@@ -45,8 +45,22 @@ export default defineConfig({
   worker: { format: 'es' },
   build: { target: 'esnext' },
   optimizeDeps: {
-    // transformers.js does its own dynamic ORT backend imports; pre-bundling breaks it
+    // transformers.js does its own dynamic ORT backend imports; pre-bundling breaks it.
+    // It is also dynamically imported inside pipeline.worker.ts so its module
+    // graph never sits on a worker's boot path.
     exclude: ['@huggingface/transformers'],
+    // Scan the worker sources at server start so their deps (remark, graphology,
+    // d3-force-3d, …) are discovered and optimized UP FRONT. Discovering them
+    // mid-session triggers "optimized dependencies changed. reloading", which
+    // kills an in-flight ingestion (dev-only failure mode).
+    // NOTE: deliberately NOT optimizeDeps.include — in Vite 8 that produced
+    // client-environment chunks inside workers (`document is not defined`).
+    entries: [
+      'index.html',
+      'src/workers/pipeline.worker.ts',
+      'src/workers/aggregator.worker.ts',
+      'src/workers/layout.worker.ts',
+    ],
   },
   test: {
     environment: 'node',

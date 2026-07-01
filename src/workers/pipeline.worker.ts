@@ -4,11 +4,14 @@
  * transformers.js. One of POOL_SIZE instances managed by WorkerPool.
  */
 
-import {
-  pipeline,
-  type FeatureExtractionPipeline,
-  type ProgressInfo,
-  type Tensor,
+// NOTE: @huggingface/transformers is imported DYNAMICALLY (see getExtractor).
+// A top-level import would put its huge module graph on the worker's boot
+// path: parse requests would wait on it, and in dev a failure inside that
+// graph kills the worker before onmessage registers ("stuck parsing").
+import type {
+  FeatureExtractionPipeline,
+  ProgressInfo,
+  Tensor,
 } from '@huggingface/transformers';
 import { EMBED_DIMS, EMBED_MODEL_ID } from '../config';
 import type { NodeStatus, ParsedDoc, PoolRequest, PoolResponse } from '../model/types';
@@ -83,20 +86,31 @@ let extractorPromise: Promise<FeatureExtractionPipeline> | null = null;
 
 function getExtractor(): Promise<FeatureExtractionPipeline> {
   if (!extractorPromise) {
-    extractorPromise = pipeline('feature-extraction', EMBED_MODEL_ID, {
-      dtype: 'q8',
-      progress_callback: (p: ProgressInfo) => {
-        if (p.status === 'progress') {
-          respond({
-            requestId: -1,
-            type: 'model:progress',
-            loaded: p.loaded,
-            total: p.total,
-            note: p.file,
-          });
-        }
-      },
-    });
+    extractorPromise = (async () => {
+      const { pipeline, env } = await import('@huggingface/transformers');
+      // PRIVACY (audit H-1): transformers.js defaults ORT's wasmPaths to
+      // cdn.jsdelivr.net — executable code from a third-party CDN inside the
+      // worker that holds all document text, and a hard offline breaker.
+      // Resetting it makes ORT fall back to its import.meta.url resolution,
+      // which Vite bundles as a same-origin asset.
+      if (env?.backends?.onnx?.wasm) {
+        env.backends.onnx.wasm.wasmPaths = undefined;
+      }
+      return pipeline('feature-extraction', EMBED_MODEL_ID, {
+        dtype: 'q8',
+        progress_callback: (p: ProgressInfo) => {
+          if (p.status === 'progress') {
+            respond({
+              requestId: -1,
+              type: 'model:progress',
+              loaded: p.loaded,
+              total: p.total,
+              note: p.file,
+            });
+          }
+        },
+      });
+    })();
     // allow a retry after a failed (e.g. offline) model download
     extractorPromise.catch(() => {
       extractorPromise = null;

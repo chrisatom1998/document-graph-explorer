@@ -12,6 +12,7 @@ import { chunkText } from './chunker';
 import { findBoilerplateLines, stripBoilerplate } from './boilerplate';
 import { semanticEdges } from './similarity';
 import { SIM_THRESHOLD, SIM_TOP_K } from '../config';
+import { parseMarkdown } from './parsers/markdown';
 
 // ---------------------------------------------------------------------------
 // tokenize
@@ -33,6 +34,37 @@ describe('tokenize', () => {
     expect(tf['kafka']).toBe(2);
     expect(tf['consumer']).toBe(1);
     expect(total).toBe(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// markdown parser
+// ---------------------------------------------------------------------------
+describe('parseMarkdown', () => {
+  it('extracts headings, links, definitions, and readable text in a worker-safe way', () => {
+    const markdown = [
+      '# Deploy Guide',
+      '',
+      'See [Incident Runbook](incident-runbook.md) and [Oncall][oncall].',
+      '',
+      '## Rollout',
+      '- Ship via **canary**.',
+      '',
+      '[oncall]: oncall-rotation.md',
+    ].join('\n');
+    const bytes = new TextEncoder().encode(markdown).buffer;
+
+    const parsed = parseMarkdown(bytes, 'deploy-guide.md');
+
+    expect(parsed.title).toBe('Deploy Guide');
+    expect(parsed.headings).toEqual(['Deploy Guide', 'Rollout']);
+    expect(parsed.mdLinkTargets).toEqual([
+      'oncall-rotation.md',
+      'incident-runbook.md',
+      'oncall-rotation.md',
+    ]);
+    expect(parsed.text).toContain('See Incident Runbook and Oncall.');
+    expect(parsed.text).toContain('Ship via canary.');
   });
 });
 
