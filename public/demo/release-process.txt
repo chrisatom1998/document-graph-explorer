@@ -1,0 +1,58 @@
+RELEASE PROCESS
+
+Most services at Nimbus Labs deploy on every merge to main, following the
+blue-green rollout described in deploy-guide.md. This document covers the
+smaller set of higher-risk services that follow a batched, scheduled
+release instead, and the manual sign-off steps that the everyday Deploy
+Guide intentionally leaves out.
+
+WHICH SERVICES THIS APPLIES TO
+
+Any service tagged "release-cadence: batched" in its Terraform module
+(see terraform-modules.md) follows this process instead of deploy-on-merge.
+Today that's auth-service and the Postgres migration runner used across
+the data layer described in postgres-operations.md. These are the
+services where a bad release has the widest blast radius, so we trade
+deploy speed for an extra review pass.
+
+THE BATCH WINDOW
+
+Batched services release twice a week, Tuesday and Thursday at 10 a.m.,
+never on a Friday and never the day before a holiday. Changes queued for
+a release window are frozen 4 hours before the window opens; anything not
+merged by the freeze rides in the next window instead. This is a hard
+rule even when someone is confident their change is small.
+
+SIGN-OFF REQUIREMENTS
+
+Before a batched release goes out:
+
+1. A second engineer signs off on the diff, in addition to normal code
+   review, specifically checking for backward compatibility with the
+   currently running version -- the same additive-only rule documented
+   in postgres-operations.md for Postgres migrations.
+2. If the release touches anything covered by the Security Review Process
+   (auth-service token logic, IAM, secrets access), that review must be
+   complete and linked in the release ticket before the freeze, not during
+   the deploy window itself.
+3. The on-call engineer for that week (see oncall-rotation.md -- listed
+   in the on-call scheduler, not this doc) is notified before the window
+   opens, so they're not caught off guard by a page ten minutes after a
+   batched release if something goes sideways.
+
+ROLLBACK
+
+Batched releases still use the same blue-green mechanics as every other
+deploy -- rollback is still a fast selector flip, not a slow reverse
+migration. The extra process here is entirely front-loaded into the
+sign-off steps above; once the release is live, it is operated exactly
+like any other service, including how it's handled if something breaks
+per the Incident Runbook.
+
+WHY THIS EXISTS
+
+This process exists because auth-service issues the JWTs every other
+service in the Architecture Overview trusts implicitly, and a bad release
+there is a very different scale of problem than a bad release to an
+internal reporting tool. Slower and reviewed beats fast and quietly wrong,
+specifically for these services.

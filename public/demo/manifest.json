@@ -1,0 +1,20 @@
+{
+  "files": [
+    "architecture-overview.md",
+    "deploy-guide.md",
+    "kubernetes-conventions.md",
+    "terraform-modules.md",
+    "auth-service.md",
+    "sso-okta-setup.md",
+    "security-review-process.md",
+    "secrets-management.md",
+    "kafka-event-bus.md",
+    "postgres-operations.md",
+    "data-retention-policy.md",
+    "onboarding.md",
+    "oncall-rotation.md",
+    "incident-runbook.md",
+    "release-process.txt",
+    "api-rate-limiting.txt"
+  ]
+}
