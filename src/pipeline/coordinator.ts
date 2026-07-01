@@ -1,0 +1,606 @@
+/**
+ * THE ORCHESTRATOR (main thread). Drives the full ingest flow:
+ *
+ *   route → hash/dedupe → cache lookup → parse (worker pool / pdf.js)
+ *   → lexical aggregation (corpus-wide) → embeddings → semantic edges
+ *   + Louvain clustering → ready.
+ *
+ * Plain module — reads stores via getState(), never hooks. A second drop
+ * while a run is in flight queues behind it (promise chain).
+ */
+
+import {
+  EMBED_DIMS,
+  KEYWORD_EDGE_MIN_SHARED,
+  KEYWORD_EDGES_PER_DOC,
+  MAX_EMBED_TEXT_BYTES,
+  MIN_MENTION_TITLE_LEN,
+  SIM_THRESHOLD,
+  SIM_TOP_K,
+  TFIDF_TOP_N,
+} from '../config';
+import type {
+  AggRequest,
+  AggResponse,
+  DocNode,
+  Edge,
+  FileType,
+  IngestFile,
+  LexicalDocInput,
+  PoolResponse,
+} from '../model/types';
+import { routeFile } from '../ingest/fileRouter';
+import {
+  layoutAddNodes,
+  layoutReheat,
+  layoutReset,
+  layoutSetClusters,
+  layoutSetLinks,
+} from '../layout/layoutBridge';
+import { lookupDocCache } from '../persistence/cache';
+import { useGraphStore } from '../store/graphStore';
+import {
+  chunkStore,
+  clearRuntimeStores,
+  docVectorStore,
+  textStore,
+} from '../store/runtimeStores';
+import { useUiStore } from '../store/uiStore';
+import { getPool, type WorkerPool } from '../workers/pool';
+import { stripBoilerplate } from './boilerplate';
+import { chunkText } from './chunker';
+import { sha256Hex } from './hash';
+import { parsePdf } from './parsers/pdf';
+
+type ParseDone = Extract<PoolResponse, { type: 'parse:done' }>;
+type EmbedDone = Extract<PoolResponse, { type: 'embed:done' }>;
+type EmbedQueryDone = Extract<PoolResponse, { type: 'embedQuery:done' }>;
+type LexicalDone = Extract<AggResponse, { type: 'lexical:done' }>;
+type SemanticDone = Extract<AggResponse, { type: 'semantic:done' }>;
+
+// fly-in spawn shell (contract: random point on a ~140 radius shell, ±25 jitter)
+const SPAWN_RADIUS = 140;
+const SPAWN_JITTER = 25;
+
+// ---------------------------------------------------------------------------
+// aggregator worker client (single dedicated worker)
+// ---------------------------------------------------------------------------
+
+let aggWorker: Worker | null = null;
+let aggNextRequestId = 1;
+const aggPending = new Map<
+  number,
+  { resolve: (response: AggResponse) => void; reject: (error: Error) => void }
+>();
+
+function ensureAggregator(): Worker {
+  if (aggWorker) return aggWorker;
+  aggWorker = new Worker(new URL('../workers/aggregator.worker.ts', import.meta.url), {
+    type: 'module',
+  });
+  aggWorker.onmessage = (ev: MessageEvent<AggResponse>) => {
+    const msg = ev.data;
+    const entry = aggPending.get(msg.requestId);
+    if (!entry) return;
+    aggPending.delete(msg.requestId);
+    if (msg.type === 'error') entry.reject(new Error(msg.message));
+    else entry.resolve(msg);
+  };
+  aggWorker.onerror = (ev: ErrorEvent) => {
+    const error = new Error(ev.message || 'aggregator worker crashed');
+    for (const [id, entry] of [...aggPending]) {
+      aggPending.delete(id);
+      entry.reject(error);
+    }
+  };
+  return aggWorker;
+}
+
+function aggRequest<T extends AggResponse>(
+  msg: AggRequest,
+  transfer?: Transferable[],
+): Promise<T> {
+  const worker = ensureAggregator();
+  const requestId = aggNextRequestId;
+  aggNextRequestId += 1;
+  const payload = { ...msg, requestId } as AggRequest;
+  return new Promise<T>((resolve, reject) => {
+    aggPending.set(requestId, {
+      // correlated by requestId at runtime; caller asserts the subtype
+      resolve: resolve as unknown as (response: AggResponse) => void,
+      reject,
+    });
+    if (transfer && transfer.length > 0) worker.postMessage(payload, transfer);
+    else worker.postMessage(payload);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// per-run bookkeeping
+// ---------------------------------------------------------------------------
+
+/**
+ * Lexical metadata (term frequencies, md link targets, original filename)
+ * lives outside DocNode; kept per docId for corpus-wide lexical reruns.
+ * Docs hydrated from cache are backfilled via a worker 'analyze' pass
+ * (their md link targets are not recoverable from extracted text — see
+ * the deviation note in the subsystem report).
+ */
+interface LexMeta {
+  tf: Record<string, number>;
+  totalTerms: number;
+  mdLinkTargets: string[];
+  fileName: string;
+}
+const lexMeta = new Map<string, LexMeta>();
+
+/** docId -> ephemeral ingest fileId/name of the CURRENT run (status chips). */
+const fileIdOfDoc = new Map<string, string>();
+const nameOfDoc = new Map<string, string>();
+
+let modelProgressWired = false;
+function wireModelProgress(): void {
+  if (modelProgressWired) return;
+  modelProgressWired = true;
+  getPool().onModelProgress((p) => {
+    useGraphStore.getState().setModelProgress({ loaded: p.loaded, total: p.total, note: p.note });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// small helpers
+// ---------------------------------------------------------------------------
+
+function basename(path: string): string {
+  const normalized = path.replace(/\\/g, '/');
+  const slash = normalized.lastIndexOf('/');
+  return slash >= 0 ? normalized.slice(slash + 1) : normalized;
+}
+
+function parentDir(path: string | undefined): string | undefined {
+  if (!path) return undefined;
+  const normalized = path.replace(/\\/g, '/');
+  const slash = normalized.lastIndexOf('/');
+  return slash > 0 ? normalized.slice(0, slash) : undefined;
+}
+
+function makeSummary(text: string): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  return flat.length > 200 ? `${flat.slice(0, 200).trimEnd()}…` : flat;
+}
+
+function randomSpawn(): [number, number, number] {
+  const u = Math.random() * 2 - 1; // cos(polar)
+  const phi = Math.random() * Math.PI * 2;
+  const s = Math.sqrt(1 - u * u);
+  const r = SPAWN_RADIUS + (Math.random() * 2 - 1) * SPAWN_JITTER;
+  return [r * s * Math.cos(phi), r * s * Math.sin(phi), r * u];
+}
+
+/** id = SHA-256 over UTF-8(path + '\0') ++ content bytes (spec §6). */
+async function contentId(path: string, bytes: ArrayBuffer): Promise<string> {
+  const pathBytes = new TextEncoder().encode(`${path}\0`);
+  const combined = new Uint8Array(pathBytes.byteLength + bytes.byteLength);
+  combined.set(pathBytes, 0);
+  combined.set(new Uint8Array(bytes), pathBytes.byteLength);
+  return sha256Hex(combined.buffer);
+}
+
+function documentNodes(): DocNode[] {
+  return useGraphStore.getState().nodes.filter((n) => n.kind === 'document');
+}
+
+function toLinkInput(edges: Edge[]): { source: string; target: string; weight: number }[] {
+  return edges.map((e) => ({ source: e.source, target: e.target, weight: e.weight }));
+}
+
+// ---------------------------------------------------------------------------
+// ingest flow
+// ---------------------------------------------------------------------------
+
+interface PendingFile {
+  file: IngestFile;
+  fileType: FileType;
+  id: string; // content hash = DocNode id
+  relPath: string; // folder-relative path, or the bare filename
+}
+
+async function runIngest(files: IngestFile[]): Promise<void> {
+  wireModelProgress();
+  const store = useGraphStore.getState; // fresh state per call; actions are stable
+
+  // (a) route by extension; unsupported → ignored tray
+  const routed: { file: IngestFile; fileType: FileType }[] = [];
+  for (const file of files) {
+    const fileType = routeFile(file.name);
+    if (!fileType) {
+      store().addIgnored(file.name, 'unsupported type');
+      continue;
+    }
+    store().setFileStatus({ fileId: file.fileId, name: file.name, stage: 'queued' });
+    routed.push({ file, fileType });
+  }
+
+  // (b) content ids; duplicates (within the drop or vs the store) → cached
+  const seenIds = new Set<string>();
+  const pending: PendingFile[] = [];
+  for (const { file, fileType } of routed) {
+    const relPath = file.path ?? file.name;
+    const id = await contentId(relPath, file.bytes);
+    if (seenIds.has(id) || store().nodeIndex[id] !== undefined) {
+      store().setFileStatus({ fileId: file.fileId, name: file.name, stage: 'cached' });
+      continue;
+    }
+    seenIds.add(id);
+    pending.push({ file, fileType, id, relPath });
+  }
+  if (pending.length === 0) return; // nothing new — leave the corpus untouched
+
+  // (c) IndexedDB cache lookup (persistence subsystem)
+  const lookups = await Promise.all(
+    pending.map(async (p) => ({
+      p,
+      cached: await lookupDocCache(p.id).catch(() => undefined),
+    })),
+  );
+  const misses: PendingFile[] = [];
+  for (const { p, cached } of lookups) {
+    fileIdOfDoc.set(p.id, p.file.fileId);
+    nameOfDoc.set(p.id, p.file.name);
+    if (!cached) {
+      misses.push(p);
+      continue;
+    }
+    store().addNodes([cached.node]);
+    textStore.set(p.id, cached.text);
+    chunkStore.set(p.id, {
+      texts: cached.chunkTexts,
+      vectors: cached.chunkVectors,
+      dims: EMBED_DIMS,
+    });
+    if (cached.docVector) docVectorStore.set(p.id, cached.docVector);
+    layoutAddNodes([{ id: p.id, cluster: cached.node.cluster, spawn: randomSpawn() }]);
+    store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
+  }
+
+  // (d) parse misses — pdf on the main thread, everything else in the pool
+  const pool = getPool();
+  if (misses.length > 0) {
+    store().setPhase('parsing');
+    const parseTasks = misses.map(async (p) => {
+      store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'parsing' });
+      let done: ParseDone;
+      if (p.fileType === 'pdf') {
+        const pdf = await parsePdf(p.file.bytes, p.file.name);
+        done = await pool.request<ParseDone>({
+          requestId: 0,
+          type: 'analyze',
+          fileId: p.file.fileId,
+          name: p.file.name,
+          path: p.file.path,
+          fileType: p.fileType,
+          docId: p.id,
+          title: pdf.title,
+          text: pdf.text,
+          status: pdf.status,
+          warning: pdf.warning,
+        });
+      } else {
+        done = await pool.request<ParseDone>(
+          {
+            requestId: 0,
+            type: 'parse',
+            fileId: p.file.fileId,
+            name: p.file.name,
+            path: p.file.path,
+            fileType: p.fileType,
+            bytes: p.file.bytes,
+          },
+          [p.file.bytes],
+        );
+      }
+      const doc = done.doc;
+      lexMeta.set(p.id, {
+        tf: doc.tf,
+        totalTerms: doc.totalTerms,
+        mdLinkTargets: doc.mdLinkTargets,
+        fileName: p.file.name,
+      });
+      const node: DocNode = {
+        id: p.id,
+        kind: 'document',
+        title: doc.title,
+        fileType: p.fileType,
+        path: p.relPath,
+        folderKey: parentDir(p.file.path),
+        summary: makeSummary(doc.text),
+        topics: [],
+        entities: doc.entities,
+        keywords: [],
+        wordCount: doc.wordCount,
+        cluster: -1,
+        degree: 0,
+        status: doc.status,
+        warning: doc.warning,
+      };
+      store().addNodes([node]);
+      textStore.set(p.id, doc.text);
+      layoutAddNodes([{ id: p.id, cluster: -1, spawn: randomSpawn() }]);
+      store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'placed' });
+    });
+    const settled = await Promise.allSettled(parseTasks);
+    settled.forEach((result, i) => {
+      if (result.status !== 'rejected') return;
+      const p = misses[i];
+      const message =
+        result.reason instanceof Error ? result.reason.message : String(result.reason);
+      // failed files keep an error chip; no ghosted node is added
+      store().setFileStatus({
+        fileId: p.file.fileId,
+        name: p.file.name,
+        stage: 'error',
+        error: message,
+      });
+    });
+  }
+
+  if (documentNodes().length === 0) {
+    store().setPhase('idle');
+    return;
+  }
+
+  // (e) lexical aggregation over the WHOLE corpus (idf + title mentions
+  // are corpus-wide, so every drop rebuilds them)
+  store().setPhase('linking');
+  await backfillLexMeta(pool);
+  const lexicalDocs: LexicalDocInput[] = documentNodes().map((n) => {
+    const meta = lexMeta.get(n.id);
+    const text = textStore.get(n.id) ?? '';
+    return {
+      id: n.id,
+      title: n.title,
+      fileName: meta?.fileName ?? basename(n.path ?? n.title),
+      tf: meta?.tf ?? {},
+      totalTerms: meta?.totalTerms ?? 0,
+      textLower: text.slice(0, MAX_EMBED_TEXT_BYTES).toLowerCase(),
+      mdLinkTargets: meta?.mdLinkTargets ?? [],
+    };
+  });
+
+  let lexEdges: Edge[] = [];
+  let boilerplate = new Set<string>();
+  try {
+    const lexical = await aggRequest<LexicalDone>({
+      requestId: 0,
+      type: 'lexical',
+      docs: lexicalDocs,
+      params: {
+        tfidfTopN: TFIDF_TOP_N,
+        minShared: KEYWORD_EDGE_MIN_SHARED,
+        edgesPerDoc: KEYWORD_EDGES_PER_DOC,
+        minTitleLen: MIN_MENTION_TITLE_LEN,
+      },
+    });
+    lexEdges = lexical.edges;
+    boilerplate = new Set(lexical.boilerplateLines);
+
+    const nodesById = new Map(documentNodes().map((n) => [n.id, n]));
+    const patches = new Map<string, Partial<DocNode>>();
+    for (const [docId, keywords] of Object.entries(lexical.keywordsByDoc)) {
+      const existing = nodesById.get(docId);
+      if (!existing) continue;
+      // topics = TF-IDF fallback; never clobber canonical (enriched) topics
+      patches.set(
+        docId,
+        existing.topics.length > 0
+          ? { keywords }
+          : { keywords, topics: keywords.slice(0, 5) },
+      );
+    }
+    store().patchNodes(patches);
+    store().setEdges(lexEdges);
+    layoutSetLinks(toLinkInput(lexEdges));
+    layoutReheat(0.8);
+  } catch (err) {
+    console.error('lexical aggregation failed', err);
+    lexEdges = store().edges;
+  }
+
+  // (f) embeddings for docs that still need a vector
+  const embedTargets = documentNodes().filter(
+    (n) => n.status !== 'unreadable' && !docVectorStore.has(n.id) && textStore.has(n.id),
+  );
+  if (embedTargets.length > 0) {
+    store().setPhase('embedding');
+    const embedJobs = embedTargets.map(async (n) => {
+      const text = textStore.get(n.id) ?? '';
+      const chunks = chunkText(stripBoilerplate(text, boilerplate));
+      if (chunks.length === 0) return; // nothing embeddable (e.g. boilerplate-only)
+      chunkStore.set(n.id, { texts: chunks, vectors: null, dims: EMBED_DIMS });
+      const fileId = fileIdOfDoc.get(n.id);
+      const name = nameOfDoc.get(n.id) ?? n.title;
+      if (fileId) store().setFileStatus({ fileId, name, stage: 'embedding' });
+      const done = await pool.request<EmbedDone>({
+        requestId: 0,
+        type: 'embed',
+        docId: n.id,
+        chunks,
+      });
+      docVectorStore.set(n.id, done.docVector);
+      chunkStore.set(n.id, { texts: chunks, vectors: done.chunkVectors, dims: EMBED_DIMS });
+      if (fileId) store().setFileStatus({ fileId, name, stage: 'placed' });
+    });
+    const settled = await Promise.allSettled(embedJobs);
+    settled.forEach((result, i) => {
+      if (result.status !== 'rejected') return;
+      const n = embedTargets[i];
+      const message =
+        result.reason instanceof Error ? result.reason.message : String(result.reason);
+      console.error(`embedding failed for ${n.title}:`, message);
+      const fileId = fileIdOfDoc.get(n.id);
+      if (fileId) {
+        store().setFileStatus({
+          fileId,
+          name: nameOfDoc.get(n.id) ?? n.title,
+          stage: 'error',
+          error: message,
+        });
+      }
+    });
+    store().setModelProgress(null);
+  }
+
+  // (g) semantic edges + Louvain clustering over the full edge set
+  store().setPhase('connecting');
+  const embedded = documentNodes().filter((n) => docVectorStore.has(n.id));
+  if (embedded.length > 0) {
+    const ids = embedded.map((n) => n.id);
+    const vectors = new Float32Array(ids.length * EMBED_DIMS);
+    ids.forEach((id, i) => {
+      const vector = docVectorStore.get(id);
+      if (vector) vectors.set(vector.subarray(0, EMBED_DIMS), i * EMBED_DIMS);
+    });
+    try {
+      const semantic = await aggRequest<SemanticDone>(
+        {
+          requestId: 0,
+          type: 'semantic',
+          ids,
+          vectors,
+          dims: EMBED_DIMS,
+          existingEdges: toLinkInput(lexEdges),
+          params: { threshold: SIM_THRESHOLD, topK: SIM_TOP_K },
+        },
+        [vectors.buffer], // `vectors` is a copy; the doc vectors stay in the store
+      );
+      const merged = new Map<string, Edge>();
+      for (const edge of [...lexEdges, ...semantic.edges]) {
+        if (!merged.has(edge.id)) merged.set(edge.id, edge);
+      }
+      const allEdges = [...merged.values()];
+      store().setEdges(allEdges);
+
+      const patches = new Map<string, Partial<DocNode>>();
+      for (const [docId, cluster] of Object.entries(semantic.clusters)) {
+        patches.set(docId, { cluster });
+      }
+      store().patchNodes(patches);
+
+      layoutSetLinks(toLinkInput(allEdges));
+      layoutSetClusters(semantic.clusters);
+      layoutReheat(0.5);
+    } catch (err) {
+      console.error('semantic aggregation failed', err);
+    }
+  }
+
+  store().setPhase('ready');
+  const sortedIds = documentNodes()
+    .map((n) => n.id)
+    .sort();
+  store().setCorpusHash(await sha256Hex(sortedIds.join('')));
+}
+
+/**
+ * Docs in the store without lexical metadata (hydrated from cache or
+ * restored by the persistence subsystem) get tf/totalTerms recomputed off
+ * the main thread via 'analyze'. mdLinkTargets are not recoverable from
+ * extracted text and stay empty for those docs.
+ */
+async function backfillLexMeta(pool: WorkerPool): Promise<void> {
+  const missing = documentNodes().filter((n) => !lexMeta.has(n.id) && textStore.has(n.id));
+  if (missing.length === 0) return;
+  await Promise.allSettled(
+    missing.map(async (n) => {
+      const fileName = basename(n.path ?? n.title);
+      const done = await pool.request<ParseDone>({
+        requestId: 0,
+        type: 'analyze',
+        fileId: n.id,
+        name: fileName,
+        path: n.path,
+        fileType: n.fileType,
+        docId: n.id,
+        title: n.title,
+        text: textStore.get(n.id) ?? '',
+        status: n.status,
+        warning: n.warning,
+      });
+      lexMeta.set(n.id, {
+        tf: done.doc.tf,
+        totalTerms: done.doc.totalTerms,
+        mdLinkTargets: [],
+        fileName,
+      });
+    }),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// public API
+// ---------------------------------------------------------------------------
+
+/** Serializes runs: a drop during an active run queues after it. */
+let runChain: Promise<void> = Promise.resolve();
+
+export function ingestFiles(files: IngestFile[]): Promise<void> {
+  const run = runChain.then(() => runIngest(files));
+  runChain = run.then(
+    () => undefined,
+    (err) => {
+      console.error('ingest run failed', err);
+    },
+  );
+  return run;
+}
+
+/** Fetches /demo/manifest.json + files (bundled by the UI) and ingests them. */
+export async function loadDemoCorpus(): Promise<void> {
+  const res = await fetch('/demo/manifest.json');
+  if (!res.ok) throw new Error(`demo manifest failed: HTTP ${res.status}`);
+  const manifest = (await res.json()) as { files: string[] };
+  const encoder = new TextEncoder();
+  const fetched = await Promise.all(
+    manifest.files.map(async (name): Promise<IngestFile | null> => {
+      const fileRes = await fetch(`/demo/${encodeURIComponent(name)}`);
+      if (!fileRes.ok) return null;
+      const text = await fileRes.text();
+      const encoded = encoder.encode(text);
+      const bytes = new ArrayBuffer(encoded.byteLength);
+      new Uint8Array(bytes).set(encoded);
+      return {
+        fileId: crypto.randomUUID(),
+        name,
+        fileType: routeFile(name) ?? 'other',
+        bytes,
+      };
+    }),
+  );
+  const files = fetched.filter((f): f is IngestFile => f !== null);
+  if (files.length > 0) await ingestFiles(files);
+}
+
+/** Embeds a search query to a unit vector (used by the search subsystem). */
+export async function embedQuery(text: string): Promise<Float32Array> {
+  const done = await getPool().request<EmbedQueryDone>({
+    requestId: 0,
+    type: 'embedQuery',
+    text,
+  });
+  return done.vector;
+}
+
+/** Full teardown: layout, graph store, runtime stores, UI selections. */
+export function resetCorpus(): void {
+  layoutReset();
+  useGraphStore.getState().reset();
+  clearRuntimeStores();
+  lexMeta.clear();
+  fileIdOfDoc.clear();
+  nameOfDoc.clear();
+  const ui = useUiStore.getState();
+  ui.setSelected(null);
+  ui.setSelectedEdge(null);
+  ui.setHovered(null);
+  ui.setSearchResults(null);
+}
