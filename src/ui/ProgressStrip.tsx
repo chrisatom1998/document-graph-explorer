@@ -4,6 +4,7 @@ import type { FileStage, PipelinePhase } from '../model/types';
 import QualityToast from './QualityToast';
 
 const AUTO_HIDE_MS = 2500;
+const IGNORED_LINGER_MS = 6000;
 const MAX_FILE_CHIPS = 7;
 
 const PHASE_LABEL: Partial<Record<PipelinePhase, string>> = {
@@ -54,8 +55,23 @@ export default function ProgressStrip() {
     return () => clearTimeout(t);
   }, [phase]);
 
+  // A drop that is rejected in full (e.g. every file too large) never starts
+  // the pipeline, so without this the rejection would be completely silent.
+  // Separate from `lingering` because that state carries the fade-out class.
+  const [ignoredFlash, setIgnoredFlash] = useState(false);
+  useEffect(() => {
+    if (ignoredFiles.length === 0) return;
+    setIgnoredFlash(true);
+    setIgnoredOpen(true);
+    const t = setTimeout(() => {
+      setIgnoredFlash(false);
+      setIgnoredOpen(false);
+    }, IGNORED_LINGER_MS);
+    return () => clearTimeout(t);
+  }, [ignoredFiles.length]);
+
   const active = phase !== 'idle' && phase !== 'ready';
-  const visible = active || lingering;
+  const visible = active || lingering || ignoredFlash;
 
   if (!visible) {
     // Still render QualityToast — it's an independent status affordance
@@ -84,7 +100,11 @@ export default function ProgressStrip() {
 
   return (
     <div className="progress-strip-layer">
-      <div className={`progress-strip glass-panel${!active && lingering ? ' is-leaving' : ''}`}>
+      <div
+        className={`progress-strip glass-panel${
+          !active && lingering && !ignoredFlash ? ' is-leaving' : ''
+        }`}
+      >
         <div className="progress-strip__top">
           <span className="progress-strip__phase">{phaseLabel}</span>
           <div className="progress-strip__bar-track">
