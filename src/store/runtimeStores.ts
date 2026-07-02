@@ -23,9 +23,17 @@ export const docVectorStore = new Map<string, Float32Array>(); // docId -> doc v
  */
 export const mdLinkTargetsStore = new Map<string, string[]>();
 
+/**
+ * docId -> labelled links (anchor text ↔ url), persisted for the reader view's
+ * numbered "Links in this document" list. Kept separate from mdLinkTargets
+ * (which is url-only and feeds reference-edge detection).
+ */
+export const docLinksStore = new Map<string, import('../model/types').LinkRef[]>();
+
 export function clearRuntimeStores(): void {
   textStore.clear();
   chunkStore.clear();
   docVectorStore.clear();
   mdLinkTargetsStore.clear();
+  docLinksStore.clear();
 }

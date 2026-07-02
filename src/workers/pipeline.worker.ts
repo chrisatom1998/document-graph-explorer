@@ -14,7 +14,7 @@ import type {
   Tensor,
 } from '@huggingface/transformers';
 import { EMBED_DIMS, EMBED_MODEL_ID } from '../config';
-import type { NodeStatus, ParsedDoc, PoolRequest, PoolResponse } from '../model/types';
+import type { LinkRef, NodeStatus, ParsedDoc, PoolRequest, PoolResponse } from '../model/types';
 import { extractEntities } from '../pipeline/entities';
 import { tokenize, termFreq } from '../pipeline/tokenize';
 import { parseHtml } from '../pipeline/parsers/html';
@@ -37,6 +37,7 @@ function analyzeText(
   title: string,
   headings: string[],
   mdLinkTargets: string[],
+  docLinks: LinkRef[],
   status: NodeStatus,
   warning?: string,
 ): ParsedDoc {
@@ -51,6 +52,7 @@ function analyzeText(
     wordCount,
     headings,
     mdLinkTargets,
+    docLinks,
     entities: extractEntities(text),
     tf,
     totalTerms: total,
@@ -240,6 +242,7 @@ async function handle(req: PoolRequest): Promise<void> {
           parsed.title,
           parsed.headings,
           parsed.mdLinkTargets,
+          parsed.docLinks,
           parsed.status,
           parsed.warning,
         );
@@ -248,8 +251,9 @@ async function handle(req: PoolRequest): Promise<void> {
       }
       case 'analyze': {
         // pre-extracted text (pdf path): tokenize/entities/wordCount only,
-        // echoing the given title/status/warning
-        const doc = analyzeText(req.text, req.title, [], [], req.status, req.warning);
+        // echoing the given title/status/warning. docLinks for pdf come from
+        // parsePdf on the main thread, so the worker leaves them empty.
+        const doc = analyzeText(req.text, req.title, [], [], [], req.status, req.warning);
         respond({ requestId: req.requestId, type: 'parse:done', fileId: req.fileId, doc });
         break;
       }

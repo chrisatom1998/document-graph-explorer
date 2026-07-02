@@ -4,6 +4,7 @@
  * become newlines, remaining tags become spaces, common entities decoded.
  */
 
+import type { LinkRef } from '../../model/types';
 import { cleanFilename, decodeText, type ParserResult } from './txt';
 
 const NAMED_ENTITIES: Record<string, string> = {
@@ -55,11 +56,21 @@ export function parseHtml(bytes: ArrayBuffer, name: string): ParserResult {
     .replace(/<head\b[\s\S]*?<\/head\s*>/gi, ' ');
 
   // collect <a href> targets before tags are stripped — otherwise the URLs
-  // are lost and the link is unrecoverable when viewing the document.
+  // are lost and the link is unrecoverable when viewing the document. The
+  // href-only pass feeds reference edges and must match ANY <a href> (even a
+  // malformed/unclosed one); a second pass that requires a closing </a> pairs
+  // each URL with its anchor text for the reader's labelled link list.
   const linkTargets: string[] = [];
   for (const m of html.matchAll(/<a\b[^>]*\shref\s*=\s*("([^"]*)"|'([^']*)'|([^\s">]+))/gi)) {
     const url = decodeEntities((m[2] ?? m[3] ?? m[4] ?? '').trim());
     if (url && !url.startsWith('#')) linkTargets.push(url); // skip in-page anchors
+  }
+  const docLinks: LinkRef[] = [];
+  const A_RE = /<a\b[^>]*\shref\s*=\s*("([^"]*)"|'([^']*)'|([^\s">]+))[^>]*>([\s\S]*?)<\/a\s*>/gi;
+  for (const m of html.matchAll(A_RE)) {
+    const url = decodeEntities((m[2] ?? m[3] ?? m[4] ?? '').trim());
+    if (!url || url.startsWith('#')) continue;
+    docLinks.push({ text: stripTags(m[5]), url });
   }
 
   // collect headings (h1 doubles as the title fallback)
@@ -91,6 +102,7 @@ export function parseHtml(bytes: ArrayBuffer, name: string): ParserResult {
     text,
     headings,
     mdLinkTargets: linkTargets,
+    docLinks,
     status: 'ok',
   };
 }

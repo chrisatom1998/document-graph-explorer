@@ -4,7 +4,7 @@
  * and intelligent text formatting.
  */
 
-import type { DocNode } from '../model/types';
+import type { DocNode, LinkRef } from '../model/types';
 import { hexFor } from '../scene/palette';
 
 const MIME_MAP: Record<string, string> = {
@@ -147,7 +147,7 @@ export function openDocumentViewer(
   node: DocNode,
   fullText: string,
   clusterName: string,
-  links: string[] = [],
+  links: LinkRef[] = [],
 ): void {
   const isMono = ['txt', 'json', 'yaml', 'csv', 'other'].includes(node.fileType);
   const typeLabel = MIME_MAP[node.fileType] ?? 'Document';
@@ -160,21 +160,35 @@ export function openDocumentViewer(
 
   // Web links the original document contained — including those hidden behind
   // markdown/HTML anchor text, whose URLs were stripped from the visible text
-  // during extraction. Relative/intra-corpus links are graph edges, not shown.
-  const webLinks = [...new Set(links.map((l) => l.trim()).filter((l) => hrefFor(l) !== null))].slice(
-    0,
-    200,
-  );
+  // during extraction. Each is numbered and paired with its label so the
+  // reader can tell which link goes with which piece of text. Relative/
+  // intra-corpus links are graph edges, not shown here.
+  const webLinks: { label: string; href: string }[] = [];
+  const seenHrefs = new Set<string>();
+  for (const l of links) {
+    const href = hrefFor(l.url.trim());
+    if (!href || seenHrefs.has(href)) continue;
+    seenHrefs.add(href);
+    const label = l.text.trim();
+    webLinks.push({ label: label && label !== href ? label : '', href });
+    if (webLinks.length >= 200) break;
+  }
   const linksSection =
     webLinks.length > 0
       ? `
   <section class="links-section">
     <div class="links-section__label">Links in this document</div>
-    <ul class="links-list">
+    <ol class="links-list">
       ${webLinks
-        .map((l) => `<li>${anchor(hrefFor(l) as string, l)}</li>`)
+        .map(
+          ({ label, href }) =>
+            `<li>${label ? `<span class="links-list__label">${escapeHtml(label)}</span>` : ''}${anchor(
+              href,
+              href,
+            )}</li>`,
+        )
         .join('\n      ')}
-    </ul>
+    </ol>
   </section>`
       : '';
 
@@ -505,15 +519,27 @@ export function openDocumentViewer(
     border-top: 1px solid var(--border);
   }
   .links-list {
-    list-style: none;
+    list-style: decimal;
+    padding-left: 26px;
     display: flex;
     flex-direction: column;
-    gap: 9px;
+    gap: 14px;
+    color: var(--text-faint); /* the numeric markers */
+  }
+  .links-list li {
+    padding-left: 4px;
+  }
+  .links-list__label {
+    display: block;
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-weight: 500;
+    margin-bottom: 2px;
   }
   .links-list a {
     color: var(--text-secondary);
     text-decoration: none;
-    font-size: 13.5px;
+    font-size: 12.5px;
     word-break: break-all;
     border-bottom: 1px solid transparent;
     transition: color 150ms ease, border-color 150ms ease;

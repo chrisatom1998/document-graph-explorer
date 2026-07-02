@@ -55,6 +55,7 @@ import { useGraphStore } from '../store/graphStore';
 import {
   chunkStore,
   clearRuntimeStores,
+  docLinksStore,
   docVectorStore,
   mdLinkTargetsStore,
   textStore,
@@ -285,6 +286,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
     });
     if (cached.docVector) docVectorStore.set(p.id, cached.docVector);
     mdLinkTargetsStore.set(p.id, cached.mdLinkTargets);
+    docLinksStore.set(p.id, cached.docLinks);
     store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
   }
 
@@ -346,6 +348,12 @@ async function runIngest(files: IngestFile[]): Promise<void> {
         fileName: p.file.name,
       });
       mdLinkTargetsStore.set(p.id, p.fileType === 'pdf' ? pdfLinks : doc.mdLinkTargets);
+      // PDFs have no anchor text (annotation URLs only) — label defaults to the
+      // URL itself in the reader; other types carry real labels from the parser.
+      docLinksStore.set(
+        p.id,
+        p.fileType === 'pdf' ? pdfLinks.map((url) => ({ text: '', url })) : doc.docLinks,
+      );
       const node: DocNode = {
         id: p.id,
         kind: 'document',
@@ -726,6 +734,7 @@ async function runRemove(ids: string[]): Promise<void> {
     chunkStore.delete(id);
     docVectorStore.delete(id);
     mdLinkTargetsStore.delete(id);
+    docLinksStore.delete(id);
     lexMeta.delete(id);
     fileIdOfDoc.delete(id);
     nameOfDoc.delete(id);

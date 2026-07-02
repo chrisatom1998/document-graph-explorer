@@ -1,5 +1,5 @@
 import { EMBED_DIMS } from '../config';
-import type { DocNode, GraphExport } from '../model/types';
+import type { DocNode, GraphExport, LinkRef } from '../model/types';
 import { useUiStore } from '../store/uiStore';
 import { getDb, type DocumentRecord, type EmbeddingRecord, type SnapshotRecord } from './db';
 
@@ -10,6 +10,7 @@ export interface CachedDoc {
   chunkVectors: Float32Array | null;
   docVector: Float32Array | null;
   mdLinkTargets: string[];
+  docLinks: LinkRef[];
 }
 
 /** Lightweight snapshot summary for listing (no heavy exportData/positions). */
@@ -66,6 +67,7 @@ export async function lookupDocCache(hash: string): Promise<CachedDoc | undefine
       chunkVectors: nonEmpty(emb?.chunkVectors),
       docVector: nonEmpty(emb?.docVector),
       mdLinkTargets: doc.mdLinkTargets ?? [],
+      docLinks: doc.docLinks ?? [],
     };
   } catch (err) {
     cacheUnavailable(err);
@@ -98,6 +100,7 @@ export async function saveDocsToCache(
     chunkVectors: Float32Array | null;
     docVector: Float32Array | null;
     mdLinkTargets: string[];
+    docLinks: LinkRef[];
   }[],
 ): Promise<void> {
   if (docs.length === 0) return;
@@ -117,6 +120,7 @@ export async function saveDocsToCache(
         text: d.text,
         chunkTexts: d.chunkTexts,
         mdLinkTargets: d.mdLinkTargets,
+        docLinks: d.docLinks,
       };
       ops.push(docStore.put(docRec));
       const docVector = nonEmpty(d.docVector);

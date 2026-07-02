@@ -10,7 +10,7 @@
  */
 
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { DocNode, GraphExport } from '../model/types';
+import type { DocNode, GraphExport, LinkRef } from '../model/types';
 
 export const DB_NAME = 'knowledge-nebula';
 export const DB_VERSION = 2;
@@ -22,6 +22,8 @@ export interface DocumentRecord {
   chunkTexts: string[];
   /** Markdown link targets — absent on records written before this field existed. */
   mdLinkTargets?: string[];
+  /** Labelled links (label ↔ url) for the reader — absent on older records. */
+  docLinks?: LinkRef[];
 }
 
 export interface EmbeddingRecord {
