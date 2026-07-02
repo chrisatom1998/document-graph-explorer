@@ -23,6 +23,8 @@ export interface PdfParseResult {
   text: string;
   status: NodeStatus;
   warning?: string;
+  /** URLs from the PDF's link annotations (the clickable "click here" layer). */
+  links: string[];
 }
 
 /** TextItem | TextMarkedContent — the root package doesn't re-export item types. */
@@ -118,18 +120,32 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
     }
 
     const pageTexts: string[] = [];
+    const linkSet = new Set<string>();
     let failedPages = 0;
     for (let pageNo = 1; pageNo <= doc.numPages; pageNo += 1) {
       try {
         const page = await doc.getPage(pageNo);
         const content = await page.getTextContent();
         pageTexts.push(extractPageText(content.items));
+        // Link annotations carry the URL that the visible text ("click here")
+        // never contains — extract them so the links stay reachable.
+        try {
+          for (const a of await page.getAnnotations()) {
+            const annot = a as { subtype?: unknown; url?: unknown };
+            if (annot.subtype === 'Link' && typeof annot.url === 'string' && annot.url) {
+              linkSet.add(annot.url);
+            }
+          }
+        } catch {
+          // annotations are optional — never fail text extraction over them
+        }
         page.cleanup();
       } catch {
         failedPages += 1;
         pageTexts.push('');
       }
     }
+    const links = [...linkSet].slice(0, 500);
 
     let text = stripRepeatedLines(pageTexts).join('\n');
     text = text.replace(/-\n/g, ''); // join hyphenated line breaks
@@ -141,6 +157,7 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
         text,
         status: 'unreadable',
         warning: 'No extractable text (scanned images?)',
+        links,
       };
     }
     if (failedPages > 0) {
@@ -149,9 +166,10 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
         text,
         status: 'partial',
         warning: `${failedPages} of ${doc.numPages} page(s) could not be read`,
+        links,
       };
     }
-    return { title, text, status: 'ok' };
+    return { title, text, status: 'ok', links };
   } catch (err) {
     if (isPasswordError(err)) {
       return {
@@ -159,6 +177,7 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
         text: '',
         status: 'unreadable',
         warning: 'Encrypted PDF — cannot read',
+        links: [],
       };
     }
     const message = err instanceof Error ? err.message : String(err);
@@ -167,6 +186,7 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
       text: '',
       status: 'unreadable',
       warning: `Could not parse PDF (${message})`,
+      links: [],
     };
   } finally {
     try {

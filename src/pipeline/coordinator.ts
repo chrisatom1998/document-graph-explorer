@@ -295,8 +295,12 @@ async function runIngest(files: IngestFile[]): Promise<void> {
     const parseTasks = misses.map(async (p) => {
       store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'parsing' });
       let done: ParseDone;
+      // pdf.js extracts link URLs from the annotation layer; the worker's
+      // 'analyze' path can't (it only sees text), so carry them across here.
+      let pdfLinks: string[] = [];
       if (p.fileType === 'pdf') {
         const pdf = await parsePdf(p.file.bytes, p.file.name);
+        pdfLinks = pdf.links;
         done = await pool.request<ParseDone>({
           requestId: 0,
           type: 'analyze',
@@ -341,7 +345,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
         totalTerms: doc.totalTerms,
         fileName: p.file.name,
       });
-      mdLinkTargetsStore.set(p.id, doc.mdLinkTargets);
+      mdLinkTargetsStore.set(p.id, p.fileType === 'pdf' ? pdfLinks : doc.mdLinkTargets);
       const node: DocNode = {
         id: p.id,
         kind: 'document',
