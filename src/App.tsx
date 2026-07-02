@@ -20,6 +20,7 @@ import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { onLayoutSettled } from './layout/layoutBridge';
 import { positionBuffer } from './scene/positionBuffer';
+import { loadDemoCorpus } from './pipeline/coordinator';
 import { initPersistence, restoreSession } from './persistence/session';
 import './styles.css';
 
@@ -36,9 +37,18 @@ export default function App() {
   const phase = useGraphStore((s) => s.phase);
 
   // Session restore + persistence hooks, once.
+  // If no session exists (first visit), auto-load the demo corpus.
   useEffect(() => {
     initPersistence();
-    restoreSession().catch((err) => console.warn('session restore failed', err));
+    restoreSession()
+      .then(() => {
+        if (useGraphStore.getState().nodes.length === 0) {
+          loadDemoCorpus().catch((err) =>
+            console.warn('auto-load demo corpus failed', err),
+          );
+        }
+      })
+      .catch((err) => console.warn('session restore failed', err));
   }, []);
 
   // Auto-frame: while a fresh corpus is forming, re-fit the camera on every
