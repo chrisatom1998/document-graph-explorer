@@ -82,8 +82,9 @@ export default function Edges() {
     const col = attrs.colors.array as Float32Array;
     for (let i = 0; i < edges.length; i++) {
       const e = edges[i];
-      // base: kind tint scaled by weight (opacity/brightness = weight, §7.1)
-      tmpColor.copy(EDGE_TINTS[e.kind]).multiplyScalar(0.22 + 0.78 * e.weight);
+      // base: kind tint scaled by weight (opacity/brightness = weight, §7.1);
+      // kept delicate so links read as fine filaments, not bright spokes
+      tmpColor.copy(EDGE_TINTS[e.kind]).multiplyScalar(0.16 + 0.55 * e.weight);
       if (emphasis && !(emphasis.has(e.source) && emphasis.has(e.target))) {
         tmpColor.multiplyScalar(DIM_FACTOR);
       }
@@ -157,7 +158,7 @@ export default function Edges() {
       <lineBasicMaterial
         vertexColors
         transparent
-        opacity={0.9}
+        opacity={0.32}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
         toneMapped={false}

@@ -1,4 +1,9 @@
-import { useRef, type ChangeEvent } from 'react';
+import {
+  useLayoutEffect,
+  useRef,
+  type ChangeEvent,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { layoutSetDims } from '../layout/layoutBridge';
@@ -130,6 +135,35 @@ function IconGear() {
   );
 }
 
+function IconBulb() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 2.2a4.6 4.6 0 0 0-2.7 8.3c.6.5 1 1.1 1 1.8v.5h3.4v-.5c0-.7.4-1.3 1-1.8A4.6 4.6 0 0 0 9 2.2Z" />
+      <path d="M7.4 14.8h3.2M8.1 16.5h1.8" />
+    </svg>
+  );
+}
+
+function IconGrip() {
+  return (
+    <svg viewBox="0 0 18 18" fill="currentColor" stroke="none">
+      <circle cx="6.5" cy="4" r="1.3" />
+      <circle cx="11.5" cy="4" r="1.3" />
+      <circle cx="6.5" cy="9" r="1.3" />
+      <circle cx="11.5" cy="9" r="1.3" />
+      <circle cx="6.5" cy="14" r="1.3" />
+      <circle cx="11.5" cy="14" r="1.3" />
+    </svg>
+  );
+}
+
 function IconPlus() {
   return (
     <svg
@@ -145,6 +179,41 @@ function IconPlus() {
   );
 }
 
+/* Dragged toolbar position, persisted across reloads. */
+const TOOLBAR_POS_KEY = 'knowledge-nebula-toolbar-pos';
+
+function loadToolbarPos(): { x: number; y: number } | null {
+  try {
+    const raw = localStorage.getItem(TOOLBAR_POS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { x?: unknown; y?: unknown };
+    if (typeof parsed.x !== 'number' || typeof parsed.y !== 'number') return null;
+    return { x: parsed.x, y: parsed.y };
+  } catch {
+    return null;
+  }
+}
+
+function saveToolbarPos(pos: { x: number; y: number }): void {
+  try {
+    localStorage.setItem(TOOLBAR_POS_KEY, JSON.stringify(pos));
+  } catch {
+    /* private mode / quota exceeded — position simply won't persist */
+  }
+}
+
+/** Pin the toolbar at (x, y), clamped ≥8px inside the viewport. */
+function placeToolbar(el: HTMLElement, x: number, y: number): { x: number; y: number } {
+  const rect = el.getBoundingClientRect();
+  const cx = Math.min(Math.max(x, 8), window.innerWidth - rect.width - 8);
+  const cy = Math.min(Math.max(y, 8), window.innerHeight - rect.height - 8);
+  el.style.top = `${cy}px`;
+  el.style.left = `${cx}px`;
+  el.style.right = 'auto';
+  el.style.marginInline = '0';
+  return { x: cx, y: cy };
+}
+
 export default function Toolbar() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const dims = useUiStore((s) => s.dims);
@@ -152,12 +221,51 @@ export default function Toolbar() {
   const setSearchOpen = useUiStore((s) => s.setSearchOpen);
   const setDims = useUiStore((s) => s.setDims);
   const setTopicNodes = useUiStore((s) => s.setTopicNodes);
+  const insightsOpen = useUiStore((s) => s.insightsOpen);
+  const setInsightsOpen = useUiStore((s) => s.setInsightsOpen);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const sendCamera = useUiStore((s) => s.sendCamera);
 
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Drag-to-move. The position is written straight to the element (not React
+  // state): it changes on every pointer move and nothing else reads it. Until
+  // the first drag the CSS default (top-center) applies; afterwards the
+  // toolbar stays wherever the user left it, persisted via localStorage.
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const dragOffset = useRef<{ dx: number; dy: number } | null>(null);
+  const lastPos = useRef<{ x: number; y: number } | null>(null);
+
+  // Restore the saved position once the toolbar mounts (it only renders when
+  // the graph has nodes). Re-clamps, so a spot saved on a larger window still
+  // lands on-screen.
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!el || !hasNodes) return;
+    const saved = loadToolbarPos();
+    if (saved) lastPos.current = placeToolbar(el, saved.x, saved.y);
+  }, [hasNodes]);
+
   if (!hasNodes) return null;
+
+  const handleGripPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const rect = rootRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    dragOffset.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handleGripPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragOffset.current;
+    const el = rootRef.current;
+    if (!drag || !el) return;
+    lastPos.current = placeToolbar(el, e.clientX - drag.dx, e.clientY - drag.dy);
+  };
+
+  const handleGripPointerUp = () => {
+    if (dragOffset.current && lastPos.current) saveToolbarPos(lastPos.current);
+    dragOffset.current = null;
+  };
 
   const handleToggleDims = () => {
     const next = dims === 3 ? 2 : 3;
@@ -173,7 +281,18 @@ export default function Toolbar() {
   };
 
   return (
-    <div className="toolbar glass-panel">
+    <div ref={rootRef} className="toolbar glass-panel">
+      <div
+        className="toolbar__grip"
+        title="Move toolbar"
+        onPointerDown={handleGripPointerDown}
+        onPointerMove={handleGripPointerMove}
+        onPointerUp={handleGripPointerUp}
+        onPointerCancel={handleGripPointerUp}
+      >
+        <IconGrip />
+      </div>
+
       <button
         type="button"
         className="btn-icon"
@@ -210,6 +329,15 @@ export default function Toolbar() {
         <IconOctahedron />
       </button>
 
+      <button
+        type="button"
+        className={`btn-icon${insightsOpen ? ' is-active' : ''}`}
+        title="Corpus insights"
+        onClick={() => setInsightsOpen(!insightsOpen)}
+      >
+        <IconBulb />
+      </button>
+
       <div className="toolbar__divider" />
 
       <button
@@ -236,6 +364,7 @@ export default function Toolbar() {
         type="file"
         accept="application/json,.json"
         className="toolbar__hidden-input"
+        aria-label="Import graph JSON"
         onChange={handleImportChange}
       />
 

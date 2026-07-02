@@ -19,8 +19,10 @@
 
 import {
   forceCenter,
+  forceCollide,
   forceLink,
   forceManyBody,
+  forceRadial,
   forceSimulation,
 } from 'd3-force-3d';
 import type { Force, SimLink } from 'd3-force-3d';
@@ -55,10 +57,16 @@ interface LayoutLink {
 
 const SETTLE_ALPHA = 0.005; // below this we declare the layout settled
 const POST_INTERVAL_MS = 33; // ~30 position posts per second
-const CLUSTER_SHELL_RADIUS = 55;
 const CLUSTER_PULL = 0.05;
-const RANDOM_SHELL_RADIUS = 120;
 const SPAWN_JITTER = 4;
+/** Nodes settle ON this sphere shell (spec §7: "orbiting" arrangement).
+ * Grows with node count so surface density — and thus label legibility —
+ * stays roughly constant. */
+const SHELL_MIN_RADIUS = 60;
+const NODE_COLLIDE_RADIUS = 4;
+// Must dominate the link force: a dense corpus (avg degree ~10) otherwise
+// drags the whole shell inward into a ball.
+const SHELL_STRENGTH = 0.9;
 
 // ---------------------------------------------------------------------------
 // State
@@ -89,8 +97,23 @@ function acquireBuffer(neededFloats: number): ArrayBuffer {
 }
 
 // ---------------------------------------------------------------------------
-// Cluster centroid force: anchors on a fibonacci-sphere shell
+// Sphere shell: nodes are pulled onto a sphere whose radius grows with node
+// count; cluster anchors sit ON that same shell (fibonacci-distributed), so
+// clusters form "continents" instead of collapsing into a central blob.
 // ---------------------------------------------------------------------------
+
+let shellRadius = SHELL_MIN_RADIUS;
+
+function updateShellRadius(): void {
+  const r = Math.max(
+    SHELL_MIN_RADIUS,
+    NODE_COLLIDE_RADIUS * 2.2 * Math.sqrt(nodes.length),
+  );
+  if (r === shellRadius) return;
+  shellRadius = r;
+  radialForce.radius(r);
+  rebuildAnchors();
+}
 
 const anchors = new Map<number, [number, number, number]>();
 
@@ -106,9 +129,9 @@ function rebuildAnchors(): void {
     const r = Math.sqrt(Math.max(0, 1 - y * y));
     const theta = golden * j;
     anchors.set(ids[j], [
-      Math.cos(theta) * r * CLUSTER_SHELL_RADIUS,
-      y * CLUSTER_SHELL_RADIUS,
-      Math.sin(theta) * r * CLUSTER_SHELL_RADIUS,
+      Math.cos(theta) * r * shellRadius,
+      y * shellRadius,
+      Math.sin(theta) * r * shellRadius,
     ]);
   }
 }
@@ -142,15 +165,23 @@ function linkWeight(l: SimLink<LayoutNode>): number {
   return typeof w === 'number' ? w : 0.5;
 }
 
+// Links shape neighborhoods ON the shell; kept weak so a dense corpus can't
+// drag the sphere inward (the radial force owns the global radius).
 const linkForce = forceLink<LayoutNode>([])
   .id((d) => d.id)
-  .strength((l) => 0.02 + 0.28 * linkWeight(l))
-  .distance((l) => 8 + 30 * (1 - linkWeight(l)));
+  .strength((l) => 0.01 + 0.09 * linkWeight(l))
+  .distance((l) => 14 + 30 * (1 - linkWeight(l)));
+
+const radialForce = forceRadial<LayoutNode>(SHELL_MIN_RADIUS, 0, 0, 0).strength(
+  SHELL_STRENGTH,
+);
 
 const sim = forceSimulation<LayoutNode>(nodes, 3)
   .force('link', linkForce)
   .force('charge', forceManyBody<LayoutNode>().strength(-40).distanceMax(400))
   .force('center', forceCenter<LayoutNode>(0, 0, 0).strength(0.02))
+  .force('shell', radialForce)
+  .force('collide', forceCollide<LayoutNode>(NODE_COLLIDE_RADIUS).strength(0.85))
   .force('cluster', makeClusterForce());
 
 // d3 starts its internal timer on construction; don't burn cycles on an
@@ -229,10 +260,11 @@ function randomShellPoint(): [number, number, number] {
   const u = Math.random() * 2 - 1;
   const theta = Math.random() * Math.PI * 2;
   const r = Math.sqrt(Math.max(0, 1 - u * u));
+  const spawnR = shellRadius * 1.8; // fly in from outside the settled shell
   return [
-    RANDOM_SHELL_RADIUS * r * Math.cos(theta),
-    RANDOM_SHELL_RADIUS * u,
-    RANDOM_SHELL_RADIUS * r * Math.sin(theta),
+    spawnR * r * Math.cos(theta),
+    spawnR * u,
+    spawnR * r * Math.sin(theta),
   ];
 }
 
@@ -279,6 +311,7 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
       if (!added) break;
       sim.nodes(nodes); // re-initializes every force
       applyLinks(); // forceLink resets on nodes(); re-set (and revive) links
+      updateShellRadius(); // shell grows with the corpus
       rebuildAnchors(); // restore path can introduce clusters via 'add'
       reheat(gentle ? 0.05 : 0.9);
       break;

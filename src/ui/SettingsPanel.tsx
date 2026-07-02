@@ -101,6 +101,12 @@ export default function SettingsPanel() {
   if (!open) return null;
 
   const enriching = phase === 'enriching' || enrichBusy;
+  const enrichBlocked = !enrichEnabled || geminiKey.trim() === '';
+  const enrichHint = !enrichEnabled
+    ? 'Turn on "Enable enrichment" first'
+    : geminiKey.trim() === ''
+      ? 'Paste your Gemini API key first'
+      : 'Run Gemini summaries, topics and cluster names';
 
   const onEnrichNow = () => {
     setEnrichResult(null);
@@ -124,9 +130,9 @@ export default function SettingsPanel() {
   };
 
   return (
-    <div className="panel-overlay" onClick={() => setSettingsOpen(false)}>
+    <div className="settings-backdrop" onClick={() => setSettingsOpen(false)}>
       <div
-        className="settings-panel glass"
+        className="settings-panel glass-panel"
         role="dialog"
         aria-modal="true"
         aria-label="Settings"
@@ -180,11 +186,12 @@ export default function SettingsPanel() {
           <button
             type="button"
             onClick={onEnrichNow}
-            disabled={enriching}
+            disabled={enriching || enrichBlocked}
+            title={enrichHint}
             style={{
               ...buttonStyle,
-              opacity: enriching ? 0.55 : 1,
-              cursor: enriching ? 'default' : 'pointer',
+              opacity: enriching || enrichBlocked ? 0.55 : 1,
+              cursor: enriching || enrichBlocked ? 'default' : 'pointer',
             }}
           >
             {enriching ? 'Enriching…' : 'Enrich now'}
@@ -196,8 +203,9 @@ export default function SettingsPanel() {
           )}
           <p style={helpStyle}>
             Your documents are processed locally. With enrichment ON, excerpts (first ~1,200
-            chars per doc) are sent to Google&apos;s Gemini API. The key is stored only in this
-            browser.
+            chars per doc) are sent to Google&apos;s Gemini API; using &quot;Ask AI&quot; on a
+            selected document sends up to its first ~12,000 chars. The key is stored only in
+            this browser.
           </p>
         </section>
 

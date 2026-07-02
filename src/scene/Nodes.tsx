@@ -209,9 +209,9 @@ export default function Nodes() {
       const ghost = n.status !== 'ok';
       ghostOfSlot[slot] = ghost ? 1 : 0;
       // size = f(degree), log-scaled so hubs are visibly hubs (spec §5.4)
-      let s = 1.1 * (1 + 0.55 * Math.log2(1 + n.degree));
+      let s = 0.7 * (1 + 0.5 * Math.log2(1 + n.degree));
       if (ghost) s *= GHOST_SCALE_FACTOR; // ghosted, never a silent gap (spec §9)
-      scaleOfSlot[slot] = Math.min(s, 4);
+      scaleOfSlot[slot] = Math.min(s, 2.6);
     }
   };
 
@@ -481,9 +481,11 @@ export default function Nodes() {
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
       >
-        <sphereGeometry args={[1, 20, 20]} />
-        {/* brightness rides instance colors; bloom threshold does the glow */}
-        <meshBasicMaterial toneMapped={false} />
+        <sphereGeometry args={[1, 32, 24]} />
+        {/* glossy marble: per-instance cluster hue as diffuse, lit by the
+            scene key light for a specular hotspot. The additive halo below
+            supplies the nebula glow that feeds bloom. */}
+        <meshPhongMaterial specular="#6a6a82" shininess={58} />
       </instancedMesh>
 
       {/* soft additive halo shell that feeds the bloom pass */}
@@ -493,10 +495,10 @@ export default function Nodes() {
         frustumCulled={false}
         raycast={NO_RAYCAST}
       >
-        <sphereGeometry args={[1, 20, 20]} />
+        <sphereGeometry args={[1, 24, 18]} />
         <meshBasicMaterial
           transparent
-          opacity={0.16}
+          opacity={0.2}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}

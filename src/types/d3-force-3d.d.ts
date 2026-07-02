@@ -81,4 +81,18 @@ declare module 'd3-force-3d' {
     strength(s: number): this;
   }
   export function forceCollide<N = SimNode>(radius?: number): CollideForce<N>;
+
+  export interface RadialForce<N = SimNode> extends Force<N> {
+    radius(r: number | ((node: N) => number)): this;
+    strength(s: number | ((node: N) => number)): this;
+    x(x: number): this;
+    y(y: number): this;
+    z(z: number): this;
+  }
+  export function forceRadial<N = SimNode>(
+    radius: number | ((node: N) => number),
+    x?: number,
+    y?: number,
+    z?: number,
+  ): RadialForce<N>;
 }

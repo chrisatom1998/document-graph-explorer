@@ -159,7 +159,7 @@ export default function SearchOverlay() {
 
           {results.length === 0 && searched && (
             <div className="search-overlay__empty">
-              No matches — the model may still be downloading
+              No matches — the model may still be loading
             </div>
           )}
         </div>

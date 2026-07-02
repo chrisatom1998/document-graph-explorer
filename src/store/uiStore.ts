@@ -28,6 +28,7 @@ interface UiState {
   autoQuality: boolean;
   cameraCommand: CameraCommand | null;
   settingsOpen: boolean;
+  insightsOpen: boolean;
 
   setHovered: (id: string | null) => void;
   setSelected: (id: string | null) => void;
@@ -41,6 +42,7 @@ interface UiState {
   setAutoQuality: (v: boolean) => void;
   sendCamera: (kind: CameraCommand['kind'], ids?: string[]) => void;
   setSettingsOpen: (v: boolean) => void;
+  setInsightsOpen: (v: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -56,6 +58,7 @@ export const useUiStore = create<UiState>((set) => ({
   autoQuality: true,
   cameraCommand: null,
   settingsOpen: false,
+  insightsOpen: false,
 
   setHovered: (hoveredId) => set({ hoveredId }),
   setSelected: (selectedId) =>
@@ -73,4 +76,5 @@ export const useUiStore = create<UiState>((set) => ({
       cameraCommand: { nonce: (s.cameraCommand?.nonce ?? 0) + 1, kind, ids },
     })),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
+  setInsightsOpen: (insightsOpen) => set({ insightsOpen }),
 }));

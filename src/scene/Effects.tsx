@@ -23,9 +23,9 @@ import type { DepthOfFieldEffect } from 'postprocessing';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
 
-const BLOOM_INTENSITY = 0.85;
-const BLOOM_THRESHOLD = 0.32;
-const BLOOM_SMOOTHING = 0.15;
+const BLOOM_INTENSITY = 1.0;
+const BLOOM_THRESHOLD = 0.28;
+const BLOOM_SMOOTHING = 0.18;
 
 /** DepthOfField that keeps its focus target on the selected node. */
 function FocusedDoF() {

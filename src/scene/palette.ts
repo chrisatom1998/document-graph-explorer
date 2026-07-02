@@ -25,7 +25,9 @@ export function clusterColor(cluster: number): THREE.Color {
   if (!color) {
     const hue = (HUE_ANCHOR + cluster * GOLDEN_ANGLE) % 360;
     // Author the HSL values in sRGB so they match how the hex tints are read.
-    color = new THREE.Color().setHSL(hue / 360, 0.65, 0.62, THREE.SRGBColorSpace);
+    // Saturated + mid-bright so the lit marbles read as vivid jewel tones
+    // (magenta / violet / blue / gold / teal) rather than pastels.
+    color = new THREE.Color().setHSL(hue / 360, 0.82, 0.56, THREE.SRGBColorSpace);
     cache.set(cluster, color);
   }
   return color;

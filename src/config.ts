@@ -25,6 +25,12 @@ export const ENRICH_MAX_RETRIES = 3;
 export const SEARCH_MIN_SCORE = 0.35; // semantic search relevance floor
 export const SEARCH_MAX_RESULTS = 12;
 
+// --- Insights ---
+export const DUP_SIM_THRESHOLD = 0.93; // cosine sim above which two docs are "possible duplicates"
+export const BRIDGE_TOP_N = 8; // bridge documents surfaced in the insights panel
+export const BRIDGE_MIN_SCORE = 0.05; // normalized betweenness floor for a "bridge"
+export const BRIDGE_MAX_PIVOTS = 512; // sample sources above this corpus size (approx. betweenness)
+
 // --- Layout / render budgets (spec §7) ---
 export const MAX_NODES = 4096; // instanced mesh capacity
 export const LABEL_BUDGET = 40; // nearest-N labels rendered

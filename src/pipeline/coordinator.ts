@@ -5,8 +5,12 @@
  *   → lexical aggregation (corpus-wide) → embeddings → semantic edges
  *   + Louvain clustering → ready.
  *
+ * Also owns document REMOVAL (removeDocuments), which re-runs the two
+ * corpus-wide aggregation passes — idf, title mentions, mutual-top-k and
+ * Louvain all shift when corpus membership changes.
+ *
  * Plain module — reads stores via getState(), never hooks. A second drop
- * while a run is in flight queues behind it (promise chain).
+ * (or a removal) while a run is in flight queues behind it (promise chain).
  */
 
 import {
@@ -37,7 +41,13 @@ import {
   layoutSetClusters,
   layoutSetLinks,
 } from '../layout/layoutBridge';
-import { lookupDocCache } from '../persistence/cache';
+import {
+  deleteDocsFromCache,
+  deleteGraphFromCache,
+  lookupDocCache,
+  setSetting,
+} from '../persistence/cache';
+import { getNodePosition } from '../scene/positionBuffer';
 import { useGraphStore } from '../store/graphStore';
 import {
   chunkStore,
@@ -351,6 +361,68 @@ async function runIngest(files: IngestFile[]): Promise<void> {
 
   // (e) lexical aggregation over the WHOLE corpus (idf + title mentions
   // are corpus-wide, so every drop rebuilds them)
+  const { lexEdges, boilerplate } = await runLexicalPass(pool);
+
+  // (f) embeddings for docs that still need a vector
+  const embedTargets = documentNodes().filter(
+    (n) => n.status !== 'unreadable' && !docVectorStore.has(n.id) && textStore.has(n.id),
+  );
+  if (embedTargets.length > 0) {
+    store().setPhase('embedding');
+    const embedJobs = embedTargets.map(async (n) => {
+      const text = textStore.get(n.id) ?? '';
+      const chunks = chunkText(stripBoilerplate(text, boilerplate));
+      if (chunks.length === 0) return; // nothing embeddable (e.g. boilerplate-only)
+      chunkStore.set(n.id, { texts: chunks, vectors: null, dims: EMBED_DIMS });
+      const fileId = fileIdOfDoc.get(n.id);
+      const name = nameOfDoc.get(n.id) ?? n.title;
+      if (fileId) store().setFileStatus({ fileId, name, stage: 'embedding' });
+      const done = await pool.request<EmbedDone>({
+        requestId: 0,
+        type: 'embed',
+        docId: n.id,
+        chunks,
+      });
+      docVectorStore.set(n.id, done.docVector);
+      chunkStore.set(n.id, { texts: chunks, vectors: done.chunkVectors, dims: EMBED_DIMS });
+      if (fileId) store().setFileStatus({ fileId, name, stage: 'placed' });
+    });
+    const settled = await Promise.allSettled(embedJobs);
+    settled.forEach((result, i) => {
+      if (result.status !== 'rejected') return;
+      const n = embedTargets[i];
+      const message =
+        result.reason instanceof Error ? result.reason.message : String(result.reason);
+      console.error(`embedding failed for ${n.title}:`, message);
+      const fileId = fileIdOfDoc.get(n.id);
+      if (fileId) {
+        store().setFileStatus({
+          fileId,
+          name: nameOfDoc.get(n.id) ?? n.title,
+          stage: 'error',
+          error: message,
+        });
+      }
+    });
+    store().setModelProgress(null);
+  }
+
+  // (g) semantic edges + Louvain clustering over the full edge set
+  await runSemanticPass(lexEdges);
+
+  store().setPhase('ready');
+  store().setCorpusHash(await computeCorpusHash());
+}
+
+// ---------------------------------------------------------------------------
+// corpus-wide aggregation passes (shared by ingest and removal)
+// ---------------------------------------------------------------------------
+
+/** Ingest step (e): lexical edges, keywords, boilerplate — whole corpus. */
+async function runLexicalPass(
+  pool: WorkerPool,
+): Promise<{ lexEdges: Edge[]; boilerplate: Set<string> }> {
+  const store = useGraphStore.getState;
   store().setPhase('linking');
   await backfillLexMeta(pool);
   const lexicalDocs: LexicalDocInput[] = documentNodes().map((n) => {
@@ -405,100 +477,144 @@ async function runIngest(files: IngestFile[]): Promise<void> {
     console.error('lexical aggregation failed', err);
     lexEdges = store().edges;
   }
+  return { lexEdges, boilerplate };
+}
 
-  // (f) embeddings for docs that still need a vector
-  const embedTargets = documentNodes().filter(
-    (n) => n.status !== 'unreadable' && !docVectorStore.has(n.id) && textStore.has(n.id),
-  );
-  if (embedTargets.length > 0) {
-    store().setPhase('embedding');
-    const embedJobs = embedTargets.map(async (n) => {
-      const text = textStore.get(n.id) ?? '';
-      const chunks = chunkText(stripBoilerplate(text, boilerplate));
-      if (chunks.length === 0) return; // nothing embeddable (e.g. boilerplate-only)
-      chunkStore.set(n.id, { texts: chunks, vectors: null, dims: EMBED_DIMS });
-      const fileId = fileIdOfDoc.get(n.id);
-      const name = nameOfDoc.get(n.id) ?? n.title;
-      if (fileId) store().setFileStatus({ fileId, name, stage: 'embedding' });
-      const done = await pool.request<EmbedDone>({
-        requestId: 0,
-        type: 'embed',
-        docId: n.id,
-        chunks,
-      });
-      docVectorStore.set(n.id, done.docVector);
-      chunkStore.set(n.id, { texts: chunks, vectors: done.chunkVectors, dims: EMBED_DIMS });
-      if (fileId) store().setFileStatus({ fileId, name, stage: 'placed' });
-    });
-    const settled = await Promise.allSettled(embedJobs);
-    settled.forEach((result, i) => {
-      if (result.status !== 'rejected') return;
-      const n = embedTargets[i];
-      const message =
-        result.reason instanceof Error ? result.reason.message : String(result.reason);
-      console.error(`embedding failed for ${n.title}:`, message);
-      const fileId = fileIdOfDoc.get(n.id);
-      if (fileId) {
-        store().setFileStatus({
-          fileId,
-          name: nameOfDoc.get(n.id) ?? n.title,
-          stage: 'error',
-          error: message,
-        });
-      }
-    });
-    store().setModelProgress(null);
-  }
-
-  // (g) semantic edges + Louvain clustering over the full edge set
+/** Ingest step (g): semantic edges + Louvain clustering over the full edge set. */
+async function runSemanticPass(lexEdges: Edge[]): Promise<void> {
+  const store = useGraphStore.getState;
   store().setPhase('connecting');
   const embedded = documentNodes().filter((n) => docVectorStore.has(n.id));
-  if (embedded.length > 0) {
-    const ids = embedded.map((n) => n.id);
-    const vectors = new Float32Array(ids.length * EMBED_DIMS);
-    ids.forEach((id, i) => {
-      const vector = docVectorStore.get(id);
-      if (vector) vectors.set(vector.subarray(0, EMBED_DIMS), i * EMBED_DIMS);
-    });
-    try {
-      const semantic = await aggRequest<SemanticDone>(
-        {
-          requestId: 0,
-          type: 'semantic',
-          ids,
-          vectors,
-          dims: EMBED_DIMS,
-          existingEdges: toLinkInput(lexEdges),
-          params: { threshold: SIM_THRESHOLD, topK: SIM_TOP_K },
-        },
-        [vectors.buffer], // `vectors` is a copy; the doc vectors stay in the store
-      );
-      const merged = new Map<string, Edge>();
-      for (const edge of [...lexEdges, ...semantic.edges]) {
-        if (!merged.has(edge.id)) merged.set(edge.id, edge);
-      }
-      const allEdges = [...merged.values()];
-      store().setEdges(allEdges);
-
-      const patches = new Map<string, Partial<DocNode>>();
-      for (const [docId, cluster] of Object.entries(semantic.clusters)) {
-        patches.set(docId, { cluster });
-      }
-      store().patchNodes(patches);
-
-      layoutSetLinks(toLinkInput(allEdges));
-      layoutSetClusters(semantic.clusters);
-      layoutReheat(0.5);
-    } catch (err) {
-      console.error('semantic aggregation failed', err);
+  if (embedded.length === 0) return;
+  const ids = embedded.map((n) => n.id);
+  const vectors = new Float32Array(ids.length * EMBED_DIMS);
+  ids.forEach((id, i) => {
+    const vector = docVectorStore.get(id);
+    if (vector) vectors.set(vector.subarray(0, EMBED_DIMS), i * EMBED_DIMS);
+  });
+  try {
+    const semantic = await aggRequest<SemanticDone>(
+      {
+        requestId: 0,
+        type: 'semantic',
+        ids,
+        vectors,
+        dims: EMBED_DIMS,
+        existingEdges: toLinkInput(lexEdges),
+        params: { threshold: SIM_THRESHOLD, topK: SIM_TOP_K },
+      },
+      [vectors.buffer], // `vectors` is a copy; the doc vectors stay in the store
+    );
+    const merged = new Map<string, Edge>();
+    for (const edge of [...lexEdges, ...semantic.edges]) {
+      if (!merged.has(edge.id)) merged.set(edge.id, edge);
     }
-  }
+    const allEdges = [...merged.values()];
+    store().setEdges(allEdges);
 
-  store().setPhase('ready');
+    const patches = new Map<string, Partial<DocNode>>();
+    for (const [docId, cluster] of Object.entries(semantic.clusters)) {
+      patches.set(docId, { cluster });
+    }
+    store().patchNodes(patches);
+
+    layoutSetLinks(toLinkInput(allEdges));
+    layoutSetClusters(semantic.clusters);
+    layoutReheat(0.5);
+  } catch (err) {
+    console.error('semantic aggregation failed', err);
+  }
+}
+
+/** Corpus identity = SHA-256 over the sorted doc ids (spec §8.4). */
+async function computeCorpusHash(): Promise<string> {
   const sortedIds = documentNodes()
     .map((n) => n.id)
     .sort();
-  store().setCorpusHash(await sha256Hex(sortedIds.join('')));
+  return sha256Hex(sortedIds.join(''));
+}
+
+// ---------------------------------------------------------------------------
+// document removal
+// ---------------------------------------------------------------------------
+
+async function runRemove(ids: string[]): Promise<void> {
+  const store = useGraphStore.getState;
+  const present = new Set(documentNodes().map((n) => n.id));
+  const removing = [...new Set(ids)].filter((id) => present.has(id));
+  if (removing.length === 0) return;
+  const gone = new Set(removing);
+  const oldCorpusHash = store().corpusHash;
+
+  // Drop UI references to whatever is about to disappear.
+  const ui = useUiStore.getState();
+  if (ui.selectedEdgeId) {
+    const edge = store().edges.find((e) => e.id === ui.selectedEdgeId);
+    if (edge && (gone.has(edge.source) || gone.has(edge.target))) ui.setSelectedEdge(null);
+  }
+  if (ui.selectedId && gone.has(ui.selectedId)) ui.setSelected(null);
+  if (ui.hoveredId && gone.has(ui.hoveredId)) ui.setHovered(null);
+  if (ui.searchResults) {
+    const kept = ui.searchResults.filter((id) => !gone.has(id));
+    if (kept.length !== ui.searchResults.length) {
+      ui.setSearchResults(kept.length > 0 ? kept : null);
+    }
+  }
+
+  // In-memory removal: graph store, runtime stores, per-run bookkeeping.
+  store().removeNodes(removing);
+  for (const id of removing) {
+    textStore.delete(id);
+    chunkStore.delete(id);
+    docVectorStore.delete(id);
+    lexMeta.delete(id);
+    fileIdOfDoc.delete(id);
+    nameOfDoc.delete(id);
+  }
+
+  const remaining = documentNodes();
+  if (remaining.length === 0) {
+    // last doc removed — tear down like a fresh start and forget the session
+    resetCorpus();
+    await deleteDocsFromCache(removing);
+    if (oldCorpusHash) await deleteGraphFromCache(oldCorpusHash);
+    await setSetting('lastCorpusHash', '');
+    return;
+  }
+
+  // Rebuild the layout with survivors held at their current positions.
+  // Slots are append-only, so removal = reset + re-add (the restore pattern);
+  // capture positions BEFORE layoutReset clears the position buffer.
+  const positions = new Map<string, [number, number, number]>();
+  for (const n of remaining) {
+    const p = getNodePosition(n.id);
+    if (p) positions.set(n.id, p);
+  }
+  layoutReset();
+  layoutAddNodes(
+    remaining.map((n) => ({ id: n.id, cluster: n.cluster, initial: positions.get(n.id) })),
+  );
+
+  // Corpus-wide re-link over the survivors.
+  const { lexEdges } = await runLexicalPass(getPool());
+  await runSemanticPass(lexEdges);
+
+  store().setPhase('ready');
+  store().setCorpusHash(await computeCorpusHash());
+
+  // Persist in a crash-safe order: write the new session first, THEN purge
+  // the removed doc's text/vectors and the stale graph snapshot. If the tab
+  // closes mid-way the cache is still a consistent, restorable state (worst
+  // case: the removal simply didn't stick).
+  // Dynamic import — a static one would create the cycle
+  // coordinator → session → exportImport → coordinator.
+  const { saveSession } = await import('../persistence/session');
+  await saveSession();
+  await deleteDocsFromCache(removing);
+  const newCorpusHash = store().corpusHash;
+  if (oldCorpusHash && oldCorpusHash !== newCorpusHash) {
+    await deleteGraphFromCache(oldCorpusHash);
+  }
 }
 
 /**
@@ -549,6 +665,22 @@ export function ingestFiles(files: IngestFile[]): Promise<void> {
     () => undefined,
     (err) => {
       console.error('ingest run failed', err);
+    },
+  );
+  return run;
+}
+
+/**
+ * Removes documents from the knowledge bank: graph, layout, runtime stores,
+ * AND the IndexedDB cache (text + embeddings are deleted from this browser).
+ * Queues behind any in-flight ingest run.
+ */
+export function removeDocuments(ids: string[]): Promise<void> {
+  const run = runChain.then(() => runRemove(ids));
+  runChain = run.then(
+    () => undefined,
+    (err) => {
+      console.error('document removal failed', err);
     },
   );
   return run;

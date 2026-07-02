@@ -2,10 +2,12 @@
  * Aggregator worker — corpus-wide passes that need the whole corpus at
  * once: lexical (TF-IDF keywords, keyword edges, reference edges,
  * boilerplate detection) and semantic (mutual-top-k similarity edges +
- * connected-component clustering). Single dedicated instance owned by the
+ * Louvain community clustering). Single dedicated instance owned by the
  * coordinator.
  */
 
+import { UndirectedGraph } from 'graphology';
+import louvain from 'graphology-communities-louvain';
 import type { AggRequest, AggResponse, Edge } from '../model/types';
 import { findBoilerplateLines } from '../pipeline/boilerplate';
 import { referenceEdges } from '../pipeline/links';
@@ -13,6 +15,23 @@ import { semanticEdges } from '../pipeline/similarity';
 import { computeIdf, keywordEdges, topKeywords } from '../pipeline/tfidf';
 
 const ctx = self as unknown as DedicatedWorkerGlobalScope;
+
+// Higher resolution -> more, smaller communities (more distinct hues). Tuned
+// so a densely cross-linked corpus separates into several colored clusters
+// instead of one blob.
+const CLUSTER_RESOLUTION = 1.25;
+
+/** Seeded PRNG so community ids (and thus colors) are stable across reloads. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 function handleLexical(req: Extract<AggRequest, { type: 'lexical' }>): void {
   const { docs, params } = req;
@@ -64,35 +83,40 @@ function handleSemantic(req: Extract<AggRequest, { type: 'semantic' }>): void {
 
   const semEdges = semanticEdges(ids, vectors, dims, params);
 
-  // Cluster over the FULL edge set (existing lexical + new semantic). Keeping
-  // this local avoids pulling graphology's CJS bundle into the worker's hot path.
+  // Community detection over the FULL weighted edge set (lexical + semantic).
+  // Connected-components clustering collapsed the whole (densely cross-linked)
+  // corpus into a single community, so every node shared one color; Louvain
+  // modularity separates it into meaningful colored clusters instead.
   const knownIds = new Set(ids);
-  const adj = new Map<string, Set<string>>();
-  for (const id of ids) adj.set(id, new Set());
-  const addEdge = (source: string, target: string): void => {
+  const graph = new UndirectedGraph();
+  for (const id of ids) graph.addNode(id);
+  const addWeighted = (source: string, target: string, weight: number): void => {
     if (source === target) return;
     if (!knownIds.has(source) || !knownIds.has(target)) return;
-    adj.get(source)!.add(target);
-    adj.get(target)!.add(source);
-  };
-  for (const edge of existingEdges) addEdge(edge.source, edge.target);
-  for (const edge of semEdges) addEdge(edge.source, edge.target);
-
-  const clusters: Record<string, number> = {};
-  let nextCluster = 0;
-  for (const id of ids) {
-    if (clusters[id] !== undefined) continue;
-    const stack = [id];
-    clusters[id] = nextCluster;
-    while (stack.length > 0) {
-      const current = stack.pop()!;
-      for (const neighbor of adj.get(current) ?? []) {
-        if (clusters[neighbor] !== undefined) continue;
-        clusters[neighbor] = nextCluster;
-        stack.push(neighbor);
-      }
+    if (graph.hasEdge(source, target)) {
+      graph.updateEdgeAttribute(source, target, 'weight', (w) =>
+        (typeof w === 'number' ? w : 0) + weight,
+      );
+    } else {
+      graph.addEdge(source, target, { weight });
     }
-    nextCluster += 1;
+  };
+  for (const edge of existingEdges) addWeighted(edge.source, edge.target, edge.weight ?? 0.5);
+  for (const edge of semEdges) addWeighted(edge.source, edge.target, edge.weight ?? 0.5);
+
+  let clusters: Record<string, number>;
+  if (graph.size > 0) {
+    clusters = louvain(graph, {
+      resolution: CLUSTER_RESOLUTION,
+      getEdgeWeight: 'weight',
+      rng: mulberry32(0x9e3779b9),
+    });
+  } else {
+    // no edges at all: each node is its own singleton community
+    clusters = {};
+    ids.forEach((id, i) => {
+      clusters[id] = i;
+    });
   }
 
   ctx.postMessage({

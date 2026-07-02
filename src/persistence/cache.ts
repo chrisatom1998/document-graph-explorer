@@ -130,6 +130,37 @@ export async function saveGraphToCache(
   }
 }
 
+/**
+ * Deletes document + embedding records ("remove from knowledge bank").
+ * The doc's text and vectors are gone from this browser after this resolves.
+ */
+export async function deleteDocsFromCache(hashes: string[]): Promise<void> {
+  if (hashes.length === 0) return;
+  try {
+    const db = await getDb();
+    const tx = db.transaction(['documents', 'embeddings'], 'readwrite');
+    const docStore = tx.objectStore('documents');
+    const embStore = tx.objectStore('embeddings');
+    await Promise.all([
+      ...hashes.map((h) => docStore.delete(h)),
+      ...hashes.map((h) => embStore.delete(h)),
+      tx.done,
+    ]);
+  } catch (err) {
+    cacheUnavailable(err);
+  }
+}
+
+/** Deletes one saved graph snapshot (stale corpus after removal). */
+export async function deleteGraphFromCache(corpusHash: string): Promise<void> {
+  try {
+    const db = await getDb();
+    await db.delete('graphs', corpusHash);
+  } catch (err) {
+    cacheUnavailable(err);
+  }
+}
+
 export async function getSetting<T>(key: string): Promise<T | undefined> {
   try {
     const db = await getDb();

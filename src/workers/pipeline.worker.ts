@@ -82,36 +82,85 @@ function runParser(req: Extract<PoolRequest, { type: 'parse' }>): ParserResult {
 
 const EMBED_BATCH_SIZE = 8;
 
+/**
+ * Backend choice. WebGPU runs MiniLM ~5-10x faster than WASM, but the WebGPU
+ * execution provider has no kernels for the q8 model's integer ops
+ * (MatMulInteger & co. would silently fall back to CPU with device round-trips,
+ * ending up SLOWER than plain WASM) — so the GPU path uses the fp16 weights
+ * and requires the adapter's 'shader-f16' feature. Anything else → WASM + q8.
+ */
+interface WebGpuAdapterLike {
+  features: { has(name: string): boolean };
+}
+
+async function pickBackend(): Promise<{ device: 'webgpu' | 'wasm'; dtype: 'fp16' | 'q8' }> {
+  try {
+    const gpu = (navigator as { gpu?: { requestAdapter(): Promise<WebGpuAdapterLike | null> } })
+      .gpu;
+    if (gpu) {
+      const adapter = await gpu.requestAdapter();
+      if (adapter?.features.has('shader-f16')) return { device: 'webgpu', dtype: 'fp16' };
+    }
+  } catch {
+    /* detection failure = no WebGPU */
+  }
+  return { device: 'wasm', dtype: 'q8' };
+}
+
 let extractorPromise: Promise<FeatureExtractionPipeline> | null = null;
+let webgpuFailed = false; // a GPU that detects but can't run the model → pin to WASM
+
+async function createExtractor(): Promise<FeatureExtractionPipeline> {
+  const { pipeline, env } = await import('@huggingface/transformers');
+  // PRIVACY (audit H-1): transformers.js defaults ORT's wasmPaths to
+  // cdn.jsdelivr.net — executable code from a third-party CDN inside the
+  // worker that holds all document text, and a hard offline breaker.
+  // Resetting it makes ORT fall back to its import.meta.url resolution,
+  // which Vite bundles as a same-origin asset.
+  if (env?.backends?.onnx?.wasm) {
+    env.backends.onnx.wasm.wasmPaths = undefined;
+  }
+  // ZERO NETWORK: the model ships in /public/models — never touch HF Hub.
+  // allowLocalModels defaults to false in browser builds, so set it
+  // explicitly; allowRemoteModels=false turns any accidental remote fetch
+  // into a hard error (and the production CSP no longer allows HF anyway).
+  env.allowLocalModels = true;
+  env.allowRemoteModels = false;
+  env.localModelPath = '/models/';
+
+  const build = async (backend: { device: 'webgpu' | 'wasm'; dtype: 'fp16' | 'q8' }) =>
+    pipeline('feature-extraction', EMBED_MODEL_ID, {
+      device: backend.device,
+      dtype: backend.dtype,
+      progress_callback: (p: ProgressInfo) => {
+        if (p.status === 'progress') {
+          respond({
+            requestId: -1,
+            type: 'model:progress',
+            loaded: p.loaded,
+            total: p.total,
+            note: p.file,
+          });
+        }
+      },
+    });
+
+  const backend = webgpuFailed ? { device: 'wasm' as const, dtype: 'q8' as const } : await pickBackend();
+  try {
+    return await build(backend);
+  } catch (err) {
+    if (backend.device !== 'webgpu') throw err;
+    // Adapter advertised support but session creation failed — fall back.
+    webgpuFailed = true;
+    console.warn('WebGPU embedding backend failed, falling back to WASM:', err);
+    return build({ device: 'wasm', dtype: 'q8' });
+  }
+}
 
 function getExtractor(): Promise<FeatureExtractionPipeline> {
   if (!extractorPromise) {
-    extractorPromise = (async () => {
-      const { pipeline, env } = await import('@huggingface/transformers');
-      // PRIVACY (audit H-1): transformers.js defaults ORT's wasmPaths to
-      // cdn.jsdelivr.net — executable code from a third-party CDN inside the
-      // worker that holds all document text, and a hard offline breaker.
-      // Resetting it makes ORT fall back to its import.meta.url resolution,
-      // which Vite bundles as a same-origin asset.
-      if (env?.backends?.onnx?.wasm) {
-        env.backends.onnx.wasm.wasmPaths = undefined;
-      }
-      return pipeline('feature-extraction', EMBED_MODEL_ID, {
-        dtype: 'q8',
-        progress_callback: (p: ProgressInfo) => {
-          if (p.status === 'progress') {
-            respond({
-              requestId: -1,
-              type: 'model:progress',
-              loaded: p.loaded,
-              total: p.total,
-              note: p.file,
-            });
-          }
-        },
-      });
-    })();
-    // allow a retry after a failed (e.g. offline) model download
+    extractorPromise = createExtractor();
+    // allow a retry after a failed model load (e.g. missing/corrupt local files)
     extractorPromise.catch(() => {
       extractorPromise = null;
     });
@@ -131,7 +180,11 @@ async function embedTexts(texts: string[]): Promise<Float32Array> {
     if (cols !== EMBED_DIMS) {
       throw new Error(`Unexpected embedding dims ${dims.join('x')}, expected ${EMBED_DIMS}`);
     }
-    const data = tensor.data as Float32Array; // float32 model output
+    const data = tensor.data;
+    if (!(data instanceof Float32Array)) {
+      // e.g. raw float16 output — copying it as-is would be silent garbage
+      throw new Error(`Unexpected embedding dtype ${data.constructor.name}`);
+    }
     out.set(data.subarray(0, batch.length * EMBED_DIMS), start * EMBED_DIMS);
     tensor.dispose();
   }

@@ -16,17 +16,21 @@ interface GraphState {
   fileStatuses: Record<string, FileStatus>;
   ignoredFiles: { name: string; reason: string }[];
   modelProgress: { loaded: number; total: number; note: string } | null;
+  /** Live enrichment progress (Gemini passes); null outside 'enriching'. */
+  enrichProgress: { done: number; total: number; note: string } | null;
   corpusHash: string | null;
   restoredFromCache: boolean;
 
   addNodes: (nodes: DocNode[]) => void;
   patchNodes: (patches: Map<string, Partial<DocNode>>) => void;
+  removeNodes: (ids: string[]) => void;
   setEdges: (edges: Edge[]) => void;
   setClusterNames: (names: Record<number, string>) => void;
   setPhase: (phase: PipelinePhase) => void;
   setFileStatus: (status: FileStatus) => void;
   addIgnored: (name: string, reason: string) => void;
   setModelProgress: (p: GraphState['modelProgress']) => void;
+  setEnrichProgress: (p: GraphState['enrichProgress']) => void;
   setCorpusHash: (h: string | null) => void;
   setRestoredFromCache: (v: boolean) => void;
   clearIngestTray: () => void;
@@ -43,6 +47,7 @@ export const useGraphStore = create<GraphState>((set) => ({
   fileStatuses: {},
   ignoredFiles: [],
   modelProgress: null,
+  enrichProgress: null,
   corpusHash: null,
   restoredFromCache: false,
 
@@ -69,6 +74,27 @@ export const useGraphStore = create<GraphState>((set) => ({
       return { nodes, clusterCount: Math.max(clusterCount, s.clusterCount) };
     }),
 
+  removeNodes: (ids) =>
+    set((s) => {
+      const gone = new Set(ids);
+      const kept = s.nodes.filter((n) => !gone.has(n.id));
+      if (kept.length === s.nodes.length) return s;
+      const nodeIndex: Record<string, number> = {};
+      kept.forEach((n, i) => {
+        nodeIndex[n.id] = i;
+      });
+      const edges = s.edges.filter((e) => !gone.has(e.source) && !gone.has(e.target));
+      const degree: Record<string, number> = {};
+      for (const e of edges) {
+        degree[e.source] = (degree[e.source] ?? 0) + 1;
+        degree[e.target] = (degree[e.target] ?? 0) + 1;
+      }
+      const nodes = kept.map((n) =>
+        (degree[n.id] ?? 0) !== n.degree ? { ...n, degree: degree[n.id] ?? 0 } : n,
+      );
+      return { nodes, nodeIndex, edges };
+    }),
+
   setEdges: (edges) =>
     set((s) => {
       // recompute degree
@@ -90,6 +116,7 @@ export const useGraphStore = create<GraphState>((set) => ({
   addIgnored: (name, reason) =>
     set((s) => ({ ignoredFiles: [...s.ignoredFiles, { name, reason }] })),
   setModelProgress: (modelProgress) => set({ modelProgress }),
+  setEnrichProgress: (enrichProgress) => set({ enrichProgress }),
   setCorpusHash: (corpusHash) => set({ corpusHash }),
   setRestoredFromCache: (restoredFromCache) => set({ restoredFromCache }),
   clearIngestTray: () => set({ fileStatuses: {}, ignoredFiles: [] }),
@@ -104,6 +131,7 @@ export const useGraphStore = create<GraphState>((set) => ({
       fileStatuses: {},
       ignoredFiles: [],
       modelProgress: null,
+      enrichProgress: null,
       corpusHash: null,
       restoredFromCache: false,
     }),

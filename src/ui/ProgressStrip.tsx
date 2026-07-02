@@ -37,6 +37,7 @@ export default function ProgressStrip() {
   const fileStatuses = useGraphStore((s) => s.fileStatuses);
   const ignoredFiles = useGraphStore((s) => s.ignoredFiles);
   const modelProgress = useGraphStore((s) => s.modelProgress);
+  const enrichProgress = useGraphStore((s) => s.enrichProgress);
 
   const [ignoredOpen, setIgnoredOpen] = useState(false);
   const [lingering, setLingering] = useState(false);
@@ -63,12 +64,23 @@ export default function ProgressStrip() {
   }
 
   const statuses = Object.values(fileStatuses);
-  const total = statuses.length;
-  const done = statuses.filter((s) => s.stage === 'placed' || s.stage === 'cached').length;
+  // During enrichment the bar tracks Gemini passes, not file ingestion —
+  // a restored session has no fileStatuses at all, and after a live ingest
+  // the file count is already at 100%, so it would sit frozen either way.
+  const enriching = phase === 'enriching';
+  const total = enriching ? enrichProgress?.total ?? 0 : statuses.length;
+  const done = enriching
+    ? enrichProgress?.done ?? 0
+    : statuses.filter((s) => s.stage === 'placed' || s.stage === 'cached').length;
   const pct = total > 0 ? Math.round((done / total) * 100) : phase === 'ready' ? 100 : 0;
 
-  const recentFiles = statuses.slice(-MAX_FILE_CHIPS);
-  const phaseLabel = phase === 'ready' ? 'Ready' : PHASE_LABEL[phase] ?? 'Working…';
+  const recentFiles = enriching ? [] : statuses.slice(-MAX_FILE_CHIPS);
+  const phaseLabel =
+    phase === 'ready'
+      ? 'Ready'
+      : enriching && enrichProgress?.note
+        ? `Enriching — ${enrichProgress.note}`
+        : PHASE_LABEL[phase] ?? 'Working…';
 
   return (
     <div className="progress-strip-layer">
@@ -101,7 +113,7 @@ export default function ProgressStrip() {
         {modelProgress && (
           <div className="model-progress">
             <span className="model-progress__label">
-              Downloading embedding model — {bytesToMB(modelProgress.loaded)} of{' '}
+              Loading embedding model — {bytesToMB(modelProgress.loaded)} of{' '}
               {bytesToMB(modelProgress.total)} MB… (first time only)
             </span>
             <div className="model-progress__bar-track">

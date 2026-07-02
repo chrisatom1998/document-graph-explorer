@@ -5,8 +5,9 @@ import react from '@vitejs/plugin-react';
 /**
  * Privacy guarantee, enforced not promised: production builds ship a CSP that
  * blocks every network destination except
- *   - 'self'                       (app assets, demo corpus, cached model)
- *   - huggingface.co / hf.co CDNs  (one-time DOWNLOAD of the local embedding model)
+ *   - 'self'                       (app assets, demo corpus, and the embedding
+ *                                   model, which is self-hosted in /public/models
+ *                                   — the app needs ZERO third-party network)
  *   - generativelanguage.googleapis.com (Gemini — used ONLY when the user
  *     explicitly enables AI enrichment and supplies their own key)
  * Document content cannot reach any other host, even via a buggy dependency.
@@ -19,7 +20,7 @@ function injectCsp(): Plugin {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
-    "connect-src 'self' data: blob: https://huggingface.co https://*.huggingface.co https://*.hf.co https://generativelanguage.googleapis.com",
+    "connect-src 'self' data: blob: https://generativelanguage.googleapis.com",
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
@@ -38,8 +39,7 @@ function injectCsp(): Plugin {
 }
 
 // NOTE: no COOP/COEP headers on purpose — we use transferable Float32Arrays
-// (not SharedArrayBuffer), and COEP: require-corp can break the ~25 MB
-// HF Hub embedding-model download.
+// (not SharedArrayBuffer), so cross-origin isolation buys nothing here.
 export default defineConfig({
   plugins: [react(), injectCsp()],
   worker: { format: 'es' },
@@ -53,14 +53,19 @@ export default defineConfig({
     // d3-force-3d, …) are discovered and optimized UP FRONT. Discovering them
     // mid-session triggers "optimized dependencies changed. reloading", which
     // kills an in-flight ingestion (dev-only failure mode).
-    // NOTE: deliberately NOT optimizeDeps.include — in Vite 8 that produced
-    // client-environment chunks inside workers (`document is not defined`).
     entries: [
       'index.html',
       'src/workers/pipeline.worker.ts',
       'src/workers/aggregator.worker.ts',
       'src/workers/layout.worker.ts',
     ],
+    // graphology is imported ONLY inside aggregator.worker.ts, and Vite's
+    // entries scan doesn't reliably pre-bundle worker-only deps — so without
+    // this they're discovered on first page load, triggering the reload above.
+    // Both are pure graph libs (no DOM), so force-including them is safe (this
+    // is the audited exception to avoiding a general include-list, which under
+    // Vite 8 produced client-env chunks in workers — `document is not defined`).
+    include: ['graphology', 'graphology-communities-louvain'],
   },
   test: {
     environment: 'node',

@@ -60,10 +60,14 @@ function parseModelJson<T>(text: string): T | null {
   }
 }
 
+const REQUEST_TIMEOUT_MS = 30_000;
+
 async function callGemini(prompt: string, responseSchema: unknown): Promise<CallResult> {
   const { geminiKey, geminiModel } = useSettingsStore.getState();
   const model = geminiModel.trim() || GEMINI_MODEL;
-  const url = `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(geminiKey)}`;
+  // Key travels as a header, not a query param: URLs leak into proxy/server
+  // logs and browser history; headers don't.
+  const url = `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`;
   const body = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: { responseMimeType: 'application/json', responseSchema },
@@ -75,8 +79,14 @@ async function callGemini(prompt: string, responseSchema: unknown): Promise<Call
     try {
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': geminiKey,
+        },
         body,
+        // A hung connection would otherwise stall enrichment forever with the
+        // button stuck on "Enriching…" and zero feedback.
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
       if (res.ok) {
         const text = extractText(await res.json());
@@ -280,13 +290,100 @@ async function nameClusters(
 }
 
 // ---------------------------------------------------------------------------
+// Per-document AI (side panel): summarize / outline / ask a question.
+// Same explicit opt-in gate as bulk enrichment (toggle + user's own key);
+// sends up to the first DOC_AI_MAX_CHARS of the ONE selected document.
+// ---------------------------------------------------------------------------
+
+const DOC_AI_MAX_CHARS = 12_000;
+
+export type DocAiAction = 'summarize' | 'outline' | 'ask';
+
+const DOC_AI_SCHEMA = {
+  type: 'OBJECT',
+  properties: { answer: { type: 'STRING' } },
+  required: ['answer'],
+} as const;
+
+/** Why the AI section is locked, or null when it's usable. */
+export function docAiBlockedReason(): string | null {
+  const { geminiKey, enrichEnabled } = useSettingsStore.getState();
+  if (!enrichEnabled) return 'Turn on "Enable enrichment" in Settings';
+  if (geminiKey.trim() === '') return 'Add a Gemini API key in Settings';
+  return null;
+}
+
+export async function askDocAi(
+  docId: string,
+  title: string,
+  action: DocAiAction,
+  question?: string,
+): Promise<{ ok: boolean; text: string }> {
+  const blocked = docAiBlockedReason();
+  if (blocked) return { ok: false, text: blocked };
+
+  const fullText = textStore.get(docId);
+  if (!fullText || fullText.trim() === '') {
+    return { ok: false, text: 'No readable text is stored for this document.' };
+  }
+  const truncated = fullText.length > DOC_AI_MAX_CHARS;
+  const excerpt = fullText.slice(0, DOC_AI_MAX_CHARS);
+
+  let task: string;
+  switch (action) {
+    case 'summarize':
+      task =
+        'Summarize this document in 4-7 crisp sentences for a busy engineer. ' +
+        'Cover its purpose, the key points, and any decisions, numbers or action items.';
+      break;
+    case 'outline':
+      task =
+        'Produce a hierarchical outline covering ALL topics in this document, in the ' +
+        "document's own order. Format as plain text: one top-level line per major " +
+        'section, with nested points indented two spaces and prefixed "- ". Every ' +
+        'distinct topic in the document must appear — completeness over brevity.';
+      break;
+    case 'ask':
+      if (!question || question.trim() === '') {
+        return { ok: false, text: 'Type a question first.' };
+      }
+      task =
+        'Answer the question below using ONLY this document. If the document does not ' +
+        'contain the answer, say so and name what is missing. Be concise and concrete.\n' +
+        `Question: ${question.trim()}`;
+      break;
+  }
+
+  const prompt = [
+    task,
+    '',
+    `Document title: ${title}`,
+    truncated
+      ? `Document text (first ${DOC_AI_MAX_CHARS.toLocaleString()} characters — the document continues beyond this):`
+      : 'Document text:',
+    excerpt,
+  ].join('\n');
+
+  const res = await callGemini(prompt, DOC_AI_SCHEMA);
+  if (!res.ok) return { ok: false, text: res.error };
+  const parsed = parseModelJson<{ answer?: unknown }>(res.text);
+  if (!parsed || typeof parsed.answer !== 'string' || parsed.answer.trim() === '') {
+    return { ok: false, text: 'Gemini returned an unexpected response shape' };
+  }
+  return { ok: true, text: parsed.answer.trim() };
+}
+
+// ---------------------------------------------------------------------------
 // Orchestrator
 // ---------------------------------------------------------------------------
 
 let running = false;
 
 export async function runEnrichment(): Promise<{ ok: boolean; message: string }> {
-  const { geminiKey } = useSettingsStore.getState();
+  const { geminiKey, enrichEnabled } = useSettingsStore.getState();
+  if (!enrichEnabled) {
+    return { ok: false, message: 'Turn on "Enable enrichment" first' };
+  }
   if (geminiKey.trim() === '') {
     return { ok: false, message: 'Add a Gemini API key in Settings' };
   }
@@ -304,14 +401,23 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
 
   running = true;
   graph.setPhase('enriching');
+  // progress = pass-1 batches + canonicalize + cluster naming
+  const batchCount = Math.ceil(docs.length / ENRICH_BATCH_SIZE);
+  const totalSteps = batchCount + 2;
+  let doneSteps = 0;
+  const step = (note: string): void => {
+    useGraphStore.getState().setEnrichProgress({ done: doneSteps, total: totalSteps, note });
+  };
   try {
     // --- Pass 1: sequential batches (rate-limit friendly); skip failures ---
     const enriched = new Map<string, DocEnrichment>();
     let failedBatches = 0;
     let lastError = '';
     for (let i = 0; i < docs.length; i += ENRICH_BATCH_SIZE) {
+      step(`Summarizing docs ${i + 1}–${Math.min(i + ENRICH_BATCH_SIZE, docs.length)} of ${docs.length}`);
       const batch = docs.slice(i, i + ENRICH_BATCH_SIZE);
       const { results, error } = await enrichBatch(batch);
+      doneSteps++;
       if (results.size === 0) {
         failedBatches++;
         lastError = error ?? 'batch produced no usable results';
@@ -324,8 +430,10 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
     }
 
     // --- Pass 2: canonicalize topics corpus-wide, apply + dedupe ---
+    step('Merging topics…');
     const uniqueTopics = [...new Set([...enriched.values()].flatMap((e) => e.topics))];
     const canon = await canonicalizeTopics(uniqueTopics);
+    doneSteps++;
     const finalTopics = new Map<string, string[]>();
     for (const [id, e] of enriched) {
       finalTopics.set(id, [...new Set(e.topics.map((t) => canon.get(t) ?? t))]);
@@ -339,7 +447,10 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
     useGraphStore.getState().patchNodes(patches);
 
     // --- Pass 3: cluster names ---
+    step('Naming clusters…');
     const clusterNames = await nameClusters(docs, finalTopics);
+    doneSteps++;
+    step('Done');
     const namedClusters = Object.keys(clusterNames).length;
     if (namedClusters > 0) {
       const current = useGraphStore.getState().clusterNames;
@@ -359,6 +470,7 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
     };
   } finally {
     running = false;
+    useGraphStore.getState().setEnrichProgress(null);
     // The phase-ready transition also triggers the session auto-save, so
     // fresh summaries/topics/cluster names persist.
     useGraphStore.getState().setPhase('ready');

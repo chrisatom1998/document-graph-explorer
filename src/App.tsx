@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import NebulaCanvas from './scene/NebulaCanvas';
 import DropZone from './ingest/DropZone';
 import EmptyState from './ui/EmptyState';
 import ProgressStrip from './ui/ProgressStrip';
 import Toolbar from './ui/Toolbar';
+import InsightsPanel from './ui/InsightsPanel';
 import SidePanel from './ui/SidePanel';
 import Tooltip from './ui/Tooltip';
 import EdgePopover from './ui/EdgePopover';
@@ -12,6 +13,8 @@ import FilterBar from './ui/FilterBar';
 import SettingsPanel from './ui/SettingsPanel';
 import { useGraphStore } from './store/graphStore';
 import { useUiStore } from './store/uiStore';
+import { onLayoutSettled } from './layout/layoutBridge';
+import { positionBuffer } from './scene/positionBuffer';
 import { initPersistence, restoreSession } from './persistence/session';
 import './styles.css';
 
@@ -33,6 +36,61 @@ export default function App() {
     restoreSession().catch((err) => console.warn('session restore failed', err));
   }, []);
 
+  // Auto-frame: while a fresh corpus is forming, re-fit the camera on every
+  // layout settle so the nebula is always in view; stop after the settle that
+  // follows 'ready' so the user owns the camera from then on.
+  const needsFrame = useRef(true);
+  useEffect(() => {
+    if (!hasNodes) {
+      needsFrame.current = true; // next corpus gets framed again
+      return;
+    }
+    return onLayoutSettled(() => {
+      if (!needsFrame.current) return;
+      useUiStore.getState().sendCamera('fitAll');
+      if (useGraphStore.getState().phase === 'ready') needsFrame.current = false;
+    });
+  }, [hasNodes]);
+
+  // Dev-only introspection for automated verification (position spread etc.).
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    (window as unknown as Record<string, unknown>).__nebula = () => {
+      const g = useGraphStore.getState();
+      const { array, count } = positionBuffer;
+      let meanR = 0;
+      let maxR = 0;
+      let minPair = Infinity;
+      for (let i = 0; i < count; i++) {
+        const x = array[i * 3];
+        const y = array[i * 3 + 1];
+        const z = array[i * 3 + 2];
+        const r = Math.hypot(x, y, z);
+        meanR += r;
+        if (r > maxR) maxR = r;
+        for (let j = i + 1; j < count; j++) {
+          const d = Math.hypot(
+            x - array[j * 3],
+            y - array[j * 3 + 1],
+            z - array[j * 3 + 2],
+          );
+          if (d < minPair) minPair = d;
+        }
+      }
+      if (count > 0) meanR /= count;
+      return {
+        phase: g.phase,
+        nodes: g.nodes.length,
+        edges: g.edges.length,
+        posCount: count,
+        meanR,
+        maxR,
+        minPair: count > 1 ? minPair : null,
+        enrich: g.enrichProgress,
+      };
+    };
+  }, []);
+
   // Global keyboard: owned HERE and nowhere else.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -49,6 +107,9 @@ export default function App() {
           ui.setSearchResults(null);
         } else if (ui.settingsOpen) {
           ui.setSettingsOpen(false);
+        } else if (ui.insightsOpen) {
+          ui.setInsightsOpen(false);
+          ui.setSearchResults(null); // drop any section highlight with it
         } else if (ui.selectedEdgeId) {
           ui.setSelectedEdge(null);
         } else if (ui.selectedId) {
@@ -72,6 +133,7 @@ export default function App() {
       <Toolbar />
       <FilterBar />
       <ProgressStrip />
+      <InsightsPanel />
       <SidePanel />
       <Tooltip />
       <EdgePopover />
