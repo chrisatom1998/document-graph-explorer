@@ -3,9 +3,12 @@
  * outline every topic in it, or ask a free-form question about it — all via
  * the user's own Gemini key behind the enrichment opt-in gate. Mount with
  * key={docId} so state resets when the selection changes.
+ *
+ * Now uses streaming: text appears word-by-word as Gemini generates it,
+ * dramatically reducing perceived latency.
  */
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { askDocAi, docAiBlockedReason, type DocAiAction } from '../enrich/gemini';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
@@ -34,18 +37,34 @@ export default function DocAiSection({ docId, title }: Props) {
     text: string;
     heading: string;
   } | null>(null);
+  const [streamText, setStreamText] = useState<string | null>(null);
 
   const ready = enrichEnabled && hasKey;
+
+  // Ref to avoid stale closure in onChunk
+  const streamRef = useRef('');
+
+  const onChunk = useCallback((accumulated: string) => {
+    streamRef.current = accumulated;
+    setStreamText(accumulated);
+  }, []);
 
   const run = (action: DocAiAction, q?: string): void => {
     if (busy) return;
     setBusy(action);
     setResult(null);
-    askDocAi(docId, title, action, q)
-      .then((r) => setResult({ ...r, heading: HEADINGS[action] }))
-      .catch((err: unknown) =>
-        setResult({ ok: false, text: String(err), heading: HEADINGS[action] }),
-      )
+    setStreamText('');
+    streamRef.current = '';
+
+    askDocAi(docId, title, action, q, onChunk)
+      .then((r) => {
+        setResult({ ...r, heading: HEADINGS[action] });
+        setStreamText(null); // clear streaming state, show final result
+      })
+      .catch((err: unknown) => {
+        setResult({ ok: false, text: String(err), heading: HEADINGS[action] });
+        setStreamText(null);
+      })
       .finally(() => setBusy(null));
   };
 
@@ -53,6 +72,13 @@ export default function DocAiSection({ docId, title }: Props) {
     if (question.trim() === '') return;
     run('ask', question);
   };
+
+  // Show streaming text while generating, final result when done
+  const displayText = streamText !== null ? streamText : result?.text ?? '';
+  const displayHeading = busy
+    ? HEADINGS[busy]
+    : result?.heading ?? '';
+  const showResult = streamText !== null || result !== null;
 
   return (
     <div className="side-panel__section">
@@ -109,16 +135,17 @@ export default function DocAiSection({ docId, title }: Props) {
               {busy === 'ask' ? 'Asking…' : 'Ask'}
             </button>
           </div>
-          {result && (
-            <div className={`doc-ai__result${result.ok ? '' : ' is-error'}`}>
+          {showResult && (
+            <div className={`doc-ai__result${result && !result.ok ? ' is-error' : ''}${busy ? ' is-streaming' : ''}`}>
               <p className="doc-ai__result-heading">
-                {result.ok ? result.heading : 'Something went wrong'}
+                {result && !result.ok ? 'Something went wrong' : displayHeading}
+                {busy && <span className="doc-ai__streaming-dot" />}
               </p>
-              <div className="doc-ai__result-text">{result.text}</div>
+              <div className="doc-ai__result-text">{displayText}</div>
             </div>
           )}
           <p className="doc-ai__disclosure">
-            Sends up to the first ~12,000 characters of this document to Gemini.
+            Sends the full document text to Gemini via your API key.
           </p>
         </>
       )}

@@ -16,7 +16,7 @@ export const EMBED_MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
 export const EMBED_DIMS = 384;
 
 // --- Enrichment (user choice: Gemini) ---
-export const GEMINI_MODEL = 'gemini-3.5-flash'; // configurable default; override in Settings
+export const GEMINI_MODEL = 'gemini-2.5-flash'; // fastest current model; override in Settings
 export const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 export const ENRICH_BATCH_SIZE = 15; // docs per request (spec says 10–20)
 export const ENRICH_MAX_RETRIES = 3;

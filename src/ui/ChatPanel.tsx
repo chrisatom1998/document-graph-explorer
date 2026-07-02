@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { sendChatMessage } from '../chat/ragChat';
-import { useChatStore, type ChatMessage } from '../store/chatStore';
+import { useChatStore, type ChatMessage, type ContentBlock } from '../store/chatStore';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 
@@ -30,6 +30,51 @@ function IconChat() {
       <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
     </svg>
   );
+}
+
+const CALLOUT_ICONS: Record<string, string> = {
+  note: '💡',
+  important: '⚠️',
+  tip: '✨',
+  source: '📎',
+};
+
+/** Renders a single structured content block. */
+function BlockRenderer({ block }: { block: ContentBlock }) {
+  switch (block.type) {
+    case 'heading':
+      return <h4 className="chat-block-heading">{block.text}</h4>;
+
+    case 'paragraph':
+      return <p className="chat-block-paragraph">{block.text}</p>;
+
+    case 'list': {
+      const Tag = block.ordered ? 'ol' : 'ul';
+      return (
+        <Tag className={`chat-block-list ${block.ordered ? 'chat-block-list--ordered' : ''}`}>
+          {block.items.map((item, i) => (
+            <li key={i} className="chat-block-list__item">{item}</li>
+          ))}
+        </Tag>
+      );
+    }
+
+    case 'callout': {
+      const icon = CALLOUT_ICONS[block.label.toLowerCase()] ?? '💬';
+      return (
+        <div className={`chat-block-callout chat-block-callout--${block.label.toLowerCase()}`}>
+          <span className="chat-block-callout__icon">{icon}</span>
+          <div className="chat-block-callout__content">
+            <span className="chat-block-callout__label">{block.label}</span>
+            <span className="chat-block-callout__text">{block.text}</span>
+          </div>
+        </div>
+      );
+    }
+
+    default:
+      return null;
+  }
 }
 
 function SourceChips({ sources, onSourceClick }: { sources: string[]; onSourceClick: (id: string) => void }) {
@@ -60,11 +105,20 @@ function SourceChips({ sources, onSourceClick }: { sources: string[]; onSourceCl
 function MessageBubble({ msg, onSourceClick }: { msg: ChatMessage; onSourceClick: (id: string) => void }) {
   const isUser = msg.role === 'user';
   const isSystem = msg.role === 'system';
+  const hasBlocks = msg.role === 'assistant' && msg.blocks && msg.blocks.length > 0;
 
   return (
     <div className={`chat-message chat-message--${msg.role}`}>
       <div className={`chat-bubble chat-bubble--${msg.role}`}>
-        <p className="chat-bubble__text">{msg.text}</p>
+        {hasBlocks ? (
+          <div className="chat-bubble__blocks">
+            {msg.blocks!.map((block, i) => (
+              <BlockRenderer key={i} block={block} />
+            ))}
+          </div>
+        ) : (
+          <p className="chat-bubble__text">{msg.text}</p>
+        )}
         {msg.sources && msg.sources.length > 0 && (
           <SourceChips sources={msg.sources} onSourceClick={onSourceClick} />
         )}

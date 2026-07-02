@@ -5,10 +5,19 @@
 
 import { create } from 'zustand';
 
+/** A typed content block for rich AI responses. */
+export type ContentBlock =
+  | { type: 'paragraph'; text: string }
+  | { type: 'list'; ordered: boolean; items: string[] }
+  | { type: 'callout'; label: string; text: string }
+  | { type: 'heading'; text: string };
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   text: string;
+  /** Structured blocks for rich rendering (assistant messages only). */
+  blocks?: ContentBlock[];
   /** Doc IDs used as context for this answer (shown as source chips). */
   sources?: string[];
   timestamp: number;

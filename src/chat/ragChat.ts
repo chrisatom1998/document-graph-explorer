@@ -16,12 +16,11 @@ import { embedQuery } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import { chunkStore, docVectorStore, textStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
-import { useChatStore } from '../store/chatStore';
+import { useChatStore, type ContentBlock } from '../store/chatStore';
 
 const RAG_TOP_K = 8; // max chunks to include as context
 const RAG_MIN_SCORE = 0.3; // cosine floor for relevance
 const CHUNK_CONTEXT_CHARS = 1500; // max chars per chunk in prompt
-const REQUEST_TIMEOUT_MS = 60_000;
 
 // ---------------------------------------------------------------------------
 // Retrieval: find the most relevant chunks for a query
@@ -127,10 +126,16 @@ function keywordFallback(query: string): RetrievedChunk[] {
     .sort((a, b) => b.score - a.score)
     .slice(0, RAG_TOP_K);
 }
+// ---------------------------------------------------------------------------
+// Generation: stream context + question to Gemini (plain text → rich blocks)
+// ---------------------------------------------------------------------------
 
-// ---------------------------------------------------------------------------
-// Generation: send context + question to Gemini
-// ---------------------------------------------------------------------------
+const STREAM_TIMEOUT_MS = 90_000;
+const ENRICH_MAX_RETRIES = 3;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
   const contextParts = chunks.map(
@@ -141,7 +146,9 @@ function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
     'You are a knowledgeable assistant answering questions about the user\'s document collection.',
     'Use ONLY the context provided below. If the context does not contain the answer, say so clearly.',
     'Be concise, specific, and cite which source document(s) your answer comes from.',
-    'Format your response in plain text with line breaks for readability.',
+    'Use plain text only — no markdown formatting (no **, ##, ```, etc.).',
+    'Use line breaks to separate paragraphs. Use "- " prefixed lines for lists.',
+    'End with a line like "Sources: doc-name-1, doc-name-2" citing which documents you used.',
     '',
     '--- CONTEXT ---',
     contextParts.join('\n\n'),
@@ -151,7 +158,67 @@ function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
   ].join('\n');
 }
 
-/** Send a chat message and get an AI response. */
+/** Strip common markdown artifacts that the model might sneak in. */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')   // **bold**
+    .replace(/__(.*?)__/g, '$1')       // __bold__
+    .replace(/\*(.*?)\*/g, '$1')       // *italic*
+    .replace(/`([^`]+)`/g, '$1')       // `code`
+    .replace(/^#{1,6}\s+/gm, '')       // # headings
+    .trim();
+}
+
+/** Convert plain text into structured ContentBlock[] for rich rendering. */
+function textToBlocks(text: string): ContentBlock[] {
+  const cleaned = stripMarkdown(text);
+  const paragraphs = cleaned.split(/\n{2,}/);
+  const blocks: ContentBlock[] = [];
+
+  for (const para of paragraphs) {
+    const trimmed = para.trim();
+    if (!trimmed) continue;
+
+    // Detect "Sources: ..." line at the end → callout
+    if (/^sources?\s*:/i.test(trimmed)) {
+      blocks.push({
+        type: 'callout',
+        label: 'Source',
+        text: trimmed.replace(/^sources?\s*:\s*/i, '').trim(),
+      });
+      continue;
+    }
+
+    // Check if this paragraph is a bullet list
+    const lines = trimmed.split('\n');
+    const bulletLines = lines.filter((l) => /^\s*[-•*]\s/.test(l));
+    if (bulletLines.length >= 2 && bulletLines.length === lines.length) {
+      blocks.push({
+        type: 'list',
+        ordered: false,
+        items: lines.map((l) => l.replace(/^\s*[-•*]\s+/, '').trim()),
+      });
+      continue;
+    }
+
+    // Check for numbered list
+    const numberedLines = lines.filter((l) => /^\s*\d+[.)]\s/.test(l));
+    if (numberedLines.length >= 2 && numberedLines.length === lines.length) {
+      blocks.push({
+        type: 'list',
+        ordered: true,
+        items: lines.map((l) => l.replace(/^\s*\d+[.)]\s+/, '').trim()),
+      });
+      continue;
+    }
+
+    blocks.push({ type: 'paragraph', text: trimmed });
+  }
+
+  return blocks.length > 0 ? blocks : [{ type: 'paragraph', text: cleaned }];
+}
+
+/** Send a chat message and get a streaming AI response. */
 export async function sendChatMessage(question: string): Promise<void> {
   const q = question.trim();
   if (!q) return;
@@ -197,82 +264,123 @@ export async function sendChatMessage(question: string): Promise<void> {
       return;
     }
 
-    // Update status
     useChatStore.getState().updateMessage(assistantId, {
       text: `Found ${chunks.length} relevant passage${chunks.length > 1 ? 's' : ''}. Generating answer…`,
     });
 
-    // Build prompt and call Gemini
+    // Build prompt and stream from Gemini
     const prompt = buildPrompt(q, chunks);
     const model = geminiModel.trim() || GEMINI_MODEL;
-    const url = `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`;
+    const url = `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
+    const sourceIds = [...new Set(chunks.map((c) => c.docId))];
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': geminiKey,
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: 'OBJECT',
-            properties: { answer: { type: 'STRING' } },
-            required: ['answer'],
+    let lastError = 'Unknown error';
+    let success = false;
+
+    for (let attempt = 0; attempt <= ENRICH_MAX_RETRIES; attempt++) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': geminiKey,
           },
-        },
-      }),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+          signal: AbortSignal.timeout(STREAM_TIMEOUT_MS),
+        });
 
-    if (!res.ok) {
-      let errMsg = `Gemini HTTP ${res.status}`;
-      try {
-        const errData = (await res.json()) as { error?: { message?: unknown } };
-        if (typeof errData.error?.message === 'string') {
-          errMsg += `: ${errData.error.message.slice(0, 200)}`;
+        if (!res.ok) {
+          const retryable = res.status === 429 || res.status === 503;
+          lastError = `Gemini HTTP ${res.status}`;
+          try {
+            const errData = (await res.json()) as { error?: { message?: unknown } };
+            if (typeof errData.error?.message === 'string') {
+              lastError += `: ${errData.error.message.slice(0, 200)}`;
+            }
+          } catch { /* ignore */ }
+          if (retryable && attempt < ENRICH_MAX_RETRIES) {
+            await sleep(1000 * 2 ** attempt);
+            continue;
+          }
+          break;
         }
-      } catch { /* ignore */ }
-      useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}` });
-      return;
-    }
 
-    const data = (await res.json()) as {
-      candidates?: { content?: { parts?: { text?: unknown }[] } }[];
-    };
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (typeof rawText !== 'string') {
-      useChatStore.getState().updateMessage(assistantId, {
-        text: 'Received an unexpected response from Gemini. Please try again.',
-      });
-      return;
-    }
+        // Stream SSE response
+        const reader = res.body?.getReader();
+        if (!reader) {
+          lastError = 'No response body';
+          break;
+        }
 
-    // Parse the JSON response
-    let answer: string;
-    try {
-      const parsed = JSON.parse(rawText) as { answer?: string };
-      answer = parsed.answer ?? rawText;
-    } catch {
-      // If JSON parsing fails, try stripping markdown fences
-      const stripped = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-      try {
-        const parsed = JSON.parse(stripped) as { answer?: string };
-        answer = parsed.answer ?? rawText;
-      } catch {
-        answer = rawText; // Use raw text as fallback
+        const decoder = new TextDecoder();
+        let accumulated = '';
+        let buffer = '';
+
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const jsonStr = line.slice(6).trim();
+            if (!jsonStr || jsonStr === '[DONE]') continue;
+            try {
+              const chunk = JSON.parse(jsonStr) as {
+                candidates?: { content?: { parts?: { text?: string }[] } }[];
+              };
+              const text = chunk?.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (typeof text === 'string') {
+                accumulated += text;
+                // Update message with streaming text (plain, no blocks yet)
+                useChatStore.getState().updateMessage(assistantId, {
+                  text: accumulated,
+                  sources: sourceIds,
+                });
+              }
+            } catch {
+              // Malformed SSE chunk — skip
+            }
+          }
+        }
+
+        if (accumulated.trim()) {
+          // Parse final text into rich blocks
+          const blocks = textToBlocks(accumulated.trim());
+          const firstText = blocks.find((b) => b.type === 'paragraph' || b.type === 'heading');
+          const plainText = firstText
+            ? ('text' in firstText ? firstText.text : '')
+            : accumulated.trim();
+
+          useChatStore.getState().updateMessage(assistantId, {
+            text: plainText,
+            blocks,
+            sources: sourceIds,
+          });
+          success = true;
+        } else {
+          lastError = 'Gemini returned an empty response';
+        }
+        break; // success or non-retryable — exit retry loop
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
+        if (attempt < ENRICH_MAX_RETRIES) {
+          await sleep(1000 * 2 ** attempt);
+          continue;
+        }
       }
     }
 
-    // Deduplicate source doc IDs
-    const sourceIds = [...new Set(chunks.map((c) => c.docId))];
-
-    useChatStore.getState().updateMessage(assistantId, {
-      text: answer.trim(),
-      sources: sourceIds,
-    });
+    if (!success) {
+      useChatStore.getState().updateMessage(assistantId, {
+        text: `Error: ${lastError}`,
+      });
+    }
   } catch (err) {
     const errMsg = err instanceof Error ? err.message : String(err);
     useChatStore.getState().updateMessage(assistantId, {

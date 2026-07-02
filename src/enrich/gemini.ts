@@ -21,7 +21,7 @@ import { useGraphStore } from '../store/graphStore';
 import { textStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
 
-const EXCERPT_CHARS = 1200;
+const EXCERPT_CHARS = 8_000; // per-doc in batched enrichment (15 docs × 8k ≈ 120k chars, well within context)
 const CLUSTER_TITLES_CAP = 30;
 const TOPICS_PER_DOC = 5;
 
@@ -291,19 +291,14 @@ async function nameClusters(
 
 // ---------------------------------------------------------------------------
 // Per-document AI (side panel): summarize / outline / ask a question.
-// Same explicit opt-in gate as bulk enrichment (toggle + user's own key);
-// sends up to the first DOC_AI_MAX_CHARS of the ONE selected document.
+// Now uses STREAMING for real-time text delivery + plain text output (no JSON
+// schema constraint) for lower latency.
 // ---------------------------------------------------------------------------
 
-const DOC_AI_MAX_CHARS = 12_000;
+// No truncation — send the full document. Gemini 3.5 Flash supports
+// up to 1M input tokens (~4M chars), so even very large docs fit easily.
 
 export type DocAiAction = 'summarize' | 'outline' | 'ask';
-
-const DOC_AI_SCHEMA = {
-  type: 'OBJECT',
-  properties: { answer: { type: 'STRING' } },
-  required: ['answer'],
-} as const;
 
 /** Why the AI section is locked, or null when it's usable. */
 export function docAiBlockedReason(): string | null {
@@ -313,11 +308,104 @@ export function docAiBlockedReason(): string | null {
   return null;
 }
 
+/**
+ * Stream text from Gemini. Calls `onChunk` with each incremental text piece
+ * so the UI can update in real-time. Returns the full accumulated text.
+ */
+async function streamGemini(
+  prompt: string,
+  onChunk?: (accumulated: string) => void,
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  const { geminiKey, geminiModel } = useSettingsStore.getState();
+  const model = geminiModel.trim() || GEMINI_MODEL;
+  const url =
+    `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
+
+  let lastError = 'Unknown Gemini error';
+  for (let attempt = 0; ; attempt++) {
+    let retryable = false;
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': geminiKey,
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+
+      if (!res.ok) {
+        retryable = res.status === 429 || res.status === 503;
+        lastError = `Gemini HTTP ${res.status}`;
+        try {
+          const errData = (await res.json()) as { error?: { message?: unknown } };
+          if (typeof errData.error?.message === 'string') {
+            lastError += `: ${errData.error.message.slice(0, 160)}`;
+          }
+        } catch { /* not JSON */ }
+        if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
+        await sleep(1000 * 2 ** attempt);
+        continue;
+      }
+
+      // Read SSE stream
+      const reader = res.body?.getReader();
+      if (!reader) return { ok: false, error: 'No response body (streaming unavailable)' };
+
+      const decoder = new TextDecoder();
+      let accumulated = '';
+      let buffer = '';
+
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE events: "data: {...}\n\n"
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? ''; // keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const jsonStr = line.slice(6).trim();
+          if (!jsonStr || jsonStr === '[DONE]') continue;
+          try {
+            const chunk = JSON.parse(jsonStr) as {
+              candidates?: { content?: { parts?: { text?: string }[] } }[];
+            };
+            const text = chunk?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (typeof text === 'string') {
+              accumulated += text;
+              onChunk?.(accumulated);
+            }
+          } catch {
+            // Malformed chunk — skip
+          }
+        }
+      }
+
+      if (accumulated.trim() === '') {
+        return { ok: false, error: 'Gemini returned an empty response' };
+      }
+      return { ok: true, text: accumulated.trim() };
+    } catch (err) {
+      retryable = true;
+      lastError = err instanceof Error ? `Network error: ${err.message}` : 'Network error';
+    }
+    if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
+    await sleep(1000 * 2 ** attempt);
+  }
+}
+
 export async function askDocAi(
   docId: string,
   title: string,
   action: DocAiAction,
   question?: string,
+  onChunk?: (text: string) => void,
 ): Promise<{ ok: boolean; text: string }> {
   const blocked = docAiBlockedReason();
   if (blocked) return { ok: false, text: blocked };
@@ -326,22 +414,22 @@ export async function askDocAi(
   if (!fullText || fullText.trim() === '') {
     return { ok: false, text: 'No readable text is stored for this document.' };
   }
-  const truncated = fullText.length > DOC_AI_MAX_CHARS;
-  const excerpt = fullText.slice(0, DOC_AI_MAX_CHARS);
 
   let task: string;
   switch (action) {
     case 'summarize':
       task =
         'Summarize this document in 4-7 crisp sentences for a busy engineer. ' +
-        'Cover its purpose, the key points, and any decisions, numbers or action items.';
+        'Cover its purpose, the key points, and any decisions, numbers or action items. ' +
+        'Use plain text only — no markdown formatting.';
       break;
     case 'outline':
       task =
         'Produce a hierarchical outline covering ALL topics in this document, in the ' +
         "document's own order. Format as plain text: one top-level line per major " +
         'section, with nested points indented two spaces and prefixed "- ". Every ' +
-        'distinct topic in the document must appear — completeness over brevity.';
+        'distinct topic in the document must appear — completeness over brevity. ' +
+        'Use plain text only — no markdown formatting.';
       break;
     case 'ask':
       if (!question || question.trim() === '') {
@@ -349,7 +437,8 @@ export async function askDocAi(
       }
       task =
         'Answer the question below using ONLY this document. If the document does not ' +
-        'contain the answer, say so and name what is missing. Be concise and concrete.\n' +
+        'contain the answer, say so and name what is missing. Be concise and concrete. ' +
+        'Use plain text only — no markdown formatting.\n' +
         `Question: ${question.trim()}`;
       break;
   }
@@ -358,19 +447,14 @@ export async function askDocAi(
     task,
     '',
     `Document title: ${title}`,
-    truncated
-      ? `Document text (first ${DOC_AI_MAX_CHARS.toLocaleString()} characters — the document continues beyond this):`
-      : 'Document text:',
-    excerpt,
+    'Document text:',
+    fullText,
   ].join('\n');
 
-  const res = await callGemini(prompt, DOC_AI_SCHEMA);
+  // Use streaming for real-time delivery
+  const res = await streamGemini(prompt, onChunk);
   if (!res.ok) return { ok: false, text: res.error };
-  const parsed = parseModelJson<{ answer?: unknown }>(res.text);
-  if (!parsed || typeof parsed.answer !== 'string' || parsed.answer.trim() === '') {
-    return { ok: false, text: 'Gemini returned an unexpected response shape' };
-  }
-  return { ok: true, text: parsed.answer.trim() };
+  return { ok: true, text: res.text };
 }
 
 // ---------------------------------------------------------------------------
