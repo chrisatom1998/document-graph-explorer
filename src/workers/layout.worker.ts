@@ -317,6 +317,30 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
       break;
     }
 
+    case 'remove': {
+      const gone = new Set(msg.ids);
+      let removed = false;
+      for (let i = nodes.length - 1; i >= 0; i--) {
+        if (gone.has(nodes[i].id)) {
+          nodeById.delete(nodes[i].id);
+          nodes.splice(i, 1);
+          removed = true;
+        }
+      }
+      if (!removed) break;
+      // Freed slots keep stale values in the position buffer; the render side
+      // skips them via its own slot bookkeeping. Recompute maxSlot so the
+      // posted buffer can shrink when the tail slots were freed.
+      maxSlot = -1;
+      for (const n of nodes) if (n.slot > maxSlot) maxSlot = n.slot;
+      sim.nodes(nodes); // re-initializes every force
+      applyLinks(); // drops links whose endpoint just left the sim
+      updateShellRadius();
+      rebuildAnchors();
+      reheat(0.1); // gentle: neighbors reflow into the gap without a jolt
+      break;
+    }
+
     case 'links': {
       rawLinks = msg.links;
       applyLinks();

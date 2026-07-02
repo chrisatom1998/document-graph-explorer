@@ -227,6 +227,7 @@ export interface LayoutNodeInput {
 
 export type LayoutRequest =
   | { type: 'add'; nodes: LayoutNodeInput[] }
+  | { type: 'remove'; ids: string[] }
   | { type: 'links'; links: { source: string; target: string; weight: number }[] }
   | { type: 'clusters'; clusterOf: Record<string, number> }
   | { type: 'reheat'; alpha: number }

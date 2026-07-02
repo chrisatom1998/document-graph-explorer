@@ -119,6 +119,9 @@ export default function Labels() {
 
   const refreshTitles = (): void => {
     const { nodes } = useGraphStore.getState();
+    // Rebuild from scratch: freed slots (removed nodes) must not keep stale
+    // titles, or the pool renders phantom labels at their old positions.
+    titleOfSlot.current = [];
     for (const n of nodes) {
       const slot = slotOfId.get(n.id);
       if (slot !== undefined && slot < MAX_NODES) titleOfSlot.current[slot] = n.title;

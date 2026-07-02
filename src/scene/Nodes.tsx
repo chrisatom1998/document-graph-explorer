@@ -30,7 +30,9 @@ import { buildAdjacency, useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import type { GraphFilter } from '../store/uiStore';
 import {
+  ghostOfSlot,
   idOfSlot,
+  kindOfSlot,
   positionBuffer,
   scaleOfSlot,
   slotOfId,
@@ -42,10 +44,10 @@ import { clusterColor } from './palette';
 // Shared slot metadata + emphasis helpers (imported by Edges/EdgePulses/Labels)
 // ---------------------------------------------------------------------------
 
-/** 1 = topic-kind node at this slot. Maintained by <Nodes/>. */
-export const kindOfSlot = new Uint8Array(MAX_NODES);
-/** 1 = partial/unreadable ("ghosted") node at this slot. Maintained by <Nodes/>. */
-export const ghostOfSlot = new Uint8Array(MAX_NODES);
+// kindOfSlot/ghostOfSlot now live in positionBuffer (so layoutBridge can clear
+// freed slots without an import cycle); re-exported here for the components
+// that import them from './Nodes'.
+export { ghostOfSlot, kindOfSlot } from './positionBuffer';
 
 let adjacencySource: Edge[] | null = null;
 let adjacencyCache = new Map<string, Set<string>>();
@@ -159,6 +161,7 @@ function instancedSphereRaycast(
   const topicsOn = useUiStore.getState().topicNodesEnabled;
   const ray = raycaster.ray;
   for (let i = 0; i < count; i++) {
+    if (!idOfSlot[i]) continue; // freed slot (removed node) -> unpickable
     if (kindOfSlot[i] === 1 && !topicsOn) continue; // invisible -> unpickable
     const radius = (scaleOfSlot[i] || 1.1) * 1.15; // slight grace margin
     const o = i * 3;
@@ -450,6 +453,17 @@ export default function Nodes() {
     for (let i = 0; i < count; i++) {
       const o = i * 3;
       dummy.position.set(arr[o], arr[o + 1], arr[o + 2]);
+
+      // Freed slot (node removed, slot awaiting reuse): render nothing. The
+      // `|| 1.1` default below would otherwise resurrect it as a ghost sphere.
+      if (!idOfSlot[i]) {
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        core.setMatrixAt(i, dummy.matrix);
+        halo.setMatrixAt(i, dummy.matrix);
+        if (topic) topic.setMatrixAt(i, dummy.matrix);
+        continue;
+      }
 
       let scale = scaleOfSlot[i] || 1.1;
       let haloScale = scale * HALO_SCALE;

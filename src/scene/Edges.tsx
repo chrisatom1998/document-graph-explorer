@@ -80,7 +80,8 @@ export default function Edges() {
         s.selectedId !== prev.selectedId ||
         s.searchResults !== prev.searchResults ||
         s.filter !== prev.filter ||
-        s.clusterCollapsed !== prev.clusterCollapsed
+        s.clusterCollapsed !== prev.clusterCollapsed ||
+        s.topicNodesEnabled !== prev.topicNodesEnabled
       ) {
         colorsDirty.current = true;
       }
@@ -88,24 +89,36 @@ export default function Edges() {
     return offUi;
   }, []);
 
+  /**
+   * An edge the scene is currently NOT drawing. Topic edges are hidden with
+   * their hubs (the octahedra only render when topicNodesEnabled) — otherwise
+   * lines converge on invisible nodes in blank space. Shared by the color
+   * pass and the click handler so hidden edges are also unclickable.
+   */
+  const isEdgeHidden = (
+    e: (typeof edges)[number],
+    ui: ReturnType<typeof useUiStore.getState>,
+  ): boolean =>
+    ui.clusterCollapsed ||
+    e.weight < ui.filter.minEdgeWeight ||
+    (e.kind === 'topic' && !ui.topicNodesEnabled);
+
   const recomputeColors = (): void => {
     const { nodes } = useGraphStore.getState();
-    const { hoveredId, selectedId, searchResults, filter, clusterCollapsed } = useUiStore.getState();
+    const ui = useUiStore.getState();
+    const { hoveredId, selectedId, searchResults, filter } = ui;
     const emphasis = computeEmphasis(nodes, edges, hoveredId, searchResults, filter);
     const focusId = hoveredId ?? selectedId;
-    const minW = filter.minEdgeWeight;
-    // Count visible edges for density fade (edges below minEdgeWeight are hidden)
-    let visibleCount = edges.length;
-    if (minW > 0) {
-      visibleCount = 0;
-      for (const e of edges) if (e.weight >= minW) visibleCount++;
-    }
+    // Count visible edges for density fade (hidden edges shouldn't dim the rest)
+    let visibleCount = 0;
+    for (const e of edges) if (!isEdgeHidden(e, ui)) visibleCount++;
     const fade = densityFade(visibleCount);
     const col = attrs.colors.array as Float32Array;
     for (let i = 0; i < edges.length; i++) {
       const e = edges[i];
-      // Edge-weight filter (spec §9 hairball slider): hide edges below threshold
-      if (e.weight < minW || clusterCollapsed) {
+      // Hidden: weight below the hairball slider, collapse mode, or a topic
+      // edge whose hub octahedron isn't rendered (toggle off).
+      if (isEdgeHidden(e, ui)) {
         const o = i * 6;
         col[o] = col[o + 1] = col[o + 2] = 0;
         col[o + 3] = col[o + 4] = col[o + 5] = 0;
@@ -174,13 +187,20 @@ export default function Edges() {
     if (e.index === undefined) return;
     const edge = edges[Math.floor(e.index / 2)]; // index = first vertex of the segment
     if (!edge) return;
+    // Hidden edges (zeroed color, still in the picking geometry) must not be
+    // clickable — a popover opening from apparently-empty space is a ghost UI.
+    if (isEdgeHidden(edge, useUiStore.getState())) return;
     e.stopPropagation();
     useUiStore.getState().setSelectedEdge(edge.id);
   };
 
   // Edges are clickable (evidence popover) but nothing signalled it — show the
-  // pointer cursor on hover so the affordance is discoverable.
-  const handlePointerOver = (): void => {
+  // pointer cursor on hover so the affordance is discoverable. Hidden edges
+  // (still present in the picking geometry) don't get the cursor either.
+  const handlePointerOver = (e: ThreeEvent<PointerEvent>): void => {
+    if (e.index === undefined) return;
+    const edge = edges[Math.floor(e.index / 2)];
+    if (!edge || isEdgeHidden(edge, useUiStore.getState())) return;
     document.body.style.cursor = 'pointer';
   };
   const handlePointerOut = (): void => {

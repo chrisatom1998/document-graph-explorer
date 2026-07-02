@@ -51,7 +51,10 @@ export default function EdgePulses() {
       if (
         s.hoveredId !== prev.hoveredId ||
         s.selectedId !== prev.selectedId ||
-        s.qualityTier !== prev.qualityTier
+        s.qualityTier !== prev.qualityTier ||
+        s.filter !== prev.filter ||
+        s.clusterCollapsed !== prev.clusterCollapsed ||
+        s.topicNodesEnabled !== prev.topicNodesEnabled
       ) {
         rebuildDirty.current = true;
       }
@@ -67,7 +70,8 @@ export default function EdgePulses() {
 
   const rebuild = (mesh: THREE.InstancedMesh): void => {
     const { edges } = useGraphStore.getState();
-    const { hoveredId, selectedId, qualityTier, filter, clusterCollapsed } = useUiStore.getState();
+    const { hoveredId, selectedId, qualityTier, filter, clusterCollapsed, topicNodesEnabled } =
+      useUiStore.getState();
     // No pulses in cluster-collapsed mode
     if (clusterCollapsed) { activeEdges.current = 0; return; }
     // degraded tiers: pulses only for the explicit selection, not hover
@@ -79,6 +83,8 @@ export default function EdgePulses() {
         const e = edges[i];
         if (e.source !== focus && e.target !== focus) continue;
         if (e.weight < minW) continue; // respect edge-density slider
+        // no pulses along edges the scene isn't drawing (hidden topic hubs)
+        if (e.kind === 'topic' && !topicNodesEnabled) continue;
         const from = slotOfId.get(focus);
         const to = slotOfId.get(e.source === focus ? e.target : e.source);
         if (from === undefined || to === undefined) continue;

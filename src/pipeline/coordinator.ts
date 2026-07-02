@@ -39,6 +39,7 @@ import { routeFile } from '../ingest/fileRouter';
 import {
   layoutAddNodes,
   layoutReheat,
+  layoutRemoveNodes,
   layoutReset,
   layoutSetClusters,
   layoutSetLinks,
@@ -674,6 +675,14 @@ function synthesizeTopicNodes(): void {
       });
     }
   }
+
+  // Free the layout slots of topic hubs that no longer exist — without this,
+  // per-ingest topic churn leaks slots toward MAX_NODES and leaves ghost
+  // geometry at the stale positions. Surviving hubs keep their slot (and
+  // position): layoutAddNodes skips ids that already have one.
+  const newIds = new Set(newNodes.map((n) => n.id));
+  const staleTopicIds = existingTopics.filter((id) => !newIds.has(id));
+  if (staleTopicIds.length > 0) layoutRemoveNodes(staleTopicIds);
 
   if (newNodes.length === 0) return;
 

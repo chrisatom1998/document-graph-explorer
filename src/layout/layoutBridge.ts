@@ -10,15 +10,22 @@
 import { MAX_NODES } from '../config';
 import type { LayoutNodeInput, LayoutRequest, LayoutResponse } from '../model/types';
 import {
+  ghostOfSlot,
   idOfSlot,
+  kindOfSlot,
   positionBuffer,
   resetPositionBuffer,
+  scaleOfSlot,
   slotOfId,
   spawnAtOfSlot,
 } from '../scene/positionBuffer';
 
 let worker: Worker | null = null;
 let nextSlot = 0;
+/** Slots freed by layoutRemoveNodes, reused before nextSlot grows — without
+ * recycling, per-ingest node churn (topic re-synthesis) marches nextSlot
+ * toward MAX_NODES until real documents get dropped as invisible. */
+const freeSlots: number[] = [];
 const settledListeners = new Set<() => void>();
 
 export function ensureLayout(): Worker {
@@ -79,11 +86,15 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
   const now = typeof performance !== 'undefined' ? performance.now() : 0;
   for (const n of nodes) {
     if (slotOfId.has(n.id)) continue;
-    if (nextSlot >= MAX_NODES) {
+    let slot: number;
+    if (freeSlots.length > 0) {
+      slot = freeSlots.pop()!; // recycle before growing
+    } else if (nextSlot < MAX_NODES) {
+      slot = nextSlot++;
+    } else {
       dropped.push(n.id);
       continue;
     }
-    const slot = nextSlot++;
     slotOfId.set(n.id, slot);
     idOfSlot[slot] = n.id;
     spawnAtOfSlot[slot] = n.initial ? -1 : now; // -1 = no materialize animation
@@ -94,6 +105,29 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
     console.warn(`Node capacity (${MAX_NODES}) reached; ignoring ${dropped.length} node(s)`);
   }
   return dropped;
+}
+
+/**
+ * Removes nodes from the layout and frees their slots for reuse. Clears every
+ * per-slot metadata entry so the render loop, raycaster, and labels treat the
+ * slot as empty until it's reassigned (a stale kind/scale would otherwise
+ * render a ghost node at the last simulated position).
+ */
+export function layoutRemoveNodes(ids: string[]): void {
+  const removed: string[] = [];
+  for (const id of ids) {
+    const slot = slotOfId.get(id);
+    if (slot === undefined) continue;
+    slotOfId.delete(id);
+    idOfSlot[slot] = '';
+    scaleOfSlot[slot] = 0;
+    spawnAtOfSlot[slot] = -1;
+    kindOfSlot[slot] = 0;
+    ghostOfSlot[slot] = 0;
+    freeSlots.push(slot);
+    removed.push(id);
+  }
+  if (removed.length) post({ type: 'remove', ids: removed });
 }
 
 export function layoutSetLinks(
@@ -135,6 +169,7 @@ export function layoutReset(): void {
   worker?.terminate();
   worker = null;
   nextSlot = 0;
+  freeSlots.length = 0;
   settledListeners.clear();
   resetPositionBuffer();
 }
