@@ -13,6 +13,7 @@ import { findBoilerplateLines, stripBoilerplate } from './boilerplate';
 import { semanticEdges } from './similarity';
 import { DUP_SIM_THRESHOLD, SIM_THRESHOLD, SIM_TOP_K } from '../config';
 import { parseMarkdown } from './parsers/markdown';
+import { parseHtml } from './parsers/html';
 
 // ---------------------------------------------------------------------------
 // tokenize
@@ -65,6 +66,30 @@ describe('parseMarkdown', () => {
     ]);
     expect(parsed.text).toContain('See Incident Runbook and Oncall.');
     expect(parsed.text).toContain('Ship via canary.');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// html parser — anchor href capture (so links survive extraction)
+// ---------------------------------------------------------------------------
+describe('parseHtml', () => {
+  it('captures <a href> targets and skips in-page anchors', () => {
+    const html = [
+      '<html><head><title>Docs</title></head><body>',
+      '<h1>Guide</h1>',
+      '<p>See the <a href="https://example.com/setup">setup page</a> and',
+      "the <a href='runbook.html'>runbook</a>.</p>",
+      '<p><a href="#top">back to top</a></p>',
+      '</body></html>',
+    ].join('\n');
+    const bytes = new TextEncoder().encode(html).buffer;
+
+    const parsed = parseHtml(bytes, 'guide.html');
+
+    expect(parsed.mdLinkTargets).toEqual(['https://example.com/setup', 'runbook.html']);
+    // the visible text keeps the anchor labels, not the URLs
+    expect(parsed.text).toContain('setup page');
+    expect(parsed.text).not.toContain('https://example.com/setup');
   });
 });
 
@@ -180,6 +205,16 @@ describe('referenceEdges', () => {
           (e.source === 'oncall' && e.target === 'runbook'),
       ),
     ).toBe(false);
+  });
+
+  it('ignores external URLs that share a basename with a local doc', () => {
+    // An external link to a same-named file must NOT create a doc-to-doc edge.
+    // Mention text is stripped so the only possible edge would be the link.
+    const external = [
+      { ...docs[0], textLower: 'how we ship.', mdLinkTargets: ['https://x.io/incident-runbook.md'] },
+      { ...docs[1], textLower: 'sev1 steps.' },
+    ];
+    expect(referenceEdges(external, 5)).toEqual([]);
   });
 });
 
