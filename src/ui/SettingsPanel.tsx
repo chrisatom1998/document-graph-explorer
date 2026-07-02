@@ -9,6 +9,7 @@ import { useState, type CSSProperties } from 'react';
 import { GEMINI_MODEL } from '../config';
 import { runEnrichment } from '../enrich/gemini';
 import { clearAllCaches } from '../persistence/cache';
+import { resetCorpus } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
@@ -77,6 +78,13 @@ const buttonStyle: CSSProperties = {
   fontSize: 13,
   cursor: 'pointer',
 };
+const dangerButtonStyle: CSSProperties = {
+  ...buttonStyle,
+  border: '1px solid rgba(255, 128, 128, 0.35)',
+  background: 'rgba(255, 128, 128, 0.12)',
+  color: '#ff9a9a',
+};
+const confirmRowStyle: CSSProperties = { display: 'flex', gap: 8, alignSelf: 'flex-start' };
 const helpStyle: CSSProperties = { fontSize: 11.5, opacity: 0.6, margin: 0 };
 const noteStyle: CSSProperties = { fontSize: 12.5, margin: 0 };
 
@@ -101,6 +109,8 @@ export default function SettingsPanel() {
   const [enrichResult, setEnrichResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [enrichBusy, setEnrichBusy] = useState(false);
   const [clearNote, setClearNote] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   if (!open) return null;
 
@@ -122,15 +132,25 @@ export default function SettingsPanel() {
       .finally(() => setEnrichBusy(false));
   };
 
-  const onClearCache = () => {
+  // Full "start over": empties the live graph/UI/chat immediately, then wipes
+  // every locally cached document, embedding, graph, and snapshot. The Gemini
+  // key and other settings live in localStorage and are intentionally kept.
+  const onClearAll = () => {
     setClearNote(null);
-    clearAllCaches().then((ok) =>
-      setClearNote(
-        ok
-          ? 'Cached session cleared — reload to start fresh.'
-          : 'Could not clear the cache (storage unavailable).',
-      ),
-    );
+    setClearing(true);
+    resetCorpus();
+    clearAllCaches()
+      .then((ok) =>
+        setClearNote(
+          ok
+            ? 'All data cleared.'
+            : 'Graph cleared, but cached data could not be removed (storage unavailable).',
+        ),
+      )
+      .finally(() => {
+        setClearing(false);
+        setConfirmClear(false);
+      });
   };
 
   return (
@@ -268,16 +288,49 @@ export default function SettingsPanel() {
 
         <section style={sectionStyle}>
           <h3 style={headingStyle}>Data</h3>
-          <button
-            type="button"
-            onClick={onClearCache}
-            title="Delete all locally cached documents, embeddings, graphs, and snapshots from this browser. Cannot be undone."
-            style={buttonStyle}
-          >
-            Clear cached session
-          </button>
+          {!confirmClear ? (
+            <button
+              type="button"
+              onClick={() => {
+                setClearNote(null);
+                setConfirmClear(true);
+              }}
+              title="Remove every loaded document and all locally cached data (documents, embeddings, graphs, snapshots). Cannot be undone."
+              style={dangerButtonStyle}
+            >
+              Clear all data
+            </button>
+          ) : (
+            <>
+              <p style={noteStyle}>
+                Remove all loaded documents and clear every cached document, embedding,
+                graph, and snapshot from this browser? This cannot be undone.
+              </p>
+              <div style={confirmRowStyle}>
+                <button
+                  type="button"
+                  onClick={onClearAll}
+                  disabled={clearing}
+                  title="Permanently clear everything"
+                  style={{ ...dangerButtonStyle, opacity: clearing ? 0.6 : 1 }}
+                >
+                  {clearing ? 'Clearing…' : 'Yes, clear everything'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmClear(false)}
+                  disabled={clearing}
+                  title="Keep my data"
+                  style={buttonStyle}
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
           <p style={helpStyle}>
-            Removes all locally cached documents, embeddings and graphs — reload to start fresh.
+            Wipes the current graph and all locally cached data. Your Gemini API key and
+            settings are kept.
           </p>
           {clearNote && <p style={noteStyle}>{clearNote}</p>}
         </section>
