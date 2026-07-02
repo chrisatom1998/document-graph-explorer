@@ -14,15 +14,17 @@ import {
   layoutSetLinks,
   onLayoutSettled,
 } from '../layout/layoutBridge';
-import type { DocNode } from '../model/types';
+import type { DocNode, GraphExport } from '../model/types';
 import { getNodePosition } from '../scene/positionBuffer';
 import { useGraphStore } from '../store/graphStore';
 import { chunkStore, docVectorStore, textStore } from '../store/runtimeStores';
 import {
   getSetting,
+  loadSnapshot,
   lookupGraphCache,
   saveDocsToCache,
   saveGraphToCache,
+  saveSnapshot,
   setSetting,
 } from './cache';
 import { getDb } from './db';
@@ -133,6 +135,90 @@ export async function saveSession(): Promise<void> {
   await setSetting('lastCorpusHash', corpusHash);
 }
 
+// ---------------------------------------------------------------------------
+// Shared hydration logic (used by both session restore and snapshot restore)
+// ---------------------------------------------------------------------------
+
+/**
+ * Hydrate graph store, runtime stores, and layout from the given data.
+ * This is the shared code path for restoreSession() and restoreSnapshot().
+ */
+async function hydrateFromRecord(
+  exportData: GraphExport,
+  positions: Record<string, [number, number, number]>,
+  corpusHash: string | null,
+): Promise<boolean> {
+  if (
+    exportData.version !== 1 ||
+    !Array.isArray(exportData.nodes) ||
+    !Array.isArray(exportData.edges) ||
+    exportData.nodes.length === 0
+  ) {
+    return false;
+  }
+
+  // --- bulk-read texts + vectors: one readonly tx, concurrent gets ---
+  const docIds = exportData.nodes
+    .filter((n) => n.kind === 'document')
+    .map((n) => n.id);
+  const db = await getDb();
+  const tx = db.transaction(['documents', 'embeddings']);
+  const docStore = tx.objectStore('documents');
+  const embStore = tx.objectStore('embeddings');
+  const [docRecs, embRecs] = await Promise.all([
+    Promise.all(docIds.map((id) => docStore.get(id))),
+    Promise.all(docIds.map((id) => embStore.get(id))),
+  ]);
+
+  for (let i = 0; i < docIds.length; i++) {
+    const id = docIds[i];
+    const doc = docRecs[i];
+    const emb = embRecs[i];
+    if (doc) {
+      textStore.set(id, doc.text);
+      chunkStore.set(id, {
+        texts: doc.chunkTexts,
+        vectors: emb && emb.chunkVectors.length > 0 ? emb.chunkVectors : null,
+        dims: EMBED_DIMS,
+      });
+    }
+    if (emb && emb.docVector.length > 0) docVectorStore.set(id, emb.docVector);
+  }
+
+  // --- hydrate graph store ---
+  const g = useGraphStore.getState();
+  g.addNodes(exportData.nodes);
+  g.setEdges(exportData.edges);
+  g.setClusterNames(exportData.clusterNames ?? {});
+  g.patchNodes(new Map()); // no-op patch recomputes clusterCount (addNodes does not)
+  if (corpusHash) g.setCorpusHash(corpusHash);
+  g.setRestoredFromCache(true);
+  suppressAutoSave = true;
+  try {
+    g.setPhase('ready'); // subscriber runs synchronously — keep it suppressed
+  } finally {
+    suppressAutoSave = false;
+  }
+
+  // --- hydrate layout at the exact settled positions ---
+  layoutAddNodes(
+    exportData.nodes.map((n) => ({
+      id: n.id,
+      cluster: n.cluster,
+      initial: positions[n.id], // undefined -> layout picks a spawn (fallback)
+    })),
+  );
+  layoutSetLinks(
+    exportData.edges.map((e) => ({ source: e.source, target: e.target, weight: e.weight })),
+  );
+  layoutSetClusters(
+    Object.fromEntries(exportData.nodes.map((n): [string, number] => [n.id, n.cluster])),
+  );
+  layoutReheat(0.03); // barely moves — restores the settled shape
+
+  return true;
+}
+
 /**
  * Restore the last session from IndexedDB. Returns true on success.
  * Reads are bulk (single transaction, all gets issued up front) — no
@@ -144,79 +230,67 @@ export async function restoreSession(): Promise<boolean> {
     if (!lastCorpusHash) return false;
     const cached = await lookupGraphCache(lastCorpusHash);
     if (!cached) return false;
-
-    const { exportData, positions } = cached;
-    if (
-      exportData.version !== 1 ||
-      !Array.isArray(exportData.nodes) ||
-      !Array.isArray(exportData.edges) ||
-      exportData.nodes.length === 0
-    ) {
-      return false;
-    }
-
-    // --- bulk-read texts + vectors: one readonly tx, concurrent gets ---
-    const docIds = exportData.nodes
-      .filter((n) => n.kind === 'document')
-      .map((n) => n.id);
-    const db = await getDb();
-    const tx = db.transaction(['documents', 'embeddings']);
-    const docStore = tx.objectStore('documents');
-    const embStore = tx.objectStore('embeddings');
-    const [docRecs, embRecs] = await Promise.all([
-      Promise.all(docIds.map((id) => docStore.get(id))),
-      Promise.all(docIds.map((id) => embStore.get(id))),
-    ]);
-
-    for (let i = 0; i < docIds.length; i++) {
-      const id = docIds[i];
-      const doc = docRecs[i];
-      const emb = embRecs[i];
-      if (doc) {
-        textStore.set(id, doc.text);
-        chunkStore.set(id, {
-          texts: doc.chunkTexts,
-          vectors: emb && emb.chunkVectors.length > 0 ? emb.chunkVectors : null,
-          dims: EMBED_DIMS,
-        });
-      }
-      if (emb && emb.docVector.length > 0) docVectorStore.set(id, emb.docVector);
-    }
-
-    // --- hydrate graph store ---
-    const g = useGraphStore.getState();
-    g.addNodes(exportData.nodes);
-    g.setEdges(exportData.edges);
-    g.setClusterNames(exportData.clusterNames ?? {});
-    g.patchNodes(new Map()); // no-op patch recomputes clusterCount (addNodes does not)
-    g.setCorpusHash(lastCorpusHash);
-    g.setRestoredFromCache(true);
-    suppressAutoSave = true;
-    try {
-      g.setPhase('ready'); // subscriber runs synchronously — keep it suppressed
-    } finally {
-      suppressAutoSave = false;
-    }
-
-    // --- hydrate layout at the exact settled positions ---
-    layoutAddNodes(
-      exportData.nodes.map((n) => ({
-        id: n.id,
-        cluster: n.cluster,
-        initial: positions[n.id], // undefined -> layout picks a spawn (fallback)
-      })),
-    );
-    layoutSetLinks(
-      exportData.edges.map((e) => ({ source: e.source, target: e.target, weight: e.weight })),
-    );
-    layoutSetClusters(
-      Object.fromEntries(exportData.nodes.map((n): [string, number] => [n.id, n.cluster])),
-    );
-    layoutReheat(0.03); // barely moves — restores the settled shape
-
-    return true;
+    return await hydrateFromRecord(cached.exportData, cached.positions, lastCorpusHash);
   } catch (err) {
     console.warn('[knowledge-nebula] session restore failed', err);
     return false;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Named snapshot save / restore
+// ---------------------------------------------------------------------------
+
+/**
+ * Save the current graph state as a named snapshot.
+ * Returns the snapshot ID on success, undefined on failure.
+ */
+export async function saveCurrentSnapshot(name: string): Promise<number | undefined> {
+  const s = useGraphStore.getState();
+  if (s.phase !== 'ready' || s.nodes.length === 0) return undefined;
+
+  const corpusHash = s.corpusHash ?? 'unnamed';
+  const exportData = toGraphExport(false);
+  const positions = collectPositions(s.nodes);
+  const docHashes = s.nodes
+    .filter((n) => n.kind === 'document')
+    .map((n) => n.id);
+
+  // Ensure documents + embeddings are persisted before snapshotting
+  const docs = s.nodes
+    .filter((n) => n.kind === 'document')
+    .map((node) => {
+      const chunks = chunkStore.get(node.id);
+      return {
+        node,
+        text: textStore.get(node.id) ?? '',
+        chunkTexts: chunks?.texts ?? [],
+        chunkVectors: chunks?.vectors ?? null,
+        docVector: docVectorStore.get(node.id) ?? null,
+      };
+    });
+  await saveDocsToCache(docs);
+
+  return saveSnapshot(name, corpusHash, exportData, positions, docHashes);
+}
+
+/**
+ * Restore a named snapshot by its IndexedDB ID.
+ * Resets the current corpus first, then hydrates from the snapshot data.
+ */
+export async function restoreSnapshotById(id: number): Promise<boolean> {
+  try {
+    const rec = await loadSnapshot(id);
+    if (!rec) return false;
+
+    // Import resetCorpus dynamically to avoid circular dependency
+    const { resetCorpus } = await import('../pipeline/coordinator');
+    resetCorpus();
+
+    return await hydrateFromRecord(rec.exportData, rec.positions ?? {}, rec.corpusHash);
+  } catch (err) {
+    console.warn('[knowledge-nebula] snapshot restore failed', err);
+    return false;
+  }
+}
+

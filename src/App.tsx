@@ -6,13 +6,16 @@ import ProgressStrip from './ui/ProgressStrip';
 import Toolbar from './ui/Toolbar';
 import InsightsPanel from './ui/InsightsPanel';
 import SidePanel from './ui/SidePanel';
+import SnapshotDrawer from './ui/SnapshotDrawer';
 import Tooltip from './ui/Tooltip';
 import EdgePopover from './ui/EdgePopover';
 import SearchOverlay from './ui/SearchOverlay';
 import FilterBar from './ui/FilterBar';
 import SettingsPanel from './ui/SettingsPanel';
+import ChatPanel from './ui/ChatPanel';
 import { useGraphStore } from './store/graphStore';
 import { useUiStore } from './store/uiStore';
+import { useChatStore } from './store/chatStore';
 import { onLayoutSettled } from './layout/layoutBridge';
 import { positionBuffer } from './scene/positionBuffer';
 import { initPersistence, restoreSession } from './persistence/session';
@@ -107,6 +110,10 @@ export default function App() {
           ui.setSearchResults(null);
         } else if (ui.settingsOpen) {
           ui.setSettingsOpen(false);
+        } else if (ui.snapshotsOpen) {
+          ui.setSnapshotsOpen(false);
+        } else if (useChatStore.getState().isOpen) {
+          useChatStore.getState().setIsOpen(false);
         } else if (ui.insightsOpen) {
           ui.setInsightsOpen(false);
           ui.setSearchResults(null); // drop any section highlight with it
@@ -139,6 +146,8 @@ export default function App() {
       <EdgePopover />
       <SearchOverlay />
       <SettingsPanel />
+      <SnapshotDrawer />
+      <ChatPanel />
     </div>
   );
 }
