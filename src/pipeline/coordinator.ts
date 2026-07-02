@@ -33,6 +33,7 @@ import type {
   FileType,
   IngestFile,
   LexicalDocInput,
+  LinkRef,
   PoolResponse,
 } from '../model/types';
 import { routeFile } from '../ingest/fileRouter';
@@ -298,9 +299,9 @@ async function runIngest(files: IngestFile[]): Promise<void> {
     const parseTasks = misses.map(async (p) => {
       store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'parsing' });
       let done: ParseDone;
-      // pdf.js extracts link URLs from the annotation layer; the worker's
+      // pdf.js extracts labelled links from the annotation layer; the worker's
       // 'analyze' path can't (it only sees text), so carry them across here.
-      let pdfLinks: string[] = [];
+      let pdfLinks: LinkRef[] = [];
       if (p.fileType === 'pdf') {
         const pdf = await parsePdf(p.file.bytes, p.file.name);
         pdfLinks = pdf.links;
@@ -348,13 +349,11 @@ async function runIngest(files: IngestFile[]): Promise<void> {
         totalTerms: doc.totalTerms,
         fileName: p.file.name,
       });
-      mdLinkTargetsStore.set(p.id, p.fileType === 'pdf' ? pdfLinks : doc.mdLinkTargets);
-      // PDFs have no anchor text (annotation URLs only) — label defaults to the
-      // URL itself in the reader; other types carry real labels from the parser.
-      docLinksStore.set(
+      mdLinkTargetsStore.set(
         p.id,
-        p.fileType === 'pdf' ? pdfLinks.map((url) => ({ text: '', url })) : doc.docLinks,
+        p.fileType === 'pdf' ? pdfLinks.map((l) => l.url) : doc.mdLinkTargets,
       );
+      docLinksStore.set(p.id, p.fileType === 'pdf' ? pdfLinks : doc.docLinks);
       const node: DocNode = {
         id: p.id,
         kind: 'document',

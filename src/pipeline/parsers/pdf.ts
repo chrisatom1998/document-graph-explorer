@@ -10,8 +10,9 @@
  */
 
 import * as pdfjs from 'pdfjs-dist';
-import type { NodeStatus } from '../../model/types';
+import type { LinkRef, NodeStatus } from '../../model/types';
 import { cleanFilename } from './txt';
+import { labelForRect, type PdfTextSpan } from './pdfLinkLabels';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -23,8 +24,9 @@ export interface PdfParseResult {
   text: string;
   status: NodeStatus;
   warning?: string;
-  /** URLs from the PDF's link annotations (the clickable "click here" layer). */
-  links: string[];
+  /** Links from the PDF's annotation layer, labelled with the text under each
+   * link's rectangle (empty text when nothing matched). */
+  links: LinkRef[];
 }
 
 /** TextItem | TextMarkedContent — the root package doesn't re-export item types. */
@@ -120,7 +122,8 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
     }
 
     const pageTexts: string[] = [];
-    const linkSet = new Set<string>();
+    // url -> label; first non-empty label wins for a URL linked multiple times
+    const linkLabels = new Map<string, string>();
     let failedPages = 0;
     for (let pageNo = 1; pageNo <= doc.numPages; pageNo += 1) {
       try {
@@ -128,12 +131,25 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
         const content = await page.getTextContent();
         pageTexts.push(extractPageText(content.items));
         // Link annotations carry the URL that the visible text ("click here")
-        // never contains — extract them so the links stay reachable.
+        // never contains — extract them, and recover each link's label from
+        // the text items under its rectangle (same page user-space coords).
         try {
+          const spans = content.items.filter(
+            (it): it is PdfTextSpan & (typeof content.items)[number] => 'str' in it,
+          );
           for (const a of await page.getAnnotations()) {
-            const annot = a as { subtype?: unknown; url?: unknown };
-            if (annot.subtype === 'Link' && typeof annot.url === 'string' && annot.url) {
-              linkSet.add(annot.url);
+            const annot = a as { subtype?: unknown; url?: unknown; rect?: unknown };
+            if (annot.subtype !== 'Link' || typeof annot.url !== 'string' || !annot.url) {
+              continue;
+            }
+            const rect = annot.rect;
+            const label =
+              Array.isArray(rect) && rect.every((v) => typeof v === 'number')
+                ? labelForRect(spans, rect as number[])
+                : '';
+            const existing = linkLabels.get(annot.url);
+            if (existing === undefined || (existing === '' && label !== '')) {
+              linkLabels.set(annot.url, label);
             }
           }
         } catch {
@@ -145,7 +161,9 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
         pageTexts.push('');
       }
     }
-    const links = [...linkSet].slice(0, 500);
+    const links: LinkRef[] = [...linkLabels]
+      .slice(0, 500)
+      .map(([url, text]) => ({ text, url }));
 
     let text = stripRepeatedLines(pageTexts).join('\n');
     text = text.replace(/-\n/g, ''); // join hyphenated line breaks

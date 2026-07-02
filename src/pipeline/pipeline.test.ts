@@ -14,6 +14,7 @@ import { semanticEdges } from './similarity';
 import { DUP_SIM_THRESHOLD, SIM_THRESHOLD, SIM_TOP_K } from '../config';
 import { parseMarkdown } from './parsers/markdown';
 import { parseHtml } from './parsers/html';
+import { labelForRect, type PdfTextSpan } from './parsers/pdfLinkLabels';
 
 // ---------------------------------------------------------------------------
 // tokenize
@@ -100,6 +101,63 @@ describe('parseHtml', () => {
     // the visible text keeps the anchor labels, not the URLs
     expect(parsed.text).toContain('setup page');
     expect(parsed.text).not.toContain('https://example.com/setup');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// pdf link labels — text-under-rect geometry (pure; pdf.js itself untestable here)
+// ---------------------------------------------------------------------------
+describe('labelForRect', () => {
+  // baseline (tx, ty) at the given point; width in the same user-space units
+  const span = (str: string, tx: number, ty: number, width: number): PdfTextSpan => ({
+    str,
+    transform: [10, 0, 0, 10, tx, ty],
+    width,
+  });
+
+  it('collects the spans whose baseline and extent fall inside the rect', () => {
+    const spans = [
+      span('Before', 0, 100, 30),
+      span('click', 40, 100, 25),
+      span('here', 70, 100, 20),
+      span('after.', 95, 100, 30),
+    ];
+    // rect covers "click here" only: x 38..92, y 96..110 (baseline 100 inside)
+    expect(labelForRect(spans, [38, 96, 92, 110])).toBe('click here');
+  });
+
+  it('excludes spans on other lines (baseline outside the rect vertically)', () => {
+    const spans = [span('link text', 40, 100, 40), span('next line', 40, 80, 40)];
+    expect(labelForRect(spans, [38, 96, 92, 110])).toBe('link text');
+  });
+
+  it('takes a whole long span when the link covers most of the rect within it', () => {
+    // one long item; the link rect is a small region inside it — glyph-level
+    // splitting isn't possible, so the whole item is better than nothing
+    const spans = [span('See the deployment guide for details', 0, 100, 200)];
+    expect(labelForRect(spans, [60, 96, 120, 110])).toBe(
+      'See the deployment guide for details',
+    );
+  });
+
+  it('rejects spans with <50% horizontal overlap when the rect is wide', () => {
+    // rect 0..100; span 90..150 overlaps only 10 of its 60 width
+    const spans = [span('mostly outside', 90, 100, 60)];
+    expect(labelForRect(spans, [0, 96, 100, 110])).toBe('');
+  });
+
+  it('handles flipped rect corner order and empty inputs', () => {
+    const spans = [span('ok', 10, 50, 10)];
+    expect(labelForRect(spans, [25, 60, 5, 45])).toBe('ok'); // corners swapped
+    expect(labelForRect([], [0, 0, 100, 100])).toBe('');
+    expect(labelForRect(spans, [0, 0])).toBe(''); // malformed rect
+  });
+
+  it('caps very long labels with an ellipsis', () => {
+    const long = 'word '.repeat(60).trim();
+    const label = labelForRect([span(long, 0, 100, 500)], [0, 96, 500, 110]);
+    expect(label.length).toBeLessThanOrEqual(140);
+    expect(label.endsWith('…')).toBe(true);
   });
 });
 
