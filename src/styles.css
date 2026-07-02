@@ -814,6 +814,29 @@ input {
   font-size: 11px;
   color: var(--text-faint);
 }
+
+/* --- Streaming indicator --- */
+
+.doc-ai__result.is-streaming {
+  border-left: 2px solid var(--accent-strong);
+  padding-left: 10px;
+}
+
+.doc-ai__streaming-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-strong);
+  margin-left: 6px;
+  vertical-align: middle;
+  animation: kn-stream-pulse 1s ease-in-out infinite;
+}
+
+@keyframes kn-stream-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
 .doc-ai__link {
   background: none;
   border: none;

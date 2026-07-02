@@ -24,6 +24,11 @@ const CHUNK_CONTEXT_CHARS = 1500; // max chars per chunk in prompt
 const REQUEST_TIMEOUT_MS = 120_000; // streaming responses can run long
 const MAX_HISTORY_MESSAGES = 8; // prior turns fed back to Gemini for memory
 const SOURCE_SNIPPET_CHARS = 200; // citation preview length
+const MAX_STREAM_RETRIES = 3; // 429/503 backoff retries before the stream starts
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // ---------------------------------------------------------------------------
 // Cancellation: one in-flight chat request at a time
@@ -310,19 +315,26 @@ export async function sendChatMessage(question: string): Promise<void> {
       { role: 'user', parts: [{ text: prompt }] },
     ];
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Key travels as a header, not a query param: URLs leak into
-        // proxy/server logs and browser history; headers don't.
-        'x-goog-api-key': geminiKey,
-      },
-      body: JSON.stringify({ contents }),
-      signal: controller.signal,
-    });
+    // Transient failures (429 rate limit / 503 overload) retry with backoff
+    // BEFORE the stream starts. A stream that dies mid-body is never retried:
+    // re-running it would duplicate text the user has already seen. An abort
+    // during the backoff sleep surfaces on the next fetch as an AbortError.
+    let res: Response;
+    for (let attempt = 0; ; attempt++) {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Key travels as a header, not a query param: URLs leak into
+          // proxy/server logs and browser history; headers don't.
+          'x-goog-api-key': geminiKey,
+        },
+        body: JSON.stringify({ contents }),
+        signal: controller.signal,
+      });
+      if (res.ok) break;
 
-    if (!res.ok) {
+      const retryable = res.status === 429 || res.status === 503;
       let errMsg = `Gemini HTTP ${res.status}`;
       try {
         const errData = (await res.json()) as { error?: { message?: unknown } };
@@ -330,8 +342,14 @@ export async function sendChatMessage(question: string): Promise<void> {
           errMsg += `: ${errData.error.message.slice(0, 200)}`;
         }
       } catch { /* ignore */ }
-      useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}` });
-      return;
+      if (!retryable || attempt >= MAX_STREAM_RETRIES) {
+        useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}` });
+        return;
+      }
+      useChatStore.getState().updateMessage(assistantId, {
+        text: `Gemini is busy (${res.status}) — retrying…`,
+      });
+      await sleep(1000 * 2 ** attempt);
     }
 
     const reader = res.body?.getReader();
