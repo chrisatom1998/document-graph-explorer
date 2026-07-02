@@ -86,10 +86,12 @@ export default function SettingsPanel() {
   const phase = useGraphStore((s) => s.phase);
 
   const geminiKey = useSettingsStore((s) => s.geminiKey);
+  const rememberKey = useSettingsStore((s) => s.rememberGeminiKey);
   const geminiModel = useSettingsStore((s) => s.geminiModel);
   const enrichEnabled = useSettingsStore((s) => s.enrichEnabled);
   const includeEmbeddings = useSettingsStore((s) => s.includeEmbeddingsInExport);
   const setGeminiKey = useSettingsStore((s) => s.setGeminiKey);
+  const setRememberKey = useSettingsStore((s) => s.setRememberGeminiKey);
   const setGeminiModel = useSettingsStore((s) => s.setGeminiModel);
   const setEnrichEnabled = useSettingsStore((s) => s.setEnrichEnabled);
   const setIncludeEmbeddings = useSettingsStore((s) => s.setIncludeEmbeddingsInExport);
@@ -164,6 +166,20 @@ export default function SettingsPanel() {
               style={inputStyle}
             />
           </label>
+          <label style={checkboxRowStyle}>
+            <input
+              type="checkbox"
+              checked={rememberKey}
+              onChange={(e) => setRememberKey(e.target.checked)}
+            />
+            Remember key on this device
+          </label>
+          {!rememberKey && (
+            <p style={helpStyle}>
+              The key is kept in memory for this tab only and cleared from browser storage —
+              you&apos;ll need to paste it again next visit.
+            </p>
+          )}
           <label style={labelStyle}>
             Model
             <input

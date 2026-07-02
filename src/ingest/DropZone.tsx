@@ -13,9 +13,10 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { IGNORED_DIRS } from '../config';
+import { IGNORED_DIRS, MAX_INGEST_FILE_BYTES } from '../config';
 import type { IngestFile } from '../model/types';
 import { ingestFiles } from '../pipeline/coordinator';
+import { useGraphStore } from '../store/graphStore';
 import { routeFile } from './fileRouter';
 
 interface NamedFile {
@@ -95,10 +96,16 @@ function filesFromDataTransfer(dt: DataTransfer): Promise<NamedFile[]> {
 // IngestFile construction
 // ---------------------------------------------------------------------------
 
+const MAX_INGEST_MB = Math.round(MAX_INGEST_FILE_BYTES / (1024 * 1024));
+
 async function toIngestFiles(named: NamedFile[]): Promise<IngestFile[]> {
   const out: IngestFile[] = [];
   for (const { file, path } of named) {
     const fileType = routeFile(file.name);
+    if (fileType !== null && file.size > MAX_INGEST_FILE_BYTES) {
+      useGraphStore.getState().addIgnored(file.name, `too large (over ${MAX_INGEST_MB} MB)`);
+      continue;
+    }
     // Unsupported files are still forwarded (with empty bytes, so huge
     // binaries are never read) — the coordinator routes them by name into
     // the ignored tray.

@@ -16,11 +16,17 @@ import react from '@vitejs/plugin-react';
 function injectCsp(): Plugin {
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'wasm-unsafe-eval'", // onnxruntime WASM
+    // 'wasm-unsafe-eval' + blob: are both for onnxruntime: it compiles WASM
+    // and boots its runtime via importScripts on a blob: URL — without blob:
+    // every embedding fails ("importScripts … failed to load"). blob: script
+    // URLs can only be minted by code that is ALREADY running same-origin JS,
+    // so this doesn't widen the injection surface.
+    "script-src 'self' 'wasm-unsafe-eval' blob:",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
-    "connect-src 'self' data: blob: https://generativelanguage.googleapis.com",
+    // no data: here — nothing legitimate fetches data: URLs, so don't allow it
+    "connect-src 'self' blob: https://generativelanguage.googleapis.com",
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
@@ -38,10 +44,24 @@ function injectCsp(): Plugin {
   };
 }
 
+/**
+ * Anti-clickjacking + misc hardening. `frame-ancestors` cannot be expressed
+ * in a <meta> CSP, so framing is denied via headers instead. Vite serves
+ * these in dev/preview; PRODUCTION HOSTING MUST SEND THEM TOO (plus ideally
+ * the CSP above as a header) — copy them into your host's header config.
+ */
+const SECURITY_HEADERS = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'no-referrer',
+};
+
 // NOTE: no COOP/COEP headers on purpose — we use transferable Float32Arrays
 // (not SharedArrayBuffer), so cross-origin isolation buys nothing here.
 export default defineConfig({
   plugins: [react(), injectCsp()],
+  server: { headers: SECURITY_HEADERS },
+  preview: { headers: SECURITY_HEADERS },
   worker: { format: 'es' },
   build: { target: 'esnext' },
   optimizeDeps: {

@@ -117,7 +117,7 @@ export default function ChatPanel() {
 
   const handleSourceClick = (docId: string) => {
     setSelected(docId);
-    sendCamera('focus', [docId]);
+    sendCamera('frameNode', [docId]);
   };
 
   if (!hasNodes) return null;

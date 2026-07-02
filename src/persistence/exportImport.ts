@@ -22,6 +22,7 @@ import { resetCorpus } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import { docVectorStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
+import { sanitizeGraphExport } from './validateImport';
 
 // ---------------------------------------------------------------------------
 // Float32 <-> base64
@@ -111,22 +112,6 @@ export function exportScenePNG(): void {
 // Import
 // ---------------------------------------------------------------------------
 
-function validateGraphExport(data: unknown): GraphExport {
-  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
-    throw new Error('Import failed: file does not contain a JSON object.');
-  }
-  const g = data as Record<string, unknown>;
-  if (g.version !== 1) {
-    throw new Error(
-      `Import failed: unsupported export version (${String(g.version ?? 'missing')}) — expected 1.`,
-    );
-  }
-  if (!Array.isArray(g.nodes) || !Array.isArray(g.edges)) {
-    throw new Error('Import failed: "nodes" and "edges" arrays are missing or malformed.');
-  }
-  return data as GraphExport;
-}
-
 /** Random point on a loose spherical shell — fly-in origin for imported nodes. */
 function randomShellPoint(): [number, number, number] {
   const u = Math.random() * 2 - 1; // cos(theta), uniform on sphere
@@ -153,13 +138,11 @@ export async function importGraphJSONFile(file: File): Promise<void> {
   } catch {
     throw new Error('Import failed: file is not valid JSON.');
   }
-  const data = validateGraphExport(parsed);
-
-  const nodes = data.nodes.filter((n) => n && typeof n.id === 'string');
-  if (nodes.length === 0) throw new Error('Import failed: export contains no nodes.');
-  const edges = data.edges.filter(
-    (e) => e && typeof e.source === 'string' && typeof e.target === 'string',
-  );
+  // Untrusted input: sanitizeGraphExport type-checks and clamps every field
+  // before anything reaches React, the layout worker, or IndexedDB.
+  const data: GraphExport = sanitizeGraphExport(parsed);
+  const nodes = data.nodes;
+  const edges = data.edges;
 
   // Clean slate first (pipeline owns worker/store/layout teardown).
   resetCorpus();
