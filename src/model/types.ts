@@ -20,6 +20,8 @@ export interface DocNode {
   degree: number;
   status: NodeStatus;
   warning?: string; // e.g. "encrypted PDF"
+  /** File mtime (epoch ms) captured at first ingest; absent for older cached docs. */
+  lastModified?: number;
 }
 
 export interface Edge {
@@ -67,6 +69,8 @@ export interface IngestFile {
   path?: string; // relative path when a folder was dropped
   fileType: FileType;
   bytes: ArrayBuffer;
+  /** File.lastModified (epoch ms); absent for sources without an mtime (demo fetch). */
+  lastModified?: number;
 }
 
 export type FileStage =

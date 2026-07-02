@@ -93,6 +93,13 @@ function sanitizeNode(raw: unknown): DocNode | null {
   if (folderKey !== null) node.folderKey = folderKey;
   if (summary !== null) node.summary = summary;
   if (warning !== null) node.warning = warning;
+  if (
+    typeof n.lastModified === 'number' &&
+    Number.isFinite(n.lastModified) &&
+    n.lastModified > 0
+  ) {
+    node.lastModified = n.lastModified;
+  }
   return node;
 }
 

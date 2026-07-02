@@ -5,12 +5,21 @@
 
 import { create } from 'zustand';
 
+/** A single citation: the best-scoring chunk retrieved from one document. */
+export interface ChatSource {
+  docId: string;
+  /** First ~200 chars of the best-matching chunk, for the tooltip preview. */
+  snippet: string;
+  /** Cosine similarity of that chunk to the question. */
+  score: number;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   text: string;
-  /** Doc IDs used as context for this answer (shown as source chips). */
-  sources?: string[];
+  /** Chunk-level citations used as context for this answer (source chips). */
+  sources?: ChatSource[];
   timestamp: number;
 }
 

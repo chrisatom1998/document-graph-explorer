@@ -23,6 +23,12 @@ interface GraphState {
   restoredFromCache: boolean;
   /** Near-duplicate pairs from the last semantic pass (spec: insights panel). */
   duplicatePairs: DuplicatePair[];
+  /**
+   * Keyword-derived cluster names, recomputed locally after every cluster
+   * pass — no API needed. Display fallback order everywhere:
+   * clusterNames[c] (Gemini) ?? localClusterNames[c] ?? `Cluster ${c}`.
+   */
+  localClusterNames: Record<number, string>;
 
   addNodes: (nodes: DocNode[]) => void;
   patchNodes: (patches: Map<string, Partial<DocNode>>) => void;
@@ -37,6 +43,7 @@ interface GraphState {
   setCorpusHash: (h: string | null) => void;
   setRestoredFromCache: (v: boolean) => void;
   setDuplicatePairs: (pairs: DuplicatePair[]) => void;
+  setLocalClusterNames: (names: Record<number, string>) => void;
   clearIngestTray: () => void;
   reset: () => void;
 }
@@ -55,6 +62,7 @@ export const useGraphStore = create<GraphState>((set) => ({
   corpusHash: null,
   restoredFromCache: false,
   duplicatePairs: [],
+  localClusterNames: {},
 
   addNodes: (incoming) =>
     set((s) => {
@@ -125,6 +133,7 @@ export const useGraphStore = create<GraphState>((set) => ({
   setCorpusHash: (corpusHash) => set({ corpusHash }),
   setRestoredFromCache: (restoredFromCache) => set({ restoredFromCache }),
   setDuplicatePairs: (duplicatePairs) => set({ duplicatePairs }),
+  setLocalClusterNames: (localClusterNames) => set({ localClusterNames }),
   clearIngestTray: () => set({ fileStatuses: {}, ignoredFiles: [] }),
   reset: () =>
     set({
@@ -141,6 +150,7 @@ export const useGraphStore = create<GraphState>((set) => ({
       corpusHash: null,
       restoredFromCache: false,
       duplicatePairs: [],
+      localClusterNames: {},
     }),
 }));
 

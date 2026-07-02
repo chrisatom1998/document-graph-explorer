@@ -11,6 +11,9 @@
  *   graphStore.duplicatePairs.
  * - Bridges: highest betweenness-centrality documents — the docs shortest
  *   paths funnel through, i.e. the ones connecting otherwise-separate domains.
+ * - Stale docs: documents whose file mtime is older than a threshold —
+ *   candidates for review or archive. Docs with no recorded mtime are
+ *   excluded: unknown age is not evidence of staleness.
  *
  * PURE functions over nodes/edges — unit-testable, no store imports. Topic
  * hub nodes and 'topic' edges are excluded everywhere: they are derived
@@ -25,7 +28,11 @@ export interface BridgeDoc {
   score: number;
 }
 
-function isDocEdge(e: Edge): boolean {
+/**
+ * The "counts as a real document-to-document connection" policy, shared with
+ * pathfinding.ts so route-finding and insights can never disagree on it.
+ */
+export function isDocEdge(e: Edge): boolean {
   return e.kind !== 'topic';
 }
 
@@ -122,4 +129,35 @@ export function computeBridges(
   }
   out.sort((x, y) => y.score - x.score);
   return out.slice(0, opts.topN);
+}
+
+export interface StaleDoc {
+  id: string;
+  /** File mtime (epoch ms) — guaranteed defined here, unlike DocNode's. */
+  lastModified: number;
+}
+
+const DAY_MS = 86_400_000;
+
+/**
+ * Document nodes whose mtime is strictly more than thresholdDays before
+ * nowMs, oldest first. Nodes without a lastModified never qualify — the
+ * field is absent for docs cached before it existed and for sources with
+ * no mtime, and unknown age is not stale.
+ */
+export function computeStaleDocs(
+  nodes: DocNode[],
+  nowMs: number,
+  thresholdDays: number,
+): StaleDoc[] {
+  const maxAge = thresholdDays * DAY_MS;
+  const out: StaleDoc[] = [];
+  for (const n of nodes) {
+    if (n.kind !== 'document' || n.lastModified === undefined) continue;
+    if (nowMs - n.lastModified > maxAge) {
+      out.push({ id: n.id, lastModified: n.lastModified });
+    }
+  }
+  out.sort((a, b) => a.lastModified - b.lastModified);
+  return out;
 }

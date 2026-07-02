@@ -1,8 +1,9 @@
 /**
  * Corpus insights drawer (left side): orphaned docs, possible duplicates,
- * bridge documents. Each row focuses the node; each section has a highlight
- * toggle that feeds the ids into the scene's existing search-emphasis dimming
- * (uiStore.searchResults), so "show me these in the graph" costs nothing new.
+ * bridge documents, stale documents. Each row focuses the node; each section
+ * has a highlight toggle that feeds the ids into the scene's existing
+ * search-emphasis dimming (uiStore.searchResults), so "show me these in the
+ * graph" costs nothing new.
  */
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -11,12 +12,16 @@ import {
   BRIDGE_MIN_SCORE,
   BRIDGE_TOP_N,
   DUP_SIM_THRESHOLD,
+  STALE_DOC_DAYS,
 } from '../config';
-import { computeBridges, computeOrphans } from '../graph/insights';
+import { computeBridges, computeOrphans, computeStaleDocs } from '../graph/insights';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { timeAgo } from '../util/relativeTime';
 
-type SectionKey = 'orphans' | 'duplicates' | 'bridges';
+type SectionKey = 'orphans' | 'duplicates' | 'bridges' | 'stale';
+
+const STALE_MONTHS = Math.round(STALE_DOC_DAYS / 30);
 
 export default function InsightsPanel() {
   const open = useUiStore((s) => s.insightsOpen);
@@ -49,6 +54,7 @@ export default function InsightsPanel() {
         minScore: BRIDGE_MIN_SCORE,
         maxPivots: BRIDGE_MAX_PIVOTS,
       }),
+      stale: computeStaleDocs(nodes, Date.now(), STALE_DOC_DAYS),
     };
   }, [open, nodes, edges, duplicatePairs]);
 
@@ -215,6 +221,38 @@ export default function InsightsPanel() {
                       />
                     </div>
                   </div>
+                ))}
+              </>
+            ),
+          )}
+
+          <hr className="hairline" />
+
+          {section(
+            'stale',
+            'Stale documents',
+            insights.stale.length,
+            insights.stale.map((d) => d.id),
+            insights.stale.length === 0 ? (
+              <p className="side-panel__summary is-fallback">
+                None — everything has been touched recently.
+              </p>
+            ) : (
+              <>
+                <p className="insights__hint">
+                  Not modified in over {STALE_MONTHS} months — candidates for
+                  review or archive.
+                </p>
+                {insights.stale.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    className="insights__row"
+                    onClick={() => focusNode(d.id)}
+                  >
+                    {titleOf(d.id)}
+                    <span className="insights__pair-sim">{timeAgo(d.lastModified)}</span>
+                  </button>
                 ))}
               </>
             ),

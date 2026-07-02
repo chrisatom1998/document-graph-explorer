@@ -151,6 +151,16 @@ function IconGear() {
   );
 }
 
+function IconPath() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+      <circle cx="4" cy="14" r="2.2" />
+      <circle cx="14" cy="4" r="2.2" />
+      <path d="M5.6 12.4 L8.5 9.5 M9.5 8.5 L12.4 5.6" strokeDasharray="0.1 2.6" />
+    </svg>
+  );
+}
+
 function IconBulb() {
   return (
     <svg
@@ -286,6 +296,9 @@ export default function Toolbar() {
   const setClusterCollapsed = useUiStore((s) => s.setClusterCollapsed);
   const insightsOpen = useUiStore((s) => s.insightsOpen);
   const setInsightsOpen = useUiStore((s) => s.setInsightsOpen);
+  const pathMode = useUiStore((s) => s.pathMode);
+  const setPathMode = useUiStore((s) => s.setPathMode);
+  const setSearchResults = useUiStore((s) => s.setSearchResults);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const setSnapshotsOpen = useUiStore((s) => s.setSnapshotsOpen);
   const sendCamera = useUiStore((s) => s.sendCamera);
@@ -439,6 +452,21 @@ export default function Toolbar() {
         onClick={() => setClusterCollapsed(!clusterCollapsed)}
       >
         <IconCollapse />
+      </button>
+
+      <button
+        type="button"
+        className={`btn-icon${pathMode ? ' is-active' : ''}`}
+        title={pathMode ? 'Exit path mode' : 'How are these connected? (pick two nodes)'}
+        onClick={() => {
+          // Both directions clear the shared highlight channel: exiting drops
+          // the path highlight, entering drops any search/insights highlight
+          // so the first endpoint pick doesn't silently clobber it later.
+          setSearchResults(null);
+          setPathMode(!pathMode);
+        }}
+      >
+        <IconPath />
       </button>
 
       <button

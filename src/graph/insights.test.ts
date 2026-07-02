@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { DocNode, Edge } from '../model/types';
-import { computeBridges, computeOrphans } from './insights';
+import { computeBridges, computeOrphans, computeStaleDocs } from './insights';
 
-function mkNode(id: string, kind: DocNode['kind'] = 'document'): DocNode {
+function mkNode(
+  id: string,
+  kind: DocNode['kind'] = 'document',
+  lastModified?: number,
+): DocNode {
   return {
     id,
     kind,
@@ -15,6 +19,7 @@ function mkNode(id: string, kind: DocNode['kind'] = 'document'): DocNode {
     cluster: 0,
     degree: 0,
     status: 'ok',
+    lastModified,
   };
 }
 
@@ -105,5 +110,48 @@ describe('computeBridges', () => {
     expect(bridges.length).toBeGreaterThan(0);
     expect(['c', 'm', 'd']).toContain(bridges[0].id);
     expect(bridges.map((b) => b.id).slice(0, 3)).toContain('m');
+  });
+});
+
+describe('computeStaleDocs', () => {
+  const DAY = 86_400_000;
+  const NOW = 1_750_000_000_000;
+  const THRESHOLD = 180;
+
+  it('flags docs strictly older than the threshold, not those exactly at it', () => {
+    const nodes = [
+      mkNode('exact', 'document', NOW - THRESHOLD * DAY), // exactly 180 days old
+      mkNode('over', 'document', NOW - THRESHOLD * DAY - 1), // one ms past
+      mkNode('fresh', 'document', NOW - DAY),
+    ];
+    const stale = computeStaleDocs(nodes, NOW, THRESHOLD);
+    expect(stale.map((d) => d.id)).toEqual(['over']);
+    expect(stale[0].lastModified).toBe(NOW - THRESHOLD * DAY - 1);
+  });
+
+  it('sorts oldest first', () => {
+    const nodes = [
+      mkNode('middle', 'document', NOW - 200 * DAY),
+      mkNode('oldest', 'document', NOW - 400 * DAY),
+      mkNode('newest-stale', 'document', NOW - 181 * DAY),
+    ];
+    expect(computeStaleDocs(nodes, NOW, THRESHOLD).map((d) => d.id)).toEqual([
+      'oldest',
+      'middle',
+      'newest-stale',
+    ]);
+  });
+
+  it('excludes docs without a lastModified — unknown age is not stale', () => {
+    const nodes = [mkNode('unknown'), mkNode('old', 'document', NOW - 365 * DAY)];
+    expect(computeStaleDocs(nodes, NOW, THRESHOLD).map((d) => d.id)).toEqual(['old']);
+  });
+
+  it('excludes topic nodes even when they carry an old timestamp', () => {
+    const nodes = [
+      mkNode('t', 'topic', NOW - 365 * DAY),
+      mkNode('doc', 'document', NOW - 365 * DAY),
+    ];
+    expect(computeStaleDocs(nodes, NOW, THRESHOLD).map((d) => d.id)).toEqual(['doc']);
   });
 });
