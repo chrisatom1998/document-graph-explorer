@@ -1,13 +1,6 @@
-/**
- * Cache facade over IndexedDB — the pipeline's persistence contract.
- * Every function degrades gracefully: private-browsing / quota / blocked
- * failures log ONE warning and behave as a cache miss; the app runs fully
- * without persistence (spec §11: works with zero network AND zero storage).
- */
-
 import { EMBED_DIMS } from '../config';
 import type { DocNode, GraphExport } from '../model/types';
-import { getDb, type DocumentRecord, type EmbeddingRecord } from './db';
+import { getDb, type DocumentRecord, type EmbeddingRecord, type SnapshotRecord } from './db';
 
 export interface CachedDoc {
   node: DocNode;
@@ -15,6 +8,14 @@ export interface CachedDoc {
   chunkTexts: string[];
   chunkVectors: Float32Array | null;
   docVector: Float32Array | null;
+}
+
+/** Lightweight snapshot summary for listing (no heavy exportData/positions). */
+export interface SnapshotSummary {
+  id: number;
+  name: string;
+  savedAt: number;
+  nodeCount: number;
 }
 
 let warnedOnce = false;
@@ -184,14 +185,90 @@ export async function setSetting<T>(key: string, value: T): Promise<void> {
 export async function clearAllCaches(): Promise<boolean> {
   try {
     const db = await getDb();
-    const tx = db.transaction(['documents', 'embeddings', 'graphs', 'settings'], 'readwrite');
+    const tx = db.transaction(
+      ['documents', 'embeddings', 'graphs', 'settings', 'snapshots'],
+      'readwrite',
+    );
     await Promise.all([
       tx.objectStore('documents').clear(),
       tx.objectStore('embeddings').clear(),
       tx.objectStore('graphs').clear(),
       tx.objectStore('settings').clear(),
+      tx.objectStore('snapshots').clear(),
       tx.done,
     ]);
+    return true;
+  } catch (err) {
+    cacheUnavailable(err);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Snapshots
+// ---------------------------------------------------------------------------
+
+/** Save a named snapshot of the current graph state. */
+export async function saveSnapshot(
+  name: string,
+  corpusHash: string,
+  exportData: GraphExport,
+  positions: Record<string, [number, number, number]>,
+  docHashes: string[],
+): Promise<number | undefined> {
+  try {
+    const db = await getDb();
+    const rec: SnapshotRecord = {
+      name,
+      savedAt: Date.now(),
+      corpusHash,
+      docHashes,
+      exportData,
+      positions,
+    };
+    const id = await db.add('snapshots', rec);
+    return id;
+  } catch (err) {
+    cacheUnavailable(err);
+    return undefined;
+  }
+}
+
+/** List all snapshots, most recent first (lightweight — no exportData). */
+export async function listSnapshots(): Promise<SnapshotSummary[]> {
+  try {
+    const db = await getDb();
+    const all = await db.getAll('snapshots');
+    return all
+      .map((r) => ({
+        id: r.id!,
+        name: r.name,
+        savedAt: r.savedAt,
+        nodeCount: r.exportData?.nodes?.length ?? 0,
+      }))
+      .sort((a, b) => b.savedAt - a.savedAt);
+  } catch (err) {
+    cacheUnavailable(err);
+    return [];
+  }
+}
+
+/** Load a full snapshot record by ID. */
+export async function loadSnapshot(id: number): Promise<SnapshotRecord | undefined> {
+  try {
+    const db = await getDb();
+    return await db.get('snapshots', id);
+  } catch (err) {
+    cacheUnavailable(err);
+    return undefined;
+  }
+}
+
+/** Delete a snapshot by ID. */
+export async function deleteSnapshot(id: number): Promise<boolean> {
+  try {
+    const db = await getDb();
+    await db.delete('snapshots', id);
     return true;
   } catch (err) {
     cacheUnavailable(err);

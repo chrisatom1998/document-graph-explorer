@@ -1,6 +1,8 @@
 import {
+  useCallback,
   useLayoutEffect,
   useRef,
+  useState,
   type ChangeEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
@@ -9,6 +11,7 @@ import { useUiStore } from '../store/uiStore';
 import { layoutSetDims } from '../layout/layoutBridge';
 import { openFilePicker } from '../ingest/DropZone';
 import { exportGraphJSON, exportScenePNG, importGraphJSONFile } from '../persistence/exportImport';
+import { saveCurrentSnapshot } from '../persistence/session';
 
 /* ---------------------------------------------------------------------- */
 /* Inline icon set — no icon library per project rules. Each is a plain   */
@@ -151,6 +154,40 @@ function IconBulb() {
   );
 }
 
+function IconSave() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4.5 2.5h7.5l3.5 3.5v8.5a1 1 0 0 1-1 1h-10a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1z" />
+      <rect x="6" y="2.5" width="5" height="4" rx="0.5" />
+      <rect x="5.5" y="10" width="7" height="4" rx="0.5" />
+    </svg>
+  );
+}
+
+function IconHistory() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2.5 9a6.5 6.5 0 1 1 1.2 3.8" />
+      <polyline points="2 5.5 2.5 9 6 8.5" />
+      <polyline points="9 5.5 9 9.5 12 11" />
+    </svg>
+  );
+}
+
 function IconGrip() {
   return (
     <svg viewBox="0 0 18 18" fill="currentColor" stroke="none">
@@ -214,8 +251,19 @@ function placeToolbar(el: HTMLElement, x: number, y: number): { x: number; y: nu
   return { x: cx, y: cy };
 }
 
+/** Default snapshot name: "Snapshot — Jul 2, 2026 5:50 AM" */
+function defaultSnapshotName(): string {
+  const d = new Date();
+  return `Snapshot — ${d.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })} ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+}
+
 export default function Toolbar() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
+  const phase = useGraphStore((s) => s.phase);
   const dims = useUiStore((s) => s.dims);
   const topicNodesEnabled = useUiStore((s) => s.topicNodesEnabled);
   const setSearchOpen = useUiStore((s) => s.setSearchOpen);
@@ -224,7 +272,15 @@ export default function Toolbar() {
   const insightsOpen = useUiStore((s) => s.insightsOpen);
   const setInsightsOpen = useUiStore((s) => s.setInsightsOpen);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
+  const setSnapshotsOpen = useUiStore((s) => s.setSnapshotsOpen);
   const sendCamera = useUiStore((s) => s.sendCamera);
+
+  // Save snapshot state
+  const [savePromptOpen, setSavePromptOpen] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [saveFlash, setSaveFlash] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const saveInputRef = useRef<HTMLInputElement | null>(null);
 
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -245,6 +301,30 @@ export default function Toolbar() {
     const saved = loadToolbarPos();
     if (saved) lastPos.current = placeToolbar(el, saved.x, saved.y);
   }, [hasNodes]);
+
+  const openSavePrompt = useCallback(() => {
+    setSaveName(defaultSnapshotName());
+    setSavePromptOpen(true);
+    // Focus the input after it renders
+    requestAnimationFrame(() => saveInputRef.current?.select());
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    const name = saveName.trim() || defaultSnapshotName();
+    setSaving(true);
+    try {
+      const id = await saveCurrentSnapshot(name);
+      if (id !== undefined) {
+        setSaveFlash(true);
+        setTimeout(() => setSaveFlash(false), 1200);
+      }
+    } catch (err) {
+      console.warn('[knowledge-nebula] snapshot save failed', err);
+    } finally {
+      setSaving(false);
+      setSavePromptOpen(false);
+    }
+  }, [saveName]);
 
   if (!hasNodes) return null;
 
@@ -336,6 +416,62 @@ export default function Toolbar() {
         onClick={() => setInsightsOpen(!insightsOpen)}
       >
         <IconBulb />
+      </button>
+
+      <div className="toolbar__divider" />
+
+      {/* Save snapshot */}
+      <div className="toolbar__save-wrap">
+        <button
+          type="button"
+          className={`btn-icon${saveFlash ? ' save-flash' : ''}`}
+          title="Save snapshot"
+          disabled={phase !== 'ready' || saving}
+          onClick={() => {
+            if (savePromptOpen) {
+              setSavePromptOpen(false);
+            } else {
+              openSavePrompt();
+            }
+          }}
+        >
+          <IconSave />
+        </button>
+        {savePromptOpen && (
+          <div className="save-prompt glass-panel">
+            <input
+              ref={saveInputRef}
+              className="save-prompt__input"
+              type="text"
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSave();
+                if (e.key === 'Escape') setSavePromptOpen(false);
+              }}
+              placeholder="Snapshot name"
+              autoComplete="off"
+            />
+            <button
+              type="button"
+              className="save-prompt__btn"
+              disabled={saving}
+              onClick={handleSave}
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Snapshots drawer */}
+      <button
+        type="button"
+        className="btn-icon"
+        title="Saved snapshots"
+        onClick={() => setSnapshotsOpen(true)}
+      >
+        <IconHistory />
       </button>
 
       <div className="toolbar__divider" />
