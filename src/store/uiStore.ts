@@ -41,6 +41,10 @@ interface UiState {
   insightsOpen: boolean;
   snapshotsOpen: boolean;
   toasts: Toast[];
+  /** "How are these connected?" mode: node clicks pick endpoints instead of selecting. */
+  pathMode: boolean;
+  /** 0–2 doc ids picked while pathMode is on; PathPanel computes the route at 2. */
+  pathEndpoints: string[];
 
   setHovered: (id: string | null) => void;
   setSelected: (id: string | null) => void;
@@ -59,6 +63,10 @@ interface UiState {
   setSnapshotsOpen: (v: boolean) => void;
   pushToast: (message: string, kind?: ToastKind) => void;
   dismissToast: (id: number) => void;
+  /** Toggling (either way) clears any picked endpoints. */
+  setPathMode: (v: boolean) => void;
+  /** Dedupes; a third pick starts a new path from that node. */
+  addPathEndpoint: (id: string) => void;
 }
 
 let nextToastId = 1;
@@ -80,6 +88,8 @@ export const useUiStore = create<UiState>((set) => ({
   insightsOpen: false,
   snapshotsOpen: false,
   toasts: [],
+  pathMode: false,
+  pathEndpoints: [],
 
   setHovered: (hoveredId) => set({ hoveredId }),
   setSelected: (selectedId) =>
@@ -103,4 +113,11 @@ export const useUiStore = create<UiState>((set) => ({
   pushToast: (message, kind = 'error') =>
     set((s) => ({ toasts: [...s.toasts, { id: nextToastId++, message, kind }] })),
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+  setPathMode: (pathMode) => set({ pathMode, pathEndpoints: [] }),
+  addPathEndpoint: (id) =>
+    set((s) => {
+      if (s.pathEndpoints.includes(id)) return s;
+      if (s.pathEndpoints.length >= 2) return { pathEndpoints: [id] };
+      return { pathEndpoints: [...s.pathEndpoints, id] };
+    }),
 }));

@@ -30,6 +30,7 @@ function IconFunnel() {
 export default function FilterBar() {
   const nodes = useGraphStore((s) => s.nodes);
   const clusterNames = useGraphStore((s) => s.clusterNames);
+  const localClusterNames = useGraphStore((s) => s.localClusterNames);
   const filter = useUiStore((s) => s.filter);
   const setFilter = useUiStore((s) => s.setFilter);
 
@@ -120,14 +121,19 @@ export default function FilterBar() {
                     style={{ background: hexFor(c) }}
                     aria-hidden="true"
                   />
-                  {clusterNames[c] ?? `C${c}`} · {count}
+                  {clusterNames[c] ?? localClusterNames[c] ?? `C${c}`} · {count}
                 </span>
               ))}
             </div>
           )}
 
           <div className="filter-bar__group">
-            <span className="filter-bar__group-label">Min degree</span>
+            <span
+              className="filter-bar__group-label"
+              title="Only show documents with at least this many connections to other documents. Slide right to focus on the most interconnected nodes."
+            >
+              Connections ≥
+            </span>
             <div className="filter-bar__degree">
               <input
                 type="range"
@@ -135,6 +141,7 @@ export default function FilterBar() {
                 max={10}
                 step={1}
                 value={filter.minDegree}
+                title={`Showing nodes with ${filter.minDegree}+ connections`}
                 onChange={(e) => setFilter({ minDegree: Number(e.target.value) })}
               />
               <span className="filter-bar__degree-value">{filter.minDegree}</span>
@@ -142,7 +149,12 @@ export default function FilterBar() {
           </div>
 
           <div className="filter-bar__group">
-            <span className="filter-bar__group-label">Min edge weight</span>
+            <span
+              className="filter-bar__group-label"
+              title="Hide weak links between documents. Slide right to only keep the strongest, most meaningful connections — helps declutter dense graphs."
+            >
+              Link Strength ≥
+            </span>
             <div className="filter-bar__degree">
               <input
                 type="range"
@@ -150,9 +162,10 @@ export default function FilterBar() {
                 max={1}
                 step={0.05}
                 value={filter.minEdgeWeight}
+                title={`Hiding links weaker than ${Math.round(filter.minEdgeWeight * 100)}%`}
                 onChange={(e) => setFilter({ minEdgeWeight: Number(e.target.value) })}
               />
-              <span className="filter-bar__degree-value">{filter.minEdgeWeight.toFixed(2)}</span>
+              <span className="filter-bar__degree-value">{Math.round(filter.minEdgeWeight * 100)}%</span>
             </div>
           </div>
 

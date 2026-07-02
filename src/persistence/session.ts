@@ -15,6 +15,7 @@ import {
   onLayoutSettled,
 } from '../layout/layoutBridge';
 import type { DocNode, GraphExport } from '../model/types';
+import { computeLocalClusterNames } from '../graph/clusterNaming';
 import { getNodePosition } from '../scene/positionBuffer';
 import { useGraphStore } from '../store/graphStore';
 import { chunkStore, docVectorStore, mdLinkTargetsStore, textStore } from '../store/runtimeStores';
@@ -201,6 +202,8 @@ async function hydrateFromRecord(
   g.setEdges(exportData.edges);
   g.setClusterNames(exportData.clusterNames ?? {});
   g.patchNodes(new Map()); // no-op patch recomputes clusterCount (addNodes does not)
+  // No semantic pass runs on restore, so recompute the keyword-derived names here.
+  g.setLocalClusterNames(computeLocalClusterNames(exportData.nodes));
   if (corpusHash) g.setCorpusHash(corpusHash);
   g.setRestoredFromCache(true);
   suppressAutoSave = true;

@@ -720,6 +720,34 @@ input {
   font-family: var(--font-ui);
 }
 
+.side-panel__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.side-panel__open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid var(--border-glass);
+  border-radius: 999px;
+  padding: 3px 12px 3px 8px;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 160ms ease;
+  white-space: nowrap;
+}
+.side-panel__open-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(143, 123, 255, 0.08);
+}
+
 /* ---- "Ask AI" section (Gemini, per selected document) ------------------- */
 
 .doc-ai__actions {
@@ -1529,6 +1557,9 @@ input {
   text-transform: uppercase;
   color: var(--text-faint);
   margin-right: 2px;
+  cursor: help;
+  text-decoration: underline dotted rgba(255, 255, 255, 0.2);
+  text-underline-offset: 3px;
 }
 
 .filter-bar__degree {
@@ -2076,6 +2107,124 @@ input {
   white-space: pre-wrap;
 }
 
+/* Markdown rendering inside assistant bubbles (see ChatMarkdown.tsx). Kept
+   compact/small — these live inside a ~340px-wide floating panel. */
+.chat-md {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chat-md > :first-child {
+  margin-top: 0;
+}
+.chat-md > :last-child {
+  margin-bottom: 0;
+}
+.chat-md p {
+  margin: 0;
+}
+.chat-md-heading {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.chat-md strong {
+  font-weight: 700;
+}
+.chat-md em {
+  font-style: italic;
+}
+.chat-md del {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+.chat-md a {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+.chat-md a:hover {
+  color: var(--accent);
+}
+.chat-md code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-glass);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.chat-md-pre {
+  margin: 2px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(6, 8, 20, 0.55);
+  border: 1px solid var(--border-glass);
+  overflow-x: auto;
+}
+.chat-md-pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre;
+}
+.chat-md ul,
+.chat-md ol {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat-md li {
+  margin: 0;
+}
+.chat-md li > ul,
+.chat-md li > ol {
+  margin-top: 2px;
+}
+.chat-md blockquote {
+  margin: 0;
+  padding: 4px 10px;
+  border-left: 2px solid var(--accent);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 4px 4px 0;
+}
+.chat-md hr {
+  border: none;
+  border-top: 1px solid var(--border-glass);
+  margin: 4px 0;
+}
+.chat-md-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-glass);
+  border-radius: 6px;
+}
+.chat-md table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 11.5px;
+}
+.chat-md th,
+.chat-md td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border-glass);
+  text-align: left;
+  white-space: nowrap;
+}
+.chat-md thead th {
+  font-weight: 600;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+.chat-md tr:last-child td {
+  border-bottom: none;
+}
+
 .chat-sources {
   display: flex;
   flex-wrap: wrap;
@@ -2169,6 +2318,18 @@ input {
   color: var(--text-faint);
 }
 
+/* Send button doubles as a Stop control while a reply is streaming. */
+.chat-panel__send.is-stop {
+  background: rgba(255, 128, 128, 0.16);
+  color: var(--danger);
+}
+.chat-panel__send.is-stop:hover {
+  background: rgba(255, 128, 128, 0.28);
+}
+.chat-panel__send.is-stop:active {
+  transform: scale(0.95);
+}
+
 .chat-typing {
   display: flex;
   gap: 4px;
@@ -2201,5 +2362,131 @@ input {
     opacity: 1;
     transform: translateY(-3px);
   }
+}
+
+/* ==========================================================================
+   Path panel ("How are these connected?") — top-center, clears the toolbar.
+   Endpoints are picked by clicking nodes in the scene (Toolbar.tsx toggles
+   pathMode, the 3D click handler appends to uiStore.pathEndpoints); this
+   panel just renders the outcome.
+   ========================================================================== */
+
+.path-panel {
+  pointer-events: auto;
+  position: fixed;
+  top: 74px;
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: min(340px, 88vw);
+  max-height: min(420px, 60vh);
+  z-index: var(--z-floating);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: kn-slide-in-down 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.path-panel__header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.path-panel__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+}
+
+.path-panel__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 12px 16px 16px;
+}
+
+.path-panel__hint {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.path-panel__chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.path-panel__chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-glass-strong);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.path-panel__hop-count {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.path-panel__route {
+  display: flex;
+  flex-direction: column;
+}
+
+.path-panel__route-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.path-panel__connector {
+  display: flex;
+  justify-content: center;
+  color: var(--text-faint);
+  font-size: 13px;
+  line-height: 1;
+  padding: 1px 0;
+}
+
+.path-panel__row {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: rgba(140, 150, 255, 0.06);
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.path-panel__row:hover {
+  background: var(--accent-soft);
+  border-color: rgba(143, 123, 255, 0.4);
+  color: var(--accent-strong);
 }
 

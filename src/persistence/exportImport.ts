@@ -18,6 +18,7 @@ import {
   layoutSetLinks,
 } from '../layout/layoutBridge';
 import type { GraphExport } from '../model/types';
+import { computeLocalClusterNames } from '../graph/clusterNaming';
 import { resetCorpus } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import { docVectorStore } from '../store/runtimeStores';
@@ -152,6 +153,8 @@ export async function importGraphJSONFile(file: File): Promise<void> {
   g.setEdges(edges);
   g.setClusterNames(data.clusterNames ?? {});
   g.patchNodes(new Map()); // no-op patch recomputes clusterCount (addNodes does not)
+  // Imports carry no pipeline passes, so derive keyword cluster names here.
+  g.setLocalClusterNames(computeLocalClusterNames(nodes));
 
   if (data.embeddings) {
     for (const [id, b64] of Object.entries(data.embeddings)) {

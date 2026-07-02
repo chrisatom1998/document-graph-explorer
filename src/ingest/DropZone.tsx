@@ -117,6 +117,7 @@ async function toIngestFiles(named: NamedFile[]): Promise<IngestFile[]> {
       path,
       fileType: fileType ?? 'other',
       bytes,
+      lastModified: file.lastModified > 0 ? file.lastModified : undefined,
     });
   }
   return out;

@@ -27,6 +27,7 @@ export const SEARCH_MAX_RESULTS = 12;
 
 // --- Insights ---
 export const DUP_SIM_THRESHOLD = 0.93; // cosine sim above which two docs are "possible duplicates"
+export const STALE_DOC_DAYS = 180; // file mtime older than this -> "stale doc" insight
 export const BRIDGE_TOP_N = 8; // bridge documents surfaced in the insights panel
 export const BRIDGE_MIN_SCORE = 0.05; // normalized betweenness floor for a "bridge"
 export const BRIDGE_MAX_PIVOTS = 512; // sample sources above this corpus size (approx. betweenness)

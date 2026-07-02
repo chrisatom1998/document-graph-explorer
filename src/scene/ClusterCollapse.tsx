@@ -108,6 +108,7 @@ export default function ClusterCollapse() {
   const clusterCollapsed = useUiStore((s) => s.clusterCollapsed);
   const nodes = useGraphStore((s) => s.nodes);
   const clusterNames = useGraphStore((s) => s.clusterNames);
+  const localClusterNames = useGraphStore((s) => s.localClusterNames);
   const clusterCount = useGraphStore((s) => s.clusterCount);
   const setClusterCollapsed = useUiStore((s) => s.setClusterCollapsed);
   const sendCamera = useUiStore((s) => s.sendCamera);
@@ -277,7 +278,7 @@ export default function ClusterCollapse() {
       {clusterIds.map((c) => {
         const centroid = centroidsRef.current.get(c);
         if (!centroid) return null;
-        const name = clusterNames[c] ?? `Cluster ${c}`;
+        const name = clusterNames[c] ?? localClusterNames[c] ?? `Cluster ${c}`;
         const memberN = clusterMeta.memberCount.get(c) ?? 1;
         const scale = SUPER_NODE_BASE * (1 + 0.6 * Math.log2(memberN));
         return (

@@ -3,9 +3,10 @@
  * a chat interface. Uses RAG over all uploaded documents.
  */
 
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { sendChatMessage } from '../chat/ragChat';
-import { useChatStore, type ChatMessage } from '../store/chatStore';
+import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import ChatMarkdown from '../chat/ChatMarkdown';
+import { cancelChat, sendChatMessage } from '../chat/ragChat';
+import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 
@@ -32,22 +33,34 @@ function IconChat() {
   );
 }
 
-function SourceChips({ sources, onSourceClick }: { sources: string[]; onSourceClick: (id: string) => void }) {
+/** Square "stop" icon shown on the send button while a reply is streaming. */
+function IconStop() {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+      <rect x="3" y="3" width="14" height="14" rx="2" />
+    </svg>
+  );
+}
+
+function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSourceClick: (id: string) => void }) {
+  // nodeIndex lookup, not a rebuilt Map: this renders per streaming delta,
+  // and a 4k-doc corpus would pay a 4k-entry Map construction each time.
   const nodes = useGraphStore((s) => s.nodes);
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const nodeIndex = useGraphStore((s) => s.nodeIndex);
 
   return (
     <div className="chat-sources">
-      {sources.map((id) => {
-        const node = nodeMap.get(id);
-        const title = node?.title ?? id.slice(0, 12);
+      {sources.map((source) => {
+        const node = nodes[nodeIndex[source.docId]];
+        const title = node?.title ?? source.docId.slice(0, 12);
+        const pct = Math.round(source.score * 100);
         return (
           <button
-            key={id}
+            key={source.docId}
             type="button"
             className="chat-source-chip"
-            title={`Open "${title}"`}
-            onClick={() => onSourceClick(id)}
+            title={`${pct}% match — ${source.snippet}`}
+            onClick={() => onSourceClick(source.docId)}
           >
             📄 {title.length > 30 ? title.slice(0, 28) + '…' : title}
           </button>
@@ -57,14 +70,23 @@ function SourceChips({ sources, onSourceClick }: { sources: string[]; onSourceCl
   );
 }
 
-function MessageBubble({ msg, onSourceClick }: { msg: ChatMessage; onSourceClick: (id: string) => void }) {
+// memo: streaming updates replace ONE message object per delta; every other
+// bubble keeps its identity and must not re-render (or re-parse its markdown).
+const MessageBubble = memo(function MessageBubble({
+  msg,
+  onSourceClick,
+}: {
+  msg: ChatMessage;
+  onSourceClick: (id: string) => void;
+}) {
   const isUser = msg.role === 'user';
   const isSystem = msg.role === 'system';
+  const isAssistant = msg.role === 'assistant';
 
   return (
     <div className={`chat-message chat-message--${msg.role}`}>
       <div className={`chat-bubble chat-bubble--${msg.role}`}>
-        <p className="chat-bubble__text">{msg.text}</p>
+        {isAssistant ? <ChatMarkdown text={msg.text} /> : <p className="chat-bubble__text">{msg.text}</p>}
         {msg.sources && msg.sources.length > 0 && (
           <SourceChips sources={msg.sources} onSourceClick={onSourceClick} />
         )}
@@ -74,7 +96,7 @@ function MessageBubble({ msg, onSourceClick }: { msg: ChatMessage; onSourceClick
       </span>
     </div>
   );
-}
+});
 
 export default function ChatPanel() {
   const isOpen = useChatStore((s) => s.isOpen);
@@ -115,10 +137,15 @@ export default function ChatPanel() {
     }
   };
 
-  const handleSourceClick = (docId: string) => {
-    setSelected(docId);
-    sendCamera('frameNode', [docId]);
-  };
+  // Stable reference — an inline handler would defeat MessageBubble's memo.
+  // (zustand action references are stable, so this never actually re-creates.)
+  const handleSourceClick = useCallback(
+    (docId: string) => {
+      setSelected(docId);
+      sendCamera('frameNode', [docId]);
+    },
+    [setSelected, sendCamera],
+  );
 
   if (!hasNodes) return null;
 
@@ -195,14 +222,18 @@ export default function ChatPanel() {
         />
         <button
           type="button"
-          className="chat-panel__send"
-          onClick={handleSend}
-          disabled={isStreaming || input.trim() === ''}
-          title="Send"
+          className={`chat-panel__send${isStreaming ? ' is-stop' : ''}`}
+          onClick={isStreaming ? () => cancelChat() : handleSend}
+          disabled={!isStreaming && input.trim() === ''}
+          title={isStreaming ? 'Stop' : 'Send'}
         >
-          <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-            <path d="M2.94 5.84a.75.75 0 0 1 .98-.52l12.5 4.5a.75.75 0 0 1 0 1.36l-12.5 4.5a.75.75 0 0 1-1.02-.9l1.6-4.78L2.9 6.72a.75.75 0 0 1 .05-.88zm2.1 1.8l-1.04 3.11a.75.75 0 0 1 0 .5l1.04 3.11L14 10z" />
-          </svg>
+          {isStreaming ? (
+            <IconStop />
+          ) : (
+            <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+              <path d="M2.94 5.84a.75.75 0 0 1 .98-.52l12.5 4.5a.75.75 0 0 1 0 1.36l-12.5 4.5a.75.75 0 0 1-1.02-.9l1.6-4.78L2.9 6.72a.75.75 0 0 1 .05-.88zm2.1 1.8l-1.04 3.11a.75.75 0 0 1 0 .5l1.04 3.11L14 10z" />
+            </svg>
+          )}
         </button>
       </div>
     </div>

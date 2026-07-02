@@ -371,6 +371,9 @@ export default function Nodes() {
     if (e.nativeEvent.button !== 0) return;
     const id = idOf(e);
     if (!id) return;
+    // Path mode: clicks pick endpoints — starting a drag here would pin the
+    // node on 1-4px of pointer jitter (drag fixes; only dblclick releases).
+    if (useUiStore.getState().pathMode) return;
     e.stopPropagation();
     drag.start(id);
   };
@@ -381,6 +384,13 @@ export default function Nodes() {
     if (!id) return;
     e.stopPropagation();
     const ui = useUiStore.getState();
+    if (ui.pathMode) {
+      // Topic hubs can't be endpoints: pathfinding skips 'topic' edges, so a
+      // topic pick would always dead-end in "no connection found".
+      if (e.instanceId !== undefined && kindOfSlot[e.instanceId] === 1) return;
+      ui.addPathEndpoint(id); // path mode: clicks pick endpoints, not selection
+      return;
+    }
     ui.setSelected(id);
     ui.sendCamera('frameNode', [id]);
   };

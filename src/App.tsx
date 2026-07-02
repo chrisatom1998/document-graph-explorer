@@ -5,6 +5,7 @@ import EmptyState from './ui/EmptyState';
 import ProgressStrip from './ui/ProgressStrip';
 import Toolbar from './ui/Toolbar';
 import InsightsPanel from './ui/InsightsPanel';
+import PathPanel from './ui/PathPanel';
 import SidePanel from './ui/SidePanel';
 import SnapshotDrawer from './ui/SnapshotDrawer';
 import Tooltip from './ui/Tooltip';
@@ -109,6 +110,9 @@ export default function App() {
         if (ui.searchOpen) {
           ui.setSearchOpen(false);
           ui.setSearchResults(null);
+        } else if (ui.pathMode) {
+          ui.setPathMode(false);
+          ui.setSearchResults(null);
         } else if (ui.settingsOpen) {
           ui.setSettingsOpen(false);
         } else if (ui.snapshotsOpen) {
@@ -142,6 +146,7 @@ export default function App() {
       <FilterBar />
       <ProgressStrip />
       <InsightsPanel />
+      <PathPanel />
       <SidePanel />
       <Tooltip />
       <EdgePopover />

@@ -49,6 +49,7 @@ import {
   lookupDocCache,
   setSetting,
 } from '../persistence/cache';
+import { computeLocalClusterNames } from '../graph/clusterNaming';
 import { getNodePosition } from '../scene/positionBuffer';
 import { useGraphStore } from '../store/graphStore';
 import {
@@ -56,8 +57,10 @@ import {
   clearRuntimeStores,
   docVectorStore,
   mdLinkTargetsStore,
+  rawBlobStore,
   textStore,
 } from '../store/runtimeStores';
+import { useChatStore } from '../store/chatStore';
 import { useUiStore } from '../store/uiStore';
 import { getPool, type WorkerPool } from '../workers/pool';
 import { stripBoilerplate } from './boilerplate';
@@ -292,6 +295,14 @@ async function runIngest(files: IngestFile[]): Promise<void> {
     store().setPhase('parsing');
     const parseTasks = misses.map(async (p) => {
       store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'parsing' });
+      // Clone original bytes as a Blob before the ArrayBuffer is transferred to the worker
+      const mimeMap: Record<string, string> = {
+        md: 'text/markdown', txt: 'text/plain', html: 'text/html',
+        json: 'application/json', yaml: 'text/yaml', csv: 'text/csv',
+        pdf: 'application/pdf', other: 'application/octet-stream',
+      };
+      const mime = mimeMap[p.fileType] ?? 'application/octet-stream';
+      rawBlobStore.set(p.id, new Blob([p.file.bytes.slice(0)], { type: mime }));
       let done: ParseDone;
       if (p.fileType === 'pdf') {
         const pdf = await parsePdf(p.file.bytes, p.file.name);
@@ -356,6 +367,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
         degree: 0,
         status: doc.status,
         warning: doc.warning,
+        lastModified: p.file.lastModified,
       };
       store().addNodes([node]);
       textStore.set(p.id, doc.text);
@@ -432,6 +444,9 @@ async function runIngest(files: IngestFile[]): Promise<void> {
 
   // (g) semantic edges + Louvain clustering over the full edge set
   await runSemanticPass(lexEdges);
+
+  // (h) synthesize topic concept nodes (spec §5.4)
+  synthesizeTopicNodes();
 
   store().setPhase('ready');
   store().setCorpusHash(await computeCorpusHash());
@@ -542,6 +557,10 @@ async function runSemanticPass(lexEdges: Edge[]): Promise<void> {
     }
     store().patchNodes(patches);
 
+    // Keyword-derived cluster names, refreshed whenever membership shifts.
+    // Gemini names (clusterNames) still win in the UI fallback chain.
+    store().setLocalClusterNames(computeLocalClusterNames(store().nodes));
+
     layoutSetLinks(toLinkInput(allEdges));
     layoutSetClusters(semantic.clusters);
     layoutReheat(0.5);
@@ -556,6 +575,119 @@ async function computeCorpusHash(): Promise<string> {
     .map((n) => n.id)
     .sort();
   return sha256Hex(sortedIds.join(''));
+}
+
+// ---------------------------------------------------------------------------
+// topic node synthesis (spec §5.4)
+// ---------------------------------------------------------------------------
+
+const TOPIC_MIN_DOCS = 2; // require at least 2 docs sharing a topic
+const TOPIC_EDGE_WEIGHT = 0.5;
+
+/**
+ * Create synthetic topic-concept nodes for topics shared by ≥2 documents.
+ * Each topic node connects via topic edges to every document that carries it.
+ * Must run AFTER clustering (so topic nodes can inherit the majority cluster).
+ * Existing topic nodes from a previous run are removed first (idempotent).
+ */
+function synthesizeTopicNodes(): void {
+  const store = useGraphStore.getState;
+
+  // Remove any previously synthesized topic nodes + edges before rebuilding
+  const existingTopics = store().nodes.filter((n) => n.kind === 'topic').map((n) => n.id);
+  if (existingTopics.length > 0) store().removeNodes(existingTopics);
+
+  // Collect topics → doc ids. Sets, not arrays: a doc whose topics contain
+  // case variants of the same label ('AI' and 'ai' — possible via imported
+  // graphs, which don't normalize topics) must not produce duplicate edge ids.
+  const topicDocs = new Map<string, Set<string>>();
+  for (const n of documentNodes()) {
+    for (const t of n.topics) {
+      const key = t.toLowerCase().trim();
+      if (!key) continue;
+      const set = topicDocs.get(key);
+      if (set) set.add(n.id);
+      else topicDocs.set(key, new Set([n.id]));
+    }
+  }
+
+  const newNodes: DocNode[] = [];
+  const newEdges: Edge[] = [];
+
+  for (const [topicKey, docIdSet] of topicDocs) {
+    if (docIdSet.size < TOPIC_MIN_DOCS) continue;
+    const docIds = [...docIdSet];
+    const topicId = `topic:${topicKey}`;
+
+    // Inherit the majority cluster from connected documents
+    const clusterVotes = new Map<number, number>();
+    for (const docId of docIds) {
+      const idx = store().nodeIndex[docId];
+      if (idx === undefined) continue;
+      const c = store().nodes[idx].cluster;
+      if (c >= 0) clusterVotes.set(c, (clusterVotes.get(c) ?? 0) + 1);
+    }
+    let bestCluster = -1;
+    let bestCount = 0;
+    for (const [c, count] of clusterVotes) {
+      if (count > bestCount) { bestCluster = c; bestCount = count; }
+    }
+
+    // Canonical display title: use the original casing from the first doc that has it
+    let displayTitle = topicKey;
+    for (const docId of docIds) {
+      const idx = store().nodeIndex[docId];
+      if (idx === undefined) continue;
+      const match = store().nodes[idx].topics.find(
+        (t) => t.toLowerCase().trim() === topicKey,
+      );
+      if (match) { displayTitle = match; break; }
+    }
+
+    const topicNode: DocNode = {
+      id: topicId,
+      kind: 'topic',
+      title: displayTitle,
+      fileType: 'other',
+      topics: [displayTitle],
+      entities: [],
+      keywords: [],
+      wordCount: 0,
+      cluster: bestCluster,
+      degree: docIds.length,
+      status: 'ok',
+    };
+    newNodes.push(topicNode);
+
+    // Create topic edges from each doc to the topic node
+    for (const docId of docIds) {
+      newEdges.push({
+        id: `${docId}->${topicId}:topic`,
+        source: docId,
+        target: topicId,
+        kind: 'topic',
+        weight: TOPIC_EDGE_WEIGHT,
+        evidence: [`Shared topic: "${displayTitle}"`],
+      });
+    }
+  }
+
+  if (newNodes.length === 0) return;
+
+  // Add nodes to store and layout
+  store().addNodes(newNodes);
+  const layoutInputs = newNodes.map((n) => ({
+    id: n.id,
+    cluster: n.cluster,
+    spawn: randomSpawn() as [number, number, number],
+  }));
+  layoutAddNodes(layoutInputs);
+
+  // Merge new topic edges with existing edges
+  const currentEdges = store().edges;
+  store().setEdges([...currentEdges, ...newEdges]);
+  layoutSetLinks(toLinkInput([...currentEdges, ...newEdges]));
+  layoutReheat(0.3);
 }
 
 // ---------------------------------------------------------------------------
@@ -584,6 +716,12 @@ async function runRemove(ids: string[]): Promise<void> {
       ui.setSearchResults(kept.length > 0 ? kept : null);
     }
   }
+  if (ui.pathEndpoints.some((id) => gone.has(id))) {
+    // A picked endpoint is disappearing — the route is void. Exiting path
+    // mode (which clears the endpoints) stops PathPanel from re-publishing
+    // the dead ids into searchResults after the cleanup above.
+    ui.setPathMode(false);
+  }
 
   // In-memory removal: graph store, runtime stores, per-run bookkeeping.
   store().removeNodes(removing);
@@ -592,6 +730,7 @@ async function runRemove(ids: string[]): Promise<void> {
     chunkStore.delete(id);
     docVectorStore.delete(id);
     mdLinkTargetsStore.delete(id);
+    rawBlobStore.delete(id);
     lexMeta.delete(id);
     fileIdOfDoc.delete(id);
     nameOfDoc.delete(id);
@@ -623,6 +762,7 @@ async function runRemove(ids: string[]): Promise<void> {
   // Corpus-wide re-link over the survivors.
   const { lexEdges } = await runLexicalPass(getPool());
   await runSemanticPass(lexEdges);
+  synthesizeTopicNodes();
 
   store().setPhase('ready');
   store().setCorpusHash(await computeCorpusHash());
@@ -746,7 +886,7 @@ export async function embedQuery(text: string): Promise<Float32Array> {
   return done.vector;
 }
 
-/** Full teardown: layout, graph store, runtime stores, UI selections. */
+/** Full teardown: layout, graph store, runtime stores, UI selections, chat. */
 export function resetCorpus(): void {
   layoutReset();
   useGraphStore.getState().reset();
@@ -759,4 +899,11 @@ export function resetCorpus(): void {
   ui.setSelectedEdge(null);
   ui.setHovered(null);
   ui.setSearchResults(null);
+  ui.setPathMode(false); // also clears pathEndpoints — they reference the old corpus
+  // Chat answers cite the outgoing corpus — stale context for the next one.
+  // Cancel any in-flight stream FIRST: it would otherwise keep running
+  // against the wiped stores with isStreaming stuck true for up to 120s.
+  // (Dynamic import: a static one would cycle ragChat → coordinator.)
+  void import('../chat/ragChat').then((m) => m.cancelChat());
+  useChatStore.getState().clearMessages();
 }

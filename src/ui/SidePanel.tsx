@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { docVectorStore, textStore } from '../store/runtimeStores';
 import { hexFor } from '../scene/palette';
+import { timeAgo } from '../util/relativeTime';
 import DocAiSection from './DocAiSection';
+import { openDocumentViewer } from './openDocumentViewer';
 import VirtualText from './VirtualText';
 import type { DocNode, Edge, EdgeKind } from '../model/types';
 
@@ -34,6 +36,7 @@ export default function SidePanel() {
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
   const edges = useGraphStore((s) => s.edges);
   const clusterNames = useGraphStore((s) => s.clusterNames);
+  const localClusterNames = useGraphStore((s) => s.localClusterNames);
 
   const node = selectedId !== null ? nodes[nodeIndex[selectedId]] : undefined;
 
@@ -77,7 +80,8 @@ export default function SidePanel() {
   if (!node) return null;
 
   const fullText = textStore.get(node.id);
-  const clusterLabel = clusterNames[node.cluster] ?? `Cluster ${node.cluster}`;
+  const clusterLabel =
+    clusterNames[node.cluster] ?? localClusterNames[node.cluster] ?? `Cluster ${node.cluster}`;
   const clusterColor = hexFor(node.cluster);
   const entities = node.entities.slice(0, 8);
 
@@ -86,6 +90,28 @@ export default function SidePanel() {
       <div className="side-panel glass-panel">
         <div className="side-panel__header">
           <h2 className="side-panel__title">{node.title}</h2>
+          {node.kind === 'document' && (
+            <button
+              type="button"
+              className="side-panel__open-btn"
+              title="Open original document in a new tab"
+              onClick={() => {
+                const text = fullText ?? textStore.get(node.id);
+                if (!text) return;
+                const cName = clusterNames[node.cluster]
+                  ?? localClusterNames[node.cluster]
+                  ?? `Cluster ${node.cluster}`;
+                openDocumentViewer(node, text, cName);
+              }}
+            >
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                <path d="M9 2h5v5" />
+                <path d="M14 2 L7 9" />
+                <path d="M12 9v4.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5H7" />
+              </svg>
+              Open
+            </button>
+          )}
           <button
             type="button"
             className="icon-btn-close"
@@ -131,6 +157,11 @@ export default function SidePanel() {
           <div className="side-panel__stats">
             <span>{node.wordCount.toLocaleString()} words</span>
             <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
+            {node.lastModified !== undefined && (
+              <span title={new Date(node.lastModified).toLocaleString()}>
+                updated {timeAgo(node.lastModified)}
+              </span>
+            )}
           </div>
 
           <div className="side-panel__section">

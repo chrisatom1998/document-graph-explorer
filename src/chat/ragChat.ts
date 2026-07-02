@@ -4,8 +4,8 @@
  * Flow:
  *   1. User asks a question
  *   2. Embed the query → cosine-search chunk vectors → top-k relevant chunks
- *   3. Build a prompt with the retrieved chunks as context
- *   4. Send to Gemini → stream back the answer
+ *   3. Build a prompt with the retrieved chunks + recent conversation history
+ *   4. Stream the answer back from Gemini token-by-token
  *
  * The knowledge source is `textStore` + `chunkStore` — new files added to the
  * graph are automatically available as context.
@@ -16,12 +16,33 @@ import { embedQuery } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import { chunkStore, docVectorStore, textStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
-import { useChatStore } from '../store/chatStore';
+import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
 
 const RAG_TOP_K = 8; // max chunks to include as context
 const RAG_MIN_SCORE = 0.3; // cosine floor for relevance
 const CHUNK_CONTEXT_CHARS = 1500; // max chars per chunk in prompt
-const REQUEST_TIMEOUT_MS = 60_000;
+const REQUEST_TIMEOUT_MS = 120_000; // streaming responses can run long
+const MAX_HISTORY_MESSAGES = 8; // prior turns fed back to Gemini for memory
+const SOURCE_SNIPPET_CHARS = 200; // citation preview length
+
+// ---------------------------------------------------------------------------
+// Cancellation: one in-flight chat request at a time
+// ---------------------------------------------------------------------------
+
+let activeAbort: AbortController | null = null;
+
+/** Abort the in-flight chat request, if any. Safe to call when idle. */
+export function cancelChat(): void {
+  activeAbort?.abort();
+}
+
+function isAbortLike(err: unknown): boolean {
+  // A user-triggered cancelChat() (AbortError) and the request timeout
+  // (TimeoutError) both end the stream gracefully — any partial answer is
+  // kept — but the catch block words them differently: the user knows they
+  // pressed Stop; a timeout has to say so or it reads like a phantom stop.
+  return err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError');
+}
 
 // ---------------------------------------------------------------------------
 // Retrieval: find the most relevant chunks for a query
@@ -128,9 +149,30 @@ function keywordFallback(query: string): RetrievedChunk[] {
     .slice(0, RAG_TOP_K);
 }
 
+/** Per unique doc, keep the single best-scoring chunk as its citation. */
+function bestChunkSources(chunks: RetrievedChunk[]): ChatSource[] {
+  const bestByDoc = new Map<string, RetrievedChunk>();
+  for (const c of chunks) {
+    const cur = bestByDoc.get(c.docId);
+    if (!cur || c.score > cur.score) bestByDoc.set(c.docId, c);
+  }
+  return [...bestByDoc.values()]
+    .sort((a, b) => b.score - a.score)
+    .map((c) => ({
+      docId: c.docId,
+      snippet: c.text.slice(0, SOURCE_SNIPPET_CHARS).trim(),
+      score: c.score,
+    }));
+}
+
 // ---------------------------------------------------------------------------
-// Generation: send context + question to Gemini
+// Generation: send context + question + history to Gemini, streaming back
 // ---------------------------------------------------------------------------
+
+interface GeminiTurn {
+  role: 'user' | 'model';
+  parts: { text: string }[];
+}
 
 function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
   const contextParts = chunks.map(
@@ -141,7 +183,7 @@ function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
     'You are a knowledgeable assistant answering questions about the user\'s document collection.',
     'Use ONLY the context provided below. If the context does not contain the answer, say so clearly.',
     'Be concise, specific, and cite which source document(s) your answer comes from.',
-    'Format your response in plain text with line breaks for readability.',
+    'Format your response in Markdown.',
     '',
     '--- CONTEXT ---',
     contextParts.join('\n\n'),
@@ -151,6 +193,45 @@ function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
   ].join('\n');
 }
 
+/**
+ * Turns prior user/assistant messages into Gemini `contents` turns for
+ * multi-turn memory. `messages` must be the history captured BEFORE the
+ * current question (and its assistant placeholder) were added, so both are
+ * naturally excluded. System messages are dropped (they're app notices, not
+ * conversation), and failed assistant turns are dropped too — no reason to
+ * teach the model its own errors.
+ */
+function buildHistoryTurns(messages: ChatMessage[]): GeminiTurn[] {
+  const usable = messages.filter((m) => {
+    if (m.role === 'system') return false;
+    if (m.role === 'assistant' && m.text.startsWith('Error:')) return false;
+    return true;
+  });
+  const turns: GeminiTurn[] = usable.slice(-MAX_HISTORY_MESSAGES).map((m) => ({
+    role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
+    parts: [{ text: m.text }],
+  }));
+
+  // Gemini rejects multiturn contents that don't strictly alternate starting
+  // with 'user'. The filtering above (dropped error/system replies) and the
+  // slice window can both break that shape — one errored turn would 400 every
+  // later question. Normalize: no leading model turn, merge consecutive
+  // same-role turns, and end on a model turn (the caller appends the current
+  // user question next).
+  while (turns.length > 0 && turns[0].role === 'model') turns.shift();
+  const merged: GeminiTurn[] = [];
+  for (const turn of turns) {
+    const prev = merged[merged.length - 1];
+    if (prev && prev.role === turn.role) {
+      prev.parts = [{ text: `${prev.parts[0].text}\n\n${turn.parts[0].text}` }];
+    } else {
+      merged.push(turn);
+    }
+  }
+  while (merged.length > 0 && merged[merged.length - 1].role === 'user') merged.pop();
+  return merged;
+}
+
 /** Send a chat message and get an AI response. */
 export async function sendChatMessage(question: string): Promise<void> {
   const q = question.trim();
@@ -158,6 +239,10 @@ export async function sendChatMessage(question: string): Promise<void> {
 
   const { geminiKey, geminiModel, enrichEnabled } = useSettingsStore.getState();
   const chat = useChatStore.getState();
+
+  // Snapshot the conversation BEFORE this turn, for multi-turn memory. This
+  // naturally excludes the user message and assistant placeholder added below.
+  const priorMessages = chat.messages;
 
   // Add user message
   chat.addMessage({ role: 'user', text: q });
@@ -186,6 +271,18 @@ export async function sendChatMessage(question: string): Promise<void> {
   chat.setIsStreaming(true);
   const assistantId = chat.addMessage({ role: 'assistant', text: 'Searching documents…' });
 
+  const controller = new AbortController();
+  activeAbort = controller;
+  let accumulated = '';
+  let sources: ChatSource[] | undefined;
+  // Manual timeout instead of AbortSignal.any([controller, AbortSignal.timeout]):
+  // same behavior, works on browsers that predate .any(), and the reason lets
+  // the catch block tell a timeout apart from a user-pressed Stop.
+  const timeoutTimer = setTimeout(
+    () => controller.abort(new DOMException('Gemini request timed out', 'TimeoutError')),
+    REQUEST_TIMEOUT_MS,
+  );
+
   try {
     // Retrieve relevant chunks
     const chunks = await retrieveChunks(q);
@@ -202,29 +299,27 @@ export async function sendChatMessage(question: string): Promise<void> {
       text: `Found ${chunks.length} relevant passage${chunks.length > 1 ? 's' : ''}. Generating answer…`,
     });
 
-    // Build prompt and call Gemini
+    sources = bestChunkSources(chunks);
+
+    // Build prompt + multi-turn history and stream from Gemini.
     const prompt = buildPrompt(q, chunks);
     const model = geminiModel.trim() || GEMINI_MODEL;
-    const url = `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`;
+    const url = `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
+    const contents: GeminiTurn[] = [
+      ...buildHistoryTurns(priorMessages),
+      { role: 'user', parts: [{ text: prompt }] },
+    ];
 
     const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // Key travels as a header, not a query param: URLs leak into
+        // proxy/server logs and browser history; headers don't.
         'x-goog-api-key': geminiKey,
       },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: 'OBJECT',
-            properties: { answer: { type: 'STRING' } },
-            required: ['answer'],
-          },
-        },
-      }),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      body: JSON.stringify({ contents }),
+      signal: controller.signal,
     });
 
     if (!res.ok) {
@@ -239,46 +334,103 @@ export async function sendChatMessage(question: string): Promise<void> {
       return;
     }
 
-    const data = (await res.json()) as {
-      candidates?: { content?: { parts?: { text?: unknown }[] } }[];
-    };
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (typeof rawText !== 'string') {
+    const reader = res.body?.getReader();
+    if (!reader) {
       useChatStore.getState().updateMessage(assistantId, {
-        text: 'Received an unexpected response from Gemini. Please try again.',
+        text: 'Gemini\'s streaming response had no body. Please try again.',
       });
       return;
     }
 
-    // Parse the JSON response
-    let answer: string;
-    try {
-      const parsed = JSON.parse(rawText) as { answer?: string };
-      answer = parsed.answer ?? rawText;
-    } catch {
-      // If JSON parsing fails, try stripping markdown fences
-      const stripped = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+    // Parse the `data: {...}` SSE lines streamGenerateContent emits. Chunks
+    // from reader.read() can split in the middle of a line, so we buffer
+    // whatever's left after the last newline and prepend it to the next read.
+    // A stream can also carry an error object or a blocked candidate after
+    // the 200 header — capture those so an empty answer names its cause.
+    // (object properties, not lets: closure writes don't fight TS narrowing)
+    const streamMeta = { error: null as string | null, blockReason: null as string | null };
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const consumeLine = (rawLine: string): void => {
+      const line = rawLine.trim();
+      if (!line.startsWith('data:')) return; // blank lines / "event:" framing
+      const payload = line.slice(5).trim();
+      if (!payload || payload === '[DONE]') return;
+      let evt: {
+        candidates?: { content?: { parts?: { text?: unknown }[] }; finishReason?: unknown }[];
+        promptFeedback?: { blockReason?: unknown };
+        error?: { message?: unknown };
+      };
       try {
-        const parsed = JSON.parse(stripped) as { answer?: string };
-        answer = parsed.answer ?? rawText;
+        evt = JSON.parse(payload);
       } catch {
-        answer = rawText; // Use raw text as fallback
+        return; // partial/keepalive line — ignore
       }
+      if (typeof evt.error?.message === 'string') streamMeta.error = evt.error.message;
+      if (typeof evt.promptFeedback?.blockReason === 'string') {
+        streamMeta.blockReason = evt.promptFeedback.blockReason;
+      }
+      const candidate = evt.candidates?.[0];
+      const finish = candidate?.finishReason;
+      if (typeof finish === 'string' && finish !== 'STOP' && finish !== 'MAX_TOKENS') {
+        streamMeta.blockReason = finish; // SAFETY / RECITATION / OTHER
+      }
+      for (const part of candidate?.content?.parts ?? []) {
+        if (typeof part.text === 'string' && part.text) accumulated += part.text;
+      }
+    };
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      const before = accumulated;
+      if (value) {
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) consumeLine(line);
+      }
+      if (done) {
+        buffer += decoder.decode(); // flush any trailing partial byte sequence
+        if (buffer) consumeLine(buffer);
+      }
+      // One store write per network chunk, not per SSE line — every write
+      // clones the message list and re-renders the whole transcript.
+      if (accumulated !== before) {
+        useChatStore.getState().updateMessage(assistantId, { text: accumulated });
+      }
+      if (done) break;
     }
 
-    // Deduplicate source doc IDs
-    const sourceIds = [...new Set(chunks.map((c) => c.docId))];
-
-    useChatStore.getState().updateMessage(assistantId, {
-      text: answer.trim(),
-      sources: sourceIds,
-    });
+    if (accumulated.trim() === '') {
+      useChatStore.getState().updateMessage(assistantId, {
+        text: streamMeta.error
+          ? `Error: Gemini stream failed: ${streamMeta.error.slice(0, 200)}`
+          : streamMeta.blockReason
+            ? `Error: Gemini blocked the response (${streamMeta.blockReason}).`
+            : 'Gemini returned an empty response. Please try again.',
+      });
+    } else {
+      useChatStore.getState().updateMessage(assistantId, { text: accumulated.trim(), sources });
+    }
   } catch (err) {
-    const errMsg = err instanceof Error ? err.message : String(err);
-    useChatStore.getState().updateMessage(assistantId, {
-      text: `Error: ${errMsg}`,
-    });
+    if (isAbortLike(err)) {
+      const timedOut = err instanceof Error && err.name === 'TimeoutError';
+      const trimmed = accumulated.trim();
+      useChatStore.getState().updateMessage(assistantId, {
+        text: trimmed
+          ? `${trimmed}\n\n${timedOut ? '_⏱ timed out — partial answer_' : '_⏹ stopped_'}`
+          : timedOut
+            ? `Error: Gemini didn't respond within ${REQUEST_TIMEOUT_MS / 1000}s. Check your network or try again.`
+            : 'Stopped.',
+        ...(sources ? { sources } : {}),
+      });
+    } else {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}` });
+    }
   } finally {
+    clearTimeout(timeoutTimer);
     useChatStore.getState().setIsStreaming(false);
+    activeAbort = null;
   }
 }
