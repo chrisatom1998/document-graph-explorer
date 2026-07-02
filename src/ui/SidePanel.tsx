@@ -1,33 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { DUP_SIM_THRESHOLD } from '../config';
-import { removeDocuments } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { docVectorStore, textStore } from '../store/runtimeStores';
 import { hexFor } from '../scene/palette';
 import DocAiSection from './DocAiSection';
 import type { DocNode, Edge, EdgeKind } from '../model/types';
-
-function IconTrash() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3 6h18" />
-      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-      <path d="M10 11v6M14 11v6" />
-    </svg>
-  );
-}
 
 const KIND_COLOR: Record<EdgeKind, string> = {
   reference: '#ffb36b',
@@ -55,10 +33,6 @@ export default function SidePanel() {
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
   const edges = useGraphStore((s) => s.edges);
   const clusterNames = useGraphStore((s) => s.clusterNames);
-  const phase = useGraphStore((s) => s.phase);
-
-  // node.id must match for the strip to show, so switching nodes dismisses it
-  const [confirmRemoveFor, setConfirmRemoveFor] = useState<string | null>(null);
 
   const node = selectedId !== null ? nodes[nodeIndex[selectedId]] : undefined;
 
@@ -114,20 +88,6 @@ export default function SidePanel() {
           <button
             type="button"
             className="icon-btn-close"
-            title={
-              phase === 'ready'
-                ? 'Remove from knowledge bank'
-                : 'Wait for processing to finish'
-            }
-            aria-label="Remove document from knowledge bank"
-            disabled={phase !== 'ready'}
-            onClick={() => setConfirmRemoveFor(node.id)}
-          >
-            <IconTrash />
-          </button>
-          <button
-            type="button"
-            className="icon-btn-close"
             title="Back to graph"
             aria-label="Back to graph"
             onClick={() => setSelected(null)}
@@ -135,35 +95,6 @@ export default function SidePanel() {
             ✕
           </button>
         </div>
-        {confirmRemoveFor === node.id && (
-          <div className="side-panel__remove-confirm">
-            <p className="side-panel__remove-confirm-text">
-              Remove “{node.title}” from the knowledge bank? Its text and
-              embeddings are deleted from this browser; re-drop the file to add
-              it back.
-            </p>
-            <div className="side-panel__remove-confirm-actions">
-              <button
-                type="button"
-                className="btn-pill danger"
-                onClick={() => {
-                  setConfirmRemoveFor(null);
-                  setSelected(null);
-                  void removeDocuments([node.id]);
-                }}
-              >
-                Remove
-              </button>
-              <button
-                type="button"
-                className="btn-pill secondary"
-                onClick={() => setConfirmRemoveFor(null)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
         <div className="side-panel__scroll">
           <div className="side-panel__badges">
             <span className="chip">{node.fileType}</span>

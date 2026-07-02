@@ -229,15 +229,6 @@ input {
   background: rgba(140, 150, 255, 0.06);
   border-color: var(--border-glass);
 }
-.btn-pill.danger {
-  background: rgba(255, 107, 107, 0.12);
-  border-color: rgba(255, 107, 107, 0.4);
-  color: var(--danger);
-}
-.btn-pill.danger:hover {
-  border-color: var(--danger);
-  box-shadow: 0 0 0 1px rgba(255, 107, 107, 0.25) inset, 0 0 22px rgba(255, 107, 107, 0.18);
-}
 
 .chip {
   display: inline-flex;
@@ -301,14 +292,6 @@ input {
 .icon-btn-close:hover {
   background: rgba(255, 128, 128, 0.12);
   color: var(--danger);
-}
-.icon-btn-close:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-.icon-btn-close:disabled:hover {
-  background: transparent;
-  color: var(--text-secondary);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -582,27 +565,6 @@ input {
   gap: 12px;
   padding: 20px 24px 14px;
   border-bottom: 1px solid var(--border-glass);
-}
-
-.side-panel__remove-confirm {
-  flex: none;
-  padding: 12px 24px 14px;
-  border-bottom: 1px solid rgba(255, 107, 107, 0.25);
-  background: rgba(255, 107, 107, 0.07);
-}
-.side-panel__remove-confirm-text {
-  margin: 0 0 10px;
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--text-secondary);
-}
-.side-panel__remove-confirm-actions {
-  display: flex;
-  gap: 8px;
-}
-.side-panel__remove-confirm-actions .btn-pill {
-  padding: 6px 14px;
-  font-size: 13px;
 }
 
 .side-panel__title {
