@@ -21,6 +21,53 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;');
 }
 
+// http(s) URLs, www. URLs, and bare emails. Kept simple/greedy; trailing
+// sentence punctuation is trimmed back onto the surrounding text below.
+const INLINE_URL_RE = /(https?:\/\/[^\s<]+|www\.[^\s<]+|[^\s<@]+@[^\s<@]+\.[a-zA-Z]{2,})/g;
+
+/** A web link the original document contained, or null if the token isn't one. */
+function hrefFor(token: string): string | null {
+  if (/^https?:\/\//i.test(token)) return token;
+  if (/^www\./i.test(token)) return `https://${token}`;
+  if (/^mailto:/i.test(token)) return token;
+  if (/^[^\s<@]+@[^\s<@]+\.[a-zA-Z]{2,}$/.test(token)) return `mailto:${token}`;
+  return null; // relative paths / bare filenames are graph edges, not web links
+}
+
+function anchor(href: string, text: string): string {
+  // The scheme is constrained to http(s)/mailto by hrefFor, so no javascript:
+  // URLs can slip through; still escape both attribute and text.
+  return `<a class="doc-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer nofollow">${escapeHtml(text)}</a>`;
+}
+
+/**
+ * Escape a line of body text AND turn any bare URLs / emails it contains into
+ * clickable links — the viewer renders extracted text, where markdown/HTML
+ * link *syntax* is already gone but visible URLs survive as plain text.
+ */
+function linkifyLine(raw: string): string {
+  let out = '';
+  let last = 0;
+  for (const m of raw.matchAll(INLINE_URL_RE)) {
+    const idx = m.index ?? 0;
+    out += escapeHtml(raw.slice(last, idx));
+    let token = m[0];
+    // pull common trailing punctuation back out of the URL (e.g. "see (url).")
+    const trail = token.match(/[.,;:!?)\]}'"]+$/);
+    let tail = '';
+    if (trail) {
+      tail = token.slice(token.length - trail[0].length);
+      token = token.slice(0, token.length - trail[0].length);
+    }
+    const href = hrefFor(token);
+    out += href ? anchor(href, token) : escapeHtml(token);
+    out += escapeHtml(tail);
+    last = idx + m[0].length;
+  }
+  out += escapeHtml(raw.slice(last));
+  return out;
+}
+
 /**
  * Lightly format text for display: detect markdown headings, fenced code
  * blocks, horizontal rules, and blank lines. Returns HTML string.
@@ -82,8 +129,8 @@ function formatContent(text: string, fileType: string): string {
       continue;
     }
 
-    // Regular text line
-    out.push(`<p class="doc-line">${escapeHtml(line)}</p>`);
+    // Regular text line — escape and linkify any bare URLs/emails
+    out.push(`<p class="doc-line">${linkifyLine(line)}</p>`);
   }
 
   // Close unclosed code block
@@ -100,6 +147,7 @@ export function openDocumentViewer(
   node: DocNode,
   fullText: string,
   clusterName: string,
+  links: string[] = [],
 ): void {
   const isMono = ['txt', 'json', 'yaml', 'csv', 'other'].includes(node.fileType);
   const typeLabel = MIME_MAP[node.fileType] ?? 'Document';
@@ -109,6 +157,26 @@ export function openDocumentViewer(
   const content = formatContent(fullText, node.fileType);
   const title = escapeHtml(node.title);
   const topics = node.topics.slice(0, 6);
+
+  // Web links the original document contained — including those hidden behind
+  // markdown/HTML anchor text, whose URLs were stripped from the visible text
+  // during extraction. Relative/intra-corpus links are graph edges, not shown.
+  const webLinks = [...new Set(links.map((l) => l.trim()).filter((l) => hrefFor(l) !== null))].slice(
+    0,
+    200,
+  );
+  const linksSection =
+    webLinks.length > 0
+      ? `
+  <section class="links-section">
+    <div class="links-section__label">Links in this document</div>
+    <ul class="links-list">
+      ${webLinks
+        .map((l) => `<li>${anchor(hrefFor(l) as string, l)}</li>`)
+        .join('\n      ')}
+    </ul>
+  </section>`
+      : '';
 
   // Open synchronously (user gesture) to avoid popup blockers
   const w = window.open('', '_blank');
@@ -404,6 +472,57 @@ export function openDocumentViewer(
     margin: 32px 0;
   }
 
+  /* ─── Inline links (bare URLs/emails in the body) ─── */
+  .doc-link {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent-glow);
+    transition: color 150ms ease, border-color 150ms ease;
+    word-break: break-word;
+  }
+  .doc-link:hover {
+    color: var(--purple);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ─── Links section (URLs hidden behind markdown/HTML labels) ─── */
+  .links-section {
+    position: relative;
+    z-index: 1;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 48px 100px;
+    animation: fadeUp 600ms 250ms ease-out both;
+  }
+  .links-section__label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 14px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .links-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .links-list a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13.5px;
+    word-break: break-all;
+    border-bottom: 1px solid transparent;
+    transition: color 150ms ease, border-color 150ms ease;
+  }
+  .links-list a:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent-glow);
+  }
+
   /* ─── Back to top ─── */
   .back-to-top {
     position: fixed;
@@ -436,7 +555,7 @@ export function openDocumentViewer(
 
   /* ─── Responsive ─── */
   @media (max-width: 700px) {
-    .hero, .summary-card, .doc-body { padding-left: 24px; padding-right: 24px; }
+    .hero, .summary-card, .doc-body, .links-section { padding-left: 24px; padding-right: 24px; }
     .hero { padding-top: 48px; }
     .hero__title { font-size: 24px; }
   }
@@ -492,7 +611,7 @@ export function openDocumentViewer(
   <main class="doc-body">
     ${content}
   </main>
-
+${linksSection}
   <button class="back-to-top" id="btt" title="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
   <script>

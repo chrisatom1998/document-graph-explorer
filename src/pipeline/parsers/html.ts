@@ -54,6 +54,14 @@ export function parseHtml(bytes: ArrayBuffer, name: string): ParserResult {
     .replace(/<noscript\b[\s\S]*?<\/noscript\s*>/gi, ' ')
     .replace(/<head\b[\s\S]*?<\/head\s*>/gi, ' ');
 
+  // collect <a href> targets before tags are stripped — otherwise the URLs
+  // are lost and the link is unrecoverable when viewing the document.
+  const linkTargets: string[] = [];
+  for (const m of html.matchAll(/<a\b[^>]*\shref\s*=\s*("([^"]*)"|'([^']*)'|([^\s">]+))/gi)) {
+    const url = decodeEntities((m[2] ?? m[3] ?? m[4] ?? '').trim());
+    if (url && !url.startsWith('#')) linkTargets.push(url); // skip in-page anchors
+  }
+
   // collect headings (h1 doubles as the title fallback)
   const headings: string[] = [];
   for (const match of html.matchAll(/<h([1-6])[^>]*>([\s\S]*?)<\/h\1\s*>/gi)) {
@@ -82,7 +90,7 @@ export function parseHtml(bytes: ArrayBuffer, name: string): ParserResult {
     title: docTitle || h1Title || cleanFilename(name),
     text,
     headings,
-    mdLinkTargets: [],
+    mdLinkTargets: linkTargets,
     status: 'ok',
   };
 }

@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { docVectorStore, textStore } from '../store/runtimeStores';
+import { docVectorStore, mdLinkTargetsStore, textStore } from '../store/runtimeStores';
 import { hexFor } from '../scene/palette';
 import { timeAgo } from '../util/relativeTime';
 import DocAiSection from './DocAiSection';
@@ -101,7 +101,10 @@ export default function SidePanel() {
                 const cName = clusterNames[node.cluster]
                   ?? localClusterNames[node.cluster]
                   ?? `Cluster ${node.cluster}`;
-                openDocumentViewer(node, text, cName);
+                // The document's original link targets (persisted) — used to
+                // surface hyperlinks whose URLs extraction stripped from the
+                // visible text (markdown/HTML anchors).
+                openDocumentViewer(node, text, cName, mdLinkTargetsStore.get(node.id) ?? []);
               }}
             >
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">

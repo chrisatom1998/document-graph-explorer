@@ -21,6 +21,17 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/**
+ * An external web link (http/https/mailto/tel/ftp/protocol-relative). These
+ * point outside the corpus, so they never form a doc-to-doc reference edge —
+ * and skipping them keeps a link to "https://…/setup.md" from spuriously
+ * matching a local "setup.md" by basename.
+ */
+function isExternalUrl(target: string): boolean {
+  const t = target.trim();
+  return /^(https?:|mailto:|tel:|ftp:)/i.test(t) || t.startsWith('//');
+}
+
 /** basename, lowercased, without #fragment / ?query / ./ prefixes. */
 function normalizeLinkTarget(target: string): string {
   let t = target.trim();
@@ -86,6 +97,7 @@ export function referenceEdges(
   // 1) explicit md link targets -> another doc's fileName
   for (const doc of docs) {
     for (const target of doc.mdLinkTargets) {
+      if (isExternalUrl(target)) continue; // external web links aren't doc refs
       const base = normalizeLinkTarget(target);
       if (!base) continue;
       const matches = byFileName.get(base);
