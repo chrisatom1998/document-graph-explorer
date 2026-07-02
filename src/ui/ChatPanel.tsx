@@ -179,6 +179,7 @@ export default function ChatPanel() {
           className="chat-panel__close"
           onClick={() => setIsOpen(false)}
           aria-label="Close chat"
+          title="Close chat"
         >
           ✕
         </button>
@@ -217,6 +218,7 @@ export default function ChatPanel() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Ask a question…"
+          title="Ask a question about your documents. Enter to send, Shift+Enter for a new line."
           rows={1}
           disabled={isStreaming}
         />

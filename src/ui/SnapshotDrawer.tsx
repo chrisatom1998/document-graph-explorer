@@ -1,15 +1,17 @@
 /**
- * Snapshot drawer: lists saved snapshots with load/delete actions.
+ * Snapshot drawer: save the current graph as a named snapshot, and lists
+ * saved snapshots with load/delete actions.
  * Reuses the settings-backdrop / glass-panel pattern from SettingsPanel.
  */
 
-import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   deleteSnapshot,
   listSnapshots,
   type SnapshotSummary,
 } from '../persistence/cache';
-import { restoreSnapshotById } from '../persistence/session';
+import { restoreSnapshotById, saveCurrentSnapshot } from '../persistence/session';
+import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 
 const panelStyle: CSSProperties = {
@@ -54,20 +56,63 @@ function formatDate(ts: number): string {
   });
 }
 
+/** Default snapshot name: "Snapshot — Jul 2, 2026 5:50 AM" */
+function defaultSnapshotName(): string {
+  const d = new Date();
+  return `Snapshot — ${d.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })} ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+}
+
 export default function SnapshotDrawer() {
   const open = useUiStore((s) => s.snapshotsOpen);
   const setOpen = useUiStore((s) => s.setSnapshotsOpen);
+  const phase = useGraphStore((s) => s.phase);
   const [snapshots, setSnapshots] = useState<SnapshotSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState<number | null>(null); // snapshot being acted on
+
+  // Save current graph
+  const [saveName, setSaveName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveFlash, setSaveFlash] = useState(false);
+  const saveInputRef = useRef<HTMLInputElement | null>(null);
 
   const refresh = useCallback(() => {
     listSnapshots().then(setSnapshots);
   }, []);
 
   useEffect(() => {
-    if (open) refresh();
+    if (open) {
+      refresh();
+      setSaveName(defaultSnapshotName());
+      // Pre-select the default name so the user can immediately type over it.
+      requestAnimationFrame(() => saveInputRef.current?.select());
+    }
   }, [open, refresh]);
+
+  const handleSave = useCallback(async () => {
+    const name = saveName.trim() || defaultSnapshotName();
+    setSaving(true);
+    try {
+      const id = await saveCurrentSnapshot(name);
+      if (id !== undefined) {
+        setSaveFlash(true);
+        setTimeout(() => setSaveFlash(false), 1200);
+        setSaveName(defaultSnapshotName());
+        refresh();
+      } else {
+        useUiStore.getState().pushToast("Couldn't save the snapshot — storage is unavailable.");
+      }
+    } catch (err) {
+      console.warn('[knowledge-nebula] snapshot save failed', err);
+      useUiStore.getState().pushToast("Couldn't save the snapshot.");
+    } finally {
+      setSaving(false);
+    }
+  }, [saveName, refresh]);
 
   if (!open) return null;
 
@@ -89,6 +134,8 @@ export default function SnapshotDrawer() {
     refresh();
   };
 
+  const saveDisabled = phase !== 'ready' || saving;
+
   return (
     <div className="settings-backdrop" onClick={() => setOpen(false)}>
       <div
@@ -106,8 +153,34 @@ export default function SnapshotDrawer() {
             style={closeBtnStyle}
             onClick={() => setOpen(false)}
             aria-label="Close snapshots"
+            title="Close snapshots"
           >
             ✕
+          </button>
+        </div>
+
+        <div className="snapshot-save-row">
+          <input
+            ref={saveInputRef}
+            className="save-prompt__input"
+            type="text"
+            title="Name this snapshot"
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !saveDisabled) handleSave();
+            }}
+            placeholder="Snapshot name"
+            autoComplete="off"
+          />
+          <button
+            type="button"
+            className={`save-prompt__btn${saveFlash ? ' save-flash' : ''}`}
+            title="Save the current graph as a named snapshot"
+            disabled={saveDisabled}
+            onClick={handleSave}
+          >
+            {saving ? 'Saving…' : 'Save'}
           </button>
         </div>
 
@@ -115,7 +188,7 @@ export default function SnapshotDrawer() {
           <div className="snapshot-empty">
             <p className="snapshot-empty__text">No snapshots yet</p>
             <p className="snapshot-empty__hint">
-              Use the save button in the toolbar to create a snapshot of your current graph.
+              Use the save row above to create a snapshot of your current graph.
             </p>
           </div>
         ) : (

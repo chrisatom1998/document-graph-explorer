@@ -19,6 +19,7 @@ export default function EmptyState() {
           <button
             type="button"
             className="btn-pill"
+            title="Choose files or folders to build your graph"
             onClick={() => {
               openFilePicker();
             }}
@@ -28,6 +29,7 @@ export default function EmptyState() {
           <button
             type="button"
             className="btn-pill secondary"
+            title="Load a sample documentation set to explore the tool"
             onClick={() => {
               loadDemoCorpus().catch((err) => {
                 console.warn('demo corpus load failed', err);

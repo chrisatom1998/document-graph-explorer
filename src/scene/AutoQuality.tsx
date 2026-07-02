@@ -15,7 +15,7 @@
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { FRAME_BUDGET_MS, FRAME_BUDGET_SUSTAIN_MS } from '../config';
-import { layoutPause, layoutResume } from '../layout/layoutBridge';
+import { layoutPause, layoutResume, layoutSetDims } from '../layout/layoutBridge';
 import { useUiStore } from '../store/uiStore';
 import type { QualityTier } from '../store/uiStore';
 
@@ -56,10 +56,16 @@ export default function AutoQuality() {
       holdUntil.current = now + GRACE_MS;
       overSince.current = null;
       underSince.current = null;
-      if (ui.qualityTier < 4) announced4.current = false;
     }
+    // NOTE: announced4 is deliberately never reset — the "try 2D" toast shows
+    // at most once per session. Resetting it on recovery let an oscillating
+    // frame budget re-push the (non-auto-dismissing) toast on every
+    // degrade→recover→degrade cycle, stacking duplicates on screen.
 
     if (!ui.autoQuality) {
+      // Opted out: hold at maximum quality rather than freezing at whatever
+      // tier we'd degraded to (the Settings toggle promises "maximum quality").
+      if (ui.qualityTier !== 0) ui.setQualityTier(0);
       overSince.current = null;
       underSince.current = null;
       return;
@@ -82,11 +88,21 @@ export default function AutoQuality() {
         const next = Math.min(4, ui.qualityTier + 1) as QualityTier;
         if (next !== ui.qualityTier) {
           ui.setQualityTier(next);
-          if (next === 4 && !announced4.current) {
+          // Suggest 2D via the shared toast stack (once per session). Only
+          // consume the guard when we actually show it — if the budget first
+          // bottoms out while already in 2D, a later 3D re-degrade should
+          // still get the suggestion. The action toast persists until acted
+          // on or dismissed.
+          if (next === 4 && !announced4.current && ui.dims === 3) {
             announced4.current = true;
-            console.info(
-              'Knowledge Nebula: frame time is staying over budget at minimum quality — 2D mode is recommended (quality tier 4).',
-            );
+            ui.pushToast('Struggling to keep up — try 2D mode?', 'info', {
+              label: 'Switch to 2D',
+              run: () => {
+                const s = useUiStore.getState();
+                s.setDims(2);
+                layoutSetDims(2);
+              },
+            });
           }
         }
         overSince.current = null;

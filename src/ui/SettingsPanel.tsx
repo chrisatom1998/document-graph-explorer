@@ -83,6 +83,8 @@ const noteStyle: CSSProperties = { fontSize: 12.5, margin: 0 };
 export default function SettingsPanel() {
   const open = useUiStore((s) => s.settingsOpen);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
+  const autoQuality = useUiStore((s) => s.autoQuality);
+  const setAutoQuality = useUiStore((s) => s.setAutoQuality);
   const phase = useGraphStore((s) => s.phase);
 
   const geminiKey = useSettingsStore((s) => s.geminiKey);
@@ -148,6 +150,7 @@ export default function SettingsPanel() {
             style={closeBtnStyle}
             onClick={() => setSettingsOpen(false)}
             aria-label="Close settings"
+            title="Close settings"
           >
             ✕
           </button>
@@ -163,10 +166,14 @@ export default function SettingsPanel() {
               onChange={(e) => setGeminiKey(e.target.value)}
               placeholder="Paste your key"
               autoComplete="off"
+              title="Your Google Gemini API key. Stored only in this browser; used for enrichment, per-document AI, and chat."
               style={inputStyle}
             />
           </label>
-          <label style={checkboxRowStyle}>
+          <label
+            style={checkboxRowStyle}
+            title="Keep the key in this browser's local storage. Uncheck to hold it only in memory for this tab — you'll re-paste it next visit."
+          >
             <input
               type="checkbox"
               checked={rememberKey}
@@ -187,11 +194,15 @@ export default function SettingsPanel() {
               value={geminiModel}
               onChange={(e) => setGeminiModel(e.target.value)}
               placeholder={GEMINI_MODEL}
+              title="Gemini model id used for all AI calls (e.g. gemini-2.5-flash). Leave blank for the default."
               style={inputStyle}
             />
             <span style={helpStyle}>Gemini model used for summaries &amp; topic naming</span>
           </label>
-          <label style={checkboxRowStyle}>
+          <label
+            style={checkboxRowStyle}
+            title="Master switch for all Gemini features — enrichment, per-document AI, and chat. Off = fully local, no network."
+          >
             <input
               type="checkbox"
               checked={enrichEnabled}
@@ -220,14 +231,17 @@ export default function SettingsPanel() {
           <p style={helpStyle}>
             Your documents are processed locally. With enrichment ON, excerpts (first ~1,200
             chars per doc) are sent to Google&apos;s Gemini API; using &quot;Ask AI&quot; on a
-            selected document sends up to its first ~12,000 chars. The key is stored only in
-            this browser.
+            selected document, or chatting, sends the full text of the relevant document(s).
+            The key is stored only in this browser.
           </p>
         </section>
 
         <section style={sectionStyle}>
           <h3 style={headingStyle}>Export</h3>
-          <label style={checkboxRowStyle}>
+          <label
+            style={checkboxRowStyle}
+            title="Embed document vectors in the exported JSON so semantic search/chat work after re-import. Makes the file much larger."
+          >
             <input
               type="checkbox"
               checked={includeEmbeddings}
@@ -238,8 +252,28 @@ export default function SettingsPanel() {
         </section>
 
         <section style={sectionStyle}>
+          <h3 style={headingStyle}>Performance</h3>
+          <label
+            style={checkboxRowStyle}
+            title="Automatically lower visual quality (bloom, labels, depth of field) when the frame rate drops, and restore it when there's headroom. Turn off to keep maximum quality even if a large graph stutters."
+          >
+            <input
+              type="checkbox"
+              checked={autoQuality}
+              onChange={(e) => setAutoQuality(e.target.checked)}
+            />
+            Auto-adjust quality for smooth performance
+          </label>
+        </section>
+
+        <section style={sectionStyle}>
           <h3 style={headingStyle}>Data</h3>
-          <button type="button" onClick={onClearCache} style={buttonStyle}>
+          <button
+            type="button"
+            onClick={onClearCache}
+            title="Delete all locally cached documents, embeddings, graphs, and snapshots from this browser. Cannot be undone."
+            style={buttonStyle}
+          >
             Clear cached session
           </button>
           <p style={helpStyle}>

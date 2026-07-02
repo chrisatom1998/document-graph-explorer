@@ -18,13 +18,29 @@ function ToastRow({ toast }: { toast: Toast }) {
   const dismissToast = useUiStore((s) => s.dismissToast);
 
   useEffect(() => {
+    // Actionable toasts (e.g. "Switch to 2D") persist until dismissed or acted
+    // on — auto-hiding a suggestion the user might want to click is worse than
+    // leaving it up. Plain notifications still auto-dismiss.
+    if (toast.action) return;
     const t = setTimeout(() => dismissToast(toast.id), AUTO_DISMISS_MS[toast.kind]);
     return () => clearTimeout(t);
-  }, [toast.id, toast.kind, dismissToast]);
+  }, [toast.id, toast.kind, toast.action, dismissToast]);
 
   return (
     <div className={`toast toast--${toast.kind} glass-panel`} role="alert">
       <span className="toast__text">{toast.message}</span>
+      {toast.action && (
+        <button
+          type="button"
+          className="toast__action btn-pill secondary"
+          onClick={() => {
+            toast.action?.run();
+            dismissToast(toast.id);
+          }}
+        >
+          {toast.action.label}
+        </button>
+      )}
       <button
         type="button"
         className="icon-btn-close"

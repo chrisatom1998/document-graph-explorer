@@ -523,6 +523,64 @@ input {
   display: none;
 }
 
+/* Popover menus ("View ▾" / "Data ▾") — a trigger .btn-icon plus an
+   absolutely-positioned dropdown anchored beneath it. */
+.toolbar__menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.toolbar__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 190px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: var(--z-modal);
+  animation: kn-pop-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.toolbar__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+.toolbar__menu-item:hover {
+  background: var(--accent-soft);
+  border-color: var(--border-glass-strong);
+  color: var(--accent-strong);
+}
+.toolbar__menu-item.is-active {
+  background: var(--accent-soft);
+  border-color: rgba(143, 123, 255, 0.45);
+  color: var(--accent-strong);
+}
+.toolbar__menu-item svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: block;
+}
+
 /* ==========================================================================
    Side panel (reader)
    ========================================================================== */
@@ -718,13 +776,6 @@ input {
   color: var(--text-faint);
   font-style: italic;
   font-family: var(--font-ui);
-}
-
-.side-panel__section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
 }
 
 .side-panel__open-btn {
@@ -1037,7 +1088,10 @@ input {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding-bottom: 28px;
+  /* Raised from 28px so the popover clears ProgressStrip (bottom: 24px, ~90px
+     tall while ingest chips/phase row are showing) instead of overlapping it
+     when an edge is clicked during/just after ingest. */
+  padding-bottom: 130px;
   pointer-events: none;
 }
 
@@ -1311,34 +1365,6 @@ input {
   flex: none;
 }
 
-.quality-toast {
-  pointer-events: auto;
-  position: fixed;
-  left: 18px;
-  bottom: 24px;
-  z-index: var(--z-floating);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  max-width: 340px;
-  animation: kn-pop-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.quality-toast__text {
-  flex: 1 1 auto;
-  font-size: 12.5px;
-  color: var(--text-primary);
-  line-height: 1.4;
-}
-
-.quality-toast__actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: none;
-}
-
 /* ==========================================================================
    Toast host — global error/warning feedback (top-right, stacked)
    ========================================================================== */
@@ -1346,7 +1372,9 @@ input {
 .toast-host {
   position: fixed;
   top: 18px;
-  right: 18px;
+  /* 74px instead of 18px: clears SidePanel's close button (top-right of a
+     full-height right-docked panel) so toasts never render underneath it. */
+  right: 74px;
   z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
@@ -1380,6 +1408,14 @@ input {
   font-size: 12.5px;
   line-height: 1.45;
   color: var(--text-primary);
+}
+
+.toast__action {
+  flex: none;
+  align-self: center;
+  padding: 5px 12px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -1714,26 +1750,23 @@ input {
 }
 
 /* ==========================================================================
-   Save snapshot prompt + flash
+   Snapshot drawer — save row + flash
+   (Save moved from a toolbar popover into the drawer itself; the drawer's
+   inline row reuses these input/button styles without the old floating
+   popover's absolute positioning.)
    ========================================================================== */
 
-.toolbar__save-wrap {
-  position: relative;
-  display: inline-flex;
-}
-
-.save-prompt {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
+.snapshot-save-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  white-space: nowrap;
-  z-index: var(--z-modal);
-  animation: kn-pop-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  gap: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.snapshot-save-row .save-prompt__input {
+  flex: 1 1 auto;
+  width: auto;
 }
 
 .save-prompt__input {
@@ -1778,7 +1811,7 @@ input {
   100% { color: var(--text-secondary); }
 }
 
-.btn-icon.save-flash {
+.save-prompt__btn.save-flash {
   animation: kn-save-flash 1.2s ease both;
 }
 

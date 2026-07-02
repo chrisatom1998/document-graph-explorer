@@ -23,13 +23,9 @@ export const docVectorStore = new Map<string, Float32Array>(); // docId -> doc v
  */
 export const mdLinkTargetsStore = new Map<string, string[]>();
 
-/** docId → original uploaded file as a Blob (for "Open original" button). */
-export const rawBlobStore = new Map<string, Blob>();
-
 export function clearRuntimeStores(): void {
   textStore.clear();
   chunkStore.clear();
   docVectorStore.clear();
   mdLinkTargetsStore.clear();
-  rawBlobStore.clear();
 }

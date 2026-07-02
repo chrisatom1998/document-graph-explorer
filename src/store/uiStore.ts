@@ -9,12 +9,27 @@ export interface CameraCommand {
   ids?: string[];
 }
 
+/**
+ * Which feature owns the current scene highlight (the shared searchResults
+ * channel). Search, insights-highlight, and path mode all dim the scene the
+ * same way; tracking the owner lets each panel tell whether its highlight is
+ * still the active one instead of clobbering the others silently.
+ */
+export type HighlightOwner = 'search' | 'insights' | 'path';
+
 export type ToastKind = 'error' | 'warning' | 'info';
+
+/** Optional action button rendered inside a toast (e.g. "Switch to 2D"). */
+export interface ToastAction {
+  label: string;
+  run: () => void;
+}
 
 export interface Toast {
   id: number;
   message: string;
   kind: ToastKind;
+  action?: ToastAction;
 }
 
 export interface GraphFilter {
@@ -29,7 +44,8 @@ interface UiState {
   selectedId: string | null;
   selectedEdgeId: string | null;
   searchOpen: boolean;
-  searchResults: string[] | null; // null = no active search
+  searchResults: string[] | null; // null = no active highlight (shared channel)
+  highlightOwner: HighlightOwner | null; // which feature set searchResults
   filter: GraphFilter;
   dims: 2 | 3;
   topicNodesEnabled: boolean;
@@ -50,7 +66,7 @@ interface UiState {
   setSelected: (id: string | null) => void;
   setSelectedEdge: (id: string | null) => void;
   setSearchOpen: (open: boolean) => void;
-  setSearchResults: (ids: string[] | null) => void;
+  setSearchResults: (ids: string[] | null, owner?: HighlightOwner) => void;
   setFilter: (f: Partial<GraphFilter>) => void;
   setDims: (d: 2 | 3) => void;
   setTopicNodes: (v: boolean) => void;
@@ -61,7 +77,7 @@ interface UiState {
   setSettingsOpen: (v: boolean) => void;
   setInsightsOpen: (v: boolean) => void;
   setSnapshotsOpen: (v: boolean) => void;
-  pushToast: (message: string, kind?: ToastKind) => void;
+  pushToast: (message: string, kind?: ToastKind, action?: ToastAction) => void;
   dismissToast: (id: number) => void;
   /** Toggling (either way) clears any picked endpoints. */
   setPathMode: (v: boolean) => void;
@@ -77,6 +93,7 @@ export const useUiStore = create<UiState>((set) => ({
   selectedEdgeId: null,
   searchOpen: false,
   searchResults: null,
+  highlightOwner: null,
   filter: { fileTypes: null, clusters: null, minDegree: 0, minEdgeWeight: 0 },
   dims: 3,
   topicNodesEnabled: false,
@@ -96,7 +113,8 @@ export const useUiStore = create<UiState>((set) => ({
     set({ selectedId, selectedEdgeId: null }),
   setSelectedEdge: (selectedEdgeId) => set({ selectedEdgeId }),
   setSearchOpen: (searchOpen) => set({ searchOpen }),
-  setSearchResults: (searchResults) => set({ searchResults }),
+  setSearchResults: (searchResults, owner) =>
+    set({ searchResults, highlightOwner: searchResults ? (owner ?? null) : null }),
   setFilter: (f) => set((s) => ({ filter: { ...s.filter, ...f } })),
   setDims: (dims) => set({ dims }),
   setTopicNodes: (topicNodesEnabled) => set({ topicNodesEnabled }),
@@ -110,8 +128,8 @@ export const useUiStore = create<UiState>((set) => ({
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setInsightsOpen: (insightsOpen) => set({ insightsOpen }),
   setSnapshotsOpen: (snapshotsOpen) => set({ snapshotsOpen }),
-  pushToast: (message, kind = 'error') =>
-    set((s) => ({ toasts: [...s.toasts, { id: nextToastId++, message, kind }] })),
+  pushToast: (message, kind = 'error', action) =>
+    set((s) => ({ toasts: [...s.toasts, { id: nextToastId++, message, kind, action }] })),
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
   setPathMode: (pathMode) => set({ pathMode, pathEndpoints: [] }),
   addPathEndpoint: (id) =>

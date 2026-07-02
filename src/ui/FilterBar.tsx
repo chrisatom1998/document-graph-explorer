@@ -98,6 +98,7 @@ export default function FilterBar() {
                 className={`chip chip-selectable${
                   activeFileTypes.includes(ft) ? ' is-active' : ''
                 }`}
+                title={`Toggle ${ft} files on or off`}
                 onClick={() => toggleFileType(ft)}
               >
                 {ft} · {fileTypeCounts[ft]}
@@ -114,6 +115,7 @@ export default function FilterBar() {
                   className={`chip chip-selectable${
                     activeClusters.includes(c) ? ' is-active' : ''
                   }`}
+                  title={`Toggle cluster: ${clusterNames[c] ?? localClusterNames[c] ?? `C${c}`}`}
                   onClick={() => toggleCluster(c)}
                 >
                   <span
@@ -170,7 +172,12 @@ export default function FilterBar() {
           </div>
 
           {hasActiveFilter && (
-            <button type="button" className="filter-bar__clear" onClick={clearAll}>
+            <button
+              type="button"
+              className="filter-bar__clear"
+              title="Reset all filters (file types, clusters, connection and link-strength minimums)"
+              onClick={clearAll}
+            >
               Clear
             </button>
           )}

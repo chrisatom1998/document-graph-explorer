@@ -12,6 +12,7 @@ const OFFSET = 16;
 export default function Tooltip() {
   const hoveredId = useUiStore((s) => s.hoveredId);
   const selectedId = useUiStore((s) => s.selectedId);
+  const pathMode = useUiStore((s) => s.pathMode);
 
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
@@ -47,6 +48,12 @@ export default function Tooltip() {
   if (!visible || !node) return null;
 
   const topTopics = node.topics.slice(0, 3);
+  // Surface the otherwise-invisible scene gestures (drag-to-pin, path picking).
+  const hint = pathMode
+    ? node.kind === 'topic'
+      ? 'topic hub — pick documents for a path'
+      : 'click to add to path'
+    : 'click to read · drag to pin · double-click to release';
 
   return (
     <div
@@ -66,7 +73,7 @@ export default function Tooltip() {
           ))}
         </div>
       )}
-      <p className="hover-tooltip__hint">click to read</p>
+      <p className="hover-tooltip__hint">{hint}</p>
     </div>
   );
 }

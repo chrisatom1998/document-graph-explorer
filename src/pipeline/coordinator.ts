@@ -57,7 +57,6 @@ import {
   clearRuntimeStores,
   docVectorStore,
   mdLinkTargetsStore,
-  rawBlobStore,
   textStore,
 } from '../store/runtimeStores';
 import { useChatStore } from '../store/chatStore';
@@ -295,14 +294,6 @@ async function runIngest(files: IngestFile[]): Promise<void> {
     store().setPhase('parsing');
     const parseTasks = misses.map(async (p) => {
       store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'parsing' });
-      // Clone original bytes as a Blob before the ArrayBuffer is transferred to the worker
-      const mimeMap: Record<string, string> = {
-        md: 'text/markdown', txt: 'text/plain', html: 'text/html',
-        json: 'application/json', yaml: 'text/yaml', csv: 'text/csv',
-        pdf: 'application/pdf', other: 'application/octet-stream',
-      };
-      const mime = mimeMap[p.fileType] ?? 'application/octet-stream';
-      rawBlobStore.set(p.id, new Blob([p.file.bytes.slice(0)], { type: mime }));
       let done: ParseDone;
       if (p.fileType === 'pdf') {
         const pdf = await parsePdf(p.file.bytes, p.file.name);
@@ -713,7 +704,8 @@ async function runRemove(ids: string[]): Promise<void> {
   if (ui.searchResults) {
     const kept = ui.searchResults.filter((id) => !gone.has(id));
     if (kept.length !== ui.searchResults.length) {
-      ui.setSearchResults(kept.length > 0 ? kept : null);
+      // Keep the same owner so the highlighting panel stays in sync.
+      ui.setSearchResults(kept.length > 0 ? kept : null, ui.highlightOwner ?? undefined);
     }
   }
   if (ui.pathEndpoints.some((id) => gone.has(id))) {
@@ -730,7 +722,6 @@ async function runRemove(ids: string[]): Promise<void> {
     chunkStore.delete(id);
     docVectorStore.delete(id);
     mdLinkTargetsStore.delete(id);
-    rawBlobStore.delete(id);
     lexMeta.delete(id);
     fileIdOfDoc.delete(id);
     nameOfDoc.delete(id);

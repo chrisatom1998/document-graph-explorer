@@ -40,10 +40,10 @@ export default function PathPanel() {
       return;
     }
     if (path) {
-      setSearchResults(path);
+      setSearchResults(path, 'path');
       sendCamera('frameSet', path);
     } else {
-      setSearchResults(pathEndpoints);
+      setSearchResults(pathEndpoints, 'path');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, pathEndpoints.length]);
@@ -92,6 +92,7 @@ export default function PathPanel() {
               <button
                 type="button"
                 className="path-panel__row"
+                title={`${titleOf(id)} — click to focus in the graph`}
                 onClick={() => focusNode(id)}
               >
                 {titleOf(id)}

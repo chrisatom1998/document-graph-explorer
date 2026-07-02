@@ -239,6 +239,14 @@ export default function ClusterCollapse() {
     }
   };
 
+  // Super-nodes are clickable (expand + frame the cluster) — signal it on hover.
+  const handlePointerOver = (): void => {
+    document.body.style.cursor = 'pointer';
+  };
+  const handlePointerOut = (): void => {
+    document.body.style.cursor = '';
+  };
+
   if (!clusterCollapsed) return null;
 
   return (
@@ -249,6 +257,8 @@ export default function ClusterCollapse() {
         args={[undefined, undefined, MAX_CLUSTERS]}
         frustumCulled={false}
         onClick={handleClick}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
       >
         <sphereGeometry args={[1, 32, 24]} />
         <meshPhongMaterial specular="#6a6a82" shininess={58} />

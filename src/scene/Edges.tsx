@@ -178,10 +178,24 @@ export default function Edges() {
     useUiStore.getState().setSelectedEdge(edge.id);
   };
 
+  // Edges are clickable (evidence popover) but nothing signalled it — show the
+  // pointer cursor on hover so the affordance is discoverable.
+  const handlePointerOver = (): void => {
+    document.body.style.cursor = 'pointer';
+  };
+  const handlePointerOut = (): void => {
+    document.body.style.cursor = '';
+  };
+
   if (edges.length === 0) return null;
 
   return (
-    <lineSegments frustumCulled={false} onClick={handleClick}>
+    <lineSegments
+      frustumCulled={false}
+      onClick={handleClick}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
+    >
       <bufferGeometry ref={geomRef}>
         <primitive object={attrs.positions} attach="attributes-position" />
         <primitive object={attrs.colors} attach="attributes-color" />

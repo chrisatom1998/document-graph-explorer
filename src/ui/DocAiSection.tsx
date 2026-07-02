@@ -90,6 +90,7 @@ export default function DocAiSection({ docId, title }: Props) {
           <button
             type="button"
             className="doc-ai__link"
+            title="Open Settings to add your Gemini API key"
             onClick={() => setSettingsOpen(true)}
           >
             Open Settings
@@ -101,6 +102,7 @@ export default function DocAiSection({ docId, title }: Props) {
             <button
               type="button"
               className="btn-pill secondary doc-ai__btn"
+              title="Generate an AI summary of this document"
               disabled={busy !== null}
               onClick={() => run('summarize')}
             >
@@ -109,6 +111,7 @@ export default function DocAiSection({ docId, title }: Props) {
             <button
               type="button"
               className="btn-pill secondary doc-ai__btn"
+              title="Produce a hierarchical outline of everything in this document"
               disabled={busy !== null}
               onClick={() => run('outline')}
             >
@@ -121,6 +124,7 @@ export default function DocAiSection({ docId, title }: Props) {
               className="doc-ai__input"
               value={question}
               placeholder="Ask about this document…"
+              title="Ask a question answered only from this document"
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') submitQuestion();
@@ -129,6 +133,7 @@ export default function DocAiSection({ docId, title }: Props) {
             <button
               type="button"
               className="btn-pill secondary doc-ai__btn"
+              title="Send your question about this document to Gemini"
               disabled={busy !== null || question.trim() === ''}
               onClick={submitQuestion}
             >

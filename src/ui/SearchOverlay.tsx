@@ -61,7 +61,7 @@ export default function SearchOverlay() {
           setResults(res);
           setActiveIndex(0);
           setSearched(true);
-          setSearchResults(res.map((r) => r.id));
+          setSearchResults(res.map((r) => r.id), 'search');
         })
         .catch((err) => {
           console.warn('search failed', err);
@@ -119,6 +119,7 @@ export default function SearchOverlay() {
             className="search-overlay__input"
             type="text"
             value={query}
+            title="Search your documents by meaning, not just keywords"
             placeholder="Search your nebula… (semantic + title)"
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -133,6 +134,7 @@ export default function SearchOverlay() {
               <div
                 key={row.id}
                 className={`search-result-row${i === activeIndex ? ' is-active' : ''}`}
+                title={`${node?.title ?? row.id} — click to open`}
                 onMouseEnter={() => setActiveIndex(i)}
                 onClick={() => selectResult(row.id)}
               >

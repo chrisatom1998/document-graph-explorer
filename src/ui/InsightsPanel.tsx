@@ -28,6 +28,7 @@ export default function InsightsPanel() {
   const setInsightsOpen = useUiStore((s) => s.setInsightsOpen);
   const setSelected = useUiStore((s) => s.setSelected);
   const setSearchResults = useUiStore((s) => s.setSearchResults);
+  const highlightOwner = useUiStore((s) => s.highlightOwner);
   const sendCamera = useUiStore((s) => s.sendCamera);
 
   const nodes = useGraphStore((s) => s.nodes);
@@ -43,6 +44,12 @@ export default function InsightsPanel() {
   useEffect(() => {
     if (!open) setHighlighted(null);
   }, [open]);
+
+  // If search or path mode takes over the shared highlight, our "Clear" button
+  // would otherwise keep claiming a highlight we no longer own — drop it.
+  useEffect(() => {
+    if (highlightOwner !== 'insights') setHighlighted(null);
+  }, [highlightOwner]);
 
   const insights = useMemo(() => {
     if (!open) return null; // betweenness is the only non-trivial cost — skip while closed
@@ -73,7 +80,7 @@ export default function InsightsPanel() {
       setSearchResults(null);
     } else {
       setHighlighted(section);
-      setSearchResults(ids);
+      setSearchResults(ids, 'insights');
     }
   };
 
@@ -101,6 +108,7 @@ export default function InsightsPanel() {
           <button
             type="button"
             className={`insights__highlight-btn${highlighted === key ? ' is-active' : ''}`}
+            title={highlighted === key ? 'Clear this highlight from the graph' : 'Dim everything except these documents in the graph'}
             onClick={() => toggleHighlight(key, ids)}
           >
             {highlighted === key ? 'Clear' : 'Highlight'}
@@ -151,6 +159,7 @@ export default function InsightsPanel() {
                     key={id}
                     type="button"
                     className="insights__row"
+                    title={`${titleOf(id)} — click to focus in the graph`}
                     onClick={() => focusNode(id)}
                   >
                     {titleOf(id)}
@@ -177,13 +186,13 @@ export default function InsightsPanel() {
                 </p>
                 {insights.duplicates.map((d) => (
                   <div className="insights__pair" key={`${d.a}|${d.b}`}>
-                    <button type="button" className="insights__row" onClick={() => focusNode(d.a)}>
+                    <button type="button" className="insights__row" title={`${titleOf(d.a)} — click to focus in the graph`} onClick={() => focusNode(d.a)}>
                       {titleOf(d.a)}
                     </button>
                     <span className="insights__pair-sim">
                       ≈ {(d.sim * 100).toFixed(1)}%
                     </span>
-                    <button type="button" className="insights__row" onClick={() => focusNode(d.b)}>
+                    <button type="button" className="insights__row" title={`${titleOf(d.b)} — click to focus in the graph`} onClick={() => focusNode(d.b)}>
                       {titleOf(d.b)}
                     </button>
                   </div>
@@ -211,7 +220,7 @@ export default function InsightsPanel() {
                 </p>
                 {insights.bridges.map((b) => (
                   <div className="insights__bridge" key={b.id}>
-                    <button type="button" className="insights__row" onClick={() => focusNode(b.id)}>
+                    <button type="button" className="insights__row" title={`${titleOf(b.id)} — click to focus in the graph`} onClick={() => focusNode(b.id)}>
                       {titleOf(b.id)}
                     </button>
                     <div className="connection-row__weight-track">
@@ -248,6 +257,7 @@ export default function InsightsPanel() {
                     key={d.id}
                     type="button"
                     className="insights__row"
+                    title={`${titleOf(d.id)} — click to focus in the graph`}
                     onClick={() => focusNode(d.id)}
                   >
                     {titleOf(d.id)}

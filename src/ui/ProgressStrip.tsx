@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import type { FileStage, PipelinePhase } from '../model/types';
-import QualityToast from './QualityToast';
 
 const AUTO_HIDE_MS = 2500;
 const IGNORED_LINGER_MS = 6000;
@@ -73,11 +72,7 @@ export default function ProgressStrip() {
   const active = phase !== 'idle' && phase !== 'ready';
   const visible = active || lingering || ignoredFlash;
 
-  if (!visible) {
-    // Still render QualityToast — it's an independent status affordance
-    // that isn't gated on ingestion being in-flight.
-    return <QualityToast />;
-  }
+  if (!visible) return null;
 
   const statuses = Object.values(fileStatuses);
   // During enrichment the bar tracks Gemini passes, not file ingestion —
@@ -156,6 +151,7 @@ export default function ProgressStrip() {
             <button
               type="button"
               className="ignored-tray__toggle"
+              title="Show or hide the files that were skipped during ingestion"
               onClick={() => setIgnoredOpen((v) => !v)}
             >
               {ignoredFiles.length} ignored {ignoredOpen ? '▾' : '▸'}
@@ -173,7 +169,6 @@ export default function ProgressStrip() {
           </div>
         )}
       </div>
-      <QualityToast />
     </div>
   );
 }
