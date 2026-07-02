@@ -1,5 +1,6 @@
 import { EMBED_DIMS } from '../config';
 import type { DocNode, GraphExport } from '../model/types';
+import { useUiStore } from '../store/uiStore';
 import { getDb, type DocumentRecord, type EmbeddingRecord, type SnapshotRecord } from './db';
 
 export interface CachedDoc {
@@ -8,6 +9,7 @@ export interface CachedDoc {
   chunkTexts: string[];
   chunkVectors: Float32Array | null;
   docVector: Float32Array | null;
+  mdLinkTargets: string[];
 }
 
 /** Lightweight snapshot summary for listing (no heavy exportData/positions). */
@@ -18,6 +20,13 @@ export interface SnapshotSummary {
   nodeCount: number;
 }
 
+function isQuotaExceeded(err: unknown): boolean {
+  return (
+    (err instanceof DOMException && err.name === 'QuotaExceededError') ||
+    (err instanceof Error && err.name === 'QuotaExceededError')
+  );
+}
+
 let warnedOnce = false;
 function cacheUnavailable(err: unknown): void {
   if (warnedOnce) return;
@@ -26,6 +35,14 @@ function cacheUnavailable(err: unknown): void {
     '[knowledge-nebula] IndexedDB unavailable — session caching disabled for this visit.',
     err,
   );
+  useUiStore
+    .getState()
+    .pushToast(
+      isQuotaExceeded(err)
+        ? "Storage is full — your session won't be saved. Clear cached data in Settings to free space."
+        : "This browser blocked local storage — your session won't be saved automatically.",
+      'warning',
+    );
 }
 
 function nonEmpty(a: Float32Array | null | undefined): Float32Array | null {
@@ -48,6 +65,7 @@ export async function lookupDocCache(hash: string): Promise<CachedDoc | undefine
       chunkTexts: doc.chunkTexts,
       chunkVectors: nonEmpty(emb?.chunkVectors),
       docVector: nonEmpty(emb?.docVector),
+      mdLinkTargets: doc.mdLinkTargets ?? [],
     };
   } catch (err) {
     cacheUnavailable(err);
@@ -79,6 +97,7 @@ export async function saveDocsToCache(
     chunkTexts: string[];
     chunkVectors: Float32Array | null;
     docVector: Float32Array | null;
+    mdLinkTargets: string[];
   }[],
 ): Promise<void> {
   if (docs.length === 0) return;
@@ -97,6 +116,7 @@ export async function saveDocsToCache(
         node: d.node,
         text: d.text,
         chunkTexts: d.chunkTexts,
+        mdLinkTargets: d.mdLinkTargets,
       };
       ops.push(docStore.put(docRec));
       const docVector = nonEmpty(d.docVector);

@@ -12,9 +12,8 @@ import {
   BRIDGE_TOP_N,
   DUP_SIM_THRESHOLD,
 } from '../config';
-import { computeBridges, computeDuplicates, computeOrphans } from '../graph/insights';
+import { computeBridges, computeOrphans } from '../graph/insights';
 import { useGraphStore } from '../store/graphStore';
-import { docVectorStore } from '../store/runtimeStores';
 import { useUiStore } from '../store/uiStore';
 
 type SectionKey = 'orphans' | 'duplicates' | 'bridges';
@@ -29,6 +28,7 @@ export default function InsightsPanel() {
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
   const edges = useGraphStore((s) => s.edges);
+  const duplicatePairs = useGraphStore((s) => s.duplicatePairs);
   const phase = useGraphStore((s) => s.phase);
 
   const [highlighted, setHighlighted] = useState<SectionKey | null>(null);
@@ -43,14 +43,14 @@ export default function InsightsPanel() {
     if (!open) return null; // betweenness is the only non-trivial cost — skip while closed
     return {
       orphans: computeOrphans(nodes, edges),
-      duplicates: computeDuplicates(edges, (id) => docVectorStore.get(id), DUP_SIM_THRESHOLD),
+      duplicates: duplicatePairs,
       bridges: computeBridges(nodes, edges, {
         topN: BRIDGE_TOP_N,
         minScore: BRIDGE_MIN_SCORE,
         maxPivots: BRIDGE_MAX_PIVOTS,
       }),
     };
-  }, [open, nodes, edges]);
+  }, [open, nodes, edges, duplicatePairs]);
 
   if (!open || !insights) return null;
 

@@ -5,6 +5,7 @@ import { useUiStore } from '../store/uiStore';
 import { docVectorStore, textStore } from '../store/runtimeStores';
 import { hexFor } from '../scene/palette';
 import DocAiSection from './DocAiSection';
+import VirtualText from './VirtualText';
 import type { DocNode, Edge, EdgeKind } from '../model/types';
 
 const KIND_COLOR: Record<EdgeKind, string> = {
@@ -21,7 +22,7 @@ interface ConnectionRow {
 }
 
 function isMonoFileType(fileType: DocNode['fileType']): boolean {
-  return fileType === 'txt' || fileType === 'other';
+  return fileType === 'txt' || fileType === 'json' || fileType === 'yaml' || fileType === 'csv' || fileType === 'other';
 }
 
 export default function SidePanel() {
@@ -51,27 +52,27 @@ export default function SidePanel() {
     return rows;
   }, [node, edges, nodes, nodeIndex]);
 
-  // Near-duplicates of THIS doc: semantic neighbors whose exact vector cosine
-  // clears DUP_SIM_THRESHOLD (same rule as the insights panel).
+  // Near-duplicates of THIS doc: exact vector cosine against every other
+  // document, not just existing semantic-edge neighbors — a genuine
+  // duplicate can be crowded out of the mutual-top-k edge rule by other
+  // near-duplicates (see similarity.ts), so scanning edges alone would miss
+  // it. O(n) for the selected node only, cheap enough for the main thread.
   const duplicatesOf = useMemo<{ id: string; sim: number }[]>(() => {
     if (!node) return [];
     const va = docVectorStore.get(node.id);
     if (!va) return [];
     const out: { id: string; sim: number }[] = [];
-    for (const edge of edges) {
-      if (edge.kind !== 'semantic') continue;
-      const otherId =
-        edge.source === node.id ? edge.target : edge.target === node.id ? edge.source : null;
-      if (!otherId) continue;
-      const vb = docVectorStore.get(otherId);
+    for (const other of nodes) {
+      if (other.id === node.id || other.kind !== 'document') continue;
+      const vb = docVectorStore.get(other.id);
       if (!vb || vb.length !== va.length) continue;
       let dot = 0;
       for (let d = 0; d < va.length; d += 1) dot += va[d] * vb[d];
-      if (dot >= DUP_SIM_THRESHOLD) out.push({ id: otherId, sim: dot });
+      if (dot >= DUP_SIM_THRESHOLD) out.push({ id: other.id, sim: dot });
     }
     out.sort((x, y) => y.sim - x.sim);
     return out;
-  }, [node, edges]);
+  }, [node, nodes]);
 
   if (!node) return null;
 
@@ -230,13 +231,12 @@ export default function SidePanel() {
           <div className="side-panel__section">
             <p className="side-panel__section-label">Document</p>
             {fullText ? (
-              <div
+              <VirtualText
+                text={fullText}
                 className={`side-panel__reader${
                   isMonoFileType(node.fileType) ? ' is-mono' : ''
                 }`}
-              >
-                {fullText}
-              </div>
+              />
             ) : (
               <div className="side-panel__reader is-unavailable">
                 text unavailable

@@ -22,6 +22,7 @@ import EdgePulses from './EdgePulses';
 import Labels from './Labels';
 import Effects from './Effects';
 import AutoQuality from './AutoQuality';
+import ClusterCollapse from './ClusterCollapse';
 
 export default function NebulaCanvas() {
   return (
@@ -54,6 +55,7 @@ export default function NebulaCanvas() {
       <Edges />
       <EdgePulses />
       <Labels />
+      <ClusterCollapse />
       <Effects />
       <AutoQuality />
     </Canvas>

@@ -20,6 +20,8 @@ export interface DocumentRecord {
   node: DocNode;
   text: string;
   chunkTexts: string[];
+  /** Markdown link targets — absent on records written before this field existed. */
+  mdLinkTargets?: string[];
 }
 
 export interface EmbeddingRecord {

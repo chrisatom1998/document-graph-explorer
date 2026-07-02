@@ -67,6 +67,9 @@ function runParser(req: Extract<PoolRequest, { type: 'parse' }>): ParserResult {
     case 'html':
       return parseHtml(req.bytes, req.name);
     case 'txt':
+    case 'json':
+    case 'yaml':
+    case 'csv':
     case 'other':
       return parseTxt(req.bytes, req.name);
     case 'pdf':

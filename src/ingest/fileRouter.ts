@@ -14,11 +14,11 @@ const EXT_MAP: Record<string, FileType> = {
   pdf: 'pdf',
   html: 'html',
   htm: 'html',
-  // code/config stretch types — treated as plain text with a type badge
-  json: 'other',
-  yaml: 'other',
-  yml: 'other',
-  csv: 'other',
+  // code/config stretch types — treated as plain text with a per-extension type badge (spec §4.2)
+  json: 'json',
+  yaml: 'yaml',
+  yml: 'yaml',
+  csv: 'csv',
 };
 
 export function routeFile(name: string): FileType | null {

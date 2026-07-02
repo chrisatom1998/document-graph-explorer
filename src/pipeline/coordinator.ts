@@ -14,10 +14,12 @@
  */
 
 import {
+  DUP_SIM_THRESHOLD,
   EMBED_DIMS,
   KEYWORD_EDGE_MIN_SHARED,
   KEYWORD_EDGES_PER_DOC,
   MAX_EMBED_TEXT_BYTES,
+  MAX_NODES,
   MIN_MENTION_TITLE_LEN,
   SIM_THRESHOLD,
   SIM_TOP_K,
@@ -53,6 +55,7 @@ import {
   chunkStore,
   clearRuntimeStores,
   docVectorStore,
+  mdLinkTargetsStore,
   textStore,
 } from '../store/runtimeStores';
 import { useUiStore } from '../store/uiStore';
@@ -130,16 +133,15 @@ function aggRequest<T extends AggResponse>(
 // ---------------------------------------------------------------------------
 
 /**
- * Lexical metadata (term frequencies, md link targets, original filename)
- * lives outside DocNode; kept per docId for corpus-wide lexical reruns.
- * Docs hydrated from cache are backfilled via a worker 'analyze' pass
- * (their md link targets are not recoverable from extracted text — see
- * the deviation note in the subsystem report).
+ * Lexical metadata (term frequencies, original filename) lives outside
+ * DocNode; kept per docId for corpus-wide lexical reruns. Docs hydrated
+ * from cache are backfilled via a worker 'analyze' pass. Md link targets
+ * live in mdLinkTargetsStore instead (they're not recoverable from
+ * extracted text, so they're persisted directly rather than backfilled).
  */
 interface LexMeta {
   tf: Record<string, number>;
   totalTerms: number;
-  mdLinkTargets: string[];
   fileName: string;
 }
 const lexMeta = new Map<string, LexMeta>();
@@ -261,6 +263,17 @@ async function runIngest(files: IngestFile[]): Promise<void> {
       misses.push(p);
       continue;
     }
+    const dropped = layoutAddNodes([{ id: p.id, cluster: cached.node.cluster, spawn: randomSpawn() }]);
+    if (dropped.length > 0) {
+      store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
+      store().setFileStatus({
+        fileId: p.file.fileId,
+        name: p.file.name,
+        stage: 'error',
+        error: `Node limit reached (${MAX_NODES} max)`,
+      });
+      continue;
+    }
     store().addNodes([cached.node]);
     textStore.set(p.id, cached.text);
     chunkStore.set(p.id, {
@@ -269,7 +282,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
       dims: EMBED_DIMS,
     });
     if (cached.docVector) docVectorStore.set(p.id, cached.docVector);
-    layoutAddNodes([{ id: p.id, cluster: cached.node.cluster, spawn: randomSpawn() }]);
+    mdLinkTargetsStore.set(p.id, cached.mdLinkTargets);
     store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
   }
 
@@ -310,12 +323,23 @@ async function runIngest(files: IngestFile[]): Promise<void> {
         );
       }
       const doc = done.doc;
+      const dropped = layoutAddNodes([{ id: p.id, cluster: -1, spawn: randomSpawn() }]);
+      if (dropped.length > 0) {
+        store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
+        store().setFileStatus({
+          fileId: p.file.fileId,
+          name: p.file.name,
+          stage: 'error',
+          error: `Node limit reached (${MAX_NODES} max)`,
+        });
+        return;
+      }
       lexMeta.set(p.id, {
         tf: doc.tf,
         totalTerms: doc.totalTerms,
-        mdLinkTargets: doc.mdLinkTargets,
         fileName: p.file.name,
       });
+      mdLinkTargetsStore.set(p.id, doc.mdLinkTargets);
       const node: DocNode = {
         id: p.id,
         kind: 'document',
@@ -335,7 +359,6 @@ async function runIngest(files: IngestFile[]): Promise<void> {
       };
       store().addNodes([node]);
       textStore.set(p.id, doc.text);
-      layoutAddNodes([{ id: p.id, cluster: -1, spawn: randomSpawn() }]);
       store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'placed' });
     });
     const settled = await Promise.allSettled(parseTasks);
@@ -435,7 +458,7 @@ async function runLexicalPass(
       tf: meta?.tf ?? {},
       totalTerms: meta?.totalTerms ?? 0,
       textLower: text.slice(0, MAX_EMBED_TEXT_BYTES).toLowerCase(),
-      mdLinkTargets: meta?.mdLinkTargets ?? [],
+      mdLinkTargets: mdLinkTargetsStore.get(n.id) ?? [],
     };
   });
 
@@ -501,10 +524,11 @@ async function runSemanticPass(lexEdges: Edge[]): Promise<void> {
         vectors,
         dims: EMBED_DIMS,
         existingEdges: toLinkInput(lexEdges),
-        params: { threshold: SIM_THRESHOLD, topK: SIM_TOP_K },
+        params: { threshold: SIM_THRESHOLD, topK: SIM_TOP_K, dupThreshold: DUP_SIM_THRESHOLD },
       },
       [vectors.buffer], // `vectors` is a copy; the doc vectors stay in the store
     );
+    store().setDuplicatePairs(semantic.duplicates);
     const merged = new Map<string, Edge>();
     for (const edge of [...lexEdges, ...semantic.edges]) {
       if (!merged.has(edge.id)) merged.set(edge.id, edge);
@@ -567,6 +591,7 @@ async function runRemove(ids: string[]): Promise<void> {
     textStore.delete(id);
     chunkStore.delete(id);
     docVectorStore.delete(id);
+    mdLinkTargetsStore.delete(id);
     lexMeta.delete(id);
     fileIdOfDoc.delete(id);
     nameOfDoc.delete(id);
@@ -620,8 +645,8 @@ async function runRemove(ids: string[]): Promise<void> {
 /**
  * Docs in the store without lexical metadata (hydrated from cache or
  * restored by the persistence subsystem) get tf/totalTerms recomputed off
- * the main thread via 'analyze'. mdLinkTargets are not recoverable from
- * extracted text and stay empty for those docs.
+ * the main thread via 'analyze'. Their mdLinkTargets are already in
+ * mdLinkTargetsStore (populated at hydration time), so they're untouched here.
  */
 async function backfillLexMeta(pool: WorkerPool): Promise<void> {
   const missing = documentNodes().filter((n) => !lexMeta.has(n.id) && textStore.has(n.id));
@@ -645,7 +670,6 @@ async function backfillLexMeta(pool: WorkerPool): Promise<void> {
       lexMeta.set(n.id, {
         tf: done.doc.tf,
         totalTerms: done.doc.totalTerms,
-        mdLinkTargets: [],
         fileName,
       });
     }),

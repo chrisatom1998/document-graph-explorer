@@ -110,6 +110,12 @@ export function computeEmphasis(
 
 const MATERIALIZE_MS = 700;
 const HALO_SCALE = 1.9;
+const HALO_OPACITY = 0.2;
+// Additive halos stack like the edges do: in crowded graphs the overlapping
+// shells (and the bloom they feed) wash out the core spheres, so halo opacity
+// eases down with node count. Floor keeps sparse regions of a big graph lit.
+const HALO_FADE_START = 500;
+const HALO_FADE_FLOOR = 0.5;
 const DIM_FACTOR = 0.12;
 const GHOST_COLOR_FACTOR = 0.35;
 const GHOST_SCALE_FACTOR = 0.8;
@@ -278,9 +284,11 @@ export default function Nodes() {
         s.hoveredId !== prev.hoveredId ||
         s.selectedId !== prev.selectedId ||
         s.searchResults !== prev.searchResults ||
-        s.filter !== prev.filter
+        s.filter !== prev.filter ||
+        s.clusterCollapsed !== prev.clusterCollapsed
       ) {
         colorsDirty.current = true;
+        matricesDirty.current = true;
       }
     });
     metaDirty.current = true;
@@ -397,6 +405,11 @@ export default function Nodes() {
       metaDirty.current = true;
       colorsDirty.current = true;
       matricesDirty.current = true;
+      const haloFade =
+        count <= HALO_FADE_START
+          ? 1
+          : Math.max(HALO_FADE_FLOOR, Math.sqrt(HALO_FADE_START / count));
+      (halo.material as THREE.MeshBasicMaterial).opacity = HALO_OPACITY * haloFade;
     }
     if (metaDirty.current) {
       refreshSlotMeta();
@@ -422,6 +435,7 @@ export default function Nodes() {
     const arr = positionBuffer.array;
     const now = performance.now();
     let stillAnimating = false;
+    const collapsed = useUiStore.getState().clusterCollapsed;
 
     for (let i = 0; i < count; i++) {
       const o = i * 3;
@@ -429,6 +443,12 @@ export default function Nodes() {
 
       let scale = scaleOfSlot[i] || 1.1;
       let haloScale = scale * HALO_SCALE;
+
+      // Cluster-collapse mode: hide individual nodes (spec §9 super-nodes)
+      if (collapsed) {
+        scale = 0;
+        haloScale = 0;
+      }
 
       // materialize: ease-out-back pop + a brief halo flare (spec §8)
       const spawn = spawnAtOfSlot[i] as number | undefined; // sparse array
@@ -498,7 +518,7 @@ export default function Nodes() {
         <sphereGeometry args={[1, 24, 18]} />
         <meshBasicMaterial
           transparent
-          opacity={0.2}
+          opacity={HALO_OPACITY}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}

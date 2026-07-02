@@ -78,12 +78,14 @@ export default function SnapshotDrawer() {
     setLoading(false);
     setActionId(null);
     if (ok) setOpen(false);
+    else useUiStore.getState().pushToast("Couldn't load that snapshot.");
   };
 
   const handleDelete = async (id: number) => {
     setActionId(id);
-    await deleteSnapshot(id);
+    const ok = await deleteSnapshot(id);
     setActionId(null);
+    if (!ok) useUiStore.getState().pushToast("Couldn't delete that snapshot.");
     refresh();
   };
 

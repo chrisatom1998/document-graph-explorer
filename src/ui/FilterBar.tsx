@@ -4,7 +4,7 @@ import { useUiStore } from '../store/uiStore';
 import { hexFor } from '../scene/palette';
 import type { FileType } from '../model/types';
 
-const FILE_TYPE_ORDER: FileType[] = ['md', 'txt', 'pdf', 'html', 'other'];
+const FILE_TYPE_ORDER: FileType[] = ['md', 'txt', 'pdf', 'html', 'json', 'yaml', 'csv', 'other'];
 
 function IconFunnel() {
   return (
@@ -22,10 +22,10 @@ function IconFunnel() {
 }
 
 /**
- * Slim collapsible chip bar (top-left) for file-type / cluster / min-degree
- * filtering. Owns its own collapsed state — uiStore has no filterOpen field
- * by design (see prompt decision), so this never needs to touch shared
- * stores beyond `filter` itself.
+ * Slim collapsible chip bar (top-left) for file-type / cluster / min-degree /
+ * min-edge-weight filtering. Owns its own collapsed state — uiStore has no
+ * filterOpen field by design, so this never needs to touch shared stores
+ * beyond `filter` itself.
  */
 export default function FilterBar() {
   const nodes = useGraphStore((s) => s.nodes);
@@ -70,9 +70,9 @@ export default function FilterBar() {
   };
 
   const hasActiveFilter =
-    filter.fileTypes !== null || filter.clusters !== null || filter.minDegree > 0;
+    filter.fileTypes !== null || filter.clusters !== null || filter.minDegree > 0 || filter.minEdgeWeight > 0;
 
-  const clearAll = () => setFilter({ fileTypes: null, clusters: null, minDegree: 0 });
+  const clearAll = () => setFilter({ fileTypes: null, clusters: null, minDegree: 0, minEdgeWeight: 0 });
 
   return (
     <div className="filter-bar-layer">
@@ -138,6 +138,21 @@ export default function FilterBar() {
                 onChange={(e) => setFilter({ minDegree: Number(e.target.value) })}
               />
               <span className="filter-bar__degree-value">{filter.minDegree}</span>
+            </div>
+          </div>
+
+          <div className="filter-bar__group">
+            <span className="filter-bar__group-label">Min edge weight</span>
+            <div className="filter-bar__degree">
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={filter.minEdgeWeight}
+                onChange={(e) => setFilter({ minEdgeWeight: Number(e.target.value) })}
+              />
+              <span className="filter-bar__degree-value">{filter.minEdgeWeight.toFixed(2)}</span>
             </div>
           </div>
 

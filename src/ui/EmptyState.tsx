@@ -1,5 +1,6 @@
 import { openFilePicker } from '../ingest/DropZone';
 import { loadDemoCorpus } from '../pipeline/coordinator';
+import { useUiStore } from '../store/uiStore';
 
 /**
  * Centered hero shown by App when there are no nodes and the pipeline is
@@ -28,7 +29,10 @@ export default function EmptyState() {
             type="button"
             className="btn-pill secondary"
             onClick={() => {
-              loadDemoCorpus();
+              loadDemoCorpus().catch((err) => {
+                console.warn('demo corpus load failed', err);
+                useUiStore.getState().pushToast("Couldn't load the demo corpus.");
+              });
             }}
           >
             Load demo corpus

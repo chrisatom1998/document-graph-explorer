@@ -3,9 +3,10 @@
  *
  * - Geometry attributes are rebuilt when the edge list changes; endpoint
  *   positions are streamed from positionBuffer each layout tick.
- * - Vertex colors encode kind tint x weight, dim to 8% when a hover/search/
- *   filter emphasis is active, and brighten x1.6 on edges incident to the
- *   hovered/selected node.
+ * - Vertex colors encode kind tint x weight, fade with edge density (additive
+ *   lines stack, so dense graphs would wash out the nodes otherwise), dim to
+ *   8% when a hover/search/filter emphasis is active, and brighten on edges
+ *   incident to the hovered/selected node (those skip the density fade).
  * - Clicking an edge selects it for the evidence popover (uiStore
  *   .setSelectedEdge). Node spheres naturally win overlapping picks: they
  *   intersect closer and stop propagation.
@@ -22,7 +23,19 @@ import { EDGE_TINTS } from './palette';
 import { computeEmphasis } from './Nodes';
 
 const DIM_FACTOR = 0.08;
-const FOCUS_BOOST = 1.6;
+const FOCUS_BOOST = 2.0;
+
+// Additive edges sum brightness where they overlap, so a fixed per-edge
+// opacity turns dense graphs into a glowing hairball that hides the nodes.
+// Fade per-edge brightness as the count grows (sqrt keeps the aggregate
+// roughly level); the floor keeps single filaments from vanishing entirely.
+const FADE_START_EDGES = 400;
+const FADE_FLOOR = 0.35;
+
+function densityFade(edgeCount: number): number {
+  if (edgeCount <= FADE_START_EDGES) return 1;
+  return Math.max(FADE_FLOOR, Math.sqrt(FADE_START_EDGES / edgeCount));
+}
 
 const tmpColor = new THREE.Color();
 
@@ -66,7 +79,8 @@ export default function Edges() {
         s.hoveredId !== prev.hoveredId ||
         s.selectedId !== prev.selectedId ||
         s.searchResults !== prev.searchResults ||
-        s.filter !== prev.filter
+        s.filter !== prev.filter ||
+        s.clusterCollapsed !== prev.clusterCollapsed
       ) {
         colorsDirty.current = true;
       }
@@ -76,20 +90,37 @@ export default function Edges() {
 
   const recomputeColors = (): void => {
     const { nodes } = useGraphStore.getState();
-    const { hoveredId, selectedId, searchResults, filter } = useUiStore.getState();
+    const { hoveredId, selectedId, searchResults, filter, clusterCollapsed } = useUiStore.getState();
     const emphasis = computeEmphasis(nodes, edges, hoveredId, searchResults, filter);
     const focusId = hoveredId ?? selectedId;
+    const minW = filter.minEdgeWeight;
+    // Count visible edges for density fade (edges below minEdgeWeight are hidden)
+    let visibleCount = edges.length;
+    if (minW > 0) {
+      visibleCount = 0;
+      for (const e of edges) if (e.weight >= minW) visibleCount++;
+    }
+    const fade = densityFade(visibleCount);
     const col = attrs.colors.array as Float32Array;
     for (let i = 0; i < edges.length; i++) {
       const e = edges[i];
-      // base: kind tint scaled by weight (opacity/brightness = weight, §7.1);
-      // kept delicate so links read as fine filaments, not bright spokes
-      tmpColor.copy(EDGE_TINTS[e.kind]).multiplyScalar(0.16 + 0.55 * e.weight);
+      // Edge-weight filter (spec §9 hairball slider): hide edges below threshold
+      if (e.weight < minW || clusterCollapsed) {
+        const o = i * 6;
+        col[o] = col[o + 1] = col[o + 2] = 0;
+        col[o + 3] = col[o + 4] = col[o + 5] = 0;
+        continue;
+      }
+      // base: kind tint scaled by weight (opacity/brightness = weight, §7.1)
+      // and by density; kept delicate so links read as fine filaments
+      tmpColor.copy(EDGE_TINTS[e.kind]).multiplyScalar((0.16 + 0.55 * e.weight) * fade);
       if (emphasis && !(emphasis.has(e.source) && emphasis.has(e.target))) {
         tmpColor.multiplyScalar(DIM_FACTOR);
       }
       if (focusId && (e.source === focusId || e.target === focusId)) {
-        tmpColor.multiplyScalar(FOCUS_BOOST);
+        // undo the density fade: the edges you're inspecting must stay vivid
+        // precisely when the rest of the graph is at its faintest
+        tmpColor.multiplyScalar(FOCUS_BOOST / fade);
         tmpColor.r = Math.min(tmpColor.r, 1);
         tmpColor.g = Math.min(tmpColor.g, 1);
         tmpColor.b = Math.min(tmpColor.b, 1);
@@ -158,7 +189,7 @@ export default function Edges() {
       <lineBasicMaterial
         vertexColors
         transparent
-        opacity={0.32}
+        opacity={0.25}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
         toneMapped={false}

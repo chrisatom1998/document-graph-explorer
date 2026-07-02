@@ -105,7 +105,8 @@ export default function Labels() {
         s.hoveredId !== prev.hoveredId ||
         s.selectedId !== prev.selectedId ||
         s.qualityTier !== prev.qualityTier ||
-        s.topicNodesEnabled !== prev.topicNodesEnabled
+        s.topicNodesEnabled !== prev.topicNodesEnabled ||
+        s.clusterCollapsed !== prev.clusterCollapsed
       ) {
         labelsDirty.current = true;
       }
@@ -139,8 +140,23 @@ export default function Labels() {
       refreshTitles();
       titlesDirty.current = false;
     }
-    const { hoveredId, selectedId, qualityTier, topicNodesEnabled } =
+    const { hoveredId, selectedId, qualityTier, topicNodesEnabled, clusterCollapsed } =
       useUiStore.getState();
+
+    // In cluster-collapse mode individual labels are hidden (super-node labels render in ClusterCollapse)
+    if (clusterCollapsed) {
+      for (let j = 0; j < LABEL_BUDGET; j++) {
+        const label = poolRefs.current[j];
+        if (label) label.visible = false;
+      }
+      const hover = hoverRef.current;
+      if (hover) hover.visible = false;
+      const selected = selectedRef.current;
+      if (selected) selected.visible = false;
+      labelsDirty.current = false;
+      return;
+    }
+
     const budget = qualityTier >= 3 ? Math.min(DEGRADED_BUDGET, LABEL_BUDGET) : LABEL_BUDGET;
     const count = Math.min(positionBuffer.count, MAX_NODES);
     const arr = positionBuffer.array;

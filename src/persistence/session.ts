@@ -17,7 +17,8 @@ import {
 import type { DocNode, GraphExport } from '../model/types';
 import { getNodePosition } from '../scene/positionBuffer';
 import { useGraphStore } from '../store/graphStore';
-import { chunkStore, docVectorStore, textStore } from '../store/runtimeStores';
+import { chunkStore, docVectorStore, mdLinkTargetsStore, textStore } from '../store/runtimeStores';
+import { useUiStore } from '../store/uiStore';
 import {
   getSetting,
   loadSnapshot,
@@ -76,6 +77,13 @@ export function initPersistence(): void {
   if (initialized) return;
   initialized = true;
 
+  // Best-effort: ask the browser not to evict our IndexedDB data under
+  // storage pressure. Unsupported/denied is silent — nothing to react to,
+  // and cacheUnavailable() already surfaces the case where writes fail.
+  if (navigator.storage?.persist) {
+    navigator.storage.persist().catch(() => {});
+  }
+
   onLayoutSettled(handleLayoutSettled);
 
   useGraphStore.subscribe((state, prev) => {
@@ -125,6 +133,7 @@ export async function saveSession(): Promise<void> {
         chunkTexts: chunks?.texts ?? [],
         chunkVectors: chunks?.vectors ?? null,
         docVector: docVectorStore.get(node.id) ?? null,
+        mdLinkTargets: mdLinkTargetsStore.get(node.id) ?? [],
       };
     });
 
@@ -181,6 +190,7 @@ async function hydrateFromRecord(
         vectors: emb && emb.chunkVectors.length > 0 ? emb.chunkVectors : null,
         dims: EMBED_DIMS,
       });
+      mdLinkTargetsStore.set(id, doc.mdLinkTargets ?? []);
     }
     if (emb && emb.docVector.length > 0) docVectorStore.set(id, emb.docVector);
   }
@@ -225,14 +235,29 @@ async function hydrateFromRecord(
  * per-record awaits — to hit the <3s acceptance target.
  */
 export async function restoreSession(): Promise<boolean> {
+  const lastCorpusHash = await getSetting<string>('lastCorpusHash');
+  if (!lastCorpusHash) return false; // no prior session — first visit, not a failure
+
   try {
-    const lastCorpusHash = await getSetting<string>('lastCorpusHash');
-    if (!lastCorpusHash) return false;
     const cached = await lookupGraphCache(lastCorpusHash);
-    if (!cached) return false;
-    return await hydrateFromRecord(cached.exportData, cached.positions, lastCorpusHash);
+    if (!cached) {
+      useUiStore
+        .getState()
+        .pushToast("Your last session couldn't be found — starting fresh.", 'warning');
+      return false;
+    }
+    const restored = await hydrateFromRecord(cached.exportData, cached.positions, lastCorpusHash);
+    if (!restored) {
+      useUiStore
+        .getState()
+        .pushToast("Your last session couldn't be restored — starting fresh.", 'warning');
+    }
+    return restored;
   } catch (err) {
     console.warn('[knowledge-nebula] session restore failed', err);
+    useUiStore
+      .getState()
+      .pushToast("Your last session couldn't be restored — starting fresh.", 'warning');
     return false;
   }
 }
@@ -267,6 +292,7 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
         chunkTexts: chunks?.texts ?? [],
         chunkVectors: chunks?.vectors ?? null,
         docVector: docVectorStore.get(node.id) ?? null,
+        mdLinkTargets: mdLinkTargetsStore.get(node.id) ?? [],
       };
     });
   await saveDocsToCache(docs);

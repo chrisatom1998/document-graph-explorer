@@ -13,6 +13,7 @@ import SearchOverlay from './ui/SearchOverlay';
 import FilterBar from './ui/FilterBar';
 import SettingsPanel from './ui/SettingsPanel';
 import ChatPanel from './ui/ChatPanel';
+import ToastHost from './ui/ToastHost';
 import { useGraphStore } from './store/graphStore';
 import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
@@ -148,6 +149,7 @@ export default function App() {
       <SettingsPanel />
       <SnapshotDrawer />
       <ChatPanel />
+      <ToastHost />
     </div>
   );
 }

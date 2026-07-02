@@ -3,12 +3,20 @@
  * Edge rule: cosine sim ≥ threshold AND mutual top-k — the top-k constraint
  * is what keeps a large corpus from becoming a hairball.
  *
+ * Also collects near-duplicate pairs (cosine ≥ dupThreshold) as a side
+ * channel, independent of the mutual-top-k edge rule: a doc with many
+ * near-duplicates can crowd a genuine ≥dupThreshold pair out of its
+ * bounded top-k list, so that pair would never become a semantic edge and
+ * would be invisible to anything that only scans the edge set. Piggybacking
+ * on this pass reuses the dot product already computed for every pair
+ * instead of a second O(n²) scan.
+ *
  * PURE — imported by the aggregator worker and unit-testable. The dense
  * n×n similarity set is never materialized; only per-doc bounded top-k
  * candidate lists are kept.
  */
 
-import type { Edge } from '../model/types';
+import type { DuplicatePair, Edge } from '../model/types';
 
 const SEMANTIC_WEIGHT_FLOOR = 0.25;
 const SEMANTIC_WEIGHT_SPAN = 0.75;
@@ -31,14 +39,16 @@ export function semanticEdges(
   ids: string[],
   vectors: Float32Array,
   dims: number,
-  params: { threshold: number; topK: number },
-): Edge[] {
+  params: { threshold: number; topK: number; dupThreshold?: number },
+): { edges: Edge[]; duplicates: DuplicatePair[] } {
   const n = ids.length;
   const { threshold, topK } = params;
-  if (n < 2 || dims <= 0 || topK <= 0) return [];
+  const dupThreshold = params.dupThreshold ?? Infinity; // omitted -> never flag duplicates
+  if (n < 2 || dims <= 0 || topK <= 0) return { edges: [], duplicates: [] };
 
   // per-doc bounded top-k candidates (sim ≥ threshold only)
   const top: Candidate[][] = Array.from({ length: n }, () => []);
+  const duplicates: DuplicatePair[] = [];
   for (let i = 0; i < n; i += 1) {
     const oi = i * dims;
     for (let j = i + 1; j < n; j += 1) {
@@ -47,12 +57,18 @@ export function semanticEdges(
       for (let d = 0; d < dims; d += 1) {
         dot += vectors[oi + d] * vectors[oj + d]; // unit vectors: dot = cosine
       }
+      if (dot >= dupThreshold) {
+        const a = ids[i] < ids[j] ? ids[i] : ids[j];
+        const b = ids[i] < ids[j] ? ids[j] : ids[i];
+        duplicates.push({ a, b, sim: dot });
+      }
       if (dot >= threshold) {
         boundedInsert(top[i], j, dot, topK);
         boundedInsert(top[j], i, dot, topK);
       }
     }
   }
+  duplicates.sort((x, y) => y.sim - x.sim);
 
   const edges: Edge[] = [];
   const denom = 1 - threshold;
@@ -81,5 +97,5 @@ export function semanticEdges(
       });
     }
   }
-  return edges;
+  return { edges, duplicates };
 }

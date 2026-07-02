@@ -67,14 +67,21 @@ export interface AddNodeSpec {
   initial?: [number, number, number];
 }
 
-export function layoutAddNodes(nodes: AddNodeSpec[]): void {
+/**
+ * Places nodes into layout slots up to MAX_NODES. Returns the ids that
+ * couldn't be placed (capacity reached) — callers must not leave those
+ * nodes in the graph store, or they become invisible, unselectable
+ * phantoms (present in counts, absent from the scene).
+ */
+export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
   const payload: LayoutNodeInput[] = [];
+  const dropped: string[] = [];
   const now = typeof performance !== 'undefined' ? performance.now() : 0;
   for (const n of nodes) {
     if (slotOfId.has(n.id)) continue;
     if (nextSlot >= MAX_NODES) {
-      console.warn(`Node capacity (${MAX_NODES}) reached; ignoring ${n.id}`);
-      break;
+      dropped.push(n.id);
+      continue;
     }
     const slot = nextSlot++;
     slotOfId.set(n.id, slot);
@@ -83,6 +90,10 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): void {
     payload.push({ id: n.id, slot, cluster: n.cluster, spawn: n.spawn, initial: n.initial });
   }
   if (payload.length) post({ type: 'add', nodes: payload });
+  if (dropped.length > 0) {
+    console.warn(`Node capacity (${MAX_NODES}) reached; ignoring ${dropped.length} node(s)`);
+  }
+  return dropped;
 }
 
 export function layoutSetLinks(

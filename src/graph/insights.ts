@@ -4,24 +4,20 @@
  *
  * - Orphans: document nodes with no reference/semantic/keyword edge at all.
  *   Nothing links to them, nothing resembles them — the stale-doc detector.
- * - Near-duplicates: semantic-edge pairs whose doc vectors' cosine similarity
- *   clears DUP_SIM_THRESHOLD. (A ≥0.93 pair is always each other's nearest
- *   neighbor, so the mutual-top-k semantic edge for it exists.)
+ * - Near-duplicates: computed in the aggregator worker's semantic pass
+ *   (similarity.ts), not here — a pair can clear DUP_SIM_THRESHOLD without
+ *   forming a semantic edge (crowded out of a mutual top-k list by other
+ *   near-duplicates), so scanning the edge set alone would miss it. See
+ *   graphStore.duplicatePairs.
  * - Bridges: highest betweenness-centrality documents — the docs shortest
  *   paths funnel through, i.e. the ones connecting otherwise-separate domains.
  *
- * PURE functions over nodes/edges (+ an injected vector lookup) — unit-testable,
- * no store imports. Topic hub nodes and 'topic' edges are excluded everywhere:
- * they are derived groupings and would dominate centrality artificially.
+ * PURE functions over nodes/edges — unit-testable, no store imports. Topic
+ * hub nodes and 'topic' edges are excluded everywhere: they are derived
+ * groupings and would dominate centrality artificially.
  */
 
 import type { DocNode, Edge } from '../model/types';
-
-export interface DuplicatePair {
-  a: string;
-  b: string;
-  sim: number;
-}
 
 export interface BridgeDoc {
   id: string;
@@ -44,33 +40,6 @@ export function computeOrphans(nodes: DocNode[], edges: Edge[]): string[] {
   return nodes
     .filter((n) => n.kind === 'document' && !connected.has(n.id))
     .map((n) => n.id);
-}
-
-/**
- * Semantic-edge pairs whose exact vector cosine ≥ threshold, best-first.
- * Pairs whose vectors are unavailable (e.g. unreadable docs) are skipped.
- */
-export function computeDuplicates(
-  edges: Edge[],
-  getVector: (id: string) => Float32Array | undefined,
-  threshold: number,
-): DuplicatePair[] {
-  const out: DuplicatePair[] = [];
-  const seen = new Set<string>();
-  for (const e of edges) {
-    if (e.kind !== 'semantic') continue;
-    const key = e.source < e.target ? `${e.source}|${e.target}` : `${e.target}|${e.source}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const va = getVector(e.source);
-    const vb = getVector(e.target);
-    if (!va || !vb || va.length !== vb.length) continue;
-    let dot = 0;
-    for (let d = 0; d < va.length; d += 1) dot += va[d] * vb[d]; // unit vectors
-    if (dot >= threshold) out.push({ a: e.source, b: e.target, sim: dot });
-  }
-  out.sort((x, y) => y.sim - x.sim);
-  return out;
 }
 
 /**

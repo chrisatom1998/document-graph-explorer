@@ -1289,6 +1289,49 @@ input {
 }
 
 /* ==========================================================================
+   Toast host — global error/warning feedback (top-right, stacked)
+   ========================================================================== */
+
+.toast-host {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  max-width: min(360px, 92vw);
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
+  border-left: 3px solid var(--text-faint);
+  animation: kn-slide-in-up 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.toast--error {
+  border-left-color: var(--danger);
+}
+.toast--warning {
+  border-left-color: var(--warning);
+}
+.toast--info {
+  border-left-color: var(--accent);
+}
+
+.toast__text {
+  flex: 1 1 auto;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
    Search overlay (⌘K)
    ========================================================================== */
 

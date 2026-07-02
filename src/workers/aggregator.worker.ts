@@ -81,7 +81,7 @@ function handleLexical(req: Extract<AggRequest, { type: 'lexical' }>): void {
 function handleSemantic(req: Extract<AggRequest, { type: 'semantic' }>): void {
   const { ids, vectors, dims, existingEdges, params } = req;
 
-  const semEdges = semanticEdges(ids, vectors, dims, params);
+  const { edges: semEdges, duplicates } = semanticEdges(ids, vectors, dims, params);
 
   // Community detection over the FULL weighted edge set (lexical + semantic).
   // Connected-components clustering collapsed the whole (densely cross-linked)
@@ -124,6 +124,7 @@ function handleSemantic(req: Extract<AggRequest, { type: 'semantic' }>): void {
     type: 'semantic:done',
     edges: semEdges,
     clusters,
+    duplicates,
   } satisfies AggResponse);
 }
 

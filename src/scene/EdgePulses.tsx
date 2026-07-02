@@ -67,14 +67,18 @@ export default function EdgePulses() {
 
   const rebuild = (mesh: THREE.InstancedMesh): void => {
     const { edges } = useGraphStore.getState();
-    const { hoveredId, selectedId, qualityTier } = useUiStore.getState();
+    const { hoveredId, selectedId, qualityTier, filter, clusterCollapsed } = useUiStore.getState();
+    // No pulses in cluster-collapsed mode
+    if (clusterCollapsed) { activeEdges.current = 0; return; }
     // degraded tiers: pulses only for the explicit selection, not hover
     const focus = qualityTier >= 3 ? selectedId : (hoveredId ?? selectedId);
+    const minW = filter.minEdgeWeight;
     let k = 0;
     if (focus) {
       for (let i = 0; i < edges.length && k < MAX_PULSE_EDGES; i++) {
         const e = edges[i];
         if (e.source !== focus && e.target !== focus) continue;
+        if (e.weight < minW) continue; // respect edge-density slider
         const from = slotOfId.get(focus);
         const to = slotOfId.get(e.source === focus ? e.target : e.source);
         if (from === undefined || to === undefined) continue;

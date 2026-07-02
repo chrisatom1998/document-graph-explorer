@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type {
   DocNode,
+  DuplicatePair,
   Edge,
   FileStatus,
   PipelinePhase,
@@ -20,6 +21,8 @@ interface GraphState {
   enrichProgress: { done: number; total: number; note: string } | null;
   corpusHash: string | null;
   restoredFromCache: boolean;
+  /** Near-duplicate pairs from the last semantic pass (spec: insights panel). */
+  duplicatePairs: DuplicatePair[];
 
   addNodes: (nodes: DocNode[]) => void;
   patchNodes: (patches: Map<string, Partial<DocNode>>) => void;
@@ -33,6 +36,7 @@ interface GraphState {
   setEnrichProgress: (p: GraphState['enrichProgress']) => void;
   setCorpusHash: (h: string | null) => void;
   setRestoredFromCache: (v: boolean) => void;
+  setDuplicatePairs: (pairs: DuplicatePair[]) => void;
   clearIngestTray: () => void;
   reset: () => void;
 }
@@ -50,6 +54,7 @@ export const useGraphStore = create<GraphState>((set) => ({
   enrichProgress: null,
   corpusHash: null,
   restoredFromCache: false,
+  duplicatePairs: [],
 
   addNodes: (incoming) =>
     set((s) => {
@@ -119,6 +124,7 @@ export const useGraphStore = create<GraphState>((set) => ({
   setEnrichProgress: (enrichProgress) => set({ enrichProgress }),
   setCorpusHash: (corpusHash) => set({ corpusHash }),
   setRestoredFromCache: (restoredFromCache) => set({ restoredFromCache }),
+  setDuplicatePairs: (duplicatePairs) => set({ duplicatePairs }),
   clearIngestTray: () => set({ fileStatuses: {}, ignoredFiles: [] }),
   reset: () =>
     set({
@@ -134,6 +140,7 @@ export const useGraphStore = create<GraphState>((set) => ({
       enrichProgress: null,
       corpusHash: null,
       restoredFromCache: false,
+      duplicatePairs: [],
     }),
 }));
 

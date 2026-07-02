@@ -1,6 +1,6 @@
 /** Graph data model (spec §6) + pipeline message shapes. */
 
-export type FileType = 'md' | 'txt' | 'pdf' | 'html' | 'other';
+export type FileType = 'md' | 'txt' | 'pdf' | 'html' | 'json' | 'yaml' | 'csv' | 'other';
 export type NodeStatus = 'ok' | 'partial' | 'unreadable';
 export type EdgeKind = 'reference' | 'semantic' | 'keyword' | 'topic';
 
@@ -30,6 +30,19 @@ export interface Edge {
   weight: number; // 0..1
   /** Mandatory: every edge must answer "why are these connected?" (spec §6) */
   evidence: string[];
+}
+
+/**
+ * A near-duplicate document pair by exact vector cosine, independent of
+ * whether a semantic edge exists between them. A high-similarity pair can
+ * miss the mutual-top-k edge rule when one side has many near-duplicates
+ * crowding its top-k (see similarity.ts) — so this is computed separately
+ * rather than derived from the edge set.
+ */
+export interface DuplicatePair {
+  a: string;
+  b: string;
+  sim: number;
 }
 
 export interface GraphExport {
@@ -169,7 +182,7 @@ export type AggRequest =
       vectors: Float32Array; // flattened [n * dims]
       dims: number;
       existingEdges: { source: string; target: string; weight: number }[];
-      params: { threshold: number; topK: number };
+      params: { threshold: number; topK: number; dupThreshold: number };
     };
 
 export type AggResponse =
@@ -185,6 +198,7 @@ export type AggResponse =
       type: 'semantic:done';
       edges: Edge[]; // semantic edges only
       clusters: Record<string, number>; // docId -> community (over full edge set)
+      duplicates: DuplicatePair[]; // pairs >= dupThreshold, independent of the edge set
     }
   | { requestId: number; type: 'error'; message: string };
 

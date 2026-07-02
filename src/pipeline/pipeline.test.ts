@@ -11,7 +11,7 @@ import { extractEntities } from './entities';
 import { chunkText } from './chunker';
 import { findBoilerplateLines, stripBoilerplate } from './boilerplate';
 import { semanticEdges } from './similarity';
-import { SIM_THRESHOLD, SIM_TOP_K } from '../config';
+import { DUP_SIM_THRESHOLD, SIM_THRESHOLD, SIM_TOP_K } from '../config';
 import { parseMarkdown } from './parsers/markdown';
 
 // ---------------------------------------------------------------------------
@@ -271,7 +271,7 @@ describe('semanticEdges', () => {
       [1, 0.1, 0, 0], // a·b ≈ 0.998 — well above threshold
       [0, 0, 1, 0], // orthogonal to both
     ]);
-    const edges = semanticEdges(ids, vectors, dims, {
+    const { edges } = semanticEdges(ids, vectors, dims, {
       threshold: SIM_THRESHOLD,
       topK: SIM_TOP_K,
     });
@@ -295,7 +295,7 @@ describe('semanticEdges', () => {
       [0.97, 0.24, 0, 0],
       [0.99, 0.14, 0, 0],
     ]);
-    const edges = semanticEdges(ids, vectors, dims, { threshold: 0.62, topK: 5 });
+    const { edges } = semanticEdges(ids, vectors, dims, { threshold: 0.62, topK: 5 });
     const seen = new Set<string>();
     for (const e of edges) {
       expect(e.source).not.toBe(e.target);
@@ -314,10 +314,51 @@ describe('semanticEdges', () => {
       [0.995, 0.1, 0, 0],
       [0.9, 0.436, 0, 0],
     ]);
-    const edges = semanticEdges(ids, vectors, dims, { threshold: 0.62, topK: 1 });
+    const { edges } = semanticEdges(ids, vectors, dims, { threshold: 0.62, topK: 1 });
     // mutual top-1: only a-b qualifies (a's best is b, b's best is a)
     expect(edges.length).toBe(1);
     const only = edges[0];
     expect([only.source, only.target].sort()).toEqual(['a', 'b']);
+  });
+
+  it('flags a near-duplicate pair crowded out of its mutual top-k edge', () => {
+    // b has 3 near-duplicates (c, d, e) all closer to it than a is, so with
+    // topK=1 the mutual-top-k rule can never connect a-b with an edge — but
+    // a-b still clears the duplicate threshold and must be reported.
+    const ids = ['a', 'b', 'c', 'd', 'e'];
+    const vectors = pack([
+      [1, 0.06, 0, 0], // a: cos(a,b) ≈ 0.9997 — a's best match is b
+      [1, 0, 0, 0], // b
+      [1, 0.001, 0, 0], // c: nearly identical to b
+      [1, 0.002, 0, 0], // d: nearly identical to b
+      [1, 0.003, 0, 0], // e: nearly identical to b
+    ]);
+    const { edges, duplicates } = semanticEdges(ids, vectors, dims, {
+      threshold: 0.62,
+      topK: 1,
+      dupThreshold: DUP_SIM_THRESHOLD,
+    });
+    // b's single top-k slot goes to c (its closest neighbor), so no a-b edge
+    const ab = edges.find(
+      (e) =>
+        (e.source === 'a' && e.target === 'b') || (e.source === 'b' && e.target === 'a'),
+    );
+    expect(ab).toBeUndefined();
+    // but the duplicate scan still finds it — that's the whole point
+    const dup = duplicates.find(
+      (d) => (d.a === 'a' && d.b === 'b') || (d.a === 'b' && d.b === 'a'),
+    );
+    expect(dup).toBeDefined();
+    expect(dup!.sim).toBeGreaterThanOrEqual(DUP_SIM_THRESHOLD);
+  });
+
+  it('omitting dupThreshold reports no duplicates', () => {
+    const ids = ['a', 'b'];
+    const vectors = pack([
+      [1, 0, 0, 0],
+      [1, 0, 0, 0], // identical
+    ]);
+    const { duplicates } = semanticEdges(ids, vectors, dims, { threshold: 0.62, topK: 5 });
+    expect(duplicates).toEqual([]);
   });
 });

@@ -77,6 +77,19 @@ function IconOctahedron() {
   );
 }
 
+function IconCollapse() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      {/* Multiple small circles collapsing into one large circle */}
+      <circle cx="9" cy="9" r="5.5" />
+      <circle cx="5" cy="5" r="1.2" fill="currentColor" opacity="0.5" />
+      <circle cx="13" cy="5" r="1.2" fill="currentColor" opacity="0.5" />
+      <circle cx="9" cy="13" r="1.2" fill="currentColor" opacity="0.5" />
+      <circle cx="9" cy="9" r="2" fill="currentColor" opacity="0.8" />
+    </svg>
+  );
+}
+
 function IconDownload() {
   return (
     <svg
@@ -266,9 +279,11 @@ export default function Toolbar() {
   const phase = useGraphStore((s) => s.phase);
   const dims = useUiStore((s) => s.dims);
   const topicNodesEnabled = useUiStore((s) => s.topicNodesEnabled);
+  const clusterCollapsed = useUiStore((s) => s.clusterCollapsed);
   const setSearchOpen = useUiStore((s) => s.setSearchOpen);
   const setDims = useUiStore((s) => s.setDims);
   const setTopicNodes = useUiStore((s) => s.setTopicNodes);
+  const setClusterCollapsed = useUiStore((s) => s.setClusterCollapsed);
   const insightsOpen = useUiStore((s) => s.insightsOpen);
   const setInsightsOpen = useUiStore((s) => s.setInsightsOpen);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
@@ -317,9 +332,12 @@ export default function Toolbar() {
       if (id !== undefined) {
         setSaveFlash(true);
         setTimeout(() => setSaveFlash(false), 1200);
+      } else {
+        useUiStore.getState().pushToast("Couldn't save the snapshot — storage is unavailable.");
       }
     } catch (err) {
       console.warn('[knowledge-nebula] snapshot save failed', err);
+      useUiStore.getState().pushToast("Couldn't save the snapshot.");
     } finally {
       setSaving(false);
       setSavePromptOpen(false);
@@ -357,7 +375,12 @@ export default function Toolbar() {
     const file = e.target.files?.[0];
     e.target.value = ''; // allow re-selecting the same file later
     if (!file) return;
-    importGraphJSONFile(file).catch((err) => console.warn('import failed', err));
+    importGraphJSONFile(file).catch((err) => {
+      console.warn('import failed', err);
+      useUiStore
+        .getState()
+        .pushToast(err instanceof Error ? err.message : 'Import failed — unknown error.');
+    });
   };
 
   return (
@@ -407,6 +430,15 @@ export default function Toolbar() {
         onClick={() => setTopicNodes(!topicNodesEnabled)}
       >
         <IconOctahedron />
+      </button>
+
+      <button
+        type="button"
+        className={`btn-icon${clusterCollapsed ? ' is-active' : ''}`}
+        title={clusterCollapsed ? 'Expand clusters' : 'Collapse to super-nodes'}
+        onClick={() => setClusterCollapsed(!clusterCollapsed)}
+      >
+        <IconCollapse />
       </button>
 
       <button
@@ -481,7 +513,10 @@ export default function Toolbar() {
         className="btn-icon"
         title="Export JSON"
         onClick={() => {
-          exportGraphJSON().catch((err) => console.warn('export JSON failed', err));
+          exportGraphJSON().catch((err) => {
+            console.warn('export JSON failed', err);
+            useUiStore.getState().pushToast("Couldn't export the graph as JSON.");
+          });
         }}
       >
         <IconDownload />

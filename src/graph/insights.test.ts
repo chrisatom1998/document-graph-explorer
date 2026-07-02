@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DocNode, Edge } from '../model/types';
-import { computeBridges, computeDuplicates, computeOrphans } from './insights';
+import { computeBridges, computeOrphans } from './insights';
 
 function mkNode(id: string, kind: DocNode['kind'] = 'document'): DocNode {
   return {
@@ -41,28 +41,6 @@ describe('computeOrphans', () => {
     const edges = [mkEdge('a', 't', 'topic')];
     // a's only connection is a topic hub — still an orphan; t is not a document
     expect(computeOrphans(nodes, edges)).toEqual(['a']);
-  });
-});
-
-describe('computeDuplicates', () => {
-  const vectors: Record<string, Float32Array> = {
-    a: new Float32Array([1, 0]),
-    b: new Float32Array([0.9995, 0.0316]), // cos(a,b) ≈ 0.9995
-    c: new Float32Array([0, 1]),
-  };
-  const getVector = (id: string) => vectors[id];
-
-  it('reports semantic pairs above the threshold, best-first', () => {
-    const edges = [mkEdge('a', 'b'), mkEdge('a', 'c')];
-    const dupes = computeDuplicates(edges, getVector, 0.93);
-    expect(dupes).toHaveLength(1);
-    expect(dupes[0]).toMatchObject({ a: 'a', b: 'b' });
-    expect(dupes[0].sim).toBeGreaterThan(0.99);
-  });
-
-  it('skips non-semantic edges and missing vectors', () => {
-    const edges = [mkEdge('a', 'b', 'reference'), mkEdge('a', 'missing')];
-    expect(computeDuplicates(edges, getVector, 0.93)).toEqual([]);
   });
 });
 

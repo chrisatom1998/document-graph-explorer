@@ -17,6 +17,7 @@ import { IGNORED_DIRS, MAX_INGEST_FILE_BYTES } from '../config';
 import type { IngestFile } from '../model/types';
 import { ingestFiles } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
+import { useUiStore } from '../store/uiStore';
 import { routeFile } from './fileRouter';
 
 interface NamedFile {
@@ -127,6 +128,7 @@ async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
     if (files.length > 0) await ingestFiles(files);
   } catch (err) {
     console.error('ingestion failed', err);
+    useUiStore.getState().pushToast("Something went wrong adding those files — check the console for details.");
   }
 }
 
