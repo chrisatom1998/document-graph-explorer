@@ -101,13 +101,20 @@ export type PipelinePhase =
 // Parse / embed worker protocol
 // ---------------------------------------------------------------------------
 
+/** A hyperlink in a document: its visible label plus its URL/target. */
+export interface LinkRef {
+  text: string; // anchor / label text as it appeared ("" when unknown, e.g. PDFs)
+  url: string; // the href / link target
+}
+
 export interface ParsedDoc {
   contentHash: string;
   title: string;
   text: string; // full extracted text (reader panel)
   wordCount: number;
   headings: string[];
-  mdLinkTargets: string[]; // link URLs/paths found in the doc
+  mdLinkTargets: string[]; // link URLs/paths found in the doc (feeds reference edges)
+  docLinks: LinkRef[]; // labelled links for the reader view (label ↔ url pairing)
   entities: string[];
   tf: Record<string, number>; // term frequency (tokenized)
   totalTerms: number;

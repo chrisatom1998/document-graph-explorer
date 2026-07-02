@@ -1,8 +1,8 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { docVectorStore, mdLinkTargetsStore, textStore } from '../store/runtimeStores';
+import { docLinksStore, docVectorStore, mdLinkTargetsStore, textStore } from '../store/runtimeStores';
 import { hexFor } from '../scene/palette';
 import { timeAgo } from '../util/relativeTime';
 import DocAiSection from './DocAiSection';
@@ -101,10 +101,17 @@ export default function SidePanel() {
                 const cName = clusterNames[node.cluster]
                   ?? localClusterNames[node.cluster]
                   ?? `Cluster ${node.cluster}`;
-                // The document's original link targets (persisted) — used to
-                // surface hyperlinks whose URLs extraction stripped from the
-                // visible text (markdown/HTML anchors).
-                openDocumentViewer(node, text, cName, mdLinkTargetsStore.get(node.id) ?? []);
+                // The document's original hyperlinks (persisted), each paired
+                // with its label. Union the labelled links with any remaining
+                // url-only targets (shortcut refs, unused defs, docs ingested
+                // before labels existed) so no web link is dropped; the viewer
+                // dedupes and keeps only web links.
+                const dl = docLinksStore.get(node.id) ?? [];
+                const covered = new Set(dl.map((l) => l.url));
+                const extras = (mdLinkTargetsStore.get(node.id) ?? [])
+                  .filter((url) => !covered.has(url))
+                  .map((url) => ({ text: '', url }));
+                openDocumentViewer(node, text, cName, [...dl, ...extras]);
               }}
             >
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">

@@ -6,6 +6,7 @@
  * Workers (`document is not defined`) and leaves ingest stuck in parsing.
  */
 
+import type { LinkRef } from '../../model/types';
 import { cleanFilename, decodeText, type ParserResult } from './txt';
 
 const ATX_HEADING_RE = /^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/;
@@ -38,6 +39,33 @@ function collectLinks(raw: string, definitions: Map<string, string>): string[] {
     if (url) targets.push(url);
   }
   return targets;
+}
+
+// Same links as collectLinks, but paired with their visible label so the
+// reader can show which URL goes with which piece of text. Images (`![...]`)
+// are excluded — they're not hyperlinks.
+const INLINE_LABELLED_RE =
+  /(!?)\[([^\]]*)]\(\s*(<[^>]+>|[^)\s]+)(?:\s+['"][^'"]*['"])?\s*\)/g;
+const REFERENCE_LABELLED_RE = /(!?)\[([^\]]+)]\[([^\]]*)]/g;
+
+function cleanLabel(label: string): string {
+  return label.replace(COLLAPSE_MARKERS_RE, '').replace(/\s+/g, ' ').trim();
+}
+
+function collectDocLinks(raw: string, definitions: Map<string, string>): LinkRef[] {
+  const links: LinkRef[] = [];
+  for (const m of raw.matchAll(INLINE_LABELLED_RE)) {
+    if (m[1] === '!') continue; // image, not a link
+    const url = stripUrlBrackets(m[3]);
+    if (url) links.push({ text: cleanLabel(m[2]), url });
+  }
+  for (const m of raw.matchAll(REFERENCE_LABELLED_RE)) {
+    if (m[1] === '!') continue;
+    const key = (m[3].trim() || m[2].trim()).toLowerCase(); // [label][] → label is the ref
+    const url = definitions.get(key);
+    if (url) links.push({ text: cleanLabel(m[2]), url });
+  }
+  return links;
 }
 
 function textLine(line: string): string {
@@ -106,6 +134,7 @@ export function parseMarkdown(bytes: ArrayBuffer, name: string): ParserResult {
     text: textBlocks.join('\n'),
     headings,
     mdLinkTargets: [...definitions.values(), ...collectLinks(raw, definitions)],
+    docLinks: collectDocLinks(raw, definitions),
     status: 'ok',
   };
 }

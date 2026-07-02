@@ -3,7 +3,7 @@
  * helpers for the other parsers. Worker-safe (no DOM).
  */
 
-import type { NodeStatus } from '../../model/types';
+import type { LinkRef, NodeStatus } from '../../model/types';
 
 /** Common result shape for the worker-side parsers (txt/md/html). */
 export interface ParserResult {
@@ -11,6 +11,7 @@ export interface ParserResult {
   text: string;
   headings: string[];
   mdLinkTargets: string[];
+  docLinks: LinkRef[];
   status: NodeStatus;
   warning?: string;
 }
@@ -38,6 +39,7 @@ export function parseTxt(bytes: ArrayBuffer, name: string): ParserResult {
     text: decodeText(bytes),
     headings: [],
     mdLinkTargets: [],
+    docLinks: [],
     status: 'ok',
   };
 }

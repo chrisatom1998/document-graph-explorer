@@ -18,7 +18,13 @@ import type { DocNode, GraphExport } from '../model/types';
 import { computeLocalClusterNames } from '../graph/clusterNaming';
 import { getNodePosition } from '../scene/positionBuffer';
 import { useGraphStore } from '../store/graphStore';
-import { chunkStore, docVectorStore, mdLinkTargetsStore, textStore } from '../store/runtimeStores';
+import {
+  chunkStore,
+  docLinksStore,
+  docVectorStore,
+  mdLinkTargetsStore,
+  textStore,
+} from '../store/runtimeStores';
 import { useUiStore } from '../store/uiStore';
 import {
   getSetting,
@@ -135,6 +141,7 @@ export async function saveSession(): Promise<void> {
         chunkVectors: chunks?.vectors ?? null,
         docVector: docVectorStore.get(node.id) ?? null,
         mdLinkTargets: mdLinkTargetsStore.get(node.id) ?? [],
+        docLinks: docLinksStore.get(node.id) ?? [],
       };
     });
 
@@ -192,6 +199,7 @@ async function hydrateFromRecord(
         dims: EMBED_DIMS,
       });
       mdLinkTargetsStore.set(id, doc.mdLinkTargets ?? []);
+      docLinksStore.set(id, doc.docLinks ?? []);
     }
     if (emb && emb.docVector.length > 0) docVectorStore.set(id, emb.docVector);
   }
@@ -296,6 +304,7 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
         chunkVectors: chunks?.vectors ?? null,
         docVector: docVectorStore.get(node.id) ?? null,
         mdLinkTargets: mdLinkTargetsStore.get(node.id) ?? [],
+        docLinks: docLinksStore.get(node.id) ?? [],
       };
     });
   await saveDocsToCache(docs);

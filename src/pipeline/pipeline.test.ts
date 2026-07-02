@@ -64,6 +64,11 @@ describe('parseMarkdown', () => {
       'incident-runbook.md',
       'oncall-rotation.md',
     ]);
+    // labelled links pair each URL with the text it was attached to
+    expect(parsed.docLinks).toEqual([
+      { text: 'Incident Runbook', url: 'incident-runbook.md' },
+      { text: 'Oncall', url: 'oncall-rotation.md' },
+    ]);
     expect(parsed.text).toContain('See Incident Runbook and Oncall.');
     expect(parsed.text).toContain('Ship via canary.');
   });
@@ -87,6 +92,11 @@ describe('parseHtml', () => {
     const parsed = parseHtml(bytes, 'guide.html');
 
     expect(parsed.mdLinkTargets).toEqual(['https://example.com/setup', 'runbook.html']);
+    // labelled links pair each href with its anchor text
+    expect(parsed.docLinks).toEqual([
+      { text: 'setup page', url: 'https://example.com/setup' },
+      { text: 'runbook', url: 'runbook.html' },
+    ]);
     // the visible text keeps the anchor labels, not the URLs
     expect(parsed.text).toContain('setup page');
     expect(parsed.text).not.toContain('https://example.com/setup');
