@@ -1,12 +1,13 @@
 /**
  * IndexedDB schema + memoized connection (idb v8).
  *
- * DB 'knowledge-nebula', version 1, four stores:
+ * DB 'knowledge-nebula', version 2, five stores:
  * - documents:  contentHash -> parsed doc (DocNode snapshot, full text, chunk texts)
  * - embeddings: contentHash -> Float32Array vectors, stored natively (no base64
  *   round-trip — this is what makes the <3s session restore possible)
  * - graphs:     corpusHash  -> GraphExport + settled layout positions
  * - settings:   string      -> small values (e.g. 'lastCorpusHash')
+ * - snapshots:  autoIncrement -> named GraphExport snapshots (v2), indexed by savedAt
  */
 
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';

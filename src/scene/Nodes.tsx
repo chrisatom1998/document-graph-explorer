@@ -39,6 +39,7 @@ import {
   spawnAtOfSlot,
 } from './positionBuffer';
 import { clusterColor } from './palette';
+import { prefersReducedMotion } from '../util/motion';
 
 // ---------------------------------------------------------------------------
 // Shared slot metadata + emphasis helpers (imported by Edges/EdgePulses/Labels)
@@ -111,13 +112,63 @@ export function computeEmphasis(
 // ---------------------------------------------------------------------------
 
 const MATERIALIZE_MS = 700;
-const HALO_SCALE = 1.9;
-const HALO_OPACITY = 0.2;
+const HALO_SCALE = 2.2;
+const HALO_INTENSITY = 0.7;
 // Additive halos stack like the edges do: in crowded graphs the overlapping
-// shells (and the bloom they feed) wash out the core spheres, so halo opacity
-// eases down with node count. Floor keeps sparse regions of a big graph lit.
+// shells (and the bloom they feed) wash out the core spheres, so halo
+// intensity eases down with node count. Floor keeps sparse regions of a big
+// graph lit.
 const HALO_FADE_START = 500;
 const HALO_FADE_FLOOR = 0.5;
+
+/**
+ * Fresnel corona halo: glow concentrates at the sphere's limb (view-grazing
+ * normals) and stays faint face-on, so each node reads as a bright core inside
+ * a luminous atmosphere instead of a flat additive ball — and overlapping
+ * halos in crowded regions stack far less. three defines USE_INSTANCING /
+ * USE_INSTANCING_COLOR (and declares those attributes) for ShaderMaterial on
+ * an InstancedMesh, so the per-instance cluster hue flows straight through.
+ * Additive output is encoded in RGB (alpha 1): SrcAlpha·One blending adds
+ * exactly what the fragment computes. No tone mapping, matching the old
+ * toneMapped={false} — authored brightness must reach the bloom pass.
+ */
+const haloMaterial = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  uniforms: { uIntensity: { value: HALO_INTENSITY } },
+  vertexShader: /* glsl */ `
+    varying vec3 vColor;
+    varying float vRim;
+    void main() {
+      vColor = vec3(1.0);
+      #ifdef USE_INSTANCING_COLOR
+        vColor = instanceColor;
+      #endif
+      vec4 mvPosition = vec4(position, 1.0);
+      vec3 nrm = normal;
+      #ifdef USE_INSTANCING
+        mvPosition = instanceMatrix * mvPosition;
+        nrm = mat3(instanceMatrix) * nrm; // uniform per-instance scale only
+      #endif
+      mvPosition = modelViewMatrix * mvPosition;
+      vec3 viewNormal = normalize(normalMatrix * nrm);
+      float facing = abs(dot(viewNormal, normalize(-mvPosition.xyz)));
+      vRim = pow(1.0 - facing, 2.0);
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform float uIntensity;
+    varying vec3 vColor;
+    varying float vRim;
+    void main() {
+      // faint face-on fill + hot limb ring that feeds the bloom pass
+      vec3 glow = vColor * uIntensity * (0.18 + 2.4 * vRim);
+      gl_FragColor = vec4(glow, 1.0);
+    }
+  `,
+});
 const DIM_FACTOR = 0.12;
 const GHOST_COLOR_FACTOR = 0.35;
 const GHOST_SCALE_FACTOR = 0.8;
@@ -241,7 +292,7 @@ export default function Nodes() {
       if (n.kind === 'topic') tmpColor.multiplyScalar(1.25); // topics slightly brighter
       if (ghostOfSlot[slot]) tmpColor.multiplyScalar(GHOST_COLOR_FACTOR);
       if (emphasis && !emphasis.has(n.id)) tmpColor.multiplyScalar(DIM_FACTOR);
-      if (n.id === hoveredId || n.id === selectedId) tmpColor.multiplyScalar(1.7);
+      if (n.id === hoveredId || n.id === selectedId) tmpColor.multiplyScalar(1.9);
       tmpColor.r = Math.min(tmpColor.r, 1);
       tmpColor.g = Math.min(tmpColor.g, 1);
       tmpColor.b = Math.min(tmpColor.b, 1);
@@ -422,7 +473,7 @@ export default function Nodes() {
         count <= HALO_FADE_START
           ? 1
           : Math.max(HALO_FADE_FLOOR, Math.sqrt(HALO_FADE_START / count));
-      (halo.material as THREE.MeshBasicMaterial).opacity = HALO_OPACITY * haloFade;
+      haloMaterial.uniforms.uIntensity.value = HALO_INTENSITY * haloFade;
     }
     if (metaDirty.current) {
       refreshSlotMeta();
@@ -449,6 +500,7 @@ export default function Nodes() {
     const now = performance.now();
     let stillAnimating = false;
     const collapsed = useUiStore.getState().clusterCollapsed;
+    const reducedMotion = prefersReducedMotion();
 
     for (let i = 0; i < count; i++) {
       const o = i * 3;
@@ -474,17 +526,22 @@ export default function Nodes() {
         haloScale = 0;
       }
 
-      // materialize: ease-out-back pop + a brief halo flare (spec §8)
+      // materialize: ease-out-back pop + a brief halo flare (spec §8) —
+      // skipped under prefers-reduced-motion (nodes appear at full size)
       const spawn = spawnAtOfSlot[i] as number | undefined; // sparse array
       if (spawn !== undefined && spawn >= 0) {
-        const t = (now - spawn) / MATERIALIZE_MS;
-        if (t < 1) {
-          const f = easeOutBack(Math.max(t, 0));
-          scale *= f;
-          haloScale = scale * HALO_SCALE * (1 + 1.5 * (1 - t));
-          stillAnimating = true;
+        if (reducedMotion) {
+          spawnAtOfSlot[i] = -1;
         } else {
-          spawnAtOfSlot[i] = -1; // animation done
+          const t = (now - spawn) / MATERIALIZE_MS;
+          if (t < 1) {
+            const f = easeOutBack(Math.max(t, 0));
+            scale *= f;
+            haloScale = scale * HALO_SCALE * (1 + 1.5 * (1 - t));
+            stillAnimating = true;
+          } else {
+            spawnAtOfSlot[i] = -1; // animation done
+          }
         }
       }
 
@@ -527,12 +584,13 @@ export default function Nodes() {
       >
         <sphereGeometry args={[1, 32, 24]} />
         {/* glossy marble: per-instance cluster hue as diffuse, lit by the
-            scene key light for a specular hotspot. The additive halo below
-            supplies the nebula glow that feeds bloom. */}
-        <meshPhongMaterial specular="#6a6a82" shininess={58} />
+            scene key light for a specular hotspot — brighter and tighter so
+            cores read as polished gems against the corona. The fresnel halo
+            below supplies the nebula glow that feeds bloom. */}
+        <meshPhongMaterial specular="#9a9ac0" shininess={90} />
       </instancedMesh>
 
-      {/* soft additive halo shell that feeds the bloom pass */}
+      {/* fresnel corona halo (limb-brightened, additive) that feeds bloom */}
       <instancedMesh
         ref={haloRef}
         args={[undefined, undefined, MAX_NODES]}
@@ -540,13 +598,7 @@ export default function Nodes() {
         raycast={NO_RAYCAST}
       >
         <sphereGeometry args={[1, 24, 18]} />
-        <meshBasicMaterial
-          transparent
-          opacity={HALO_OPACITY}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          toneMapped={false}
-        />
+        <primitive object={haloMaterial} attach="material" />
       </instancedMesh>
 
       {/* topic nodes as octahedra (spec §5.4), behind the toggle */}

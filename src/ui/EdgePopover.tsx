@@ -1,13 +1,6 @@
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import type { EdgeKind } from '../model/types';
-
-const KIND_COLOR: Record<EdgeKind, string> = {
-  reference: '#ffb36b',
-  semantic: '#7fb4ff',
-  keyword: '#6f86e8',
-  topic: '#7ee8c4',
-};
+import { EDGE_KIND_HEX } from '../scene/palette';
 
 /** Bottom-center popover for a clicked edge (spec §7.3 "Click edge"). */
 export default function EdgePopover() {
@@ -25,7 +18,7 @@ export default function EdgePopover() {
 
   const source = nodes[nodeIndex[edge.source]];
   const target = nodes[nodeIndex[edge.target]];
-  const color = KIND_COLOR[edge.kind];
+  const color = EDGE_KIND_HEX[edge.kind];
 
   return (
     <div className="edge-popover-layer">

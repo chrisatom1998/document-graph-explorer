@@ -2,8 +2,9 @@
  * User settings, persisted to localStorage (key 'knowledge-nebula-settings').
  * The Gemini API key lives ONLY here — it is never written into GraphExport
  * JSON or the IndexedDB graph cache — and is persisted only while
- * rememberGeminiKey is on; with it off the key stays in memory for this tab
- * and localStorage holds an empty string.
+ * rememberGeminiKey is on (OFF by default: localStorage is plaintext at
+ * rest, so opting in is the user's call); with it off the key stays in
+ * memory for this tab and localStorage holds an empty string.
  */
 
 import { create } from 'zustand';
@@ -29,7 +30,7 @@ export interface SettingsState extends PersistedSettings {
 
 const DEFAULTS: PersistedSettings = {
   geminiKey: '',
-  rememberGeminiKey: true,
+  rememberGeminiKey: false,
   geminiModel: GEMINI_MODEL,
   enrichEnabled: false,
   includeEmbeddingsInExport: false,
@@ -48,7 +49,7 @@ function loadPersisted(): PersistedSettings {
     return {
       geminiKey:
         rememberGeminiKey && typeof parsed.geminiKey === 'string'
-          ? parsed.geminiKey
+          ? parsed.geminiKey.trim()
           : DEFAULTS.geminiKey,
       rememberGeminiKey,
       geminiModel:
@@ -71,7 +72,9 @@ function loadPersisted(): PersistedSettings {
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   ...loadPersisted(),
-  setGeminiKey: (geminiKey) => set({ geminiKey }),
+  // Trimmed at the store boundary so every consumer (enrichment, doc AI,
+  // chat) gets a header-safe key even when pasted with stray whitespace.
+  setGeminiKey: (geminiKey) => set({ geminiKey: geminiKey.trim() }),
   setRememberGeminiKey: (rememberGeminiKey) => set({ rememberGeminiKey }),
   setGeminiModel: (geminiModel) => set({ geminiModel }),
   setEnrichEnabled: (enrichEnabled) => set({ enrichEnabled }),

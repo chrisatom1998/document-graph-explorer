@@ -12,7 +12,6 @@ interface GraphState {
   nodeIndex: Record<string, number>; // id -> index into nodes
   edges: Edge[];
   clusterNames: Record<number, string>;
-  clusterCount: number;
   phase: PipelinePhase;
   fileStatuses: Record<string, FileStatus>;
   ignoredFiles: { name: string; reason: string }[];
@@ -20,7 +19,6 @@ interface GraphState {
   /** Live enrichment progress (Gemini passes); null outside 'enriching'. */
   enrichProgress: { done: number; total: number; note: string } | null;
   corpusHash: string | null;
-  restoredFromCache: boolean;
   /** Near-duplicate pairs from the last semantic pass (spec: insights panel). */
   duplicatePairs: DuplicatePair[];
   /**
@@ -41,7 +39,6 @@ interface GraphState {
   setModelProgress: (p: GraphState['modelProgress']) => void;
   setEnrichProgress: (p: GraphState['enrichProgress']) => void;
   setCorpusHash: (h: string | null) => void;
-  setRestoredFromCache: (v: boolean) => void;
   setDuplicatePairs: (pairs: DuplicatePair[]) => void;
   setLocalClusterNames: (names: Record<number, string>) => void;
   clearIngestTray: () => void;
@@ -53,14 +50,12 @@ export const useGraphStore = create<GraphState>((set) => ({
   nodeIndex: {},
   edges: [],
   clusterNames: {},
-  clusterCount: 0,
   phase: 'idle',
   fileStatuses: {},
   ignoredFiles: [],
   modelProgress: null,
   enrichProgress: null,
   corpusHash: null,
-  restoredFromCache: false,
   duplicatePairs: [],
   localClusterNames: {},
 
@@ -82,9 +77,7 @@ export const useGraphStore = create<GraphState>((set) => ({
         const patch = patches.get(n.id);
         return patch ? { ...n, ...patch } : n;
       });
-      const clusterCount =
-        1 + nodes.reduce((m, n) => Math.max(m, n.cluster), -1);
-      return { nodes, clusterCount: Math.max(clusterCount, s.clusterCount) };
+      return { nodes };
     }),
 
   removeNodes: (ids) =>
@@ -131,7 +124,6 @@ export const useGraphStore = create<GraphState>((set) => ({
   setModelProgress: (modelProgress) => set({ modelProgress }),
   setEnrichProgress: (enrichProgress) => set({ enrichProgress }),
   setCorpusHash: (corpusHash) => set({ corpusHash }),
-  setRestoredFromCache: (restoredFromCache) => set({ restoredFromCache }),
   setDuplicatePairs: (duplicatePairs) => set({ duplicatePairs }),
   setLocalClusterNames: (localClusterNames) => set({ localClusterNames }),
   clearIngestTray: () => set({ fileStatuses: {}, ignoredFiles: [] }),
@@ -141,14 +133,12 @@ export const useGraphStore = create<GraphState>((set) => ({
       nodeIndex: {},
       edges: [],
       clusterNames: {},
-      clusterCount: 0,
       phase: 'idle',
       fileStatuses: {},
       ignoredFiles: [],
       modelProgress: null,
       enrichProgress: null,
       corpusHash: null,
-      restoredFromCache: false,
       duplicatePairs: [],
       localClusterNames: {},
     }),

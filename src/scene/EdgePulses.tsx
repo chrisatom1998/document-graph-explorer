@@ -15,6 +15,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
 import { EDGE_TINTS } from './palette';
+import { prefersReducedMotion } from '../util/motion';
 
 const PULSE_CAPACITY = 220;
 const MAX_PULSE_EDGES = 70; // 2 pulses each -> 140 instances, headroom below capacity
@@ -72,8 +73,8 @@ export default function EdgePulses() {
     const { edges } = useGraphStore.getState();
     const { hoveredId, selectedId, qualityTier, filter, clusterCollapsed, topicNodesEnabled } =
       useUiStore.getState();
-    // No pulses in cluster-collapsed mode
-    if (clusterCollapsed) { activeEdges.current = 0; return; }
+    // No pulses in cluster-collapsed mode or under prefers-reduced-motion
+    if (clusterCollapsed || prefersReducedMotion()) { activeEdges.current = 0; return; }
     // degraded tiers: pulses only for the explicit selection, not hover
     const focus = qualityTier >= 3 ? selectedId : (hoveredId ?? selectedId);
     const minW = filter.minEdgeWeight;

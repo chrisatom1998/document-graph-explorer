@@ -21,6 +21,13 @@ import type { DuplicatePair, Edge } from '../model/types';
 const SEMANTIC_WEIGHT_FLOOR = 0.25;
 const SEMANTIC_WEIGHT_SPAN = 0.75;
 
+/**
+ * Reported duplicate pairs are bounded: a corpus of near-identical docs
+ * (e.g. templated pages) otherwise yields O(n²) pairs. The bounded insert
+ * keeps the highest-similarity pairs — the ones worth surfacing in the UI.
+ */
+export const MAX_DUPLICATE_PAIRS = 512;
+
 interface Candidate {
   j: number;
   sim: number;
@@ -33,6 +40,15 @@ function boundedInsert(list: Candidate[], j: number, sim: number, topK: number):
   while (idx > 0 && list[idx - 1].sim < sim) idx -= 1;
   list.splice(idx, 0, { j, sim });
   if (list.length > topK) list.pop();
+}
+
+/** Same bounded-descending insert, for the duplicate-pair side channel. */
+function boundedDupInsert(list: DuplicatePair[], pair: DuplicatePair): void {
+  if (list.length === MAX_DUPLICATE_PAIRS && list[list.length - 1].sim >= pair.sim) return;
+  let idx = list.length;
+  while (idx > 0 && list[idx - 1].sim < pair.sim) idx -= 1;
+  list.splice(idx, 0, pair);
+  if (list.length > MAX_DUPLICATE_PAIRS) list.pop();
 }
 
 export function semanticEdges(
@@ -60,7 +76,7 @@ export function semanticEdges(
       if (dot >= dupThreshold) {
         const a = ids[i] < ids[j] ? ids[i] : ids[j];
         const b = ids[i] < ids[j] ? ids[j] : ids[i];
-        duplicates.push({ a, b, sim: dot });
+        boundedDupInsert(duplicates, { a, b, sim: dot });
       }
       if (dot >= threshold) {
         boundedInsert(top[i], j, dot, topK);
@@ -68,7 +84,7 @@ export function semanticEdges(
       }
     }
   }
-  duplicates.sort((x, y) => y.sim - x.sim);
+  // duplicates is already sorted descending by the bounded insert
 
   const edges: Edge[] = [];
   const denom = 1 - threshold;

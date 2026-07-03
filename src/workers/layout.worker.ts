@@ -61,9 +61,11 @@ const CLUSTER_PULL = 0.05;
 const SPAWN_JITTER = 4;
 /** Nodes settle ON this sphere shell (spec §7: "orbiting" arrangement).
  * Grows with node count so surface density — and thus label legibility —
- * stays roughly constant. */
-const SHELL_MIN_RADIUS = 60;
-const NODE_COLLIDE_RADIUS = 4;
+ * stays roughly constant. The collide radius drives the shell radius
+ * (updateShellRadius), so it is the master spacing knob: raising it grows
+ * per-node breathing room across the whole nebula. */
+const SHELL_MIN_RADIUS = 72;
+const NODE_COLLIDE_RADIUS = 5;
 // Must dominate the link force: a dense corpus (avg degree ~10) otherwise
 // drags the whole shell inward into a ball.
 const SHELL_STRENGTH = 0.9;
@@ -170,7 +172,7 @@ function linkWeight(l: SimLink<LayoutNode>): number {
 const linkForce = forceLink<LayoutNode>([])
   .id((d) => d.id)
   .strength((l) => 0.01 + 0.09 * linkWeight(l))
-  .distance((l) => 14 + 30 * (1 - linkWeight(l)));
+  .distance((l) => 18 + 38 * (1 - linkWeight(l)));
 
 const radialForce = forceRadial<LayoutNode>(SHELL_MIN_RADIUS, 0, 0, 0).strength(
   SHELL_STRENGTH,
@@ -178,7 +180,7 @@ const radialForce = forceRadial<LayoutNode>(SHELL_MIN_RADIUS, 0, 0, 0).strength(
 
 const sim = forceSimulation<LayoutNode>(nodes, 3)
   .force('link', linkForce)
-  .force('charge', forceManyBody<LayoutNode>().strength(-40).distanceMax(400))
+  .force('charge', forceManyBody<LayoutNode>().strength(-55).distanceMax(450))
   .force('center', forceCenter<LayoutNode>(0, 0, 0).strength(0.02))
   .force('shell', radialForce)
   .force('collide', forceCollide<LayoutNode>(NODE_COLLIDE_RADIUS).strength(0.85))

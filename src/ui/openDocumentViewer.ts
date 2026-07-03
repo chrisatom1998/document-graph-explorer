@@ -202,9 +202,6 @@ export function openDocumentViewer(
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${title} — Knowledge Nebula</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
   :root {
     --bg-deep: #07080f;
@@ -219,8 +216,11 @@ export function openDocumentViewer(
     --accent: ${clusterColor};
     --accent-glow: ${clusterColor}33;
     --purple: #8f7bff;
-    --font-reading: 'Inter', system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    /* System stacks only — no web-font fetch, so opening a document never
+       reaches the network (honors the app's "documents never leave this
+       browser" guarantee, and matches the main app's own font vars). */
+    --font-reading: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

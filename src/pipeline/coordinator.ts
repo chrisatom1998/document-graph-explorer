@@ -52,6 +52,7 @@ import {
   setSetting,
 } from '../persistence/cache';
 import { computeLocalClusterNames } from '../graph/clusterNaming';
+import { truncateToBytes } from '../util/bytes';
 import { getNodePosition } from '../scene/positionBuffer';
 import { useGraphStore } from '../store/graphStore';
 import {
@@ -110,6 +111,11 @@ function ensureAggregator(): Worker {
       aggPending.delete(id);
       entry.reject(error);
     }
+    // Discard the dead worker so the next ensureAggregator() respawns a fresh
+    // one; otherwise every later lexical/semantic pass posts into a crashed
+    // worker and the serialized run chain wedges permanently.
+    aggWorker?.terminate();
+    aggWorker = null;
   };
   return aggWorker;
 }
@@ -409,8 +415,16 @@ async function runIngest(files: IngestFile[]): Promise<void> {
     store().setPhase('embedding');
     const embedJobs = embedTargets.map(async (n) => {
       const text = textStore.get(n.id) ?? '';
-      const chunks = chunkText(stripBoilerplate(text, boilerplate));
+      const { chunks, truncated } = chunkText(stripBoilerplate(text, boilerplate));
       if (chunks.length === 0) return; // nothing embeddable (e.g. boilerplate-only)
+      if (truncated && n.status !== 'unreadable' && !n.warning) {
+        // Large document: search/embeddings cover only the leading portion.
+        // Surface it instead of silently indexing part of the doc.
+        const kb = Math.round(MAX_EMBED_TEXT_BYTES / 1024);
+        store().patchNodes(
+          new Map([[n.id, { status: 'partial', warning: `Only the first ~${kb} KB indexed for search` }]]),
+        );
+      }
       chunkStore.set(n.id, { texts: chunks, vectors: null, dims: EMBED_DIMS });
       const fileId = fileIdOfDoc.get(n.id);
       const name = nameOfDoc.get(n.id) ?? n.title;
@@ -475,7 +489,7 @@ async function runLexicalPass(
       fileName: meta?.fileName ?? basename(n.path ?? n.title),
       tf: meta?.tf ?? {},
       totalTerms: meta?.totalTerms ?? 0,
-      textLower: text.slice(0, MAX_EMBED_TEXT_BYTES).toLowerCase(),
+      textLower: truncateToBytes(text, MAX_EMBED_TEXT_BYTES).toLowerCase(),
       mdLinkTargets: mdLinkTargetsStore.get(n.id) ?? [],
     };
   });
@@ -517,6 +531,9 @@ async function runLexicalPass(
   } catch (err) {
     console.error('lexical aggregation failed', err);
     lexEdges = store().edges;
+    useUiStore
+      .getState()
+      .pushToast('Keyword linking failed — connections may be incomplete.', 'warning');
   }
   return { lexEdges, boilerplate };
 }
@@ -569,6 +586,12 @@ async function runSemanticPass(lexEdges: Edge[]): Promise<void> {
     layoutReheat(0.5);
   } catch (err) {
     console.error('semantic aggregation failed', err);
+    useUiStore
+      .getState()
+      .pushToast(
+        'Similarity analysis failed — semantic connections and clusters may be stale.',
+        'warning',
+      );
   }
 }
 
@@ -685,19 +708,26 @@ function synthesizeTopicNodes(): void {
 
   if (newNodes.length === 0) return;
 
-  // Add nodes to store and layout
-  store().addNodes(newNodes);
+  // Place in layout FIRST: hubs dropped at node capacity must not enter the
+  // store (invisible phantoms) or keep edges (dangling endpoints crash the
+  // layout worker — same hazard validateImport guards imports against).
   const layoutInputs = newNodes.map((n) => ({
     id: n.id,
     cluster: n.cluster,
     spawn: randomSpawn() as [number, number, number],
   }));
-  layoutAddNodes(layoutInputs);
+  const droppedIds = new Set(layoutAddNodes(layoutInputs));
+  const placedNodes = newNodes.filter((n) => !droppedIds.has(n.id));
+  const placedEdges = newEdges.filter(
+    (e) => !droppedIds.has(e.source) && !droppedIds.has(e.target),
+  );
+  if (placedNodes.length === 0) return;
+  store().addNodes(placedNodes);
 
   // Merge new topic edges with existing edges
   const currentEdges = store().edges;
-  store().setEdges([...currentEdges, ...newEdges]);
-  layoutSetLinks(toLinkInput([...currentEdges, ...newEdges]));
+  store().setEdges([...currentEdges, ...placedEdges]);
+  layoutSetLinks(toLinkInput([...currentEdges, ...placedEdges]));
   layoutReheat(0.3);
 }
 

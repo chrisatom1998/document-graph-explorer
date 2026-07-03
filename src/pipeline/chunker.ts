@@ -11,13 +11,24 @@ import { CHUNK_OVERLAP, CHUNK_TOKENS, MAX_EMBED_TEXT_BYTES } from '../config';
 const TOKENS_PER_WORD = 1.3;
 const MIN_CHUNK_WORDS = 16;
 
+export interface ChunkResult {
+  chunks: string[];
+  /**
+   * True when the per-document embed byte budget cut off later chunks, so the
+   * returned chunks cover only the leading portion of the document. Callers
+   * should surface this (e.g. a 'partial' node warning) rather than silently
+   * indexing part of a large document.
+   */
+  truncated: boolean;
+}
+
 export function chunkText(
   text: string,
   targetTokens: number = CHUNK_TOKENS,
   overlap: number = CHUNK_OVERLAP,
-): string[] {
+): ChunkResult {
   const cleaned = text.trim();
-  if (!cleaned) return [];
+  if (!cleaned) return { chunks: [], truncated: false };
 
   const targetWords = Math.max(MIN_CHUNK_WORDS, Math.round(targetTokens / TOKENS_PER_WORD));
   const overlapWords = Math.min(
@@ -40,7 +51,7 @@ export function chunkText(
       if (start + targetWords >= words.length) break;
     }
   }
-  if (segments.length === 0) return [];
+  if (segments.length === 0) return { chunks: [], truncated: false };
 
   // 2) greedy packing into chunks, carrying an overlap tail between chunks
   const chunks: string[] = [];
@@ -63,9 +74,11 @@ export function chunkText(
   const encoder = new TextEncoder();
   const out: string[] = [];
   let usedBytes = 0;
+  let truncated = false;
   for (const chunk of chunks) {
     const chunkBytes = encoder.encode(chunk).byteLength;
     if (usedBytes + chunkBytes > MAX_EMBED_TEXT_BYTES) {
+      truncated = true;
       if (out.length === 0) {
         // pathological single oversized chunk (e.g. minified blobs):
         // never return an empty result for a non-empty document
@@ -76,5 +89,5 @@ export function chunkText(
     usedBytes += chunkBytes;
     out.push(chunk);
   }
-  return out;
+  return { chunks: out, truncated };
 }

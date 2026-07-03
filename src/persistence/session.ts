@@ -209,11 +209,9 @@ async function hydrateFromRecord(
   g.addNodes(exportData.nodes);
   g.setEdges(exportData.edges);
   g.setClusterNames(exportData.clusterNames ?? {});
-  g.patchNodes(new Map()); // no-op patch recomputes clusterCount (addNodes does not)
   // No semantic pass runs on restore, so recompute the keyword-derived names here.
   g.setLocalClusterNames(computeLocalClusterNames(exportData.nodes));
   if (corpusHash) g.setCorpusHash(corpusHash);
-  g.setRestoredFromCache(true);
   suppressAutoSave = true;
   try {
     g.setPhase('ready'); // subscriber runs synchronously — keep it suppressed

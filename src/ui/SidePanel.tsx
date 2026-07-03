@@ -3,19 +3,12 @@ import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { docLinksStore, docVectorStore, mdLinkTargetsStore, textStore } from '../store/runtimeStores';
-import { hexFor } from '../scene/palette';
+import { EDGE_KIND_HEX, hexFor } from '../scene/palette';
 import { timeAgo } from '../util/relativeTime';
 import DocAiSection from './DocAiSection';
 import { openDocumentViewer } from './openDocumentViewer';
 import VirtualText from './VirtualText';
-import type { DocNode, Edge, EdgeKind } from '../model/types';
-
-const KIND_COLOR: Record<EdgeKind, string> = {
-  reference: '#ffb36b',
-  semantic: '#7fb4ff',
-  keyword: '#6f86e8',
-  topic: '#7ee8c4',
-};
+import type { DocNode, Edge } from '../model/types';
 
 interface ConnectionRow {
   edge: Edge;
@@ -229,7 +222,7 @@ export default function SidePanel() {
                   <div className="connection-row__main">
                     <span
                       className="chip-dot"
-                      style={{ background: KIND_COLOR[edge.kind] }}
+                      style={{ background: EDGE_KIND_HEX[edge.kind] }}
                       aria-hidden="true"
                     />
                     <button
@@ -273,6 +266,7 @@ export default function SidePanel() {
             <p className="side-panel__section-label">Document</p>
             {fullText ? (
               <VirtualText
+                key={node.id}
                 text={fullText}
                 className={`side-panel__reader${
                   isMonoFileType(node.fileType) ? ' is-mono' : ''

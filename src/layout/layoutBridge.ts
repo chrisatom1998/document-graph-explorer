@@ -9,6 +9,7 @@
 
 import { MAX_NODES } from '../config';
 import type { LayoutNodeInput, LayoutRequest, LayoutResponse } from '../model/types';
+import { useUiStore } from '../store/uiStore';
 import {
   ghostOfSlot,
   idOfSlot,
@@ -27,6 +28,8 @@ let nextSlot = 0;
  * toward MAX_NODES until real documents get dropped as invisible. */
 const freeSlots: number[] = [];
 const settledListeners = new Set<() => void>();
+/** One capacity toast per corpus — every over-cap add repeats the console line. */
+let warnedCapacity = false;
 
 export function ensureLayout(): Worker {
   if (worker) return worker;
@@ -103,6 +106,15 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
   if (payload.length) post({ type: 'add', nodes: payload });
   if (dropped.length > 0) {
     console.warn(`Node capacity (${MAX_NODES}) reached; ignoring ${dropped.length} node(s)`);
+    if (!warnedCapacity) {
+      warnedCapacity = true;
+      useUiStore
+        .getState()
+        .pushToast(
+          `Graph is at its ${MAX_NODES.toLocaleString()}-node capacity — some items were left out (see the ignored list).`,
+          'warning',
+        );
+    }
   }
   return dropped;
 }
@@ -140,7 +152,7 @@ export function layoutSetClusters(clusterOf: Record<string, number>): void {
   post({ type: 'clusters', clusterOf });
 }
 
-export function layoutReheat(alpha = 0.6): void {
+export function layoutReheat(alpha: number): void {
   post({ type: 'reheat', alpha });
 }
 
@@ -170,6 +182,10 @@ export function layoutReset(): void {
   worker = null;
   nextSlot = 0;
   freeSlots.length = 0;
-  settledListeners.clear();
+  warnedCapacity = false;
+  // NOTE: settledListeners is intentionally NOT cleared. These are long-lived
+  // subscriptions (App auto-frame, session restore) registered once via effects;
+  // clearing them here silently drops them across a partial removal/reset, since
+  // the subscriber effects don't re-run when `hasNodes` stays true.
   resetPositionBuffer();
 }

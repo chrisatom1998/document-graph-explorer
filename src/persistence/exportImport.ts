@@ -24,30 +24,9 @@ import { useGraphStore } from '../store/graphStore';
 import { docVectorStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
 import { sanitizeGraphExport } from './validateImport';
+import { base64ToF32, f32ToBase64 } from './f32base64';
 
-// ---------------------------------------------------------------------------
-// Float32 <-> base64
-// ---------------------------------------------------------------------------
-
-/** Chunk size keeps String.fromCharCode argument counts under stack limits. */
-const B64_CHUNK = 0x8000;
-
-export function f32ToBase64(a: Float32Array): string {
-  const bytes = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += B64_CHUNK) {
-    binary += String.fromCharCode(...Array.from(bytes.subarray(i, i + B64_CHUNK)));
-  }
-  return btoa(binary);
-}
-
-export function base64ToF32(s: string): Float32Array {
-  const binary = atob(s);
-  const usable = binary.length - (binary.length % 4);
-  const bytes = new Uint8Array(usable);
-  for (let i = 0; i < usable; i++) bytes[i] = binary.charCodeAt(i);
-  return new Float32Array(bytes.buffer);
-}
+export { base64ToF32, f32ToBase64 };
 
 // ---------------------------------------------------------------------------
 // Export
@@ -152,7 +131,6 @@ export async function importGraphJSONFile(file: File): Promise<void> {
   g.addNodes(nodes);
   g.setEdges(edges);
   g.setClusterNames(data.clusterNames ?? {});
-  g.patchNodes(new Map()); // no-op patch recomputes clusterCount (addNodes does not)
   // Imports carry no pipeline passes, so derive keyword cluster names here.
   g.setLocalClusterNames(computeLocalClusterNames(nodes));
 

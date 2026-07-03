@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { IGNORED_DIRS, MAX_INGEST_FILE_BYTES } from '../config';
+import { IGNORED_DIRS, MAX_INGEST_FILE_BYTES, MAX_INGEST_TOTAL_BYTES } from '../config';
 import type { IngestFile } from '../model/types';
 import { ingestFiles } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
@@ -98,19 +98,40 @@ function filesFromDataTransfer(dt: DataTransfer): Promise<NamedFile[]> {
 // ---------------------------------------------------------------------------
 
 const MAX_INGEST_MB = Math.round(MAX_INGEST_FILE_BYTES / (1024 * 1024));
+const MAX_INGEST_TOTAL_MB = Math.round(MAX_INGEST_TOTAL_BYTES / (1024 * 1024));
 
 async function toIngestFiles(named: NamedFile[]): Promise<IngestFile[]> {
   const out: IngestFile[] = [];
+  let totalBytes = 0;
+  let totalCapHit = false;
   for (const { file, path } of named) {
     const fileType = routeFile(file.name);
     if (fileType !== null && file.size > MAX_INGEST_FILE_BYTES) {
       useGraphStore.getState().addIgnored(file.name, `too large (over ${MAX_INGEST_MB} MB)`);
       continue;
     }
+    // Every file is read fully into memory before the pipeline runs, so the
+    // per-file cap alone can't stop a huge folder drop from OOMing the tab.
+    if (fileType !== null && totalBytes + file.size > MAX_INGEST_TOTAL_BYTES) {
+      useGraphStore
+        .getState()
+        .addIgnored(file.name, `drop exceeds ${MAX_INGEST_TOTAL_MB} MB total — add it separately`);
+      if (!totalCapHit) {
+        totalCapHit = true;
+        useUiStore
+          .getState()
+          .pushToast(
+            `That drop is over the ${MAX_INGEST_TOTAL_MB} MB total limit — the remainder was skipped (see the ignored list).`,
+            'warning',
+          );
+      }
+      continue;
+    }
     // Unsupported files are still forwarded (with empty bytes, so huge
     // binaries are never read) — the coordinator routes them by name into
     // the ignored tray.
     const bytes = fileType !== null ? await file.arrayBuffer() : new ArrayBuffer(0);
+    totalBytes += bytes.byteLength;
     out.push({
       fileId: crypto.randomUUID(),
       name: file.name,

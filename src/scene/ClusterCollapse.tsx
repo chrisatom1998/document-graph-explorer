@@ -13,7 +13,7 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -25,13 +25,11 @@ const SUPER_NODE_BASE = 4.0;
 const dummy = new THREE.Object3D();
 const tmpColor = new THREE.Color();
 
-function InterClusterEdges({ clusterIds, centroids }: {
-  clusterIds: number[];
+function InterClusterEdges({ centroids }: {
   centroids: Map<number, THREE.Vector3>;
 }) {
   const edges = useGraphStore((s) => s.edges);
   const nodes = useGraphStore((s) => s.nodes);
-  const nodeIndex = useGraphStore((s) => s.nodeIndex);
 
   // Build cluster of each node ID for fast lookup
   const nodeCluster = useMemo(() => {
@@ -87,6 +85,11 @@ function InterClusterEdges({ clusterIds, centroids }: {
     return g;
   }, [interEdges, centroids]);
 
+  // R3F does not auto-dispose a geometry passed as an object prop, so dispose
+  // the previous one ourselves — otherwise every edge/centroid change leaks
+  // its GPU buffers.
+  useEffect(() => () => geom.dispose(), [geom]);
+
   if (interEdges.length === 0) return null;
 
   return (
@@ -109,7 +112,6 @@ export default function ClusterCollapse() {
   const nodes = useGraphStore((s) => s.nodes);
   const clusterNames = useGraphStore((s) => s.clusterNames);
   const localClusterNames = useGraphStore((s) => s.localClusterNames);
-  const clusterCount = useGraphStore((s) => s.clusterCount);
   const setClusterCollapsed = useUiStore((s) => s.setClusterCollapsed);
   const sendCamera = useUiStore((s) => s.sendCamera);
 
@@ -137,6 +139,19 @@ export default function ClusterCollapse() {
 
   // Centroids recomputed each frame from position buffer
   const centroidsRef = useRef(new Map<number, THREE.Vector3>());
+  // Persistent per-frame scratch — reused (not reallocated) each frame so the
+  // collapsed view runs at a zero-GC steady state. `sumsRef` holds the running
+  // per-cluster accumulators; `centroidPoolRef` holds a reusable Vector3 per
+  // cluster id so we never `new THREE.Vector3()` inside the frame loop.
+  const sumsRef = useRef(new Map<number, { x: number; y: number; z: number; n: number }>());
+  const centroidPoolRef = useRef(new Map<number, THREE.Vector3>());
+
+  // Dirty heuristic (same pattern as Nodes/Edges): skip the per-frame
+  // centroid recompute when the simulation hasn't ticked since last frame.
+  const lastVersionRef = useRef(-1);
+  useEffect(() => {
+    lastVersionRef.current = -1; // membership changed — matrices are stale
+  }, [nodes]);
 
   // Pre-create instance colors at full capacity
   useEffect(() => {
@@ -166,27 +181,34 @@ export default function ClusterCollapse() {
     if (!mesh || !halo || !clusterCollapsed) {
       if (mesh) mesh.count = 0;
       if (halo) halo.count = 0;
+      lastVersionRef.current = -1; // force a recompute when collapse re-activates
       return;
     }
+    if (positionBuffer.version === lastVersionRef.current) return;
+    lastVersionRef.current = positionBuffer.version;
 
     const count = positionBuffer.count;
     const arr = positionBuffer.array;
     const centroids = centroidsRef.current;
+    const centroidPool = centroidPoolRef.current;
     centroids.clear();
 
-    // Accumulate positions per cluster
-    const sums = new Map<number, { x: number; y: number; z: number; n: number }>();
+    // Accumulate positions per cluster into reused accumulators (reset in place)
+    const sums = sumsRef.current;
+    for (const s of sums.values()) {
+      s.x = 0; s.y = 0; s.z = 0; s.n = 0;
+    }
     for (const n of nodes) {
       if (n.cluster < 0) continue;
       const slot = slotOfId.get(n.id);
       if (slot === undefined || slot >= count) continue;
       const o = slot * 3;
-      const s = sums.get(n.cluster);
-      if (s) {
-        s.x += arr[o]; s.y += arr[o + 1]; s.z += arr[o + 2]; s.n++;
-      } else {
-        sums.set(n.cluster, { x: arr[o], y: arr[o + 1], z: arr[o + 2], n: 1 });
+      let s = sums.get(n.cluster);
+      if (!s) {
+        s = { x: 0, y: 0, z: 0, n: 0 };
+        sums.set(n.cluster, s);
       }
+      s.x += arr[o]; s.y += arr[o + 1]; s.z += arr[o + 2]; s.n++;
     }
 
     const numClusters = Math.min(clusterIds.length, MAX_CLUSTERS);
@@ -204,7 +226,14 @@ export default function ClusterCollapse() {
         const cy = s.y / s.n;
         const cz = s.z / s.n;
         dummy.position.set(cx, cy, cz);
-        centroids.set(c, new THREE.Vector3(cx, cy, cz));
+        // Reuse a pooled Vector3 per cluster id instead of allocating one each frame
+        let v = centroidPool.get(c);
+        if (!v) {
+          v = new THREE.Vector3();
+          centroidPool.set(c, v);
+        }
+        v.set(cx, cy, cz);
+        centroids.set(c, v);
         const memberN = clusterMeta.memberCount.get(c) ?? 1;
         const scale = SUPER_NODE_BASE * (1 + 0.6 * Math.log2(memberN));
         dummy.scale.setScalar(scale);
@@ -282,7 +311,7 @@ export default function ClusterCollapse() {
       </instancedMesh>
 
       {/* Inter-cluster edges */}
-      <InterClusterEdges clusterIds={clusterIds} centroids={centroidsRef.current} />
+      <InterClusterEdges centroids={centroidsRef.current} />
 
       {/* Cluster name labels */}
       {clusterIds.map((c) => {

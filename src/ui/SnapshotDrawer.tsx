@@ -13,6 +13,7 @@ import {
 import { restoreSnapshotById, saveCurrentSnapshot } from '../persistence/session';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { useFocusTrap } from './useFocusTrap';
 
 const panelStyle: CSSProperties = {
   width: 'min(480px, 92vw)',
@@ -79,6 +80,8 @@ export default function SnapshotDrawer() {
   const [saving, setSaving] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
   const saveInputRef = useRef<HTMLInputElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, open);
 
   const refresh = useCallback(() => {
     listSnapshots().then(setSnapshots);
@@ -139,6 +142,7 @@ export default function SnapshotDrawer() {
   return (
     <div className="settings-backdrop" onClick={() => setOpen(false)}>
       <div
+        ref={dialogRef}
         className="snapshot-drawer glass-panel"
         role="dialog"
         aria-modal="true"

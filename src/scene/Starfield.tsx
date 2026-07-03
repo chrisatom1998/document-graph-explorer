@@ -13,8 +13,11 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 
 const STAR_COUNT = 3200;
-const SHELL_MIN = 480;
-const SHELL_MAX = 950;
+// Must stay OUTSIDE the layout's node shell (layout.worker.ts grows it as
+// 11·√n, so ~700u at the 4096-node cap) — the nebula must never poke through
+// its own backdrop.
+const SHELL_MIN = 600;
+const SHELL_MAX = 1150;
 
 const TINTS = [
   new THREE.Color('#9db4ff'),
