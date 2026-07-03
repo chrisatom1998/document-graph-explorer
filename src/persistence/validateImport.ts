@@ -33,7 +33,18 @@ const MAX_LIST_ITEMS = 64; // topics / entities / keywords / evidence
 const MAX_LIST_ITEM_CHARS = 200;
 const MAX_CLUSTER_NAMES = 1024;
 
-const FILE_TYPES: ReadonlySet<string> = new Set(['md', 'txt', 'pdf', 'html', 'other']);
+// Must mirror the FileType union in model/types.ts, or exporting then
+// reimporting a graph downgrades json/yaml/csv nodes to 'other'.
+const FILE_TYPES: ReadonlySet<string> = new Set([
+  'md',
+  'txt',
+  'pdf',
+  'html',
+  'json',
+  'yaml',
+  'csv',
+  'other',
+]);
 const NODE_STATUSES: ReadonlySet<string> = new Set(['ok', 'partial', 'unreadable']);
 const EDGE_KINDS: ReadonlySet<string> = new Set(['reference', 'semantic', 'keyword', 'topic']);
 

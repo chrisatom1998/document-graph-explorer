@@ -5,8 +5,9 @@
  * from the shared stylesheet — only panel-specific bits are inlined.
  */
 
-import { useState, type CSSProperties } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import { GEMINI_MODEL } from '../config';
+import { useFocusTrap } from './useFocusTrap';
 import { runEnrichment } from '../enrich/gemini';
 import { clearAllCaches } from '../persistence/cache';
 import { resetCorpus } from '../pipeline/coordinator';
@@ -112,6 +113,9 @@ export default function SettingsPanel() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, open);
+
   if (!open) return null;
 
   const enriching = phase === 'enriching' || enrichBusy;
@@ -156,6 +160,7 @@ export default function SettingsPanel() {
   return (
     <div className="settings-backdrop" onClick={() => setSettingsOpen(false)}>
       <div
+        ref={dialogRef}
         className="settings-panel glass-panel"
         role="dialog"
         aria-modal="true"

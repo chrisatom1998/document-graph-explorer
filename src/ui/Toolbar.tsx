@@ -339,6 +339,19 @@ export default function Toolbar() {
     if (saved) lastPos.current = placeToolbar(el, saved.x, saved.y);
   }, [hasNodes]);
 
+  // A pinned toolbar must survive the window shrinking mid-session, not just
+  // at mount — re-clamp on resize (default centered layout needs no clamp).
+  useEffect(() => {
+    const onResize = () => {
+      const el = rootRef.current;
+      const pos = lastPos.current;
+      if (!el || !pos) return;
+      lastPos.current = placeToolbar(el, pos.x, pos.y);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   // Close whichever popover is open on outside click or Escape. Scoped to a
   // plain document listener that only ever touches local `openMenu` state —
   // it never reaches into App.tsx's global Escape cascade (search/path

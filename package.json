@@ -8,7 +8,9 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@huggingface/transformers": "^4.2.0",
@@ -32,11 +34,16 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.0",
     "@vitejs/plugin-react": "^5.2.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.7.0",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.1",
     "vite": "^7.3.6",
     "vitest": "^4.1.9"
   }

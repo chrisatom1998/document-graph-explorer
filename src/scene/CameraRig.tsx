@@ -19,6 +19,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import type { CameraCommand } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
+import { prefersReducedMotion } from '../util/motion';
 
 const IDLE_MS = 10_000;
 const SMOOTH_TIME = (CAMERA_GLIDE_MS / 1000) * 0.45; // ~800ms glide feel
@@ -155,10 +156,12 @@ export default function CameraRig() {
       }
     }
 
-    // barely-perceptible idle orbit (spec §7.2), 3D only
+    // barely-perceptible idle orbit (spec §7.2), 3D only — and never for
+    // users who asked the OS for reduced motion
     const idle =
       ui.dims === 3 &&
       !tweenActive.current &&
+      !prefersReducedMotion() &&
       performance.now() - lastInteraction.current > IDLE_MS &&
       useGraphStore.getState().phase === 'ready';
     controls.autoRotate = idle;
@@ -182,7 +185,7 @@ export default function CameraRig() {
       dampingFactor={0.08}
       rotateSpeed={0.55}
       minDistance={8}
-      maxDistance={1200}
+      maxDistance={1400}
       autoRotateSpeed={0.25}
       onStart={onStart}
       onEnd={onEnd}

@@ -123,7 +123,7 @@ Bloom, edge pulses, live materialization, camera choreography, starfield, auto-q
 ### Phase 4 (Current) — Polish & Persistence
 - ✅ AI enrichment (Gemini summaries, topics, cluster names)
 - ✅ Named snapshots (save/load/delete)
-- ☐ Document removal & re-indexing
+- ✅ Document removal & re-indexing
 - ☐ Folder watching via File System Access API
 - ☐ 2D toggle mode
 

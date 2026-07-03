@@ -81,7 +81,9 @@ async function callGemini(prompt: string, responseSchema: unknown): Promise<Call
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': geminiKey,
+          // Trim: a pasted key with a trailing newline/space is an invalid HTTP
+          // header value, and fetch throws a TypeError mislabeled as "Network error".
+          'x-goog-api-key': geminiKey.trim(),
         },
         body,
         // A hung connection would otherwise stall enrichment forever with the
@@ -295,8 +297,9 @@ async function nameClusters(
 // schema constraint) for lower latency.
 // ---------------------------------------------------------------------------
 
-// No truncation — send the full document. Gemini 3.5 Flash supports
-// up to 1M input tokens (~4M chars), so even very large docs fit easily.
+// No truncation — send the full document. The default model (GEMINI_MODEL in
+// config.ts) supports up to 1M input tokens (~4M chars), so even very large
+// docs fit easily.
 
 export type DocAiAction = 'summarize' | 'outline' | 'ask';
 
@@ -324,17 +327,36 @@ async function streamGemini(
   let lastError = 'Unknown Gemini error';
   for (let attempt = 0; ; attempt++) {
     let retryable = false;
+    // Inactivity deadline that resets on each received chunk — a fixed
+    // wall-clock timeout would abort a long-but-healthy stream (e.g. an
+    // "outline covering ALL topics") mid-response and retry from scratch.
+    const controller = new AbortController();
+    let idleTimer: ReturnType<typeof setTimeout> | undefined;
+    const clearIdle = () => {
+      if (idleTimer !== undefined) {
+        clearTimeout(idleTimer);
+        idleTimer = undefined;
+      }
+    };
+    const armIdle = () => {
+      clearIdle();
+      idleTimer = setTimeout(
+        () => controller.abort(new DOMException('Gemini stream idle timeout', 'TimeoutError')),
+        REQUEST_TIMEOUT_MS,
+      );
+    };
     try {
+      armIdle(); // also covers connection latency before the first byte
       const res = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': geminiKey,
+          'x-goog-api-key': geminiKey.trim(),
         },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
         }),
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -362,6 +384,7 @@ async function streamGemini(
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
+        armIdle(); // healthy chunk arrived — push the inactivity deadline out
         buffer += decoder.decode(value, { stream: true });
 
         // Parse SSE events: "data: {...}\n\n"
@@ -394,6 +417,8 @@ async function streamGemini(
     } catch (err) {
       retryable = true;
       lastError = err instanceof Error ? `Network error: ${err.message}` : 'Network error';
+    } finally {
+      clearIdle();
     }
     if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
     await sleep(1000 * 2 ** attempt);

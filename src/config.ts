@@ -43,6 +43,9 @@ export const CAMERA_GLIDE_MS = 800;
 // Files are read fully into memory (and their text persisted to IndexedDB);
 // without a cap a single multi-GB drop freezes or crashes the tab.
 export const MAX_INGEST_FILE_BYTES = 64 * 1024 * 1024;
+// The per-file cap alone doesn't stop a folder of many large-but-legal files
+// from exhausting tab memory — cap the whole drop too.
+export const MAX_INGEST_TOTAL_BYTES = 512 * 1024 * 1024;
 export const IGNORED_DIRS = new Set([
   'node_modules',
   '.git',

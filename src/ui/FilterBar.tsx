@@ -93,16 +93,18 @@ export default function FilterBar() {
           <div className="filter-bar__group">
             <span className="filter-bar__group-label">Type</span>
             {FILE_TYPE_ORDER.filter((ft) => (fileTypeCounts[ft] ?? 0) > 0).map((ft) => (
-              <span
+              <button
                 key={ft}
+                type="button"
                 className={`chip chip-selectable${
                   activeFileTypes.includes(ft) ? ' is-active' : ''
                 }`}
+                aria-pressed={activeFileTypes.includes(ft)}
                 title={`Toggle ${ft} files on or off`}
                 onClick={() => toggleFileType(ft)}
               >
                 {ft} · {fileTypeCounts[ft]}
-              </span>
+              </button>
             ))}
           </div>
 
@@ -110,11 +112,13 @@ export default function FilterBar() {
             <div className="filter-bar__group">
               <span className="filter-bar__group-label">Cluster</span>
               {clusterCounts.map(([c, count]) => (
-                <span
+                <button
                   key={c}
+                  type="button"
                   className={`chip chip-selectable${
                     activeClusters.includes(c) ? ' is-active' : ''
                   }`}
+                  aria-pressed={activeClusters.includes(c)}
                   title={`Toggle cluster: ${clusterNames[c] ?? localClusterNames[c] ?? `C${c}`}`}
                   onClick={() => toggleCluster(c)}
                 >
@@ -124,7 +128,7 @@ export default function FilterBar() {
                     aria-hidden="true"
                   />
                   {clusterNames[c] ?? localClusterNames[c] ?? `C${c}`} · {count}
-                </span>
+                </button>
               ))}
             </div>
           )}

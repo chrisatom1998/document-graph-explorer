@@ -33,8 +33,10 @@ const LABEL_COLOR = '#c9cfee'; // see bloom-tension note above
 // Bundled locally (public/fonts, OFL-1.1) — troika's default font is a CDN
 // fetch, which the privacy CSP blocks and offline use can't reach.
 const LABEL_FONT = '/fonts/Inter-Regular.woff';
-const NEAR_FULL = 60; // full opacity inside this camera distance...
-const FAR_FAINT = 260; // ...fading to 0.15 out here
+// Scaled with the layout's shell radius (layout.worker.ts) — a wider nebula
+// means larger typical camera distances, so the fade band moves out with it.
+const NEAR_FULL = 75; // full opacity inside this camera distance...
+const FAR_FAINT = 320; // ...fading to 0.15 out here
 
 /** troika text mesh surface we mutate imperatively */
 interface TroikaLabel extends THREE.Mesh {

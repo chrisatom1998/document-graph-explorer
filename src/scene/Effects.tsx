@@ -23,7 +23,9 @@ import type { DepthOfFieldEffect } from 'postprocessing';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
 
-const BLOOM_INTENSITY = 1.0;
+// Threshold/smoothing are half of the label-vs-bloom contract (Labels.tsx) —
+// intensity and radius are safe to tune; the threshold is not.
+const BLOOM_INTENSITY = 1.15;
 const BLOOM_THRESHOLD = 0.28;
 const BLOOM_SMOOTHING = 0.18;
 
@@ -44,7 +46,7 @@ function FocusedDoF() {
   // it imperatively above (checked against installed typings: target is
   // `Vector3 | null` on DepthOfFieldEffect).
   return (
-    <DepthOfField ref={ref} target={[0, 0, 0]} worldFocusRange={55} bokehScale={2.2} />
+    <DepthOfField ref={ref} target={[0, 0, 0]} worldFocusRange={70} bokehScale={2.2} />
   );
 }
 
@@ -69,7 +71,7 @@ export default function Effects() {
           intensity={BLOOM_INTENSITY}
           luminanceThreshold={BLOOM_THRESHOLD}
           luminanceSmoothing={BLOOM_SMOOTHING}
-          radius={0.85}
+          radius={0.9}
         />
       )}
       {dofOn ? <FocusedDoF /> : <></>}

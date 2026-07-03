@@ -107,10 +107,16 @@ export default function SearchOverlay() {
     setSearchResults(null);
   };
 
+  const hasResults = results.length > 0;
+  const activeOptionId = hasResults ? `search-option-${activeIndex}` : undefined;
+
   return (
     <div className="search-backdrop" onMouseDown={closeAndClear}>
       <div
         className="search-overlay glass-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search documents"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="search-overlay__input-row">
@@ -118,6 +124,12 @@ export default function SearchOverlay() {
             ref={inputRef}
             className="search-overlay__input"
             type="text"
+            role="combobox"
+            aria-expanded={hasResults}
+            aria-controls="search-overlay-results"
+            aria-activedescendant={activeOptionId}
+            aria-autocomplete="list"
+            aria-label="Search your documents by meaning, not just keywords"
             value={query}
             title="Search your documents by meaning, not just keywords"
             placeholder="Search your nebula… (semantic + title)"
@@ -127,12 +139,20 @@ export default function SearchOverlay() {
           <span className="kbd">Esc</span>
         </div>
 
-        <div className="search-overlay__results">
+        <div
+          className="search-overlay__results"
+          id="search-overlay-results"
+          role="listbox"
+          aria-label="Search results"
+        >
           {results.map((row, i) => {
             const node = nodes[nodeIndex[row.id]];
             return (
               <div
                 key={row.id}
+                id={`search-option-${i}`}
+                role="option"
+                aria-selected={i === activeIndex}
                 className={`search-result-row${i === activeIndex ? ' is-active' : ''}`}
                 title={`${node?.title ?? row.id} — click to open`}
                 onMouseEnter={() => setActiveIndex(i)}

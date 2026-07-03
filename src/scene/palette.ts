@@ -39,13 +39,22 @@ export function hexFor(cluster: number): string {
 }
 
 /**
- * Edge tints by kind. `reference` edges get the distinct warm amber the spec
- * calls for; the rest stay in the cool band so references pop.
- * Read-only instances — `.copy()` before mutating.
+ * Edge tints by kind — the single source of truth for edge-kind color.
+ * `reference` edges get the distinct warm amber the spec calls for; the rest
+ * stay in the cool band so references pop. UI panels use the hex map; the
+ * scene uses the derived THREE.Color instances (read-only — `.copy()` before
+ * mutating).
  */
+export const EDGE_KIND_HEX: Record<EdgeKind, string> = {
+  reference: '#ffb36b',
+  semantic: '#7fb4ff',
+  keyword: '#6f86e8',
+  topic: '#7ee8c4',
+};
+
 export const EDGE_TINTS: Record<EdgeKind, THREE.Color> = {
-  reference: new THREE.Color('#ffb36b'),
-  semantic: new THREE.Color('#7fb4ff'),
-  keyword: new THREE.Color('#6f86e8'),
-  topic: new THREE.Color('#7ee8c4'),
+  reference: new THREE.Color(EDGE_KIND_HEX.reference),
+  semantic: new THREE.Color(EDGE_KIND_HEX.semantic),
+  keyword: new THREE.Color(EDGE_KIND_HEX.keyword),
+  topic: new THREE.Color(EDGE_KIND_HEX.topic),
 };

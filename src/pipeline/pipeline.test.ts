@@ -10,8 +10,8 @@ import { referenceEdges } from './links';
 import { extractEntities } from './entities';
 import { chunkText } from './chunker';
 import { findBoilerplateLines, stripBoilerplate } from './boilerplate';
-import { semanticEdges } from './similarity';
-import { DUP_SIM_THRESHOLD, SIM_THRESHOLD, SIM_TOP_K } from '../config';
+import { MAX_DUPLICATE_PAIRS, semanticEdges } from './similarity';
+import { DUP_SIM_THRESHOLD, MAX_EMBED_TEXT_BYTES, SIM_THRESHOLD, SIM_TOP_K } from '../config';
 import { parseMarkdown } from './parsers/markdown';
 import { parseHtml } from './parsers/html';
 import { labelForRect, type PdfTextSpan } from './parsers/pdfLinkLabels';
@@ -306,17 +306,44 @@ describe('extractEntities', () => {
 // ---------------------------------------------------------------------------
 describe('chunkText', () => {
   it('short text yields exactly one non-empty chunk', () => {
-    const chunks = chunkText('A short document about deployment.');
+    const { chunks, truncated } = chunkText('A short document about deployment.');
     expect(chunks.length).toBe(1);
     expect(chunks[0].length).toBeGreaterThan(0);
+    expect(truncated).toBe(false);
   });
 
   it('long text yields multiple overlapping chunks', () => {
     const para = 'word '.repeat(400).trim(); // ~400 words ≈ 520 tokens
     const text = Array.from({ length: 5 }, (_, i) => `Paragraph ${i}. ${para}`).join('\n\n');
-    const chunks = chunkText(text);
+    const { chunks } = chunkText(text);
     expect(chunks.length).toBeGreaterThan(1);
     for (const c of chunks) expect(c.length).toBeGreaterThan(0);
+  });
+
+  it('empty / whitespace-only text yields no chunks', () => {
+    expect(chunkText('').chunks).toEqual([]);
+    expect(chunkText('   \n\n  ').chunks).toEqual([]);
+  });
+
+  it('flags truncation and stays within the byte budget when over the embed cap', () => {
+    // MAX_EMBED_TEXT_BYTES is 200 KB; build a document comfortably past it as
+    // many distinct paragraphs so chunking produces multiple packable chunks.
+    const para = Array.from({ length: 60 }, (_, i) => `sentence ${i} about the system`).join(' ');
+    const text = Array.from({ length: 400 }, (_, i) => `Section ${i}. ${para}`).join('\n\n');
+    const { chunks, truncated } = chunkText(text);
+    expect(truncated).toBe(true);
+    expect(chunks.length).toBeGreaterThan(0);
+    const bytes = chunks.reduce((sum, c) => sum + new TextEncoder().encode(c).byteLength, 0);
+    expect(bytes).toBeLessThanOrEqual(MAX_EMBED_TEXT_BYTES);
+  });
+
+  it('never returns empty for a single pathological oversized chunk', () => {
+    // one giant unbroken "word" (e.g. a minified blob) that alone exceeds the cap
+    const blob = 'x'.repeat(MAX_EMBED_TEXT_BYTES * 2);
+    const { chunks, truncated } = chunkText(blob);
+    expect(truncated).toBe(true);
+    expect(chunks.length).toBe(1);
+    expect(chunks[0].length).toBeGreaterThan(0);
   });
 });
 
@@ -453,6 +480,26 @@ describe('semanticEdges', () => {
     );
     expect(dup).toBeDefined();
     expect(dup!.sim).toBeGreaterThanOrEqual(DUP_SIM_THRESHOLD);
+  });
+
+  it('caps reported duplicates and keeps the highest-similarity pairs', () => {
+    // 34 identical docs produce C(34,2) = 561 sim-1.0 pairs — more than the
+    // cap — plus one weaker 0.95-sim pair listed FIRST so it must be evicted,
+    // not just never inserted. Without a cap this array is O(n²).
+    const weakPair = [
+      [0, 1, 0, 0],
+      [0, 1, 0.32, 0], // cos ≈ 0.953 vs its partner, ~0 vs the clones
+    ];
+    const clones = Array.from({ length: 34 }, () => [1, 0, 0, 0]);
+    const vecs = [...weakPair, ...clones];
+    const ids = vecs.map((_, i) => `doc${i}`);
+    const { duplicates } = semanticEdges(ids, pack(vecs), dims, {
+      threshold: 0.62,
+      topK: 1,
+      dupThreshold: 0.93,
+    });
+    expect(duplicates.length).toBe(MAX_DUPLICATE_PAIRS);
+    for (const d of duplicates) expect(d.sim).toBeGreaterThan(0.99);
   });
 
   it('omitting dupThreshold reports no duplicates', () => {

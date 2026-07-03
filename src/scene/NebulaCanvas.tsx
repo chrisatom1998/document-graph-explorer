@@ -41,7 +41,9 @@ export default function NebulaCanvas() {
       }}
     >
       <color attach="background" args={['#050510']} />
-      <fogExp2 attach="fog" args={['#050510', 0.0012]} />
+      {/* density tracks the layout shell radius — the wider spacing would
+          otherwise fog out the nebula's far side */}
+      <fogExp2 attach="fog" args={['#050510', 0.001]} />
       {/* base fill so shadowed sides keep their hue */}
       <ambientLight intensity={0.55} />
       {/* key light (upper-left): drives the glossy specular highlight */}
