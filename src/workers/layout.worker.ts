@@ -94,7 +94,14 @@ function acquireBuffer(neededFloats: number): ArrayBuffer {
     if (buf.byteLength >= neededFloats * 4) return buf;
     // undersized (node count outgrew it) -> drop and let GC take it
   }
-  capacityFloats = Math.max(neededFloats, Math.ceil(capacityFloats * 1.5), 96);
+  // Grow capacity only when the corpus outgrew it (with 1.5x headroom). An
+  // ordinary pool miss — the main thread simply hasn't returned the previous
+  // buffer yet, routine whenever render frames run slower than sim ticks —
+  // must NOT compound capacity: doing so grew the allocation exponentially
+  // per miss until `new ArrayBuffer` threw RangeError on every tick.
+  if (neededFloats > capacityFloats) {
+    capacityFloats = Math.max(neededFloats, Math.ceil(capacityFloats * 1.5), 96);
+  }
   return new ArrayBuffer(capacityFloats * 4);
 }
 
