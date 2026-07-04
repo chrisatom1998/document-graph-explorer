@@ -11,7 +11,7 @@ import globals from 'globals';
  * findings aren't reported twice.
  */
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'public', 'coverage'] },
+  { ignores: ['dist', 'dist-airgap', 'node_modules', 'public', 'coverage'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -33,8 +33,8 @@ export default tseslint.config(
     },
   },
   {
-    // Node context: tests and build config.
-    files: ['**/*.test.ts', '*.config.{ts,js}', 'vite.config.ts'],
-    languageOptions: { globals: { ...globals.node } },
+    // Node context: tests, build config, and the .mjs build/verify scripts.
+    files: ['**/*.test.ts', '*.config.{ts,js}', 'vite.config.ts', '**/*.mjs'],
+    languageOptions: { sourceType: 'module', globals: { ...globals.node } },
   },
 );
