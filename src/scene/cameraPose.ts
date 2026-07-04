@@ -12,4 +12,6 @@ export const cameraPose = {
   tx: 0,
   ty: 0,
   tz: 0,
+  fov: 55, // vertical, degrees — sizes the minimap viewport box
+  aspect: 16 / 9,
 };

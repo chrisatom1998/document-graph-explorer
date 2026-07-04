@@ -2,7 +2,7 @@
  * Corner minimap (bottom-right): a 2D orthographic projection of the whole
  * nebula for orientation once the graph outgrows one screenful — node dots in
  * cluster colors, faint edge filaments, the selected node ringed, and a
- * camera wedge showing where you are and which way you're looking.
+ * viewport box outlining the region the camera currently has on screen.
  *
  * Deliberately outside the R3F tree: a plain <canvas> redrawn on a 10Hz
  * interval from positionBuffer + cameraPose (both imperative bridges), so it
@@ -174,46 +174,65 @@ export default function Minimap() {
         }
       }
 
-      // --- camera: wedge at the eye, opening toward the orbit target -------
-      const camX = toX(projU(cameraPose.px, cameraPose.py, cameraPose.pz));
-      const camY = toY(projV(cameraPose.py, cameraPose.pz, dims));
+      // --- camera: viewport box over the region currently on screen --------
+      // Sized from the view frustum at the orbit-target distance (exact in 2D,
+      // where the camera looks straight down the layout plane; a footprint
+      // approximation in 3D, ignoring tilt foreshortening). Centered on the
+      // target — the world point at the middle of the screen.
+      const dist = Math.hypot(
+        cameraPose.px - cameraPose.tx,
+        cameraPose.py - cameraPose.ty,
+        cameraPose.pz - cameraPose.tz,
+      );
+      const rawHalfV = dist * Math.tan((cameraPose.fov * Math.PI) / 360) * f.scale;
+      const halfV = Math.min(Math.max(rawHalfV, 4), H);
+      const halfU = Math.min(Math.max(rawHalfV * cameraPose.aspect, 5), W);
       const tgtX = toX(projU(cameraPose.tx, cameraPose.ty, cameraPose.tz));
       const tgtY = toY(projV(cameraPose.ty, cameraPose.tz, dims));
-      // Camera can orbit far outside the graph bounds — keep its marker on
+      // Target can sit outside the graph bounds — keep the box's center on
       // the map so "you are here" never silently disappears off the edge.
-      const px = Math.min(Math.max(camX, 6), W - 6);
-      const py = Math.min(Math.max(camY, 6), H - 6);
-      let dx = tgtX - px;
-      let dy = tgtY - py;
-      const len = Math.hypot(dx, dy);
-      if (len > 1e-3) {
-        dx /= len;
-        dy /= len;
+      const bx = Math.min(Math.max(tgtX, 8), W - 8);
+      const by = Math.min(Math.max(tgtY, 8), H - 8);
+      // Align the box with the camera heading projected onto the map plane,
+      // so it still shows which way you're looking; a straight-down view has
+      // no projected heading — fall back to map-aligned.
+      let hu = cameraPose.tx - cameraPose.px;
+      let hv =
+        dims === 3
+          ? cameraPose.tz - cameraPose.pz
+          : -(cameraPose.ty - cameraPose.py);
+      const hLen = Math.hypot(hu, hv);
+      if (hLen > 1e-3) {
+        hu /= hLen;
+        hv /= hLen;
       } else {
-        dx = 0;
-        dy = -1; // looking straight down the projection axis: point "north"
+        hu = 0;
+        hv = -1;
       }
-      const wedge = 11;
-      const half = 0.45; // ~26° half-angle
-      ctx.fillStyle = 'rgba(169, 150, 255, 0.22)';
+      ctx.fillStyle = 'rgba(169, 150, 255, 0.10)';
       ctx.strokeStyle = 'rgba(169, 150, 255, 0.7)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(px, py);
-      ctx.lineTo(
-        px + (dx * Math.cos(half) - dy * Math.sin(half)) * wedge,
-        py + (dx * Math.sin(half) + dy * Math.cos(half)) * wedge,
-      );
-      ctx.lineTo(
-        px + (dx * Math.cos(-half) - dy * Math.sin(-half)) * wedge,
-        py + (dx * Math.sin(-half) + dy * Math.cos(-half)) * wedge,
-      );
+      // corners: center ± screen-right (-hv, hu) · halfU ± heading · halfV
+      ctx.moveTo(bx - hv * halfU + hu * halfV, by + hu * halfU + hv * halfV);
+      ctx.lineTo(bx + hv * halfU + hu * halfV, by - hu * halfU + hv * halfV);
+      ctx.lineTo(bx + hv * halfU - hu * halfV, by - hu * halfU - hv * halfV);
+      ctx.lineTo(bx - hv * halfU - hu * halfV, by + hu * halfU - hv * halfV);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
+      // eye dot: where the camera itself sits (matches the box center in 2D)
+      const camX = toX(projU(cameraPose.px, cameraPose.py, cameraPose.pz));
+      const camY = toY(projV(cameraPose.py, cameraPose.pz, dims));
       ctx.fillStyle = '#a996ff';
       ctx.beginPath();
-      ctx.arc(px, py, 2, 0, Math.PI * 2);
+      ctx.arc(
+        Math.min(Math.max(camX, 6), W - 6),
+        Math.min(Math.max(camY, 6), H - 6),
+        2,
+        0,
+        Math.PI * 2,
+      );
       ctx.fill();
     };
 

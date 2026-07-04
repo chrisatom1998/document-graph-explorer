@@ -7,6 +7,30 @@
    input everywhere else.
    ========================================================================== */
 
+/* Self-hosted UI face (OFL, license alongside the files). Same-origin only —
+   the production CSP forbids external font hosts. font-display: swap keeps
+   first paint on the system stack. */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('./assets/fonts/space-grotesk-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('./assets/fonts/space-grotesk-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 :root {
   color-scheme: dark;
 
@@ -41,8 +65,8 @@
   --radius-sm: 7px;
 
   --font-ui:
-    system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif,
-    'Apple Color Emoji', 'Segoe UI Emoji';
+    'Space Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
   --font-reading: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
   --font-mono:
     ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
@@ -83,6 +107,15 @@ button,
 input {
   font-family: inherit;
   color: inherit;
+}
+
+/* Counters and metrics align digit columns wherever numbers tick over. */
+.side-panel__stats,
+.chat-panel__doc-count,
+.chat-bubble-btn__badge,
+.path-panel__hop-count,
+.edge-kind-badge {
+  font-variant-numeric: tabular-nums;
 }
 
 .app-root {
