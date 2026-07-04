@@ -21,6 +21,7 @@ import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { onLayoutSettled } from './layout/layoutBridge';
 import { positionBuffer } from './scene/positionBuffer';
+import { panInput } from './scene/panInput';
 import { loadDemoCorpus } from './pipeline/coordinator';
 import { initPersistence, restoreSession } from './persistence/session';
 import './styles.css';
@@ -109,6 +110,16 @@ export default function App() {
 
   // Global keyboard: owned HERE and nowhere else.
   useEffect(() => {
+    // Arrow keys pan the camera. Held keys are tracked here; CameraRig reads
+    // the net direction from panInput each frame and applies a smooth pan.
+    const held = new Set<string>();
+    const isPanKey = (k: string) =>
+      k === 'ArrowLeft' || k === 'ArrowRight' || k === 'ArrowUp' || k === 'ArrowDown';
+    const syncPan = () => {
+      panInput.x = (held.has('ArrowRight') ? 1 : 0) - (held.has('ArrowLeft') ? 1 : 0);
+      panInput.y = (held.has('ArrowUp') ? 1 : 0) - (held.has('ArrowDown') ? 1 : 0);
+    };
+
     const onKey = (e: KeyboardEvent) => {
       const ui = useUiStore.getState();
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -117,6 +128,13 @@ export default function App() {
         return;
       }
       if (isTypingTarget(e.target)) return;
+      // Plain arrows only — leave modified combos to the browser/OS.
+      if (isPanKey(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault(); // otherwise the page scrolls
+        held.add(e.key);
+        syncPan();
+        return;
+      }
       if (e.key === 'Escape') {
         if (ui.searchOpen) {
           ui.setSearchOpen(false);
@@ -144,8 +162,27 @@ export default function App() {
         ui.sendCamera('fitAll');
       }
     };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (isPanKey(e.key) && held.delete(e.key)) syncPan();
+    };
+    // A lost focus (alt-tab, devtools) can swallow keyup — clear held state so
+    // a key never sticks and pans the camera forever.
+    const onBlur = () => {
+      if (held.size) {
+        held.clear();
+        syncPan();
+      }
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+      panInput.x = 0;
+      panInput.y = 0;
+    };
   }, []);
 
   return (

@@ -20,17 +20,24 @@ import { useUiStore } from '../store/uiStore';
 import type { CameraCommand } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { cameraPose } from './cameraPose';
+import { panInput } from './panInput';
 import { prefersReducedMotion } from '../util/motion';
 
 const IDLE_MS = 10_000;
 const SMOOTH_TIME = (CAMERA_GLIDE_MS / 1000) * 0.45; // ~800ms glide feel
 const ARRIVE_EPS_SQ = 0.25; // "< 0.5u" arrival check, squared
+// Arrow-key pan rate as a fraction of the target distance per second, so the
+// pan feels the same whether zoomed into one node or viewing the whole nebula.
+const PAN_SPEED = 0.8;
 
 // module-level temps — single rig instance, zero per-frame allocations
 const desiredPos = new THREE.Vector3();
 const desiredTarget = new THREE.Vector3();
 const viewDir = new THREE.Vector3();
 const centroid = new THREE.Vector3();
+const panRight = new THREE.Vector3();
+const panUp = new THREE.Vector3();
+const panDelta = new THREE.Vector3();
 
 export default function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
@@ -144,6 +151,25 @@ export default function CameraRig() {
     if (cmd && cmd.nonce !== lastNonce.current) {
       lastNonce.current = cmd.nonce;
       beginCommand(cmd, state.camera, controls);
+    }
+
+    // Arrow-key pan (App writes the direction to panInput). Nudging BOTH the
+    // camera and the orbit target by the same screen-space delta preserves the
+    // orbit angle/distance, so controls.update() below leaves it untouched.
+    if (panInput.x !== 0 || panInput.y !== 0) {
+      tweenActive.current = false; // a manual pan cancels any active glide
+      const cam = state.camera;
+      const dist = Math.max(cam.position.distanceTo(controls.target), 1);
+      const step = dist * PAN_SPEED * delta;
+      panRight.set(1, 0, 0).applyQuaternion(cam.quaternion);
+      panUp.set(0, 1, 0).applyQuaternion(cam.quaternion);
+      panDelta
+        .set(0, 0, 0)
+        .addScaledVector(panRight, panInput.x * step)
+        .addScaledVector(panUp, panInput.y * step);
+      cam.position.add(panDelta);
+      controls.target.add(panDelta);
+      lastInteraction.current = performance.now(); // suppress idle auto-orbit
     }
 
     if (tweenActive.current) {

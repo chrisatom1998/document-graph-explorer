@@ -17,6 +17,7 @@ import { Environment, Lightformer } from '@react-three/drei';
 import { useUiStore } from '../store/uiStore';
 import CameraRig from './CameraRig';
 import Starfield from './Starfield';
+import AiCore from './AiCore';
 import Nodes from './Nodes';
 import Edges from './Edges';
 import EdgePulses from './EdgePulses';
@@ -87,6 +88,7 @@ export default function NebulaCanvas() {
 
       <CameraRig />
       <Starfield />
+      <AiCore />
       <Nodes />
       <Edges />
       <EdgePulses />
