@@ -176,6 +176,9 @@ export default function CameraRig() {
     cameraPose.tx = controls.target.x;
     cameraPose.ty = controls.target.y;
     cameraPose.tz = controls.target.z;
+    const persp = state.camera as THREE.PerspectiveCamera;
+    cameraPose.fov = persp.fov ?? 55;
+    cameraPose.aspect = persp.aspect ?? 16 / 9;
   });
 
   const onStart = (): void => {

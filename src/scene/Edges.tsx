@@ -26,7 +26,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
-import { EDGE_TINTS } from './palette';
+import { clusterColor, EDGE_TINTS } from './palette';
 import { computeEmphasis } from './Nodes';
 import {
   EDGE_SEGMENTS,
@@ -53,9 +53,52 @@ function densityFade(edgeCount: number): number {
   return Math.max(FADE_FLOOR, Math.sqrt(FADE_START_EDGES / edgeCount));
 }
 
-const tmpColor = new THREE.Color();
+// How much of each endpoint's cluster hue bleeds into the edge gradient.
+// Kind tint stays dominant (it is information — legend/popover encode it);
+// reference edges are exempt so their warm amber keeps popping (spec §7.1).
+const CLUSTER_BLEND = 0.35;
+
+const srcColor = new THREE.Color();
+const dstColor = new THREE.Color();
 const ctrl = new Float32Array(3);
 const pt = new Float32Array(3);
+
+// Aerial perspective for the filaments: brightness eases toward uFadeMin as
+// view distance runs uFadeNear -> uFadeFar, so near edges read crisper and the
+// far side of a big nebula recedes instead of stacking additively at full
+// strength. GPU-side (vViewZ varying) — zero per-frame CPU cost.
+const FADE_NEAR = 150;
+const FADE_FAR = 600;
+const FADE_MIN = 0.45;
+
+const lineMaterial = new THREE.LineBasicMaterial({
+  vertexColors: true,
+  transparent: true,
+  opacity: 0.25,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  toneMapped: false,
+});
+lineMaterial.onBeforeCompile = (shader) => {
+  shader.uniforms.uFadeNear = { value: FADE_NEAR };
+  shader.uniforms.uFadeFar = { value: FADE_FAR };
+  shader.uniforms.uFadeMin = { value: FADE_MIN };
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', '#include <common>\nvarying float vViewZ;')
+    .replace(
+      '#include <project_vertex>',
+      '#include <project_vertex>\n\tvViewZ = -mvPosition.z;',
+    );
+  shader.fragmentShader = shader.fragmentShader
+    .replace(
+      '#include <common>',
+      '#include <common>\nvarying float vViewZ;\nuniform float uFadeNear;\nuniform float uFadeFar;\nuniform float uFadeMin;',
+    )
+    .replace(
+      '#include <color_fragment>',
+      '#include <color_fragment>\n\tdiffuseColor.rgb *= mix(1.0, uFadeMin, smoothstep(uFadeNear, uFadeFar, vViewZ));',
+    );
+};
 
 export default function Edges() {
   const edges = useGraphStore((s) => s.edges);
@@ -142,6 +185,8 @@ export default function Edges() {
       filter,
     );
     const focusId = hoveredId ?? selectedId;
+    const clusterOf = new Map<string, number>();
+    for (const n of nodes) clusterOf.set(n.id, n.cluster);
     // Count visible edges for density fade (hidden edges shouldn't dim the rest)
     let visibleCount = 0;
     for (const e of edges) if (!isEdgeHidden(e, ui)) visibleCount++;
@@ -158,30 +203,44 @@ export default function Edges() {
         continue;
       }
       // base: kind tint scaled by weight (opacity/brightness = weight, §7.1)
-      // and by density; kept delicate so links read as fine filaments
-      tmpColor.copy(EDGE_TINTS[e.kind]).multiplyScalar((0.16 + 0.55 * e.weight) * fade);
+      // and by density; kept delicate so links read as fine filaments. Each
+      // end leans toward its node's cluster hue so filaments visibly belong
+      // to the communities they join (gradient across the arc).
+      srcColor.copy(EDGE_TINTS[e.kind]);
+      dstColor.copy(EDGE_TINTS[e.kind]);
+      if (e.kind !== 'reference') {
+        srcColor.lerp(clusterColor(clusterOf.get(e.source) ?? -1), CLUSTER_BLEND);
+        dstColor.lerp(clusterColor(clusterOf.get(e.target) ?? -1), CLUSTER_BLEND);
+      }
+      let brightness = (0.16 + 0.55 * e.weight) * fade;
       if (emphasis && !(emphasis.has(e.source) && emphasis.has(e.target))) {
-        tmpColor.multiplyScalar(DIM_FACTOR);
+        brightness *= DIM_FACTOR;
       }
       if (focusId && (e.source === focusId || e.target === focusId)) {
         // undo the density fade: the edges you're inspecting must stay vivid
         // precisely when the rest of the graph is at its faintest
-        tmpColor.multiplyScalar(FOCUS_BOOST / fade);
-        tmpColor.r = Math.min(tmpColor.r, 1);
-        tmpColor.g = Math.min(tmpColor.g, 1);
-        tmpColor.b = Math.min(tmpColor.b, 1);
+        brightness *= FOCUS_BOOST / fade;
       }
-      // Vertex k of the polyline sits at curve parameter t=k/segments; taper
-      // brightness toward the middle of the arc. Segment pair layout: vertex
-      // 2j is point j, vertex 2j+1 is point j+1.
+      srcColor.multiplyScalar(brightness);
+      dstColor.multiplyScalar(brightness);
+      srcColor.r = Math.min(srcColor.r, 1);
+      srcColor.g = Math.min(srcColor.g, 1);
+      srcColor.b = Math.min(srcColor.b, 1);
+      dstColor.r = Math.min(dstColor.r, 1);
+      dstColor.g = Math.min(dstColor.g, 1);
+      dstColor.b = Math.min(dstColor.b, 1);
+      // Vertex k of the polyline sits at curve parameter t=k/segments; blend
+      // src -> dst cluster-leaning tints along the arc and taper brightness
+      // toward the middle. Segment pair layout: vertex 2j is point j, vertex
+      // 2j+1 is point j+1.
       for (let v = 0; v < vertsPerEdge; v++) {
         const k = (v >> 1) + (v & 1); // point index this vertex represents
         const t = k / segments;
         const taper = 1 - (1 - MID_TAPER) * 4 * t * (1 - t); // 1 at ends, MID_TAPER at t=.5
         const o = base + v * 3;
-        col[o] = tmpColor.r * taper;
-        col[o + 1] = tmpColor.g * taper;
-        col[o + 2] = tmpColor.b * taper;
+        col[o] = (srcColor.r + (dstColor.r - srcColor.r) * t) * taper;
+        col[o + 1] = (srcColor.g + (dstColor.g - srcColor.g) * t) * taper;
+        col[o + 2] = (srcColor.b + (dstColor.b - srcColor.b) * t) * taper;
       }
     }
     attrs.colors.needsUpdate = true;
@@ -281,14 +340,7 @@ export default function Edges() {
         <primitive object={attrs.positions} attach="attributes-position" />
         <primitive object={attrs.colors} attach="attributes-color" />
       </bufferGeometry>
-      <lineBasicMaterial
-        vertexColors
-        transparent
-        opacity={0.25}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-        toneMapped={false}
-      />
+      <primitive object={lineMaterial} attach="material" />
     </lineSegments>
   );
 }

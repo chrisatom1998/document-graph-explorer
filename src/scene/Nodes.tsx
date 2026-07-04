@@ -594,11 +594,18 @@ export default function Nodes() {
         onDoubleClick={handleDoubleClick}
       >
         <sphereGeometry args={[1, 32, 24]} />
-        {/* glossy marble: per-instance cluster hue as diffuse, lit by the
-            scene key light for a specular hotspot — brighter and tighter so
-            cores read as polished gems against the corona. The fresnel halo
-            below supplies the nebula glow that feeds bloom. */}
-        <meshPhongMaterial specular="#9a9ac0" shininess={90} />
+        {/* glassy marble: per-instance cluster hue as diffuse under a
+            clearcoat, reflecting the procedural Lightformer environment
+            (NebulaCanvas) so cores read as polished glass orbs rather than
+            plastic. The fresnel halo below supplies the nebula glow that
+            feeds bloom. */}
+        <meshPhysicalMaterial
+          roughness={0.32}
+          metalness={0}
+          clearcoat={0.9}
+          clearcoatRoughness={0.25}
+          envMapIntensity={0.7}
+        />
       </instancedMesh>
 
       {/* fresnel corona halo (limb-brightened, additive) that feeds bloom */}
