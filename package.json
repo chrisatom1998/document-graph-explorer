@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:airgap": "tsc --noEmit && vite build --mode airgap --outDir dist-airgap && node scripts/verify-airgap.mjs",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test": "vitest run",

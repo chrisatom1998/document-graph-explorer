@@ -1,37 +1,10 @@
 /// <reference types="vitest/config" />
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { buildCsp } from './src/security/csp';
 
-/**
- * Privacy guarantee, enforced not promised: production builds ship a CSP that
- * blocks every network destination except
- *   - 'self'                       (app assets, demo corpus, and the embedding
- *                                   model, which is self-hosted in /public/models
- *                                   — the app needs ZERO third-party network)
- *   - generativelanguage.googleapis.com (Gemini — used ONLY when the user
- *     explicitly enables AI enrichment and supplies their own key)
- * Document content cannot reach any other host, even via a buggy dependency.
- * (Dev server stays permissive so HMR websockets work.)
- */
-function injectCsp(): Plugin {
-  const csp = [
-    "default-src 'self'",
-    // 'wasm-unsafe-eval' + blob: are both for onnxruntime: it compiles WASM
-    // and boots its runtime via importScripts on a blob: URL — without blob:
-    // every embedding fails ("importScripts … failed to load"). blob: script
-    // URLs can only be minted by code that is ALREADY running same-origin JS,
-    // so this doesn't widen the injection surface.
-    "script-src 'self' 'wasm-unsafe-eval' blob:",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
-    "font-src 'self' data:",
-    // no data: here — nothing legitimate fetches data: URLs, so don't allow it
-    "connect-src 'self' blob: https://generativelanguage.googleapis.com",
-    "worker-src 'self' blob:",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'none'",
-  ].join('; ');
+function injectCsp(airgap: boolean): Plugin {
+  const csp = buildCsp({ airgap });
   return {
     name: 'knowledge-nebula:inject-csp',
     apply: 'build',
@@ -58,8 +31,8 @@ const SECURITY_HEADERS = {
 
 // NOTE: no COOP/COEP headers on purpose — we use transferable Float32Arrays
 // (not SharedArrayBuffer), so cross-origin isolation buys nothing here.
-export default defineConfig({
-  plugins: [react(), injectCsp()],
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), injectCsp(mode === 'airgap')],
   server: { headers: SECURITY_HEADERS },
   preview: { headers: SECURITY_HEADERS },
   worker: { format: 'es' },
@@ -91,4 +64,4 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.ts'],
   },
-});
+}));
