@@ -1,14 +1,21 @@
 /**
  * Corner minimap (bottom-right): a 2D orthographic projection of the whole
  * nebula for orientation once the graph outgrows one screenful — node dots in
- * cluster colors, faint edge filaments, the selected node ringed, and a
- * viewport box outlining the region the camera currently has on screen.
+ * cluster colors, faint edge filaments, the selected node ringed, plus a
+ * camera indicator: a heading-aligned viewport box over the region currently
+ * on screen and an arrow at the camera's own map position pointing where it
+ * looks. When the camera sits outside the fitted bounds the arrow pins to
+ * the map border with its orientation intact, so "you are here" never lies
+ * or disappears.
  *
- * Deliberately outside the R3F tree: a plain <canvas> redrawn on a 10Hz
- * interval from positionBuffer + cameraPose (both imperative bridges), so it
- * costs nothing per 3D frame and never re-renders with React state. Only
- * appears at MINIMAP_MIN_NODES+ — small graphs fit on screen and don't need
- * a "you are here".
+ * Deliberately outside the R3F tree: a plain <canvas> driven imperatively
+ * from positionBuffer + cameraPose (both out-of-React bridges). The graph
+ * layer (dots + filaments) is cached on an offscreen canvas refreshed on a
+ * 10Hz cadence; each animation frame merely re-composites that layer and
+ * redraws the indicator, and only when the pose actually changed — so the
+ * arrow tracks the camera at full frame rate while costing nothing at idle.
+ * Only appears at MINIMAP_MIN_NODES+ — small graphs fit on screen and don't
+ * need a "you are here".
  *
  * Projection is a fixed top-down view (x/z) in 3D — a compass, not a mirror
  * of the camera — and the layout plane (x/y) in 2D mode. Clicking flies the
@@ -22,27 +29,30 @@ import { useUiStore } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from '../scene/positionBuffer';
 import { cameraPose } from '../scene/cameraPose';
 import { hexFor } from '../scene/palette';
+import {
+  arrowVertices,
+  boxCorners,
+  clampToRect,
+  headingOnMap,
+  projU,
+  projV,
+  viewportHalfExtents,
+} from './minimapMath';
 
 const W = 200;
 const H = 148;
 const PAD = 14;
-const TICK_MS = 100;
+const SCENE_MS = 100; // graph-layer refresh cadence; the arrow redraws per frame
 const EDGE_DRAW_CAP = 1200; // beyond this, dots alone read better anyway
 const CLICK_RADIUS = 12; // px
-const SMOOTH = 0.25; // bounds-fit lerp per tick (layout settles without jitter)
+const SMOOTH = 0.25; // bounds-fit lerp per scene tick (layout settles without jitter)
+const ARROW_SIZE = 5.5; // px
+const ARROW_INSET = 7; // border pin margin, keeps the whole arrow on-map
 
 interface MapTransform {
   scale: number;
   cx: number; // world-space center (projected u)
   cy: number;
-}
-
-/** Project world position to the map plane: top-down in 3D, layout plane in 2D. */
-function projU(x: number, _y: number, _z: number): number {
-  return x;
-}
-function projV(y: number, z: number, dims: 2 | 3): number {
-  return dims === 3 ? z : -y;
 }
 
 export default function Minimap() {
@@ -64,11 +74,15 @@ export default function Minimap() {
     canvas.width = W * dpr;
     canvas.height = H * dpr;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const scene = document.createElement('canvas');
+    scene.width = W * dpr;
+    scene.height = H * dpr;
+    const sctx = scene.getContext('2d');
+    if (!ctx || !sctx) return;
     ctx.scale(dpr, dpr);
+    sctx.scale(dpr, dpr);
 
-    const draw = (): void => {
-      if (document.hidden) return;
+    const drawScene = (): void => {
       const { nodes, edges } = useGraphStore.getState();
       const ui = useUiStore.getState();
       const arr = positionBuffer.array;
@@ -93,8 +107,11 @@ export default function Minimap() {
         if (v > maxV) maxV = v;
         placed++;
       }
-      ctx.clearRect(0, 0, W, H);
-      if (placed === 0) return;
+      sctx.clearRect(0, 0, W, H);
+      if (placed === 0) {
+        fit.current = null; // also hides the indicator until positions return
+        return;
+      }
 
       const spanU = Math.max(maxU - minU, 1);
       const spanV = Math.max(maxV - minV, 1);
@@ -115,9 +132,9 @@ export default function Minimap() {
 
       // --- edges: faintest possible filaments, straight is fine at this size
       if (edges.length <= EDGE_DRAW_CAP && !ui.clusterCollapsed) {
-        ctx.strokeStyle = 'rgba(140, 150, 255, 0.10)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
+        sctx.strokeStyle = 'rgba(140, 150, 255, 0.10)';
+        sctx.lineWidth = 1;
+        sctx.beginPath();
         for (const e of edges) {
           if (e.weight < ui.filter.minEdgeWeight) continue;
           if (e.kind === 'topic' && !ui.topicNodesEnabled) continue;
@@ -126,16 +143,16 @@ export default function Minimap() {
           if (s === undefined || t === undefined || s >= count || t >= count) continue;
           const so = s * 3;
           const to = t * 3;
-          ctx.moveTo(
+          sctx.moveTo(
             toX(projU(arr[so], arr[so + 1], arr[so + 2])),
             toY(projV(arr[so + 1], arr[so + 2], dims)),
           );
-          ctx.lineTo(
+          sctx.lineTo(
             toX(projU(arr[to], arr[to + 1], arr[to + 2])),
             toY(projV(arr[to + 1], arr[to + 2], dims)),
           );
         }
-        ctx.stroke();
+        sctx.stroke();
       }
 
       // --- nodes: cluster-colored dots, hubs slightly larger ---------------
@@ -147,98 +164,126 @@ export default function Minimap() {
         const x = toX(projU(arr[o], arr[o + 1], arr[o + 2]));
         const y = toY(projV(arr[o + 1], arr[o + 2], dims));
         const r = 0.9 + 0.5 * (scaleOfSlot[slot] || 1);
-        ctx.globalAlpha = n.status === 'ok' ? 0.9 : 0.35;
-        ctx.fillStyle = hexFor(n.cluster);
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
+        sctx.globalAlpha = n.status === 'ok' ? 0.9 : 0.35;
+        sctx.fillStyle = hexFor(n.cluster);
+        sctx.beginPath();
+        sctx.arc(x, y, r, 0, Math.PI * 2);
+        sctx.fill();
       }
-      ctx.globalAlpha = 1;
+      sctx.globalAlpha = 1;
 
       // --- selected node: accent ring --------------------------------------
       if (ui.selectedId) {
         const slot = slotOfId.get(ui.selectedId);
         if (slot !== undefined && slot < count) {
           const o = slot * 3;
-          ctx.strokeStyle = '#a996ff';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(
+          sctx.strokeStyle = '#a996ff';
+          sctx.lineWidth = 1.5;
+          sctx.beginPath();
+          sctx.arc(
             toX(projU(arr[o], arr[o + 1], arr[o + 2])),
             toY(projV(arr[o + 1], arr[o + 2], dims)),
             5,
             0,
             Math.PI * 2,
           );
-          ctx.stroke();
+          sctx.stroke();
         }
       }
+    };
 
-      // --- camera: viewport box over the region currently on screen --------
-      // Sized from the view frustum at the orbit-target distance (exact in 2D,
-      // where the camera looks straight down the layout plane; a footprint
-      // approximation in 3D, ignoring tilt foreshortening). Centered on the
-      // target — the world point at the middle of the screen.
-      const dist = Math.hypot(
-        cameraPose.px - cameraPose.tx,
-        cameraPose.py - cameraPose.ty,
-        cameraPose.pz - cameraPose.tz,
-      );
-      const rawHalfV = dist * Math.tan((cameraPose.fov * Math.PI) / 360) * f.scale;
-      const halfV = Math.min(Math.max(rawHalfV, 4), H);
-      const halfU = Math.min(Math.max(rawHalfV * cameraPose.aspect, 5), W);
-      const tgtX = toX(projU(cameraPose.tx, cameraPose.ty, cameraPose.tz));
-      const tgtY = toY(projV(cameraPose.ty, cameraPose.tz, dims));
-      // Target can sit outside the graph bounds — keep the box's center on
-      // the map so "you are here" never silently disappears off the edge.
-      const bx = Math.min(Math.max(tgtX, 8), W - 8);
-      const by = Math.min(Math.max(tgtY, 8), H - 8);
-      // Align the box with the camera heading projected onto the map plane,
-      // so it still shows which way you're looking; a straight-down view has
-      // no projected heading — fall back to map-aligned.
-      let hu = cameraPose.tx - cameraPose.px;
-      let hv =
-        dims === 3
-          ? cameraPose.tz - cameraPose.pz
-          : -(cameraPose.ty - cameraPose.py);
-      const hLen = Math.hypot(hu, hv);
-      if (hLen > 1e-3) {
-        hu /= hLen;
-        hv /= hLen;
-      } else {
-        hu = 0;
-        hv = -1;
-      }
+    const drawIndicator = (): void => {
+      const f = fit.current;
+      if (!f) return;
+      const dims = useUiStore.getState().dims;
+      const toX = (u: number): number => W / 2 + (u - f.cx) * f.scale;
+      const toY = (v: number): number => H / 2 + (v - f.cy) * f.scale;
+
+      const { hu, hv } = headingOnMap(cameraPose, dims);
+      const { halfU, halfV } = viewportHalfExtents(cameraPose, f.scale, W, H);
+      // Box at the TRUE target position — off-map it just clips at the canvas
+      // edge; the border-pinned arrow below is the visibility guarantee.
+      const bx = toX(projU(cameraPose.tx, cameraPose.ty, cameraPose.tz));
+      const by = toY(projV(cameraPose.ty, cameraPose.tz, dims));
+      const corners = boxCorners(bx, by, hu, hv, halfU, halfV);
       ctx.fillStyle = 'rgba(169, 150, 255, 0.10)';
       ctx.strokeStyle = 'rgba(169, 150, 255, 0.7)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      // corners: center ± screen-right (-hv, hu) · halfU ± heading · halfV
-      ctx.moveTo(bx - hv * halfU + hu * halfV, by + hu * halfU + hv * halfV);
-      ctx.lineTo(bx + hv * halfU + hu * halfV, by - hu * halfU + hv * halfV);
-      ctx.lineTo(bx + hv * halfU - hu * halfV, by - hu * halfU - hv * halfV);
-      ctx.lineTo(bx - hv * halfU - hu * halfV, by + hu * halfU - hv * halfV);
+      ctx.moveTo(corners[0][0], corners[0][1]);
+      ctx.lineTo(corners[1][0], corners[1][1]);
+      ctx.lineTo(corners[2][0], corners[2][1]);
+      ctx.lineTo(corners[3][0], corners[3][1]);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
-      // eye dot: where the camera itself sits (matches the box center in 2D)
-      const camX = toX(projU(cameraPose.px, cameraPose.py, cameraPose.pz));
-      const camY = toY(projV(cameraPose.py, cameraPose.pz, dims));
-      ctx.fillStyle = '#a996ff';
-      ctx.beginPath();
-      ctx.arc(
-        Math.min(Math.max(camX, 6), W - 6),
-        Math.min(Math.max(camY, 6), H - 6),
-        2,
-        0,
-        Math.PI * 2,
+
+      // arrow: the camera itself, pointing along the view heading (coincides
+      // with the box center in 2D, where it points map-up = screen-up)
+      const pin = clampToRect(
+        toX(projU(cameraPose.px, cameraPose.py, cameraPose.pz)),
+        toY(projV(cameraPose.py, cameraPose.pz, dims)),
+        ARROW_INSET,
+        W - ARROW_INSET,
+        ARROW_INSET,
+        H - ARROW_INSET,
       );
+      const tri = arrowVertices(pin.x, pin.y, hu, hv, ARROW_SIZE);
+      ctx.beginPath();
+      ctx.moveTo(tri[0][0], tri[0][1]);
+      ctx.lineTo(tri[1][0], tri[1][1]);
+      ctx.lineTo(tri[2][0], tri[2][1]);
+      ctx.closePath();
+      ctx.fillStyle = '#a996ff';
       ctx.fill();
+      ctx.strokeStyle = 'rgba(12, 10, 30, 0.6)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     };
 
-    draw();
-    const timer = window.setInterval(draw, TICK_MS);
-    return () => window.clearInterval(timer);
+    let raf = 0;
+    let lastSceneAt = -Infinity;
+    const seen = {
+      px: NaN,
+      py: NaN,
+      pz: NaN,
+      tx: NaN,
+      ty: NaN,
+      tz: NaN,
+      fov: NaN,
+      aspect: NaN,
+    };
+    const frame = (now: number): void => {
+      raf = requestAnimationFrame(frame);
+      const poseChanged =
+        cameraPose.px !== seen.px ||
+        cameraPose.py !== seen.py ||
+        cameraPose.pz !== seen.pz ||
+        cameraPose.tx !== seen.tx ||
+        cameraPose.ty !== seen.ty ||
+        cameraPose.tz !== seen.tz ||
+        cameraPose.fov !== seen.fov ||
+        cameraPose.aspect !== seen.aspect;
+      const sceneDue = now - lastSceneAt >= SCENE_MS;
+      if (!poseChanged && !sceneDue) return;
+      if (sceneDue) {
+        drawScene();
+        lastSceneAt = now;
+      }
+      seen.px = cameraPose.px;
+      seen.py = cameraPose.py;
+      seen.pz = cameraPose.pz;
+      seen.tx = cameraPose.tx;
+      seen.ty = cameraPose.ty;
+      seen.tz = cameraPose.tz;
+      seen.fov = cameraPose.fov;
+      seen.aspect = cameraPose.aspect;
+      ctx.clearRect(0, 0, W, H);
+      ctx.drawImage(scene, 0, 0, W, H);
+      drawIndicator();
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
   }, [visible]);
 
   const handleClick = (ev: ReactMouseEvent<HTMLCanvasElement>): void => {
