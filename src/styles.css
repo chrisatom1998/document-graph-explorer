@@ -2430,6 +2430,21 @@ input {
   color: var(--accent-strong);
 }
 
+/* A source renders as a pair: the chip (fly to node) + an open button (open
+   the document itself). Grouped tighter than the 6px between sources. */
+.chat-source {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+}
+.chat-source-chip--open {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 6px;
+}
+
 .chat-message__time {
   font-size: 10px;
   color: var(--text-faint);

@@ -9,6 +9,7 @@ import { cancelChat, sendChatMessage } from '../chat/ragChat';
 import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { openDocument } from './openDocument';
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString(undefined, {
@@ -54,16 +55,41 @@ function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSour
         const node = nodes[nodeIndex[source.docId]];
         const title = node?.title ?? source.docId.slice(0, 12);
         const pct = Math.round(source.score * 100);
+        // Sibling buttons, not nested (nested <button> is invalid HTML): the
+        // chip flies to the node, the paired icon opens the document itself.
         return (
-          <button
-            key={source.docId}
-            type="button"
-            className="chat-source-chip"
-            title={`${pct}% match — ${source.snippet}`}
-            onClick={() => onSourceClick(source.docId)}
-          >
-            📄 {title.length > 30 ? title.slice(0, 28) + '…' : title}
-          </button>
+          <span key={source.docId} className="chat-source">
+            <button
+              type="button"
+              className="chat-source-chip"
+              title={`${pct}% match — ${source.snippet}`}
+              onClick={() => onSourceClick(source.docId)}
+            >
+              📄 {title.length > 30 ? title.slice(0, 28) + '…' : title}
+            </button>
+            <button
+              type="button"
+              className="chat-source-chip chat-source-chip--open"
+              title="Open the source document — the original file if it was kept, otherwise a formatted text view"
+              aria-label={`Open ${title}`}
+              onClick={() => void openDocument(source.docId)}
+            >
+              <svg
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                width="12"
+                height="12"
+              >
+                <path d="M9 2h5v5" />
+                <path d="M14 2 L7 9" />
+                <path d="M12 9v4.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5H7" />
+              </svg>
+            </button>
+          </span>
         );
       })}
     </div>

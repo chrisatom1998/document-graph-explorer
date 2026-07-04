@@ -53,6 +53,7 @@ import {
   deleteDocsFromCache,
   deleteGraphFromCache,
   lookupDocCache,
+  saveDocsToCache,
   setSetting,
 } from '../persistence/cache';
 import { deleteOriginals, putOriginalIfMissing } from '../persistence/originals';
@@ -474,6 +475,30 @@ async function runIngest(files: IngestFile[]): Promise<void> {
       }
     });
     store().setModelProgress(null);
+  }
+
+  // (f2) eager KB flush: the parse + embed work of THIS drop reaches
+  // IndexedDB now, not 1.5s after 'ready' — a tab closed mid-run re-drops as
+  // cache hits instead of re-parsing. Node snapshots here predate clustering
+  // (cluster -1) and enrichment; that's fine: these records are only consumed
+  // by lookupDocCache on a future drop, which re-runs the corpus-wide passes,
+  // and the post-ready session save overwrites them with final nodes.
+  if (misses.length > 0) {
+    const flushDocs = misses
+      .map((p) => store().nodes[store().nodeIndex[p.id]])
+      // parse failures / node-limit drops never entered the store
+      .filter((n): n is DocNode => n !== undefined)
+      .map((node) => ({
+        node,
+        text: textStore.get(node.id) ?? '',
+        chunkTexts: chunkStore.get(node.id)?.texts ?? [],
+        chunkVectors: chunkStore.get(node.id)?.vectors ?? null,
+        docVector: docVectorStore.get(node.id) ?? null,
+        mdLinkTargets: mdLinkTargetsStore.get(node.id) ?? [],
+        docLinks: docLinksStore.get(node.id) ?? [],
+      }));
+    // fire-and-forget; quota failures degrade via the cache's one-time warning
+    void saveDocsToCache(flushDocs);
   }
 
   // (g) semantic edges + Louvain clustering over the full edge set

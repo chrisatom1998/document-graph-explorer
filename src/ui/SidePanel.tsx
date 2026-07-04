@@ -2,34 +2,14 @@ import { useMemo } from 'react';
 import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { docLinksStore, docVectorStore, mdLinkTargetsStore, textStore } from '../store/runtimeStores';
+import { docVectorStore, textStore } from '../store/runtimeStores';
 import { EDGE_KIND_HEX, EDGE_KIND_LABEL, hexFor } from '../scene/palette';
 import { canonicalizeTopic } from '../pipeline/topics';
 import { timeAgo } from '../util/relativeTime';
 import DocAiSection from './DocAiSection';
-import { openDocumentViewer } from './openDocumentViewer';
-import { getOriginal } from '../persistence/originals';
+import { openDocument } from './openDocument';
 import VirtualText from './VirtualText';
 import type { DocNode, Edge } from '../model/types';
-
-/**
- * Hand the exact original bytes to the browser as a named download — the OS
- * file association (the user's chosen default app) opens it from there. A
- * browser can't launch Word/Acrobat directly; byte-identical download with
- * the right filename + MIME is the faithful equivalent.
- */
-function openOriginalFile(name: string, blob: Blob): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // revoke on a delay — revoking synchronously can cancel the download in
-  // some browsers
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
 
 interface ConnectionRow {
   edge: Edge;
@@ -109,34 +89,7 @@ export default function SidePanel() {
               type="button"
               className="side-panel__open-btn"
               title="Open the original file — opens with your default app for this type"
-              onClick={() => {
-                // Exact-original first: the stored bytes open in the user's
-                // default app. The styled text viewer is the fallback for docs
-                // without a retained original (imported graphs, legacy cache,
-                // oversized files).
-                void getOriginal(node.id).then((original) => {
-                  if (original) {
-                    openOriginalFile(original.name, original.blob);
-                    return;
-                  }
-                  const text = fullText ?? textStore.get(node.id);
-                  if (!text) return;
-                  const cName = clusterNames[node.cluster]
-                    ?? localClusterNames[node.cluster]
-                    ?? `Cluster ${node.cluster}`;
-                  // The document's original hyperlinks (persisted), each paired
-                  // with its label. Union the labelled links with any remaining
-                  // url-only targets (shortcut refs, unused defs, docs ingested
-                  // before labels existed) so no web link is dropped; the viewer
-                  // dedupes and keeps only web links.
-                  const dl = docLinksStore.get(node.id) ?? [];
-                  const covered = new Set(dl.map((l) => l.url));
-                  const extras = (mdLinkTargetsStore.get(node.id) ?? [])
-                    .filter((url) => !covered.has(url))
-                    .map((url) => ({ text: '', url }));
-                  openDocumentViewer(node, text, cName, [...dl, ...extras]);
-                });
-              }}
+              onClick={() => void openDocument(node.id)}
             >
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
                 <path d="M9 2h5v5" />
