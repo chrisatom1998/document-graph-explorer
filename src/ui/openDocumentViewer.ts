@@ -202,7 +202,7 @@ export function openDocumentViewer(
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${title} — Knowledge Nebula</title>
+<title>${title} — Document Graph Explorer</title>
 <style>
   :root {
     --bg-deep: #07080f;

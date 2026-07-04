@@ -6,7 +6,7 @@ import { buildCsp } from './src/security/csp';
 function injectCsp(airgap: boolean): Plugin {
   const csp = buildCsp({ airgap });
   return {
-    name: 'knowledge-nebula:inject-csp',
+    name: 'document-graph-explorer:inject-csp',
     apply: 'build',
     transformIndexHtml(html) {
       return html.replace(

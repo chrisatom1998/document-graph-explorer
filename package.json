@@ -1,12 +1,12 @@
 {
-  "name": "knowledge-nebula",
+  "name": "document-graph-explorer",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "build:airgap": "tsc --noEmit && vite build --mode airgap --outDir dist-airgap && node scripts/verify-airgap.mjs",
+    "build:airgap": "tsc --noEmit && vite build --mode airgap --outDir dist-airgap && node scripts/sanitize-airgap.mjs && node scripts/verify-airgap.mjs",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test": "vitest run",

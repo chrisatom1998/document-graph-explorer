@@ -1,6 +1,6 @@
-# Knowledge Nebula
+# Document Graph Explorer
 
-A drag-and-drop **3D mind map for your documents**. Drop a folder of text, Markdown, PDF, or HTML files onto the window and Knowledge Nebula parses them, extracts topics and relationships, and renders the whole corpus as an explorable force-directed 3D graph — documents become nodes, semantic and structural relationships become edges.
+A drag-and-drop **3D mind map for your documents**. Drop a folder of text, Markdown, PDF, or HTML files onto the window and Document Graph Explorer parses them, extracts topics and relationships, and renders the whole corpus as an explorable force-directed 3D graph — documents become nodes, semantic and structural relationships become edges.
 
 **Local-first and private by architecture.** Parsing, embeddings, similarity, and clustering all run in your browser (in web workers, with a self-hosted embedding model). Your documents never leave the tab. The only optional network call is Gemini enrichment, which is off by default and requires you to supply your own API key — enforced in production by a strict Content-Security-Policy (see [vite.config.ts](vite.config.ts)).
 

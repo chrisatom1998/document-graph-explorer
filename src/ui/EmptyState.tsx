@@ -11,7 +11,7 @@ export default function EmptyState() {
   return (
     <div className="empty-state">
       <div className="empty-state__card glass-panel">
-        <h1 className="empty-state__title">Knowledge Nebula</h1>
+        <h1 className="empty-state__title">Document Graph Explorer</h1>
         <p className="empty-state__tagline">
           Drop your docs. Watch them become a universe.
         </p>

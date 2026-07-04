@@ -73,7 +73,7 @@ export async function exportGraphJSON(): Promise<void> {
   const includeEmbeddings = useSettingsStore.getState().includeEmbeddingsInExport;
   const data = toGraphExport(includeEmbeddings);
   const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-  downloadBlob(blob, `knowledge-nebula-${dateStamp()}.json`);
+  downloadBlob(blob, `document-graph-explorer-${dateStamp()}.json`);
 }
 
 /** Canvas snapshot (scene renders with preserveDrawingBuffer). */
@@ -84,7 +84,7 @@ export function exportScenePNG(): void {
     return;
   }
   canvas.toBlob((blob) => {
-    if (blob) downloadBlob(blob, `knowledge-nebula-${dateStamp()}.png`);
+    if (blob) downloadBlob(blob, `document-graph-explorer-${dateStamp()}.png`);
   }, 'image/png');
 }
 
