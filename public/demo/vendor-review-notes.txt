@@ -1,0 +1,19 @@
+VENDOR SECURITY REVIEW NOTES — ClickHouse Cloud, June 2026
+
+Reviewed by: security team, per the vendor contract summary process.
+
+Posture: SOC 2 Type II current (report on file); ISO 27001 certified;
+pen test summary shared under NDA — no criticals, two mediums remediated.
+
+Data handling: product analytics events only (no payment data). Data
+classification: Internal. Retention aligned to our 13-month data retention
+policy via TTL tables. Deletion API verified against a GDPR erasure request.
+
+Access: SSO via Okta enforced; no local accounts. API keys rotate 90 days
+via secrets management. Audit logging exports to our SIEM nightly.
+
+Network: private link only from the VPC; no public endpoints. Egress covered
+by the NAT gateway allowlist.
+
+Verdict: APPROVED for Internal-classified data through the 2027 renewal.
+Follow-up: re-review if tenant isolation model changes for multi-region.

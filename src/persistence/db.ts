@@ -1,20 +1,22 @@
 /**
  * IndexedDB schema + memoized connection (idb v8).
  *
- * DB 'knowledge-nebula', version 2, five stores:
+ * DB 'knowledge-nebula', version 3, six stores:
  * - documents:  contentHash -> parsed doc (DocNode snapshot, full text, chunk texts)
  * - embeddings: contentHash -> Float32Array vectors, stored natively (no base64
  *   round-trip — this is what makes the <3s session restore possible)
  * - graphs:     corpusHash  -> GraphExport + settled layout positions
  * - settings:   string      -> small values (e.g. 'lastCorpusHash')
  * - snapshots:  autoIncrement -> named GraphExport snapshots (v2), indexed by savedAt
+ * - originals:  contentHash -> the exact ingested file bytes as a Blob (v3), so
+ *   "Open" can hand back the byte-identical original (never leaves the browser)
  */
 
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { DocNode, GraphExport, LinkRef } from '../model/types';
 
 export const DB_NAME = 'knowledge-nebula';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export interface DocumentRecord {
   hash: string;
@@ -53,12 +55,21 @@ export interface SnapshotRecord {
   positions: Record<string, [number, number, number]>;
 }
 
+export interface OriginalFileRecord {
+  hash: string;
+  /** Original filename (with extension) — the download name on "Open". */
+  name: string;
+  /** Exact ingested bytes; Blob.type carries the MIME. */
+  blob: Blob;
+}
+
 export interface NebulaDB extends DBSchema {
   documents: { key: string; value: DocumentRecord };
   embeddings: { key: string; value: EmbeddingRecord };
   graphs: { key: string; value: GraphRecord };
   settings: { key: string; value: unknown };
   snapshots: { key: number; value: SnapshotRecord; indexes: { 'by-savedAt': number } };
+  originals: { key: string; value: OriginalFileRecord };
 }
 
 let dbPromise: Promise<IDBPDatabase<NebulaDB>> | null = null;
@@ -97,6 +108,9 @@ export function getDb(): Promise<IDBPDatabase<NebulaDB>> {
           autoIncrement: true,
         });
         snapStore.createIndex('by-savedAt', 'savedAt');
+      }
+      if (oldVersion < 3) {
+        db.createObjectStore('originals', { keyPath: 'hash' });
       }
     },
     blocked() {

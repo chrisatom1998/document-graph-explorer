@@ -1,0 +1,15 @@
+ONCALL HANDOFF — week of June 22, 2026
+
+Pages this week: 6 (2 actionable, 4 noise)
+- Kafka event bus consumer lag alert fired twice during the EKS upgrade window.
+  Mitigation: paused the ClickHouse analytics sink, drained, resumed. Watch this.
+- Postgres replication lag spiked to 8s during the Saturday vacuum window.
+  Autovacuum settings tuned per postgres-operations doc; verify next weekend.
+
+Noise to fix:
+- WAF rules alert threshold too low after the ruleset expansion. Ticket filed.
+- Grafana dashboards for the NAT gateway still point at the old region.
+
+Handing over: promo code engine launch is behind a feature flag; if billing
+alerts fire, flip promo-engine-v2 off first and page the billing oncall.
+Escalation: PagerDuty schedule 'platform-primary', then the incident runbook.

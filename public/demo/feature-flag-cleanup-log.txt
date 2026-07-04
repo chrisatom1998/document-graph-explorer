@@ -1,0 +1,23 @@
+FEATURE FLAG CLEANUP LOG — monthly sweep, June 2026
+
+Policy: flags older than 90 days past full rollout are deleted (see the
+feature flags guide). Stale flags caused the May billing outage bypass —
+this log is the guardrail.
+
+Removed this month (11):
+- promo-engine-v1-fallback (superseded by v2)
+- billing-webhooks-retry-legacy
+- search-cursor-pagination-beta (100% for 5 months)
+- sso-group-mapping-fix (permanent since rev 12)
+- canary-search-service, canary-auth-service (canary deployments are default)
+- i18n-date-format-v2, dashboard-dark-mode-beta
+- eks-upgrade-drain-guard (upgrade complete)
+- migration-linter-bypass (DELETED — root cause of the May incident)
+- nat-gateway-dual-stack
+
+Kept with justification (3):
+- enterprise-tenant-isolation (launch gate, owner: platform)
+- usage-billing-shadow-mode (finance reconciliation through Q3)
+- promo-engine-v2 (launch gate, owner: billing)
+
+Next sweep: July 28. Owners notified via the weekly eng sync.

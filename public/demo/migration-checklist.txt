@@ -1,0 +1,20 @@
+PRODUCTION MIGRATION CHECKLIST (print and check off)
+
+Before:
+[ ] Migration reviewed against schema-migrations guide (no table rewrites)
+[ ] Migration linter green (no bypass flags — see the May post-mortem)
+[ ] Rollback script tested in staging
+[ ] Database backups verified within the last 7 days
+[ ] Replication lag under 1s on all replicas
+[ ] Change announced in the deploy channel with the deploy guide link
+
+During:
+[ ] Run inside the maintenance window; watch lock time in Grafana
+[ ] PgBouncer pool sizes reduced per the connection pooling runbook
+[ ] Abort if lock wait exceeds 30 seconds
+
+After:
+[ ] Prometheus alerts quiet for 30 minutes
+[ ] Autovacuum/analyze completed on touched tables (postgres vacuuming doc)
+[ ] Update the schema registry and notify the data team
+[ ] Log the change in audit logging for SOC 2 evidence
