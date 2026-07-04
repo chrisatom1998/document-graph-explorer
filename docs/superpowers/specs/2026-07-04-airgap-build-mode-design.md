@@ -24,6 +24,26 @@ CSP, all AI UI is removed, the runtime enrichment/chat entry points refuse to
 fire, and a post-build script fails the build if the shipped CSP contains any
 external host. The normal `npm run build` is unchanged.
 
+## Scope of the guarantee
+
+"Zero external destinations" means **programmatic** external requests — every
+path by which the app itself could send data out: `fetch`/XHR, WebSocket,
+`sendBeacon`, external subresources (scripts, styles, fonts, images), and the
+embedding-model download. All of these are blocked in an airgap build by the CSP
+(`connect-src 'self' blob:`, and no external host in any directive) and, for the
+Gemini paths, refused at runtime before they fire. No document content can leave
+the browser.
+
+It does **not** override a user's own deliberate navigation: if a user's
+document contains a link and the user clicks it, the document viewer opens that
+URL in a new tab (a top-level navigation, which CSP `connect-src` does not
+govern). This is not exfiltration — it sends none of the user's document
+content, and nothing loads without that explicit click. A distributor who wants
+the airgap build to have *literally* no reachable external URL can strip external
+anchors under `AIRGAP` in `src/ui/openDocumentViewer.ts` (rendering them as plain
+text); this is intentionally left as an opt-in hardening, not part of the default
+guarantee.
+
 ## Non-goals
 
 - **No dead-code elimination of Gemini modules.** The enrichment/chat code stays
