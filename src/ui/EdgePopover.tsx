@@ -1,6 +1,6 @@
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { EDGE_KIND_HEX } from '../scene/palette';
+import { EDGE_KIND_HEX, EDGE_KIND_LABEL } from '../scene/palette';
 
 /** Bottom-center popover for a clicked edge (spec §7.3 "Click edge"). */
 export default function EdgePopover() {
@@ -30,7 +30,7 @@ export default function EdgePopover() {
             style={{ color, borderColor: color }}
           >
             <span className="chip-dot" style={{ background: color }} aria-hidden="true" />
-            {edge.kind}
+            {EDGE_KIND_LABEL[edge.kind]}
           </span>
           <button
             type="button"

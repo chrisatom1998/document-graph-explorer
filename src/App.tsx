@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import NebulaCanvas from './scene/NebulaCanvas';
 import DropZone from './ingest/DropZone';
 import EmptyState from './ui/EmptyState';
+import BrandMark from './ui/BrandMark';
 import ProgressStrip from './ui/ProgressStrip';
 import Toolbar from './ui/Toolbar';
 import InsightsPanel from './ui/InsightsPanel';
@@ -190,6 +191,7 @@ export default function App() {
       <NebulaCanvas />
       <DropZone />
       {!hasNodes && phase === 'idle' && <EmptyState />}
+      <BrandMark />
       <Toolbar />
       <FilterBar />
       <ProgressStrip />

@@ -732,6 +732,25 @@ input {
   gap: 6px;
 }
 
+/* A topic chip that resolves to a hub: clickable, with the count of documents
+   sharing it. Makes "how topics relate" reachable in one click. */
+.side-panel__topic-chip {
+  gap: 6px;
+}
+.side-panel__topic-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-radius: 999px;
+}
+
 .side-panel__connections {
   display: flex;
   flex-direction: column;
@@ -754,6 +773,17 @@ input {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* The relationship type (reference / similar / keyword / entity / topic) so a
+   connection answers not just "to what" but "how". The colored dot already
+   carries the hue; this is the name. */
+.connection-row__kind {
+  flex: none;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
 }
 
 .connection-row__title {
@@ -1630,9 +1660,30 @@ input {
    Filter bar
    ========================================================================== */
 
+/* gTech brand lockup, top-left. Non-interactive: the wrapper stays
+   pointer-events:none so orbit input reaches the canvas. The filter bar sits
+   just below it (see .filter-bar-layer top). */
+.brand-mark {
+  position: fixed;
+  top: 15px;
+  left: 20px;
+  z-index: var(--z-floating);
+  pointer-events: none;
+  animation: kn-fade-in 480ms var(--ease-out) both;
+}
+.brand-mark__img {
+  display: block;
+  height: 52px;
+  width: auto;
+  /* the wordmark is mid-grey; lift it off the near-black void and give it a
+     tight glow so it reads crisply without a background plate */
+  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.7)) brightness(1.15) contrast(1.05);
+  opacity: 1;
+}
+
 .filter-bar-layer {
   position: fixed;
-  top: 18px;
+  top: 80px; /* stacked below the brand mark (top 15 + ~52 height + gap) */
   left: 18px;
   z-index: var(--z-floating);
   pointer-events: none;
@@ -1795,8 +1846,15 @@ input {
   .toolbar {
     top: 10px;
   }
+  .brand-mark {
+    top: 9px;
+    left: 12px;
+  }
+  .brand-mark__img {
+    height: 44px;
+  }
   .filter-bar-layer {
-    top: 10px;
+    top: 64px;
     left: 10px;
   }
   .side-panel {

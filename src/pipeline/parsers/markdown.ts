@@ -96,7 +96,6 @@ export function parseMarkdown(bytes: ArrayBuffer, name: string): ParserResult {
     definitions.set(match[1].trim().toLowerCase(), stripUrlBrackets(match[2]));
   }
 
-  let title = '';
   const headings: string[] = [];
   const textBlocks: string[] = [];
 
@@ -107,7 +106,6 @@ export function parseMarkdown(bytes: ArrayBuffer, name: string): ParserResult {
       const heading = cleanHeading(atx[2]);
       if (heading) {
         headings.push(heading);
-        if (!title && atx[1].length === 1) title = heading;
       }
       textBlocks.push(heading);
       continue;
@@ -118,7 +116,6 @@ export function parseMarkdown(bytes: ArrayBuffer, name: string): ParserResult {
       const heading = cleanHeading(line);
       if (heading) {
         headings.push(heading);
-        if (!title && next.trim().startsWith('=')) title = heading;
       }
       textBlocks.push(heading);
       i += 1;
@@ -130,7 +127,7 @@ export function parseMarkdown(bytes: ArrayBuffer, name: string): ParserResult {
   }
 
   return {
-    title: title || headings[0] || cleanFilename(name),
+    title: cleanFilename(name),
     text: textBlocks.join('\n'),
     headings,
     mdLinkTargets: [...definitions.values(), ...collectLinks(raw, definitions)],

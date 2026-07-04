@@ -5,8 +5,8 @@
  * canvas back after the frame. dpr caps at 2 so retina displays don't melt
  * the bloom pass.
  *
- * Lighting: the node cores are lit (glossy Phong) so they read as 3D marbles
- * with a specular hotspot. A single strong key light from the upper-left puts
+ * Lighting: the node cores are lit (glossy physical material) so they read
+ * as 3D marbles with a specular hotspot. A single strong key light from the upper-left puts
  * that highlight in the same screen-relative spot on every sphere; a dim cool
  * fill keeps shadowed sides from going black. The halo/edge/starfield
  * materials stay unlit (basic/additive) and ignore these lights entirely.
@@ -17,6 +17,7 @@ import { Environment, Lightformer } from '@react-three/drei';
 import { useUiStore } from '../store/uiStore';
 import CameraRig from './CameraRig';
 import Starfield from './Starfield';
+import NebulaClouds from './NebulaClouds';
 import AiCore from './AiCore';
 import Nodes from './Nodes';
 import Edges from './Edges';
@@ -88,6 +89,7 @@ export default function NebulaCanvas() {
 
       <CameraRig />
       <Starfield />
+      <NebulaClouds />
       <AiCore />
       <Nodes />
       <Edges />

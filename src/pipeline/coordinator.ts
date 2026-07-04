@@ -16,6 +16,8 @@
 import {
   DUP_SIM_THRESHOLD,
   EMBED_DIMS,
+  ENTITY_EDGE_MIN_SHARED,
+  ENTITY_EDGES_PER_DOC,
   KEYWORD_EDGE_MIN_SHARED,
   KEYWORD_EDGES_PER_DOC,
   MAX_EMBED_TEXT_BYTES,
@@ -24,6 +26,8 @@ import {
   SIM_THRESHOLD,
   SIM_TOP_K,
   TFIDF_TOP_N,
+  TOPIC_MAX_DOC_FRACTION,
+  TOPIC_MIN_DOCS,
 } from '../config';
 import type {
   AggRequest,
@@ -70,6 +74,7 @@ import { stripBoilerplate } from './boilerplate';
 import { chunkText } from './chunker';
 import { sha256Hex } from './hash';
 import { parsePdf } from './parsers/pdf';
+import { groupTopics } from './topics';
 
 type ParseDone = Extract<PoolResponse, { type: 'parse:done' }>;
 type EmbedDone = Extract<PoolResponse, { type: 'embed:done' }>;
@@ -491,6 +496,7 @@ async function runLexicalPass(
       totalTerms: meta?.totalTerms ?? 0,
       textLower: truncateToBytes(text, MAX_EMBED_TEXT_BYTES).toLowerCase(),
       mdLinkTargets: mdLinkTargetsStore.get(n.id) ?? [],
+      entities: n.entities, // shared-entity edges (persisted on the node)
     };
   });
 
@@ -506,6 +512,8 @@ async function runLexicalPass(
         minShared: KEYWORD_EDGE_MIN_SHARED,
         edgesPerDoc: KEYWORD_EDGES_PER_DOC,
         minTitleLen: MIN_MENTION_TITLE_LEN,
+        entityMinShared: ENTITY_EDGE_MIN_SHARED,
+        entityEdgesPerDoc: ENTITY_EDGES_PER_DOC,
       },
     });
     lexEdges = lexical.edges;
@@ -607,14 +615,16 @@ async function computeCorpusHash(): Promise<string> {
 // topic node synthesis (spec §5.4)
 // ---------------------------------------------------------------------------
 
-const TOPIC_MIN_DOCS = 2; // require at least 2 docs sharing a topic
 const TOPIC_EDGE_WEIGHT = 0.5;
 
 /**
- * Create synthetic topic-concept nodes for topics shared by ≥2 documents.
- * Each topic node connects via topic edges to every document that carries it.
- * Must run AFTER clustering (so topic nodes can inherit the majority cluster).
- * Existing topic nodes from a previous run are removed first (idempotent).
+ * Create synthetic topic-concept nodes for topics shared by ≥TOPIC_MIN_DOCS
+ * documents. groupTopics folds label variants (case / separators, and safe
+ * singular/plural pairs) into one hub and drops corpus-ubiquitous topics that
+ * would only tangle unrelated clusters. Each hub connects via topic edges to
+ * every document that carries it. Must run AFTER clustering (so hubs inherit
+ * the majority cluster). Existing topic nodes from a previous run are removed
+ * first (idempotent).
  */
 function synthesizeTopicNodes(): void {
   const store = useGraphStore.getState;
@@ -623,27 +633,16 @@ function synthesizeTopicNodes(): void {
   const existingTopics = store().nodes.filter((n) => n.kind === 'topic').map((n) => n.id);
   if (existingTopics.length > 0) store().removeNodes(existingTopics);
 
-  // Collect topics → doc ids. Sets, not arrays: a doc whose topics contain
-  // case variants of the same label ('AI' and 'ai' — possible via imported
-  // graphs, which don't normalize topics) must not produce duplicate edge ids.
-  const topicDocs = new Map<string, Set<string>>();
-  for (const n of documentNodes()) {
-    for (const t of n.topics) {
-      const key = t.toLowerCase().trim();
-      if (!key) continue;
-      const set = topicDocs.get(key);
-      if (set) set.add(n.id);
-      else topicDocs.set(key, new Set([n.id]));
-    }
-  }
+  const groups = groupTopics(
+    documentNodes().map((n) => ({ id: n.id, topics: n.topics })),
+    { minDocs: TOPIC_MIN_DOCS, maxDocFraction: TOPIC_MAX_DOC_FRACTION },
+  );
 
   const newNodes: DocNode[] = [];
   const newEdges: Edge[] = [];
 
-  for (const [topicKey, docIdSet] of topicDocs) {
-    if (docIdSet.size < TOPIC_MIN_DOCS) continue;
-    const docIds = [...docIdSet];
-    const topicId = `topic:${topicKey}`;
+  for (const { key, label, docIds } of groups) {
+    const topicId = `topic:${key}`;
 
     // Inherit the majority cluster from connected documents
     const clusterVotes = new Map<number, number>();
@@ -659,23 +658,12 @@ function synthesizeTopicNodes(): void {
       if (count > bestCount) { bestCluster = c; bestCount = count; }
     }
 
-    // Canonical display title: use the original casing from the first doc that has it
-    let displayTitle = topicKey;
-    for (const docId of docIds) {
-      const idx = store().nodeIndex[docId];
-      if (idx === undefined) continue;
-      const match = store().nodes[idx].topics.find(
-        (t) => t.toLowerCase().trim() === topicKey,
-      );
-      if (match) { displayTitle = match; break; }
-    }
-
     const topicNode: DocNode = {
       id: topicId,
       kind: 'topic',
-      title: displayTitle,
+      title: label,
       fileType: 'other',
-      topics: [displayTitle],
+      topics: [label],
       entities: [],
       keywords: [],
       wordCount: 0,
@@ -693,7 +681,7 @@ function synthesizeTopicNodes(): void {
         target: topicId,
         kind: 'topic',
         weight: TOPIC_EDGE_WEIGHT,
-        evidence: [`Shared topic: "${displayTitle}"`],
+        evidence: [`Shared topic: "${label}"`],
       });
     }
   }

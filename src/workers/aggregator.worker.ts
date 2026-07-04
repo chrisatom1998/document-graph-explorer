@@ -10,6 +10,7 @@ import { UndirectedGraph } from 'graphology';
 import louvain from 'graphology-communities-louvain';
 import type { AggRequest, AggResponse, Edge } from '../model/types';
 import { findBoilerplateLines } from '../pipeline/boilerplate';
+import { entityEdges } from '../pipeline/entityLinks';
 import { referenceEdges } from '../pipeline/links';
 import { semanticEdges } from '../pipeline/similarity';
 import { computeIdf, keywordEdges, topKeywords } from '../pipeline/tfidf';
@@ -61,9 +62,16 @@ function handleLexical(req: Extract<AggRequest, { type: 'lexical' }>): void {
     params.minTitleLen,
   );
 
-  // reference first so it wins any (theoretical) id collision
+  const entEdges = entityEdges(
+    docs.map((d) => ({ id: d.id, entities: d.entities })),
+    { minShared: params.entityMinShared, edgesPerDoc: params.entityEdgesPerDoc },
+  );
+
+  // Merge all lexical edge kinds. Ids embed the kind (`:reference` / `:entity`
+  // / `:keyword`), so different kinds on the same pair never collide; the
+  // first-wins guard only dedupes within a kind. Order is cosmetic.
   const merged = new Map<string, Edge>();
-  for (const edge of [...refEdges, ...kwEdges]) {
+  for (const edge of [...refEdges, ...entEdges, ...kwEdges]) {
     if (!merged.has(edge.id)) merged.set(edge.id, edge);
   }
 

@@ -74,15 +74,17 @@ export function hexFor(cluster: number): string {
 
 /**
  * Edge tints by kind — the single source of truth for edge-kind color.
- * `reference` edges get the distinct warm amber the spec calls for; the rest
- * stay in the cool band so references pop. UI panels use the hex map; the
- * scene uses the derived THREE.Color instances (read-only — `.copy()` before
- * mutating).
+ * `reference` edges get the distinct warm amber the spec calls for; `entity`
+ * edges (shared code identifiers) get a rose so they read apart from the
+ * cool keyword/semantic band; the rest stay cool so references pop. UI panels
+ * use the hex map; the scene uses the derived THREE.Color instances
+ * (read-only — `.copy()` before mutating).
  */
 export const EDGE_KIND_HEX: Record<EdgeKind, string> = {
   reference: '#ffb36b',
   semantic: '#7fb4ff',
   keyword: '#6f86e8',
+  entity: '#ff9bb3',
   topic: '#7ee8c4',
 };
 
@@ -90,5 +92,15 @@ export const EDGE_TINTS: Record<EdgeKind, THREE.Color> = {
   reference: new THREE.Color(EDGE_KIND_HEX.reference),
   semantic: new THREE.Color(EDGE_KIND_HEX.semantic),
   keyword: new THREE.Color(EDGE_KIND_HEX.keyword),
+  entity: new THREE.Color(EDGE_KIND_HEX.entity),
   topic: new THREE.Color(EDGE_KIND_HEX.topic),
+};
+
+/** Human-readable edge-kind labels for the UI (badges, connection tags). */
+export const EDGE_KIND_LABEL: Record<EdgeKind, string> = {
+  reference: 'reference',
+  semantic: 'similar',
+  keyword: 'keyword',
+  entity: 'entity',
+  topic: 'topic',
 };

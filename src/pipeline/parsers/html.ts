@@ -73,13 +73,13 @@ export function parseHtml(bytes: ArrayBuffer, name: string): ParserResult {
     docLinks.push({ text: stripTags(m[5]), url });
   }
 
-  // collect headings (h1 doubles as the title fallback)
+  // collect headings for structure/search; node titles come from document
+  // metadata (<title>) or the filename, not visible body headings.
   const headings: string[] = [];
   for (const match of html.matchAll(/<h([1-6])[^>]*>([\s\S]*?)<\/h\1\s*>/gi)) {
     const text = stripTags(match[2]);
     if (text) headings.push(text);
   }
-  const h1Match = /<h1[^>]*>([\s\S]*?)<\/h1\s*>/i.exec(html);
 
   // block-level tag boundaries → newline, remaining tags → space
   html = html.replace(BLOCK_TAG_RX, '\n').replace(/<[^>]*>/g, ' ');
@@ -95,10 +95,9 @@ export function parseHtml(bytes: ArrayBuffer, name: string): ParserResult {
     .trim();
 
   const docTitle = titleMatch ? stripTags(titleMatch[1]) : '';
-  const h1Title = h1Match ? stripTags(h1Match[1]) : '';
 
   return {
-    title: docTitle || h1Title || cleanFilename(name),
+    title: docTitle || cleanFilename(name),
     text,
     headings,
     mdLinkTargets: linkTargets,

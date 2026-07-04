@@ -3,7 +3,8 @@ import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { docLinksStore, docVectorStore, mdLinkTargetsStore, textStore } from '../store/runtimeStores';
-import { EDGE_KIND_HEX, hexFor } from '../scene/palette';
+import { EDGE_KIND_HEX, EDGE_KIND_LABEL, hexFor } from '../scene/palette';
+import { canonicalizeTopic } from '../pipeline/topics';
 import { timeAgo } from '../util/relativeTime';
 import DocAiSection from './DocAiSection';
 import { openDocumentViewer } from './openDocumentViewer';
@@ -180,11 +181,35 @@ export default function SidePanel() {
             <div className="side-panel__section">
               <p className="side-panel__section-label">Topics</p>
               <div className="side-panel__chip-row">
-                {node.topics.map((t) => (
-                  <span key={t} className="chip">
-                    {t}
-                  </span>
-                ))}
+                {node.topics.map((t) => {
+                  // A topic becomes a hub node when ≥2 docs share it. When one
+                  // exists, the chip jumps to that hub — where the Connections
+                  // list shows every document carrying the topic — and shows
+                  // how many docs that is. Otherwise it's a plain label.
+                  const hub = nodes[nodeIndex[`topic:${canonicalizeTopic(t)}`]];
+                  if (!hub || hub.id === node.id) {
+                    return (
+                      <span key={t} className="chip">
+                        {t}
+                      </span>
+                    );
+                  }
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      className="chip chip-selectable side-panel__topic-chip"
+                      title={`${hub.degree} document${hub.degree === 1 ? '' : 's'} share this topic — open the topic hub`}
+                      onClick={() => {
+                        setSelected(hub.id);
+                        sendCamera('frameNode', [hub.id]);
+                      }}
+                    >
+                      {t}
+                      <span className="side-panel__topic-count">{hub.degree}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -236,6 +261,12 @@ export default function SidePanel() {
                     >
                       {neighbor?.title ?? neighborId}
                     </button>
+                    <span
+                      className="connection-row__kind"
+                      title={`${EDGE_KIND_LABEL[edge.kind]} connection`}
+                    >
+                      {EDGE_KIND_LABEL[edge.kind]}
+                    </span>
                   </div>
                   <div className="connection-row__weight-track">
                     <div

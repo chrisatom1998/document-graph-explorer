@@ -19,6 +19,12 @@ const EXT_MAP: Record<string, FileType> = {
   yaml: 'yaml',
   yml: 'yaml',
   csv: 'csv',
+  docx: 'docx',
+  docm: 'docx',
+  pptx: 'pptx',
+  pptm: 'pptx',
+  xlsx: 'xlsx',
+  xlsm: 'xlsx',
 };
 
 export function routeFile(name: string): FileType | null {

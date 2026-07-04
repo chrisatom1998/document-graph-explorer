@@ -73,6 +73,16 @@ describe('parseMarkdown', () => {
     expect(parsed.text).toContain('See Incident Runbook and Oncall.');
     expect(parsed.text).toContain('Ship via canary.');
   });
+
+  it('uses the filename for the node title, not the first heading', () => {
+    const markdown = ['# Introduction', '', 'Actual body text.'].join('\n');
+    const bytes = new TextEncoder().encode(markdown).buffer;
+
+    const parsed = parseMarkdown(bytes, 'customer-onboarding-playbook.md');
+
+    expect(parsed.title).toBe('Customer Onboarding Playbook');
+    expect(parsed.headings).toEqual(['Introduction']);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -101,6 +111,25 @@ describe('parseHtml', () => {
     // the visible text keeps the anchor labels, not the URLs
     expect(parsed.text).toContain('setup page');
     expect(parsed.text).not.toContain('https://example.com/setup');
+  });
+
+  it('uses the filename when HTML has headings but no <title> metadata', () => {
+    const html = '<main><h1>Introduction</h1><p>Actual body text.</p></main>';
+    const bytes = new TextEncoder().encode(html).buffer;
+
+    const parsed = parseHtml(bytes, 'customer-onboarding-playbook.html');
+
+    expect(parsed.title).toBe('Customer Onboarding Playbook');
+    expect(parsed.headings).toEqual(['Introduction']);
+  });
+
+  it('uses <title> metadata ahead of the filename', () => {
+    const html = '<title>Canonical HTML Title</title><main><h1>Introduction</h1></main>';
+    const bytes = new TextEncoder().encode(html).buffer;
+
+    const parsed = parseHtml(bytes, 'draft.html');
+
+    expect(parsed.title).toBe('Canonical HTML Title');
   });
 });
 

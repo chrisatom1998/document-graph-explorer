@@ -34,7 +34,7 @@ const MAX_LIST_ITEM_CHARS = 200;
 const MAX_CLUSTER_NAMES = 1024;
 
 // Must mirror the FileType union in model/types.ts, or exporting then
-// reimporting a graph downgrades json/yaml/csv nodes to 'other'.
+// reimporting a graph downgrades known file types to 'other'.
 const FILE_TYPES: ReadonlySet<string> = new Set([
   'md',
   'txt',
@@ -43,10 +43,19 @@ const FILE_TYPES: ReadonlySet<string> = new Set([
   'json',
   'yaml',
   'csv',
+  'docx',
+  'pptx',
+  'xlsx',
   'other',
 ]);
 const NODE_STATUSES: ReadonlySet<string> = new Set(['ok', 'partial', 'unreadable']);
-const EDGE_KINDS: ReadonlySet<string> = new Set(['reference', 'semantic', 'keyword', 'topic']);
+const EDGE_KINDS: ReadonlySet<string> = new Set([
+  'reference',
+  'semantic',
+  'keyword',
+  'entity',
+  'topic',
+]);
 
 function asString(v: unknown, maxLen: number): string | null {
   if (typeof v !== 'string') return null;

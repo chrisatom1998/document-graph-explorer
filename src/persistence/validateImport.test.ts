@@ -104,6 +104,20 @@ describe('sanitizeGraphExport — node sanitization', () => {
     expect(out.nodes).toHaveLength(1);
     expect(out.nodes[0].topics).toEqual(['ok', 'also ok']);
   });
+
+  it('preserves Office file types during export/import sanitization', () => {
+    const out = sanitizeGraphExport(
+      validExport({
+        nodes: [
+          validNode('a', { fileType: 'docx' }),
+          validNode('b', { fileType: 'pptx' }),
+          validNode('c', { fileType: 'xlsx' }),
+        ],
+        edges: [],
+      }),
+    );
+    expect(out.nodes.map((n) => n.fileType)).toEqual(['docx', 'pptx', 'xlsx']);
+  });
 });
 
 describe('sanitizeGraphExport — edge sanitization', () => {

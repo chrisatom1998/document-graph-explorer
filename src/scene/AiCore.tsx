@@ -20,6 +20,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useChatStore } from '../store/chatStore';
 import { prefersReducedMotion } from '../util/motion';
+import { makeSoftSprite } from './proceduralTextures';
 
 const BASE_GLOW = 26; // sprite world size (soft halo radius ~13u)
 const BASE_GLOW_OPACITY = 0.4;
@@ -29,24 +30,6 @@ const GLOW_COLOR = new THREE.Color('#2fd9c4');
 const NO_RAYCAST = (): void => {
   /* the core is decoration, never pickable */
 };
-
-/** Soft round sprite so the core reads as a glowing orb, not a hard disc. */
-function makeSoftSprite(): THREE.Texture {
-  const size = 64;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const g = canvas.getContext('2d')!;
-  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-  grad.addColorStop(0, 'rgba(255,255,255,1)');
-  grad.addColorStop(0.4, 'rgba(255,255,255,0.5)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
-  g.fillStyle = grad;
-  g.fillRect(0, 0, size, size);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.needsUpdate = true;
-  return tex;
-}
 
 export default function AiCore() {
   const sprite = useMemo(makeSoftSprite, []);

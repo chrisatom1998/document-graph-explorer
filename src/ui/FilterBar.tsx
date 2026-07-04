@@ -4,7 +4,19 @@ import { useUiStore } from '../store/uiStore';
 import { hexFor } from '../scene/palette';
 import type { FileType } from '../model/types';
 
-const FILE_TYPE_ORDER: FileType[] = ['md', 'txt', 'pdf', 'html', 'json', 'yaml', 'csv', 'other'];
+const FILE_TYPE_ORDER: FileType[] = [
+  'md',
+  'txt',
+  'pdf',
+  'html',
+  'docx',
+  'pptx',
+  'xlsx',
+  'json',
+  'yaml',
+  'csv',
+  'other',
+];
 
 function IconFunnel() {
   return (

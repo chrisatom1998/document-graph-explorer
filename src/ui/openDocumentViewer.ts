@@ -10,6 +10,7 @@ import { hexFor } from '../scene/palette';
 const MIME_MAP: Record<string, string> = {
   md: 'Markdown', txt: 'Plain Text', html: 'HTML',
   json: 'JSON', yaml: 'YAML', csv: 'CSV',
+  docx: 'Word', pptx: 'PowerPoint', xlsx: 'Excel',
   pdf: 'PDF', other: 'Document',
 };
 

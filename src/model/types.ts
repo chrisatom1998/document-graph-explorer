@@ -1,8 +1,19 @@
 /** Graph data model (spec §6) + pipeline message shapes. */
 
-export type FileType = 'md' | 'txt' | 'pdf' | 'html' | 'json' | 'yaml' | 'csv' | 'other';
+export type FileType =
+  | 'md'
+  | 'txt'
+  | 'pdf'
+  | 'html'
+  | 'json'
+  | 'yaml'
+  | 'csv'
+  | 'docx'
+  | 'pptx'
+  | 'xlsx'
+  | 'other';
 export type NodeStatus = 'ok' | 'partial' | 'unreadable';
-export type EdgeKind = 'reference' | 'semantic' | 'keyword' | 'topic';
+export type EdgeKind = 'reference' | 'semantic' | 'keyword' | 'entity' | 'topic';
 
 export interface DocNode {
   id: string; // SHA-256 of path + content
@@ -177,6 +188,7 @@ export interface LexicalDocInput {
   totalTerms: number;
   textLower: string; // capped, for title-mention scan + boilerplate
   mdLinkTargets: string[];
+  entities: string[]; // for shared-entity edges (entityLinks.ts)
 }
 
 export type AggRequest =
@@ -184,7 +196,14 @@ export type AggRequest =
       requestId: number;
       type: 'lexical';
       docs: LexicalDocInput[];
-      params: { tfidfTopN: number; minShared: number; edgesPerDoc: number; minTitleLen: number };
+      params: {
+        tfidfTopN: number;
+        minShared: number;
+        edgesPerDoc: number;
+        minTitleLen: number;
+        entityMinShared: number;
+        entityEdgesPerDoc: number;
+      };
     }
   | {
       requestId: number;

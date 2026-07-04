@@ -19,6 +19,7 @@ import { extractEntities } from '../pipeline/entities';
 import { tokenize, termFreq } from '../pipeline/tokenize';
 import { parseHtml } from '../pipeline/parsers/html';
 import { parseMarkdown } from '../pipeline/parsers/markdown';
+import { parseOffice } from '../pipeline/parsers/office';
 import { parseTxt, type ParserResult } from '../pipeline/parsers/txt';
 
 const ctx = self as unknown as DedicatedWorkerGlobalScope;
@@ -62,12 +63,16 @@ function analyzeText(
   };
 }
 
-function runParser(req: Extract<PoolRequest, { type: 'parse' }>): ParserResult {
+async function runParser(req: Extract<PoolRequest, { type: 'parse' }>): Promise<ParserResult> {
   switch (req.fileType) {
     case 'md':
       return parseMarkdown(req.bytes, req.name);
     case 'html':
       return parseHtml(req.bytes, req.name);
+    case 'docx':
+    case 'pptx':
+    case 'xlsx':
+      return parseOffice(req.bytes, req.name, req.fileType);
     case 'txt':
     case 'json':
     case 'yaml':
@@ -236,7 +241,7 @@ async function handle(req: PoolRequest): Promise<void> {
   try {
     switch (req.type) {
       case 'parse': {
-        const parsed = runParser(req);
+        const parsed = await runParser(req);
         const doc = analyzeText(
           parsed.text,
           parsed.title,
