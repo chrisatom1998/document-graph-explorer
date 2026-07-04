@@ -55,6 +55,8 @@ import {
   lookupDocCache,
   setSetting,
 } from '../persistence/cache';
+import { deleteOriginals, putOriginalIfMissing } from '../persistence/originals';
+import { mimeForFilename } from '../util/fileMime';
 import { computeLocalClusterNames } from '../graph/clusterNaming';
 import { truncateToBytes } from '../util/bytes';
 import { getNodePosition } from '../scene/positionBuffer';
@@ -231,6 +233,11 @@ interface PendingFile {
   fileType: FileType;
   id: string; // content hash = DocNode id
   relPath: string; // folder-relative path, or the bare filename
+  /**
+   * Exact ingested bytes, snapshotted BEFORE the parse step transfers (and
+   * detaches) file.bytes — this is what "Open original file" hands back.
+   */
+  original: Blob;
 }
 
 async function runIngest(files: IngestFile[]): Promise<void> {
@@ -255,12 +262,15 @@ async function runIngest(files: IngestFile[]): Promise<void> {
   for (const { file, fileType } of routed) {
     const relPath = file.path ?? file.name;
     const id = await contentId(relPath, file.bytes);
+    const original = new Blob([file.bytes], { type: mimeForFilename(file.name) });
     if (seenIds.has(id) || store().nodeIndex[id] !== undefined) {
+      // known doc — backfill the original if it predates original retention
+      void putOriginalIfMissing(id, file.name, original);
       store().setFileStatus({ fileId: file.fileId, name: file.name, stage: 'cached' });
       continue;
     }
     seenIds.add(id);
-    pending.push({ file, fileType, id, relPath });
+    pending.push({ file, fileType, id, relPath, original });
   }
   if (pending.length === 0) return; // nothing new — leave the corpus untouched
 
@@ -300,6 +310,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
     if (cached.docVector) docVectorStore.set(p.id, cached.docVector);
     mdLinkTargetsStore.set(p.id, cached.mdLinkTargets);
     docLinksStore.set(p.id, cached.docLinks);
+    void putOriginalIfMissing(p.id, p.file.name, p.original);
     store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
   }
 
@@ -385,6 +396,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
       };
       store().addNodes([node]);
       textStore.set(p.id, doc.text);
+      void putOriginalIfMissing(p.id, p.file.name, p.original);
       store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'placed' });
     });
     const settled = await Promise.allSettled(parseTasks);
@@ -771,6 +783,7 @@ async function runRemove(ids: string[]): Promise<void> {
     // last doc removed — tear down like a fresh start and forget the session
     resetCorpus();
     await deleteDocsFromCache(removing);
+    await deleteOriginals(removing);
     if (oldCorpusHash) await deleteGraphFromCache(oldCorpusHash);
     await setSetting('lastCorpusHash', '');
     return;
@@ -806,6 +819,7 @@ async function runRemove(ids: string[]): Promise<void> {
   const { saveSession } = await import('../persistence/session');
   await saveSession();
   await deleteDocsFromCache(removing);
+  await deleteOriginals(removing);
   const newCorpusHash = store().corpusHash;
   if (oldCorpusHash && oldCorpusHash !== newCorpusHash) {
     await deleteGraphFromCache(oldCorpusHash);
@@ -885,15 +899,13 @@ export async function loadDemoCorpus(): Promise<void> {
   const res = await fetch('/demo/manifest.json');
   if (!res.ok) throw new Error(`demo manifest failed: HTTP ${res.status}`);
   const manifest = (await res.json()) as { files: string[] };
-  const encoder = new TextEncoder();
   const fetched = await Promise.all(
     manifest.files.map(async (name): Promise<IngestFile | null> => {
       const fileRes = await fetch(`/demo/${encodeURIComponent(name)}`);
       if (!fileRes.ok) return null;
-      const text = await fileRes.text();
-      const encoded = encoder.encode(text);
-      const bytes = new ArrayBuffer(encoded.byteLength);
-      new Uint8Array(bytes).set(encoded);
+      // arrayBuffer, NOT text(): the demo corpus includes binary formats
+      // (pdf/docx/pptx) that a text decode round-trip would corrupt.
+      const bytes = await fileRes.arrayBuffer();
       return {
         fileId: crypto.randomUUID(),
         name,

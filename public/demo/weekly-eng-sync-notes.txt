@@ -1,0 +1,20 @@
+WEEKLY ENG SYNC — June 30, 2026
+
+Shipped:
+- Canary deployments for the search service (deploy guide updated)
+- Stripe webhooks retry backoff fix; billing alerts quiet for 12 days
+- Feature flags SDK v3 rollout at 80%
+
+In flight:
+- Postgres 16 upgrade plan in review; cutover rehearsal booked for July 18
+- Tenant isolation audit for the enterprise tier (security review process)
+- Internationalization string extraction for the dashboard
+
+Blocked:
+- Salesforce sync backfill waiting on API quota bump from the vendor
+- Neo4j graph database upgrade blocked on the entitlements migration
+
+Announcements: post-mortem for the May billing outage published; action items
+tracked in the incident post-mortem doc. RFC fast-track lane live — see the
+RFC process page. New joiners: two SREs start Monday (onboarding buddies
+assigned).

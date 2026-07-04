@@ -1,0 +1,18 @@
+SUPPORT ESCALATIONS DIGEST — June 2026
+
+Volume: 41 escalations (down from 58 in May). Top categories: billing (14),
+auth/SSO (9), performance (8), data export (6), other (4).
+
+Billing: most tickets trace to promo code stacking edge cases; the promo code
+engine v2 flag fixes stacking rules. Refund workflows handled 22 refunds
+within SLA; two chargebacks disputed successfully.
+
+Auth: three enterprise tenants hit the Okta SSO group-mapping bug fixed in
+sso-okta-setup rev 12. MFA reset requests remain the top self-serve gap.
+
+Performance: two customers on the legacy API reported p99 spikes matching the
+API rate limiting rollout; allowlisted while they migrate to cursor
+pagination per the API style guide.
+
+Escalation path reminder: SEV assessments per incident-severity doc; customer
+comms templates live in the incident runbook appendix.
