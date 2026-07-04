@@ -11,6 +11,7 @@
  * graph are automatically available as context.
  */
 
+import { AIRGAP, AIRGAP_MESSAGE } from '../airgap';
 import { EMBED_DIMS, GEMINI_ENDPOINT, GEMINI_MODEL } from '../config';
 import { embedQuery } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
@@ -251,6 +252,11 @@ export async function sendChatMessage(question: string): Promise<void> {
 
   // Add user message
   chat.addMessage({ role: 'user', text: q });
+
+  if (AIRGAP) {
+    chat.addMessage({ role: 'system', text: AIRGAP_MESSAGE });
+    return;
+  }
 
   // Validate API availability
   if (!enrichEnabled || geminiKey.trim() === '') {

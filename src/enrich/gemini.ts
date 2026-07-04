@@ -10,6 +10,7 @@
  * enrichment. runEnrichment never throws and never leaves the phase stuck.
  */
 
+import { AIRGAP, AIRGAP_MESSAGE } from '../airgap';
 import {
   ENRICH_BATCH_SIZE,
   ENRICH_MAX_RETRIES,
@@ -63,6 +64,7 @@ function parseModelJson<T>(text: string): T | null {
 const REQUEST_TIMEOUT_MS = 30_000;
 
 async function callGemini(prompt: string, responseSchema: unknown): Promise<CallResult> {
+  if (AIRGAP) return { ok: false, error: AIRGAP_MESSAGE };
   const { geminiKey, geminiModel } = useSettingsStore.getState();
   const model = geminiModel.trim() || GEMINI_MODEL;
   // Key travels as a header, not a query param: URLs leak into proxy/server
@@ -305,6 +307,7 @@ export type DocAiAction = 'summarize' | 'outline' | 'ask';
 
 /** Why the AI section is locked, or null when it's usable. */
 export function docAiBlockedReason(): string | null {
+  if (AIRGAP) return AIRGAP_MESSAGE;
   const { geminiKey, enrichEnabled } = useSettingsStore.getState();
   if (!enrichEnabled) return 'Turn on "Enable enrichment" in Settings';
   if (geminiKey.trim() === '') return 'Add a Gemini API key in Settings';
@@ -319,6 +322,7 @@ async function streamGemini(
   prompt: string,
   onChunk?: (accumulated: string) => void,
 ): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  if (AIRGAP) return { ok: false, error: AIRGAP_MESSAGE };
   const { geminiKey, geminiModel } = useSettingsStore.getState();
   const model = geminiModel.trim() || GEMINI_MODEL;
   const url =
@@ -489,6 +493,7 @@ export async function askDocAi(
 let running = false;
 
 export async function runEnrichment(): Promise<{ ok: boolean; message: string }> {
+  if (AIRGAP) return { ok: false, message: AIRGAP_MESSAGE };
   const { geminiKey, enrichEnabled } = useSettingsStore.getState();
   if (!enrichEnabled) {
     return { ok: false, message: 'Turn on "Enable enrichment" first' };
