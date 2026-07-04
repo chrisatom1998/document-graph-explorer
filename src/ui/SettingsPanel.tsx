@@ -7,6 +7,7 @@
 
 import { useRef, useState, type CSSProperties } from 'react';
 import { GEMINI_MODEL } from '../config';
+import { AIRGAP } from '../airgap';
 import { useFocusTrap } from './useFocusTrap';
 import { runEnrichment } from '../enrich/gemini';
 import { clearAllCaches } from '../persistence/cache';
@@ -181,6 +182,16 @@ export default function SettingsPanel() {
           </button>
         </div>
 
+        {AIRGAP && (
+          <section style={sectionStyle}>
+            <h3 style={headingStyle}>AI</h3>
+            <p style={noteStyle}>
+              🔒 Air-gapped build — no external network. AI features are removed
+              from this build.
+            </p>
+          </section>
+        )}
+        {!AIRGAP && (
         <section style={sectionStyle}>
           <h3 style={headingStyle}>AI Enrichment (optional)</h3>
           <label style={labelStyle}>
@@ -260,6 +271,7 @@ export default function SettingsPanel() {
             The key is stored only in this browser.
           </p>
         </section>
+        )}
 
         <section style={sectionStyle}>
           <h3 style={headingStyle}>Export</h3>

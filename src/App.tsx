@@ -17,6 +17,7 @@ import Minimap from './ui/Minimap';
 import SettingsPanel from './ui/SettingsPanel';
 import ChatPanel from './ui/ChatPanel';
 import ToastHost from './ui/ToastHost';
+import { AIRGAP } from './airgap';
 import { useGraphStore } from './store/graphStore';
 import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
@@ -204,7 +205,7 @@ export default function App() {
       <SearchOverlay />
       <SettingsPanel />
       <SnapshotDrawer />
-      <ChatPanel />
+      {!AIRGAP && <ChatPanel />}
       <ToastHost />
     </div>
   );

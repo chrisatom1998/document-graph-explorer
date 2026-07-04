@@ -7,6 +7,7 @@ import { EDGE_KIND_HEX, EDGE_KIND_LABEL, hexFor } from '../scene/palette';
 import { canonicalizeTopic } from '../pipeline/topics';
 import { timeAgo } from '../util/relativeTime';
 import DocAiSection from './DocAiSection';
+import { AIRGAP } from '../airgap';
 import { openDocument } from './openDocument';
 import VirtualText from './VirtualText';
 import type { DocNode, Edge } from '../model/types';
@@ -210,7 +211,7 @@ export default function SidePanel() {
             </div>
           )}
 
-          {fullText && (
+          {!AIRGAP && fullText && (
             <>
               <hr className="hairline" />
               {/* key resets the Q&A state when the selection changes */}
