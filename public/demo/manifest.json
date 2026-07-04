@@ -1,17 +1,5 @@
 {
   "files": [
-    "architecture-overview.md",
-    "deploy-guide.md",
-    "incident-runbook.md",
-    "product-roadmap.md",
-    "postgres-operations.md",
-    "kafka-event-bus.md",
-    "soc2-compliance.md",
-    "team-topologies.md",
-    "onboarding.md",
-    "developer-handbook.md",
-    "release-process.txt",
-    "api-rate-limiting.txt",
     "oncall-handoff-notes.txt",
     "capacity-planning-notes.txt",
     "weekly-eng-sync-notes.txt",

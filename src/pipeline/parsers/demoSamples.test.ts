@@ -1,10 +1,11 @@
 /**
- * Regression guard for the committed demo corpus (public/demo): the manifest
- * composition stays 10 md / 10 txt / 10 docx / 15 pdf / 3 pptx, every listed
- * file exists on disk, and every office sample parses cleanly with the real
- * parser (binary-safe end to end — these are the actual bytes the demo loader
- * fetches). PDF extraction runs on pdf.js in the browser and is covered by
- * the e2e check instead.
+ * Regression guard for the committed demo corpus (public/demo): the corpus is
+ * exactly the files generated for the office/PDF sample-data feature — 8 txt /
+ * 10 docx / 15 pdf / 3 pptx, no markdown — every listed file exists on disk,
+ * and every office sample parses cleanly with the real parser (binary-safe
+ * end to end — these are the actual bytes the demo loader fetches). PDF
+ * extraction runs on pdf.js in the browser and is covered by the e2e check
+ * instead.
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -21,13 +22,13 @@ const manifest = JSON.parse(
 const byExt = (ext: string): string[] => manifest.files.filter((f) => f.endsWith(ext));
 
 describe('demo corpus manifest', () => {
-  it('has the agreed composition: 10 md, 10 txt, 10 docx, 15 pdf, 3 pptx', () => {
-    expect(byExt('.md')).toHaveLength(10);
-    expect(byExt('.txt')).toHaveLength(10);
+  it('has the agreed composition: 8 txt, 10 docx, 15 pdf, 3 pptx, no markdown', () => {
+    expect(byExt('.md')).toHaveLength(0);
+    expect(byExt('.txt')).toHaveLength(8);
     expect(byExt('.docx')).toHaveLength(10);
     expect(byExt('.pdf')).toHaveLength(15);
     expect(byExt('.pptx')).toHaveLength(3);
-    expect(manifest.files).toHaveLength(48);
+    expect(manifest.files).toHaveLength(36);
   });
 
   it('lists only files that exist in public/demo', () => {
