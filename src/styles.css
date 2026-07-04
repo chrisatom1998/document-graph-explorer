@@ -2546,3 +2546,31 @@ input {
   color: var(--accent-strong);
 }
 
+
+/* ==========================================================================
+   Minimap (bottom-right orientation aid — appears on larger corpora)
+   ========================================================================== */
+
+.minimap {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: var(--z-floating);
+  padding: 5px;
+  pointer-events: auto;
+  animation: kn-pop-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* keep pace with the side panel's 280ms slide when dodging it */
+  transition: right 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* SidePanel (right-docked, min(420px, 92vw) wide) is open: slide clear. */
+.minimap--shifted {
+  right: calc(min(420px, 92vw) + 18px);
+}
+
+.minimap canvas {
+  display: block;
+  border-radius: calc(var(--radius-lg) - 5px);
+  background: rgba(5, 5, 16, 0.55);
+  cursor: pointer;
+}

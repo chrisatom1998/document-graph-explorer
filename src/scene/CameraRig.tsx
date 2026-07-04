@@ -19,6 +19,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import type { CameraCommand } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
+import { cameraPose } from './cameraPose';
 import { prefersReducedMotion } from '../util/motion';
 
 const IDLE_MS = 10_000;
@@ -167,6 +168,14 @@ export default function CameraRig() {
     controls.autoRotate = idle;
 
     controls.update(); // damping + autoRotate need this every frame
+
+    // Publish the pose for the Minimap overlay (plain object write, no React).
+    cameraPose.px = state.camera.position.x;
+    cameraPose.py = state.camera.position.y;
+    cameraPose.pz = state.camera.position.z;
+    cameraPose.tx = controls.target.x;
+    cameraPose.ty = controls.target.y;
+    cameraPose.tz = controls.target.z;
   });
 
   const onStart = (): void => {

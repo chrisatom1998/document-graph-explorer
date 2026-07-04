@@ -1,12 +1,19 @@
 /**
- * All edges in a single LineSegments buffer (spec §7.1).
+ * All edges in a single LineSegments buffer (spec §7.1), drawn as CURVED
+ * polylines: each edge is a quadratic bezier (EDGE_SEGMENTS segments) bowing
+ * away from the nebula core — see edgeCurve.ts for why that doubles as a
+ * cheap edge-bundling stand-in. EdgePulses shares the same curve math so
+ * packets ride the visible filament, not the invisible chord.
  *
- * - Geometry attributes are rebuilt when the edge list changes; endpoint
- *   positions are streamed from positionBuffer each layout tick.
+ * - Geometry attributes are rebuilt when the edge list (or curve quality)
+ *   changes; endpoint positions are streamed from positionBuffer each layout
+ *   tick and the bezier is re-evaluated per point.
  * - Vertex colors encode kind tint x weight, fade with edge density (additive
- *   lines stack, so dense graphs would wash out the nodes otherwise), dim to
- *   8% when a hover/search/filter emphasis is active, and brighten on edges
- *   incident to the hovered/selected node (those skip the density fade).
+ *   lines stack, so dense graphs would wash out the nodes otherwise), taper
+ *   slightly toward mid-curve (endpoints anchor to their nodes, the long arc
+ *   stays gossamer), dim to 8% when a hover/selection/search/filter emphasis
+ *   is active, and brighten on edges incident to the hovered/selected node
+ *   (those skip the density fade).
  * - Clicking an edge selects it for the evidence popover (uiStore
  *   .setSelectedEdge). Node spheres naturally win overlapping picks: they
  *   intersect closer and stop propagation.
@@ -21,9 +28,18 @@ import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
 import { EDGE_TINTS } from './palette';
 import { computeEmphasis } from './Nodes';
+import {
+  EDGE_SEGMENTS,
+  EDGE_SEGMENTS_DEGRADED,
+  edgeControlPoint,
+  evalEdgePoint,
+} from './edgeCurve';
 
 const DIM_FACTOR = 0.08;
 const FOCUS_BOOST = 2.0;
+// Mid-curve brightness relative to the endpoints: the arc thins out where it
+// is farthest from either node, reading as a faint gradient filament.
+const MID_TAPER = 0.68;
 
 // Additive edges sum brightness where they overlap, so a fixed per-edge
 // opacity turns dense graphs into a glowing hairball that hides the nodes.
@@ -38,9 +54,17 @@ function densityFade(edgeCount: number): number {
 }
 
 const tmpColor = new THREE.Color();
+const ctrl = new Float32Array(3);
+const pt = new Float32Array(3);
 
 export default function Edges() {
   const edges = useGraphStore((s) => s.edges);
+  // Bezier resolution follows the auto-quality ladder (spec §7.4): degraded
+  // tiers drop to coarser arcs. Selector collapses to a boolean so the
+  // component only re-renders (and rebuilds buffers) when crossing the line.
+  const segments = useUiStore((s) =>
+    s.qualityTier >= 3 ? EDGE_SEGMENTS_DEGRADED : EDGE_SEGMENTS,
+  );
   const raycaster = useThree((s) => s.raycaster);
 
   const colorsDirty = useRef(true);
@@ -52,15 +76,17 @@ export default function Edges() {
     raycaster.params.Line.threshold = 1.2;
   }, [raycaster]);
 
-  // Fresh attribute pair per edge-list identity. positions fill per frame;
-  // colors fill on edges/hover/search/filter changes.
+  // Fresh attribute pair per edge-list / curve-resolution identity. Each edge
+  // owns `segments` line segments = 2*segments vertices. positions fill per
+  // frame; colors fill on edges/hover/selection/search/filter changes.
   const attrs = useMemo(() => {
-    const positions = new THREE.BufferAttribute(new Float32Array(edges.length * 6), 3);
+    const floats = edges.length * segments * 6;
+    const positions = new THREE.BufferAttribute(new Float32Array(floats), 3);
     positions.setUsage(THREE.DynamicDrawUsage);
-    const colors = new THREE.BufferAttribute(new Float32Array(edges.length * 6), 3);
+    const colors = new THREE.BufferAttribute(new Float32Array(floats), 3);
     colors.setUsage(THREE.DynamicDrawUsage);
     return { positions, colors };
-  }, [edges]);
+  }, [edges, segments]);
 
   // The default bounding sphere would be computed from the initial all-zero
   // positions and then never track the moving layout, which breaks raycast
@@ -107,21 +133,28 @@ export default function Edges() {
     const { nodes } = useGraphStore.getState();
     const ui = useUiStore.getState();
     const { hoveredId, selectedId, searchResults, filter } = ui;
-    const emphasis = computeEmphasis(nodes, edges, hoveredId, searchResults, filter);
+    const emphasis = computeEmphasis(
+      nodes,
+      edges,
+      hoveredId,
+      selectedId,
+      searchResults,
+      filter,
+    );
     const focusId = hoveredId ?? selectedId;
     // Count visible edges for density fade (hidden edges shouldn't dim the rest)
     let visibleCount = 0;
     for (const e of edges) if (!isEdgeHidden(e, ui)) visibleCount++;
     const fade = densityFade(visibleCount);
     const col = attrs.colors.array as Float32Array;
+    const vertsPerEdge = segments * 2;
     for (let i = 0; i < edges.length; i++) {
       const e = edges[i];
+      const base = i * vertsPerEdge * 3;
       // Hidden: weight below the hairball slider, collapse mode, or a topic
       // edge whose hub octahedron isn't rendered (toggle off).
       if (isEdgeHidden(e, ui)) {
-        const o = i * 6;
-        col[o] = col[o + 1] = col[o + 2] = 0;
-        col[o + 3] = col[o + 4] = col[o + 5] = 0;
+        col.fill(0, base, base + vertsPerEdge * 3);
         continue;
       }
       // base: kind tint scaled by weight (opacity/brightness = weight, §7.1)
@@ -138,13 +171,18 @@ export default function Edges() {
         tmpColor.g = Math.min(tmpColor.g, 1);
         tmpColor.b = Math.min(tmpColor.b, 1);
       }
-      const o = i * 6;
-      col[o] = tmpColor.r;
-      col[o + 1] = tmpColor.g;
-      col[o + 2] = tmpColor.b;
-      col[o + 3] = tmpColor.r;
-      col[o + 4] = tmpColor.g;
-      col[o + 5] = tmpColor.b;
+      // Vertex k of the polyline sits at curve parameter t=k/segments; taper
+      // brightness toward the middle of the arc. Segment pair layout: vertex
+      // 2j is point j, vertex 2j+1 is point j+1.
+      for (let v = 0; v < vertsPerEdge; v++) {
+        const k = (v >> 1) + (v & 1); // point index this vertex represents
+        const t = k / segments;
+        const taper = 1 - (1 - MID_TAPER) * 4 * t * (1 - t); // 1 at ends, MID_TAPER at t=.5
+        const o = base + v * 3;
+        col[o] = tmpColor.r * taper;
+        col[o + 1] = tmpColor.g * taper;
+        col[o + 2] = tmpColor.b * taper;
+      }
     }
     attrs.colors.needsUpdate = true;
   };
@@ -163,6 +201,7 @@ export default function Edges() {
     const arr = positionBuffer.array;
     const count = positionBuffer.count;
     const pos = attrs.positions.array as Float32Array;
+    const floatsPerEdge = segments * 6;
     for (let i = 0; i < edges.length; i++) {
       const e = edges[i];
       const s = slotOfId.get(e.source);
@@ -170,22 +209,44 @@ export default function Edges() {
       if (s === undefined || t === undefined || s >= count || t >= count) {
         continue; // endpoint not placed yet: keep previous (zeros collapse to a point)
       }
-      const o = i * 6;
       const so = s * 3;
       const to = t * 3;
-      pos[o] = arr[so];
-      pos[o + 1] = arr[so + 1];
-      pos[o + 2] = arr[so + 2];
-      pos[o + 3] = arr[to];
-      pos[o + 4] = arr[to + 1];
-      pos[o + 5] = arr[to + 2];
+      const ax = arr[so];
+      const ay = arr[so + 1];
+      const az = arr[so + 2];
+      const bx = arr[to];
+      const by = arr[to + 1];
+      const bz = arr[to + 2];
+      edgeControlPoint(ax, ay, az, bx, by, bz, ctrl, 0);
+      const base = i * floatsPerEdge;
+      // Point k closes segment k-1 and opens segment k: evaluate once, write
+      // to both vertex slots.
+      for (let k = 0; k <= segments; k++) {
+        evalEdgePoint(ax, ay, az, ctrl[0], ctrl[1], ctrl[2], bx, by, bz, k / segments, pt, 0);
+        if (k > 0) {
+          const o = base + ((k - 1) * 2 + 1) * 3;
+          pos[o] = pt[0];
+          pos[o + 1] = pt[1];
+          pos[o + 2] = pt[2];
+        }
+        if (k < segments) {
+          const o = base + k * 6;
+          pos[o] = pt[0];
+          pos[o + 1] = pt[1];
+          pos[o + 2] = pt[2];
+        }
+      }
     }
     attrs.positions.needsUpdate = true;
   });
 
+  /** Segment vertex index -> owning edge (each edge spans `segments` pairs). */
+  const edgeAtIndex = (index: number): (typeof edges)[number] | undefined =>
+    edges[Math.floor(index / (segments * 2))];
+
   const handleClick = (e: ThreeEvent<MouseEvent>): void => {
     if (e.index === undefined) return;
-    const edge = edges[Math.floor(e.index / 2)]; // index = first vertex of the segment
+    const edge = edgeAtIndex(e.index);
     if (!edge) return;
     // Hidden edges (zeroed color, still in the picking geometry) must not be
     // clickable — a popover opening from apparently-empty space is a ghost UI.
@@ -199,7 +260,7 @@ export default function Edges() {
   // (still present in the picking geometry) don't get the cursor either.
   const handlePointerOver = (e: ThreeEvent<PointerEvent>): void => {
     if (e.index === undefined) return;
-    const edge = edges[Math.floor(e.index / 2)];
+    const edge = edgeAtIndex(e.index);
     if (!edge || isEdgeHidden(edge, useUiStore.getState())) return;
     document.body.style.cursor = 'pointer';
   };

@@ -15,6 +15,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
 import { EDGE_TINTS } from './palette';
+import { edgeControlPoint, evalEdgePoint } from './edgeCurve';
 import { prefersReducedMotion } from '../util/motion';
 
 const PULSE_CAPACITY = 220;
@@ -22,6 +23,8 @@ const MAX_PULSE_EDGES = 70; // 2 pulses each -> 140 instances, headroom below ca
 
 const dummy = new THREE.Object3D();
 const tmpColor = new THREE.Color();
+const ctrl = new Float32Array(3);
+const pt = new Float32Array(3);
 
 const NO_RAYCAST = (): void => {
   /* pulses are decoration, never pickable */
@@ -126,6 +129,16 @@ export default function EdgePulses() {
       const valid = sa < count && sb < count;
       const ao = sa * 3;
       const bo = sb * 3;
+      // Pulses ride the same bezier the edge is drawn with (edgeCurve.ts is
+      // symmetric in the endpoints, so travelling focus->neighbor against the
+      // edge's stored direction still follows the visible arc).
+      if (valid) {
+        edgeControlPoint(
+          arr[ao], arr[ao + 1], arr[ao + 2],
+          arr[bo], arr[bo + 1], arr[bo + 2],
+          ctrl, 0,
+        );
+      }
       for (let p = 0; p < 2; p++) {
         const idx = j * 2 + p;
         if (!valid) {
@@ -133,11 +146,13 @@ export default function EdgePulses() {
           dummy.position.set(0, 0, 0);
         } else {
           const t = (time * speed + p * 0.5) % 1;
-          dummy.position.set(
-            arr[ao] + (arr[bo] - arr[ao]) * t,
-            arr[ao + 1] + (arr[bo + 1] - arr[ao + 1]) * t,
-            arr[ao + 2] + (arr[bo + 2] - arr[ao + 2]) * t,
+          evalEdgePoint(
+            arr[ao], arr[ao + 1], arr[ao + 2],
+            ctrl[0], ctrl[1], ctrl[2],
+            arr[bo], arr[bo + 1], arr[bo + 2],
+            t, pt, 0,
           );
+          dummy.position.set(pt[0], pt[1], pt[2]);
           // swell mid-flight
           dummy.scale.setScalar(0.5 + 0.5 * Math.sin(Math.PI * t));
         }

@@ -4,7 +4,7 @@
  * - Core spheres + additive halo shells share one matrix pass driven by
  *   positionBuffer; topic nodes render as octahedra on a third instanced
  *   mesh (mutually exclusive with the sphere at the same slot).
- * - Per-instance colors encode cluster hue, hover/search/filter emphasis
+ * - Per-instance colors encode cluster hue, hover/selection/search/filter emphasis
  *   (non-emphasized dims to 12%), ghosting for partial/unreadable docs, and
  *   hover/selection brightening.
  * - Picking uses an analytic ray-sphere raycast over positionBuffer instead
@@ -64,8 +64,10 @@ export function adjacencyFor(edges: Edge[]): Map<string, Set<string>> {
 
 /**
  * The emphasis set for the active dim trigger, or null when nothing dims.
- * Precedence: hover > search > filter (spec §7.3).
+ * Precedence: hover > selection > search > filter (spec §7.3).
  *  - hover: node + adjacency neighbors
+ *  - selection (focus mode): selected node + neighbors — clicking a node
+ *    dims everything not directly connected until it's deselected
  *  - search: results + their neighbors
  *  - filter: matching nodes only
  */
@@ -73,12 +75,14 @@ export function computeEmphasis(
   nodes: DocNode[],
   edges: Edge[],
   hoveredId: string | null,
+  selectedId: string | null,
   searchResults: string[] | null,
   filter: GraphFilter,
 ): Set<string> | null {
-  if (hoveredId) {
-    const set = new Set<string>([hoveredId]);
-    const neighbors = adjacencyFor(edges).get(hoveredId);
+  const focusId = hoveredId ?? selectedId;
+  if (focusId) {
+    const set = new Set<string>([focusId]);
+    const neighbors = adjacencyFor(edges).get(focusId);
     if (neighbors) for (const id of neighbors) set.add(id);
     return set;
   }
@@ -284,7 +288,14 @@ export default function Nodes() {
     const topic = topicRef.current;
     const { nodes, edges } = useGraphStore.getState();
     const { hoveredId, selectedId, searchResults, filter } = useUiStore.getState();
-    const emphasis = computeEmphasis(nodes, edges, hoveredId, searchResults, filter);
+    const emphasis = computeEmphasis(
+      nodes,
+      edges,
+      hoveredId,
+      selectedId,
+      searchResults,
+      filter,
+    );
     for (const n of nodes) {
       const slot = slotOfId.get(n.id);
       if (slot === undefined || slot >= MAX_NODES) continue;

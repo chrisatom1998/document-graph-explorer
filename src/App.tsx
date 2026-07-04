@@ -12,6 +12,7 @@ import Tooltip from './ui/Tooltip';
 import EdgePopover from './ui/EdgePopover';
 import SearchOverlay from './ui/SearchOverlay';
 import FilterBar from './ui/FilterBar';
+import Minimap from './ui/Minimap';
 import SettingsPanel from './ui/SettingsPanel';
 import ChatPanel from './ui/ChatPanel';
 import ToastHost from './ui/ToastHost';
@@ -158,6 +159,7 @@ export default function App() {
       <InsightsPanel />
       <PathPanel />
       <SidePanel />
+      <Minimap />
       <Tooltip />
       <EdgePopover />
       <SearchOverlay />

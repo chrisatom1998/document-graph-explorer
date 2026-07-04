@@ -38,6 +38,7 @@ export const LABEL_BUDGET = 40; // nearest-N labels rendered
 export const FRAME_BUDGET_MS = 22; // auto-quality trip threshold
 export const FRAME_BUDGET_SUSTAIN_MS = 2000; // ...sustained this long before degrading
 export const CAMERA_GLIDE_MS = 800;
+export const MINIMAP_MIN_NODES = 20; // corner minimap appears at this corpus size
 
 // --- Ingestion ---
 // Files are read fully into memory (and their text persisted to IndexedDB);
