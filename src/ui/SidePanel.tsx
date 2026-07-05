@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { docVectorStore, textStore } from '../store/runtimeStores';
 import { EDGE_KIND_HEX, EDGE_KIND_LABEL, hexFor } from '../scene/palette';
 import { canonicalizeTopic } from '../pipeline/topics';
+import { removeDocuments } from '../pipeline/coordinator';
 import { timeAgo } from '../util/relativeTime';
 import DocAiSection from './DocAiSection';
 import { AIRGAP } from '../airgap';
@@ -36,6 +37,14 @@ export default function SidePanel() {
   const localClusterNames = useGraphStore((s) => s.localClusterNames);
 
   const node = selectedId !== null ? nodes[nodeIndex[selectedId]] : undefined;
+
+  // Two-step inline confirm for the destructive Remove action. Reset whenever
+  // the selection changes so an armed confirm never lingers onto a different
+  // document (or survives the panel closing and reopening).
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  useEffect(() => {
+    setConfirmRemove(false);
+  }, [selectedId]);
 
   const connections = useMemo<ConnectionRow[]>(() => {
     if (!node) return [];
@@ -101,6 +110,48 @@ export default function SidePanel() {
               </svg>
               Open
             </button>
+          )}
+          {node.kind === 'document' && !confirmRemove && (
+            <button
+              type="button"
+              className="side-panel__open-btn side-panel__remove-btn"
+              title="Remove this document from the graph and delete its cached data — the file on disk is untouched"
+              onClick={() => setConfirmRemove(true)}
+            >
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                <path d="M3 4.5h10" />
+                <path d="M6 4.5V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v2" />
+                <path d="M4.5 4.5l.6 8.6a1 1 0 0 0 1 .9h3.8a1 1 0 0 0 1-.9l.6-8.6" />
+              </svg>
+              Remove
+            </button>
+          )}
+          {node.kind === 'document' && confirmRemove && (
+            <div className="side-panel__remove-confirm">
+              <span className="side-panel__remove-confirm-text">
+                Remove from graph? This also deletes its cached data — the
+                file on disk is untouched.
+              </span>
+              <button
+                type="button"
+                className="side-panel__open-btn side-panel__remove-btn side-panel__remove-confirm-btn"
+                title="Permanently remove this document and its cached data"
+                onClick={() => {
+                  void removeDocuments([node.id]);
+                  setSelected(null);
+                }}
+              >
+                Confirm
+              </button>
+              <button
+                type="button"
+                className="side-panel__open-btn"
+                title="Keep this document"
+                onClick={() => setConfirmRemove(false)}
+              >
+                Cancel
+              </button>
+            </div>
           )}
           <button
             type="button"

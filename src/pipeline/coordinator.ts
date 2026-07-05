@@ -909,11 +909,24 @@ export function ingestFiles(files: IngestFile[]): Promise<void> {
  * Queues behind any in-flight ingest run.
  */
 export function removeDocuments(ids: string[]): Promise<void> {
+  // Resolve the display label NOW: the SidePanel closes optimistically, and
+  // by the time a failure surfaces the node may be half-gone from the store.
+  const g = useGraphStore.getState();
+  const label =
+    ids.length === 1
+      ? `'${g.nodes[g.nodeIndex[ids[0]]]?.title ?? nameOfDoc.get(ids[0]) ?? ids[0]}'`
+      : `${ids.length} documents`;
   const run = runChain.then(() => runRemove(ids));
   runChain = run.then(
     () => undefined,
     (err) => {
       console.error('document removal failed', err);
+      useUiStore
+        .getState()
+        .pushToast(
+          `Couldn't remove ${label} — the graph may be out of sync. Reload to recover.`,
+          'warning',
+        );
     },
   );
   return run;

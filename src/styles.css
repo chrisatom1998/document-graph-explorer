@@ -666,6 +666,7 @@ input {
   flex: none;
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap; /* lets the Remove-confirm row drop to its own line */
   gap: 12px;
   padding: 20px 24px 14px;
   border-bottom: 1px solid var(--border-glass);
@@ -873,6 +874,40 @@ input {
   border-color: var(--accent);
   color: var(--accent);
   background: rgba(143, 123, 255, 0.08);
+}
+
+/* Remove reuses .side-panel__open-btn's shape; only the hover state differs
+   (danger, not accent) since it's a destructive action. */
+.side-panel__remove-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: rgba(255, 128, 128, 0.08);
+}
+
+/* Confirming Remove needs room for the explanatory copy; the header's
+   flex-wrap (see .side-panel__header) drops this full-width row onto its
+   own line below the title/Open/Close row. */
+.side-panel__remove-confirm {
+  display: flex;
+  align-items: center;
+  flex: 1 1 100%;
+  gap: 10px;
+  margin-top: 4px;
+}
+.side-panel__remove-confirm-text {
+  flex: 1 1 auto;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+.side-panel__remove-confirm-btn {
+  border-color: rgba(255, 128, 128, 0.35);
+  background: rgba(255, 128, 128, 0.12);
+  color: var(--danger);
+}
+.side-panel__remove-confirm-btn:hover {
+  border-color: var(--danger);
+  background: rgba(255, 128, 128, 0.2);
 }
 
 /* ---- "Ask AI" section (Gemini, per selected document) ------------------- */
