@@ -14,8 +14,8 @@
  *   node and pins it via layoutPin; drag fixes, double-click releases.
  *
  * This file also owns the per-slot visual metadata (scaleOfSlot from degree,
- * kind/ghost lookups) and exports the emphasis helpers shared by
- * Edges/EdgePulses/Labels so the dimming rules cannot diverge.
+ * kind/ghost lookups). The emphasis helpers shared by Edges/EdgePulses/Labels
+ * live in ./emphasis so those components don't need to import this one.
  */
 
 import { useEffect, useMemo, useRef } from 'react';
@@ -24,11 +24,10 @@ import { useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { MAX_NODES } from '../config';
-import type { DocNode, Edge } from '../model/types';
 import { layoutPin, layoutUnpin } from '../layout/layoutBridge';
-import { buildAdjacency, useGraphStore } from '../store/graphStore';
+import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import type { GraphFilter } from '../store/uiStore';
+import { computeEmphasis } from './emphasis';
 import {
   ghostOfSlot,
   idOfSlot,
@@ -42,74 +41,13 @@ import { clusterColor } from './palette';
 import { prefersReducedMotion } from '../util/motion';
 
 // ---------------------------------------------------------------------------
-// Shared slot metadata + emphasis helpers (imported by Edges/EdgePulses/Labels)
+// Shared slot metadata (imported by Edges/EdgePulses/Labels)
 // ---------------------------------------------------------------------------
 
 // kindOfSlot/ghostOfSlot now live in positionBuffer (so layoutBridge can clear
 // freed slots without an import cycle); re-exported here for the components
 // that import them from './Nodes'.
 export { ghostOfSlot, kindOfSlot } from './positionBuffer';
-
-let adjacencySource: Edge[] | null = null;
-let adjacencyCache = new Map<string, Set<string>>();
-
-/** buildAdjacency memoized on edges identity (edges array is immutable in the store). */
-export function adjacencyFor(edges: Edge[]): Map<string, Set<string>> {
-  if (adjacencySource !== edges) {
-    adjacencySource = edges;
-    adjacencyCache = buildAdjacency(edges);
-  }
-  return adjacencyCache;
-}
-
-/**
- * The emphasis set for the active dim trigger, or null when nothing dims.
- * Precedence: hover > selection > search > filter (spec §7.3).
- *  - hover: node + adjacency neighbors
- *  - selection (focus mode): selected node + neighbors — clicking a node
- *    dims everything not directly connected until it's deselected
- *  - search: results + their neighbors
- *  - filter: matching nodes only
- */
-export function computeEmphasis(
-  nodes: DocNode[],
-  edges: Edge[],
-  hoveredId: string | null,
-  selectedId: string | null,
-  searchResults: string[] | null,
-  filter: GraphFilter,
-): Set<string> | null {
-  const focusId = hoveredId ?? selectedId;
-  if (focusId) {
-    const set = new Set<string>([focusId]);
-    const neighbors = adjacencyFor(edges).get(focusId);
-    if (neighbors) for (const id of neighbors) set.add(id);
-    return set;
-  }
-  if (searchResults) {
-    const set = new Set<string>();
-    const adjacency = adjacencyFor(edges);
-    for (const id of searchResults) {
-      set.add(id);
-      const neighbors = adjacency.get(id);
-      if (neighbors) for (const n of neighbors) set.add(n);
-    }
-    return set;
-  }
-  const filterActive =
-    filter.fileTypes !== null || filter.clusters !== null || filter.minDegree > 0;
-  if (filterActive) {
-    const set = new Set<string>();
-    for (const n of nodes) {
-      if (filter.fileTypes && !filter.fileTypes.includes(n.fileType)) continue;
-      if (filter.clusters && !filter.clusters.includes(n.cluster)) continue;
-      if (n.degree < filter.minDegree) continue;
-      set.add(n.id);
-    }
-    return set;
-  }
-  return null;
-}
 
 // ---------------------------------------------------------------------------
 // Module-level temps (zero per-frame allocations)
