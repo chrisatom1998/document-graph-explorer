@@ -18,6 +18,7 @@ import {
   GEMINI_MODEL,
 } from '../config';
 import type { DocNode } from '../model/types';
+import { isOffline, OFFLINE_MESSAGE } from '../offline';
 import { useGraphStore } from '../store/graphStore';
 import { textStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
@@ -64,7 +65,7 @@ function parseModelJson<T>(text: string): T | null {
 const REQUEST_TIMEOUT_MS = 30_000;
 
 async function callGemini(prompt: string, responseSchema: unknown): Promise<CallResult> {
-  if (AIRGAP) return { ok: false, error: AIRGAP_MESSAGE };
+  if (isOffline()) return { ok: false, error: AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE };
   const { geminiKey, geminiModel } = useSettingsStore.getState();
   const model = geminiModel.trim() || GEMINI_MODEL;
   // Key travels as a header, not a query param: URLs leak into proxy/server
@@ -307,7 +308,7 @@ export type DocAiAction = 'summarize' | 'outline' | 'ask';
 
 /** Why the AI section is locked, or null when it's usable. */
 export function docAiBlockedReason(): string | null {
-  if (AIRGAP) return AIRGAP_MESSAGE;
+  if (isOffline()) return AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE;
   const { geminiKey, enrichEnabled } = useSettingsStore.getState();
   if (!enrichEnabled) return 'Turn on "Enable enrichment" in Settings';
   if (geminiKey.trim() === '') return 'Add a Gemini API key in Settings';
@@ -322,7 +323,7 @@ async function streamGemini(
   prompt: string,
   onChunk?: (accumulated: string) => void,
 ): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
-  if (AIRGAP) return { ok: false, error: AIRGAP_MESSAGE };
+  if (isOffline()) return { ok: false, error: AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE };
   const { geminiKey, geminiModel } = useSettingsStore.getState();
   const model = geminiModel.trim() || GEMINI_MODEL;
   const url =
@@ -493,7 +494,7 @@ export async function askDocAi(
 let running = false;
 
 export async function runEnrichment(): Promise<{ ok: boolean; message: string }> {
-  if (AIRGAP) return { ok: false, message: AIRGAP_MESSAGE };
+  if (isOffline()) return { ok: false, message: AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE };
   const { geminiKey, enrichEnabled } = useSettingsStore.getState();
   if (!enrichEnabled) {
     return { ok: false, message: 'Turn on "Enable enrichment" first' };

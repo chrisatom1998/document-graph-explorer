@@ -11,8 +11,8 @@
  * graph are automatically available as context.
  */
 
-import { AIRGAP } from '../airgap';
 import { EMBED_DIMS, GEMINI_ENDPOINT, GEMINI_MODEL } from '../config';
+import { isOffline } from '../offline';
 import { embedQuery } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import { chunkStore, docVectorStore, textStore } from '../store/runtimeStores';
@@ -256,7 +256,7 @@ export async function sendChatMessage(question: string): Promise<void> {
 
   // When Gemini isn't available (airgap build, enrichment off, or no key), answer
   // locally by extracting the best-matching passages — no network, no refusal.
-  const useLocal = AIRGAP || !enrichEnabled || geminiKey.trim() === '';
+  const useLocal = isOffline() || !enrichEnabled || geminiKey.trim() === '';
 
   const docCount = useGraphStore.getState().nodes.filter((n) => n.kind === 'document').length;
   if (docCount === 0) {
