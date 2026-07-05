@@ -2451,6 +2451,13 @@ input {
   margin-inline: 4px;
 }
 
+.chat-panel__mode-hint {
+  font-size: 11px;
+  opacity: 0.6;
+  margin: 0 12px 6px;
+  text-align: center;
+}
+
 .chat-panel__input-row {
   display: flex;
   align-items: flex-end;

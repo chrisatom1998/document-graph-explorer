@@ -6,8 +6,10 @@
 import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import ChatMarkdown from '../chat/ChatMarkdown';
 import { cancelChat, sendChatMessage } from '../chat/ragChat';
+import { AIRGAP } from '../airgap';
 import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
 import { useGraphStore } from '../store/graphStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 import { openDocument } from './openDocument';
 
@@ -132,6 +134,9 @@ export default function ChatPanel() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const setSelected = useUiStore((s) => s.setSelected);
   const sendCamera = useUiStore((s) => s.sendCamera);
+  const enrichEnabled = useSettingsStore((s) => s.enrichEnabled);
+  const geminiKey = useSettingsStore((s) => s.geminiKey);
+  const localMode = AIRGAP || !enrichEnabled || geminiKey.trim() === '';
 
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -234,6 +239,12 @@ export default function ChatPanel() {
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {localMode && (
+        <p className="chat-panel__mode-hint" title="Answers are exact passages retrieved from your own documents — no AI service, no network.">
+          Offline mode — answers are exact passages from your documents.
+        </p>
+      )}
 
       {/* Input */}
       <div className="chat-panel__input-row">
