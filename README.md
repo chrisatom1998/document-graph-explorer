@@ -33,6 +33,15 @@ Then open the printed local URL and drag documents onto the window. A demo corpu
 
 See [SECURITY.md](SECURITY.md) for the full privacy guarantee and how to verify it.
 
+### Run it (no dev tools)
+
+Once you've built the air-gapped bundle (`npm run build:airgap`), you can open it without Node, npm, or a terminal each time:
+
+1. Build once: `npm run build:airgap`
+2. Double-click `run.cmd` (Windows) or `run.command` (macOS) — or run `./run.sh` on Linux.
+
+This starts a small localhost-only static server (Node built-ins only, no dependencies) and opens the app in your default browser. It requires only Node.js to be installed; it serves `dist-airgap/` on `127.0.0.1` and is never reachable from your LAN.
+
 ## How it works
 
 Ingestion is a pipeline that runs off the main thread:
