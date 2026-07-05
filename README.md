@@ -1,6 +1,6 @@
 # Document Graph Explorer
 
-A drag-and-drop **3D mind map for your documents**. Drop a folder of text, Markdown, PDF, or HTML files onto the window and Document Graph Explorer parses them, extracts topics and relationships, and renders the whole corpus as an explorable force-directed 3D graph — documents become nodes, semantic and structural relationships become edges.
+A drag-and-drop **3D mind map for your documents**. Drop a folder of text, Markdown, PDF, HTML, or Word/PowerPoint/Excel files onto the window and Document Graph Explorer parses them, extracts topics and relationships, and renders the whole corpus as an explorable force-directed 3D graph — documents become nodes, semantic and structural relationships become edges.
 
 **Local-first and private by architecture.** Parsing, embeddings, similarity, and clustering all run in your browser (in web workers, with a self-hosted embedding model). Your documents never leave the tab. The only optional network call is Gemini enrichment, which is off by default and requires you to supply your own API key — enforced in production by a strict Content-Security-Policy (see [vite.config.ts](vite.config.ts)).
 
@@ -24,13 +24,22 @@ Then open the printed local URL and drag documents onto the window. A demo corpu
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run preview` | Preview the production build locally |
 
+## Builds
+
+| Command | Output | Network |
+| --- | --- | --- |
+| `npm run build` | `dist/` | Fully local by default; optional opt-in Gemini enrichment |
+| `npm run build:airgap` | `dist-airgap/` | **Zero external network** — host-free CSP + runtime refusal + post-build verify gate |
+
+See [SECURITY.md](SECURITY.md) for the full privacy guarantee and how to verify it.
+
 ## How it works
 
 Ingestion is a pipeline that runs off the main thread:
 
 **parse → boilerplate strip → chunk → tokenize → TF-IDF → embeddings → similarity links → Louvain clustering → topic synthesis**
 
-- **Parsing** ([src/pipeline/parsers/](src/pipeline/parsers/)) handles Markdown, HTML, plain text, and PDF (including link annotations).
+- **Parsing** ([src/pipeline/parsers/](src/pipeline/parsers/)) handles Markdown, HTML, plain text, PDF (including link annotations), and Office formats (DOCX, PPTX, XLSX).
 - **Embeddings** use a self-hosted `all-MiniLM-L6-v2` model in [public/models/](public/models/) via transformers.js — no third-party API.
 - **The 3D scene** ([src/scene/](src/scene/)) is React Three Fiber over Three.js, with instanced nodes/edges, a force-directed layout worker, and a cluster-collapse view for large graphs.
 - **State** lives in Zustand stores ([src/store/](src/store/)); the computed graph persists to IndexedDB so you don't re-parse every session, and can be exported/imported as JSON.

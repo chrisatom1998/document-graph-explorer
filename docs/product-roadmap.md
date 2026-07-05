@@ -1,4 +1,4 @@
-# Knowledge Nebula — Product Roadmap
+# Document Graph Explorer — Product Roadmap
 
 **Owner:** Chris Johnson  
 **Last Updated:** July 2, 2026
@@ -20,7 +20,7 @@ Make internal documentation **explorable, connected, and alive** — transformin
 | Milestone | Status | Date |
 |---|---|---|
 | Drag-and-drop ingestion with live progress | ✅ Shipped | June 2026 |
-| Multi-format parsing (MD, TXT, PDF, HTML) | ✅ Shipped | June 2026 |
+| Multi-format parsing (MD, TXT, PDF, HTML, DOCX, PPTX, XLSX) | ✅ Shipped | June 2026 |
 | TF-IDF keyword extraction + lexical edges | ✅ Shipped | June 2026 |
 | Local semantic embeddings (MiniLM, WebGPU) | ✅ Shipped | June 2026 |
 | Semantic similarity edges with top-k constraint | ✅ Shipped | June 2026 |
@@ -36,6 +36,7 @@ Make internal documentation **explorable, connected, and alive** — transformin
 | Named snapshots (save/load/delete) | ✅ Shipped | July 2026 |
 | Corpus insights panel | ✅ Shipped | July 2026 |
 | Document removal | ✅ Shipped | July 2026 |
+| Air-gapped build (`build:airgap`) with enforced zero-egress CSP | ✅ Shipped | July 2026 |
 
 ### Key Results
 - **50 files → useful graph in <30s** on mid-tier hardware
@@ -82,13 +83,13 @@ Make internal documentation **explorable, connected, and alive** — transformin
 ## Strategic Themes
 
 ### 1. Privacy-First Architecture
-Knowledge Nebula's client-side architecture is a **competitive differentiator**. Enterprises with sensitive documentation (legal, financial, healthcare) need tools that don't require uploading documents to third-party servers. Every feature is designed to work fully offline.
+Document Graph Explorer's client-side architecture is a **competitive differentiator**. Enterprises with sensitive documentation (legal, financial, healthcare) need tools that don't require uploading documents to third-party servers. Every feature is designed to work fully offline.
 
 ### 2. Intelligence Without API Keys
 Local semantic embeddings (transformers.js) provide real AI-powered connections without requiring users to configure API keys or incur per-request costs. The optional Gemini enrichment adds value but is never required.
 
 ### 3. Visual-First Knowledge Management
-Traditional documentation tools are text-first. Knowledge Nebula inverts this — the primary interface is spatial and visual. Users build a mental model of their documentation landscape through exploration, not reading.
+Traditional documentation tools are text-first. Document Graph Explorer inverts this — the primary interface is spatial and visual. Users build a mental model of their documentation landscape through exploration, not reading.
 
 ### 4. Zero-Friction Adoption
 No accounts, no installations, no configuration. Drop files → see your knowledge. This removes the biggest barrier to adoption for internal tools.

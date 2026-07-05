@@ -1,4 +1,4 @@
-# Knowledge Nebula — Project Plan
+# Document Graph Explorer — Project Plan
 
 **Owner:** Chris Johnson  
 **Status:** Active Development (v1)  
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-Knowledge Nebula is a browser-based tool that transforms internal documentation into an interactive, explorable 3D knowledge graph. Users drag files onto the window and instantly see their documentation visualized as a living constellation — with meaningful connections based on shared topics, cross-references, and semantic similarity.
+Document Graph Explorer is a browser-based tool that transforms internal documentation into an interactive, explorable 3D knowledge graph. Users drag files onto the window and instantly see their documentation visualized as a living constellation — with meaningful connections based on shared topics, cross-references, and semantic similarity.
 
 The tool runs **entirely client-side** (zero server cost, zero data exposure), making it uniquely suited for teams working with sensitive internal documentation.
 
@@ -46,7 +46,7 @@ The tool runs **entirely client-side** (zero server cost, zero data exposure), m
 ## Key Capabilities (v1)
 
 ### Ingestion
-- Drag-and-drop files or folders (`.md`, `.txt`, `.pdf`, `.html`)
+- Drag-and-drop files or folders (`.md`, `.txt`, `.pdf`, `.html`, `.docx`, `.pptx`, `.xlsx`, and `.json`/`.yaml`/`.csv` as text)
 - Real-time progress with nodes materializing live into the 3D scene
 - Web Worker pool ensures zero UI jank during processing
 
@@ -62,6 +62,9 @@ The tool runs **entirely client-side** (zero server cost, zero data exposure), m
 - Click-to-read side panel with full document text
 - Semantic search (⌘K) that finds relevant docs even without keyword matches
 - Filter by file type, cluster, or connectivity
+
+### Distribution & Security
+- **Air-gapped build** (`npm run build:airgap`): zero external network, enforced by a host-free CSP, runtime refusal, and a post-build verify gate. See [SECURITY.md](../SECURITY.md).
 
 ### Persistence & Snapshots
 - Auto-caches sessions to IndexedDB — revisiting is instant (<3s for 200 docs)

@@ -10,7 +10,7 @@
 
 ### Problem Statement
 
-Knowledge Nebula users invest significant time ingesting documents, tuning their graph, and exploring connections. But documentation evolves — new files get added, old ones get removed, and the graph changes. Without a way to **save and return to past states**, users lose the ability to:
+Document Graph Explorer users invest significant time ingesting documents, tuning their graph, and exploring connections. But documentation evolves — new files get added, old ones get removed, and the graph changes. Without a way to **save and return to past states**, users lose the ability to:
 
 - Compare how a knowledge base has evolved over time
 - Maintain "known-good" reference graphs for onboarding
