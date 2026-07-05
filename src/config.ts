@@ -29,6 +29,10 @@ export const ENRICH_MAX_RETRIES = 3;
 export const SEARCH_MIN_SCORE = 0.35; // semantic search relevance floor
 export const SEARCH_MAX_RESULTS = 12;
 
+// --- Extractive (local, no-LLM) chat answers ---
+export const EXTRACT_MAX_PASSAGES = 4; // distinct-doc passages shown in a local answer
+export const EXTRACT_PASSAGE_CHARS = 600; // per-passage verbatim quote cap
+
 // --- Insights ---
 export const DUP_SIM_THRESHOLD = 0.93; // cosine sim above which two docs are "possible duplicates"
 export const STALE_DOC_DAYS = 180; // file mtime older than this -> "stale doc" insight
