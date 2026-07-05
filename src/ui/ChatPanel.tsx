@@ -136,7 +136,8 @@ export default function ChatPanel() {
   const sendCamera = useUiStore((s) => s.sendCamera);
   const enrichEnabled = useSettingsStore((s) => s.enrichEnabled);
   const geminiKey = useSettingsStore((s) => s.geminiKey);
-  const localMode = AIRGAP || !enrichEnabled || geminiKey.trim() === '';
+  const offlineMode = useSettingsStore((s) => s.offlineMode);
+  const localMode = AIRGAP || offlineMode || !enrichEnabled || geminiKey.trim() === '';
 
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);

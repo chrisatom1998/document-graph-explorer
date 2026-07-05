@@ -102,11 +102,13 @@ export default function SettingsPanel() {
   const geminiModel = useSettingsStore((s) => s.geminiModel);
   const enrichEnabled = useSettingsStore((s) => s.enrichEnabled);
   const includeEmbeddings = useSettingsStore((s) => s.includeEmbeddingsInExport);
+  const offlineMode = useSettingsStore((s) => s.offlineMode);
   const setGeminiKey = useSettingsStore((s) => s.setGeminiKey);
   const setRememberKey = useSettingsStore((s) => s.setRememberGeminiKey);
   const setGeminiModel = useSettingsStore((s) => s.setGeminiModel);
   const setEnrichEnabled = useSettingsStore((s) => s.setEnrichEnabled);
   const setIncludeEmbeddings = useSettingsStore((s) => s.setIncludeEmbeddingsInExport);
+  const setOfflineMode = useSettingsStore((s) => s.setOfflineMode);
 
   const [enrichResult, setEnrichResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [enrichBusy, setEnrichBusy] = useState(false);
@@ -194,6 +196,23 @@ export default function SettingsPanel() {
         {!AIRGAP && (
         <section style={sectionStyle}>
           <h3 style={headingStyle}>AI Enrichment (optional)</h3>
+          <label
+            style={checkboxRowStyle}
+            title="Blocks all external network in the app and answers chat from your documents locally. Behavioral setting — for the sealed, CSP-enforced guarantee, ship the air-gapped build."
+          >
+            <input
+              type="checkbox"
+              checked={offlineMode}
+              onChange={(e) => setOfflineMode(e.target.checked)}
+            />
+            Offline mode — no external network; local answers only
+          </label>
+          {offlineMode && (
+            <p style={helpStyle}>
+              AI features below are disabled while offline. (Behavioral setting — the
+              air-gapped build remains the enforced guarantee.)
+            </p>
+          )}
           <label style={labelStyle}>
             Gemini API key
             <input
@@ -204,6 +223,7 @@ export default function SettingsPanel() {
               autoComplete="off"
               title="Your Google Gemini API key. Stored only in this browser; used for enrichment, per-document AI, and chat."
               style={inputStyle}
+              disabled={offlineMode}
             />
           </label>
           <label
@@ -214,6 +234,7 @@ export default function SettingsPanel() {
               type="checkbox"
               checked={rememberKey}
               onChange={(e) => setRememberKey(e.target.checked)}
+              disabled={offlineMode}
             />
             Remember key on this device
           </label>
@@ -232,6 +253,7 @@ export default function SettingsPanel() {
               placeholder={GEMINI_MODEL}
               title="Gemini model id used for all AI calls (e.g. gemini-2.5-flash). Leave blank for the default."
               style={inputStyle}
+              disabled={offlineMode}
             />
             <span style={helpStyle}>Gemini model used for summaries &amp; topic naming</span>
           </label>
@@ -243,18 +265,19 @@ export default function SettingsPanel() {
               type="checkbox"
               checked={enrichEnabled}
               onChange={(e) => setEnrichEnabled(e.target.checked)}
+              disabled={offlineMode}
             />
             Enable enrichment
           </label>
           <button
             type="button"
             onClick={onEnrichNow}
-            disabled={enriching || enrichBlocked}
+            disabled={enriching || enrichBlocked || offlineMode}
             title={enrichHint}
             style={{
               ...buttonStyle,
-              opacity: enriching || enrichBlocked ? 0.55 : 1,
-              cursor: enriching || enrichBlocked ? 'default' : 'pointer',
+              opacity: enriching || enrichBlocked || offlineMode ? 0.55 : 1,
+              cursor: enriching || enrichBlocked || offlineMode ? 'default' : 'pointer',
             }}
           >
             {enriching ? 'Enriching…' : 'Enrich now'}

@@ -10,6 +10,7 @@ import DocAiSection from './DocAiSection';
 import { AIRGAP } from '../airgap';
 import { openDocument } from './openDocument';
 import VirtualText from './VirtualText';
+import { useSettingsStore } from '../store/settingsStore';
 import type { DocNode, Edge } from '../model/types';
 
 interface ConnectionRow {
@@ -26,6 +27,7 @@ export default function SidePanel() {
   const selectedId = useUiStore((s) => s.selectedId);
   const setSelected = useUiStore((s) => s.setSelected);
   const sendCamera = useUiStore((s) => s.sendCamera);
+  const offlineMode = useSettingsStore((s) => s.offlineMode);
 
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
@@ -211,7 +213,7 @@ export default function SidePanel() {
             </div>
           )}
 
-          {!AIRGAP && fullText && (
+          {!(AIRGAP || offlineMode) && fullText && (
             <>
               <hr className="hairline" />
               {/* key resets the Q&A state when the selection changes */}
