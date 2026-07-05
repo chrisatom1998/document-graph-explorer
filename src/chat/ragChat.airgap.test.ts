@@ -1,34 +1,42 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { DocNode } from '../model/types';
 
 vi.mock('../airgap', () => ({ AIRGAP: true, AIRGAP_MESSAGE: 'AIRGAP_TEST_MSG' }));
-
-// ragChat -> pipeline/coordinator -> parsers/pdf statically imports
-// pdfjs-dist, which reaches for the browser-only DOMMatrix global at module
-// load time. Vitest's node environment has no DOM, so the bare import
-// throws before this file's tests can even run. The AIRGAP-gated path under
-// test returns before parsePdf is ever called, so stubbing the module here
-// only unblocks module resolution — it doesn't touch the behavior asserted
-// below. Pre-existing repo/environment gap, not introduced by this task.
-vi.mock('pdfjs-dist', () => ({ GlobalWorkerOptions: {} }));
+// Fully mock the coordinator so its pdfjs import chain never loads and the query
+// embed deterministically rejects — routing retrieveChunks through its local
+// keywordFallback (substring/token match over textStore), which needs no worker.
+vi.mock('../pipeline/coordinator', () => ({
+  embedQuery: vi.fn().mockRejectedValue(new Error('no embed worker in test')),
+}));
 
 import { sendChatMessage } from './ragChat';
 import { useChatStore } from '../store/chatStore';
+import { useGraphStore } from '../store/graphStore';
+import { textStore, chunkStore, docVectorStore } from '../store/runtimeStores';
 
-describe('chat gate under airgap', () => {
+describe('airgap chat: local, no network', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     useChatStore.getState().clearMessages();
+    textStore.clear();
+    chunkStore.clear();
+    docVectorStore.clear();
+    // Minimal document node — retrieveChunks reads id+title; docCount reads kind.
+    useGraphStore.setState({
+      nodes: [{ id: 'doc1', kind: 'document', title: 'Rate Limiting' } as DocNode],
+    });
+    textStore.set('doc1', 'Rate limiting caps requests at 100 per minute to protect the API from abuse.');
   });
 
-  it('sendChatMessage refuses via an AIRGAP system message, without ever calling fetch', async () => {
+  it('answers from local documents with a citation and never calls fetch', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    await sendChatMessage('hello');
+    await sendChatMessage('how does rate limiting work');
+
     expect(fetchSpy).not.toHaveBeenCalled();
-    // The last message must be the AIRGAP refusal, not the default
-    // enrichment-disabled notice — this is what uniquely proves the AIRGAP
-    // guard fired (both paths block fetch, but only this one emits AIRGAP_MESSAGE).
     const last = useChatStore.getState().messages.at(-1);
-    expect(last?.role).toBe('system');
-    expect(last?.text).toBe('AIRGAP_TEST_MSG');
+    expect(last?.role).toBe('assistant');
+    expect(last?.text).not.toBe('AIRGAP_TEST_MSG'); // no longer a refusal
+    expect(last?.text.toLowerCase()).toContain('rate limiting'); // quotes the passage
+    expect(last?.sources?.some((s) => s.docId === 'doc1')).toBe(true); // cited
   });
 });

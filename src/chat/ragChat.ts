@@ -11,13 +11,14 @@
  * graph are automatically available as context.
  */
 
-import { AIRGAP, AIRGAP_MESSAGE } from '../airgap';
+import { AIRGAP } from '../airgap';
 import { EMBED_DIMS, GEMINI_ENDPOINT, GEMINI_MODEL } from '../config';
 import { embedQuery } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import { chunkStore, docVectorStore, textStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
 import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
+import { formatExtractiveAnswer } from './extractiveAnswer';
 
 const RAG_TOP_K = 8; // max chunks to include as context
 const RAG_MIN_SCORE = 0.3; // cosine floor for relevance
@@ -253,21 +254,9 @@ export async function sendChatMessage(question: string): Promise<void> {
   // Add user message
   chat.addMessage({ role: 'user', text: q });
 
-  if (AIRGAP) {
-    chat.addMessage({ role: 'system', text: AIRGAP_MESSAGE });
-    return;
-  }
-
-  // Validate API availability
-  if (!enrichEnabled || geminiKey.trim() === '') {
-    chat.addMessage({
-      role: 'system',
-      text: !enrichEnabled
-        ? 'Turn on "Enable enrichment" in Settings to use the chat feature.'
-        : 'Add a Gemini API key in Settings to use the chat feature.',
-    });
-    return;
-  }
+  // When Gemini isn't available (airgap build, enrichment off, or no key), answer
+  // locally by extracting the best-matching passages — no network, no refusal.
+  const useLocal = AIRGAP || !enrichEnabled || geminiKey.trim() === '';
 
   const docCount = useGraphStore.getState().nodes.filter((n) => n.kind === 'document').length;
   if (docCount === 0) {
@@ -297,6 +286,15 @@ export async function sendChatMessage(question: string): Promise<void> {
   try {
     // Retrieve relevant chunks
     const chunks = await retrieveChunks(q);
+
+    if (useLocal) {
+      const { text, sources: localSources } = formatExtractiveAnswer(q, chunks);
+      useChatStore.getState().updateMessage(assistantId, {
+        text,
+        ...(localSources.length ? { sources: localSources } : {}),
+      });
+      return;
+    }
 
     if (chunks.length === 0) {
       useChatStore.getState().updateMessage(assistantId, {
