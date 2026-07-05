@@ -180,7 +180,9 @@ function listen(server, basePort, attempt) {
   server.listen(port, '127.0.0.1', () => {
     const url = `http://127.0.0.1:${port}/`;
     const label = AIRGAP_MODE ? ' (air-gapped build)' : '';
-    console.log(`Document Graph Explorer${label} — serving ${url}`);
+    // Plain hyphen (not an em dash) so the launcher console reads cleanly
+    // under Windows' default OEM codepage instead of mojibaking.
+    console.log(`Document Graph Explorer${label} - serving ${url}`);
     console.log('(localhost-only; press Ctrl+C to stop)');
     openBrowser(url);
   });

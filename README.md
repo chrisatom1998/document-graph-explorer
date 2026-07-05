@@ -44,6 +44,18 @@ This starts a small localhost-only static server (Node built-ins only, no depend
 
 To run the sealed air-gapped build instead, build it once (`npm run build:airgap`) and pass `--airgap` to the launcher: `run.cmd --airgap` (Windows) or `./run.sh --airgap` / `./run.command --airgap` (macOS/Linux) — or directly, `node scripts/serve.mjs --airgap`.
 
+### Launch it from your desktop (Windows)
+
+To get a double-clickable **"Document Graph Explorer"** icon on your desktop, run once:
+
+```
+npm run install:desktop
+```
+
+This drops a desktop shortcut (with the app icon) that points back at `run.cmd` in this repo — no separate executable is installed, so there's nothing for endpoint security to flag, and the shortcut keeps working as the repo updates. Add `-Airgap` to the script for a shortcut that launches the sealed build: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-desktop-shortcut.ps1 -Airgap`.
+
+The icon is generated from `public/icon.svg` into `packaging/document-graph-explorer.ico` (regenerate with `scripts/make-app-icon.ps1` if the brand icon changes). On macOS, drag `run.command` to your Dock, or right-click it on the desktop → **Make Alias** and move the alias where you like (the first launch needs a right-click → **Open** to clear Gatekeeper).
+
 ## How it works
 
 Ingestion is a pipeline that runs off the main thread:

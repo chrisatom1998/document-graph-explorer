@@ -8,6 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "build:airgap": "tsc --noEmit && vite build --mode airgap --outDir dist-airgap && node scripts/sanitize-airgap.mjs && node scripts/verify-airgap.mjs",
     "build:exe": "npm run build && pkg scripts/serve-exe.cjs --targets node18-win-x64 --output run.exe",
+    "install:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-desktop-shortcut.ps1",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test": "vitest run",
