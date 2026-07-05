@@ -18,6 +18,7 @@ interface PersistedSettings {
   geminiModel: string;
   enrichEnabled: boolean;
   includeEmbeddingsInExport: boolean;
+  offlineMode: boolean;
 }
 
 export interface SettingsState extends PersistedSettings {
@@ -26,6 +27,7 @@ export interface SettingsState extends PersistedSettings {
   setGeminiModel: (model: string) => void;
   setEnrichEnabled: (enabled: boolean) => void;
   setIncludeEmbeddingsInExport: (include: boolean) => void;
+  setOfflineMode: (offline: boolean) => void;
 }
 
 const DEFAULTS: PersistedSettings = {
@@ -34,6 +36,7 @@ const DEFAULTS: PersistedSettings = {
   geminiModel: GEMINI_MODEL,
   enrichEnabled: false,
   includeEmbeddingsInExport: false,
+  offlineMode: false,
 };
 
 function loadPersisted(): PersistedSettings {
@@ -64,6 +67,8 @@ function loadPersisted(): PersistedSettings {
         typeof parsed.includeEmbeddingsInExport === 'boolean'
           ? parsed.includeEmbeddingsInExport
           : DEFAULTS.includeEmbeddingsInExport,
+      offlineMode:
+        typeof parsed.offlineMode === 'boolean' ? parsed.offlineMode : DEFAULTS.offlineMode,
     };
   } catch {
     return DEFAULTS;
@@ -80,6 +85,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setEnrichEnabled: (enrichEnabled) => set({ enrichEnabled }),
   setIncludeEmbeddingsInExport: (includeEmbeddingsInExport) =>
     set({ includeEmbeddingsInExport }),
+  setOfflineMode: (offlineMode) => set({ offlineMode }),
 }));
 
 // Persist on every change (tiny payload; no middleware needed). Turning
@@ -92,6 +98,7 @@ useSettingsStore.subscribe((s) => {
       geminiModel: s.geminiModel,
       enrichEnabled: s.enrichEnabled,
       includeEmbeddingsInExport: s.includeEmbeddingsInExport,
+      offlineMode: s.offlineMode,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
   } catch {
