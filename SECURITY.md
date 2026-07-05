@@ -12,6 +12,14 @@ is no server, no account, no telemetry, and no analytics.
 | `npm run build`, AI enrichment **off** (default) | **None.** No document content leaves the browser. |
 | `npm run build`, AI enrichment **on** (opt-in, user supplies a Gemini key) | Document excerpts are sent to Google's Gemini API (`generativelanguage.googleapis.com`) **only** for the AI features the user explicitly triggers. Off by default. |
 
+> **Offline mode (Settings toggle) vs the air-gapped build:** the normal build
+> includes an "Offline mode" toggle that blocks all external requests in
+> JavaScript (per-call refusal plus a global fetch guard) and answers chat from
+> your documents locally. It is a **behavioral** setting a user can flip off.
+> For distribution where the guarantee must be enforced rather than configured,
+> use the air-gapped build — its CSP physically removes the external network at
+> the browser level and cannot be re-enabled at runtime.
+
 The embedding model (MiniLM) and its WASM runtime are **self-hosted** in the app
 (`/models`, `/assets`) — they are never fetched from HuggingFace or a CDN
 (`allowRemoteModels = false`, ORT `wasmPaths` pinned same-origin).
