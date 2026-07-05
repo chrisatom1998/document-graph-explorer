@@ -27,7 +27,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
 import { clusterColor, EDGE_TINTS } from './palette';
-import { computeEmphasis } from './Nodes';
+import { computeEmphasis } from './emphasis';
 import {
   EDGE_SEGMENTS,
   EDGE_SEGMENTS_DEGRADED,
