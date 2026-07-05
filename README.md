@@ -35,12 +35,14 @@ See [SECURITY.md](SECURITY.md) for the full privacy guarantee and how to verify 
 
 ### Run it (no dev tools)
 
-Once you've built the air-gapped bundle (`npm run build:airgap`), you can open it without Node, npm, or a terminal each time:
+Once you've built the app (`npm run build`), you can open it without npm or a terminal each time:
 
-1. Build once: `npm run build:airgap`
+1. Build once: `npm run build`
 2. Double-click `run.cmd` (Windows) or `run.command` (macOS) — or run `./run.sh` on Linux.
 
-This starts a small localhost-only static server (Node built-ins only, no dependencies) and opens the app in your default browser. It requires only Node.js to be installed; it serves `dist-airgap/` on `127.0.0.1` and is never reachable from your LAN.
+This starts a small localhost-only static server (Node built-ins only, no dependencies) and opens the app in your default browser. It requires only Node.js to be installed; it serves the normal `dist/` build on `127.0.0.1` and is never reachable from your LAN.
+
+To run the sealed air-gapped build instead, build it once (`npm run build:airgap`) and pass `--airgap` to the launcher: `run.cmd --airgap` (Windows) or `./run.sh --airgap` / `./run.command --airgap` (macOS/Linux) — or directly, `node scripts/serve.mjs --airgap`.
 
 ## How it works
 

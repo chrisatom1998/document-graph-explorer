@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-airgap/
+run.exe
 *.local
 .DS_Store
 coverage/

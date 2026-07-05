@@ -54,4 +54,10 @@ export default tseslint.config(
     files: ['**/*.test.ts', '*.config.{ts,js}', 'vite.config.ts', '**/*.mjs'],
     languageOptions: { sourceType: 'module', globals: { ...globals.node } },
   },
+  {
+    // CommonJS Node scripts (the pkg-packaged exe entry must stay CJS).
+    files: ['**/*.cjs'],
+    languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
 );
