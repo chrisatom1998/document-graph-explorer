@@ -2,7 +2,21 @@ import { describe, expect, it } from 'vitest';
 import path from 'node:path';
 // @ts-expect-error - scripts/serve.mjs is a plain Node ESM script (no allowJs/.d.ts
 // for the scripts/ dir); imported here purely for its pure, unit-testable helpers.
-import { contentTypeFor, resolveSafe } from '../../scripts/serve.mjs';
+import { contentTypeFor, distDirFor, resolveSafe } from '../../scripts/serve.mjs';
+
+describe('distDirFor', () => {
+  it('defaults to the normal build (dist)', () => {
+    expect(distDirFor([])).toBe('dist');
+  });
+
+  it('serves dist-airgap when --airgap is passed', () => {
+    expect(distDirFor(['--airgap'])).toBe('dist-airgap');
+  });
+
+  it('ignores unrelated flags', () => {
+    expect(distDirFor(['--verbose', '--port=9000'])).toBe('dist');
+  });
+});
 
 describe('contentTypeFor', () => {
   it.each([

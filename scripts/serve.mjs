@@ -1,17 +1,27 @@
-// Dependency-free static server for the sealed `dist-airgap/` build. Node
-// builtins ONLY — no npm packages — so double-clicking a launcher (run.cmd /
-// run.command / run.sh) works with nothing installed beyond Node itself.
+// Dependency-free static server for the built app. Node builtins ONLY — no
+// npm packages — so double-clicking a launcher (run.cmd / run.command /
+// run.sh) works with nothing installed beyond Node itself.
+//
+// Serves the normal `dist/` build by default; pass `--airgap` to serve the
+// sealed `dist-airgap/` build instead (the launchers forward their args).
 //
 // Binds 127.0.0.1 ONLY. This is a local convenience server for opening the
-// air-gapped build in a browser tab; it is never meant to be reachable from a
-// LAN, so it does not offer a way to bind 0.0.0.0.
+// app in a browser tab; it is never meant to be reachable from a LAN, so it
+// does not offer a way to bind 0.0.0.0.
 import { createServer } from 'node:http';
 import { existsSync, statSync, createReadStream } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 
-const ROOT = fileURLToPath(new URL('../dist-airgap/', import.meta.url));
+/** Which build directory a given argv selects: `dist` unless `--airgap`. */
+export function distDirFor(argv) {
+  return argv.includes('--airgap') ? 'dist-airgap' : 'dist';
+}
+
+const AIRGAP_MODE = distDirFor(process.argv.slice(2)) === 'dist-airgap';
+const DIST_DIR = AIRGAP_MODE ? 'dist-airgap' : 'dist';
+const ROOT = fileURLToPath(new URL(`../${DIST_DIR}/`, import.meta.url));
 const INDEX_HTML = path.join(ROOT, 'index.html');
 const DEFAULT_PORT = 8317;
 const MAX_PORT_ATTEMPTS = 10; // try basePort .. basePort + 10 before giving up
@@ -169,7 +179,8 @@ function listen(server, basePort, attempt) {
   });
   server.listen(port, '127.0.0.1', () => {
     const url = `http://127.0.0.1:${port}/`;
-    console.log(`Document Graph Explorer (air-gapped build) — serving ${url}`);
+    const label = AIRGAP_MODE ? ' (air-gapped build)' : '';
+    console.log(`Document Graph Explorer${label} — serving ${url}`);
     console.log('(localhost-only; press Ctrl+C to stop)');
     openBrowser(url);
   });
@@ -177,7 +188,11 @@ function listen(server, basePort, attempt) {
 
 function main() {
   if (!existsSync(INDEX_HTML)) {
-    console.error('Air-gapped build not found — run: npm run build:airgap');
+    console.error(
+      AIRGAP_MODE
+        ? 'Air-gapped build not found — run: npm run build:airgap'
+        : 'Build not found — run: npm run build',
+    );
     process.exit(1);
     return;
   }
