@@ -84,7 +84,9 @@ export default function SnapshotDrawer() {
   useFocusTrap(dialogRef, open);
 
   const refresh = useCallback(() => {
-    listSnapshots().then(setSnapshots);
+    // listSnapshots() catches internally and always resolves (never rejects)
+    // — fire-and-forget from this synchronous callback.
+    void listSnapshots().then(setSnapshots);
   }, []);
 
   useEffect(() => {
@@ -172,7 +174,9 @@ export default function SnapshotDrawer() {
             value={saveName}
             onChange={(e) => setSaveName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !saveDisabled) handleSave();
+              // handleSave catches its own errors (toasts on failure) and
+              // never rejects — fire-and-forget from this key handler.
+              if (e.key === 'Enter' && !saveDisabled) void handleSave();
             }}
             placeholder="Snapshot name"
             autoComplete="off"

@@ -146,7 +146,9 @@ export default function SettingsPanel() {
     setClearNote(null);
     setClearing(true);
     resetCorpus();
-    clearAllCaches()
+    // clearAllCaches() catches internally and always resolves (never rejects)
+    // — fire-and-forget from this synchronous handler.
+    void clearAllCaches()
       .then((ok) =>
         setClearNote(
           ok

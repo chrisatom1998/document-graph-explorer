@@ -208,7 +208,7 @@ function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
  * conversation), and failed assistant turns are dropped too — no reason to
  * teach the model its own errors.
  */
-function buildHistoryTurns(messages: ChatMessage[]): GeminiTurn[] {
+export function buildHistoryTurns(messages: ChatMessage[]): GeminiTurn[] {
   const usable = messages.filter((m) => {
     if (m.role === 'system') return false;
     if (m.role === 'assistant' && m.text.startsWith('Error:')) return false;
