@@ -159,7 +159,9 @@ export default function ChatPanel() {
     const q = input.trim();
     if (!q || isStreaming) return;
     setInput('');
-    sendChatMessage(q);
+    // sendChatMessage handles all its own errors (writes them into the chat
+    // transcript) and never rejects to the caller — fire-and-forget.
+    void sendChatMessage(q);
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
