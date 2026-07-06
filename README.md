@@ -45,6 +45,29 @@ npm run build:desktop
 
 That produces a runnable app bundle at `release/mac-arm64/Document Graph Explorer.app` and distributable `zip`/`dmg` archives under `release/`.
 
+### Run it (no dev tools)
+
+Once you've built the app (`npm run build`), you can open it without npm or a terminal each time:
+
+1. Build once: `npm run build`
+2. Double-click `run.cmd` (Windows) or `run.command` (macOS) — or run `./run.sh` on Linux.
+
+This starts a small localhost-only static server (Node built-ins only, no dependencies) and opens the app in your default browser. It requires only Node.js to be installed; it serves the normal `dist/` build on `127.0.0.1` and is never reachable from your LAN.
+
+To run the sealed air-gapped build instead, build it once (`npm run build:airgap`) and pass `--airgap` to the launcher: `run.cmd --airgap` (Windows) or `./run.sh --airgap` / `./run.command --airgap` (macOS/Linux) — or directly, `node scripts/serve.mjs --airgap`.
+
+### Launch it from your desktop (Windows)
+
+To get a double-clickable **"Document Graph Explorer"** icon on your desktop, run once:
+
+```
+npm run install:desktop
+```
+
+This drops a desktop shortcut (with the app icon) that points back at `run.cmd` in this repo — no separate executable is installed, so there's nothing for endpoint security to flag, and the shortcut keeps working as the repo updates. Add `-Airgap` to the script for a shortcut that launches the sealed build: `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-desktop-shortcut.ps1 -Airgap`.
+
+The icon is generated from `public/icon.svg` into `packaging/document-graph-explorer.ico` (regenerate with `scripts/make-app-icon.ps1` if the brand icon changes). On macOS, drag `run.command` to your Dock, or right-click it on the desktop → **Make Alias** and move the alias where you like (the first launch needs a right-click → **Open** to clear Gatekeeper).
+
 ## How it works
 
 Ingestion is a pipeline that runs off the main thread:
