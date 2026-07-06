@@ -55,11 +55,10 @@ export default tseslint.config(
     languageOptions: { sourceType: 'module', globals: { ...globals.node } },
   },
   {
-    // Electron main process: CommonJS, requires `require`/`__dirname`.
+    // Electron main process + CommonJS Node scripts (the pkg-packaged exe
+    // entry must stay CJS too): requires `require`/`__dirname`.
     files: ['**/*.cjs'],
     languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } },
-    rules: {
-      '@typescript-eslint/no-require-imports': 'off',
-    },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
 );
