@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "build:airgap": "tsc --noEmit && vite build --mode airgap --outDir dist-airgap && node scripts/sanitize-airgap.mjs && node scripts/verify-airgap.mjs",
     "build:desktop": "npm run build && electron-builder --mac dir && node scripts/deploy-app.mjs",
+    "dist:mac": "npm run build && electron-builder --mac dmg zip",
     "desktop": "npm run build && electron .",
     "build:exe": "npm run build && pkg scripts/serve-exe.cjs --targets node18-win-x64 --output run.exe",
     "install:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-desktop-shortcut.ps1",
