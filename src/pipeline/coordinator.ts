@@ -507,8 +507,13 @@ async function runIngest(files: IngestFile[]): Promise<void> {
   // (h) synthesize topic concept nodes (spec §5.4)
   synthesizeTopicNodes();
 
-  store().setPhase('ready');
   store().setCorpusHash(await computeCorpusHash());
+  store().setPhase('ready');
+
+  // Persist the completed uploaded corpus immediately, so quitting right after
+  // ingest still restores these files on the next launch.
+  const { saveSession } = await import('../persistence/session');
+  await saveSession();
 }
 
 // ---------------------------------------------------------------------------
@@ -770,10 +775,6 @@ async function runRemove(ids: string[]): Promise<void> {
 
   // Drop UI references to whatever is about to disappear.
   const ui = useUiStore.getState();
-  if (ui.selectedEdgeId) {
-    const edge = store().edges.find((e) => e.id === ui.selectedEdgeId);
-    if (edge && (gone.has(edge.source) || gone.has(edge.target))) ui.setSelectedEdge(null);
-  }
   if (ui.selectedId && gone.has(ui.selectedId)) ui.setSelected(null);
   if (ui.hoveredId && gone.has(ui.hoveredId)) ui.setHovered(null);
   if (ui.searchResults) {
@@ -947,6 +948,7 @@ export async function loadDemoCorpus(): Promise<void> {
       return {
         fileId: crypto.randomUUID(),
         name,
+        path: `demo/${name}`,
         fileType: routeFile(name) ?? 'other',
         bytes,
       };
@@ -976,7 +978,6 @@ export function resetCorpus(): void {
   nameOfDoc.clear();
   const ui = useUiStore.getState();
   ui.setSelected(null);
-  ui.setSelectedEdge(null);
   ui.setHovered(null);
   ui.setSearchResults(null);
   ui.setPathMode(false); // also clears pathEndpoints — they reference the old corpus

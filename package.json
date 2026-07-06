@@ -2,11 +2,14 @@
   "name": "document-graph-explorer",
   "private": true,
   "version": "0.1.0",
+  "main": "desktop/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "build:airgap": "tsc --noEmit && vite build --mode airgap --outDir dist-airgap && node scripts/sanitize-airgap.mjs && node scripts/verify-airgap.mjs",
+    "build:desktop": "npm run build && electron-builder --mac dir && node scripts/deploy-app.mjs",
+    "desktop": "npm run build && electron .",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test": "vitest run",
@@ -44,6 +47,8 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.0",
     "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^32.3.3",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^17.7.0",
@@ -52,5 +57,23 @@
     "typescript-eslint": "^8.62.1",
     "vite": "^7.3.6",
     "vitest": "^4.1.9"
+  },
+  "build": {
+    "appId": "com.gtech.knowledgenebula",
+    "productName": "Knowledge Nebula",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "desktop/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dir"
+      ]
+    }
   }
 }

@@ -14,15 +14,11 @@
  *   stays gossamer), dim to 8% when a hover/selection/search/filter emphasis
  *   is active, and brighten on edges incident to the hovered/selected node
  *   (those skip the density fade).
- * - Clicking an edge selects it for the evidence popover (uiStore
- *   .setSelectedEdge). Node spheres naturally win overlapping picks: they
- *   intersect closer and stop propagation.
  */
 
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import type { ThreeEvent } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
@@ -299,43 +295,10 @@ export default function Edges() {
     attrs.positions.needsUpdate = true;
   });
 
-  /** Segment vertex index -> owning edge (each edge spans `segments` pairs). */
-  const edgeAtIndex = (index: number): (typeof edges)[number] | undefined =>
-    edges[Math.floor(index / (segments * 2))];
-
-  const handleClick = (e: ThreeEvent<MouseEvent>): void => {
-    if (e.index === undefined) return;
-    const edge = edgeAtIndex(e.index);
-    if (!edge) return;
-    // Hidden edges (zeroed color, still in the picking geometry) must not be
-    // clickable — a popover opening from apparently-empty space is a ghost UI.
-    if (isEdgeHidden(edge, useUiStore.getState())) return;
-    e.stopPropagation();
-    useUiStore.getState().setSelectedEdge(edge.id);
-  };
-
-  // Edges are clickable (evidence popover) but nothing signalled it — show the
-  // pointer cursor on hover so the affordance is discoverable. Hidden edges
-  // (still present in the picking geometry) don't get the cursor either.
-  const handlePointerOver = (e: ThreeEvent<PointerEvent>): void => {
-    if (e.index === undefined) return;
-    const edge = edgeAtIndex(e.index);
-    if (!edge || isEdgeHidden(edge, useUiStore.getState())) return;
-    document.body.style.cursor = 'pointer';
-  };
-  const handlePointerOut = (): void => {
-    document.body.style.cursor = '';
-  };
-
   if (edges.length === 0) return null;
 
   return (
-    <lineSegments
-      frustumCulled={false}
-      onClick={handleClick}
-      onPointerOver={handlePointerOver}
-      onPointerOut={handlePointerOut}
-    >
+    <lineSegments frustumCulled={false}>
       <bufferGeometry ref={geomRef}>
         <primitive object={attrs.positions} attach="attributes-position" />
         <primitive object={attrs.colors} attach="attributes-color" />

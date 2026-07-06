@@ -855,6 +855,402 @@ input {
   font-family: var(--font-ui);
 }
 
+/* Obsidian-style rendered markdown preview (see ui/DocumentMarkdown.tsx).
+   Unlike the plain-text reader, source whitespace must NOT be preserved —
+   remark already turns wrapped lines into single paragraphs. */
+.side-panel__reader--markdown {
+  white-space: normal;
+}
+.md-doc > :first-child {
+  margin-top: 0;
+}
+.md-doc > :last-child {
+  margin-bottom: 0;
+}
+.md-doc p {
+  margin: 0 0 10px;
+}
+.md-doc .md-heading {
+  margin: 18px 0 8px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+.md-doc .md-h1 {
+  font-size: 19px;
+}
+.md-doc .md-h2 {
+  font-size: 16.5px;
+}
+.md-doc .md-h3 {
+  font-size: 14.5px;
+}
+.md-doc .md-h4,
+.md-doc .md-h5,
+.md-doc .md-h6 {
+  font-size: 13.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+.md-doc strong {
+  font-weight: 700;
+}
+.md-doc em {
+  font-style: italic;
+}
+.md-doc del {
+  text-decoration: line-through;
+  opacity: 0.65;
+}
+.md-doc ul,
+.md-doc ol {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+.md-doc li {
+  margin: 2px 0;
+}
+.md-doc blockquote {
+  margin: 0 0 10px;
+  padding: 4px 10px;
+  border-left: 2px solid var(--accent);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 4px 4px 0;
+}
+.md-doc hr {
+  border: none;
+  border-top: 1px solid var(--border-glass);
+  margin: 14px 0;
+}
+.md-doc code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-glass);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.md-doc table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12.5px;
+}
+.md-doc th,
+.md-doc td {
+  padding: 5px 9px;
+  border-bottom: 1px solid var(--border-glass);
+  text-align: left;
+}
+.md-doc thead th {
+  font-weight: 600;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+.md-doc tr:last-child td {
+  border-bottom: none;
+}
+.md-doc a {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+.md-doc a:hover {
+  color: var(--accent);
+}
+
+/* Internal doc links — resolved [[wikilinks]] / relative links jump straight
+   to the target node (setSelected + frameNode), Obsidian-style. Unresolved
+   ones (relative links to a doc that isn't in this graph) still read as a
+   normal link visually — matching how a regular Markdown/Docs viewer renders
+   every link the same solid color regardless of destination — just without
+   a pointer cursor, since there's nowhere for them to navigate to. */
+.md-link {
+  font: inherit;
+}
+.md-link--internal {
+  display: inline;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.md-link--internal:hover {
+  color: var(--accent);
+}
+.md-link--unresolved {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: default;
+}
+
+/* Live PDF page preview (see ui/PdfPreview.tsx) — renders the actual pages
+   of the original PDF as canvas images instead of just extracted text.
+   Unlike the plain-text/markdown readers, this must NOT be capped at 40vh
+   with its own scrollbar — a multi-page PDF would then only ever show a
+   sliver of page 1 in a cramped nested-scroll box. Let it grow to its full
+   height instead, so every page renders and the side panel's own scroll
+   (side-panel__scroll) is the single scroll container. */
+.side-panel__reader--pdf {
+  max-height: none;
+  overflow: visible;
+  white-space: normal;
+  padding: 14px;
+}
+.pdf-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pdf-preview.is-loading,
+.pdf-preview.is-error {
+  padding: 0;
+  color: var(--text-faint);
+  font-style: italic;
+  font-family: var(--font-ui);
+  white-space: normal;
+}
+.pdf-preview__page {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border-glass);
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+.pdf-preview__page canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #fff;
+}
+.pdf-preview__page-num {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  font-size: 10px;
+  font-family: var(--font-ui);
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* CSV table preview (see ui/CsvPreview.tsx). */
+.side-panel__reader--csv {
+  padding: 0;
+  overflow: hidden;
+}
+.csv-preview__scroll {
+  max-height: 40vh;
+  overflow: auto;
+}
+.csv-preview table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.csv-preview th,
+.csv-preview td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-glass);
+  border-right: 1px solid var(--border-glass);
+  text-align: left;
+}
+.csv-preview th:last-child,
+.csv-preview td:last-child {
+  border-right: none;
+}
+.csv-preview thead th {
+  position: sticky;
+  top: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  z-index: 1;
+}
+.csv-preview tr:last-child td {
+  border-bottom: none;
+}
+.csv-preview__truncated {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-style: italic;
+  border-top: 1px solid var(--border-glass);
+}
+
+/* JSON preview (see ui/JsonPreview.tsx). */
+.side-panel__reader--json {
+  white-space: pre;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.json-key {
+  color: var(--accent-strong);
+}
+.json-string {
+  color: #8bd5a0;
+}
+.json-number {
+  color: #f2c078;
+}
+.json-bool,
+.json-null {
+  color: #e88b9c;
+  font-style: italic;
+}
+
+/* YAML preview (see ui/YamlPreview.tsx). */
+.side-panel__reader--yaml {
+  white-space: pre;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.yaml-key {
+  color: var(--accent-strong);
+}
+.yaml-comment {
+  color: var(--text-faint);
+  font-style: italic;
+}
+.yaml-list-marker {
+  color: var(--accent);
+}
+
+/* Sanitized HTML preview (see ui/HtmlPreview.tsx) — same typographic
+   language as .md-doc, but by bare tag since HtmlPreview renders plain
+   h1-h6/p/table/... elements rather than markdownAst's classed nodes. */
+.side-panel__reader--html {
+  white-space: normal;
+}
+.html-doc > :first-child {
+  margin-top: 0;
+}
+.html-doc > :last-child {
+  margin-bottom: 0;
+}
+.html-doc p {
+  margin: 0 0 10px;
+}
+.html-doc h1,
+.html-doc h2,
+.html-doc h3,
+.html-doc h4,
+.html-doc h5,
+.html-doc h6 {
+  margin: 18px 0 8px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+.html-doc h1 {
+  font-size: 19px;
+}
+.html-doc h2 {
+  font-size: 16.5px;
+}
+.html-doc h3 {
+  font-size: 14.5px;
+}
+.html-doc h4,
+.html-doc h5,
+.html-doc h6 {
+  font-size: 13.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+.html-doc ul,
+.html-doc ol {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+.html-doc li {
+  margin: 2px 0;
+}
+.html-doc blockquote {
+  margin: 0 0 10px;
+  padding: 4px 10px;
+  border-left: 2px solid var(--accent);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 4px 4px 0;
+}
+.html-doc hr {
+  border: none;
+  border-top: 1px solid var(--border-glass);
+  margin: 14px 0;
+}
+.html-doc code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-glass);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.html-doc pre {
+  margin: 2px 0 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(6, 8, 20, 0.55);
+  border: 1px solid var(--border-glass);
+  overflow-x: auto;
+}
+.html-doc pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+.html-doc table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12.5px;
+  margin: 0 0 10px;
+}
+.html-doc th,
+.html-doc td {
+  padding: 5px 9px;
+  border-bottom: 1px solid var(--border-glass);
+  text-align: left;
+}
+.html-doc thead th {
+  font-weight: 600;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+.html-doc tr:last-child td {
+  border-bottom: none;
+}
+.html-doc a {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+.html-doc a:hover {
+  color: var(--accent);
+}
+.html-doc img {
+  max-width: 100%;
+  border-radius: 6px;
+}
+
 .side-panel__open-btn {
   display: inline-flex;
   align-items: center;
@@ -1186,116 +1582,6 @@ input {
   font-size: 10.5px;
   color: var(--text-faint);
   letter-spacing: 0.02em;
-}
-
-/* ==========================================================================
-   Edge popover
-   ========================================================================== */
-
-.edge-popover-layer {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-floating);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  /* Raised from 28px so the popover clears ProgressStrip (bottom: 24px, ~90px
-     tall while ingest chips/phase row are showing) instead of overlapping it
-     when an edge is clicked during/just after ingest. */
-  padding-bottom: 130px;
-  pointer-events: none;
-}
-
-.edge-popover {
-  pointer-events: auto;
-  width: min(460px, 92vw);
-  padding: 18px 20px;
-  animation: kn-slide-in-up 220ms var(--ease-out) both;
-}
-
-.edge-popover__header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.edge-popover__label {
-  flex: 1 1 auto;
-  margin: 0;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
-.edge-kind-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: capitalize;
-  background: rgba(140, 150, 255, 0.1);
-  border: 1px solid var(--border-glass);
-}
-
-.edge-popover__pair {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-  font-size: 15px;
-  color: var(--text-primary);
-}
-
-.edge-popover__doc-btn {
-  background: none;
-  border: none;
-  padding: 2px 0;
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-  cursor: pointer;
-  pointer-events: auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 46%;
-}
-.edge-popover__doc-btn:hover {
-  color: var(--accent-strong);
-  text-decoration: underline;
-}
-
-.edge-popover__arrow {
-  color: var(--text-faint);
-  flex: none;
-}
-
-.edge-popover__weight-track {
-  width: 100%;
-  height: 5px;
-  border-radius: 3px;
-  background: rgba(140, 150, 255, 0.1);
-  overflow: hidden;
-  margin-top: 14px;
-}
-.edge-popover__weight-fill {
-  height: 100%;
-  border-radius: 3px;
-  background: linear-gradient(90deg, var(--edge-blue), var(--accent));
-}
-
-.edge-popover__why {
-  margin: 12px 0 0;
-  padding-left: 18px;
-  font-size: 12.5px;
-  line-height: 1.7;
-  color: var(--text-secondary);
 }
 
 /* ==========================================================================
@@ -1689,6 +1975,116 @@ input {
   font-size: 13px;
   color: var(--text-faint);
   line-height: 1.5;
+}
+
+/* ==========================================================================
+   Show me panel
+   ========================================================================== */
+
+.show-me-layer {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: var(--z-panel);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.show-me-panel {
+  width: min(560px, calc(100vw - 32px));
+  pointer-events: auto;
+  overflow: hidden;
+  animation: kn-slide-in-up 220ms var(--ease-out) both;
+}
+
+.show-me-panel__form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-bottom: 1px solid rgba(140, 150, 255, 0.12);
+}
+
+.show-me-panel__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 36px;
+  border: 1px solid rgba(140, 150, 255, 0.18);
+  border-radius: var(--radius-sm);
+  background: rgba(5, 6, 18, 0.58);
+  color: var(--text-primary);
+  padding: 0 12px;
+  outline: none;
+}
+
+.show-me-panel__input:focus {
+  border-color: rgba(126, 232, 196, 0.55);
+  box-shadow: 0 0 0 3px rgba(126, 232, 196, 0.1);
+}
+
+.show-me-panel__input::placeholder {
+  color: var(--text-faint);
+}
+
+.show-me-panel__submit {
+  flex: none;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(126, 232, 196, 0.38);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  background: rgba(126, 232, 196, 0.14);
+  cursor: pointer;
+}
+
+.show-me-panel__submit:hover {
+  background: rgba(126, 232, 196, 0.2);
+}
+
+.show-me-panel__body {
+  padding: 10px 12px 12px;
+}
+
+.show-me-panel__note,
+.show-me-panel__count {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.show-me-panel__results {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.show-me-panel__result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: rgba(140, 150, 255, 0.06);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.show-me-panel__result:hover {
+  border-color: var(--border-glass);
+  background: rgba(140, 150, 255, 0.11);
+}
+
+.show-me-panel__result span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ==========================================================================

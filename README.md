@@ -30,8 +30,20 @@ Then open the printed local URL and drag documents onto the window. A demo corpu
 | --- | --- | --- |
 | `npm run build` | `dist/` | Fully local by default; optional opt-in Gemini enrichment |
 | `npm run build:airgap` | `dist-airgap/` | **Zero external network** — host-free CSP + runtime refusal + post-build verify gate |
+| `npm run build:desktop` | `release/mac-arm64/Document Graph Explorer.app` plus `zip`/`dmg` | Normal app build wrapped as a local macOS desktop executable |
 
 See [SECURITY.md](SECURITY.md) for the full privacy guarantee and how to verify it.
+
+## Desktop app
+
+Build a macOS app bundle from the normal production build:
+
+```bash
+npm install
+npm run build:desktop
+```
+
+That produces a runnable app bundle at `release/mac-arm64/Document Graph Explorer.app` and distributable `zip`/`dmg` archives under `release/`.
 
 ## How it works
 

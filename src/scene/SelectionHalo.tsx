@@ -57,7 +57,8 @@ export default function SelectionHalo() {
 
   useFrame(({ camera, clock }) => {
     const mesh = meshRef.current;
-    const id = useUiStore.getState().selectedId;
+    const ui = useUiStore.getState();
+    const id = ui.selectedId;
     if (!mesh || !id) return;
     const slot = slotOfId.get(id);
     if (slot === undefined || slot >= positionBuffer.count) {
@@ -70,7 +71,11 @@ export default function SelectionHalo() {
     mesh.position.set(arr[o], arr[o + 1], arr[o + 2]);
     mesh.quaternion.copy(camera.quaternion); // billboard
     const radius = scaleOfSlot[slot] || 1.1;
-    const pulse = prefersReducedMotion()
+    // Show-me's pulse is a "look here, pick one" cue for an undecided
+    // choice among several candidates — once the user has picked one (it's
+    // now selected), hold the ring steady instead of continuing to breathe.
+    const holdStill = prefersReducedMotion() || ui.highlightOwner === 'showMe';
+    const pulse = holdStill
       ? 0
       : Math.sin(clock.elapsedTime * PULSE_HZ * Math.PI * 2) * PULSE_AMPLITUDE;
     mesh.scale.setScalar(radius * RING_SCALE * (1 + pulse));

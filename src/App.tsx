@@ -10,8 +10,8 @@ import PathPanel from './ui/PathPanel';
 import SidePanel from './ui/SidePanel';
 import SnapshotDrawer from './ui/SnapshotDrawer';
 import Tooltip from './ui/Tooltip';
-import EdgePopover from './ui/EdgePopover';
 import SearchOverlay from './ui/SearchOverlay';
+import ShowMePanel from './ui/ShowMePanel';
 import FilterBar from './ui/FilterBar';
 import Minimap from './ui/Minimap';
 import SettingsPanel from './ui/SettingsPanel';
@@ -23,7 +23,6 @@ import { useChatStore } from './store/chatStore';
 import { onLayoutSettled } from './layout/layoutBridge';
 import { positionBuffer } from './scene/positionBuffer';
 import { panInput } from './scene/panInput';
-import { loadDemoCorpus } from './pipeline/coordinator';
 import { initPersistence, restoreSession } from './persistence/session';
 import './styles.css';
 
@@ -39,19 +38,11 @@ export default function App() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const phase = useGraphStore((s) => s.phase);
 
-  // Session restore + persistence hooks, once.
-  // If no session exists (first visit), auto-load the demo corpus.
+  // Session restore + persistence hooks, once. Fresh starts stay empty until
+  // the user adds files or explicitly loads the demo corpus from EmptyState.
   useEffect(() => {
     initPersistence();
-    restoreSession()
-      .then(() => {
-        if (useGraphStore.getState().nodes.length === 0) {
-          loadDemoCorpus().catch((err) =>
-            console.warn('auto-load demo corpus failed', err),
-          );
-        }
-      })
-      .catch((err) => console.warn('session restore failed', err));
+    restoreSession().catch((err) => console.warn('session restore failed', err));
   }, []);
 
   // Auto-frame: while a fresh corpus is forming, re-fit the camera on every
@@ -125,7 +116,12 @@ export default function App() {
       const ui = useUiStore.getState();
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        ui.setSearchOpen(!ui.searchOpen);
+        const nextSearchOpen = !ui.searchOpen;
+        ui.setSearchOpen(nextSearchOpen);
+        if (nextSearchOpen) {
+          ui.setShowMeOpen(false);
+          ui.setSearchResults(null);
+        }
         return;
       }
       if (isTypingTarget(e.target)) return;
@@ -140,6 +136,9 @@ export default function App() {
         if (ui.searchOpen) {
           ui.setSearchOpen(false);
           ui.setSearchResults(null);
+        } else if (ui.showMeOpen) {
+          ui.setShowMeOpen(false);
+          ui.setSearchResults(null);
         } else if (ui.pathMode) {
           ui.setPathMode(false);
           ui.setSearchResults(null);
@@ -152,8 +151,6 @@ export default function App() {
         } else if (ui.insightsOpen) {
           ui.setInsightsOpen(false);
           ui.setSearchResults(null); // drop any section highlight with it
-        } else if (ui.selectedEdgeId) {
-          ui.setSelectedEdge(null);
         } else if (ui.selectedId) {
           ui.setSelected(null);
         } else {
@@ -200,8 +197,8 @@ export default function App() {
       <SidePanel />
       <Minimap />
       <Tooltip />
-      <EdgePopover />
       <SearchOverlay />
+      <ShowMePanel />
       <SettingsPanel />
       <SnapshotDrawer />
       <ChatPanel />

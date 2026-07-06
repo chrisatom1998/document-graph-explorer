@@ -15,7 +15,7 @@ export interface CameraCommand {
  * same way; tracking the owner lets each panel tell whether its highlight is
  * still the active one instead of clobbering the others silently.
  */
-export type HighlightOwner = 'search' | 'insights' | 'path';
+export type HighlightOwner = 'search' | 'insights' | 'path' | 'showMe';
 
 export type ToastKind = 'error' | 'warning' | 'info';
 
@@ -42,8 +42,8 @@ export interface GraphFilter {
 interface UiState {
   hoveredId: string | null;
   selectedId: string | null;
-  selectedEdgeId: string | null;
   searchOpen: boolean;
+  showMeOpen: boolean;
   searchResults: string[] | null; // null = no active highlight (shared channel)
   highlightOwner: HighlightOwner | null; // which feature set searchResults
   filter: GraphFilter;
@@ -64,8 +64,8 @@ interface UiState {
 
   setHovered: (id: string | null) => void;
   setSelected: (id: string | null) => void;
-  setSelectedEdge: (id: string | null) => void;
   setSearchOpen: (open: boolean) => void;
+  setShowMeOpen: (open: boolean) => void;
   setSearchResults: (ids: string[] | null, owner?: HighlightOwner) => void;
   setFilter: (f: Partial<GraphFilter>) => void;
   setDims: (d: 2 | 3) => void;
@@ -90,8 +90,8 @@ let nextToastId = 1;
 export const useUiStore = create<UiState>((set) => ({
   hoveredId: null,
   selectedId: null,
-  selectedEdgeId: null,
   searchOpen: false,
+  showMeOpen: false,
   searchResults: null,
   highlightOwner: null,
   filter: { fileTypes: null, clusters: null, minDegree: 0, minEdgeWeight: 0 },
@@ -110,9 +110,9 @@ export const useUiStore = create<UiState>((set) => ({
 
   setHovered: (hoveredId) => set({ hoveredId }),
   setSelected: (selectedId) =>
-    set({ selectedId, selectedEdgeId: null }),
-  setSelectedEdge: (selectedEdgeId) => set({ selectedEdgeId }),
+    set({ selectedId }),
   setSearchOpen: (searchOpen) => set({ searchOpen }),
+  setShowMeOpen: (showMeOpen) => set({ showMeOpen }),
   setSearchResults: (searchResults, owner) =>
     set({ searchResults, highlightOwner: searchResults ? (owner ?? null) : null }),
   setFilter: (f) => set((s) => ({ filter: { ...s.filter, ...f } })),

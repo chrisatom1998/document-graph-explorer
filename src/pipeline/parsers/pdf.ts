@@ -13,11 +13,70 @@ import * as pdfjs from 'pdfjs-dist';
 import type { LinkRef, NodeStatus } from '../../model/types';
 import { cleanFilename } from './txt';
 import { labelForRect, type PdfTextSpan } from './pdfLinkLabels';
+import {
+  hasUint8ArrayBase64HexSupport,
+  installUint8ArrayBase64HexPolyfill,
+} from './pdfUint8ArrayPolyfill';
+import { installMapUpsertPolyfill } from './pdfMapUpsertPolyfill';
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+// See pdfUint8ArrayPolyfill.ts: pdf.js 6.x needs Uint8Array
+// toHex/fromHex/toBase64/fromBase64, which older bundled Chromium (e.g.
+// Electron's) may not implement yet. Patch the main thread unconditionally
+// (harmless no-op where the runtime already has them); remember whether it
+// was actually missing so the dedicated worker — a separate global scope —
+// can get the same treatment below.
+const NEEDS_UINT8ARRAY_POLYFILL = !hasUint8ArrayBase64HexSupport();
+installUint8ArrayBase64HexPolyfill();
+
+// See pdfMapUpsertPolyfill.ts: pdf.js 6.x's canvas renderer (main thread
+// only — used by ui/PdfPreview.tsx) needs Map.prototype.getOrInsertComputed,
+// which is newer still and commonly missing even where the Uint8Array
+// methods above are already present (e.g. Electron's bundled Chromium).
+installMapUpsertPolyfill();
+
+const PDF_WORKER_ASSET_URL = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url,
 ).toString();
+
+/**
+ * pdf.js's dedicated worker runs in its own global scope, so the polyfill
+ * above never reaches it. When it's actually needed, fetch the worker
+ * script's own source once, splice the (already-compiled) polyfill in
+ * front of it, and load that combined script from a blob: URL instead of
+ * the raw asset — CSP already allows `worker-src 'self' blob:`. Cached for
+ * the life of the session; falls back to the plain asset URL if anything
+ * about the fetch/blob step fails, which is no worse than before this fix.
+ */
+let workerSrcReady: Promise<void> | null = null;
+
+async function ensureWorkerSrc(): Promise<void> {
+  if (!NEEDS_UINT8ARRAY_POLYFILL) {
+    pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER_ASSET_URL;
+    return;
+  }
+  try {
+    const source = await fetch(PDF_WORKER_ASSET_URL).then((r) => r.text());
+    const polyfillSrc = `(${installUint8ArrayBase64HexPolyfill.toString()})();`;
+    const blob = new Blob([polyfillSrc, '\n', source], { type: 'text/javascript' });
+    pdfjs.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+  } catch {
+    pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER_ASSET_URL;
+  }
+}
+
+function workerSrcReadyOnce(): Promise<void> {
+  if (!workerSrcReady) workerSrcReady = ensureWorkerSrc();
+  return workerSrcReady;
+}
+
+/**
+ * Same worker setup as parsePdf, exposed for the SidePanel's live PDF page
+ * preview (ui/PdfPreview.tsx) so it doesn't duplicate the polyfill/worker
+ * plumbing above.
+ */
+export const ensurePdfWorkerReady = workerSrcReadyOnce;
+
 
 export interface PdfParseResult {
   title: string;
@@ -104,6 +163,7 @@ function stripRepeatedLines(pageTexts: string[]): string[] {
 
 export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfParseResult> {
   const fallbackTitle = cleanFilename(name);
+  await workerSrcReadyOnce();
   // NOTE: pdf.js transfers the underlying buffer to its worker; callers must
   // not rely on `bytes` afterwards (the coordinator hashes before parsing).
   const task = pdfjs.getDocument({ data: new Uint8Array(bytes) });
