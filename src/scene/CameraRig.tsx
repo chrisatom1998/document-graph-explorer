@@ -225,6 +225,10 @@ export default function CameraRig() {
       minDistance={8}
       maxDistance={1400}
       autoRotateSpeed={0.25}
+      // Mouse/touch never pans — the drag gesture always orbits around the
+      // nebula's current target (whole-sphere rotation). Panning is still
+      // available via the arrow keys (see panInput.ts).
+      enablePan={false}
       onStart={onStart}
       onEnd={onEnd}
     />

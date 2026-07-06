@@ -115,6 +115,7 @@ const DIM_FACTOR = 0.12;
 const GHOST_COLOR_FACTOR = 0.35;
 const GHOST_SCALE_FACTOR = 0.8;
 const PIN_THROTTLE_MS = 33;
+const SHOW_ME_PULSE_PERIOD_MS = 1050;
 
 const dummy = new THREE.Object3D();
 const tmpColor = new THREE.Color();
@@ -197,6 +198,7 @@ export default function Nodes() {
   const colorsDirty = useRef(true); // instance colors need recompute
   const matricesDirty = useRef(true); // matrix pass forced (scale/count/mount changes)
   const animating = useRef(false); // a materialize tween was live last pass
+  const showMePulsing = useRef(false);
   const lastVersion = useRef(-1);
   const lastCount = useRef(-1);
   const dragRef = useRef<DragState | null>(null);
@@ -225,7 +227,8 @@ export default function Nodes() {
     if (!core?.instanceColor || !halo?.instanceColor) return false;
     const topic = topicRef.current;
     const { nodes, edges } = useGraphStore.getState();
-    const { hoveredId, selectedId, searchResults, filter } = useUiStore.getState();
+    const { hoveredId, selectedId, searchResults, highlightOwner, filter } = useUiStore.getState();
+    const showMeIds = highlightOwner === 'showMe' && searchResults ? new Set(searchResults) : null;
     const emphasis = computeEmphasis(
       nodes,
       edges,
@@ -242,6 +245,7 @@ export default function Nodes() {
       if (ghostOfSlot[slot]) tmpColor.multiplyScalar(GHOST_COLOR_FACTOR);
       if (emphasis && !emphasis.has(n.id)) tmpColor.multiplyScalar(DIM_FACTOR);
       if (n.id === hoveredId || n.id === selectedId) tmpColor.multiplyScalar(1.9);
+      if (showMeIds?.has(n.id)) tmpColor.setRGB(1, 0.96, 0.62);
       tmpColor.r = Math.min(tmpColor.r, 1);
       tmpColor.g = Math.min(tmpColor.g, 1);
       tmpColor.b = Math.min(tmpColor.b, 1);
@@ -287,6 +291,7 @@ export default function Nodes() {
         s.hoveredId !== prev.hoveredId ||
         s.selectedId !== prev.selectedId ||
         s.searchResults !== prev.searchResults ||
+        s.highlightOwner !== prev.highlightOwner ||
         s.filter !== prev.filter ||
         s.clusterCollapsed !== prev.clusterCollapsed
       ) {
@@ -394,8 +399,9 @@ export default function Nodes() {
       ui.addPathEndpoint(id); // path mode: clicks pick endpoints, not selection
       return;
     }
+    // Select only — opens the side panel without moving the camera or
+    // surfacing any other popover.
     ui.setSelected(id);
-    ui.sendCamera('frameNode', [id]);
   };
 
   const handleDoubleClick = (e: ThreeEvent<MouseEvent>): void => {
@@ -448,8 +454,17 @@ export default function Nodes() {
     const arr = positionBuffer.array;
     const now = performance.now();
     let stillAnimating = false;
-    const collapsed = useUiStore.getState().clusterCollapsed;
+    const ui = useUiStore.getState();
+    const collapsed = ui.clusterCollapsed;
+    // Once the user has picked a node out of the Show-me set (selectedId
+    // set), settle down — the pulse is a "look here" cue for an undecided
+    // choice, not something that should keep animating once one is picked.
+    const showMeIds =
+      ui.highlightOwner === 'showMe' && ui.searchResults && !ui.selectedId
+        ? new Set(ui.searchResults)
+        : null;
     const reducedMotion = prefersReducedMotion();
+    showMePulsing.current = !!showMeIds && !collapsed && !reducedMotion;
 
     for (let i = 0; i < count; i++) {
       const o = i * 3;
@@ -468,6 +483,14 @@ export default function Nodes() {
 
       let scale = scaleOfSlot[i] || 1.1;
       let haloScale = scale * HALO_SCALE;
+      const showMePulse = showMeIds?.has(idOfSlot[i] ?? '') && !reducedMotion;
+      if (showMePulse) {
+        const wave = (Math.sin((now / SHOW_ME_PULSE_PERIOD_MS) * Math.PI * 2) + 1) * 0.5;
+        const pulse = 1.16 + wave * 0.34;
+        scale *= pulse;
+        haloScale = scale * HALO_SCALE * (1.25 + wave * 1.1);
+        stillAnimating = true;
+      }
 
       // Cluster-collapse mode: hide individual nodes (spec §9 super-nodes)
       if (collapsed) {
@@ -511,7 +534,7 @@ export default function Nodes() {
       }
     }
 
-    animating.current = stillAnimating;
+    animating.current = stillAnimating || showMePulsing.current;
     core.instanceMatrix.needsUpdate = true;
     halo.instanceMatrix.needsUpdate = true;
     if (topic) topic.instanceMatrix.needsUpdate = true;

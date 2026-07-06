@@ -27,6 +27,8 @@ import {
 } from '../store/runtimeStores';
 import { useUiStore } from '../store/uiStore';
 import {
+  deleteDocsFromCache,
+  deleteGraphFromCache,
   getSetting,
   loadSnapshot,
   lookupGraphCache,
@@ -40,6 +42,7 @@ import { toGraphExport } from './exportImport';
 
 const FULL_SAVE_DEBOUNCE_MS = 1500;
 const POSITION_SAVE_DEBOUNCE_MS = 2500;
+const DEMO_MANIFEST_URL = '/demo/manifest.json';
 
 let initialized = false;
 let suppressAutoSave = false; // restoring is not a change worth re-saving
@@ -72,6 +75,25 @@ function handleLayoutSettled(): void {
       console.warn('[knowledge-nebula] position save failed', err),
     );
   }, POSITION_SAVE_DEBOUNCE_MS);
+}
+
+async function isDemoOnlySession(exportData: GraphExport): Promise<boolean> {
+  const docs = exportData.nodes.filter((n) => n.kind === 'document');
+  if (docs.length === 0) return false;
+
+  const res = await fetch(DEMO_MANIFEST_URL);
+  if (!res.ok) return false;
+  const manifest = (await res.json()) as { files?: unknown };
+  if (!Array.isArray(manifest.files)) return false;
+
+  const demoFiles = new Set(
+    manifest.files.filter((name): name is string => typeof name === 'string'),
+  );
+  return docs.every((doc) => {
+    const path = doc.path ?? doc.title;
+    const name = path.replace(/\\/g, '/').split('/').pop() ?? path;
+    return doc.lastModified === undefined && demoFiles.has(name);
+  });
 }
 
 /**
@@ -253,6 +275,17 @@ export async function restoreSession(): Promise<boolean> {
       useUiStore
         .getState()
         .pushToast("Your last session couldn't be found — starting fresh.", 'warning');
+      return false;
+    }
+    if (await isDemoOnlySession(cached.exportData)) {
+      const docIds = cached.exportData.nodes
+        .filter((n) => n.kind === 'document')
+        .map((n) => n.id);
+      await Promise.all([
+        deleteDocsFromCache(docIds),
+        deleteGraphFromCache(lastCorpusHash),
+        setSetting('lastCorpusHash', ''),
+      ]);
       return false;
     }
     const restored = await hydrateFromRecord(cached.exportData, cached.positions, lastCorpusHash);

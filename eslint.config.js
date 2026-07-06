@@ -54,4 +54,12 @@ export default tseslint.config(
     files: ['**/*.test.ts', '*.config.{ts,js}', 'vite.config.ts', '**/*.mjs'],
     languageOptions: { sourceType: 'module', globals: { ...globals.node } },
   },
+  {
+    // Electron main process: CommonJS, requires `require`/`__dirname`.
+    files: ['**/*.cjs'],
+    languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
 );

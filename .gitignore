@@ -5,3 +5,4 @@ dist-airgap/
 .DS_Store
 coverage/
 vite-dev.*.log
+release/

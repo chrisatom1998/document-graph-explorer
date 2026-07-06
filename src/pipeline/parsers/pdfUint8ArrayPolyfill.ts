@@ -1,0 +1,77 @@
+/**
+ * pdf.js 6.x calls the brand-new `Uint8Array` base64/hex methods internally
+ * (fingerprint hashing in its worker, data-URI/signature encoding on the
+ * main thread). They landed in recent V8/Chrome, but Electron's bundled
+ * Chromium lags behind whatever browser this app usually gets dev-tested
+ * in — so the packaged desktop .app can hit
+ * "x.toHex is not a function" / "x.fromBase64 is not a function" on every
+ * single PDF import while the exact same code works everywhere else.
+ *
+ * `hasUint8ArrayBase64HexSupport` / `installUint8ArrayBase64HexPolyfill` are
+ * used on the main thread (pdf.ts) AND, when needed, spliced — via
+ * `installUint8ArrayBase64HexPolyfill.toString()` — in front of pdf.js's
+ * separately-loaded dedicated worker script (see pdf.ts's
+ * `ensureWorkerSrc`). Keep `installUint8ArrayBase64HexPolyfill` a
+ * free-standing function with NO closures over anything outside its own
+ * body — the worker copy runs from a completely different module/global
+ * scope than this file.
+ */
+
+/** True when the runtime already implements the full set natively. */
+export function hasUint8ArrayBase64HexSupport(): boolean {
+  const proto = Uint8Array.prototype as unknown as Record<string, unknown>;
+  const ctor = Uint8Array as unknown as Record<string, unknown>;
+  return (
+    typeof proto.toHex === 'function' &&
+    typeof proto.toBase64 === 'function' &&
+    typeof ctor.fromHex === 'function' &&
+    typeof ctor.fromBase64 === 'function'
+  );
+}
+
+/** Installs whichever of the four methods are missing. Safe to call unconditionally. */
+export function installUint8ArrayBase64HexPolyfill(): void {
+  const HEX_CHARS = '0123456789abcdef';
+  const proto = Uint8Array.prototype as unknown as {
+    toHex?: () => string;
+    toBase64?: () => string;
+  };
+  const ctor = Uint8Array as unknown as {
+    fromHex?: (hex: string) => Uint8Array;
+    fromBase64?: (base64: string) => Uint8Array;
+  };
+
+  if (typeof proto.toHex !== 'function') {
+    proto.toHex = function toHex(this: Uint8Array): string {
+      let out = '';
+      for (let i = 0; i < this.length; i++) {
+        out += HEX_CHARS[this[i] >> 4] + HEX_CHARS[this[i] & 0x0f];
+      }
+      return out;
+    };
+  }
+  if (typeof ctor.fromHex !== 'function') {
+    ctor.fromHex = function fromHex(hex: string): Uint8Array {
+      const out = new Uint8Array(Math.floor(hex.length / 2));
+      for (let i = 0; i < out.length; i++) {
+        out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+      }
+      return out;
+    };
+  }
+  if (typeof proto.toBase64 !== 'function') {
+    proto.toBase64 = function toBase64(this: Uint8Array): string {
+      let binary = '';
+      for (let i = 0; i < this.length; i++) binary += String.fromCharCode(this[i]);
+      return btoa(binary);
+    };
+  }
+  if (typeof ctor.fromBase64 !== 'function') {
+    ctor.fromBase64 = function fromBase64(base64: string): Uint8Array {
+      const binary = atob(base64);
+      const out = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+      return out;
+    };
+  }
+}

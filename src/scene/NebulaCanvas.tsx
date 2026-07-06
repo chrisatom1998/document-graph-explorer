@@ -37,11 +37,9 @@ export default function NebulaCanvas() {
       camera={{ fov: 55, near: 0.1, far: 4000, position: [0, 0, 160] }}
       gl={{ antialias: true, preserveDrawingBuffer: true }}
       onPointerMissed={() => {
-        // Clicking empty space dismisses whatever is selected, mirroring the
-        // Escape-key ladder in App.tsx (edge popover first, then node panel).
+        // Clicking empty space dismisses whatever is selected.
         const ui = useUiStore.getState();
-        if (ui.selectedEdgeId) ui.setSelectedEdge(null);
-        else if (ui.selectedId) ui.setSelected(null);
+        if (ui.selectedId) ui.setSelected(null);
       }}
     >
       <color attach="background" args={['#050510']} />
