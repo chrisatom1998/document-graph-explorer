@@ -11,7 +11,9 @@ npm install      # install dependencies
 npm run dev      # start the Vite dev server
 ```
 
-Then open the printed local URL and drag documents onto the window. A demo corpus auto-loads on first visit.
+Then open the printed local URL and drag documents onto the window — or click **Load demo corpus** on the welcome screen to explore instantly.
+
+**New here? Read the [User Guide](docs/user-guide.md)** — why the tool is valuable, what it can do, and a walkthrough of every feature.
 
 ## Scripts
 
@@ -30,20 +32,36 @@ Then open the printed local URL and drag documents onto the window. A demo corpu
 | --- | --- | --- |
 | `npm run build` | `dist/` | Fully local by default; optional opt-in Gemini enrichment |
 | `npm run build:airgap` | `dist-airgap/` | **Zero external network** — host-free CSP + runtime refusal + post-build verify gate |
-| `npm run build:desktop` | `release/mac-arm64/Document Graph Explorer.app` plus `zip`/`dmg` | Normal app build wrapped as a local macOS desktop executable |
+| `npm run build:desktop` | `release/mac-arm64/Knowledge Nebula.app`, installed to `/Applications` | Normal app build wrapped as a local macOS desktop executable |
+| `npm run dist:mac` | `Knowledge Nebula-<version>-arm64.dmg` and `.zip` under `release/` | Distributable macOS installer images (see [Distributing the app](#distributing-the-app-dmg)) |
 
 See [SECURITY.md](SECURITY.md) for the full privacy guarantee and how to verify it.
 
 ## Desktop app
 
-Build a macOS app bundle from the normal production build:
+Build a macOS app bundle from the normal production build (run on a Mac):
 
 ```bash
 npm install
 npm run build:desktop
 ```
 
-That produces a runnable app bundle at `release/mac-arm64/Document Graph Explorer.app` and distributable `zip`/`dmg` archives under `release/`.
+That produces `release/mac-arm64/Knowledge Nebula.app` and copies it to `/Applications` so it shows up in Launchpad and Spotlight. This is the **local install** path — nothing is packaged for other machines.
+
+### Distributing the app (dmg)
+
+To package the app for other Macs, build the installer images instead:
+
+```bash
+npm run dist:mac
+```
+
+This produces `Knowledge Nebula-<version>-arm64.dmg` (drag-to-Applications installer) and a matching `.zip` under `release/`. Both targets must be built on macOS.
+
+Distribution caveats:
+
+- **Gatekeeper**: the build is only ad-hoc signed. On another Mac, recipients must right-click → **Open** (or approve it under System Settings → Privacy & Security → **Open Anyway**) the first time. For friction-free distribution you need an Apple Developer ID certificate plus notarization — electron-builder automates both once `CSC_LINK`/`CSC_KEY_PASSWORD` and a `notarize` config are provided.
+- **Architecture**: the output is Apple Silicon (`arm64`) only. For Intel Macs, add `--universal` (larger binary) or build a separate `x64` artifact.
 
 ### Run it (no dev tools)
 
@@ -77,7 +95,7 @@ Ingestion is a pipeline that runs off the main thread:
 - **Parsing** ([src/pipeline/parsers/](src/pipeline/parsers/)) handles Markdown, HTML, plain text, PDF (including link annotations), and Office formats (DOCX, PPTX, XLSX).
 - **Embeddings** use a self-hosted `all-MiniLM-L6-v2` model in [public/models/](public/models/) via transformers.js — no third-party API.
 - **The 3D scene** ([src/scene/](src/scene/)) is React Three Fiber over Three.js, with instanced nodes/edges, a force-directed layout worker, and a cluster-collapse view for large graphs.
-- **State** lives in Zustand stores ([src/store/](src/store/)); the computed graph persists to IndexedDB so you don't re-parse every session, and can be exported/imported as JSON.
+- **State** lives in Zustand stores ([src/store/](src/store/)); the computed graph persists to IndexedDB so you don't re-parse every session. (JSON export/import is implemented in [src/persistence/exportImport.ts](src/persistence/exportImport.ts) but not yet exposed in the UI.)
 
 For the full design, see [knowledge-nebula-spec.md](knowledge-nebula-spec.md) and [docs/](docs/).
 
