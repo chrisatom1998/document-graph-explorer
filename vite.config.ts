@@ -2,6 +2,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { buildCsp } from './src/security/csp';
+import pkg from './package.json';
 
 function injectCsp(airgap: boolean): Plugin {
   const csp = buildCsp({ airgap });
@@ -41,6 +42,7 @@ const SECURITY_HEADERS = {
 // (not SharedArrayBuffer), so cross-origin isolation buys nothing here.
 export default defineConfig(({ mode }) => ({
   plugins: [react(), injectCsp(mode === 'airgap')],
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   server: { headers: SECURITY_HEADERS },
   preview: { headers: SECURITY_HEADERS },
   worker: { format: 'es' },
