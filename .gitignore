@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-airgap/
+docs/*.pdf
 run.exe
 *.local
 .DS_Store
