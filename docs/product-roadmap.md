@@ -30,12 +30,14 @@ Make internal documentation **explorable, connected, and alive** — transformin
 | Click-to-read side panel with full document text | ✅ Shipped | June 2026 |
 | Semantic search (⌘K) | ✅ Shipped | June 2026 |
 | IndexedDB session caching (<3s restore) | ✅ Shipped | June 2026 |
-| JSON export/import | ✅ Shipped | June 2026 |
+| JSON export/import | ✅ Shipped | July 2026 |
+| PNG scene export | ✅ Shipped | July 2026 |
 | Auto-quality ladder (60fps target) | ✅ Shipped | June 2026 |
 | AI enrichment via Gemini (summaries, topics, cluster names) | ✅ Shipped | July 2026 |
 | Named snapshots (save/load/delete) | ✅ Shipped | July 2026 |
 | Corpus insights panel | ✅ Shipped | July 2026 |
 | Document removal | ✅ Shipped | July 2026 |
+| 2D/3D toggle mode | ✅ Shipped | July 2026 |
 | Air-gapped build (`build:airgap`) with enforced zero-egress CSP | ✅ Shipped | July 2026 |
 
 ### Key Results
@@ -56,7 +58,6 @@ Make internal documentation **explorable, connected, and alive** — transformin
 |---|---|---|
 | **Snapshot diff view** | High | Compare two snapshots visually — see what docs/connections changed over time. Enables documentation health tracking. |
 | **Shareable snapshot URLs** | High | Export a snapshot to a hosted JSON file and generate a shareable link. Enables team-wide access without re-ingesting. |
-| **2D toggle mode** | Medium | Some users prefer 2D for readability. Flat layout with the same clustering and interactions. |
 | **Folder watching** | Medium | File System Access API monitors a folder for changes and auto-re-indexes. Living graph that stays current. |
 | **Guided onboarding tour** | Medium | Interactive walkthrough for first-time users — drag, search, explore. Reduces support burden. |
 | **Keyboard navigation** | Low | Full keyboard support for navigating nodes, edges, and panels. Accessibility compliance. |

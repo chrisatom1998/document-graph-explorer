@@ -226,7 +226,9 @@ Everything persists automatically to your browser's IndexedDB: the session saves
 
 Settings → **Data** → **Clear all data** (two-step confirm) wipes the graph and every cached document, embedding, and snapshot; your settings and API key are kept.
 
-> **Note:** JSON graph export/import and PNG scene export exist in the codebase (and the Settings panel has an "Include embeddings in JSON export" option), but they are not yet wired to any button in the UI.
+Toolbar -> **Data** opens local export/import tools. **Export graph JSON** downloads the current graph; **Export image PNG** saves the visible scene; **Import graph JSON** loads a previous export and asks for confirmation before replacing a live graph. Settings -> **Export** still controls whether JSON exports include document embeddings for semantic search after re-import.
+
+Generated PDF copies of this guide should be produced from this Markdown source (render + print-to-PDF) rather than edited directly.
 
 ## Offline mode & the air-gapped build
 
