@@ -32,6 +32,12 @@ export interface Toast {
   action?: ToastAction;
 }
 
+export interface LastError {
+  message: string;
+  stack?: string;
+  at: number;
+}
+
 export interface GraphFilter {
   fileTypes: FileType[] | null; // null = all
   clusters: number[] | null;
@@ -57,6 +63,7 @@ interface UiState {
   insightsOpen: boolean;
   snapshotsOpen: boolean;
   toasts: Toast[];
+  lastError: LastError | null;
   /** "How are these connected?" mode: node clicks pick endpoints instead of selecting. */
   pathMode: boolean;
   /** 0–2 doc ids picked while pathMode is on; PathPanel computes the route at 2. */
@@ -79,6 +86,7 @@ interface UiState {
   setSnapshotsOpen: (v: boolean) => void;
   pushToast: (message: string, kind?: ToastKind, action?: ToastAction) => void;
   dismissToast: (id: number) => void;
+  setLastError: (error: LastError | null) => void;
   /** Toggling (either way) clears any picked endpoints. */
   setPathMode: (v: boolean) => void;
   /** Dedupes; a third pick starts a new path from that node. */
@@ -105,6 +113,7 @@ export const useUiStore = create<UiState>((set) => ({
   insightsOpen: false,
   snapshotsOpen: false,
   toasts: [],
+  lastError: null,
   pathMode: false,
   pathEndpoints: [],
 
@@ -131,6 +140,7 @@ export const useUiStore = create<UiState>((set) => ({
   pushToast: (message, kind = 'error', action) =>
     set((s) => ({ toasts: [...s.toasts, { id: nextToastId++, message, kind, action }] })),
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+  setLastError: (lastError) => set({ lastError }),
   setPathMode: (pathMode) => set({ pathMode, pathEndpoints: [] }),
   addPathEndpoint: (id) =>
     set((s) => {

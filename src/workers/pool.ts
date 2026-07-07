@@ -24,6 +24,7 @@ export interface ModelProgress {
   note: string;
 }
 type ProgressListener = (progress: ModelProgress) => void;
+type WorkerCrashListener = (error: Error) => void;
 
 /** Structural Worker surface, injectable for tests (no Worker in Node). */
 export interface PipelineWorkerLike {
@@ -73,6 +74,7 @@ export class WorkerPool {
   private abandoned = new Map<number, number>();
   private nextRequestId = 1;
   private progressListeners = new Set<ProgressListener>();
+  private crashListeners = new Set<WorkerCrashListener>();
   private disposed = false;
   private readonly workerFactory: () => PipelineWorkerLike;
   private readonly size: number;
@@ -206,6 +208,13 @@ export class WorkerPool {
     };
   }
 
+  onWorkerCrash(listener: WorkerCrashListener): () => void {
+    this.crashListeners.add(listener);
+    return () => {
+      this.crashListeners.delete(listener);
+    };
+  }
+
   private handleMessage(msg: PoolResponse): void {
     if (msg.type === 'model:progress') {
       const progress: ModelProgress = { loaded: msg.loaded, total: msg.total, note: msg.note };
@@ -261,6 +270,13 @@ export class WorkerPool {
   }
 
   private handleWorkerFailure(index: number, error: Error): void {
+    for (const listener of this.crashListeners) {
+      try {
+        listener(error);
+      } catch (err) {
+        console.warn('[knowledge-nebula] worker crash listener failed', err);
+      }
+    }
     // Only in-flight requests are bound to this worker; the queued backlog
     // carries on against a replacement spawned lazily by the next pump.
     for (const [id, entry] of [...this.pending]) {
@@ -289,6 +305,7 @@ export class WorkerPool {
     this.workers = [];
     this.busy = [];
     this.progressListeners.clear();
+    this.crashListeners.clear();
   }
 }
 

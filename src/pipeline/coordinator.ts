@@ -216,8 +216,17 @@ let modelProgressWired = false;
 function wireModelProgress(): void {
   if (modelProgressWired) return;
   modelProgressWired = true;
-  getPool().onModelProgress((p) => {
+  const pool = getPool();
+  pool.onModelProgress((p) => {
     useGraphStore.getState().setModelProgress({ loaded: p.loaded, total: p.total, note: p.note });
+  });
+  pool.onWorkerCrash(() => {
+    useUiStore
+      .getState()
+      .pushToast(
+        'A background worker crashed and was restarted - processing continues.',
+        'warning',
+      );
   });
 }
 
@@ -1098,6 +1107,7 @@ export async function loadDemoCorpus(): Promise<void> {
 
 /** Embeds a search query to a unit vector (used by the search subsystem). */
 export async function embedQuery(text: string): Promise<Float32Array> {
+  wireModelProgress();
   const done = await getPool().request<EmbedQueryDone>({
     requestId: 0,
     type: 'embedQuery',
