@@ -15,6 +15,7 @@ import { resetCorpus } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
+import { buildDiagnosticsText, getAppVersion } from './diagnostics';
 
 const panelStyle: CSSProperties = {
   width: 'min(460px, 92vw)',
@@ -89,13 +90,27 @@ const dangerButtonStyle: CSSProperties = {
 const confirmRowStyle: CSSProperties = { display: 'flex', gap: 8, alignSelf: 'flex-start' };
 const helpStyle: CSSProperties = { fontSize: 11.5, opacity: 0.6, margin: 0 };
 const noteStyle: CSSProperties = { fontSize: 12.5, margin: 0 };
+const detailGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'auto 1fr',
+  gap: '5px 10px',
+  fontSize: 12.5,
+};
+const detailLabelStyle: CSSProperties = { opacity: 0.6 };
+const detailValueStyle: CSSProperties = {
+  minWidth: 0,
+  overflowWrap: 'anywhere',
+};
 
 export default function SettingsPanel() {
   const open = useUiStore((s) => s.settingsOpen);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const autoQuality = useUiStore((s) => s.autoQuality);
   const setAutoQuality = useUiStore((s) => s.setAutoQuality);
+  const lastError = useUiStore((s) => s.lastError);
   const phase = useGraphStore((s) => s.phase);
+  const nodeCount = useGraphStore((s) => s.nodes.length);
+  const edgeCount = useGraphStore((s) => s.edges.length);
 
   const geminiKey = useSettingsStore((s) => s.geminiKey);
   const rememberKey = useSettingsStore((s) => s.rememberGeminiKey);
@@ -113,6 +128,7 @@ export default function SettingsPanel() {
   const [enrichResult, setEnrichResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [enrichBusy, setEnrichBusy] = useState(false);
   const [clearNote, setClearNote] = useState<string | null>(null);
+  const [diagnosticsNote, setDiagnosticsNote] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
 
@@ -128,6 +144,17 @@ export default function SettingsPanel() {
     : geminiKey.trim() === ''
       ? 'Paste your Gemini API key first'
       : 'Run Gemini summaries, topics and cluster names';
+  const appVersion = getAppVersion();
+  const buildFlavor = AIRGAP ? 'airgap' : 'standard';
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown';
+  const diagnosticsText = buildDiagnosticsText({
+    version: appVersion,
+    buildFlavor,
+    userAgent,
+    nodeCount,
+    edgeCount,
+    lastError,
+  });
 
   const onEnrichNow = () => {
     setEnrichResult(null);
@@ -160,6 +187,19 @@ export default function SettingsPanel() {
         setClearing(false);
         setConfirmClear(false);
       });
+  };
+
+  const onCopyDiagnostics = () => {
+    setDiagnosticsNote(null);
+    const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined;
+    if (!clipboard?.writeText) {
+      setDiagnosticsNote('Clipboard unavailable.');
+      return;
+    }
+    void clipboard.writeText(diagnosticsText).then(
+      () => setDiagnosticsNote('Diagnostics copied.'),
+      () => setDiagnosticsNote("Couldn't copy diagnostics."),
+    );
   };
 
   return (
@@ -375,6 +415,35 @@ export default function SettingsPanel() {
             settings are kept.
           </p>
           {clearNote && <p style={noteStyle}>{clearNote}</p>}
+        </section>
+
+        <section style={sectionStyle}>
+          <h3 style={headingStyle}>About</h3>
+          <div style={detailGridStyle}>
+            <span style={detailLabelStyle}>Version</span>
+            <span style={detailValueStyle}>{appVersion}</span>
+            <span style={detailLabelStyle}>Build</span>
+            <span style={detailValueStyle}>{buildFlavor}</span>
+            <span style={detailLabelStyle}>Browser</span>
+            <span style={detailValueStyle}>{userAgent}</span>
+            <span style={detailLabelStyle}>Corpus</span>
+            <span style={detailValueStyle}>
+              {nodeCount} nodes / {edgeCount} edges
+            </span>
+            <span style={detailLabelStyle}>Last error</span>
+            <span style={detailValueStyle}>
+              {lastError ? lastError.message : 'None recorded'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onCopyDiagnostics}
+            title="Copy local diagnostic details to the clipboard"
+            style={buttonStyle}
+          >
+            Copy diagnostics
+          </button>
+          {diagnosticsNote && <p style={noteStyle}>{diagnosticsNote}</p>}
         </section>
       </div>
     </div>
