@@ -18,12 +18,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../pipeline/coordinator', () => ({ resetCorpus: vi.fn() }));
 
-import { toGraphExport, f32ToBase64 } from './exportImport';
+import { toGraphExport, f32ToBase64, importGraphJSONFile } from './exportImport';
 import { sanitizeGraphExport } from './validateImport';
 import { useGraphStore } from '../store/graphStore';
 import { docVectorStore } from '../store/runtimeStores';
 import { EMBED_DIMS } from '../config';
 import type { DocNode, Edge } from '../model/types';
+import { resetCorpus } from '../pipeline/coordinator';
+
+const mockResetCorpus = vi.mocked(resetCorpus);
 
 function docNode(id: string, extra: Partial<DocNode> = {}): DocNode {
   return {
@@ -53,6 +56,7 @@ const edge: Edge = {
 
 describe('export -> import round trip', () => {
   beforeEach(() => {
+    mockResetCorpus.mockClear();
     useGraphStore.getState().reset();
     docVectorStore.clear();
   });
@@ -114,5 +118,25 @@ describe('export -> import round trip', () => {
     expect(sanitized.edges[0].source).toBe('a');
     expect(sanitized.edges[0].target).toBe('b');
     expect(sanitized.edges[0].weight).toBe(edge.weight);
+  });
+
+  it('validates imports before resetting the current graph', async () => {
+    const existing = docNode('existing');
+    useGraphStore.setState({
+      nodes: [existing],
+      nodeIndex: { existing: 0 },
+      edges: [],
+      clusterNames: {},
+    });
+
+    const invalid = new File(
+      [JSON.stringify({ version: 1, nodes: [{ title: 'missing id' }], edges: [] })],
+      'invalid.json',
+      { type: 'application/json' },
+    );
+
+    await expect(importGraphJSONFile(invalid)).rejects.toThrow(/no valid nodes/i);
+    expect(mockResetCorpus).not.toHaveBeenCalled();
+    expect(useGraphStore.getState().nodes).toEqual([existing]);
   });
 });

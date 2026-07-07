@@ -1,6 +1,7 @@
 import { openFilePicker } from '../ingest/DropZone';
 import { loadDemoCorpus } from '../pipeline/coordinator';
 import { useUiStore } from '../store/uiStore';
+import { importGraphJsonFileWithToast, openGraphJsonPicker } from './ExportImportMenu';
 
 /**
  * Centered hero shown by App when there are no nodes and the pipeline is
@@ -38,6 +39,18 @@ export default function EmptyState() {
             }}
           >
             Load demo corpus
+          </button>
+          <button
+            type="button"
+            className="btn-pill secondary"
+            title="Import a previously exported graph JSON file"
+            onClick={() => {
+              openGraphJsonPicker((file) => {
+                void importGraphJsonFileWithToast(file);
+              });
+            }}
+          >
+            Import a graph
           </button>
         </div>
         <p className="empty-state__hint">or drag files / folders anywhere</p>

@@ -9,6 +9,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { layoutSetDims } from '../layout/layoutBridge';
 import { openFilePicker } from '../ingest/DropZone';
+import ExportImportMenu from './ExportImportMenu';
 
 /* ---------------------------------------------------------------------- */
 /* Inline icon set — no icon library per project rules. Each is a plain   */
@@ -165,6 +166,23 @@ function IconHistory() {
   );
 }
 
+function IconData() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <ellipse cx="9" cy="4.2" rx="5.5" ry="2.2" />
+      <path d="M3.5 4.2v4.8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2V4.2" />
+      <path d="M3.5 9v4.8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2V9" />
+    </svg>
+  );
+}
+
 function IconGrip() {
   return (
     <svg viewBox="0 0 18 18" fill="currentColor" stroke="none">
@@ -228,7 +246,7 @@ function placeToolbar(el: HTMLElement, x: number, y: number): { x: number; y: nu
   return { x: cx, y: cy };
 }
 
-type MenuKey = 'view';
+type MenuKey = 'view' | 'data';
 
 export default function Toolbar() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
@@ -253,7 +271,9 @@ export default function Toolbar() {
 
   // Which popover menu (if any) is open. Only one at a time.
   const [openMenu, setOpenMenu] = useState<MenuKey | null>(null);
+  const [dataDialogOpen, setDataDialogOpen] = useState(false);
   const viewMenuWrapRef = useRef<HTMLDivElement | null>(null);
+  const dataMenuWrapRef = useRef<HTMLDivElement | null>(null);
 
   // Drag-to-move. The position is written straight to the element (not React
   // state): it changes on every pointer move and nothing else reads it. Until
@@ -294,9 +314,10 @@ export default function Toolbar() {
   // meaning dismissing a toolbar menu with Escape doesn't also trigger the
   // app's "nothing else is open, so fit the camera" fallback.
   useEffect(() => {
-    if (!openMenu) return;
+    if (!openMenu || dataDialogOpen) return;
     const handlePointerDown = (e: PointerEvent) => {
-      if (viewMenuWrapRef.current && !viewMenuWrapRef.current.contains(e.target as Node)) {
+      const activeRef = openMenu === 'view' ? viewMenuWrapRef : dataMenuWrapRef;
+      if (activeRef.current && !activeRef.current.contains(e.target as Node)) {
         setOpenMenu(null);
       }
     };
@@ -312,7 +333,7 @@ export default function Toolbar() {
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [openMenu]);
+  }, [dataDialogOpen, openMenu]);
 
   // A floating dropdown must not coexist with a modal overlay: if one opens
   // (e.g. Cmd+K search while the View menu is up), close the menu so its
@@ -471,6 +492,28 @@ export default function Toolbar() {
       >
         <IconBulb />
       </button>
+
+      <div className="toolbar__menu-wrap" ref={dataMenuWrapRef}>
+        <button
+          type="button"
+          className={`btn-icon${openMenu === 'data' ? ' is-active' : ''}`}
+          title="Data options"
+          aria-haspopup="true"
+          aria-expanded={openMenu === 'data'}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleMenu('data');
+          }}
+        >
+          <IconData />
+        </button>
+        {openMenu === 'data' && (
+          <ExportImportMenu
+            onClose={() => setOpenMenu(null)}
+            onDialogOpenChange={setDataDialogOpen}
+          />
+        )}
+      </div>
 
       <div className="toolbar__divider" />
 

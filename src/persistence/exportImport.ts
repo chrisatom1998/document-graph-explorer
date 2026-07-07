@@ -17,7 +17,7 @@ import {
   layoutSetClusters,
   layoutSetLinks,
 } from '../layout/layoutBridge';
-import type { GraphExport } from '../model/types';
+import type { DocNode, Edge, GraphExport } from '../model/types';
 import { computeLocalClusterNames } from '../graph/clusterNaming';
 import { enqueueRun, resetCorpus } from '../pipeline/coordinator';
 import { randomSpherePoint } from '../pipeline/spawnPosition';
@@ -78,15 +78,28 @@ export async function exportGraphJSON(): Promise<void> {
 }
 
 /** Canvas snapshot (scene renders with preserveDrawingBuffer). */
-export function exportScenePNG(): void {
-  const canvas = document.querySelector('canvas');
-  if (!canvas) {
-    console.warn('[knowledge-nebula] no canvas found — nothing to export');
-    return;
-  }
-  canvas.toBlob((blob) => {
-    if (blob) downloadBlob(blob, `document-graph-explorer-${dateStamp()}.png`);
-  }, 'image/png');
+export function exportScenePNG(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const canvas = document.querySelector<HTMLCanvasElement>('.nebula-canvas canvas');
+    if (!canvas || typeof canvas.toBlob !== 'function') {
+      console.warn('[knowledge-nebula] no canvas found - nothing to export');
+      resolve(false);
+      return;
+    }
+    try {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          resolve(false);
+          return;
+        }
+        downloadBlob(blob, `document-graph-explorer-${dateStamp()}.png`);
+        resolve(true);
+      }, 'image/png');
+    } catch (err) {
+      console.warn('[knowledge-nebula] PNG export failed', err);
+      resolve(false);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -112,11 +125,11 @@ function randomShellPoint(): [number, number, number] {
  * both mutate the graph store, runtime stores, and layout, and an import
  * landing mid-ingest would corrupt all three.
  */
-export function importGraphJSONFile(file: File): Promise<void> {
+export function importGraphJSONFile(file: File): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
   return enqueueRun(() => doImportGraphJSONFile(file));
 }
 
-async function doImportGraphJSONFile(file: File): Promise<void> {
+async function doImportGraphJSONFile(file: File): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
   if (file.size > MAX_INGEST_FILE_BYTES) {
     const maxMb = Math.round(MAX_INGEST_FILE_BYTES / (1024 * 1024));
     throw new Error(
@@ -171,4 +184,5 @@ async function doImportGraphJSONFile(file: File): Promise<void> {
   layoutReheat(0.6); // no saved positions — run the layout hot
 
   g.setPhase('ready');
+  return { nodes, edges };
 }

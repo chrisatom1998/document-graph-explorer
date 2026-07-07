@@ -615,6 +615,15 @@ input {
   border-color: var(--border-glass-strong);
   color: var(--accent-strong);
 }
+.toolbar__menu-item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.toolbar__menu-item:disabled:hover {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-primary);
+}
 .toolbar__menu-item.is-active {
   background: var(--accent-soft);
   border-color: rgba(143, 123, 255, 0.45);
