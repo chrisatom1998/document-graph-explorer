@@ -128,7 +128,7 @@ Bloom, edge pulses, live materialization, camera choreography, starfield, auto-q
 - ✅ Named snapshots (save/load/delete)
 - ✅ Document removal & re-indexing
 - ☐ Folder watching via File System Access API
-- ☐ 2D toggle mode
+- ✅ 2D toggle mode
 
 ### Phase 5 (Future) — Collaboration & Scale
 - ☐ Shareable snapshot URLs (via exported JSON hosting)
