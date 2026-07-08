@@ -1,0 +1,18 @@
+LOAD TEST RESULTS — pre-launch, June 26, 2026
+
+Scenario: enterprise launch traffic model, 2.5x current peak for 45 minutes.
+Rig: k6 from three regions, production-mirror environment.
+
+Results:
+- API gateway: p50 34ms, p99 210ms (budget 250ms) PASS
+- Auth service: p99 88ms; token cache hit 99.1% PASS
+- Billing writes: invoice processing queue peaked at 4.2k, drained in 3m PASS
+- Search: p99 480ms (budget 400ms) FAIL — Elasticsearch hot tier CPU-bound;
+  fix: two more hot nodes + query rewrite (ticket SEARCH-2214)
+- Kafka event bus: max consumer lag 11s during the spike, recovered in 90s
+- Postgres: max replication lag 2.1s; connection pooling held at 92% util
+
+Errors: 0.02% 5xx overall; all from the search timeout path with correct
+rate limiting headers.
+
+Verdict: launch-ready except search; re-test after SEARCH-2214.

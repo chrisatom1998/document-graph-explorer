@@ -1,0 +1,19 @@
+CAPACITY PLANNING NOTES — 2026 mid-year review
+
+Compute: autoscaling groups peak at 62% of reserved capacity. Headroom OK
+through Q4 assuming the enterprise launch adds <20% traffic. Load balancer
+connection counts trend +11% QoQ.
+
+Data stores:
+- Postgres primary at 58% storage; connection pooling keeps active conns flat.
+- Redis cache hit rate 97.2%; memory 71% — plan a shard split before Q4.
+- Elasticsearch indexing volume doubled after the analytics rollout; hot tier
+  needs two more nodes (cloud cost analysis has the pricing).
+- S3 storage growth is linear; lifecycle rules from data archiving keep costs
+  flat.
+
+Events: Kafka event bus at 40k msg/s peak, partitions balanced after the
+rebalance. ClickHouse analytics ingest lags under 30s at p99.
+
+Action: revisit after the quarterly business review; tie increases to the
+usage billing forecast.
