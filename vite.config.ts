@@ -52,13 +52,16 @@ export default defineConfig(({ mode }) => ({
       'src/workers/aggregator.worker.ts',
       'src/workers/layout.worker.ts',
     ],
-    // graphology is imported ONLY inside aggregator.worker.ts, and Vite's
-    // entries scan doesn't reliably pre-bundle worker-only deps — so without
-    // this they're discovered on first page load, triggering the reload above.
-    // Both are pure graph libs (no DOM), so force-including them is safe (this
-    // is the audited exception to avoiding a general include-list, which under
-    // Vite 8 produced client-env chunks in workers — `document is not defined`).
-    include: ['graphology', 'graphology-communities-louvain'],
+    // graphology is imported ONLY inside aggregator.worker.ts, and jszip /
+    // fast-xml-parser ONLY inside pipeline.worker.ts (via parsers/office.ts).
+    // Vite's entries scan doesn't reliably pre-bundle worker-only deps — so
+    // without this they're discovered mid-ingest, and the re-optimize aborts
+    // the worker's in-flight imports (every parse fails, the run collapses
+    // back to idle). All four are DOM-free libs, so force-including them is
+    // safe (this is the audited exception to avoiding a general include-list,
+    // which under Vite 8 produced client-env chunks in workers — `document is
+    // not defined`).
+    include: ['graphology', 'graphology-communities-louvain', 'jszip', 'fast-xml-parser'],
   },
   test: {
     environment: 'node',
