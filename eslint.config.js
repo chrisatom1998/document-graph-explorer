@@ -21,7 +21,7 @@ const tsconfigRootDir = fileURLToPath(new URL('.', import.meta.url));
  * codebase hasn't been audited against.
  */
 export default tseslint.config(
-  { ignores: ['dist', 'dist-airgap', 'node_modules', 'public', 'coverage'] },
+  { ignores: ['dist', 'dist-airgap', 'node_modules', 'public', 'coverage', 'release'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
