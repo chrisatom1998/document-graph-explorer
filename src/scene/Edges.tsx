@@ -104,6 +104,9 @@ export default function Edges() {
   const segments = useUiStore((s) =>
     s.qualityTier >= 3 ? EDGE_SEGMENTS_DEGRADED : EDGE_SEGMENTS,
   );
+  // Ambient 2D style: straight constellation lines instead of bowed arcs
+  // (the "bow away from the core" trick only earns its keep in a 3D volume).
+  const flat = useUiStore((s) => s.dims === 2);
   const raycaster = useThree((s) => s.raycaster);
 
   const colorsDirty = useRef(true);
@@ -153,6 +156,13 @@ export default function Edges() {
     });
     return offUi;
   }, []);
+
+  // Straight vs. bowed geometry depends on `flat` — force a position rebuild
+  // (and recolor, since line opacity below also reacts to it) when it flips.
+  useEffect(() => {
+    forcePositions.current = true;
+    colorsDirty.current = true;
+  }, [flat]);
 
   /**
    * An edge the scene is currently NOT drawing. Topic edges are hidden with
@@ -209,6 +219,9 @@ export default function Edges() {
         dstColor.lerp(clusterColor(clusterOf.get(e.target) ?? -1), CLUSTER_BLEND);
       }
       let brightness = (0.16 + 0.55 * e.weight) * fade;
+      // Flat mode drops the additive stacking down to a gossamer web —
+      // legible constellation lines instead of a glowing hairball.
+      if (flat) brightness *= 0.6;
       if (emphasis && !(emphasis.has(e.source) && emphasis.has(e.target))) {
         brightness *= DIM_FACTOR;
       }
@@ -244,6 +257,9 @@ export default function Edges() {
 
   useFrame(() => {
     if (edges.length === 0) return;
+    // Flat lines get zero bloom help, so the base opacity nudges up to stay
+    // legible as thin constellation threads.
+    lineMaterial.opacity = flat ? 0.45 : 0.25;
     if (colorsDirty.current) {
       recomputeColors();
       colorsDirty.current = false;
@@ -272,7 +288,15 @@ export default function Edges() {
       const bx = arr[to];
       const by = arr[to + 1];
       const bz = arr[to + 2];
-      edgeControlPoint(ax, ay, az, bx, by, bz, ctrl, 0);
+      if (flat) {
+        // Control point ON the chord (exact midpoint) degenerates the
+        // quadratic bezier into a straight segment — no bow.
+        ctrl[0] = (ax + bx) * 0.5;
+        ctrl[1] = (ay + by) * 0.5;
+        ctrl[2] = (az + bz) * 0.5;
+      } else {
+        edgeControlPoint(ax, ay, az, bx, by, bz, ctrl, 0);
+      }
       const base = i * floatsPerEdge;
       // Point k closes segment k-1 and opens segment k: evaluate once, write
       // to both vertex slots.

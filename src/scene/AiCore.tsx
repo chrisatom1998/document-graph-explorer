@@ -19,6 +19,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useChatStore } from '../store/chatStore';
+import { useUiStore } from '../store/uiStore';
 import { prefersReducedMotion } from '../util/motion';
 import { makeSoftSprite } from './proceduralTextures';
 
@@ -33,6 +34,9 @@ const NO_RAYCAST = (): void => {
 
 export default function AiCore() {
   const sprite = useMemo(makeSoftSprite, []);
+  // The flat (2D ambient) style has no central "mind of the AI" glow — it
+  // reads as a clean constellation, not a nebula with a core.
+  const visible = useUiStore((s) => s.dims === 3);
 
   const glowRef = useRef<THREE.Sprite>(null);
   const glowMatRef = useRef<THREE.SpriteMaterial>(null);
@@ -82,7 +86,7 @@ export default function AiCore() {
   });
 
   return (
-    <sprite ref={glowRef} scale={[BASE_GLOW, BASE_GLOW, 1]} raycast={NO_RAYCAST}>
+    <sprite ref={glowRef} visible={visible} scale={[BASE_GLOW, BASE_GLOW, 1]} raycast={NO_RAYCAST}>
       <spriteMaterial
         ref={glowMatRef}
         map={sprite}

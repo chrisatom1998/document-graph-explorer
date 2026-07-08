@@ -29,6 +29,12 @@ const BLOOM_INTENSITY = 1.15;
 const BLOOM_THRESHOLD = 0.28;
 const BLOOM_SMOOTHING = 0.18;
 
+// Flat (2D ambient) mode wants a restrained, "portfolio hero" glow — a hint
+// of bloom on the brightest dots, not the nebula's money-shot wash.
+const FLAT_BLOOM_INTENSITY = 0.4;
+const FLAT_BLOOM_THRESHOLD = 0.45;
+const FLAT_VIGNETTE_DARKNESS = 0.35;
+
 /** DepthOfField that keeps its focus target on the selected node. */
 function FocusedDoF() {
   const ref = useRef<DepthOfFieldEffect>(null);
@@ -52,8 +58,12 @@ function FocusedDoF() {
 
 export default function Effects() {
   const qualityTier = useUiStore((s) => s.qualityTier);
-  const dofOn = useUiStore((s) => s.qualityTier === 0 && s.selectedId !== null);
+  const flat = useUiStore((s) => s.dims === 2);
+  const dofOn = useUiStore((s) => s.qualityTier === 0 && s.selectedId !== null) && !flat;
   const halfRes = qualityTier >= 2;
+
+  const intensity = flat ? FLAT_BLOOM_INTENSITY : BLOOM_INTENSITY;
+  const threshold = flat ? FLAT_BLOOM_THRESHOLD : BLOOM_THRESHOLD;
 
   return (
     <EffectComposer>
@@ -61,21 +71,21 @@ export default function Effects() {
         <Bloom
           mipmapBlur={false}
           resolutionScale={0.5}
-          intensity={BLOOM_INTENSITY}
-          luminanceThreshold={BLOOM_THRESHOLD}
+          intensity={intensity}
+          luminanceThreshold={threshold}
           luminanceSmoothing={BLOOM_SMOOTHING}
         />
       ) : (
         <Bloom
           mipmapBlur
-          intensity={BLOOM_INTENSITY}
-          luminanceThreshold={BLOOM_THRESHOLD}
+          intensity={intensity}
+          luminanceThreshold={threshold}
           luminanceSmoothing={BLOOM_SMOOTHING}
           radius={0.9}
         />
       )}
       {dofOn ? <FocusedDoF /> : <></>}
-      <Vignette darkness={0.55} offset={0.18} />
+      <Vignette darkness={flat ? FLAT_VIGNETTE_DARKNESS : 0.55} offset={0.18} />
     </EffectComposer>
   );
 }

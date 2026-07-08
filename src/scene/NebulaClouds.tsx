@@ -95,8 +95,10 @@ function buildClouds(
 }
 
 export default function NebulaClouds() {
-  // hidden (not unmounted) on degraded tiers so recovery doesn't rebuild
-  const visible = useUiStore((s) => s.qualityTier < 3);
+  // hidden (not unmounted) on degraded tiers so recovery doesn't rebuild; also
+  // hidden in flat (2D ambient) mode — the clean constellation look has no
+  // colorful volumetric clouds.
+  const visible = useUiStore((s) => s.qualityTier < 3 && s.dims === 3);
 
   const clouds = useMemo(() => {
     const textures = [makeCloudTexture(11), makeCloudTexture(23), makeCloudTexture(47)];

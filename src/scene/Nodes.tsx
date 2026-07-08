@@ -116,6 +116,10 @@ const GHOST_COLOR_FACTOR = 0.35;
 const GHOST_SCALE_FACTOR = 0.8;
 const PIN_THROTTLE_MS = 33;
 const SHOW_ME_PULSE_PERIOD_MS = 1050;
+// Flat (2D ambient) styling constants — see the `flat` flag in Nodes().
+const FLAT_SCALE_FACTOR = 0.55;
+const FLAT_HALO_SCALE = 1.4;
+const FLAT_HALO_INTENSITY_FACTOR = 0.5;
 
 const dummy = new THREE.Object3D();
 const tmpColor = new THREE.Color();
@@ -188,6 +192,11 @@ interface DragState {
 
 export default function Nodes() {
   const topicNodesEnabled = useUiStore((s) => s.topicNodesEnabled);
+  // "Ambient" 2D style (spec §7.3 addendum): flat, matte dots instead of
+  // glossy lit marbles, a tighter halo, and smaller sizing — the constellation
+  // look. Re-renders on toggle (a rare, deliberate user action), which is
+  // exactly when the material swap below needs to happen.
+  const flat = useUiStore((s) => s.dims === 2);
   const rootGet = useThree((s) => s.get);
 
   const coreRef = useRef<THREE.InstancedMesh>(null);
@@ -201,6 +210,7 @@ export default function Nodes() {
   const showMePulsing = useRef(false);
   const lastVersion = useRef(-1);
   const lastCount = useRef(-1);
+  const haloFadeRef = useRef(1); // density-based halo fade, refreshed on count change
   const dragRef = useRef<DragState | null>(null);
 
   // ---- per-slot metadata from the graph store --------------------------------
@@ -215,7 +225,10 @@ export default function Nodes() {
       // size = f(degree), log-scaled so hubs are visibly hubs (spec §5.4)
       let s = 0.7 * (1 + 0.5 * Math.log2(1 + n.degree));
       if (ghost) s *= GHOST_SCALE_FACTOR; // ghosted, never a silent gap (spec §9)
-      scaleOfSlot[slot] = Math.min(s, 2.6);
+      // Flat mode reads as a constellation of small dots, not orbs — the
+      // whole size range compresses so hub/leaf stay legible without ever
+      // looking like the 3D marbles.
+      scaleOfSlot[slot] = Math.min(s, 2.6) * (flat ? FLAT_SCALE_FACTOR : 1);
     }
   };
 
@@ -306,6 +319,12 @@ export default function Nodes() {
       offUi();
     };
   }, []);
+
+  // Flipping flat (2D) on/off changes per-slot sizing — rerun the meta pass.
+  useEffect(() => {
+    metaDirty.current = true;
+    matricesDirty.current = true;
+  }, [flat]);
 
   // ---- drag-to-pin ------------------------------------------------------------
   const drag = useMemo(() => {
@@ -424,12 +443,15 @@ export default function Nodes() {
       metaDirty.current = true;
       colorsDirty.current = true;
       matricesDirty.current = true;
-      const haloFade =
+      haloFadeRef.current =
         count <= HALO_FADE_START
           ? 1
           : Math.max(HALO_FADE_FLOOR, Math.sqrt(HALO_FADE_START / count));
-      haloMaterial.uniforms.uIntensity.value = HALO_INTENSITY * haloFade;
     }
+    // Flat mode dims the corona further, independent of density fade, and
+    // must re-apply every frame since it can change without `count` changing.
+    haloMaterial.uniforms.uIntensity.value =
+      HALO_INTENSITY * haloFadeRef.current * (flat ? FLAT_HALO_INTENSITY_FACTOR : 1);
     if (metaDirty.current) {
       refreshSlotMeta();
       metaDirty.current = false;
@@ -482,13 +504,13 @@ export default function Nodes() {
       }
 
       let scale = scaleOfSlot[i] || 1.1;
-      let haloScale = scale * HALO_SCALE;
+      let haloScale = scale * (flat ? FLAT_HALO_SCALE : HALO_SCALE);
       const showMePulse = showMeIds?.has(idOfSlot[i] ?? '') && !reducedMotion;
       if (showMePulse) {
         const wave = (Math.sin((now / SHOW_ME_PULSE_PERIOD_MS) * Math.PI * 2) + 1) * 0.5;
         const pulse = 1.16 + wave * 0.34;
         scale *= pulse;
-        haloScale = scale * HALO_SCALE * (1.25 + wave * 1.1);
+        haloScale = scale * (flat ? FLAT_HALO_SCALE : HALO_SCALE) * (1.25 + wave * 1.1);
         stillAnimating = true;
       }
 
@@ -509,7 +531,7 @@ export default function Nodes() {
           if (t < 1) {
             const f = easeOutBack(Math.max(t, 0));
             scale *= f;
-            haloScale = scale * HALO_SCALE * (1 + 1.5 * (1 - t));
+            haloScale = scale * (flat ? FLAT_HALO_SCALE : HALO_SCALE) * (1 + 1.5 * (1 - t));
             stillAnimating = true;
           } else {
             spawnAtOfSlot[i] = -1; // animation done
@@ -555,18 +577,25 @@ export default function Nodes() {
         onDoubleClick={handleDoubleClick}
       >
         <sphereGeometry args={[1, 32, 24]} />
-        {/* glassy marble: per-instance cluster hue as diffuse under a
-            clearcoat, reflecting the procedural Lightformer environment
-            (NebulaCanvas) so cores read as polished glass orbs rather than
-            plastic. The fresnel halo below supplies the nebula glow that
-            feeds bloom. */}
-        <meshPhysicalMaterial
-          roughness={0.32}
-          metalness={0}
-          clearcoat={0.9}
-          clearcoatRoughness={0.25}
-          envMapIntensity={0.7}
-        />
+        {flat ? (
+          // Flat/ambient 2D style: an unlit matte dot (no specular hotspot,
+          // no env reflection) so it reads as a small constellation point
+          // rather than a lit 3D marble.
+          <meshBasicMaterial toneMapped={false} />
+        ) : (
+          // glassy marble: per-instance cluster hue as diffuse under a
+          // clearcoat, reflecting the procedural Lightformer environment
+          // (NebulaCanvas) so cores read as polished glass orbs rather than
+          // plastic. The fresnel halo below supplies the nebula glow that
+          // feeds bloom.
+          <meshPhysicalMaterial
+            roughness={0.32}
+            metalness={0}
+            clearcoat={0.9}
+            clearcoatRoughness={0.25}
+            envMapIntensity={0.7}
+          />
+        )}
       </instancedMesh>
 
       {/* fresnel corona halo (limb-brightened, additive) that feeds bloom */}

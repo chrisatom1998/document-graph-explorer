@@ -39,6 +39,7 @@ export default function EdgePulses() {
   const speeds = useRef(new Float32Array(MAX_PULSE_EDGES));
   const activeEdges = useRef(0);
   const rebuildDirty = useRef(true);
+  const flatRef = useRef(false); // ambient (2D) style: smaller, cooler pulses
 
   useEffect(() => {
     const mesh = meshRef.current;
@@ -58,7 +59,8 @@ export default function EdgePulses() {
         s.qualityTier !== prev.qualityTier ||
         s.filter !== prev.filter ||
         s.clusterCollapsed !== prev.clusterCollapsed ||
-        s.topicNodesEnabled !== prev.topicNodesEnabled
+        s.topicNodesEnabled !== prev.topicNodesEnabled ||
+        s.dims !== prev.dims
       ) {
         rebuildDirty.current = true;
       }
@@ -74,8 +76,17 @@ export default function EdgePulses() {
 
   const rebuild = (mesh: THREE.InstancedMesh): void => {
     const { edges } = useGraphStore.getState();
-    const { hoveredId, selectedId, qualityTier, filter, clusterCollapsed, topicNodesEnabled } =
-      useUiStore.getState();
+    const {
+      hoveredId,
+      selectedId,
+      qualityTier,
+      filter,
+      clusterCollapsed,
+      topicNodesEnabled,
+      dims,
+    } = useUiStore.getState();
+    const flat = dims === 2; // ambient style: a hint of light, not a hot flare
+    flatRef.current = flat;
     // No pulses in cluster-collapsed mode or under prefers-reduced-motion
     if (clusterCollapsed || prefersReducedMotion()) { activeEdges.current = 0; return; }
     // degraded tiers: pulses only for the explicit selection, not hover
@@ -95,7 +106,7 @@ export default function EdgePulses() {
         fromSlot.current[k] = from; // OUTWARD from the focus node
         toSlot.current[k] = to;
         speeds.current[k] = 0.35 + 0.5 * e.weight;
-        tmpColor.copy(EDGE_TINTS[e.kind]).multiplyScalar(1.8); // hot: feeds bloom
+        tmpColor.copy(EDGE_TINTS[e.kind]).multiplyScalar(flat ? 1.1 : 1.8); // hot: feeds bloom
         if (mesh.instanceColor) {
           mesh.setColorAt(k * 2, tmpColor);
           mesh.setColorAt(k * 2 + 1, tmpColor);
@@ -133,11 +144,18 @@ export default function EdgePulses() {
       // symmetric in the endpoints, so travelling focus->neighbor against the
       // edge's stored direction still follows the visible arc).
       if (valid) {
-        edgeControlPoint(
-          arr[ao], arr[ao + 1], arr[ao + 2],
-          arr[bo], arr[bo + 1], arr[bo + 2],
-          ctrl, 0,
-        );
+        if (flatRef.current) {
+          // straight chord, matching Edges.tsx's flat-mode geometry
+          ctrl[0] = (arr[ao] + arr[bo]) * 0.5;
+          ctrl[1] = (arr[ao + 1] + arr[bo + 1]) * 0.5;
+          ctrl[2] = (arr[ao + 2] + arr[bo + 2]) * 0.5;
+        } else {
+          edgeControlPoint(
+            arr[ao], arr[ao + 1], arr[ao + 2],
+            arr[bo], arr[bo + 1], arr[bo + 2],
+            ctrl, 0,
+          );
+        }
       }
       for (let p = 0; p < 2; p++) {
         const idx = j * 2 + p;
@@ -154,7 +172,8 @@ export default function EdgePulses() {
           );
           dummy.position.set(pt[0], pt[1], pt[2]);
           // swell mid-flight
-          dummy.scale.setScalar(0.5 + 0.5 * Math.sin(Math.PI * t));
+          const swell = 0.5 + 0.5 * Math.sin(Math.PI * t);
+          dummy.scale.setScalar(flatRef.current ? swell * 0.65 : swell);
         }
         dummy.updateMatrix();
         mesh.setMatrixAt(idx, dummy.matrix);

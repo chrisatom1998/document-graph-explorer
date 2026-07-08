@@ -16,6 +16,7 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
+import { useUiStore } from '../store/uiStore';
 import {
   blackbodyColor,
   sampleStarBrightness,
@@ -127,7 +128,9 @@ function makeStarMaterial(map: THREE.Texture): THREE.ShaderMaterial {
   const material = new THREE.ShaderMaterial({
     uniforms: THREE.UniformsUtils.merge([
       THREE.UniformsLib.fog,
-      { uMap: { value: null }, uScale: { value: 540 } },
+      // uDim: global brightness multiplier so flat (2D ambient) mode can
+      // calm the field down to a faint backdrop without rebuilding buffers.
+      { uMap: { value: null }, uScale: { value: 540 }, uDim: { value: 1 } },
     ]),
     vertexColors: true,
     transparent: true,
@@ -149,12 +152,13 @@ function makeStarMaterial(map: THREE.Texture): THREE.ShaderMaterial {
     `,
     fragmentShader: /* glsl */ `
       uniform sampler2D uMap;
+      uniform float uDim;
       varying vec3 vColor;
       #include <fog_pars_fragment>
       void main() {
         float alpha = texture2D(uMap, gl_PointCoord).a;
         if (alpha < 0.004) discard;
-        gl_FragColor = vec4(vColor, alpha);
+        gl_FragColor = vec4(vColor * uDim, alpha);
         #include <fog_fragment>
       }
     `,
@@ -164,6 +168,11 @@ function makeStarMaterial(map: THREE.Texture): THREE.ShaderMaterial {
 }
 
 export default function Starfield() {
+  // Flat (2D ambient) mode wants a calm, faint backdrop — dim the star field
+  // and mute the colorful nebula dust so it doesn't compete with the
+  // constellation of nodes.
+  const flat = useUiStore((s) => s.dims === 2);
+
   const { stars, heroes, dust, fieldMaterial, heroMaterial, softSprite } = useMemo(() => {
     const softSprite = makeSoftSprite();
     return {
@@ -186,6 +195,11 @@ export default function Starfield() {
     heroMaterial.uniforms.uScale.value = scale;
   }, [height, dpr, fieldMaterial, heroMaterial]);
 
+  useEffect(() => {
+    fieldMaterial.uniforms.uDim.value = flat ? 0.55 : 1;
+    heroMaterial.uniforms.uDim.value = flat ? 0.2 : 1; // diffraction spikes read as "3D photo"
+  }, [flat, fieldMaterial, heroMaterial]);
+
   return (
     <group>
       {/* near nebula dust in the graph volume */}
@@ -199,7 +213,7 @@ export default function Starfield() {
           size={1.7}
           sizeAttenuation
           transparent
-          opacity={0.38}
+          opacity={flat ? 0.12 : 0.38}
           vertexColors
           blending={THREE.AdditiveBlending}
           depthWrite={false}

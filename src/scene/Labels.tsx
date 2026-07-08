@@ -64,16 +64,21 @@ function opacityFor(distance: number): number {
   );
 }
 
-function labelProps(reserved: boolean) {
+// Flat (2D ambient) style: smaller, cooler, tag-like labels that sit beside
+// their dot instead of a bold caption floating above a marble.
+const FLAT_LABEL_COLOR = '#aebbdb';
+const FLAT_FONT_SIZE = 1.5;
+
+function labelProps(reserved: boolean, flat: boolean) {
   return {
     font: LABEL_FONT,
-    fontSize: 2.3,
-    color: LABEL_COLOR,
-    outlineWidth: 0.06,
+    fontSize: flat ? FLAT_FONT_SIZE : 2.3,
+    color: flat ? FLAT_LABEL_COLOR : LABEL_COLOR,
+    outlineWidth: flat ? 0 : 0.06,
     outlineColor: '#050510',
-    outlineOpacity: 0.85,
-    anchorX: 'center' as const,
-    anchorY: 'bottom' as const,
+    outlineOpacity: flat ? 0 : 0.85,
+    anchorX: flat ? ('left' as const) : ('center' as const),
+    anchorY: flat ? ('middle' as const) : ('bottom' as const),
     visible: false,
     renderOrder: reserved ? 11 : 10,
     'material-toneMapped': false,
@@ -82,6 +87,8 @@ function labelProps(reserved: boolean) {
 }
 
 export default function Labels() {
+  // Ambient 2D style: smaller side tags beside each dot (see labelProps/place).
+  const flat = useUiStore((s) => s.dims === 2);
   const poolRefs = useRef<(TroikaLabel | null)[]>(Array(LABEL_BUDGET).fill(null));
   const hoverRef = useRef<TroikaLabel | null>(null);
   const selectedRef = useRef<TroikaLabel | null>(null);
@@ -229,11 +236,13 @@ export default function Labels() {
   const place = (label: TroikaLabel, slot: number, camera: THREE.Camera): void => {
     const arr = positionBuffer.array;
     const o = slot * 3;
-    label.position.set(
-      arr[o],
-      arr[o + 1] + (scaleOfSlot[slot] || 1.1) + 1.6,
-      arr[o + 2],
-    );
+    const radius = scaleOfSlot[slot] || 1.1;
+    if (flat) {
+      // Ambient tag style: sits to the right of the dot, vertically centered.
+      label.position.set(arr[o] + radius + 1.4, arr[o + 1], arr[o + 2]);
+    } else {
+      label.position.set(arr[o], arr[o + 1] + radius + 1.6, arr[o + 2]);
+    }
     label.quaternion.copy(camera.quaternion);
   };
 
@@ -274,7 +283,7 @@ export default function Labels() {
             ref={(t: TroikaLabel | null) => {
               poolRefs.current[i] = t;
             }}
-            {...labelProps(false)}
+            {...labelProps(false, flat)}
           >
             {''}
           </Text>
@@ -283,7 +292,7 @@ export default function Labels() {
           ref={(t: TroikaLabel | null) => {
             hoverRef.current = t;
           }}
-          {...labelProps(true)}
+          {...labelProps(true, flat)}
         >
           {''}
         </Text>
@@ -291,7 +300,7 @@ export default function Labels() {
           ref={(t: TroikaLabel | null) => {
             selectedRef.current = t;
           }}
-          {...labelProps(true)}
+          {...labelProps(true, flat)}
         >
           {''}
         </Text>
