@@ -28,12 +28,10 @@ import { positionBuffer, slotOfId } from './positionBuffer';
 const BLOOM_INTENSITY = 1.15;
 const BLOOM_THRESHOLD = 0.28;
 const BLOOM_SMOOTHING = 0.18;
-
-// Flat (2D ambient) mode wants a restrained, "portfolio hero" glow — a hint
-// of bloom on the brightest dots, not the nebula's money-shot wash.
-const FLAT_BLOOM_INTENSITY = 0.4;
-const FLAT_BLOOM_THRESHOLD = 0.45;
-const FLAT_VIGNETTE_DARKNESS = 0.35;
+// 2D star chart: bloom drops to a faint dot glow (the halo shells are off),
+// DoF makes no sense on a flat plane, vignette lightens to a soft frame.
+const FLAT_BLOOM_INTENSITY = 0.5;
+const FLAT_VIGNETTE = 0.4;
 
 /** DepthOfField that keeps its focus target on the selected node. */
 function FocusedDoF() {
@@ -59,11 +57,11 @@ function FocusedDoF() {
 export default function Effects() {
   const qualityTier = useUiStore((s) => s.qualityTier);
   const flat = useUiStore((s) => s.dims === 2);
-  const dofOn = useUiStore((s) => s.qualityTier === 0 && s.selectedId !== null) && !flat;
+  const dofOn = useUiStore(
+    (s) => s.qualityTier === 0 && s.selectedId !== null && s.dims === 3,
+  );
   const halfRes = qualityTier >= 2;
-
   const intensity = flat ? FLAT_BLOOM_INTENSITY : BLOOM_INTENSITY;
-  const threshold = flat ? FLAT_BLOOM_THRESHOLD : BLOOM_THRESHOLD;
 
   return (
     <EffectComposer>
@@ -72,20 +70,20 @@ export default function Effects() {
           mipmapBlur={false}
           resolutionScale={0.5}
           intensity={intensity}
-          luminanceThreshold={threshold}
+          luminanceThreshold={BLOOM_THRESHOLD}
           luminanceSmoothing={BLOOM_SMOOTHING}
         />
       ) : (
         <Bloom
           mipmapBlur
           intensity={intensity}
-          luminanceThreshold={threshold}
+          luminanceThreshold={BLOOM_THRESHOLD}
           luminanceSmoothing={BLOOM_SMOOTHING}
           radius={0.9}
         />
       )}
       {dofOn ? <FocusedDoF /> : <></>}
-      <Vignette darkness={flat ? FLAT_VIGNETTE_DARKNESS : 0.55} offset={0.18} />
+      <Vignette darkness={flat ? FLAT_VIGNETTE : 0.55} offset={0.18} />
     </EffectComposer>
   );
 }

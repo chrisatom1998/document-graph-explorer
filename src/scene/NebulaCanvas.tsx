@@ -15,6 +15,7 @@
 import { Canvas } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import { useUiStore } from '../store/uiStore';
+import { FLAT_BG } from './palette';
 import CameraRig from './CameraRig';
 import Starfield from './Starfield';
 import NebulaClouds from './NebulaClouds';
@@ -29,6 +30,10 @@ import ClusterCollapse from './ClusterCollapse';
 import SelectionHalo from './SelectionHalo';
 
 export default function NebulaCanvas() {
+  // 2D constellation mode: flat ink background, no starfield/clouds/core —
+  // the graph reads as a star chart, not a nebula (see palette FLAT_* tokens).
+  const flat = useUiStore((s) => s.dims === 2);
+  const bg = flat ? FLAT_BG : '#050510';
   return (
     <Canvas
       className="nebula-canvas"
@@ -42,10 +47,10 @@ export default function NebulaCanvas() {
         if (ui.selectedId) ui.setSelected(null);
       }}
     >
-      <color attach="background" args={['#050510']} />
+      <color attach="background" args={[bg]} />
       {/* density tracks the layout shell radius — the wider spacing would
           otherwise fog out the nebula's far side */}
-      <fogExp2 attach="fog" args={['#050510', 0.001]} />
+      <fogExp2 attach="fog" args={[bg, 0.001]} />
       {/* base fill so shadowed sides keep their hue */}
       <ambientLight intensity={0.55} />
       {/* key light (upper-left): drives the glossy specular highlight */}
@@ -86,9 +91,9 @@ export default function NebulaCanvas() {
       </Environment>
 
       <CameraRig />
-      <Starfield />
-      <NebulaClouds />
-      <AiCore />
+      {!flat && <Starfield />}
+      {!flat && <NebulaClouds />}
+      {!flat && <AiCore />}
       <Nodes />
       <Edges />
       <EdgePulses />

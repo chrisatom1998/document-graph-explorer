@@ -25,6 +25,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { kindOfSlot } from './Nodes';
+import { FLAT_BG, FLAT_LABEL } from './palette';
 
 const REFRESH_MS = 120;
 const TRUNCATE_AT = 34;
@@ -33,6 +34,14 @@ const LABEL_COLOR = '#c9cfee'; // see bloom-tension note above
 // Bundled locally (public/fonts, OFL-1.1) — troika's default font is a CDN
 // fetch, which the privacy CSP blocks and offline use can't reach.
 const LABEL_FONT = '/fonts/Inter-Regular.woff';
+// 2D star chart: monospace labels beside the dot (anchored left, centered
+// vertically) instead of above it — same pool/eviction machinery.
+const FLAT_FONT = '/fonts/JetBrainsMono-Regular.ttf';
+const FLAT_GAP = 1.4; // world units between dot edge and label
+// Everything in 2D sits on the z=0 plane, so node spheres (radius up to 1.3
+// toward the camera) would z-clip the glyph quads — lift labels off the plane
+// and skip the depth test so text always reads over dots and edges.
+const FLAT_LIFT = 2.5;
 // Scaled with the layout's shell radius (layout.worker.ts) — a wider nebula
 // means larger typical camera distances, so the fade band moves out with it.
 const NEAR_FULL = 75; // full opacity inside this camera distance...
@@ -64,30 +73,26 @@ function opacityFor(distance: number): number {
   );
 }
 
-// Flat (2D ambient) style: smaller, cooler, tag-like labels that sit beside
-// their dot instead of a bold caption floating above a marble.
-const FLAT_LABEL_COLOR = '#aebbdb';
-const FLAT_FONT_SIZE = 1.5;
-
 function labelProps(reserved: boolean, flat: boolean) {
   return {
-    font: LABEL_FONT,
-    fontSize: flat ? FLAT_FONT_SIZE : 2.3,
-    color: flat ? FLAT_LABEL_COLOR : LABEL_COLOR,
-    outlineWidth: flat ? 0 : 0.06,
-    outlineColor: '#050510',
-    outlineOpacity: flat ? 0 : 0.85,
-    anchorX: flat ? ('left' as const) : ('center' as const),
-    anchorY: flat ? ('middle' as const) : ('bottom' as const),
+    font: flat ? FLAT_FONT : LABEL_FONT,
+    fontSize: 2.3,
+    color: flat ? FLAT_LABEL : LABEL_COLOR,
+    outlineWidth: 0.06,
+    outlineColor: flat ? FLAT_BG : '#050510',
+    outlineOpacity: 0.85,
+    anchorX: (flat ? 'left' : 'center') as 'left' | 'center',
+    anchorY: (flat ? 'middle' : 'bottom') as 'middle' | 'bottom',
     visible: false,
     renderOrder: reserved ? 11 : 10,
     'material-toneMapped': false,
     'material-depthWrite': false,
+    'material-depthTest': !flat, // see FLAT_LIFT note
   };
 }
 
 export default function Labels() {
-  // Ambient 2D style: smaller side tags beside each dot (see labelProps/place).
+  // 2D star chart restyle (font/color/anchoring) — re-render swaps the props
   const flat = useUiStore((s) => s.dims === 2);
   const poolRefs = useRef<(TroikaLabel | null)[]>(Array(LABEL_BUDGET).fill(null));
   const hoverRef = useRef<TroikaLabel | null>(null);
@@ -236,12 +241,19 @@ export default function Labels() {
   const place = (label: TroikaLabel, slot: number, camera: THREE.Camera): void => {
     const arr = positionBuffer.array;
     const o = slot * 3;
-    const radius = scaleOfSlot[slot] || 1.1;
     if (flat) {
-      // Ambient tag style: sits to the right of the dot, vertically centered.
-      label.position.set(arr[o] + radius + 1.4, arr[o + 1], arr[o + 2]);
+      // star chart: label sits to the RIGHT of the dot, vertically centered
+      label.position.set(
+        arr[o] + (scaleOfSlot[slot] || 1.1) + FLAT_GAP,
+        arr[o + 1],
+        arr[o + 2] + FLAT_LIFT,
+      );
     } else {
-      label.position.set(arr[o], arr[o + 1] + radius + 1.6, arr[o + 2]);
+      label.position.set(
+        arr[o],
+        arr[o + 1] + (scaleOfSlot[slot] || 1.1) + 1.6,
+        arr[o + 2],
+      );
     }
     label.quaternion.copy(camera.quaternion);
   };
