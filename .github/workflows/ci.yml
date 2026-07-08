@@ -38,3 +38,18 @@ jobs:
 
       - name: Build (air-gapped) + verify zero external hosts
         run: npm run build:airgap
+
+      - name: Build (Windows .exe) + verify icon embedded
+        run: |
+          npm run build:exe
+          file run.exe | grep -q 'PE32+ executable' || (echo "run.exe is not a valid PE executable" && exit 1)
+          node -e "
+            const ResEdit = require('resedit');
+            const fs = require('fs');
+            const exe = ResEdit.NtExecutable.from(fs.readFileSync('run.exe'));
+            const res = ResEdit.NtExecutableResource.from(exe);
+            const icons = ResEdit.Resource.IconGroupEntry.fromEntries(res.entries);
+            const iconCount = icons.reduce((n, g) => n + g.icons.length, 0);
+            if (iconCount < 1) { console.error('No icon embedded in run.exe'); process.exit(1); }
+            console.log('run.exe has', iconCount, 'embedded icon(s)');
+          "
