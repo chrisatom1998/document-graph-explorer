@@ -22,7 +22,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
-import { clusterColor, EDGE_TINTS } from './palette';
+import { clusterColor, EDGE_TINTS, FLAT_EDGE } from './palette';
 import { computeEmphasis } from './emphasis';
 import {
   EDGE_SEGMENTS,
@@ -36,6 +36,11 @@ const FOCUS_BOOST = 2.0;
 // Mid-curve brightness relative to the endpoints: the arc thins out where it
 // is farthest from either node, reading as a faint gradient filament.
 const MID_TAPER = 0.68;
+// 2D star chart: hairlines are fainter than the nebula filaments and carry a
+// single uniform tint (weight still maps to brightness; kind moves to the
+// popover/legend and the pulse colors).
+const FLAT_BRIGHT_BASE = 0.1;
+const FLAT_BRIGHT_WEIGHT = 0.3;
 
 // Additive edges sum brightness where they overlap, so a fixed per-edge
 // opacity turns dense graphs into a glowing hairball that hides the nodes.
@@ -104,9 +109,6 @@ export default function Edges() {
   const segments = useUiStore((s) =>
     s.qualityTier >= 3 ? EDGE_SEGMENTS_DEGRADED : EDGE_SEGMENTS,
   );
-  // Ambient 2D style: straight constellation lines instead of bowed arcs
-  // (the "bow away from the core" trick only earns its keep in a 3D volume).
-  const flat = useUiStore((s) => s.dims === 2);
   const raycaster = useThree((s) => s.raycaster);
 
   const colorsDirty = useRef(true);
@@ -138,14 +140,7 @@ export default function Edges() {
     forcePositions.current = true;
     colorsDirty.current = true;
     const geom = geomRef.current;
-    if (geom) {
-      // This <bufferGeometry> instance persists across `attrs` changes (same
-      // ref below, attributes swapped via `primitive`/`attach`) — dispose it
-      // whenever the attribute pair is replaced so the renderer drops its
-      // old GPU buffers instead of leaking them on every edge-set change.
-      geom.dispose();
-      geom.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
-    }
+    if (geom) geom.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
   }, [attrs]);
 
   useEffect(() => {
@@ -160,16 +155,14 @@ export default function Edges() {
       ) {
         colorsDirty.current = true;
       }
+      // 2D/3D toggle: tints change AND curves straighten/bow (positions)
+      if (s.dims !== prev.dims) {
+        colorsDirty.current = true;
+        forcePositions.current = true;
+      }
     });
     return offUi;
   }, []);
-
-  // Straight vs. bowed geometry depends on `flat` — force a position rebuild
-  // (and recolor, since line opacity below also reacts to it) when it flips.
-  useEffect(() => {
-    forcePositions.current = true;
-    colorsDirty.current = true;
-  }, [flat]);
 
   /**
    * An edge the scene is currently NOT drawing. Topic edges are hidden with
@@ -198,6 +191,7 @@ export default function Edges() {
       filter,
     );
     const focusId = hoveredId ?? selectedId;
+    const flat = ui.dims === 2;
     const clusterOf = new Map<string, number>();
     for (const n of nodes) clusterOf.set(n.id, n.cluster);
     // Count visible edges for density fade (hidden edges shouldn't dim the rest)
@@ -219,16 +213,21 @@ export default function Edges() {
       // and by density; kept delicate so links read as fine filaments. Each
       // end leans toward its node's cluster hue so filaments visibly belong
       // to the communities they join (gradient across the arc).
-      srcColor.copy(EDGE_TINTS[e.kind]);
-      dstColor.copy(EDGE_TINTS[e.kind]);
-      if (e.kind !== 'reference') {
-        srcColor.lerp(clusterColor(clusterOf.get(e.source) ?? -1), CLUSTER_BLEND);
-        dstColor.lerp(clusterColor(clusterOf.get(e.target) ?? -1), CLUSTER_BLEND);
+      if (flat) {
+        // star chart: one uniform slate hairline tint, no cluster bleed
+        srcColor.copy(FLAT_EDGE);
+        dstColor.copy(FLAT_EDGE);
+      } else {
+        srcColor.copy(EDGE_TINTS[e.kind]);
+        dstColor.copy(EDGE_TINTS[e.kind]);
+        if (e.kind !== 'reference') {
+          srcColor.lerp(clusterColor(clusterOf.get(e.source) ?? -1), CLUSTER_BLEND);
+          dstColor.lerp(clusterColor(clusterOf.get(e.target) ?? -1), CLUSTER_BLEND);
+        }
       }
-      let brightness = (0.16 + 0.55 * e.weight) * fade;
-      // Flat mode drops the additive stacking down to a gossamer web —
-      // legible constellation lines instead of a glowing hairball.
-      if (flat) brightness *= 0.6;
+      let brightness =
+        (flat ? FLAT_BRIGHT_BASE + FLAT_BRIGHT_WEIGHT * e.weight : 0.16 + 0.55 * e.weight) *
+        fade;
       if (emphasis && !(emphasis.has(e.source) && emphasis.has(e.target))) {
         brightness *= DIM_FACTOR;
       }
@@ -252,7 +251,8 @@ export default function Edges() {
       for (let v = 0; v < vertsPerEdge; v++) {
         const k = (v >> 1) + (v & 1); // point index this vertex represents
         const t = k / segments;
-        const taper = 1 - (1 - MID_TAPER) * 4 * t * (1 - t); // 1 at ends, MID_TAPER at t=.5
+        // 1 at ends, MID_TAPER at t=.5 — straight 2D hairlines stay uniform
+        const taper = flat ? 1 : 1 - (1 - MID_TAPER) * 4 * t * (1 - t);
         const o = base + v * 3;
         col[o] = (srcColor.r + (dstColor.r - srcColor.r) * t) * taper;
         col[o + 1] = (srcColor.g + (dstColor.g - srcColor.g) * t) * taper;
@@ -264,9 +264,6 @@ export default function Edges() {
 
   useFrame(() => {
     if (edges.length === 0) return;
-    // Flat lines get zero bloom help, so the base opacity nudges up to stay
-    // legible as thin constellation threads.
-    lineMaterial.opacity = flat ? 0.45 : 0.25;
     if (colorsDirty.current) {
       recomputeColors();
       colorsDirty.current = false;
@@ -280,6 +277,9 @@ export default function Edges() {
     const count = positionBuffer.count;
     const pos = attrs.positions.array as Float32Array;
     const floatsPerEdge = segments * 6;
+    // 2D star chart: control point at the chord midpoint degenerates the
+    // bezier to a straight line — same buffers, no bow.
+    const flat = useUiStore.getState().dims === 2;
     for (let i = 0; i < edges.length; i++) {
       const e = edges[i];
       const s = slotOfId.get(e.source);
@@ -296,8 +296,6 @@ export default function Edges() {
       const by = arr[to + 1];
       const bz = arr[to + 2];
       if (flat) {
-        // Control point ON the chord (exact midpoint) degenerates the
-        // quadratic bezier into a straight segment — no bow.
         ctrl[0] = (ax + bx) * 0.5;
         ctrl[1] = (ay + by) * 0.5;
         ctrl[2] = (az + bz) * 0.5;

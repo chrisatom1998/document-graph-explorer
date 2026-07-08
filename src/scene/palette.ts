@@ -96,6 +96,20 @@ export const EDGE_TINTS: Record<EdgeKind, THREE.Color> = {
   topic: new THREE.Color(EDGE_KIND_HEX.topic),
 };
 
+/**
+ * 2D constellation theme (dims === 2): the flat star-chart restyle. The
+ * nebula's jewel tones collapse to a single pale cyan — a whisper of the
+ * cluster hue (FLAT_NODE_CLUSTER_BLEND) keeps the FilterBar legend and
+ * cluster filters legible — and all edge kinds share one slate hairline
+ * tint (kind stays encoded in the popover/legend and in the pulse colors).
+ * The THREE.Color instances are shared read-only (`.copy()` before mutating).
+ */
+export const FLAT_BG = '#0c141d';
+export const FLAT_NODE = new THREE.Color('#8fd0e2');
+export const FLAT_NODE_CLUSTER_BLEND = 0.25;
+export const FLAT_EDGE = new THREE.Color('#8fb0c9');
+export const FLAT_LABEL = '#c5ced6';
+
 /** Human-readable edge-kind labels for the UI (badges, connection tags). */
 export const EDGE_KIND_LABEL: Record<EdgeKind, string> = {
   reference: 'reference',

@@ -4,18 +4,15 @@
   "version": "1.0.0",
   "main": "desktop/main.cjs",
   "type": "module",
-  "engines": {
-    "node": ">=24"
-  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "build:airgap": "tsc --noEmit && vite build --mode airgap --outDir dist-airgap && node scripts/sanitize-airgap.mjs && node scripts/verify-airgap.mjs",
     "build:desktop": "npm run build && electron-builder --mac dir && node scripts/deploy-app.mjs",
     "dist:mac": "npm run build && electron-builder --mac dmg zip",
-    "dist:win": "npm run build && electron-builder --win portable",
+    "dist:win": "npm run build && electron-builder --win nsis portable",
     "desktop": "npm run build && electron .",
-    "build:exe": "npm run build && pkg scripts/serve-exe.cjs --targets node24-win-x64 --output release/win/run.exe && node scripts/set-exe-icon.mjs release/win/run.exe && node scripts/stage-win-release.mjs",
+    "build:exe": "npm run build && pkg scripts/serve-exe.cjs --targets node18-win-x64 --output run.exe",
     "install:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-desktop-shortcut.ps1",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
@@ -54,29 +51,27 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.0",
     "@vitejs/plugin-react": "^5.2.0",
-    "@yao-pkg/pkg": "^6.21.0",
-    "electron": "^43.1.0",
-    "electron-builder": "^26.15.3",
+    "electron": "^32.3.3",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
-    "resedit": "^3.0.2",
+    "pkg": "^5.8.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.1",
     "vite": "^7.3.6",
     "vitest": "^4.1.9"
   },
   "build": {
-    "appId": "com.documentgraph.explorer",
-    "productName": "Document Graph Explorer",
+    "appId": "com.gtech.knowledgenebula",
+    "productName": "Knowledge Nebula",
     "directories": {
       "output": "release"
     },
     "files": [
       "dist/**/*",
       "desktop/**/*",
-      "scripts/staticServer.cjs",
       "package.json",
       "!node_modules/**/*"
     ],
@@ -87,13 +82,19 @@
       ]
     },
     "win": {
-      "icon": "packaging/document-graph-explorer.ico",
       "target": [
+        "nsis",
         "portable"
-      ]
+      ],
+      "icon": "packaging/document-graph-explorer.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Knowledge-Nebula-Setup-${version}.exe"
     },
     "portable": {
-      "artifactName": "${productName}-${version}.${ext}"
+      "artifactName": "Knowledge-Nebula-Portable-${version}.exe"
     }
   }
 }

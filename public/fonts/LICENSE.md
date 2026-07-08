@@ -1,14 +1,20 @@
-# Bundled font
+# Bundled fonts
 
 **Inter-Regular.woff** — Inter typeface by Rasmus Andersson.
 Licensed under the SIL Open Font License, Version 1.1 (`OFL-1.1`).
 
 Source: https://github.com/rsms/inter · https://rsms.me/inter/
 
-This font is vendored locally (rather than fetched from a CDN at runtime) so
+**JetBrainsMono-Regular.ttf** — JetBrains Mono typeface, © 2020 JetBrains s.r.o.
+Licensed under the SIL Open Font License, Version 1.1 (`OFL-1.1`).
+Used for node labels in the 2D constellation view.
+
+Source: https://github.com/JetBrains/JetBrainsMono (v2.304)
+
+These fonts are vendored locally (rather than fetched from a CDN at runtime) so
 that Knowledge Nebula makes **zero external network requests** while rendering,
 in keeping with the project's privacy-by-architecture guarantee. troika/drei
-`<Text>` loads this file via a same-origin `fetch()`, which the app's
+`<Text>` loads these files via a same-origin `fetch()`, which the app's
 Content-Security-Policy permits (`connect-src 'self'`).
 
 The full OFL-1.1 license text is available at:
