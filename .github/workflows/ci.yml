@@ -42,11 +42,12 @@ jobs:
       - name: Build (Windows .exe) + verify icon embedded
         run: |
           npm run build:exe
-          file run.exe | grep -q 'PE32+ executable' || (echo "run.exe is not a valid PE executable" && exit 1)
+          file release/win/run.exe | grep -q 'PE32+ executable' || (echo "run.exe is not a valid PE executable" && exit 1)
+          test -f release/win/dist/index.html || (echo "dist/ was not staged next to run.exe" && exit 1)
           node -e "
             const ResEdit = require('resedit');
             const fs = require('fs');
-            const exe = ResEdit.NtExecutable.from(fs.readFileSync('run.exe'));
+            const exe = ResEdit.NtExecutable.from(fs.readFileSync('release/win/run.exe'));
             const res = ResEdit.NtExecutableResource.from(exe);
             const icons = ResEdit.Resource.IconGroupEntry.fromEntries(res.entries);
             const iconCount = icons.reduce((n, g) => n + g.icons.length, 0);
