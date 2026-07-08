@@ -34,7 +34,7 @@ Then open the printed local URL and drag documents onto the window — or click 
 | `npm run build:airgap` | `dist-airgap/` | **Zero external network** — host-free CSP + runtime refusal + post-build verify gate |
 | `npm run build:desktop` | `release/mac-arm64/Knowledge Nebula.app`, installed to `/Applications` | Normal app build wrapped as a local macOS desktop executable |
 | `npm run dist:mac` | `Knowledge Nebula-<version>-arm64.dmg` and `.zip` under `release/` | Distributable macOS installer images (see [Distributing the app](#distributing-the-app-dmg)) |
-| `npm run build:exe` | `run.exe` (standalone, branded with the app icon) | Windows executable — see [Windows executable (.exe)](#windows-executable-exe) |
+| `npm run build:exe` | `release/win/` (`run.exe` + `dist/`, branded with the app icon) | Windows executable — see [Windows executable (.exe)](#windows-executable-exe) |
 
 See [SECURITY.md](SECURITY.md) for the full privacy guarantee and how to verify it.
 
@@ -95,12 +95,22 @@ For a single, double-clickable file that needs no Node.js install on the target 
 npm run build:exe
 ```
 
-This produces `run.exe` at the repo root — a standalone Windows binary (built with [`@yao-pkg/pkg`](https://github.com/yao-pkg/pkg), a Node.js runtime bundled with the app) that serves the `dist/` build on `127.0.0.1` and opens it in the default browser, with the app icon and file metadata (product name, version, description) embedded in the executable via [`resedit`](https://www.npmjs.com/package/resedit) so it shows the branded graphic icon in Explorer, the taskbar, and the title bar — not the generic Node.js icon.
+This produces a self-contained `release/win/` folder:
+
+```
+release/win/
+├── run.exe   <- standalone Windows binary (double-click to launch)
+└── dist/     <- the built web app, served by run.exe
+```
+
+`run.exe` is a standalone Windows binary (built with [`@yao-pkg/pkg`](https://github.com/yao-pkg/pkg), a Node.js runtime bundled with the app) that serves the `dist/` folder sitting next to it on `127.0.0.1` and opens it in the default browser, with the app icon and file metadata (product name, version, description) embedded in the executable via [`resedit`](https://www.npmjs.com/package/resedit) so it shows the branded graphic icon in Explorer, the taskbar, and the title bar — not the generic Node.js icon.
+
+To ship it to another Windows machine, copy (or zip) the whole `release/win/` folder — `run.exe` must stay next to its `dist/` folder.
 
 Notes:
 
-- `run.exe` can be built from Linux, macOS, or Windows (cross-compilation), but requires Node.js ≥ 22 on the machine doing the build.
-- `run.exe` is gitignored — build it locally or in CI whenever you need to (re)distribute it; it isn't committed to the repo.
+- `run.exe` can be built from Linux, macOS, or Windows (cross-compilation), but requires Node.js ≥ 22 on the machine doing the build. The target machine needs nothing installed.
+- `release/` is gitignored — build it locally or in CI whenever you need to (re)distribute it; it isn't committed to the repo.
 - The embedded icon is the same `packaging/document-graph-explorer.ico` used for the desktop shortcut (see above); regenerate that file first if you want a different icon before running `build:exe`.
 - Like any unsigned executable, Windows SmartScreen may warn on first run ("Windows protected your PC") — click **More info → Run anyway**. Code-signing removes this warning but requires a paid certificate and is out of scope here.
 

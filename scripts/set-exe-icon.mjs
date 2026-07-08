@@ -12,7 +12,7 @@ import * as ResEdit from 'resedit';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 
-const exePath = path.resolve(repoRoot, process.argv[2] || 'run.exe');
+const exePath = path.resolve(repoRoot, process.argv[2] || 'release/win/run.exe');
 const iconPath = path.join(repoRoot, 'packaging', 'document-graph-explorer.ico');
 const pkg = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
 
