@@ -68,8 +68,8 @@
     "vitest": "^4.1.9"
   },
   "build": {
-    "appId": "com.gtech.knowledgenebula",
-    "productName": "Knowledge Nebula",
+    "appId": "com.documentgraph.explorer",
+    "productName": "Document Graph Explorer",
     "directories": {
       "output": "release"
     },
