@@ -76,6 +76,7 @@
     "files": [
       "dist/**/*",
       "desktop/**/*",
+      "scripts/staticServer.cjs",
       "package.json",
       "!node_modules/**/*"
     ],
