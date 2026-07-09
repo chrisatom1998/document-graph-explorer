@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rebuild Knowledge Nebula and redeploy it to ~/Applications.
+# Rebuild Document Graph Explorer and redeploy it to ~/Applications.
 # Works even when npm/node aren't on PATH, by locating an nvm-installed Node.
 set -euo pipefail
 

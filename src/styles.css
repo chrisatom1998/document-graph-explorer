@@ -2103,30 +2103,9 @@ input {
    Filter bar
    ========================================================================== */
 
-/* gTech brand lockup, top-left. Non-interactive: the wrapper stays
-   pointer-events:none so orbit input reaches the canvas. The filter bar sits
-   just below it (see .filter-bar-layer top). */
-.brand-mark {
-  position: fixed;
-  top: 15px;
-  left: 20px;
-  z-index: var(--z-floating);
-  pointer-events: none;
-  animation: kn-fade-in 480ms var(--ease-out) both;
-}
-.brand-mark__img {
-  display: block;
-  height: 52px;
-  width: auto;
-  /* the wordmark is mid-grey; lift it off the near-black void and give it a
-     tight glow so it reads crisply without a background plate */
-  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.7)) brightness(1.15) contrast(1.05);
-  opacity: 1;
-}
-
 .filter-bar-layer {
   position: fixed;
-  top: 80px; /* stacked below the brand mark (top 15 + ~52 height + gap) */
+  top: 15px;
   left: 18px;
   z-index: var(--z-floating);
   pointer-events: none;
@@ -2289,15 +2268,8 @@ input {
   .toolbar {
     top: 10px;
   }
-  .brand-mark {
-    top: 9px;
-    left: 12px;
-  }
-  .brand-mark__img {
-    height: 44px;
-  }
   .filter-bar-layer {
-    top: 64px;
+    top: 10px;
     left: 10px;
   }
   .side-panel {
