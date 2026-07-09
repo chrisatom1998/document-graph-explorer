@@ -22,7 +22,7 @@
  * camera to the nearest document.
  */
 
-import { useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react';
+import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { MINIMAP_MIN_NODES } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -316,17 +316,30 @@ export default function Minimap() {
     if (bestId) ui.sendCamera('frameNode', [bestId]);
   };
 
+  // Keyboard equivalent of the click-to-fly behavior above: a click flies to
+  // whichever node is nearest the pointer, which has no keyboard analog, so
+  // Enter/Space instead fly to the currently selected node (or reset to the
+  // full overview when nothing is selected).
+  const handleKeyDown = (ev: ReactKeyboardEvent<HTMLCanvasElement>): void => {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    ev.preventDefault();
+    const ui = useUiStore.getState();
+    if (ui.selectedId) ui.sendCamera('frameNode', [ui.selectedId]);
+    else ui.sendCamera('fitAll');
+  };
+
   if (!visible) return null;
 
   return (
-    <div
-      className={`minimap glass-panel${shifted ? ' minimap--shifted' : ''}`}
-      aria-hidden="true"
-    >
+    <div className={`minimap glass-panel${shifted ? ' minimap--shifted' : ''}`}>
       <canvas
         ref={canvasRef}
         style={{ width: W, height: H }}
         onClick={handleClick}
+        onKeyDown={handleKeyDown}
+        role="button"
+        tabIndex={0}
+        aria-label="Minimap — click, or press Enter, to fly to the nearest document"
         title="Click to fly to a document"
       />
     </div>
