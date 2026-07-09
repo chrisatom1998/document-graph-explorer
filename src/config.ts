@@ -32,6 +32,7 @@ export const SEARCH_MAX_RESULTS = 12;
 // --- Extractive (local, no-LLM) chat answers ---
 export const EXTRACT_MAX_PASSAGES = 4; // distinct-doc passages shown in a local answer
 export const EXTRACT_PASSAGE_CHARS = 600; // per-passage verbatim quote cap
+export const SOURCE_SNIPPET_CHARS = 200; // citation-chip preview length (chat + extractive answers)
 
 // --- Insights ---
 export const DUP_SIM_THRESHOLD = 0.93; // cosine sim above which two docs are "possible duplicates"

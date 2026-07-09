@@ -21,8 +21,8 @@ import { buildHistoryTurns } from './ragChat';
 import type { ChatMessage } from '../store/chatStore';
 
 let nextId = 0;
-function msg(role: ChatMessage['role'], text: string): ChatMessage {
-  return { id: `m-${++nextId}`, role, text, timestamp: Date.now() };
+function msg(role: ChatMessage['role'], text: string, isError = false): ChatMessage {
+  return { id: `m-${++nextId}`, role, text, isError, timestamp: Date.now() };
 }
 
 describe('buildHistoryTurns', () => {
@@ -42,10 +42,10 @@ describe('buildHistoryTurns', () => {
     ]);
   });
 
-  it('excludes failed assistant turns (text starting with "Error:")', () => {
+  it('excludes failed assistant turns (isError: true)', () => {
     const turns = buildHistoryTurns([
       msg('user', 'Q1'),
-      msg('assistant', 'Error: Gemini HTTP 500'),
+      msg('assistant', 'Gemini HTTP 500', true),
       msg('user', 'Q2'),
       msg('assistant', 'A2'),
     ]);
