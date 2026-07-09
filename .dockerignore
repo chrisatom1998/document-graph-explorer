@@ -1,6 +1,7 @@
 node_modules
 dist
 dist-airgap
+release
 release/win-unpacked
 release/builder-debug.yml
 .git
