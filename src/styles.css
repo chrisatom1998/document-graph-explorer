@@ -1250,6 +1250,18 @@ input {
   max-width: 100%;
   border-radius: 6px;
 }
+.html-doc__blocked-img {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  margin: 2px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: rgba(140, 150, 255, 0.06);
+  border: 1px dashed var(--border-glass);
+  border-radius: 6px;
+}
 
 .side-panel__open-btn {
   display: inline-flex;
@@ -2489,6 +2501,16 @@ input {
   background: rgba(255, 107, 107, 0.1);
 }
 
+.snapshot-btn--delete-confirm {
+  border-color: rgba(255, 107, 107, 0.35);
+  background: rgba(255, 107, 107, 0.15);
+  color: #ff6b6b;
+}
+.snapshot-btn--delete-confirm:hover:not(:disabled) {
+  border-color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.25);
+}
+
 /* ==========================================================================
    Chat / RAG AI Panel & Bubble
    ========================================================================== */
@@ -3145,4 +3167,8 @@ input {
   border-radius: calc(var(--radius-lg) - 5px);
   background: rgba(5, 5, 16, 0.55);
   cursor: pointer;
+}
+.minimap canvas:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
 }
