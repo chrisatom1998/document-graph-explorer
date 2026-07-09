@@ -1,14 +1,11 @@
 /**
  * Random point on a spherical shell of radius `radius` (± `jitter`, uniform)
  * — the "fly-in" origin used for newly placed graph nodes before the force
- * layout settles them. Worker-safe (Math.random only, no DOM) so it can be
- * shared by every main-thread ingest/import path without pulling in scene
- * code.
- *
- * Deliberately NOT shared with layout.worker.ts's randomShellPoint(): that
- * one samples around the layout's *current* settled shell radius (a
- * runtime-computed value owned by the layout worker), a different contract
- * than this fixed-radius spawn shell.
+ * layout settles them. Worker-safe (Math.random only, no DOM), zero
+ * dependencies, so it can be shared by every ingest/import path and by
+ * layout.worker.ts without pulling in scene code. Callers own the radius:
+ * ingest/import paths pass a fixed spawn radius, while layout.worker.ts
+ * passes its own runtime-computed settled-shell radius.
  */
 export function randomSpherePoint(radius: number, jitter = 0): [number, number, number] {
   const u = Math.random() * 2 - 1; // cos(polar)
