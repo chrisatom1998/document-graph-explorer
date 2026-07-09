@@ -7,3 +7,4 @@ run.exe
 coverage/
 vite-dev.*.log
 release/
+release-build/
