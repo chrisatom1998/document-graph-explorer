@@ -1,7 +1,7 @@
 const { app, BrowserWindow, shell } = require('electron');
-const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
+const { createRequestHandler, hasIndexHtml } = require('../scripts/staticServer.cjs');
 
 // Fixed port: the renderer's origin (http://127.0.0.1:<port>) is what
 // Chromium partitions IndexedDB/localStorage by. A random port per launch
@@ -11,79 +11,39 @@ const path = require('node:path');
 // closing and reopening the app.
 const LOCAL_SERVER_PORT = 47182;
 
-const MIME_TYPES = {
-  '.css': 'text/css; charset=utf-8',
-  '.gif': 'image/gif',
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.md': 'text/markdown; charset=utf-8',
-  '.onnx': 'application/octet-stream',
-  '.pdf': 'application/pdf',
-  '.png': 'image/png',
-  '.svg': 'image/svg+xml',
-  '.txt': 'text/plain; charset=utf-8',
-  '.wasm': 'application/wasm',
-  '.woff2': 'font/woff2',
-  '.xml': 'application/xml; charset=utf-8',
-  '.zip': 'application/zip',
-};
-
 let server;
 
 function resolveDistPath() {
   return path.join(__dirname, '..', 'dist');
 }
 
-function resolveAssetPath(urlPathname) {
-  const distPath = resolveDistPath();
-  const requestPath = decodeURIComponent(urlPathname.split('?')[0]);
-  const normalizedPath = path.normalize(requestPath).replace(/^([.][.][/\\])+/, '');
-  const assetPath = path.join(distPath, normalizedPath === '/' ? 'index.html' : normalizedPath);
-  const safeRoot = `${distPath}${path.sep}`;
-
-  if (assetPath !== distPath && !assetPath.startsWith(safeRoot)) {
-    return null;
+/** Only http(s) links may be handed off to the OS's default browser. */
+function isAllowedExternalUrl(url) {
+  try {
+    const protocol = new URL(url).protocol;
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
   }
-
-  if (fs.existsSync(assetPath) && fs.statSync(assetPath).isFile()) {
-    return assetPath;
-  }
-
-  const spaFallback = path.join(distPath, 'index.html');
-  return fs.existsSync(spaFallback) ? spaFallback : null;
 }
 
 function startStaticServer() {
   return new Promise((resolve, reject) => {
     const distPath = resolveDistPath();
 
-    if (!fs.existsSync(path.join(distPath, 'index.html'))) {
+    if (!hasIndexHtml(distPath)) {
       reject(new Error(`Missing built app at ${distPath}. Run "npm run build" first.`));
       return;
     }
 
-    server = http.createServer((req, res) => {
-      const assetPath = resolveAssetPath(req.url || '/');
-
-      if (!assetPath) {
-        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('Not found');
-        return;
-      }
-
-      const extension = path.extname(assetPath).toLowerCase();
-      const contentType = MIME_TYPES[extension] || 'application/octet-stream';
-
-      res.writeHead(200, {
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': extension === '.html' ? 'no-cache' : 'public, max-age=31536000, immutable',
-        'Content-Type': contentType,
-      });
-
-      fs.createReadStream(assetPath).pipe(res);
+    const handleRequest = createRequestHandler(distPath, {
+      spaFallback: true,
+      getResponseHeaders: (_target, ext) => ({
+        'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=31536000, immutable',
+      }),
     });
+
+    server = http.createServer(handleRequest);
 
     server.once('error', reject);
     server.listen(LOCAL_SERVER_PORT, '127.0.0.1', () => {
@@ -99,6 +59,7 @@ function startStaticServer() {
 
 async function createWindow() {
   const startUrl = await startStaticServer();
+  const appOrigin = new URL(startUrl).origin;
   const mainWindow = new BrowserWindow({
     width: 1440,
     height: 960,
@@ -114,8 +75,26 @@ async function createWindow() {
   });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url);
+    if (isAllowedExternalUrl(url)) {
+      void shell.openExternal(url);
+    }
     return { action: 'deny' };
+  });
+
+  // The app never legitimately navigates away from its own local origin —
+  // clicking/following a link should open externally (handled above), not
+  // navigate the app window itself. Block anything else outright.
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    let navOrigin;
+    try {
+      navOrigin = new URL(url).origin;
+    } catch {
+      event.preventDefault();
+      return;
+    }
+    if (navOrigin !== appOrigin) {
+      event.preventDefault();
+    }
   });
 
   await mainWindow.loadURL(startUrl);

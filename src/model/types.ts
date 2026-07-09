@@ -213,6 +213,17 @@ export type AggRequest =
       dims: number;
       existingEdges: { source: string; target: string; weight: number }[];
       params: { threshold: number; topK: number; dupThreshold: number };
+    }
+  | {
+      // Clustering-only pass: Louvain over a caller-supplied edge set, no
+      // vectors/similarity computation. Used by the incremental semantic
+      // path (pipeline/coordinator.ts), which computes new-vs-existing
+      // similarity pairs itself and only needs the worker to re-run
+      // community detection over the resulting (small) edge set.
+      requestId: number;
+      type: 'cluster';
+      ids: string[];
+      edges: { source: string; target: string; weight: number }[];
     };
 
 export type AggResponse =
@@ -229,7 +240,12 @@ export type AggResponse =
       edges: Edge[]; // semantic edges only
       clusters: Record<string, number>; // docId -> community (over full edge set)
       duplicates: DuplicatePair[]; // pairs >= dupThreshold, independent of the edge set
+      /** Per-doc bounded top-k candidates, indices into the request's `ids` —
+       * cached by the caller so the next incremental pass can skip the full
+       * O(n²) rescan (see similarity.ts's SemanticIndex). */
+      top: { j: number; sim: number }[][];
     }
+  | { requestId: number; type: 'cluster:done'; clusters: Record<string, number> }
   | { requestId: number; type: 'error'; message: string };
 
 // ---------------------------------------------------------------------------

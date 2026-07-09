@@ -38,6 +38,10 @@ function parseMsg(): PoolRequest {
   };
 }
 
+function embedMsg(): PoolRequest {
+  return { requestId: 0, type: 'embed', docId: 'd', chunks: ['x'] };
+}
+
 class FakeWorker implements PipelineWorkerLike {
   messages: PoolRequest[] = [];
   onmessage: ((ev: MessageEvent<PoolResponse>) => void) | null = null;
@@ -54,6 +58,19 @@ class FakeWorker implements PipelineWorkerLike {
     const msg = this.messages[this.messages.length - 1];
     this.onmessage?.({
       data: { requestId: msg.requestId, type: 'parse:done', fileId: 'f', doc: makeDoc() },
+    } as MessageEvent<PoolResponse>);
+  }
+  respondEmbedToLast(): void {
+    const msg = this.messages[this.messages.length - 1];
+    this.onmessage?.({
+      data: {
+        requestId: msg.requestId,
+        type: 'embed:done',
+        docId: 'd',
+        docVector: new Float32Array(0),
+        chunkVectors: new Float32Array(0),
+        nChunks: 0,
+      },
     } as MessageEvent<PoolResponse>);
   }
   crash(): void {
@@ -124,6 +141,25 @@ describe('WorkerPool scheduling', () => {
     expect(workers).toHaveLength(2);
     workers[1].respondToLast();
     await expect(second).resolves.toMatchObject({ type: 'parse:done' });
+  });
+
+  it("an embed request timeout rejects only that request — the worker survives", async () => {
+    const first = pool.request(embedMsg());
+    const firstTimesOut = expect(first).rejects.toThrow(/timed out/);
+    // embed's timeout (180s) is much longer than parse's (30s) — advance
+    // past it without ever hitting parse's shorter window.
+    await vi.advanceTimersByTimeAsync(180_001);
+    await firstTimesOut;
+    // No replacement worker: the original keeps running (and keeps
+    // whatever model it already loaded) instead of being retired.
+    expect(workers).toHaveLength(1);
+    expect(workers[0].terminated).toBe(false);
+
+    // The same (still-alive) worker serves the next request normally.
+    const second = pool.request(embedMsg());
+    expect(workers).toHaveLength(1);
+    workers[0].respondEmbedToLast();
+    await expect(second).resolves.toMatchObject({ type: 'embed:done' });
   });
 
   it('dispose rejects queued jobs as well as in-flight ones', async () => {

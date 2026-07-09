@@ -69,7 +69,6 @@ export default function App() {
       const { array, count } = positionBuffer;
       let meanR = 0;
       let maxR = 0;
-      let minPair = Infinity;
       for (let i = 0; i < count; i++) {
         const x = array[i * 3];
         const y = array[i * 3 + 1];
@@ -77,16 +76,32 @@ export default function App() {
         const r = Math.hypot(x, y, z);
         meanR += r;
         if (r > maxR) maxR = r;
-        for (let j = i + 1; j < count; j++) {
-          const d = Math.hypot(
-            x - array[j * 3],
-            y - array[j * 3 + 1],
-            z - array[j * 3 + 2],
-          );
-          if (d < minPair) minPair = d;
-        }
       }
       if (count > 0) meanR /= count;
+
+      // minPair is an O(n^2) all-pairs scan — fine for the small demo corpus
+      // this was written against, but it'd hang the tab on a large one.
+      // Sample a capped, evenly-strided subset of nodes instead of every
+      // pair; this is dev-only debug tooling, not a rendered metric, so an
+      // approximate answer is fine.
+      let minPair = Infinity;
+      if (count > 1) {
+        const MINPAIR_SAMPLE_CAP = 300;
+        const sampleCount = Math.min(count, MINPAIR_SAMPLE_CAP);
+        const stride = count / sampleCount;
+        for (let si = 0; si < sampleCount; si++) {
+          const i = Math.floor(si * stride) * 3;
+          for (let sj = si + 1; sj < sampleCount; sj++) {
+            const j = Math.floor(sj * stride) * 3;
+            const d = Math.hypot(
+              array[i] - array[j],
+              array[i + 1] - array[j + 1],
+              array[i + 2] - array[j + 2],
+            );
+            if (d < minPair) minPair = d;
+          }
+        }
+      }
       return {
         phase: g.phase,
         nodes: g.nodes.length,

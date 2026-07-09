@@ -1,0 +1,9 @@
+services:
+  document-graph-explorer:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      # Staged by `npm run build:exe` -> scripts/stage-win-release.mjs.
+      - ./release/downloads:/usr/share/nginx/downloads:ro
+    restart: unless-stopped

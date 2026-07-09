@@ -22,6 +22,14 @@ import { isOffline, OFFLINE_MESSAGE } from '../offline';
 import { useGraphStore } from '../store/graphStore';
 import { textStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
+import {
+  backoffDelayMs,
+  isRetryableStatus,
+  parseSseLine,
+  readErrorMessage,
+  sleep,
+  splitSseLines,
+} from '../chat/geminiClient';
 
 const EXCERPT_CHARS = 8_000; // per-doc in batched enrichment (15 docs × 8k ≈ 120k chars, well within context)
 const CLUSTER_TITLES_CAP = 30;
@@ -33,11 +41,7 @@ const TOPICS_PER_DOC = 5;
 
 type CallResult = { ok: true; text: string } | { ok: false; error: string };
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function extractText(data: unknown): string | null {
+export function extractText(data: unknown): string | null {
   const d = data as {
     candidates?: { content?: { parts?: { text?: unknown }[] } }[];
   } | null;
@@ -45,7 +49,7 @@ function extractText(data: unknown): string | null {
   return typeof t === 'string' ? t : null;
 }
 
-function parseModelJson<T>(text: string): T | null {
+export function parseModelJson<T>(text: string): T | null {
   try {
     return JSON.parse(text) as T;
   } catch {
@@ -98,23 +102,17 @@ async function callGemini(prompt: string, responseSchema: unknown): Promise<Call
         if (text !== null) return { ok: true, text };
         lastError = 'Gemini returned an unexpected response shape';
       } else {
-        retryable = res.status === 429 || res.status === 503;
+        retryable = isRetryableStatus(res.status);
         lastError = `Gemini HTTP ${res.status}`;
-        try {
-          const errData = (await res.json()) as { error?: { message?: unknown } };
-          if (typeof errData.error?.message === 'string') {
-            lastError += `: ${errData.error.message.slice(0, 160)}`;
-          }
-        } catch {
-          /* error body wasn't JSON */
-        }
+        const bodyMsg = await readErrorMessage(res, 160);
+        if (bodyMsg) lastError += `: ${bodyMsg}`;
       }
     } catch (err) {
       retryable = true; // fetch network failure
       lastError = err instanceof Error ? `Network error: ${err.message}` : 'Network error';
     }
     if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
-    await sleep(1000 * 2 ** attempt);
+    await sleep(backoffDelayMs(attempt));
   }
 }
 
@@ -365,16 +363,12 @@ async function streamGemini(
       });
 
       if (!res.ok) {
-        retryable = res.status === 429 || res.status === 503;
+        retryable = isRetryableStatus(res.status);
         lastError = `Gemini HTTP ${res.status}`;
-        try {
-          const errData = (await res.json()) as { error?: { message?: unknown } };
-          if (typeof errData.error?.message === 'string') {
-            lastError += `: ${errData.error.message.slice(0, 160)}`;
-          }
-        } catch { /* not JSON */ }
+        const bodyMsg = await readErrorMessage(res, 160);
+        if (bodyMsg) lastError += `: ${bodyMsg}`;
         if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
-        await sleep(1000 * 2 ** attempt);
+        await sleep(backoffDelayMs(attempt));
         continue;
       }
 
@@ -390,27 +384,15 @@ async function streamGemini(
         const { done, value } = await reader.read();
         if (done) break;
         armIdle(); // healthy chunk arrived — push the inactivity deadline out
-        buffer += decoder.decode(value, { stream: true });
 
-        // Parse SSE events: "data: {...}\n\n"
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? ''; // keep incomplete line in buffer
+        const { lines, remainder } = splitSseLines(buffer, decoder.decode(value, { stream: true }));
+        buffer = remainder;
 
         for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const jsonStr = line.slice(6).trim();
-          if (!jsonStr || jsonStr === '[DONE]') continue;
-          try {
-            const chunk = JSON.parse(jsonStr) as {
-              candidates?: { content?: { parts?: { text?: string }[] } }[];
-            };
-            const text = chunk?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (typeof text === 'string') {
-              accumulated += text;
-              onChunk?.(accumulated);
-            }
-          } catch {
-            // Malformed chunk — skip
+          const evt = parseSseLine(line);
+          if (evt?.text) {
+            accumulated += evt.text;
+            onChunk?.(accumulated);
           }
         }
       }
@@ -426,7 +408,7 @@ async function streamGemini(
       clearIdle();
     }
     if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
-    await sleep(1000 * 2 ** attempt);
+    await sleep(backoffDelayMs(attempt));
   }
 }
 

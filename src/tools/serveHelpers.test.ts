@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import path from 'node:path';
 // @ts-expect-error - scripts/serve.mjs is a plain Node ESM script (no allowJs/.d.ts
 // for the scripts/ dir); imported here purely for its pure, unit-testable helpers.
-import { contentTypeFor, distDirFor, resolveSafe } from '../../scripts/serve.mjs';
+import { distDirFor } from '../../scripts/serve.mjs';
+// @ts-expect-error - scripts/staticServer.cjs is a plain Node CJS module (no
+// allowJs/.d.ts for the scripts/ dir); imported here purely for its pure,
+// unit-testable helpers. Shared by serve.mjs, serve-exe.cjs, and desktop/main.cjs.
+import { contentTypeFor, resolveSafe } from '../../scripts/staticServer.cjs';
 
 describe('distDirFor', () => {
   it('defaults to the normal build (dist)', () => {

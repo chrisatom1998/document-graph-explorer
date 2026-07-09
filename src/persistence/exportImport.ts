@@ -10,7 +10,7 @@
  * falls back to title/keyword matching.
  */
 
-import { EMBED_DIMS } from '../config';
+import { EMBED_DIMS, MAX_INGEST_FILE_BYTES } from '../config';
 import {
   layoutAddNodes,
   layoutReheat,
@@ -19,7 +19,8 @@ import {
 } from '../layout/layoutBridge';
 import type { GraphExport } from '../model/types';
 import { computeLocalClusterNames } from '../graph/clusterNaming';
-import { resetCorpus } from '../pipeline/coordinator';
+import { enqueueRun, resetCorpus } from '../pipeline/coordinator';
+import { randomSpherePoint } from '../pipeline/spawnPosition';
 import { useGraphStore } from '../store/graphStore';
 import { docVectorStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
@@ -92,13 +93,9 @@ export function exportScenePNG(): void {
 // Import
 // ---------------------------------------------------------------------------
 
-/** Random point on a loose spherical shell — fly-in origin for imported nodes. */
+/** Random point on a loose spherical shell (radius 80–120) — fly-in origin for imported nodes. */
 function randomShellPoint(): [number, number, number] {
-  const u = Math.random() * 2 - 1; // cos(theta), uniform on sphere
-  const phi = Math.random() * Math.PI * 2;
-  const s = Math.sqrt(Math.max(0, 1 - u * u));
-  const r = 80 + Math.random() * 40;
-  return [r * s * Math.cos(phi), r * s * Math.sin(phi), r * u];
+  return randomSpherePoint(100, 20);
 }
 
 /**
@@ -109,8 +106,23 @@ function randomShellPoint(): [number, number, number] {
  * corpusHash is intentionally left null: exports carry no document text, so
  * auto-caching an imported session would overwrite good cached docs with
  * empty ones. Imported graphs live for the tab session (re-exportable).
+ *
+ * Routed through the shared run-queue (pipeline/coordinator.ts's
+ * enqueueRun) so this can never interleave with an in-flight ingest —
+ * both mutate the graph store, runtime stores, and layout, and an import
+ * landing mid-ingest would corrupt all three.
  */
-export async function importGraphJSONFile(file: File): Promise<void> {
+export function importGraphJSONFile(file: File): Promise<void> {
+  return enqueueRun(() => doImportGraphJSONFile(file));
+}
+
+async function doImportGraphJSONFile(file: File): Promise<void> {
+  if (file.size > MAX_INGEST_FILE_BYTES) {
+    const maxMb = Math.round(MAX_INGEST_FILE_BYTES / (1024 * 1024));
+    throw new Error(
+      `Import failed: file is too large (${Math.round(file.size / (1024 * 1024))} MB) — the maximum is ${maxMb} MB.`,
+    );
+  }
   const raw = await file.text();
   let parsed: unknown;
   try {

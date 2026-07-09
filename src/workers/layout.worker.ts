@@ -27,6 +27,7 @@ import {
 } from 'd3-force-3d';
 import type { Force, SimLink } from 'd3-force-3d';
 import type { LayoutRequest, LayoutResponse } from '../model/types';
+import { randomSpherePoint } from '../pipeline/spawnPosition';
 
 declare const self: DedicatedWorkerGlobalScope;
 
@@ -265,16 +266,11 @@ sim.on('end', () => {
 // Protocol
 // ---------------------------------------------------------------------------
 
+/** Fly in from outside the settled shell, around its *current* (runtime,
+ * node-count-dependent) radius — shares the sphere-sampling math in
+ * pipeline/spawnPosition.ts, but that radius is only known here. */
 function randomShellPoint(): [number, number, number] {
-  const u = Math.random() * 2 - 1;
-  const theta = Math.random() * Math.PI * 2;
-  const r = Math.sqrt(Math.max(0, 1 - u * u));
-  const spawnR = shellRadius * 1.8; // fly in from outside the settled shell
-  return [
-    spawnR * r * Math.cos(theta),
-    spawnR * u,
-    spawnR * r * Math.sin(theta),
-  ];
+  return randomSpherePoint(shellRadius * 1.8);
 }
 
 self.onmessage = (ev: MessageEvent<LayoutRequest>) => {

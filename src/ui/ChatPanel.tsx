@@ -10,7 +10,7 @@ import { AIRGAP } from '../airgap';
 import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
 import { useGraphStore } from '../store/graphStore';
 import { useSettingsStore } from '../store/settingsStore';
-import { useUiStore } from '../store/uiStore';
+import { focusNode } from './focusNode';
 import { openDocument } from './openDocument';
 
 function formatTime(ts: number): string {
@@ -132,8 +132,7 @@ export default function ChatPanel() {
   const messages = useChatStore((s) => s.messages);
   const isStreaming = useChatStore((s) => s.isStreaming);
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
-  const setSelected = useUiStore((s) => s.setSelected);
-  const sendCamera = useUiStore((s) => s.sendCamera);
+  const docCount = useGraphStore((s) => s.nodes.filter((n) => n.kind === 'document').length);
   const enrichEnabled = useSettingsStore((s) => s.enrichEnabled);
   const geminiKey = useSettingsStore((s) => s.geminiKey);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
@@ -173,13 +172,9 @@ export default function ChatPanel() {
 
   // Stable reference — an inline handler would defeat MessageBubble's memo.
   // (zustand action references are stable, so this never actually re-creates.)
-  const handleSourceClick = useCallback(
-    (docId: string) => {
-      setSelected(docId);
-      sendCamera('frameNode', [docId]);
-    },
-    [setSelected, sendCamera],
-  );
+  const handleSourceClick = useCallback((docId: string) => {
+    focusNode(docId);
+  }, []);
 
   if (!hasNodes) return null;
 
@@ -197,8 +192,6 @@ export default function ChatPanel() {
       </button>
     );
   }
-
-  const docCount = useGraphStore.getState().nodes.filter((n) => n.kind === 'document').length;
 
   return (
     <div className="chat-panel glass-panel">
@@ -260,7 +253,6 @@ export default function ChatPanel() {
           placeholder="Ask a question…"
           title="Ask a question about your documents. Enter to send, Shift+Enter for a new line."
           rows={1}
-          disabled={isStreaming}
         />
         <button
           type="button"

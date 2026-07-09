@@ -28,13 +28,19 @@ const MIN_TOKEN_LEN = 3;
 const MAX_TOKEN_LEN = 30;
 const NUMBERS_ONLY = /^\d+$/;
 
+// Unicode property escapes (\p{L} letters, \p{N} numbers, `u` flag) instead
+// of an ASCII-only [a-z0-9] class, so non-Latin-script text (e.g. Cyrillic,
+// CJK, Arabic) tokenizes into real tokens rather than being split into
+// individual characters (or dropped entirely) at every non-ASCII boundary.
+const WORD_SPLIT = /[^\p{L}\p{N}]+/u;
+
 /**
- * Lowercase, split on non-alphanumerics, drop very short/long tokens,
- * numbers-only tokens, and stopwords.
+ * Lowercase, split on non-alphanumerics (Unicode-aware), drop very
+ * short/long tokens, numbers-only tokens, and stopwords.
  */
 export function tokenize(text: string): string[] {
   const out: string[] = [];
-  for (const raw of text.toLowerCase().split(/[^a-z0-9]+/)) {
+  for (const raw of text.toLowerCase().split(WORD_SPLIT)) {
     if (raw.length < MIN_TOKEN_LEN || raw.length > MAX_TOKEN_LEN) continue;
     if (NUMBERS_ONLY.test(raw)) continue;
     if (STOPWORDS.has(raw)) continue;

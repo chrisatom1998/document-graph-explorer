@@ -11,6 +11,17 @@ import { cleanFilename, type ParserResult } from './txt';
 
 type XmlNode = Record<string, unknown>;
 
+// Zip-bomb hardening: a crafted .docx/.pptx/.xlsx can declare a tiny
+// compressed part that inflates to gigabytes, exhausting tab memory long
+// before the caller sees any output. 40 MB is generous for any legitimate
+// Office XML part (even a huge spreadsheet's sharedStrings.xml) while still
+// bounding the worst case.
+const MAX_ZIP_ENTRY_BYTES = 40 * 1024 * 1024;
+// Slide count cap for pptx — mirrors the per-part cap's intent for decks
+// with an implausible number of slides (each slide is its own zip entry, so
+// the per-entry cap alone doesn't bound the total slide count).
+const MAX_PPTX_SLIDES = 300;
+
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   preserveOrder: true,
@@ -102,8 +113,36 @@ function numericSort(a: string, b: string): number {
   return na - nb || a.localeCompare(b);
 }
 
+/**
+ * JSZip records each entry's uncompressed size from the central directory
+ * while parsing the archive layout — BEFORE `.async()` actually inflates
+ * anything — so this is available for a cheap pre-check. `_data` isn't part
+ * of JSZip's public d.ts (undocumented internal), so it's read defensively:
+ * if a future JSZip version doesn't expose it, `declared` is just
+ * `undefined` and this falls through to the post-decompress length check
+ * in zipText below instead of throwing.
+ */
+function declaredUncompressedSize(entry: JSZip.JSZipObject): number | undefined {
+  const size = (entry as unknown as { _data?: { uncompressedSize?: unknown } })._data
+    ?.uncompressedSize;
+  return typeof size === 'number' && Number.isFinite(size) ? size : undefined;
+}
+
 async function zipText(zip: JSZip, path: string): Promise<string | null> {
-  return (await zip.file(path)?.async('text')) ?? null;
+  const entry = zip.file(path);
+  if (!entry) return null;
+  const declared = declaredUncompressedSize(entry);
+  if (declared !== undefined && declared > MAX_ZIP_ENTRY_BYTES) {
+    // Oversized part — treat like a missing one; callers already handle a
+    // missing part by falling back to "unreadable"/empty text.
+    return null;
+  }
+  const text = await entry.async('text');
+  // Belt-and-suspenders: also cap the actual decompressed length, in case
+  // the declared-size pre-check above wasn't available (e.g. a JSZip
+  // version without the internal field, or a zip that lies about size in
+  // its central directory).
+  return text.length > MAX_ZIP_ENTRY_BYTES ? text.slice(0, MAX_ZIP_ENTRY_BYTES) : text;
 }
 
 async function readCoreTitle(zip: JSZip): Promise<string> {
@@ -229,9 +268,11 @@ function pptxRunLinks(paragraph: XmlNode, rels: Map<string, string>): LinkRef[] 
 
 async function parsePptx(zip: JSZip, name: string): Promise<ParserResult> {
   const coreTitle = await readCoreTitle(zip);
-  const slidePaths = Object.keys(zip.files)
+  const allSlidePaths = Object.keys(zip.files)
     .filter((p) => /^ppt\/slides\/slide\d+\.xml$/i.test(p))
     .sort(numericSort);
+  const slidePaths = allSlidePaths.slice(0, MAX_PPTX_SLIDES);
+  const truncated = allSlidePaths.length > MAX_PPTX_SLIDES;
   if (slidePaths.length === 0) return emptyResult(name, 'No PowerPoint slides found');
 
   const headings: string[] = [];
@@ -255,9 +296,18 @@ async function parsePptx(zip: JSZip, name: string): Promise<ParserResult> {
   }
 
   const text = normalizeLines(lines);
-  return text
-    ? result(name, coreTitle || cleanFilename(name), text, headings, docLinks)
-    : emptyResult(name, 'No readable PowerPoint text found');
+  if (!text) return emptyResult(name, 'No readable PowerPoint text found');
+  return truncated
+    ? result(
+        name,
+        coreTitle || cleanFilename(name),
+        text,
+        headings,
+        docLinks,
+        'partial',
+        `Only the first ${MAX_PPTX_SLIDES} slides were indexed`,
+      )
+    : result(name, coreTitle || cleanFilename(name), text, headings, docLinks);
 }
 
 async function sharedStrings(zip: JSZip): Promise<string[]> {

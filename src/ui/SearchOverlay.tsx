@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { searchCorpus } from '../search/semanticSearch';
+import { focusNode } from './focusNode';
 
 const DEBOUNCE_MS = 250;
 
@@ -16,8 +17,6 @@ export default function SearchOverlay() {
   const searchOpen = useUiStore((s) => s.searchOpen);
   const setSearchOpen = useUiStore((s) => s.setSearchOpen);
   const setSearchResults = useUiStore((s) => s.setSearchResults);
-  const setSelected = useUiStore((s) => s.setSelected);
-  const sendCamera = useUiStore((s) => s.sendCamera);
 
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
@@ -81,8 +80,7 @@ export default function SearchOverlay() {
   if (!searchOpen) return null;
 
   const selectResult = (id: string) => {
-    setSelected(id);
-    sendCamera('frameNode', [id]);
+    focusNode(id);
     setSearchOpen(false);
   };
 
