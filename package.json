@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "main": "desktop/main.cjs",
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -52,7 +55,7 @@
     "@types/three": "^0.185.0",
     "@vitejs/plugin-react": "^5.2.0",
     "@yao-pkg/pkg": "^6.21.0",
-    "electron": "^32.3.3",
+    "electron": "^43.1.0",
     "electron-builder": "^25.1.8",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^5.2.0",
