@@ -49,7 +49,7 @@ function loadPersisted(): PersistedSettings {
       typeof parsed.rememberGeminiKey === 'boolean'
         ? parsed.rememberGeminiKey
         : DEFAULTS.rememberGeminiKey;
-    return {
+    const loaded: PersistedSettings = {
       geminiKey:
         rememberGeminiKey && typeof parsed.geminiKey === 'string'
           ? parsed.geminiKey.trim()
@@ -70,6 +70,22 @@ function loadPersisted(): PersistedSettings {
       offlineMode:
         typeof parsed.offlineMode === 'boolean' ? parsed.offlineMode : DEFAULTS.offlineMode,
     };
+    // rememberGeminiKey default flipped to false after early builds stored keys
+    // with the field missing (treated as "remember"). Without an eager rewrite,
+    // a stale plaintext key would sit in localStorage until the next settings
+    // change — scrub it on boot whenever remember is off.
+    if (
+      !rememberGeminiKey &&
+      typeof parsed.geminiKey === 'string' &&
+      parsed.geminiKey.length > 0
+    ) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
+      } catch {
+        /* private mode / quota — in-memory state is already keyless */
+      }
+    }
+    return loaded;
   } catch {
     return DEFAULTS;
   }

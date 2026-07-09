@@ -58,6 +58,10 @@ Open the URL, then DevTools → **Network** → "Disable cache" → reload → d
 documents and interact. Every request's domain is the local origin; there are no
 external domains and no CSP violations in the Console.
 
+## Assessments
+
+- [Security assessment of merged PRs (2026-07-09)](docs/security-assessment-2026-07-09-merged-prs.md) — review of PRs #1 and #2 for vulnerabilities and data leaks, plus follow-up remediations.
+
 ## Reporting a vulnerability
 
 Report suspected security issues privately to the repository owner
