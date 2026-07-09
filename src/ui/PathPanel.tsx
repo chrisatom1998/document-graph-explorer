@@ -12,6 +12,7 @@ import { useEffect, useMemo, type ReactNode } from 'react';
 import { shortestPath } from '../graph/pathfinding';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { focusNode } from './focusNode';
 
 export default function PathPanel() {
   const pathMode = useUiStore((s) => s.pathMode);
@@ -19,7 +20,6 @@ export default function PathPanel() {
   const setPathMode = useUiStore((s) => s.setPathMode);
   const setSearchResults = useUiStore((s) => s.setSearchResults);
   const sendCamera = useUiStore((s) => s.sendCamera);
-  const setSelected = useUiStore((s) => s.setSelected);
 
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
@@ -51,11 +51,6 @@ export default function PathPanel() {
   if (!pathMode) return null;
 
   const titleOf = (id: string): string => nodes[nodeIndex[id]]?.title ?? id;
-
-  const focusNode = (id: string): void => {
-    setSelected(id);
-    sendCamera('frameNode', [id]);
-  };
 
   const close = (): void => {
     setSearchResults(null);
