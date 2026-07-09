@@ -33,6 +33,7 @@ import type {
   AggRequest,
   AggResponse,
   DocNode,
+  DuplicatePair,
   Edge,
   FileType,
   IngestFile,
@@ -77,13 +78,19 @@ import { stripBoilerplate } from './boilerplate';
 import { chunkText } from './chunker';
 import { sha256Hex } from './hash';
 import { parsePdf } from './parsers/pdf';
+import { enqueueRun } from './runQueue';
+import { randomSpherePoint } from './spawnPosition';
+import { addToSemanticIndex, edgesFromIndex, type SemanticIndex } from './similarity';
 import { groupTopics } from './topics';
+
+export { enqueueRun };
 
 type ParseDone = Extract<PoolResponse, { type: 'parse:done' }>;
 type EmbedDone = Extract<PoolResponse, { type: 'embed:done' }>;
 type EmbedQueryDone = Extract<PoolResponse, { type: 'embedQuery:done' }>;
 type LexicalDone = Extract<AggResponse, { type: 'lexical:done' }>;
 type SemanticDone = Extract<AggResponse, { type: 'semantic:done' }>;
+type ClusterDone = Extract<AggResponse, { type: 'cluster:done' }>;
 
 // fly-in spawn shell (contract: random point on a ~140 radius shell, ±25 jitter)
 const SPAWN_RADIUS = 140;
@@ -93,12 +100,32 @@ const SPAWN_JITTER = 25;
 // aggregator worker client (single dedicated worker)
 // ---------------------------------------------------------------------------
 
+// Corpus-wide lexical/semantic passes are CPU-bound and bounded by MAX_NODES
+// (no model-load step, unlike the embed pool) — generous relative to any
+// realistic corpus size, but finite so a wedged worker can't hang the
+// serialized run queue forever. Sits between pool.ts's PARSE_REQUEST_TIMEOUT_MS
+// (30s, comparably cheap per-file work) and EMBED_REQUEST_TIMEOUT_MS (180s,
+// which pays for model load) for a similar-order-of-magnitude, corpus-wide pass.
+const AGG_REQUEST_TIMEOUT_MS = 60_000;
+
 let aggWorker: Worker | null = null;
 let aggNextRequestId = 1;
 const aggPending = new Map<
   number,
-  { resolve: (response: AggResponse) => void; reject: (error: Error) => void }
+  {
+    resolve: (response: AggResponse) => void;
+    reject: (error: Error) => void;
+    timer: ReturnType<typeof setTimeout>;
+  }
 >();
+
+function failAllPending(error: Error): void {
+  for (const [id, entry] of [...aggPending]) {
+    aggPending.delete(id);
+    clearTimeout(entry.timer);
+    entry.reject(error);
+  }
+}
 
 function ensureAggregator(): Worker {
   if (aggWorker) return aggWorker;
@@ -110,18 +137,24 @@ function ensureAggregator(): Worker {
     const entry = aggPending.get(msg.requestId);
     if (!entry) return;
     aggPending.delete(msg.requestId);
+    clearTimeout(entry.timer);
     if (msg.type === 'error') entry.reject(new Error(msg.message));
     else entry.resolve(msg);
   };
   aggWorker.onerror = (ev: ErrorEvent) => {
-    const error = new Error(ev.message || 'aggregator worker crashed');
-    for (const [id, entry] of [...aggPending]) {
-      aggPending.delete(id);
-      entry.reject(error);
-    }
     // Discard the dead worker so the next ensureAggregator() respawns a fresh
     // one; otherwise every later lexical/semantic pass posts into a crashed
     // worker and the serialized run chain wedges permanently.
+    failAllPending(new Error(ev.message || 'aggregator worker crashed'));
+    aggWorker?.terminate();
+    aggWorker = null;
+  };
+  aggWorker.onmessageerror = () => {
+    // A message that couldn't be structured-cloned/decoded leaves whatever
+    // request it was replying to (and every OTHER pending request on this
+    // worker — we can no longer trust its state) hanging forever without
+    // this: reject everything in flight and respawn, same as a crash.
+    failAllPending(new Error('aggregator worker message could not be decoded'));
     aggWorker?.terminate();
     aggWorker = null;
   };
@@ -137,10 +170,20 @@ function aggRequest<T extends AggResponse>(
   aggNextRequestId += 1;
   const payload = { ...msg, requestId } as AggRequest;
   return new Promise<T>((resolve, reject) => {
+    // Rejects only THIS request on timeout — not the whole worker. A lone
+    // slow pass doesn't necessarily mean the worker is wedged, and
+    // terminating it would also abort every other in-flight request sharing
+    // it; onerror/onmessageerror above already handle the "actually dead"
+    // case by failing everything and respawning.
+    const timer = setTimeout(() => {
+      if (!aggPending.delete(requestId)) return;
+      reject(new Error(`aggregator worker request timed out after ${AGG_REQUEST_TIMEOUT_MS}ms`));
+    }, AGG_REQUEST_TIMEOUT_MS);
     aggPending.set(requestId, {
       // correlated by requestId at runtime; caller asserts the subtype
       resolve: resolve as unknown as (response: AggResponse) => void,
       reject,
+      timer,
     });
     if (transfer && transfer.length > 0) worker.postMessage(payload, transfer);
     else worker.postMessage(payload);
@@ -201,11 +244,7 @@ function makeSummary(text: string): string {
 }
 
 function randomSpawn(): [number, number, number] {
-  const u = Math.random() * 2 - 1; // cos(polar)
-  const phi = Math.random() * Math.PI * 2;
-  const s = Math.sqrt(1 - u * u);
-  const r = SPAWN_RADIUS + (Math.random() * 2 - 1) * SPAWN_JITTER;
-  return [r * s * Math.cos(phi), r * s * Math.sin(phi), r * u];
+  return randomSpherePoint(SPAWN_RADIUS, SPAWN_JITTER);
 }
 
 /** id = SHA-256 over UTF-8(path + '\0') ++ content bytes (spec §6). */
@@ -588,6 +627,41 @@ async function runLexicalPass(
   return { lexEdges, boilerplate };
 }
 
+// ---------------------------------------------------------------------------
+// incremental semantic similarity (see similarity.ts's SemanticIndex)
+// ---------------------------------------------------------------------------
+
+const SIM_PARAMS = { threshold: SIM_THRESHOLD, topK: SIM_TOP_K, dupThreshold: DUP_SIM_THRESHOLD };
+
+/**
+ * Full O(n²) rebuilds are still exact and cheap in absolute terms, but
+ * happen every REBUILD_INTERVAL additions anyway (rather than never) as a
+ * defensive floor: it bounds the incremental cache's lifetime so a subtle
+ * bug in the incremental path (or an id churn pattern this module didn't
+ * anticipate) can only drift for a bounded number of ingests before
+ * self-healing, and it re-derives `semanticIndex.vectors` fresh from
+ * docVectorStore so that store can never silently diverge from the graph.
+ */
+const SEMANTIC_REBUILD_INTERVAL = 25;
+
+/** Cached across ingest runs; cleared on removal/reset to force a rebuild. */
+let semanticIndex: SemanticIndex | null = null;
+let additionsSinceRebuild = 0;
+
+function resetSemanticIndex(): void {
+  semanticIndex = null;
+  additionsSinceRebuild = 0;
+}
+
+function vectorsFor(ids: string[]): Float32Array {
+  const vectors = new Float32Array(ids.length * EMBED_DIMS);
+  ids.forEach((id, i) => {
+    const vector = docVectorStore.get(id);
+    if (vector) vectors.set(vector.subarray(0, EMBED_DIMS), i * EMBED_DIMS);
+  });
+  return vectors;
+}
+
 /** Ingest step (g): semantic edges + Louvain clustering over the full edge set. */
 async function runSemanticPass(lexEdges: Edge[]): Promise<void> {
   const store = useGraphStore.getState;
@@ -595,34 +669,93 @@ async function runSemanticPass(lexEdges: Edge[]): Promise<void> {
   const embedded = documentNodes().filter((n) => docVectorStore.has(n.id));
   if (embedded.length === 0) return;
   const ids = embedded.map((n) => n.id);
-  const vectors = new Float32Array(ids.length * EMBED_DIMS);
-  ids.forEach((id, i) => {
-    const vector = docVectorStore.get(id);
-    if (vector) vectors.set(vector.subarray(0, EMBED_DIMS), i * EMBED_DIMS);
-  });
+
+  const cachedIds = semanticIndex?.ids ?? [];
+  const cachedIdSet = new Set(cachedIds);
+  const idSet = new Set(ids);
+  // A doc leaving the corpus (removal) invalidates the cache outright —
+  // runRemove() already calls resetSemanticIndex(), but guard here too in
+  // case a future caller reaches this without going through it.
+  const cacheIsStale = cachedIds.some((id) => !idSet.has(id));
+  const newIds = cacheIsStale ? [] : ids.filter((id) => !cachedIdSet.has(id));
+  const needsFullRebuild =
+    !semanticIndex ||
+    cacheIsStale ||
+    additionsSinceRebuild + newIds.length > SEMANTIC_REBUILD_INTERVAL;
+
   try {
-    const semantic = await aggRequest<SemanticDone>(
-      {
-        requestId: 0,
-        type: 'semantic',
-        ids,
-        vectors,
+    let edges: Edge[];
+    let duplicates: DuplicatePair[];
+    let clusters: Record<string, number>;
+
+    if (needsFullRebuild) {
+      // Full O(n²) pass, offloaded to the aggregator worker — periodic
+      // (see SEMANTIC_REBUILD_INTERVAL) rather than on every ingest.
+      const vectors = vectorsFor(ids);
+      const semantic = await aggRequest<SemanticDone>(
+        {
+          requestId: 0,
+          type: 'semantic',
+          ids,
+          vectors,
+          dims: EMBED_DIMS,
+          existingEdges: toLinkInput(lexEdges),
+          params: SIM_PARAMS,
+        },
+        [vectors.buffer], // `vectors` is a copy; the doc vectors stay in the store
+      );
+      edges = semantic.edges;
+      duplicates = semantic.duplicates;
+      clusters = semantic.clusters;
+      // Cache the rebuilt index for the next incremental pass. `vectors` was
+      // transferred (detached) above, so re-derive a fresh copy here — an
+      // O(n) memory copy, not the O(n²) similarity pass the worker just did.
+      semanticIndex = {
+        ids: [...ids],
+        vectors: vectorsFor(ids),
         dims: EMBED_DIMS,
-        existingEdges: toLinkInput(lexEdges),
-        params: { threshold: SIM_THRESHOLD, topK: SIM_TOP_K, dupThreshold: DUP_SIM_THRESHOLD },
-      },
-      [vectors.buffer], // `vectors` is a copy; the doc vectors stay in the store
-    );
-    store().setDuplicatePairs(semantic.duplicates);
+        top: semantic.top,
+        duplicates,
+      };
+      additionsSinceRebuild = 0;
+    } else {
+      // Incremental fast path: only new-doc × existing-corpus (and new×new)
+      // pairs are computed — see similarity.ts's addToSemanticIndex — so
+      // cost scales with the SIZE OF THE NEW BATCH, not the corpus. Cheap
+      // enough to run on the main thread without a worker round trip.
+      const newVectors = vectorsFor(newIds);
+      semanticIndex = addToSemanticIndex(semanticIndex!, newIds, newVectors, SIM_PARAMS);
+      additionsSinceRebuild += newIds.length;
+      edges = edgesFromIndex(semanticIndex, SIM_THRESHOLD);
+      duplicates = semanticIndex.duplicates;
+
+      // Clustering still needs a corpus-wide pass over the FULL edge set
+      // whenever membership shifts — offload the Louvain pass (which is
+      // comparatively cheap next to a full similarity rescan) to the
+      // worker without repaying the O(n²) similarity cost above.
+      const mergedForCluster = new Map<string, Edge>();
+      for (const edge of [...lexEdges, ...edges]) {
+        if (!mergedForCluster.has(edge.id)) mergedForCluster.set(edge.id, edge);
+      }
+      const clusterResp = await aggRequest<ClusterDone>({
+        requestId: 0,
+        type: 'cluster',
+        ids,
+        edges: toLinkInput([...mergedForCluster.values()]),
+      });
+      clusters = clusterResp.clusters;
+    }
+
+    store().setDuplicatePairs(duplicates);
     const merged = new Map<string, Edge>();
-    for (const edge of [...lexEdges, ...semantic.edges]) {
+    for (const edge of [...lexEdges, ...edges]) {
       if (!merged.has(edge.id)) merged.set(edge.id, edge);
     }
     const allEdges = [...merged.values()];
     store().setEdges(allEdges);
 
     const patches = new Map<string, Partial<DocNode>>();
-    for (const [docId, cluster] of Object.entries(semantic.clusters)) {
+    for (const [docId, cluster] of Object.entries(clusters)) {
       patches.set(docId, { cluster });
     }
     store().patchNodes(patches);
@@ -632,10 +765,13 @@ async function runSemanticPass(lexEdges: Edge[]): Promise<void> {
     store().setLocalClusterNames(computeLocalClusterNames(store().nodes));
 
     layoutSetLinks(toLinkInput(allEdges));
-    layoutSetClusters(semantic.clusters);
+    layoutSetClusters(clusters);
     layoutReheat(0.5);
   } catch (err) {
     console.error('semantic aggregation failed', err);
+    // Whatever's cached may not match what actually landed in the store —
+    // force a full rebuild next time rather than compounding a bad state.
+    resetSemanticIndex();
     useUiStore
       .getState()
       .pushToast(
@@ -772,6 +908,9 @@ async function runRemove(ids: string[]): Promise<void> {
   if (removing.length === 0) return;
   const gone = new Set(removing);
   const oldCorpusHash = store().corpusHash;
+  // Removed ids invalidate the cached incremental similarity index outright
+  // (see runSemanticPass) — force its next pass to do a full rebuild.
+  resetSemanticIndex();
 
   // Drop UI references to whatever is about to disappear.
   const ui = useUiStore.getState();
@@ -890,24 +1029,26 @@ async function backfillLexMeta(pool: WorkerPool): Promise<void> {
 // public API
 // ---------------------------------------------------------------------------
 
-/** Serializes runs: a drop during an active run queues after it. */
-let runChain: Promise<void> = Promise.resolve();
-
+/**
+ * Serializes runs via the shared FIFO run-queue (runQueue.ts): a drop during
+ * an active run — or an in-flight import/snapshot-restore (exportImport.ts,
+ * session.ts route through the same `enqueueRun`) — queues after it, so
+ * these mutations of shared graph/runtime-store/layout state can never
+ * interleave.
+ */
 export function ingestFiles(files: IngestFile[]): Promise<void> {
-  const run = runChain.then(() => runIngest(files));
-  runChain = run.then(
-    () => undefined,
-    (err) => {
-      console.error('ingest run failed', err);
-    },
-  );
+  const run = enqueueRun(() => runIngest(files));
+  // Attached separately from the returned promise so a caller that doesn't
+  // itself .catch() the result (e.g. a fire-and-forget drop) doesn't produce
+  // an unhandled rejection warning; it doesn't change what `run` resolves to.
+  run.catch((err) => console.error('ingest run failed', err));
   return run;
 }
 
 /**
  * Removes documents from the knowledge bank: graph, layout, runtime stores,
  * AND the IndexedDB cache (text + embeddings are deleted from this browser).
- * Queues behind any in-flight ingest run.
+ * Queues behind any in-flight ingest/import/restore run.
  */
 export function removeDocuments(ids: string[]): Promise<void> {
   // Resolve the display label NOW: the SidePanel closes optimistically, and
@@ -917,19 +1058,16 @@ export function removeDocuments(ids: string[]): Promise<void> {
     ids.length === 1
       ? `'${g.nodes[g.nodeIndex[ids[0]]]?.title ?? nameOfDoc.get(ids[0]) ?? ids[0]}'`
       : `${ids.length} documents`;
-  const run = runChain.then(() => runRemove(ids));
-  runChain = run.then(
-    () => undefined,
-    (err) => {
-      console.error('document removal failed', err);
-      useUiStore
-        .getState()
-        .pushToast(
-          `Couldn't remove ${label} — the graph may be out of sync. Reload to recover.`,
-          'warning',
-        );
-    },
-  );
+  const run = enqueueRun(() => runRemove(ids));
+  run.catch((err) => {
+    console.error('document removal failed', err);
+    useUiStore
+      .getState()
+      .pushToast(
+        `Couldn't remove ${label} — the graph may be out of sync. Reload to recover.`,
+        'warning',
+      );
+  });
   return run;
 }
 
@@ -976,6 +1114,7 @@ export function resetCorpus(): void {
   lexMeta.clear();
   fileIdOfDoc.clear();
   nameOfDoc.clear();
+  resetSemanticIndex();
   const ui = useUiStore.getState();
   ui.setSelected(null);
   ui.setHovered(null);
