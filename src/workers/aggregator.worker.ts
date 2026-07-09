@@ -12,7 +12,7 @@ import type { AggRequest, AggResponse, Edge } from '../model/types';
 import { findBoilerplateLines } from '../pipeline/boilerplate';
 import { entityEdges } from '../pipeline/entityLinks';
 import { referenceEdges } from '../pipeline/links';
-import { semanticEdges } from '../pipeline/similarity';
+import { buildSemanticIndex, edgesFromIndex } from '../pipeline/similarity';
 import { computeIdf, keywordEdges, topKeywords } from '../pipeline/tfidf';
 
 const ctx = self as unknown as DedicatedWorkerGlobalScope;
@@ -86,15 +86,16 @@ function handleLexical(req: Extract<AggRequest, { type: 'lexical' }>): void {
   } satisfies AggResponse);
 }
 
-function handleSemantic(req: Extract<AggRequest, { type: 'semantic' }>): void {
-  const { ids, vectors, dims, existingEdges, params } = req;
-
-  const { edges: semEdges, duplicates } = semanticEdges(ids, vectors, dims, params);
-
-  // Community detection over the FULL weighted edge set (lexical + semantic).
-  // Connected-components clustering collapsed the whole (densely cross-linked)
-  // corpus into a single community, so every node shared one color; Louvain
-  // modularity separates it into meaningful colored clusters instead.
+/**
+ * Community detection over a caller-supplied weighted edge set. Connected-
+ * components clustering collapsed the whole (densely cross-linked) corpus
+ * into a single community, so every node shared one color; Louvain
+ * modularity separates it into meaningful colored clusters instead.
+ */
+function clusterFromEdges(
+  ids: string[],
+  edges: { source: string; target: string; weight: number }[],
+): Record<string, number> {
   const knownIds = new Set(ids);
   const graph = new UndirectedGraph();
   for (const id of ids) graph.addNode(id);
@@ -109,30 +110,50 @@ function handleSemantic(req: Extract<AggRequest, { type: 'semantic' }>): void {
       graph.addEdge(source, target, { weight });
     }
   };
-  for (const edge of existingEdges) addWeighted(edge.source, edge.target, edge.weight ?? 0.5);
-  for (const edge of semEdges) addWeighted(edge.source, edge.target, edge.weight ?? 0.5);
+  for (const edge of edges) addWeighted(edge.source, edge.target, edge.weight ?? 0.5);
 
-  let clusters: Record<string, number>;
   if (graph.size > 0) {
-    clusters = louvain(graph, {
+    return louvain(graph, {
       resolution: CLUSTER_RESOLUTION,
       getEdgeWeight: 'weight',
       rng: mulberry32(0x9e3779b9),
     });
-  } else {
-    // no edges at all: each node is its own singleton community
-    clusters = {};
-    ids.forEach((id, i) => {
-      clusters[id] = i;
-    });
   }
+  // no edges at all: each node is its own singleton community
+  const clusters: Record<string, number> = {};
+  ids.forEach((id, i) => {
+    clusters[id] = i;
+  });
+  return clusters;
+}
+
+function handleSemantic(req: Extract<AggRequest, { type: 'semantic' }>): void {
+  const { ids, vectors, dims, existingEdges, params } = req;
+
+  const index = buildSemanticIndex(ids, vectors, dims, params);
+  const semEdges = edgesFromIndex(index, params.threshold);
+
+  const clusters = clusterFromEdges(ids, [
+    ...existingEdges,
+    ...semEdges.map((e) => ({ source: e.source, target: e.target, weight: e.weight })),
+  ]);
 
   ctx.postMessage({
     requestId: req.requestId,
     type: 'semantic:done',
     edges: semEdges,
     clusters,
-    duplicates,
+    duplicates: index.duplicates,
+    top: index.top,
+  } satisfies AggResponse);
+}
+
+function handleCluster(req: Extract<AggRequest, { type: 'cluster' }>): void {
+  const clusters = clusterFromEdges(req.ids, req.edges);
+  ctx.postMessage({
+    requestId: req.requestId,
+    type: 'cluster:done',
+    clusters,
   } satisfies AggResponse);
 }
 
@@ -141,7 +162,8 @@ ctx.onmessage = (ev: MessageEvent<AggRequest>) => {
   void (async () => {
     try {
       if (req.type === 'lexical') handleLexical(req);
-      else handleSemantic(req);
+      else if (req.type === 'semantic') handleSemantic(req);
+      else handleCluster(req);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       ctx.postMessage({ requestId: req.requestId, type: 'error', message } satisfies AggResponse);

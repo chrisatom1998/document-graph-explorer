@@ -13,6 +13,14 @@ npm run dev      # start the Vite dev server
 
 Then open the printed local URL and drag documents onto the window — or click **Load demo corpus** on the welcome screen to explore instantly.
 
+### Run with Docker
+
+```bash
+docker compose up --build
+```
+
+Then visit `http://localhost:8080`. The optional Windows `.exe` download at `/downloads/` is served from a read-only bind mount of `release/downloads/` (populate it with `npm run build:exe`); it's fine to leave that folder empty or missing.
+
 **New here? Read the [User Guide](docs/user-guide.md)** — why the tool is valuable, what it can do, and a walkthrough of every feature.
 
 ## Scripts
@@ -121,7 +129,7 @@ Ingestion is a pipeline that runs off the main thread:
 **parse → boilerplate strip → chunk → tokenize → TF-IDF → embeddings → similarity links → Louvain clustering → topic synthesis**
 
 - **Parsing** ([src/pipeline/parsers/](src/pipeline/parsers/)) handles Markdown, HTML, plain text, PDF (including link annotations), and Office formats (DOCX, PPTX, XLSX).
-- **Embeddings** use a self-hosted `all-MiniLM-L6-v2` model in [public/models/](public/models/) via transformers.js — no third-party API.
+- **Embeddings** use a self-hosted `bge-small-en-v1.5` model in [public/models/](public/models/) via transformers.js — no third-party API.
 - **The 3D scene** ([src/scene/](src/scene/)) is React Three Fiber over Three.js, with instanced nodes/edges, a force-directed layout worker, and a cluster-collapse view for large graphs.
 - **State** lives in Zustand stores ([src/store/](src/store/)); the computed graph persists to IndexedDB so you don't re-parse every session. (JSON export/import is implemented in [src/persistence/exportImport.ts](src/persistence/exportImport.ts) but not yet exposed in the UI.)
 

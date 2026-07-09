@@ -23,9 +23,13 @@
  */
 
 import { createElement, Fragment, useMemo, type ReactNode } from 'react';
+import { SAFE_LINK_PROTOCOL } from './markdownAst';
 
-const SAFE_LINK_PROTOCOL = /^(https?:|mailto:)/i;
-const SAFE_IMG_PROTOCOL = /^(https?:|data:|blob:)/i;
+// Remote (http/https) images are deliberately excluded: loading them would
+// leak the fact that this document was opened (and when) to whatever host
+// serves the image, breaking the "documents never leave this browser"
+// guarantee. Only protocols that stay local/embedded survive.
+const SAFE_IMG_PROTOCOL = /^(data:|blob:)/i;
 
 /** Never rendered — node AND descendants are dropped entirely. */
 const DANGEROUS_TAGS = new Set([
@@ -85,7 +89,13 @@ function renderNode(node: Node, key: string): ReactNode {
 
   if (tag === 'img') {
     const src = (el.getAttribute('src') ?? '').trim();
-    if (!SAFE_IMG_PROTOCOL.test(src)) return null;
+    if (!SAFE_IMG_PROTOCOL.test(src)) {
+      return (
+        <span key={key} className="html-doc__blocked-img" title={src || undefined}>
+          🖼 Remote image blocked
+        </span>
+      );
+    }
     return <img key={key} src={src} alt={el.getAttribute('alt') ?? ''} loading="lazy" />;
   }
 

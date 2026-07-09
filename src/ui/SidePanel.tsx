@@ -9,6 +9,7 @@ import { removeDocuments } from '../pipeline/coordinator';
 import { timeAgo } from '../util/relativeTime';
 import DocAiSection from './DocAiSection';
 import { AIRGAP } from '../airgap';
+import { focusNode } from './focusNode';
 import { openDocument } from './openDocument';
 import VirtualText from './VirtualText';
 import DocumentMarkdown, { MAX_RENDER_CHARS as MD_MAX_RENDER_CHARS } from './DocumentMarkdown';
@@ -40,7 +41,6 @@ const PdfPreview = lazy(() => import('./PdfPreview'));
 export default function SidePanel() {
   const selectedId = useUiStore((s) => s.selectedId);
   const setSelected = useUiStore((s) => s.setSelected);
-  const sendCamera = useUiStore((s) => s.sendCamera);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
 
   const nodes = useGraphStore((s) => s.nodes);
@@ -258,10 +258,7 @@ export default function SidePanel() {
                 type="button"
                 className="chip chip-selectable side-panel__badge-warning side-panel__dup-chip"
                 title={`${(d.sim * 100).toFixed(1)}% similar — these might be the same doc`}
-                onClick={() => {
-                  setSelected(d.id);
-                  sendCamera('frameNode', [d.id]);
-                }}
+                onClick={() => focusNode(d.id)}
               >
                 ≈ duplicate of {nodes[nodeIndex[d.id]]?.title ?? d.id}
               </button>
@@ -310,10 +307,7 @@ export default function SidePanel() {
                       type="button"
                       className="chip chip-selectable side-panel__topic-chip"
                       title={`${hub.degree} document${hub.degree === 1 ? '' : 's'} share this topic — open the topic hub`}
-                      onClick={() => {
-                        setSelected(hub.id);
-                        sendCamera('frameNode', [hub.id]);
-                      }}
+                      onClick={() => focusNode(hub.id)}
                     >
                       {t}
                       <span className="side-panel__topic-count">{hub.degree}</span>
@@ -364,10 +358,7 @@ export default function SidePanel() {
                       type="button"
                       className="connection-row__title"
                       title={neighbor?.title ?? neighborId}
-                      onClick={() => {
-                        setSelected(neighborId);
-                        sendCamera('frameNode', [neighborId]);
-                      }}
+                      onClick={() => focusNode(neighborId)}
                     >
                       {neighbor?.title ?? neighborId}
                     </button>
@@ -418,10 +409,7 @@ export default function SidePanel() {
                 key={node.id}
                 text={mdSource.text}
                 linkIndex={linkIndex}
-                onNavigate={(id) => {
-                  setSelected(id);
-                  sendCamera('frameNode', [id]);
-                }}
+                onNavigate={(id) => focusNode(id)}
                 className="side-panel__reader side-panel__reader--markdown"
               />
             ) : htmlSource && htmlSource.id === node.id ? (

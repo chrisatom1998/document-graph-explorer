@@ -7,9 +7,17 @@
  *
  * Falls back to a plain pre-wrap dump of the raw text when it isn't valid
  * JSON (e.g. a truncated/oversized extraction) rather than showing nothing.
+ *
+ * Above MAX_RENDER_CHARS, skip parsing/highlighting entirely (perf safety
+ * net — JSON.parse + re-stringify + regex-tokenizing a huge file can freeze
+ * the main thread) and fall back to VirtualText instead.
  */
 
 import { useMemo, type ReactNode } from 'react';
+import VirtualText from './VirtualText';
+
+/** Same order of magnitude as the (heavier) DOM-walk guards in HtmlPreview/DocumentMarkdown, scaled down for this file type's lighter but still O(n)-ish parse+re-stringify+tokenize pipeline. */
+export const MAX_RENDER_CHARS = 500_000;
 
 const JSON_TOKEN_RE =
   /("(?:\\u[0-9a-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g;
@@ -49,6 +57,7 @@ interface JsonPreviewProps {
 
 export default function JsonPreview({ text, className }: JsonPreviewProps) {
   const pretty = useMemo(() => {
+    if (text.length > MAX_RENDER_CHARS) return null;
     try {
       return JSON.stringify(JSON.parse(text), null, 2);
     } catch {
@@ -57,6 +66,10 @@ export default function JsonPreview({ text, className }: JsonPreviewProps) {
   }, [text]);
 
   const wrapClass = className ? `json-preview ${className}` : 'json-preview';
+
+  if (text.length > MAX_RENDER_CHARS) {
+    return <VirtualText text={text} className={wrapClass} />;
+  }
 
   if (pretty === null) {
     return (

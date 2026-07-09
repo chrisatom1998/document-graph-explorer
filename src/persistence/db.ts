@@ -136,13 +136,14 @@ export function getDb(): Promise<IDBPDatabase<NebulaDB>> {
 
   // Safety timeout: if the upgrade is blocked for >2s, reject so callers
   // degrade to no-cache instead of hanging forever.
+  let timedOut = false;
   const guarded = Promise.race([
     p,
     new Promise<never>((_, reject) =>
-      setTimeout(
-        () => reject(new Error('DB open timed out (upgrade likely blocked)')),
-        2000,
-      ),
+      setTimeout(() => {
+        timedOut = true;
+        reject(new Error('DB open timed out (upgrade likely blocked)'));
+      }, 2000),
     ),
   ]);
 
@@ -152,5 +153,16 @@ export function getDb(): Promise<IDBPDatabase<NebulaDB>> {
     // clearing the memo lets a later call retry.
     if (dbPromise === guarded) dbPromise = null;
   });
+
+  // If the timeout won the race, `p` (the real open request) may still
+  // resolve later — e.g. the blocking connection above eventually closes on
+  // its own. Nothing else holds a reference to that connection once
+  // `guarded` already rejected to every caller, so it would otherwise leak
+  // an open IDB connection for the life of the tab. Close it the moment it
+  // shows up; `p`'s own rejection path is already handled by `guarded` above.
+  p.then((db) => {
+    if (timedOut) db.close();
+  }).catch(() => {});
+
   return guarded;
 }

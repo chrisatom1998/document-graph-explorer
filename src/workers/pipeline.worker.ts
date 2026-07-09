@@ -1,6 +1,6 @@
 /**
  * Pipeline worker: parse (txt/md/html — NEVER pdf, which runs on the main
- * thread), analyze pre-extracted text, and MiniLM embeddings via
+ * thread), analyze pre-extracted text, and bge-small-en-v1.5 embeddings via
  * transformers.js. One of POOL_SIZE instances managed by WorkerPool.
  */
 
@@ -93,7 +93,7 @@ async function runParser(req: Extract<PoolRequest, { type: 'parse' }>): Promise<
 const EMBED_BATCH_SIZE = 8;
 
 /**
- * Backend choice. WebGPU runs MiniLM ~5-10x faster than WASM, but the WebGPU
+ * Backend choice. WebGPU runs bge-small ~5-10x faster than WASM, but the WebGPU
  * execution provider has no kernels for the q8 model's integer ops
  * (MatMulInteger & co. would silently fall back to CPU with device round-trips,
  * ending up SLOWER than plain WASM) — so the GPU path uses the fp16 weights

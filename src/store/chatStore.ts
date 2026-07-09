@@ -20,6 +20,14 @@ export interface ChatMessage {
   text: string;
   /** Chunk-level citations used as context for this answer (source chips). */
   sources?: ChatSource[];
+  /**
+   * True when this message reports a failure (a hard error, not just an
+   * unhelpful-but-valid answer). Replaces the old convention of sniffing a
+   * literal "Error:" text prefix — an explicit flag so producers/consumers
+   * don't depend on message copy. Optional/additive so existing messages
+   * (and UI code that hasn't been updated to read it) keep working.
+   */
+  isError?: boolean;
   timestamp: number;
 }
 

@@ -9,10 +9,18 @@ function injectCsp(airgap: boolean): Plugin {
     name: 'document-graph-explorer:inject-csp',
     apply: 'build',
     transformIndexHtml(html) {
-      return html.replace(
-        '</title>',
-        `</title>\n    <meta http-equiv="Content-Security-Policy" content="${csp}" />`,
-      );
+      // Tags-array form (not a raw string replace) so this composes correctly
+      // with other transformIndexHtml hooks instead of clobbering their edits.
+      return {
+        html,
+        tags: [
+          {
+            tag: 'meta',
+            attrs: { 'http-equiv': 'Content-Security-Policy', content: csp },
+            injectTo: 'head-prepend',
+          },
+        ],
+      };
     },
   };
 }

@@ -2,7 +2,7 @@
 
 ## Cursor Cloud specific instructions
 
-This repo is a **single client-side web app** ("Document Graph Explorer" / "Knowledge Nebula"): React 19 + Vite + React Three Fiber. All parsing, embeddings, and clustering run in the browser (web workers + a self-hosted `all-MiniLM-L6-v2` model in `public/models/`). There is no backend server to run.
+This repo is a **single client-side web app** ("Document Graph Explorer" / "Knowledge Nebula"): React 19 + Vite + React Three Fiber. All parsing, embeddings, and clustering run in the browser (web workers + a self-hosted `bge-small-en-v1.5` model in `public/models/`). There is no backend server to run.
 
 Standard commands live in `package.json` scripts and are documented in `README.md`; use those (`npm run dev`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`). CI (`.github/workflows/ci.yml`) runs lint → typecheck → test → build.
 

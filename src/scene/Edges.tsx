@@ -138,7 +138,14 @@ export default function Edges() {
     forcePositions.current = true;
     colorsDirty.current = true;
     const geom = geomRef.current;
-    if (geom) geom.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
+    if (geom) {
+      // This <bufferGeometry> instance persists across `attrs` changes (same
+      // ref below, attributes swapped via `primitive`/`attach`) — dispose it
+      // whenever the attribute pair is replaced so the renderer drops its
+      // old GPU buffers instead of leaking them on every edge-set change.
+      geom.dispose();
+      geom.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
+    }
   }, [attrs]);
 
   useEffect(() => {

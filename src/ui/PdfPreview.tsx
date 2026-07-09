@@ -4,7 +4,10 @@
  * actual document rather than just its extracted text. Pages render lazily
  * as they scroll near the viewport (IntersectionObserver) — a document can
  * have hundreds of pages, and eagerly rasterizing all of them would be slow
- * and memory-heavy for no benefit over what's on screen.
+ * and memory-heavy for no benefit over what's on screen. Symmetrically, a
+ * page's canvas is cleared (and dropped from renderedRef, so it re-renders
+ * on the way back) once it scrolls back OUT of that window, bounding memory
+ * to roughly what's near the viewport rather than every page ever visited.
  *
  * MAIN-THREAD ONLY, same as pipeline/parsers/pdf.ts (pdf.js needs DOM/canvas).
  */
@@ -109,9 +112,22 @@ export default function PdfPreview({ blob, className }: PdfPreviewProps) {
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
           const pageNo = Number((entry.target as HTMLElement).dataset.pageNo);
-          if (pageNo) void renderPage(pageNo);
+          if (!pageNo) continue;
+          if (entry.isIntersecting) {
+            void renderPage(pageNo);
+            continue;
+          }
+          // Left the observed window (scrolled far away) — clear the
+          // rasterized bitmap and forget it was rendered so the browser can
+          // reclaim the backing memory; it'll re-render on the way back.
+          if (!renderedRef.current.has(pageNo)) continue;
+          renderedRef.current.delete(pageNo);
+          const canvas = canvasRefs.current.get(pageNo);
+          if (canvas) {
+            canvas.width = 0;
+            canvas.height = 0;
+          }
         }
       },
       { rootMargin: '400px 0px' },

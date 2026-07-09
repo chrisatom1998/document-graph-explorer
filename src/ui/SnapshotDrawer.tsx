@@ -75,6 +75,14 @@ export default function SnapshotDrawer() {
   const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState<number | null>(null); // snapshot being acted on
 
+  // Two-step inline confirm for the destructive Delete action — same pattern
+  // as SidePanel's Remove confirm. Reset whenever the drawer closes so an
+  // armed confirm never lingers into the next time it's opened.
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  useEffect(() => {
+    if (!open) setConfirmDeleteId(null);
+  }, [open]);
+
   // Save current graph
   const [saveName, setSaveName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -132,6 +140,7 @@ export default function SnapshotDrawer() {
   };
 
   const handleDelete = async (id: number) => {
+    setConfirmDeleteId(null);
     setActionId(id);
     const ok = await deleteSnapshot(id);
     setActionId(null);
@@ -220,15 +229,37 @@ export default function SnapshotDrawer() {
                   >
                     {loading && actionId === snap.id ? 'Loading…' : 'Load'}
                   </button>
-                  <button
-                    type="button"
-                    className="snapshot-btn snapshot-btn--delete"
-                    disabled={actionId === snap.id}
-                    onClick={() => handleDelete(snap.id)}
-                    title="Delete this snapshot"
-                  >
-                    ✕
-                  </button>
+                  {confirmDeleteId === snap.id ? (
+                    <>
+                      <button
+                        type="button"
+                        className="snapshot-btn snapshot-btn--delete-confirm"
+                        disabled={actionId === snap.id}
+                        onClick={() => handleDelete(snap.id)}
+                        title="Permanently delete this snapshot"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        type="button"
+                        className="snapshot-btn"
+                        onClick={() => setConfirmDeleteId(null)}
+                        title="Keep this snapshot"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="snapshot-btn snapshot-btn--delete"
+                      disabled={actionId === snap.id}
+                      onClick={() => setConfirmDeleteId(snap.id)}
+                      title="Delete this snapshot"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               </li>
             ))}

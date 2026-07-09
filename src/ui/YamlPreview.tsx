@@ -6,9 +6,16 @@
  * file types. The raw bytes for this file type ARE the extracted text
  * (verbatim decode, see pipeline/parsers/txt.ts), so this renders directly
  * off the already-cached full text, no async fetch.
+ *
+ * Above MAX_RENDER_CHARS, skip the per-line regex highlighting (perf safety
+ * net for huge files) and fall back to VirtualText instead.
  */
 
 import { Fragment, type ReactNode } from 'react';
+import VirtualText from './VirtualText';
+
+/** Same threshold as JsonPreview's guard — both do a similar per-line regex pass. */
+export const MAX_RENDER_CHARS = 500_000;
 
 const KEY_RE = /^(\s*(?:-\s+)?)([\w.$-]+|"[^"]*"|'[^']*')(\s*:)(\s|$)/;
 const LIST_MARKER_RE = /^(\s*)(-\s)/;
@@ -60,8 +67,13 @@ interface YamlPreviewProps {
 }
 
 export default function YamlPreview({ text, className }: YamlPreviewProps) {
-  const lines = text.split('\n');
   const wrapClass = className ? `yaml-preview ${className}` : 'yaml-preview';
+
+  if (text.length > MAX_RENDER_CHARS) {
+    return <VirtualText text={text} className={wrapClass} />;
+  }
+
+  const lines = text.split('\n');
 
   return (
     <pre className={wrapClass}>

@@ -5,6 +5,7 @@
  */
 
 import type { Edge } from '../model/types';
+import { isExternalUrl, normalizeLinkTarget } from './urlUtils';
 
 export interface ReferenceDocInput {
   id: string;
@@ -19,31 +20,6 @@ const MENTION_WEIGHT = 0.85;
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-/**
- * An external web link (http/https/mailto/tel/ftp/protocol-relative). These
- * point outside the corpus, so they never form a doc-to-doc reference edge —
- * and skipping them keeps a link to "https://…/setup.md" from spuriously
- * matching a local "setup.md" by basename.
- */
-function isExternalUrl(target: string): boolean {
-  const t = target.trim();
-  return /^(https?:|mailto:|tel:|ftp:)/i.test(t) || t.startsWith('//');
-}
-
-/** basename, lowercased, without #fragment / ?query / ./ prefixes. */
-function normalizeLinkTarget(target: string): string {
-  let t = target.trim();
-  const hash = t.indexOf('#');
-  if (hash >= 0) t = t.slice(0, hash);
-  const query = t.indexOf('?');
-  if (query >= 0) t = t.slice(0, query);
-  while (t.startsWith('./')) t = t.slice(2);
-  t = t.replace(/\/+$/, '');
-  const slash = Math.max(t.lastIndexOf('/'), t.lastIndexOf('\\'));
-  if (slash >= 0) t = t.slice(slash + 1);
-  return t.toLowerCase();
 }
 
 /**

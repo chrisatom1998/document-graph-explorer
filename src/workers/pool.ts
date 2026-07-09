@@ -148,6 +148,7 @@ export class WorkerPool {
       return;
     }
     const requestId = job.payload.requestId;
+    const jobType = job.payload.type;
     this.busy[index] += 1;
     // The timer starts at dispatch — the moment the worker actually gets the
     // job — never at enqueue, where a long backlog would expire it unfairly.
@@ -155,10 +156,23 @@ export class WorkerPool {
       job.timeoutMs > 0
         ? setTimeout(() => {
             if (!this.pending.has(requestId)) return;
-            this.handleWorkerFailure(
-              index,
-              new Error(`${job.payload.type} worker request timed out`),
-            );
+            if (jobType === 'embed' || jobType === 'embedQuery') {
+              // An embed worker has an expensively-loaded model (first-use
+              // WASM compile + weights) resident in memory. Retiring the
+              // whole worker over one slow request would throw that away
+              // and force the NEXT request to pay the load cost again —
+              // so reject only this request and leave the worker (and its
+              // warm model) running for whatever comes next. Contrast with
+              // parse/analyze below, which have no comparable warm state to
+              // protect and retiring is the simpler/safer default.
+              this.rejectTimedOut(
+                index,
+                requestId,
+                new Error(`${jobType} worker request timed out`),
+              );
+            } else {
+              this.handleWorkerFailure(index, new Error(`${jobType} worker request timed out`));
+            }
           }, job.timeoutMs)
         : undefined;
     this.pending.set(requestId, {
@@ -199,6 +213,26 @@ export class WorkerPool {
     this.busy[entry.workerIndex] = Math.max(0, this.busy[entry.workerIndex] - 1);
     if (msg.type === 'error') entry.reject(new Error(msg.message));
     else entry.resolve(msg);
+    this.pump();
+  }
+
+  /**
+   * Rejects a single timed-out request without touching the worker that was
+   * running it — the worker is assumed to still be healthy (just slow on
+   * this one request) and keeps serving future jobs, including any
+   * expensively-loaded model it already has in memory. NOTE: the worker
+   * itself is still processing the abandoned request under the hood (a
+   * worker's event loop can't be interrupted mid-job); its eventual
+   * response arrives with a requestId no longer in `pending` and is
+   * silently dropped by handleMessage.
+   */
+  private rejectTimedOut(index: number, requestId: number, error: Error): void {
+    const entry = this.pending.get(requestId);
+    if (!entry) return;
+    this.pending.delete(requestId);
+    if (entry.timer) clearTimeout(entry.timer);
+    this.busy[index] = Math.max(0, this.busy[index] - 1);
+    entry.reject(error);
     this.pump();
   }
 
