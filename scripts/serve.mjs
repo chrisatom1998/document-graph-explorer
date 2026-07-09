@@ -9,10 +9,11 @@
 // app in a browser tab; it is never meant to be reachable from a LAN, so it
 // does not offer a way to bind 0.0.0.0.
 import { createServer } from 'node:http';
-import { existsSync, statSync, createReadStream } from 'node:fs';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
+import { contentTypeFor, createRequestHandler, resolveSafe } from './staticServer.cjs';
 
 /** Which build directory a given argv selects: `dist` unless `--airgap`. */
 export function distDirFor(argv) {
@@ -37,112 +38,17 @@ const SECURITY_HEADERS = {
   'Referrer-Policy': 'no-referrer',
 };
 
-const MIME_TYPES = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-  '.ico': 'image/x-icon',
-  '.wasm': 'application/wasm', // required for WASM streaming instantiation
-  '.woff': 'font/woff',
-  '.woff2': 'font/woff2',
-  '.txt': 'text/plain; charset=utf-8',
-  '.md': 'text/markdown; charset=utf-8',
-};
-
-/** Content-Type for a request path, keyed off its extension. Unknown -> octet-stream. */
-export function contentTypeFor(pathname) {
-  const ext = path.extname(pathname).toLowerCase();
-  return MIME_TYPES[ext] ?? 'application/octet-stream';
-}
-
-/**
- * Resolve a request path to an absolute file path INSIDE `root`, or `null` if
- * the request tries to escape it (`..` traversal, an encoded traversal like
- * `..%2f`, or an absolute-path injection). Fails closed: anything not
- * provably inside `root` after normalization is rejected.
- */
-export function resolveSafe(root, urlPath) {
-  const rootAbs = path.resolve(root);
-
-  let decoded;
-  try {
-    decoded = decodeURIComponent(urlPath.split('?')[0].split('#')[0]);
-  } catch {
-    return null; // malformed percent-encoding
-  }
-
-  const rel = decoded === '/' || decoded === '' ? 'index.html' : decoded.replace(/^[/\\]+/, '');
-  if (path.isAbsolute(rel)) return null; // e.g. decoded to a drive-absolute path
-
-  const target = path.normalize(path.join(rootAbs, rel));
-  const prefix = rootAbs.endsWith(path.sep) ? rootAbs : rootAbs + path.sep;
-  if (target !== rootAbs && !target.startsWith(prefix)) return null;
-
-  return target;
-}
-
 function logLine(req, status) {
   console.log(`${status} ${req.method} ${req.url}`);
 }
 
-function handleRequest(req, res) {
-  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
-    res.setHeader(name, value);
-  }
+// Re-exported for src/tools/serveHelpers.test.ts and any other importers that
+// used to pull these from this file — the implementations now live in the
+// shared scripts/staticServer.cjs module (also used by serve-exe.cjs and
+// desktop/main.cjs).
+export { contentTypeFor, resolveSafe };
 
-  const target = resolveSafe(ROOT, req.url ?? '/');
-  if (target === null) {
-    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('403 Forbidden');
-    logLine(req, 403);
-    return;
-  }
-
-  let stats;
-  try {
-    stats = statSync(target);
-  } catch {
-    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('404 Not Found');
-    logLine(req, 404);
-    return;
-  }
-
-  // No directory listing and no SPA rewrite — `/` already mapped to
-  // index.html in resolveSafe(); any other directory path is a plain 404.
-  if (stats.isDirectory()) {
-    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('404 Not Found');
-    logLine(req, 404);
-    return;
-  }
-
-  // The 'error' handler is load-bearing: an unhandled 'error' event on the
-  // read stream (file deleted between statSync and here, transient I/O
-  // fault) is an uncaught exception that would kill the whole server.
-  // writeHead is deferred to 'open' so an open-time failure can still
-  // answer 500; the security headers set above ride along on either path.
-  const stream = createReadStream(target);
-  stream.once('open', () => {
-    res.writeHead(200, { 'Content-Type': contentTypeFor(target) });
-    logLine(req, 200);
-  });
-  stream.on('error', (err) => {
-    console.error(`serve: read error for ${req.url}: ${err.message}`);
-    if (!res.headersSent) {
-      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('500 Internal Server Error');
-      logLine(req, 500);
-    } else {
-      res.destroy(); // mid-stream failure: truncate the response, keep serving
-    }
-  });
-  stream.pipe(res);
-}
+const handleRequest = createRequestHandler(ROOT, { headers: SECURITY_HEADERS, log: logLine });
 
 function openBrowser(url) {
   try {
