@@ -74,7 +74,8 @@ function lexicalLabelMatch(node: DocNode, queryLower: string, queryTokens: strin
   return false;
 }
 
-function mergeHit(hits: Map<string, SearchHit>, hit: SearchHit): void {
+/** Exported for unit testing — merge/dedupe rules for a single incoming hit. */
+export function mergeHit(hits: Map<string, SearchHit>, hit: SearchHit): void {
   const prev = hits.get(hit.id);
   if (!prev) {
     hits.set(hit.id, hit);
@@ -119,7 +120,11 @@ export async function searchCorpus(query: string): Promise<SearchHit[]> {
       const vectors = chunks.vectors;
       if (!vectors || vectors.length === 0) continue;
       const dims = chunks.dims > 0 ? chunks.dims : EMBED_DIMS;
-      if (qVec.length < dims) break; // dims mismatch — semantic pass unusable
+      // dims mismatch — this candidate's chunk vectors are unusable, but
+      // that says nothing about the REST of the corpus, so skip just this
+      // one instead of `break`ing out of the loop (which silently dropped
+      // every remaining candidate from consideration).
+      if (qVec.length < dims) continue;
       hasChunkVectors.add(docId);
 
       // Flat [n * dims] loop over typed arrays — zero allocation per chunk.
