@@ -16,6 +16,7 @@ import {
 } from '../layout/layoutBridge';
 import type { DocNode, GraphExport } from '../model/types';
 import { computeLocalClusterNames } from '../graph/clusterNaming';
+import { enqueueRun } from '../pipeline/coordinator';
 import { getNodePosition } from '../scene/positionBuffer';
 import { useGraphStore } from '../store/graphStore';
 import {
@@ -39,6 +40,7 @@ import {
 } from './cache';
 import { getDb } from './db';
 import { toGraphExport } from './exportImport';
+import { sanitizeGraphExport } from './validateImport';
 
 const FULL_SAVE_DEBOUNCE_MS = 1500;
 const POSITION_SAVE_DEBOUNCE_MS = 2500;
@@ -81,19 +83,27 @@ async function isDemoOnlySession(exportData: GraphExport): Promise<boolean> {
   const docs = exportData.nodes.filter((n) => n.kind === 'document');
   if (docs.length === 0) return false;
 
-  const res = await fetch(DEMO_MANIFEST_URL);
-  if (!res.ok) return false;
-  const manifest = (await res.json()) as { files?: unknown };
-  if (!Array.isArray(manifest.files)) return false;
+  try {
+    const res = await fetch(DEMO_MANIFEST_URL);
+    if (!res.ok) return false;
+    const manifest = (await res.json()) as { files?: unknown };
+    if (!Array.isArray(manifest.files)) return false;
 
-  const demoFiles = new Set(
-    manifest.files.filter((name): name is string => typeof name === 'string'),
-  );
-  return docs.every((doc) => {
-    const path = doc.path ?? doc.title;
-    const name = path.replace(/\\/g, '/').split('/').pop() ?? path;
-    return doc.lastModified === undefined && demoFiles.has(name);
-  });
+    const demoFiles = new Set(
+      manifest.files.filter((name): name is string => typeof name === 'string'),
+    );
+    return docs.every((doc) => {
+      const path = doc.path ?? doc.title;
+      const name = path.replace(/\\/g, '/').split('/').pop() ?? path;
+      return doc.lastModified === undefined && demoFiles.has(name);
+    });
+  } catch {
+    // network hiccup / offline / malformed manifest JSON — treat the
+    // session as "not demo-only" rather than letting restoreSession's
+    // caller see an uncaught rejection over what's meant to be a cheap,
+    // best-effort check.
+    return false;
+  }
 }
 
 /**
@@ -181,19 +191,27 @@ export async function saveSession(): Promise<void> {
 /**
  * Hydrate graph store, runtime stores, and layout from the given data.
  * This is the shared code path for restoreSession() and restoreSnapshot().
+ *
+ * Records restored from IndexedDB are run through the same sanitizer as a
+ * fresh untrusted import (sanitizeGraphExport): they can predate the
+ * sanitizer's rules (older app versions), or drift from the current schema
+ * in ways a hand-rolled shape check here wouldn't catch — dangling edges
+ * still crash the layout worker's link initializer regardless of the data's
+ * origin.
  */
 async function hydrateFromRecord(
-  exportData: GraphExport,
+  rawExportData: GraphExport,
   positions: Record<string, [number, number, number]>,
   corpusHash: string | null,
 ): Promise<boolean> {
-  if (
-    exportData.version !== 1 ||
-    !Array.isArray(exportData.nodes) ||
-    !Array.isArray(exportData.edges) ||
-    exportData.nodes.length === 0
-  ) {
-    return false;
+  let exportData: GraphExport;
+  try {
+    // sanitizeGraphExport throws on a structurally unusable record (wrong
+    // version, malformed node/edge arrays, or no valid nodes at all) —
+    // exactly the cases the old manual check here used to catch by hand.
+    exportData = sanitizeGraphExport(rawExportData);
+  } catch {
+    return false; // malformed IndexedDB record — treat like "couldn't restore"
   }
 
   // --- bulk-read texts + vectors: one readonly tx, concurrent gets ---
@@ -346,8 +364,18 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
 /**
  * Restore a named snapshot by its IndexedDB ID.
  * Resets the current corpus first, then hydrates from the snapshot data.
+ *
+ * Routed through the shared run-queue (enqueueRun) so a restore can never
+ * land concurrently with an in-flight ingest — both reset/repopulate the
+ * graph store, runtime stores, and layout, and interleaving would corrupt
+ * all three (CRITICAL: this is the same hazard importGraphJSONFile guards
+ * against in exportImport.ts).
  */
-export async function restoreSnapshotById(id: number): Promise<boolean> {
+export function restoreSnapshotById(id: number): Promise<boolean> {
+  return enqueueRun(() => doRestoreSnapshotById(id));
+}
+
+async function doRestoreSnapshotById(id: number): Promise<boolean> {
   try {
     const rec = await loadSnapshot(id);
     if (!rec) return false;
