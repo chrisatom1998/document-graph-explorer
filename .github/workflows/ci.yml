@@ -54,3 +54,29 @@ jobs:
             if (iconCount < 1) { console.error('No icon embedded in run.exe'); process.exit(1); }
             console.log('run.exe has', iconCount, 'embedded icon(s)');
           "
+          test -f docker/downloads/Document\ Graph\ Explorer.exe || (echo "exe was not staged for Docker downloads" && exit 1)
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker compose build
+
+      - name: Smoke-test container
+        run: |
+          docker compose up -d
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8080/ >/dev/null; then
+              echo "App responded on attempt $i"
+              curl -sfI http://127.0.0.1:8080/models/Xenova/bge-small-en-v1.5/config.json | grep -q '200 OK'
+              docker compose down
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs
+          docker compose down
+          echo "Container never became reachable on :8080" >&2
+          exit 1

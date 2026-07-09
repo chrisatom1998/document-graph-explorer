@@ -8,3 +8,5 @@ coverage/
 vite-dev.*.log
 release/
 release-build/
+docker/downloads/*
+!docker/downloads/.gitkeep

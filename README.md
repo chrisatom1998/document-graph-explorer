@@ -19,7 +19,7 @@ Then open the printed local URL and drag documents onto the window — or click 
 docker compose up --build
 ```
 
-Then visit `http://localhost:8080`. The optional Windows `.exe` download at `/downloads/` is served from a read-only bind mount of `release/downloads/` (populate it with `npm run build:exe`); it's fine to leave that folder empty or missing.
+Then visit `http://localhost:8080`. The optional Windows `.exe` download at `/downloads/` is served from a read-only bind mount of `docker/downloads/` (populate it with `npm run build:exe`); the folder is checked in empty and safe to leave that way.
 
 **New here? Read the [User Guide](docs/user-guide.md)** — why the tool is valuable, what it can do, and a walkthrough of every feature.
 

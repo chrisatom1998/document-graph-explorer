@@ -4,6 +4,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # Staged by `npm run build:exe` -> scripts/stage-win-release.mjs.
-      - ./release/downloads:/usr/share/nginx/downloads:ro
+      # Staged by `npm run build:exe` -> scripts/stage-win-release.mjs into
+      # docker/downloads/ (not release/, which Docker would create as root).
+      - ./docker/downloads:/usr/share/nginx/downloads:ro
     restart: unless-stopped

@@ -1,6 +1,6 @@
 // Copies dist/ next to the packaged run.exe under release/win/, and copies
-// the exe itself into release/downloads/ so it can be served by nginx (see
-// docker-compose.yml's `./release/downloads:/usr/share/nginx/downloads:ro`
+// the exe itself into docker/downloads/ so it can be served by nginx (see
+// docker-compose.yml's `./docker/downloads:/usr/share/nginx/downloads:ro`
 // bind mount and docker/nginx.conf's `/downloads/` location). The exe
 // serves the dist folder that sits beside it (see serve-exe.cjs APP_BASE),
 // so release/win/ is a self-contained folder you can zip and ship:
@@ -15,7 +15,7 @@ const repoRoot = path.resolve(__dirname, '..');
 const distDir = path.join(repoRoot, 'dist');
 const stagedDist = path.join(repoRoot, 'release', 'win', 'dist');
 const exePath = path.join(repoRoot, 'release', 'win', 'run.exe');
-const downloadsDir = path.join(repoRoot, 'release', 'downloads');
+const downloadsDir = path.join(repoRoot, 'docker', 'downloads');
 
 if (!existsSync(path.join(distDir, 'index.html'))) {
   console.error('dist/ build not found - run: npm run build');
