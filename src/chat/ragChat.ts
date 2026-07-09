@@ -237,10 +237,12 @@ export async function sendChatMessage(question: string): Promise<void> {
   if (!q) return;
 
   const chat = useChatStore.getState();
-  // Guard against concurrent sends: the UI already disables input while
-  // streaming, but this check is the actual source of truth — checked
-  // synchronously, before anything else touches shared state, so a second
-  // call can never slip in between this check and setIsStreaming(true) below.
+  // Guard against concurrent sends: ChatPanel keeps its textarea enabled
+  // while streaming (so the user can read/compose ahead) and only checks
+  // isStreaming itself before calling in — this check is the actual source
+  // of truth, checked synchronously before anything else touches shared
+  // state, so a second call can never slip in between this check and
+  // setIsStreaming(true) below.
   if (chat.isStreaming) return;
 
   const { geminiKey, geminiModel, enrichEnabled } = useSettingsStore.getState();
