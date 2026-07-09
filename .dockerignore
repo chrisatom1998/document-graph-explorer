@@ -4,6 +4,8 @@ dist-airgap
 release
 release/win-unpacked
 release/builder-debug.yml
+docker/downloads/*
+!docker/downloads/.gitkeep
 .git
 .github
 coverage
