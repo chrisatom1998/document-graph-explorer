@@ -18,6 +18,7 @@ import { computeBridges, computeOrphans, computeStaleDocs } from '../graph/insig
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { timeAgo } from '../util/relativeTime';
+import { focusNode } from './focusNode';
 
 type SectionKey = 'orphans' | 'duplicates' | 'bridges' | 'stale';
 
@@ -26,10 +27,8 @@ const STALE_MONTHS = Math.round(STALE_DOC_DAYS / 30);
 export default function InsightsPanel() {
   const open = useUiStore((s) => s.insightsOpen);
   const setInsightsOpen = useUiStore((s) => s.setInsightsOpen);
-  const setSelected = useUiStore((s) => s.setSelected);
   const setSearchResults = useUiStore((s) => s.setSearchResults);
   const highlightOwner = useUiStore((s) => s.highlightOwner);
-  const sendCamera = useUiStore((s) => s.sendCamera);
 
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
@@ -68,11 +67,6 @@ export default function InsightsPanel() {
   if (!open || !insights) return null;
 
   const titleOf = (id: string): string => nodes[nodeIndex[id]]?.title ?? id;
-
-  const focusNode = (id: string): void => {
-    setSelected(id);
-    sendCamera('frameNode', [id]);
-  };
 
   const toggleHighlight = (section: SectionKey, ids: string[]): void => {
     if (highlighted === section) {
