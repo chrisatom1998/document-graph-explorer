@@ -16,7 +16,7 @@ export const MAX_EMBED_TEXT_BYTES = 200 * 1024; // cap text used for embedding (
 export const MIN_MENTION_TITLE_LEN = 5; // ignore very short titles for mention matching
 
 // --- Embedding model ---
-export const EMBED_MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
+export const EMBED_MODEL_ID = 'Xenova/bge-small-en-v1.5';
 export const EMBED_DIMS = 384;
 
 // --- Enrichment (user choice: Gemini) ---
