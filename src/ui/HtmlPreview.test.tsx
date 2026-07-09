@@ -56,11 +56,14 @@ describe('HtmlPreview sanitizer', () => {
     expect((window as unknown as Record<string, unknown>).__pwned).toBeUndefined();
   });
 
-  it('falls back to a plain pre-wrap dump above MAX_RENDER_CHARS', async () => {
+  it('falls back to a bounded VirtualText excerpt above MAX_RENDER_CHARS', async () => {
     const { MAX_RENDER_CHARS } = await import('./HtmlPreview');
     const huge = `<p>${'x'.repeat(MAX_RENDER_CHARS + 10)}</p>`;
     const { container } = render(<HtmlPreview html={huge} />);
     expect(container.querySelector('p')).toBeNull();
+    // Excerpt is capped well below the full payload.
+    expect(container.textContent?.length ?? 0).toBeLessThan(300_000);
     expect(container.textContent).toContain('x'.repeat(50));
+    expect(container.textContent).toMatch(/truncated/i);
   });
 });

@@ -339,7 +339,7 @@ export default function Minimap() {
         onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
-        aria-label="Minimap — click, or press Enter, to fly to the nearest document"
+        aria-label="Minimap — click a document to fly to it, or press Enter to frame the selection"
         title="Click to fly to a document"
       />
     </div>

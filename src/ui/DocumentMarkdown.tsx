@@ -18,6 +18,7 @@ import remarkGfm from 'remark-gfm';
 import type { Root } from 'mdast';
 import { renderMarkdownChildren } from './markdownAst';
 import { resolveLinkTarget, type LinkIndex } from '../graph/linkResolver';
+import VirtualText from './VirtualText';
 
 const processor = unified().use(remarkParse).use(remarkGfm);
 
@@ -30,6 +31,9 @@ const processor = unified().use(remarkParse).use(remarkGfm);
  * still guarding against multi-MB one-off pastes tanking the main thread.
  */
 export const MAX_RENDER_CHARS = 8_000_000;
+
+/** Cap on the plain-text fallback so a single huge line can't freeze the DOM. */
+const FALLBACK_EXCERPT_CHARS = 200_000;
 
 interface DocumentMarkdownProps {
   text: string;
@@ -50,12 +54,14 @@ export default function DocumentMarkdown({ text, linkIndex, onNavigate, classNam
 
   const wrapClass = className ? `md-doc ${className}` : 'md-doc';
 
+  // Oversized / unparseable: show a bounded plain-text excerpt via VirtualText
+  // instead of mounting an 8 MB+ text node that freezes the main thread.
   if (!tree) {
-    return (
-      <div className={wrapClass} style={{ whiteSpace: 'pre-wrap' }}>
-        {text}
-      </div>
-    );
+    const excerpt =
+      text.length > FALLBACK_EXCERPT_CHARS
+        ? `${text.slice(0, FALLBACK_EXCERPT_CHARS)}\n\n… (truncated)`
+        : text;
+    return <VirtualText text={excerpt} className={wrapClass} />;
   }
 
   return (
