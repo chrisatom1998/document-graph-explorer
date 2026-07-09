@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseOffice } from './office';
 
 async function zipBuffer(files: Record<string, string>): Promise<ArrayBuffer> {
@@ -181,5 +181,37 @@ describe('parseOffice', () => {
 
     expect(parsed.title).toBe('Service Registry');
     expect(parsed.headings).toEqual(['Raw']);
+  });
+
+  it('treats an oversized zip entry as missing instead of truncating mid-XML', async () => {
+    const bytes = await zipBuffer({
+      'word/document.xml': [
+        '<w:document xmlns:w="w"><w:body>',
+        '<w:p><w:r><w:t>Should never be indexed</w:t></w:r></w:p>',
+        '</w:body></w:document>',
+      ].join(''),
+    });
+
+    // Force the declared uncompressed size above the 40 MB per-entry cap
+    // without allocating a multi-dozen-MB fixture.
+    const originalLoad = JSZip.loadAsync.bind(JSZip);
+    const loadSpy = vi.spyOn(JSZip, 'loadAsync').mockImplementation(async (data, opts) => {
+      const zip = await originalLoad(data, opts);
+      const entry = zip.file('word/document.xml');
+      if (entry) {
+        const dataField = (entry as unknown as { _data?: { uncompressedSize?: number } })._data;
+        if (dataField) dataField.uncompressedSize = 50 * 1024 * 1024;
+      }
+      return zip;
+    });
+
+    try {
+      const parsed = await parseOffice(bytes, 'huge.docx', 'docx');
+      expect(parsed.status).toBe('unreadable');
+      expect(parsed.text).toBe('');
+      expect(parsed.warning).toMatch(/No Word document body found/i);
+    } finally {
+      loadSpy.mockRestore();
+    }
   });
 });

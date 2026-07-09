@@ -24,6 +24,7 @@
 
 import { createElement, Fragment, useMemo, type ReactNode } from 'react';
 import { SAFE_LINK_PROTOCOL } from './markdownAst';
+import VirtualText from './VirtualText';
 
 // Remote (http/https) images are deliberately excluded: loading them would
 // leak the fact that this document was opened (and when) to whatever host
@@ -49,6 +50,9 @@ const SIMPLE_TAGS = new Set([
 
 /** Above this, skip the DOM walk (perf safety net) and fall back to a plain dump. */
 export const MAX_RENDER_CHARS = 8_000_000;
+
+/** Cap on the plain-text fallback so a single huge line can't freeze the DOM. */
+const FALLBACK_EXCERPT_CHARS = 200_000;
 
 function renderChildren(node: Node, keyPrefix: string): ReactNode[] {
   const out: ReactNode[] = [];
@@ -147,12 +151,15 @@ export default function HtmlPreview({ html, className }: HtmlPreviewProps) {
 
   const wrapClass = className ? `html-doc ${className}` : 'html-doc';
 
+  // Oversized / unparseable: show a bounded plain-text excerpt via VirtualText
+  // instead of mounting an 8 MB+ text node (or a single unwrapped mega-line)
+  // that freezes the main thread.
   if (!tree) {
-    return (
-      <div className={wrapClass} style={{ whiteSpace: 'pre-wrap' }}>
-        {html}
-      </div>
-    );
+    const excerpt =
+      html.length > FALLBACK_EXCERPT_CHARS
+        ? `${html.slice(0, FALLBACK_EXCERPT_CHARS)}\n\n… (truncated)`
+        : html;
+    return <VirtualText text={excerpt} className={wrapClass} />;
   }
 
   return <div className={wrapClass}>{tree}</div>;

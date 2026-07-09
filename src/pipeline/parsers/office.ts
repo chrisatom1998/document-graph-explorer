@@ -21,6 +21,9 @@ const MAX_ZIP_ENTRY_BYTES = 40 * 1024 * 1024;
 // with an implausible number of slides (each slide is its own zip entry, so
 // the per-entry cap alone doesn't bound the total slide count).
 const MAX_PPTX_SLIDES = 300;
+// Same idea for xlsx worksheets — each sheet is a separate inflated XML
+// part, so the per-entry cap alone doesn't bound total sheet count.
+const MAX_XLSX_SHEETS = 200;
 
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
@@ -138,11 +141,12 @@ async function zipText(zip: JSZip, path: string): Promise<string | null> {
     return null;
   }
   const text = await entry.async('text');
-  // Belt-and-suspenders: also cap the actual decompressed length, in case
-  // the declared-size pre-check above wasn't available (e.g. a JSZip
+  // Belt-and-suspenders: also reject on the actual decompressed length, in
+  // case the declared-size pre-check above wasn't available (e.g. a JSZip
   // version without the internal field, or a zip that lies about size in
-  // its central directory).
-  return text.length > MAX_ZIP_ENTRY_BYTES ? text.slice(0, MAX_ZIP_ENTRY_BYTES) : text;
+  // its central directory). Truncating mid-XML would produce silently
+  // corrupt parse results; treat oversized parts as missing instead.
+  return text.length > MAX_ZIP_ENTRY_BYTES ? null : text;
 }
 
 async function readCoreTitle(zip: JSZip): Promise<string> {
@@ -349,8 +353,10 @@ function cellValue(cell: XmlNode, strings: string[]): string {
 
 async function parseXlsx(zip: JSZip, name: string): Promise<ParserResult> {
   const coreTitle = await readCoreTitle(zip);
-  const sheets = await workbookSheets(zip);
-  if (sheets.length === 0) return emptyResult(name, 'No Excel worksheets found');
+  const allSheets = await workbookSheets(zip);
+  if (allSheets.length === 0) return emptyResult(name, 'No Excel worksheets found');
+  const sheets = allSheets.slice(0, MAX_XLSX_SHEETS);
+  const truncated = allSheets.length > MAX_XLSX_SHEETS;
   const strings = await sharedStrings(zip);
   const headings = sheets.map((s) => s.name);
   const lines: string[] = [];
@@ -369,9 +375,18 @@ async function parseXlsx(zip: JSZip, name: string): Promise<ParserResult> {
   }
 
   const text = normalizeLines(lines);
-  return text
-    ? result(name, coreTitle || cleanFilename(name), text, headings, [])
-    : emptyResult(name, 'No readable Excel cell text found');
+  if (!text) return emptyResult(name, 'No readable Excel cell text found');
+  return truncated
+    ? result(
+        name,
+        coreTitle || cleanFilename(name),
+        text,
+        headings,
+        [],
+        'partial',
+        `Only the first ${MAX_XLSX_SHEETS} worksheets were indexed`,
+      )
+    : result(name, coreTitle || cleanFilename(name), text, headings, []);
 }
 
 export async function parseOffice(

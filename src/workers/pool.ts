@@ -65,6 +65,12 @@ export class WorkerPool {
   private busy: number[] = [];
   private queue: QueuedJob[] = [];
   private pending = new Map<number, InFlightRequest>();
+  /**
+   * Embed requests that timed out on the caller side but whose worker is
+   * still processing them. Maps requestId → workerIndex so a late response
+   * can free the busy slot without retiring the (warm-model) worker.
+   */
+  private abandoned = new Map<number, number>();
   private nextRequestId = 1;
   private progressListeners = new Set<ProgressListener>();
   private disposed = false;
@@ -207,7 +213,16 @@ export class WorkerPool {
       return;
     }
     const entry = this.pending.get(msg.requestId);
-    if (!entry) return;
+    if (!entry) {
+      // Late response for an embed that already timed out on the caller
+      // side — free the busy slot we held open and dispatch the backlog.
+      const abandonedIndex = this.abandoned.get(msg.requestId);
+      if (abandonedIndex === undefined) return;
+      this.abandoned.delete(msg.requestId);
+      this.busy[abandonedIndex] = Math.max(0, this.busy[abandonedIndex] - 1);
+      this.pump();
+      return;
+    }
     this.pending.delete(msg.requestId);
     if (entry.timer) clearTimeout(entry.timer);
     this.busy[entry.workerIndex] = Math.max(0, this.busy[entry.workerIndex] - 1);
@@ -217,23 +232,22 @@ export class WorkerPool {
   }
 
   /**
-   * Rejects a single timed-out request without touching the worker that was
-   * running it — the worker is assumed to still be healthy (just slow on
-   * this one request) and keeps serving future jobs, including any
-   * expensively-loaded model it already has in memory. NOTE: the worker
-   * itself is still processing the abandoned request under the hood (a
-   * worker's event loop can't be interrupted mid-job); its eventual
-   * response arrives with a requestId no longer in `pending` and is
-   * silently dropped by handleMessage.
+   * Rejects a single timed-out embed request without retiring the worker
+   * that holds the loaded model. The worker is still processing the
+   * abandoned job (a worker's event loop can't be interrupted mid-job), so
+   * the busy slot stays held until the late response arrives — otherwise
+   * the next job would be posted into the worker's message queue behind
+   * the abandoned one while its timeout already ticks, unfairly failing
+   * healthy follow-up work.
    */
   private rejectTimedOut(index: number, requestId: number, error: Error): void {
     const entry = this.pending.get(requestId);
     if (!entry) return;
     this.pending.delete(requestId);
     if (entry.timer) clearTimeout(entry.timer);
-    this.busy[index] = Math.max(0, this.busy[index] - 1);
+    this.abandoned.set(requestId, index);
     entry.reject(error);
-    this.pump();
+    // Do not free busy[index] or pump — wait for the late response.
   }
 
   private retireWorker(index: number): void {
@@ -241,6 +255,9 @@ export class WorkerPool {
     if (worker) worker.terminate();
     this.workers[index] = null;
     this.busy[index] = 0;
+    for (const [id, workerIndex] of [...this.abandoned]) {
+      if (workerIndex === index) this.abandoned.delete(id);
+    }
   }
 
   private handleWorkerFailure(index: number, error: Error): void {
@@ -266,6 +283,7 @@ export class WorkerPool {
       entry.reject(error);
     }
     this.pending.clear();
+    this.abandoned.clear();
     for (const job of this.queue) job.reject(error);
     this.queue = [];
     this.workers = [];

@@ -155,9 +155,17 @@ describe('WorkerPool scheduling', () => {
     expect(workers).toHaveLength(1);
     expect(workers[0].terminated).toBe(false);
 
-    // The same (still-alive) worker serves the next request normally.
+    // The busy slot stays held until the abandoned job finishes — otherwise
+    // the next request would sit in the worker's message queue behind it
+    // while its own timeout already ticks.
     const second = pool.request(embedMsg());
     expect(workers).toHaveLength(1);
+    expect(workers[0].messages).toHaveLength(1);
+
+    // Late response for the timed-out request frees the slot; then the
+    // queued follow-up is dispatched on the same warm worker.
+    workers[0].respondEmbedToLast();
+    expect(workers[0].messages).toHaveLength(2);
     workers[0].respondEmbedToLast();
     await expect(second).resolves.toMatchObject({ type: 'embed:done' });
   });
