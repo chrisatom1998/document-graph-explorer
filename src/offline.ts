@@ -42,13 +42,15 @@ function isExternal(input: RequestInfo | URL): boolean {
 let installed = false;
 
 /**
- * Defense-in-depth: wrap fetch so that while offline, ANY cross-origin request
- * rejects before hitting the network — covering future code paths nobody
- * remembered to gate. Installed once at app startup (main.tsx).
+ * Defense-in-depth: wrap fetch, `navigator.sendBeacon`, and the `WebSocket`
+ * constructor so that while offline, ANY cross-origin call fails before
+ * hitting the network — covering future code paths nobody remembered to
+ * gate. Installed once at app startup (main.tsx).
  */
 export function installOfflineFetchGuard(): void {
   if (installed && import.meta.env.MODE !== 'test') return;
   installed = true;
+
   const realFetch = globalThis.fetch.bind(globalThis);
   globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     if (isOffline() && isExternal(input)) {
@@ -59,4 +61,31 @@ export function installOfflineFetchGuard(): void {
     }
     return realFetch(input, init);
   }) as typeof fetch;
+
+  if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+    const realSendBeacon = navigator.sendBeacon.bind(navigator);
+    navigator.sendBeacon = ((url: string | URL, data?: BodyInit | null) => {
+      if (isOffline() && isExternal(url)) {
+        return false; // sendBeacon's own "not queued" signal — fails gracefully, no throw
+      }
+      return realSendBeacon(url, data);
+    }) as typeof navigator.sendBeacon;
+  }
+
+  if (typeof globalThis.WebSocket === 'function') {
+    const RealWebSocket = globalThis.WebSocket;
+    globalThis.WebSocket = class OfflineGuardedWebSocket extends RealWebSocket {
+      constructor(url: string | URL, protocols?: string | string[]) {
+        if (isOffline() && isExternal(url)) {
+          // Fail fast, before ever opening a socket — mirrors the SecurityError
+          // a browser itself throws for a disallowed WebSocket connection.
+          throw new DOMException(
+            `Offline mode: external WebSocket connection blocked (${String(url)})`,
+            'SecurityError',
+          );
+        }
+        super(url, protocols);
+      }
+    } as typeof WebSocket;
+  }
 }

