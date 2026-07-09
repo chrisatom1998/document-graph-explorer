@@ -14,12 +14,14 @@ const MIME_MAP: Record<string, string> = {
   pdf: 'PDF', other: 'Document',
 };
 
-function escapeHtml(str: string): string {
+/** Exported for unit tests — internal helpers used while building the viewer HTML. */
+export function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // http(s) URLs, www. URLs, and bare emails. Kept simple/greedy; trailing
@@ -27,7 +29,7 @@ function escapeHtml(str: string): string {
 const INLINE_URL_RE = /(https?:\/\/[^\s<]+|www\.[^\s<]+|[^\s<@]+@[^\s<@]+\.[a-zA-Z]{2,})/g;
 
 /** A web link the original document contained, or null if the token isn't one. */
-function hrefFor(token: string): string | null {
+export function hrefFor(token: string): string | null {
   if (/^https?:\/\//i.test(token)) return token;
   if (/^www\./i.test(token)) return `https://${token}`;
   if (/^mailto:/i.test(token)) return token;
@@ -46,7 +48,7 @@ function anchor(href: string, text: string): string {
  * clickable links — the viewer renders extracted text, where markdown/HTML
  * link *syntax* is already gone but visible URLs survive as plain text.
  */
-function linkifyLine(raw: string): string {
+export function linkifyLine(raw: string): string {
   let out = '';
   let last = 0;
   for (const m of raw.matchAll(INLINE_URL_RE)) {
@@ -639,19 +641,33 @@ export function openDocumentViewer(
     ${content}
   </main>
 ${linksSection}
-  <button class="back-to-top" id="btt" title="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
-
-  <script>
-    const bar = document.getElementById('progress');
-    const btt = document.getElementById('btt');
-    window.addEventListener('scroll', () => {
-      const h = document.documentElement.scrollHeight - window.innerHeight;
-      const pct = h > 0 ? (window.scrollY / h) * 100 : 0;
-      bar.style.width = pct + '%';
-      btt.classList.toggle('visible', window.scrollY > 400);
-    }, { passive: true });
-  </script>
+  <button class="back-to-top" id="btt" title="Back to top">↑</button>
 </body>
 </html>`);
   w.document.close();
+
+  // The production CSP (src/security/csp.ts) has no 'unsafe-inline' in
+  // script-src, so inline <script> tags / onclick= attributes written into
+  // the popup's HTML above would silently fail there — about:blank popups
+  // inherit the opener's CSP. Wire the reading-progress bar and back-to-top
+  // button up from here instead: this code runs in the (unrestricted) main
+  // app document, and same-origin `w.addEventListener`/DOM access on the
+  // popup's window/document isn't script injection, so CSP doesn't apply.
+  const bar = w.document.getElementById('progress');
+  const btt = w.document.getElementById('btt');
+  if (bar && btt) {
+    w.addEventListener(
+      'scroll',
+      () => {
+        const h = w.document.documentElement.scrollHeight - w.innerHeight;
+        const pct = h > 0 ? (w.scrollY / h) * 100 : 0;
+        bar.style.width = `${pct}%`;
+        btt.classList.toggle('visible', w.scrollY > 400);
+      },
+      { passive: true },
+    );
+    btt.addEventListener('click', () => {
+      w.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
 }
