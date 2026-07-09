@@ -18,19 +18,22 @@ import { useGraphStore } from '../store/graphStore';
 import { chunkStore, docVectorStore, textStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
 import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
-import { formatExtractiveAnswer } from './extractiveAnswer';
+import { bestPerDocument, formatExtractiveAnswer, toSnippetSource } from './extractiveAnswer';
+import {
+  backoffDelayMs,
+  isRetryableStatus,
+  parseSseLine,
+  readErrorMessage,
+  sleep,
+  splitSseLines,
+} from './geminiClient';
 
 const RAG_TOP_K = 8; // max chunks to include as context
 const RAG_MIN_SCORE = 0.3; // cosine floor for relevance
 const CHUNK_CONTEXT_CHARS = 1500; // max chars per chunk in prompt
 const REQUEST_TIMEOUT_MS = 120_000; // streaming responses can run long
 const MAX_HISTORY_MESSAGES = 8; // prior turns fed back to Gemini for memory
-const SOURCE_SNIPPET_CHARS = 200; // citation preview length
 const MAX_STREAM_RETRIES = 3; // 429/503 backoff retries before the stream starts
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 // ---------------------------------------------------------------------------
 // Cancellation: one in-flight chat request at a time
@@ -158,18 +161,7 @@ function keywordFallback(query: string): RetrievedChunk[] {
 
 /** Per unique doc, keep the single best-scoring chunk as its citation. */
 function bestChunkSources(chunks: RetrievedChunk[]): ChatSource[] {
-  const bestByDoc = new Map<string, RetrievedChunk>();
-  for (const c of chunks) {
-    const cur = bestByDoc.get(c.docId);
-    if (!cur || c.score > cur.score) bestByDoc.set(c.docId, c);
-  }
-  return [...bestByDoc.values()]
-    .sort((a, b) => b.score - a.score)
-    .map((c) => ({
-      docId: c.docId,
-      snippet: c.text.slice(0, SOURCE_SNIPPET_CHARS).trim(),
-      score: c.score,
-    }));
+  return bestPerDocument(chunks).map(toSnippetSource);
 }
 
 // ---------------------------------------------------------------------------
@@ -211,7 +203,7 @@ function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
 export function buildHistoryTurns(messages: ChatMessage[]): GeminiTurn[] {
   const usable = messages.filter((m) => {
     if (m.role === 'system') return false;
-    if (m.role === 'assistant' && m.text.startsWith('Error:')) return false;
+    if (m.role === 'assistant' && m.isError) return false;
     return true;
   });
   const turns: GeminiTurn[] = usable.slice(-MAX_HISTORY_MESSAGES).map((m) => ({
@@ -244,8 +236,14 @@ export async function sendChatMessage(question: string): Promise<void> {
   const q = question.trim();
   if (!q) return;
 
-  const { geminiKey, geminiModel, enrichEnabled } = useSettingsStore.getState();
   const chat = useChatStore.getState();
+  // Guard against concurrent sends: the UI already disables input while
+  // streaming, but this check is the actual source of truth — checked
+  // synchronously, before anything else touches shared state, so a second
+  // call can never slip in between this check and setIsStreaming(true) below.
+  if (chat.isStreaming) return;
+
+  const { geminiKey, geminiModel, enrichEnabled } = useSettingsStore.getState();
 
   // Snapshot the conversation BEFORE this turn, for multi-turn memory. This
   // naturally excludes the user message and assistant placeholder added below.
@@ -338,22 +336,18 @@ export async function sendChatMessage(question: string): Promise<void> {
       });
       if (res.ok) break;
 
-      const retryable = res.status === 429 || res.status === 503;
+      const retryable = isRetryableStatus(res.status);
       let errMsg = `Gemini HTTP ${res.status}`;
-      try {
-        const errData = (await res.json()) as { error?: { message?: unknown } };
-        if (typeof errData.error?.message === 'string') {
-          errMsg += `: ${errData.error.message.slice(0, 200)}`;
-        }
-      } catch { /* ignore */ }
+      const bodyMsg = await readErrorMessage(res);
+      if (bodyMsg) errMsg += `: ${bodyMsg}`;
       if (!retryable || attempt >= MAX_STREAM_RETRIES) {
-        useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}` });
+        useChatStore.getState().updateMessage(assistantId, { text: errMsg, isError: true });
         return;
       }
       useChatStore.getState().updateMessage(assistantId, {
         text: `Gemini is busy (${res.status}) — retrying…`,
       });
-      await sleep(1000 * 2 ** attempt);
+      await sleep(backoffDelayMs(attempt));
     }
 
     const reader = res.body?.getReader();
@@ -374,41 +368,19 @@ export async function sendChatMessage(question: string): Promise<void> {
     const decoder = new TextDecoder();
     let buffer = '';
     const consumeLine = (rawLine: string): void => {
-      const line = rawLine.trim();
-      if (!line.startsWith('data:')) return; // blank lines / "event:" framing
-      const payload = line.slice(5).trim();
-      if (!payload || payload === '[DONE]') return;
-      let evt: {
-        candidates?: { content?: { parts?: { text?: unknown }[] }; finishReason?: unknown }[];
-        promptFeedback?: { blockReason?: unknown };
-        error?: { message?: unknown };
-      };
-      try {
-        evt = JSON.parse(payload);
-      } catch {
-        return; // partial/keepalive line — ignore
-      }
-      if (typeof evt.error?.message === 'string') streamMeta.error = evt.error.message;
-      if (typeof evt.promptFeedback?.blockReason === 'string') {
-        streamMeta.blockReason = evt.promptFeedback.blockReason;
-      }
-      const candidate = evt.candidates?.[0];
-      const finish = candidate?.finishReason;
-      if (typeof finish === 'string' && finish !== 'STOP' && finish !== 'MAX_TOKENS') {
-        streamMeta.blockReason = finish; // SAFETY / RECITATION / OTHER
-      }
-      for (const part of candidate?.content?.parts ?? []) {
-        if (typeof part.text === 'string' && part.text) accumulated += part.text;
-      }
+      const evt = parseSseLine(rawLine);
+      if (!evt) return;
+      if (evt.error) streamMeta.error = evt.error;
+      if (evt.blockReason) streamMeta.blockReason = evt.blockReason;
+      if (evt.text) accumulated += evt.text;
     };
 
     for (;;) {
       const { done, value } = await reader.read();
       const before = accumulated;
       if (value) {
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
+        const { lines, remainder } = splitSseLines(buffer, decoder.decode(value, { stream: true }));
+        buffer = remainder;
         for (const line of lines) consumeLine(line);
       }
       if (done) {
@@ -426,10 +398,11 @@ export async function sendChatMessage(question: string): Promise<void> {
     if (accumulated.trim() === '') {
       useChatStore.getState().updateMessage(assistantId, {
         text: streamMeta.error
-          ? `Error: Gemini stream failed: ${streamMeta.error.slice(0, 200)}`
+          ? `Gemini stream failed: ${streamMeta.error.slice(0, 200)}`
           : streamMeta.blockReason
-            ? `Error: Gemini blocked the response (${streamMeta.blockReason}).`
+            ? `Gemini blocked the response (${streamMeta.blockReason}).`
             : 'Gemini returned an empty response. Please try again.',
+        isError: Boolean(streamMeta.error || streamMeta.blockReason),
       });
     } else {
       useChatStore.getState().updateMessage(assistantId, { text: accumulated.trim(), sources });
@@ -442,17 +415,23 @@ export async function sendChatMessage(question: string): Promise<void> {
         text: trimmed
           ? `${trimmed}\n\n${timedOut ? '_⏱ timed out — partial answer_' : '_⏹ stopped_'}`
           : timedOut
-            ? `Error: Gemini didn't respond within ${REQUEST_TIMEOUT_MS / 1000}s. Check your network or try again.`
+            ? `Gemini didn't respond within ${REQUEST_TIMEOUT_MS / 1000}s. Check your network or try again.`
             : 'Stopped.',
+        ...(!trimmed && timedOut ? { isError: true } : {}),
         ...(sources ? { sources } : {}),
       });
     } else {
       const errMsg = err instanceof Error ? err.message : String(err);
-      useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}` });
+      useChatStore.getState().updateMessage(assistantId, { text: errMsg, isError: true });
     }
   } finally {
     clearTimeout(timeoutTimer);
     useChatStore.getState().setIsStreaming(false);
-    activeAbort = null;
+    // Only clear activeAbort if it still refers to THIS request's controller
+    // — guards against a newer request's controller being clobbered by an
+    // older one's cleanup if their completions ever interleave.
+    if (activeAbort === controller) {
+      activeAbort = null;
+    }
   }
 }

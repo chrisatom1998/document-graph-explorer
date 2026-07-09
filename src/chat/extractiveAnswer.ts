@@ -5,16 +5,35 @@
  * synchronous — the retrieval that feeds it (ragChat.retrieveChunks) is what
  * touches embeddings; this only formats.
  */
-import { EXTRACT_MAX_PASSAGES, EXTRACT_PASSAGE_CHARS } from '../config';
+import { EXTRACT_MAX_PASSAGES, EXTRACT_PASSAGE_CHARS, SOURCE_SNIPPET_CHARS } from '../config';
 import type { ChatSource } from '../store/chatStore';
-
-const SOURCE_SNIPPET_CHARS = 200; // citation-chip preview length (matches ragChat)
 
 export interface Passage {
   docId: string;
   docTitle: string;
   text: string;
   score: number;
+}
+
+/**
+ * Keep only the best-scoring item per `docId`, sorted by score descending.
+ * Shared between this module and ragChat.ts (both dedupe retrieved chunks
+ * down to "the one best passage per source document" before citing them).
+ */
+export function bestPerDocument<T extends { docId: string; score: number }>(
+  items: readonly T[],
+): T[] {
+  const bestByDoc = new Map<string, T>();
+  for (const item of items) {
+    const cur = bestByDoc.get(item.docId);
+    if (!cur || item.score > cur.score) bestByDoc.set(item.docId, item);
+  }
+  return [...bestByDoc.values()].sort((a, b) => b.score - a.score);
+}
+
+/** A passage's citation chip: doc id + a truncated preview + its score. */
+export function toSnippetSource(c: { docId: string; text: string; score: number }): ChatSource {
+  return { docId: c.docId, snippet: c.text.slice(0, SOURCE_SNIPPET_CHARS).trim(), score: c.score };
 }
 
 /** Truncate on a word boundary near `max`, appending an ellipsis when cut. */
@@ -30,15 +49,7 @@ export function formatExtractiveAnswer(
   question: string,
   chunks: readonly Passage[],
 ): { text: string; sources: ChatSource[] } {
-  // Best passage per document, highest score first.
-  const bestByDoc = new Map<string, Passage>();
-  for (const c of chunks) {
-    const cur = bestByDoc.get(c.docId);
-    if (!cur || c.score > cur.score) bestByDoc.set(c.docId, c);
-  }
-  const top = [...bestByDoc.values()]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, EXTRACT_MAX_PASSAGES);
+  const top = bestPerDocument(chunks).slice(0, EXTRACT_MAX_PASSAGES);
 
   if (top.length === 0) {
     return {
@@ -52,11 +63,7 @@ export function formatExtractiveAnswer(
   const blocks = top.map((c) => `**${c.docTitle}**\n\n> ${clip(c.text, EXTRACT_PASSAGE_CHARS).replace(/\n+/g, '\n> ')}`);
   const text = [lead, ...blocks].join('\n\n');
 
-  const sources: ChatSource[] = top.map((c) => ({
-    docId: c.docId,
-    snippet: c.text.slice(0, SOURCE_SNIPPET_CHARS).trim(),
-    score: c.score,
-  }));
+  const sources: ChatSource[] = top.map(toSnippetSource);
 
   return { text, sources };
 }
