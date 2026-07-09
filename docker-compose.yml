@@ -1,0 +1,12 @@
+services:
+  document-graph-explorer:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount only the portable .exe (not the whole release/ tree).
+      - type: bind
+        source: ./release/Knowledge Nebula-0.1.0.exe
+        target: /usr/share/nginx/downloads/Knowledge Nebula-0.1.0.exe
+        read_only: true
+    restart: unless-stopped

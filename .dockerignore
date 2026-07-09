@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-airgap
+release/win-unpacked
+release/builder-debug.yml
+.git
+.github
+coverage
+*.local
+.DS_Store
+vite-dev.*.log
+run.exe
+desktop-app-screenshot.png
+.git-commit-msg.txt
+dist-win-build.log
+prs.json
+release-id.txt
