@@ -9,3 +9,17 @@ describe('electron-builder packaging', () => {
     expect(pkg.build.files).toContain('scripts/staticServer.cjs');
   });
 });
+
+describe('Docker packaging', () => {
+  it('keeps staged Windows downloads out of the Docker build context', () => {
+    const dockerIgnore = readFileSync('.dockerignore', 'utf8')
+      .split(/\r?\n/)
+      .map((line) => line.trim());
+
+    const downloadsRule = dockerIgnore.indexOf('docker/downloads/*');
+    const placeholderRule = dockerIgnore.indexOf('!docker/downloads/.gitkeep');
+
+    expect(downloadsRule).toBeGreaterThanOrEqual(0);
+    expect(placeholderRule).toBeGreaterThan(downloadsRule);
+  });
+});
