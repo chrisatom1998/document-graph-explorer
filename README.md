@@ -13,6 +13,14 @@ npm run dev      # start the Vite dev server
 
 Then open the printed local URL and drag documents onto the window — or click **Load demo corpus** on the welcome screen to explore instantly.
 
+### Run with Docker
+
+```bash
+docker compose up --build
+```
+
+Then visit `http://localhost:8080`. The optional Windows `.exe` download at `/downloads/` is served from a read-only bind mount of `release/downloads/` (populate it with `npm run build:exe`); it's fine to leave that folder empty or missing.
+
 **New here? Read the [User Guide](docs/user-guide.md)** — why the tool is valuable, what it can do, and a walkthrough of every feature.
 
 ## Scripts
