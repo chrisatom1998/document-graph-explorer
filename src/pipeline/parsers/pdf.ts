@@ -16,6 +16,7 @@ import { labelForRect, type PdfTextSpan } from './pdfLinkLabels';
 import {
   hasUint8ArrayBase64HexSupport,
   installUint8ArrayBase64HexPolyfill,
+  INSTALL_UINT8ARRAY_POLYFILL_SOURCE,
 } from './pdfUint8ArrayPolyfill';
 import { installMapUpsertPolyfill } from './pdfMapUpsertPolyfill';
 
@@ -42,11 +43,13 @@ const PDF_WORKER_ASSET_URL = new URL(
 /**
  * pdf.js's dedicated worker runs in its own global scope, so the polyfill
  * above never reaches it. When it's actually needed, fetch the worker
- * script's own source once, splice the (already-compiled) polyfill in
- * front of it, and load that combined script from a blob: URL instead of
- * the raw asset — CSP already allows `worker-src 'self' blob:`. Cached for
- * the life of the session; falls back to the plain asset URL if anything
- * about the fetch/blob step fails, which is no worse than before this fix.
+ * script's own source once, splice the prebuilt polyfill source
+ * (INSTALL_UINT8ARRAY_POLYFILL_SOURCE — a plain string constant, not a
+ * `Function.prototype.toString()` serialization) in front of it, and load
+ * that combined script from a blob: URL instead of the raw asset — CSP
+ * already allows `worker-src 'self' blob:`. Cached for the life of the
+ * session; falls back to the plain asset URL if anything about the
+ * fetch/blob step fails, which is no worse than before this fix.
  */
 let workerSrcReady: Promise<void> | null = null;
 
@@ -57,8 +60,9 @@ async function ensureWorkerSrc(): Promise<void> {
   }
   try {
     const source = await fetch(PDF_WORKER_ASSET_URL).then((r) => r.text());
-    const polyfillSrc = `(${installUint8ArrayBase64HexPolyfill.toString()})();`;
-    const blob = new Blob([polyfillSrc, '\n', source], { type: 'text/javascript' });
+    const blob = new Blob([INSTALL_UINT8ARRAY_POLYFILL_SOURCE, '\n', source], {
+      type: 'text/javascript',
+    });
     pdfjs.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
   } catch {
     pdfjs.GlobalWorkerOptions.workerSrc = PDF_WORKER_ASSET_URL;

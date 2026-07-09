@@ -29,6 +29,61 @@ export function hasUint8ArrayBase64HexSupport(): boolean {
   );
 }
 
+/**
+ * Prebuilt IIFE source, functionally identical to
+ * `installUint8ArrayBase64HexPolyfill` below — computed once, here, as a
+ * literal string constant instead of calling `.toString()` on the function
+ * at runtime (see pdf.ts's `ensureWorkerSrc`, which used to splice
+ * `installUint8ArrayBase64HexPolyfill.toString()` into pdf.js's worker
+ * script source). Relying on `Function.prototype.toString()` to serialize a
+ * function into re-executable source is fragile: minifiers/bundlers are
+ * free to rename, hoist, or otherwise transform the function as long as its
+ * OWN behavior is preserved, with no obligation to keep `.toString()`
+ * producing standalone-valid source — a guarantee this codepath was quietly
+ * depending on. A hardcoded constant has no such dependency.
+ *
+ * Must stay behaviorally in sync with `installUint8ArrayBase64HexPolyfill`
+ * below by hand (both are tiny and rarely change).
+ */
+export const INSTALL_UINT8ARRAY_POLYFILL_SOURCE = `(function () {
+  var HEX_CHARS = '0123456789abcdef';
+  var proto = Uint8Array.prototype;
+  var ctor = Uint8Array;
+  if (typeof proto.toHex !== 'function') {
+    proto.toHex = function toHex() {
+      var out = '';
+      for (var i = 0; i < this.length; i++) {
+        out += HEX_CHARS[this[i] >> 4] + HEX_CHARS[this[i] & 0x0f];
+      }
+      return out;
+    };
+  }
+  if (typeof ctor.fromHex !== 'function') {
+    ctor.fromHex = function fromHex(hex) {
+      var out = new Uint8Array(Math.floor(hex.length / 2));
+      for (var i = 0; i < out.length; i++) {
+        out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+      }
+      return out;
+    };
+  }
+  if (typeof proto.toBase64 !== 'function') {
+    proto.toBase64 = function toBase64() {
+      var binary = '';
+      for (var i = 0; i < this.length; i++) binary += String.fromCharCode(this[i]);
+      return btoa(binary);
+    };
+  }
+  if (typeof ctor.fromBase64 !== 'function') {
+    ctor.fromBase64 = function fromBase64(base64) {
+      var binary = atob(base64);
+      var out = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+      return out;
+    };
+  }
+})();`;
+
 /** Installs whichever of the four methods are missing. Safe to call unconditionally. */
 export function installUint8ArrayBase64HexPolyfill(): void {
   const HEX_CHARS = '0123456789abcdef';
