@@ -6,4 +6,4 @@ run.exe
 .DS_Store
 coverage/
 vite-dev.*.log
-release/builder-debug.yml
+release/
