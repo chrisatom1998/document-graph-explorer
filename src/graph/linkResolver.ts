@@ -6,33 +6,15 @@
  * Matching mirrors the "hard edge" rules in pipeline/links.ts (normalized
  * basename against each doc's fileName, i.e. `basename(path ?? title)`) plus
  * a title-only fallback for wikilinks, which reference a note's title rather
- * than a filename. Deliberately duplicated rather than imported: links.ts
- * runs in the aggregator worker over plain LexicalDocInput records, while
- * this runs on the main thread over live DocNode objects — sharing would
- * mean threading a third shape through both, for ~10 lines of logic.
+ * than a filename. The normalization helpers themselves (isExternalUrl,
+ * normalizeLinkTarget) are shared via pipeline/urlUtils.ts — links.ts runs
+ * in the aggregator worker over plain LexicalDocInput records, while this
+ * runs on the main thread over live DocNode objects, but the URL rules are
+ * identical, so only the doc-shape-specific indexing logic below differs.
  */
 
 import type { DocNode } from '../model/types';
-
-/** External web links never resolve to a doc in the corpus. */
-function isExternalUrl(target: string): boolean {
-  const t = target.trim();
-  return /^(https?:|mailto:|tel:|ftp:)/i.test(t) || t.startsWith('//');
-}
-
-/** basename, lowercased, without #fragment / ?query / ./ prefixes. */
-function normalizeLinkTarget(target: string): string {
-  let t = target.trim();
-  const hash = t.indexOf('#');
-  if (hash >= 0) t = t.slice(0, hash);
-  const query = t.indexOf('?');
-  if (query >= 0) t = t.slice(0, query);
-  while (t.startsWith('./')) t = t.slice(2);
-  t = t.replace(/\/+$/, '');
-  const slash = Math.max(t.lastIndexOf('/'), t.lastIndexOf('\\'));
-  if (slash >= 0) t = t.slice(slash + 1);
-  return t.toLowerCase();
-}
+import { isExternalUrl, normalizeLinkTarget } from '../pipeline/urlUtils';
 
 function stripExt(s: string): string {
   return s.replace(/\.[a-z0-9]{1,8}$/i, '');
