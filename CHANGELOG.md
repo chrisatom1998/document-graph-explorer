@@ -6,6 +6,11 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-07-10
+
+### Changed
+- Align package metadata with the `v1.0.1` patch release so the automated release workflow can publish standard and air-gapped web artifacts.
+
 ## [1.0.0] - 2026-07-10
 
 ### Added
