@@ -85,6 +85,7 @@
     },
     "win": {
       "icon": "packaging/document-graph-explorer.ico",
+      "signAndEditExecutable": false,
       "target": [
         "portable"
       ]
