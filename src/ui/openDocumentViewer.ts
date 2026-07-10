@@ -653,6 +653,7 @@ ${linksSection}
   // button up from here instead: this code runs in the (unrestricted) main
   // app document, and same-origin `w.addEventListener`/DOM access on the
   // popup's window/document isn't script injection, so CSP doesn't apply.
+  if (typeof w.document.getElementById !== 'function') return;
   const bar = w.document.getElementById('progress');
   const btt = w.document.getElementById('btt');
   if (bar && btt) {
