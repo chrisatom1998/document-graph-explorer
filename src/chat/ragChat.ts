@@ -261,7 +261,7 @@ export function buildPrompt(question: string, chunks: RetrievedChunk[]): string 
 export function buildHistoryTurns(messages: ChatMessage[]): GeminiTurn[] {
   const usable = messages.filter((m) => {
     if (m.role === 'system') return false;
-    if (m.role === 'assistant' && m.text.startsWith('Error:')) return false;
+    if (m.role === 'assistant' && (m.isError || m.text.startsWith('Error:'))) return false;
     return true;
   });
   const turns: GeminiTurn[] = usable.slice(-MAX_HISTORY_MESSAGES).map((m) => ({

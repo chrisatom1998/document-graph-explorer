@@ -19,7 +19,8 @@ import {
 } from '../layout/layoutBridge';
 import type { DocNode, Edge, GraphExport } from '../model/types';
 import { computeLocalClusterNames } from '../graph/clusterNaming';
-import { enqueueRun, resetCorpus } from '../pipeline/coordinator';
+import { resetCorpus } from '../pipeline/coordinator';
+import { enqueueRun } from '../pipeline/runQueue';
 import { randomSpherePoint } from '../pipeline/spawnPosition';
 import { useGraphStore } from '../store/graphStore';
 import { docVectorStore } from '../store/runtimeStores';
