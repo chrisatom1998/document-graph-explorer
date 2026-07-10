@@ -113,6 +113,31 @@ describe('settingsStore — stale key scrub on boot', () => {
     expect(JSON.parse(store.get(STORAGE_KEY)!).geminiKey).toBe('AIzaRememberedKey');
     expect(JSON.parse(store.get(STORAGE_KEY)!)).not.toHaveProperty('geminiModel');
   });
+
+  it('reloads the OpenRouter selection while scrubbing a session-only key', async () => {
+    store.set(
+      STORAGE_KEY,
+      JSON.stringify({
+        geminiKey: '',
+        rememberGeminiKey: false,
+        chatProvider: 'openrouter',
+        openRouterKey: 'sk-or-session-only',
+        rememberOpenRouterKey: false,
+        openRouterModel: 'google/gemini-3.1-pro-preview',
+        enrichEnabled: false,
+        includeEmbeddingsInExport: false,
+        offlineMode: false,
+      }),
+    );
+
+    const { useSettingsStore } = await import('./settingsStore');
+    expect(useSettingsStore.getState().chatProvider).toBe('openrouter');
+    expect(useSettingsStore.getState().openRouterModel).toBe(
+      'google/gemini-3.1-pro-preview',
+    );
+    expect(useSettingsStore.getState().openRouterKey).toBe('');
+    expect(JSON.parse(store.get(STORAGE_KEY)!).openRouterKey).toBe('');
+  });
 });
 
 describe('offlineMode', () => {
