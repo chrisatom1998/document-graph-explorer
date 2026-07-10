@@ -1,7 +1,7 @@
 {
   "name": "document-graph-explorer",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "desktop/main.cjs",
   "type": "module",
   "scripts": {
@@ -10,9 +10,9 @@
     "build:airgap": "tsc --noEmit && vite build --mode airgap --outDir dist-airgap && node scripts/sanitize-airgap.mjs && node scripts/verify-airgap.mjs",
     "build:desktop": "npm run build && electron-builder --mac dir && node scripts/deploy-app.mjs",
     "dist:mac": "npm run build && electron-builder --mac dmg zip",
-    "dist:win": "npm run build && electron-builder --win nsis portable",
+    "dist:win": "npm run build && electron-builder --win portable",
     "desktop": "npm run build && electron .",
-    "build:exe": "npm run build && pkg scripts/serve-exe.cjs --targets node18-win-x64 --output run.exe",
+    "build:exe": "npm run build && pkg scripts/serve-exe.cjs --targets node18-win-x64 --output release/win/run.exe && node scripts/set-exe-icon.mjs release/win/run.exe && node scripts/stage-win-release.mjs",
     "install:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-desktop-shortcut.ps1",
     "agent": "node agent/subagent.mjs",
     "agent:test": "vitest run -t \"standalone subagent\"",
@@ -60,14 +60,15 @@
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
     "pkg": "^5.8.1",
+    "resedit": "^2.0.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.1",
     "vite": "^7.3.6",
     "vitest": "^4.1.9"
   },
   "build": {
-    "appId": "com.gtech.knowledgenebula",
-    "productName": "Knowledge Nebula",
+    "appId": "com.documentgraph.explorer",
+    "productName": "Document Graph Explorer",
     "directories": {
       "output": "release"
     },
@@ -85,19 +86,14 @@
       ]
     },
     "win": {
+      "icon": "packaging/document-graph-explorer.ico",
+      "signAndEditExecutable": false,
       "target": [
-        "nsis",
         "portable"
-      ],
-      "icon": "packaging/document-graph-explorer.ico"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "artifactName": "Knowledge-Nebula-Setup-${version}.exe"
+      ]
     },
     "portable": {
-      "artifactName": "Knowledge-Nebula-Portable-${version}.exe"
+      "artifactName": "${productName}-${version}.${ext}"
     }
   }
 }
