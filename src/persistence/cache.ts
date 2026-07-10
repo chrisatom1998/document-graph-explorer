@@ -1,4 +1,4 @@
-import { EMBED_DIMS } from '../config';
+import { EMBED_DIMS, EMBEDDING_FINGERPRINT } from '../config';
 import type { DocNode, GraphExport, LinkRef } from '../model/types';
 import { useUiStore } from '../store/uiStore';
 import { getDb, type DocumentRecord, type EmbeddingRecord, type SnapshotRecord } from './db';
@@ -50,6 +50,10 @@ function nonEmpty(a: Float32Array | null | undefined): Float32Array | null {
   return a && a.length > 0 ? a : null;
 }
 
+function compatibleEmbedding(embedding: EmbeddingRecord | undefined): boolean {
+  return embedding?.fingerprint === EMBEDDING_FINGERPRINT;
+}
+
 /** Joins the documents + embeddings stores for a single content hash. */
 export async function lookupDocCache(hash: string): Promise<CachedDoc | undefined> {
   try {
@@ -60,12 +64,15 @@ export async function lookupDocCache(hash: string): Promise<CachedDoc | undefine
       tx.objectStore('embeddings').get(hash),
     ]);
     if (!doc) return undefined;
+    const compatible = compatibleEmbedding(emb);
     return {
       node: doc.node,
       text: doc.text,
       chunkTexts: doc.chunkTexts,
-      chunkVectors: nonEmpty(emb?.chunkVectors),
-      docVector: nonEmpty(emb?.docVector),
+      // Old records deliberately re-index instead of silently mixing vector
+      // spaces after a model or chunking change.
+      chunkVectors: compatible ? nonEmpty(emb?.chunkVectors) : null,
+      docVector: compatible ? nonEmpty(emb?.docVector) : null,
       mdLinkTargets: doc.mdLinkTargets ?? [],
       docLinks: doc.docLinks ?? [],
     };
@@ -128,6 +135,7 @@ export async function saveDocsToCache(
       if (docVector || chunkVectors) {
         const embRec: EmbeddingRecord = {
           hash,
+          fingerprint: EMBEDDING_FINGERPRINT,
           docVector: docVector ?? new Float32Array(0),
           chunkVectors: chunkVectors ?? new Float32Array(0),
           nChunks: chunkVectors ? Math.floor(chunkVectors.length / EMBED_DIMS) : 0,

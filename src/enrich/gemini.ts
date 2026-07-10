@@ -12,10 +12,14 @@
 
 import { AIRGAP, AIRGAP_MESSAGE } from '../airgap';
 import {
+  geminiSystemInstruction,
+  geminiThinkingConfig,
+  resolveGeminiModel,
+} from '../ai/geminiModels';
+import {
   ENRICH_BATCH_SIZE,
   ENRICH_MAX_RETRIES,
   GEMINI_ENDPOINT,
-  GEMINI_MODEL,
 } from '../config';
 import type { DocNode } from '../model/types';
 import { isOffline, OFFLINE_MESSAGE } from '../offline';
@@ -30,6 +34,7 @@ import {
   sleep,
   splitSseLines,
 } from '../chat/geminiClient';
+import { prepareDocumentContext } from './documentContext';
 
 const EXCERPT_CHARS = 8_000; // per-doc in batched enrichment (15 docs × 8k ≈ 120k chars, well within context)
 const CLUSTER_TITLES_CAP = 30;
@@ -41,7 +46,11 @@ const TOPICS_PER_DOC = 5;
 
 type CallResult = { ok: true; text: string } | { ok: false; error: string };
 
-export function extractText(data: unknown): string | null {
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function extractText(data: unknown): string | null {
   const d = data as {
     candidates?: { content?: { parts?: { text?: unknown }[] } }[];
   } | null;
@@ -49,7 +58,7 @@ export function extractText(data: unknown): string | null {
   return typeof t === 'string' ? t : null;
 }
 
-export function parseModelJson<T>(text: string): T | null {
+function parseModelJson<T>(text: string): T | null {
   try {
     return JSON.parse(text) as T;
   } catch {
@@ -71,13 +80,18 @@ const REQUEST_TIMEOUT_MS = 30_000;
 async function callGemini(prompt: string, responseSchema: unknown): Promise<CallResult> {
   if (isOffline()) return { ok: false, error: AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE };
   const { geminiKey, geminiModel } = useSettingsStore.getState();
-  const model = geminiModel.trim() || GEMINI_MODEL;
+  const model = resolveGeminiModel('enrichment', geminiModel);
   // Key travels as a header, not a query param: URLs leak into proxy/server
   // logs and browser history; headers don't.
   const url = `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`;
   const body = JSON.stringify({
+    systemInstruction: geminiSystemInstruction('enrichment'),
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { responseMimeType: 'application/json', responseSchema },
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema,
+      ...geminiThinkingConfig('enrichment', model),
+    },
   });
 
   let lastError = 'Unknown Gemini error';
@@ -102,17 +116,23 @@ async function callGemini(prompt: string, responseSchema: unknown): Promise<Call
         if (text !== null) return { ok: true, text };
         lastError = 'Gemini returned an unexpected response shape';
       } else {
-        retryable = isRetryableStatus(res.status);
+        retryable = res.status === 429 || res.status === 503;
         lastError = `Gemini HTTP ${res.status}`;
-        const bodyMsg = await readErrorMessage(res, 160);
-        if (bodyMsg) lastError += `: ${bodyMsg}`;
+        try {
+          const errData = (await res.json()) as { error?: { message?: unknown } };
+          if (typeof errData.error?.message === 'string') {
+            lastError += `: ${errData.error.message.slice(0, 160)}`;
+          }
+        } catch {
+          /* error body wasn't JSON */
+        }
       }
     } catch (err) {
       retryable = true; // fetch network failure
       lastError = err instanceof Error ? `Network error: ${err.message}` : 'Network error';
     }
     if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
-    await sleep(backoffDelayMs(attempt));
+    await sleep(1000 * 2 ** attempt);
   }
 }
 
@@ -298,9 +318,8 @@ async function nameClusters(
 // schema constraint) for lower latency.
 // ---------------------------------------------------------------------------
 
-// No truncation — send the full document. The default model (GEMINI_MODEL in
-// config.ts) supports up to 1M input tokens (~4M chars), so even very large
-// docs fit easily.
+// Document AI is bounded before sending source text to Gemini. The ingest cap
+// is intentionally much larger than any model context window.
 
 export type DocAiAction = 'summarize' | 'outline' | 'ask';
 
@@ -323,7 +342,7 @@ async function streamGemini(
 ): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
   if (isOffline()) return { ok: false, error: AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE };
   const { geminiKey, geminiModel } = useSettingsStore.getState();
-  const model = geminiModel.trim() || GEMINI_MODEL;
+  const model = resolveGeminiModel('document', geminiModel);
   const url =
     `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
 
@@ -357,18 +376,24 @@ async function streamGemini(
           'x-goog-api-key': geminiKey.trim(),
         },
         body: JSON.stringify({
+          systemInstruction: geminiSystemInstruction('document'),
           contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: geminiThinkingConfig('document', model),
         }),
         signal: controller.signal,
       });
 
       if (!res.ok) {
-        retryable = isRetryableStatus(res.status);
+        retryable = res.status === 429 || res.status === 503;
         lastError = `Gemini HTTP ${res.status}`;
-        const bodyMsg = await readErrorMessage(res, 160);
-        if (bodyMsg) lastError += `: ${bodyMsg}`;
+        try {
+          const errData = (await res.json()) as { error?: { message?: unknown } };
+          if (typeof errData.error?.message === 'string') {
+            lastError += `: ${errData.error.message.slice(0, 160)}`;
+          }
+        } catch { /* not JSON */ }
         if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
-        await sleep(backoffDelayMs(attempt));
+        await sleep(1000 * 2 ** attempt);
         continue;
       }
 
@@ -384,15 +409,27 @@ async function streamGemini(
         const { done, value } = await reader.read();
         if (done) break;
         armIdle(); // healthy chunk arrived — push the inactivity deadline out
+        buffer += decoder.decode(value, { stream: true });
 
-        const { lines, remainder } = splitSseLines(buffer, decoder.decode(value, { stream: true }));
-        buffer = remainder;
+        // Parse SSE events: "data: {...}\n\n"
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? ''; // keep incomplete line in buffer
 
         for (const line of lines) {
-          const evt = parseSseLine(line);
-          if (evt?.text) {
-            accumulated += evt.text;
-            onChunk?.(accumulated);
+          if (!line.startsWith('data: ')) continue;
+          const jsonStr = line.slice(6).trim();
+          if (!jsonStr || jsonStr === '[DONE]') continue;
+          try {
+            const chunk = JSON.parse(jsonStr) as {
+              candidates?: { content?: { parts?: { text?: string }[] } }[];
+            };
+            const text = chunk?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (typeof text === 'string') {
+              accumulated += text;
+              onChunk?.(accumulated);
+            }
+          } catch {
+            // Malformed chunk — skip
           }
         }
       }
@@ -408,7 +445,7 @@ async function streamGemini(
       clearIdle();
     }
     if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
-    await sleep(backoffDelayMs(attempt));
+    await sleep(1000 * 2 ** attempt);
   }
 }
 
@@ -455,12 +492,17 @@ export async function askDocAi(
       break;
   }
 
+  const context = prepareDocumentContext(fullText, action, question);
+  const scopeNote = context.truncated
+    ? 'Only selected sections of this large document are included below. State that limitation when it affects the answer.'
+    : 'The complete document is included below.';
   const prompt = [
     task,
+    scopeNote,
     '',
     `Document title: ${title}`,
     'Document text:',
-    fullText,
+    context.text,
   ].join('\n');
 
   // Use streaming for real-time delivery

@@ -4,6 +4,13 @@ All notable changes to Document Graph Explorer are documented here.
 
 This project follows the Keep a Changelog format.
 
+## [Unreleased]
+
+### Changed
+- Gemini calls now use task-specific stable models: 3.1 Flash-Lite for structured enrichment and 3.5 Flash for document Q&A and chat, with a single optional custom override.
+- Local semantic search now uses self-hosted BGE small embeddings with retrieval-prefixed queries for better search, graph links, and local chat grounding.
+- Gemini 3 requests use task-appropriate thinking levels and system instructions that treat document content as untrusted reference material.
+
 ## [1.0.0] - 2026-07-07
 
 ### Added

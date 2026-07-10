@@ -10,7 +10,9 @@ export const ENTITY_EDGE_MIN_SHARED = 2; // shared named entities to form an ent
 export const ENTITY_EDGES_PER_DOC = 4; // cap entity edges per doc (anti-hairball)
 export const TOPIC_MIN_DOCS = 2; // docs sharing a topic before it becomes a hub
 export const TOPIC_MAX_DOC_FRACTION = 0.33; // drop topics carried by >⅓ of the corpus
-export const CHUNK_TOKENS = 512; // ~tokens per embedding chunk
+// BGE small supports longer inputs than the old MiniLM default, but keep chunks
+// compact: smaller evidence windows improve retrieval precision and chat grounding.
+export const CHUNK_TOKENS = 192; // conservative ~wordpiece budget per chunk
 export const CHUNK_OVERLAP = 0.15; // 15% overlap between chunks
 export const MAX_EMBED_TEXT_BYTES = 200 * 1024; // cap text used for embedding (spec §4.3)
 export const MIN_MENTION_TITLE_LEN = 5; // ignore very short titles for mention matching
@@ -18,12 +20,25 @@ export const MIN_MENTION_TITLE_LEN = 5; // ignore very short titles for mention 
 // --- Embedding model ---
 export const EMBED_MODEL_ID = 'Xenova/bge-small-en-v1.5';
 export const EMBED_DIMS = 384;
+export const EMBED_QUERY_PREFIX = 'Represent this sentence for searching relevant passages: ';
+// Bump automatically whenever a setting that changes vector meaning changes.
+// Persisted vectors must never be mixed with queries from another profile.
+export const EMBEDDING_FINGERPRINT = [
+  EMBED_MODEL_ID,
+  `dims=${EMBED_DIMS}`,
+  'pooling=mean',
+  'normalize=true',
+  `chunkTokens=${CHUNK_TOKENS}`,
+  `overlap=${CHUNK_OVERLAP}`,
+].join('|');
 
-// --- Enrichment (user choice: Gemini) ---
-export const GEMINI_MODEL = 'gemini-2.5-flash'; // fastest current model; override in Settings
+// --- Optional cloud AI (Gemini; model routing lives in ai/geminiModels.ts) ---
 export const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 export const ENRICH_BATCH_SIZE = 15; // docs per request (spec says 10–20)
 export const ENRICH_MAX_RETRIES = 3;
+// Kept far below Gemini's context limit. Large documents are selected by
+// relevant/representative sections before they leave the browser.
+export const DOCUMENT_AI_MAX_CONTEXT_CHARS = 240_000;
 
 // --- Search ---
 export const SEARCH_MIN_SCORE = 0.35; // semantic search relevance floor

@@ -6,7 +6,10 @@
  */
 
 import { useRef, useState, type CSSProperties } from 'react';
-import { GEMINI_MODEL } from '../config';
+import {
+  GEMINI_ENRICH_MODEL,
+  GEMINI_INTERACTIVE_MODEL,
+} from '../ai/geminiModels';
 import { AIRGAP } from '../airgap';
 import { useFocusTrap } from './useFocusTrap';
 import { runEnrichment } from '../enrich/gemini';
@@ -287,17 +290,20 @@ export default function SettingsPanel() {
             </p>
           )}
           <label style={labelStyle}>
-            Model
+            Model override
             <input
               type="text"
               value={geminiModel}
               onChange={(e) => setGeminiModel(e.target.value)}
-              placeholder={GEMINI_MODEL}
-              title="Gemini model id used for all AI calls (e.g. gemini-2.5-flash). Leave blank for the default."
+              placeholder="Automatic (recommended)"
+              title="Optional Gemini model id used for every AI call. Leave blank for task-specific automatic routing."
               style={inputStyle}
               disabled={offlineMode}
             />
-            <span style={helpStyle}>Gemini model used for summaries &amp; topic naming</span>
+            <span style={helpStyle}>
+              Automatic uses {GEMINI_ENRICH_MODEL} for enrichment and{' '}
+              {GEMINI_INTERACTIVE_MODEL} for document AI and chat.
+            </span>
           </label>
           <label
             style={checkboxRowStyle}

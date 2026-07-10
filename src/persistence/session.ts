@@ -6,7 +6,7 @@
  * - bulk restore on startup: target < 3s for ~200 docs, fully offline
  */
 
-import { EMBED_DIMS } from '../config';
+import { EMBED_DIMS, EMBEDDING_FINGERPRINT } from '../config';
 import {
   layoutAddNodes,
   layoutReheat,
@@ -226,22 +226,27 @@ async function hydrateFromRecord(
     Promise.all(docIds.map((id) => docStore.get(id))),
     Promise.all(docIds.map((id) => embStore.get(id))),
   ]);
+  let needsEmbeddingRebuild = false;
 
   for (let i = 0; i < docIds.length; i++) {
     const id = docIds[i];
     const doc = docRecs[i];
     const emb = embRecs[i];
+    const compatible = emb?.fingerprint === EMBEDDING_FINGERPRINT;
+    if (doc && emb && !compatible && (emb.docVector.length > 0 || emb.chunkVectors.length > 0)) {
+      needsEmbeddingRebuild = true;
+    }
     if (doc) {
       textStore.set(id, doc.text);
       chunkStore.set(id, {
         texts: doc.chunkTexts,
-        vectors: emb && emb.chunkVectors.length > 0 ? emb.chunkVectors : null,
+        vectors: compatible && emb && emb.chunkVectors.length > 0 ? emb.chunkVectors : null,
         dims: EMBED_DIMS,
       });
       mdLinkTargetsStore.set(id, doc.mdLinkTargets ?? []);
       docLinksStore.set(id, doc.docLinks ?? []);
     }
-    if (emb && emb.docVector.length > 0) docVectorStore.set(id, emb.docVector);
+    if (compatible && emb && emb.docVector.length > 0) docVectorStore.set(id, emb.docVector);
   }
 
   // --- hydrate graph store ---
@@ -274,6 +279,14 @@ async function hydrateFromRecord(
     Object.fromEntries(exportData.nodes.map((n): [string, number] => [n.id, n.cluster])),
   );
   layoutReheat(0.03); // barely moves — restores the settled shape
+
+  if (needsEmbeddingRebuild) {
+    useUiStore.getState().pushToast('Search index updated — rebuilding local embeddings.', 'info');
+    // Dynamic import preserves the existing persistence/coordinator cycle break.
+    void import('../pipeline/coordinator')
+      .then((m) => m.rebuildEmbeddings())
+      .catch((err) => console.error('embedding rebuild after restore failed', err));
+  }
 
   return true;
 }

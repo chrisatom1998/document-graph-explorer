@@ -346,7 +346,12 @@ describe('chunkText', () => {
     const text = Array.from({ length: 5 }, (_, i) => `Paragraph ${i}. ${para}`).join('\n\n');
     const { chunks } = chunkText(text);
     expect(chunks.length).toBeGreaterThan(1);
-    for (const c of chunks) expect(c.length).toBeGreaterThan(0);
+    for (const c of chunks) {
+      expect(c.length).toBeGreaterThan(0);
+      // The production chunker uses a conservative word heuristic so evidence
+      // windows stay focused for retrieval.
+      expect(c.split(/\s+/).length).toBeLessThanOrEqual(148);
+    }
   });
 
   it('empty / whitespace-only text yields no chunks', () => {

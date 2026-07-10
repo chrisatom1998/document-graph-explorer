@@ -31,6 +31,8 @@ export interface DocumentRecord {
 
 export interface EmbeddingRecord {
   hash: string;
+  /** Embedding model + preprocessing profile that produced these vectors. */
+  fingerprint?: string;
   /** zero-length = absent */
   docVector: Float32Array;
   /** flattened [nChunks * EMBED_DIMS]; zero-length = absent */

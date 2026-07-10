@@ -29,6 +29,7 @@ import {
   TOPIC_MAX_DOC_FRACTION,
   TOPIC_MIN_DOCS,
 } from '../config';
+import { embeddingQueryText } from '../ai/embeddingPolicy';
 import type {
   AggRequest,
   AggResponse,
@@ -1080,6 +1081,56 @@ export function removeDocuments(ids: string[]): Promise<void> {
   return run;
 }
 
+/**
+ * Rebuilds all local vectors after an embedding profile change. Source text is
+ * already persisted locally, so this never needs to re-read the original files.
+ */
+async function runEmbeddingRebuild(): Promise<void> {
+  wireModelProgress();
+  const docs = documentNodes().filter((n) => n.status !== 'unreadable' && textStore.has(n.id));
+  if (docs.length === 0) return;
+
+  const pool = getPool();
+  const { lexEdges, boilerplate } = await runLexicalPass(pool);
+  useGraphStore.getState().setPhase('embedding');
+  for (const doc of docs) {
+    docVectorStore.delete(doc.id);
+    const { chunks, truncated } = chunkText(stripBoilerplate(textStore.get(doc.id) ?? '', boilerplate));
+    if (chunks.length === 0) {
+      chunkStore.delete(doc.id);
+      continue;
+    }
+    if (truncated && !doc.warning) {
+      useGraphStore.getState().patchNodes(
+        new Map([[doc.id, { status: 'partial', warning: 'Only the first ~200 KB indexed for search' }]]),
+      );
+    }
+    chunkStore.set(doc.id, { texts: chunks, vectors: null, dims: EMBED_DIMS });
+    const done = await pool.request<EmbedDone>({ requestId: 0, type: 'embed', docId: doc.id, chunks });
+    docVectorStore.set(doc.id, done.docVector);
+    chunkStore.set(doc.id, { texts: chunks, vectors: done.chunkVectors, dims: EMBED_DIMS });
+  }
+  useGraphStore.getState().setModelProgress(null);
+  await runSemanticPass(lexEdges);
+  synthesizeTopicNodes();
+  useGraphStore.getState().setCorpusHash(await computeCorpusHash());
+  useGraphStore.getState().setPhase('ready');
+  const { saveSession } = await import('../persistence/session');
+  await saveSession();
+}
+
+export function rebuildEmbeddings(): Promise<void> {
+  const run = runChain.then(runEmbeddingRebuild);
+  runChain = run.then(
+    () => undefined,
+    (err) => {
+      console.error('embedding rebuild failed', err);
+      useUiStore.getState().pushToast('Embedding rebuild failed — re-add affected documents to retry.', 'warning');
+    },
+  );
+  return run;
+}
+
 /** Fetches /demo/manifest.json + files (bundled by the UI) and ingests them. */
 export async function loadDemoCorpus(): Promise<void> {
   const res = await fetch('/demo/manifest.json');
@@ -1111,7 +1162,7 @@ export async function embedQuery(text: string): Promise<Float32Array> {
   const done = await getPool().request<EmbedQueryDone>({
     requestId: 0,
     type: 'embedQuery',
-    text,
+    text: embeddingQueryText(text),
   });
   return done.vector;
 }

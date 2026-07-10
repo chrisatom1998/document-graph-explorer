@@ -8,6 +8,8 @@ import { create } from 'zustand';
 /** A single citation: the best-scoring chunk retrieved from one document. */
 export interface ChatSource {
   docId: string;
+  /** Zero-based passage index within the document, when chunk metadata exists. */
+  chunkIndex?: number;
   /** First ~200 chars of the best-matching chunk, for the tooltip preview. */
   snippet: string;
   /** Cosine similarity of that chunk to the question. */

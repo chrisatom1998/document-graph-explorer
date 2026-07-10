@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { formatExtractiveAnswer, type Passage } from './extractiveAnswer';
 
-const p = (docId: string, docTitle: string, text: string, score: number): Passage => ({
+const p = (docId: string, docTitle: string, text: string, score: number, chunkIndex?: number): Passage => ({
   docId, docTitle, text, score,
+  ...(chunkIndex === undefined ? {} : { chunkIndex }),
 });
 
 describe('formatExtractiveAnswer', () => {
@@ -14,12 +15,12 @@ describe('formatExtractiveAnswer', () => {
 
   it('quotes the passage verbatim and cites the source doc', () => {
     const r = formatExtractiveAnswer('rate limits', [
-      p('doc1', 'Rate Limiting', 'Requests are capped at 100/min per token.', 0.9),
+      p('doc1', 'Rate Limiting', 'Requests are capped at 100/min per token.', 0.9, 3),
     ]);
     expect(r.text).toContain('Rate Limiting');
     expect(r.text).toContain('Requests are capped at 100/min per token.');
     expect(r.sources).toHaveLength(1);
-    expect(r.sources[0]).toMatchObject({ docId: 'doc1' });
+    expect(r.sources[0]).toMatchObject({ docId: 'doc1', chunkIndex: 3 });
   });
 
   it('keeps only the best passage per document', () => {

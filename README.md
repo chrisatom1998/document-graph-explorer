@@ -13,14 +13,6 @@ npm run dev      # start the Vite dev server
 
 Then open the printed local URL and drag documents onto the window — or click **Load demo corpus** on the welcome screen to explore instantly.
 
-### Run with Docker
-
-```bash
-docker compose up --build
-```
-
-Then visit `http://localhost:8080`. The optional Windows `.exe` download at `/downloads/` is served from a read-only bind mount of `docker/downloads/` (populate it with `npm run build:exe`); the folder is checked in empty and safe to leave that way.
-
 **New here? Read the [User Guide](docs/user-guide.md)** — why the tool is valuable, what it can do, and a walkthrough of every feature.
 
 ## Scripts
@@ -42,7 +34,6 @@ Then visit `http://localhost:8080`. The optional Windows `.exe` download at `/do
 | `npm run build:airgap` | `dist-airgap/` | **Zero external network** — host-free CSP + runtime refusal + post-build verify gate |
 | `npm run build:desktop` | `release/mac-arm64/Knowledge Nebula.app`, installed to `/Applications` | Normal app build wrapped as a local macOS desktop executable |
 | `npm run dist:mac` | `Knowledge Nebula-<version>-arm64.dmg` and `.zip` under `release/` | Distributable macOS installer images (see [Distributing the app](#distributing-the-app-dmg)) |
-| `npm run build:exe` | `release/win/` (`run.exe` + `dist/`, branded with the app icon) | Windows executable — see [Windows executable (.exe)](#windows-executable-exe) |
 
 See [SECURITY.md](SECURITY.md) for the full privacy guarantee and how to verify it.
 
@@ -95,33 +86,6 @@ This drops a desktop shortcut (with the app icon) that points back at `run.cmd` 
 
 The icon is generated from `public/icon.svg` into `packaging/document-graph-explorer.ico` (regenerate with `scripts/make-app-icon.ps1` if the brand icon changes). On macOS, drag `run.command` to your Dock, or right-click it on the desktop → **Make Alias** and move the alias where you like (the first launch needs a right-click → **Open** to clear Gatekeeper).
 
-### Windows executable (.exe)
-
-For a single, double-clickable file that needs no Node.js install on the target machine:
-
-```bash
-npm run build:exe
-```
-
-This produces a self-contained `release/win/` folder:
-
-```
-release/win/
-├── run.exe   <- standalone Windows binary (double-click to launch)
-└── dist/     <- the built web app, served by run.exe
-```
-
-`run.exe` is a standalone Windows binary (built with [`@yao-pkg/pkg`](https://github.com/yao-pkg/pkg), a Node.js runtime bundled with the app) that serves the `dist/` folder sitting next to it on `127.0.0.1` and opens it in the default browser, with the app icon and file metadata (product name, version, description) embedded in the executable via [`resedit`](https://www.npmjs.com/package/resedit) so it shows the branded graphic icon in Explorer, the taskbar, and the title bar — not the generic Node.js icon.
-
-To ship it to another Windows machine, copy (or zip) the whole `release/win/` folder — `run.exe` must stay next to its `dist/` folder.
-
-Notes:
-
-- `run.exe` can be built from Linux, macOS, or Windows (cross-compilation), but requires Node.js ≥ 22 on the machine doing the build. The target machine needs nothing installed.
-- `release/` is gitignored — build it locally or in CI whenever you need to (re)distribute it; it isn't committed to the repo.
-- The embedded icon is the same `packaging/document-graph-explorer.ico` used for the desktop shortcut (see above); regenerate that file first if you want a different icon before running `build:exe`.
-- Like any unsigned executable, Windows SmartScreen may warn on first run ("Windows protected your PC") — click **More info → Run anyway**. Code-signing removes this warning but requires a paid certificate and is out of scope here.
-
 ## How it works
 
 Ingestion is a pipeline that runs off the main thread:
@@ -130,6 +94,7 @@ Ingestion is a pipeline that runs off the main thread:
 
 - **Parsing** ([src/pipeline/parsers/](src/pipeline/parsers/)) handles Markdown, HTML, plain text, PDF (including link annotations), and Office formats (DOCX, PPTX, XLSX).
 - **Embeddings** use a self-hosted `bge-small-en-v1.5` model in [public/models/](public/models/) via transformers.js — no third-party API.
+- **Optional Gemini AI** routes structured enrichment to `gemini-3.1-flash-lite` and document Q&A/chat to `gemini-3.5-flash`; Settings can pin one custom model for every task.
 - **The 3D scene** ([src/scene/](src/scene/)) is React Three Fiber over Three.js, with instanced nodes/edges, a force-directed layout worker, and a cluster-collapse view for large graphs.
 - **State** lives in Zustand stores ([src/store/](src/store/)); the computed graph persists to IndexedDB so you don't re-parse every session. The toolbar Data menu exposes JSON export/import and PNG scene export through [src/persistence/exportImport.ts](src/persistence/exportImport.ts).
 

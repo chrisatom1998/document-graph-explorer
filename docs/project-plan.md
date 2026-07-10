@@ -53,7 +53,7 @@ The tool runs **entirely client-side** (zero server cost, zero data exposure), m
 ### Intelligence
 - **Structural analysis**: extracts titles, headings, cross-references, entities
 - **TF-IDF keyword edges**: shared rare terms create connections
-- **Semantic embeddings**: local MiniLM model (no API needed) computes document similarity
+- **Semantic embeddings**: local BGE small model (no API needed) computes document similarity
 - **Community detection**: Louvain clustering groups related documents into color-coded constellations
 - **Optional AI enrichment**: Gemini API for summaries, canonical topics, cluster names
 

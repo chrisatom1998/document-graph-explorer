@@ -57,6 +57,7 @@ function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSour
         const node = nodes[nodeIndex[source.docId]];
         const title = node?.title ?? source.docId.slice(0, 12);
         const pct = Math.round(source.score * 100);
+        const passage = source.chunkIndex === undefined ? '' : `, passage ${source.chunkIndex + 1}`;
         // Sibling buttons, not nested (nested <button> is invalid HTML): the
         // chip flies to the node, the paired icon opens the document itself.
         return (
@@ -64,10 +65,10 @@ function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSour
             <button
               type="button"
               className="chat-source-chip"
-              title={`${pct}% match — ${source.snippet}`}
+              title={`${pct}% match${passage} — ${source.snippet}`}
               onClick={() => onSourceClick(source.docId)}
             >
-              📄 {title.length > 30 ? title.slice(0, 28) + '…' : title}
+              📄 {title.length > 30 ? title.slice(0, 28) + '…' : title}{source.chunkIndex === undefined ? '' : ` · ${source.chunkIndex + 1}`}
             </button>
             <button
               type="button"

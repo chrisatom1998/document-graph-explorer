@@ -22,7 +22,7 @@ Make internal documentation **explorable, connected, and alive** — transformin
 | Drag-and-drop ingestion with live progress | ✅ Shipped | June 2026 |
 | Multi-format parsing (MD, TXT, PDF, HTML, DOCX, PPTX, XLSX) | ✅ Shipped | June 2026 |
 | TF-IDF keyword extraction + lexical edges | ✅ Shipped | June 2026 |
-| Local semantic embeddings (MiniLM, WebGPU) | ✅ Shipped | June 2026 |
+| Local semantic embeddings (BGE small, WebGPU) | ✅ Shipped | June 2026 |
 | Semantic similarity edges with top-k constraint | ✅ Shipped | June 2026 |
 | Louvain community detection + cluster coloring | ✅ Shipped | June 2026 |
 | 3D force-directed layout (d3-force-3d in worker) | ✅ Shipped | June 2026 |

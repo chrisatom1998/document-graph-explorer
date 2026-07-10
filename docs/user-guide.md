@@ -92,7 +92,7 @@ There are four ways to get documents in:
 
 **Supported formats:** `txt`, `log`, `md`, `mdx`, `pdf`, `html`/`htm`, `docx`/`docm`, `pptx`/`pptm`, `xlsx`/`xlsm`, `json`, `yaml`/`yml`, `csv`. Anything else lands in the collapsible **ignored tray** with a reason rather than failing silently. Dotfiles and development directories (`node_modules`, `.git`, `dist`, `build`, `.venv`, …) are skipped automatically when dropping folders.
 
-**What happens next:** ingestion runs entirely off the main thread — parse → boilerplate strip → chunk → TF-IDF → embeddings (self-hosted MiniLM model) → similarity links + Louvain clustering → topic synthesis. A **progress strip** shows the current phase (`Parsing…`, `Finding connections…`, `Embedding meaning…`, `Clustering…`, `Ready`), a percentage bar, and per-file status chips. The first run also shows a one-time banner while the embedding model loads.
+**What happens next:** ingestion runs entirely off the main thread — parse → boilerplate strip → chunk → TF-IDF → embeddings (self-hosted BGE model) → similarity links + Louvain clustering → topic synthesis. A **progress strip** shows the current phase (`Parsing…`, `Finding connections…`, `Embedding meaning…`, `Clustering…`, `Ready`), a percentage bar, and per-file status chips. The first run also shows a one-time banner while the embedding model loads.
 
 **Limits:**
 
@@ -214,7 +214,7 @@ Settings → **AI Enrichment**. Enrichment adds three things the local pipeline 
 2. Turn on **Enable enrichment**.
 3. Click **Enrich now**.
 
-The model defaults to `gemini-2.5-flash` and can be overridden. With enrichment on, document excerpts are sent to Google's Gemini API for the batch pass, and "Ask AI" / chat send the relevant documents' text; with it off (the default), nothing ever leaves the browser. The key travels only as a request header, is never written into exports or the graph cache, and enrichment failures degrade gracefully (you keep the local summaries and names).
+Automatic model routing uses `gemini-3.1-flash-lite` for high-volume structured enrichment and `gemini-3.5-flash` for document AI and chat. Settings → **Model override** can pin one custom Gemini model for every task. With enrichment on, document excerpts are sent to Google's Gemini API for the batch pass, and "Ask AI" / chat send the relevant documents' text; with it off (the default), nothing ever leaves the browser. The key travels only as a request header, is never written into exports or the graph cache, and enrichment failures degrade gracefully (you keep the local summaries and names).
 
 ## Snapshots
 

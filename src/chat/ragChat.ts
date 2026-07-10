@@ -11,29 +11,32 @@
  * graph are automatically available as context.
  */
 
-import { EMBED_DIMS, GEMINI_ENDPOINT, GEMINI_MODEL } from '../config';
+import {
+  geminiSystemInstruction,
+  geminiThinkingConfig,
+  resolveGeminiModel,
+} from '../ai/geminiModels';
+import { EMBED_DIMS, GEMINI_ENDPOINT } from '../config';
 import { isOffline } from '../offline';
 import { embedQuery } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import { chunkStore, docVectorStore, textStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
 import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
-import { bestPerDocument, formatExtractiveAnswer, toSnippetSource } from './extractiveAnswer';
-import {
-  backoffDelayMs,
-  isRetryableStatus,
-  parseSseLine,
-  readErrorMessage,
-  sleep,
-  splitSseLines,
-} from './geminiClient';
+import { formatExtractiveAnswer } from './extractiveAnswer';
 
 const RAG_TOP_K = 8; // max chunks to include as context
 const RAG_MIN_SCORE = 0.3; // cosine floor for relevance
+const RAG_MAX_CHUNKS_PER_DOC = 2; // avoid one long document crowding out the corpus
 const CHUNK_CONTEXT_CHARS = 1500; // max chars per chunk in prompt
 const REQUEST_TIMEOUT_MS = 120_000; // streaming responses can run long
 const MAX_HISTORY_MESSAGES = 8; // prior turns fed back to Gemini for memory
+const SOURCE_SNIPPET_CHARS = 200; // citation preview length
 const MAX_STREAM_RETRIES = 3; // 429/503 backoff retries before the stream starts
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // ---------------------------------------------------------------------------
 // Cancellation: one in-flight chat request at a time
@@ -66,6 +69,47 @@ interface RetrievedChunk {
   score: number;
 }
 
+function queryTerms(query: string): string[] {
+  return [...new Set(query.toLowerCase().match(/[a-z0-9][a-z0-9+#._-]{1,}/g) ?? [])];
+}
+
+function lexicalCoverage(text: string, terms: string[]): number {
+  if (terms.length === 0) return 0;
+  const lower = text.toLowerCase();
+  return terms.reduce((count, term) => count + (lower.includes(term) ? 1 : 0), 0) / terms.length;
+}
+
+/** Keep the highest-scoring passages without letting a single doc dominate. */
+export function diversifyChunks<T extends { docId: string; score: number }>(
+  chunks: T[],
+  limit: number = RAG_TOP_K,
+  perDocument: number = RAG_MAX_CHUNKS_PER_DOC,
+): T[] {
+  const perDoc = new Map<string, number>();
+  const out: T[] = [];
+  for (const chunk of [...chunks].sort((a, b) => b.score - a.score)) {
+    const count = perDoc.get(chunk.docId) ?? 0;
+    if (count >= perDocument) continue;
+    out.push(chunk);
+    perDoc.set(chunk.docId, count + 1);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/** Return an evidence window around the first matched query term. */
+export function keywordEvidence(text: string, terms: string[], maxChars: number): string {
+  const lower = text.toLowerCase();
+  const index = terms
+    .map((term) => lower.indexOf(term))
+    .filter((position) => position >= 0)
+    .sort((a, b) => a - b)[0];
+  if (index === undefined) return text.slice(0, maxChars);
+  const start = Math.max(0, index - Math.floor(maxChars * 0.3));
+  const end = Math.min(text.length, start + maxChars);
+  return text.slice(start, end).trim();
+}
+
 async function retrieveChunks(query: string): Promise<RetrievedChunk[]> {
   const nodes = useGraphStore.getState().nodes;
   if (nodes.length === 0) return [];
@@ -80,6 +124,7 @@ async function retrieveChunks(query: string): Promise<RetrievedChunk[]> {
 
   const titleMap = new Map(nodes.map((n) => [n.id, n.title]));
   const hits: RetrievedChunk[] = [];
+  const terms = queryTerms(query);
 
   // Chunk-level retrieval (most precise)
   for (const [docId, chunks] of chunkStore) {
@@ -93,14 +138,17 @@ async function retrieveChunks(query: string): Promise<RetrievedChunk[]> {
       const off = c * dims;
       let dot = 0;
       for (let d = 0; d < dims; d++) dot += vectors[off + d] * qVec[d];
-      if (dot >= RAG_MIN_SCORE) {
-        const text = c < chunks.texts.length ? chunks.texts[c] : '';
+      const text = c < chunks.texts.length ? chunks.texts[c] : '';
+      const lexical = lexicalCoverage(text, terms);
+      if (dot >= RAG_MIN_SCORE || lexical >= 0.5) {
         hits.push({
           docId,
           docTitle: titleMap.get(docId) ?? docId.slice(0, 8),
           chunkIndex: c,
           text: text.slice(0, CHUNK_CONTEXT_CHARS),
-          score: dot,
+          // Dense retrieval captures paraphrase; a small exact-term boost
+          // protects acronyms, ticket IDs, and product names.
+          score: dot + lexical * 0.12,
         });
       }
     }
@@ -108,7 +156,7 @@ async function retrieveChunks(query: string): Promise<RetrievedChunk[]> {
 
   // Doc-level fallback for imported graphs without chunk vectors
   for (const [docId, vec] of docVectorStore) {
-    if (chunkStore.has(docId)) continue; // already covered
+    if (chunkStore.get(docId)?.vectors) continue; // already covered
     if (vec.length !== qVec.length) continue;
     let dot = 0;
     for (let d = 0; d < vec.length; d++) dot += vec[d] * qVec[d];
@@ -124,16 +172,14 @@ async function retrieveChunks(query: string): Promise<RetrievedChunk[]> {
     }
   }
 
-  return hits
-    .sort((a, b) => b.score - a.score)
-    .slice(0, RAG_TOP_K);
+  return diversifyChunks(hits);
 }
 
 /** Simple keyword fallback when embeddings aren't available. */
 function keywordFallback(query: string): RetrievedChunk[] {
   const nodes = useGraphStore.getState().nodes;
   const qLower = query.toLowerCase();
-  const qTokens = qLower.split(/\s+/).filter((t) => t.length > 2);
+  const qTokens = queryTerms(qLower).filter((t) => t.length > 2);
   const hits: RetrievedChunk[] = [];
 
   for (const n of nodes) {
@@ -148,20 +194,30 @@ function keywordFallback(query: string): RetrievedChunk[] {
         docId: n.id,
         docTitle: n.title,
         chunkIndex: 0,
-        text: text.slice(0, CHUNK_CONTEXT_CHARS * 2),
+        text: keywordEvidence(text, qTokens, CHUNK_CONTEXT_CHARS * 2),
         score: titleMatch ? 1.0 : tokenHits / qTokens.length,
       });
     }
   }
 
-  return hits
-    .sort((a, b) => b.score - a.score)
-    .slice(0, RAG_TOP_K);
+  return diversifyChunks(hits);
 }
 
 /** Per unique doc, keep the single best-scoring chunk as its citation. */
 function bestChunkSources(chunks: RetrievedChunk[]): ChatSource[] {
-  return bestPerDocument(chunks).map(toSnippetSource);
+  const bestByDoc = new Map<string, RetrievedChunk>();
+  for (const c of chunks) {
+    const cur = bestByDoc.get(c.docId);
+    if (!cur || c.score > cur.score) bestByDoc.set(c.docId, c);
+  }
+  return [...bestByDoc.values()]
+    .sort((a, b) => b.score - a.score)
+    .map((c) => ({
+      docId: c.docId,
+      chunkIndex: c.chunkIndex,
+      snippet: c.text.slice(0, SOURCE_SNIPPET_CHARS).trim(),
+      score: c.score,
+    }));
 }
 
 // ---------------------------------------------------------------------------
@@ -173,15 +229,17 @@ interface GeminiTurn {
   parts: { text: string }[];
 }
 
-function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
+export function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
   const contextParts = chunks.map(
-    (c, i) => `[Source ${i + 1}: "${c.docTitle}"]\n${c.text}`,
+    (c, i) => `[Source ${i + 1}: "${c.docTitle}", passage ${c.chunkIndex + 1}]\n${c.text}`,
   );
 
   return [
     'You are a knowledgeable assistant answering questions about the user\'s document collection.',
     'Use ONLY the context provided below. If the context does not contain the answer, say so clearly.',
-    'Be concise, specific, and cite which source document(s) your answer comes from.',
+    'Every factual claim must be supported by a source below. Cite supporting claims inline as [Source N].',
+    'Do not cite a source that does not support the claim, and do not invent facts, source names, or citation numbers.',
+    'Be concise and specific. When the evidence is incomplete or conflicting, state that limitation.',
     'Format your response in Markdown.',
     '',
     '--- CONTEXT ---',
@@ -203,7 +261,7 @@ function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
 export function buildHistoryTurns(messages: ChatMessage[]): GeminiTurn[] {
   const usable = messages.filter((m) => {
     if (m.role === 'system') return false;
-    if (m.role === 'assistant' && m.isError) return false;
+    if (m.role === 'assistant' && m.text.startsWith('Error:')) return false;
     return true;
   });
   const turns: GeminiTurn[] = usable.slice(-MAX_HISTORY_MESSAGES).map((m) => ({
@@ -236,16 +294,8 @@ export async function sendChatMessage(question: string): Promise<void> {
   const q = question.trim();
   if (!q) return;
 
-  const chat = useChatStore.getState();
-  // Guard against concurrent sends: ChatPanel keeps its textarea enabled
-  // while streaming (so the user can read/compose ahead) and only checks
-  // isStreaming itself before calling in — this check is the actual source
-  // of truth, checked synchronously before anything else touches shared
-  // state, so a second call can never slip in between this check and
-  // setIsStreaming(true) below.
-  if (chat.isStreaming) return;
-
   const { geminiKey, geminiModel, enrichEnabled } = useSettingsStore.getState();
+  const chat = useChatStore.getState();
 
   // Snapshot the conversation BEFORE this turn, for multi-turn memory. This
   // naturally excludes the user message and assistant placeholder added below.
@@ -312,7 +362,7 @@ export async function sendChatMessage(question: string): Promise<void> {
 
     // Build prompt + multi-turn history and stream from Gemini.
     const prompt = buildPrompt(q, chunks);
-    const model = geminiModel.trim() || GEMINI_MODEL;
+    const model = resolveGeminiModel('chat', geminiModel);
     const url = `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
     const contents: GeminiTurn[] = [
       ...buildHistoryTurns(priorMessages),
@@ -333,23 +383,31 @@ export async function sendChatMessage(question: string): Promise<void> {
           // proxy/server logs and browser history; headers don't.
           'x-goog-api-key': geminiKey,
         },
-        body: JSON.stringify({ contents }),
+        body: JSON.stringify({
+          systemInstruction: geminiSystemInstruction('chat'),
+          contents,
+          generationConfig: geminiThinkingConfig('chat', model),
+        }),
         signal: controller.signal,
       });
       if (res.ok) break;
 
-      const retryable = isRetryableStatus(res.status);
+      const retryable = res.status === 429 || res.status === 503;
       let errMsg = `Gemini HTTP ${res.status}`;
-      const bodyMsg = await readErrorMessage(res);
-      if (bodyMsg) errMsg += `: ${bodyMsg}`;
+      try {
+        const errData = (await res.json()) as { error?: { message?: unknown } };
+        if (typeof errData.error?.message === 'string') {
+          errMsg += `: ${errData.error.message.slice(0, 200)}`;
+        }
+      } catch { /* ignore */ }
       if (!retryable || attempt >= MAX_STREAM_RETRIES) {
-        useChatStore.getState().updateMessage(assistantId, { text: errMsg, isError: true });
+        useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}` });
         return;
       }
       useChatStore.getState().updateMessage(assistantId, {
         text: `Gemini is busy (${res.status}) — retrying…`,
       });
-      await sleep(backoffDelayMs(attempt));
+      await sleep(1000 * 2 ** attempt);
     }
 
     const reader = res.body?.getReader();
@@ -370,19 +428,41 @@ export async function sendChatMessage(question: string): Promise<void> {
     const decoder = new TextDecoder();
     let buffer = '';
     const consumeLine = (rawLine: string): void => {
-      const evt = parseSseLine(rawLine);
-      if (!evt) return;
-      if (evt.error) streamMeta.error = evt.error;
-      if (evt.blockReason) streamMeta.blockReason = evt.blockReason;
-      if (evt.text) accumulated += evt.text;
+      const line = rawLine.trim();
+      if (!line.startsWith('data:')) return; // blank lines / "event:" framing
+      const payload = line.slice(5).trim();
+      if (!payload || payload === '[DONE]') return;
+      let evt: {
+        candidates?: { content?: { parts?: { text?: unknown }[] }; finishReason?: unknown }[];
+        promptFeedback?: { blockReason?: unknown };
+        error?: { message?: unknown };
+      };
+      try {
+        evt = JSON.parse(payload);
+      } catch {
+        return; // partial/keepalive line — ignore
+      }
+      if (typeof evt.error?.message === 'string') streamMeta.error = evt.error.message;
+      if (typeof evt.promptFeedback?.blockReason === 'string') {
+        streamMeta.blockReason = evt.promptFeedback.blockReason;
+      }
+      const candidate = evt.candidates?.[0];
+      const finish = candidate?.finishReason;
+      if (typeof finish === 'string' && finish !== 'STOP' && finish !== 'MAX_TOKENS') {
+        streamMeta.blockReason = finish; // SAFETY / RECITATION / OTHER
+      }
+      for (const part of candidate?.content?.parts ?? []) {
+        if (typeof part.text === 'string' && part.text) accumulated += part.text;
+      }
     };
 
     for (;;) {
       const { done, value } = await reader.read();
       const before = accumulated;
       if (value) {
-        const { lines, remainder } = splitSseLines(buffer, decoder.decode(value, { stream: true }));
-        buffer = remainder;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
         for (const line of lines) consumeLine(line);
       }
       if (done) {
@@ -400,11 +480,10 @@ export async function sendChatMessage(question: string): Promise<void> {
     if (accumulated.trim() === '') {
       useChatStore.getState().updateMessage(assistantId, {
         text: streamMeta.error
-          ? `Gemini stream failed: ${streamMeta.error.slice(0, 200)}`
+          ? `Error: Gemini stream failed: ${streamMeta.error.slice(0, 200)}`
           : streamMeta.blockReason
-            ? `Gemini blocked the response (${streamMeta.blockReason}).`
+            ? `Error: Gemini blocked the response (${streamMeta.blockReason}).`
             : 'Gemini returned an empty response. Please try again.',
-        isError: Boolean(streamMeta.error || streamMeta.blockReason),
       });
     } else {
       useChatStore.getState().updateMessage(assistantId, { text: accumulated.trim(), sources });
@@ -417,23 +496,17 @@ export async function sendChatMessage(question: string): Promise<void> {
         text: trimmed
           ? `${trimmed}\n\n${timedOut ? '_⏱ timed out — partial answer_' : '_⏹ stopped_'}`
           : timedOut
-            ? `Gemini didn't respond within ${REQUEST_TIMEOUT_MS / 1000}s. Check your network or try again.`
+            ? `Error: Gemini didn't respond within ${REQUEST_TIMEOUT_MS / 1000}s. Check your network or try again.`
             : 'Stopped.',
-        ...(!trimmed && timedOut ? { isError: true } : {}),
         ...(sources ? { sources } : {}),
       });
     } else {
       const errMsg = err instanceof Error ? err.message : String(err);
-      useChatStore.getState().updateMessage(assistantId, { text: errMsg, isError: true });
+      useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}` });
     }
   } finally {
     clearTimeout(timeoutTimer);
     useChatStore.getState().setIsStreaming(false);
-    // Only clear activeAbort if it still refers to THIS request's controller
-    // — guards against a newer request's controller being clobbered by an
-    // older one's cleanup if their completions ever interleave.
-    if (activeAbort === controller) {
-      activeAbort = null;
-    }
+    activeAbort = null;
   }
 }

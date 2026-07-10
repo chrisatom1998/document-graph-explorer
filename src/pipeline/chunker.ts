@@ -36,7 +36,9 @@ export function chunkText(
     targetWords - 1,
   );
 
-  // 1) paragraph segments; hard-split paragraphs longer than a chunk
+  // 1) Paragraph segments; hard-split paragraphs longer than a chunk. Do not
+  // apply overlap here: the packing pass below owns it, otherwise long
+  // paragraphs receive overlap twice and can exceed the model budget.
   const segments: string[][] = [];
   for (const para of cleaned.split(/\n\s*\n+/)) {
     const words = para.trim().split(/\s+/).filter((w) => w.length > 0);
@@ -45,8 +47,7 @@ export function chunkText(
       segments.push(words);
       continue;
     }
-    const step = Math.max(1, targetWords - overlapWords);
-    for (let start = 0; start < words.length; start += step) {
+    for (let start = 0; start < words.length; start += targetWords) {
       segments.push(words.slice(start, start + targetWords));
       if (start + targetWords >= words.length) break;
     }
@@ -61,8 +62,16 @@ export function chunkText(
     if (current.length > carried && current.length + segment.length > targetWords) {
       chunks.push(current.join(' '));
       const tail = current.slice(current.length - Math.min(overlapWords, current.length));
-      current = tail.slice();
-      carried = current.length;
+      // A full paragraph can itself be as large as a chunk. In that case a
+      // carried tail would overflow the model budget, so start it cleanly.
+      if (tail.length + segment.length > targetWords) {
+        current = segment.slice();
+        carried = 0;
+      } else {
+        current = tail.concat(segment);
+        carried = tail.length;
+      }
+      continue;
     }
     current = current.concat(segment);
   }

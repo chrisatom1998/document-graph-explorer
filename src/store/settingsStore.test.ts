@@ -17,6 +17,13 @@ describe('settingsStore', () => {
     useSettingsStore.getState().setGeminiKey('  AIzaFakeKey123\n');
     expect(useSettingsStore.getState().geminiKey).toBe('AIzaFakeKey123');
   });
+
+  it('uses automatic model routing by default and normalizes custom overrides', () => {
+    expect(useSettingsStore.getState().geminiModel).toBe('');
+    useSettingsStore.getState().setGeminiModel('  custom-model  ');
+    expect(useSettingsStore.getState().geminiModel).toBe('custom-model');
+    useSettingsStore.getState().setGeminiModel('');
+  });
 });
 
 describe('settingsStore — stale key scrub on boot', () => {

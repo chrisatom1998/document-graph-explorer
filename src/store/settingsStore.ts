@@ -8,7 +8,7 @@
  */
 
 import { create } from 'zustand';
-import { GEMINI_MODEL } from '../config';
+import { LEGACY_GEMINI_DEFAULT } from '../ai/geminiModels';
 
 const STORAGE_KEY = 'knowledge-nebula-settings';
 
@@ -33,7 +33,7 @@ export interface SettingsState extends PersistedSettings {
 const DEFAULTS: PersistedSettings = {
   geminiKey: '',
   rememberGeminiKey: false,
-  geminiModel: GEMINI_MODEL,
+  geminiModel: '',
   enrichEnabled: false,
   includeEmbeddingsInExport: false,
   offlineMode: false,
@@ -55,9 +55,14 @@ function loadPersisted(): PersistedSettings {
           ? parsed.geminiKey.trim()
           : DEFAULTS.geminiKey,
       rememberGeminiKey,
+      // Older releases persisted their built-in default as if it were a user
+      // override. Clear that exact value so existing users receive automatic
+      // task routing; every other non-empty custom model remains pinned.
       geminiModel:
-        typeof parsed.geminiModel === 'string' && parsed.geminiModel.trim() !== ''
-          ? parsed.geminiModel
+        typeof parsed.geminiModel === 'string' &&
+        parsed.geminiModel.trim() !== '' &&
+        parsed.geminiModel.trim() !== LEGACY_GEMINI_DEFAULT
+          ? parsed.geminiModel.trim()
           : DEFAULTS.geminiModel,
       enrichEnabled:
         typeof parsed.enrichEnabled === 'boolean'
@@ -97,7 +102,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   // chat) gets a header-safe key even when pasted with stray whitespace.
   setGeminiKey: (geminiKey) => set({ geminiKey: geminiKey.trim() }),
   setRememberGeminiKey: (rememberGeminiKey) => set({ rememberGeminiKey }),
-  setGeminiModel: (geminiModel) => set({ geminiModel }),
+  setGeminiModel: (geminiModel) => set({ geminiModel: geminiModel.trim() }),
   setEnrichEnabled: (enrichEnabled) => set({ enrichEnabled }),
   setIncludeEmbeddingsInExport: (includeEmbeddingsInExport) =>
     set({ includeEmbeddingsInExport }),
