@@ -353,7 +353,7 @@ export default function SettingsPanel() {
           )}
           <label
             style={checkboxRowStyle}
-            title="Master switch for all Gemini features — enrichment, per-document AI, and chat. Off = fully local, no network."
+            title="Enable Gemini enrichment and per-document AI. Document chat uses the provider selected above."
           >
             <input
               type="checkbox"
@@ -361,7 +361,7 @@ export default function SettingsPanel() {
               onChange={(e) => setEnrichEnabled(e.target.checked)}
               disabled={offlineMode}
             />
-            Enable enrichment
+            Enable Gemini enrichment and document AI
           </label>
           <button
             type="button"
@@ -463,8 +463,8 @@ export default function SettingsPanel() {
             </>
           )}
           <p style={helpStyle}>
-            Wipes the current graph and all locally cached data. Your Gemini API key and
-            settings are kept.
+            Wipes the current graph and all locally cached data. Your API keys and settings
+            are kept.
           </p>
           {clearNote && <p style={noteStyle}>{clearNote}</p>}
         </section>
