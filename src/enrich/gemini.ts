@@ -26,14 +26,6 @@ import { isOffline, OFFLINE_MESSAGE } from '../offline';
 import { useGraphStore } from '../store/graphStore';
 import { textStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
-import {
-  backoffDelayMs,
-  isRetryableStatus,
-  parseSseLine,
-  readErrorMessage,
-  sleep,
-  splitSseLines,
-} from '../chat/geminiClient';
 import { prepareDocumentContext } from './documentContext';
 
 const EXCERPT_CHARS = 8_000; // per-doc in batched enrichment (15 docs × 8k ≈ 120k chars, well within context)
@@ -50,7 +42,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function extractText(data: unknown): string | null {
+export function extractText(data: unknown): string | null {
   const d = data as {
     candidates?: { content?: { parts?: { text?: unknown }[] } }[];
   } | null;
@@ -58,7 +50,7 @@ function extractText(data: unknown): string | null {
   return typeof t === 'string' ? t : null;
 }
 
-function parseModelJson<T>(text: string): T | null {
+export function parseModelJson<T>(text: string): T | null {
   try {
     return JSON.parse(text) as T;
   } catch {

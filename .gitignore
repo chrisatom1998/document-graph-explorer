@@ -11,3 +11,6 @@ release/
 release-build/
 docker/downloads/*
 !docker/downloads/.gitkeep
+.codex/
+copilot-worktrees/
+document-graph-explorer/

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useSettingsStore } from './settingsStore';
 
 const STORAGE_KEY = 'knowledge-nebula-settings';
 

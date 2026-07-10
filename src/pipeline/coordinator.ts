@@ -1120,15 +1120,11 @@ async function runEmbeddingRebuild(): Promise<void> {
 }
 
 export function rebuildEmbeddings(): Promise<void> {
-  const run = runChain.then(runEmbeddingRebuild);
-  runChain = run.then(
-    () => undefined,
-    (err) => {
+  return enqueueRun(runEmbeddingRebuild).catch((err: unknown) => {
       console.error('embedding rebuild failed', err);
       useUiStore.getState().pushToast('Embedding rebuild failed — re-add affected documents to retry.', 'warning');
-    },
-  );
-  return run;
+    throw err;
+  });
 }
 
 /** Fetches /demo/manifest.json + files (bundled by the UI) and ingests them. */
