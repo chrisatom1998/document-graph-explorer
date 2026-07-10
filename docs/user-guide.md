@@ -214,7 +214,7 @@ Settings → **AI Enrichment**. Enrichment adds three things the local pipeline 
 2. Turn on **Enable enrichment**.
 3. Click **Enrich now**.
 
-Automatic model routing uses `gemini-3.1-flash-lite` for high-volume structured enrichment and `gemini-3.5-flash` for document AI and chat. Settings → **Model override** can pin one custom Gemini model for every task. With enrichment on, document excerpts are sent to Google's Gemini API for the batch pass, and "Ask AI" / chat send the relevant documents' text; with it off (the default), nothing ever leaves the browser. The key travels only as a request header, is never written into exports or the graph cache, and enrichment failures degrade gracefully (you keep the local summaries and names).
+The app uses `gemini-3.1-flash-lite` for high-volume structured enrichment and `gemini-3.5-flash` for document AI and chat. This model policy is fixed; Settings still requires your Gemini API key before any cloud AI feature can run. With enrichment on, document excerpts are sent to Google's Gemini API for the batch pass, and "Ask AI" / chat send the relevant documents' text; with it off (the default), nothing ever leaves the browser. The key travels only as a request header, is never written into exports or the graph cache, and enrichment failures degrade gracefully (you keep the local summaries and names).
 
 ## Snapshots
 

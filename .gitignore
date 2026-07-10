@@ -9,6 +9,7 @@ coverage/
 vite-dev.*.log
 release/
 release-build/
+agent/runs/
 docker/downloads/*
 !docker/downloads/.gitkeep
 .codex/

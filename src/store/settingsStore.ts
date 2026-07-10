@@ -8,23 +8,30 @@
  */
 
 import { create } from 'zustand';
-import { LEGACY_GEMINI_DEFAULT } from '../ai/geminiModels';
-
 const STORAGE_KEY = 'knowledge-nebula-settings';
 
 interface PersistedSettings {
   geminiKey: string;
   rememberGeminiKey: boolean;
-  geminiModel: string;
+  chatProvider: ChatProvider;
+  openRouterKey: string;
+  rememberOpenRouterKey: boolean;
+  openRouterModel: string;
   enrichEnabled: boolean;
   includeEmbeddingsInExport: boolean;
   offlineMode: boolean;
 }
 
+export type ChatProvider = 'local' | 'gemini' | 'openrouter';
+export const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-sonnet-5';
+
 export interface SettingsState extends PersistedSettings {
   setGeminiKey: (key: string) => void;
   setRememberGeminiKey: (remember: boolean) => void;
-  setGeminiModel: (model: string) => void;
+  setChatProvider: (provider: ChatProvider) => void;
+  setOpenRouterKey: (key: string) => void;
+  setRememberOpenRouterKey: (remember: boolean) => void;
+  setOpenRouterModel: (model: string) => void;
   setEnrichEnabled: (enabled: boolean) => void;
   setIncludeEmbeddingsInExport: (include: boolean) => void;
   setOfflineMode: (offline: boolean) => void;
@@ -33,7 +40,10 @@ export interface SettingsState extends PersistedSettings {
 const DEFAULTS: PersistedSettings = {
   geminiKey: '',
   rememberGeminiKey: false,
-  geminiModel: '',
+  chatProvider: 'local',
+  openRouterKey: '',
+  rememberOpenRouterKey: false,
+  openRouterModel: DEFAULT_OPENROUTER_MODEL,
   enrichEnabled: false,
   includeEmbeddingsInExport: false,
   offlineMode: false,
@@ -49,21 +59,30 @@ function loadPersisted(): PersistedSettings {
       typeof parsed.rememberGeminiKey === 'boolean'
         ? parsed.rememberGeminiKey
         : DEFAULTS.rememberGeminiKey;
+    const rememberOpenRouterKey =
+      typeof parsed.rememberOpenRouterKey === 'boolean'
+        ? parsed.rememberOpenRouterKey
+        : DEFAULTS.rememberOpenRouterKey;
+    const chatProvider: ChatProvider =
+      parsed.chatProvider === 'gemini' || parsed.chatProvider === 'openrouter' || parsed.chatProvider === 'local'
+        ? parsed.chatProvider
+        : DEFAULTS.chatProvider;
     const loaded: PersistedSettings = {
       geminiKey:
         rememberGeminiKey && typeof parsed.geminiKey === 'string'
           ? parsed.geminiKey.trim()
           : DEFAULTS.geminiKey,
       rememberGeminiKey,
-      // Older releases persisted their built-in default as if it were a user
-      // override. Clear that exact value so existing users receive automatic
-      // task routing; every other non-empty custom model remains pinned.
-      geminiModel:
-        typeof parsed.geminiModel === 'string' &&
-        parsed.geminiModel.trim() !== '' &&
-        parsed.geminiModel.trim() !== LEGACY_GEMINI_DEFAULT
-          ? parsed.geminiModel.trim()
-          : DEFAULTS.geminiModel,
+      chatProvider,
+      openRouterKey:
+        rememberOpenRouterKey && typeof parsed.openRouterKey === 'string'
+          ? parsed.openRouterKey.trim()
+          : DEFAULTS.openRouterKey,
+      rememberOpenRouterKey,
+      openRouterModel:
+        typeof parsed.openRouterModel === 'string' && parsed.openRouterModel.trim()
+          ? parsed.openRouterModel.trim()
+          : DEFAULTS.openRouterModel,
       enrichEnabled:
         typeof parsed.enrichEnabled === 'boolean'
           ? parsed.enrichEnabled
@@ -80,9 +99,13 @@ function loadPersisted(): PersistedSettings {
     // a stale plaintext key would sit in localStorage until the next settings
     // change — scrub it on boot whenever remember is off.
     if (
-      !rememberGeminiKey &&
-      typeof parsed.geminiKey === 'string' &&
-      parsed.geminiKey.length > 0
+      (!rememberGeminiKey &&
+        typeof parsed.geminiKey === 'string' &&
+        parsed.geminiKey.length > 0) ||
+      (!rememberOpenRouterKey &&
+        typeof parsed.openRouterKey === 'string' &&
+        parsed.openRouterKey.length > 0) ||
+      Object.hasOwn(parsed, 'geminiModel')
     ) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
@@ -102,7 +125,11 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   // chat) gets a header-safe key even when pasted with stray whitespace.
   setGeminiKey: (geminiKey) => set({ geminiKey: geminiKey.trim() }),
   setRememberGeminiKey: (rememberGeminiKey) => set({ rememberGeminiKey }),
-  setGeminiModel: (geminiModel) => set({ geminiModel: geminiModel.trim() }),
+  setChatProvider: (chatProvider) => set({ chatProvider }),
+  setOpenRouterKey: (openRouterKey) => set({ openRouterKey: openRouterKey.trim() }),
+  setRememberOpenRouterKey: (rememberOpenRouterKey) => set({ rememberOpenRouterKey }),
+  setOpenRouterModel: (openRouterModel) =>
+    set({ openRouterModel: openRouterModel.trim() }),
   setEnrichEnabled: (enrichEnabled) => set({ enrichEnabled }),
   setIncludeEmbeddingsInExport: (includeEmbeddingsInExport) =>
     set({ includeEmbeddingsInExport }),
@@ -116,7 +143,10 @@ useSettingsStore.subscribe((s) => {
     const persisted: PersistedSettings = {
       geminiKey: s.rememberGeminiKey ? s.geminiKey : '',
       rememberGeminiKey: s.rememberGeminiKey,
-      geminiModel: s.geminiModel,
+      chatProvider: s.chatProvider,
+      openRouterKey: s.rememberOpenRouterKey ? s.openRouterKey : '',
+      rememberOpenRouterKey: s.rememberOpenRouterKey,
+      openRouterModel: s.openRouterModel || DEFAULT_OPENROUTER_MODEL,
       enrichEnabled: s.enrichEnabled,
       includeEmbeddingsInExport: s.includeEmbeddingsInExport,
       offlineMode: s.offlineMode,

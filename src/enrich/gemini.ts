@@ -71,8 +71,8 @@ const REQUEST_TIMEOUT_MS = 30_000;
 
 async function callGemini(prompt: string, responseSchema: unknown): Promise<CallResult> {
   if (isOffline()) return { ok: false, error: AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE };
-  const { geminiKey, geminiModel } = useSettingsStore.getState();
-  const model = resolveGeminiModel('enrichment', geminiModel);
+  const { geminiKey } = useSettingsStore.getState();
+  const model = resolveGeminiModel('enrichment');
   // Key travels as a header, not a query param: URLs leak into proxy/server
   // logs and browser history; headers don't.
   const url = `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`;
@@ -333,8 +333,8 @@ async function streamGemini(
   onChunk?: (accumulated: string) => void,
 ): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
   if (isOffline()) return { ok: false, error: AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE };
-  const { geminiKey, geminiModel } = useSettingsStore.getState();
-  const model = resolveGeminiModel('document', geminiModel);
+  const { geminiKey } = useSettingsStore.getState();
+  const model = resolveGeminiModel('document');
   const url =
     `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
 

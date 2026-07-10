@@ -1,18 +1,14 @@
-/** Central Gemini model policy. A non-empty user override always wins. */
+/** Central Gemini model policy. Model selection is intentionally app-controlled. */
 
 export const GEMINI_ENRICH_MODEL = 'gemini-3.1-flash-lite';
 export const GEMINI_INTERACTIVE_MODEL = 'gemini-3.5-flash';
-export const LEGACY_GEMINI_DEFAULT = 'gemini-2.5-flash';
-
 export type GeminiTask = 'enrichment' | 'document' | 'chat';
 
-export function resolveGeminiModel(task: GeminiTask, override: string): string {
-  const customModel = override.trim();
-  if (customModel) return customModel;
+export function resolveGeminiModel(task: GeminiTask): string {
   return task === 'enrichment' ? GEMINI_ENRICH_MODEL : GEMINI_INTERACTIVE_MODEL;
 }
 
-/** Gemini 3 uses named thinking levels; older custom model overrides do not. */
+/** Gemini 3 uses named thinking levels. */
 export function geminiThinkingConfig(
   task: GeminiTask,
   model: string,

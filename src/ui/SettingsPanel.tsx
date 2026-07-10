@@ -6,17 +6,13 @@
  */
 
 import { useRef, useState, type CSSProperties } from 'react';
-import {
-  GEMINI_ENRICH_MODEL,
-  GEMINI_INTERACTIVE_MODEL,
-} from '../ai/geminiModels';
 import { AIRGAP } from '../airgap';
 import { useFocusTrap } from './useFocusTrap';
 import { runEnrichment } from '../enrich/gemini';
 import { clearAllCaches } from '../persistence/cache';
 import { resetCorpus } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
-import { useSettingsStore } from '../store/settingsStore';
+import { DEFAULT_OPENROUTER_MODEL, useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 import { buildDiagnosticsText, getAppVersion } from './diagnostics';
 
@@ -117,13 +113,19 @@ export default function SettingsPanel() {
 
   const geminiKey = useSettingsStore((s) => s.geminiKey);
   const rememberKey = useSettingsStore((s) => s.rememberGeminiKey);
-  const geminiModel = useSettingsStore((s) => s.geminiModel);
+  const chatProvider = useSettingsStore((s) => s.chatProvider);
+  const openRouterKey = useSettingsStore((s) => s.openRouterKey);
+  const rememberOpenRouterKey = useSettingsStore((s) => s.rememberOpenRouterKey);
+  const openRouterModel = useSettingsStore((s) => s.openRouterModel);
   const enrichEnabled = useSettingsStore((s) => s.enrichEnabled);
   const includeEmbeddings = useSettingsStore((s) => s.includeEmbeddingsInExport);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
   const setGeminiKey = useSettingsStore((s) => s.setGeminiKey);
   const setRememberKey = useSettingsStore((s) => s.setRememberGeminiKey);
-  const setGeminiModel = useSettingsStore((s) => s.setGeminiModel);
+  const setChatProvider = useSettingsStore((s) => s.setChatProvider);
+  const setOpenRouterKey = useSettingsStore((s) => s.setOpenRouterKey);
+  const setRememberOpenRouterKey = useSettingsStore((s) => s.setRememberOpenRouterKey);
+  const setOpenRouterModel = useSettingsStore((s) => s.setOpenRouterModel);
   const setEnrichEnabled = useSettingsStore((s) => s.setEnrichEnabled);
   const setIncludeEmbeddings = useSettingsStore((s) => s.setIncludeEmbeddingsInExport);
   const setOfflineMode = useSettingsStore((s) => s.setOfflineMode);
@@ -240,7 +242,7 @@ export default function SettingsPanel() {
         )}
         {!AIRGAP && (
         <section style={sectionStyle}>
-          <h3 style={headingStyle}>AI Enrichment (optional)</h3>
+          <h3 style={headingStyle}>AI (optional)</h3>
           <label
             style={checkboxRowStyle}
             title="Blocks all external network in the app and answers chat from your documents locally. Behavioral setting — for the sealed, CSP-enforced guarantee, ship the air-gapped build."
@@ -259,6 +261,66 @@ export default function SettingsPanel() {
             </p>
           )}
           <label style={labelStyle}>
+            Chat provider
+            <select
+              value={chatProvider}
+              onChange={(e) => setChatProvider(e.target.value as 'local' | 'gemini' | 'openrouter')}
+              style={inputStyle}
+              disabled={offlineMode}
+              title="Choose how document chat answers are generated"
+            >
+              <option value="local">Local passages</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="openrouter">OpenRouter</option>
+            </select>
+          </label>
+          {chatProvider === 'openrouter' && (
+            <>
+              <label style={labelStyle}>
+                OpenRouter API key
+                <input
+                  type="password"
+                  value={openRouterKey}
+                  onChange={(e) => setOpenRouterKey(e.target.value)}
+                  placeholder="Paste your key"
+                  autoComplete="off"
+                  style={inputStyle}
+                  disabled={offlineMode}
+                />
+              </label>
+              <label style={checkboxRowStyle}>
+                <input
+                  type="checkbox"
+                  checked={rememberOpenRouterKey}
+                  onChange={(e) => setRememberOpenRouterKey(e.target.checked)}
+                  disabled={offlineMode}
+                />
+                Remember OpenRouter key on this device
+              </label>
+              {!rememberOpenRouterKey && (
+                <p style={helpStyle}>The OpenRouter key is held in memory for this tab only.</p>
+              )}
+              <label style={labelStyle}>
+                OpenRouter model ID
+                <input
+                  type="text"
+                  value={openRouterModel}
+                  onChange={(e) => setOpenRouterModel(e.target.value)}
+                  onBlur={() => {
+                    if (!openRouterModel) setOpenRouterModel(DEFAULT_OPENROUTER_MODEL);
+                  }}
+                  placeholder="provider/model"
+                  spellCheck={false}
+                  style={inputStyle}
+                  disabled={offlineMode}
+                />
+              </label>
+              <p style={helpStyle}>
+                Chat sends retrieved passages and recent chat history to OpenRouter. Usage may incur model charges.
+              </p>
+            </>
+          )}
+          <label style={labelStyle}>
             Gemini API key
             <input
               type="password"
@@ -266,7 +328,7 @@ export default function SettingsPanel() {
               onChange={(e) => setGeminiKey(e.target.value)}
               placeholder="Paste your key"
               autoComplete="off"
-              title="Your Google Gemini API key. Stored only in this browser; used for enrichment, per-document AI, and chat."
+              title="Your Google Gemini API key. Used for enrichment, per-document AI, and Gemini chat."
               style={inputStyle}
               disabled={offlineMode}
             />
@@ -289,22 +351,6 @@ export default function SettingsPanel() {
               you&apos;ll need to paste it again next visit.
             </p>
           )}
-          <label style={labelStyle}>
-            Model override
-            <input
-              type="text"
-              value={geminiModel}
-              onChange={(e) => setGeminiModel(e.target.value)}
-              placeholder="Automatic (recommended)"
-              title="Optional Gemini model id used for every AI call. Leave blank for task-specific automatic routing."
-              style={inputStyle}
-              disabled={offlineMode}
-            />
-            <span style={helpStyle}>
-              Automatic uses {GEMINI_ENRICH_MODEL} for enrichment and{' '}
-              {GEMINI_INTERACTIVE_MODEL} for document AI and chat.
-            </span>
-          </label>
           <label
             style={checkboxRowStyle}
             title="Master switch for all Gemini features — enrichment, per-document AI, and chat. Off = fully local, no network."
@@ -337,9 +383,9 @@ export default function SettingsPanel() {
           )}
           <p style={helpStyle}>
             Your documents are processed locally. With enrichment ON, excerpts (first ~1,200
-            chars per doc) are sent to Google&apos;s Gemini API; using &quot;Ask AI&quot; on a
-            selected document, or chatting, sends the full text of the relevant document(s).
-            The key is stored only in this browser.
+            chars per doc) are sent to Google&apos;s Gemini API. &quot;Ask AI&quot; sends the selected
+            document to Gemini. Chat sends only retrieved passages and recent chat history to
+            the provider selected above.
           </p>
         </section>
         )}

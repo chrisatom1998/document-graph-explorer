@@ -134,10 +134,12 @@ export default function ChatPanel() {
   const isStreaming = useChatStore((s) => s.isStreaming);
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const docCount = useGraphStore((s) => s.nodes.filter((n) => n.kind === 'document').length);
-  const enrichEnabled = useSettingsStore((s) => s.enrichEnabled);
+  const chatProvider = useSettingsStore((s) => s.chatProvider);
   const geminiKey = useSettingsStore((s) => s.geminiKey);
+  const openRouterKey = useSettingsStore((s) => s.openRouterKey);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
-  const localMode = AIRGAP || offlineMode || !enrichEnabled || geminiKey.trim() === '';
+  const selectedKey = chatProvider === 'openrouter' ? openRouterKey : geminiKey;
+  const localMode = AIRGAP || offlineMode || chatProvider === 'local' || selectedKey.trim() === '';
 
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);

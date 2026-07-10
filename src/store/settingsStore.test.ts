@@ -19,11 +19,24 @@ describe('settingsStore', () => {
     expect(useSettingsStore.getState().geminiKey).toBe('AIzaFakeKey123');
   });
 
-  it('uses automatic model routing by default and normalizes custom overrides', () => {
-    expect(useSettingsStore.getState().geminiModel).toBe('');
-    useSettingsStore.getState().setGeminiModel('  custom-model  ');
-    expect(useSettingsStore.getState().geminiModel).toBe('custom-model');
-    useSettingsStore.getState().setGeminiModel('');
+  it('does not expose a Gemini model override', () => {
+    expect(useSettingsStore.getState()).not.toHaveProperty('geminiModel');
+    expect(useSettingsStore.getState()).not.toHaveProperty('setGeminiModel');
+  });
+
+  it('defaults chat to local and saves an explicit OpenRouter model selection', () => {
+    expect(useSettingsStore.getState().chatProvider).toBe('local');
+    expect(useSettingsStore.getState().openRouterModel).toBe('anthropic/claude-sonnet-5');
+    useSettingsStore.getState().setChatProvider('openrouter');
+    useSettingsStore.getState().setOpenRouterModel('  google/gemini-3.1-pro-preview  ');
+    expect(useSettingsStore.getState().chatProvider).toBe('openrouter');
+    expect(useSettingsStore.getState().openRouterModel).toBe('google/gemini-3.1-pro-preview');
+    useSettingsStore.getState().setChatProvider('local');
+    useSettingsStore.getState().setOpenRouterModel('anthropic/claude-sonnet-5');
+  });
+
+  it('does not remember the OpenRouter key by default', () => {
+    expect(useSettingsStore.getState().rememberOpenRouterKey).toBe(false);
   });
 });
 
@@ -78,6 +91,7 @@ describe('settingsStore — stale key scrub on boot', () => {
     const rewritten = JSON.parse(store.get(STORAGE_KEY)!);
     expect(rewritten.geminiKey).toBe('');
     expect(rewritten.rememberGeminiKey).toBe(false);
+    expect(rewritten).not.toHaveProperty('geminiModel');
   });
 
   it('leaves a remembered key intact on boot', async () => {
@@ -97,6 +111,7 @@ describe('settingsStore — stale key scrub on boot', () => {
     expect(useSettingsStore.getState().geminiKey).toBe('AIzaRememberedKey');
     expect(useSettingsStore.getState().rememberGeminiKey).toBe(true);
     expect(JSON.parse(store.get(STORAGE_KEY)!).geminiKey).toBe('AIzaRememberedKey');
+    expect(JSON.parse(store.get(STORAGE_KEY)!)).not.toHaveProperty('geminiModel');
   });
 });
 

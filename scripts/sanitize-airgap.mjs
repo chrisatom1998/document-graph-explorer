@@ -27,6 +27,7 @@ const ASSETS = new URL('../dist-airgap/assets/', import.meta.url);
 // DLP watchlist targets, so it's neutralized along with the real model/CDN hosts.
 const HOSTS = [
   'github.com/huggingface/transformers.js',
+  'openrouter.ai',
   'cdn.jsdelivr.net',
   'huggingface.co',
   'hf.co',

@@ -21,9 +21,10 @@ import { isOffline } from '../offline';
 import { embedQuery } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import { chunkStore, docVectorStore, textStore } from '../store/runtimeStores';
-import { useSettingsStore } from '../store/settingsStore';
+import { DEFAULT_OPENROUTER_MODEL, useSettingsStore } from '../store/settingsStore';
 import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
 import { formatExtractiveAnswer } from './extractiveAnswer';
+import { streamOpenRouterChat } from './openRouterClient';
 
 const RAG_TOP_K = 8; // max chunks to include as context
 const RAG_MIN_SCORE = 0.3; // cosine floor for relevance
@@ -294,7 +295,7 @@ export async function sendChatMessage(question: string): Promise<void> {
   const q = question.trim();
   if (!q) return;
 
-  const { geminiKey, geminiModel, enrichEnabled } = useSettingsStore.getState();
+  const { chatProvider, geminiKey, openRouterKey, openRouterModel } = useSettingsStore.getState();
   const chat = useChatStore.getState();
 
   // Snapshot the conversation BEFORE this turn, for multi-turn memory. This
@@ -306,7 +307,8 @@ export async function sendChatMessage(question: string): Promise<void> {
 
   // When Gemini isn't available (airgap build, enrichment off, or no key), answer
   // locally by extracting the best-matching passages — no network, no refusal.
-  const useLocal = isOffline() || !enrichEnabled || geminiKey.trim() === '';
+  const selectedKey = chatProvider === 'openrouter' ? openRouterKey : geminiKey;
+  const useLocal = isOffline() || chatProvider === 'local' || selectedKey.trim() === '';
 
   const docCount = useGraphStore.getState().nodes.filter((n) => n.kind === 'document').length;
   if (docCount === 0) {
@@ -329,7 +331,7 @@ export async function sendChatMessage(question: string): Promise<void> {
   // same behavior, works on browsers that predate .any(), and the reason lets
   // the catch block tell a timeout apart from a user-pressed Stop.
   const timeoutTimer = setTimeout(
-    () => controller.abort(new DOMException('Gemini request timed out', 'TimeoutError')),
+    () => controller.abort(new DOMException('AI request timed out', 'TimeoutError')),
     REQUEST_TIMEOUT_MS,
   );
 
@@ -362,7 +364,28 @@ export async function sendChatMessage(question: string): Promise<void> {
 
     // Build prompt + multi-turn history and stream from Gemini.
     const prompt = buildPrompt(q, chunks);
-    const model = resolveGeminiModel('chat', geminiModel);
+    if (chatProvider === 'openrouter') {
+      const answer = await streamOpenRouterChat({
+        apiKey: openRouterKey,
+        model: openRouterModel || DEFAULT_OPENROUTER_MODEL,
+        prompt,
+        history: priorMessages,
+        signal: controller.signal,
+        onText: (text) => {
+          accumulated = text;
+          useChatStore.getState().updateMessage(assistantId, { text });
+        },
+        onRetry: (status) => {
+          useChatStore.getState().updateMessage(assistantId, {
+            text: `OpenRouter is busy (${status}) - retrying...`,
+          });
+        },
+      });
+      accumulated = answer;
+      useChatStore.getState().updateMessage(assistantId, { text: answer, sources });
+      return;
+    }
+    const model = resolveGeminiModel('chat');
     const url = `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
     const contents: GeminiTurn[] = [
       ...buildHistoryTurns(priorMessages),
@@ -496,7 +519,7 @@ export async function sendChatMessage(question: string): Promise<void> {
         text: trimmed
           ? `${trimmed}\n\n${timedOut ? '_⏱ timed out — partial answer_' : '_⏹ stopped_'}`
           : timedOut
-            ? `Error: Gemini didn't respond within ${REQUEST_TIMEOUT_MS / 1000}s. Check your network or try again.`
+            ? `Error: The selected AI provider didn't respond within ${REQUEST_TIMEOUT_MS / 1000}s. Check your network or try again.`
             : 'Stopped.',
         ...(sources ? { sources } : {}),
       });
