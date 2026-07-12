@@ -19,6 +19,7 @@ This project follows the Keep a Changelog format.
 
 ### Fixed
 - Replaced the self-referencing `--ease-out` CSS token so intended interface transitions render correctly.
+- Regenerated cross-platform optional dependency metadata so clean Linux and Docker installs succeed under npm 11.
 
 ## [1.0.1] - 2026-07-10
 
