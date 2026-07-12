@@ -55,12 +55,16 @@ export default function App() {
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
-    return useChatStore.subscribe((state) => {
+    const unsubscribe = useChatStore.subscribe((state) => {
       if (!corpusHash || state.isStreaming) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => saveChatHistory(corpusHash, state.messages)
         .catch((error) => console.warn('chat history save failed', error)), 350);
     });
+    return () => {
+      if (timer) clearTimeout(timer);
+      unsubscribe();
+    };
   }, [corpusHash]);
 
   // Auto-frame: while a fresh corpus is forming, re-fit the camera on every
