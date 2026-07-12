@@ -6,6 +6,17 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-07-12
+
+### Added
+- Provider-independent hybrid retrieval with reciprocal-rank fusion, passage diversification, and shared search/chat grounding.
+- Durable chat history persistence across sessions.
+- Optional retrieval benchmark panel (`?eval=retrieval`) and archived validation artifacts for regression checks.
+- Runtime asset verification after standard and air-gapped builds.
+
+### Changed
+- Search and local RAG chat now share one retrieval path instead of separate semantic-only pipelines.
+
 ## [1.1.0] - 2026-07-11
 
 ### Added
