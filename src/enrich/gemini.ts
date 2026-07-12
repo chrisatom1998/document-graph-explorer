@@ -28,7 +28,7 @@ import { textStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
 import { prepareDocumentContext } from './documentContext';
 
-const EXCERPT_CHARS = 8_000; // per-doc in batched enrichment (15 docs × 8k ≈ 120k chars, well within context)
+const EXCERPT_CHARS = 1_200; // Matches the consent disclosure shown before enrichment is enabled.
 const CLUSTER_TITLES_CAP = 30;
 const TOPICS_PER_DOC = 5;
 
