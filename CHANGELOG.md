@@ -6,6 +6,12 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-07-12
+
+### Fixed
+- Block hardlink and symlink aliases to sensitive paths in the standalone subagent read/search tools.
+- Cancel pending debounced chat-history saves when the corpus hash changes so Clear All cannot repopulate wiped chats.
+
 ## [1.1.3] - 2026-07-12
 
 ### Added
