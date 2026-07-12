@@ -6,6 +6,17 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-07-12
+
+### Added
+- Design report document under `docs/` for product and architecture reference.
+- Coverage for Gemini enrichment consent-aligned excerpts and cache clear including chat history.
+
+### Changed
+- Reduce Gemini enrichment excerpt size to match the consent disclosure shown before enrichment is enabled.
+- Clear persisted chat history when wiping local caches.
+- Harden the standalone subagent runner and expand its tests.
+
 ## [1.1.2] - 2026-07-12
 
 ### Fixed
