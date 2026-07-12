@@ -17,6 +17,7 @@ import SettingsPanel from './ui/SettingsPanel';
 import ChatPanel from './ui/ChatPanel';
 import ToastHost from './ui/ToastHost';
 import FirstRunGuide from './ui/FirstRunGuide';
+import { shouldIgnoreGlobalKey } from './ui/globalKeyboard';
 import { useGraphStore } from './store/graphStore';
 import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
@@ -30,14 +31,6 @@ import './styles.css';
 const RetrievalBenchmarkPanel = import.meta.env.DEV
   ? lazy(() => import('./dev/RetrievalBenchmarkPanel'))
   : null;
-
-function isTypingTarget(t: EventTarget | null): boolean {
-  return (
-    t instanceof HTMLInputElement ||
-    t instanceof HTMLTextAreaElement ||
-    (t instanceof HTMLElement && t.isContentEditable)
-  );
-}
 
 export default function App() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
@@ -164,7 +157,7 @@ export default function App() {
         }
         return;
       }
-      if (isTypingTarget(e.target)) return;
+      if (shouldIgnoreGlobalKey(e)) return;
       // Plain arrows only — leave modified combos to the browser/OS.
       if (isPanKey(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault(); // otherwise the page scrolls
@@ -228,19 +221,19 @@ export default function App() {
       <NebulaCanvas />
       <DropZone />
       {!hasNodes && phase === 'idle' && <EmptyState />}
-      <Toolbar />
-      <FilterBar />
+      {phase === 'ready' && <Toolbar />}
+      {phase === 'ready' && <FilterBar />}
       <ProgressStrip />
       <InsightsPanel />
       <PathPanel />
       <SidePanel />
-      <Minimap />
+      {phase === 'ready' && <Minimap />}
       <Tooltip />
-      <SearchOverlay />
+      {phase === 'ready' && <SearchOverlay />}
       <ShowMePanel />
       <SettingsPanel />
       <SnapshotDrawer />
-      <ChatPanel />
+      {phase === 'ready' && <ChatPanel />}
       <FirstRunGuide />
       <ToastHost />
       {RetrievalBenchmarkPanel && new URLSearchParams(window.location.search).get('eval') === 'retrieval' && (

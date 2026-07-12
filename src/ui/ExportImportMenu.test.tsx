@@ -108,7 +108,9 @@ describe('ExportImportMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: /import graph json/i }));
     const file = pickJsonFile();
 
-    expect(await screen.findByRole('dialog', { name: /replace current graph/i })).toBeVisible();
+    const dialog = await screen.findByRole('dialog', { name: /replace current graph/i });
+    expect(dialog).toBeVisible();
+    expect(dialog.parentElement?.parentElement).toBe(document.body);
     expect(screen.getByText(file.name)).toBeInTheDocument();
     expect(mockImportGraphJSONFile).not.toHaveBeenCalled();
 
@@ -127,6 +129,24 @@ describe('ExportImportMenu', () => {
 
     await waitFor(() => expect(mockImportGraphJSONFile).toHaveBeenCalledWith(file));
     expect(screen.queryByRole('dialog', { name: /replace current graph/i })).not.toBeInTheDocument();
+  });
+
+  it('reports document and topic-node counts separately', async () => {
+    mockImportGraphJSONFile.mockResolvedValueOnce({
+      nodes: [docNode('imported'), { ...docNode('topic'), kind: 'topic', fileType: 'other' }],
+      edges: [edge('imported', 'topic')],
+    });
+    setGraph([], 'idle');
+    render(<ExportImportMenu />);
+
+    fireEvent.click(screen.getByRole('button', { name: /import graph json/i }));
+    pickJsonFile();
+
+    await waitFor(() =>
+      expect(useUiStore.getState().toasts.at(-1)?.message).toBe(
+        'Imported 1 document, 1 topic node, and 1 connection.',
+      ),
+    );
   });
 
   it('cancel leaves the pending import untouched', async () => {

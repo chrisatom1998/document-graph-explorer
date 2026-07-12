@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import {
   exportGraphJSON,
   exportScenePNG,
@@ -31,6 +32,12 @@ function plural(count: number, singular: string, pluralWord = `${singular}s`): s
   return `${count} ${count === 1 ? singular : pluralWord}`;
 }
 
+function formatList(items: string[]): string {
+  if (items.length < 2) return items[0] ?? '';
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')}, and ${items.at(-1)}`;
+}
+
 function messageFromError(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
@@ -38,10 +45,17 @@ function messageFromError(err: unknown): string {
 export async function importGraphJsonFileWithToast(file: File): Promise<boolean> {
   try {
     const { nodes, edges } = await importGraphJSONFile(file);
+    const documentCount = nodes.filter((node) => node.kind === 'document').length;
+    const topicCount = nodes.length - documentCount;
+    const importedItems = [
+      plural(documentCount, 'document'),
+      ...(topicCount > 0 ? [plural(topicCount, 'topic node')] : []),
+      plural(edges.length, 'connection'),
+    ];
     useUiStore
       .getState()
       .pushToast(
-        `Imported ${plural(nodes.length, 'document')} and ${plural(edges.length, 'connection')}.`,
+        `Imported ${formatList(importedItems)}.`,
         'info',
       );
     return true;
@@ -223,8 +237,9 @@ export default function ExportImportMenu({
         </button>
       </div>
 
-      {pendingFile && (
-        <div className="settings-backdrop" onClick={cancelImport}>
+      {pendingFile &&
+        createPortal(
+          <div className="settings-backdrop" onClick={cancelImport}>
           <div
             ref={dialogRef}
             className="glass-panel"
@@ -263,8 +278,9 @@ export default function ExportImportMenu({
               </button>
             </div>
           </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

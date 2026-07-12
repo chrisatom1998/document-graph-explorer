@@ -50,14 +50,17 @@ export default function FilterBar() {
 
   const fileTypeCounts = useMemo(() => {
     const counts: Partial<Record<FileType, number>> = {};
-    for (const n of nodes) counts[n.fileType] = (counts[n.fileType] ?? 0) + 1;
+    for (const n of nodes) {
+      if (n.kind !== 'document') continue;
+      counts[n.fileType] = (counts[n.fileType] ?? 0) + 1;
+    }
     return counts;
   }, [nodes]);
 
   const clusterCounts = useMemo(() => {
     const counts = new Map<number, number>();
     for (const n of nodes) {
-      if (n.cluster < 0) continue;
+      if (n.kind !== 'document' || n.cluster < 0) continue;
       counts.set(n.cluster, (counts.get(n.cluster) ?? 0) + 1);
     }
     return [...counts.entries()].sort((a, b) => a[0] - b[0]);

@@ -124,6 +124,47 @@ describe('shared hybrid retrieval', () => {
     expect(result[0].semanticRank).toBeUndefined();
   });
 
+  it('can return lexical results without starting semantic embedding', async () => {
+    const embedQuery = vi.fn(async () => new Float32Array([1, 0]));
+    const result = await retrieveCorpus(
+      'architecture',
+      { semantic: false },
+      dependencies(
+        [node('architecture', 'Architecture Overview')],
+        new Map(),
+        embedQuery,
+        new Map([['architecture', 'System architecture and topology.']]),
+      ),
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ docId: 'architecture', matchKind: 'title' });
+    expect(embedQuery).not.toHaveBeenCalled();
+  });
+
+  it('searches exported document metadata when source passages are unavailable', async () => {
+    const imported = {
+      ...node('dr', 'Disaster Recovery Plan'),
+      summary: 'The recovery point objective (RPO) is fifteen minutes.',
+      topics: ['business continuity'],
+    };
+
+    const embedQuery = vi.fn();
+    const result = await retrieveCorpus(
+      'recovery point objective',
+      {},
+      dependencies([imported], new Map(), embedQuery),
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      docId: 'dr',
+      matchKind: 'keyword',
+      text: expect.stringContaining('recovery point objective'),
+    });
+    expect(embedQuery).not.toHaveBeenCalled();
+  });
+
   it('returns no results for empty and unsupported no-answer queries', async () => {
     const deps = dependencies(
       [node('a', 'Operations')],

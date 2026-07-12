@@ -6,8 +6,8 @@
  *
  * Import note: GraphExport contains no full text or chunk vectors, so an
  * imported graph reads/searches at reduced fidelity by design — semantic
- * search uses doc vectors when the export included embeddings, otherwise it
- * falls back to title/keyword matching.
+ * search uses doc vectors when the export included embeddings, while lexical
+ * search and local chat fall back to exported summaries/topics/keywords.
  */
 
 import { EMBED_DIMS, MAX_INGEST_FILE_BYTES } from '../config';

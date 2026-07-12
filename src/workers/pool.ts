@@ -66,15 +66,11 @@ export class WorkerPool {
   private busy: number[] = [];
   private queue: QueuedJob[] = [];
   private pending = new Map<number, InFlightRequest>();
-  /**
-   * Embed requests that timed out on the caller side but whose worker is
-   * still processing them. Maps requestId → workerIndex so a late response
-   * can free the busy slot without retiring the (warm-model) worker.
-   */
-  private abandoned = new Map<number, number>();
   private nextRequestId = 1;
   private progressListeners = new Set<ProgressListener>();
   private crashListeners = new Set<WorkerCrashListener>();
+  /** All embedding work shares one worker so the model is loaded exactly once. */
+  private embeddingWorkerIndex: number | null = null;
   private disposed = false;
   private readonly workerFactory: () => PipelineWorkerLike;
   private readonly size: number;
@@ -101,15 +97,43 @@ export class WorkerPool {
     return index;
   }
 
-  /** Idle worker if any; else grow up to size; else -1 (job stays queued). */
-  private pickIdleWorker(): number {
+  /** Idle non-embedding worker if any; else grow; finally reuse the warm worker. */
+  private pickGeneralIdleWorker(): number {
     for (let i = 0; i < this.workers.length; i += 1) {
-      if (this.workers[i] && this.busy[i] === 0) return i;
+      if (i !== this.embeddingWorkerIndex && this.workers[i] && this.busy[i] === 0) return i;
     }
     const emptySlot = this.workers.findIndex((w) => w === null);
     if (emptySlot >= 0) return this.spawn(emptySlot);
     if (this.workers.length < this.size) return this.spawn();
+    if (
+      this.embeddingWorkerIndex !== null &&
+      this.workers[this.embeddingWorkerIndex] &&
+      this.busy[this.embeddingWorkerIndex] === 0
+    ) {
+      return this.embeddingWorkerIndex;
+    }
     return -1;
+  }
+
+  /**
+   * Parsing can scale across the pool. Embedding cannot: every pipeline
+   * worker has its own module scope, so concurrent workers would each load
+   * and compile a full model session. Pin every embed and embedQuery request
+   * to one warm worker instead.
+   */
+  private pickIdleWorker(jobType: PoolRequest['type']): number {
+    const isEmbedding = jobType === 'embed' || jobType === 'embedQuery';
+    if (!isEmbedding) return this.pickGeneralIdleWorker();
+
+    if (this.embeddingWorkerIndex !== null) {
+      const index = this.embeddingWorkerIndex;
+      if (this.workers[index]) return this.busy[index] === 0 ? index : -1;
+      this.embeddingWorkerIndex = null;
+    }
+
+    const index = this.pickGeneralIdleWorker();
+    if (index >= 0) this.embeddingWorkerIndex = index;
+    return index;
   }
 
   private requestTimeoutMs(msg: PoolRequest): number {
@@ -140,10 +164,11 @@ export class WorkerPool {
   /** Dispatch queued jobs while an idle worker (or room to grow) exists. */
   private pump(): void {
     while (this.queue.length > 0) {
-      const index = this.pickIdleWorker();
-      if (index < 0) return; // every worker is mid-job; backlog waits here
-      const job = this.queue.shift();
+      const job = this.queue[0];
       if (!job) return;
+      const index = this.pickIdleWorker(job.payload.type);
+      if (index < 0) return; // every worker is mid-job; backlog waits here
+      this.queue.shift();
       this.dispatch(index, job);
     }
   }
@@ -164,23 +189,10 @@ export class WorkerPool {
       job.timeoutMs > 0
         ? setTimeout(() => {
             if (!this.pending.has(requestId)) return;
-            if (jobType === 'embed' || jobType === 'embedQuery') {
-              // An embed worker has an expensively-loaded model (first-use
-              // WASM compile + weights) resident in memory. Retiring the
-              // whole worker over one slow request would throw that away
-              // and force the NEXT request to pay the load cost again —
-              // so reject only this request and leave the worker (and its
-              // warm model) running for whatever comes next. Contrast with
-              // parse/analyze below, which have no comparable warm state to
-              // protect and retiring is the simpler/safer default.
-              this.rejectTimedOut(
-                index,
-                requestId,
-                new Error(`${jobType} worker request timed out`),
-              );
-            } else {
-              this.handleWorkerFailure(index, new Error(`${jobType} worker request timed out`));
-            }
+            // A timed-out worker may be permanently wedged. Retire it for
+            // every job type so queued work can move to a fresh worker. This
+            // deliberately trades a warm embedding model for bounded recovery.
+            this.handleWorkerFailure(index, new Error(`${jobType} worker request timed out`));
           }, job.timeoutMs)
         : undefined;
     this.pending.set(requestId, {
@@ -222,16 +234,7 @@ export class WorkerPool {
       return;
     }
     const entry = this.pending.get(msg.requestId);
-    if (!entry) {
-      // Late response for an embed that already timed out on the caller
-      // side — free the busy slot we held open and dispatch the backlog.
-      const abandonedIndex = this.abandoned.get(msg.requestId);
-      if (abandonedIndex === undefined) return;
-      this.abandoned.delete(msg.requestId);
-      this.busy[abandonedIndex] = Math.max(0, this.busy[abandonedIndex] - 1);
-      this.pump();
-      return;
-    }
+    if (!entry) return;
     this.pending.delete(msg.requestId);
     if (entry.timer) clearTimeout(entry.timer);
     this.busy[entry.workerIndex] = Math.max(0, this.busy[entry.workerIndex] - 1);
@@ -240,33 +243,12 @@ export class WorkerPool {
     this.pump();
   }
 
-  /**
-   * Rejects a single timed-out embed request without retiring the worker
-   * that holds the loaded model. The worker is still processing the
-   * abandoned job (a worker's event loop can't be interrupted mid-job), so
-   * the busy slot stays held until the late response arrives — otherwise
-   * the next job would be posted into the worker's message queue behind
-   * the abandoned one while its timeout already ticks, unfairly failing
-   * healthy follow-up work.
-   */
-  private rejectTimedOut(index: number, requestId: number, error: Error): void {
-    const entry = this.pending.get(requestId);
-    if (!entry) return;
-    this.pending.delete(requestId);
-    if (entry.timer) clearTimeout(entry.timer);
-    this.abandoned.set(requestId, index);
-    entry.reject(error);
-    // Do not free busy[index] or pump — wait for the late response.
-  }
-
   private retireWorker(index: number): void {
     const worker = this.workers[index];
     if (worker) worker.terminate();
     this.workers[index] = null;
     this.busy[index] = 0;
-    for (const [id, workerIndex] of [...this.abandoned]) {
-      if (workerIndex === index) this.abandoned.delete(id);
-    }
+    if (this.embeddingWorkerIndex === index) this.embeddingWorkerIndex = null;
   }
 
   private handleWorkerFailure(index: number, error: Error): void {
@@ -299,11 +281,11 @@ export class WorkerPool {
       entry.reject(error);
     }
     this.pending.clear();
-    this.abandoned.clear();
     for (const job of this.queue) job.reject(error);
     this.queue = [];
     this.workers = [];
     this.busy = [];
+    this.embeddingWorkerIndex = null;
     this.progressListeners.clear();
     this.crashListeners.clear();
   }

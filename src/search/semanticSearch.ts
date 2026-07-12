@@ -34,14 +34,7 @@ export function mergeHit(hits: Map<string, SearchHit>, hit: SearchHit): void {
   }
 }
 
-export async function searchCorpus(query: string): Promise<SearchHit[]> {
-  const retrieved = await retrieveCorpus(query, {
-    limit: SEARCH_MAX_RESULTS,
-    perDocument: 1,
-    timeoutMs: 15_000,
-    minSemanticScore: SEARCH_MIN_SCORE,
-    maxPassageChars: 500,
-  });
+function toSearchHits(retrieved: Awaited<ReturnType<typeof retrieveCorpus>>): SearchHit[] {
   const maxFused = retrieved[0]?.fusedScore ?? 1;
   return retrieved.map((hit) => ({
     id: hit.docId,
@@ -53,4 +46,24 @@ export async function searchCorpus(query: string): Promise<SearchHit[]> {
       ? { snippet: hit.text.replace(/\s+/g, ' ').trim().slice(0, 140) }
       : {}),
   }));
+}
+
+async function runSearch(query: string, semantic: boolean): Promise<SearchHit[]> {
+  const retrieved = await retrieveCorpus(query, {
+    limit: SEARCH_MAX_RESULTS,
+    perDocument: 1,
+    timeoutMs: 15_000,
+    minSemanticScore: SEARCH_MIN_SCORE,
+    maxPassageChars: 500,
+    semantic,
+  });
+  return toSearchHits(retrieved);
+}
+
+export function searchCorpusLexical(query: string): Promise<SearchHit[]> {
+  return runSearch(query, false);
+}
+
+export function searchCorpus(query: string): Promise<SearchHit[]> {
+  return runSearch(query, true);
 }

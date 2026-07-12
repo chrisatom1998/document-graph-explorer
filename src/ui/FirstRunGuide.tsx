@@ -6,13 +6,14 @@ const KEY = 'knowledge-nebula-first-graph-guide-v1';
 
 export default function FirstRunGuide() {
   const ready = useGraphStore((s) => s.phase === 'ready' && s.nodes.length > 0);
+  const selectedId = useUiStore((s) => s.selectedId);
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
     try { setDismissed(localStorage.getItem(KEY) === 'dismissed'); } catch { setDismissed(false); }
   }, []);
 
-  if (!ready || dismissed) return null;
+  if (!ready || dismissed || selectedId !== null) return null;
   const close = () => {
     try { localStorage.setItem(KEY, 'dismissed'); } catch { /* best effort */ }
     setDismissed(true);
