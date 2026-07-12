@@ -6,6 +6,20 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-11
+
+### Added
+- Batched procedural atmosphere volumes that follow live cluster centroids and make communities read as distinct spatial regions without obscuring graph links.
+- Cluster-colored focus lighting around hovered and selected nodes.
+- Tested cluster-field geometry with bounded radii and deterministic draw-budget prioritization.
+
+### Changed
+- Refined the 3D scene with explicit sRGB output, ACES filmic tone mapping, balanced hemisphere illumination, stronger key/rim lighting, and restrained exposure tuning.
+- Integrated the new atmosphere with adaptive quality and reduced-motion behavior, including correct restoration after quality-tier changes.
+
+### Fixed
+- Replaced the self-referencing `--ease-out` CSS token so intended interface transitions render correctly.
+
 ## [1.0.1] - 2026-07-10
 
 ### Changed

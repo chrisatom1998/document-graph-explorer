@@ -14,12 +14,15 @@
 
 import { Canvas } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
+import * as THREE from 'three';
 import { useUiStore } from '../store/uiStore';
 import { FLAT_BG } from './palette';
 import CameraRig from './CameraRig';
 import Starfield from './Starfield';
 import NebulaClouds from './NebulaClouds';
+import ClusterAtmosphere from './ClusterAtmosphere';
 import AiCore from './AiCore';
+import FocusLight from './FocusLight';
 import Nodes from './Nodes';
 import Edges from './Edges';
 import EdgePulses from './EdgePulses';
@@ -41,6 +44,11 @@ export default function NebulaCanvas() {
       dpr={[1, 2]}
       camera={{ fov: 55, near: 0.1, far: 4000, position: [0, 0, 160] }}
       gl={{ antialias: true, preserveDrawingBuffer: true }}
+      onCreated={({ gl }) => {
+        gl.outputColorSpace = THREE.SRGBColorSpace;
+        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMappingExposure = 1.08;
+      }}
       onPointerMissed={() => {
         // Clicking empty space dismisses whatever is selected.
         const ui = useUiStore.getState();
@@ -52,11 +60,12 @@ export default function NebulaCanvas() {
           otherwise fog out the nebula's far side */}
       <fogExp2 attach="fog" args={[bg, 0.001]} />
       {/* base fill so shadowed sides keep their hue */}
-      <ambientLight intensity={0.55} />
+      <ambientLight intensity={0.38} />
+      <hemisphereLight color="#b7c9ff" groundColor="#130a2c" intensity={0.34} />
       {/* key light (upper-left): drives the glossy specular highlight */}
-      <directionalLight position={[-70, 95, 130]} intensity={1.8} />
+      <directionalLight position={[-70, 95, 130]} intensity={2.1} />
       {/* cool rim/fill from the opposite side for a little depth */}
-      <pointLight position={[60, -40, 40]} intensity={0.45} color="#7fa8ff" distance={0} />
+      <pointLight position={[60, -40, 40]} intensity={0.62} color="#7fa8ff" distance={0} />
 
       {/* procedural reflection environment for the glassy node cores — three
           soft Lightformer sheets rendered once to a PMREM at startup. Fully
@@ -93,7 +102,9 @@ export default function NebulaCanvas() {
       <CameraRig />
       {!flat && <Starfield />}
       {!flat && <NebulaClouds />}
+      {!flat && <ClusterAtmosphere />}
       {!flat && <AiCore />}
+      <FocusLight />
       <Nodes />
       <Edges />
       <EdgePulses />
