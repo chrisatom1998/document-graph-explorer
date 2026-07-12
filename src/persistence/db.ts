@@ -16,7 +16,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { DocNode, GraphExport, LinkRef } from '../model/types';
 
 export const DB_NAME = 'knowledge-nebula';
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 export interface DocumentRecord {
   hash: string;
@@ -65,6 +65,13 @@ export interface OriginalFileRecord {
   blob: Blob;
 }
 
+/** Transcript scoped to one corpus, retained entirely on-device. */
+export interface ChatRecord {
+  corpusHash: string;
+  messages: import('../store/chatStore').ChatMessage[];
+  savedAt: number;
+}
+
 export interface NebulaDB extends DBSchema {
   documents: { key: string; value: DocumentRecord };
   embeddings: { key: string; value: EmbeddingRecord };
@@ -72,6 +79,7 @@ export interface NebulaDB extends DBSchema {
   settings: { key: string; value: unknown };
   snapshots: { key: number; value: SnapshotRecord; indexes: { 'by-savedAt': number } };
   originals: { key: string; value: OriginalFileRecord };
+  chats: { key: string; value: ChatRecord };
 }
 
 let dbPromise: Promise<IDBPDatabase<NebulaDB>> | null = null;
@@ -113,6 +121,9 @@ export function getDb(): Promise<IDBPDatabase<NebulaDB>> {
       }
       if (oldVersion < 3) {
         db.createObjectStore('originals', { keyPath: 'hash' });
+      }
+      if (oldVersion < 4) {
+        db.createObjectStore('chats', { keyPath: 'corpusHash' });
       }
     },
     blocked() {

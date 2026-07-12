@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { searchCorpus } from '../search/semanticSearch';
+import type { RetrievalMatchKind } from '../search/retrieval';
 import { focusNode } from './focusNode';
 
 const DEBOUNCE_MS = 250;
@@ -9,7 +10,7 @@ const DEBOUNCE_MS = 250;
 interface ResultRow {
   id: string;
   score: number;
-  matchKind: 'title' | 'keyword' | 'semantic';
+  matchKind: RetrievalMatchKind;
   snippet?: string;
 }
 

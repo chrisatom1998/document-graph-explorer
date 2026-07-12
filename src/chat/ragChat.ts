@@ -3,12 +3,12 @@
  *
  * Flow:
  *   1. User asks a question
- *   2. Embed the query → cosine-search chunk vectors → top-k relevant chunks
+ *   2. Run shared lexical + semantic retrieval with reciprocal-rank fusion
  *   3. Build a prompt with the retrieved chunks + recent conversation history
  *   4. Stream the answer back from Gemini token-by-token
  *
- * The knowledge source is `textStore` + `chunkStore` — new files added to the
- * graph are automatically available as context.
+ * Search, local answers, Gemini, and OpenRouter all consume the same ranked
+ * passages so provider selection cannot change the evidence base.
  */
 
 import {
@@ -16,13 +16,12 @@ import {
   geminiThinkingConfig,
   resolveGeminiModel,
 } from '../ai/geminiModels';
-import { EMBED_DIMS, GEMINI_ENDPOINT } from '../config';
+import { GEMINI_ENDPOINT } from '../config';
 import { isOffline } from '../offline';
-import { embedQuery } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
-import { chunkStore, docVectorStore, textStore } from '../store/runtimeStores';
 import { DEFAULT_OPENROUTER_MODEL, useSettingsStore } from '../store/settingsStore';
 import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
+import { retrieveCorpus } from '../search/retrieval';
 import { formatExtractiveAnswer } from './extractiveAnswer';
 import { streamOpenRouterChat } from './openRouterClient';
 
@@ -70,16 +69,6 @@ interface RetrievedChunk {
   score: number;
 }
 
-function queryTerms(query: string): string[] {
-  return [...new Set(query.toLowerCase().match(/[a-z0-9][a-z0-9+#._-]{1,}/g) ?? [])];
-}
-
-function lexicalCoverage(text: string, terms: string[]): number {
-  if (terms.length === 0) return 0;
-  const lower = text.toLowerCase();
-  return terms.reduce((count, term) => count + (lower.includes(term) ? 1 : 0), 0) / terms.length;
-}
-
 /** Keep the highest-scoring passages without letting a single doc dominate. */
 export function diversifyChunks<T extends { docId: string; score: number }>(
   chunks: T[],
@@ -112,96 +101,20 @@ export function keywordEvidence(text: string, terms: string[], maxChars: number)
 }
 
 async function retrieveChunks(query: string): Promise<RetrievedChunk[]> {
-  const nodes = useGraphStore.getState().nodes;
-  if (nodes.length === 0) return [];
-
-  let qVec: Float32Array;
-  try {
-    qVec = await embedQuery(query);
-  } catch {
-    // Embedding unavailable — fall back to keyword matching
-    return keywordFallback(query);
-  }
-
-  const titleMap = new Map(nodes.map((n) => [n.id, n.title]));
-  const hits: RetrievedChunk[] = [];
-  const terms = queryTerms(query);
-
-  // Chunk-level retrieval (most precise)
-  for (const [docId, chunks] of chunkStore) {
-    const vectors = chunks.vectors;
-    if (!vectors || vectors.length === 0) continue;
-    const dims = chunks.dims > 0 ? chunks.dims : EMBED_DIMS;
-    if (qVec.length < dims) continue;
-
-    const nChunks = Math.floor(vectors.length / dims);
-    for (let c = 0; c < nChunks; c++) {
-      const off = c * dims;
-      let dot = 0;
-      for (let d = 0; d < dims; d++) dot += vectors[off + d] * qVec[d];
-      const text = c < chunks.texts.length ? chunks.texts[c] : '';
-      const lexical = lexicalCoverage(text, terms);
-      if (dot >= RAG_MIN_SCORE || lexical >= 0.5) {
-        hits.push({
-          docId,
-          docTitle: titleMap.get(docId) ?? docId.slice(0, 8),
-          chunkIndex: c,
-          text: text.slice(0, CHUNK_CONTEXT_CHARS),
-          // Dense retrieval captures paraphrase; a small exact-term boost
-          // protects acronyms, ticket IDs, and product names.
-          score: dot + lexical * 0.12,
-        });
-      }
-    }
-  }
-
-  // Doc-level fallback for imported graphs without chunk vectors
-  for (const [docId, vec] of docVectorStore) {
-    if (chunkStore.get(docId)?.vectors) continue; // already covered
-    if (vec.length !== qVec.length) continue;
-    let dot = 0;
-    for (let d = 0; d < vec.length; d++) dot += vec[d] * qVec[d];
-    if (dot >= RAG_MIN_SCORE) {
-      const text = (textStore.get(docId) ?? '').slice(0, CHUNK_CONTEXT_CHARS * 2);
-      hits.push({
-        docId,
-        docTitle: titleMap.get(docId) ?? docId.slice(0, 8),
-        chunkIndex: 0,
-        text,
-        score: dot,
-      });
-    }
-  }
-
-  return diversifyChunks(hits);
-}
-
-/** Simple keyword fallback when embeddings aren't available. */
-function keywordFallback(query: string): RetrievedChunk[] {
-  const nodes = useGraphStore.getState().nodes;
-  const qLower = query.toLowerCase();
-  const qTokens = queryTerms(qLower).filter((t) => t.length > 2);
-  const hits: RetrievedChunk[] = [];
-
-  for (const n of nodes) {
-    if (n.kind !== 'document') continue;
-    const text = textStore.get(n.id) ?? '';
-    const textLower = text.toLowerCase();
-    const titleMatch = n.title.toLowerCase().includes(qLower);
-    const tokenHits = qTokens.filter((t) => textLower.includes(t)).length;
-
-    if (titleMatch || tokenHits >= Math.max(1, qTokens.length * 0.4)) {
-      hits.push({
-        docId: n.id,
-        docTitle: n.title,
-        chunkIndex: 0,
-        text: keywordEvidence(text, qTokens, CHUNK_CONTEXT_CHARS * 2),
-        score: titleMatch ? 1.0 : tokenHits / qTokens.length,
-      });
-    }
-  }
-
-  return diversifyChunks(hits);
+  const hits = await retrieveCorpus(query, {
+    limit: RAG_TOP_K,
+    perDocument: RAG_MAX_CHUNKS_PER_DOC,
+    timeoutMs: 15_000,
+    minSemanticScore: RAG_MIN_SCORE,
+    maxPassageChars: CHUNK_CONTEXT_CHARS,
+  });
+  return hits.map((hit) => ({
+    docId: hit.docId,
+    docTitle: hit.docTitle,
+    chunkIndex: hit.passageIndex,
+    text: hit.text,
+    score: hit.fusedScore,
+  }));
 }
 
 /** Per unique doc, keep the single best-scoring chunk as its citation. */

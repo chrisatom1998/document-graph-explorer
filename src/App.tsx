@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import NebulaCanvas from './scene/NebulaCanvas';
 import DropZone from './ingest/DropZone';
 import EmptyState from './ui/EmptyState';
@@ -16,6 +16,7 @@ import Minimap from './ui/Minimap';
 import SettingsPanel from './ui/SettingsPanel';
 import ChatPanel from './ui/ChatPanel';
 import ToastHost from './ui/ToastHost';
+import FirstRunGuide from './ui/FirstRunGuide';
 import { useGraphStore } from './store/graphStore';
 import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
@@ -23,7 +24,12 @@ import { onLayoutSettled } from './layout/layoutBridge';
 import { positionBuffer } from './scene/positionBuffer';
 import { panInput } from './scene/panInput';
 import { initPersistence, restoreSession } from './persistence/session';
+import { loadChatHistory, saveChatHistory } from './persistence/chatHistory';
 import './styles.css';
+
+const RetrievalBenchmarkPanel = import.meta.env.DEV
+  ? lazy(() => import('./dev/RetrievalBenchmarkPanel'))
+  : null;
 
 function isTypingTarget(t: EventTarget | null): boolean {
   return (
@@ -36,6 +42,7 @@ function isTypingTarget(t: EventTarget | null): boolean {
 export default function App() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const phase = useGraphStore((s) => s.phase);
+  const corpusHash = useGraphStore((s) => s.corpusHash);
 
   // Session restore + persistence hooks, once. Fresh starts stay empty until
   // the user adds files or explicitly loads the demo corpus from EmptyState.
@@ -43,6 +50,25 @@ export default function App() {
     initPersistence();
     restoreSession().catch((err) => console.warn('session restore failed', err));
   }, []);
+
+  useEffect(() => {
+    if (!corpusHash || phase !== 'ready') return;
+    let cancelled = false;
+    loadChatHistory(corpusHash).then((messages) => {
+      if (!cancelled) useChatStore.getState().replaceMessages(messages);
+    }).catch((error) => console.warn('chat history restore failed', error));
+    return () => { cancelled = true; };
+  }, [corpusHash, phase]);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    return useChatStore.subscribe((state) => {
+      if (!corpusHash || state.isStreaming) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => saveChatHistory(corpusHash, state.messages)
+        .catch((error) => console.warn('chat history save failed', error)), 350);
+    });
+  }, [corpusHash]);
 
   // Auto-frame: while a fresh corpus is forming, re-fit the camera on every
   // layout settle so the nebula is always in view; stop after the settle that
@@ -215,7 +241,11 @@ export default function App() {
       <SettingsPanel />
       <SnapshotDrawer />
       <ChatPanel />
+      <FirstRunGuide />
       <ToastHost />
+      {RetrievalBenchmarkPanel && new URLSearchParams(window.location.search).get('eval') === 'retrieval' && (
+        <Suspense fallback={null}><RetrievalBenchmarkPanel /></Suspense>
+      )}
     </div>
   );
 }

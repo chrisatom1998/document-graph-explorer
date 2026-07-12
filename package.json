@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "build:airgap": "tsc --noEmit && vite build --mode airgap --outDir dist-airgap && node scripts/sanitize-airgap.mjs && node scripts/verify-airgap.mjs",
+    "build": "tsc --noEmit && vite build && node scripts/verify-runtime-assets.mjs dist",
+    "build:airgap": "tsc --noEmit && vite build --mode airgap --outDir dist-airgap && node scripts/sanitize-airgap.mjs && node scripts/verify-airgap.mjs && node scripts/verify-runtime-assets.mjs dist-airgap",
     "build:desktop": "npm run build && electron-builder --mac dir && node scripts/deploy-app.mjs",
     "dist:mac": "npm run build && electron-builder --mac dmg zip",
     "dist:win": "npm run build && electron-builder --win portable",

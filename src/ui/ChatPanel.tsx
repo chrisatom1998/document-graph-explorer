@@ -12,6 +12,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { focusNode } from './focusNode';
 import { openDocument } from './openDocument';
+import { chatTranscriptMarkdown } from '../persistence/chatHistory';
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString(undefined, {
@@ -179,6 +180,16 @@ export default function ChatPanel() {
     focusNode(docId);
   }, []);
 
+  const exportTranscript = () => {
+    const blob = new Blob([chatTranscriptMarkdown(messages)], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'knowledge-nebula-chat.md';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (!hasNodes) return null;
 
   // Bubble only
@@ -203,6 +214,7 @@ export default function ChatPanel() {
         <div className="chat-panel__title-row">
           <h3 className="chat-panel__title">Chat with your docs</h3>
           <span className="chat-panel__doc-count">{docCount} doc{docCount !== 1 ? 's' : ''}</span>
+          {messages.length > 0 && <button type="button" className="chat-panel__export" onClick={exportTranscript}>Export</button>}
         </div>
         <button
           type="button"
@@ -224,6 +236,14 @@ export default function ChatPanel() {
               Your {docCount} uploaded document{docCount !== 1 ? 's are' : ' is'} the
               knowledge source. Try asking about key topics, comparisons, or specific details.
             </p>
+          </div>
+        )}
+        {messages.length === 0 && (
+          <div className="chat-panel__workflows">
+            <button type="button" onClick={() => setInput('Compare the main positions and evidence across these documents.')}>Compare documents</button>
+            <button type="button" onClick={() => setInput('Identify contradictions or unresolved disagreements in this corpus, with citations.')}>Find contradictions</button>
+            <button type="button" onClick={() => setInput('Build a timeline of key events, decisions, and dates with citations.')}>Build a timeline</button>
+            <button type="button" onClick={() => setInput('Extract decisions, owners, and action items from these documents with citations.')}>Decisions & actions</button>
           </div>
         )}
         {messages.map((msg) => (

@@ -42,6 +42,7 @@ interface ChatState {
   setIsOpen: (open: boolean) => void;
   setIsStreaming: (streaming: boolean) => void;
   clearMessages: () => void;
+  replaceMessages: (messages: ChatMessage[]) => void;
 }
 
 let nextId = 0;
@@ -67,4 +68,5 @@ export const useChatStore = create<ChatState>((set) => ({
   setIsOpen: (isOpen) => set({ isOpen }),
   setIsStreaming: (isStreaming) => set({ isStreaming }),
   clearMessages: () => set({ messages: [] }),
+  replaceMessages: (messages) => set({ messages, isStreaming: false }),
 }));
