@@ -1,0 +1,46 @@
+- generic [ref=e3]:
+  - generic [ref=e20]:
+    - generic "Move toolbar" [ref=e21]
+    - button "Search (⌘K)" [ref=e29] [cursor=pointer]
+    - button "Show me a topic" [ref=e33] [cursor=pointer]
+    - button "Fit view" [ref=e38] [cursor=pointer]
+    - button "View options" [ref=e46] [cursor=pointer]
+    - button "How are these connected? (pick two nodes)" [ref=e50] [cursor=pointer]
+    - button "Corpus insights" [ref=e55] [cursor=pointer]
+    - button "Data options" [ref=e60] [cursor=pointer]
+    - button "Saved snapshots" [ref=e66] [cursor=pointer]
+    - button "Settings" [ref=e71] [cursor=pointer]
+    - button "Add files" [ref=e75] [cursor=pointer]
+  - button "Show filters" [ref=e78] [cursor=pointer]
+  - generic [ref=e81]:
+    - generic [ref=e82]:
+      - generic [ref=e83]: Embedding meaning…
+      - generic [ref=e86]: 0/36
+    - generic [ref=e87]:
+      - generic "network-architecture-overview.pdf" [ref=e88]:
+        - generic [ref=e89]: ✦
+        - generic [ref=e90]: network-architectur…
+      - generic "sla-agreement-enterprise.pdf" [ref=e91]:
+        - generic [ref=e92]: ✦
+        - generic [ref=e93]: sla-agreement-enter…
+      - generic "onboarding-checklist.pdf" [ref=e94]:
+        - generic [ref=e95]: ✦
+        - generic [ref=e96]: onboarding-checklis…
+      - generic "postgres-performance-tuning.pdf" [ref=e97]:
+        - generic [ref=e98]: ✦
+        - generic [ref=e99]: postgres-performanc…
+      - generic "q3-platform-roadmap-review.pptx" [ref=e100]:
+        - generic [ref=e101]: ✦
+        - generic [ref=e102]: q3-platform-roadmap…
+      - generic "incident-response-training.pptx" [ref=e103]:
+        - generic [ref=e104]: ✦
+        - generic [ref=e105]: incident-response-t…
+      - generic "architecture-all-hands.pptx" [ref=e106]:
+        - generic [ref=e107]: ✦
+        - generic [ref=e108]: architecture-all-ha…
+  - button "Minimap — click a document to fly to it, or press Enter to frame the selection" [ref=e110] [cursor=pointer]
+  - button "AI" [ref=e111] [cursor=pointer]
+  - complementary [ref=e16]:
+    - heading "Retrieval benchmark" [level=2] [ref=e17]
+    - paragraph [ref=e18]: Development only. Running resets the current corpus, loads the 37 bundled demo documents, and evaluates 30 grounded queries.
+    - button "Loading demo corpus..." [disabled] [ref=e115]

@@ -1,0 +1,42 @@
+- generic [ref=e3]:
+  - generic [ref=e16]:
+    - generic "Move toolbar" [ref=e17]
+    - button "Search (⌘K)" [ref=e25] [cursor=pointer]
+    - button "Show me a topic" [ref=e29] [cursor=pointer]
+    - button "Fit view" [ref=e34] [cursor=pointer]
+    - button "View options" [ref=e42] [cursor=pointer]
+    - button "How are these connected? (pick two nodes)" [ref=e46] [cursor=pointer]
+    - button "Corpus insights" [ref=e51] [cursor=pointer]
+    - button "Data options" [ref=e56] [cursor=pointer]
+    - button "Saved snapshots" [ref=e62] [cursor=pointer]
+    - button "Settings" [ref=e67] [cursor=pointer]
+    - button "Add files" [ref=e71] [cursor=pointer]
+  - button "Show filters" [ref=e74] [cursor=pointer]
+  - generic [ref=e77]:
+    - generic [ref=e78]:
+      - generic [ref=e79]: Embedding meaning…
+      - generic [ref=e82]: 0/36
+    - generic [ref=e83]:
+      - generic "network-architecture-overview.pdf" [ref=e84]:
+        - generic [ref=e85]: ✦
+        - generic [ref=e86]: network-architectur…
+      - generic "sla-agreement-enterprise.pdf" [ref=e87]:
+        - generic [ref=e88]: ✦
+        - generic [ref=e89]: sla-agreement-enter…
+      - generic "onboarding-checklist.pdf" [ref=e90]:
+        - generic [ref=e91]: ✦
+        - generic [ref=e92]: onboarding-checklis…
+      - generic "postgres-performance-tuning.pdf" [ref=e93]:
+        - generic [ref=e94]: ✦
+        - generic [ref=e95]: postgres-performanc…
+      - generic "q3-platform-roadmap-review.pptx" [ref=e96]:
+        - generic [ref=e97]: ✦
+        - generic [ref=e98]: q3-platform-roadmap…
+      - generic "incident-response-training.pptx" [ref=e99]:
+        - generic [ref=e100]: ✦
+        - generic [ref=e101]: incident-response-t…
+      - generic "architecture-all-hands.pptx" [ref=e102]:
+        - generic [ref=e103]: ✦
+        - generic [ref=e104]: architecture-all-ha…
+  - button "Minimap — click a document to fly to it, or press Enter to frame the selection" [ref=e106] [cursor=pointer]
+  - button "AI" [ref=e107] [cursor=pointer]

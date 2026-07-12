@@ -1,0 +1,47 @@
+- generic [ref=f4e3]:
+  - generic [ref=f4e16]:
+    - generic "Move toolbar" [ref=f4e17]
+    - button "Search (⌘K)" [ref=f4e25] [cursor=pointer]
+    - button "Show me a topic" [ref=f4e29] [cursor=pointer]
+    - button "Fit view" [ref=f4e34] [cursor=pointer]
+    - button "View options" [ref=f4e42] [cursor=pointer]
+    - button "How are these connected? (pick two nodes)" [ref=f4e46] [cursor=pointer]
+    - button "Corpus insights" [ref=f4e51] [cursor=pointer]
+    - button "Data options" [ref=f4e56] [cursor=pointer]
+    - button "Saved snapshots" [ref=f4e62] [cursor=pointer]
+    - button "Settings" [ref=f4e67] [cursor=pointer]
+    - button "Add files" [ref=f4e71] [cursor=pointer]
+  - button "Show filters" [ref=f4e74] [cursor=pointer]
+  - generic [ref=f4e77]:
+    - generic [ref=f4e78]:
+      - generic [ref=f4e79]: Embedding meaning…
+      - generic [ref=f4e82]: 0/36
+    - generic [ref=f4e83]:
+      - generic "network-architecture-overview.pdf" [ref=f4e84]:
+        - generic [ref=f4e85]: ✦
+        - generic [ref=f4e86]: network-architectur…
+      - generic "sla-agreement-enterprise.pdf" [ref=f4e87]:
+        - generic [ref=f4e88]: ✦
+        - generic [ref=f4e89]: sla-agreement-enter…
+      - generic "onboarding-checklist.pdf" [ref=f4e90]:
+        - generic [ref=f4e91]: ✦
+        - generic [ref=f4e92]: onboarding-checklis…
+      - generic "postgres-performance-tuning.pdf" [ref=f4e93]:
+        - generic [ref=f4e94]: ✦
+        - generic [ref=f4e95]: postgres-performanc…
+      - generic "q3-platform-roadmap-review.pptx" [ref=f4e96]:
+        - generic [ref=f4e97]: ✦
+        - generic [ref=f4e98]: q3-platform-roadmap…
+      - generic "incident-response-training.pptx" [ref=f4e99]:
+        - generic [ref=f4e100]: ✦
+        - generic [ref=f4e101]: incident-response-t…
+      - generic "architecture-all-hands.pptx" [ref=f4e102]:
+        - generic [ref=f4e103]: ✦
+        - generic [ref=f4e104]: architecture-all-ha…
+    - generic [ref=f4e111]: Loading embedding model — 0.0 of 0.0 MB… (first time only)
+  - button "Minimap — click a document to fly to it, or press Enter to frame the selection" [ref=f4e106] [cursor=pointer]
+  - button "AI" [ref=f4e107] [cursor=pointer]
+  - alert [ref=f4e115]:
+    - generic [ref=f4e116]: Struggling to keep up — try 2D mode?
+    - button "Switch to 2D" [ref=f4e117] [cursor=pointer]
+    - button "Dismiss notification" [ref=f4e118] [cursor=pointer]: ✕

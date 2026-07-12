@@ -1,0 +1,153 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - navigation "Site" [ref=e5]:
+      - link "Back to top" [ref=e6] [cursor=pointer]:
+        - /url: "#top"
+        - text: chris.johnson
+      - list [ref=e7]:
+        - listitem [ref=e8]:
+          - link "Experience" [ref=e9] [cursor=pointer]:
+            - /url: "#experience"
+        - listitem [ref=e10]:
+          - link "Projects" [ref=e11] [cursor=pointer]:
+            - /url: "#projects"
+        - listitem [ref=e12]:
+          - link "Skills" [ref=e13] [cursor=pointer]:
+            - /url: "#skills"
+        - listitem [ref=e14]:
+          - link "Contact" [ref=e15] [cursor=pointer]:
+            - /url: "#contact"
+      - button "Use dark theme" [ref=e16] [cursor=pointer]:
+        - generic [ref=e17]: ☾
+    - generic [ref=e18]:
+      - paragraph [ref=e19]: Solutions Engineer
+      - heading "Chris Johnson" [level=1] [ref=e20]
+      - paragraph [ref=e21]: I build the connective tissue between products, platforms, and revenue — AI tooling, cloud architecture, and full‑stack apps that make complex systems legible.
+      - generic [ref=e22]:
+        - link "See what I've built ↓" [ref=e23] [cursor=pointer]:
+          - /url: "#projects"
+        - link "LinkedIn ↗" [ref=e24] [cursor=pointer]:
+          - /url: https://linkedin.com/in/christopherjohnson98
+        - link "Email me" [ref=e25] [cursor=pointer]:
+          - /url: mailto:Chrismjohnson19@gmail.com
+    - paragraph [ref=e26]:
+      - text: ambient graph · an homage to
+      - link "Knowledge Nebula" [ref=e27] [cursor=pointer]:
+        - /url: "#knowledge-nebula"
+  - main [ref=e28]:
+    - generic [ref=e29]:
+      - text: "01"
+      - generic [ref=e30]:
+        - paragraph [ref=e31]: Experience
+        - heading "Four years turning enterprise complexity into shipped product." [level=2] [ref=e32]
+      - article [ref=e33]:
+        - paragraph [ref=e34]: 04/2025 — present
+        - generic [ref=e35]:
+          - heading "Technical Solutions Consultant" [level=3] [ref=e36]
+          - paragraph [ref=e37]: Google — Irvine, CA
+          - list [ref=e38]:
+            - listitem [ref=e39]: Lead monetization and revenue optimization across Firebase — mediation, open bidding, and latency improvements for mobile and CTV inventory.
+            - listitem [ref=e40]: Design internal tools and dashboards in SQL, TypeScript, and Next.js that automate performance insights and cut report turnaround time by 50%.
+            - listitem [ref=e41]: Drive greenfield initiatives connecting API-level data to unify tracking, debugging, and opportunity identification across the stack.
+            - listitem [ref=e42]: Serve as technical liaison across Product, Engineering, Sales, and Business Development — translating complex metrics into actionable recommendations.
+      - article [ref=e43]:
+        - paragraph [ref=e44]: 08/2022 — 03/2025
+        - generic [ref=e45]:
+          - heading "Cloud Solution Architect" [level=3] [ref=e46]
+          - paragraph [ref=e47]: Microsoft — Irvine, CA
+          - list [ref=e48]:
+            - listitem [ref=e49]: Helped enterprise customers modernize operations with AI models, virtual agents, and custom applications built on Azure, Power Platform, and Dynamics 365.
+            - listitem [ref=e50]: Developed and maintained Azure Functions that streamlined internal processes, including the Value-Based Delivery catalog.
+            - listitem [ref=e51]: Guided secure, business-aligned cloud transitions as customers' technical and strategic advisor.
+    - generic [ref=e52]:
+      - text: "02"
+      - generic [ref=e53]:
+        - paragraph [ref=e54]: Projects
+        - heading "Things I build when the workday ends." [level=2] [ref=e55]
+      - generic [ref=e56]:
+        - article [ref=e57]:
+          - generic [ref=e58]:
+            - paragraph [ref=e59]: 2026 — · Flagship
+            - heading "Knowledge Nebula" [level=3] [ref=e60]
+            - paragraph [ref=e61]: A privacy-first app that turns folders of documents into an explorable 3D knowledge graph. Drop in text, Markdown, PDFs, or Office files and it extracts topics and relationships, rendering the whole corpus as a force-directed constellation — with parsing, embeddings, and clustering running entirely on-device. An air-gapped build ships with a zero-network guarantee.
+            - paragraph [ref=e62]: TypeScript · React · 3D/WebGL · On-device AI · Desktop app
+          - img "Knowledge Nebula rendering a demo corpus as a 3D constellation of glowing, labeled document nodes" [ref=e63]
+        - article [ref=e64]:
+          - 'img "Geopolitical Simulator concept interface: a world strategy map with France selected, national economy panel, and diplomatic actions" [ref=e65]'
+          - generic [ref=e66]:
+            - paragraph [ref=e67]: 2026 — · Concept preview
+            - heading "Geopolitical Simulator" [level=3] [ref=e68]
+            - paragraph [ref=e69]: A grand-strategy simulation where the player takes the helm of any real-world nation — steering its economy, politics, and military.
+            - paragraph [ref=e70]: Simulation · Game design
+        - article [ref=e71]:
+          - 'img "Relationship app concept: a phone screen showing a nightly couples check-in, streak, and shared rituals" [ref=e72]'
+          - generic [ref=e73]:
+            - paragraph [ref=e74]: 2026 — · Concept preview
+            - heading "Relationship Maintenance App" [level=3] [ref=e75]
+            - paragraph [ref=e76]: A mobile app geared toward keeping romantic relationships healthy and engaging — built for couples who want intention, not autopilot.
+            - paragraph [ref=e77]: Mobile
+    - generic [ref=e78]:
+      - text: "03"
+      - generic [ref=e79]:
+        - paragraph [ref=e80]: Skills
+        - heading "What I work with." [level=2] [ref=e81]
+      - generic [ref=e82]:
+        - paragraph [ref=e83]: Languages
+        - paragraph [ref=e84]:
+          - generic [ref=e85]: Python
+          - generic [ref=e86]: Java
+          - generic [ref=e87]: TypeScript
+          - generic [ref=e88]: JavaScript
+          - generic [ref=e89]: C#
+          - generic [ref=e90]: PowerShell
+          - generic [ref=e91]: SQL
+      - generic [ref=e92]:
+        - paragraph [ref=e93]: Cloud & platforms
+        - paragraph [ref=e94]:
+          - generic [ref=e95]: Google Cloud
+          - generic [ref=e96]: Firebase
+          - generic [ref=e97]: Azure
+          - generic [ref=e98]: .NET
+          - generic [ref=e99]: Power Platform
+          - generic [ref=e100]: Dynamics 365
+      - generic [ref=e101]:
+        - paragraph [ref=e102]: Practices
+        - paragraph [ref=e103]:
+          - generic [ref=e104]: Solution Architecture
+          - generic [ref=e105]: Cloud Architecture
+          - generic [ref=e106]: Identity & Access Management
+          - generic [ref=e107]: DevOps
+          - generic [ref=e108]: Generative AI
+      - generic [ref=e109]:
+        - paragraph [ref=e110]: Product
+        - paragraph [ref=e111]:
+          - generic [ref=e112]: React
+          - generic [ref=e113]: Next.js
+          - generic [ref=e114]: Full-Stack Development
+          - generic [ref=e115]: Mobile Development
+    - generic [ref=e116]:
+      - text: "04"
+      - generic [ref=e117]:
+        - paragraph [ref=e118]: Education
+        - heading "Georgia Tech, start to finish." [level=2] [ref=e119]
+      - article [ref=e120]:
+        - paragraph [ref=e121]: 08/2016 — 05/2022
+        - generic [ref=e122]:
+          - heading "B.S. Computer Science" [level=3] [ref=e123]
+          - paragraph [ref=e124]: Georgia Institute of Technology — Atlanta, GA
+    - generic [ref=e125]:
+      - text: "05"
+      - generic [ref=e126]:
+        - paragraph [ref=e127]: Contact
+        - heading "Let's build something." [level=2] [ref=e128]
+      - generic [ref=e129]:
+        - link "Chrismjohnson19@gmail.com" [ref=e130] [cursor=pointer]:
+          - /url: mailto:Chrismjohnson19@gmail.com
+        - link "678-642-6551" [ref=e131] [cursor=pointer]:
+          - /url: tel:+16786426551
+        - link "linkedin.com/in/christopherjohnson98" [ref=e132] [cursor=pointer]:
+          - /url: https://linkedin.com/in/christopherjohnson98
+        - paragraph [ref=e133]: Irvine, CA · open to interesting problems
+  - contentinfo [ref=e134]:
+    - generic [ref=e135]: © 2026 Chris Johnson
+    - generic [ref=e136]: one HTML file · no trackers · nothing on this page phones home

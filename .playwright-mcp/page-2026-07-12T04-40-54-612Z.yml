@@ -1,0 +1,9 @@
+- generic [ref=f4e7]:
+  - heading "Document Graph Explorer" [level=1] [ref=f4e8]
+  - paragraph [ref=f4e9]: Drop your docs. Watch them become a universe.
+  - generic [ref=f4e10]:
+    - button "Add files" [ref=f4e11] [cursor=pointer]
+    - button "Load demo corpus" [ref=f4e12] [cursor=pointer]
+    - button "Import a graph" [ref=f4e13] [cursor=pointer]
+  - paragraph [ref=f4e14]: or drag files / folders anywhere
+  - paragraph [ref=f4e15]: 100% local — your documents never leave this browser.
