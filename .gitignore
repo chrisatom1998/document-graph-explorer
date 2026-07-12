@@ -1,6 +1,8 @@
 node_modules/
 dist/
 dist-airgap/
+dist.zip
+dist-airgap.zip
 docs/*.pdf
 run.exe
 *.local
@@ -9,6 +11,8 @@ coverage/
 vite-dev.*.log
 release/
 release-build/
+/Document.Graph.Explorer-*.exe
+/Document-Graph-Explorer-*.zip
 agent/runs/
 docker/downloads/*
 !docker/downloads/.gitkeep
