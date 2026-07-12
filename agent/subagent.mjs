@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -17,6 +17,17 @@ const IGNORED_DIRS = new Set([
   'coverage',
   'copilot-worktrees',
 ]);
+const SENSITIVE_FILENAMES = new Set([
+  '.npmrc',
+  '.pypirc',
+  '.netrc',
+  'credentials',
+  'credentials.json',
+  'service-account.json',
+]);
+const SENSITIVE_EXTENSIONS = new Set(['.key', '.pem', '.p12', '.pfx', '.jks', '.keystore']);
+const SENSITIVE_DATA_FILE =
+  /^(?:secrets?|credentials?|service[-_.]?account|auth[-_.]?token)(?:\.(?:json|ya?ml|toml|ini|conf|config|txt))?$/;
 
 export function normalizeRepoPath(inputPath = '.') {
   const resolved = resolve(REPO_ROOT, inputPath);
@@ -27,8 +38,56 @@ export function normalizeRepoPath(inputPath = '.') {
   return resolved;
 }
 
-function toRepoRelative(absPath) {
+function repoRelativePath(absPath) {
   return relative(REPO_ROOT, absPath).replaceAll('\\', '/') || '.';
+}
+
+export function isSensitiveRepoPath(inputPath) {
+  const repoPath = isAbsolute(inputPath) ? repoRelativePath(inputPath) : inputPath.replaceAll('\\', '/');
+  const segments = repoPath.toLowerCase().split('/').filter(Boolean);
+  const fileName = segments.at(-1) ?? '';
+  const extension = fileName.includes('.') ? fileName.slice(fileName.lastIndexOf('.')) : '';
+  return (
+    segments.includes('.git') ||
+    /^\.env(?:\.|$)/.test(fileName) ||
+    SENSITIVE_FILENAMES.has(fileName) ||
+    SENSITIVE_DATA_FILE.test(fileName) ||
+    SENSITIVE_EXTENSIONS.has(extension) ||
+    /^(?:id_rsa|id_dsa|id_ecdsa|id_ed25519)$/.test(fileName)
+  );
+}
+
+function normalizeApprovedSensitivePaths(paths = []) {
+  return new Set(paths.map((path) => toRepoRelative(normalizeRepoPath(path))));
+}
+
+function assertReadablePath(inputPath, approvedSensitivePaths) {
+  const requestedPath = normalizeRepoPath(inputPath);
+  if (!existsSync(requestedPath)) return requestedPath;
+
+  const realPath = realpathSync(requestedPath);
+  const realRelative = relative(REPO_ROOT, realPath);
+  if (realRelative.startsWith('..') || isAbsolute(realRelative)) {
+    throw new Error(`Path escapes repository root through a symbolic link: ${inputPath}`);
+  }
+
+  const requestedRelative = toRepoRelative(requestedPath);
+  const canonicalRelative = toRepoRelative(realPath);
+  if (
+    (isSensitiveRepoPath(requestedRelative) || isSensitiveRepoPath(canonicalRelative)) &&
+    !approvedSensitivePaths.has(requestedRelative) &&
+    !approvedSensitivePaths.has(canonicalRelative)
+  ) {
+    throw new Error(
+      `Sensitive repository path is blocked: ${requestedRelative}. ` +
+        'The operator must explicitly approve this exact path with --allow-sensitive-read.',
+    );
+  }
+  return realPath;
+}
+
+function toRepoRelative(absPath) {
+  return repoRelativePath(absPath);
 }
 
 function parseJsonArgs(value, fallback = {}) {
@@ -46,15 +105,16 @@ function truncate(value, maxChars = DEFAULT_TOOL_RESULT_CHARS) {
   return `${text.slice(0, maxChars)}\n...[truncated ${text.length - maxChars} chars]`;
 }
 
-function walkFiles(startDir, limit, files = []) {
+function walkFiles(startDir, limit, approvedSensitivePaths, files = []) {
   if (files.length >= limit) return files;
   for (const entry of readdirSync(startDir, { withFileTypes: true })) {
     if (files.length >= limit) break;
     const absPath = join(startDir, entry.name);
     if (entry.isDirectory()) {
-      if (!IGNORED_DIRS.has(entry.name)) walkFiles(absPath, limit, files);
+      if (!IGNORED_DIRS.has(entry.name)) walkFiles(absPath, limit, approvedSensitivePaths, files);
     } else if (entry.isFile()) {
-      files.push(absPath);
+      const repoPath = toRepoRelative(absPath);
+      if (!isSensitiveRepoPath(repoPath) || approvedSensitivePaths.has(repoPath)) files.push(absPath);
     }
   }
   return files;
@@ -68,17 +128,17 @@ function readTextFile(absPath, maxBytes = 512_000) {
   return readFileSync(absPath, 'utf8');
 }
 
-function listFiles(args) {
-  const root = normalizeRepoPath(args.root ?? '.');
+function listFiles(args, approvedSensitivePaths) {
+  const root = assertReadablePath(args.root ?? '.', approvedSensitivePaths);
   if (!existsSync(root) || !statSync(root).isDirectory()) {
     throw new Error(`Directory not found: ${args.root ?? '.'}`);
   }
   const limit = Math.max(1, Math.min(Number(args.limit ?? 200), 1_000));
-  return walkFiles(root, limit).map(toRepoRelative);
+  return walkFiles(root, limit, approvedSensitivePaths).map(toRepoRelative);
 }
 
-function readFileTool(args) {
-  const absPath = normalizeRepoPath(args.path);
+export function readFileTool(args, approvedSensitivePaths = new Set()) {
+  const absPath = assertReadablePath(args.path, approvedSensitivePaths);
   if (!existsSync(absPath) || !statSync(absPath).isFile()) {
     throw new Error(`File not found: ${args.path}`);
   }
@@ -93,15 +153,15 @@ function readFileTool(args) {
   };
 }
 
-function searchText(args) {
+function searchText(args, approvedSensitivePaths) {
   const query = String(args.query ?? '').trim();
   if (!query) throw new Error('query is required');
-  const root = normalizeRepoPath(args.root ?? '.');
+  const root = assertReadablePath(args.root ?? '.', approvedSensitivePaths);
   const limit = Math.max(1, Math.min(Number(args.limit ?? 80), 200));
   const needle = args.caseSensitive ? query : query.toLowerCase();
   const matches = [];
 
-  for (const absPath of walkFiles(root, 5_000)) {
+  for (const absPath of walkFiles(root, 5_000, approvedSensitivePaths)) {
     if (matches.length >= limit) break;
     let content;
     try {
@@ -152,13 +212,15 @@ function repoContext() {
   };
 }
 
-const toolHandlers = {
-  repo_context: repoContext,
-  list_files: listFiles,
-  read_file: readFileTool,
-  search_text: searchText,
-  inspect_package: inspectPackage,
-};
+function createToolHandlers(approvedSensitivePaths) {
+  return {
+    repo_context: repoContext,
+    list_files: (args) => listFiles(args, approvedSensitivePaths),
+    read_file: (args) => readFileTool(args, approvedSensitivePaths),
+    search_text: (args) => searchText(args, approvedSensitivePaths),
+    inspect_package: inspectPackage,
+  };
+}
 
 const tools = [
   {
@@ -191,7 +253,7 @@ const tools = [
     function: {
       name: 'read_file',
       description:
-        'Read a bounded slice of a UTF-8 text file by repo-relative path. Use after list_files or search_text identifies a target.',
+        'Read a bounded slice of a UTF-8 text file by repo-relative path. Sensitive files are unavailable unless the operator explicitly approved the exact path.',
       parameters: {
         type: 'object',
         required: ['path'],
@@ -247,6 +309,7 @@ function parseCli(argv) {
     baseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
     maxSteps: DEFAULT_MAX_STEPS,
     timeoutMs: DEFAULT_TIMEOUT_MS,
+    approvedSensitiveReads: [],
     dryRun: false,
     trace: true,
   };
@@ -258,6 +321,11 @@ function parseCli(argv) {
     else if (arg === '--base-url') options.baseUrl = argv[++index] ?? options.baseUrl;
     else if (arg === '--max-steps') options.maxSteps = Number(argv[++index] ?? options.maxSteps);
     else if (arg === '--timeout-ms') options.timeoutMs = Number(argv[++index] ?? options.timeoutMs);
+    else if (arg === '--allow-sensitive-read') {
+      const approvedPath = argv[++index];
+      if (!approvedPath) throw new Error('--allow-sensitive-read requires a repo-relative path');
+      options.approvedSensitiveReads.push(approvedPath);
+    }
     else if (arg === '--dry-run') options.dryRun = true;
     else if (arg === '--no-trace') options.trace = false;
     else if (arg === '--help' || arg === '-h') options.help = true;
@@ -273,12 +341,17 @@ function usage() {
 Usage:
   npm run agent -- "answer a repo question"
   npm run agent -- --prompt "inspect the chat code" --model gpt-5-mini
+  npm run agent -- --allow-sensitive-read .env.example "inspect environment setup"
   npm run agent -- --dry-run "show the configured tools"
 
 Environment:
   OPENAI_API_KEY   Required unless --dry-run is used.
   OPENAI_MODEL     Optional. Defaults to gpt-5-mini.
   OPENAI_BASE_URL  Optional OpenAI-compatible /v1 endpoint.
+
+Sensitive files (.git metadata, environment files, credentials, and private keys)
+are blocked by default. Repeat --allow-sensitive-read with an exact repo-relative
+path to approve an exceptional read for this run.
 `;
 }
 
@@ -338,6 +411,8 @@ async function callModel({ baseUrl, apiKey, model, messages, timeoutMs }) {
 }
 
 export async function runAgent(options) {
+  const approvedSensitivePaths = normalizeApprovedSensitivePaths(options.approvedSensitiveReads);
+  const toolHandlers = createToolHandlers(approvedSensitivePaths);
   if (options.dryRun) {
     return {
       model: options.model,
@@ -356,7 +431,7 @@ export async function runAgent(options) {
     {
       role: 'system',
       content:
-        'You are a standalone Knowledge Nebula subagent. Work from repository evidence, use tools before making repo claims, keep actions read-only, surface uncertainty, and stop when the answer is complete. Never claim to edit files.',
+        'You are a standalone Knowledge Nebula subagent. Work from repository evidence, use tools before making repo claims, keep actions read-only, surface uncertainty, and stop when the answer is complete. Never claim to edit files. Sensitive repository files are blocked unless the operator explicitly approved an exact path for this run.',
     },
     { role: 'user', content: options.prompt },
   ];
