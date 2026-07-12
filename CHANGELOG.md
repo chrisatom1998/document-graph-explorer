@@ -6,6 +6,13 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-07-12
+
+### Fixed
+- Recover cleanly from PDF and embedding worker timeouts, validate persisted vectors, and rebuild missing indexes transactionally.
+- Make search and imported-graph chat useful immediately through lexical metadata fallback and progressive semantic results.
+- Fix mobile toolbar/modal/toast/counting issues and add keyboard/screen-reader document browsing plus progress semantics.
+
 ## [1.1.1] - 2026-07-12
 
 ### Added
