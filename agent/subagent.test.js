@@ -1,15 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { existsSync, linkSync, symlinkSync, unlinkSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   isSensitiveRepoPath,
   normalizeRepoPath,
   readFileTool,
+  resetSensitiveInodeCache,
   runAgent,
+  searchTextTool,
 } from './subagent.mjs';
+
+const REPO_ROOT = normalizeRepoPath('.');
 
 describe('standalone subagent', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
+    resetSensitiveInodeCache();
   });
 
   it('blocks file paths outside the repository', () => {
@@ -27,6 +34,43 @@ describe('standalone subagent', () => {
     const approved = readFileTool({ path: '.git/config' }, new Set(['.git/config']));
     expect(approved.path).toBe('.git/config');
     expect(approved.content.length).toBeGreaterThan(0);
+  });
+
+  it('blocks hardlink and symlink aliases to sensitive files from read and search', () => {
+    const hardlinkAlias = join(REPO_ROOT, '.codex-test-hardlink-alias.txt');
+    const symlinkAlias = join(REPO_ROOT, '.codex-test-symlink-alias.txt');
+
+    for (const path of [hardlinkAlias, symlinkAlias]) {
+      if (existsSync(path)) unlinkSync(path);
+    }
+
+    linkSync(join(REPO_ROOT, '.git/config'), hardlinkAlias);
+    symlinkSync('.git/config', symlinkAlias);
+    resetSensitiveInodeCache();
+
+    try {
+      expect(() => readFileTool({ path: '.codex-test-hardlink-alias.txt' })).toThrow(
+        /sensitive repository path is blocked/i,
+      );
+      expect(() => readFileTool({ path: '.codex-test-symlink-alias.txt' })).toThrow(
+        /sensitive repository path is blocked/i,
+      );
+
+      const configSnippet = readFileTool(
+        { path: '.git/config', maxLines: 5 },
+        new Set(['.git/config']),
+      ).content.split('\n')[0];
+      expect(configSnippet.length).toBeGreaterThan(0);
+
+      const matches = searchTextTool({ query: configSnippet.slice(0, 24), limit: 50 });
+      expect(matches.every((match) => !match.path.includes('codex-test'))).toBe(true);
+      expect(matches.every((match) => !match.path.startsWith('.git/'))).toBe(true);
+    } finally {
+      for (const path of [hardlinkAlias, symlinkAlias]) {
+        if (existsSync(path)) unlinkSync(path);
+      }
+      resetSensitiveInodeCache();
+    }
   });
 
   it('continues to allow ordinary repository reads', () => {

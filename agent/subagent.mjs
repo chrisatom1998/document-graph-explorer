@@ -61,6 +61,62 @@ function normalizeApprovedSensitivePaths(paths = []) {
   return new Set(paths.map((path) => toRepoRelative(normalizeRepoPath(path))));
 }
 
+let sensitiveInodeKeys = null;
+
+/** Clears the cached sensitive-inode set (for tests that create temporary aliases). */
+export function resetSensitiveInodeCache() {
+  sensitiveInodeKeys = null;
+}
+
+function inodeKey(absPath) {
+  const { dev, ino } = statSync(absPath);
+  return `${dev}:${ino}`;
+}
+
+/**
+ * Collect inodes of sensitive-named files (and symlink targets), including under
+ * `.git`, so hardlinks with benign names cannot bypass the sensitive-read gate.
+ */
+function getSensitiveInodeKeys() {
+  if (sensitiveInodeKeys) return sensitiveInodeKeys;
+  const keys = new Set();
+  const stack = [REPO_ROOT];
+  while (stack.length > 0) {
+    const dir = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const absPath = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        // Enter `.git` for inode discovery; skip other bulky ignored trees.
+        if (IGNORED_DIRS.has(entry.name) && entry.name !== '.git') continue;
+        stack.push(absPath);
+        continue;
+      }
+      if (!entry.isFile() && !entry.isSymbolicLink()) continue;
+      try {
+        const requestedRelative = toRepoRelative(absPath);
+        const realPath = realpathSync(absPath);
+        const realRelative = relative(REPO_ROOT, realPath);
+        if (realRelative.startsWith('..') || isAbsolute(realRelative)) continue;
+        const canonicalRelative = toRepoRelative(realPath);
+        if (!isSensitiveRepoPath(requestedRelative) && !isSensitiveRepoPath(canonicalRelative)) {
+          continue;
+        }
+        if (statSync(realPath).isFile()) keys.add(inodeKey(realPath));
+      } catch {
+        /* ignore unreadable entries */
+      }
+    }
+  }
+  sensitiveInodeKeys = keys;
+  return keys;
+}
+
 function assertReadablePath(inputPath, approvedSensitivePaths) {
   const requestedPath = normalizeRepoPath(inputPath);
   if (!existsSync(requestedPath)) return requestedPath;
@@ -73,11 +129,21 @@ function assertReadablePath(inputPath, approvedSensitivePaths) {
 
   const requestedRelative = toRepoRelative(requestedPath);
   const canonicalRelative = toRepoRelative(realPath);
-  if (
-    (isSensitiveRepoPath(requestedRelative) || isSensitiveRepoPath(canonicalRelative)) &&
-    !approvedSensitivePaths.has(requestedRelative) &&
-    !approvedSensitivePaths.has(canonicalRelative)
-  ) {
+  const approved =
+    approvedSensitivePaths.has(requestedRelative) ||
+    approvedSensitivePaths.has(canonicalRelative);
+  const pathSensitive =
+    isSensitiveRepoPath(requestedRelative) || isSensitiveRepoPath(canonicalRelative);
+
+  if (pathSensitive && !approved) {
+    throw new Error(
+      `Sensitive repository path is blocked: ${requestedRelative}. ` +
+        'The operator must explicitly approve this exact path with --allow-sensitive-read.',
+    );
+  }
+
+  // Hardlinks keep a non-sensitive path while sharing the sensitive file's inode.
+  if (!approved && getSensitiveInodeKeys().has(inodeKey(realPath))) {
     throw new Error(
       `Sensitive repository path is blocked: ${requestedRelative}. ` +
         'The operator must explicitly approve this exact path with --allow-sensitive-read.',
@@ -112,9 +178,16 @@ function walkFiles(startDir, limit, approvedSensitivePaths, files = []) {
     const absPath = join(startDir, entry.name);
     if (entry.isDirectory()) {
       if (!IGNORED_DIRS.has(entry.name)) walkFiles(absPath, limit, approvedSensitivePaths, files);
-    } else if (entry.isFile()) {
-      const repoPath = toRepoRelative(absPath);
-      if (!isSensitiveRepoPath(repoPath) || approvedSensitivePaths.has(repoPath)) files.push(absPath);
+      continue;
+    }
+    // Dirent reports symlinks as neither files nor directories — resolve and gate them too.
+    if (!entry.isFile() && !entry.isSymbolicLink()) continue;
+    try {
+      if (entry.isSymbolicLink() && !statSync(absPath).isFile()) continue;
+      // Same gate as read_file: unresolved name, realpath target, and hardlink inode.
+      files.push(assertReadablePath(toRepoRelative(absPath), approvedSensitivePaths));
+    } catch {
+      /* skip blocked or unreadable entries */
     }
   }
   return files;
@@ -153,7 +226,7 @@ export function readFileTool(args, approvedSensitivePaths = new Set()) {
   };
 }
 
-function searchText(args, approvedSensitivePaths) {
+export function searchTextTool(args, approvedSensitivePaths = new Set()) {
   const query = String(args.query ?? '').trim();
   if (!query) throw new Error('query is required');
   const root = assertReadablePath(args.root ?? '.', approvedSensitivePaths);
@@ -165,6 +238,8 @@ function searchText(args, approvedSensitivePaths) {
     if (matches.length >= limit) break;
     let content;
     try {
+      // Defense in depth: re-check before content crosses the provider boundary.
+      assertReadablePath(toRepoRelative(absPath), approvedSensitivePaths);
       content = readTextFile(absPath, 256_000);
     } catch {
       continue;
@@ -217,7 +292,7 @@ function createToolHandlers(approvedSensitivePaths) {
     repo_context: repoContext,
     list_files: (args) => listFiles(args, approvedSensitivePaths),
     read_file: (args) => readFileTool(args, approvedSensitivePaths),
-    search_text: (args) => searchText(args, approvedSensitivePaths),
+    search_text: (args) => searchTextTool(args, approvedSensitivePaths),
     inspect_package: inspectPackage,
   };
 }
