@@ -31,6 +31,7 @@ export interface RetrievalOptions {
   timeoutMs?: number;
   minSemanticScore?: number;
   maxPassageChars?: number;
+  semantic?: boolean;
 }
 
 export interface RetrievalDependencies {
@@ -154,14 +155,26 @@ function upsertCandidate(
 }
 
 function passagesForDocument(
-  docId: string,
+  node: DocNode,
   chunks: ReadonlyMap<string, ChunkData>,
   texts: ReadonlyMap<string, string>,
 ): string[] {
-  const chunkTexts = chunks.get(docId)?.texts.filter(Boolean) ?? [];
+  const chunkTexts = chunks.get(node.id)?.texts.filter(Boolean) ?? [];
   if (chunkTexts.length > 0) return chunkTexts;
-  const fullText = texts.get(docId)?.trim();
-  return fullText ? [fullText] : [];
+  const fullText = texts.get(node.id)?.trim();
+  if (fullText) return [fullText];
+
+  // JSON exports intentionally omit source text. Keep imported graphs useful
+  // for title/keyword search and local chat by falling back to the bounded
+  // document metadata that is part of the graph export. This is lower-fidelity
+  // evidence than an indexed passage, but it is still user-owned corpus data.
+  const metadata = [
+    node.summary,
+    node.topics.length > 0 ? `Topics: ${node.topics.join(', ')}` : '',
+    node.entities.length > 0 ? `Entities: ${node.entities.join(', ')}` : '',
+    node.keywords.length > 0 ? `Keywords: ${node.keywords.join(', ')}` : '',
+  ].filter(Boolean).join('\n');
+  return metadata ? [metadata] : [];
 }
 
 /**
@@ -195,7 +208,7 @@ export async function retrieveCorpus(
 
   // Lexical pass always runs, including when embeddings are unavailable.
   for (const node of documentNodes) {
-    const passages = passagesForDocument(node.id, deps.chunks, deps.texts);
+    const passages = passagesForDocument(node, deps.chunks, deps.texts);
     for (let passageIndex = 0; passageIndex < passages.length; passageIndex++) {
       const text = passages[passageIndex];
       const lexical = lexicalRelevance(q, text, node.title);
@@ -211,8 +224,14 @@ export async function retrieveCorpus(
     }
   }
 
-  // Semantic failure is an expected local-first degradation path.
-  try {
+  const hasSemanticIndex =
+    [...deps.docVectors.values()].some((vector) => vector.length > 0) ||
+    [...deps.chunks.values()].some((chunk) => (chunk.vectors?.length ?? 0) > 0);
+
+  // Semantic failure is an expected local-first degradation path. Callers
+  // can skip it for the immediate lexical pass shown while the model loads,
+  // and imported graphs without vectors should not load the model pointlessly.
+  if (options.semantic !== false && hasSemanticIndex) try {
     const queryVector = await withTimeout(deps.embedQuery(q), timeoutMs);
     const titleById = new Map(documentNodes.map((node) => [node.id, node.title]));
     const coveredByChunks = new Set<string>();

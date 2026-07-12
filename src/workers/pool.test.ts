@@ -116,6 +116,32 @@ describe('WorkerPool scheduling', () => {
     expect(workers[0].messages).toHaveLength(1);
   });
 
+  it('serializes embeddings onto one warm worker even when the pool can grow', async () => {
+    pool.dispose();
+    workers = [];
+    pool = new WorkerPool({
+      size: 3,
+      workerFactory: () => {
+        const worker = new FakeWorker();
+        workers.push(worker);
+        return worker;
+      },
+    });
+
+    const first = pool.request(embedMsg());
+    const second = pool.request(embedMsg());
+
+    expect(workers).toHaveLength(1);
+    expect(workers[0].messages).toHaveLength(1);
+    workers[0].respondEmbedToLast();
+    await expect(first).resolves.toMatchObject({ type: 'embed:done' });
+
+    expect(workers).toHaveLength(1);
+    expect(workers[0].messages).toHaveLength(2);
+    workers[0].respondEmbedToLast();
+    await expect(second).resolves.toMatchObject({ type: 'embed:done' });
+  });
+
   it("starts a job's timeout at dispatch, not enqueue", async () => {
     const first = pool.request(parseMsg());
     const second = pool.request(parseMsg());
@@ -143,30 +169,19 @@ describe('WorkerPool scheduling', () => {
     await expect(second).resolves.toMatchObject({ type: 'parse:done' });
   });
 
-  it("an embed request timeout rejects only that request — the worker survives", async () => {
+  it('retires a timed-out embed worker so queued embeddings can recover', async () => {
     const first = pool.request(embedMsg());
     const firstTimesOut = expect(first).rejects.toThrow(/timed out/);
     // embed's timeout (180s) is much longer than parse's (30s) — advance
     // past it without ever hitting parse's shorter window.
     await vi.advanceTimersByTimeAsync(180_001);
     await firstTimesOut;
-    // No replacement worker: the original keeps running (and keeps
-    // whatever model it already loaded) instead of being retired.
-    expect(workers).toHaveLength(1);
-    expect(workers[0].terminated).toBe(false);
+    expect(workers[0].terminated).toBe(true);
 
-    // The busy slot stays held until the abandoned job finishes — otherwise
-    // the next request would sit in the worker's message queue behind it
-    // while its own timeout already ticks.
     const second = pool.request(embedMsg());
-    expect(workers).toHaveLength(1);
-    expect(workers[0].messages).toHaveLength(1);
-
-    // Late response for the timed-out request frees the slot; then the
-    // queued follow-up is dispatched on the same warm worker.
-    workers[0].respondEmbedToLast();
-    expect(workers[0].messages).toHaveLength(2);
-    workers[0].respondEmbedToLast();
+    expect(workers).toHaveLength(2);
+    expect(workers[1].messages).toHaveLength(1);
+    workers[1].respondEmbedToLast();
     await expect(second).resolves.toMatchObject({ type: 'embed:done' });
   });
 

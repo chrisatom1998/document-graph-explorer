@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { searchCorpus, type SearchHit } from '../search/semanticSearch';
+import { searchCorpus, searchCorpusLexical, type SearchHit } from '../search/semanticSearch';
 
 const MAX_SHOW_ME_RESULTS = 40;
 
@@ -40,22 +40,24 @@ export default function ShowMePanel() {
 
     const seq = ++requestSeq.current;
     setStatus('searching');
-    searchCorpus(q)
-      .then((hits) => {
+    const applyHits = (hits: SearchHit[]) => {
         if (seq !== requestSeq.current) return;
         const shown = hits.slice(0, MAX_SHOW_ME_RESULTS);
         setResults(shown);
         setStatus(shown.length > 0 ? 'done' : 'empty');
         setSearchResults(shown.map((hit) => hit.id), 'showMe');
         if (shown.length > 0) sendCamera('frameSet', shown.map((hit) => hit.id));
-      })
-      .catch((err) => {
+    };
+    void (async () => {
+      try {
+        applyHits(await searchCorpusLexical(q));
+        applyHits(await searchCorpus(q));
+      } catch (err) {
         console.warn('show me failed', err);
         if (seq !== requestSeq.current) return;
-        setResults([]);
         setStatus('empty');
-        setSearchResults(null);
-      });
+      }
+    })();
   };
 
   const close = () => {

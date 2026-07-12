@@ -1091,32 +1091,70 @@ async function runEmbeddingRebuild(): Promise<void> {
   if (docs.length === 0) return;
 
   const pool = getPool();
-  const { lexEdges, boilerplate } = await runLexicalPass(pool);
-  useGraphStore.getState().setPhase('embedding');
-  for (const doc of docs) {
-    docVectorStore.delete(doc.id);
-    const { chunks, truncated } = chunkText(stripBoilerplate(textStore.get(doc.id) ?? '', boilerplate));
-    if (chunks.length === 0) {
-      chunkStore.delete(doc.id);
-      continue;
-    }
-    if (truncated && !doc.warning) {
-      useGraphStore.getState().patchNodes(
-        new Map([[doc.id, { status: 'partial', warning: 'Only the first ~200 KB indexed for search' }]]),
+  const graph = useGraphStore.getState;
+  try {
+    const { lexEdges, boilerplate } = await runLexicalPass(pool);
+    graph().setPhase('embedding');
+
+    // Build replacement vectors off to the side. A single failed request
+    // must not destroy the last usable index for documents already rebuilt.
+    const rebuilt = new Map<
+      string,
+      { chunks: string[]; docVector: Float32Array | null; chunkVectors: Float32Array | null }
+    >();
+    const patches = new Map<string, Partial<DocNode>>();
+    for (const doc of docs) {
+      const { chunks, truncated } = chunkText(
+        stripBoilerplate(textStore.get(doc.id) ?? '', boilerplate),
       );
+      if (chunks.length === 0) {
+        rebuilt.set(doc.id, { chunks: [], docVector: null, chunkVectors: null });
+        continue;
+      }
+      if (truncated && !doc.warning) {
+        patches.set(doc.id, {
+          status: 'partial',
+          warning: 'Only the first ~200 KB indexed for search',
+        });
+      }
+      const done = await pool.request<EmbedDone>({
+        requestId: 0,
+        type: 'embed',
+        docId: doc.id,
+        chunks,
+      });
+      rebuilt.set(doc.id, {
+        chunks,
+        docVector: done.docVector,
+        chunkVectors: done.chunkVectors,
+      });
     }
-    chunkStore.set(doc.id, { texts: chunks, vectors: null, dims: EMBED_DIMS });
-    const done = await pool.request<EmbedDone>({ requestId: 0, type: 'embed', docId: doc.id, chunks });
-    docVectorStore.set(doc.id, done.docVector);
-    chunkStore.set(doc.id, { texts: chunks, vectors: done.chunkVectors, dims: EMBED_DIMS });
+
+    for (const [docId, result] of rebuilt) {
+      docVectorStore.delete(docId);
+      if (result.docVector) docVectorStore.set(docId, result.docVector);
+      if (result.chunks.length === 0) chunkStore.delete(docId);
+      else {
+        chunkStore.set(docId, {
+          texts: result.chunks,
+          vectors: result.chunkVectors,
+          dims: EMBED_DIMS,
+        });
+      }
+    }
+    graph().patchNodes(patches);
+    await runSemanticPass(lexEdges);
+    synthesizeTopicNodes();
+    graph().setCorpusHash(await computeCorpusHash());
+    graph().setPhase('ready');
+    const { saveSession } = await import('../persistence/session');
+    await saveSession();
+  } finally {
+    graph().setModelProgress(null);
+    // A failed worker/model request must not leave the application locked in
+    // an in-progress phase. The previous index remains intact until commit.
+    if (graph().phase !== 'ready') graph().setPhase('ready');
   }
-  useGraphStore.getState().setModelProgress(null);
-  await runSemanticPass(lexEdges);
-  synthesizeTopicNodes();
-  useGraphStore.getState().setCorpusHash(await computeCorpusHash());
-  useGraphStore.getState().setPhase('ready');
-  const { saveSession } = await import('../persistence/session');
-  await saveSession();
 }
 
 export function rebuildEmbeddings(): Promise<void> {

@@ -109,6 +109,10 @@ export default function SettingsPanel() {
   const lastError = useUiStore((s) => s.lastError);
   const phase = useGraphStore((s) => s.phase);
   const nodeCount = useGraphStore((s) => s.nodes.length);
+  const documentCount = useGraphStore((s) =>
+    s.nodes.reduce((count, node) => count + (node.kind === 'document' ? 1 : 0), 0),
+  );
+  const topicCount = nodeCount - documentCount;
   const edgeCount = useGraphStore((s) => s.edges.length);
 
   const geminiKey = useSettingsStore((s) => s.geminiKey);
@@ -218,7 +222,7 @@ export default function SettingsPanel() {
         style={panelStyle}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={headerRowStyle}>
+        <div className="settings-panel__header" style={headerRowStyle}>
           <h2 style={titleStyle}>Settings</h2>
           <button
             type="button"
@@ -480,7 +484,9 @@ export default function SettingsPanel() {
             <span style={detailValueStyle}>{userAgent}</span>
             <span style={detailLabelStyle}>Corpus</span>
             <span style={detailValueStyle}>
-              {nodeCount} nodes / {edgeCount} edges
+              {documentCount} document{documentCount === 1 ? '' : 's'}
+              {topicCount > 0 && ` / ${topicCount} topic node${topicCount === 1 ? '' : 's'}`}
+              {' / '}{edgeCount} connection{edgeCount === 1 ? '' : 's'}
             </span>
             <span style={detailLabelStyle}>Last error</span>
             <span style={detailValueStyle}>

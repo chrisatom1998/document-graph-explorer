@@ -260,8 +260,8 @@ export default function ChatPanel() {
       </div>
 
       {localMode && (
-        <p className="chat-panel__mode-hint" title="Answers are exact passages retrieved from your own documents — no AI service, no network.">
-          Offline mode — answers are exact passages from your documents.
+        <p className="chat-panel__mode-hint" title="Answers use indexed passages or exported document summaries from your own graph — no AI service, no network.">
+          Offline mode — answers use indexed passages and document summaries.
         </p>
       )}
 

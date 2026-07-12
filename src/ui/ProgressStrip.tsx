@@ -99,10 +99,19 @@ export default function ProgressStrip() {
         className={`progress-strip glass-panel${
           !active && lingering && !ignoredFlash ? ' is-leaving' : ''
         }`}
+        aria-busy={active}
       >
-        <div className="progress-strip__top">
+        <div className="progress-strip__top" role="status" aria-live="polite" aria-atomic="true">
           <span className="progress-strip__phase">{phaseLabel}</span>
-          <div className="progress-strip__bar-track">
+          <div
+            className="progress-strip__bar-track"
+            role="progressbar"
+            aria-label={phaseLabel}
+            aria-valuemin={0}
+            aria-valuemax={total || undefined}
+            aria-valuenow={total > 0 ? done : undefined}
+            aria-valuetext={total > 0 ? `${done} of ${total}` : phaseLabel}
+          >
             <div className="progress-strip__bar-fill" style={{ width: `${pct}%` }} />
           </div>
           <span className="progress-strip__count">
@@ -131,7 +140,15 @@ export default function ProgressStrip() {
               Loading embedding model — {bytesToMB(modelProgress.loaded)} of{' '}
               {bytesToMB(modelProgress.total)} MB… (first time only)
             </span>
-            <div className="model-progress__bar-track">
+            <div
+              className="model-progress__bar-track"
+              role="progressbar"
+              aria-label="Loading embedding model"
+              aria-valuemin={0}
+              aria-valuemax={modelProgress.total}
+              aria-valuenow={modelProgress.loaded}
+              aria-valuetext={`${bytesToMB(modelProgress.loaded)} of ${bytesToMB(modelProgress.total)} MB`}
+            >
               <div
                 className="model-progress__bar-fill"
                 style={{

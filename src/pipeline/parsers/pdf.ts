@@ -99,6 +99,41 @@ const MIN_TEXT_CHARS = 40; // below this the PDF is considered unreadable
 const HEADER_FOOTER_MIN_PAGES = 3; // repeated-line cleanup needs ≥ 3 pages
 const HEADER_FOOTER_FRACTION = 0.6; // line repeats on ≥ 60% of pages
 const SAME_LINE_Y_TOLERANCE = 2; // pt; larger y-jumps start a new line
+const PDF_PARSE_TIMEOUT_MS = 60_000;
+
+class PdfParseTimeoutError extends Error {
+  constructor() {
+    super(`PDF parsing timed out after ${PDF_PARSE_TIMEOUT_MS / 1000} seconds`);
+    this.name = 'PdfParseTimeoutError';
+  }
+}
+
+async function beforePdfDeadline<T>(
+  operation: Promise<T>,
+  deadline: number,
+  cancel: () => void,
+): Promise<T> {
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) {
+    cancel();
+    throw new PdfParseTimeoutError();
+  }
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          cancel();
+          reject(new PdfParseTimeoutError());
+        }, remaining);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 function isPasswordError(err: unknown): boolean {
   if (typeof err === 'object' && err !== null) {
@@ -171,28 +206,34 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
   // NOTE: pdf.js transfers the underlying buffer to its worker; callers must
   // not rely on `bytes` afterwards (the coordinator hashes before parsing).
   const task = pdfjs.getDocument({ data: new Uint8Array(bytes) });
+  const deadline = Date.now() + PDF_PARSE_TIMEOUT_MS;
+  let destroyStarted: Promise<void> | null = null;
+  const destroyTask = (): void => {
+    if (!destroyStarted) destroyStarted = task.destroy().catch(() => undefined);
+  };
+  let title = fallbackTitle;
+  const pageTexts: string[] = [];
+  // url -> label; first non-empty label wins for a URL linked multiple times
+  const linkLabels = new Map<string, string>();
+  let failedPages = 0;
   try {
-    const doc = await task.promise;
+    const doc = await beforePdfDeadline(task.promise, deadline, destroyTask);
 
-    let title = fallbackTitle;
     try {
-      const meta = await doc.getMetadata();
+      const meta = await beforePdfDeadline(doc.getMetadata(), deadline, destroyTask);
       const infoTitle = (meta.info as { Title?: unknown }).Title;
       if (typeof infoTitle === 'string' && infoTitle.trim().length > 0) {
         title = infoTitle.trim();
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof PdfParseTimeoutError) throw err;
       // metadata is optional; keep the filename title
     }
 
-    const pageTexts: string[] = [];
-    // url -> label; first non-empty label wins for a URL linked multiple times
-    const linkLabels = new Map<string, string>();
-    let failedPages = 0;
     for (let pageNo = 1; pageNo <= doc.numPages; pageNo += 1) {
       try {
-        const page = await doc.getPage(pageNo);
-        const content = await page.getTextContent();
+        const page = await beforePdfDeadline(doc.getPage(pageNo), deadline, destroyTask);
+        const content = await beforePdfDeadline(page.getTextContent(), deadline, destroyTask);
         pageTexts.push(extractPageText(content.items));
         // Link annotations carry the URL that the visible text ("click here")
         // never contains — extract them, and recover each link's label from
@@ -201,7 +242,12 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
           const spans = content.items.filter(
             (it): it is PdfTextSpan & (typeof content.items)[number] => 'str' in it,
           );
-          for (const a of await page.getAnnotations()) {
+          const annotations = await beforePdfDeadline(
+            page.getAnnotations(),
+            deadline,
+            destroyTask,
+          );
+          for (const a of annotations) {
             const annot = a as { subtype?: unknown; url?: unknown; rect?: unknown };
             if (annot.subtype !== 'Link' || typeof annot.url !== 'string' || !annot.url) {
               continue;
@@ -216,11 +262,13 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
               linkLabels.set(annot.url, label);
             }
           }
-        } catch {
+        } catch (err) {
+          if (err instanceof PdfParseTimeoutError) throw err;
           // annotations are optional — never fail text extraction over them
         }
         page.cleanup();
-      } catch {
+      } catch (err) {
+        if (err instanceof PdfParseTimeoutError) throw err;
         failedPages += 1;
         pageTexts.push('');
       }
@@ -253,6 +301,19 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
     }
     return { title, text, status: 'ok', links };
   } catch (err) {
+    if (err instanceof PdfParseTimeoutError) {
+      let text = stripRepeatedLines(pageTexts).join('\n');
+      text = text.replace(/-\n/g, '').replace(/\n{3,}/g, '\n\n').trim();
+      return {
+        title,
+        text,
+        status: text.length >= MIN_TEXT_CHARS ? 'partial' : 'unreadable',
+        warning: err.message,
+        links: [...linkLabels]
+          .slice(0, 500)
+          .map(([url, label]) => ({ text: label, url })),
+      };
+    }
     if (isPasswordError(err)) {
       return {
         title: fallbackTitle,
@@ -271,10 +332,8 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
       links: [],
     };
   } finally {
-    try {
-      await task.destroy();
-    } catch {
-      // task may already be destroyed after a load failure
-    }
+    // Start cleanup, but never let a wedged pdf.js destroy promise recreate
+    // the ingestion hang this deadline is meant to prevent.
+    destroyTask();
   }
 }

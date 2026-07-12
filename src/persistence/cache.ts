@@ -50,6 +50,23 @@ function nonEmpty(a: Float32Array | null | undefined): Float32Array | null {
   return a && a.length > 0 ? a : null;
 }
 
+export function validDocVector(
+  vector: Float32Array | null | undefined,
+): vector is Float32Array {
+  return vector instanceof Float32Array && vector.length === EMBED_DIMS;
+}
+
+export function validChunkVectors(
+  vectors: Float32Array | null | undefined,
+  chunkCount: number,
+): vectors is Float32Array {
+  return (
+    vectors instanceof Float32Array &&
+    chunkCount > 0 &&
+    vectors.length === chunkCount * EMBED_DIMS
+  );
+}
+
 function compatibleEmbedding(embedding: EmbeddingRecord | undefined): boolean {
   return embedding?.fingerprint === EMBEDDING_FINGERPRINT;
 }
@@ -71,8 +88,11 @@ export async function lookupDocCache(hash: string): Promise<CachedDoc | undefine
       chunkTexts: doc.chunkTexts,
       // Old records deliberately re-index instead of silently mixing vector
       // spaces after a model or chunking change.
-      chunkVectors: compatible ? nonEmpty(emb?.chunkVectors) : null,
-      docVector: compatible ? nonEmpty(emb?.docVector) : null,
+      chunkVectors:
+        compatible && validChunkVectors(emb?.chunkVectors, doc.chunkTexts.length)
+          ? emb!.chunkVectors
+          : null,
+      docVector: compatible && validDocVector(emb?.docVector) ? emb!.docVector : null,
       mdLinkTargets: doc.mdLinkTargets ?? [],
       docLinks: doc.docLinks ?? [],
     };

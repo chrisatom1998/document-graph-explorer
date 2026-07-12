@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { searchCorpus } from '../search/semanticSearch';
+import { searchCorpus, searchCorpusLexical } from '../search/semanticSearch';
 import type { RetrievalMatchKind } from '../search/retrieval';
 import { focusNode } from './focusNode';
 
@@ -55,21 +55,23 @@ export default function SearchOverlay() {
 
     debounceRef.current = setTimeout(() => {
       const seq = ++requestSeq.current;
-      searchCorpus(query)
-        .then((res) => {
+      const applyResults = (res: ResultRow[]) => {
           if (seq !== requestSeq.current) return; // stale response
           setResults(res);
           setActiveIndex(0);
           setSearched(true);
           setSearchResults(res.map((r) => r.id), 'search');
-        })
-        .catch((err) => {
+      };
+      void (async () => {
+        try {
+          applyResults(await searchCorpusLexical(query));
+          applyResults(await searchCorpus(query));
+        } catch (err) {
           console.warn('search failed', err);
           if (seq !== requestSeq.current) return;
-          setResults([]);
           setSearched(true);
-          setSearchResults(null);
-        });
+        }
+      })();
     }, DEBOUNCE_MS);
 
     return () => {
@@ -88,13 +90,13 @@ export default function SearchOverlay() {
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActiveIndex((i) => Math.min(i + 1, results.length - 1));
+      setActiveIndex((i) => Math.min(i + 1, displayedResults.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setActiveIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const row = results[activeIndex];
+      const row = displayedResults[activeIndex];
       if (row) selectResult(row.id);
     }
     // Escape intentionally left unhandled here so it bubbles to App's
@@ -106,8 +108,14 @@ export default function SearchOverlay() {
     setSearchResults(null);
   };
 
-  const hasResults = results.length > 0;
-  const activeOptionId = hasResults ? `search-option-${activeIndex}` : undefined;
+  const browsing = query.trim().length === 0;
+  const displayedResults: ResultRow[] = browsing
+    ? nodes
+        .filter((node) => node.kind === 'document')
+        .map((node) => ({ id: node.id, score: 0, matchKind: 'title' }))
+    : results;
+  const hasDisplayedResults = displayedResults.length > 0;
+  const activeOptionId = hasDisplayedResults ? `search-option-${activeIndex}` : undefined;
 
   return (
     <div className="search-backdrop" onMouseDown={closeAndClear}>
@@ -124,7 +132,7 @@ export default function SearchOverlay() {
             className="search-overlay__input"
             type="text"
             role="combobox"
-            aria-expanded={hasResults}
+            aria-expanded={hasDisplayedResults}
             aria-controls="search-overlay-results"
             aria-activedescendant={activeOptionId}
             aria-autocomplete="list"
@@ -142,9 +150,9 @@ export default function SearchOverlay() {
           className="search-overlay__results"
           id="search-overlay-results"
           role="listbox"
-          aria-label="Search results"
+          aria-label={browsing ? 'All documents' : 'Search results'}
         >
-          {results.map((row, i) => {
+          {displayedResults.map((row, i) => {
             const node = nodes[nodeIndex[row.id]];
             return (
               <div
@@ -162,15 +170,17 @@ export default function SearchOverlay() {
                     {node?.title ?? row.id}
                   </span>
                   <span className={`match-kind-badge kind-${row.matchKind}`}>
-                    {row.matchKind}
+                    {browsing ? 'document' : row.matchKind}
                   </span>
                 </div>
-                <div className="search-result-row__score-track">
-                  <div
-                    className="search-result-row__score-fill"
-                    style={{ width: `${Math.round(Math.min(1, row.score) * 100)}%` }}
-                  />
-                </div>
+                {!browsing && (
+                  <div className="search-result-row__score-track">
+                    <div
+                      className="search-result-row__score-fill"
+                      style={{ width: `${Math.round(Math.min(1, row.score) * 100)}%` }}
+                    />
+                  </div>
+                )}
                 {row.snippet && (
                   <p className="search-result-row__snippet">{row.snippet}</p>
                 )}

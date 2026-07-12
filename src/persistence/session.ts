@@ -37,6 +37,8 @@ import {
   saveGraphToCache,
   saveSnapshot,
   setSetting,
+  validChunkVectors,
+  validDocVector,
 } from './cache';
 import { getDb } from './db';
 import { toGraphExport } from './exportImport';
@@ -227,26 +229,32 @@ async function hydrateFromRecord(
     Promise.all(docIds.map((id) => embStore.get(id))),
   ]);
   let needsEmbeddingRebuild = false;
+  const nodesById = new Map(exportData.nodes.map((node) => [node.id, node]));
 
   for (let i = 0; i < docIds.length; i++) {
     const id = docIds[i];
     const doc = docRecs[i];
     const emb = embRecs[i];
     const compatible = emb?.fingerprint === EMBEDDING_FINGERPRINT;
-    if (doc && emb && !compatible && (emb.docVector.length > 0 || emb.chunkVectors.length > 0)) {
+    const docVectorValid = compatible && validDocVector(emb?.docVector);
+    const chunkVectorsValid =
+      compatible && doc !== undefined && validChunkVectors(emb?.chunkVectors, doc.chunkTexts.length);
+    const node = nodesById.get(id);
+    const canEmbed = doc !== undefined && node?.status !== 'unreadable' && doc.text.trim().length > 0;
+    if (canEmbed && (!docVectorValid || (doc.chunkTexts.length > 0 && !chunkVectorsValid))) {
       needsEmbeddingRebuild = true;
     }
     if (doc) {
       textStore.set(id, doc.text);
       chunkStore.set(id, {
         texts: doc.chunkTexts,
-        vectors: compatible && emb && emb.chunkVectors.length > 0 ? emb.chunkVectors : null,
+        vectors: chunkVectorsValid ? emb!.chunkVectors : null,
         dims: EMBED_DIMS,
       });
       mdLinkTargetsStore.set(id, doc.mdLinkTargets ?? []);
       docLinksStore.set(id, doc.docLinks ?? []);
     }
-    if (compatible && emb && emb.docVector.length > 0) docVectorStore.set(id, emb.docVector);
+    if (docVectorValid) docVectorStore.set(id, emb!.docVector);
   }
 
   // --- hydrate graph store ---

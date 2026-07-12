@@ -1870,7 +1870,9 @@ input {
 }
 
 .toast {
-  pointer-events: auto;
+  /* The visual card may overlap a docked panel. Only its actual controls
+     should capture input; clicking the message passes through to the UI. */
+  pointer-events: none;
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -1897,11 +1899,16 @@ input {
 }
 
 .toast__action {
+  pointer-events: auto;
   flex: none;
   align-self: center;
   padding: 5px 12px;
   font-size: 12px;
   white-space: nowrap;
+}
+
+.toast .icon-btn-close {
+  pointer-events: auto;
 }
 
 /* ==========================================================================
@@ -1935,6 +1942,15 @@ input {
   animation: kn-fade-in 140ms ease both;
 }
 
+.settings-panel__header {
+  position: sticky;
+  top: -20px;
+  z-index: 1;
+  margin-top: -20px;
+  padding: 20px 0 12px;
+  background: var(--bg-glass-strong);
+}
+
 .search-overlay {
   width: min(560px, 92vw);
   max-height: 60vh;
@@ -1962,7 +1978,7 @@ input {
   color: var(--text-primary);
 }
 .search-overlay__input::placeholder {
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 
 .search-overlay__results {
@@ -2074,7 +2090,7 @@ input {
   position: fixed;
   left: 50%;
   bottom: 24px;
-  z-index: var(--z-panel);
+  z-index: var(--z-modal);
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -2344,9 +2360,22 @@ input {
   }
   .toolbar {
     top: 10px;
+    width: calc(100vw - 20px);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .toolbar__grip {
+    display: none;
+  }
+  .toolbar__menu {
+    position: fixed;
+    top: 112px;
+    left: 10px;
+    right: 10px;
+    min-width: 0;
   }
   .filter-bar-layer {
-    top: 64px; /* below the near-full-width toolbar on small screens */
+    top: 112px; /* below the wrapped toolbar on small screens */
     left: 10px;
   }
   .side-panel {
