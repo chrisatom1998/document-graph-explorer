@@ -1,7 +1,7 @@
 /**
  * IndexedDB schema + memoized connection (idb v8).
  *
- * DB 'knowledge-nebula', version 3, six stores:
+ * DB 'knowledge-nebula', version 5, eight stores:
  * - documents:  contentHash -> parsed doc (DocNode snapshot, full text, chunk texts)
  * - embeddings: contentHash -> Float32Array vectors, stored natively (no base64
  *   round-trip — this is what makes the <3s session restore possible)
@@ -10,13 +10,15 @@
  * - snapshots:  autoIncrement -> named GraphExport snapshots (v2), indexed by savedAt
  * - originals:  contentHash -> the exact ingested file bytes as a Blob (v3), so
  *   "Open" can hand back the byte-identical original (never leaves the browser)
+ * - chats:      stable corpus id -> local transcript (v4)
+ * - corpora:    stable corpus id -> named, independently restorable workspace (v5)
  */
 
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { DocNode, GraphExport, LinkRef } from '../model/types';
 
 export const DB_NAME = 'knowledge-nebula';
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 export interface DocumentRecord {
   hash: string;
@@ -55,6 +57,8 @@ export interface SnapshotRecord {
   docHashes: string[]; // references into documents + embeddings stores
   exportData: GraphExport;
   positions: Record<string, [number, number, number]>;
+  /** Stable workspace id; absent on snapshots created before multi-corpus support. */
+  corpusId?: string;
 }
 
 export interface OriginalFileRecord {
@@ -72,6 +76,37 @@ export interface ChatRecord {
   savedAt: number;
 }
 
+export interface WatchedFileRecord {
+  size: number;
+  lastModified: number;
+  docId: string;
+}
+
+/** A persisted directory source. Handles are structured-cloneable in supporting browsers. */
+export interface WatchedFolderRecord {
+  handle: FileSystemDirectoryHandle;
+  rootName: string;
+  files: Record<string, WatchedFileRecord>;
+  paused: boolean;
+}
+
+/**
+ * Stable workspace identity. `corpusHash` remains the content revision and can
+ * change after every add/remove; the UUID `id` is what names and switches a
+ * corpus without turning every revision into a separate workspace.
+ */
+export interface CorpusRecord {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+  corpusHash: string | null;
+  docHashes: string[];
+  exportData: GraphExport | null;
+  positions: Record<string, [number, number, number]>;
+  watch?: WatchedFolderRecord;
+}
+
 export interface NebulaDB extends DBSchema {
   documents: { key: string; value: DocumentRecord };
   embeddings: { key: string; value: EmbeddingRecord };
@@ -80,6 +115,11 @@ export interface NebulaDB extends DBSchema {
   snapshots: { key: number; value: SnapshotRecord; indexes: { 'by-savedAt': number } };
   originals: { key: string; value: OriginalFileRecord };
   chats: { key: string; value: ChatRecord };
+  corpora: {
+    key: string;
+    value: CorpusRecord;
+    indexes: { 'by-updatedAt': number };
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<NebulaDB>> | null = null;
@@ -124,6 +164,10 @@ export function getDb(): Promise<IDBPDatabase<NebulaDB>> {
       }
       if (oldVersion < 4) {
         db.createObjectStore('chats', { keyPath: 'corpusHash' });
+      }
+      if (oldVersion < 5) {
+        const corpusStore = db.createObjectStore('corpora', { keyPath: 'id' });
+        corpusStore.createIndex('by-updatedAt', 'updatedAt');
       }
     },
     blocked() {

@@ -19,6 +19,7 @@ export interface SnapshotSummary {
   name: string;
   savedAt: number;
   nodeCount: number;
+  corpusId?: string;
 }
 
 function isQuotaExceeded(err: unknown): boolean {
@@ -44,6 +45,11 @@ function cacheUnavailable(err: unknown): void {
         : "This browser blocked local storage — your session won't be saved automatically.",
       'warning',
     );
+}
+
+/** Let persistence extensions reuse the cache layer's one-time degradation UX. */
+export function reportPersistenceUnavailable(err: unknown): void {
+  cacheUnavailable(err);
 }
 
 function nonEmpty(a: Float32Array | null | undefined): Float32Array | null {
@@ -238,7 +244,7 @@ export async function clearAllCaches(): Promise<boolean> {
   try {
     const db = await getDb();
     const tx = db.transaction(
-      ['documents', 'embeddings', 'graphs', 'settings', 'snapshots', 'originals', 'chats'],
+      ['documents', 'embeddings', 'graphs', 'settings', 'snapshots', 'originals', 'chats', 'corpora'],
       'readwrite',
     );
     await Promise.all([
@@ -249,6 +255,7 @@ export async function clearAllCaches(): Promise<boolean> {
       tx.objectStore('snapshots').clear(),
       tx.objectStore('originals').clear(),
       tx.objectStore('chats').clear(),
+      tx.objectStore('corpora').clear(),
       tx.done,
     ]);
     return true;
@@ -269,6 +276,7 @@ export async function saveSnapshot(
   exportData: GraphExport,
   positions: Record<string, [number, number, number]>,
   docHashes: string[],
+  corpusId?: string,
 ): Promise<number | undefined> {
   try {
     const db = await getDb();
@@ -279,6 +287,7 @@ export async function saveSnapshot(
       docHashes,
       exportData,
       positions,
+      corpusId,
     };
     const id = await db.add('snapshots', rec);
     return id;
@@ -299,6 +308,7 @@ export async function listSnapshots(): Promise<SnapshotSummary[]> {
         name: r.name,
         savedAt: r.savedAt,
         nodeCount: r.exportData?.nodes?.length ?? 0,
+        corpusId: r.corpusId,
       }))
       .sort((a, b) => b.savedAt - a.savedAt);
   } catch (err) {

@@ -97,6 +97,8 @@ export default function FilterBar() {
           type="button"
           className={`btn-icon glass-panel${!collapsed ? ' is-active' : ''}`}
           title={collapsed ? 'Show filters' : 'Hide filters'}
+          aria-label={collapsed ? 'Show graph filters' : 'Hide graph filters'}
+          aria-expanded={!collapsed}
           onClick={() => setCollapsed((v) => !v)}
         >
           <IconFunnel />
@@ -162,6 +164,7 @@ export default function FilterBar() {
                 max={10}
                 step={1}
                 value={filter.minDegree}
+                aria-label="Minimum document connections"
                 title={`Showing nodes with ${filter.minDegree}+ connections`}
                 onChange={(e) => setFilter({ minDegree: Number(e.target.value) })}
               />
@@ -183,6 +186,7 @@ export default function FilterBar() {
                 max={1}
                 step={0.05}
                 value={filter.minEdgeWeight}
+                aria-label="Minimum link strength"
                 title={`Hiding links weaker than ${Math.round(filter.minEdgeWeight * 100)}%`}
                 onChange={(e) => setFilter({ minEdgeWeight: Number(e.target.value) })}
               />

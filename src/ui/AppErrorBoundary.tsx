@@ -1,5 +1,4 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { exportGraphJSON } from '../persistence/exportImport';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 
@@ -61,7 +60,9 @@ export default class AppErrorBoundary extends Component<
                   : 'No graph is loaded to export'
               }
               onClick={() => {
-                void exportGraphJSON();
+                void import('../persistence/exportImport')
+                  .then(({ exportGraphJSON }) => exportGraphJSON())
+                  .catch((error) => console.warn('emergency graph export failed', error));
               }}
             >
               Export your graph (JSON)

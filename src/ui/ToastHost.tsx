@@ -56,10 +56,8 @@ function ToastRow({ toast }: { toast: Toast }) {
 
 export default function ToastHost() {
   const toasts = useUiStore((s) => s.toasts);
-  if (toasts.length === 0) return null;
-
   return (
-    <div className="toast-host" aria-live="polite">
+    <div className="toast-host" aria-live="polite" aria-atomic="false">
       {toasts.map((t) => (
         <ToastRow key={t.id} toast={t} />
       ))}

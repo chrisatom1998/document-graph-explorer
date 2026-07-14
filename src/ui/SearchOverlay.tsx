@@ -28,6 +28,7 @@ export default function SearchOverlay() {
   const [searched, setSearched] = useState(false);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestSeq = useRef(0);
 
@@ -108,6 +109,20 @@ export default function SearchOverlay() {
     setSearchResults(null);
   };
 
+  const handleDialogKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'Tab') return;
+    const input = inputRef.current;
+    const closeButton = closeButtonRef.current;
+    if (!input || !closeButton) return;
+    if (e.shiftKey && document.activeElement === input) {
+      e.preventDefault();
+      closeButton.focus();
+    } else if (!e.shiftKey && document.activeElement === closeButton) {
+      e.preventDefault();
+      input.focus();
+    }
+  };
+
   const browsing = query.trim().length === 0;
   const displayedResults: ResultRow[] = browsing
     ? nodes
@@ -125,6 +140,7 @@ export default function SearchOverlay() {
         aria-modal="true"
         aria-label="Search documents"
         onMouseDown={(e) => e.stopPropagation()}
+        onKeyDown={handleDialogKeyDown}
       >
         <div className="search-overlay__input-row">
           <input
@@ -143,7 +159,16 @@ export default function SearchOverlay() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <span className="kbd">Esc</span>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            className="icon-btn-close"
+            title="Close search"
+            aria-label="Close search"
+            onClick={closeAndClear}
+          >
+            ×
+          </button>
         </div>
 
         <div

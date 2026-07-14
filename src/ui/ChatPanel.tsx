@@ -21,22 +21,6 @@ function formatTime(ts: number): string {
   });
 }
 
-/** Chat bubble SVG icon. */
-function IconChat() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-    </svg>
-  );
-}
-
 /** Square "stop" icon shown on the send button while a reply is streaming. */
 function IconStop() {
   return (
@@ -145,6 +129,7 @@ export default function ChatPanel() {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const wasStreamingRef = useRef(false);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -157,6 +142,13 @@ export default function ChatPanel() {
       requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (wasStreamingRef.current && !isStreaming && isOpen) {
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+    wasStreamingRef.current = isStreaming;
+  }, [isOpen, isStreaming]);
 
   const handleSend = () => {
     const q = input.trim();
@@ -190,25 +182,10 @@ export default function ChatPanel() {
     URL.revokeObjectURL(url);
   };
 
-  if (!hasNodes) return null;
-
-  // Bubble only
-  if (!isOpen) {
-    return (
-      <button
-        type="button"
-        className="chat-bubble-btn"
-        onClick={() => setIsOpen(true)}
-        title="Chat with your documents"
-      >
-        <IconChat />
-        <span className="chat-bubble-btn__badge">AI</span>
-      </button>
-    );
-  }
+  if (!hasNodes || !isOpen) return null;
 
   return (
-    <div className="chat-panel glass-panel">
+    <div className="chat-panel glass-panel" role="dialog" aria-label="Chat with your documents">
       {/* Header */}
       <div className="chat-panel__header">
         <div className="chat-panel__title-row">
@@ -274,6 +251,7 @@ export default function ChatPanel() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Ask a question…"
+          aria-label="Ask a question about your documents"
           title="Ask a question about your documents. Enter to send, Shift+Enter for a new line."
           rows={1}
         />
@@ -283,6 +261,7 @@ export default function ChatPanel() {
           onClick={isStreaming ? () => cancelChat() : handleSend}
           disabled={!isStreaming && input.trim() === ''}
           title={isStreaming ? 'Stop' : 'Send'}
+          aria-label={isStreaming ? 'Stop generating answer' : 'Send message'}
         >
           {isStreaming ? (
             <IconStop />

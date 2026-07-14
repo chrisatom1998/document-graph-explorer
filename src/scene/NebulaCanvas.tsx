@@ -40,6 +40,8 @@ export default function NebulaCanvas() {
   return (
     <Canvas
       className="nebula-canvas"
+      role="application"
+      aria-label="Interactive document graph. Drag to orbit, use toolbar buttons for search, filtering, path finding and view controls."
       style={{ position: 'fixed', inset: 0 }}
       dpr={[1, 2]}
       camera={{ fov: 55, near: 0.1, far: 4000, position: [0, 0, 160] }}

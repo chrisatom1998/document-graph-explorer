@@ -6,6 +6,15 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+- Local English OCR fallback for scanned PDFs using bundled Tesseract.js assets, with progress reporting and a 20-page safety cap.
+- Browser folder watching for supported File System Access environments, including automatic add/change/remove reconciliation, pause/reconnect controls, and focus-triggered rescans while the app is open.
+- Backend-free shareable graph URLs with explicit metadata disclosure, bounded fragment decoding, sanitized identifiers, short source excerpts, and exclusion of original bytes, full document text, local paths, embeddings, and file handles.
+- Named multi-corpus workspaces with independent persisted graphs, layouts, document references, and optional watched-folder state.
+
+### Changed
+- Kept corpus and folder-management code outside the eager app entry, bounded watched-folder metadata reads, and avoided repeatedly loading every saved graph just to refresh corpus summaries.
+
 ## [1.1.4] - 2026-07-12
 
 ### Fixed

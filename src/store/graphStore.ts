@@ -5,6 +5,7 @@ import type {
   Edge,
   FileStatus,
   PipelinePhase,
+  PipelineTaskProgress,
 } from '../model/types';
 
 interface GraphState {
@@ -15,7 +16,7 @@ interface GraphState {
   phase: PipelinePhase;
   fileStatuses: Record<string, FileStatus>;
   ignoredFiles: { name: string; reason: string }[];
-  modelProgress: { loaded: number; total: number; note: string } | null;
+  modelProgress: PipelineTaskProgress | null;
   /** Live enrichment progress (Gemini passes); null outside 'enriching'. */
   enrichProgress: { done: number; total: number; note: string } | null;
   corpusHash: string | null;

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -50,6 +50,21 @@ export default function SidePanel() {
   const localClusterNames = useGraphStore((s) => s.localClusterNames);
 
   const node = selectedId !== null ? nodes[nodeIndex[selectedId]] : undefined;
+  const nodeId = node?.id;
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!nodeId) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+    return () => {
+      if (previouslyFocused && previouslyFocused !== document.body && previouslyFocused.isConnected) {
+        previouslyFocused.focus();
+      } else {
+        document.querySelector<HTMLElement>('.graph-navigator__list')?.focus();
+      }
+    };
+  }, [nodeId]);
 
   // Two-step inline confirm for the destructive Remove action. Reset whenever
   // the selection changes so an armed confirm never lingers onto a different
@@ -166,7 +181,7 @@ export default function SidePanel() {
 
   return (
     <div className="side-panel-layer">
-      <div className="side-panel glass-panel">
+      <div className="side-panel glass-panel" role="dialog" aria-label={node.title}>
         <div className="side-panel__header">
           <h2 className="side-panel__title">{node.title}</h2>
           {node.kind === 'document' && (
@@ -227,6 +242,7 @@ export default function SidePanel() {
             </div>
           )}
           <button
+            ref={closeButtonRef}
             type="button"
             className="icon-btn-close"
             title="Back to graph"

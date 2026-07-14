@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -9,7 +11,9 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { layoutSetDims } from '../layout/layoutBridge';
 import { openFilePicker } from '../ingest/DropZone';
-import ExportImportMenu from './ExportImportMenu';
+
+const ExportImportMenu = lazy(() => import('./ExportImportMenu'));
+const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
 
 /* ---------------------------------------------------------------------- */
 /* Inline icon set — no icon library per project rules. Each is a plain   */
@@ -119,6 +123,23 @@ function IconGear() {
     >
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+function IconHelp() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="9" cy="9" r="7" />
+      <path d="M6.9 6.8A2.2 2.2 0 0 1 9 5.4c1.3 0 2.3.8 2.3 2 0 1.7-2.1 1.8-2.1 3.2" />
+      <path d="M9 13.2h.01" />
     </svg>
   );
 }
@@ -258,6 +279,7 @@ export default function Toolbar() {
   const searchOpen = useUiStore((s) => s.searchOpen);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
   const snapshotsOpen = useUiStore((s) => s.snapshotsOpen);
+  const helpOpen = useUiStore((s) => s.helpOpen);
   const setDims = useUiStore((s) => s.setDims);
   const setTopicNodes = useUiStore((s) => s.setTopicNodes);
   const insightsOpen = useUiStore((s) => s.insightsOpen);
@@ -267,6 +289,9 @@ export default function Toolbar() {
   const setSearchResults = useUiStore((s) => s.setSearchResults);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const setSnapshotsOpen = useUiStore((s) => s.setSnapshotsOpen);
+  const setHelpOpen = useUiStore((s) => s.setHelpOpen);
+  const clusterCollapsed = useUiStore((s) => s.clusterCollapsed);
+  const setClusterCollapsed = useUiStore((s) => s.setClusterCollapsed);
   const sendCamera = useUiStore((s) => s.sendCamera);
 
   // Which popover menu (if any) is open. Only one at a time.
@@ -339,8 +364,8 @@ export default function Toolbar() {
   // (e.g. Cmd+K search while the View menu is up), close the menu so its
   // capture-phase Escape handler can't swallow the modal's own Escape.
   useEffect(() => {
-    if (searchOpen || showMeOpen || settingsOpen || snapshotsOpen) setOpenMenu(null);
-  }, [searchOpen, showMeOpen, settingsOpen, snapshotsOpen]);
+    if (searchOpen || showMeOpen || settingsOpen || snapshotsOpen || helpOpen) setOpenMenu(null);
+  }, [searchOpen, showMeOpen, settingsOpen, snapshotsOpen, helpOpen]);
 
   if (!hasNodes) return null;
 
@@ -386,10 +411,15 @@ export default function Toolbar() {
         <IconGrip />
       </div>
 
+      <Suspense fallback={null}><CorpusSwitcher /></Suspense>
+
+      <div className="toolbar__divider" />
+
       <button
         type="button"
         className="btn-icon"
         title="Search (⌘K)"
+        aria-label="Search documents"
         onClick={() => {
           setShowMeOpen(false);
           setSearchResults(null);
@@ -403,6 +433,7 @@ export default function Toolbar() {
         type="button"
         className={`btn-icon${showMeOpen ? ' is-active' : ''}`}
         title="Show me a topic"
+        aria-label="Show me a topic"
         onClick={() => {
           const nextShowMeOpen = !showMeOpen;
           setSearchOpen(false);
@@ -417,6 +448,7 @@ export default function Toolbar() {
         type="button"
         className="btn-icon"
         title="Fit view"
+        aria-label="Fit the whole graph in view"
         onClick={() => sendCamera('fitAll')}
       >
         <IconFit />
@@ -429,11 +461,12 @@ export default function Toolbar() {
           // Lit when the menu is open OR any view mode is active, so the
           // collapsed toolbar still signals "something is on" at a glance.
           className={`btn-icon${
-            openMenu === 'view' || dims === 2 || topicNodesEnabled
+            openMenu === 'view' || dims === 2 || topicNodesEnabled || clusterCollapsed
               ? ' is-active'
               : ''
           }`}
           title="View options"
+          aria-label="View options"
           aria-haspopup="true"
           aria-expanded={openMenu === 'view'}
           onClick={(e) => {
@@ -465,6 +498,16 @@ export default function Toolbar() {
               <IconOctahedron />
               <span>Topic nodes</span>
             </button>
+            <button
+              type="button"
+              className={`toolbar__menu-item${clusterCollapsed ? ' is-active' : ''}`}
+              title={clusterCollapsed ? 'Show document nodes' : 'Collapse clusters'}
+              aria-pressed={clusterCollapsed}
+              onClick={() => setClusterCollapsed(!clusterCollapsed)}
+            >
+              <IconOctahedron />
+              <span>Collapse clusters</span>
+            </button>
           </div>
         )}
       </div>
@@ -473,6 +516,7 @@ export default function Toolbar() {
         type="button"
         className={`btn-icon${pathMode ? ' is-active' : ''}`}
         title={pathMode ? 'Exit path mode' : 'How are these connected? (pick two nodes)'}
+        aria-label={pathMode ? 'Exit path mode' : 'Find a path between two nodes'}
         onClick={() => {
           // Both directions clear the shared highlight channel: exiting drops
           // the path highlight, entering drops any search/insights highlight
@@ -488,6 +532,7 @@ export default function Toolbar() {
         type="button"
         className={`btn-icon${insightsOpen ? ' is-active' : ''}`}
         title="Corpus insights"
+        aria-label="Corpus insights"
         onClick={() => setInsightsOpen(!insightsOpen)}
       >
         <IconBulb />
@@ -498,6 +543,7 @@ export default function Toolbar() {
           type="button"
           className={`btn-icon${openMenu === 'data' ? ' is-active' : ''}`}
           title="Data options"
+          aria-label="Data options"
           aria-haspopup="true"
           aria-expanded={openMenu === 'data'}
           onClick={(e) => {
@@ -508,10 +554,12 @@ export default function Toolbar() {
           <IconData />
         </button>
         {openMenu === 'data' && (
-          <ExportImportMenu
-            onClose={() => setOpenMenu(null)}
-            onDialogOpenChange={setDataDialogOpen}
-          />
+          <Suspense fallback={null}>
+            <ExportImportMenu
+              onClose={() => setOpenMenu(null)}
+              onDialogOpenChange={setDataDialogOpen}
+            />
+          </Suspense>
         )}
       </div>
 
@@ -522,6 +570,7 @@ export default function Toolbar() {
         type="button"
         className="btn-icon"
         title="Saved snapshots"
+        aria-label="Saved snapshots"
         onClick={() => setSnapshotsOpen(true)}
       >
         <IconHistory />
@@ -531,6 +580,7 @@ export default function Toolbar() {
         type="button"
         className="btn-icon"
         title="Settings"
+        aria-label="Settings"
         onClick={() => setSettingsOpen(true)}
       >
         <IconGear />
@@ -539,7 +589,18 @@ export default function Toolbar() {
       <button
         type="button"
         className="btn-icon"
+        title="Help and graph legend"
+        aria-label="Help and graph legend"
+        onClick={() => setHelpOpen(true)}
+      >
+        <IconHelp />
+      </button>
+
+      <button
+        type="button"
+        className="btn-icon"
         title="Add files"
+        aria-label="Add files"
         onClick={() => {
           openFilePicker();
         }}

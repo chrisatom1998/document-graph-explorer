@@ -14,11 +14,11 @@ import {
   layoutSetLinks,
   onLayoutSettled,
 } from '../layout/layoutBridge';
-import type { DocNode, GraphExport } from '../model/types';
+import type { GraphExport } from '../model/types';
 import { computeLocalClusterNames } from '../graph/clusterNaming';
-import { enqueueRun } from '../pipeline/coordinator';
-import { getNodePosition } from '../scene/positionBuffer';
+import { enqueueRun } from '../pipeline/runQueue';
 import { useGraphStore } from '../store/graphStore';
+import { useCorpusStore } from '../store/corpusStore';
 import {
   chunkStore,
   docLinksStore,
@@ -30,19 +30,27 @@ import { useUiStore } from '../store/uiStore';
 import {
   deleteDocsFromCache,
   deleteGraphFromCache,
-  getSetting,
   loadSnapshot,
-  lookupGraphCache,
+  reportPersistenceUnavailable,
   saveDocsToCache,
-  saveGraphToCache,
   saveSnapshot,
-  setSetting,
   validChunkVectors,
   validDocVector,
 } from './cache';
 import { getDb } from './db';
-import { toGraphExport } from './exportImport';
+import {
+  activateCorpus,
+  getCorpusRecord,
+  initializeCorpusRepository,
+  markActiveCorpusEmpty,
+  unreferencedDocumentIds,
+} from './corpusRepository';
+import { toGraphExport } from './graphExport';
+import { collectPositions, saveGraphRecord, saveSession } from './sessionSave';
 import { sanitizeGraphExport } from './validateImport';
+import { deleteOriginals } from './originals';
+
+export { saveSession } from './sessionSave';
 
 const FULL_SAVE_DEBOUNCE_MS = 1500;
 const POSITION_SAVE_DEBOUNCE_MS = 2500;
@@ -52,24 +60,6 @@ let initialized = false;
 let suppressAutoSave = false; // restoring is not a change worth re-saving
 let fullSaveTimer: ReturnType<typeof setTimeout> | null = null;
 let positionSaveTimer: ReturnType<typeof setTimeout> | null = null;
-
-function collectPositions(nodes: DocNode[]): Record<string, [number, number, number]> {
-  const positions: Record<string, [number, number, number]> = {};
-  for (const n of nodes) {
-    const p = getNodePosition(n.id);
-    if (p) positions[n.id] = p;
-  }
-  return positions;
-}
-
-/** Refresh only the graphs record (positions + current graph snapshot). */
-async function saveGraphRecord(): Promise<void> {
-  const s = useGraphStore.getState();
-  if (s.phase !== 'ready' || !s.corpusHash || s.nodes.length === 0) return;
-  const positions = collectPositions(s.nodes);
-  if (Object.keys(positions).length === 0) return;
-  await saveGraphToCache(s.corpusHash, toGraphExport(false), positions);
-}
 
 function handleLayoutSettled(): void {
   if (positionSaveTimer !== null) clearTimeout(positionSaveTimer);
@@ -152,40 +142,6 @@ export function initPersistence(): void {
     }
   });
 }
-
-export async function saveSession(): Promise<void> {
-  const s = useGraphStore.getState();
-  if (!s.corpusHash || s.nodes.length === 0) return;
-  if (s.phase !== 'ready') return; // never persist a half-built graph
-  const corpusHash = s.corpusHash;
-
-  // Session cache never embeds vectors in exportData — they live natively
-  // (and much faster) in the embeddings store.
-  const exportData = toGraphExport(false);
-  const positions = collectPositions(s.nodes);
-
-  const docs = s.nodes
-    .filter((n) => n.kind === 'document')
-    .map((node) => {
-      const chunks = chunkStore.get(node.id);
-      return {
-        node,
-        text: textStore.get(node.id) ?? '',
-        chunkTexts: chunks?.texts ?? [],
-        chunkVectors: chunks?.vectors ?? null,
-        docVector: docVectorStore.get(node.id) ?? null,
-        mdLinkTargets: mdLinkTargetsStore.get(node.id) ?? [],
-        docLinks: docLinksStore.get(node.id) ?? [],
-      };
-    });
-
-  await Promise.all([
-    saveGraphToCache(corpusHash, exportData, positions),
-    saveDocsToCache(docs),
-  ]);
-  await setSetting('lastCorpusHash', corpusHash);
-}
-
 // ---------------------------------------------------------------------------
 // Shared hydration logic (used by both session restore and snapshot restore)
 // ---------------------------------------------------------------------------
@@ -201,7 +157,7 @@ export async function saveSession(): Promise<void> {
  * still crash the layout worker's link initializer regardless of the data's
  * origin.
  */
-async function hydrateFromRecord(
+export async function hydrateFromRecord(
   rawExportData: GraphExport,
   positions: Record<string, [number, number, number]>,
   corpusHash: string | null,
@@ -291,7 +247,7 @@ async function hydrateFromRecord(
   if (needsEmbeddingRebuild) {
     useUiStore.getState().pushToast('Search index updated — rebuilding local embeddings.', 'info');
     // Dynamic import preserves the existing persistence/coordinator cycle break.
-    void import('../pipeline/coordinator')
+    void import('../pipeline/coordinatorLazy')
       .then((m) => m.rebuildEmbeddings())
       .catch((err) => console.error('embedding rebuild after restore failed', err));
   }
@@ -305,11 +261,15 @@ async function hydrateFromRecord(
  * per-record awaits — to hit the <3s acceptance target.
  */
 export async function restoreSession(): Promise<boolean> {
-  const lastCorpusHash = await getSetting<string>('lastCorpusHash');
-  if (!lastCorpusHash) return false; // no prior session — first visit, not a failure
-
   try {
-    const cached = await lookupGraphCache(lastCorpusHash);
+    const activeId = await initializeCorpusRepository();
+    const activeCorpus = await getCorpusRecord(activeId);
+    const lastCorpusHash = activeCorpus?.corpusHash;
+    if (!lastCorpusHash) return false; // no prior session — first visit, not a failure
+
+    const cached = activeCorpus?.exportData
+      ? { exportData: activeCorpus.exportData, positions: activeCorpus.positions ?? {} }
+      : undefined;
     if (!cached) {
       useUiStore
         .getState()
@@ -320,10 +280,12 @@ export async function restoreSession(): Promise<boolean> {
       const docIds = cached.exportData.nodes
         .filter((n) => n.kind === 'document')
         .map((n) => n.id);
+      await markActiveCorpusEmpty();
+      const purge = await unreferencedDocumentIds(docIds);
       await Promise.all([
-        deleteDocsFromCache(docIds),
+        deleteDocsFromCache(purge),
+        deleteOriginals(purge),
         deleteGraphFromCache(lastCorpusHash),
-        setSetting('lastCorpusHash', ''),
       ]);
       return false;
     }
@@ -336,9 +298,8 @@ export async function restoreSession(): Promise<boolean> {
     return restored;
   } catch (err) {
     console.warn('[knowledge-nebula] session restore failed', err);
-    useUiStore
-      .getState()
-      .pushToast("Your last session couldn't be restored — starting fresh.", 'warning');
+    reportPersistenceUnavailable(err);
+    useCorpusStore.getState().setLocalState([], null);
     return false;
   }
 }
@@ -379,7 +340,14 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
     });
   await saveDocsToCache(docs);
 
-  return saveSnapshot(name, corpusHash, exportData, positions, docHashes);
+  return saveSnapshot(
+    name,
+    corpusHash,
+    exportData,
+    positions,
+    docHashes,
+    useCorpusStore.getState().activeCorpusId ?? undefined,
+  );
 }
 
 /**
@@ -392,23 +360,38 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
  * all three (CRITICAL: this is the same hazard importGraphJSONFile guards
  * against in exportImport.ts).
  */
-export function restoreSnapshotById(id: number): Promise<boolean> {
+export async function restoreSnapshotById(id: number): Promise<boolean> {
+  const { suspendFolderWatcher } = await import('../ingest/folderWatcher');
+  await suspendFolderWatcher();
   return enqueueRun(() => doRestoreSnapshotById(id));
 }
 
 async function doRestoreSnapshotById(id: number): Promise<boolean> {
+  const { bindFolderWatcherToActiveCorpus } = await import('../ingest/folderWatcher');
   try {
     const rec = await loadSnapshot(id);
     if (!rec) return false;
 
-    // Import resetCorpus dynamically to avoid circular dependency
-    const { resetCorpus } = await import('../pipeline/coordinator');
+    // Preserve the outgoing head before moving to the snapshot's owning
+    // corpus. Legacy snapshots without an owner deliberately restore into the
+    // current workspace, matching their pre-multi-corpus behavior.
+    if (useGraphStore.getState().phase === 'ready') await saveSession();
+    if (rec.corpusId && await getCorpusRecord(rec.corpusId)) {
+      await activateCorpus(rec.corpusId);
+    }
+
+    // Import resetCorpus dynamically to avoid circular dependency. The lazy
+    // facade keeps coordinator itself from becoming a mixed import target.
+    const { resetCorpus } = await import('../pipeline/coordinatorLazy');
     resetCorpus();
 
-    return await hydrateFromRecord(rec.exportData, rec.positions ?? {}, rec.corpusHash);
+    const restored = await hydrateFromRecord(rec.exportData, rec.positions ?? {}, rec.corpusHash);
+    return restored;
   } catch (err) {
     console.warn('[knowledge-nebula] snapshot restore failed', err);
     return false;
+  } finally {
+    await bindFolderWatcherToActiveCorpus().catch(() => undefined);
   }
 }
 

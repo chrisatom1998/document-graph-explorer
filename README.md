@@ -15,6 +15,13 @@ Then open the printed local URL and drag documents onto the window — or click 
 
 **New here? Read the [User Guide](docs/user-guide.md)** — why the tool is valuable, what it can do, and a walkthrough of every feature.
 
+## Feature highlights
+
+- **Scanned-PDF OCR:** when a PDF has too little embedded text, the app falls back to the bundled Tesseract.js runtime. OCR is local, uses the bundled English model, and is limited to the first 20 pages of each PDF.
+- **Live folder sources:** connect a folder from the corpus switcher to add changed files and remove deleted files automatically. This requires a browser with the File System Access API and runs only while the app is open; the app checks about every eight seconds while visible and again when the tab regains focus. Drag-and-drop remains available everywhere as a one-time import.
+- **Shareable graph URLs:** **Data → Copy shareable URL** creates a backend-free URL fragment containing a portable graph view. The link includes titles, short source excerpts (up to 200 characters), topics, entities, keywords, warnings, cluster labels, and connection evidence, but excludes full document text and original file bytes, local paths, embeddings, file handles, and settings. Large graphs that exceed browser-safe URL limits should be shared with JSON export instead.
+- **Multiple corpora:** create, rename, switch, and delete independent named workspaces from the corpus switcher. Each corpus keeps its own graph, layout, document references, and optional watched folder in browser-local IndexedDB.
+
 ## Scripts
 
 | Script | What it does |
@@ -36,6 +43,12 @@ Then open the printed local URL and drag documents onto the window — or click 
 | `npm run dist:mac` | `Knowledge Nebula-<version>-arm64.dmg` and `.zip` under `release/` | Distributable macOS installer images (see [Distributing the app](#distributing-the-app-dmg)) |
 
 See [SECURITY.md](SECURITY.md) for the full privacy guarantee and how to verify it.
+
+The production shell lazy-loads the 3D renderer, parsing pipeline, chat, document
+viewers, settings, and analytics panels. `npm run build` enforces an 80 kB
+uncompressed entry limit and a 280 kB total eager-JavaScript limit; the heavier
+scene and ingestion chunks must remain demand-loaded. Run `npm run check:bundle`
+after producing both normal and air-gapped builds to check them together.
 
 ## Desktop app
 
@@ -92,11 +105,11 @@ Ingestion is a pipeline that runs off the main thread:
 
 **parse → boilerplate strip → chunk → tokenize → TF-IDF → embeddings → similarity links → Louvain clustering → topic synthesis**
 
-- **Parsing** ([src/pipeline/parsers/](src/pipeline/parsers/)) handles Markdown, HTML, plain text, PDF (including link annotations), and Office formats (DOCX, PPTX, XLSX).
+- **Parsing** ([src/pipeline/parsers/](src/pipeline/parsers/)) handles Markdown, HTML, plain text, PDF (including link annotations and local OCR fallback for scanned pages), and Office formats (DOCX, PPTX, XLSX).
 - **Embeddings** use a self-hosted `bge-small-en-v1.5` model in [public/models/](public/models/) via transformers.js — no third-party API.
 - **Optional Gemini AI** routes structured enrichment to `gemini-3.1-flash-lite` and document Q&A/chat to `gemini-3.5-flash`; the app controls this policy while Settings requires the user's API key.
 - **The 3D scene** ([src/scene/](src/scene/)) is React Three Fiber over Three.js, with instanced nodes/edges, a force-directed layout worker, and a cluster-collapse view for large graphs.
-- **State** lives in Zustand stores ([src/store/](src/store/)); the computed graph persists to IndexedDB so you don't re-parse every session. The toolbar Data menu exposes JSON export/import and PNG scene export through [src/persistence/exportImport.ts](src/persistence/exportImport.ts).
+- **State** lives in Zustand stores ([src/store/](src/store/)); named corpora, computed graphs, layouts, and watched-folder metadata persist to IndexedDB so you can switch workspaces without re-parsing every session. The toolbar Data menu exposes sanitized share URLs, JSON export/import, and PNG scene export.
 
 For the full design, see [knowledge-nebula-spec.md](knowledge-nebula-spec.md) and [docs/](docs/).
 
