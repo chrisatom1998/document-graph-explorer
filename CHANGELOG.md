@@ -6,6 +6,8 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.5] - 2026-07-14
+
 ### Added
 - Local English OCR fallback for scanned PDFs using bundled Tesseract.js assets, with progress reporting and a 20-page safety cap.
 - Browser folder watching for supported File System Access environments, including automatic add/change/remove reconciliation, pause/reconnect controls, and focus-triggered rescans while the app is open.
