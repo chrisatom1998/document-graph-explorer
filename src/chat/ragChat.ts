@@ -24,6 +24,9 @@ import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatSt
 import { retrieveCorpus } from '../search/retrieval';
 import { formatExtractiveAnswer } from './extractiveAnswer';
 import { streamOpenRouterChat } from './openRouterClient';
+import { clearActiveChatAbort, setActiveChatAbort } from './chatCancellation';
+
+export { cancelChat } from './chatCancellation';
 
 const RAG_TOP_K = 8; // max chunks to include as context
 const RAG_MIN_SCORE = 0.3; // cosine floor for relevance
@@ -41,13 +44,6 @@ function sleep(ms: number): Promise<void> {
 // ---------------------------------------------------------------------------
 // Cancellation: one in-flight chat request at a time
 // ---------------------------------------------------------------------------
-
-let activeAbort: AbortController | null = null;
-
-/** Abort the in-flight chat request, if any. Safe to call when idle. */
-export function cancelChat(): void {
-  activeAbort?.abort();
-}
 
 function isAbortLike(err: unknown): boolean {
   // A user-triggered cancelChat() (AbortError) and the request timeout
@@ -237,7 +233,7 @@ export async function sendChatMessage(question: string): Promise<void> {
   const assistantId = chat.addMessage({ role: 'assistant', text: 'Searching documents…' });
 
   const controller = new AbortController();
-  activeAbort = controller;
+  setActiveChatAbort(controller);
   let accumulated = '';
   let sources: ChatSource[] | undefined;
   // Manual timeout instead of AbortSignal.any([controller, AbortSignal.timeout]):
@@ -443,6 +439,6 @@ export async function sendChatMessage(question: string): Promise<void> {
   } finally {
     clearTimeout(timeoutTimer);
     useChatStore.getState().setIsStreaming(false);
-    activeAbort = null;
+    clearActiveChatAbort(controller);
   }
 }

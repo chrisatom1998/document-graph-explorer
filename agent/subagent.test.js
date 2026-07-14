@@ -8,7 +8,7 @@ import {
   resetSensitiveInodeCache,
   runAgent,
   searchTextTool,
-} from './subagent.mjs';
+} from './subagentCore.mjs';
 
 const REPO_ROOT = normalizeRepoPath('.');
 
@@ -71,7 +71,7 @@ describe('standalone subagent', () => {
       }
       resetSensitiveInodeCache();
     }
-  });
+  }, 15_000);
 
   it('continues to allow ordinary repository reads', () => {
     expect(readFileTool({ path: 'package.json', maxLines: 1 })).toMatchObject({

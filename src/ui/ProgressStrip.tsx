@@ -92,6 +92,20 @@ export default function ProgressStrip() {
       : enriching && enrichProgress?.note
         ? `Enriching — ${enrichProgress.note}`
         : PHASE_LABEL[phase] ?? 'Working…';
+  const taskProgressLabel =
+    modelProgress?.kind === 'ocr'
+      ? modelProgress.note
+      : modelProgress
+        ? `Loading embedding model — ${bytesToMB(modelProgress.loaded)} of ${bytesToMB(modelProgress.total)} MB… (first time only)`
+        : '';
+  const taskProgressValueText =
+    modelProgress?.kind === 'ocr'
+      ? `${modelProgress.loaded} of ${modelProgress.total} pages`
+      : modelProgress
+        ? `${bytesToMB(modelProgress.loaded)} of ${bytesToMB(modelProgress.total)} MB`
+        : '';
+  const taskProgressAriaLabel =
+    modelProgress?.kind === 'ocr' ? 'Recognizing scanned PDF text' : 'Loading embedding model';
 
   return (
     <div className="progress-strip-layer">
@@ -136,18 +150,15 @@ export default function ProgressStrip() {
 
         {modelProgress && (
           <div className="model-progress">
-            <span className="model-progress__label">
-              Loading embedding model — {bytesToMB(modelProgress.loaded)} of{' '}
-              {bytesToMB(modelProgress.total)} MB… (first time only)
-            </span>
+            <span className="model-progress__label">{taskProgressLabel}</span>
             <div
               className="model-progress__bar-track"
               role="progressbar"
-              aria-label="Loading embedding model"
+              aria-label={taskProgressAriaLabel}
               aria-valuemin={0}
               aria-valuemax={modelProgress.total}
               aria-valuenow={modelProgress.loaded}
-              aria-valuetext={`${bytesToMB(modelProgress.loaded)} of ${bytesToMB(modelProgress.total)} MB`}
+              aria-valuetext={taskProgressValueText}
             >
               <div
                 className="model-progress__bar-fill"

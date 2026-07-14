@@ -62,6 +62,7 @@ interface UiState {
   settingsOpen: boolean;
   insightsOpen: boolean;
   snapshotsOpen: boolean;
+  helpOpen: boolean;
   toasts: Toast[];
   lastError: LastError | null;
   /** "How are these connected?" mode: node clicks pick endpoints instead of selecting. */
@@ -84,6 +85,7 @@ interface UiState {
   setSettingsOpen: (v: boolean) => void;
   setInsightsOpen: (v: boolean) => void;
   setSnapshotsOpen: (v: boolean) => void;
+  setHelpOpen: (v: boolean) => void;
   pushToast: (message: string, kind?: ToastKind, action?: ToastAction) => void;
   dismissToast: (id: number) => void;
   setLastError: (error: LastError | null) => void;
@@ -112,6 +114,7 @@ export const useUiStore = create<UiState>((set) => ({
   settingsOpen: false,
   insightsOpen: false,
   snapshotsOpen: false,
+  helpOpen: false,
   toasts: [],
   lastError: null,
   pathMode: false,
@@ -137,6 +140,7 @@ export const useUiStore = create<UiState>((set) => ({
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setInsightsOpen: (insightsOpen) => set({ insightsOpen }),
   setSnapshotsOpen: (snapshotsOpen) => set({ snapshotsOpen }),
+  setHelpOpen: (helpOpen) => set({ helpOpen }),
   pushToast: (message, kind = 'error', action) =>
     set((s) => ({ toasts: [...s.toasts, { id: nextToastId++, message, kind, action }] })),
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),

@@ -14,7 +14,7 @@ describe('ProgressStrip accessibility', () => {
         first: { fileId: 'first', name: 'first.md', stage: 'placed' },
         second: { fileId: 'second', name: 'second.md', stage: 'embedding' },
       },
-      modelProgress: { loaded: 5, total: 10, note: '' },
+      modelProgress: { kind: 'embedding-model', loaded: 5, total: 10, note: '' },
     });
   });
 
@@ -28,5 +28,23 @@ describe('ProgressStrip accessibility', () => {
       .toHaveAttribute('aria-valuetext', '1 of 2');
     expect(screen.getByRole('progressbar', { name: 'Loading embedding model' }))
       .toHaveAttribute('aria-valuetext', '0.0 of 0.0 MB');
+  });
+
+  it('announces OCR progress as pages instead of model bytes', () => {
+    useGraphStore.setState({
+      phase: 'parsing',
+      modelProgress: {
+        kind: 'ocr',
+        loaded: 2,
+        total: 7,
+        note: 'OCR scan.pdf — page 2 of 7',
+      },
+    });
+
+    render(<ProgressStrip />);
+
+    expect(screen.getByText('OCR scan.pdf — page 2 of 7')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar', { name: 'Recognizing scanned PDF text' }))
+      .toHaveAttribute('aria-valuetext', '2 of 7 pages');
   });
 });

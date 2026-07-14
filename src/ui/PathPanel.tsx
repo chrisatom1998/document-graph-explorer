@@ -104,7 +104,7 @@ export default function PathPanel() {
   }
 
   return (
-    <div className="path-panel glass-panel">
+    <div className="path-panel glass-panel" role="dialog" aria-label="Connection path finder">
       <div className="path-panel__header">
         <h2 className="path-panel__title">How are these connected?</h2>
         <button

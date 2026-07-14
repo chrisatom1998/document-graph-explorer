@@ -7,7 +7,7 @@ vi.mock('./db', () => ({ getDb: getDbMock }));
 import { clearAllCaches } from './cache';
 
 describe('clearAllCaches', () => {
-  it('clears every persistent store, including chat transcripts', async () => {
+  it('clears every persistent store, including chats and the corpus registry', async () => {
     const clears = new Map<string, ReturnType<typeof vi.fn>>();
     const objectStore = vi.fn((name: string) => {
       const clear = vi.fn().mockResolvedValue(undefined);
@@ -19,7 +19,16 @@ describe('clearAllCaches', () => {
 
     await expect(clearAllCaches()).resolves.toBe(true);
     expect(transaction).toHaveBeenCalledWith(
-      ['documents', 'embeddings', 'graphs', 'settings', 'snapshots', 'originals', 'chats'],
+      [
+        'documents',
+        'embeddings',
+        'graphs',
+        'settings',
+        'snapshots',
+        'originals',
+        'chats',
+        'corpora',
+      ],
       'readwrite',
     );
     expect([...clears.keys()]).toEqual([
@@ -30,6 +39,7 @@ describe('clearAllCaches', () => {
       'snapshots',
       'originals',
       'chats',
+      'corpora',
     ]);
     for (const clear of clears.values()) expect(clear).toHaveBeenCalledOnce();
   });

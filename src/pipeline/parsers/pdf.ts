@@ -10,8 +10,10 @@
  */
 
 import * as pdfjs from 'pdfjs-dist';
+import { OCR_MAX_PAGES } from '../../config';
 import type { LinkRef, NodeStatus } from '../../model/types';
 import { cleanFilename } from './txt';
+import { ocrPdfPages, type OcrPageProgress } from './ocr';
 import { labelForRect, type PdfTextSpan } from './pdfLinkLabels';
 import {
   hasUint8ArrayBase64HexSupport,
@@ -90,6 +92,10 @@ export interface PdfParseResult {
   /** Links from the PDF's annotation layer, labelled with the text under each
    * link's rectangle (empty text when nothing matched). */
   links: LinkRef[];
+}
+
+export interface PdfParseOptions {
+  onOcrProgress?: OcrPageProgress;
 }
 
 /** TextItem | TextMarkedContent — the root package doesn't re-export item types. */
@@ -200,7 +206,11 @@ function stripRepeatedLines(pageTexts: string[]): string[] {
   );
 }
 
-export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfParseResult> {
+export async function parsePdf(
+  bytes: ArrayBuffer,
+  name: string,
+  options: PdfParseOptions = {},
+): Promise<PdfParseResult> {
   const fallbackTitle = cleanFilename(name);
   await workerSrcReadyOnce();
   // NOTE: pdf.js transfers the underlying buffer to its worker; callers must
@@ -282,6 +292,28 @@ export async function parsePdf(bytes: ArrayBuffer, name: string): Promise<PdfPar
     text = text.replace(/\n{3,}/g, '\n\n').trim();
 
     if (text.length < MIN_TEXT_CHARS) {
+      // The ArrayBuffer has been transferred to pdf.js by this point, so the
+      // fallback must rasterize from the still-open PDFDocumentProxy before
+      // the loading task is destroyed in `finally`.
+      try {
+        const ocrText = (await ocrPdfPages(doc, OCR_MAX_PAGES, options.onOcrProgress)).trim();
+        if (ocrText.length >= MIN_TEXT_CHARS) {
+          const pageLimitNote =
+            doc.numPages > OCR_MAX_PAGES ? `; first ${OCR_MAX_PAGES} pages only` : '';
+          return {
+            title,
+            text: ocrText,
+            status: 'partial',
+            warning: `Text recognized via OCR (scanned document${pageLimitNote})`,
+            links,
+          };
+        }
+      } catch (err) {
+        // OCR is an optional fallback. Missing assets, unsupported WASM, or a
+        // recognition failure must preserve the parser's existing unreadable
+        // result instead of turning ingestion into a rejected file.
+        console.warn('[knowledge-nebula] scanned-PDF OCR failed', err);
+      }
       return {
         title,
         text,

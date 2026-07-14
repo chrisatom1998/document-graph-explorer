@@ -115,7 +115,7 @@ export default function InsightsPanel() {
 
   return (
     <div className="insights-layer">
-      <div className="insights glass-panel">
+      <div className="insights glass-panel" role="dialog" aria-label="Corpus insights">
         <div className="side-panel__header insights__header">
           <h2 className="side-panel__title">Corpus insights</h2>
           <button

@@ -10,10 +10,10 @@ WORKDIR /app
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
 
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci
+RUN --mount=type=cache,target=/root/.npm --mount=type=cache,target=/app/node_modules npm ci --prefer-offline --no-audit
 
 COPY . .
-RUN npm run build
+RUN --mount=type=cache,target=/app/node_modules npm run build
 
 # nginxinc/nginx-unprivileged:1.27-alpine, digest verified 2026-07-09 via:
 #   docker pull nginxinc/nginx-unprivileged:1.27-alpine && docker inspect --format='{{index .RepoDigests 0}}' nginxinc/nginx-unprivileged:1.27-alpine

@@ -15,16 +15,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { IGNORED_DIRS, MAX_INGEST_FILE_BYTES, MAX_INGEST_TOTAL_BYTES } from '../config';
 import type { IngestFile } from '../model/types';
-import { ingestFiles } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { routeFile } from './fileRouter';
-
-interface NamedFile {
-  file: File;
-  /** relative path for folder drops; undefined for top-level files */
-  path?: string;
-}
+import type { NamedFile } from './localFiles';
 
 // ---------------------------------------------------------------------------
 // directory walking (webkitGetAsEntry API is callback-based; promisify it)
@@ -147,7 +141,10 @@ async function toIngestFiles(named: NamedFile[]): Promise<IngestFile[]> {
 async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
   try {
     const files = await toIngestFiles(named);
-    if (files.length > 0) await ingestFiles(files);
+    if (files.length > 0) {
+      const { ingestFiles } = await import('../pipeline/coordinatorLazy');
+      await ingestFiles(files);
+    }
   } catch (err) {
     console.error('ingestion failed', err);
     useUiStore.getState().pushToast("Something went wrong adding those files — check the console for details.");

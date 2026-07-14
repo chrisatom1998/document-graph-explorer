@@ -55,10 +55,15 @@ import {
   deleteDocsFromCache,
   deleteGraphFromCache,
   lookupDocCache,
+  reportPersistenceUnavailable,
   saveDocsToCache,
-  setSetting,
 } from '../persistence/cache';
 import { deleteOriginals, putOriginalIfMissing } from '../persistence/originals';
+import { saveSession } from '../persistence/sessionSave';
+import {
+  markActiveCorpusEmpty,
+  unreferencedDocumentIds,
+} from '../persistence/corpusRepository';
 import { mimeForFilename } from '../util/fileMime';
 import { computeLocalClusterNames } from '../graph/clusterNaming';
 import { truncateToBytes } from '../util/bytes';
@@ -73,9 +78,11 @@ import {
   textStore,
 } from '../store/runtimeStores';
 import { useChatStore } from '../store/chatStore';
+import { cancelChat } from '../chat/chatCancellation';
 import { useUiStore } from '../store/uiStore';
 import { getPool, type WorkerPool } from '../workers/pool';
 import { stripBoilerplate } from './boilerplate';
+import { documentContentId } from './documentId';
 import { chunkText } from './chunker';
 import { sha256Hex } from './hash';
 import { parsePdf } from './parsers/pdf';
@@ -219,7 +226,12 @@ function wireModelProgress(): void {
   modelProgressWired = true;
   const pool = getPool();
   pool.onModelProgress((p) => {
-    useGraphStore.getState().setModelProgress({ loaded: p.loaded, total: p.total, note: p.note });
+    useGraphStore.getState().setModelProgress({
+      kind: 'embedding-model',
+      loaded: p.loaded,
+      total: p.total,
+      note: p.note,
+    });
   });
   pool.onWorkerCrash(() => {
     useUiStore
@@ -255,15 +267,6 @@ function makeSummary(text: string): string {
 
 function randomSpawn(): [number, number, number] {
   return randomSpherePoint(SPAWN_RADIUS, SPAWN_JITTER);
-}
-
-/** id = SHA-256 over UTF-8(path + '\0') ++ content bytes (spec §6). */
-async function contentId(path: string, bytes: ArrayBuffer): Promise<string> {
-  const pathBytes = new TextEncoder().encode(`${path}\0`);
-  const combined = new Uint8Array(pathBytes.byteLength + bytes.byteLength);
-  combined.set(pathBytes, 0);
-  combined.set(new Uint8Array(bytes), pathBytes.byteLength);
-  return sha256Hex(combined.buffer);
 }
 
 function documentNodes(): DocNode[] {
@@ -311,7 +314,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
   const pending: PendingFile[] = [];
   for (const { file, fileType } of routed) {
     const relPath = file.path ?? file.name;
-    const id = await contentId(relPath, file.bytes);
+    const id = await documentContentId(relPath, file.bytes);
     const original = new Blob([file.bytes], { type: mimeForFilename(file.name) });
     if (seenIds.has(id) || store().nodeIndex[id] !== undefined) {
       // known doc — backfill the original if it predates original retention
@@ -375,7 +378,19 @@ async function runIngest(files: IngestFile[]): Promise<void> {
       // 'analyze' path can't (it only sees text), so carry them across here.
       let pdfLinks: LinkRef[] = [];
       if (p.fileType === 'pdf') {
-        const pdf = await parsePdf(p.file.bytes, p.file.name);
+        const pdf = await parsePdf(p.file.bytes, p.file.name, {
+          onOcrProgress: (completed, total) => {
+            store().setModelProgress({
+              kind: 'ocr',
+              loaded: completed,
+              total,
+              note:
+                completed === 0
+                  ? `Preparing OCR for ${p.file.name}`
+                  : `OCR ${p.file.name} — page ${completed} of ${total}`,
+            });
+          },
+        });
         pdfLinks = pdf.links;
         done = await pool.request<ParseDone>({
           requestId: 0,
@@ -450,6 +465,10 @@ async function runIngest(files: IngestFile[]): Promise<void> {
       store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'placed' });
     });
     const settled = await Promise.allSettled(parseTasks);
+    // OCR calls are serialized but parse tasks are concurrent. Clear only
+    // after every parse task settles so one PDF cannot erase the next queued
+    // PDF's freshly-published progress update.
+    if (store().modelProgress?.kind === 'ocr') store().setModelProgress(null);
     settled.forEach((result, i) => {
       if (result.status !== 'rejected') return;
       const p = misses[i];
@@ -561,7 +580,6 @@ async function runIngest(files: IngestFile[]): Promise<void> {
 
   // Persist the completed uploaded corpus immediately, so quitting right after
   // ingest still restores these files on the next launch.
-  const { saveSession } = await import('../persistence/session');
   await saveSession();
 }
 
@@ -957,10 +975,14 @@ async function runRemove(ids: string[]): Promise<void> {
   if (remaining.length === 0) {
     // last doc removed — tear down like a fresh start and forget the session
     resetCorpus();
-    await deleteDocsFromCache(removing);
-    await deleteOriginals(removing);
+    await markActiveCorpusEmpty().catch(reportPersistenceUnavailable);
+    const purge = await unreferencedDocumentIds(removing).catch((error: unknown) => {
+      reportPersistenceUnavailable(error);
+      return [];
+    });
+    await deleteDocsFromCache(purge);
+    await deleteOriginals(purge);
     if (oldCorpusHash) await deleteGraphFromCache(oldCorpusHash);
-    await setSetting('lastCorpusHash', '');
     return;
   }
 
@@ -989,12 +1011,15 @@ async function runRemove(ids: string[]): Promise<void> {
   // the removed doc's text/vectors and the stale graph snapshot. If the tab
   // closes mid-way the cache is still a consistent, restorable state (worst
   // case: the removal simply didn't stick).
-  // Dynamic import — a static one would create the cycle
-  // coordinator → session → exportImport → coordinator.
-  const { saveSession } = await import('../persistence/session');
+  // sessionSave is deliberately coordinator-free, so persistence stays
+  // acyclic while this mutation pipeline remains a lazy application chunk.
   await saveSession();
-  await deleteDocsFromCache(removing);
-  await deleteOriginals(removing);
+  const purge = await unreferencedDocumentIds(removing).catch((error: unknown) => {
+    reportPersistenceUnavailable(error);
+    return [];
+  });
+  await deleteDocsFromCache(purge);
+  await deleteOriginals(purge);
   const newCorpusHash = store().corpusHash;
   if (oldCorpusHash && oldCorpusHash !== newCorpusHash) {
     await deleteGraphFromCache(oldCorpusHash);
@@ -1082,6 +1107,37 @@ export function removeDocuments(ids: string[]): Promise<void> {
 }
 
 /**
+ * Apply one watched-folder diff as a single queued mutation. New revisions are
+ * ingested before their superseded/removed node ids are dropped, so a changed
+ * one-file corpus never flashes through an empty reset state.
+ */
+export interface WatchedReplacement {
+  oldId: string;
+  newId: string;
+}
+
+export function reconcileWatchedFiles(
+  files: IngestFile[],
+  removeIds: string[],
+  replacements: WatchedReplacement[] = [],
+  expectedIds: string[] = [],
+): Promise<string[]> {
+  const run = enqueueRun(async () => {
+    if (files.length > 0) await runIngest(files);
+    const present = new Set(documentNodes().map((node) => node.id));
+    const acceptedIds = expectedIds.filter((id) => present.has(id));
+    const supersededIds = replacements
+      .filter(({ newId }) => present.has(newId))
+      .map(({ oldId }) => oldId);
+    const removing = [...new Set([...removeIds, ...supersededIds])];
+    if (removing.length > 0) await runRemove(removing);
+    return acceptedIds;
+  });
+  run.catch((error) => console.error('watched-folder reconciliation failed', error));
+  return run;
+}
+
+/**
  * Rebuilds all local vectors after an embedding profile change. Source text is
  * already persisted locally, so this never needs to re-read the original files.
  */
@@ -1147,7 +1203,6 @@ async function runEmbeddingRebuild(): Promise<void> {
     synthesizeTopicNodes();
     graph().setCorpusHash(await computeCorpusHash());
     graph().setPhase('ready');
-    const { saveSession } = await import('../persistence/session');
     await saveSession();
   } finally {
     graph().setModelProgress(null);
@@ -1218,7 +1273,6 @@ export function resetCorpus(): void {
   // Chat answers cite the outgoing corpus — stale context for the next one.
   // Cancel any in-flight stream FIRST: it would otherwise keep running
   // against the wiped stores with isStreaming stuck true for up to 120s.
-  // (Dynamic import: a static one would cycle ragChat → coordinator.)
-  void import('../chat/ragChat').then((m) => m.cancelChat());
+  cancelChat();
   useChatStore.getState().clearMessages();
 }

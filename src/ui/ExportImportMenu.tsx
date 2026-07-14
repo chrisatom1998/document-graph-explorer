@@ -4,7 +4,9 @@ import {
   exportGraphJSON,
   exportScenePNG,
   importGraphJSONFile,
+  toGraphExport,
 } from '../persistence/exportImport';
+import { createShareUrl } from '../persistence/shareUrl';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useFocusTrap } from './useFocusTrap';
@@ -131,6 +133,32 @@ function IconImport() {
   );
 }
 
+function IconLink() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path d="M7.2 10.8 10.8 7.2" strokeLinecap="round" />
+      <path d="M6.1 12.7 4.8 14a2.6 2.6 0 0 1-3.7-3.7l2.4-2.4a2.6 2.6 0 0 1 3.7 0" strokeLinecap="round" />
+      <path d="m11.9 5.3 1.3-1.3a2.6 2.6 0 1 1 3.7 3.7l-2.4 2.4a2.6 2.6 0 0 1-3.7 0" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+async function copyText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const input = document.createElement('textarea');
+  input.value = text;
+  input.style.position = 'fixed';
+  input.style.opacity = '0';
+  document.body.appendChild(input);
+  input.select();
+  const copied = document.execCommand('copy');
+  input.remove();
+  if (!copied) throw new Error('Copy failed — export graph JSON instead.');
+}
+
 interface ExportImportMenuProps {
   onClose?: () => void;
   onDialogOpenChange?: (open: boolean) => void;
@@ -144,8 +172,10 @@ export default function ExportImportMenu({
   const nodeCount = useGraphStore((s) => s.nodes.length);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  const [shareConfirmOpen, setShareConfirmOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
-  const confirmOpen = pendingFile !== null;
+  const confirmOpen = pendingFile !== null || shareConfirmOpen;
   useFocusTrap(dialogRef, confirmOpen);
 
   useEffect(() => {
@@ -183,9 +213,34 @@ export default function ExportImportMenu({
     if (!importing) setPendingFile(null);
   };
 
+  const copyShareLink = async () => {
+    setSharing(true);
+    try {
+      const url = await createShareUrl(toGraphExport(false));
+      await copyText(url);
+      useUiStore.getState().pushToast('Shareable graph link copied.', 'info');
+      setShareConfirmOpen(false);
+      onClose?.();
+    } catch (error) {
+      useUiStore.getState().pushToast(messageFromError(error), 'error');
+    } finally {
+      setSharing(false);
+    }
+  };
+
   return (
     <>
       <div className="toolbar__menu glass-panel">
+        <button
+          type="button"
+          className="toolbar__menu-item"
+          title="Copy a backend-free link to this graph"
+          disabled={!canExportGraph}
+          onClick={() => setShareConfirmOpen(true)}
+        >
+          <IconLink />
+          <span>Copy shareable URL</span>
+        </button>
         <button
           type="button"
           className="toolbar__menu-item"
@@ -278,6 +333,51 @@ export default function ExportImportMenu({
               </button>
             </div>
           </div>
+          </div>,
+          document.body,
+        )}
+
+      {shareConfirmOpen &&
+        createPortal(
+          <div className="settings-backdrop" onClick={() => !sharing && setShareConfirmOpen(false)}>
+            <div
+              ref={dialogRef}
+              className="glass-panel"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Copy shareable graph URL?"
+              style={confirmPanelStyle}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape' && !sharing) setShareConfirmOpen(false);
+              }}
+            >
+              <h2 style={confirmTitleStyle}>Share This Graph?</h2>
+              <p style={confirmTextStyle}>
+                The link contains titles, short source excerpts (up to 200 characters), topics,
+                entities, keywords, warnings, cluster labels, and connection evidence. It excludes
+                full document text, local paths, embeddings, file handles, and settings. Anyone
+                with the link can view the included graph metadata.
+              </p>
+              <div style={confirmRowStyle}>
+                <button
+                  type="button"
+                  className="snapshot-btn"
+                  disabled={sharing}
+                  onClick={() => setShareConfirmOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="snapshot-btn snapshot-btn--load"
+                  disabled={sharing}
+                  onClick={() => void copyShareLink()}
+                >
+                  {sharing ? 'Creating link…' : 'Copy link'}
+                </button>
+              </div>
+            </div>
           </div>,
           document.body,
         )}

@@ -20,9 +20,27 @@ is no server, no account, no telemetry, and no analytics.
 > use the air-gapped build — its CSP physically removes the external network at
 > the browser level and cannot be re-enabled at runtime.
 
-The embedding model (MiniLM) and its WASM runtime are **self-hosted** in the app
-(`/models`, `/assets`) — they are never fetched from HuggingFace or a CDN
-(`allowRemoteModels = false`, ORT `wasmPaths` pinned same-origin).
+The embedding model (MiniLM), its WASM runtime, and the Tesseract.js OCR worker,
+WASM core, and English language data are **self-hosted** in the app (`/models`,
+`/assets`, `/ocr`) — they are never fetched from HuggingFace or a CDN
+(`allowRemoteModels = false`, ORT and OCR asset paths pinned same-origin).
+
+## Browser-local persistence and sharing
+
+Named corpora, extracted document text, graph data, embeddings, layouts, chat
+history, snapshots, original file bytes, and watched-folder handles are stored in
+the browser's IndexedDB. A watched folder grants the app read access through the
+browser's File System Access API; rescans happen only while the app is open and
+permission may need to be granted again after a restart or browser policy change.
+
+**Shareable URLs are an explicit disclosure action.** The Data menu shows a
+confirmation before copying a link. The URL fragment contains titles, short source
+excerpts of up to 200 characters, topics, entities, keywords, warnings, cluster data, and connection evidence, so anyone who
+receives the link can read that graph metadata. It excludes full document text,
+original file bytes, local paths, modification times, embeddings, file handles,
+and settings, and replaces content-derived node and edge IDs. URL fragments are
+not sent to the hosting server as part of HTTP requests, but recipients' browsers
+can decode the fragment locally.
 
 ## How the air-gapped guarantee is enforced (not just promised)
 

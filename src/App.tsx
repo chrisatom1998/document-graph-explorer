@@ -1,32 +1,39 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
-import NebulaCanvas from './scene/NebulaCanvas';
 import DropZone from './ingest/DropZone';
 import EmptyState from './ui/EmptyState';
 import ProgressStrip from './ui/ProgressStrip';
 import Toolbar from './ui/Toolbar';
-import InsightsPanel from './ui/InsightsPanel';
-import PathPanel from './ui/PathPanel';
-import SidePanel from './ui/SidePanel';
-import SnapshotDrawer from './ui/SnapshotDrawer';
 import Tooltip from './ui/Tooltip';
-import SearchOverlay from './ui/SearchOverlay';
-import ShowMePanel from './ui/ShowMePanel';
-import FilterBar from './ui/FilterBar';
-import Minimap from './ui/Minimap';
-import SettingsPanel from './ui/SettingsPanel';
-import ChatPanel from './ui/ChatPanel';
+import ChatLauncher from './ui/ChatLauncher';
+import GraphNavigator from './ui/GraphNavigator';
 import ToastHost from './ui/ToastHost';
-import FirstRunGuide from './ui/FirstRunGuide';
 import { shouldIgnoreGlobalKey } from './ui/globalKeyboard';
 import { useGraphStore } from './store/graphStore';
 import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
+import { useCorpusStore } from './store/corpusStore';
 import { onLayoutSettled } from './layout/layoutBridge';
 import { positionBuffer } from './scene/positionBuffer';
 import { panInput } from './scene/panInput';
 import { initPersistence, restoreSession } from './persistence/session';
+import { initializeCorpusRepository } from './persistence/corpusRepository';
+import { reportPersistenceUnavailable } from './persistence/cache';
 import { loadChatHistory, saveChatHistory } from './persistence/chatHistory';
 import './styles.css';
+
+const NebulaCanvas = lazy(() => import('./scene/NebulaCanvas'));
+const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
+const PathPanel = lazy(() => import('./ui/PathPanel'));
+const SidePanel = lazy(() => import('./ui/SidePanel'));
+const SnapshotDrawer = lazy(() => import('./ui/SnapshotDrawer'));
+const SearchOverlay = lazy(() => import('./ui/SearchOverlay'));
+const ShowMePanel = lazy(() => import('./ui/ShowMePanel'));
+const FilterBar = lazy(() => import('./ui/FilterBar'));
+const Minimap = lazy(() => import('./ui/Minimap'));
+const SettingsPanel = lazy(() => import('./ui/SettingsPanel'));
+const ChatPanel = lazy(() => import('./ui/ChatPanel'));
+const HelpPopover = lazy(() => import('./ui/HelpPopover'));
+const FirstRunGuide = lazy(() => import('./ui/FirstRunGuide'));
 
 const RetrievalBenchmarkPanel = import.meta.env.DEV
   ? lazy(() => import('./dev/RetrievalBenchmarkPanel'))
@@ -35,37 +42,86 @@ const RetrievalBenchmarkPanel = import.meta.env.DEV
 export default function App() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const phase = useGraphStore((s) => s.phase);
-  const corpusHash = useGraphStore((s) => s.corpusHash);
+  const activeCorpusId = useCorpusStore((s) => s.activeCorpusId);
+  const corpusMode = useCorpusStore((s) => s.mode);
+  const selectedId = useUiStore((s) => s.selectedId);
+  const searchOpen = useUiStore((s) => s.searchOpen);
+  const showMeOpen = useUiStore((s) => s.showMeOpen);
+  const settingsOpen = useUiStore((s) => s.settingsOpen);
+  const insightsOpen = useUiStore((s) => s.insightsOpen);
+  const snapshotsOpen = useUiStore((s) => s.snapshotsOpen);
+  const helpOpen = useUiStore((s) => s.helpOpen);
+  const pathMode = useUiStore((s) => s.pathMode);
+  const chatOpen = useChatStore((s) => s.isOpen);
 
   // Session restore + persistence hooks, once. Fresh starts stay empty until
   // the user adds files or explicitly loads the demo corpus from EmptyState.
   useEffect(() => {
     initPersistence();
-    restoreSession().catch((err) => console.warn('session restore failed', err));
+    void (async () => {
+      try {
+        const { decodeShareFragment, hasShareFragment } = await import('./persistence/shareUrl');
+        if (hasShareFragment(window.location.href)) {
+          // Populate the local workspace list without hydrating any private
+          // graph. The portable view then clears the active id, letting the
+          // owner explicitly switch back while recipients simply see their
+          // own (usually empty) device-local list.
+          try {
+            await initializeCorpusRepository();
+          } catch (error) {
+            reportPersistenceUnavailable(error);
+          }
+          try {
+            const shared = await decodeShareFragment(window.location.href);
+            if (shared) {
+              const { importGraphExportData } = await import('./persistence/exportImport');
+              await importGraphExportData(shared, 'shared');
+              useUiStore
+                .getState()
+                .pushToast('Opened a shared graph — document contents remain on the owner’s device.', 'info');
+              return;
+            }
+          } catch (error) {
+            useCorpusStore.getState().setEphemeral('Invalid shared graph', 'shared');
+            useUiStore
+              .getState()
+              .pushToast(error instanceof Error ? error.message : 'This shared graph link is invalid.');
+            return;
+          }
+        }
+        await restoreSession();
+        const { bindFolderWatcherToActiveCorpus } = await import('./ingest/folderWatcher');
+        await bindFolderWatcherToActiveCorpus();
+      } catch (error) {
+        console.warn('session restore failed', error);
+      }
+    })();
   }, []);
 
+  const chatScope = corpusMode === 'local' ? activeCorpusId : null;
+
   useEffect(() => {
-    if (!corpusHash || phase !== 'ready') return;
+    if (!chatScope || phase !== 'ready') return;
     let cancelled = false;
-    loadChatHistory(corpusHash).then((messages) => {
+    loadChatHistory(chatScope).then((messages) => {
       if (!cancelled) useChatStore.getState().replaceMessages(messages);
     }).catch((error) => console.warn('chat history restore failed', error));
     return () => { cancelled = true; };
-  }, [corpusHash, phase]);
+  }, [chatScope, phase]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const unsubscribe = useChatStore.subscribe((state) => {
-      if (!corpusHash || state.isStreaming) return;
+      if (!chatScope || state.isStreaming) return;
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => saveChatHistory(corpusHash, state.messages)
+      timer = setTimeout(() => saveChatHistory(chatScope, state.messages)
         .catch((error) => console.warn('chat history save failed', error)), 350);
     });
     return () => {
       if (timer) clearTimeout(timer);
       unsubscribe();
     };
-  }, [corpusHash]);
+  }, [chatScope]);
 
   // Auto-frame: while a fresh corpus is forming, re-fit the camera on every
   // layout settle so the nebula is always in view; stop after the settle that
@@ -183,6 +239,8 @@ export default function App() {
           ui.setSettingsOpen(false);
         } else if (ui.snapshotsOpen) {
           ui.setSnapshotsOpen(false);
+        } else if (ui.helpOpen) {
+          ui.setHelpOpen(false);
         } else if (useChatStore.getState().isOpen) {
           useChatStore.getState().setIsOpen(false);
         } else if (ui.insightsOpen) {
@@ -222,23 +280,50 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <NebulaCanvas />
+      <Suspense fallback={<div className="scene-loading" role="status" aria-label="Loading interactive graph" />}>
+        <NebulaCanvas />
+      </Suspense>
       <DropZone />
       {!hasNodes && phase === 'idle' && <EmptyState />}
       {phase === 'ready' && <Toolbar />}
-      {phase === 'ready' && <FilterBar />}
+      {phase === 'ready' && <GraphNavigator />}
+      {phase === 'ready' && (
+        <Suspense fallback={null}><FilterBar /></Suspense>
+      )}
       <ProgressStrip />
-      <InsightsPanel />
-      <PathPanel />
-      <SidePanel />
-      {phase === 'ready' && <Minimap />}
+      {insightsOpen && (
+        <Suspense fallback={null}><InsightsPanel /></Suspense>
+      )}
+      {pathMode && (
+        <Suspense fallback={null}><PathPanel /></Suspense>
+      )}
+      {selectedId && (
+        <Suspense fallback={null}><SidePanel /></Suspense>
+      )}
+      {phase === 'ready' && (
+        <Suspense fallback={null}><Minimap /></Suspense>
+      )}
       <Tooltip />
-      {phase === 'ready' && <SearchOverlay />}
-      <ShowMePanel />
-      <SettingsPanel />
-      <SnapshotDrawer />
-      {phase === 'ready' && <ChatPanel />}
-      <FirstRunGuide />
+      {phase === 'ready' && searchOpen && (
+        <Suspense fallback={null}><SearchOverlay /></Suspense>
+      )}
+      {showMeOpen && (
+        <Suspense fallback={null}><ShowMePanel /></Suspense>
+      )}
+      {settingsOpen && (
+        <Suspense fallback={null}><SettingsPanel /></Suspense>
+      )}
+      {snapshotsOpen && (
+        <Suspense fallback={null}><SnapshotDrawer /></Suspense>
+      )}
+      {phase === 'ready' && <ChatLauncher />}
+      {phase === 'ready' && chatOpen && (
+        <Suspense fallback={null}><ChatPanel /></Suspense>
+      )}
+      {helpOpen && (
+        <Suspense fallback={null}><HelpPopover /></Suspense>
+      )}
+      <Suspense fallback={null}><FirstRunGuide /></Suspense>
       <ToastHost />
       {RetrievalBenchmarkPanel && new URLSearchParams(window.location.search).get('eval') === 'retrieval' && (
         <Suspense fallback={null}><RetrievalBenchmarkPanel /></Suspense>

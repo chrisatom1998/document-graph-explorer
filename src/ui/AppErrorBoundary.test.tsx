@@ -65,7 +65,7 @@ describe('AppErrorBoundary', () => {
     );
   });
 
-  it('can export the current graph from the fallback', () => {
+  it('can export the current graph from the fallback', async () => {
     useGraphStore.setState({
       nodes: [docNode()],
       nodeIndex: { doc1: 0 },
@@ -81,6 +81,6 @@ describe('AppErrorBoundary', () => {
     expect(exportButton).toBeEnabled();
     fireEvent.click(exportButton);
 
-    expect(mockExportGraphJSON).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockExportGraphJSON).toHaveBeenCalledTimes(1));
   });
 });

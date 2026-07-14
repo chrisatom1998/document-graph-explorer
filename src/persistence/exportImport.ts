@@ -19,42 +19,22 @@ import {
 } from '../layout/layoutBridge';
 import type { DocNode, Edge, GraphExport } from '../model/types';
 import { computeLocalClusterNames } from '../graph/clusterNaming';
-import { resetCorpus } from '../pipeline/coordinator';
 import { enqueueRun } from '../pipeline/runQueue';
 import { randomSpherePoint } from '../pipeline/spawnPosition';
 import { useGraphStore } from '../store/graphStore';
+import { useCorpusStore } from '../store/corpusStore';
 import { docVectorStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
 import { sanitizeGraphExport } from './validateImport';
 import { base64ToF32, f32ToBase64 } from './f32base64';
+import { toGraphExport } from './graphExport';
 
 export { base64ToF32, f32ToBase64 };
+export { toGraphExport } from './graphExport';
 
 // ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
-
-export function toGraphExport(includeEmbeddings: boolean): GraphExport {
-  const s = useGraphStore.getState();
-  const out: GraphExport = {
-    version: 1,
-    createdAt: new Date().toISOString(),
-    generator: 'knowledge-nebula',
-    includeEmbeddings,
-    clusterNames: s.clusterNames,
-    nodes: s.nodes,
-    edges: s.edges,
-  };
-  if (includeEmbeddings) {
-    const embeddings: Record<string, string> = {};
-    for (const n of s.nodes) {
-      const vec = docVectorStore.get(n.id);
-      if (vec && vec.length > 0) embeddings[n.id] = f32ToBase64(vec);
-    }
-    out.embeddings = embeddings;
-  }
-  return out;
-}
 
 function dateStamp(): string {
   return new Date().toISOString().slice(0, 10);
@@ -126,11 +106,7 @@ function randomShellPoint(): [number, number, number] {
  * both mutate the graph store, runtime stores, and layout, and an import
  * landing mid-ingest would corrupt all three.
  */
-export function importGraphJSONFile(file: File): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
-  return enqueueRun(() => doImportGraphJSONFile(file));
-}
-
-async function doImportGraphJSONFile(file: File): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
+export async function importGraphJSONFile(file: File): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
   if (file.size > MAX_INGEST_FILE_BYTES) {
     const maxMb = Math.round(MAX_INGEST_FILE_BYTES / (1024 * 1024));
     throw new Error(
@@ -144,14 +120,40 @@ async function doImportGraphJSONFile(file: File): Promise<{ nodes: DocNode[]; ed
   } catch {
     throw new Error('Import failed: file is not valid JSON.');
   }
-  // Untrusted input: sanitizeGraphExport type-checks and clamps every field
-  // before anything reaches React, the layout worker, or IndexedDB.
-  const data: GraphExport = sanitizeGraphExport(parsed);
+  const data = sanitizeGraphExport(parsed);
+
+  // Stop and drain a watcher before entering the shared mutation queue. Doing
+  // this inside the queued import could deadlock with a scan whose reconcile
+  // job is already waiting behind the import.
+  const { suspendFolderWatcher } = await import('../ingest/folderWatcher');
+  await suspendFolderWatcher();
+  return enqueueRun(() => doImportGraphExportData(data, 'imported'));
+}
+
+/** Apply already-decoded, untrusted graph data (for portable URL shares). */
+export async function importGraphExportData(
+  input: unknown,
+  mode: 'shared' | 'imported' = 'shared',
+): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
+  const data = sanitizeGraphExport(input);
+  const { suspendFolderWatcher } = await import('../ingest/folderWatcher');
+  await suspendFolderWatcher();
+  return enqueueRun(() => doImportGraphExportData(data, mode));
+}
+
+async function doImportGraphExportData(
+  data: GraphExport,
+  mode: 'shared' | 'imported',
+): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
   const nodes = data.nodes;
   const edges = data.edges;
 
   // Clean slate first (pipeline owns worker/store/layout teardown).
+  const { resetCorpus } = await import('../pipeline/coordinatorLazy');
   resetCorpus();
+  useCorpusStore
+    .getState()
+    .setEphemeral(mode === 'shared' ? 'Shared graph' : 'Imported graph', mode);
 
   const g = useGraphStore.getState();
   g.addNodes(nodes);

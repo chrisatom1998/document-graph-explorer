@@ -1,7 +1,7 @@
 # Document Graph Explorer — Product Roadmap
 
 **Owner:** Chris Johnson  
-**Last Updated:** July 2, 2026
+**Last Updated:** July 13, 2026
 
 ---
 
@@ -39,6 +39,10 @@ Make internal documentation **explorable, connected, and alive** — transformin
 | Document removal | ✅ Shipped | July 2026 |
 | 2D/3D toggle mode | ✅ Shipped | July 2026 |
 | Air-gapped build (`build:airgap`) with enforced zero-egress CSP | ✅ Shipped | July 2026 |
+| Shareable graph URLs with sanitized, backend-free fragments | ✅ Shipped | July 2026 |
+| Folder watching with File System Access polling | ✅ Shipped | July 2026 |
+| Multi-corpus workspaces | ✅ Shipped | July 2026 |
+| Local OCR fallback for scanned PDFs | ✅ Shipped | July 2026 |
 
 ### Key Results
 - **50 files → useful graph in <30s** on mid-tier hardware
@@ -57,8 +61,6 @@ Make internal documentation **explorable, connected, and alive** — transformin
 | Feature | Priority | Business Value |
 |---|---|---|
 | **Snapshot diff view** | High | Compare two snapshots visually — see what docs/connections changed over time. Enables documentation health tracking. |
-| **Shareable snapshot URLs** | High | Export a snapshot to a hosted JSON file and generate a shareable link. Enables team-wide access without re-ingesting. |
-| **Folder watching** | Medium | File System Access API monitors a folder for changes and auto-re-indexes. Living graph that stays current. |
 | **Guided onboarding tour** | Medium | Interactive walkthrough for first-time users — drag, search, explore. Reduces support burden. |
 | **Keyboard navigation** | Low | Full keyboard support for navigating nodes, edges, and panels. Accessibility compliance. |
 
@@ -72,8 +74,6 @@ Make internal documentation **explorable, connected, and alive** — transformin
 
 | Feature | Priority | Business Value |
 |---|---|---|
-| **Multi-corpus workspaces** | High | Manage multiple documentation sets (per-project, per-team) without cross-contamination |
-| **OCR for scanned PDFs** | High | Tesseract.js integration unlocks scanned documents — common in legal, compliance, and legacy orgs |
 | **Annotation layer** | Medium | Users can add notes, tags, and bookmarks to nodes — personal knowledge overlaid on team docs |
 | **Comparative analytics** | Medium | Quantitative comparison between snapshots: "12 new docs, 3 removed, 47 new connections since last month" |
 | **Export to Notion/Confluence** | Low | Push graph structure and summaries into existing wiki platforms |
@@ -103,7 +103,9 @@ No accounts, no installations, no configuration. Drop files → see your knowled
 |---|---|---|
 | WebGPU browser support (for fast embeddings) | Low | Falls back to WASM backend; performance degrades gracefully |
 | IndexedDB quota limits | Medium | Large corpora (1000+ docs with embeddings) may hit ~500MB limits on some browsers. Future: offer selective caching. |
-| pdf.js text extraction quality | Medium | Some PDFs produce poor text. Clear user feedback via "unreadable" badges. OCR planned for H1 2027. |
+| PDF/OCR extraction quality | Medium | PDFs with little embedded text fall back to bundled English OCR, capped at the first 20 pages. Unreadable status and warnings remain when extraction is insufficient. |
+| File System Access browser support | Medium | Live folder polling is offered only in supporting browsers and while the app is open; one-time drag-and-drop remains the universal fallback. |
+| Share-link size and disclosure | Medium | Links use bounded, sanitized URL fragments and require confirmation. Oversized graphs fall back to JSON export; original bytes, paths, and embeddings are excluded. |
 | Gemini API pricing changes | Low | Enrichment is optional. Core tool works without any API. |
 
 ---

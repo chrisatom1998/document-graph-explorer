@@ -71,6 +71,11 @@ export const MAX_INGEST_FILE_BYTES = 64 * 1024 * 1024;
 // The per-file cap alone doesn't stop a folder of many large-but-legal files
 // from exhausting tab memory — cap the whole drop too.
 export const MAX_INGEST_TOTAL_BYTES = 512 * 1024 * 1024;
+/** Polling fallback for the browser File System Access API (only while open). */
+export const FOLDER_WATCH_INTERVAL_MS = 8_000;
+// OCR is deliberately bounded: scanned PDFs are rasterized page-by-page and
+// recognition is substantially more expensive than native text extraction.
+export const OCR_MAX_PAGES = 20;
 export const IGNORED_DIRS = new Set([
   'node_modules',
   '.git',

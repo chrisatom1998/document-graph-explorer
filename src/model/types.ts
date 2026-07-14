@@ -108,6 +108,21 @@ export type PipelinePhase =
   | 'enriching'
   | 'ready';
 
+/** Long-running auxiliary work shown beneath the main pipeline progress. */
+export type PipelineTaskProgress =
+  | {
+      kind: 'embedding-model';
+      loaded: number; // bytes downloaded
+      total: number; // total bytes when known
+      note: string;
+    }
+  | {
+      kind: 'ocr';
+      loaded: number; // pages completed
+      total: number; // pages selected for OCR
+      note: string;
+    };
+
 // ---------------------------------------------------------------------------
 // Parse / embed worker protocol
 // ---------------------------------------------------------------------------

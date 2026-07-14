@@ -46,7 +46,26 @@ export default defineConfig(({ mode }) => ({
   server: { headers: SECURITY_HEADERS },
   preview: { headers: SECURITY_HEADERS },
   worker: { format: 'es' },
-  build: { target: 'esnext' },
+  build: {
+    target: 'esnext',
+    // The largest chunk is the demand-loaded WebGL renderer. Eager code has a
+    // much tighter, separately enforced budget in scripts/check-bundle.mjs.
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        // Keep Rollup from pulling shared preload helpers into a named vendor
+        // chunk and accidentally turning an async scene into an eager preload.
+        onlyExplicitManualChunks: true,
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          // React is the only eager framework vendor. Feature libraries stay
+          // with their lazy route/panel so they cannot leak into index.html.
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react';
+          return undefined;
+        },
+      },
+    },
+  },
   optimizeDeps: {
     // transformers.js does its own dynamic ORT backend imports; pre-bundling breaks it.
     // It is also dynamically imported inside pipeline.worker.ts so its module

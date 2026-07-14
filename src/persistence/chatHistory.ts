@@ -11,6 +11,11 @@ export async function saveChatHistory(corpusHash: string, messages: ChatMessage[
   await (await getDb()).put('chats', { corpusHash, messages: messages.slice(-100), savedAt: Date.now() });
 }
 
+export async function deleteChatHistory(corpusId: string): Promise<void> {
+  if (!corpusId) return;
+  await (await getDb()).delete('chats', corpusId);
+}
+
 export function chatTranscriptMarkdown(messages: ChatMessage[]): string {
   return messages.map((message) => {
     const sources = message.sources?.length
