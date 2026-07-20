@@ -100,7 +100,9 @@ async function syncBoundFolder(): Promise<number> {
     return !previous || previous.size !== entry.file.size || previous.lastModified !== entry.file.lastModified;
   });
   const changedPaths = new Set(changed.map((entry) => entry.path!));
-  const { files: prepared, deferredPaths } = await prepareIngestFiles(changed);
+  const { files: prepared, deferredPaths } = await prepareIngestFiles(changed, {
+    deferredWillRetry: true, // the next poll picks up whatever didn't fit
+  });
   const preparedByPath = new Map(prepared.map((file) => [file.path!, file]));
   const nextFiles: Record<string, WatchedFileRecord> = {};
   const removeIds = new Set<string>();
