@@ -97,8 +97,14 @@ function maybeLoad(): void {
       if (currentScope() !== scope) return;
       // An answer that started streaming while the read was in flight is newer
       // than anything on disk, and replaceMessages would both discard it and
-      // clear isStreaming out from under the running request.
-      if (useChatStore.getState().isStreaming) return;
+      // clear isStreaming out from under the running request. Release the
+      // scope claim so this retries once the stream finishes — otherwise the
+      // saved transcript is never restored and the next save replaces it with
+      // just this one turn.
+      if (useChatStore.getState().isStreaming) {
+        lastLoadedScope = null;
+        return;
+      }
       useChatStore.getState().replaceMessages(messages);
     })
     .catch((error) => {
@@ -124,7 +130,12 @@ export function initChatHistorySync(): void {
   if (started) return;
   started = true;
   unsubscribers = [
-    useChatStore.subscribe(scheduleSave),
+    useChatStore.subscribe(() => {
+      scheduleSave();
+      // Also the retry path for a load deferred by an in-flight stream: the
+      // stream ending is a chat-store change, not a corpus or phase one.
+      maybeLoad();
+    }),
     // Both stores can be the one that makes a load newly valid: the corpus
     // store when the switch finishes, the graph store when hydration reaches
     // 'ready'. Whichever lands last triggers the single load.

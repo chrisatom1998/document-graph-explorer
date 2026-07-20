@@ -376,17 +376,30 @@ async function doRestoreSnapshotById(id: number): Promise<boolean> {
     // corpus. Legacy snapshots without an owner deliberately restore into the
     // current workspace, matching their pre-multi-corpus behavior.
     if (useGraphStore.getState().phase === 'ready') await saveSession();
-    if (rec.corpusId && await getCorpusRecord(rec.corpusId)) {
-      await activateCorpus(rec.corpusId);
+    // Land the outgoing transcript before the active corpus moves, then mark
+    // the switch so the reset's cleared message list is not persisted against
+    // whichever corpus happens to be active when the debounce fires. Without
+    // this, restoring a snapshot owned by another corpus could overwrite that
+    // corpus's saved history with an empty one.
+    const { flushPendingChatSave } = await import('./chatHistorySync');
+    await flushPendingChatSave();
+    const switchingCorpus = Boolean(rec.corpusId && (await getCorpusRecord(rec.corpusId)));
+    if (switchingCorpus) {
+      useCorpusStore.getState().setSwitching(true);
+      await activateCorpus(rec.corpusId!);
     }
 
-    // Import resetCorpus dynamically to avoid circular dependency. The lazy
-    // facade keeps coordinator itself from becoming a mixed import target.
-    const { resetCorpus } = await import('../pipeline/coordinatorLazy');
-    resetCorpus();
+    try {
+      // Import resetCorpus dynamically to avoid circular dependency. The lazy
+      // facade keeps coordinator itself from becoming a mixed import target.
+      const { resetCorpus } = await import('../pipeline/coordinatorLazy');
+      resetCorpus();
 
-    const restored = await hydrateFromRecord(rec.exportData, rec.positions ?? {}, rec.corpusHash);
-    return restored;
+      const restored = await hydrateFromRecord(rec.exportData, rec.positions ?? {}, rec.corpusHash);
+      return restored;
+    } finally {
+      if (switchingCorpus) useCorpusStore.getState().setSwitching(false);
+    }
   } catch (err) {
     console.warn('[knowledge-nebula] snapshot restore failed', err);
     return false;

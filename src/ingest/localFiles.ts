@@ -23,7 +23,20 @@ export interface PreparedIngest {
   deferredPaths: Set<string>;
 }
 
-export async function prepareIngestFiles(named: NamedFile[]): Promise<PreparedIngest> {
+export interface PrepareOptions {
+  /**
+   * Set by callers that re-scan on a schedule (the folder watcher). Files held
+   * back by the batch cap will be picked up on a later pass, so reporting them
+   * as skipped would add an ignored-file entry and a warning toast on every
+   * poll until the backlog drains.
+   */
+  deferredWillRetry?: boolean;
+}
+
+export async function prepareIngestFiles(
+  named: NamedFile[],
+  options: PrepareOptions = {},
+): Promise<PreparedIngest> {
   const output: IngestFile[] = [];
   const deferredPaths = new Set<string>();
   let totalBytes = 0;
@@ -36,20 +49,22 @@ export async function prepareIngestFiles(named: NamedFile[]): Promise<PreparedIn
       continue;
     }
     if (fileType !== null && totalBytes + file.size > MAX_INGEST_TOTAL_BYTES) {
-      useGraphStore
-        .getState()
-        .addIgnored(file.name, `selection exceeds ${MAX_INGEST_TOTAL_MB} MB total`);
       // Deferred, not rejected: this file is within the per-file limit and only
       // lost the race for room in this batch.
       deferredPaths.add(path ?? file.name);
-      if (!totalCapHit) {
-        totalCapHit = true;
-        useUiStore
+      if (!options.deferredWillRetry) {
+        useGraphStore
           .getState()
-          .pushToast(
-            `That selection is over the ${MAX_INGEST_TOTAL_MB} MB total limit — the remainder was skipped.`,
-            'warning',
-          );
+          .addIgnored(file.name, `selection exceeds ${MAX_INGEST_TOTAL_MB} MB total`);
+        if (!totalCapHit) {
+          totalCapHit = true;
+          useUiStore
+            .getState()
+            .pushToast(
+              `That selection is over the ${MAX_INGEST_TOTAL_MB} MB total limit — the remainder was skipped.`,
+              'warning',
+            );
+        }
       }
       continue;
     }

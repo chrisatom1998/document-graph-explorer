@@ -68,5 +68,16 @@ export const useChatStore = create<ChatState>((set) => ({
   setIsOpen: (isOpen) => set({ isOpen }),
   setIsStreaming: (isStreaming) => set({ isStreaming }),
   clearMessages: () => set({ messages: [] }),
-  replaceMessages: (messages) => set({ messages, isStreaming: false }),
+  replaceMessages: (messages) => {
+    // Restored transcripts carry ids minted in an earlier session, but the
+    // generator restarts at 0 on every page load — so without this the first
+    // new turn reuses `chat-1`. That collides silently: React sees duplicate
+    // keys, and updateMessage patches BOTH messages, so streaming an answer
+    // also rewrites whichever restored message shares its id.
+    for (const message of messages) {
+      const n = /^chat-(\d+)$/.exec(message.id);
+      if (n) nextId = Math.max(nextId, Number(n[1]));
+    }
+    set({ messages, isStreaming: false });
+  },
 }));

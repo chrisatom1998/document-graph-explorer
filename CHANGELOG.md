@@ -23,6 +23,12 @@ This project follows the Keep a Changelog format.
 - Keep the chat transcript from force-scrolling to the bottom on every streaming chunk, so an earlier answer can be re-read while a new one arrives.
 - Only fail fast on an IndexedDB open that is actually blocked by another connection; a slow but healthy open (cold profile, large first upgrade) no longer degrades the whole visit to "persistence unavailable".
 - Correct assistive-technology semantics and Escape handling in the corpus switcher, and remove a nested assertive live region in the toast host that could double-announce.
+- Rebase the chat message-id counter when a transcript is restored. The counter restarts at zero each page load, so the first new turn could reuse a restored message's id, producing duplicate React keys and causing a single update to patch two messages at once.
+- Apply the same transcript flush and switch guard to snapshot restore that normal corpus switches use, so restoring a snapshot owned by another workspace can no longer persist an empty transcript over that workspace's saved history.
+- Restore a saved transcript that arrived while an answer was still streaming, instead of discarding it permanently and letting the next save replace the stored history with only the new turn.
+- Stop retrying a document-AI request that was cancelled during a rate-limit backoff, which continued issuing billable requests after the user had moved to another document.
+- Mark an empty-bodied streaming failure as an error so it is excluded from the history sent to the model rather than replayed as a genuine prior answer.
+- Stop re-reporting watched-folder files that were merely deferred by the batch size cap; they are retried on the next scan, so each poll was adding another ignored-file entry and warning toast until the backlog drained.
 
 ### Changed
 - Scan document text once against an index of all titles and filenames instead of comparing every document against every other one. Measured on a synthetic corpus, reference-edge extraction drops from ~3.1s to ~0.19s at 500 documents and completes 2000 documents in ~1.2s, where the previous approach would have exceeded the aggregator timeout.
