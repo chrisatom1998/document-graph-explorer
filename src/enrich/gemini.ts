@@ -331,8 +331,10 @@ export function docAiBlockedReason(): string | null {
 async function streamGemini(
   prompt: string,
   onChunk?: (accumulated: string) => void,
+  signal?: AbortSignal,
 ): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
   if (isOffline()) return { ok: false, error: AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE };
+  if (signal?.aborted) return { ok: false, error: 'Cancelled' };
   const { geminiKey } = useSettingsStore.getState();
   const model = resolveGeminiModel('document');
   const url =
@@ -359,6 +361,11 @@ async function streamGemini(
         REQUEST_TIMEOUT_MS,
       );
     };
+    // Forward an external cancellation (the caller navigated away) into this
+    // attempt's controller, then detach in the finally so attempts don't
+    // accumulate listeners on a long-lived signal.
+    const onExternalAbort = () => controller.abort(new DOMException('Cancelled', 'AbortError'));
+    signal?.addEventListener('abort', onExternalAbort);
     try {
       armIdle(); // also covers connection latency before the first byte
       const res = await fetch(url, {
@@ -431,10 +438,15 @@ async function streamGemini(
       }
       return { ok: true, text: accumulated.trim() };
     } catch (err) {
+      // A caller-initiated cancellation is a final answer, not a transient
+      // failure — retrying would re-issue the request the user just abandoned
+      // and keep spending their API quota.
+      if (signal?.aborted) return { ok: false, error: 'Cancelled' };
       retryable = true;
       lastError = err instanceof Error ? `Network error: ${err.message}` : 'Network error';
     } finally {
       clearIdle();
+      signal?.removeEventListener('abort', onExternalAbort);
     }
     if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
     await sleep(1000 * 2 ** attempt);
@@ -447,6 +459,7 @@ export async function askDocAi(
   action: DocAiAction,
   question?: string,
   onChunk?: (text: string) => void,
+  signal?: AbortSignal,
 ): Promise<{ ok: boolean; text: string }> {
   const blocked = docAiBlockedReason();
   if (blocked) return { ok: false, text: blocked };
@@ -498,7 +511,7 @@ export async function askDocAi(
   ].join('\n');
 
   // Use streaming for real-time delivery
-  const res = await streamGemini(prompt, onChunk);
+  const res = await streamGemini(prompt, onChunk, signal);
   if (!res.ok) return { ok: false, text: res.error };
   return { ok: true, text: res.text };
 }

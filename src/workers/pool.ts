@@ -105,7 +105,13 @@ export class WorkerPool {
     const emptySlot = this.workers.findIndex((w) => w === null);
     if (emptySlot >= 0) return this.spawn(emptySlot);
     if (this.workers.length < this.size) return this.spawn();
+    // Only a single-worker pool may lend the pinned embedding worker to general
+    // work. Anywhere else this is a bad trade: one wedged parse retires the
+    // worker and throws away the loaded model, forcing a full reload on the
+    // next embed — and with size >= 2 general jobs always have another slot.
+    // On a 1-worker pool there is no other slot, so refusing would starve them.
     if (
+      this.size === 1 &&
       this.embeddingWorkerIndex !== null &&
       this.workers[this.embeddingWorkerIndex] &&
       this.busy[this.embeddingWorkerIndex] === 0
@@ -161,14 +167,42 @@ export class WorkerPool {
     });
   }
 
-  /** Dispatch queued jobs while an idle worker (or room to grow) exists. */
+  /**
+   * Dispatch every queued job that can run right now, scanning past ones that
+   * cannot.
+   *
+   * Stopping at queue[0] meant one embed job waiting on the pinned (busy)
+   * embedding worker held up every parse behind it while general workers sat
+   * idle — the first search of a session loads the model for up to three
+   * minutes, and a file dropped meanwhile just sat at "queued".
+   *
+   * FIFO still holds *within* each resource class, which is the only ordering
+   * that matters: dispatchability depends solely on a job's class (embed jobs
+   * want the one pinned worker, everything else wants any other slot), so
+   * skipping a blocked job can never let a later job of that same class jump
+   * ahead of it. Once a class is known blocked we stop re-testing it.
+   */
   private pump(): void {
-    while (this.queue.length > 0) {
-      const job = this.queue[0];
+    let embedBlocked = false;
+    let generalBlocked = false;
+    let i = 0;
+    while (i < this.queue.length) {
+      const job = this.queue[i];
       if (!job) return;
+      const isEmbed = job.payload.type === 'embed' || job.payload.type === 'embedQuery';
+      if (isEmbed ? embedBlocked : generalBlocked) {
+        i += 1;
+        continue;
+      }
       const index = this.pickIdleWorker(job.payload.type);
-      if (index < 0) return; // every worker is mid-job; backlog waits here
-      this.queue.shift();
+      if (index < 0) {
+        if (isEmbed) embedBlocked = true;
+        else generalBlocked = true;
+        if (embedBlocked && generalBlocked) return; // nothing can move
+        i += 1;
+        continue;
+      }
+      this.queue.splice(i, 1); // next job shifts into i — don't advance
       this.dispatch(index, job);
     }
   }

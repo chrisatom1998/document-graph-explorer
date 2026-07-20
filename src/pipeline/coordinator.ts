@@ -72,8 +72,10 @@ import { useGraphStore } from '../store/graphStore';
 import {
   chunkStore,
   clearRuntimeStores,
+  dirtyDocIds,
   docLinksStore,
   docVectorStore,
+  markDocsDirty,
   mdLinkTargetsStore,
   textStore,
 } from '../store/runtimeStores';
@@ -114,7 +116,19 @@ const SPAWN_JITTER = 25;
 // serialized run queue forever. Sits between pool.ts's PARSE_REQUEST_TIMEOUT_MS
 // (30s, comparably cheap per-file work) and EMBED_REQUEST_TIMEOUT_MS (180s,
 // which pays for model load) for a similar-order-of-magnitude, corpus-wide pass.
-const AGG_REQUEST_TIMEOUT_MS = 60_000;
+// Scaled by corpus size: the corpus-wide passes grow with document count, so a
+// flat budget that is generous at 200 docs is a false alarm at 2000. The base
+// covers fixed costs; the per-doc term tracks the work itself; the ceiling
+// keeps a genuinely wedged worker from hanging the run queue indefinitely.
+const AGG_BASE_TIMEOUT_MS = 60_000;
+const AGG_PER_DOC_TIMEOUT_MS = 30;
+const AGG_MAX_TIMEOUT_MS = 300_000;
+
+function aggTimeoutFor(msg: AggRequest): number {
+  const count =
+    msg.type === 'lexical' ? msg.docs.length : 'ids' in msg ? msg.ids.length : 0;
+  return Math.min(AGG_MAX_TIMEOUT_MS, AGG_BASE_TIMEOUT_MS + AGG_PER_DOC_TIMEOUT_MS * count);
+}
 
 let aggWorker: Worker | null = null;
 let aggNextRequestId = 1;
@@ -135,6 +149,17 @@ function failAllPending(error: Error): void {
   }
 }
 
+/**
+ * Reject everything in flight and drop the worker so the next request respawns
+ * a clean one. Used for crashes, undecodable messages, and timeouts alike —
+ * in every case the worker's state can no longer be trusted.
+ */
+function discardAggregator(error: Error): void {
+  failAllPending(error);
+  aggWorker?.terminate();
+  aggWorker = null;
+}
+
 function ensureAggregator(): Worker {
   if (aggWorker) return aggWorker;
   aggWorker = new Worker(new URL('../workers/aggregator.worker.ts', import.meta.url), {
@@ -150,21 +175,14 @@ function ensureAggregator(): Worker {
     else entry.resolve(msg);
   };
   aggWorker.onerror = (ev: ErrorEvent) => {
-    // Discard the dead worker so the next ensureAggregator() respawns a fresh
-    // one; otherwise every later lexical/semantic pass posts into a crashed
-    // worker and the serialized run chain wedges permanently.
-    failAllPending(new Error(ev.message || 'aggregator worker crashed'));
-    aggWorker?.terminate();
-    aggWorker = null;
+    discardAggregator(new Error(ev.message || 'aggregator worker crashed'));
   };
   aggWorker.onmessageerror = () => {
     // A message that couldn't be structured-cloned/decoded leaves whatever
     // request it was replying to (and every OTHER pending request on this
     // worker — we can no longer trust its state) hanging forever without
     // this: reject everything in flight and respawn, same as a crash.
-    failAllPending(new Error('aggregator worker message could not be decoded'));
-    aggWorker?.terminate();
-    aggWorker = null;
+    discardAggregator(new Error('aggregator worker message could not be decoded'));
   };
   return aggWorker;
 }
@@ -177,16 +195,20 @@ function aggRequest<T extends AggResponse>(
   const requestId = aggNextRequestId;
   aggNextRequestId += 1;
   const payload = { ...msg, requestId } as AggRequest;
+  const timeoutMs = aggTimeoutFor(msg);
   return new Promise<T>((resolve, reject) => {
-    // Rejects only THIS request on timeout — not the whole worker. A lone
-    // slow pass doesn't necessarily mean the worker is wedged, and
-    // terminating it would also abort every other in-flight request sharing
-    // it; onerror/onmessageerror above already handle the "actually dead"
-    // case by failing everything and respawning.
+    // A timeout means this worker is wedged, so tear it down rather than just
+    // rejecting the request. The worker is single-threaded: leaving it running
+    // starves every later lexical/semantic/cluster pass behind the stuck one,
+    // so a single timeout used to cascade into permanent failure that only a
+    // reload cleared. Runs are serialized by the queue, so there is at most one
+    // request in flight and effectively nothing else to take down with it.
     const timer = setTimeout(() => {
-      if (!aggPending.delete(requestId)) return;
-      reject(new Error(`aggregator worker request timed out after ${AGG_REQUEST_TIMEOUT_MS}ms`));
-    }, AGG_REQUEST_TIMEOUT_MS);
+      if (!aggPending.has(requestId)) return;
+      discardAggregator(
+        new Error(`aggregator worker request timed out after ${timeoutMs}ms`),
+      );
+    }, timeoutMs);
     aggPending.set(requestId, {
       // correlated by requestId at runtime; caller asserts the subtype
       resolve: resolve as unknown as (response: AggResponse) => void,
@@ -461,6 +483,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
       };
       store().addNodes([node]);
       textStore.set(p.id, doc.text);
+      markDocsDirty([p.id]);
       void putOriginalIfMissing(p.id, p.file.name, p.original);
       store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'placed' });
     });
@@ -523,6 +546,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
       });
       docVectorStore.set(n.id, done.docVector);
       chunkStore.set(n.id, { texts: chunks, vectors: done.chunkVectors, dims: EMBED_DIMS });
+      markDocsDirty([n.id]);
       if (fileId) store().setFileStatus({ fileId, name, stage: 'placed' });
     });
     const settled = await Promise.allSettled(embedJobs);
@@ -966,6 +990,9 @@ async function runRemove(ids: string[]): Promise<void> {
     docVectorStore.delete(id);
     mdLinkTargetsStore.delete(id);
     docLinksStore.delete(id);
+    // Nothing left to persist for a removed doc — a stale dirty entry would
+    // make the next save look it up and find nothing.
+    dirtyDocIds.delete(id);
     lexMeta.delete(id);
     fileIdOfDoc.delete(id);
     nameOfDoc.delete(id);
@@ -1198,7 +1225,13 @@ async function runEmbeddingRebuild(): Promise<void> {
         });
       }
     }
+    markDocsDirty(rebuilt.keys()); // every vector here differs from the cache
     graph().patchNodes(patches);
+    // Every vector above was replaced, but the doc ids did not change — so
+    // runSemanticPass's staleness check (which only detects departures) would
+    // take the incremental path and serve edges computed in the OLD vector
+    // space. Drop the cache so the next pass rebuilds against the new one.
+    resetSemanticIndex();
     await runSemanticPass(lexEdges);
     synthesizeTopicNodes();
     graph().setCorpusHash(await computeCorpusHash());

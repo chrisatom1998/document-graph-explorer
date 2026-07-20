@@ -27,6 +27,22 @@ export function makeSoftSprite(size = 64): THREE.Texture {
   return tex;
 }
 
+let sharedSoftSprite: THREE.Texture | null = null;
+
+/**
+ * The default-size soft sprite, shared by every caller that just needs a round
+ * glow (starfield dust, the AI core's halo).
+ *
+ * Components that build their own copy leak it on unmount — a texture passed as
+ * a `map` prop or via `<primitive>` is not disposed by R3F — and the scene
+ * mounts and unmounts these on every 2D/3D toggle. Deliberately never disposed:
+ * it lives as long as the renderer does.
+ */
+export function getSharedSoftSprite(): THREE.Texture {
+  sharedSoftSprite ??= makeSoftSprite();
+  return sharedSoftSprite;
+}
+
 /**
  * Bright star with four diffraction spikes — the cross flare a real telescope's
  * spider vanes put on every bright star. Used only by the few "hero" stars;

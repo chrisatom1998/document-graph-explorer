@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { useActiveOptionScroll } from './useActiveOptionScroll';
 
 const SUMMARY_ID = 'graph-navigator-summary';
 const INSTRUCTIONS_ID = 'graph-navigator-instructions';
@@ -42,6 +43,7 @@ export default function GraphNavigator() {
   }, [activeId, orderedNodes, selectedId]);
 
   const activeIndex = Math.max(0, orderedNodes.findIndex((node) => node.id === activeId));
+  useActiveOptionScroll(orderedNodes.length > 0 ? optionId(activeIndex) : undefined);
   const documentCount = orderedNodes.filter((node) => node.kind === 'document').length;
   const topicCount = orderedNodes.length - documentCount;
   const clusterCount = new Set(

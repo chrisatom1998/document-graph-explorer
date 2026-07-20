@@ -86,6 +86,9 @@ function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSour
 
 // memo: streaming updates replace ONE message object per delta; every other
 // bubble keeps its identity and must not re-render (or re-parse its markdown).
+/** Within this many px of the bottom still counts as "following along". */
+const STICK_THRESHOLD_PX = 48;
+
 const MessageBubble = memo(function MessageBubble({
   msg,
   onSourceClick,
@@ -131,8 +134,19 @@ export default function ChatPanel() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const wasStreamingRef = useRef(false);
 
-  // Auto-scroll to bottom on new messages
+  // Follow new messages, but only while the reader is already at the bottom.
+  // Streaming updates the transcript on every chunk, so scrolling
+  // unconditionally made it impossible to scroll up and re-read an earlier
+  // answer while a new one was still arriving.
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
+  const handleMessagesScroll = (): void => {
+    const el = messagesRef.current;
+    if (!el) return;
+    stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_THRESHOLD_PX;
+  };
   useEffect(() => {
+    if (!stickToBottomRef.current) return;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -205,7 +219,7 @@ export default function ChatPanel() {
       </div>
 
       {/* Messages */}
-      <div className="chat-panel__messages">
+      <div className="chat-panel__messages" ref={messagesRef} onScroll={handleMessagesScroll}>
         {messages.length === 0 && (
           <div className="chat-panel__empty">
             <p className="chat-panel__empty-title">Ask anything about your documents</p>

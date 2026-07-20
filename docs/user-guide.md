@@ -200,7 +200,7 @@ Two modes, selected automatically:
 
 Either way, every answer carries **source chips**: hover for the match strength and snippet, click to fly to that document in the graph, or use the ↗ icon to open it.
 
-Chat history is intentionally ephemeral — it lives in memory only and clears when the corpus is reset.
+Chat history is saved per workspace in browser-local IndexedDB — the most recent 100 messages are restored when you return to that workspace. Like everything else the app stores, it never leaves your device. The transcript is cleared when the corpus is reset, and deleting a workspace deletes its transcript with it.
 
 ## Ask AI about one document
 
