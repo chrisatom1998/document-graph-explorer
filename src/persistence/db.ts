@@ -144,6 +144,9 @@ export async function closeDb(): Promise<void> {
 /** Memoized connection. Rejections drop the memo so later calls may retry. */
 export function getDb(): Promise<IDBPDatabase<NebulaDB>> {
   if (dbPromise) return dbPromise;
+  // Declared before openDB so the blocked() callback below can never observe
+  // it in the temporal dead zone; assigned when the guard promise is built.
+  let failIfStillBlocked: (() => void) | undefined;
   const p = openDB<NebulaDB>(DB_NAME, DB_VERSION, {
     upgrade(db, oldVersion) {
       if (oldVersion < 1) {
@@ -172,12 +175,13 @@ export function getDb(): Promise<IDBPDatabase<NebulaDB>> {
     },
     blocked() {
       // An older connection (e.g. from a pre-HMR module) is still open.
-      // We can't force-close it from here, so log a warning. The timeout
-      // below will reject the promise so callers degrade gracefully.
+      // We can't force-close it from here, so warn and start the short fuse
+      // below — this is the case that genuinely never resolves on its own.
       console.warn(
         '[knowledge-nebula] DB upgrade blocked by an older connection — ' +
           'reload the page if persistence is stuck.',
       );
+      failIfStillBlocked?.();
     },
     blocking() {
       // *This* connection is blocking a newer version from opening
@@ -191,17 +195,27 @@ export function getDb(): Promise<IDBPDatabase<NebulaDB>> {
     },
   });
 
-  // Safety timeout: if the upgrade is blocked for >2s, reject so callers
-  // degrade to no-cache instead of hanging forever.
+  // Two different failure shapes, two different fuses.
+  //
+  // A *blocked* upgrade never completes on its own, so it gets the short fuse —
+  // but only once blocked() actually fires. A merely slow open (cold profile,
+  // contended disk, a first v1→v5 upgrade over a large database) does finish,
+  // and the old unconditional 2s race declared "persistence unavailable" for
+  // the whole visit while the open was still healthy and in progress. The long
+  // fuse only guards against a pathological hang.
   let timedOut = false;
   const guarded = Promise.race([
     p,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => {
+    new Promise<never>((_, reject) => {
+      const fail = (message: string) => () => {
         timedOut = true;
-        reject(new Error('DB open timed out (upgrade likely blocked)'));
-      }, 2000),
-    ),
+        reject(new Error(message));
+      };
+      failIfStillBlocked = () => {
+        setTimeout(fail('DB open timed out (upgrade blocked by an older connection)'), 2000);
+      };
+      setTimeout(fail('DB open timed out'), 20_000);
+    }),
   ]);
 
   dbPromise = guarded;

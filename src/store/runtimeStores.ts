@@ -30,10 +30,28 @@ export const mdLinkTargetsStore = new Map<string, string[]>();
  */
 export const docLinksStore = new Map<string, import('../model/types').LinkRef[]>();
 
+/**
+ * Documents whose text/chunks/vectors differ from what the IndexedDB document
+ * cache holds.
+ *
+ * saveSession used to rewrite every document on every completed run — full text
+ * plus chunk vectors for the whole corpus, on each drop and each debounced
+ * auto-save. At a couple of thousand documents that is hundreds of megabytes of
+ * structured cloning per save, nearly all of it re-writing bytes that never
+ * changed. Writers mark what they touch; saveSession persists exactly that and
+ * clears the ids it committed.
+ */
+export const dirtyDocIds = new Set<string>();
+
+export function markDocsDirty(ids: Iterable<string>): void {
+  for (const id of ids) dirtyDocIds.add(id);
+}
+
 export function clearRuntimeStores(): void {
   textStore.clear();
   chunkStore.clear();
   docVectorStore.clear();
   mdLinkTargetsStore.clear();
   docLinksStore.clear();
+  dirtyDocIds.clear();
 }

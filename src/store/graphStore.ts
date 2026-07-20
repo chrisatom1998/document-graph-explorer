@@ -46,9 +46,20 @@ interface GraphState {
   reset: () => void;
 }
 
+/**
+ * Node ids come from imported files and share links, so they can be arbitrary
+ * strings — including 'constructor', 'toString' or '__proto__'. On a normal
+ * object those collide with Object.prototype: the dedupe check below would see
+ * an inherited member and silently drop the node from the store while the
+ * layout worker still received it. A null-prototype map has no inherited keys,
+ * so every id behaves like plain data. Clone it with Object.assign, never
+ * spread — spread would hand the prototype back.
+ */
+const emptyNodeIndex = (): Record<string, number> => Object.create(null) as Record<string, number>;
+
 export const useGraphStore = create<GraphState>((set) => ({
   nodes: [],
-  nodeIndex: {},
+  nodeIndex: emptyNodeIndex(),
   edges: [],
   clusterNames: {},
   phase: 'idle',
@@ -63,7 +74,7 @@ export const useGraphStore = create<GraphState>((set) => ({
   addNodes: (incoming) =>
     set((s) => {
       const nodes = s.nodes.slice();
-      const nodeIndex = { ...s.nodeIndex };
+      const nodeIndex = Object.assign(emptyNodeIndex(), s.nodeIndex);
       for (const n of incoming) {
         if (nodeIndex[n.id] !== undefined) continue; // content-hash dedupe
         nodeIndex[n.id] = nodes.length;
@@ -86,12 +97,14 @@ export const useGraphStore = create<GraphState>((set) => ({
       const gone = new Set(ids);
       const kept = s.nodes.filter((n) => !gone.has(n.id));
       if (kept.length === s.nodes.length) return s;
-      const nodeIndex: Record<string, number> = {};
+      const nodeIndex = emptyNodeIndex();
       kept.forEach((n, i) => {
         nodeIndex[n.id] = i;
       });
       const edges = s.edges.filter((e) => !gone.has(e.source) && !gone.has(e.target));
-      const degree: Record<string, number> = {};
+      // Same prototype hazard as nodeIndex: degree['constructor'] ?? 0 would
+      // yield the inherited function rather than 0.
+      const degree = emptyNodeIndex();
       for (const e of edges) {
         degree[e.source] = (degree[e.source] ?? 0) + 1;
         degree[e.target] = (degree[e.target] ?? 0) + 1;
@@ -105,7 +118,9 @@ export const useGraphStore = create<GraphState>((set) => ({
   setEdges: (edges) =>
     set((s) => {
       // recompute degree
-      const degree: Record<string, number> = {};
+      // Same prototype hazard as nodeIndex: degree['constructor'] ?? 0 would
+      // yield the inherited function rather than 0.
+      const degree = emptyNodeIndex();
       for (const e of edges) {
         degree[e.source] = (degree[e.source] ?? 0) + 1;
         degree[e.target] = (degree[e.target] ?? 0) + 1;
@@ -131,7 +146,7 @@ export const useGraphStore = create<GraphState>((set) => ({
   reset: () =>
     set({
       nodes: [],
-      nodeIndex: {},
+      nodeIndex: emptyNodeIndex(),
       edges: [],
       clusterNames: {},
       phase: 'idle',

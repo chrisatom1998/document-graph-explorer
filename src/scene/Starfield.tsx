@@ -13,7 +13,7 @@
  * far shell keeps the same fogExp2 depth falloff the old material had.
  */
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import { useUiStore } from '../store/uiStore';
@@ -167,15 +167,28 @@ function makeStarMaterial(map: THREE.Texture): THREE.ShaderMaterial {
   return material;
 }
 
-export default function Starfield() {
-  // Flat (2D ambient) mode wants a calm, faint backdrop — dim the star field
-  // and mute the colorful nebula dust so it doesn't compete with the
-  // constellation of nodes.
-  const flat = useUiStore((s) => s.dims === 2);
+/**
+ * Built once for the lifetime of the tab, not per mount.
+ *
+ * NebulaCanvas unmounts this component in 2D mode, and these materials and
+ * canvas textures are attached via `<primitive>`/props, which R3F does not
+ * dispose — so a per-mount build leaked two shader programs and two textures on
+ * every 2D/3D toggle. Sharing them also stops the sky re-randomizing each time.
+ * Lazily built so importing this module never touches `document`.
+ */
+let starfieldAssets: {
+  stars: ReturnType<typeof buildStars>;
+  heroes: ReturnType<typeof buildHeroes>;
+  dust: ReturnType<typeof buildDust>;
+  fieldMaterial: ReturnType<typeof makeStarMaterial>;
+  heroMaterial: ReturnType<typeof makeStarMaterial>;
+  softSprite: ReturnType<typeof makeSoftSprite>;
+} | null = null;
 
-  const { stars, heroes, dust, fieldMaterial, heroMaterial, softSprite } = useMemo(() => {
+function getStarfieldAssets(): NonNullable<typeof starfieldAssets> {
+  if (!starfieldAssets) {
     const softSprite = makeSoftSprite();
-    return {
+    starfieldAssets = {
       stars: buildStars(STAR_COUNT),
       heroes: buildHeroes(),
       dust: buildDust(DUST_COUNT),
@@ -183,7 +196,17 @@ export default function Starfield() {
       heroMaterial: makeStarMaterial(makeStarSprite()),
       softSprite,
     };
-  }, []);
+  }
+  return starfieldAssets;
+}
+
+export default function Starfield() {
+  // Flat (2D ambient) mode wants a calm, faint backdrop — dim the star field
+  // and mute the colorful nebula dust so it doesn't compete with the
+  // constellation of nodes.
+  const flat = useUiStore((s) => s.dims === 2);
+
+  const { stars, heroes, dust, fieldMaterial, heroMaterial, softSprite } = getStarfieldAssets();
 
   // Keep uScale matched to the drawing buffer (device px) so star discs stay
   // the same physical size across resizes and DPR changes.

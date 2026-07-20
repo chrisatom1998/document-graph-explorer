@@ -13,8 +13,19 @@ export interface NamedFile {
 const MAX_INGEST_MB = Math.round(MAX_INGEST_FILE_BYTES / (1024 * 1024));
 const MAX_INGEST_TOTAL_MB = Math.round(MAX_INGEST_TOTAL_BYTES / (1024 * 1024));
 
-export async function prepareIngestFiles(named: NamedFile[]): Promise<IngestFile[]> {
+export interface PreparedIngest {
+  files: IngestFile[];
+  /**
+   * Paths held back only because this batch hit the total-size cap — not
+   * because the file itself is unusable. A caller that tracks the source (the
+   * folder watcher) must retry these rather than record them as processed.
+   */
+  deferredPaths: Set<string>;
+}
+
+export async function prepareIngestFiles(named: NamedFile[]): Promise<PreparedIngest> {
   const output: IngestFile[] = [];
+  const deferredPaths = new Set<string>();
   let totalBytes = 0;
   let totalCapHit = false;
 
@@ -28,6 +39,9 @@ export async function prepareIngestFiles(named: NamedFile[]): Promise<IngestFile
       useGraphStore
         .getState()
         .addIgnored(file.name, `selection exceeds ${MAX_INGEST_TOTAL_MB} MB total`);
+      // Deferred, not rejected: this file is within the per-file limit and only
+      // lost the race for room in this batch.
+      deferredPaths.add(path ?? file.name);
       if (!totalCapHit) {
         totalCapHit = true;
         useUiStore
@@ -51,12 +65,14 @@ export async function prepareIngestFiles(named: NamedFile[]): Promise<IngestFile
       lastModified: file.lastModified > 0 ? file.lastModified : undefined,
     });
   }
-  return output;
+  return { files: output, deferredPaths };
 }
 
 export async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
   try {
-    const files = await prepareIngestFiles(named);
+    // A one-shot selection has no manifest to retry against, so deferred files
+    // stay reported-and-skipped exactly as before.
+    const { files } = await prepareIngestFiles(named);
     if (files.length === 0) return;
     const { ingestFiles } = await import('../pipeline/coordinatorLazy');
     await ingestFiles(files);

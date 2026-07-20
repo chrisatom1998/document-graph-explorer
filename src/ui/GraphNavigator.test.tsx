@@ -50,6 +50,19 @@ describe('GraphNavigator', () => {
     expect(useUiStore.getState().cameraCommand).toMatchObject({ kind: 'frameNode', ids: ['zeta'] });
   });
 
+  it('scrolls the newly active option into view as the highlight moves', () => {
+    // The list moves aria-activedescendant rather than DOM focus, so nothing
+    // scrolls it for us.
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    render(<GraphNavigator />);
+    scrollIntoView.mockClear();
+
+    fireEvent.keyDown(screen.getByRole('listbox', { name: 'Graph nodes' }), { key: 'ArrowDown' });
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
+  });
+
   it('contains arrow keys so the global camera handler cannot consume them', () => {
     const windowHandler = vi.fn();
     window.addEventListener('keydown', windowHandler);

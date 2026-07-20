@@ -8,14 +8,14 @@
  * layer static while retaining the steady brightness cue.
  */
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useChatStore } from '../store/chatStore';
 import { useUiStore } from '../store/uiStore';
 import { prefersReducedMotion } from '../util/motion';
 import { computeAiCoreVisuals } from './aiCoreVisuals';
-import { makeSoftSprite } from './proceduralTextures';
+import { getSharedSoftSprite } from './proceduralTextures';
 
 const CORE_COLOR = new THREE.Color('#26e6cf');
 const SHELL_COLOR = new THREE.Color('#66fff0');
@@ -56,7 +56,7 @@ const shellMaterial = new THREE.ShaderMaterial({
 shellMaterial.toneMapped = false;
 
 export default function AiCore() {
-  const sprite = useMemo(makeSoftSprite, []);
+  const sprite = getSharedSoftSprite();
   const visible = useUiStore((s) => s.dims === 3);
   const glowRef = useRef<THREE.Sprite>(null);
   const glowMatRef = useRef<THREE.SpriteMaterial>(null);

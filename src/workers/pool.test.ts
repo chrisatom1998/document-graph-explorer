@@ -192,4 +192,72 @@ describe('WorkerPool scheduling', () => {
     await expect(first).rejects.toThrow(/disposed/);
     await expect(second).rejects.toThrow(/disposed/);
   });
+
+  it('lets the only worker take general work once its embed finishes', () => {
+    // size 1: refusing here would starve parses forever on a 2-core machine.
+    pool.request(embedMsg()).catch(() => undefined);
+    workers[0].respondEmbedToLast();
+
+    void pool.request(parseMsg()).catch(() => undefined);
+
+    expect(workers[0].messages.map((m) => m.type)).toEqual(['embed', 'parse']);
+  });
+});
+
+describe('WorkerPool dispatch past blocked jobs', () => {
+  let workers: FakeWorker[];
+  let pool: WorkerPool;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    workers = [];
+    pool = new WorkerPool({
+      size: 2,
+      workerFactory: () => {
+        const w = new FakeWorker();
+        workers.push(w);
+        return w;
+      },
+    });
+  });
+
+  afterEach(() => {
+    pool.dispose();
+    vi.useRealTimers();
+  });
+
+  it('runs a parse while an embed waits on the busy pinned worker', () => {
+    void pool.request(embedMsg()).catch(() => undefined); // pins and occupies worker 0
+    void pool.request(embedMsg()).catch(() => undefined); // queued: the pinned worker is busy
+    void pool.request(parseMsg()).catch(() => undefined); // must not wait behind it
+
+    expect(workers).toHaveLength(2);
+    expect(workers[1].messages.map((m) => m.type)).toEqual(['parse']);
+  });
+
+  it('keeps FIFO order within a class when an earlier job is skipped', () => {
+    void pool.request(embedMsg()).catch(() => undefined);
+    void pool.request(embedMsg()).catch(() => undefined); // blocked at the head of the queue
+    const firstParse = { ...parseMsg(), fileId: 'first' };
+    const secondParse = { ...parseMsg(), fileId: 'second' };
+    void pool.request(firstParse).catch(() => undefined);
+    void pool.request(secondParse).catch(() => undefined);
+
+    // Two parses, one free worker: the earlier one must go first.
+    expect(workers[1].messages[0]).toMatchObject({ type: 'parse', fileId: 'first' });
+    workers[1].respondToLast();
+    expect(workers[1].messages[1]).toMatchObject({ type: 'parse', fileId: 'second' });
+  });
+
+  it('never hands a parse to the pinned embedding worker when other slots exist', () => {
+    void pool.request(embedMsg()).catch(() => undefined);
+    workers[0].respondEmbedToLast(); // worker 0 pinned but now idle
+    void pool.request(parseMsg()).catch(() => undefined);
+    void pool.request(parseMsg()).catch(() => undefined);
+
+    // Both parses belong on worker 1, queueing there rather than retiring the
+    // warm model on worker 0.
+    expect(workers[0].messages.every((m) => m.type === 'embed')).toBe(true);
+    expect(workers[1].messages.map((m) => m.type)).toEqual(['parse']);
+  });
 });

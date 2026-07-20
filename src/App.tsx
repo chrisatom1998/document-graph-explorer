@@ -13,12 +13,13 @@ import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { useCorpusStore } from './store/corpusStore';
 import { onLayoutSettled } from './layout/layoutBridge';
+import { enqueueRun } from './pipeline/runQueue';
 import { positionBuffer } from './scene/positionBuffer';
 import { panInput } from './scene/panInput';
 import { initPersistence, restoreSession } from './persistence/session';
 import { initializeCorpusRepository } from './persistence/corpusRepository';
 import { reportPersistenceUnavailable } from './persistence/cache';
-import { loadChatHistory, saveChatHistory } from './persistence/chatHistory';
+import { initChatHistorySync } from './persistence/chatHistorySync';
 import './styles.css';
 
 const NebulaCanvas = lazy(() => import('./scene/NebulaCanvas'));
@@ -42,8 +43,6 @@ const RetrievalBenchmarkPanel = import.meta.env.DEV
 export default function App() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const phase = useGraphStore((s) => s.phase);
-  const activeCorpusId = useCorpusStore((s) => s.activeCorpusId);
-  const corpusMode = useCorpusStore((s) => s.mode);
   const selectedId = useUiStore((s) => s.selectedId);
   const searchOpen = useUiStore((s) => s.searchOpen);
   const showMeOpen = useUiStore((s) => s.showMeOpen);
@@ -89,39 +88,28 @@ export default function App() {
             return;
           }
         }
-        await restoreSession();
-        const { bindFolderWatcherToActiveCorpus } = await import('./ingest/folderWatcher');
-        await bindFolderWatcherToActiveCorpus();
+        // Serialized like every other restore path: DropZone is already live,
+        // so a drop landing mid-restore would otherwise interleave its ingest
+        // with hydration and leave the two writing over each other. The shared
+        // graph branch above returns before this point, so its own internally
+        // queued import never nests inside this run.
+        await enqueueRun(async () => {
+          await restoreSession();
+          const { bindFolderWatcherToActiveCorpus } = await import('./ingest/folderWatcher');
+          await bindFolderWatcherToActiveCorpus();
+        });
       } catch (error) {
         console.warn('session restore failed', error);
       }
     })();
   }, []);
 
-  const chatScope = corpusMode === 'local' ? activeCorpusId : null;
-
+  // Loading and saving the transcript both hinge on which workspace is active
+  // at the moment they run, which a committed effect scope can't track through
+  // a switch — chatHistorySync derives it from the stores instead.
   useEffect(() => {
-    if (!chatScope || phase !== 'ready') return;
-    let cancelled = false;
-    loadChatHistory(chatScope).then((messages) => {
-      if (!cancelled) useChatStore.getState().replaceMessages(messages);
-    }).catch((error) => console.warn('chat history restore failed', error));
-    return () => { cancelled = true; };
-  }, [chatScope, phase]);
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const unsubscribe = useChatStore.subscribe((state) => {
-      if (!chatScope || state.isStreaming) return;
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => saveChatHistory(chatScope, state.messages)
-        .catch((error) => console.warn('chat history save failed', error)), 350);
-    });
-    return () => {
-      if (timer) clearTimeout(timer);
-      unsubscribe();
-    };
-  }, [chatScope]);
+    initChatHistorySync();
+  }, []);
 
   // Auto-frame: while a fresh corpus is forming, re-fit the camera on every
   // layout settle so the nebula is always in view; stop after the settle that
@@ -209,6 +197,10 @@ export default function App() {
       const ui = useUiStore.getState();
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
+        // The overlay only renders once the graph is ready, so opening it
+        // earlier just sets invisible state that then swallows the next
+        // Escape. Closing a stray open state stays allowed.
+        if (useGraphStore.getState().phase !== 'ready' && !ui.searchOpen) return;
         const nextSearchOpen = !ui.searchOpen;
         ui.setSearchOpen(nextSearchOpen);
         if (nextSearchOpen) {

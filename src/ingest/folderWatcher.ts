@@ -100,7 +100,7 @@ async function syncBoundFolder(): Promise<number> {
     return !previous || previous.size !== entry.file.size || previous.lastModified !== entry.file.lastModified;
   });
   const changedPaths = new Set(changed.map((entry) => entry.path!));
-  const prepared = await prepareIngestFiles(changed);
+  const { files: prepared, deferredPaths } = await prepareIngestFiles(changed);
   const preparedByPath = new Map(prepared.map((file) => [file.path!, file]));
   const nextFiles: Record<string, WatchedFileRecord> = {};
   const removeIds = new Set<string>();
@@ -110,6 +110,14 @@ async function syncBoundFolder(): Promise<number> {
     const previous = watch.files[path];
     const ingestFile = preparedByPath.get(path);
     if (!ingestFile) {
+      // Held back by this batch's total-size cap, not by anything wrong with
+      // the file. Keep the prior manifest entry (or none, for a file never
+      // seen) so the next scan still sees it as changed and retries it —
+      // recording the new size/mtime here would strand it forever.
+      if (deferredPaths.has(path)) {
+        if (previous) nextFiles[path] = previous;
+        continue;
+      }
       // A changed file that is now over an ingest limit must not leave the
       // prior revision displayed as though it still matched the folder.
       if (changedPaths.has(path) && previous?.docId) removeIds.add(previous.docId);
@@ -218,6 +226,20 @@ export function folderWatchingSupported(): boolean {
   return typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
 }
 
+/**
+ * Re-arms watching for whichever corpus is now active. Resolves once the watch
+ * STATE is published and monitoring is re-armed — the catch-up scan is kicked
+ * off but deliberately not awaited, because that scan reaches
+ * `reconcileWatchedFiles`, which enqueues onto the same FIFO run queue. Awaiting
+ * it from inside an `enqueueRun` callback (corpus switch, delete, snapshot
+ * restore) would wait on a run that cannot start until the current one ends:
+ * a permanent deadlock. Fire-and-forget keeps this function safe to call from
+ * inside the queue; the diff lands as a normal queued run right afterwards.
+ *
+ * Invariant for queued callers: suspend the watcher BEFORE entering the queue
+ * (every current caller does), so the `suspendFolderWatcher` drain below can
+ * never await a sync that is itself waiting on the queue.
+ */
 export async function bindFolderWatcherToActiveCorpus(): Promise<void> {
   await suspendFolderWatcher();
   const corpusId = useCorpusStore.getState().activeCorpusId;
@@ -243,7 +265,7 @@ export async function bindFolderWatcherToActiveCorpus(): Promise<void> {
     return;
   }
   beginMonitoring(corpusId, watch.rootName);
-  await requestFolderSync().catch(() => 0);
+  void requestFolderSync().catch(() => undefined);
 }
 
 export async function chooseFolderToWatch(): Promise<void> {
@@ -254,6 +276,12 @@ export async function chooseFolderToWatch(): Promise<void> {
   const corpusId = useCorpusStore.getState().activeCorpusId;
   if (!corpusId) throw new Error('Create a local corpus before watching a folder.');
   const handle = await window.showDirectoryPicker!({ id: 'knowledge-nebula-source', mode: 'read' });
+  // Drain AFTER the picker, never before: showDirectoryPicker needs the user
+  // activation from this click, and awaiting a scan first can outlive it. An
+  // in-flight sync captured the OLD watch record and finishes by writing
+  // `{...oldWatch, files, paused:false}` — draining here forces that write to
+  // land before the new handle is stored, instead of clobbering it afterwards.
+  await suspendFolderWatcher();
   const watch: WatchedFolderRecord = {
     handle,
     rootName: handle.name,

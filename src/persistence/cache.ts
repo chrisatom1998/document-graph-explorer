@@ -135,8 +135,11 @@ export async function saveDocsToCache(
     mdLinkTargets: string[];
     docLinks: LinkRef[];
   }[],
-): Promise<void> {
-  if (docs.length === 0) return;
+  // Reports whether the write actually committed, so callers tracking unsaved
+  // work (see dirtyDocIds) can keep it queued when the cache is unavailable or
+  // over quota instead of dropping it.
+): Promise<boolean> {
+  if (docs.length === 0) return true;
   try {
     const db = await getDb();
     const tx = db.transaction(['documents', 'embeddings'], 'readwrite', {
@@ -171,8 +174,10 @@ export async function saveDocsToCache(
     }
     ops.push(tx.done);
     await Promise.all(ops);
+    return true;
   } catch (err) {
     cacheUnavailable(err);
+    return false;
   }
 }
 

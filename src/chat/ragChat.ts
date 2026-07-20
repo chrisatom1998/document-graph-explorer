@@ -333,7 +333,7 @@ export async function sendChatMessage(question: string): Promise<void> {
         }
       } catch { /* ignore */ }
       if (!retryable || attempt >= MAX_STREAM_RETRIES) {
-        useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}` });
+        useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}`, isError: true });
         return;
       }
       useChatStore.getState().updateMessage(assistantId, {
@@ -416,6 +416,7 @@ export async function sendChatMessage(question: string): Promise<void> {
           : streamMeta.blockReason
             ? `Error: Gemini blocked the response (${streamMeta.blockReason}).`
             : 'Gemini returned an empty response. Please try again.',
+        isError: true,
       });
     } else {
       useChatStore.getState().updateMessage(assistantId, { text: accumulated.trim(), sources });
@@ -430,11 +431,14 @@ export async function sendChatMessage(question: string): Promise<void> {
           : timedOut
             ? `Error: The selected AI provider didn't respond within ${REQUEST_TIMEOUT_MS / 1000}s. Check your network or try again.`
             : 'Stopped.',
+        // Only a timeout with nothing to show is a failure. A user-stopped
+        // answer, or a partial one we kept, is still usable context.
+        ...(!trimmed && timedOut ? { isError: true } : {}),
         ...(sources ? { sources } : {}),
       });
     } else {
       const errMsg = err instanceof Error ? err.message : String(err);
-      useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}` });
+      useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}`, isError: true });
     }
   } finally {
     clearTimeout(timeoutTimer);

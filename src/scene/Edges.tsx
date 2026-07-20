@@ -140,7 +140,14 @@ export default function Edges() {
     forcePositions.current = true;
     colorsDirty.current = true;
     const geom = geomRef.current;
-    if (geom) geom.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
+    if (geom) {
+      // The <bufferGeometry> below persists while its attributes are swapped,
+      // so the superseded pair's GPU buffers are only released if we say so —
+      // and these are the largest buffers in the scene, rebuilt on every
+      // setEdges during ingest. Same reasoning as ClusterCollapse.
+      geom.dispose();
+      geom.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
+    }
   }, [attrs]);
 
   useEffect(() => {

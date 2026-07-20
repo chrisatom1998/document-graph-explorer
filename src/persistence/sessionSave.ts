@@ -3,6 +3,7 @@ import { getNodePosition } from '../scene/positionBuffer';
 import { useGraphStore } from '../store/graphStore';
 import {
   chunkStore,
+  dirtyDocIds,
   docLinksStore,
   docVectorStore,
   mdLinkTargetsStore,
@@ -48,8 +49,14 @@ export async function saveSession(): Promise<void> {
   const corpusHash = state.corpusHash;
   const exportData = toGraphExport(false);
   const positions = collectPositions(state.nodes);
-  const docs = state.nodes
-    .filter((node) => node.kind === 'document')
+
+  // Only documents whose heavy payload actually changed. The graph and corpus
+  // records below stay full writes — they are small, and they are what session
+  // restore reads nodes and edges from.
+  const pending = [...dirtyDocIds];
+  const docs = pending
+    .map((id) => state.nodes[state.nodeIndex[id]])
+    .filter((node) => node?.kind === 'document')
     .map((node) => {
       const chunks = chunkStore.get(node.id);
       return {
@@ -63,12 +70,16 @@ export async function saveSession(): Promise<void> {
       };
     });
 
-  await Promise.all([
+  const [, docsSaved] = await Promise.all([
     saveGraphToCache(corpusHash, exportData, positions),
     saveDocsToCache(docs),
     saveActiveCorpusSnapshot(corpusHash, exportData, positions).catch(
       reportPersistenceUnavailable,
     ),
   ]);
+  // Clear only what this call committed; anything marked dirty while the write
+  // was in flight stays queued for the next save. A failed write keeps
+  // everything, so a quota error retries rather than silently losing the doc.
+  if (docsSaved) for (const id of pending) dirtyDocIds.delete(id);
   await setSetting('lastCorpusHash', corpusHash);
 }
