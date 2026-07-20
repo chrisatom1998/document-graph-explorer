@@ -17,7 +17,6 @@
  *   existing tier-3 degradations (label cap, pulses off).
  */
 
-import { useMemo } from 'react';
 import * as THREE from 'three';
 import { useUiStore } from '../store/uiStore';
 import { makeCloudTexture } from './proceduralTextures';
@@ -94,15 +93,18 @@ function buildClouds(
   return specs;
 }
 
-export default function NebulaClouds() {
-  // hidden (not unmounted) on degraded tiers so recovery doesn't rebuild; also
-  // hidden in flat (2D ambient) mode — the clean constellation look has no
-  // colorful volumetric clouds.
-  const visible = useUiStore((s) => s.qualityTier < 3 && s.dims === 3);
+/**
+ * Built once per tab rather than per mount: the three canvas textures and ~26
+ * sprite materials below are attached with `<primitive>`, which R3F never
+ * disposes, so remounting (NebulaCanvas drops this component in 2D) leaked all
+ * of them each time. Lazy so module import stays DOM-free.
+ */
+let cloudSpecs: ReturnType<typeof buildClouds> | null = null;
 
-  const clouds = useMemo(() => {
+function getCloudSpecs(): ReturnType<typeof buildClouds> {
+  if (!cloudSpecs) {
     const textures = [makeCloudTexture(11), makeCloudTexture(23), makeCloudTexture(47)];
-    return [
+    cloudSpecs = [
       ...buildClouds(textures, WISP_COUNT, WISP_MIN_R, WISP_MAX_R, 25, 70, 0.05, 0.12, true),
       ...buildClouds(
         textures,
@@ -116,7 +118,17 @@ export default function NebulaClouds() {
         false,
       ),
     ];
-  }, []);
+  }
+  return cloudSpecs;
+}
+
+export default function NebulaClouds() {
+  // hidden (not unmounted) on degraded tiers so recovery doesn't rebuild; also
+  // hidden in flat (2D ambient) mode — the clean constellation look has no
+  // colorful volumetric clouds.
+  const visible = useUiStore((s) => s.qualityTier < 3 && s.dims === 3);
+
+  const clouds = getCloudSpecs();
 
   return (
     <group visible={visible}>

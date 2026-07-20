@@ -4,6 +4,7 @@ import { useUiStore } from '../store/uiStore';
 import { searchCorpus, searchCorpusLexical } from '../search/semanticSearch';
 import type { RetrievalMatchKind } from '../search/retrieval';
 import { focusNode } from './focusNode';
+import { useActiveOptionScroll } from './useActiveOptionScroll';
 
 const DEBOUNCE_MS = 250;
 
@@ -81,6 +82,18 @@ export default function SearchOverlay() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, searchOpen]);
 
+  const browsing = query.trim().length === 0;
+  const displayedResults: ResultRow[] = browsing
+    ? nodes
+        .filter((node) => node.kind === 'document')
+        .map((node) => ({ id: node.id, score: 0, matchKind: 'title' }))
+    : results;
+  const hasDisplayedResults = displayedResults.length > 0;
+  const activeOptionId = hasDisplayedResults ? `search-option-${activeIndex}` : undefined;
+  // Must run before the closed-overlay early return: hooks cannot be
+  // conditional, and this list is only rendered while the overlay is open.
+  useActiveOptionScroll(searchOpen ? activeOptionId : undefined);
+
   if (!searchOpen) return null;
 
   const selectResult = (id: string) => {
@@ -122,15 +135,6 @@ export default function SearchOverlay() {
       input.focus();
     }
   };
-
-  const browsing = query.trim().length === 0;
-  const displayedResults: ResultRow[] = browsing
-    ? nodes
-        .filter((node) => node.kind === 'document')
-        .map((node) => ({ id: node.id, score: 0, matchKind: 'title' }))
-    : results;
-  const hasDisplayedResults = displayedResults.length > 0;
-  const activeOptionId = hasDisplayedResults ? `search-option-${activeIndex}` : undefined;
 
   return (
     <div className="search-backdrop" onMouseDown={closeAndClear}>

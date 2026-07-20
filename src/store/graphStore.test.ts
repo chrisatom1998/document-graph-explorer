@@ -88,3 +88,50 @@ describe('removeNodes', () => {
     expect(after.nodeIndex).toEqual({ b: 0, d: 1 });
   });
 });
+
+// Ids arrive from imported files and share links, so they are untrusted text.
+describe('node ids that collide with Object.prototype members', () => {
+  beforeEach(() => {
+    useGraphStore.getState().reset();
+  });
+
+  const hostile = ['constructor', 'toString', 'hasOwnProperty', '__proto__'];
+
+  it('stores and indexes them like any other id', () => {
+    useGraphStore.getState().addNodes(hostile.map(mkNode));
+
+    const { nodes, nodeIndex } = useGraphStore.getState();
+    expect(nodes.map((n) => n.id)).toEqual(hostile);
+    hostile.forEach((id, i) => expect(nodeIndex[id]).toBe(i));
+  });
+
+  it('still dedupes them on a second add', () => {
+    const s = useGraphStore.getState();
+    s.addNodes(hostile.map(mkNode));
+    s.addNodes(hostile.map(mkNode));
+
+    expect(useGraphStore.getState().nodes).toHaveLength(hostile.length);
+  });
+
+  it('counts their degree numerically rather than inheriting a prototype member', () => {
+    const s = useGraphStore.getState();
+    s.addNodes([mkNode('constructor'), mkNode('toString')]);
+    s.setEdges([mkEdge('constructor', 'toString')]);
+
+    const byId = new Map(useGraphStore.getState().nodes.map((n) => [n.id, n]));
+    expect(byId.get('constructor')?.degree).toBe(1);
+    expect(byId.get('toString')?.degree).toBe(1);
+  });
+
+  it('removes them without corrupting the remaining index', () => {
+    const s = useGraphStore.getState();
+    s.addNodes([mkNode('constructor'), mkNode('keep')]);
+
+    useGraphStore.getState().removeNodes(['constructor']);
+
+    const after = useGraphStore.getState();
+    expect(after.nodes.map((n) => n.id)).toEqual(['keep']);
+    expect(after.nodeIndex['keep']).toBe(0);
+    expect(after.nodeIndex['constructor']).toBeUndefined();
+  });
+});

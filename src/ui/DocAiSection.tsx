@@ -8,7 +8,7 @@
  * dramatically reducing perceived latency.
  */
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { askDocAi, docAiBlockedReason, type DocAiAction } from '../enrich/gemini';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
@@ -49,6 +49,13 @@ export default function DocAiSection({ docId, title }: Props) {
     setStreamText(accumulated);
   }, []);
 
+  // SidePanel remounts this component per document (key={node.id}), so
+  // selecting another node unmounts it. Without this the stream kept running
+  // to completion against the user's own paid API key, for an answer nobody
+  // would ever see.
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => abortRef.current?.abort(), []);
+
   const run = (action: DocAiAction, q?: string): void => {
     if (busy) return;
     setBusy(action);
@@ -56,16 +63,24 @@ export default function DocAiSection({ docId, title }: Props) {
     setStreamText('');
     streamRef.current = '';
 
-    askDocAi(docId, title, action, q, onChunk)
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    askDocAi(docId, title, action, q, onChunk, controller.signal)
       .then((r) => {
+        if (controller.signal.aborted) return;
         setResult({ ...r, heading: HEADINGS[action] });
         setStreamText(null); // clear streaming state, show final result
       })
       .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
         setResult({ ok: false, text: String(err), heading: HEADINGS[action] });
         setStreamText(null);
       })
-      .finally(() => setBusy(null));
+      .finally(() => {
+        if (!controller.signal.aborted) setBusy(null);
+      });
   };
 
   const submitQuestion = (): void => {

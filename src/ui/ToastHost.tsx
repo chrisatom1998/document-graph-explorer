@@ -27,7 +27,10 @@ function ToastRow({ toast }: { toast: Toast }) {
   }, [toast.id, toast.kind, toast.action, dismissToast]);
 
   return (
-    <div className={`toast toast--${toast.kind} glass-panel`} role="alert">
+    // No role="alert" here: this row is inserted into the aria-live="polite"
+    // container below, which already announces it. Nesting an assertive region
+    // inside a polite one makes screen readers announce twice or race.
+    <div className={`toast toast--${toast.kind} glass-panel`}>
       <span className="toast__text">{toast.message}</span>
       {toast.action && (
         <button

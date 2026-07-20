@@ -11,6 +11,7 @@ is no server, no account, no telemetry, and no analytics.
 | `npm run build:airgap` (air-gapped) | **None.** Zero external destinations — enforced, see below. |
 | `npm run build`, AI enrichment **off** (default) | **None.** No document content leaves the browser. |
 | `npm run build`, AI enrichment **on** (opt-in, user supplies a Gemini key) | Document excerpts are sent to Google's Gemini API (`generativelanguage.googleapis.com`) **only** for the AI features the user explicitly triggers. Off by default. |
+| `npm run build`, chat provider set to **OpenRouter** (opt-in, user supplies an OpenRouter key) | The question and the document passages retrieved for it are sent to `openrouter.ai`, which routes them to the model the user selected. Only when the user picks this provider and asks a question. Off by default. |
 
 > **Offline mode (Settings toggle) vs the air-gapped build:** the normal build
 > includes an "Offline mode" toggle that blocks all external requests in

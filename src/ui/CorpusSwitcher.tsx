@@ -49,10 +49,13 @@ export default function CorpusSwitcher({ variant = 'toolbar' }: { variant?: 'too
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation();
-        setOpen(false);
-      }
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      // Escape backs out one level at a time: an in-progress rename first,
+      // then the menu itself. Closing the whole menu would discard the rename
+      // and the user's place in it.
+      if (renaming) setRenaming(false);
+      else setOpen(false);
     };
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown, true);
@@ -60,7 +63,17 @@ export default function CorpusSwitcher({ variant = 'toolbar' }: { variant?: 'too
       document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown, true);
     };
-  }, [open]);
+  }, [open, renaming]);
+
+  // Close when an overlay opens on top, the way Toolbar's menus do. The
+  // capture-phase Escape above would otherwise consume the key meant for the
+  // overlay the user is actually looking at.
+  const overlayOpen = useUiStore(
+    (s) => s.searchOpen || s.showMeOpen || s.settingsOpen || s.snapshotsOpen || s.helpOpen,
+  );
+  useEffect(() => {
+    if (overlayOpen) setOpen(false);
+  }, [overlayOpen]);
 
   const run = async (action: () => Promise<unknown>, closeAfter = false) => {
     setBusy(true);
@@ -124,9 +137,16 @@ export default function CorpusSwitcher({ variant = 'toolbar' }: { variant?: 'too
             {watchLabel && <span className="corpus-switcher__watch-label" role="status">{watchLabel}</span>}
           </div>
 
-          <div className="corpus-switcher__list" role="listbox" aria-label="Saved corpora">
+          {/*
+            A list, not a listbox: each row holds two independent controls
+            (switch and delete), and role="option" may not contain interactive
+            descendants. There is no aria-activedescendant model here either —
+            the buttons are reached with Tab — so listbox was misreporting the
+            widget to assistive tech.
+          */}
+          <div className="corpus-switcher__list" role="list" aria-label="Saved corpora">
             {corpora.map((corpus) => (
-              <div className="corpus-switcher__row" key={corpus.id}>
+              <div className="corpus-switcher__row" role="listitem" key={corpus.id}>
                 <button
                   type="button"
                   className="corpus-switcher__corpus"

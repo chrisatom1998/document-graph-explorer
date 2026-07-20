@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { buildCsp } from './csp';
 
 describe('buildCsp', () => {
-  it('normal build allows exactly the Gemini connect-src host', () => {
+  it('normal build allows exactly the two opt-in AI connect-src hosts', () => {
     const csp = buildCsp({ airgap: false });
     expect(csp).toContain(
-      "connect-src 'self' blob: https://generativelanguage.googleapis.com",
+      "connect-src 'self' blob: https://generativelanguage.googleapis.com https://openrouter.ai",
     );
   });
 
@@ -14,6 +14,7 @@ describe('buildCsp', () => {
     expect(csp).toContain("connect-src 'self' blob:");
     expect(csp).not.toMatch(/https?:\/\//);
     expect(csp).not.toContain('generativelanguage');
+    expect(csp).not.toContain('openrouter');
   });
 
   it('both modes keep the non-connect directives identical', () => {

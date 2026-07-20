@@ -4,6 +4,7 @@ import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
 import { deleteDocsFromCache, deleteGraphFromCache } from './cache';
 import { deleteChatHistory } from './chatHistory';
+import { flushPendingChatSave } from './chatHistorySync';
 import {
   activateCorpus,
   createCorpus,
@@ -23,6 +24,9 @@ export async function restoreCorpusById(id: string): Promise<boolean> {
     const record = await getCorpusRecord(id);
     if (!record) return false;
     if (useGraphStore.getState().phase === 'ready') await saveSession();
+    // Land any debounced transcript against the workspace that produced it,
+    // before setSwitching(true) starts suppressing saves.
+    await flushPendingChatSave();
 
     useCorpusStore.getState().setSwitching(true);
     try {
@@ -45,6 +49,7 @@ export async function createAndSwitchCorpus(name: string): Promise<string> {
   await suspendFolderWatcher();
   return enqueueRun(async () => {
     if (useGraphStore.getState().phase === 'ready') await saveSession();
+    await flushPendingChatSave();
     useCorpusStore.getState().setSwitching(true);
     try {
       const record = await createCorpus(name);

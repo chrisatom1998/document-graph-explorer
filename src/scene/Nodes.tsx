@@ -184,7 +184,20 @@ function instancedSphereRaycast(
 interface DragState {
   id: string;
   lastPin: number;
+  /** Pointer position at pointerdown, for the drag-vs-click distinction. */
+  startX: number;
+  startY: number;
+  /** Set once travel passes DRAG_THRESHOLD_PX; only then may the node pin. */
+  engaged: boolean;
 }
+
+/**
+ * Pointer travel that separates a click from a drag. Ordinary clicks carry a
+ * pixel or two of jitter, so pinning on the first pointermove froze nodes that
+ * the user only meant to select — with no visual cue and only an undiscoverable
+ * double-click to undo. Shared with handleClick so both read the same boundary.
+ */
+const DRAG_THRESHOLD_PX = 4;
 
 export default function Nodes() {
   const topicNodesEnabled = useUiStore((s) => s.topicNodesEnabled);
@@ -333,6 +346,12 @@ export default function Nodes() {
     const onMove = (ev: PointerEvent): void => {
       const state = dragRef.current;
       if (!state) return;
+      if (!state.engaged) {
+        const travel = Math.hypot(ev.clientX - state.startX, ev.clientY - state.startY);
+        if (travel <= DRAG_THRESHOLD_PX) return; // still a click, not a drag
+        state.engaged = true;
+        document.body.style.cursor = 'grabbing';
+      }
       const now = performance.now();
       if (now - state.lastPin < PIN_THROTTLE_MS) return; // ~30 pins/s
       state.lastPin = now;
@@ -356,17 +375,20 @@ export default function Nodes() {
       if (controls) controls.enabled = true;
       document.body.style.cursor = '';
     };
-    const start = (id: string): void => {
+    const start = (id: string, startX: number, startY: number): void => {
       const slot = slotOfId.get(id);
       if (slot === undefined) return;
       const arr = positionBuffer.array;
       dragOrigin.set(arr[slot * 3], arr[slot * 3 + 1], arr[slot * 3 + 2]);
       rootGet().camera.getWorldDirection(dragNormal);
       dragPlane.setFromNormalAndCoplanarPoint(dragNormal, dragOrigin);
-      dragRef.current = { id, lastPin: 0 };
+      dragRef.current = { id, lastPin: 0, startX, startY, engaged: false };
       const controls = rootGet().controls as unknown as OrbitControlsImpl | null;
-      if (controls) controls.enabled = false; // orbit off while dragging
-      document.body.style.cursor = 'grabbing';
+      // Orbit goes off immediately (not at the threshold) so a plain click can
+      // never nudge the camera; onUp re-enables it either way.
+      if (controls) controls.enabled = false;
+      // The grabbing cursor waits for the threshold — showing it during a plain
+      // click would promise a drag that isn't happening.
       window.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', onUp);
     };
@@ -400,15 +422,14 @@ export default function Nodes() {
     if (e.nativeEvent.button !== 0) return;
     const id = idOf(e);
     if (!id) return;
-    // Path mode: clicks pick endpoints — starting a drag here would pin the
-    // node on 1-4px of pointer jitter (drag fixes; only dblclick releases).
+    // Path mode: clicks pick endpoints, so dragging a node has no meaning here.
     if (useUiStore.getState().pathMode) return;
     e.stopPropagation();
-    drag.start(id);
+    drag.start(id, e.nativeEvent.clientX, e.nativeEvent.clientY);
   };
 
   const handleClick = (e: ThreeEvent<MouseEvent>): void => {
-    if (e.delta > 4) return; // pointer travelled: that was a drag, not a click
+    if (e.delta > DRAG_THRESHOLD_PX) return; // pointer travelled: a drag, not a click
     const id = idOf(e);
     if (!id) return;
     e.stopPropagation();
