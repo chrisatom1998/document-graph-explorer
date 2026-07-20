@@ -342,6 +342,11 @@ async function streamGemini(
 
   let lastError = 'Unknown Gemini error';
   for (let attempt = 0; ; attempt++) {
+    // Checked per attempt, not just on entry: cancellation can land during a
+    // retry backoff, and the next attempt would then attach its listener to an
+    // already-aborted signal — which never fires — and issue another paid
+    // request for an answer the user has already navigated away from.
+    if (signal?.aborted) return { ok: false, error: 'Cancelled' };
     let retryable = false;
     // Inactivity deadline that resets on each received chunk — a fixed
     // wall-clock timeout would abort a long-but-healthy stream (e.g. an

@@ -346,6 +346,10 @@ export async function sendChatMessage(question: string): Promise<void> {
     if (!reader) {
       useChatStore.getState().updateMessage(assistantId, {
         text: 'Gemini\'s streaming response had no body. Please try again.',
+        // Without the flag this reads as a normal answer (the text has no
+        // "Error:" prefix for the legacy check to catch), so a persisted
+        // failure would be replayed to the model as prior context.
+        isError: true,
       });
       return;
     }

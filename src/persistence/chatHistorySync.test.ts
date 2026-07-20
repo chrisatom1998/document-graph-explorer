@@ -127,6 +127,46 @@ describe('loading the transcript', () => {
     expect(state.messages.at(-1)?.text).toBe('streaming now');
   });
 
+  it('retries a load that was deferred because an answer was streaming', async () => {
+    await vi.advanceTimersByTimeAsync(0);
+    history.loadChatHistory.mockClear();
+    history.loadChatHistory.mockResolvedValue([
+      { id: 'chat-901', role: 'user', text: 'saved turn', timestamp: 1 },
+    ]);
+
+    // The read lands while an answer is mid-stream, so it must not be applied.
+    useChatStore.setState({ isStreaming: true });
+    activateLocalCorpus(CORPUS_B);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(useChatStore.getState().messages.some((m) => m.text === 'saved turn')).toBe(false);
+
+    // Once the stream ends the saved transcript must still arrive — otherwise
+    // the next save persists only the new turn and the history is lost.
+    useChatStore.setState({ isStreaming: false });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(useChatStore.getState().messages.some((m) => m.text === 'saved turn')).toBe(true);
+  });
+
+  it('never reissues a message id that a restored transcript already uses', () => {
+    // Ids are minted from a counter that restarts at 0 each page load, so a
+    // restored transcript can collide with the first new turn — duplicate React
+    // keys, and updateMessage would patch both messages at once.
+    useChatStore.getState().replaceMessages([
+      { id: 'chat-9001', role: 'user', text: 'restored', timestamp: 1 },
+      { id: 'chat-9002', role: 'assistant', text: 'restored answer', timestamp: 2 },
+    ]);
+
+    const newId = useChatStore.getState().addMessage({ role: 'user', text: 'new turn' });
+
+    // Asserting the counter actually rebased past the restored ids, rather
+    // than merely that this particular id happened not to clash — the counter
+    // starts low, so a "no collision" check alone would pass without the fix.
+    const issued = Number(/^chat-(\d+)$/.exec(newId)?.[1]);
+    expect(issued).toBeGreaterThan(9002);
+    const ids = useChatStore.getState().messages.map((m) => m.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('loads the new workspace exactly once after a switch settles', async () => {
     await vi.advanceTimersByTimeAsync(0);
     history.loadChatHistory.mockClear();
