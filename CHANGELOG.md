@@ -6,6 +6,18 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.6] - 2026-07-20
+
+### Fixed
+- Stop chat history from wiping the outgoing workspace or overwriting a live answer during corpus switches by syncing transcripts outside React effects.
+- Keep folder watching from deadlocking on corpus switch/restore, clobbering a newly chosen folder handle, or stranding files deferred by the batch size cap.
+- Unblock parse jobs while the pinned embedding worker is busy loading the model, and avoid lending that worker to general work in multi-worker pools.
+- Speed up title/filename mention linking with a single-pass anchor index and prefer titles over filenames when both match.
+- Align Content-Security-Policy and deployment header docs so OpenRouter is allowed in standard builds and blocked in air-gap builds.
+
+### Changed
+- Harden session save, worker pool dispatch, and graph/scene update paths covered by the critical bug-fix batch.
+
 ## [1.1.5] - 2026-07-14
 
 ### Added
