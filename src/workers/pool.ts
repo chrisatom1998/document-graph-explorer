@@ -17,6 +17,11 @@ const PARSE_REQUEST_TIMEOUT_MS = 30_000;
 // then batched inference), but must not hang the serialized ingest chain
 // forever if the worker wedges — so cap them generously rather than not at all.
 const EMBED_REQUEST_TIMEOUT_MS = 180_000;
+// Batched requests pay the normal model-load allowance plus inference time
+// proportional to their actual chunk count (doc count badly underestimates
+// large PDFs). The cap still recovers a genuinely wedged worker.
+const EMBED_BATCH_TIMEOUT_PER_CHUNK_MS = 5_000;
+const EMBED_BATCH_MAX_TIMEOUT_MS = 15 * 60_000;
 
 export interface ModelProgress {
   loaded: number;
@@ -128,7 +133,8 @@ export class WorkerPool {
    * to one warm worker instead.
    */
   private pickIdleWorker(jobType: PoolRequest['type']): number {
-    const isEmbedding = jobType === 'embed' || jobType === 'embedQuery';
+    const isEmbedding =
+      jobType === 'embed' || jobType === 'embedBatch' || jobType === 'embedQuery';
     if (!isEmbedding) return this.pickGeneralIdleWorker();
 
     if (this.embeddingWorkerIndex !== null) {
@@ -145,6 +151,15 @@ export class WorkerPool {
   private requestTimeoutMs(msg: PoolRequest): number {
     if (msg.type === 'parse' || msg.type === 'analyze') return PARSE_REQUEST_TIMEOUT_MS;
     if (msg.type === 'embed' || msg.type === 'embedQuery') return EMBED_REQUEST_TIMEOUT_MS;
+    // Scale by chunks, not documents: one document can contain dozens of
+    // model inputs while many short documents fit into one inference batch.
+    if (msg.type === 'embedBatch') {
+      const chunks = msg.docs.reduce((total, doc) => total + doc.chunks.length, 0);
+      return Math.min(
+        EMBED_BATCH_MAX_TIMEOUT_MS,
+        EMBED_REQUEST_TIMEOUT_MS + chunks * EMBED_BATCH_TIMEOUT_PER_CHUNK_MS,
+      );
+    }
     return 0;
   }
 
@@ -189,7 +204,10 @@ export class WorkerPool {
     while (i < this.queue.length) {
       const job = this.queue[i];
       if (!job) return;
-      const isEmbed = job.payload.type === 'embed' || job.payload.type === 'embedQuery';
+      const isEmbed =
+        job.payload.type === 'embed' ||
+        job.payload.type === 'embedBatch' ||
+        job.payload.type === 'embedQuery';
       if (isEmbed ? embedBlocked : generalBlocked) {
         i += 1;
         continue;

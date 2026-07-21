@@ -38,8 +38,14 @@ function startStaticServer() {
 
     const handleRequest = createRequestHandler(distPath, {
       spaFallback: true,
-      getResponseHeaders: (_target, ext) => ({
-        'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=31536000, immutable',
+      getResponseHeaders: (target, ext) => ({
+        // Public filenames are not content-hashed. In particular, caching the
+        // demo manifest as immutable made upgraded apps keep loading the old
+        // corpus definition for a year.
+        'Cache-Control':
+          ext === '.html' || target.endsWith(path.join('demo', 'manifest.json'))
+            ? 'no-cache'
+            : 'public, max-age=31536000, immutable',
       }),
     });
 

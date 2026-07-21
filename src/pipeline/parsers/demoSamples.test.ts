@@ -1,34 +1,37 @@
 /**
  * Regression guard for the committed demo corpus (public/demo): the corpus is
- * exactly the files generated for the office/PDF sample-data feature — 8 txt /
- * 10 docx / 15 pdf / 3 pptx, no markdown — every listed file exists on disk,
- * and every office sample parses cleanly with the real parser (binary-safe
- * end to end — these are the actual bytes the demo loader fetches). PDF
- * extraction runs on pdf.js in the browser and is covered by the e2e check
- * instead.
+ * contains the original office/PDF sample-data files — 8 txt / 10 docx / 15
+ * pdf / 3 pptx, no markdown — plus a deterministic generated-text corpus.
+ * Every static file exists on disk, and every office sample parses cleanly
+ * with the real parser (binary-safe end to end — these are the actual bytes
+ * the demo loader fetches). PDF extraction runs on pdf.js in the browser and
+ * is covered by the e2e check instead.
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parseOffice } from './office';
+import { GENERATED_DEMO_DOCUMENT_COUNT } from '../../demo/generatedDocuments';
 
 const DEMO_DIR = join(__dirname, '../../../public/demo');
 
 const manifest = JSON.parse(
   readFileSync(join(DEMO_DIR, 'manifest.json'), 'utf-8'),
-) as { files: string[] };
+) as { files: string[]; generated?: { count?: number } };
 
 const byExt = (ext: string): string[] => manifest.files.filter((f) => f.endsWith(ext));
 
 describe('demo corpus manifest', () => {
-  it('has the agreed composition: 8 txt, 10 docx, 15 pdf, 3 pptx, no markdown', () => {
+  it('has the agreed static composition and exactly 2,000 total demo documents', () => {
     expect(byExt('.md')).toHaveLength(0);
     expect(byExt('.txt')).toHaveLength(8);
     expect(byExt('.docx')).toHaveLength(10);
     expect(byExt('.pdf')).toHaveLength(15);
     expect(byExt('.pptx')).toHaveLength(3);
     expect(manifest.files).toHaveLength(36);
+    expect(manifest.generated?.count).toBe(GENERATED_DEMO_DOCUMENT_COUNT);
+    expect(manifest.files.length + (manifest.generated?.count ?? 0)).toBe(2000);
   });
 
   it('lists only files that exist in public/demo', () => {

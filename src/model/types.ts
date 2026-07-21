@@ -82,6 +82,12 @@ export interface IngestFile {
   bytes: ArrayBuffer;
   /** File.lastModified (epoch ms); absent for sources without an mtime (demo fetch). */
   lastModified?: number;
+  /**
+   * Deterministically reconstructable source (the generated demo corpus): its
+   * exact bytes can be rebuilt on demand, so ingest skips persisting them as a
+   * retained "original" — thousands of redundant IndexedDB writes avoided.
+   */
+  reconstructable?: boolean;
 }
 
 export type FileStage =
@@ -175,6 +181,15 @@ export type PoolRequest =
       warning?: string;
     }
   | { requestId: number; type: 'embed'; docId: string; chunks: string[] }
+  | {
+      // Batched embedding: many documents' chunks in one worker round trip.
+      // The worker packs chunks across doc boundaries into model-sized
+      // batches, so single-chunk docs no longer each pay a full inference
+      // call. Order of `docs` is preserved in the response.
+      requestId: number;
+      type: 'embedBatch';
+      docs: { docId: string; chunks: string[] }[];
+    }
   | { requestId: number; type: 'embedQuery'; text: string };
 
 export type PoolResponse =
@@ -186,6 +201,16 @@ export type PoolResponse =
       docVector: Float32Array;
       chunkVectors: Float32Array; // flattened [nChunks * dims]
       nChunks: number;
+    }
+  | {
+      requestId: number;
+      type: 'embedBatch:done';
+      docs: {
+        docId: string;
+        docVector: Float32Array;
+        chunkVectors: Float32Array; // flattened [nChunks * dims]
+        nChunks: number;
+      }[];
     }
   | { requestId: number; type: 'embedQuery:done'; vector: Float32Array }
   | { requestId: number; type: 'model:progress'; loaded: number; total: number; note: string }

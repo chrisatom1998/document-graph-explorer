@@ -36,6 +36,7 @@ interface GraphState {
   setClusterNames: (names: Record<number, string>) => void;
   setPhase: (phase: PipelinePhase) => void;
   setFileStatus: (status: FileStatus) => void;
+  setFileStatuses: (statuses: FileStatus[]) => void;
   addIgnored: (name: string, reason: string) => void;
   setModelProgress: (p: GraphState['modelProgress']) => void;
   setEnrichProgress: (p: GraphState['enrichProgress']) => void;
@@ -135,6 +136,13 @@ export const useGraphStore = create<GraphState>((set) => ({
   setPhase: (phase) => set({ phase }),
   setFileStatus: (status) =>
     set((s) => ({ fileStatuses: { ...s.fileStatuses, [status.fileId]: status } })),
+  setFileStatuses: (statuses) =>
+    set((s) => {
+      if (statuses.length === 0) return s;
+      const fileStatuses = { ...s.fileStatuses };
+      for (const status of statuses) fileStatuses[status.fileId] = status;
+      return { fileStatuses };
+    }),
   addIgnored: (name, reason) =>
     set((s) => ({ ignoredFiles: [...s.ignoredFiles, { name, reason }] })),
   setModelProgress: (modelProgress) => set({ modelProgress }),
