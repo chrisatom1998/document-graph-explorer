@@ -201,9 +201,8 @@ async function embedTexts(texts: string[]): Promise<Float32Array> {
   return out;
 }
 
-async function handleEmbed(req: Extract<PoolRequest, { type: 'embed' }>): Promise<void> {
-  const chunkVectors = await embedTexts(req.chunks);
-  const nChunks = req.chunks.length;
+/** Mean-pool a document's chunk vectors into a single unit vector. */
+function poolDocVector(chunkVectors: Float32Array, nChunks: number): Float32Array {
   const docVector = new Float32Array(EMBED_DIMS);
   for (let c = 0; c < nChunks; c += 1) {
     const offset = c * EMBED_DIMS;
@@ -220,6 +219,13 @@ async function handleEmbed(req: Extract<PoolRequest, { type: 'embed' }>): Promis
       for (let d = 0; d < EMBED_DIMS; d += 1) docVector[d] /= norm;
     }
   }
+  return docVector;
+}
+
+async function handleEmbed(req: Extract<PoolRequest, { type: 'embed' }>): Promise<void> {
+  const chunkVectors = await embedTexts(req.chunks);
+  const nChunks = req.chunks.length;
+  const docVector = poolDocVector(chunkVectors, nChunks);
   respond(
     {
       requestId: req.requestId,
@@ -231,6 +237,39 @@ async function handleEmbed(req: Extract<PoolRequest, { type: 'embed' }>): Promis
     },
     [docVector.buffer, chunkVectors.buffer],
   );
+}
+
+/**
+ * Batched embedding: pack every document's chunks into one flat list, embed
+ * in model-sized batches (so single-chunk docs share a batch instead of each
+ * paying a full inference call), then slice each doc's chunk vectors back out
+ * and mean-pool its doc vector. One worker round trip for many documents.
+ */
+async function handleEmbedBatch(
+  req: Extract<PoolRequest, { type: 'embedBatch' }>,
+): Promise<void> {
+  const allChunks: string[] = [];
+  for (const doc of req.docs) for (const chunk of doc.chunks) allChunks.push(chunk);
+
+  const allVectors = allChunks.length > 0 ? await embedTexts(allChunks) : new Float32Array(0);
+
+  const transfer: Transferable[] = [];
+  let offset = 0;
+  const docs = req.docs.map((doc) => {
+    const nChunks = doc.chunks.length;
+    // Copy this doc's slice into its own buffer so each can be transferred
+    // back independently (a subarray view can't be detached on its own).
+    const chunkVectors = allVectors.slice(
+      offset * EMBED_DIMS,
+      (offset + nChunks) * EMBED_DIMS,
+    );
+    offset += nChunks;
+    const docVector = poolDocVector(chunkVectors, nChunks);
+    transfer.push(docVector.buffer, chunkVectors.buffer);
+    return { docId: doc.docId, docVector, chunkVectors, nChunks };
+  });
+
+  respond({ requestId: req.requestId, type: 'embedBatch:done', docs }, transfer);
 }
 
 // ---------------------------------------------------------------------------
@@ -264,6 +303,10 @@ async function handle(req: PoolRequest): Promise<void> {
       }
       case 'embed': {
         await handleEmbed(req);
+        break;
+      }
+      case 'embedBatch': {
+        await handleEmbedBatch(req);
         break;
       }
       case 'embedQuery': {

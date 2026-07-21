@@ -36,6 +36,7 @@ import type {
   DocNode,
   DuplicatePair,
   Edge,
+  FileStatus,
   FileType,
   IngestFile,
   LexicalDocInput,
@@ -92,11 +93,13 @@ import { enqueueRun } from './runQueue';
 import { randomSpherePoint } from './spawnPosition';
 import { addToSemanticIndex, edgesFromIndex, type SemanticIndex } from './similarity';
 import { groupTopics } from './topics';
+import { createGeneratedDemoDocuments } from '../demo/generatedDocuments';
+import { fetchDemoManifest } from '../demo/manifest';
 
 export { enqueueRun };
 
 type ParseDone = Extract<PoolResponse, { type: 'parse:done' }>;
-type EmbedDone = Extract<PoolResponse, { type: 'embed:done' }>;
+type EmbedBatchDone = Extract<PoolResponse, { type: 'embedBatch:done' }>;
 type EmbedQueryDone = Extract<PoolResponse, { type: 'embedQuery:done' }>;
 type LexicalDone = Extract<AggResponse, { type: 'lexical:done' }>;
 type SemanticDone = Extract<AggResponse, { type: 'semantic:done' }>;
@@ -337,10 +340,15 @@ async function runIngest(files: IngestFile[]): Promise<void> {
   for (const { file, fileType } of routed) {
     const relPath = file.path ?? file.name;
     const id = await documentContentId(relPath, file.bytes);
-    const original = new Blob([file.bytes], { type: mimeForFilename(file.name) });
+    // Reconstructable sources (generated demo docs) skip original retention:
+    // their bytes rebuild on demand, so an empty Blob stands in and the
+    // thousands of redundant IndexedDB original-writes never happen.
+    const original = file.reconstructable
+      ? new Blob([])
+      : new Blob([file.bytes], { type: mimeForFilename(file.name) });
     if (seenIds.has(id) || store().nodeIndex[id] !== undefined) {
       // known doc — backfill the original if it predates original retention
-      void putOriginalIfMissing(id, file.name, original);
+      if (!file.reconstructable) void putOriginalIfMissing(id, file.name, original);
       store().setFileStatus({ fileId: file.fileId, name: file.name, stage: 'cached' });
       continue;
     }
@@ -385,7 +393,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
     if (cached.docVector) docVectorStore.set(p.id, cached.docVector);
     mdLinkTargetsStore.set(p.id, cached.mdLinkTargets);
     docLinksStore.set(p.id, cached.docLinks);
-    void putOriginalIfMissing(p.id, p.file.name, p.original);
+    if (!p.file.reconstructable) void putOriginalIfMissing(p.id, p.file.name, p.original);
     store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
   }
 
@@ -393,8 +401,20 @@ async function runIngest(files: IngestFile[]): Promise<void> {
   const pool = getPool();
   if (misses.length > 0) {
     store().setPhase('parsing');
-    const parseTasks = misses.map(async (p) => {
-      store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'parsing' });
+    // A parsed doc waiting to be committed to the graph/layout/runtime stores.
+    // Parsing runs concurrently across the pool, but commits are flushed in
+    // fixed-size groups so a large drop makes ~tens of store/layout updates
+    // instead of one per file (each store action clones growing arrays/maps,
+    // so per-file commits are quadratic on a 2,500-doc corpus).
+    interface ParsedResult {
+      p: PendingFile;
+      doc: ParseDone['doc'];
+      pdfLinks: LinkRef[];
+    }
+    store().setFileStatuses(
+      misses.map((p) => ({ fileId: p.file.fileId, name: p.file.name, stage: 'parsing' as const })),
+    );
+    const parseTasks = misses.map(async (p): Promise<ParsedResult> => {
       let done: ParseDone;
       // pdf.js extracts labelled links from the annotation layer; the worker's
       // 'analyze' path can't (it only sees text), so carry them across here.
@@ -441,7 +461,12 @@ async function runIngest(files: IngestFile[]): Promise<void> {
           [p.file.bytes],
         );
       }
-      const doc = done.doc;
+      return { p, doc: done.doc, pdfLinks };
+    });
+
+    // Commit one parsed result into the runtime stores + layout. Returns the
+    // node to add and the placed status, or null when the node-cap was hit.
+    const commitParsed = ({ p, doc, pdfLinks }: ParsedResult): { node: DocNode } | null => {
       const dropped = layoutAddNodes([{ id: p.id, cluster: -1, spawn: randomSpawn() }]);
       if (dropped.length > 0) {
         store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
@@ -451,18 +476,16 @@ async function runIngest(files: IngestFile[]): Promise<void> {
           stage: 'error',
           error: `Node limit reached (${MAX_NODES} max)`,
         });
-        return;
+        return null;
       }
-      lexMeta.set(p.id, {
-        tf: doc.tf,
-        totalTerms: doc.totalTerms,
-        fileName: p.file.name,
-      });
+      lexMeta.set(p.id, { tf: doc.tf, totalTerms: doc.totalTerms, fileName: p.file.name });
       mdLinkTargetsStore.set(
         p.id,
         p.fileType === 'pdf' ? pdfLinks.map((l) => l.url) : doc.mdLinkTargets,
       );
       docLinksStore.set(p.id, p.fileType === 'pdf' ? pdfLinks : doc.docLinks);
+      textStore.set(p.id, doc.text);
+      if (!p.file.reconstructable) void putOriginalIfMissing(p.id, p.file.name, p.original);
       const node: DocNode = {
         id: p.id,
         kind: 'document',
@@ -481,13 +504,61 @@ async function runIngest(files: IngestFile[]): Promise<void> {
         warning: doc.warning,
         lastModified: p.file.lastModified,
       };
-      store().addNodes([node]);
-      textStore.set(p.id, doc.text);
-      markDocsDirty([p.id]);
-      void putOriginalIfMissing(p.id, p.file.name, p.original);
-      store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'placed' });
-    });
-    const settled = await Promise.allSettled(parseTasks);
+      return { node };
+    };
+
+    // Flush a group of parsed results as a single batch of store updates.
+    const flushBatch = (results: ParsedResult[]): void => {
+      const nodes: DocNode[] = [];
+      const dirtyIds: string[] = [];
+      const placed: FileStatus[] = [];
+      for (const result of results) {
+        const committed = commitParsed(result);
+        if (!committed) continue;
+        nodes.push(committed.node);
+        dirtyIds.push(result.p.id);
+        placed.push({
+          fileId: result.p.file.fileId,
+          name: result.p.file.name,
+          stage: 'placed',
+        });
+      }
+      if (nodes.length > 0) {
+        store().addNodes(nodes);
+        markDocsDirty(dirtyIds);
+        store().setFileStatuses(placed);
+      }
+    };
+
+    // Flush as workers finish rather than retaining every ParseDone until the
+    // slowest parser/OCR job settles. Promise callbacks run serially on the
+    // main thread, so this shared buffer needs no lock.
+    const completed: ParsedResult[] = [];
+    let completedFlushTimer: ReturnType<typeof setTimeout> | null = null;
+    const flushCompleted = (): void => {
+      if (completedFlushTimer !== null) {
+        clearTimeout(completedFlushTimer);
+        completedFlushTimer = null;
+      }
+      if (completed.length > 0) flushBatch(completed.splice(0));
+    };
+    const trackedTasks = parseTasks.map((task) =>
+      task.then((result) => {
+        completed.push(result);
+        if (completed.length >= PARSE_COMMIT_BATCH) {
+          flushCompleted();
+        } else if (completedFlushTimer === null) {
+          // Drain a partial batch promptly so a 40–60-file ingest (or the
+          // tail of a larger one) is not held behind one slow OCR/parser.
+          completedFlushTimer = setTimeout(() => {
+            completedFlushTimer = null;
+            if (completed.length > 0) flushBatch(completed.splice(0));
+          }, 50);
+        }
+      }),
+    );
+    const settled = await Promise.allSettled(trackedTasks);
+    flushCompleted();
     // OCR calls are serialized but parse tasks are concurrent. Clear only
     // after every parse task settles so one PDF cannot erase the next queued
     // PDF's freshly-published progress update.
@@ -522,50 +593,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
   );
   if (embedTargets.length > 0) {
     store().setPhase('embedding');
-    const embedJobs = embedTargets.map(async (n) => {
-      const text = textStore.get(n.id) ?? '';
-      const { chunks, truncated } = chunkText(stripBoilerplate(text, boilerplate));
-      if (chunks.length === 0) return; // nothing embeddable (e.g. boilerplate-only)
-      if (truncated && n.status !== 'unreadable' && !n.warning) {
-        // Large document: search/embeddings cover only the leading portion.
-        // Surface it instead of silently indexing part of the doc.
-        const kb = Math.round(MAX_EMBED_TEXT_BYTES / 1024);
-        store().patchNodes(
-          new Map([[n.id, { status: 'partial', warning: `Only the first ~${kb} KB indexed for search` }]]),
-        );
-      }
-      chunkStore.set(n.id, { texts: chunks, vectors: null, dims: EMBED_DIMS });
-      const fileId = fileIdOfDoc.get(n.id);
-      const name = nameOfDoc.get(n.id) ?? n.title;
-      if (fileId) store().setFileStatus({ fileId, name, stage: 'embedding' });
-      const done = await pool.request<EmbedDone>({
-        requestId: 0,
-        type: 'embed',
-        docId: n.id,
-        chunks,
-      });
-      docVectorStore.set(n.id, done.docVector);
-      chunkStore.set(n.id, { texts: chunks, vectors: done.chunkVectors, dims: EMBED_DIMS });
-      markDocsDirty([n.id]);
-      if (fileId) store().setFileStatus({ fileId, name, stage: 'placed' });
-    });
-    const settled = await Promise.allSettled(embedJobs);
-    settled.forEach((result, i) => {
-      if (result.status !== 'rejected') return;
-      const n = embedTargets[i];
-      const message =
-        result.reason instanceof Error ? result.reason.message : String(result.reason);
-      console.error(`embedding failed for ${n.title}:`, message);
-      const fileId = fileIdOfDoc.get(n.id);
-      if (fileId) {
-        store().setFileStatus({
-          fileId,
-          name: nameOfDoc.get(n.id) ?? n.title,
-          stage: 'error',
-          error: message,
-        });
-      }
-    });
+    await runEmbeddingPass(pool, embedTargets, boilerplate);
     store().setModelProgress(null);
   }
 
@@ -610,6 +638,125 @@ async function runIngest(files: IngestFile[]): Promise<void> {
 // ---------------------------------------------------------------------------
 // corpus-wide aggregation passes (shared by ingest and removal)
 // ---------------------------------------------------------------------------
+
+// How many documents' chunks to pack into one worker embed request. The worker
+// still batches chunks through the model internally; this bounds how many docs
+// share a single round trip (and one status/commit flush) so a 2,500-doc
+// corpus makes ~tens of requests instead of one per document.
+const EMBED_DOCS_PER_REQUEST = 32;
+
+// How many parsed documents to commit to the graph/layout/runtime stores in
+// one flush. Bounds how often the growing node array / status map are cloned
+// during a large ingest without holding all results back to a single commit.
+const PARSE_COMMIT_BATCH = 64;
+
+interface EmbedTarget {
+  id: string;
+  title: string;
+  chunks: string[];
+}
+
+/**
+ * Prepare a document for embedding: strip corpus boilerplate, chunk, surface a
+ * truncation warning, and stage its chunk texts. Returns null when nothing is
+ * embeddable (e.g. a boilerplate-only doc).
+ */
+function prepareEmbedTarget(n: DocNode, boilerplate: Set<string>): EmbedTarget | null {
+  const text = textStore.get(n.id) ?? '';
+  const { chunks, truncated } = chunkText(stripBoilerplate(text, boilerplate));
+  if (chunks.length === 0) return null;
+  if (truncated && n.status !== 'unreadable' && !n.warning) {
+    // Large document: search/embeddings cover only the leading portion.
+    // Surface it instead of silently indexing part of the doc.
+    const kb = Math.round(MAX_EMBED_TEXT_BYTES / 1024);
+    useGraphStore
+      .getState()
+      .patchNodes(
+        new Map([[n.id, { status: 'partial', warning: `Only the first ~${kb} KB indexed for search` }]]),
+      );
+  }
+  chunkStore.set(n.id, { texts: chunks, vectors: null, dims: EMBED_DIMS });
+  return { id: n.id, title: n.title, chunks };
+}
+
+/**
+ * Ingest step (f): embed every target document. Chunks are packed across
+ * document boundaries into batched worker requests (EMBED_DOCS_PER_REQUEST
+ * docs each), so a single-chunk document no longer costs a full inference
+ * round trip. Status chips and the dirty-doc flush are committed per batch.
+ * One failed batch is isolated: its docs get an error chip and the rest of
+ * the corpus still embeds.
+ */
+async function runEmbeddingPass(
+  pool: WorkerPool,
+  nodes: DocNode[],
+  boilerplate: Set<string>,
+): Promise<void> {
+  const store = useGraphStore.getState;
+  const targets: EmbedTarget[] = [];
+  for (const n of nodes) {
+    const target = prepareEmbedTarget(n, boilerplate);
+    if (target) targets.push(target);
+  }
+  if (targets.length === 0) return;
+
+  // None of these documents is complete yet. Publishing this once up front
+  // keeps the progress counter honest while batches run sequentially.
+  store().setFileStatuses(
+    targets.flatMap((target): FileStatus[] => {
+      const fileId = fileIdOfDoc.get(target.id);
+      return fileId
+        ? [{ fileId, name: nameOfDoc.get(target.id) ?? target.title, stage: 'embedding' }]
+        : [];
+    }),
+  );
+
+  for (let start = 0; start < targets.length; start += EMBED_DOCS_PER_REQUEST) {
+    const batch = targets.slice(start, start + EMBED_DOCS_PER_REQUEST);
+    try {
+      const done = await pool.request<EmbedBatchDone>({
+        requestId: 0,
+        type: 'embedBatch',
+        docs: batch.map((t) => ({ docId: t.id, chunks: t.chunks })),
+      });
+      const chunksById = new Map(batch.map((t) => [t.id, t.chunks]));
+      const embeddedIds: string[] = [];
+      const placedStatuses: FileStatus[] = [];
+      for (const result of done.docs) {
+        const chunks = chunksById.get(result.docId) ?? [];
+        docVectorStore.set(result.docId, result.docVector);
+        chunkStore.set(result.docId, { texts: chunks, vectors: result.chunkVectors, dims: EMBED_DIMS });
+        embeddedIds.push(result.docId);
+        const fileId = fileIdOfDoc.get(result.docId);
+        if (fileId) {
+          placedStatuses.push({
+            fileId,
+            name: nameOfDoc.get(result.docId) ?? result.docId,
+            stage: 'placed',
+          });
+        }
+      }
+      store().setFileStatuses(placedStatuses);
+      markDocsDirty(embeddedIds);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const errorStatuses: FileStatus[] = [];
+      for (const t of batch) {
+        console.error(`embedding failed for ${t.title}:`, message);
+        const fileId = fileIdOfDoc.get(t.id);
+        if (fileId) {
+          errorStatuses.push({
+            fileId,
+            name: nameOfDoc.get(t.id) ?? t.title,
+            stage: 'error',
+            error: message,
+          });
+        }
+      }
+      store().setFileStatuses(errorStatuses);
+    }
+  }
+}
 
 /** Ingest step (e): lexical edges, keywords, boilerplate — whole corpus. */
 async function runLexicalPass(
@@ -1186,6 +1333,11 @@ async function runEmbeddingRebuild(): Promise<void> {
       { chunks: string[]; docVector: Float32Array | null; chunkVectors: Float32Array | null }
     >();
     const patches = new Map<string, Partial<DocNode>>();
+    // Chunk every doc first (recording truncation + empty results), then embed
+    // the non-empty ones in batched worker requests — the same cross-document
+    // packing the ingest path uses, so a rebuild over a large corpus makes
+    // ~tens of round trips instead of one per document.
+    const toEmbed: { id: string; chunks: string[] }[] = [];
     for (const doc of docs) {
       const { chunks, truncated } = chunkText(
         stripBoilerplate(textStore.get(doc.id) ?? '', boilerplate),
@@ -1200,17 +1352,23 @@ async function runEmbeddingRebuild(): Promise<void> {
           warning: 'Only the first ~200 KB indexed for search',
         });
       }
-      const done = await pool.request<EmbedDone>({
+      toEmbed.push({ id: doc.id, chunks });
+    }
+    for (let start = 0; start < toEmbed.length; start += EMBED_DOCS_PER_REQUEST) {
+      const batch = toEmbed.slice(start, start + EMBED_DOCS_PER_REQUEST);
+      const done = await pool.request<EmbedBatchDone>({
         requestId: 0,
-        type: 'embed',
-        docId: doc.id,
-        chunks,
+        type: 'embedBatch',
+        docs: batch.map((d) => ({ docId: d.id, chunks: d.chunks })),
       });
-      rebuilt.set(doc.id, {
-        chunks,
-        docVector: done.docVector,
-        chunkVectors: done.chunkVectors,
-      });
+      const chunksById = new Map(batch.map((d) => [d.id, d.chunks]));
+      for (const result of done.docs) {
+        rebuilt.set(result.docId, {
+          chunks: chunksById.get(result.docId) ?? [],
+          docVector: result.docVector,
+          chunkVectors: result.chunkVectors,
+        });
+      }
     }
 
     for (const [docId, result] of rebuilt) {
@@ -1255,9 +1413,9 @@ export function rebuildEmbeddings(): Promise<void> {
 
 /** Fetches /demo/manifest.json + files (bundled by the UI) and ingests them. */
 export async function loadDemoCorpus(): Promise<void> {
-  const res = await fetch('/demo/manifest.json');
+  const res = await fetchDemoManifest();
   if (!res.ok) throw new Error(`demo manifest failed: HTTP ${res.status}`);
-  const manifest = (await res.json()) as { files: string[] };
+  const manifest = (await res.json()) as { files: string[]; generated?: { count?: unknown } };
   const fetched = await Promise.all(
     manifest.files.map(async (name): Promise<IngestFile | null> => {
       const fileRes = await fetch(`/demo/${encodeURIComponent(name)}`);
@@ -1274,7 +1432,12 @@ export async function loadDemoCorpus(): Promise<void> {
       };
     }),
   );
-  const files = fetched.filter((f): f is IngestFile => f !== null);
+  const generatedCount = manifest.generated?.count;
+  const generated =
+    typeof generatedCount === 'number' && Number.isInteger(generatedCount) && generatedCount > 0
+      ? createGeneratedDemoDocuments(generatedCount)
+      : [];
+  const files = [...fetched.filter((f): f is IngestFile => f !== null), ...generated];
   if (files.length > 0) await ingestFiles(files);
 }
 

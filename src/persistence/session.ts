@@ -49,13 +49,12 @@ import { toGraphExport } from './graphExport';
 import { collectPositions, saveGraphRecord, saveSession } from './sessionSave';
 import { sanitizeGraphExport } from './validateImport';
 import { deleteOriginals } from './originals';
+import { fetchDemoManifest } from '../demo/manifest';
 
 export { saveSession } from './sessionSave';
 
 const FULL_SAVE_DEBOUNCE_MS = 1500;
 const POSITION_SAVE_DEBOUNCE_MS = 2500;
-const DEMO_MANIFEST_URL = '/demo/manifest.json';
-
 let initialized = false;
 let suppressAutoSave = false; // restoring is not a change worth re-saving
 let fullSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -76,18 +75,27 @@ async function isDemoOnlySession(exportData: GraphExport): Promise<boolean> {
   if (docs.length === 0) return false;
 
   try {
-    const res = await fetch(DEMO_MANIFEST_URL);
+    const res = await fetchDemoManifest();
     if (!res.ok) return false;
-    const manifest = (await res.json()) as { files?: unknown };
+    const manifest = (await res.json()) as { files?: unknown; generated?: { count?: unknown } };
     if (!Array.isArray(manifest.files)) return false;
 
     const demoFiles = new Set(
       manifest.files.filter((name): name is string => typeof name === 'string'),
     );
+    const generatedCount = manifest.generated?.count;
+    const validGeneratedCount =
+      typeof generatedCount === 'number' && Number.isInteger(generatedCount) && generatedCount > 0
+        ? generatedCount
+        : 0;
+    const { isGeneratedDemoFilename } = await import('../demo/generatedDocuments');
     return docs.every((doc) => {
       const path = doc.path ?? doc.title;
       const name = path.replace(/\\/g, '/').split('/').pop() ?? path;
-      return doc.lastModified === undefined && demoFiles.has(name);
+      return (
+        doc.lastModified === undefined &&
+        (demoFiles.has(name) || isGeneratedDemoFilename(name, validGeneratedCount))
+      );
     });
   } catch {
     // network hiccup / offline / malformed manifest JSON — treat the
@@ -407,4 +415,3 @@ async function doRestoreSnapshotById(id: number): Promise<boolean> {
     await bindFolderWatcherToActiveCorpus().catch(() => undefined);
   }
 }
-

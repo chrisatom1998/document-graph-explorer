@@ -134,7 +134,7 @@ export default function RetrievalBenchmarkPanel() {
   return (
     <aside style={{ position: 'fixed', inset: '16px 16px auto auto', zIndex: 10000, width: 420, maxHeight: 'calc(100vh - 32px)', overflow: 'auto', padding: 16, borderRadius: 12, color: '#eef5ff', background: 'rgba(8, 15, 30, .96)', border: '1px solid rgba(127,180,255,.45)', font: '13px/1.45 system-ui' }}>
       <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Retrieval benchmark</h2>
-      <p style={{ margin: '0 0 12px', opacity: .78 }}>Development only. Running resets the current corpus, loads the 36 bundled demo documents, and evaluates 30 grounded queries.</p>
+      <p style={{ margin: '0 0 12px', opacity: .78 }}>Development only. Running resets the current corpus, loads the 2,000-document demo corpus, and evaluates 30 grounded queries.</p>
       <button type="button" onClick={() => void run()} disabled={state === 'loading' || state === 'running'}>
         {state === 'loading' ? 'Loading demo corpus...' : state === 'running' ? `Running ${completed}/30...` : 'Run benchmark'}
       </button>
