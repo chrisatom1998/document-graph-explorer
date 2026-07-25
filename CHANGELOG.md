@@ -6,6 +6,18 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.8] - 2026-07-25
+
+### Added
+- Richer generated demo corpus content (theme systems, incidents, actions, risks, and artifacts) so Load demo corpus produces more distinctive, cross-linked documents.
+- Batched embedding worker requests that pack many short documents into shared model inference calls instead of one round trip per document.
+
+### Changed
+- Commit parsed ingest results in fixed-size store/layout batches so large drops update the graph in groups rather than once per file.
+- Scale the AI core with corpus size so the center orb stays readable against the expanded force-layout shell.
+- Skip IndexedDB original retention for reconstructable generated demo documents, avoiding thousands of redundant writes on demo load.
+- Serve and fetch the unversioned demo manifest with `no-cache` / `no-store` so desktop upgrades no longer keep a year-old cached corpus definition.
+
 ## [1.1.7] - 2026-07-20
 
 ### Fixed
