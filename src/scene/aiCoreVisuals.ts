@@ -9,6 +9,28 @@ export interface AiCoreVisualState {
 }
 
 /**
+ * Matches the layout worker's orbit shell:
+ *   r = max(SHELL_MIN_RADIUS, NODE_COLLIDE_RADIUS * 2.2 * sqrt(n))
+ * so the center orb grows with corpus size and stays in proportion to the
+ * nebula. Small corpora stay at the baseline size of 1.
+ */
+const SHELL_MIN_RADIUS = 72;
+const SHELL_RADIUS_PER_SQRT_NODE = 5 * 2.2;
+
+/**
+ * Corpus-driven scale for the AI core. At ~2,000 documents this is ~6.8× so
+ * the singularity remains a readable anchor against the expanded shell.
+ */
+export function computeAiCoreCorpusScale(documentCount: number): number {
+  const n = Math.max(0, documentCount);
+  const shellRadius = Math.max(
+    SHELL_MIN_RADIUS,
+    SHELL_RADIUS_PER_SQRT_NODE * Math.sqrt(n),
+  );
+  return shellRadius / SHELL_MIN_RADIUS;
+}
+
+/**
  * Pure visual-state calculation for the AI core. Keeping this independent of
  * three.js makes the motion contract testable and ensures reduced-motion mode
  * cannot accidentally inherit a phase-driven pulse.
