@@ -6,6 +6,8 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.7] - 2026-07-20
+
 ### Fixed
 - Rebase the chat message-id counter when a transcript is restored. The counter restarts at zero each page load, so the first new turn could reuse a restored message's id, producing duplicate React keys and causing a single update to patch two messages at once.
 - Apply the same transcript flush and switch guard to snapshot restore that normal corpus switches use, so restoring a snapshot owned by another workspace can no longer persist an empty transcript over that workspace's saved history.
