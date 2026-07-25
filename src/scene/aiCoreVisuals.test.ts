@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { computeAiCoreVisuals } from './aiCoreVisuals';
+import {
+  computeAiCoreCorpusScale,
+  computeAiCoreVisuals,
+} from './aiCoreVisuals';
 
 describe('computeAiCoreVisuals', () => {
   it('clamps energy to the supported range', () => {
@@ -26,5 +29,23 @@ describe('computeAiCoreVisuals', () => {
 
     expect(later).toEqual(first);
     expect(later.angularSpeed).toBe(0);
+  });
+});
+
+describe('computeAiCoreCorpusScale', () => {
+  it('keeps small corpora at the baseline size', () => {
+    expect(computeAiCoreCorpusScale(0)).toBe(1);
+    expect(computeAiCoreCorpusScale(36)).toBe(1);
+  });
+
+  it('grows with sqrt of document count to match the orbit shell', () => {
+    const scale = computeAiCoreCorpusScale(2000);
+    // shell ≈ 11 * sqrt(2000) ≈ 492 → scale ≈ 492 / 72 ≈ 6.83
+    expect(scale).toBeCloseTo((11 * Math.sqrt(2000)) / 72, 5);
+    expect(scale).toBeGreaterThan(6);
+  });
+
+  it('treats negative counts as empty', () => {
+    expect(computeAiCoreCorpusScale(-10)).toBe(1);
   });
 });
