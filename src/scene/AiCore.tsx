@@ -4,22 +4,29 @@
  * the restrained sprite behind them supplies the soft atmospheric glow.
  *
  * Streaming still drives the existing energy ramp, but now it brightens and
- * accelerates the whole assembly. Reduced-motion mode keeps every geometry
- * layer static while retaining the steady brightness cue.
+ * accelerates the whole assembly. The whole assembly also scales with corpus
+ * size so it stays in proportion to the expanding orbit shell. Reduced-motion
+ * mode keeps every geometry layer static while retaining the steady brightness
+ * cue.
  */
 
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useChatStore } from '../store/chatStore';
+import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { prefersReducedMotion } from '../util/motion';
-import { computeAiCoreVisuals } from './aiCoreVisuals';
+import {
+  computeAiCoreCorpusScale,
+  computeAiCoreVisuals,
+} from './aiCoreVisuals';
 import { getSharedSoftSprite } from './proceduralTextures';
 
 const CORE_COLOR = new THREE.Color('#26e6cf');
 const SHELL_COLOR = new THREE.Color('#66fff0');
 const RING_COLOR = '#7affef';
+const BASE_LIGHT_DISTANCE = 42;
 
 const NO_RAYCAST = (): void => {
   /* the core is decoration, never pickable */
@@ -55,9 +62,19 @@ const shellMaterial = new THREE.ShaderMaterial({
 });
 shellMaterial.toneMapped = false;
 
+function countDocuments(nodes: { kind: string }[]): number {
+  let count = 0;
+  for (const node of nodes) {
+    if (node.kind === 'document') count += 1;
+  }
+  return count;
+}
+
 export default function AiCore() {
   const sprite = getSharedSoftSprite();
   const visible = useUiStore((s) => s.dims === 3);
+  const documentCount = useGraphStore((s) => countDocuments(s.nodes));
+  const corpusScale = computeAiCoreCorpusScale(documentCount);
   const glowRef = useRef<THREE.Sprite>(null);
   const glowMatRef = useRef<THREE.SpriteMaterial>(null);
   const coreRef = useRef<THREE.Mesh>(null);
@@ -116,90 +133,98 @@ export default function AiCore() {
 
   return (
     <group visible={visible}>
-      <pointLight color={CORE_COLOR} intensity={5} distance={42} decay={2} />
+      {/* Distance is world-space — keep the light outside the scaled assembly. */}
+      <pointLight
+        color={CORE_COLOR}
+        intensity={5}
+        distance={BASE_LIGHT_DISTANCE * corpusScale}
+        decay={2}
+      />
 
-      <sprite ref={glowRef} scale={[14, 14, 1]} raycast={NO_RAYCAST}>
-        <spriteMaterial
-          ref={glowMatRef}
-          map={sprite}
-          color={CORE_COLOR}
-          transparent
-          opacity={0.12}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          toneMapped={false}
-        />
-      </sprite>
-
-      <mesh ref={coreRef} raycast={NO_RAYCAST}>
-        <icosahedronGeometry args={[2.45, 4]} />
-        <meshPhysicalMaterial
-          color="#07322f"
-          emissive={CORE_COLOR}
-          emissiveIntensity={0.42}
-          metalness={0.24}
-          roughness={0.14}
-          clearcoat={1}
-          clearcoatRoughness={0.08}
-          envMapIntensity={1.8}
-        />
-      </mesh>
-
-      <mesh ref={wireRef} raycast={NO_RAYCAST} rotation={[0.4, 0.2, 0.1]}>
-        <icosahedronGeometry args={[3.05, 2]} />
-        <meshBasicMaterial
-          color="#a4fff6"
-          wireframe
-          transparent
-          opacity={0.34}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          toneMapped={false}
-        />
-      </mesh>
-
-      <mesh ref={shellRef} raycast={NO_RAYCAST}>
-        <sphereGeometry args={[3.55, 32, 24]} />
-        <primitive object={shellMaterial} attach="material" />
-      </mesh>
-
-      <group ref={ringsRef} rotation={[0.3, 0.15, -0.2]}>
-        <mesh raycast={NO_RAYCAST} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[5.4, 0.07, 6, 96]} />
-          <meshBasicMaterial
-            ref={rememberRingMaterial}
-            color={RING_COLOR}
+      <group scale={corpusScale}>
+        <sprite ref={glowRef} scale={[14, 14, 1]} raycast={NO_RAYCAST}>
+          <spriteMaterial
+            ref={glowMatRef}
+            map={sprite}
+            color={CORE_COLOR}
             transparent
-            opacity={0.46}
+            opacity={0.12}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </sprite>
+
+        <mesh ref={coreRef} raycast={NO_RAYCAST}>
+          <icosahedronGeometry args={[2.45, 4]} />
+          <meshPhysicalMaterial
+            color="#07322f"
+            emissive={CORE_COLOR}
+            emissiveIntensity={0.42}
+            metalness={0.24}
+            roughness={0.14}
+            clearcoat={1}
+            clearcoatRoughness={0.08}
+            envMapIntensity={1.8}
+          />
+        </mesh>
+
+        <mesh ref={wireRef} raycast={NO_RAYCAST} rotation={[0.4, 0.2, 0.1]}>
+          <icosahedronGeometry args={[3.05, 2]} />
+          <meshBasicMaterial
+            color="#a4fff6"
+            wireframe
+            transparent
+            opacity={0.34}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
             toneMapped={false}
           />
         </mesh>
-        <mesh raycast={NO_RAYCAST} rotation={[0.65, 0.2, 0.9]}>
-          <torusGeometry args={[6.25, 0.06, 6, 96]} />
-          <meshBasicMaterial
-            ref={rememberRingMaterial}
-            color="#70bfff"
-            transparent
-            opacity={0.46}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-            toneMapped={false}
-          />
+
+        <mesh ref={shellRef} raycast={NO_RAYCAST}>
+          <sphereGeometry args={[3.55, 32, 24]} />
+          <primitive object={shellMaterial} attach="material" />
         </mesh>
-        <mesh raycast={NO_RAYCAST} rotation={[1.15, -0.75, 0.25]}>
-          <torusGeometry args={[7.1, 0.05, 6, 96]} />
-          <meshBasicMaterial
-            ref={rememberRingMaterial}
-            color="#b39aff"
-            transparent
-            opacity={0.46}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-            toneMapped={false}
-          />
-        </mesh>
+
+        <group ref={ringsRef} rotation={[0.3, 0.15, -0.2]}>
+          <mesh raycast={NO_RAYCAST} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[5.4, 0.07, 6, 96]} />
+            <meshBasicMaterial
+              ref={rememberRingMaterial}
+              color={RING_COLOR}
+              transparent
+              opacity={0.46}
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+              toneMapped={false}
+            />
+          </mesh>
+          <mesh raycast={NO_RAYCAST} rotation={[0.65, 0.2, 0.9]}>
+            <torusGeometry args={[6.25, 0.06, 6, 96]} />
+            <meshBasicMaterial
+              ref={rememberRingMaterial}
+              color="#70bfff"
+              transparent
+              opacity={0.46}
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+              toneMapped={false}
+            />
+          </mesh>
+          <mesh raycast={NO_RAYCAST} rotation={[1.15, -0.75, 0.25]}>
+            <torusGeometry args={[7.1, 0.05, 6, 96]} />
+            <meshBasicMaterial
+              ref={rememberRingMaterial}
+              color="#b39aff"
+              transparent
+              opacity={0.46}
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+              toneMapped={false}
+            />
+          </mesh>
+        </group>
       </group>
     </group>
   );
