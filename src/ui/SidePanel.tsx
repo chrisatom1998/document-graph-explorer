@@ -8,6 +8,8 @@ import { canonicalizeTopic } from '../pipeline/topics';
 import { removeDocuments } from '../pipeline/coordinator';
 import { timeAgo } from '../util/relativeTime';
 import DocAiSection from './DocAiSection';
+import NotesTagsSection from './NotesTagsSection';
+import { annotationKey } from '../store/annotationStore';
 import { AIRGAP } from '../airgap';
 import { focusNode } from './focusNode';
 import { openDocument } from './openDocument';
@@ -345,6 +347,11 @@ export default function SidePanel() {
                 ))}
               </div>
             </div>
+          )}
+
+          {node.kind === 'document' && (
+            /* key resets the tag draft when the selection changes */
+            <NotesTagsSection key={node.id} docKey={annotationKey(node)} />
           )}
 
           {!(AIRGAP || offlineMode) && fullText && (

@@ -175,6 +175,7 @@ Click any node. The right-hand panel shows:
 - **Badges**: file type, cluster (with color), warnings (e.g. partially indexed), and clickable **≈ duplicate of …** chips when a near-duplicate exists.
 - **Stats**: word count, connection count, last-modified time.
 - **Summary** (AI-enriched if enrichment ran, otherwise the document's opening lines), **Topics** (topics shared with other docs are clickable hubs), and **Entities**.
+- **Notes & Tags**: your own free-text note, tag chips (with one-click suggestions from tags used elsewhere in the corpus), and a **☆ Pin** toggle. Annotations are saved per corpus, keyed by the document's path — an edited file keeps its notes — and pinned documents appear as a jump list in Corpus insights.
 - **Ask AI** (when enrichment is enabled — see below).
 - **Connections**: every edge sorted by strength, with the relationship kind, a weight bar, evidence for the link, and a click-to-jump neighbor title.
 - **A real document reader**: PDFs render their actual pages (lazily as you scroll); Markdown renders with headings, tables, code, and working cross-document links — a `[[wikilink]]` or relative link to another ingested doc jumps to it *inside the graph*; HTML renders sanitized; CSV becomes a real table; JSON/YAML are syntax-highlighted; everything else gets a clean text reader.

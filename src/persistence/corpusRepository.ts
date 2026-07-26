@@ -4,6 +4,7 @@ import { getSetting, lookupGraphCache, setSetting } from './cache';
 import {
   getDb,
   type CorpusRecord,
+  type DocAnnotationRecord,
   type SavedViewRecord,
   type WatchedFolderRecord,
 } from './db';
@@ -53,6 +54,14 @@ async function publish(
   removedId?: string,
 ): Promise<void> {
   const state = useCorpusStore.getState();
+  // A background write (debounced annotation/watch/view persistence) must not
+  // re-derive the active workspace while an imported/shared graph is on
+  // screen: setLocalState unconditionally flips mode back to 'local', and the
+  // lastCorpusId fallback would silently re-activate a real corpus underneath
+  // the ephemeral one — misdirecting later edits into it and re-arming
+  // active-corpus mutations (e.g. markActiveCorpusEmpty) that ephemeral mode
+  // deliberately disarms. Only an explicit activation may leave that state.
+  if (activeId === undefined && state.mode !== 'local') return;
   let summaries = state.initialized
     ? state.corpora
     : (await allRecords()).map(summary);
@@ -284,6 +293,28 @@ export async function updateCorpusViews(
 ): Promise<void> {
   const record = await mutateCorpus(id, (current) => {
     current.views = views;
+    current.updatedAt = Date.now();
+  });
+  await publish(undefined, record);
+}
+
+/**
+ * Merge a per-key annotation patch (null = delete) into the corpus record.
+ * A patch, not a whole-map replace: writes touch only the keys this caller
+ * changed, so a concurrent writer (second tab) can't have its keys clobbered
+ * by our stale snapshot of the rest of the map.
+ */
+export async function updateCorpusAnnotations(
+  id: string,
+  patch: Record<string, DocAnnotationRecord | null>,
+): Promise<void> {
+  const record = await mutateCorpus(id, (current) => {
+    const next = { ...(current.annotations ?? {}) };
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === null) delete next[key];
+      else next[key] = value;
+    }
+    current.annotations = next;
     current.updatedAt = Date.now();
   });
   await publish(undefined, record);

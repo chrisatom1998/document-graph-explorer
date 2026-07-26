@@ -1322,6 +1322,60 @@ input {
   gap: 6px;
 }
 
+/* Notes & Tags: user-authored annotation block */
+.side-panel__notes-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.side-panel__notes-head .side-panel__section-label {
+  margin-bottom: 0;
+}
+.side-panel__note-input {
+  width: 100%;
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+}
+.side-panel__note-input:focus {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 2px rgba(120, 140, 255, 0.18);
+}
+.side-panel__note-input::placeholder {
+  color: var(--text-faint);
+}
+.side-panel__tag-input {
+  min-width: 72px;
+  flex: 1 1 72px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px dashed var(--border-glass-strong);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+}
+.side-panel__tag-input::placeholder {
+  color: var(--text-secondary);
+}
+.side-panel__tag-input:focus {
+  border-color: var(--accent-strong);
+  border-style: solid;
+}
+.side-panel__tag-suggestions {
+  margin-top: 8px;
+}
+
 /* A topic chip that resolves to a hub: clickable, with the count of documents
    sharing it. Makes "how topics relate" reachable in one click. */
 .side-panel__topic-chip {
@@ -1450,6 +1504,16 @@ input {
 .side-panel__reader--markdown {
   white-space: normal;
 }
+/* Model-authored external link: shown in full, deliberately not clickable. */
+.md-inert-link {
+  color: var(--text-primary);
+}
+.md-inert-link__url {
+  color: var(--text-faint);
+  word-break: break-all;
+  font-size: 0.92em;
+}
+
 .md-doc > :first-child {
   margin-top: 0;
 }
