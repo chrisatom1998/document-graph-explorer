@@ -6,6 +6,8 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.9] - 2026-07-25
+
 ### Added
 - Snapshot comparison: each saved snapshot now has a **Compare** action that summarizes what changed between it and the current graph — documents added/removed/updated and connections gained/lost. An edited file (whose content-derived id changed) counts as one update, not a removal plus an addition, and edges are compared by endpoints so an updated document that kept its connections adds no churn.
 - Saved views: bookmark the current camera position, 2D/3D mode, and filters from the View menu, then jump back with one click. Views are stored per corpus (up to 12) and survive restarts.
