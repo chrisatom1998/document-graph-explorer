@@ -20,3 +20,4 @@ docker/downloads/*
 .cursor/
 copilot-worktrees/
 document-graph-explorer/
+artifacts/

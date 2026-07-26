@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   chooseFolderToWatch,
   folderWatchingSupported,
@@ -26,6 +27,14 @@ function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+type FloatingMenuPosition = {
+  left: number;
+  width: number;
+  maxHeight: number;
+  top?: number | 'auto';
+  bottom?: number | 'auto';
+};
+
 export default function CorpusSwitcher({ variant = 'toolbar' }: { variant?: 'toolbar' | 'empty' }) {
   const activeId = useCorpusStore((state) => state.activeCorpusId);
   const activeName = useCorpusStore((state) => state.activeName);
@@ -41,12 +50,16 @@ export default function CorpusSwitcher({ variant = 'toolbar' }: { variant?: 'too
   const [renameValue, setRenameValue] = useState('');
   const [renaming, setRenaming] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [floatingMenuPosition, setFloatingMenuPosition] = useState<FloatingMenuPosition | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (!rootRef.current?.contains(target) && !menuRef.current?.contains(target)) setOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
@@ -74,6 +87,55 @@ export default function CorpusSwitcher({ variant = 'toolbar' }: { variant?: 'too
   useEffect(() => {
     if (overlayOpen) setOpen(false);
   }, [overlayOpen]);
+
+  // On the welcome screen the picker lives inside a rounded, scrollable card.
+  // Put its menu at the document level so the card can never crop it, then keep
+  // it aligned with the button as the window moves or resizes.
+  useLayoutEffect(() => {
+    if (!open || variant !== 'empty') {
+      setFloatingMenuPosition(null);
+      return;
+    }
+
+    const positionMenu = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+
+      const rect = trigger.getBoundingClientRect();
+      const gutter = 12;
+      const gap = 10;
+      const width = Math.min(350, Math.max(0, window.innerWidth - gutter * 2));
+      const spaceBelow = window.innerHeight - rect.bottom - gutter;
+      const spaceAbove = rect.top - gutter;
+      const opensAbove = spaceBelow < 280 && spaceAbove > spaceBelow;
+      const availableHeight = opensAbove ? spaceAbove : spaceBelow;
+      const left = Math.min(
+        Math.max(rect.left + rect.width / 2 - width / 2, gutter),
+        Math.max(gutter, window.innerWidth - width - gutter),
+      );
+
+      setFloatingMenuPosition({
+        left,
+        width,
+        maxHeight: Math.min(620, Math.max(0, availableHeight - gap)),
+        ...(opensAbove
+          ? { top: 'auto', bottom: window.innerHeight - rect.top + gap }
+          : { top: rect.bottom + gap, bottom: 'auto' }),
+      });
+    };
+
+    positionMenu();
+    window.addEventListener('resize', positionMenu);
+    window.addEventListener('scroll', positionMenu, true);
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(positionMenu);
+    if (triggerRef.current) observer?.observe(triggerRef.current);
+
+    return () => {
+      window.removeEventListener('resize', positionMenu);
+      window.removeEventListener('scroll', positionMenu, true);
+      observer?.disconnect();
+    };
+  }, [open, variant]);
 
   const run = async (action: () => Promise<unknown>, closeAfter = false) => {
     setBusy(true);
@@ -105,30 +167,16 @@ export default function CorpusSwitcher({ variant = 'toolbar' }: { variant?: 'too
     return null;
   })();
 
-  return (
+  const isFloatingEmptyMenu = variant === 'empty';
+  const menu = open && (!isFloatingEmptyMenu || floatingMenuPosition) ? (
     <div
-      ref={rootRef}
-      className={`corpus-switcher corpus-switcher--${variant}`}
+      ref={menuRef}
+      className={`corpus-switcher__menu glass-panel${isFloatingEmptyMenu ? ' corpus-switcher__menu--floating' : ''}`}
+      style={isFloatingEmptyMenu && floatingMenuPosition ? floatingMenuPosition : undefined}
+      role="dialog"
+      aria-label="Manage corpora"
       onPointerDown={(event) => event.stopPropagation()}
     >
-      <button
-        type="button"
-        className="corpus-switcher__trigger"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-label={`Current corpus: ${activeName}${watchLabel ? `, ${watchLabel}` : ''}`}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <span
-          className={`corpus-switcher__status is-${watchStatus}`}
-          aria-hidden="true"
-        />
-        <span className="corpus-switcher__name">{activeName}</span>
-        <span className="corpus-switcher__chevron" aria-hidden="true">⌄</span>
-      </button>
-
-      {open && (
-        <div className="corpus-switcher__menu glass-panel" role="dialog" aria-label="Manage corpora">
           <div className="corpus-switcher__header">
             <div>
               <strong>Corpora</strong>
@@ -277,8 +325,33 @@ export default function CorpusSwitcher({ variant = 'toolbar' }: { variant?: 'too
               </p>
             )}
           </div>
-        </div>
-      )}
+    </div>
+  ) : null;
+
+  return (
+    <div
+      ref={rootRef}
+      className={`corpus-switcher corpus-switcher--${variant}`}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        className="corpus-switcher__trigger"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={`Current corpus: ${activeName}${watchLabel ? `, ${watchLabel}` : ''}`}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span
+          className={`corpus-switcher__status is-${watchStatus}`}
+          aria-hidden="true"
+        />
+        <span className="corpus-switcher__name">{activeName}</span>
+        <span className="corpus-switcher__chevron" aria-hidden="true">⌄</span>
+      </button>
+
+      {menu && (isFloatingEmptyMenu ? createPortal(menu, document.body) : menu)}
     </div>
   );
 }
