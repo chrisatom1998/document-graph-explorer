@@ -1,20 +1,30 @@
 import { useEffect, useState, type CSSProperties } from 'react';
+import { AIRGAP } from '../airgap';
 import { useGraphStore } from '../store/graphStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 
-const KEY = 'knowledge-nebula-first-graph-guide-v2';
+// v3: added saved views, folder sync, snapshot compare, and chat-provider
+// steps — bumping the key shows the enhanced tour once to users who
+// dismissed the shorter v2 tour.
+const KEY = 'knowledge-nebula-first-graph-guide-v3';
 export const FIRST_RUN_GUIDE_REOPEN_EVENT = 'knowledge-nebula-reopen-first-run-guide';
 
 const TOUR_STEPS = [
   {
     selector: '.nebula-canvas',
     title: 'Explore the map',
-    body: 'Drag to orbit, scroll to zoom, and select a node to read the source behind it.',
+    body: 'Drag to orbit, scroll to zoom, and select a node to read the source behind it — plus add your own notes, tags, and pins.',
   },
   {
     selector: '.toolbar',
     title: 'Find and shape the view',
-    body: 'Search, trace paths, switch between 2D and 3D, collapse clusters, save snapshots, and add files here.',
+    body: 'Search, trace paths, switch between 2D and 3D, collapse clusters, and add files here.',
+  },
+  {
+    selector: '[aria-label="View options"]',
+    title: 'Save your favorite views',
+    body: 'View options also bookmarks the current camera angle, 2D/3D mode, and filters as a named view you can jump back to anytime.',
   },
   {
     selector: '.filter-bar-layer',
@@ -22,9 +32,23 @@ const TOUR_STEPS = [
     body: 'Open Filters to focus by file type or cluster, or raise Link Strength to hide weaker connections.',
   },
   {
-    selector: '.chat-bubble-btn',
+    selector: '[aria-label^="Current corpus"]',
+    title: 'Keep a folder in sync',
+    body: 'Connect a folder from the corpus switcher and edits are re-indexed automatically — within a second in the desktop app.',
+  },
+  {
+    selector: '[aria-label="Saved snapshots"]',
+    title: 'Snapshot and compare',
+    body: 'Save named snapshots of the graph, then use Compare to see what changed since — documents added, removed, or updated, and connections gained or lost.',
+  },
+  {
+    // The bubble hides while the chat panel is open — anchor to either.
+    selector: '.chat-bubble-btn, .chat-panel',
     title: 'Ask the corpus',
-    body: 'Open chat for grounded answers that cite the documents and passages used.',
+    body: 'Open chat for grounded answers that cite the documents used. Answers can come from local passages, Gemini, OpenRouter, or a fully local Ollama model — pick a provider in Settings.',
+    /** Airgap/offline builds must not advertise cloud providers. */
+    offlineBody:
+      'Open chat for grounded answers extracted from your documents, with citations to the passages used.',
   },
 ] as const;
 
@@ -38,6 +62,7 @@ interface SpotlightRect {
 export default function FirstRunGuide() {
   const ready = useGraphStore((state) => state.phase === 'ready' && state.nodes.length > 0);
   const selectedId = useUiStore((state) => state.selectedId);
+  const offlineMode = useSettingsStore((state) => state.offlineMode);
   const [dismissed, setDismissed] = useState(true);
   const [step, setStep] = useState(0);
   const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null);
@@ -83,7 +108,7 @@ export default function FirstRunGuide() {
     };
   }, [dismissed, ready, selectedId, step]);
 
-  if (!ready || dismissed || selectedId !== null) return null;
+  const visible = ready && !dismissed && selectedId === null;
 
   const close = () => {
     try {
@@ -94,7 +119,24 @@ export default function FirstRunGuide() {
     setDismissed(true);
   };
 
+  // Escape dismisses the tour, and must win over the global Escape ladder
+  // (camera overview) while the tour is up — capture phase for that.
+  useEffect(() => {
+    if (!visible) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      close();
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, [visible]);
+
+  if (!visible) return null;
+
   const current = TOUR_STEPS[step];
+  const offline = AIRGAP || offlineMode;
+  const body = offline && 'offlineBody' in current ? current.offlineBody : current.body;
   const spotlightStyle: CSSProperties | undefined = spotlight
     ? {
         top: Math.max(6, spotlight.top - 6),
@@ -120,7 +162,7 @@ export default function FirstRunGuide() {
         </button>
         <span className="first-run-guide__step">Step {step + 1} of {TOUR_STEPS.length}</span>
         <strong>{current.title}</strong>
-        <p>{current.body}</p>
+        <p>{body}</p>
         <div className="first-run-guide__actions">
           <button
             type="button"

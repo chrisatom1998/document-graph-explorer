@@ -26,7 +26,12 @@ export function escapeHtml(str: string): string {
 
 // http(s) URLs, www. URLs, and bare emails. Kept simple/greedy; trailing
 // sentence punctuation is trimmed back onto the surrounding text below.
-const INLINE_URL_RE = /(https?:\/\/[^\s<]+|www\.[^\s<]+|[^\s<@]+@[^\s<@]+\.[a-zA-Z]{2,})/g;
+// Quantifiers are BOUNDED: the email alternative's two open-ended runs meeting
+// at a literal '@' backtrack quadratically on a long punctuation-free line
+// (a legitimate minified file does this as readily as a hostile one), which
+// hangs the main thread. Real URLs and addresses fit far inside these limits.
+const INLINE_URL_RE =
+  /(https?:\/\/[^\s<]{1,2048}|www\.[^\s<]{1,2048}|[^\s<@]{1,256}@[^\s<@]{1,256}\.[a-zA-Z]{2,24})/g;
 
 /** A web link the original document contained, or null if the token isn't one. */
 export function hrefFor(token: string): string | null {
