@@ -91,6 +91,20 @@ export interface WatchedFolderRecord {
 }
 
 /**
+ * User-authored annotation on one document, stored per corpus and keyed by
+ * the document's STABLE key (path, falling back to title) rather than its
+ * content-derived node id — an edited file keeps its notes. Unlike chat
+ * transcripts, annotations are durable user work: nothing in the corpus
+ * lifecycle may clear them implicitly.
+ */
+export interface DocAnnotationRecord {
+  note: string;
+  tags: string[];
+  pinned: boolean;
+  updatedAt: number;
+}
+
+/**
  * A named camera + display-state bookmark ("saved view"), stored per corpus.
  * Filter shape mirrors uiStore's GraphFilter but is declared independently:
  * persistence must not depend on store modules, and a persisted record needs
@@ -127,6 +141,7 @@ export interface CorpusRecord {
   positions: Record<string, [number, number, number]>;
   watch?: WatchedFolderRecord;
   views?: SavedViewRecord[];
+  annotations?: Record<string, DocAnnotationRecord>;
 }
 
 export interface NebulaDB extends DBSchema {

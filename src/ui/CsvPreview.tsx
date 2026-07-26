@@ -14,6 +14,13 @@ import { useMemo } from 'react';
 
 /** Above this many data rows, render only the first N (perf safety net for huge exports). */
 const MAX_ROWS = 5000;
+/**
+ * Columns are bounded too: a single line of commas is a valid, tiny .csv that
+ * would otherwise mount one DOM cell per field and wedge the renderer — and a
+ * legitimately wide export degrades the same way. Every sibling preview
+ * (Json/Yaml/Markdown/Html) has an equivalent cap.
+ */
+const MAX_COLS = 200;
 
 /** Parse CSV text into rows of string cells. PURE. */
 export function parseCsv(text: string): string[][] {
@@ -99,6 +106,8 @@ export default function CsvPreview({ text, className }: CsvPreviewProps) {
   const [header, ...body] = rows;
   const truncated = body.length > MAX_ROWS;
   const visibleBody = truncated ? body.slice(0, MAX_ROWS) : body;
+  const totalCols = rows.reduce((max, r) => Math.max(max, r.length), 0);
+  const colsTruncated = totalCols > MAX_COLS;
 
   return (
     <div className={wrapClass}>
@@ -106,7 +115,7 @@ export default function CsvPreview({ text, className }: CsvPreviewProps) {
         <table>
           <thead>
             <tr>
-              {header.map((cell, i) => (
+              {header.slice(0, MAX_COLS).map((cell, i) => (
                 <th key={i}>{cell}</th>
               ))}
             </tr>
@@ -114,7 +123,7 @@ export default function CsvPreview({ text, className }: CsvPreviewProps) {
           <tbody>
             {visibleBody.map((r, ri) => (
               <tr key={ri}>
-                {r.map((cell, ci) => (
+                {r.slice(0, MAX_COLS).map((cell, ci) => (
                   <td key={ci}>{cell}</td>
                 ))}
               </tr>
@@ -122,9 +131,15 @@ export default function CsvPreview({ text, className }: CsvPreviewProps) {
           </tbody>
         </table>
       </div>
-      {truncated && (
+      {(truncated || colsTruncated) && (
         <p className="csv-preview__truncated">
-          Showing first {MAX_ROWS.toLocaleString()} of {body.length.toLocaleString()} rows.
+          Showing first{' '}
+          {truncated
+            ? `${MAX_ROWS.toLocaleString()} of ${body.length.toLocaleString()} rows`
+            : `${body.length.toLocaleString()} rows`}
+          {colsTruncated &&
+            `, ${MAX_COLS.toLocaleString()} of ${totalCols.toLocaleString()} columns`}
+          .
         </p>
       )}
     </div>

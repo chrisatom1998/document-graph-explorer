@@ -50,7 +50,11 @@ export default function ChatMarkdown({ text }: { text: string }): ReactNode {
 
   return (
     <div className="chat-md">
-      {renderMarkdownChildren(tree.children, 'md', { flattenHeadings: true })}
+      {/* Model output is untrusted: show external URLs, never make them one-click. */}
+      {renderMarkdownChildren(tree.children, 'md', {
+        flattenHeadings: true,
+        inertExternalLinks: true,
+      })}
     </div>
   );
 }

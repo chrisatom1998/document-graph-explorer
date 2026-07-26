@@ -32,6 +32,8 @@ const MAX_PATH_CHARS = 1024;
 const MAX_LIST_ITEMS = 64; // topics / entities / keywords / evidence
 const MAX_LIST_ITEM_CHARS = 200;
 const MAX_CLUSTER_NAMES = 1024;
+/** Hard ceiling on entries a single object-map scan will look at. */
+const MAX_SCANNED_ENTRIES = 100_000;
 
 // Must mirror the FileType union in model/types.ts, or exporting then
 // reimporting a graph downgrades known file types to 'other'.
@@ -199,8 +201,12 @@ export function sanitizeGraphExport(data: unknown): GraphExport {
     !Array.isArray(g.clusterNames)
   ) {
     let kept = 0;
+    let examined = 0;
     for (const [key, value] of Object.entries(g.clusterNames)) {
-      if (kept >= MAX_CLUSTER_NAMES) break;
+      // Bound entries EXAMINED, not just kept: a map of millions of invalid
+      // entries `continue`s without advancing `kept`, so the keep-cap alone
+      // never ends the loop.
+      if (kept >= MAX_CLUSTER_NAMES || ++examined > MAX_SCANNED_ENTRIES) break;
       const clusterId = Number(key);
       const name = asString(value, MAX_LIST_ITEM_CHARS)?.trim();
       if (!Number.isFinite(clusterId) || !name) continue;
@@ -214,7 +220,11 @@ export function sanitizeGraphExport(data: unknown): GraphExport {
   let embeddings: Record<string, string> | undefined;
   if (typeof g.embeddings === 'object' && g.embeddings !== null && !Array.isArray(g.embeddings)) {
     embeddings = {};
+    let examined = 0;
     for (const [id, b64] of Object.entries(g.embeddings)) {
+      // Same reasoning as clusterNames: unknown ids skip without any counter
+      // advancing, so this loop needs its own bound on entries examined.
+      if (++examined > MAX_SCANNED_ENTRIES) break;
       if (!nodeIds.has(id)) continue;
       if (typeof b64 !== 'string' || b64.length === 0 || b64.length > MAX_EMBEDDING_B64_CHARS) {
         continue;

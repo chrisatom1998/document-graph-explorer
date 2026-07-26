@@ -6,6 +6,21 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+- Document annotations: every document's side panel now has a **Notes & Tags** section — a free-text note, removable tag chips with corpus-wide one-click suggestions, and a pin. Annotations persist per corpus in IndexedDB, keyed by the document's stable path so an edited file keeps its notes, and survive document removal. Pinned documents surface as a jump list in Corpus insights. Saves are debounced, per-key (a second tab's annotations can't be clobbered), flushed on tab close/app hide, and retried with a warning toast on failure.
+- The first-run tour now covers the full feature set in 7 steps: saved views, folder sync, snapshot compare, chat providers, and annotations. It reappears once for users who dismissed the older 4-step tour, can be dismissed with Escape, and drops cloud-provider mentions in airgap/offline mode.
+
+### Security
+- Upgraded Electron from 32.3.3 (EOL, Chromium 128, 17 known advisories) to 43.x, and hardened the packaged app's Electron fuses: `RunAsNode`, `--inspect` CLI arguments, and `NODE_OPTIONS` are disabled, while asar integrity validation, `OnlyLoadAppFromAsar`, and cookie encryption are enabled. At their defaults a signed Electron binary doubles as a general-purpose Node interpreter that inherits the app's signature and granted permissions.
+- Updated `fast-xml-parser` (Office-document parsing) past an entity-expansion DoS, and cleared the critical `node-tar` chain in the build tooling. `npm audit`: 40 → 26 issues, 0 critical.
+- Chat prompts now fence retrieved passages with a per-request random nonce, so a document containing the literal context delimiter can no longer close the context block and have the rest of its text read as instructions.
+- Chat renders model-authored external links as inert text showing the full URL instead of one-click anchors, closing a prompt-injection exfiltration path that bypassed the CSP by leaving the app entirely.
+- Bounded model-authored enrichment output (summary length, topic label length) so an injected instruction in one document cannot propagate oversized content into topic canonicalization, cluster names, and exports.
+- Bounded the CSV preview by column count (a one-line all-commas file mounted one DOM cell per field and wedged the renderer), the document-viewer URL linkifier's regex quantifiers (quadratic backtracking hung the main thread on a long line), and the import validator's cluster-name/embedding scans (invalid entries advanced no counter, defeating the caps).
+
+### Fixed
+- Background per-corpus writes (annotations, and by the same path watched-folder and saved-view updates) can no longer re-derive the active workspace while an imported or shared graph is open. Previously the publish fallback re-activated the last local corpus underneath the ephemeral view — flipping the mode back to "local", misdirecting later edits into a real corpus, and re-arming active-corpus mutations (such as marking the corpus empty on last-document removal) that ephemeral mode deliberately disarms.
+
 ## [1.1.9] - 2026-07-25
 
 ### Added

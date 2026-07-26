@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Chip } from '@heroui/react/chip';
+import { ProgressBar } from '@heroui/react/progress-bar';
 import { useGraphStore } from '../store/graphStore';
 import type { FileStage, PipelinePhase } from '../model/types';
 
@@ -83,8 +85,6 @@ export default function ProgressStrip() {
   const done = enriching
     ? enrichProgress?.done ?? 0
     : statuses.filter((s) => s.stage === 'placed' || s.stage === 'cached').length;
-  const pct = total > 0 ? Math.round((done / total) * 100) : phase === 'ready' ? 100 : 0;
-
   const recentFiles = enriching ? [] : statuses.slice(-MAX_FILE_CHIPS);
   const phaseLabel =
     phase === 'ready'
@@ -117,17 +117,18 @@ export default function ProgressStrip() {
       >
         <div className="progress-strip__top" role="status" aria-live="polite" aria-atomic="true">
           <span className="progress-strip__phase">{phaseLabel}</span>
-          <div
-            className="progress-strip__bar-track"
-            role="progressbar"
+          <ProgressBar
+            className="progress-strip__progress"
             aria-label={phaseLabel}
-            aria-valuemin={0}
-            aria-valuemax={total || undefined}
-            aria-valuenow={total > 0 ? done : undefined}
-            aria-valuetext={total > 0 ? `${done} of ${total}` : phaseLabel}
+            minValue={0}
+            maxValue={total || 1}
+            value={total > 0 ? done : 0}
+            valueLabel={total > 0 ? `${done} of ${total}` : phaseLabel}
           >
-            <div className="progress-strip__bar-fill" style={{ width: `${pct}%` }} />
-          </div>
+            <ProgressBar.Track className="progress-strip__bar-track">
+              <ProgressBar.Fill className="progress-strip__bar-fill" />
+            </ProgressBar.Track>
+          </ProgressBar>
           <span className="progress-strip__count">
             {done}/{total || 0}
           </span>
@@ -136,14 +137,16 @@ export default function ProgressStrip() {
         {recentFiles.length > 0 && (
           <div className="progress-strip__files">
             {recentFiles.map((f) => (
-              <span
+              <Chip
                 key={f.fileId}
                 className={`file-chip stage-${f.stage}`}
                 title={f.stage === 'error' ? f.error ?? 'Error' : f.name}
+                size="sm"
+                variant="secondary"
               >
                 <span className="file-chip__icon">{STAGE_ICON[f.stage]}</span>
                 <span className="file-chip__name">{truncateName(f.name)}</span>
-              </span>
+              </Chip>
             ))}
           </div>
         )}
@@ -151,26 +154,18 @@ export default function ProgressStrip() {
         {modelProgress && (
           <div className="model-progress">
             <span className="model-progress__label">{taskProgressLabel}</span>
-            <div
-              className="model-progress__bar-track"
-              role="progressbar"
+            <ProgressBar
+              className="model-progress__progress"
               aria-label={taskProgressAriaLabel}
-              aria-valuemin={0}
-              aria-valuemax={modelProgress.total}
-              aria-valuenow={modelProgress.loaded}
-              aria-valuetext={taskProgressValueText}
+              minValue={0}
+              maxValue={Math.max(1, modelProgress.total)}
+              value={modelProgress.loaded}
+              valueLabel={taskProgressValueText}
             >
-              <div
-                className="model-progress__bar-fill"
-                style={{
-                  width: `${
-                    modelProgress.total > 0
-                      ? Math.round((modelProgress.loaded / modelProgress.total) * 100)
-                      : 0
-                  }%`,
-                }}
-              />
-            </div>
+              <ProgressBar.Track className="model-progress__bar-track">
+                <ProgressBar.Fill className="model-progress__bar-fill" />
+              </ProgressBar.Track>
+            </ProgressBar>
           </div>
         )}
 

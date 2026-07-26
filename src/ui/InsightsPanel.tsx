@@ -15,12 +15,13 @@ import {
   STALE_DOC_DAYS,
 } from '../config';
 import { computeBridges, computeOrphans, computeStaleDocs } from '../graph/insights';
+import { annotationKey, useAnnotationStore } from '../store/annotationStore';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { timeAgo } from '../util/relativeTime';
 import { focusNode } from './focusNode';
 
-type SectionKey = 'orphans' | 'duplicates' | 'bridges' | 'stale';
+type SectionKey = 'pinned' | 'orphans' | 'duplicates' | 'bridges' | 'stale';
 
 const STALE_MONTHS = Math.round(STALE_DOC_DAYS / 30);
 
@@ -35,6 +36,7 @@ export default function InsightsPanel() {
   const edges = useGraphStore((s) => s.edges);
   const duplicatePairs = useGraphStore((s) => s.duplicatePairs);
   const phase = useGraphStore((s) => s.phase);
+  const annotations = useAnnotationStore((s) => s.annotations);
 
   const [highlighted, setHighlighted] = useState<SectionKey | null>(null);
 
@@ -53,6 +55,9 @@ export default function InsightsPanel() {
   const insights = useMemo(() => {
     if (!open) return null; // betweenness is the only non-trivial cost — skip while closed
     return {
+      pinned: nodes.filter(
+        (n) => n.kind === 'document' && annotations[annotationKey(n)]?.pinned,
+      ),
       orphans: computeOrphans(nodes, edges),
       duplicates: duplicatePairs,
       bridges: computeBridges(nodes, edges, {
@@ -62,7 +67,7 @@ export default function InsightsPanel() {
       }),
       stale: computeStaleDocs(nodes, Date.now(), STALE_DOC_DAYS),
     };
-  }, [open, nodes, edges, duplicatePairs]);
+  }, [open, nodes, edges, duplicatePairs, annotations]);
 
   if (!open || !insights) return null;
 
@@ -131,6 +136,34 @@ export default function InsightsPanel() {
         <div className="insights__scroll">
           {phase !== 'ready' && (
             <p className="insights__hint">Still processing — results may be partial.</p>
+          )}
+
+          {insights.pinned.length > 0 && (
+            <>
+              {section(
+                'pinned',
+                'Pinned documents',
+                insights.pinned.length,
+                insights.pinned.map((n) => n.id),
+                <>
+                  <p className="insights__hint">
+                    Documents you starred from the side panel's Notes &amp; Tags.
+                  </p>
+                  {insights.pinned.map((n) => (
+                    <button
+                      key={n.id}
+                      type="button"
+                      className="insights__row"
+                      title={`${n.title} — click to focus in the graph`}
+                      onClick={() => focusNode(n.id)}
+                    >
+                      ★ {n.title}
+                    </button>
+                  ))}
+                </>,
+              )}
+              <hr className="hairline" />
+            </>
           )}
 
           {section(

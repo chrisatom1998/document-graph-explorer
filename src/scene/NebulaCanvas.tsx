@@ -32,18 +32,46 @@ import AutoQuality from './AutoQuality';
 import ClusterCollapse from './ClusterCollapse';
 import SelectionHalo from './SelectionHalo';
 
+function supportsWebGL(): boolean {
+  if (typeof document === 'undefined') return true;
+  try {
+    const canvas = document.createElement('canvas');
+    return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'));
+  } catch {
+    return false;
+  }
+}
+
+function WebGLFallback() {
+  return (
+    <section className="webgl-fallback" role="status" aria-live="polite">
+      <span className="webgl-fallback__mark" aria-hidden="true">✦</span>
+      <h1>Interactive graph unavailable</h1>
+      <p>
+        This browser or graphics setting cannot start WebGL. Your local files stay private;
+        try enabling hardware acceleration or opening this workspace in a supported browser.
+      </p>
+    </section>
+  );
+}
+
 export default function NebulaCanvas() {
   // 2D constellation mode: flat ink background, no starfield/clouds/core —
   // the graph reads as a star chart, not a nebula (see palette FLAT_* tokens).
   const flat = useUiStore((s) => s.dims === 2);
   const bg = flat ? FLAT_BG : '#050510';
+  const coarsePointer =
+    typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
+
+  if (!supportsWebGL()) return <WebGLFallback />;
+
   return (
     <Canvas
       className="nebula-canvas"
       role="application"
       aria-label="Interactive document graph. Drag to orbit, use toolbar buttons for search, filtering, path finding and view controls."
       style={{ position: 'fixed', inset: 0 }}
-      dpr={[1, 2]}
+      dpr={coarsePointer ? 1 : [1, 2]}
       camera={{ fov: 55, near: 0.1, far: 4000, position: [0, 0, 160] }}
       gl={{ antialias: true, preserveDrawingBuffer: true }}
       onCreated={({ gl }) => {
