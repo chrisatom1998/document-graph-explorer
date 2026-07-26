@@ -38,8 +38,11 @@ jobs:
       - name: Build air-gapped app
         run: npm run build:airgap
 
-      - name: Build portable Windows runtime
+      - name: Build portable Windows runtime (pkg)
         run: npm run build:exe
+
+      - name: Build Electron Windows portable
+        run: npx electron-builder --win portable
 
       - name: Guard tag matches package version
         run: |
@@ -52,11 +55,28 @@ jobs:
 
       - name: Package artifacts
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
           zip -r dist.zip dist
           zip -r dist-airgap.zip dist-airgap
-          zip -r "Document-Graph-Explorer-${GITHUB_REF_NAME}-windows-x64-portable.zip" release/win
+          zip -r "Document-Graph-Explorer-${VERSION}-win-pkg.zip" release/win
+          EXE="$(find release -maxdepth 3 -type f -name '*.exe' ! -path 'release/win/*' | head -1)"
+          if [ -z "$EXE" ]; then
+            echo "Electron portable exe not found under release/" >&2
+            exit 1
+          fi
+          cp "$EXE" "Document.Graph.Explorer-${VERSION}.exe"
+          zip -9 "Document-Graph-Explorer-${GITHUB_REF_NAME}-windows-x64-portable.zip" \
+            "Document.Graph.Explorer-${VERSION}.exe"
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist.zip dist-airgap.zip "Document-Graph-Explorer-${GITHUB_REF_NAME}-windows-x64-portable.zip" --generate-notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            dist.zip \
+            dist-airgap.zip \
+            "Document-Graph-Explorer-${VERSION}-win-pkg.zip" \
+            "Document-Graph-Explorer-${GITHUB_REF_NAME}-windows-x64-portable.zip" \
+            "Document.Graph.Explorer-${VERSION}.exe" \
+            --generate-notes
