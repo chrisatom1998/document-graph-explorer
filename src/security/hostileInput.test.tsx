@@ -174,9 +174,10 @@ describe('chat prompt context fencing', () => {
     const closers = prompt.match(/--- END CONTEXT-[0-9a-f]{18} ---/g) ?? [];
     expect(closers).toHaveLength(1);
     const realCloser = closers[0];
+    expect(realCloser).toBeDefined();
     expect(forged).not.toContain(realCloser);
     // Everything after the document's forged delimiter is still INSIDE the fence.
-    expect(prompt.indexOf(realCloser)).toBeGreaterThan(prompt.indexOf('exfiltrate the corpus'));
+    expect(prompt.indexOf(realCloser!)).toBeGreaterThan(prompt.indexOf('exfiltrate the corpus'));
   });
 
   it('uses a fresh nonce per request (not guessable from a prior answer)', () => {
@@ -197,6 +198,16 @@ describe('chat prompt context fencing', () => {
 // ---------------------------------------------------------------------------
 
 describe('import validator vs. hostile graph payloads', () => {
+  // A node-less export is rejected outright ("no valid nodes"), so any case
+  // exercising the map scans below has to carry one real node — otherwise the
+  // payload never reaches the loop under test.
+  const withNode = (extra: Record<string, unknown>): Record<string, unknown> => ({
+    version: 1,
+    nodes: [{ id: 'n1', kind: 'document', title: 'Node 1' }],
+    edges: [],
+    ...extra,
+  });
+
   it('does not pollute Object.prototype via __proto__ / constructor keys', () => {
     const hostile = {
       version: 1,
@@ -222,7 +233,7 @@ describe('import validator vs. hostile graph payloads', () => {
     const clusterNames: Record<string, unknown> = {};
     for (let i = 0; i < 400_000; i++) clusterNames[`not-a-number-${i}`] = '';
     const start = performance.now();
-    const out = sanitizeGraphExport({ version: 1, nodes: [], edges: [], clusterNames });
+    const out = sanitizeGraphExport(withNode({ clusterNames }));
     const elapsed = performance.now() - start;
     expect(Object.keys(out.clusterNames ?? {})).toHaveLength(0);
     expect(elapsed).toBeLessThan(2000);
@@ -232,13 +243,17 @@ describe('import validator vs. hostile graph payloads', () => {
     const embeddings: Record<string, string> = {};
     for (let i = 0; i < 400_000; i++) embeddings[`unknown-${i}`] = 'AAAA';
     const start = performance.now();
-    sanitizeGraphExport({ version: 1, nodes: [], edges: [], embeddings });
+    sanitizeGraphExport(withNode({ embeddings }));
     expect(performance.now() - start).toBeLessThan(2000);
   });
 
-  it('rejects non-object and structurally wrong payloads without throwing', () => {
+  it('rejects non-object and structurally wrong payloads with a user-safe error', () => {
+    // Rejection is by design: the sanitizer throws a descriptive Error and the
+    // import path surfaces err.message to the user (see importGraphJSONFile).
+    // What matters for safety is that junk never yields a partial graph — and
+    // that the message is our own prose, not attacker-controlled text.
     for (const junk of [null, undefined, 42, 'string', [], { nodes: 'not-an-array' }]) {
-      expect(() => sanitizeGraphExport(junk)).not.toThrow();
+      expect(() => sanitizeGraphExport(junk)).toThrow(/^Import failed: /);
     }
   });
 });
