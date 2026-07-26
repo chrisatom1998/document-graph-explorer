@@ -466,7 +466,7 @@ export default function SettingsPanel() {
                 setClearNote(null);
                 setConfirmClear(true);
               }}
-              title="Remove every loaded document and all locally cached data (documents, embeddings, graphs, snapshots). Cannot be undone."
+              title="Remove every loaded document and all locally cached data (documents, embeddings, graphs, snapshots, chat history, notes and tags). Cannot be undone."
               style={dangerButtonStyle}
             >
               Clear all data

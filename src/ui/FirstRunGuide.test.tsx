@@ -70,9 +70,33 @@ describe('FirstRunGuide', () => {
 
     await act(async () => screen.getByRole('button', { name: 'Next' }).click());
     expect(screen.getByText('Find and shape the view')).toBeVisible();
-    expect(screen.getByText('Step 2 of 4')).toBeVisible();
+    expect(screen.getByText('Step 2 of 7')).toBeVisible();
 
     await act(async () => screen.getByRole('button', { name: 'Back' }).click());
     expect(screen.getByText('Explore the map')).toBeVisible();
+  });
+
+  it('teaches every headline feature, ending on chat providers', async () => {
+    render(<FirstRunGuide />);
+    await screen.findByText('Explore the map');
+
+    const seen: string[] = [];
+    for (;;) {
+      seen.push(screen.getByRole('strong').textContent ?? '');
+      const next = screen.queryByRole('button', { name: 'Next' });
+      if (!next) break;
+      await act(async () => next.click());
+    }
+
+    expect(seen).toEqual([
+      'Explore the map',
+      'Find and shape the view',
+      'Save your favorite views',
+      'Reduce visual noise',
+      'Keep a folder in sync',
+      'Snapshot and compare',
+      'Ask the corpus',
+    ]);
+    expect(screen.getByRole('button', { name: 'Got it' })).toBeVisible();
   });
 });

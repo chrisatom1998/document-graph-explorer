@@ -43,6 +43,7 @@ Make internal documentation **explorable, connected, and alive** — transformin
 | Folder watching with File System Access polling | ✅ Shipped | July 2026 |
 | Multi-corpus workspaces | ✅ Shipped | July 2026 |
 | Local OCR fallback for scanned PDFs | ✅ Shipped | July 2026 |
+| Annotation layer (notes, tags, pins per document) | ✅ Shipped | July 2026 |
 
 ### Key Results
 - **50 files → useful graph in <30s** on mid-tier hardware
@@ -74,7 +75,6 @@ Make internal documentation **explorable, connected, and alive** — transformin
 
 | Feature | Priority | Business Value |
 |---|---|---|
-| **Annotation layer** | Medium | Users can add notes, tags, and bookmarks to nodes — personal knowledge overlaid on team docs |
 | **Comparative analytics** | Medium | Quantitative comparison between snapshots: "12 new docs, 3 removed, 47 new connections since last month" |
 | **Export to Notion/Confluence** | Low | Push graph structure and summaries into existing wiki platforms |
 | **Plugin API** | Low | Allow custom parsers, enrichment providers, and visualization modes |
