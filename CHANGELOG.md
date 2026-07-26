@@ -13,7 +13,7 @@ This project follows the Keep a Changelog format.
 - The first-run tour now covers the full feature set in 7 steps: saved views, folder sync, snapshot compare, chat providers, and annotations. It reappears once for users who dismissed the older 4-step tour, can be dismissed with Escape, and drops cloud-provider mentions in airgap/offline mode.
 
 ### Changed
-- Welcome/empty state, progress strip, and first-run chrome restyled with HeroUI; nebula canvas and global styles refreshed to match.
+- Welcome/empty state, progress strip, and first-run chrome restyled with HeroUI (open-source components; no Pro license required for builds); nebula canvas and global styles refreshed to match.
 
 ### Security
 - Upgraded Electron from 32.3.3 (EOL, Chromium 128, 17 known advisories) to 43.x, and hardened the packaged app's Electron fuses: `RunAsNode`, `--inspect` CLI arguments, and `NODE_OPTIONS` are disabled, while asar integrity validation, `OnlyLoadAppFromAsar`, and cookie encryption are enabled. At their defaults a signed Electron binary doubles as a general-purpose Node interpreter that inherits the app's signature and granted permissions.

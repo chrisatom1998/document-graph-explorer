@@ -1,10 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Button } from '@heroui/react/button';
 import { Chip } from '@heroui/react/chip';
-// Import the verified Pro component through its focused public entrypoint.
-// This avoids pulling unrelated Pro widgets and their optional peer packages
-// into the graph application's initial bundle.
-import { EmptyState as HeroEmptyState } from '@heroui-pro/react/empty-state';
+import { EmptyState as HeroEmptyState } from '@heroui/react/empty-state';
 import { openFilePicker } from '../ingest/DropZone';
 import { useUiStore } from '../store/uiStore';
 
@@ -48,23 +45,23 @@ export default function EmptyState() {
 
   return (
     <div className="empty-state-layer">
-      <HeroEmptyState className="empty-state__card glass-panel" size="lg">
+      <HeroEmptyState className="empty-state__card glass-panel">
         <div className="empty-state__visual"><Constellation /></div>
-        <HeroEmptyState.Content className="empty-state__content">
-          <HeroEmptyState.Header className="empty-state__header">
+        <div className="empty-state__content">
+          <header className="empty-state__header">
             <Chip className="empty-state__eyebrow" size="sm" variant="secondary">
               <span className="empty-state__orb" aria-hidden="true" />
               Private knowledge workspace
             </Chip>
             <p className="empty-state__kicker">Document Graph Explorer</p>
-            <HeroEmptyState.Title className="empty-state__title">
+            <h1 className="empty-state__title">
               Turn scattered files into a living map.
-            </HeroEmptyState.Title>
-            <HeroEmptyState.Description className="empty-state__tagline">
+            </h1>
+            <p className="empty-state__tagline">
               Build a local interactive 3D graph of ideas and relationships, then explore the
               shape of your research without sending your documents anywhere.
-            </HeroEmptyState.Description>
-          </HeroEmptyState.Header>
+            </p>
+          </header>
 
           <div className="empty-state__actions">
             <Button
@@ -92,7 +89,7 @@ export default function EmptyState() {
           </div>
           <Suspense fallback={null}><CorpusSwitcher variant="empty" /></Suspense>
           <p className="empty-state__hint">or drag files and folders anywhere</p>
-        </HeroEmptyState.Content>
+        </div>
 
         <div className="empty-state__workflow" aria-label="How Document Graph Explorer works">
           <div className="empty-state__step">
