@@ -70,6 +70,17 @@ export default function CameraRig() {
     const count = positionBuffer.count;
     const arr = positionBuffer.array;
 
+    // Explicit pose (saved views): glide straight to the stored position and
+    // target — no framing math, no dependence on current node positions.
+    if (cmd.kind === 'pose') {
+      if (!cmd.pose) return;
+      desiredPos.set(cmd.pose.px, cmd.pose.py, cmd.pose.pz);
+      desiredTarget.set(cmd.pose.tx, cmd.pose.ty, cmd.pose.tz);
+      tweenActive.current = true;
+      lastInteraction.current = performance.now();
+      return;
+    }
+
     // keep the current viewing direction; only distance/target change
     viewDir.copy(camera.position).sub(controls.target);
     if (viewDir.lengthSq() < 1e-6) viewDir.set(0, 0, 1);

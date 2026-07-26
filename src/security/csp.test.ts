@@ -2,11 +2,19 @@ import { describe, it, expect } from 'vitest';
 import { buildCsp } from './csp';
 
 describe('buildCsp', () => {
-  it('normal build allows exactly the two opt-in AI connect-src hosts', () => {
+  it('normal build allows exactly the opt-in AI connect-src hosts', () => {
     const csp = buildCsp({ airgap: false });
     expect(csp).toContain(
-      "connect-src 'self' blob: https://generativelanguage.googleapis.com https://openrouter.ai",
+      "connect-src 'self' blob: https://generativelanguage.googleapis.com https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434",
     );
+  });
+
+  it('only loopback hosts are allowed over plain http', () => {
+    const csp = buildCsp({ airgap: false });
+    const plainHttpHosts = csp.match(/http:\/\/[^\s;]+/g) ?? [];
+    for (const host of plainHttpHosts) {
+      expect(host).toMatch(/^http:\/\/(127\.0\.0\.1|localhost):11434$/);
+    }
   });
 
   it('airgap build has no external host anywhere in the policy', () => {
@@ -15,6 +23,7 @@ describe('buildCsp', () => {
     expect(csp).not.toMatch(/https?:\/\//);
     expect(csp).not.toContain('generativelanguage');
     expect(csp).not.toContain('openrouter');
+    expect(csp).not.toContain('11434');
   });
 
   it('both modes keep the non-connect directives identical', () => {

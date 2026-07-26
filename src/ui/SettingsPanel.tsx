@@ -12,7 +12,11 @@ import { runEnrichment } from '../enrich/gemini';
 import { clearAllCaches } from '../persistence/cache';
 import { resetCorpus } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
-import { DEFAULT_OPENROUTER_MODEL, useSettingsStore } from '../store/settingsStore';
+import {
+  DEFAULT_OLLAMA_MODEL,
+  DEFAULT_OPENROUTER_MODEL,
+  useSettingsStore,
+} from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 import { buildDiagnosticsText, getAppVersion } from './diagnostics';
 
@@ -121,6 +125,7 @@ export default function SettingsPanel() {
   const openRouterKey = useSettingsStore((s) => s.openRouterKey);
   const rememberOpenRouterKey = useSettingsStore((s) => s.rememberOpenRouterKey);
   const openRouterModel = useSettingsStore((s) => s.openRouterModel);
+  const ollamaModel = useSettingsStore((s) => s.ollamaModel);
   const enrichEnabled = useSettingsStore((s) => s.enrichEnabled);
   const includeEmbeddings = useSettingsStore((s) => s.includeEmbeddingsInExport);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
@@ -130,6 +135,7 @@ export default function SettingsPanel() {
   const setOpenRouterKey = useSettingsStore((s) => s.setOpenRouterKey);
   const setRememberOpenRouterKey = useSettingsStore((s) => s.setRememberOpenRouterKey);
   const setOpenRouterModel = useSettingsStore((s) => s.setOpenRouterModel);
+  const setOllamaModel = useSettingsStore((s) => s.setOllamaModel);
   const setEnrichEnabled = useSettingsStore((s) => s.setEnrichEnabled);
   const setIncludeEmbeddings = useSettingsStore((s) => s.setIncludeEmbeddingsInExport);
   const setOfflineMode = useSettingsStore((s) => s.setOfflineMode);
@@ -268,7 +274,9 @@ export default function SettingsPanel() {
             Chat provider
             <select
               value={chatProvider}
-              onChange={(e) => setChatProvider(e.target.value as 'local' | 'gemini' | 'openrouter')}
+              onChange={(e) =>
+                setChatProvider(e.target.value as 'local' | 'gemini' | 'openrouter' | 'ollama')
+              }
               style={inputStyle}
               disabled={offlineMode}
               title="Choose how document chat answers are generated"
@@ -276,8 +284,33 @@ export default function SettingsPanel() {
               <option value="local">Local passages</option>
               <option value="gemini">Google Gemini</option>
               <option value="openrouter">OpenRouter</option>
+              <option value="ollama">Ollama (local)</option>
             </select>
           </label>
+          {chatProvider === 'ollama' && (
+            <>
+              <label style={labelStyle}>
+                Ollama model
+                <input
+                  type="text"
+                  value={ollamaModel}
+                  onChange={(e) => setOllamaModel(e.target.value)}
+                  onBlur={() => {
+                    if (!ollamaModel) setOllamaModel(DEFAULT_OLLAMA_MODEL);
+                  }}
+                  placeholder={DEFAULT_OLLAMA_MODEL}
+                  spellCheck={false}
+                  style={inputStyle}
+                  disabled={offlineMode}
+                />
+              </label>
+              <p style={helpStyle}>
+                Chat runs against your own Ollama server at 127.0.0.1:11434 — no API key, nothing
+                leaves this machine. Install from ollama.com, then pull the model (e.g. `ollama
+                pull {ollamaModel || DEFAULT_OLLAMA_MODEL}`).
+              </p>
+            </>
+          )}
           {chatProvider === 'openrouter' && (
             <>
               <label style={labelStyle}>

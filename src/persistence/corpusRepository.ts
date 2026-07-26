@@ -1,7 +1,12 @@
 import type { DocNode, GraphExport } from '../model/types';
 import { useCorpusStore, type CorpusSummary } from '../store/corpusStore';
 import { getSetting, lookupGraphCache, setSetting } from './cache';
-import { getDb, type CorpusRecord, type WatchedFolderRecord } from './db';
+import {
+  getDb,
+  type CorpusRecord,
+  type SavedViewRecord,
+  type WatchedFolderRecord,
+} from './db';
 
 const LAST_CORPUS_ID_KEY = 'lastCorpusId';
 const LAST_CORPUS_HASH_KEY = 'lastCorpusHash';
@@ -268,6 +273,17 @@ export async function updateCorpusWatch(
 ): Promise<void> {
   const record = await mutateCorpus(id, (current) => {
     current.watch = watch;
+    current.updatedAt = Date.now();
+  });
+  await publish(undefined, record);
+}
+
+export async function updateCorpusViews(
+  id: string,
+  views: SavedViewRecord[],
+): Promise<void> {
+  const record = await mutateCorpus(id, (current) => {
+    current.views = views;
     current.updatedAt = Date.now();
   });
   await publish(undefined, record);

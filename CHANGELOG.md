@@ -6,6 +6,18 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+- Snapshot comparison: each saved snapshot now has a **Compare** action that summarizes what changed between it and the current graph — documents added/removed/updated and connections gained/lost. An edited file (whose content-derived id changed) counts as one update, not a removal plus an addition, and edges are compared by endpoints so an updated document that kept its connections adds no churn.
+- Saved views: bookmark the current camera position, 2D/3D mode, and filters from the View menu, then jump back with one click. Views are stored per corpus (up to 12) and survive restarts.
+- Ollama chat provider: document chat can now run against a local Ollama server (127.0.0.1:11434) — no API key, nothing leaves the machine. Opt-in from Settings with a configurable model; unreachable-server and missing-model errors explain how to fix them. The production CSP admits only the two loopback spellings of the endpoint; airgap builds still admit no host at all.
+- Native folder watching in the desktop app: the Electron shell watches a connected folder with fs.watch and triggers the normal sync within about a second of a change, instead of waiting for the next 8-second poll. The native watch is a trigger only — scanning, diffing, and ingestion are unchanged — and browsers keep the polling behavior.
+- macOS app icon (generated nebula-constellation artwork; `scripts/make-mac-icon.mjs` regenerates it).
+
+### Changed
+- `run-app.sh` now rebuilds and redeploys automatically when the installed app is older than the source tree, instead of failing or launching a stale build.
+- Moved stray debugging screenshots and the retrieval benchmark snapshot from the repository root into `docs/`.
+- README: corrected desktop build output names ("Knowledge Nebula.app" → "Document Graph Explorer.app") and refreshed the privacy paragraph to cover all three chat providers.
+
 ## [1.1.8] - 2026-07-25
 
 ### Added

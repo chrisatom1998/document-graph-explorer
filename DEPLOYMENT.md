@@ -53,7 +53,7 @@ server {
   add_header X-Frame-Options "DENY" always;
   add_header X-Content-Type-Options "nosniff" always;
   add_header Referrer-Policy "no-referrer" always;
-  add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: https://generativelanguage.googleapis.com https://openrouter.ai; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'" always;
+  add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: https://generativelanguage.googleapis.com https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'" always;
 
   location / {
     try_files $uri $uri/ /index.html;
@@ -61,8 +61,9 @@ server {
 }
 ```
 
-For `dist-airgap/`, remove both `https://generativelanguage.googleapis.com` and
-`https://openrouter.ai` from `connect-src`.
+For `dist-airgap/`, remove `https://generativelanguage.googleapis.com`,
+`https://openrouter.ai`, and the two `:11434` loopback hosts (Ollama) from
+`connect-src`.
 
 ## Checklist
 

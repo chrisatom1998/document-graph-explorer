@@ -82,6 +82,7 @@
       "!node_modules/**/*"
     ],
     "mac": {
+      "icon": "packaging/icon.icns",
       "category": "public.app-category.productivity",
       "target": [
         "dir"

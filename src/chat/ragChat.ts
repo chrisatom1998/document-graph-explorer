@@ -19,11 +19,16 @@ import {
 import { GEMINI_ENDPOINT } from '../config';
 import { isOffline } from '../offline';
 import { useGraphStore } from '../store/graphStore';
-import { DEFAULT_OPENROUTER_MODEL, useSettingsStore } from '../store/settingsStore';
+import {
+  DEFAULT_OLLAMA_MODEL,
+  DEFAULT_OPENROUTER_MODEL,
+  useSettingsStore,
+} from '../store/settingsStore';
 import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
 import { retrieveCorpus } from '../search/retrieval';
 import { formatExtractiveAnswer } from './extractiveAnswer';
 import { streamOpenRouterChat } from './openRouterClient';
+import { streamOllamaChat } from './ollamaClient';
 import { clearActiveChatAbort, setActiveChatAbort } from './chatCancellation';
 
 export { cancelChat } from './chatCancellation';
@@ -204,7 +209,8 @@ export async function sendChatMessage(question: string): Promise<void> {
   const q = question.trim();
   if (!q) return;
 
-  const { chatProvider, geminiKey, openRouterKey, openRouterModel } = useSettingsStore.getState();
+  const { chatProvider, geminiKey, openRouterKey, openRouterModel, ollamaModel } =
+    useSettingsStore.getState();
   const chat = useChatStore.getState();
 
   // Snapshot the conversation BEFORE this turn, for multi-turn memory. This
@@ -214,10 +220,15 @@ export async function sendChatMessage(question: string): Promise<void> {
   // Add user message
   chat.addMessage({ role: 'user', text: q });
 
-  // When Gemini isn't available (airgap build, enrichment off, or no key), answer
-  // locally by extracting the best-matching passages — no network, no refusal.
-  const selectedKey = chatProvider === 'openrouter' ? openRouterKey : geminiKey;
-  const useLocal = isOffline() || chatProvider === 'local' || selectedKey.trim() === '';
+  // When the selected provider isn't available (airgap build, offline mode, or
+  // a cloud provider without its key), answer locally by extracting the
+  // best-matching passages — no network, no refusal. Ollama needs no key: its
+  // only requirement is the local server, and a missing server is reported at
+  // request time with a fix-it message.
+  const selectedKey =
+    chatProvider === 'openrouter' ? openRouterKey : chatProvider === 'gemini' ? geminiKey : null;
+  const useLocal =
+    isOffline() || chatProvider === 'local' || (selectedKey !== null && selectedKey.trim() === '');
 
   const docCount = useGraphStore.getState().nodes.filter((n) => n.kind === 'document').length;
   if (docCount === 0) {
@@ -271,8 +282,23 @@ export async function sendChatMessage(question: string): Promise<void> {
 
     sources = bestChunkSources(chunks);
 
-    // Build prompt + multi-turn history and stream from Gemini.
+    // Build prompt + multi-turn history and stream from the selected provider.
     const prompt = buildPrompt(q, chunks);
+    if (chatProvider === 'ollama') {
+      const answer = await streamOllamaChat({
+        model: ollamaModel || DEFAULT_OLLAMA_MODEL,
+        prompt,
+        history: priorMessages,
+        signal: controller.signal,
+        onText: (text) => {
+          accumulated = text;
+          useChatStore.getState().updateMessage(assistantId, { text });
+        },
+      });
+      accumulated = answer;
+      useChatStore.getState().updateMessage(assistantId, { text: answer, sources });
+      return;
+    }
     if (chatProvider === 'openrouter') {
       const answer = await streamOpenRouterChat({
         apiKey: openRouterKey,
