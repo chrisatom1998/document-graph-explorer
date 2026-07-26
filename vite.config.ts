@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { buildCsp } from './src/security/csp';
 import pkg from './package.json';
 
@@ -41,7 +42,7 @@ const SECURITY_HEADERS = {
 // NOTE: no COOP/COEP headers on purpose — we use transferable Float32Arrays
 // (not SharedArrayBuffer), so cross-origin isolation buys nothing here.
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), injectCsp(mode === 'airgap')],
+  plugins: [react(), tailwindcss(), injectCsp(mode === 'airgap')],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   server: { headers: SECURITY_HEADERS },
   preview: { headers: SECURITY_HEADERS },

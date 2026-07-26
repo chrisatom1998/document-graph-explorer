@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react';
+import { Button } from '@heroui/react/button';
 import { AIRGAP } from '../airgap';
 import { useGraphStore } from '../store/graphStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -164,26 +165,28 @@ export default function FirstRunGuide() {
         <strong>{current.title}</strong>
         <p>{body}</p>
         <div className="first-run-guide__actions">
-          <button
-            type="button"
+          <Button
             className="first-run-guide__back"
-            disabled={step === 0}
-            onClick={() => setStep((value) => Math.max(0, value - 1))}
+            variant="tertiary"
+            size="sm"
+            isDisabled={step === 0}
+            onPress={() => setStep((value) => Math.max(0, value - 1))}
           >
             Back
-          </button>
+          </Button>
           {step < TOUR_STEPS.length - 1 ? (
-            <button
-              type="button"
+            <Button
               className="first-run-guide__done"
-              onClick={() => setStep((value) => value + 1)}
+              variant="primary"
+              size="sm"
+              onPress={() => setStep((value) => value + 1)}
             >
               Next
-            </button>
+            </Button>
           ) : (
-            <button type="button" className="first-run-guide__done" onClick={close}>
+            <Button className="first-run-guide__done" variant="primary" size="sm" onPress={close}>
               Got it
-            </button>
+            </Button>
           )}
         </div>
       </aside>

@@ -1,3 +1,7 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+@import "@heroui-pro/react/css";
+
 /* ==========================================================================
    Document Graph Explorer — application stylesheet
    Design system: near-black "deep-space observatory" UI floating over the
@@ -126,13 +130,21 @@
 :root {
   color-scheme: dark;
 
-  --bg-void: #050510;
-  --bg-glass: rgba(10, 12, 24, 0.78);
-  --bg-glass-strong: rgba(12, 14, 28, 0.9);
-  --bg-glass-soft: rgba(10, 12, 24, 0.55);
-  --border-glass: rgba(140, 150, 255, 0.14);
-  --border-glass-strong: rgba(140, 150, 255, 0.28);
-  --shadow-glass: 0 8px 40px rgba(0, 0, 0, 0.5);
+  /* HeroUI's glass-dark theme drives component surfaces. These app tokens
+     translate it to our graph shell so old and new controls feel unified. */
+  --background: #060914;
+  --foreground: #edf2ff;
+  --focus: #77e5ff;
+  --radius: 0.625rem;
+  --glass-blur: 22px;
+
+  --bg-void: #060914;
+  --bg-glass: rgba(11, 16, 34, 0.72);
+  --bg-glass-strong: rgba(10, 15, 31, 0.9);
+  --bg-glass-soft: rgba(10, 15, 31, 0.52);
+  --border-glass: rgba(158, 176, 255, 0.16);
+  --border-glass-strong: rgba(132, 218, 255, 0.36);
+  --shadow-glass: 0 14px 50px rgba(0, 0, 0, 0.42), inset 0 1px rgba(255, 255, 255, 0.035);
 
   --text-primary: #dfe4f4;
   --text-secondary: #8b93b8;
@@ -141,10 +153,10 @@
   --text-muted: var(--text-secondary);
   --panel-bg: var(--bg-glass-strong);
 
-  --accent: #8f7bff;
-  --accent-soft: rgba(143, 123, 255, 0.16);
-  --accent-strong: #a996ff;
-  --edge-blue: #7fb4ff;
+  --accent: #8e7dff;
+  --accent-soft: rgba(142, 125, 255, 0.16);
+  --accent-strong: #b4a8ff;
+  --edge-blue: #77e5ff;
 
   --kind-reference: #ffb36b;
   --kind-semantic: #7fb4ff;
@@ -178,6 +190,24 @@
   --z-floating: 30;
   --z-modal: 40;
   --z-dropzone: 50;
+}
+
+/* Keep the official glass-dark theme active while tuning its neutral defaults
+   for this application's violet/cyan research vocabulary. `html.glass-dark`
+   matches the theme selector's specificity, so these values intentionally
+   win over the stock theme without needing a second provider or theme layer. */
+html.glass-dark {
+  --glass-blur: 22px;
+  --background: #060914;
+  --foreground: #edf2ff;
+  --focus: #77e5ff;
+  --accent: #8e7dff;
+  --accent-foreground: #ffffff;
+  --surface: rgba(11, 16, 34, 0.72);
+  --surface-secondary: rgba(18, 25, 49, 0.68);
+  --surface-tertiary: rgba(28, 36, 67, 0.72);
+  --overlay: rgba(12, 17, 35, 0.84);
+  --default: rgba(160, 179, 255, 0.12);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -397,12 +427,54 @@ input {
 
 .glass-panel {
   background: var(--bg-glass);
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.16);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.16);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-glass);
 }
+
+/* The working state is deliberately quieter than the welcome screen: a slim
+   command dock frames the graph without competing with it. */
+.toolbar {
+  border-color: rgba(169, 186, 255, 0.2);
+  background: rgba(9, 14, 30, 0.68);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.36), inset 0 1px rgba(255, 255, 255, 0.04);
+}
+.toolbar .btn-icon { border-radius: 8px; }
+.toolbar__menu,
+.filter-bar,
+.insights,
+.path-panel,
+.help-popover,
+.snapshot-drawer,
+.chat-panel {
+  border-color: rgba(158, 176, 255, 0.18);
+  box-shadow: var(--shadow-glass);
+}
+.filter-bar { background: rgba(9, 14, 30, 0.68); }
+.side-panel {
+  background: rgba(8, 13, 28, 0.76);
+  backdrop-filter: blur(24px) saturate(1.14);
+  -webkit-backdrop-filter: blur(24px) saturate(1.14);
+}
+.insights { background: rgba(9, 14, 30, 0.75); }
+.minimap { background: rgba(9, 14, 30, 0.58); }
+
+.webgl-fallback {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  padding: 24px;
+  background: radial-gradient(circle at 50% 42%, #151b38 0%, var(--bg-void) 52%);
+  color: var(--text-primary);
+  text-align: center;
+}
+.webgl-fallback__mark { color: var(--edge-blue); font-size: 32px; }
+.webgl-fallback h1 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+.webgl-fallback p { max-width: 490px; margin: 0; color: var(--text-secondary); line-height: 1.55; }
 
 /* Every overlay's outer wrapper: full-bleed, click-through by default. */
 .overlay-layer {
@@ -654,31 +726,75 @@ input {
    Empty state
    ========================================================================== */
 
-.empty-state {
+.empty-state-layer {
   position: fixed;
   inset: 0;
   z-index: var(--z-overlay);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
+  padding: 24px;
   pointer-events: none;
 }
 
 .empty-state__card {
   pointer-events: auto;
+  display: grid;
+  grid-template-columns: minmax(210px, 0.78fr) minmax(330px, 1.22fr);
+  grid-template-areas:
+    'visual content'
+    'workflow workflow'
+    'trust trust';
+  column-gap: clamp(28px, 5vw, 72px);
+  row-gap: 22px;
+  width: min(1000px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: clamp(28px, 5vw, 64px);
+  text-align: left;
+  animation: kn-pop-in 520ms var(--ease-out) both;
+  border-color: rgba(141, 168, 255, 0.22);
+  background: rgba(9, 14, 30, 0.74);
+  color: var(--text-primary);
+}
+
+.empty-state__visual {
+  grid-area: visual;
+  display: grid;
+  place-items: center;
+  min-height: 280px;
+}
+
+.empty-state__constellation {
+  width: min(100%, 330px);
+  overflow: visible;
+}
+
+.empty-state__orbit {
+  stroke: rgba(146, 132, 255, 0.28);
+  stroke-width: 1;
+}
+.empty-state__orbit--outer { stroke-dasharray: 3 7; }
+.empty-state__link {
+  stroke: rgba(119, 229, 255, 0.34);
+  stroke-width: 1.25;
+}
+.empty-state__node { fill: #b5a9ff; filter: drop-shadow(0 0 7px rgba(142, 125, 255, 0.65)); }
+.empty-state__node--core { fill: #e8e3ff; filter: drop-shadow(0 0 18px rgba(142, 125, 255, 0.9)); }
+.empty-state__node--cyan { fill: #8deaff; filter: drop-shadow(0 0 9px rgba(119, 229, 255, 0.85)); }
+
+.empty-state__content {
+  grid-area: content;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  width: min(780px, calc(100vw - 40px));
-  max-height: calc(100vh - 40px);
-  overflow: auto;
-  padding: 32px 42px 28px;
-  text-align: center;
-  animation: kn-pop-in 520ms var(--ease-out) both;
-  background:
-    linear-gradient(145deg, rgba(20, 22, 49, 0.93), rgba(7, 9, 23, 0.88)),
-    var(--bg-glass);
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.empty-state__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .empty-state__eyebrow {
@@ -686,7 +802,7 @@ input {
   align-items: center;
   gap: 8px;
   margin: 0;
-  color: var(--kind-topic);
+  color: #bceeff;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.13em;
@@ -697,69 +813,68 @@ input {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--kind-topic);
-  box-shadow: 0 0 12px rgba(126, 232, 196, 0.85);
-}
-
-.empty-state__intro {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  background: var(--edge-blue);
+  box-shadow: 0 0 12px rgba(119, 229, 255, 0.85);
 }
 
 .empty-state__kicker {
   margin: 0;
-  color: var(--text-secondary);
-  font-size: 13px;
-  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .empty-state__title {
   margin: 0;
-  max-width: 680px;
-  font-size: clamp(34px, 5vw, 54px);
+  max-width: 580px;
+  font-size: clamp(36px, 4.4vw, 58px);
   font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  background: linear-gradient(120deg, #d9d4ff 0%, #8f7bff 45%, #7fb4ff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+  color: #f1f4ff;
 }
 
 .empty-state__tagline {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   color: var(--text-secondary);
-  max-width: 460px;
-  line-height: 1.5;
+  max-width: 520px;
+  line-height: 1.6;
 }
 
 .empty-state__actions {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-top: 6px;
+  gap: 10px;
+  margin-top: 24px;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
+.empty-state__actions .button {
+  border-radius: 9px;
+  color: #edf2ff;
+}
+.empty-state__primary-action { box-shadow: 0 8px 26px rgba(112, 93, 250, 0.28); }
+
 .empty-state__hint {
-  margin: -8px 0 0;
-  font-size: 13px;
+  margin: 10px 0 0;
+  font-size: 11px;
   color: var(--text-faint);
 }
 
 .empty-state__workflow {
+  grid-area: workflow;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   width: 100%;
-  margin-top: 4px;
+  margin-top: 2px;
   overflow: hidden;
   border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.025);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.022);
 }
 
 .empty-state__step {
@@ -795,9 +910,10 @@ input {
 }
 
 .empty-state__trust-row {
+  grid-area: trust;
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   gap: 8px;
   color: var(--text-faint);
@@ -2260,6 +2376,8 @@ input {
   flex-direction: column;
   gap: 10px;
   animation: kn-slide-in-up 260ms var(--ease-out) both;
+  border-color: rgba(137, 224, 255, 0.22);
+  background: rgba(9, 14, 30, 0.82);
 }
 .progress-strip.is-leaving {
   animation: kn-fade-out 480ms ease both;
@@ -2277,6 +2395,12 @@ input {
   font-weight: 600;
   color: var(--text-primary);
   min-width: 148px;
+}
+
+.progress-strip__progress,
+.model-progress__progress {
+  flex: 1 1 auto;
+  min-width: 80px;
 }
 
 .progress-strip__bar-track {
@@ -2430,13 +2554,18 @@ input {
   flex-direction: column;
   gap: 8px;
   pointer-events: none;
-  max-width: min(360px, 92vw);
+  width: min(340px, calc(100vw - 92px));
+  max-width: min(340px, 92vw);
 }
 
 .toast {
   /* The visual card may overlap a docked panel. Only its actual controls
      should capture input; clicking the message passes through to the UI. */
   pointer-events: none;
+  position: relative;
+  inset: auto;
+  width: 100%;
+  min-width: 0;
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -3047,15 +3176,30 @@ input {
 /* ========================================================================== */
 
 @media (max-width: 640px) {
+  .empty-state-layer {
+    padding: 10px;
+  }
   .empty-state__title {
     font-size: 32px;
   }
   .empty-state__card {
-    width: min(100vw - 20px, 780px);
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'visual'
+      'content'
+      'workflow'
+      'trust';
+    width: 100%;
     max-height: calc(100vh - 20px);
-    gap: 15px;
+    row-gap: 15px;
     padding: 24px 20px;
   }
+  .empty-state__visual { min-height: 132px; }
+  .empty-state__constellation { width: 180px; }
+  .empty-state__content,
+  .empty-state__header { align-items: center; text-align: center; }
+  .empty-state__actions { justify-content: center; margin-top: 14px; }
+  .empty-state__actions .button { min-height: 42px; }
   .empty-state__workflow {
     grid-template-columns: 1fr;
   }
@@ -3068,6 +3212,7 @@ input {
     border-left: none;
   }
   .empty-state__trust-row {
+    justify-content: center;
     gap: 6px;
     font-size: 10px;
   }
@@ -3147,6 +3292,14 @@ input {
   .side-panel {
     width: 100vw;
   }
+}
+
+@media (pointer: coarse) {
+  .toolbar { padding: 7px; }
+  .toolbar .btn-icon { min-width: 42px; min-height: 42px; }
+  .filter-bar__clear,
+  .ignored-tray__toggle { min-height: 40px; }
+  .chat-bubble-btn { width: 58px; height: 58px; }
 }
 
 /* ==========================================================================

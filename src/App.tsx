@@ -1,7 +1,5 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import DropZone from './ingest/DropZone';
-import EmptyState from './ui/EmptyState';
-import ProgressStrip from './ui/ProgressStrip';
 import Toolbar from './ui/Toolbar';
 import Tooltip from './ui/Tooltip';
 import ChatLauncher from './ui/ChatLauncher';
@@ -23,6 +21,10 @@ import { initChatHistorySync } from './persistence/chatHistorySync';
 import './styles.css';
 
 const NebulaCanvas = lazy(() => import('./scene/NebulaCanvas'));
+// The welcome and ingest UI pull in the component library, but neither needs
+// to delay the interactive shell or graph bundle on a restored workspace.
+const EmptyState = lazy(() => import('./ui/EmptyState'));
+const ProgressStrip = lazy(() => import('./ui/ProgressStrip'));
 const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
 const PathPanel = lazy(() => import('./ui/PathPanel'));
 const SidePanel = lazy(() => import('./ui/SidePanel'));
@@ -276,13 +278,15 @@ export default function App() {
         <NebulaCanvas />
       </Suspense>
       <DropZone />
-      {!hasNodes && phase === 'idle' && <EmptyState />}
+      {!hasNodes && phase === 'idle' && (
+        <Suspense fallback={null}><EmptyState /></Suspense>
+      )}
       {phase === 'ready' && <Toolbar />}
       {phase === 'ready' && <GraphNavigator />}
       {phase === 'ready' && (
         <Suspense fallback={null}><FilterBar /></Suspense>
       )}
-      <ProgressStrip />
+      <Suspense fallback={null}><ProgressStrip /></Suspense>
       {insightsOpen && (
         <Suspense fallback={null}><InsightsPanel /></Suspense>
       )}
