@@ -14,6 +14,7 @@ import { openFilePicker } from '../ingest/DropZone';
 
 const ExportImportMenu = lazy(() => import('./ExportImportMenu'));
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
+const SavedViewsSection = lazy(() => import('./SavedViewsSection'));
 
 /* ---------------------------------------------------------------------- */
 /* Inline icon set — no icon library per project rules. Each is a plain   */
@@ -297,6 +298,7 @@ export default function Toolbar() {
   // Which popover menu (if any) is open. Only one at a time.
   const [openMenu, setOpenMenu] = useState<MenuKey | null>(null);
   const [dataDialogOpen, setDataDialogOpen] = useState(false);
+
   const viewMenuWrapRef = useRef<HTMLDivElement | null>(null);
   const dataMenuWrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -508,6 +510,11 @@ export default function Toolbar() {
               <IconOctahedron />
               <span>Collapse clusters</span>
             </button>
+
+            {/* Saved views: camera + filter bookmarks, per corpus (lazy chunk) */}
+            <Suspense fallback={null}>
+              <SavedViewsSection onApplied={() => setOpenMenu(null)} />
+            </Suspense>
           </div>
         )}
       </div>

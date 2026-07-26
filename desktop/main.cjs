@@ -1,4 +1,5 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { createRequestHandler, hasIndexHtml } = require('../scripts/staticServer.cjs');
@@ -12,6 +13,61 @@ const { createRequestHandler, hasIndexHtml } = require('../scripts/staticServer.
 const LOCAL_SERVER_PORT = 47182;
 
 let server;
+
+// ---------------------------------------------------------------------------
+// Native folder watching. One watch at a time (the renderer watches at most
+// one folder per active corpus). Events are debounced and collapsed into a
+// bare "something changed" ping — the renderer re-runs its normal
+// File System Access scan to find out what, so the two code paths can never
+// disagree about the folder's contents.
+// ---------------------------------------------------------------------------
+const FOLDER_CHANGE_DEBOUNCE_MS = 500;
+let folderWatcher = null;
+let folderChangeTimer = null;
+
+function stopFolderWatch() {
+  if (folderChangeTimer) clearTimeout(folderChangeTimer);
+  folderChangeTimer = null;
+  if (folderWatcher) folderWatcher.close();
+  folderWatcher = null;
+}
+
+function registerFolderWatchIpc() {
+  ipcMain.handle('folder-watch:start', (event, absolutePath) => {
+    stopFolderWatch();
+    if (typeof absolutePath !== 'string' || !path.isAbsolute(absolutePath)) return false;
+    let stat;
+    try {
+      stat = fs.statSync(absolutePath);
+    } catch {
+      return false;
+    }
+    if (!stat.isDirectory()) return false;
+    try {
+      // recursive: supported natively on macOS and Windows. If the platform
+      // refuses, the renderer's polling loop still covers the folder.
+      folderWatcher = fs.watch(absolutePath, { recursive: true }, () => {
+        if (folderChangeTimer) clearTimeout(folderChangeTimer);
+        folderChangeTimer = setTimeout(() => {
+          folderChangeTimer = null;
+          if (!event.sender.isDestroyed()) event.sender.send('folder-watch:changed');
+        }, FOLDER_CHANGE_DEBOUNCE_MS);
+      });
+      // A deleted/unmounted watch root errors rather than crashing the app;
+      // the renderer's next poll reports the folder state as usual.
+      folderWatcher.on('error', () => stopFolderWatch());
+    } catch {
+      folderWatcher = null;
+      return false;
+    }
+    return true;
+  });
+
+  ipcMain.handle('folder-watch:stop', () => {
+    stopFolderWatch();
+    return true;
+  });
+}
 
 function resolveDistPath() {
   return path.join(__dirname, '..', 'dist');
@@ -77,6 +133,7 @@ async function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      preload: path.join(__dirname, 'preload.cjs'),
     },
   });
 
@@ -122,6 +179,7 @@ if (!gotSingleInstanceLock) {
   });
 
   app.whenReady().then(() => {
+    registerFolderWatchIpc();
     void createWindow();
 
     app.on('activate', () => {
@@ -139,6 +197,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  stopFolderWatch();
   if (server) {
     server.close();
   }

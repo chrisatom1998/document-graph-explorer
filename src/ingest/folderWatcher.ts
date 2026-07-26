@@ -8,6 +8,10 @@ import {
   type FolderWatchStatus,
 } from '../store/folderWatchStore';
 import { useUiStore } from '../store/uiStore';
+import {
+  armDesktopFolderWatch,
+  disarmDesktopFolderWatch,
+} from './desktopFolderWatch';
 import { scanFolder } from './folderScanner';
 import { prepareIngestFiles } from './localFiles';
 
@@ -53,6 +57,7 @@ function clearTimer(): void {
   if (typeof document !== 'undefined') {
     document.removeEventListener('visibilitychange', handleVisibilityChange);
   }
+  void disarmDesktopFolderWatch();
 }
 
 function handleWake(): void {
@@ -94,6 +99,13 @@ async function syncBoundFolder(): Promise<number> {
 
   setWatchState({ status: 'checking', folderName: watch.rootName, error: null });
   const scanned = await scanFolder(watch.handle);
+  // Desktop shell only (no-op in browsers): arm a native fs watch on this
+  // folder so the NEXT change triggers an immediate sync instead of waiting
+  // for the poll. Uses this scan's files to learn the folder's absolute path;
+  // deliberately not awaited — it cannot affect the current sync.
+  void armDesktopFolderWatch(corpusId, watch.rootName, scanned, handleWake).catch(
+    () => undefined,
+  );
   const byPath = new Map(scanned.map((entry) => [entry.path!, entry]));
   const changed = scanned.filter((entry) => {
     const previous = watch.files[entry.path!];

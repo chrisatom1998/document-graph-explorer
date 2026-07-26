@@ -2,7 +2,7 @@
 
 A drag-and-drop **3D mind map for your documents**. Drop a folder of text, Markdown, PDF, HTML, or Word/PowerPoint/Excel files onto the window and Document Graph Explorer parses them, extracts topics and relationships, and renders the whole corpus as an explorable force-directed 3D graph — documents become nodes, semantic and structural relationships become edges.
 
-**Local-first and private by architecture.** Parsing, embeddings, similarity, and clustering all run in your browser (in web workers, with a self-hosted embedding model). Your documents never leave the tab. The only optional network call is Gemini enrichment, which is off by default and requires you to supply your own API key — enforced in production by a strict Content-Security-Policy (see [vite.config.ts](vite.config.ts)).
+**Local-first and private by architecture.** Parsing, embeddings, similarity, and clustering all run in your browser (in web workers, with a self-hosted embedding model). Your documents never leave the tab. The only optional network calls are the opt-in cloud chat/enrichment providers (Gemini, OpenRouter), both off by default and requiring your own API key — enforced in production by a strict Content-Security-Policy (see [vite.config.ts](vite.config.ts)). For AI chat with zero cloud involvement, pick the **Ollama** provider in Settings and chat runs against your own local Ollama server.
 
 ## Quick start
 
@@ -18,7 +18,7 @@ Then open the printed local URL and drag documents onto the window — or click 
 ## Feature highlights
 
 - **Scanned-PDF OCR:** when a PDF has too little embedded text, the app falls back to the bundled Tesseract.js runtime. OCR is local, uses the bundled English model, and is limited to the first 20 pages of each PDF.
-- **Live folder sources:** connect a folder from the corpus switcher to add changed files and remove deleted files automatically. This requires a browser with the File System Access API and runs only while the app is open; the app checks about every eight seconds while visible and again when the tab regains focus. Drag-and-drop remains available everywhere as a one-time import.
+- **Live folder sources:** connect a folder from the corpus switcher to add changed files and remove deleted files automatically. This requires a browser with the File System Access API and runs only while the app is open; the app checks about every eight seconds while visible and again when the tab regains focus. In the desktop app, a native filesystem watch additionally triggers a sync within about a second of a change — no waiting for the next poll. Drag-and-drop remains available everywhere as a one-time import.
 - **Shareable graph URLs:** **Data → Copy shareable URL** creates a backend-free URL fragment containing a portable graph view. The link includes titles, short source excerpts (up to 200 characters), topics, entities, keywords, warnings, cluster labels, and connection evidence, but excludes full document text and original file bytes, local paths, embeddings, file handles, and settings. Large graphs that exceed browser-safe URL limits should be shared with JSON export instead.
 - **Multiple corpora:** create, rename, switch, and delete independent named workspaces from the corpus switcher. Each corpus keeps its own graph, layout, document references, and optional watched folder in browser-local IndexedDB.
 
@@ -39,8 +39,8 @@ Then open the printed local URL and drag documents onto the window — or click 
 | --- | --- | --- |
 | `npm run build` | `dist/` | Fully local by default; optional opt-in Gemini enrichment |
 | `npm run build:airgap` | `dist-airgap/` | **Zero external network** — host-free CSP + runtime refusal + post-build verify gate |
-| `npm run build:desktop` | `release/mac-arm64/Knowledge Nebula.app`, installed to `/Applications` | Normal app build wrapped as a local macOS desktop executable |
-| `npm run dist:mac` | `Knowledge Nebula-<version>-arm64.dmg` and `.zip` under `release/` | Distributable macOS installer images (see [Distributing the app](#distributing-the-app-dmg)) |
+| `npm run build:desktop` | `release/mac-arm64/Document Graph Explorer.app`, installed to `/Applications` | Normal app build wrapped as a local macOS desktop executable |
+| `npm run dist:mac` | `Document Graph Explorer-<version>-arm64.dmg` and `.zip` under `release/` | Distributable macOS installer images (see [Distributing the app](#distributing-the-app-dmg)) |
 
 See [SECURITY.md](SECURITY.md) for the full privacy guarantee and how to verify it.
 
@@ -59,7 +59,7 @@ npm install
 npm run build:desktop
 ```
 
-That produces `release/mac-arm64/Knowledge Nebula.app` and copies it to `/Applications` so it shows up in Launchpad and Spotlight. This is the **local install** path — nothing is packaged for other machines.
+That produces `release/mac-arm64/Document Graph Explorer.app` and copies it to `/Applications` so it shows up in Launchpad and Spotlight. This is the **local install** path — nothing is packaged for other machines.
 
 ### Distributing the app (dmg)
 
@@ -69,7 +69,7 @@ To package the app for other Macs, build the installer images instead:
 npm run dist:mac
 ```
 
-This produces `Knowledge Nebula-<version>-arm64.dmg` (drag-to-Applications installer) and a matching `.zip` under `release/`. Both targets must be built on macOS.
+This produces `Document Graph Explorer-<version>-arm64.dmg` (drag-to-Applications installer) and a matching `.zip` under `release/`. Both targets must be built on macOS.
 
 Distribution caveats:
 

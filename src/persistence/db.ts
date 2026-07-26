@@ -91,6 +91,27 @@ export interface WatchedFolderRecord {
 }
 
 /**
+ * A named camera + display-state bookmark ("saved view"), stored per corpus.
+ * Filter shape mirrors uiStore's GraphFilter but is declared independently:
+ * persistence must not depend on store modules, and a persisted record needs
+ * a stable shape regardless of UI refactors.
+ */
+export interface SavedViewRecord {
+  id: string;
+  name: string;
+  createdAt: number;
+  /** Camera position + orbit target in scene coordinates. */
+  pose: { px: number; py: number; pz: number; tx: number; ty: number; tz: number };
+  dims: 2 | 3;
+  filter: {
+    fileTypes: import('../model/types').FileType[] | null;
+    clusters: number[] | null;
+    minDegree: number;
+    minEdgeWeight: number;
+  };
+}
+
+/**
  * Stable workspace identity. `corpusHash` remains the content revision and can
  * change after every add/remove; the UUID `id` is what names and switches a
  * corpus without turning every revision into a separate workspace.
@@ -105,6 +126,7 @@ export interface CorpusRecord {
   exportData: GraphExport | null;
   positions: Record<string, [number, number, number]>;
   watch?: WatchedFolderRecord;
+  views?: SavedViewRecord[];
 }
 
 export interface NebulaDB extends DBSchema {

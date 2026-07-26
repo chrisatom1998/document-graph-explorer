@@ -3,10 +3,21 @@ import type { FileType } from '../model/types';
 
 export type QualityTier = 0 | 1 | 2 | 3 | 4; // 0 = ultra … 4 = suggest 2D
 
+export interface CameraPose {
+  px: number;
+  py: number;
+  pz: number;
+  tx: number;
+  ty: number;
+  tz: number;
+}
+
 export interface CameraCommand {
   nonce: number; // bump to re-trigger
-  kind: 'frameNode' | 'frameSet' | 'fitAll';
+  kind: 'frameNode' | 'frameSet' | 'fitAll' | 'pose';
   ids?: string[];
+  /** Explicit camera position + orbit target; only for kind 'pose' (saved views). */
+  pose?: CameraPose;
 }
 
 /**
@@ -82,6 +93,7 @@ interface UiState {
   setQualityTier: (t: QualityTier) => void;
   setAutoQuality: (v: boolean) => void;
   sendCamera: (kind: CameraCommand['kind'], ids?: string[]) => void;
+  sendCameraPose: (pose: CameraPose) => void;
   setSettingsOpen: (v: boolean) => void;
   setInsightsOpen: (v: boolean) => void;
   setSnapshotsOpen: (v: boolean) => void;
@@ -136,6 +148,10 @@ export const useUiStore = create<UiState>((set) => ({
   sendCamera: (kind, ids) =>
     set((s) => ({
       cameraCommand: { nonce: (s.cameraCommand?.nonce ?? 0) + 1, kind, ids },
+    })),
+  sendCameraPose: (pose) =>
+    set((s) => ({
+      cameraCommand: { nonce: (s.cameraCommand?.nonce ?? 0) + 1, kind: 'pose', pose },
     })),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setInsightsOpen: (insightsOpen) => set({ insightsOpen }),

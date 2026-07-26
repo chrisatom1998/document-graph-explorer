@@ -5,9 +5,11 @@
  */
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { diffGraphs, formatDiffSummary } from '../graph/snapshotDiff';
 import {
   deleteSnapshot,
   listSnapshots,
+  loadSnapshot,
   type SnapshotSummary,
 } from '../persistence/cache';
 import { restoreSnapshotById, saveCurrentSnapshot } from '../persistence/session';
@@ -83,6 +85,12 @@ export default function SnapshotDrawer() {
     if (!open) setConfirmDeleteId(null);
   }, [open]);
 
+  // "What changed since this snapshot?" — computed on demand, per snapshot.
+  const [diffById, setDiffById] = useState<Record<number, string>>({});
+  useEffect(() => {
+    if (!open) setDiffById({});
+  }, [open]);
+
   // Save current graph
   const [saveName, setSaveName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -137,6 +145,26 @@ export default function SnapshotDrawer() {
     setActionId(null);
     if (ok) setOpen(false);
     else useUiStore.getState().pushToast("Couldn't load that snapshot.");
+  };
+
+  const handleCompare = async (id: number) => {
+    setActionId(id);
+    try {
+      const rec = await loadSnapshot(id);
+      const exportData = rec?.exportData;
+      if (!exportData?.nodes) {
+        useUiStore.getState().pushToast("Couldn't read that snapshot for comparison.");
+        return;
+      }
+      const current = useGraphStore.getState();
+      const diff = diffGraphs(
+        { nodes: exportData.nodes, edges: exportData.edges ?? [] },
+        { nodes: current.nodes, edges: current.edges },
+      );
+      setDiffById((prev) => ({ ...prev, [id]: `Since this snapshot: ${formatDiffSummary(diff)}` }));
+    } finally {
+      setActionId(null);
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -218,6 +246,11 @@ export default function SnapshotDrawer() {
                     {formatDate(snap.savedAt)} · {snap.nodeCount} node
                     {snap.nodeCount !== 1 ? 's' : ''}
                   </span>
+                  {diffById[snap.id] && (
+                    <span className="snapshot-item__meta" role="status">
+                      {diffById[snap.id]}
+                    </span>
+                  )}
                 </div>
                 <div className="snapshot-item__actions">
                   <button
@@ -228,6 +261,15 @@ export default function SnapshotDrawer() {
                     title="Load this snapshot"
                   >
                     {loading && actionId === snap.id ? 'Loading…' : 'Load'}
+                  </button>
+                  <button
+                    type="button"
+                    className="snapshot-btn"
+                    disabled={phase !== 'ready' || actionId === snap.id}
+                    onClick={() => void handleCompare(snap.id)}
+                    title="Summarize what changed between this snapshot and the current graph"
+                  >
+                    Compare
                   </button>
                   {confirmDeleteId === snap.id ? (
                     <>

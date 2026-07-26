@@ -17,13 +17,15 @@ interface PersistedSettings {
   openRouterKey: string;
   rememberOpenRouterKey: boolean;
   openRouterModel: string;
+  ollamaModel: string;
   enrichEnabled: boolean;
   includeEmbeddingsInExport: boolean;
   offlineMode: boolean;
 }
 
-export type ChatProvider = 'local' | 'gemini' | 'openrouter';
+export type ChatProvider = 'local' | 'gemini' | 'openrouter' | 'ollama';
 export const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-sonnet-5';
+export const DEFAULT_OLLAMA_MODEL = 'llama3.2';
 
 export interface SettingsState extends PersistedSettings {
   setGeminiKey: (key: string) => void;
@@ -32,6 +34,7 @@ export interface SettingsState extends PersistedSettings {
   setOpenRouterKey: (key: string) => void;
   setRememberOpenRouterKey: (remember: boolean) => void;
   setOpenRouterModel: (model: string) => void;
+  setOllamaModel: (model: string) => void;
   setEnrichEnabled: (enabled: boolean) => void;
   setIncludeEmbeddingsInExport: (include: boolean) => void;
   setOfflineMode: (offline: boolean) => void;
@@ -44,6 +47,7 @@ const DEFAULTS: PersistedSettings = {
   openRouterKey: '',
   rememberOpenRouterKey: false,
   openRouterModel: DEFAULT_OPENROUTER_MODEL,
+  ollamaModel: DEFAULT_OLLAMA_MODEL,
   enrichEnabled: false,
   includeEmbeddingsInExport: false,
   offlineMode: false,
@@ -64,7 +68,10 @@ function loadPersisted(): PersistedSettings {
         ? parsed.rememberOpenRouterKey
         : DEFAULTS.rememberOpenRouterKey;
     const chatProvider: ChatProvider =
-      parsed.chatProvider === 'gemini' || parsed.chatProvider === 'openrouter' || parsed.chatProvider === 'local'
+      parsed.chatProvider === 'gemini' ||
+      parsed.chatProvider === 'openrouter' ||
+      parsed.chatProvider === 'ollama' ||
+      parsed.chatProvider === 'local'
         ? parsed.chatProvider
         : DEFAULTS.chatProvider;
     const loaded: PersistedSettings = {
@@ -83,6 +90,10 @@ function loadPersisted(): PersistedSettings {
         typeof parsed.openRouterModel === 'string' && parsed.openRouterModel.trim()
           ? parsed.openRouterModel.trim()
           : DEFAULTS.openRouterModel,
+      ollamaModel:
+        typeof parsed.ollamaModel === 'string' && parsed.ollamaModel.trim()
+          ? parsed.ollamaModel.trim()
+          : DEFAULTS.ollamaModel,
       enrichEnabled:
         typeof parsed.enrichEnabled === 'boolean'
           ? parsed.enrichEnabled
@@ -130,6 +141,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setRememberOpenRouterKey: (rememberOpenRouterKey) => set({ rememberOpenRouterKey }),
   setOpenRouterModel: (openRouterModel) =>
     set({ openRouterModel: openRouterModel.trim() }),
+  setOllamaModel: (ollamaModel) => set({ ollamaModel: ollamaModel.trim() }),
   setEnrichEnabled: (enrichEnabled) => set({ enrichEnabled }),
   setIncludeEmbeddingsInExport: (includeEmbeddingsInExport) =>
     set({ includeEmbeddingsInExport }),
@@ -147,6 +159,7 @@ useSettingsStore.subscribe((s) => {
       openRouterKey: s.rememberOpenRouterKey ? s.openRouterKey : '',
       rememberOpenRouterKey: s.rememberOpenRouterKey,
       openRouterModel: s.openRouterModel || DEFAULT_OPENROUTER_MODEL,
+      ollamaModel: s.ollamaModel || DEFAULT_OLLAMA_MODEL,
       enrichEnabled: s.enrichEnabled,
       includeEmbeddingsInExport: s.includeEmbeddingsInExport,
       offlineMode: s.offlineMode,
