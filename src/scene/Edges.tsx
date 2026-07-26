@@ -1,9 +1,18 @@
 /**
- * All edges in a single LineSegments buffer (spec §7.1), drawn as CURVED
+ * All edges in a single batched buffer (spec §7.1), drawn as CURVED
  * polylines: each edge is a quadratic bezier (EDGE_SEGMENTS segments) bowing
  * away from the nebula core — see edgeCurve.ts for why that doubles as a
  * cheap edge-bundling stand-in. EdgePulses shares the same curve math so
  * packets ride the visible filament, not the invisible chord.
+ *
+ * Two render paths over the SAME position/color arrays (identical segment-
+ * pair layout, so the fill code below serves both):
+ * - Fat lines (tiers 0-1, 3D): LineSegments2 ribbons with a constant CSS-px
+ *   width. GL_LINES hairlines are 1 device px everywhere (linewidth is
+ *   ignored), which reads as thread-thin wireframe on retina next to the
+ *   glossy nodes; the ribbons let edges participate in the bloom aesthetic.
+ * - Hairlines (tier >= 2, and always in the 2D star chart, whose delicate
+ *   hairline look is intentional): the original LineSegments path.
  *
  * - Geometry attributes are rebuilt when the edge list (or curve quality)
  *   changes; endpoint positions are streamed from positionBuffer each layout
@@ -18,6 +27,9 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -72,6 +84,24 @@ const FADE_NEAR = 150;
 const FADE_FAR = 600;
 const FADE_MIN = 0.45;
 
+// Fragment half of the fade is identical for both materials; the vertex-side
+// vViewZ write differs per material (different shader anchors), so each
+// onBeforeCompile patches that itself.
+function injectFadeFragment(shader: THREE.WebGLProgramParametersWithUniforms): void {
+  shader.uniforms.uFadeNear = { value: FADE_NEAR };
+  shader.uniforms.uFadeFar = { value: FADE_FAR };
+  shader.uniforms.uFadeMin = { value: FADE_MIN };
+  shader.fragmentShader = shader.fragmentShader
+    .replace(
+      '#include <common>',
+      '#include <common>\nvarying float vViewZ;\nuniform float uFadeNear;\nuniform float uFadeFar;\nuniform float uFadeMin;',
+    )
+    .replace(
+      '#include <color_fragment>',
+      '#include <color_fragment>\n\tdiffuseColor.rgb *= mix(1.0, uFadeMin, smoothstep(uFadeNear, uFadeFar, vViewZ));',
+    );
+}
+
 const lineMaterial = new THREE.LineBasicMaterial({
   vertexColors: true,
   transparent: true,
@@ -81,23 +111,45 @@ const lineMaterial = new THREE.LineBasicMaterial({
   toneMapped: false,
 });
 lineMaterial.onBeforeCompile = (shader) => {
-  shader.uniforms.uFadeNear = { value: FADE_NEAR };
-  shader.uniforms.uFadeFar = { value: FADE_FAR };
-  shader.uniforms.uFadeMin = { value: FADE_MIN };
+  injectFadeFragment(shader);
   shader.vertexShader = shader.vertexShader
     .replace('#include <common>', '#include <common>\nvarying float vViewZ;')
     .replace(
       '#include <project_vertex>',
       '#include <project_vertex>\n\tvViewZ = -mvPosition.z;',
     );
-  shader.fragmentShader = shader.fragmentShader
+};
+
+// Fat-line pass: width in CSS px (constant across the dpr ladder — degraded
+// resolutions must not thin the filaments). Opacity sits well below the
+// hairline's 0.25: a ~1.6px ribbon covers roughly 3x the pixels of a
+// 1-device-px hairline, and with additive blending coverage reads as
+// brightness. fog matches the hairline (ShaderMaterial defaults it off).
+const FAT_WIDTH_PX = 1.6;
+const FAT_OPACITY = 0.14;
+
+const fatMaterial = new LineMaterial({
+  vertexColors: true,
+  transparent: true,
+  opacity: FAT_OPACITY,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  toneMapped: false,
+  linewidth: FAT_WIDTH_PX,
+  worldUnits: false,
+  alphaToCoverage: false,
+  fog: true,
+});
+fatMaterial.onBeforeCompile = (shader) => {
+  injectFadeFragment(shader);
+  // LineMaterial has its own vertex shader (no project_vertex include); its
+  // per-vertex view-space position is the `mvPosition` approximation near the
+  // end of main(). Anchor checked against the installed three@0.185 source.
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', '#include <common>\nvarying float vViewZ;')
     .replace(
-      '#include <common>',
-      '#include <common>\nvarying float vViewZ;\nuniform float uFadeNear;\nuniform float uFadeFar;\nuniform float uFadeMin;',
-    )
-    .replace(
-      '#include <color_fragment>',
-      '#include <color_fragment>\n\tdiffuseColor.rgb *= mix(1.0, uFadeMin, smoothstep(uFadeNear, uFadeFar, vViewZ));',
+      'vec4 mvPosition = ( position.y < 0.5 ) ? start : end;',
+      'vec4 mvPosition = ( position.y < 0.5 ) ? start : end;\n\tvViewZ = -mvPosition.z;',
     );
 };
 
@@ -109,7 +161,17 @@ export default function Edges() {
   const segments = useUiStore((s) =>
     s.qualityTier >= 3 ? EDGE_SEGMENTS_DEGRADED : EDGE_SEGMENTS,
   );
+  // Ribbons cost ~4x the vertices of GL_LINES, so they ride the top of the
+  // quality ladder only; the 2D star chart keeps hairlines by design.
+  const fat = useUiStore((s) => s.dims === 3 && s.qualityTier < 2);
   const raycaster = useThree((s) => s.raycaster);
+
+  // LineMaterial needs the viewport size to convert linewidth px -> clip
+  // units. CSS size (not drawing-buffer size) so width survives dpr changes.
+  const size = useThree((s) => s.size);
+  useEffect(() => {
+    fatMaterial.resolution.set(size.width, size.height);
+  }, [size]);
 
   const colorsDirty = useRef(true);
   const forcePositions = useRef(true);
@@ -131,6 +193,36 @@ export default function Edges() {
     colors.setUsage(THREE.DynamicDrawUsage);
     return { positions, colors };
   }, [edges, segments]);
+
+  // Fat path wraps the SAME arrays in instanced interleaved buffers
+  // (setPositions/setColors keep a Float32Array by reference, no copy), so
+  // the per-frame fill below feeds both paths; only the needsUpdate flags
+  // differ. Rebuilt with attrs identity; disposed below.
+  const fatGeom = useMemo(() => {
+    if (!fat || edges.length === 0) return null;
+    const g = new LineSegmentsGeometry();
+    g.setPositions(attrs.positions.array as Float32Array);
+    g.setColors(attrs.colors.array as Float32Array);
+    (g.attributes.instanceStart as THREE.InterleavedBufferAttribute).data.setUsage(
+      THREE.DynamicDrawUsage,
+    );
+    (g.attributes.instanceColorStart as THREE.InterleavedBufferAttribute).data.setUsage(
+      THREE.DynamicDrawUsage,
+    );
+    return g;
+  }, [attrs, fat, edges.length]);
+
+  const fatLine = useMemo(() => {
+    if (!fatGeom) return null;
+    const obj = new LineSegments2(fatGeom, fatMaterial);
+    obj.frustumCulled = false; // same reasoning as the hairline path
+    return obj;
+  }, [fatGeom]);
+
+  useEffect(() => {
+    if (!fatGeom) return;
+    return () => fatGeom.dispose();
+  }, [fatGeom]);
 
   // The default bounding sphere would be computed from the initial all-zero
   // positions and then never track the moving layout, which breaks raycast
@@ -267,6 +359,10 @@ export default function Edges() {
       }
     }
     attrs.colors.needsUpdate = true;
+    if (fatGeom) {
+      (fatGeom.attributes.instanceColorStart as THREE.InterleavedBufferAttribute).data.needsUpdate =
+        true;
+    }
   };
 
   useFrame(() => {
@@ -329,9 +425,15 @@ export default function Edges() {
       }
     }
     attrs.positions.needsUpdate = true;
+    if (fatGeom) {
+      (fatGeom.attributes.instanceStart as THREE.InterleavedBufferAttribute).data.needsUpdate =
+        true;
+    }
   });
 
   if (edges.length === 0) return null;
+
+  if (fatLine) return <primitive object={fatLine} />;
 
   return (
     <lineSegments frustumCulled={false}>

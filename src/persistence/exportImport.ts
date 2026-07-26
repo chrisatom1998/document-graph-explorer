@@ -25,6 +25,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useCorpusStore } from '../store/corpusStore';
 import { docVectorStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
+import { captureSceneCanvas } from '../scene/sceneCapture';
 import { sanitizeGraphExport } from './validateImport';
 import { base64ToF32, f32ToBase64 } from './f32base64';
 import { toGraphExport } from './graphExport';
@@ -58,10 +59,15 @@ export async function exportGraphJSON(): Promise<void> {
   downloadBlob(blob, `document-graph-explorer-${dateStamp()}.json`);
 }
 
-/** Canvas snapshot (scene renders with preserveDrawingBuffer). */
+/**
+ * Canvas snapshot. The scene renders WITHOUT preserveDrawingBuffer (a
+ * per-frame cost), so captureSceneCanvas renders a fresh frame and we must
+ * grab the pixels synchronously in the same task — toBlob captures the
+ * bitmap at call time (only the encoding is async), so this is safe.
+ */
 export function exportScenePNG(): Promise<boolean> {
   return new Promise((resolve) => {
-    const canvas = document.querySelector<HTMLCanvasElement>('.nebula-canvas canvas');
+    const canvas = captureSceneCanvas();
     if (!canvas || typeof canvas.toBlob !== 'function') {
       console.warn('[knowledge-nebula] no canvas found - nothing to export');
       resolve(false);

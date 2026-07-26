@@ -63,8 +63,13 @@ export default function Effects() {
   const halfRes = qualityTier >= 2;
   const intensity = flat ? FLAT_BLOOM_INTENSITY : BLOOM_INTENSITY;
 
+  // Geometry antialiasing lives HERE, not on the canvas: the composer renders
+  // the scene into its own framebuffer, so the WebGL context's MSAA (off in
+  // NebulaCanvas) could only ever smooth the final fullscreen blit. 4x is
+  // visually equivalent to the library default 8x at this scene's contrast
+  // and half the cost; degraded tiers drop it with the half-res bloom.
   return (
-    <EffectComposer>
+    <EffectComposer multisampling={halfRes ? 0 : 4}>
       {halfRes ? (
         <Bloom
           mipmapBlur={false}

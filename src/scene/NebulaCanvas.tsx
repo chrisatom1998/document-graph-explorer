@@ -1,9 +1,14 @@
 /**
  * Root 3D canvas — the deep-space observatory (spec §7.1).
  *
- * preserveDrawingBuffer is REQUIRED: the toolbar's "Export PNG" reads the
- * canvas back after the frame. dpr caps at 2 so retina displays don't melt
- * the bloom pass.
+ * No preserveDrawingBuffer: keeping the backbuffer alive after every swap is
+ * a per-frame tax (worst on tiled GPUs). "Export PNG" instead goes through
+ * sceneCapture.ts — SceneCapture below renders one frame synchronously right
+ * before the pixels are read. Canvas antialias is OFF on purpose: the
+ * EffectComposer renders the scene into its own framebuffer, so context MSAA
+ * would only smooth the final fullscreen blit — geometry AA lives on the
+ * composer's multisampling (Effects.tsx). dpr starts capped at 2 (retina
+ * won't melt the bloom pass); AutoQuality owns dpr at runtime.
  *
  * Lighting: the node cores are lit (glossy physical material) so they read
  * as 3D marbles with a specular hotspot. A single strong key light from the upper-left puts
@@ -12,10 +17,12 @@
  * materials stay unlit (basic/additive) and ignore these lights entirely.
  */
 
-import { Canvas } from '@react-three/fiber';
+import { useEffect } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
 import { useUiStore } from '../store/uiStore';
+import { registerSceneCapture } from './sceneCapture';
 import { FLAT_BG } from './palette';
 import CameraRig from './CameraRig';
 import Starfield from './Starfield';
@@ -31,6 +38,27 @@ import Effects from './Effects';
 import AutoQuality from './AutoQuality';
 import ClusterCollapse from './ClusterCollapse';
 import SelectionHalo from './SelectionHalo';
+
+const COARSE_POINTER =
+  typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches);
+// Initial value only — AutoQuality owns dpr at runtime (quality ladder).
+// Module-level so the prop identity is stable and Canvas re-renders never
+// clobber the ladder's setDpr.
+const INITIAL_DPR: number | [number, number] = COARSE_POINTER ? 1 : [1, 2];
+
+/** Registers the Export-PNG capture hook: render a frame now, hand back the canvas. */
+function SceneCapture() {
+  const gl = useThree((s) => s.gl);
+  const advance = useThree((s) => s.advance);
+  useEffect(() => {
+    registerSceneCapture(() => {
+      advance(performance.now(), true);
+      return gl.domElement;
+    });
+    return () => registerSceneCapture(null);
+  }, [gl, advance]);
+  return null;
+}
 
 function supportsWebGL(): boolean {
   if (typeof document === 'undefined') return true;
@@ -60,8 +88,6 @@ export default function NebulaCanvas() {
   // the graph reads as a star chart, not a nebula (see palette FLAT_* tokens).
   const flat = useUiStore((s) => s.dims === 2);
   const bg = flat ? FLAT_BG : '#050510';
-  const coarsePointer =
-    typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 
   if (!supportsWebGL()) return <WebGLFallback />;
 
@@ -71,9 +97,9 @@ export default function NebulaCanvas() {
       role="application"
       aria-label="Interactive document graph. Drag to orbit, use toolbar buttons for search, filtering, path finding and view controls."
       style={{ position: 'fixed', inset: 0 }}
-      dpr={coarsePointer ? 1 : [1, 2]}
+      dpr={INITIAL_DPR}
       camera={{ fov: 55, near: 0.1, far: 4000, position: [0, 0, 160] }}
-      gl={{ antialias: true, preserveDrawingBuffer: true }}
+      gl={{ antialias: false, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -129,6 +155,7 @@ export default function NebulaCanvas() {
         />
       </Environment>
 
+      <SceneCapture />
       <CameraRig />
       {!flat && <Starfield />}
       {!flat && <NebulaClouds />}

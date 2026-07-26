@@ -2,22 +2,31 @@
  * Auto-quality ladder (spec §7.4): EMA of frame time; sustained overruns of
  * FRAME_BUDGET_MS step the quality tier DOWN the ladder (tier+1), sustained
  * headroom steps back up. Tier semantics live with the consumers:
- *   1+: DoF off (Effects)   2+: half-res bloom (Effects)
- *   3+: label cap 15 (Labels) + hover pulses off (EdgePulses)
- *   4 : "suggest 2D" — the UI layer shows a toast off qualityTier===4;
- *       we emit a one-time console.info here.
+ *   1+: DoF off (Effects)
+ *   2+: half-res bloom + composer MSAA off (Effects), dpr cap 1.5 (here),
+ *       hairline edges instead of fat lines (Edges)
+ *   3+: dpr cap 1.25 + label cap 15 (Labels) + hover pulses off (EdgePulses)
+ *   4 : dpr cap 1; "suggest 2D" — the UI layer shows a toast off
+ *       qualityTier===4; we emit a one-time console.info here.
  *
  * Also owns the document visibilitychange -> layoutPause/layoutResume hookup
  * (pause simulation when the tab is hidden, spec §7.4). This is a document
  * listener, not a keyboard listener — App's keyboard ownership is untouched.
+ *
+ * Also owns render resolution: dpr is the biggest fill-rate lever (bloom is
+ * fullscreen), so degraded tiers shrink the backbuffer alongside the effect
+ * cuts above. Caps, not values — never exceeds the device pixel ratio, and
+ * coarse-pointer devices stay at 1 (matching NebulaCanvas's initial dpr).
  */
 
 import { useEffect, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { FRAME_BUDGET_MS, FRAME_BUDGET_SUSTAIN_MS } from '../config';
 import { layoutPause, layoutResume, layoutSetDims } from '../layout/layoutBridge';
 import { useUiStore } from '../store/uiStore';
 import type { QualityTier } from '../store/uiStore';
+
+const DPR_CAP_BY_TIER = [2, 2, 1.5, 1.25, 1] as const;
 
 const RECOVER_MS = 14; // headroom threshold for stepping back up
 const RECOVER_SUSTAIN_MS = 5_000;
@@ -31,6 +40,14 @@ export default function AutoQuality() {
   const holdUntil = useRef(0);
   const lastTier = useRef<QualityTier>(useUiStore.getState().qualityTier);
   const announced4 = useRef(false);
+
+  const setDpr = useThree((s) => s.setDpr);
+  const tier = useUiStore((s) => s.qualityTier);
+  useEffect(() => {
+    const coarse = Boolean(window.matchMedia?.('(pointer: coarse)').matches);
+    const base = coarse ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+    setDpr(Math.min(base, DPR_CAP_BY_TIER[tier]));
+  }, [tier, setDpr]);
 
   useEffect(() => {
     holdUntil.current = performance.now() + GRACE_MS; // startup grace
