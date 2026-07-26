@@ -6,6 +6,12 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.11] - 2026-07-26
+
+### Changed
+- Scene render pipeline: drop `preserveDrawingBuffer` (Export PNG now captures one on-demand frame via a `sceneCapture` bridge), turn off unused canvas MSAA in favor of explicit composer multisampling, and add render resolution (dpr) to the AutoQuality ladder so bloom-heavy scenes can shed fill-rate under load.
+- Graph edges in 3D use fat-line ribbons (`LineSegments2`) at top quality tiers instead of 1-device-px `GL_LINES` hairlines; hairlines remain at degraded tiers and in the 2D star chart.
+
 ## [1.1.10] - 2026-07-26
 
 ### Added
