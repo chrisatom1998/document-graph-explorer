@@ -6,6 +6,11 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.13] - 2026-07-27
+
+### Changed
+- Welcome screen constellation replaced with a 3D hero miniature of the real graph scene (instanced cores/halos, fat-line filaments, edge-pulse packets; cool-band cluster hues; reduced-motion and WebGL fallbacks to the flat SVG mark).
+
 ## [1.1.12] - 2026-07-26
 
 ### Fixed
