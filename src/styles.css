@@ -763,10 +763,26 @@ input {
   min-height: 280px;
 }
 
+/* Fixed stage so the 3D hero and the flat fallback occupy identical space —
+   swapping one for the other must not reflow the card. */
+.empty-state__hero {
+  position: relative;
+  width: min(100%, 330px);
+  aspect-ratio: 360 / 272;
+  /* A <canvas> carries an intrinsic 300px min-content width, and a grid
+     item's `min-width: auto` refuses to shrink past it — without this the
+     stage stays 300px wide in a narrower column and laps over the copy. */
+  min-width: 0;
+}
+
+.empty-state__hero-canvas { width: 100%; height: 100%; }
+
 .empty-state__constellation {
   width: min(100%, 330px);
   overflow: visible;
 }
+
+.empty-state__hero .empty-state__constellation { width: 100%; height: 100%; }
 
 .empty-state__orbit {
   stroke: rgba(146, 132, 255, 0.28);
@@ -3195,6 +3211,7 @@ input {
     padding: 24px 20px;
   }
   .empty-state__visual { min-height: 170px; }
+  .empty-state__hero,
   .empty-state__constellation { width: 180px; }
   .empty-state__content,
   .empty-state__header { align-items: center; text-align: center; }
