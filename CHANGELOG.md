@@ -6,6 +6,18 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.12] - 2026-07-26
+
+### Fixed
+- Corpus switcher on the welcome screen: the empty-state dropdown now renders through a document-level portal sized against the trigger, so the welcome card's rounded clipping can no longer crop the menu (viewport-aware flip above/below; follows resize/scroll).
+- Welcome constellation styles restored after an orphaned HeroOrbitalPreview scaffold renamed `.empty-state__constellation` away from the class EmptyState still uses — the SVG had lost its width cap and `overflow: visible` (needed for node drop-shadows), and the mobile 180px override no longer applied.
+
+### Removed
+- Unused `HeroOrbitalPreview` component and its visual-stage CSS (HeroUI Pro-dependent scaffold that EmptyState never adopted after the Pro dependency was dropped).
+
+### Tests
+- Added hostile-input coverage for HtmlPreview and the graph-import sanitizer (prompt-injection / DoS-bound payloads), aligned with `sanitizeGraphExport`'s real throw-on-unusable-file contract.
+
 ## [1.1.11] - 2026-07-26
 
 ### Changed
