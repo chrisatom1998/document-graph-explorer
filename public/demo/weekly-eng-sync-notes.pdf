@@ -1,0 +1,55 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Title (\376\377\000\127\000\105\000\105\000\113\000\114\000\131\000\040\000\105\000\116\000\107\000\040\000\123\000\131\000\116\000\103\000\040\040\024\000\040\000\112\000\165\000\156\000\145\000\040\000\063\000\060\000\054\000\040\000\062\000\060\000\062\000\066) /Producer (Document Graph Explorer demo corpus) >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 1489 >>
+stream
+BT /F1 10 Tf 1 0 0 1 54 724.0 Tm (WEEKLY ENG SYNC \227 June 30, 2026) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 696.0 Tm (Shipped:) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 682.0 Tm (- Canary deployments for the search service \(deploy guide updated\)) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 668.0 Tm (- Stripe webhooks retry backoff fix; billing alerts quiet for 12 days) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 654.0 Tm (- Feature flags SDK v3 rollout at 80%) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 626.0 Tm (In flight:) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 612.0 Tm (- Postgres 16 upgrade plan in review; cutover rehearsal booked for July 18) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 598.0 Tm (- Tenant isolation audit for the enterprise tier \(security review process\)) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 584.0 Tm (- Internationalization string extraction for the dashboard) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 556.0 Tm (Blocked:) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 542.0 Tm (- Salesforce sync backfill waiting on API quota bump from the vendor) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 528.0 Tm (- Neo4j graph database upgrade blocked on the entitlements migration) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 500.0 Tm (Announcements: post-mortem for the May billing outage published; action items) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 486.0 Tm (tracked in the incident post-mortem doc. RFC fast-track lane live \227 see the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 472.0 Tm (RFC process page. New joiners: two SREs start Monday \(onboarding buddies) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 458.0 Tm (assigned\).) Tj ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000314 00000 n 
+0000000649 00000 n 
+0000000785 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 5 0 R >>
+startxref
+2325
+%%EOF

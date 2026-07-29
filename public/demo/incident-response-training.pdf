@@ -1,0 +1,60 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Title (\376\377\000\111\000\156\000\143\000\151\000\144\000\145\000\156\000\164\000\040\000\122\000\145\000\163\000\160\000\157\000\156\000\163\000\145\000\040\000\124\000\162\000\141\000\151\000\156\000\151\000\156\000\147) /Producer (Document Graph Explorer demo corpus) >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 1906 >>
+stream
+BT /F2 11.5 Tf 1 0 0 1 54 715.9 Tm (Incident Response Training) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 701.9 Tm (SRE onboarding \267 severity, roles, and the first 15 minutes) Tj ET
+BT /F2 11.5 Tf 1 0 0 1 54 665.8 Tm (Severity levels) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 651.8 Tm (SEV1: customer-facing outage or data loss \227 page the incident commander) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 637.8 Tm (SEV2: degraded service, error budget burning \227 page the oncall rotation) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 623.8 Tm (SEV3: contained issue, no customer impact \227 ticket and fix in hours) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 609.8 Tm (When in doubt, declare higher and downgrade later) Tj ET
+BT /F2 11.5 Tf 1 0 0 1 54 573.7 Tm (Roles) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 559.7 Tm (Incident commander: owns coordination, never debugging) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 545.7 Tm (Ops lead: drives mitigation from the incident runbook) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 531.7 Tm (Comms lead: status page and stakeholder updates every 30 minutes) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 517.7 Tm (Scribe: timeline in the incident channel for the post-mortem) Tj ET
+BT /F2 11.5 Tf 1 0 0 1 54 481.6 Tm (First 15 minutes) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 467.6 Tm (Acknowledge the PagerDuty page and join the bridge) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 453.6 Tm (Check Grafana dashboards and Prometheus alerts for blast radius) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 439.6 Tm (Mitigate first: rollback, feature flag off, or shed load) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 425.6 Tm (Root cause hunting waits until customers are stable) Tj ET
+BT /F2 11.5 Tf 1 0 0 1 54 389.5 Tm (After the incident) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 375.5 Tm (Blameless post-mortem within five business days) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 361.5 Tm (Action items tracked to closure in the runbook review) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 347.5 Tm (Audit logging timeline attached for compliance evidence) Tj ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000314 00000 n 
+0000000609 00000 n 
+0000000745 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 5 0 R >>
+startxref
+2702
+%%EOF

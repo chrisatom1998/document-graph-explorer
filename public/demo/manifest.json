@@ -1,23 +1,23 @@
 {
   "files": [
-    "oncall-handoff-notes.txt",
-    "capacity-planning-notes.txt",
-    "weekly-eng-sync-notes.txt",
-    "customer-support-escalations.txt",
-    "load-test-results.txt",
-    "migration-checklist.txt",
-    "vendor-review-notes.txt",
-    "feature-flag-cleanup-log.txt",
-    "security-audit-report.docx",
-    "postgres-upgrade-plan.docx",
-    "team-offsite-summary.docx",
-    "api-style-guide.docx",
-    "incident-post-mortem-2026-05.docx",
-    "vendor-contract-summary.docx",
-    "hiring-plan-h2-2026.docx",
-    "disaster-recovery-plan.docx",
-    "data-privacy-policy.docx",
-    "engineering-okrs-q3.docx",
+    "oncall-handoff-notes.pdf",
+    "capacity-planning-notes.pdf",
+    "weekly-eng-sync-notes.pdf",
+    "customer-support-escalations.pdf",
+    "load-test-results.pdf",
+    "migration-checklist.pdf",
+    "vendor-review-notes.pdf",
+    "feature-flag-cleanup-log.pdf",
+    "security-audit-report.pdf",
+    "postgres-upgrade-plan.pdf",
+    "team-offsite-summary.pdf",
+    "api-style-guide.pdf",
+    "incident-post-mortem-2026-05.pdf",
+    "vendor-contract-summary.pdf",
+    "hiring-plan-h2-2026.pdf",
+    "disaster-recovery-plan.pdf",
+    "data-privacy-policy.pdf",
+    "engineering-okrs-q3.pdf",
     "soc2-type2-audit-letter.pdf",
     "quarterly-business-review.pdf",
     "employee-benefits-overview.pdf",
@@ -33,11 +33,11 @@
     "sla-agreement-enterprise.pdf",
     "onboarding-checklist.pdf",
     "postgres-performance-tuning.pdf",
-    "q3-platform-roadmap-review.pptx",
-    "incident-response-training.pptx",
-    "architecture-all-hands.pptx"
+    "q3-platform-roadmap-review.pdf",
+    "incident-response-training.pdf",
+    "architecture-all-hands.pdf"
   ],
   "generated": {
-    "count": 1964
+    "count": 64
   }
 }

@@ -49,6 +49,19 @@ if (!languageHeader.equals(Buffer.from([0x1f, 0x8b]))) {
   throw new Error(`Invalid gzip OCR language asset in ${ocrDir}`);
 }
 
+// pdf.js standard-14 font programs (public/standard_fonts): PDFs that use
+// Helvetica/Times/Courier without embedding them — including the generated
+// demo corpus — render blank preview pages if these are missing. Helvetica
+// maps to LiberationSans, the demo corpus's only font family.
+const fontsDir = join(outputDir, 'standard_fonts');
+const requiredFontAssets = ['LiberationSans-Regular.ttf', 'LiberationSans-Bold.ttf'];
+for (const fontName of requiredFontAssets) {
+  const asset = join(fontsDir, fontName);
+  if (!existsSync(asset) || statSync(asset).size === 0) {
+    throw new Error(`Missing or empty pdf.js standard font asset: ${asset}`);
+  }
+}
+
 console.log(
-  `Verified ${wasmAssets.length} WebAssembly runtime asset(s), bundled embedding model, and same-origin OCR runtime in ${outputDir}.`,
+  `Verified ${wasmAssets.length} WebAssembly runtime asset(s), bundled embedding model, same-origin OCR runtime, and pdf.js standard fonts in ${outputDir}.`,
 );

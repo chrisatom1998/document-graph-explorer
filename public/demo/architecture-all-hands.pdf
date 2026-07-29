@@ -1,0 +1,60 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Title (\376\377\000\101\000\162\000\143\000\150\000\151\000\164\000\145\000\143\000\164\000\165\000\162\000\145\000\040\000\101\000\154\000\154\000\055\000\110\000\141\000\156\000\144\000\163) /Producer (Document Graph Explorer demo corpus) >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 1878 >>
+stream
+BT /F2 11.5 Tf 1 0 0 1 54 715.9 Tm (Architecture All-Hands) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 701.9 Tm (Engineering \267 how the platform fits together in 2026) Tj ET
+BT /F2 11.5 Tf 1 0 0 1 54 665.8 Tm (The big picture) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 651.8 Tm (Edge: CDN caching in front of the load balancer and WAF rules) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 637.8 Tm (Core: auth service, billing, search, and the API gateway) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 623.8 Tm (Async: Kafka event bus connects producers to the analytics sinks) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 609.8 Tm (Data: Postgres for transactions, Redis cache, S3 storage for blobs) Tj ET
+BT /F2 11.5 Tf 1 0 0 1 54 573.7 Tm (What changed this year) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 559.7 Tm (SSO via Okta replaced the legacy session service) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 545.7 Tm (Schema migrations moved to online, backwards-compatible only) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 531.7 Tm (Neo4j graph database powers the new entitlements explorer) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 517.7 Tm (Elasticsearch indexing rebuilt with zero-downtime aliases) Tj ET
+BT /F2 11.5 Tf 1 0 0 1 54 481.6 Tm (Operational posture) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 467.6 Tm (Autoscaling groups sized from the Datadog tracing p99s) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 453.6 Tm (Database backups verified weekly by automated restore) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 439.6 Tm (Secrets management centralized in Vault with 90-day rotation) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 425.6 Tm (DNS management and NAT gateway configs are Terraform modules) Tj ET
+BT /F2 11.5 Tf 1 0 0 1 54 389.5 Tm (Where we're heading) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 375.5 Tm (Multi-region reads behind the CDN by Q4) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 361.5 Tm (Postgres replication lag SLO of under two seconds) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 347.5 Tm (Tenant isolation hardening for the enterprise tier) Tj ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000314 00000 n 
+0000000577 00000 n 
+0000000713 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 5 0 R >>
+startxref
+2642
+%%EOF

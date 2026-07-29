@@ -83,6 +83,15 @@ function workerSrcReadyOnce(): Promise<void> {
  */
 export const ensurePdfWorkerReady = workerSrcReadyOnce;
 
+/**
+ * Standard-14 font programs (copied from pdfjs-dist/standard_fonts into
+ * public/). PDFs that reference Helvetica/Times/Courier without embedding
+ * them — including the generated demo corpus — render blank canvas pages
+ * without this; text EXTRACTION works either way, so the gap only shows in
+ * the SidePanel's PDF preview. Every getDocument call must pass it.
+ */
+export const PDF_STANDARD_FONT_DATA_URL = '/standard_fonts/';
+
 
 export interface PdfParseResult {
   title: string;
@@ -206,7 +215,47 @@ function stripRepeatedLines(pageTexts: string[]): string[] {
   );
 }
 
+/**
+ * The 60s parse deadline starts inside parsePdfNow, so admission must be
+ * gated: the coordinator fires every miss's parse task at once, and a large
+ * all-PDF drop (e.g. the 100-doc demo corpus, or a user folder of hundreds of
+ * PDFs) would otherwise have documents burning their deadline while queued
+ * behind pdf.js — the tail of the batch would time out as 'unreadable'
+ * without ever being looked at.
+ */
+const PDF_PARSE_MAX_CONCURRENT = 4;
+let pdfParseActive = 0;
+const pdfParseWaiters: Array<() => void> = [];
+
+async function acquirePdfParseSlot(): Promise<void> {
+  if (pdfParseActive < PDF_PARSE_MAX_CONCURRENT) {
+    pdfParseActive += 1;
+    return;
+  }
+  // released slot is handed over directly — the counter stays saturated
+  await new Promise<void>((resolve) => pdfParseWaiters.push(resolve));
+}
+
+function releasePdfParseSlot(): void {
+  const next = pdfParseWaiters.shift();
+  if (next) next();
+  else pdfParseActive -= 1;
+}
+
 export async function parsePdf(
+  bytes: ArrayBuffer,
+  name: string,
+  options: PdfParseOptions = {},
+): Promise<PdfParseResult> {
+  await acquirePdfParseSlot();
+  try {
+    return await parsePdfNow(bytes, name, options);
+  } finally {
+    releasePdfParseSlot();
+  }
+}
+
+async function parsePdfNow(
   bytes: ArrayBuffer,
   name: string,
   options: PdfParseOptions = {},
@@ -215,7 +264,10 @@ export async function parsePdf(
   await workerSrcReadyOnce();
   // NOTE: pdf.js transfers the underlying buffer to its worker; callers must
   // not rely on `bytes` afterwards (the coordinator hashes before parsing).
-  const task = pdfjs.getDocument({ data: new Uint8Array(bytes) });
+  const task = pdfjs.getDocument({
+    data: new Uint8Array(bytes),
+    standardFontDataUrl: PDF_STANDARD_FONT_DATA_URL,
+  });
   const deadline = Date.now() + PDF_PARSE_TIMEOUT_MS;
   let destroyStarted: Promise<void> | null = null;
   const destroyTask = (): void => {

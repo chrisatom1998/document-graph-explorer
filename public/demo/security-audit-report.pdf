@@ -1,0 +1,66 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Title (\376\377\000\123\000\145\000\143\000\165\000\162\000\151\000\164\000\171\000\040\000\101\000\165\000\144\000\151\000\164\000\040\000\122\000\145\000\160\000\157\000\162\000\164\000\040\040\024\000\040\000\110\000\061\000\040\000\062\000\060\000\062\000\066) /Producer (Document Graph Explorer demo corpus) >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 2728 >>
+stream
+BT /F2 15 Tf 1 0 0 1 54 713.0 Tm (Security Audit Report \227 H1 2026) Tj ET
+BT /F2 15 Tf 1 0 0 1 54 688.0 Tm (Executive Summary) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 674.0 Tm (The H1 2026 internal security audit covered vulnerability scanning, penetration testing,) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 660.0 Tm (dependency auditing, and access control across all production services. The audit found the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 646.0 Tm (overall security posture strong, with three medium findings and no critical findings. All medium) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 632.0 Tm (findings have remediation owners and dates.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 618.0 Tm (Scope included the API gateway, auth service, billing pipeline, and the Postgres and Redis data) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 604.0 Tm (stores. Evidence was collected from Trivy scans, Burp Suite sessions, AWS IAM policy reviews,) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 590.0 Tm (and audit logging dashboards.) Tj ET
+BT /F2 15 Tf 1 0 0 1 54 565.0 Tm (Findings) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 551.0 Tm (Finding 1 \(Medium\): Two internal services accepted TLS 1.1 connections. Remediation: enforce TLS) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 537.0 Tm (1.2+ at the load balancer; owner: platform team.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 523.0 Tm (Finding 2 \(Medium\): Stale AWS IAM roles from the 2025 re-org retained S3 write access.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 509.0 Tm (Remediation: quarterly IAM policy review added to the SOC 2 control calendar; owner: security.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 495.0 Tm (Finding 3 \(Medium\): PagerDuty escalation for the WAF alert queue routed to a deprecated) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 481.0 Tm (rotation. Remediation: oncall rotation updated; owner: SRE.) Tj ET
+BT /F2 15 Tf 1 0 0 1 54 456.0 Tm (Methodology) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 442.0 Tm (Vulnerability scanning ran weekly with Trivy and Snyk across container images and npm) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 428.0 Tm (dependencies. Penetration testing followed OWASP ASVS L2, focusing on authentication, session) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 414.0 Tm (management, and multi-factor auth flows. Secrets management was validated against Vault access) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 400.0 Tm (logs.) Tj ET
+BT /F2 15 Tf 1 0 0 1 54 375.0 Tm (Recommendations) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 361.0 Tm (Adopt continuous dependency auditing in CI, expand the WAF ruleset to cover the new GraphQL) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 347.0 Tm (endpoint, and rehearse the security incident runbook quarterly with the oncall rotation.) Tj ET
+BT /F2 15 Tf 1 0 0 1 54 322.0 Tm (References) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 308.0 Tm (OWASP ASVS) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 294.0 Tm (SOC 2 control calendar) Tj ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000314 00000 n 
+0000000649 00000 n 
+0000000785 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 5 0 R >>
+startxref
+3564
+%%EOF

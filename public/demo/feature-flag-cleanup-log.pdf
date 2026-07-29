@@ -1,0 +1,58 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Title (\376\377\000\106\000\105\000\101\000\124\000\125\000\122\000\105\000\040\000\106\000\114\000\101\000\107\000\040\000\103\000\114\000\105\000\101\000\116\000\125\000\120\000\040\000\114\000\117\000\107\000\040\040\024\000\040\000\155\000\157\000\156\000\164\000\150\000\154\000\171\000\040\000\163\000\167\000\145\000\145\000\160\000\054\000\040\000\112\000\165\000\156\000\145\000\040\000\062\000\060\000\062\000\066) /Producer (Document Graph Explorer demo corpus) >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 1769 >>
+stream
+BT /F1 10 Tf 1 0 0 1 54 724.0 Tm (FEATURE FLAG CLEANUP LOG \227 monthly sweep, June 2026) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 696.0 Tm (Policy: flags older than 90 days past full rollout are deleted \(see the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 682.0 Tm (feature flags guide\). Stale flags caused the May billing outage bypass \227) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 668.0 Tm (this log is the guardrail.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 640.0 Tm (Removed this month \(11\):) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 626.0 Tm (- promo-engine-v1-fallback \(superseded by v2\)) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 612.0 Tm (- billing-webhooks-retry-legacy) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 598.0 Tm (- search-cursor-pagination-beta \(100% for 5 months\)) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 584.0 Tm (- sso-group-mapping-fix \(permanent since rev 12\)) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 570.0 Tm (- canary-search-service, canary-auth-service \(canary deployments are default\)) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 556.0 Tm (- i18n-date-format-v2, dashboard-dark-mode-beta) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 542.0 Tm (- eks-upgrade-drain-guard \(upgrade complete\)) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 528.0 Tm (- migration-linter-bypass \(DELETED \227 root cause of the May incident\)) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 514.0 Tm (- nat-gateway-dual-stack) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 486.0 Tm (Kept with justification \(3\):) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 472.0 Tm (- enterprise-tenant-isolation \(launch gate, owner: platform\)) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 458.0 Tm (- usage-billing-shadow-mode \(finance reconciliation through Q3\)) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 444.0 Tm (- promo-engine-v2 \(launch gate, owner: billing\)) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 416.0 Tm (Next sweep: July 28. Owners notified via the weekly eng sync.) Tj ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000314 00000 n 
+0000000809 00000 n 
+0000000945 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 5 0 R >>
+startxref
+2765
+%%EOF

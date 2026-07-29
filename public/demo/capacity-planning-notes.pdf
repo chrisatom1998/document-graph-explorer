@@ -1,0 +1,54 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Title (\376\377\000\103\000\101\000\120\000\101\000\103\000\111\000\124\000\131\000\040\000\120\000\114\000\101\000\116\000\116\000\111\000\116\000\107\000\040\000\116\000\117\000\124\000\105\000\123\000\040\040\024\000\040\000\062\000\060\000\062\000\066\000\040\000\155\000\151\000\144\000\055\000\171\000\145\000\141\000\162\000\040\000\162\000\145\000\166\000\151\000\145\000\167) /Producer (Document Graph Explorer demo corpus) >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 1477 >>
+stream
+BT /F1 10 Tf 1 0 0 1 54 724.0 Tm (CAPACITY PLANNING NOTES \227 2026 mid-year review) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 696.0 Tm (Compute: autoscaling groups peak at 62% of reserved capacity. Headroom OK) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 682.0 Tm (through Q4 assuming the enterprise launch adds <20% traffic. Load balancer) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 668.0 Tm (connection counts trend +11% QoQ.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 640.0 Tm (Data stores:) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 626.0 Tm (- Postgres primary at 58% storage; connection pooling keeps active conns flat.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 612.0 Tm (- Redis cache hit rate 97.2%; memory 71% \227 plan a shard split before Q4.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 598.0 Tm (- Elasticsearch indexing volume doubled after the analytics rollout; hot tier) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 584.0 Tm (  needs two more nodes \(cloud cost analysis has the pricing\).) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 570.0 Tm (- S3 storage growth is linear; lifecycle rules from data archiving keep costs) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 556.0 Tm (  flat.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 528.0 Tm (Events: Kafka event bus at 40k msg/s peak, partitions balanced after the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 514.0 Tm (rebalance. ClickHouse analytics ingest lags under 30s at p99.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 486.0 Tm (Action: revisit after the quarterly business review; tie increases to the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 472.0 Tm (usage billing forecast.) Tj ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000314 00000 n 
+0000000769 00000 n 
+0000000905 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 5 0 R >>
+startxref
+2433
+%%EOF

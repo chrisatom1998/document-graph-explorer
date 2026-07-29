@@ -14,7 +14,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as pdfjs from 'pdfjs-dist';
-import { ensurePdfWorkerReady } from '../pipeline/parsers/pdf';
+import { ensurePdfWorkerReady, PDF_STANDARD_FONT_DATA_URL } from '../pipeline/parsers/pdf';
 
 // Canvas pixel resolution multiplier — rendered at a higher-than-CSS-size
 // resolution so it stays crisp; the canvas is then scaled down to 100% width
@@ -53,7 +53,10 @@ export default function PdfPreview({ blob, className }: PdfPreviewProps) {
       try {
         await ensurePdfWorkerReady();
         const buf = await blob.arrayBuffer();
-        const task = pdfjs.getDocument({ data: new Uint8Array(buf) });
+        const task = pdfjs.getDocument({
+          data: new Uint8Array(buf),
+          standardFontDataUrl: PDF_STANDARD_FONT_DATA_URL,
+        });
         taskRef.current = task;
         const doc = await task.promise;
         if (cancelled) {

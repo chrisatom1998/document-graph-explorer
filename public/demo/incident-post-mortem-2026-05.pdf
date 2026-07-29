@@ -1,0 +1,56 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Title (\376\377\000\120\000\157\000\163\000\164\000\055\000\115\000\157\000\162\000\164\000\145\000\155\000\072\000\040\000\115\000\141\000\171\000\040\000\102\000\151\000\154\000\154\000\151\000\156\000\147\000\040\000\117\000\165\000\164\000\141\000\147\000\145) /Producer (Document Graph Explorer demo corpus) >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 1731 >>
+stream
+BT /F2 15 Tf 1 0 0 1 54 713.0 Tm (Post-Mortem: May Billing Outage) Tj ET
+BT /F2 15 Tf 1 0 0 1 54 688.0 Tm (Impact) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 674.0 Tm (On May 14, invoice processing halted for 3 hours 40 minutes after a schema migration locked the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 660.0 Tm (invoices table. 2,300 invoices were delayed; no data was lost. SEV1 declared at 09:12 UTC,) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 646.0 Tm (resolved 12:52 UTC.) Tj ET
+BT /F2 15 Tf 1 0 0 1 54 621.0 Tm (Timeline) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 607.0 Tm (09:02 migration deployed. 09:08 Prometheus alerts fired on invoice queue depth. 09:12 oncall) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 593.0 Tm (paged via PagerDuty and declared SEV1. 09:30 rollback attempted but blocked by the long-running) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 579.0 Tm (lock. 11:45 lock terminated after replica promotion. 12:52 queue drained, status page green.) Tj ET
+BT /F2 15 Tf 1 0 0 1 54 554.0 Tm (Root cause) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 540.0 Tm (The migration added a NOT NULL column with a default, rewriting the table under an exclusive) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 526.0 Tm (lock \227 a pattern the schema migrations guide forbids. The pre-deploy check that flags table) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 512.0 Tm (rewrites was disabled by a stale feature flag.) Tj ET
+BT /F2 15 Tf 1 0 0 1 54 487.0 Tm (Action items) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 473.0 Tm (Re-enable the migration linter and remove the bypass flag \(done\). Add lock-time budget alerts to) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 459.0 Tm (Grafana dashboards. Rehearse replica promotion in the incident runbook quarterly. Feature flag) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 445.0 Tm (cleanup log now tracks stale flags monthly.) Tj ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000314 00000 n 
+0000000649 00000 n 
+0000000785 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 5 0 R >>
+startxref
+2567
+%%EOF

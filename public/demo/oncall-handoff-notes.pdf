@@ -1,0 +1,51 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Title (\376\377\000\117\000\116\000\103\000\101\000\114\000\114\000\040\000\110\000\101\000\116\000\104\000\117\000\106\000\106\000\040\040\024\000\040\000\167\000\145\000\145\000\153\000\040\000\157\000\146\000\040\000\112\000\165\000\156\000\145\000\040\000\062\000\062\000\054\000\040\000\062\000\060\000\062\000\066) /Producer (Document Graph Explorer demo corpus) >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 1286 >>
+stream
+BT /F1 10 Tf 1 0 0 1 54 724.0 Tm (ONCALL HANDOFF \227 week of June 22, 2026) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 696.0 Tm (Pages this week: 6 \(2 actionable, 4 noise\)) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 682.0 Tm (- Kafka event bus consumer lag alert fired twice during the EKS upgrade window.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 668.0 Tm (  Mitigation: paused the ClickHouse analytics sink, drained, resumed. Watch this.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 654.0 Tm (- Postgres replication lag spiked to 8s during the Saturday vacuum window.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 640.0 Tm (  Autovacuum settings tuned per postgres-operations doc; verify next weekend.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 612.0 Tm (Noise to fix:) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 598.0 Tm (- WAF rules alert threshold too low after the ruleset expansion. Ticket filed.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 584.0 Tm (- Grafana dashboards for the NAT gateway still point at the old region.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 556.0 Tm (Handing over: promo code engine launch is behind a feature flag; if billing) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 542.0 Tm (alerts fire, flip promo-engine-v2 off first and page the billing oncall.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 528.0 Tm (Escalation: PagerDuty schedule 'platform-primary', then the incident runbook.) Tj ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000314 00000 n 
+0000000705 00000 n 
+0000000841 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 5 0 R >>
+startxref
+2178
+%%EOF

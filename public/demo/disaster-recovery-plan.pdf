@@ -1,0 +1,53 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Title (\376\377\000\104\000\151\000\163\000\141\000\163\000\164\000\145\000\162\000\040\000\122\000\145\000\143\000\157\000\166\000\145\000\162\000\171\000\040\000\120\000\154\000\141\000\156) /Producer (Document Graph Explorer demo corpus) >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 1370 >>
+stream
+BT /F2 15 Tf 1 0 0 1 54 713.0 Tm (Disaster Recovery Plan) Tj ET
+BT /F2 15 Tf 1 0 0 1 54 688.0 Tm (Objectives) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 674.0 Tm (RPO of five minutes for transactional data, RTO of one hour for the core platform. Postgres) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 660.0 Tm (replication streams to the secondary region continuously; S3 storage replicates cross-region) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 646.0 Tm (with versioning.) Tj ET
+BT /F2 15 Tf 1 0 0 1 54 621.0 Tm (Scenarios) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 607.0 Tm (Region loss: DNS management fails over via health-checked records; autoscaling groups warm in) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 593.0 Tm (the secondary region within 20 minutes. Data corruption: restore from verified database backups,) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 579.0 Tm (replaying the Kafka event bus from the last checkpoint. Credential compromise: secrets) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 565.0 Tm (management rotation runbook, all sessions revoked through SSO.) Tj ET
+BT /F2 15 Tf 1 0 0 1 54 540.0 Tm (Verification) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 526.0 Tm (Backup verification restores run weekly and are audited for SOC 2. A full regional failover game) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 512.0 Tm (day runs twice a year with the incident runbook; results feed the post-mortem guide and this) Tj ET
+BT /F1 10 Tf 1 0 0 1 54 498.0 Tm (plan.) Tj ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000314 00000 n 
+0000000577 00000 n 
+0000000713 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R /Info 5 0 R >>
+startxref
+2134
+%%EOF
