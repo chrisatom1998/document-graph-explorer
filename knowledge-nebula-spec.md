@@ -231,7 +231,7 @@ The corpus is a nebula. Near-black space (#050510 with subtle blue-violet gradie
 | **Hairball graphs** | With loose thresholds, 200 docs → 20,000 edges → unreadable glowing yarn. | Top-k + threshold edge rule (§5.2), edge-count slider in UI, cluster-collapse mode ("show communities as super-nodes"). |
 | **Model download weight** | ~25 MB embedding model on first load. | Lazy-load after first drop, cache in browser, show download progress honestly. |
 | **3D perf cliff** | Beyond ~2k nodes, even instancing + bloom struggles on integrated GPUs. | Auto-quality ladder (§7.4) + first-class 2D fallback. |
-| **"Spectacular" vs. usable** | Every post-processing pass costs legibility. | Bloom + pulses are the entire effects budget. Ruthlessly cut anything that makes labels harder to read. |
+| **"Spectacular" vs. usable** | Every post-processing pass costs legibility. | Bloom + pulses are the entire effects budget, plus restrained god rays off the AI core at quality tier 0 only. Ruthlessly cut anything that makes labels harder to read. |
 
 ---
 
