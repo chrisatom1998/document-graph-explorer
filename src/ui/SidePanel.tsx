@@ -31,6 +31,10 @@ interface ConnectionRow {
   neighbor: DocNode | undefined;
 }
 
+/** Connections shown before "Show all", and evidence lines shown per row. */
+const CONNECTIONS_COLLAPSED = 8;
+const EVIDENCE_COLLAPSED = 1;
+
 function isMonoFileType(fileType: DocNode['fileType']): boolean {
   return fileType === 'txt' || fileType === 'other';
 }
@@ -76,6 +80,27 @@ export default function SidePanel() {
     setConfirmRemove(false);
   }, [selectedId]);
 
+  // Connections are uncapped by nature (a hub document can have dozens, each
+  // with several evidence lines), which pushed everything below them —
+  // notably Ask AI — off screen. Show the strongest few by default; the list
+  // is already sorted by weight, so nothing high-signal hides behind this.
+  const [showAllConnections, setShowAllConnections] = useState(false);
+  // Evidence expands per row (by edge id) — a reference edge can carry a
+  // dozen "mentions …" lines, and one long row shouldn't push the rest away.
+  const [expandedEvidence, setExpandedEvidence] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    setShowAllConnections(false);
+    setExpandedEvidence(new Set());
+  }, [selectedId]);
+
+  const toggleEvidence = (edgeId: string): void => {
+    setExpandedEvidence((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(edgeId)) next.add(edgeId);
+      return next;
+    });
+  };
+
   const connections = useMemo<ConnectionRow[]>(() => {
     if (!node) return [];
     const rows: ConnectionRow[] = [];
@@ -90,6 +115,11 @@ export default function SidePanel() {
     rows.sort((a, b) => b.edge.weight - a.edge.weight);
     return rows;
   }, [node, edges, nodes, nodeIndex]);
+
+  const visibleConnections = showAllConnections
+    ? connections
+    : connections.slice(0, CONNECTIONS_COLLAPSED);
+  const hiddenConnections = connections.length - visibleConnections.length;
 
   // Near-duplicates of THIS doc: exact vector cosine against every other
   // document, not just existing semantic-edge neighbors — a genuine
@@ -365,54 +395,90 @@ export default function SidePanel() {
           <hr className="hairline" />
 
           <div className="side-panel__section">
-            <p className="side-panel__section-label">
-              Connections ({connections.length})
-            </p>
+            {/* Count lives in the meta row above — not repeated here. */}
+            <p className="side-panel__section-label">Connections</p>
             <div className="side-panel__connections">
-              {connections.map(({ edge, neighborId, neighbor }) => (
-                <div className="connection-row" key={edge.id}>
-                  <div className="connection-row__main">
-                    <span
-                      className="chip-dot"
-                      style={{ background: EDGE_KIND_HEX[edge.kind] }}
-                      aria-hidden="true"
-                    />
-                    <button
-                      type="button"
-                      className="connection-row__title"
-                      title={neighbor?.title ?? neighborId}
-                      onClick={() => focusNode(neighborId)}
-                    >
-                      {neighbor?.title ?? neighborId}
-                    </button>
-                    <span
-                      className="connection-row__kind"
-                      title={`${EDGE_KIND_LABEL[edge.kind]} connection`}
-                    >
-                      {EDGE_KIND_LABEL[edge.kind]}
-                    </span>
+              {visibleConnections.map(({ edge, neighborId, neighbor }) => {
+                const evidenceOpen = expandedEvidence.has(edge.id);
+                const shownEvidence = evidenceOpen
+                  ? edge.evidence
+                  : edge.evidence.slice(0, EVIDENCE_COLLAPSED);
+                const hiddenEvidence = edge.evidence.length - shownEvidence.length;
+                return (
+                  <div className="connection-row" key={edge.id}>
+                    <div className="connection-row__main">
+                      <span
+                        className="chip-dot"
+                        style={{ background: EDGE_KIND_HEX[edge.kind] }}
+                        aria-hidden="true"
+                      />
+                      <button
+                        type="button"
+                        className="connection-row__title"
+                        title={neighbor?.title ?? neighborId}
+                        onClick={() => focusNode(neighborId)}
+                      >
+                        {neighbor?.title ?? neighborId}
+                      </button>
+                      <span
+                        className="connection-row__kind"
+                        title={`${EDGE_KIND_LABEL[edge.kind]} connection`}
+                      >
+                        {EDGE_KIND_LABEL[edge.kind]}
+                      </span>
+                    </div>
+                    <div className="connection-row__weight-track">
+                      <div
+                        className="connection-row__weight-fill"
+                        style={{ width: `${Math.round(edge.weight * 100)}%` }}
+                      />
+                    </div>
+                    {shownEvidence.length > 0 && (
+                      <ul className="connection-row__evidence">
+                        {shownEvidence.map((ev, i) => (
+                          <li key={i}>{ev}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {(hiddenEvidence > 0 || evidenceOpen) && (
+                      <button
+                        type="button"
+                        className="connection-row__more"
+                        title={
+                          evidenceOpen
+                            ? 'Collapse this connection’s evidence'
+                            : 'Show the rest of the evidence for this connection'
+                        }
+                        onClick={() => toggleEvidence(edge.id)}
+                      >
+                        {evidenceOpen ? 'Show less evidence' : `+${hiddenEvidence} more`}
+                      </button>
+                    )}
                   </div>
-                  <div className="connection-row__weight-track">
-                    <div
-                      className="connection-row__weight-fill"
-                      style={{ width: `${Math.round(edge.weight * 100)}%` }}
-                    />
-                  </div>
-                  {edge.evidence.length > 0 && (
-                    <ul className="connection-row__evidence">
-                      {edge.evidence.map((ev, i) => (
-                        <li key={i}>{ev}</li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
+                );
+              })}
               {connections.length === 0 && (
                 <p className="side-panel__summary is-fallback">
                   No connections yet.
                 </p>
               )}
             </div>
+            {(hiddenConnections > 0 || showAllConnections) && (
+              <button
+                type="button"
+                className="side-panel__show-all"
+                title={
+                  showAllConnections
+                    ? 'Show only the strongest connections'
+                    : 'Show every connection for this document'
+                }
+                onClick={() => setShowAllConnections((v) => !v)}
+              >
+                {showAllConnections
+                  ? `Show top ${CONNECTIONS_COLLAPSED}`
+                  : `Show all ${connections.length} connections`}
+              </button>
+            )}
           </div>
 
           <hr className="hairline" />

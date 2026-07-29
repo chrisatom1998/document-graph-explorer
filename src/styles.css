@@ -1605,6 +1605,29 @@ input {
   margin: 0;
 }
 
+/* Inline disclosure buttons: per-row evidence and the whole-list "show all". */
+.connection-row__more,
+.side-panel__show-all {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--accent-strong);
+  cursor: pointer;
+}
+.connection-row__more:hover,
+.side-panel__show-all:hover {
+  text-decoration: underline;
+}
+.connection-row__more {
+  margin-top: 4px;
+}
+.side-panel__show-all {
+  margin-top: 10px;
+}
+
 .side-panel__reader {
   max-height: 40vh;
   overflow-y: auto;
@@ -2090,7 +2113,7 @@ input {
   background: rgba(255, 128, 128, 0.2);
 }
 
-/* ---- "Ask AI" section (Gemini, per selected document) ------------------- */
+/* ---- "Ask AI" section (per selected document, via the AI provider) ------ */
 
 .doc-ai__actions {
   display: flex;
