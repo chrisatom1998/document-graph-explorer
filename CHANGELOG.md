@@ -6,8 +6,11 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+## [1.1.14] - 2026-07-29
+
 ### Added
 - Chat now picks its own model, independent of enrichment. The two workloads pull in opposite directions — chat is one request per question, so quality is affordable; enrichment is one request per 15 documents corpus-wide, where a large reasoning model turns minutes into hours — so each gets its own curated shortlist. Chat leads with flagship models (Claude Sonnet 5, GPT-5.4, Gemini 3.1 Pro) and defaults to Claude Sonnet 5; enrichment keeps the fast tier and defaults to Gemini 3.1 Flash Lite. Models are stored per provider, so switching providers back and forth keeps each choice, and a pre-split saved model carries into both.
+- Inter-cluster bridge filaments in the 3D scene: sparse luminous ribbons spanning cluster centroids so topic neighborhoods stay visually connected without drawing every cross-cluster document edge.
 
 ### Changed
 - AI enrichment, per-document AI, and chat no longer use Google Gemini. They now run through a user-selected provider — OpenRouter (cloud, user's API key) or a local Ollama server.
