@@ -59,7 +59,9 @@ jobs:
           zip -r dist.zip dist
           zip -r dist-airgap.zip dist-airgap
           zip -r "Document-Graph-Explorer-${VERSION}-win-pkg.zip" release/win
-          EXE="$(find release -maxdepth 3 -type f -name '*.exe' ! -path 'release/win/*' | head -1)"
+          # Portable target lands as release/<productName>-<version>.exe (maxdepth 1).
+          # Do not scan win-unpacked/: that tree also has tiny helper exes (e.g. elevate.exe).
+          EXE="$(find release -maxdepth 1 -type f -name '*.exe' | head -1)"
           if [ -z "$EXE" ]; then
             echo "Electron portable exe not found under release/" >&2
             exit 1
