@@ -32,6 +32,7 @@ import AiCore from './AiCore';
 import FocusLight from './FocusLight';
 import Nodes from './Nodes';
 import Edges from './Edges';
+import ClusterBridges from './ClusterBridges';
 import EdgePulses from './EdgePulses';
 import Labels from './Labels';
 import Effects from './Effects';
@@ -164,6 +165,8 @@ export default function NebulaCanvas() {
       <FocusLight />
       <Nodes />
       <Edges />
+      {/* 3D only: the 2D star chart keeps its delicate hairline aesthetic */}
+      {!flat && <ClusterBridges />}
       <EdgePulses />
       <Labels />
       <SelectionHalo />
