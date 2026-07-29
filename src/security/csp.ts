@@ -1,7 +1,7 @@
 /**
- * Single source of the app's Content-Security-Policy. In airgap builds both
- * external connect-src hosts (Gemini and OpenRouter) are removed, so the
- * browser physically blocks every off-origin request. Consumed by
+ * Single source of the app's Content-Security-Policy. In airgap builds the
+ * external connect-src host (OpenRouter) is removed, so the browser
+ * physically blocks every off-origin request. Consumed by
  * vite.config.ts's injectCsp plugin at build time.
  *
  * Any host added here must also be reflected in docker/security-headers.conf,
@@ -13,12 +13,12 @@ export function buildCsp({ airgap }: { airgap: boolean }): string {
   // connect-src deliberately omits data: — nothing legitimate fetches data:
   // URLs, so don't allow it. In airgap builds the opt-in AI hosts are dropped
   // too, leaving only 'self' and blob:. The two loopback hosts are for the
-  // opt-in Ollama chat provider (a local server, port 11434) — listed under
+  // opt-in Ollama provider (a local server, port 11434) — listed under
   // both spellings because browsers match CSP hosts literally, and dropped
   // from airgap builds anyway so its "no host anywhere" guarantee holds.
   const connectSrc = airgap
     ? "connect-src 'self' blob:"
-    : "connect-src 'self' blob: https://generativelanguage.googleapis.com https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434";
+    : "connect-src 'self' blob: https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434";
   return [
     "default-src 'self'",
     // 'wasm-unsafe-eval' + blob: are both for onnxruntime: it compiles WASM and

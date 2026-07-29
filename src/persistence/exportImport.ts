@@ -2,7 +2,7 @@
  * GraphExport JSON round-trip + PNG snapshot.
  *
  * Privacy: GraphExport carries graph data only (and, opt-in, base64 doc
- * vectors). The Gemini key and other settings never leave localStorage.
+ * vectors). The API key and other settings never leave localStorage.
  *
  * Import note: GraphExport contains no full text or chunk vectors, so an
  * imported graph reads/searches at reduced fidelity by design — semantic

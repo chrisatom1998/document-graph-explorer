@@ -2,7 +2,7 @@
 
 A drag-and-drop **3D mind map for your documents**. Drop a folder of text, Markdown, PDF, HTML, or Word/PowerPoint/Excel files onto the window and Document Graph Explorer parses them, extracts topics and relationships, and renders the whole corpus as an explorable force-directed 3D graph — documents become nodes, semantic and structural relationships become edges.
 
-**Local-first and private by architecture.** Parsing, embeddings, similarity, and clustering all run in your browser (in web workers, with a self-hosted embedding model). Your documents never leave the tab. The only optional network calls are the opt-in cloud chat/enrichment providers (Gemini, OpenRouter), both off by default and requiring your own API key — enforced in production by a strict Content-Security-Policy (see [vite.config.ts](vite.config.ts)). For AI chat with zero cloud involvement, pick the **Ollama** provider in Settings and chat runs against your own local Ollama server.
+**Local-first and private by architecture.** Parsing, embeddings, similarity, and clustering all run in your browser (in web workers, with a self-hosted embedding model). Your documents never leave the tab. The only optional network call is the opt-in cloud chat/enrichment provider (OpenRouter), off by default and requiring your own API key — enforced in production by a strict Content-Security-Policy (see [vite.config.ts](vite.config.ts)). For AI features with zero cloud involvement, pick the **Ollama** provider in Settings and enrichment/chat run against your own local Ollama server.
 
 ## Quick start
 
@@ -37,7 +37,7 @@ Then open the printed local URL and drag documents onto the window — or click 
 
 | Command | Output | Network |
 | --- | --- | --- |
-| `npm run build` | `dist/` | Fully local by default; optional opt-in Gemini enrichment |
+| `npm run build` | `dist/` | Fully local by default; optional opt-in AI enrichment (OpenRouter or local Ollama) |
 | `npm run build:airgap` | `dist-airgap/` | **Zero external network** — host-free CSP + runtime refusal + post-build verify gate |
 | `npm run build:desktop` | `release/mac-arm64/Document Graph Explorer.app`, installed to `/Applications` | Normal app build wrapped as a local macOS desktop executable |
 | `npm run dist:mac` | `Document Graph Explorer-<version>-arm64.dmg` and `.zip` under `release/` | Distributable macOS installer images (see [Distributing the app](#distributing-the-app-dmg)) |
@@ -107,7 +107,7 @@ Ingestion is a pipeline that runs off the main thread:
 
 - **Parsing** ([src/pipeline/parsers/](src/pipeline/parsers/)) handles Markdown, HTML, plain text, PDF (including link annotations and local OCR fallback for scanned pages), and Office formats (DOCX, PPTX, XLSX).
 - **Embeddings** use a self-hosted `bge-small-en-v1.5` model in [public/models/](public/models/) via transformers.js — no third-party API.
-- **Optional Gemini AI** routes structured enrichment to `gemini-3.1-flash-lite` and document Q&A/chat to `gemini-3.5-flash`; the app controls this policy while Settings requires the user's API key.
+- **Optional AI enrichment** (summaries, topics, cluster names, document Q&A, chat) runs through the provider and model the user picks in Settings: any model on OpenRouter (with their API key) or any model on their local Ollama server.
 - **The 3D scene** ([src/scene/](src/scene/)) is React Three Fiber over Three.js, with instanced nodes/edges, a force-directed layout worker, and a cluster-collapse view for large graphs.
 - **State** lives in Zustand stores ([src/store/](src/store/)); named corpora, computed graphs, layouts, and watched-folder metadata persist to IndexedDB so you can switch workspaces without re-parsing every session. The toolbar Data menu exposes sanitized share URLs, JSON export/import, and PNG scene export.
 

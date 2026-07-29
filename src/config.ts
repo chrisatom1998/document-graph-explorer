@@ -32,11 +32,18 @@ export const EMBEDDING_FINGERPRINT = [
   `overlap=${CHUNK_OVERLAP}`,
 ].join('|');
 
-// --- Optional cloud AI (Gemini; model routing lives in ai/geminiModels.ts) ---
-export const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
+// --- Optional AI enrichment (OpenRouter or Ollama; client in ai/llmClient.ts) ---
 export const ENRICH_BATCH_SIZE = 15; // docs per request (spec says 10–20)
 export const ENRICH_MAX_RETRIES = 3;
-// Kept far below Gemini's context limit. Large documents are selected by
+// Pass-1 batches in flight at once. A 500-document corpus is 34 batches, and
+// running them strictly one after another wastes most of the wall clock
+// waiting on a remote model. Cloud providers absorb the parallelism; Ollama
+// stays at 1 because a local server serializes requests anyway (default
+// OLLAMA_NUM_PARALLEL), so extra in-flight requests would just queue —
+// starving the stream's idle deadline while they wait for a free slot.
+export const ENRICH_CONCURRENCY_CLOUD = 4;
+export const ENRICH_CONCURRENCY_LOCAL = 1;
+// Kept far below typical model context limits. Large documents are selected by
 // relevant/representative sections before they leave the browser.
 export const DOCUMENT_AI_MAX_CONTEXT_CHARS = 240_000;
 

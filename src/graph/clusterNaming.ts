@@ -1,6 +1,6 @@
 /**
  * Local (no-network) cluster naming — the middle tier of the cluster-label
- * fallback chain: clusterNames (Gemini) ?? localClusterNames ?? "Cluster N".
+ * fallback chain: clusterNames (AI-enriched) ?? localClusterNames ?? "Cluster N".
  *
  * Names each Louvain community from keywords its documents already carry, so
  * clusters read as "Auth & Tokens" instead of "Cluster 3" even without an API

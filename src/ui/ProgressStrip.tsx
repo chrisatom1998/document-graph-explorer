@@ -77,7 +77,7 @@ export default function ProgressStrip() {
   if (!visible) return null;
 
   const statuses = Object.values(fileStatuses);
-  // During enrichment the bar tracks Gemini passes, not file ingestion —
+  // During enrichment the bar tracks AI passes, not file ingestion —
   // a restored session has no fileStatuses at all, and after a live ingest
   // the file count is already at 100%, so it would sit frozen either way.
   const enriching = phase === 'enriching';

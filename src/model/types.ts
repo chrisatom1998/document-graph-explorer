@@ -22,7 +22,7 @@ export interface DocNode {
   fileType: FileType;
   path?: string;
   folderKey?: string; // layout hint only — never an edge
-  summary?: string; // Gemini or first ~200 chars
+  summary?: string; // AI-enriched or first ~200 chars
   topics: string[]; // canonical (enriched) or TF-IDF fallback
   entities: string[];
   keywords: string[]; // raw TF-IDF top-N

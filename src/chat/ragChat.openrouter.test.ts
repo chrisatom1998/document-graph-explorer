@@ -20,7 +20,7 @@ describe('OpenRouter RAG chat', () => {
     useSettingsStore.getState().setOfflineMode(false);
     useSettingsStore.getState().setChatProvider('openrouter');
     useSettingsStore.getState().setOpenRouterKey('test-openrouter-key');
-    useSettingsStore.getState().setOpenRouterModel('anthropic/claude-sonnet-5');
+    useSettingsStore.getState().setOpenRouterChatModel('anthropic/claude-sonnet-5');
     useGraphStore.setState({
       nodes: [{ id: 'doc1', kind: 'document', title: 'Rate Limits' } as DocNode],
     });

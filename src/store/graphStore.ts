@@ -17,7 +17,7 @@ interface GraphState {
   fileStatuses: Record<string, FileStatus>;
   ignoredFiles: { name: string; reason: string }[];
   modelProgress: PipelineTaskProgress | null;
-  /** Live enrichment progress (Gemini passes); null outside 'enriching'. */
+  /** Live enrichment progress (AI passes); null outside 'enriching'. */
   enrichProgress: { done: number; total: number; note: string } | null;
   corpusHash: string | null;
   /** Near-duplicate pairs from the last semantic pass (spec: insights panel). */
@@ -25,7 +25,7 @@ interface GraphState {
   /**
    * Keyword-derived cluster names, recomputed locally after every cluster
    * pass — no API needed. Display fallback order everywhere:
-   * clusterNames[c] (Gemini) ?? localClusterNames[c] ?? `Cluster ${c}`.
+   * clusterNames[c] (AI-enriched) ?? localClusterNames[c] ?? `Cluster ${c}`.
    */
   localClusterNames: Record<number, string>;
 

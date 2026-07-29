@@ -3,9 +3,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Force the airgap gate on for this file only.
 vi.mock('../airgap', () => ({ AIRGAP: true, AIRGAP_MESSAGE: 'AIRGAP_TEST_MSG' }));
 
-import { runEnrichment, docAiBlockedReason } from './gemini';
+import { runEnrichment, docAiBlockedReason } from './enrichment';
 
-describe('gemini AI gates under airgap', () => {
+describe('enrichment AI gates under airgap', () => {
   beforeEach(() => vi.restoreAllMocks());
 
   it('runEnrichment refuses without ever calling fetch', async () => {

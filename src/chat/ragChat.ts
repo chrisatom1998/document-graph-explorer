@@ -5,26 +5,20 @@
  *   1. User asks a question
  *   2. Run shared lexical + semantic retrieval with reciprocal-rank fusion
  *   3. Build a prompt with the retrieved chunks + recent conversation history
- *   4. Stream the answer back from Gemini token-by-token
+ *   4. Stream the answer back from the selected provider token-by-token
  *
- * Search, local answers, Gemini, and OpenRouter all consume the same ranked
+ * Search, local answers, OpenRouter, and Ollama all consume the same ranked
  * passages so provider selection cannot change the evidence base.
  */
 
-import {
-  geminiSystemInstruction,
-  geminiThinkingConfig,
-  resolveGeminiModel,
-} from '../ai/geminiModels';
-import { GEMINI_ENDPOINT } from '../config';
 import { isOffline } from '../offline';
 import { useGraphStore } from '../store/graphStore';
 import {
   DEFAULT_OLLAMA_MODEL,
-  DEFAULT_OPENROUTER_MODEL,
+  DEFAULT_OPENROUTER_CHAT_MODEL,
   useSettingsStore,
 } from '../store/settingsStore';
-import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
+import { useChatStore, type ChatSource } from '../store/chatStore';
 import { retrieveCorpus } from '../search/retrieval';
 import { formatExtractiveAnswer } from './extractiveAnswer';
 import { streamOpenRouterChat } from './openRouterClient';
@@ -38,13 +32,7 @@ const RAG_MIN_SCORE = 0.3; // cosine floor for relevance
 const RAG_MAX_CHUNKS_PER_DOC = 2; // avoid one long document crowding out the corpus
 const CHUNK_CONTEXT_CHARS = 1500; // max chars per chunk in prompt
 const REQUEST_TIMEOUT_MS = 120_000; // streaming responses can run long
-const MAX_HISTORY_MESSAGES = 8; // prior turns fed back to Gemini for memory
 const SOURCE_SNIPPET_CHARS = 200; // citation preview length
-const MAX_STREAM_RETRIES = 3; // 429/503 backoff retries before the stream starts
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 // ---------------------------------------------------------------------------
 // Cancellation: one in-flight chat request at a time
@@ -136,13 +124,8 @@ function bestChunkSources(chunks: RetrievedChunk[]): ChatSource[] {
 }
 
 // ---------------------------------------------------------------------------
-// Generation: send context + question + history to Gemini, streaming back
+// Generation: send context + question + history to the provider, streaming back
 // ---------------------------------------------------------------------------
-
-interface GeminiTurn {
-  role: 'user' | 'model';
-  parts: { text: string }[];
-}
 
 /**
  * Random per-request delimiter. Document text and titles are untrusted — a
@@ -180,51 +163,12 @@ export function buildPrompt(question: string, chunks: RetrievedChunk[]): string 
   ].join('\n');
 }
 
-/**
- * Turns prior user/assistant messages into Gemini `contents` turns for
- * multi-turn memory. `messages` must be the history captured BEFORE the
- * current question (and its assistant placeholder) were added, so both are
- * naturally excluded. System messages are dropped (they're app notices, not
- * conversation), and failed assistant turns are dropped too — no reason to
- * teach the model its own errors.
- */
-export function buildHistoryTurns(messages: ChatMessage[]): GeminiTurn[] {
-  const usable = messages.filter((m) => {
-    if (m.role === 'system') return false;
-    if (m.role === 'assistant' && (m.isError || m.text.startsWith('Error:'))) return false;
-    return true;
-  });
-  const turns: GeminiTurn[] = usable.slice(-MAX_HISTORY_MESSAGES).map((m) => ({
-    role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
-    parts: [{ text: m.text }],
-  }));
-
-  // Gemini rejects multiturn contents that don't strictly alternate starting
-  // with 'user'. The filtering above (dropped error/system replies) and the
-  // slice window can both break that shape — one errored turn would 400 every
-  // later question. Normalize: no leading model turn, merge consecutive
-  // same-role turns, and end on a model turn (the caller appends the current
-  // user question next).
-  while (turns.length > 0 && turns[0].role === 'model') turns.shift();
-  const merged: GeminiTurn[] = [];
-  for (const turn of turns) {
-    const prev = merged[merged.length - 1];
-    if (prev && prev.role === turn.role) {
-      prev.parts = [{ text: `${prev.parts[0].text}\n\n${turn.parts[0].text}` }];
-    } else {
-      merged.push(turn);
-    }
-  }
-  while (merged.length > 0 && merged[merged.length - 1].role === 'user') merged.pop();
-  return merged;
-}
-
 /** Send a chat message and get an AI response. */
 export async function sendChatMessage(question: string): Promise<void> {
   const q = question.trim();
   if (!q) return;
 
-  const { chatProvider, geminiKey, openRouterKey, openRouterModel, ollamaModel } =
+  const { chatProvider, openRouterKey, openRouterChatModel, ollamaChatModel } =
     useSettingsStore.getState();
   const chat = useChatStore.getState();
 
@@ -236,14 +180,14 @@ export async function sendChatMessage(question: string): Promise<void> {
   chat.addMessage({ role: 'user', text: q });
 
   // When the selected provider isn't available (airgap build, offline mode, or
-  // a cloud provider without its key), answer locally by extracting the
+  // OpenRouter without its key), answer locally by extracting the
   // best-matching passages — no network, no refusal. Ollama needs no key: its
   // only requirement is the local server, and a missing server is reported at
   // request time with a fix-it message.
-  const selectedKey =
-    chatProvider === 'openrouter' ? openRouterKey : chatProvider === 'gemini' ? geminiKey : null;
   const useLocal =
-    isOffline() || chatProvider === 'local' || (selectedKey !== null && selectedKey.trim() === '');
+    isOffline() ||
+    chatProvider === 'local' ||
+    (chatProvider === 'openrouter' && openRouterKey.trim() === '');
 
   const docCount = useGraphStore.getState().nodes.filter((n) => n.kind === 'document').length;
   if (docCount === 0) {
@@ -301,7 +245,7 @@ export async function sendChatMessage(question: string): Promise<void> {
     const prompt = buildPrompt(q, chunks);
     if (chatProvider === 'ollama') {
       const answer = await streamOllamaChat({
-        model: ollamaModel || DEFAULT_OLLAMA_MODEL,
+        model: ollamaChatModel || DEFAULT_OLLAMA_MODEL,
         prompt,
         history: priorMessages,
         signal: controller.signal,
@@ -314,158 +258,26 @@ export async function sendChatMessage(question: string): Promise<void> {
       useChatStore.getState().updateMessage(assistantId, { text: answer, sources });
       return;
     }
-    if (chatProvider === 'openrouter') {
-      const answer = await streamOpenRouterChat({
-        apiKey: openRouterKey,
-        model: openRouterModel || DEFAULT_OPENROUTER_MODEL,
-        prompt,
-        history: priorMessages,
-        signal: controller.signal,
-        onText: (text) => {
-          accumulated = text;
-          useChatStore.getState().updateMessage(assistantId, { text });
-        },
-        onRetry: (status) => {
-          useChatStore.getState().updateMessage(assistantId, {
-            text: `OpenRouter is busy (${status}) - retrying...`,
-          });
-        },
-      });
-      accumulated = answer;
-      useChatStore.getState().updateMessage(assistantId, { text: answer, sources });
-      return;
-    }
-    const model = resolveGeminiModel('chat');
-    const url = `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
-    const contents: GeminiTurn[] = [
-      ...buildHistoryTurns(priorMessages),
-      { role: 'user', parts: [{ text: prompt }] },
-    ];
-
-    // Transient failures (429 rate limit / 503 overload) retry with backoff
-    // BEFORE the stream starts. A stream that dies mid-body is never retried:
-    // re-running it would duplicate text the user has already seen. An abort
-    // during the backoff sleep surfaces on the next fetch as an AbortError.
-    let res: Response;
-    for (let attempt = 0; ; attempt++) {
-      res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Key travels as a header, not a query param: URLs leak into
-          // proxy/server logs and browser history; headers don't.
-          'x-goog-api-key': geminiKey,
-        },
-        body: JSON.stringify({
-          systemInstruction: geminiSystemInstruction('chat'),
-          contents,
-          generationConfig: geminiThinkingConfig('chat', model),
-        }),
-        signal: controller.signal,
-      });
-      if (res.ok) break;
-
-      const retryable = res.status === 429 || res.status === 503;
-      let errMsg = `Gemini HTTP ${res.status}`;
-      try {
-        const errData = (await res.json()) as { error?: { message?: unknown } };
-        if (typeof errData.error?.message === 'string') {
-          errMsg += `: ${errData.error.message.slice(0, 200)}`;
-        }
-      } catch { /* ignore */ }
-      if (!retryable || attempt >= MAX_STREAM_RETRIES) {
-        useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}`, isError: true });
-        return;
-      }
-      useChatStore.getState().updateMessage(assistantId, {
-        text: `Gemini is busy (${res.status}) — retrying…`,
-      });
-      await sleep(1000 * 2 ** attempt);
-    }
-
-    const reader = res.body?.getReader();
-    if (!reader) {
-      useChatStore.getState().updateMessage(assistantId, {
-        text: 'Gemini\'s streaming response had no body. Please try again.',
-        // Without the flag this reads as a normal answer (the text has no
-        // "Error:" prefix for the legacy check to catch), so a persisted
-        // failure would be replayed to the model as prior context.
-        isError: true,
-      });
-      return;
-    }
-
-    // Parse the `data: {...}` SSE lines streamGenerateContent emits. Chunks
-    // from reader.read() can split in the middle of a line, so we buffer
-    // whatever's left after the last newline and prepend it to the next read.
-    // A stream can also carry an error object or a blocked candidate after
-    // the 200 header — capture those so an empty answer names its cause.
-    // (object properties, not lets: closure writes don't fight TS narrowing)
-    const streamMeta = { error: null as string | null, blockReason: null as string | null };
-    const decoder = new TextDecoder();
-    let buffer = '';
-    const consumeLine = (rawLine: string): void => {
-      const line = rawLine.trim();
-      if (!line.startsWith('data:')) return; // blank lines / "event:" framing
-      const payload = line.slice(5).trim();
-      if (!payload || payload === '[DONE]') return;
-      let evt: {
-        candidates?: { content?: { parts?: { text?: unknown }[] }; finishReason?: unknown }[];
-        promptFeedback?: { blockReason?: unknown };
-        error?: { message?: unknown };
-      };
-      try {
-        evt = JSON.parse(payload);
-      } catch {
-        return; // partial/keepalive line — ignore
-      }
-      if (typeof evt.error?.message === 'string') streamMeta.error = evt.error.message;
-      if (typeof evt.promptFeedback?.blockReason === 'string') {
-        streamMeta.blockReason = evt.promptFeedback.blockReason;
-      }
-      const candidate = evt.candidates?.[0];
-      const finish = candidate?.finishReason;
-      if (typeof finish === 'string' && finish !== 'STOP' && finish !== 'MAX_TOKENS') {
-        streamMeta.blockReason = finish; // SAFETY / RECITATION / OTHER
-      }
-      for (const part of candidate?.content?.parts ?? []) {
-        if (typeof part.text === 'string' && part.text) accumulated += part.text;
-      }
-    };
-
-    for (;;) {
-      const { done, value } = await reader.read();
-      const before = accumulated;
-      if (value) {
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-        for (const line of lines) consumeLine(line);
-      }
-      if (done) {
-        buffer += decoder.decode(); // flush any trailing partial byte sequence
-        if (buffer) consumeLine(buffer);
-      }
-      // One store write per network chunk, not per SSE line — every write
-      // clones the message list and re-renders the whole transcript.
-      if (accumulated !== before) {
-        useChatStore.getState().updateMessage(assistantId, { text: accumulated });
-      }
-      if (done) break;
-    }
-
-    if (accumulated.trim() === '') {
-      useChatStore.getState().updateMessage(assistantId, {
-        text: streamMeta.error
-          ? `Error: Gemini stream failed: ${streamMeta.error.slice(0, 200)}`
-          : streamMeta.blockReason
-            ? `Error: Gemini blocked the response (${streamMeta.blockReason}).`
-            : 'Gemini returned an empty response. Please try again.',
-        isError: true,
-      });
-    } else {
-      useChatStore.getState().updateMessage(assistantId, { text: accumulated.trim(), sources });
-    }
+    // OpenRouter is the only remaining provider ('local' and a missing key
+    // were both routed to the local answer above).
+    const answer = await streamOpenRouterChat({
+      apiKey: openRouterKey,
+      model: openRouterChatModel || DEFAULT_OPENROUTER_CHAT_MODEL,
+      prompt,
+      history: priorMessages,
+      signal: controller.signal,
+      onText: (text) => {
+        accumulated = text;
+        useChatStore.getState().updateMessage(assistantId, { text });
+      },
+      onRetry: (status) => {
+        useChatStore.getState().updateMessage(assistantId, {
+          text: `OpenRouter is busy (${status}) - retrying...`,
+        });
+      },
+    });
+    accumulated = answer;
+    useChatStore.getState().updateMessage(assistantId, { text: answer, sources });
   } catch (err) {
     if (isAbortLike(err)) {
       const timedOut = err instanceof Error && err.name === 'TimeoutError';

@@ -1,21 +1,28 @@
 /**
- * Settings modal: Gemini enrichment config, export options, cache management.
- * Visibility is owned by uiStore.settingsOpen; Esc handling lives in App.tsx
- * (no window key listeners here). Generic .panel-overlay/.glass styling comes
- * from the shared stylesheet — only panel-specific bits are inlined.
+ * Settings modal: AI provider config (OpenRouter / Ollama), export options,
+ * cache management. Visibility is owned by uiStore.settingsOpen; Esc handling
+ * lives in App.tsx (no window key listeners here). Generic
+ * .panel-overlay/.glass styling comes from the shared stylesheet — only
+ * panel-specific bits are inlined.
  */
 
-import { useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AIRGAP } from '../airgap';
 import { useFocusTrap } from './useFocusTrap';
-import { runEnrichment } from '../enrich/gemini';
+import {
+  fetchModelCatalog,
+  openRouterModelOptions,
+  SUGGESTED_OLLAMA_MODELS,
+} from '../ai/modelCatalog';
+import { runEnrichment } from '../enrich/enrichment';
 import { clearAllCaches } from '../persistence/cache';
 import { resetCorpus } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import {
   DEFAULT_OLLAMA_MODEL,
-  DEFAULT_OPENROUTER_MODEL,
   useSettingsStore,
+  type ChatProvider,
+  type EnrichProvider,
 } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 import { buildDiagnosticsText, getAppVersion } from './diagnostics';
@@ -119,23 +126,25 @@ export default function SettingsPanel() {
   const topicCount = nodeCount - documentCount;
   const edgeCount = useGraphStore((s) => s.edges.length);
 
-  const geminiKey = useSettingsStore((s) => s.geminiKey);
-  const rememberKey = useSettingsStore((s) => s.rememberGeminiKey);
   const chatProvider = useSettingsStore((s) => s.chatProvider);
+  const enrichProvider = useSettingsStore((s) => s.enrichProvider);
   const openRouterKey = useSettingsStore((s) => s.openRouterKey);
   const rememberOpenRouterKey = useSettingsStore((s) => s.rememberOpenRouterKey);
-  const openRouterModel = useSettingsStore((s) => s.openRouterModel);
-  const ollamaModel = useSettingsStore((s) => s.ollamaModel);
+  const openRouterChatModel = useSettingsStore((s) => s.openRouterChatModel);
+  const openRouterEnrichModel = useSettingsStore((s) => s.openRouterEnrichModel);
+  const ollamaChatModel = useSettingsStore((s) => s.ollamaChatModel);
+  const ollamaEnrichModel = useSettingsStore((s) => s.ollamaEnrichModel);
   const enrichEnabled = useSettingsStore((s) => s.enrichEnabled);
   const includeEmbeddings = useSettingsStore((s) => s.includeEmbeddingsInExport);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
-  const setGeminiKey = useSettingsStore((s) => s.setGeminiKey);
-  const setRememberKey = useSettingsStore((s) => s.setRememberGeminiKey);
   const setChatProvider = useSettingsStore((s) => s.setChatProvider);
+  const setEnrichProvider = useSettingsStore((s) => s.setEnrichProvider);
   const setOpenRouterKey = useSettingsStore((s) => s.setOpenRouterKey);
   const setRememberOpenRouterKey = useSettingsStore((s) => s.setRememberOpenRouterKey);
-  const setOpenRouterModel = useSettingsStore((s) => s.setOpenRouterModel);
-  const setOllamaModel = useSettingsStore((s) => s.setOllamaModel);
+  const setOpenRouterChatModel = useSettingsStore((s) => s.setOpenRouterChatModel);
+  const setOpenRouterEnrichModel = useSettingsStore((s) => s.setOpenRouterEnrichModel);
+  const setOllamaChatModel = useSettingsStore((s) => s.setOllamaChatModel);
+  const setOllamaEnrichModel = useSettingsStore((s) => s.setOllamaEnrichModel);
   const setEnrichEnabled = useSettingsStore((s) => s.setEnrichEnabled);
   const setIncludeEmbeddings = useSettingsStore((s) => s.setIncludeEmbeddingsInExport);
   const setOfflineMode = useSettingsStore((s) => s.setOfflineMode);
@@ -150,15 +159,115 @@ export default function SettingsPanel() {
   const dialogRef = useRef<HTMLDivElement>(null);
   useFocusTrap(dialogRef, open);
 
+  // Which providers the current selections actually use — the OpenRouter and
+  // Ollama config blocks are shared between chat and enrichment.
+  const needsOpenRouter = chatProvider === 'openrouter' || enrichProvider === 'openrouter';
+  const needsOllama = chatProvider === 'ollama' || enrichProvider === 'ollama';
+  const hasOpenRouterKey = openRouterKey.trim() !== '';
+
+  // Live catalogs behind the two model pickers. `null` means "catalog
+  // unknown" (not yet loaded, or unreachable) — distinct from an empty list,
+  // which for Ollama genuinely means no models are installed. Both pickers
+  // soft-fail to their built-in shortlist so configuration never blocks on
+  // network state. The OpenRouter catalog is fetched only once a key is
+  // entered: it validates the curated IDs and surfaces a bad key as a 401.
+  const [openRouterAvailable, setOpenRouterAvailable] = useState<string[] | null>(null);
+  const [openRouterModelsNote, setOpenRouterModelsNote] = useState<string | null>(null);
+  const [ollamaInstalled, setOllamaInstalled] = useState<string[] | null>(null);
+  const [ollamaModelsNote, setOllamaModelsNote] = useState<string | null>(null);
+  const [ollamaReloads, setOllamaReloads] = useState(0);
+
+  useEffect(() => {
+    if (!open || AIRGAP || offlineMode || !needsOpenRouter || !hasOpenRouterKey) {
+      setOpenRouterModelsNote(null);
+      return;
+    }
+    let cancelled = false;
+    setOpenRouterModelsNote('Checking your key against the model catalog…');
+    // Debounced: the key arrives one keystroke at a time.
+    const timer = setTimeout(() => {
+      void fetchModelCatalog('openrouter', openRouterKey).then((catalog) => {
+        if (cancelled) return;
+        setOpenRouterAvailable(catalog.ok ? catalog.models : null);
+        setOpenRouterModelsNote(
+          catalog.ok
+            ? null
+            : `Couldn't reach the OpenRouter catalog (${catalog.error}) — the list below may include a model your key can't use.`,
+        );
+      });
+    }, 600);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [open, offlineMode, needsOpenRouter, hasOpenRouterKey, openRouterKey]);
+
+  useEffect(() => {
+    if (!open || AIRGAP || offlineMode || !needsOllama) return;
+    let cancelled = false;
+    setOllamaModelsNote('Checking installed models…');
+    void fetchModelCatalog('ollama', '').then((catalog) => {
+      if (cancelled) return;
+      setOllamaInstalled(catalog.ok ? catalog.models : null);
+      setOllamaModelsNote(
+        catalog.ok
+          ? `${catalog.models.length} installed model${catalog.models.length === 1 ? '' : 's'} found`
+          : `${catalog.error}. Showing common models — pull one, then Recheck.`,
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, offlineMode, needsOllama, ollamaReloads]);
+
   if (!open) return null;
 
+  // Chat and enrichment pick independently from purpose-specific shortlists —
+  // chat can afford quality (one request per question), enrichment cannot
+  // (one request per 15 documents, corpus-wide).
+  const openRouterChatOptions = openRouterModelOptions(
+    'chat',
+    openRouterAvailable,
+    openRouterChatModel,
+  );
+  const openRouterEnrichOptions = openRouterModelOptions(
+    'enrichment',
+    openRouterAvailable,
+    openRouterEnrichModel,
+  );
+  // Installed models when we could read the server; otherwise common names so
+  // the picker still offers something to select (and pull).
+  const ollamaOptionsFor = (current: string): string[] => [
+    ...new Set([...(ollamaInstalled ?? SUGGESTED_OLLAMA_MODELS), current].filter(Boolean)),
+  ];
+
+  const renderModelSelect = (
+    label: string,
+    hint: string,
+    value: string,
+    onChange: (next: string) => void,
+    options: { id: string; label: string; note?: string }[],
+  ) => (
+    <label style={labelStyle}>
+      {label}
+      <select value={value} onChange={(e) => onChange(e.target.value)} title={hint} style={inputStyle}>
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.note ? `${option.label} — ${option.note}` : option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
   const enriching = phase === 'enriching' || enrichBusy;
-  const enrichBlocked = !enrichEnabled || geminiKey.trim() === '';
+  const enrichKeyMissing = enrichProvider === 'openrouter' && !hasOpenRouterKey;
+  const enrichBlocked = !enrichEnabled || enrichKeyMissing;
   const enrichHint = !enrichEnabled
-    ? 'Turn on "Enable enrichment" first'
-    : geminiKey.trim() === ''
-      ? 'Paste your Gemini API key first'
-      : 'Run Gemini summaries, topics and cluster names';
+    ? 'Turn on "Enable AI enrichment" first'
+    : enrichKeyMissing
+      ? 'Paste your OpenRouter API key first'
+      : 'Generate AI summaries, topics and cluster names';
   const appVersion = getAppVersion();
   const buildFlavor = AIRGAP ? 'airgap' : 'standard';
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown';
@@ -182,7 +291,7 @@ export default function SettingsPanel() {
   };
 
   // Full "start over": empties the live graph/UI/chat immediately, then wipes
-  // every locally cached document, embedding, graph, and snapshot. The Gemini
+  // every locally cached document, embedding, graph, and snapshot. The API
   // key and other settings live in localStorage and are intentionally kept.
   const onClearAll = () => {
     setClearNote(null);
@@ -274,44 +383,30 @@ export default function SettingsPanel() {
             Chat provider
             <select
               value={chatProvider}
-              onChange={(e) =>
-                setChatProvider(e.target.value as 'local' | 'gemini' | 'openrouter' | 'ollama')
-              }
+              onChange={(e) => setChatProvider(e.target.value as ChatProvider)}
               style={inputStyle}
               disabled={offlineMode}
               title="Choose how document chat answers are generated"
             >
               <option value="local">Local passages</option>
-              <option value="gemini">Google Gemini</option>
               <option value="openrouter">OpenRouter</option>
               <option value="ollama">Ollama (local)</option>
             </select>
           </label>
-          {chatProvider === 'ollama' && (
-            <>
-              <label style={labelStyle}>
-                Ollama model
-                <input
-                  type="text"
-                  value={ollamaModel}
-                  onChange={(e) => setOllamaModel(e.target.value)}
-                  onBlur={() => {
-                    if (!ollamaModel) setOllamaModel(DEFAULT_OLLAMA_MODEL);
-                  }}
-                  placeholder={DEFAULT_OLLAMA_MODEL}
-                  spellCheck={false}
-                  style={inputStyle}
-                  disabled={offlineMode}
-                />
-              </label>
-              <p style={helpStyle}>
-                Chat runs against your own Ollama server at 127.0.0.1:11434 — no API key, nothing
-                leaves this machine. Install from ollama.com, then pull the model (e.g. `ollama
-                pull {ollamaModel || DEFAULT_OLLAMA_MODEL}`).
-              </p>
-            </>
-          )}
-          {chatProvider === 'openrouter' && (
+          <label style={labelStyle}>
+            Enrichment &amp; document AI provider
+            <select
+              value={enrichProvider}
+              onChange={(e) => setEnrichProvider(e.target.value as EnrichProvider)}
+              style={inputStyle}
+              disabled={offlineMode}
+              title="Provider used for corpus enrichment (summaries, topics, cluster names) and the per-document Ask AI panel"
+            >
+              <option value="openrouter">OpenRouter</option>
+              <option value="ollama">Ollama (local)</option>
+            </select>
+          </label>
+          {!offlineMode && needsOpenRouter && (
             <>
               <label style={labelStyle}>
                 OpenRouter API key
@@ -321,76 +416,100 @@ export default function SettingsPanel() {
                   onChange={(e) => setOpenRouterKey(e.target.value)}
                   placeholder="Paste your key"
                   autoComplete="off"
+                  title="Your OpenRouter API key (openrouter.ai/keys). Required for every OpenRouter feature."
                   style={inputStyle}
-                  disabled={offlineMode}
                 />
               </label>
-              <label style={checkboxRowStyle}>
+              <label
+                style={checkboxRowStyle}
+                title="Keep the key in this browser's local storage. Uncheck to hold it only in memory for this tab — you'll re-paste it next visit."
+              >
                 <input
                   type="checkbox"
                   checked={rememberOpenRouterKey}
                   onChange={(e) => setRememberOpenRouterKey(e.target.checked)}
-                  disabled={offlineMode}
                 />
                 Remember OpenRouter key on this device
               </label>
               {!rememberOpenRouterKey && (
                 <p style={helpStyle}>The OpenRouter key is held in memory for this tab only.</p>
               )}
-              <label style={labelStyle}>
-                OpenRouter model ID
-                <input
-                  type="text"
-                  value={openRouterModel}
-                  onChange={(e) => setOpenRouterModel(e.target.value)}
-                  onBlur={() => {
-                    if (!openRouterModel) setOpenRouterModel(DEFAULT_OPENROUTER_MODEL);
-                  }}
-                  placeholder="provider/model"
-                  spellCheck={false}
-                  style={inputStyle}
-                  disabled={offlineMode}
-                />
-              </label>
+              {hasOpenRouterKey ? (
+                <>
+                  {chatProvider === 'openrouter' &&
+                    renderModelSelect(
+                      'Chat model',
+                      'Model that answers document chat questions',
+                      openRouterChatModel,
+                      setOpenRouterChatModel,
+                      openRouterChatOptions,
+                    )}
+                  {enrichProvider === 'openrouter' && (
+                    <>
+                      {renderModelSelect(
+                        'Enrichment & document AI model',
+                        'Model used for corpus enrichment and the per-document Ask AI panel',
+                        openRouterEnrichModel,
+                        setOpenRouterEnrichModel,
+                        openRouterEnrichOptions,
+                      )}
+                      <p style={helpStyle}>
+                        Enrichment options are all fast-tier models: it sends one request per
+                        15 documents across the whole corpus, where a large reasoning model
+                        turns minutes into hours. Chat is one request per question, so it can
+                        afford a stronger model.
+                      </p>
+                    </>
+                  )}
+                  {openRouterModelsNote && <p style={helpStyle}>{openRouterModelsNote}</p>}
+                </>
+              ) : (
+                <p style={helpStyle}>Paste your OpenRouter API key to choose a model.</p>
+              )}
+            </>
+          )}
+          {!offlineMode && needsOllama && (
+            <>
+              {chatProvider === 'ollama' &&
+                renderModelSelect(
+                  'Chat model (Ollama)',
+                  'Installed model that answers document chat questions',
+                  ollamaChatModel,
+                  setOllamaChatModel,
+                  ollamaOptionsFor(ollamaChatModel).map((m) => ({ id: m, label: m })),
+                )}
+              {enrichProvider === 'ollama' &&
+                renderModelSelect(
+                  'Enrichment & document AI model (Ollama)',
+                  'Installed model used for corpus enrichment and the per-document Ask AI panel',
+                  ollamaEnrichModel,
+                  setOllamaEnrichModel,
+                  ollamaOptionsFor(ollamaEnrichModel).map((m) => ({ id: m, label: m })),
+                )}
+              <div style={confirmRowStyle}>
+                <button
+                  type="button"
+                  onClick={() => setOllamaReloads((n) => n + 1)}
+                  title="Re-read the models installed on your Ollama server"
+                  style={buttonStyle}
+                >
+                  Recheck installed models
+                </button>
+              </div>
+              {ollamaModelsNote && <p style={helpStyle}>{ollamaModelsNote}</p>}
               <p style={helpStyle}>
-                Chat sends retrieved passages and recent chat history to OpenRouter. Usage may incur model charges.
+                Ollama runs on your own machine at 127.0.0.1:11434 — no API key, nothing
+                leaves this machine. Install from ollama.com, then pull the model (e.g. `ollama
+                pull{' '}
+                {(chatProvider === 'ollama' ? ollamaChatModel : ollamaEnrichModel) ||
+                  DEFAULT_OLLAMA_MODEL}
+                `).
               </p>
             </>
           )}
-          <label style={labelStyle}>
-            Gemini API key
-            <input
-              type="password"
-              value={geminiKey}
-              onChange={(e) => setGeminiKey(e.target.value)}
-              placeholder="Paste your key"
-              autoComplete="off"
-              title="Your Google Gemini API key. Used for enrichment, per-document AI, and Gemini chat."
-              style={inputStyle}
-              disabled={offlineMode}
-            />
-          </label>
           <label
             style={checkboxRowStyle}
-            title="Keep the key in this browser's local storage. Uncheck to hold it only in memory for this tab — you'll re-paste it next visit."
-          >
-            <input
-              type="checkbox"
-              checked={rememberKey}
-              onChange={(e) => setRememberKey(e.target.checked)}
-              disabled={offlineMode}
-            />
-            Remember key on this device
-          </label>
-          {!rememberKey && (
-            <p style={helpStyle}>
-              The key is kept in memory for this tab only and cleared from browser storage —
-              you&apos;ll need to paste it again next visit.
-            </p>
-          )}
-          <label
-            style={checkboxRowStyle}
-            title="Enable Gemini enrichment and per-document AI. Document chat uses the provider selected above."
+            title="Enable AI enrichment and per-document AI using the enrichment provider selected above."
           >
             <input
               type="checkbox"
@@ -398,7 +517,7 @@ export default function SettingsPanel() {
               onChange={(e) => setEnrichEnabled(e.target.checked)}
               disabled={offlineMode}
             />
-            Enable Gemini enrichment and document AI
+            Enable AI enrichment and document AI
           </label>
           <button
             type="button"
@@ -420,9 +539,10 @@ export default function SettingsPanel() {
           )}
           <p style={helpStyle}>
             Your documents are processed locally. With enrichment ON, excerpts (first ~1,200
-            chars per doc) are sent to Google&apos;s Gemini API. &quot;Ask AI&quot; sends the selected
-            document to Gemini. Chat sends only retrieved passages and recent chat history to
-            the provider selected above.
+            chars per doc) are sent to the enrichment provider selected above — OpenRouter
+            (cloud, may incur model charges) or your local Ollama server. &quot;Ask AI&quot; sends the
+            selected document to that provider. Chat sends only retrieved passages and recent
+            chat history to the chat provider.
           </p>
         </section>
         )}

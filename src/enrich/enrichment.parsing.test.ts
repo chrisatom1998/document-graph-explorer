@@ -1,41 +1,10 @@
 /**
- * Pure parsing helpers from gemini.ts: `extractText` (pulls the first
- * candidate's first part's text out of a `generateContent` JSON response) and
- * `parseModelJson` (parses a model's JSON output, tolerating markdown code
- * fences some models wrap it in despite the strict `responseMimeType`).
+ * `parseModelJson` parses a model's JSON output, tolerating the markdown code
+ * fences some models wrap it in despite the JSON-only instruction. (The SSE
+ * framing that carries the text is covered in chat/openRouterClient.test.ts.)
  */
 import { describe, expect, it } from 'vitest';
-import { extractText, parseModelJson } from './gemini';
-
-describe('extractText', () => {
-  it('extracts the first candidate/part text', () => {
-    const data = { candidates: [{ content: { parts: [{ text: 'hello' }] } }] };
-    expect(extractText(data)).toBe('hello');
-  });
-
-  it('returns null for null/undefined input', () => {
-    expect(extractText(null)).toBeNull();
-    expect(extractText(undefined)).toBeNull();
-  });
-
-  it('returns null when candidates is missing or empty', () => {
-    expect(extractText({})).toBeNull();
-    expect(extractText({ candidates: [] })).toBeNull();
-  });
-
-  it('returns null when the text field is missing or not a string', () => {
-    expect(extractText({ candidates: [{ content: { parts: [{}] } }] })).toBeNull();
-    expect(
-      extractText({ candidates: [{ content: { parts: [{ text: 42 }] } }] }),
-    ).toBeNull();
-  });
-
-  it('returns null for a malformed/unexpected shape instead of throwing', () => {
-    expect(extractText('not an object')).toBeNull();
-    expect(extractText(42)).toBeNull();
-    expect(extractText({ candidates: 'not an array' })).toBeNull();
-  });
-});
+import { parseModelJson } from './enrichment';
 
 describe('parseModelJson', () => {
   it('parses plain JSON', () => {

@@ -18,7 +18,9 @@ describe('offline-toggle chat: local, no network (normal build)', () => {
     textStore.clear(); chunkStore.clear(); docVectorStore.clear();
     useSettingsStore.getState().setOfflineMode(true);
     useSettingsStore.getState().setEnrichEnabled(true);
-    useSettingsStore.getState().setGeminiKey('test-key'); // proves the toggle overrides an available Gemini
+    // Proves the toggle overrides an otherwise-available OpenRouter setup.
+    useSettingsStore.getState().setChatProvider('openrouter');
+    useSettingsStore.getState().setOpenRouterKey('test-key');
     useGraphStore.setState({
       nodes: [{ id: 'doc1', kind: 'document', title: 'Rate Limiting' } as DocNode],
     });
@@ -27,7 +29,8 @@ describe('offline-toggle chat: local, no network (normal build)', () => {
   afterEach(() => {
     useSettingsStore.getState().setOfflineMode(false);
     useSettingsStore.getState().setEnrichEnabled(false);
-    useSettingsStore.getState().setGeminiKey('');
+    useSettingsStore.getState().setChatProvider('local');
+    useSettingsStore.getState().setOpenRouterKey('');
   });
 
   it('answers locally with a citation and never calls fetch', async () => {

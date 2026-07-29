@@ -1,15 +1,16 @@
 /**
  * "Ask AI" section of the side panel: summarize the selected document,
  * outline every topic in it, or ask a free-form question about it — all via
- * the user's own Gemini key behind the enrichment opt-in gate. Mount with
- * key={docId} so state resets when the selection changes.
+ * the user's selected AI provider (OpenRouter or Ollama) behind the
+ * enrichment opt-in gate. Mount with key={docId} so state resets when the
+ * selection changes.
  *
- * Now uses streaming: text appears word-by-word as Gemini generates it,
+ * Uses streaming: text appears word-by-word as the model generates it,
  * dramatically reducing perceived latency.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { askDocAi, docAiBlockedReason, type DocAiAction } from '../enrich/gemini';
+import { askDocAi, docAiBlockedReason, type DocAiAction } from '../enrich/enrichment';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 
@@ -25,9 +26,11 @@ interface Props {
 }
 
 export default function DocAiSection({ docId, title }: Props) {
-  // Subscribe so the section unlocks live when the key/toggle change.
+  // Subscribe so the section unlocks live when the key/provider/toggle change.
   const enrichEnabled = useSettingsStore((s) => s.enrichEnabled);
-  const hasKey = useSettingsStore((s) => s.geminiKey.trim() !== '');
+  const providerReady = useSettingsStore(
+    (s) => s.enrichProvider === 'ollama' || s.openRouterKey.trim() !== '',
+  );
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
 
   const [question, setQuestion] = useState('');
@@ -39,7 +42,7 @@ export default function DocAiSection({ docId, title }: Props) {
   } | null>(null);
   const [streamText, setStreamText] = useState<string | null>(null);
 
-  const ready = enrichEnabled && hasKey;
+  const ready = enrichEnabled && providerReady;
 
   // Ref to avoid stale closure in onChunk
   const streamRef = useRef('');
@@ -105,7 +108,7 @@ export default function DocAiSection({ docId, title }: Props) {
           <button
             type="button"
             className="doc-ai__link"
-            title="Open Settings to add your Gemini API key"
+            title="Open Settings to configure your AI provider"
             onClick={() => setSettingsOpen(true)}
           >
             Open Settings
@@ -148,7 +151,7 @@ export default function DocAiSection({ docId, title }: Props) {
             <button
               type="button"
               className="btn-pill secondary doc-ai__btn"
-              title="Send your question about this document to Gemini"
+              title="Send your question about this document to your AI provider"
               disabled={busy !== null || question.trim() === ''}
               onClick={submitQuestion}
             >
@@ -165,7 +168,8 @@ export default function DocAiSection({ docId, title }: Props) {
             </div>
           )}
           <p className="doc-ai__disclosure">
-            Sends the full document text to Gemini via your API key.
+            Sends the full document text to your selected AI provider (OpenRouter or your
+            local Ollama server).
           </p>
         </>
       )}

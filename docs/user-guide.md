@@ -10,7 +10,7 @@ This guide covers why the tool exists, what it can do, and how to use every feat
 
 **You can see a corpus, not just search it.** Most document tools answer the question "where is X?" This one answers "what do I have, and how does it fit together?" — the shape of a project, a research archive, or a knowledge base becomes visible at a glance: which themes dominate, which documents bridge topics, what's isolated and probably orphaned.
 
-**It's private by architecture, not by promise.** Everything — parsing, embeddings, similarity, clustering, layout — runs inside your browser, in web workers, using a self-hosted embedding model. There is no server, no account, no telemetry. Your documents never leave the tab. The only network call the app can make is the optional Gemini enrichment, which is **off by default**, requires your own API key, and can be physically removed entirely with the air-gapped build. That makes the tool usable on corpora you could never upload to a cloud service: contracts, medical notes, unpublished research, internal docs. See [SECURITY.md](../SECURITY.md) for the enforced guarantee.
+**It's private by architecture, not by promise.** Everything — parsing, embeddings, similarity, clustering, layout — runs inside your browser, in web workers, using a self-hosted embedding model. There is no server, no account, no telemetry. Your documents never leave the tab. The only network call the app can make is the optional AI enrichment via OpenRouter, which is **off by default**, requires your own API key, and can be physically removed entirely with the air-gapped build (choosing the local Ollama provider instead keeps even AI features on your machine). That makes the tool usable on corpora you could never upload to a cloud service: contracts, medical notes, unpublished research, internal docs. See [SECURITY.md](../SECURITY.md) for the enforced guarantee.
 
 **It's zero-friction.** No indexing service to stand up, no database, no configuration. Open the app, drag a folder in, and the graph builds itself. The computed graph persists locally (IndexedDB), so the next session restores instantly without re-parsing.
 
@@ -21,7 +21,7 @@ This guide covers why the tool exists, what it can do, and how to use every feat
 - **Ingest real-world formats**: plain text, Markdown, HTML, PDF (including link annotations), and Office files (Word, PowerPoint, Excel), plus CSV/JSON/YAML with dedicated viewers.
 - **Build the graph automatically**: semantic similarity links, explicit cross-document links (e.g. Markdown/PDF links between files), entity co-mention links, and named topic clusters.
 - **Let you explore in 3D**: orbit/zoom/pan a force-directed layout, hover for details, click to read, pin nodes by dragging, with an adaptive quality system (and a 2D mode) that keeps the scene smooth.
-- **Answer questions from your documents**: a built-in chat panel retrieves the most relevant passages and answers extractively — fully offline — or streams richer answers via opt-in Gemini enrichment, always with clickable source citations.
+- **Answer questions from your documents**: a built-in chat panel retrieves the most relevant passages and answers extractively — fully offline — or streams richer answers via an opt-in AI provider (OpenRouter or a local Ollama server), always with clickable source citations.
 - **Search semantically**: find documents by meaning, not just keyword match (`Ctrl+K` / `⌘K`).
 - **Surface insights**: orphaned documents, near-duplicates, bridge documents, and stale files; plus shortest-path finding between any two documents ("How are these connected?").
 - **Persist your work**: sessions restore automatically in under a few seconds; named snapshots capture graph states you can reload at any time.
@@ -73,7 +73,7 @@ Produces `Knowledge Nebula-<version>-arm64.dmg` and `.zip` under `release/`. Rec
 
 | Mode | What it means | How to get it |
 | --- | --- | --- |
-| **Default** | No document content leaves the browser. Gemini enrichment exists but is off until you supply a key. | `npm run build` (or any launcher) |
+| **Default** | No document content leaves the browser. AI enrichment exists but is off until you configure a provider. | `npm run build` (or any launcher) |
 | **Offline mode** | A Settings toggle that blocks all external requests in JavaScript and answers chat locally. Behavioral — can be toggled back off. | Settings → **Offline mode** |
 | **Air-gapped build** | External network **physically removed** via CSP, AI UI stripped entirely, enforced by a post-build verification gate. For distribution where the guarantee must be enforced, not configured. | `npm run build:airgap`, launchers with `--airgap` |
 
@@ -197,7 +197,7 @@ The floating **chat bubble** (lower-left, "AI" badge) opens **"Chat with your do
 Two modes, selected automatically:
 
 - **Local (default / offline / air-gapped):** the app retrieves the best-matching passages from your corpus and quotes them verbatim, grouped by source — no network, no LLM, marked with the hint *"Offline mode — answers are exact passages from your documents."*
-- **Gemini (opt-in):** with enrichment enabled and your API key set, the same retrieval feeds Google's Gemini, which streams a synthesized answer token-by-token, with multi-turn memory over the recent conversation.
+- **AI provider (opt-in):** with a chat provider selected in Settings — OpenRouter (with your API key) or a local Ollama server — the same retrieval feeds the model, which streams a synthesized answer token-by-token, with multi-turn memory over the recent conversation. Chat has its own **Chat model** picker, separate from enrichment: because chat is one request per question rather than one per 15 documents, the list leads with flagship models (Claude Sonnet 5, GPT-5.4, Gemini 3.1 Pro) and keeps the fast tier as the cheap option.
 
 Either way, every answer carries **source chips**: hover for the match strength and snippet, click to fly to that document in the graph, or use the ↗ icon to open it.
 
@@ -205,17 +205,18 @@ Chat history is saved per workspace in browser-local IndexedDB — the most rece
 
 ## Ask AI about one document
 
-With enrichment enabled, the detail panel gains an **Ask AI** section with three streaming actions: **Summarize** (4–7 sentences), **Outline topics** (hierarchical outline of the whole document), and a free-form **Ask** box answered only from that document. Note the disclosure shown in the panel: these actions send the full document text to Gemini via your API key.
+With enrichment enabled, the detail panel gains an **Ask AI** section with three streaming actions: **Summarize** (4–7 sentences), **Outline topics** (hierarchical outline of the whole document), and a free-form **Ask** box answered only from that document. Note the disclosure shown in the panel: these actions send the full document text to your selected AI provider (OpenRouter, or your local Ollama server).
 
 ## AI enrichment (optional, off by default)
 
 Settings → **AI Enrichment**. Enrichment adds three things the local pipeline can't: fluent per-document **summaries and topics**, corpus-wide **topic canonicalization** (merging "auth" / "authentication" / "authn" into one topic), and human-quality **cluster names** ("Deployment & Infra" instead of a keyword list). To use it:
 
-1. Paste a **Gemini API key** (yours; stored only in this browser). By default the key is kept for this tab only — check **Remember key on this device** to persist it locally.
-2. Turn on **Enable enrichment**.
-3. Click **Enrich now**.
+1. Pick an **Enrichment & document AI provider**: **OpenRouter** (cloud) or **Ollama** (a local server on your machine).
+2. For OpenRouter, paste your **API key** (stored only in this browser; by default kept for this tab only — check **Remember OpenRouter key on this device** to persist it locally), then pick an **Enrichment & document AI model**. For Ollama, pick one of the models installed on your local server (**Recheck installed models** re-reads the server after you pull one). This is separate from the **Chat model** — the two are chosen independently.
+3. Turn on **Enable AI enrichment**.
+4. Click **Enrich now**.
 
-The app uses `gemini-3.1-flash-lite` for high-volume structured enrichment and `gemini-3.5-flash` for document AI and chat. This model policy is fixed; Settings still requires your Gemini API key before any cloud AI feature can run. With enrichment on, document excerpts are sent to Google's Gemini API for the batch pass, and "Ask AI" / chat send the relevant documents' text; with it off (the default), nothing ever leaves the browser. The key travels only as a request header, is never written into exports or the graph cache, and enrichment failures degrade gracefully (you keep the local summaries and names).
+The enrichment list is deliberately short. Enrichment sends one request per 15 documents across the whole corpus, so every option is a fast-tier model (Gemini Flash Lite, Claude Haiku, GPT-5 mini and similar) where a large reasoning model would turn minutes into hours. Chat's list is separate and leads with flagship models, since it only sends one request per question. The list is checked against OpenRouter's live catalog, and a model you had selected before this list existed stays available. With enrichment on, document excerpts are sent to the selected provider for the batch pass, and "Ask AI" / chat send the relevant documents' text; with it off (the default), nothing ever leaves the browser — and with the Ollama provider nothing leaves your machine at all. The OpenRouter key travels only as a request header, is never written into exports or the graph cache, and enrichment failures degrade gracefully (you keep the local summaries and names).
 
 ## Snapshots
 

@@ -6,6 +6,22 @@ This project follows the Keep a Changelog format.
 
 ## [Unreleased]
 
+### Added
+- Chat now picks its own model, independent of enrichment. The two workloads pull in opposite directions — chat is one request per question, so quality is affordable; enrichment is one request per 15 documents corpus-wide, where a large reasoning model turns minutes into hours — so each gets its own curated shortlist. Chat leads with flagship models (Claude Sonnet 5, GPT-5.4, Gemini 3.1 Pro) and defaults to Claude Sonnet 5; enrichment keeps the fast tier and defaults to Gemini 3.1 Flash Lite. Models are stored per provider, so switching providers back and forth keeps each choice, and a pre-split saved model carries into both.
+
+### Changed
+- AI enrichment, per-document AI, and chat no longer use Google Gemini. They now run through a user-selected provider — OpenRouter (cloud, user's API key) or a local Ollama server.
+- Model selection is a curated dropdown rather than a free-text model ID. Enrichment's list is fast-tier only (Gemini 3.1/3.5 Flash Lite, Claude Haiku 4.5, GPT-5 mini, Mistral Small 3.2, Qwen3.7 Flash, GLM 4.7 Flash), each with at least a 200k context window for per-document AI. Lists are validated against OpenRouter's live catalog, and a previously-saved model stays selectable. Ollama's picker lists the models installed on your server, with a **Recheck installed models** button.
+- Settings: replaced the Gemini API key fields with separate chat and enrichment provider selectors; the OpenRouter key (session-only by default) is shared, the model choices are not.
+- Demo corpus is now 100 documents (36 committed sample PDFs + 64 generated records), down from 500. Every record is written as a real PDF and parsed back through pdf.js on load, which costs far more per document than the plain-text corpus it replaced; a cold load drops from ~52s to ~11s. Generated cross-references are unchanged in kind — a new test pins every cited filename to a document that actually exists, guarding the `count >= themes * 3` floor the reference math depends on.
+- Side panel connections list collapses to the 8 strongest with a "Show all" toggle, and evidence collapses to one line per row. Previously every edge rendered every evidence line, pushing the Ask AI section off screen on well-connected documents.
+
+### Fixed
+- Enrichment was far slower than it needed to be on large corpora, from three compounding causes: batches ran strictly one at a time (34 sequential requests for a 500-document corpus), the 30-second request timeout was a wall clock rather than an inactivity deadline (so a merely-slow batch aborted and burned three retries before being skipped), and the default model was a large reasoning model. Batches now run 4-at-a-time against cloud providers, every request streams so the timeout resets on each received chunk, and the default is a fast-tier model.
+
+### Removed
+- Google Gemini as a provider: its API key storage, model policy, chat path, and its host (`generativelanguage.googleapis.com`) from the Content-Security-Policy and deployment header examples. A leftover Gemini key in localStorage from an earlier build is scrubbed on boot; a persisted `chatProvider` of `gemini` falls back to local passages.
+
 ## [1.1.13] - 2026-07-27
 
 ### Changed

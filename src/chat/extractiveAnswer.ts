@@ -1,7 +1,7 @@
 /**
  * Local, no-LLM chat answers: render the best-matching retrieved passages
- * verbatim, grouped by source document, with citations. Used whenever Gemini
- * is unavailable (airgap build, or enrichment off / no key). Pure and
+ * verbatim, grouped by source document, with citations. Used whenever the AI
+ * provider is unavailable (airgap build, offline mode, or no key). Pure and
  * synchronous — the retrieval that feeds it (ragChat.retrieveChunks) is what
  * touches embeddings; this only formats.
  */

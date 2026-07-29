@@ -960,7 +960,7 @@ async function runSemanticPass(lexEdges: Edge[]): Promise<void> {
     store().patchNodes(patches);
 
     // Keyword-derived cluster names, refreshed whenever membership shifts.
-    // Gemini names (clusterNames) still win in the UI fallback chain.
+    // AI-enriched names (clusterNames) still win in the UI fallback chain.
     store().setLocalClusterNames(computeLocalClusterNames(store().nodes));
 
     layoutSetLinks(toLinkInput(allEdges));

@@ -3,7 +3,7 @@ import type { DocNode } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 import { textStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
-import { runEnrichment } from './gemini';
+import { runEnrichment } from './enrichment';
 
 const documentNode: DocNode = {
   id: 'doc-1',
@@ -19,18 +19,20 @@ const documentNode: DocNode = {
   status: 'ok',
 };
 
-function geminiResponse(text: string): Response {
+/** Every request streams, so responses are SSE (see ai/llmClient.ts). */
+function completionResponse(text: string): Response {
   return new Response(
-    JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }),
-    { status: 200, headers: { 'Content-Type': 'application/json' } },
+    `data: ${JSON.stringify({ choices: [{ delta: { content: text }, finish_reason: 'stop' }] })}\n\n`,
+    { status: 200, headers: { 'Content-Type': 'text/event-stream' } },
   );
 }
 
-describe('Gemini enrichment disclosure boundary', () => {
+describe('enrichment disclosure boundary', () => {
   beforeEach(() => {
     useSettingsStore.getState().setOfflineMode(false);
     useSettingsStore.getState().setEnrichEnabled(true);
-    useSettingsStore.getState().setGeminiKey('test-key');
+    useSettingsStore.getState().setEnrichProvider('openrouter');
+    useSettingsStore.getState().setOpenRouterKey('test-key');
     useGraphStore.setState({ nodes: [documentNode], phase: 'ready' });
     textStore.set(documentNode.id, 'x'.repeat(9_000));
   });
@@ -39,7 +41,7 @@ describe('Gemini enrichment disclosure boundary', () => {
     vi.restoreAllMocks();
     textStore.clear();
     useSettingsStore.getState().setEnrichEnabled(false);
-    useSettingsStore.getState().setGeminiKey('');
+    useSettingsStore.getState().setOpenRouterKey('');
     useGraphStore.setState({ nodes: [], phase: 'idle' });
   });
 
@@ -47,23 +49,23 @@ describe('Gemini enrichment disclosure boundary', () => {
     const fetchMock = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
-        geminiResponse(
+        completionResponse(
           JSON.stringify([
             { docId: documentNode.id, summary: 'Summary', topics: ['privacy'] },
           ]),
         ),
       )
       .mockResolvedValueOnce(
-        geminiResponse(JSON.stringify([{ cluster: 0, name: 'Private Docs' }])),
+        completionResponse(JSON.stringify([{ cluster: 0, name: 'Private Docs' }])),
       );
 
     await expect(runEnrichment()).resolves.toMatchObject({ ok: true });
 
     const firstRequest = fetchMock.mock.calls[0]?.[1];
     const requestBody = JSON.parse(String(firstRequest?.body)) as {
-      contents: { parts: { text: string }[] }[];
+      messages: { role: string; content: string }[];
     };
-    const prompt = requestBody.contents[0].parts[0].text;
+    const prompt = requestBody.messages.find((m) => m.role === 'user')?.content ?? '';
     const payload = JSON.parse(prompt.match(/Documents \(JSON\): (.+)$/m)?.[1] ?? 'null') as {
       excerpt: string;
     }[];

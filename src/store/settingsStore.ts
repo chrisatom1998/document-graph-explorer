@@ -1,8 +1,8 @@
 /**
  * User settings, persisted to localStorage (key 'knowledge-nebula-settings').
- * The Gemini API key lives ONLY here — it is never written into GraphExport
- * JSON or the IndexedDB graph cache — and is persisted only while
- * rememberGeminiKey is on (OFF by default: localStorage is plaintext at
+ * The OpenRouter API key lives ONLY here — it is never written into
+ * GraphExport JSON or the IndexedDB graph cache — and is persisted only while
+ * rememberOpenRouterKey is on (OFF by default: localStorage is plaintext at
  * rest, so opting in is the user's call); with it off the key stays in
  * memory for this tab and localStorage holds an empty string.
  */
@@ -11,43 +11,56 @@ import { create } from 'zustand';
 const STORAGE_KEY = 'knowledge-nebula-settings';
 
 interface PersistedSettings {
-  geminiKey: string;
-  rememberGeminiKey: boolean;
   chatProvider: ChatProvider;
+  enrichProvider: EnrichProvider;
   openRouterKey: string;
   rememberOpenRouterKey: boolean;
-  openRouterModel: string;
-  ollamaModel: string;
+  openRouterChatModel: string;
+  openRouterEnrichModel: string;
+  ollamaChatModel: string;
+  ollamaEnrichModel: string;
   enrichEnabled: boolean;
   includeEmbeddingsInExport: boolean;
   offlineMode: boolean;
 }
 
-export type ChatProvider = 'local' | 'gemini' | 'openrouter' | 'ollama';
-export const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-sonnet-5';
+export type ChatProvider = 'local' | 'openrouter' | 'ollama';
+/** Provider used for enrichment and per-document AI (no 'local' — both need a model). */
+export type EnrichProvider = 'openrouter' | 'ollama';
+
+// Chat and enrichment pick their model independently, because the workloads
+// pull in opposite directions: chat is one request per question, so quality is
+// affordable; enrichment issues one request per 15-document batch across the
+// whole corpus, where a large reasoning model turns minutes into hours.
+// Models are stored per provider so switching providers back and forth keeps
+// each choice. See ai/modelCatalog.ts for the curated shortlists.
+export const DEFAULT_OPENROUTER_CHAT_MODEL = 'anthropic/claude-sonnet-5';
+export const DEFAULT_OPENROUTER_ENRICH_MODEL = 'google/gemini-3.1-flash-lite';
 export const DEFAULT_OLLAMA_MODEL = 'llama3.2';
 
 export interface SettingsState extends PersistedSettings {
-  setGeminiKey: (key: string) => void;
-  setRememberGeminiKey: (remember: boolean) => void;
   setChatProvider: (provider: ChatProvider) => void;
+  setEnrichProvider: (provider: EnrichProvider) => void;
   setOpenRouterKey: (key: string) => void;
   setRememberOpenRouterKey: (remember: boolean) => void;
-  setOpenRouterModel: (model: string) => void;
-  setOllamaModel: (model: string) => void;
+  setOpenRouterChatModel: (model: string) => void;
+  setOpenRouterEnrichModel: (model: string) => void;
+  setOllamaChatModel: (model: string) => void;
+  setOllamaEnrichModel: (model: string) => void;
   setEnrichEnabled: (enabled: boolean) => void;
   setIncludeEmbeddingsInExport: (include: boolean) => void;
   setOfflineMode: (offline: boolean) => void;
 }
 
 const DEFAULTS: PersistedSettings = {
-  geminiKey: '',
-  rememberGeminiKey: false,
   chatProvider: 'local',
+  enrichProvider: 'openrouter',
   openRouterKey: '',
   rememberOpenRouterKey: false,
-  openRouterModel: DEFAULT_OPENROUTER_MODEL,
-  ollamaModel: DEFAULT_OLLAMA_MODEL,
+  openRouterChatModel: DEFAULT_OPENROUTER_CHAT_MODEL,
+  openRouterEnrichModel: DEFAULT_OPENROUTER_ENRICH_MODEL,
+  ollamaChatModel: DEFAULT_OLLAMA_MODEL,
+  ollamaEnrichModel: DEFAULT_OLLAMA_MODEL,
   enrichEnabled: false,
   includeEmbeddingsInExport: false,
   offlineMode: false,
@@ -58,42 +71,64 @@ function loadPersisted(): PersistedSettings {
     if (typeof localStorage === 'undefined') return DEFAULTS;
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULTS;
-    const parsed = JSON.parse(raw) as Partial<Record<keyof PersistedSettings, unknown>>;
-    const rememberGeminiKey =
-      typeof parsed.rememberGeminiKey === 'boolean'
-        ? parsed.rememberGeminiKey
-        : DEFAULTS.rememberGeminiKey;
+    const parsed = JSON.parse(raw) as Partial<Record<keyof PersistedSettings, unknown>> & {
+      geminiKey?: unknown;
+      geminiModel?: unknown;
+      rememberGeminiKey?: unknown;
+      // Pre-split: one model shared by chat and enrichment.
+      openRouterModel?: unknown;
+      ollamaModel?: unknown;
+    };
+    /** Read a model field, falling back to the pre-split shared value. */
+    const model = (value: unknown, legacy: unknown, fallback: string): string => {
+      if (typeof value === 'string' && value.trim()) return value.trim();
+      if (typeof legacy === 'string' && legacy.trim()) return legacy.trim();
+      return fallback;
+    };
     const rememberOpenRouterKey =
       typeof parsed.rememberOpenRouterKey === 'boolean'
         ? parsed.rememberOpenRouterKey
         : DEFAULTS.rememberOpenRouterKey;
+    // 'gemini' (removed provider) intentionally fails this check and falls
+    // back to the safe default, which needs no key.
     const chatProvider: ChatProvider =
-      parsed.chatProvider === 'gemini' ||
       parsed.chatProvider === 'openrouter' ||
       parsed.chatProvider === 'ollama' ||
       parsed.chatProvider === 'local'
         ? parsed.chatProvider
         : DEFAULTS.chatProvider;
+    const enrichProvider: EnrichProvider =
+      parsed.enrichProvider === 'openrouter' || parsed.enrichProvider === 'ollama'
+        ? parsed.enrichProvider
+        : DEFAULTS.enrichProvider;
     const loaded: PersistedSettings = {
-      geminiKey:
-        rememberGeminiKey && typeof parsed.geminiKey === 'string'
-          ? parsed.geminiKey.trim()
-          : DEFAULTS.geminiKey,
-      rememberGeminiKey,
       chatProvider,
+      enrichProvider,
       openRouterKey:
         rememberOpenRouterKey && typeof parsed.openRouterKey === 'string'
           ? parsed.openRouterKey.trim()
           : DEFAULTS.openRouterKey,
       rememberOpenRouterKey,
-      openRouterModel:
-        typeof parsed.openRouterModel === 'string' && parsed.openRouterModel.trim()
-          ? parsed.openRouterModel.trim()
-          : DEFAULTS.openRouterModel,
-      ollamaModel:
-        typeof parsed.ollamaModel === 'string' && parsed.ollamaModel.trim()
-          ? parsed.ollamaModel.trim()
-          : DEFAULTS.ollamaModel,
+      openRouterChatModel: model(
+        parsed.openRouterChatModel,
+        parsed.openRouterModel,
+        DEFAULTS.openRouterChatModel,
+      ),
+      openRouterEnrichModel: model(
+        parsed.openRouterEnrichModel,
+        parsed.openRouterModel,
+        DEFAULTS.openRouterEnrichModel,
+      ),
+      ollamaChatModel: model(
+        parsed.ollamaChatModel,
+        parsed.ollamaModel,
+        DEFAULTS.ollamaChatModel,
+      ),
+      ollamaEnrichModel: model(
+        parsed.ollamaEnrichModel,
+        parsed.ollamaModel,
+        DEFAULTS.ollamaEnrichModel,
+      ),
       enrichEnabled:
         typeof parsed.enrichEnabled === 'boolean'
           ? parsed.enrichEnabled
@@ -105,18 +140,19 @@ function loadPersisted(): PersistedSettings {
       offlineMode:
         typeof parsed.offlineMode === 'boolean' ? parsed.offlineMode : DEFAULTS.offlineMode,
     };
-    // rememberGeminiKey default flipped to false after early builds stored keys
-    // with the field missing (treated as "remember"). Without an eager rewrite,
-    // a stale plaintext key would sit in localStorage until the next settings
-    // change — scrub it on boot whenever remember is off.
+    // Eagerly rewrite storage when it still carries fields from removed
+    // features (the Gemini key/model era) or a session-only OpenRouter key.
+    // Without this, a stale plaintext key would sit in localStorage until the
+    // next settings change — scrub it on boot.
     if (
-      (!rememberGeminiKey &&
-        typeof parsed.geminiKey === 'string' &&
-        parsed.geminiKey.length > 0) ||
       (!rememberOpenRouterKey &&
         typeof parsed.openRouterKey === 'string' &&
         parsed.openRouterKey.length > 0) ||
-      Object.hasOwn(parsed, 'geminiModel')
+      Object.hasOwn(parsed, 'geminiKey') ||
+      Object.hasOwn(parsed, 'rememberGeminiKey') ||
+      Object.hasOwn(parsed, 'geminiModel') ||
+      Object.hasOwn(parsed, 'openRouterModel') ||
+      Object.hasOwn(parsed, 'ollamaModel')
     ) {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
@@ -132,16 +168,19 @@ function loadPersisted(): PersistedSettings {
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   ...loadPersisted(),
+  setChatProvider: (chatProvider) => set({ chatProvider }),
+  setEnrichProvider: (enrichProvider) => set({ enrichProvider }),
   // Trimmed at the store boundary so every consumer (enrichment, doc AI,
   // chat) gets a header-safe key even when pasted with stray whitespace.
-  setGeminiKey: (geminiKey) => set({ geminiKey: geminiKey.trim() }),
-  setRememberGeminiKey: (rememberGeminiKey) => set({ rememberGeminiKey }),
-  setChatProvider: (chatProvider) => set({ chatProvider }),
   setOpenRouterKey: (openRouterKey) => set({ openRouterKey: openRouterKey.trim() }),
   setRememberOpenRouterKey: (rememberOpenRouterKey) => set({ rememberOpenRouterKey }),
-  setOpenRouterModel: (openRouterModel) =>
-    set({ openRouterModel: openRouterModel.trim() }),
-  setOllamaModel: (ollamaModel) => set({ ollamaModel: ollamaModel.trim() }),
+  setOpenRouterChatModel: (openRouterChatModel) =>
+    set({ openRouterChatModel: openRouterChatModel.trim() }),
+  setOpenRouterEnrichModel: (openRouterEnrichModel) =>
+    set({ openRouterEnrichModel: openRouterEnrichModel.trim() }),
+  setOllamaChatModel: (ollamaChatModel) => set({ ollamaChatModel: ollamaChatModel.trim() }),
+  setOllamaEnrichModel: (ollamaEnrichModel) =>
+    set({ ollamaEnrichModel: ollamaEnrichModel.trim() }),
   setEnrichEnabled: (enrichEnabled) => set({ enrichEnabled }),
   setIncludeEmbeddingsInExport: (includeEmbeddingsInExport) =>
     set({ includeEmbeddingsInExport }),
@@ -149,17 +188,18 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 }));
 
 // Persist on every change (tiny payload; no middleware needed). Turning
-// rememberGeminiKey off scrubs any previously stored key on the next write.
+// rememberOpenRouterKey off scrubs any previously stored key on the next write.
 useSettingsStore.subscribe((s) => {
   try {
     const persisted: PersistedSettings = {
-      geminiKey: s.rememberGeminiKey ? s.geminiKey : '',
-      rememberGeminiKey: s.rememberGeminiKey,
       chatProvider: s.chatProvider,
+      enrichProvider: s.enrichProvider,
       openRouterKey: s.rememberOpenRouterKey ? s.openRouterKey : '',
       rememberOpenRouterKey: s.rememberOpenRouterKey,
-      openRouterModel: s.openRouterModel || DEFAULT_OPENROUTER_MODEL,
-      ollamaModel: s.ollamaModel || DEFAULT_OLLAMA_MODEL,
+      openRouterChatModel: s.openRouterChatModel || DEFAULT_OPENROUTER_CHAT_MODEL,
+      openRouterEnrichModel: s.openRouterEnrichModel || DEFAULT_OPENROUTER_ENRICH_MODEL,
+      ollamaChatModel: s.ollamaChatModel || DEFAULT_OLLAMA_MODEL,
+      ollamaEnrichModel: s.ollamaEnrichModel || DEFAULT_OLLAMA_MODEL,
       enrichEnabled: s.enrichEnabled,
       includeEmbeddingsInExport: s.includeEmbeddingsInExport,
       offlineMode: s.offlineMode,

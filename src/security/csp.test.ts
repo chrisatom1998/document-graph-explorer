@@ -5,8 +5,10 @@ describe('buildCsp', () => {
   it('normal build allows exactly the opt-in AI connect-src hosts', () => {
     const csp = buildCsp({ airgap: false });
     expect(csp).toContain(
-      "connect-src 'self' blob: https://generativelanguage.googleapis.com https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434",
+      "connect-src 'self' blob: https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434",
     );
+    // Gemini was removed as a provider — its host must stay gone.
+    expect(csp).not.toContain('generativelanguage');
   });
 
   it('only loopback hosts are allowed over plain http', () => {

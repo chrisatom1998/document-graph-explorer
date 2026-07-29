@@ -17,15 +17,17 @@ describe('ChatPanel offline toggle (normal build)', () => {
     useChatStore.getState().clearMessages();
     useChatStore.getState().setIsOpen(true);
     useGraphStore.setState({ nodes: [{ id: 'doc1', kind: 'document', title: 'Doc' } as DocNode] });
-    // Gemini otherwise available — the toggle alone must force local mode.
+    // OpenRouter otherwise available — the toggle alone must force local mode.
     useSettingsStore.getState().setEnrichEnabled(true);
-    useSettingsStore.getState().setGeminiKey('test-key');
+    useSettingsStore.getState().setChatProvider('openrouter');
+    useSettingsStore.getState().setOpenRouterKey('test-key');
     useSettingsStore.getState().setOfflineMode(true);
   });
   afterEach(() => {
     useSettingsStore.getState().setOfflineMode(false);
     useSettingsStore.getState().setEnrichEnabled(false);
-    useSettingsStore.getState().setGeminiKey('');
+    useSettingsStore.getState().setChatProvider('local');
+    useSettingsStore.getState().setOpenRouterKey('');
   });
 
   it('shows the offline hint when the toggle is on', () => {

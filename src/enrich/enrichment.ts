@@ -1,8 +1,9 @@
 /**
- * Optional Layer-3 enrichment via Google's Gemini API (spec §5.3).
+ * Optional Layer-3 enrichment via the user's selected AI provider — OpenRouter
+ * (cloud, user's API key) or a local Ollama server (spec §5.3).
  *
  * Three sequential passes:
- *   1. Batched summaries + topics per doc (strict JSON via responseSchema)
+ *   1. Batched summaries + topics per doc (strict JSON, prompt-enforced)
  *   2. Corpus-wide topic canonicalization ("auth"/"authentication"/"AuthN" -> one)
  *   3. Cluster naming ("Deployment & Infra")
  *
@@ -11,21 +12,21 @@
  */
 
 import { AIRGAP, AIRGAP_MESSAGE } from '../airgap';
-import {
-  geminiSystemInstruction,
-  geminiThinkingConfig,
-  resolveGeminiModel,
-} from '../ai/geminiModels';
+import { llmComplete, llmStream, type LlmTarget } from '../ai/llmClient';
 import {
   ENRICH_BATCH_SIZE,
-  ENRICH_MAX_RETRIES,
-  GEMINI_ENDPOINT,
+  ENRICH_CONCURRENCY_CLOUD,
+  ENRICH_CONCURRENCY_LOCAL,
 } from '../config';
 import type { DocNode } from '../model/types';
 import { isOffline, OFFLINE_MESSAGE } from '../offline';
 import { useGraphStore } from '../store/graphStore';
 import { textStore } from '../store/runtimeStores';
-import { useSettingsStore } from '../store/settingsStore';
+import {
+  DEFAULT_OLLAMA_MODEL,
+  DEFAULT_OPENROUTER_ENRICH_MODEL,
+  useSettingsStore,
+} from '../store/settingsStore';
 import { prepareDocumentContext } from './documentContext';
 
 const EXCERPT_CHARS = 1_200; // Matches the consent disclosure shown before enrichment is enabled.
@@ -35,29 +36,48 @@ const TOPICS_PER_DOC = 5;
 const MAX_SUMMARY_CHARS = 1200;
 const MAX_TOPIC_CHARS = 48;
 
-// ---------------------------------------------------------------------------
-// Low-level call with retry (429/503/network -> 1s/2s/4s backoff)
-// ---------------------------------------------------------------------------
-
-type CallResult = { ok: true; text: string } | { ok: false; error: string };
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+/** The provider + model enrichment and doc AI currently target, from Settings. */
+export function enrichmentTarget(): LlmTarget {
+  const { enrichProvider, openRouterKey, openRouterEnrichModel, ollamaEnrichModel } =
+    useSettingsStore.getState();
+  return enrichProvider === 'ollama'
+    ? { provider: 'ollama', apiKey: '', model: ollamaEnrichModel || DEFAULT_OLLAMA_MODEL }
+    : {
+        provider: 'openrouter',
+        apiKey: openRouterKey,
+        model: openRouterEnrichModel || DEFAULT_OPENROUTER_ENRICH_MODEL,
+      };
 }
 
-export function extractText(data: unknown): string | null {
-  const d = data as {
-    candidates?: { content?: { parts?: { text?: unknown }[] } }[];
-  } | null;
-  const t = d?.candidates?.[0]?.content?.parts?.[0]?.text;
-  return typeof t === 'string' ? t : null;
+/**
+ * Run `worker` over every item with at most `limit` in flight, preserving
+ * input order in the returned results. Results are collected by index rather
+ * than push order so a fast batch finishing ahead of a slow one can't
+ * reorder them.
+ */
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const runners = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
+    for (;;) {
+      const index = next++;
+      if (index >= items.length) return;
+      results[index] = await worker(items[index], index);
+    }
+  });
+  await Promise.all(runners);
+  return results;
 }
 
 export function parseModelJson<T>(text: string): T | null {
   try {
     return JSON.parse(text) as T;
   } catch {
-    /* fall through — some models wrap JSON in fences despite the mime type */
+    /* fall through — some models wrap JSON in fences despite instructions */
   }
   const stripped = text
     .trim()
@@ -70,67 +90,6 @@ export function parseModelJson<T>(text: string): T | null {
   }
 }
 
-const REQUEST_TIMEOUT_MS = 30_000;
-
-async function callGemini(prompt: string, responseSchema: unknown): Promise<CallResult> {
-  if (isOffline()) return { ok: false, error: AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE };
-  const { geminiKey } = useSettingsStore.getState();
-  const model = resolveGeminiModel('enrichment');
-  // Key travels as a header, not a query param: URLs leak into proxy/server
-  // logs and browser history; headers don't.
-  const url = `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`;
-  const body = JSON.stringify({
-    systemInstruction: geminiSystemInstruction('enrichment'),
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: {
-      responseMimeType: 'application/json',
-      responseSchema,
-      ...geminiThinkingConfig('enrichment', model),
-    },
-  });
-
-  let lastError = 'Unknown Gemini error';
-  for (let attempt = 0; ; attempt++) {
-    let retryable = false;
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Trim: a pasted key with a trailing newline/space is an invalid HTTP
-          // header value, and fetch throws a TypeError mislabeled as "Network error".
-          'x-goog-api-key': geminiKey.trim(),
-        },
-        body,
-        // A hung connection would otherwise stall enrichment forever with the
-        // button stuck on "Enriching…" and zero feedback.
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
-      if (res.ok) {
-        const text = extractText(await res.json());
-        if (text !== null) return { ok: true, text };
-        lastError = 'Gemini returned an unexpected response shape';
-      } else {
-        retryable = res.status === 429 || res.status === 503;
-        lastError = `Gemini HTTP ${res.status}`;
-        try {
-          const errData = (await res.json()) as { error?: { message?: unknown } };
-          if (typeof errData.error?.message === 'string') {
-            lastError += `: ${errData.error.message.slice(0, 160)}`;
-          }
-        } catch {
-          /* error body wasn't JSON */
-        }
-      }
-    } catch (err) {
-      retryable = true; // fetch network failure
-      lastError = err instanceof Error ? `Network error: ${err.message}` : 'Network error';
-    }
-    if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
-    await sleep(1000 * 2 ** attempt);
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Pass 1 — summaries + topics (batched)
 // ---------------------------------------------------------------------------
@@ -139,19 +98,6 @@ interface DocEnrichment {
   summary: string;
   topics: string[];
 }
-
-const PASS1_SCHEMA = {
-  type: 'ARRAY',
-  items: {
-    type: 'OBJECT',
-    properties: {
-      docId: { type: 'STRING' },
-      summary: { type: 'STRING' },
-      topics: { type: 'ARRAY', items: { type: 'STRING' } },
-    },
-    required: ['docId', 'summary', 'topics'],
-  },
-} as const;
 
 async function enrichBatch(
   batch: DocNode[],
@@ -167,16 +113,17 @@ async function enrichBatch(
     '- "docId": the id copied exactly as given',
     '- "summary": one crisp sentence (max 25 words) saying what the document covers',
     `- "topics": 3-${TOPICS_PER_DOC} short lowercase topic labels (1-3 words each), specific over generic`,
+    'Respond with ONLY a JSON array of these objects — no prose, no code fences.',
     '',
     `Documents (JSON): ${JSON.stringify(payload)}`,
   ].join('\n');
 
   const results = new Map<string, DocEnrichment>();
-  const res = await callGemini(prompt, PASS1_SCHEMA);
+  const res = await llmComplete(enrichmentTarget(), 'enrichment', prompt);
   if (!res.ok) return { results, error: res.error };
   const parsed = parseModelJson<unknown[]>(res.text);
   if (!Array.isArray(parsed)) {
-    return { results, error: 'Gemini response was not a JSON array' };
+    return { results, error: 'Model response was not a JSON array' };
   }
   const known = new Set(batch.map((n) => n.id));
   for (const item of parsed) {
@@ -203,24 +150,8 @@ async function enrichBatch(
 }
 
 // ---------------------------------------------------------------------------
-// Pass 2 — topic canonicalization (from/to pairs; responseSchema can't do
-// dynamic-key maps)
+// Pass 2 — topic canonicalization (from/to pairs)
 // ---------------------------------------------------------------------------
-
-const PASS2_SCHEMA = {
-  type: 'OBJECT',
-  properties: {
-    canon: {
-      type: 'ARRAY',
-      items: {
-        type: 'OBJECT',
-        properties: { from: { type: 'STRING' }, to: { type: 'STRING' } },
-        required: ['from', 'to'],
-      },
-    },
-  },
-  required: ['canon'],
-} as const;
 
 async function canonicalizeTopics(topics: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>();
@@ -229,12 +160,12 @@ async function canonicalizeTopics(topics: string[]): Promise<Map<string, string>
     'These topic labels were extracted from one documentation corpus.',
     'Merge synonyms, spelling variants and abbreviations into a single canonical form',
     '(e.g. "auth", "authentication", "authn" all become "authentication").',
-    'Return {"canon": [{"from": existing label, "to": canonical label}, ...]},',
+    'Respond with ONLY the JSON object {"canon": [{"from": existing label, "to": canonical label}, ...]},',
     'listing only labels that should change. Keep canonical forms concise and lowercase.',
     '',
     `Labels (JSON): ${JSON.stringify(topics)}`,
   ].join('\n');
-  const res = await callGemini(prompt, PASS2_SCHEMA);
+  const res = await llmComplete(enrichmentTarget(), 'enrichment', prompt);
   if (!res.ok) return map; // graceful: keep raw topics
   const parsed = parseModelJson<{ canon?: unknown }>(res.text);
   if (!parsed || !Array.isArray(parsed.canon)) return map;
@@ -250,15 +181,6 @@ async function canonicalizeTopics(topics: string[]): Promise<Map<string, string>
 // ---------------------------------------------------------------------------
 // Pass 3 — cluster names
 // ---------------------------------------------------------------------------
-
-const PASS3_SCHEMA = {
-  type: 'ARRAY',
-  items: {
-    type: 'OBJECT',
-    properties: { cluster: { type: 'NUMBER' }, name: { type: 'STRING' } },
-    required: ['cluster', 'name'],
-  },
-} as const;
 
 async function nameClusters(
   docs: DocNode[],
@@ -294,12 +216,13 @@ async function nameClusters(
   const prompt = [
     'Name each documentation cluster below with a 2-4 word evocative but clear name',
     '(examples: "Deployment & Infra", "Onboarding Guides"). Base each name on the',
-    'member titles and top topics. Return an array of {"cluster": number, "name": string}.',
+    'member titles and top topics.',
+    'Respond with ONLY a JSON array of {"cluster": number, "name": string} — no prose, no code fences.',
     '',
     `Clusters (JSON): ${JSON.stringify(clusterInputs)}`,
   ].join('\n');
 
-  const res = await callGemini(prompt, PASS3_SCHEMA);
+  const res = await llmComplete(enrichmentTarget(), 'enrichment', prompt);
   if (!res.ok) return {}; // graceful: keep existing names
   const parsed = parseModelJson<unknown[]>(res.text);
   if (!Array.isArray(parsed)) return {};
@@ -317,156 +240,23 @@ async function nameClusters(
 
 // ---------------------------------------------------------------------------
 // Per-document AI (side panel): summarize / outline / ask a question.
-// Now uses STREAMING for real-time text delivery + plain text output (no JSON
-// schema constraint) for lower latency.
+// Streams plain text for real-time delivery.
 // ---------------------------------------------------------------------------
 
-// Document AI is bounded before sending source text to Gemini. The ingest cap
-// is intentionally much larger than any model context window.
+// Document AI is bounded before sending source text to the provider. The
+// ingest cap is intentionally much larger than any model context window.
 
 export type DocAiAction = 'summarize' | 'outline' | 'ask';
 
 /** Why the AI section is locked, or null when it's usable. */
 export function docAiBlockedReason(): string | null {
   if (isOffline()) return AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE;
-  const { geminiKey, enrichEnabled } = useSettingsStore.getState();
-  if (!enrichEnabled) return 'Turn on "Enable enrichment" in Settings';
-  if (geminiKey.trim() === '') return 'Add a Gemini API key in Settings';
-  return null;
-}
-
-/**
- * Stream text from Gemini. Calls `onChunk` with each incremental text piece
- * so the UI can update in real-time. Returns the full accumulated text.
- */
-async function streamGemini(
-  prompt: string,
-  onChunk?: (accumulated: string) => void,
-  signal?: AbortSignal,
-): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
-  if (isOffline()) return { ok: false, error: AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE };
-  if (signal?.aborted) return { ok: false, error: 'Cancelled' };
-  const { geminiKey } = useSettingsStore.getState();
-  const model = resolveGeminiModel('document');
-  const url =
-    `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
-
-  let lastError = 'Unknown Gemini error';
-  for (let attempt = 0; ; attempt++) {
-    // Checked per attempt, not just on entry: cancellation can land during a
-    // retry backoff, and the next attempt would then attach its listener to an
-    // already-aborted signal — which never fires — and issue another paid
-    // request for an answer the user has already navigated away from.
-    if (signal?.aborted) return { ok: false, error: 'Cancelled' };
-    let retryable = false;
-    // Inactivity deadline that resets on each received chunk — a fixed
-    // wall-clock timeout would abort a long-but-healthy stream (e.g. an
-    // "outline covering ALL topics") mid-response and retry from scratch.
-    const controller = new AbortController();
-    let idleTimer: ReturnType<typeof setTimeout> | undefined;
-    const clearIdle = () => {
-      if (idleTimer !== undefined) {
-        clearTimeout(idleTimer);
-        idleTimer = undefined;
-      }
-    };
-    const armIdle = () => {
-      clearIdle();
-      idleTimer = setTimeout(
-        () => controller.abort(new DOMException('Gemini stream idle timeout', 'TimeoutError')),
-        REQUEST_TIMEOUT_MS,
-      );
-    };
-    // Forward an external cancellation (the caller navigated away) into this
-    // attempt's controller, then detach in the finally so attempts don't
-    // accumulate listeners on a long-lived signal.
-    const onExternalAbort = () => controller.abort(new DOMException('Cancelled', 'AbortError'));
-    signal?.addEventListener('abort', onExternalAbort);
-    try {
-      armIdle(); // also covers connection latency before the first byte
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': geminiKey.trim(),
-        },
-        body: JSON.stringify({
-          systemInstruction: geminiSystemInstruction('document'),
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: geminiThinkingConfig('document', model),
-        }),
-        signal: controller.signal,
-      });
-
-      if (!res.ok) {
-        retryable = res.status === 429 || res.status === 503;
-        lastError = `Gemini HTTP ${res.status}`;
-        try {
-          const errData = (await res.json()) as { error?: { message?: unknown } };
-          if (typeof errData.error?.message === 'string') {
-            lastError += `: ${errData.error.message.slice(0, 160)}`;
-          }
-        } catch { /* not JSON */ }
-        if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
-        await sleep(1000 * 2 ** attempt);
-        continue;
-      }
-
-      // Read SSE stream
-      const reader = res.body?.getReader();
-      if (!reader) return { ok: false, error: 'No response body (streaming unavailable)' };
-
-      const decoder = new TextDecoder();
-      let accumulated = '';
-      let buffer = '';
-
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        armIdle(); // healthy chunk arrived — push the inactivity deadline out
-        buffer += decoder.decode(value, { stream: true });
-
-        // Parse SSE events: "data: {...}\n\n"
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? ''; // keep incomplete line in buffer
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const jsonStr = line.slice(6).trim();
-          if (!jsonStr || jsonStr === '[DONE]') continue;
-          try {
-            const chunk = JSON.parse(jsonStr) as {
-              candidates?: { content?: { parts?: { text?: string }[] } }[];
-            };
-            const text = chunk?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (typeof text === 'string') {
-              accumulated += text;
-              onChunk?.(accumulated);
-            }
-          } catch {
-            // Malformed chunk — skip
-          }
-        }
-      }
-
-      if (accumulated.trim() === '') {
-        return { ok: false, error: 'Gemini returned an empty response' };
-      }
-      return { ok: true, text: accumulated.trim() };
-    } catch (err) {
-      // A caller-initiated cancellation is a final answer, not a transient
-      // failure — retrying would re-issue the request the user just abandoned
-      // and keep spending their API quota.
-      if (signal?.aborted) return { ok: false, error: 'Cancelled' };
-      retryable = true;
-      lastError = err instanceof Error ? `Network error: ${err.message}` : 'Network error';
-    } finally {
-      clearIdle();
-      signal?.removeEventListener('abort', onExternalAbort);
-    }
-    if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
-    await sleep(1000 * 2 ** attempt);
+  const { enrichEnabled, enrichProvider, openRouterKey } = useSettingsStore.getState();
+  if (!enrichEnabled) return 'Turn on "Enable AI enrichment" in Settings';
+  if (enrichProvider === 'openrouter' && openRouterKey.trim() === '') {
+    return 'Add an OpenRouter API key in Settings';
   }
+  return null;
 }
 
 export async function askDocAi(
@@ -527,7 +317,7 @@ export async function askDocAi(
   ].join('\n');
 
   // Use streaming for real-time delivery
-  const res = await streamGemini(prompt, onChunk, signal);
+  const res = await llmStream(enrichmentTarget(), 'document', prompt, onChunk, signal);
   if (!res.ok) return { ok: false, text: res.error };
   return { ok: true, text: res.text };
 }
@@ -540,12 +330,12 @@ let running = false;
 
 export async function runEnrichment(): Promise<{ ok: boolean; message: string }> {
   if (isOffline()) return { ok: false, message: AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE };
-  const { geminiKey, enrichEnabled } = useSettingsStore.getState();
+  const { enrichEnabled, enrichProvider, openRouterKey } = useSettingsStore.getState();
   if (!enrichEnabled) {
-    return { ok: false, message: 'Turn on "Enable enrichment" first' };
+    return { ok: false, message: 'Turn on "Enable AI enrichment" first' };
   }
-  if (geminiKey.trim() === '') {
-    return { ok: false, message: 'Add a Gemini API key in Settings' };
+  if (enrichProvider === 'openrouter' && openRouterKey.trim() === '') {
+    return { ok: false, message: 'Add an OpenRouter API key in Settings' };
   }
   const graph = useGraphStore.getState();
   const docs = graph.nodes.filter((n) => n.kind === 'document');
@@ -561,6 +351,8 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
 
   running = true;
   graph.setPhase('enriching');
+  const concurrency =
+    enrichProvider === 'ollama' ? ENRICH_CONCURRENCY_LOCAL : ENRICH_CONCURRENCY_CLOUD;
   // progress = pass-1 batches + canonicalize + cluster naming
   const batchCount = Math.ceil(docs.length / ENRICH_BATCH_SIZE);
   const totalSteps = batchCount + 2;
@@ -569,15 +361,26 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
     useGraphStore.getState().setEnrichProgress({ done: doneSteps, total: totalSteps, note });
   };
   try {
-    // --- Pass 1: sequential batches (rate-limit friendly); skip failures ---
+    // --- Pass 1: batches run several at a time; failures are skipped ---
     const enriched = new Map<string, DocEnrichment>();
     let failedBatches = 0;
     let lastError = '';
+    const batches: DocNode[][] = [];
     for (let i = 0; i < docs.length; i += ENRICH_BATCH_SIZE) {
-      step(`Summarizing docs ${i + 1}–${Math.min(i + ENRICH_BATCH_SIZE, docs.length)} of ${docs.length}`);
-      const batch = docs.slice(i, i + ENRICH_BATCH_SIZE);
-      const { results, error } = await enrichBatch(batch);
+      batches.push(docs.slice(i, i + ENRICH_BATCH_SIZE));
+    }
+    let summarized = 0;
+    step(`Summarizing 0 of ${docs.length} documents`);
+    const batchOutcomes = await mapWithConcurrency(batches, concurrency, async (batch) => {
+      const outcome = await enrichBatch(batch);
+      // Progress is reported per completed batch, not per started one, so the
+      // bar can't run ahead of work that is still in flight.
       doneSteps++;
+      summarized += batch.length;
+      step(`Summarizing ${summarized} of ${docs.length} documents`);
+      return outcome;
+    });
+    for (const { results, error } of batchOutcomes) {
       if (results.size === 0) {
         failedBatches++;
         lastError = error ?? 'batch produced no usable results';

@@ -19,7 +19,7 @@ describe('Ollama RAG chat', () => {
     docVectorStore.clear();
     useSettingsStore.getState().setOfflineMode(false);
     useSettingsStore.getState().setChatProvider('ollama');
-    useSettingsStore.getState().setOllamaModel('llama3.2');
+    useSettingsStore.getState().setOllamaChatModel('llama3.2');
     useGraphStore.setState({
       nodes: [{ id: 'doc1', kind: 'document', title: 'Rate Limits' } as DocNode],
     });

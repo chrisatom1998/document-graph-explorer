@@ -1,19 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { runEnrichment, docAiBlockedReason } from './gemini';
+import { runEnrichment, docAiBlockedReason } from './enrichment';
 import { OFFLINE_MESSAGE } from '../offline';
 import { useSettingsStore } from '../store/settingsStore';
 
-describe('gemini gates under the offline toggle (normal build)', () => {
+describe('enrichment gates under the offline toggle (normal build)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     useSettingsStore.getState().setOfflineMode(true);
     useSettingsStore.getState().setEnrichEnabled(true);
-    useSettingsStore.getState().setGeminiKey('test-key');
+    useSettingsStore.getState().setEnrichProvider('openrouter');
+    useSettingsStore.getState().setOpenRouterKey('test-key');
   });
   afterEach(() => {
     useSettingsStore.getState().setOfflineMode(false);
     useSettingsStore.getState().setEnrichEnabled(false);
-    useSettingsStore.getState().setGeminiKey('');
+    useSettingsStore.getState().setOpenRouterKey('');
   });
 
   it('runEnrichment refuses with OFFLINE_MESSAGE and never fetches, even with key+enrichment on', async () => {

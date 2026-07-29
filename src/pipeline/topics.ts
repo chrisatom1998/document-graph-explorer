@@ -1,6 +1,6 @@
 /**
  * Topic grouping (spec §5.4 refinement). Turns each document's raw topic
- * labels — whether Gemini-enriched or the TF-IDF fallback — into the shared
+ * labels — whether AI-enriched or the TF-IDF fallback — into the shared
  * topic groups that become topic-hub nodes.
  *
  * Two problems this fixes over the old "exact lowercased string" match:

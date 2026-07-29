@@ -46,7 +46,7 @@ const TOUR_STEPS = [
     // The bubble hides while the chat panel is open — anchor to either.
     selector: '.chat-bubble-btn, .chat-panel',
     title: 'Ask the corpus',
-    body: 'Open chat for grounded answers that cite the documents used. Answers can come from local passages, Gemini, OpenRouter, or a fully local Ollama model — pick a provider in Settings.',
+    body: 'Open chat for grounded answers that cite the documents used. Answers can come from local passages, OpenRouter, or a fully local Ollama model — pick a provider in Settings.',
     /** Airgap/offline builds must not advertise cloud providers. */
     offlineBody:
       'Open chat for grounded answers extracted from your documents, with citations to the passages used.',

@@ -123,11 +123,13 @@ export default function ChatPanel() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const docCount = useGraphStore((s) => s.nodes.filter((n) => n.kind === 'document').length);
   const chatProvider = useSettingsStore((s) => s.chatProvider);
-  const geminiKey = useSettingsStore((s) => s.geminiKey);
   const openRouterKey = useSettingsStore((s) => s.openRouterKey);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
-  const selectedKey = chatProvider === 'openrouter' ? openRouterKey : geminiKey;
-  const localMode = AIRGAP || offlineMode || chatProvider === 'local' || selectedKey.trim() === '';
+  const localMode =
+    AIRGAP ||
+    offlineMode ||
+    chatProvider === 'local' ||
+    (chatProvider === 'openrouter' && openRouterKey.trim() === '');
 
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
