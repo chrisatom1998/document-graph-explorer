@@ -18,6 +18,8 @@ docker/downloads/*
 !docker/downloads/.gitkeep
 .codex/
 .cursor/
+tools/usd_pipeline/.venv/
+__pycache__/
 copilot-worktrees/
 document-graph-explorer/
 artifacts/

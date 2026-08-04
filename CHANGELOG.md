@@ -9,6 +9,7 @@ This project follows the Keep a Changelog format.
 ## [1.1.14] - 2026-07-29
 
 ### Added
+- OpenUSD export: **Data → Export OpenUSD scene** serializes the graph as a composed `.usda` stage — document/topic nodes as Sphere prims carrying a `docGraph:` custom-attribute schema (title, topics, entities, keywords, status), edges as one BasisCurves prim per kind with parallel weight/evidence arrays, translucent cluster hulls, and a `graphView` variantSet switching detailed vs summary views. Validated against stock `usdchecker`. A new Python pipeline CLI (`tools/usd_pipeline/usd_pipeline.py`, Pixar `usd-core`) re-validates every schema invariant, exercises the variants through composition, and packages `.usdz`; see `docs/openusd-pipeline.md`.
 - Chat now picks its own model, independent of enrichment. The two workloads pull in opposite directions — chat is one request per question, so quality is affordable; enrichment is one request per 15 documents corpus-wide, where a large reasoning model turns minutes into hours — so each gets its own curated shortlist. Chat leads with flagship models (Claude Sonnet 5, GPT-5.4, Gemini 3.1 Pro) and defaults to Claude Sonnet 5; enrichment keeps the fast tier and defaults to Gemini 3.1 Flash Lite. Models are stored per provider, so switching providers back and forth keeps each choice, and a pre-split saved model carries into both.
 - Inter-cluster bridge filaments in the 3D scene: sparse luminous ribbons spanning cluster centroids so topic neighborhoods stay visually connected without drawing every cross-cluster document edge.
 
