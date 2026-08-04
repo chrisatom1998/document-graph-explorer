@@ -37,11 +37,11 @@ export { toGraphExport } from './graphExport';
 // Export
 // ---------------------------------------------------------------------------
 
-function dateStamp(): string {
+export function dateStamp(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function downloadBlob(blob: Blob, filename: string): void {
+export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

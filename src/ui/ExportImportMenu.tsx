@@ -116,6 +116,23 @@ function IconImage() {
   );
 }
 
+function IconUsd() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 2.2 15 5.5v7L9 15.8 3 12.5v-7L9 2.2Z" />
+      <path d="M3 5.5 9 8.8l6-3.3" />
+      <path d="M9 8.8v7" />
+    </svg>
+  );
+}
+
 function IconImport() {
   return (
     <svg
@@ -259,6 +276,26 @@ export default function ExportImportMenu({
         >
           <IconJson />
           <span>Export graph JSON</span>
+        </button>
+        <button
+          type="button"
+          className="toolbar__menu-item"
+          title="Export the graph as an OpenUSD stage (.usda) for usdview / NVIDIA Omniverse"
+          disabled={!canExportGraph}
+          onClick={() => {
+            void import('../persistence/usdExport')
+              .then((m) => m.exportGraphUSD())
+              .then(() =>
+                useUiStore.getState().pushToast('OpenUSD export started.', 'info'),
+              )
+              .catch((err: unknown) =>
+                useUiStore.getState().pushToast(messageFromError(err), 'error'),
+              );
+            onClose?.();
+          }}
+        >
+          <IconUsd />
+          <span>Export OpenUSD scene</span>
         </button>
         <button
           type="button"
