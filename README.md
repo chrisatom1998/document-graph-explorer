@@ -4,6 +4,12 @@ A drag-and-drop **3D mind map for your documents**. Drop a folder of text, Markd
 
 The result is more than a picture: it is a **queryable 3D model of your document collection** — a lightweight digital twin of a knowledge base that can stay synchronized with a live folder on disk, be measured against [published benchmarks](docs/benchmarks.md), and travel as an [OpenUSD stage](docs/openusd-pipeline.md) into usdview, NVIDIA Omniverse, and other scene-description toolchains.
 
+The graph exports as an [OpenUSD stage](docs/openusd-pipeline.md) that other tools can open directly — no NVIDIA hardware required to verify:
+
+| Pixar Storm (`usdrecord`), detailed view | Pixar Storm, `summary` variant (cluster hulls) | Apple Reality Composer Pro |
+| --- | --- | --- |
+| ![Exported stage rendered by Pixar's Storm renderer, showing document nodes and connections](docs/assets/openusd-detailed.png) | ![Same stage with the graphView variantSet switched to summary, showing translucent cluster hulls](docs/assets/openusd-summary.png) | ![Stage imported into Reality Composer Pro, showing the cluster hierarchy and the graphView variantSet as a native dropdown](docs/assets/openusd-realitycomposerpro.png) |
+
 **Local-first and private by architecture.** Parsing, embeddings, similarity, and clustering all run in your browser (in web workers, with a self-hosted embedding model). Your documents never leave the tab. The only optional network call is the opt-in cloud chat/enrichment provider (OpenRouter), off by default and requiring your own API key — enforced in production by a strict Content-Security-Policy (see [vite.config.ts](vite.config.ts)). For AI features with zero cloud involvement, pick the **Ollama** provider in Settings and enrichment/chat run against your own local Ollama server.
 
 ## Quick start
