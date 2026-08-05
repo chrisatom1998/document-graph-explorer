@@ -21,6 +21,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
+    "bench:layout": "vite-node scripts/bench-layout.mjs",
     "check:bundle": "node scripts/check-bundle.mjs dist && node scripts/check-bundle.mjs dist-airgap"
   },
   "dependencies": {

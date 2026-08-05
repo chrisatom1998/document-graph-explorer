@@ -31,6 +31,7 @@ Then open the printed local URL and drag documents onto the window — or click 
 | `npm run build` | Type-check (`tsc --noEmit`) then production build |
 | `npm run typecheck` | Type-check only |
 | `npm test` | Run the unit test suite once (Vitest) |
+| `npm run bench:layout` | Layout-convergence benchmark against the production worker (see [docs/benchmarks.md](docs/benchmarks.md)) |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run preview` | Preview the production build locally |
 
