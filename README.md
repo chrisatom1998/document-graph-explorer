@@ -42,6 +42,47 @@ Document Graph Explorer treats a document collection the way digital-twin toolin
 - **Agency:** [usd-agent](tools/usd_pipeline/usd_agent.py) answers natural-language questions about an exported stage by tool-calling over the live USD scene graph — clusters, documents, connection evidence — via OpenRouter, local Ollama, or an offline mock provider.
 - **Measurement:** [docs/benchmarks.md](docs/benchmarks.md) documents ingest throughput, layout convergence, render frame rate, and export cost, with methodology and caveats.
 
+## Using the OpenUSD export
+
+OpenUSD is the scene-description format Pixar built for film and NVIDIA, Apple, and the wider 3D industry adopted. Exporting to it means the graph is no longer trapped in this app: any USD tool can open it, and — because the export carries the document metadata alongside the geometry — the file stays *queryable*, not just renderable.
+
+**1. Export.** With a corpus loaded, choose **Data → Export OpenUSD scene**. You get one self-contained text file, `document-graph-explorer-<date>.usda`, with no external references. Each document is a sphere (sized by how connected it is, colored by cluster), each relationship is a curve colored by kind, and every prim carries `docGraph:*` attributes — titles, topics, entities, and the evidence explaining why two documents are linked. Full document text, file bytes, local paths, and embeddings are excluded.
+
+**2. Open it anywhere.** `usdview corpus.usda`, drag it into NVIDIA Omniverse USD Composer or Apple Reality Composer Pro, or render it headless with `usdrecord`. The stage ships a `graphView` variantSet that switches between **detailed** (documents and connections) and **summary** (cluster hulls only) — one file, two levels of zoom, selectable downstream without editing the export.
+
+**3. Validate and package.** The companion CLI needs Python and one dependency:
+
+```bash
+cd tools/usd_pipeline
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt
+
+python usd_pipeline.py report corpus.usda     # schema + composition check, non-zero exit on violation
+python usd_pipeline.py usdz corpus.usda       # package for Omniverse / AR Quick Look
+```
+
+`report` is written to be usable as a CI gate on exported assets.
+
+**4. Ask the stage questions.** [usd_agent.py](tools/usd_pipeline/usd_agent.py) is an LLM agent whose tools are USD stage operations, so it answers from the file rather than guessing. Start with the offline self-test — it exercises every tool with no API key, no network, and no cost:
+
+```bash
+python usd_agent.py selftest corpus.usda
+```
+
+Then point it at a model. Cloud: set `OPENROUTER_API_KEY` (defaults to Claude Sonnet 5). Local and fully offline: run Ollama and pass `--provider ollama` (defaults to `llama3.1` at `http://localhost:11434`).
+
+```bash
+python usd_agent.py ask corpus.usda "Which cluster has the most documents?"
+python usd_agent.py ask corpus.usda "Why are the on-call handoff docs connected?" --provider ollama
+python usd_agent.py repl corpus.usda          # interactive session
+```
+
+It prints its tool calls as it works, so you can see which parts of the stage produced the answer; add `--quiet` to suppress the trace. Every tool is read-only — `switch_view` changes the variant selection in memory only, and nothing is written back to the file.
+
+Common snags: `the 'pxr' module is missing` means the virtual environment isn't active or `pip install` hasn't run; `OPENROUTER_API_KEY is not set` means you need the key or `--provider ollama`. If `selftest` passes, the stage is valid and any remaining problem is the model connection.
+
+Full schema tables, the validation contract, and third-party tooling notes are in the [OpenUSD pipeline guide](docs/openusd-pipeline.md).
+
 ## Scripts
 
 | Script | What it does |
