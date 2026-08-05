@@ -99,6 +99,24 @@ over "Corpus" (
 
 ![Exported stage, summary variant — cluster hulls only](assets/openusd-summary.png)
 
+## Third-party tooling: Reality Composer Pro
+
+The same stage imports directly into Apple's Reality Composer Pro (Xcode's
+USD authoring tool): the full cluster hierarchy appears in the scene tree,
+the export shows up as a composition **reference**, and the `graphView`
+variantSet surfaces as a native dropdown — switched here to `summary`.
+
+![Exported stage in Reality Composer Pro: 13 clusters in the hierarchy, the .usda as a reference, and the graphView variantSet as a native control](assets/openusd-realitycomposerpro.png)
+
+Two RealityKit rendering limits to know about: it does not draw `BasisCurves`
+(the edge geometry), and it does not apply visibility opinions authored
+inside variants, so the viewport shows document spheres in either variant.
+The composition itself — hierarchy, attributes, references, variant
+selection — round-trips fully; Storm-based tools (usdview, `usdrecord`,
+Omniverse RTX) render everything, as the captures above show. NVIDIA
+Omniverse itself requires an RTX GPU (Windows/Linux), so the Omniverse-side
+proof here is limited to what its shared OpenUSD/Storm foundations validate.
+
 ## Ask the stage: usd-agent
 
 Because the export carries the `docGraph` schema, the stage is not just
