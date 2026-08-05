@@ -26,7 +26,7 @@ from collections import Counter
 from pathlib import Path
 
 try:
-    from pxr import Usd, UsdGeom, UsdUtils
+    from pxr import Tf, Usd, UsdGeom, UsdUtils
 except ImportError:  # pragma: no cover - environment guard, not logic
     sys.exit(
         "error: the 'pxr' module is missing — install Pixar's OpenUSD bindings "
@@ -51,7 +51,12 @@ class Report:
 
 
 def open_stage(path: str) -> Usd.Stage:
-    stage = Usd.Stage.Open(path)
+    try:
+        # The bindings raise Tf.ErrorException on a missing/unparseable file;
+        # they do not return None. Keep the None check as a fallback.
+        stage = Usd.Stage.Open(path)
+    except Tf.ErrorException as err:
+        sys.exit(f"error: could not open stage: {path} ({err})")
     if stage is None:
         sys.exit(f"error: could not open stage: {path}")
     return stage

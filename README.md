@@ -33,6 +33,7 @@ Document Graph Explorer treats a document collection the way digital-twin toolin
 - **Model:** topics, entities, evidence-backed edges, and Louvain communities form a queryable knowledge structure, not just a rendering. Every connection can answer "why are these related?".
 - **Synthetic data:** the 100-document demo corpus is 36 committed samples plus 64 records from a synthetic-data generator ([generatedDocuments.ts](src/demo/generatedDocuments.ts)) — written as real PDFs and pushed through the normal ingest path, with tests pinning every generated cross-reference to a document that actually exists. It doubles as the fixture for the performance benchmarks.
 - **Interchange:** the OpenUSD export carries the full model — geometry, the `docGraph:` attribute schema, and composition variants — into any USD toolchain, and the [Python pipeline CLI](tools/usd_pipeline/usd_pipeline.py) validates schema invariants and packages `.usdz`.
+- **Agency:** [usd-agent](tools/usd_pipeline/usd_agent.py) answers natural-language questions about an exported stage by tool-calling over the live USD scene graph — clusters, documents, connection evidence — via OpenRouter, local Ollama, or an offline mock provider.
 - **Measurement:** [docs/benchmarks.md](docs/benchmarks.md) documents ingest throughput, layout convergence, render frame rate, and export cost, with methodology and caveats.
 
 ## Scripts

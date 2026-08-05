@@ -99,6 +99,34 @@ over "Corpus" (
 
 ![Exported stage, summary variant — cluster hulls only](assets/openusd-summary.png)
 
+## Ask the stage: usd-agent
+
+Because the export carries the `docGraph` schema, the stage is not just
+renderable — it is answerable. `usd_agent.py` is an LLM agent whose tools are
+OpenUSD stage operations (via `usd-core`): it answers natural-language
+questions about an exported corpus by querying prims, attributes, and edge
+evidence, never by guessing.
+
+```bash
+python usd_agent.py ask corpus.usda "Which cluster has the most documents?"
+python usd_agent.py ask corpus.usda "Why are the on-call handoff docs connected?"
+python usd_agent.py repl corpus.usda            # interactive session
+python usd_agent.py selftest corpus.usda        # exercise every tool, no LLM
+```
+
+Providers mirror the app's philosophy: `--provider openrouter` (cloud, your
+`OPENROUTER_API_KEY`, defaults to Claude Sonnet 5), `--provider ollama`
+(local server, zero cloud), or `--provider mock` (no network at all — a
+scripted run that exercises the real agent loop, used by `selftest`). Both
+live providers speak the OpenAI tool-calling protocol, matching the repo's
+Node subagent (`agent/subagentCore.mjs`).
+
+The agent's toolbox: `stage_summary`, `list_clusters`, `find_documents`,
+`get_document`, `get_edges`, `get_neighbors`, `top_connected`, plus
+`get_view`/`switch_view`, which flip the `graphView` variantSet in memory —
+composition as an agent skill. All tools are read-only against the file;
+nothing is written back.
+
 ## Validation contract
 
 `usd_pipeline.py report` enforces, per stage:
