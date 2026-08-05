@@ -69,6 +69,16 @@ export default tseslint.config(
     languageOptions: { sourceType: 'module', globals: { ...globals.node } },
   },
   {
+    // Playwright capture scripts: Node at the top level, but their
+    // page.evaluate / addInitScript callbacks execute inside the browser
+    // page, so they legitimately reference document/localStorage too.
+    files: ['artifacts/social-demo/*.mjs'],
+    languageOptions: {
+      sourceType: 'module',
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
+  {
     // Electron main process + CommonJS Node scripts (the pkg-packaged exe
     // entry must stay CJS too): requires `require`/`__dirname`.
     files: ['**/*.cjs'],
