@@ -2,23 +2,23 @@
 """usd-agent: natural-language Q&A over Document Graph Explorer OpenUSD exports.
 
 An LLM agent whose tools are OpenUSD stage operations (via Pixar's usd-core
-bindings). Ask questions about an exported corpus stage — clusters, documents,
-connections, evidence — and the agent answers by querying the live stage:
+bindings). Ask questions about an exported corpus stage (clusters, documents,
+connections, evidence) and the agent answers by querying the live stage:
 
   python usd_agent.py ask corpus.usda "Which cluster has the most documents?"
   python usd_agent.py repl corpus.usda            # interactive session
   python usd_agent.py selftest corpus.usda        # run every tool, no LLM
 
-Providers (chosen with --provider, mirroring the app's philosophy):
+Providers (--provider):
   openrouter  cloud, needs OPENROUTER_API_KEY (default model: Claude Sonnet 5)
-  ollama      local server, zero cloud (default host http://localhost:11434)
-  mock        no network at all — scripted tool calls that exercise the real
-              agent loop end-to-end; used by tests and demos
+  ollama      local server (default host http://localhost:11434)
+  mock        no network; scripted tool calls that drive the real agent loop,
+              used by selftest and demos
 
-Both live providers speak the OpenAI chat-completions tool-calling protocol,
-matching the repo's Node subagent (agent/subagentCore.mjs). All tools are
-read-only except switch_view, which changes the stage's variant selection
-in memory only — nothing is ever written back to the file.
+The live providers use the OpenAI chat-completions tool-calling protocol, the
+same protocol as the Node subagent in agent/subagentCore.mjs. All tools are
+read-only except switch_view, which changes the variant selection in memory
+only; nothing is written back to the file.
 """
 
 from __future__ import annotations
@@ -32,9 +32,9 @@ import urllib.request
 
 try:
     from pxr import Tf, Usd, UsdGeom
-except ImportError:  # pragma: no cover - environment guard, not logic
+except ImportError:  # pragma: no cover
     sys.exit(
-        "error: the 'pxr' module is missing — install Pixar's OpenUSD bindings "
+        "error: the 'pxr' module is missing. Install Pixar's OpenUSD bindings "
         "with `pip install usd-core` (see requirements.txt)."
     )
 
@@ -63,8 +63,9 @@ def _attr(prim, name, default=None):
 class StageIndex:
     def __init__(self, path: str):
         try:
-            # The bindings raise Tf.ErrorException on a missing/unparseable
-            # file; they do not return None. Keep the None check as a fallback.
+            # Usd.Stage.Open raises Tf.ErrorException for missing or
+            # unparseable files rather than returning None; the None check
+            # below is defensive.
             self.stage = Usd.Stage.Open(path)
         except Tf.ErrorException as err:
             raise StageError(f"could not open stage: {path} ({err})") from err
@@ -111,9 +112,8 @@ class StageIndex:
             sources = list(_attr(prim, "docGraph:sourceIds", []) or [])
             targets = list(_attr(prim, "docGraph:targetIds", []) or [])
             evidence = list(_attr(prim, "docGraph:evidence", []) or [])
-            # Endpoints are required; a missing metadata array degrades to
-            # defaults instead of silently dropping the whole edge kind
-            # (usd_pipeline.py `report` is the strict integrity gate).
+            # Endpoints are required. Missing weight/evidence arrays fall back
+            # to defaults; strict integrity checking is usd_pipeline.py's job.
             for i in range(min(len(sources), len(targets))):
                 self.edges.append(
                     {
@@ -252,13 +252,15 @@ class StageIndex:
 
     def get_view(self):
         corpus = self.stage.GetPrimAtPath("/Corpus")
-        if not corpus:  # invalid prim, not None — bool() is the validity check
+        if not corpus:  # GetPrimAtPath returns an invalid prim, not None
             return {"error": "stage has no /Corpus prim; not a Document Graph Explorer export?"}
         vset = corpus.GetVariantSet("graphView")
         visible = {}
         for scope in ("Documents", "Connections", "ClusterHulls"):
             prim = self.stage.GetPrimAtPath(f"/Corpus/{scope}")
             if prim:
+                # ComputeVisibility resolves inherited visibility to a token;
+                # "invisible" is the only hidden state.
                 visible[scope] = str(UsdGeom.Imageable(prim).ComputeVisibility()) != "invisible"
         return {
             "variant_set": "graphView",
@@ -351,8 +353,8 @@ def dispatch_tool(index: StageIndex, name: str, arguments: dict):
     try:
         return getattr(index, name)(**arguments)
     except (TypeError, ValueError, AttributeError, KeyError, IndexError) as err:
-        # Arguments are model output; a bad call must become an error string
-        # the model can correct, never a crash that ends the session.
+        # Arguments come from the model. Return the failure as a tool result
+        # it can correct rather than letting the exception end the session.
         return {"error": f"bad arguments for {name}: {type(err).__name__}: {err}"}
 
 
@@ -412,11 +414,11 @@ class OpenAICompatProvider:
 
 
 class MockProvider:
-    """Deterministic scripted run: exercises the real agent loop with no network.
+    """Scripted provider: deterministic, no network.
 
-    Step 1 asks for a summary and the cluster list; step 2 answers from the
-    actual tool results. This validates tool schemas, dispatch, message
-    threading, and transcript rendering end to end.
+    Step 1 requests stage_summary and list_clusters; step 2 writes an answer
+    from the returned tool results. The full loop (schemas, dispatch, message
+    threading) runs without an LLM, which is what selftest needs.
     """
 
     def __init__(self, model: str = "mock"):
@@ -496,7 +498,7 @@ SYSTEM_PROMPT = (
     "You are usd-agent, an analyst for Document Graph Explorer OpenUSD exports. "
     "The stage models a document corpus: Sphere prims are documents/topics with "
     "docGraph:* attributes, BasisCurves are typed connections whose evidence "
-    "explains WHY two documents relate. Answer questions by calling tools — "
+    "explains WHY two documents relate. Answer questions by calling tools; "
     "never guess stage contents. Quote evidence strings when explaining "
     "connections. Be concise and concrete; cite doc titles with their ids."
 )
@@ -535,7 +537,9 @@ def run_agent(index: StageIndex, provider, question: str, verbose: bool = True) 
         if not tool_calls:
             return message.get("content") or "(empty response)"
         if step == MAX_AGENT_STEPS - 1:
-            break  # out of budget — don't burn a tool round nobody will read
+            # Last step: results from another tool round could never be turned
+            # into an answer, so stop here rather than spend it.
+            break
         messages.append(message)
         for call in tool_calls:
             name = call.get("function", {}).get("name", "")
@@ -545,10 +549,14 @@ def run_agent(index: StageIndex, provider, question: str, verbose: bool = True) 
             else:
                 result = dispatch_tool(index, name, arguments)
             if verbose:
-                print(f"  ⚙ {name}({json.dumps(arguments) if arguments is not None else '<unparsable>'})", file=sys.stderr)
+                shown = json.dumps(arguments) if arguments is not None else "<unparsable>"
+                print(f"  [tool] {name}({shown})", file=sys.stderr)
             content = json.dumps(result)
             if len(content) > MAX_TOOL_RESULT_CHARS:
-                content = content[:MAX_TOOL_RESULT_CHARS] + "... [truncated; use limit arguments to narrow the query]"
+                content = (
+                    content[:MAX_TOOL_RESULT_CHARS]
+                    + "... [truncated; use limit arguments to narrow the query]"
+                )
             messages.append(
                 {
                     "role": "tool",
@@ -576,7 +584,7 @@ def cmd_ask(args):
 def cmd_repl(args):
     index = StageIndex(args.stage)
     provider = make_provider(args.provider, args.model)
-    print(f"usd-agent repl — stage: {args.stage} (provider: {args.provider}; empty line quits)")
+    print(f"usd-agent repl: {args.stage} (provider {args.provider}; empty line quits)")
     while True:
         try:
             question = input("usd> ").strip()
@@ -584,8 +592,8 @@ def cmd_repl(args):
             break
         if not question:
             break
-        # One bad question (provider hiccup, Ctrl-C mid-call) must not end the
-        # whole session — that would throw away the user's context.
+        # Keep the session alive through provider failures and a Ctrl-C on a
+        # single question.
         try:
             print(run_agent(index, provider, question, verbose=not args.quiet))
         except ProviderError as err:
@@ -596,7 +604,7 @@ def cmd_repl(args):
 
 
 def cmd_selftest(args):
-    """Run every tool against the stage with sample arguments — no LLM."""
+    """Run every tool against the stage with sample arguments, no LLM."""
     index = StageIndex(args.stage)
     some_doc = next(iter(index.docs), "")
     samples = {
@@ -611,16 +619,18 @@ def cmd_selftest(args):
         "switch_view": {"variant": "summary"},
     }
     failures = 0
-    # A corpus export always has documents — an empty index means the stage is
-    # not what this agent expects, and every later check would be vacuous.
+    # An empty index means the stage is not a corpus export; every per-tool
+    # check below would pass vacuously.
     docs_ok = len(index.docs) > 0
     print(f"  {'PASS' if docs_ok else 'FAIL'}  stage has documents ({len(index.docs)})")
-    failures += 0 if docs_ok else 1
+    if not docs_ok:
+        failures += 1
     for name in TOOL_NAMES:
         result = dispatch_tool(index, name, samples[name])
         ok = not (isinstance(result, dict) and "error" in result)
         print(f"  {'PASS' if ok else 'FAIL'}  {name} -> {json.dumps(result)[:120]}")
-        failures += 0 if ok else 1
+        if not ok:
+            failures += 1
     # Ill-typed model arguments must come back as error dicts, never raise.
     hostile = [
         ("get_edges", {"min_weight": "high"}),
@@ -633,16 +643,21 @@ def cmd_selftest(args):
         try:
             result = dispatch_tool(index, name, bad_args)
             ok = isinstance(result, dict) and "error" in result
-        except Exception as err:  # noqa: BLE001 - the whole point of the check
+        except Exception as err:  # noqa: BLE001 - any raise is the failure under test
             result = {"raised": f"{type(err).__name__}: {err}"}
             ok = False
-        print(f"  {'PASS' if ok else 'FAIL'}  rejects {name}({json.dumps(bad_args)}) -> {json.dumps(result)[:80]}")
-        failures += 0 if ok else 1
+        print(
+            f"  {'PASS' if ok else 'FAIL'}  rejects {name}({json.dumps(bad_args)})"
+            f" -> {json.dumps(result)[:80]}"
+        )
+        if not ok:
+            failures += 1
     # Loop machinery end-to-end via the mock provider.
     answer = run_agent(index, MockProvider(), "selftest question", verbose=False)
     loop_ok = "[mock provider]" in answer
     print(f"  {'PASS' if loop_ok else 'FAIL'}  agent loop (mock provider) -> {answer.splitlines()[0][:100]}")
-    failures += 0 if loop_ok else 1
+    if not loop_ok:
+        failures += 1
     print(f"RESULT: {'PASS' if failures == 0 else f'FAIL ({failures})'}")
     return 0 if failures == 0 else 1
 
