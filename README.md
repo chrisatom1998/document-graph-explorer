@@ -2,6 +2,8 @@
 
 A drag-and-drop **3D mind map for your documents**. Drop a folder of text, Markdown, PDF, HTML, or Word/PowerPoint/Excel files onto the window and Document Graph Explorer parses them, extracts topics and relationships, and renders the whole corpus as an explorable force-directed 3D graph — documents become nodes, semantic and structural relationships become edges.
 
+The result is more than a picture: it is a **queryable 3D model of your document collection** — a lightweight digital twin of a knowledge base that can stay synchronized with a live folder on disk, be measured against [published benchmarks](docs/benchmarks.md), and travel as an [OpenUSD stage](docs/openusd-pipeline.md) into usdview, NVIDIA Omniverse, and other scene-description toolchains.
+
 **Local-first and private by architecture.** Parsing, embeddings, similarity, and clustering all run in your browser (in web workers, with a self-hosted embedding model). Your documents never leave the tab. The only optional network call is the opt-in cloud chat/enrichment provider (OpenRouter), off by default and requiring your own API key — enforced in production by a strict Content-Security-Policy (see [vite.config.ts](vite.config.ts)). For AI features with zero cloud involvement, pick the **Ollama** provider in Settings and enrichment/chat run against your own local Ollama server.
 
 ## Quick start
@@ -22,6 +24,16 @@ Then open the printed local URL and drag documents onto the window — or click 
 - **Shareable graph URLs:** **Data → Copy shareable URL** creates a backend-free URL fragment containing a portable graph view. The link includes titles, short source excerpts (up to 200 characters), topics, entities, keywords, warnings, cluster labels, and connection evidence, but excludes full document text and original file bytes, local paths, embeddings, file handles, and settings. Large graphs that exceed browser-safe URL limits should be shared with JSON export instead.
 - **OpenUSD export:** **Data → Export OpenUSD scene** writes the graph as a composed OpenUSD stage (`.usda`) — documents as prims with a `docGraph:` attribute schema, edges as per-kind curves with evidence, cluster hulls, and a detailed⇄summary variantSet — making the corpus a portable digital-twin asset for usdview, NVIDIA Omniverse, and any USD toolchain. A Python companion CLI ([tools/usd_pipeline](tools/usd_pipeline/usd_pipeline.py)) validates the schema and packages `.usdz`. See the [OpenUSD pipeline guide](docs/openusd-pipeline.md).
 - **Multiple corpora:** create, rename, switch, and delete independent named workspaces from the corpus switcher. Each corpus keeps its own graph, layout, document references, and optional watched folder in browser-local IndexedDB.
+
+## From document pile to digital twin
+
+Document Graph Explorer treats a document collection the way digital-twin tooling treats a physical asset: ingest operational inputs, build a semantic model, keep it synchronized with reality, and make it portable to other tools.
+
+- **Ingest:** parsing, embedding, and linking run entirely client-side in web workers (~11 docs/s end-to-end on the demo corpus). A watched folder is the live operational input — the graph tracks the corpus on disk as it changes.
+- **Model:** topics, entities, evidence-backed edges, and Louvain communities form a queryable knowledge structure, not just a rendering. Every connection can answer "why are these related?".
+- **Synthetic data:** the 100-document demo corpus is 36 committed samples plus 64 records from a synthetic-data generator ([generatedDocuments.ts](src/demo/generatedDocuments.ts)) — written as real PDFs and pushed through the normal ingest path, with tests pinning every generated cross-reference to a document that actually exists. It doubles as the fixture for the performance benchmarks.
+- **Interchange:** the OpenUSD export carries the full model — geometry, the `docGraph:` attribute schema, and composition variants — into any USD toolchain, and the [Python pipeline CLI](tools/usd_pipeline/usd_pipeline.py) validates schema invariants and packages `.usdz`.
+- **Measurement:** [docs/benchmarks.md](docs/benchmarks.md) documents ingest throughput, layout convergence, render frame rate, and export cost, with methodology and caveats.
 
 ## Scripts
 
