@@ -92,18 +92,23 @@ export default function ProgressStrip() {
       : enriching && enrichProgress?.note
         ? `Enriching — ${enrichProgress.note}`
         : PHASE_LABEL[phase] ?? 'Working…';
+  // total can be 0 when the size probe fails (compressed responses have no
+  // usable content-length) — show bytes-only progress rather than "of 0.0 MB".
+  const modelMB = modelProgress
+    ? modelProgress.total
+      ? `${bytesToMB(modelProgress.loaded)} of ${bytesToMB(modelProgress.total)} MB`
+      : `${bytesToMB(modelProgress.loaded)} MB`
+    : '';
   const taskProgressLabel =
     modelProgress?.kind === 'ocr'
       ? modelProgress.note
       : modelProgress
-        ? `Loading embedding model — ${bytesToMB(modelProgress.loaded)} of ${bytesToMB(modelProgress.total)} MB… (first time only)`
+        ? `Loading embedding model — ${modelMB}… (first time only)`
         : '';
   const taskProgressValueText =
     modelProgress?.kind === 'ocr'
       ? `${modelProgress.loaded} of ${modelProgress.total} pages`
-      : modelProgress
-        ? `${bytesToMB(modelProgress.loaded)} of ${bytesToMB(modelProgress.total)} MB`
-        : '';
+      : modelMB;
   const taskProgressAriaLabel =
     modelProgress?.kind === 'ocr' ? 'Recognizing scanned PDF text' : 'Loading embedding model';
 

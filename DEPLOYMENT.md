@@ -41,6 +41,17 @@ COOP and COEP are intentionally omitted. The app uses transferable
 `Float32Array`s, not `SharedArrayBuffer`, so cross-origin isolation does not add
 value here and can complicate local deployment.
 
+## Vercel
+
+`vercel.json` carries the required headers (including the CSP with
+`frame-ancestors 'none'`) and the SPA rewrite. Deploy with `vercel build --prod`
+then `vercel deploy --prebuilt --prod`. The production URL is
+https://document-graph-explorer.vercel.app; the linked GitHub repo auto-deploys
+pushes to `main`. Note: Vercel serves `.onnx` compressed (no `content-length`),
+which is why the embed worker streams model downloads itself — see
+`prefetchModelAssets` in `src/workers/pipeline.worker.ts` before touching that
+path.
+
 ## Nginx Example
 
 ```nginx

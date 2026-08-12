@@ -34,6 +34,7 @@ export default tseslint.config(
       'document-graph-explorer',
       '.codex',
       '.cursor',
+      '.vercel',
     ],
   },
   js.configs.recommended,

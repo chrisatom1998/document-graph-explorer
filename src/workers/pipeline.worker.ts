@@ -8,11 +8,7 @@
 // A top-level import would put its huge module graph on the worker's boot
 // path: parse requests would wait on it, and in dev a failure inside that
 // graph kills the worker before onmessage registers ("stuck parsing").
-import type {
-  FeatureExtractionPipeline,
-  ProgressInfo,
-  Tensor,
-} from '@huggingface/transformers';
+import type { FeatureExtractionPipeline, Tensor } from '@huggingface/transformers';
 import { EMBED_DIMS, EMBED_MODEL_ID } from '../config';
 import type { LinkRef, NodeStatus, ParsedDoc, PoolRequest, PoolResponse } from '../model/types';
 import { extractEntities } from '../pipeline/entities';
@@ -120,6 +116,52 @@ async function pickBackend(): Promise<{ device: 'webgpu' | 'wasm'; dtype: 'fp16'
 let extractorPromise: Promise<FeatureExtractionPipeline> | null = null;
 let webgpuFailed = false; // a GPU that detects but can't run the model → pin to WASM
 
+const MODEL_FILE_BY_DTYPE = { fp16: 'model_fp16.onnx', q8: 'model_quantized.onnx' } as const;
+
+/**
+ * Warm the HTTP cache for the model's files with a plain streaming fetch,
+ * reporting download progress from our own read loop.
+ *
+ * We must never hand transformers.js a progress_callback: its with-progress
+ * download path re-allocates and copies its whole buffer on every chunk when
+ * the response carries no content-length, and production hosts (Vercel,
+ * `vite preview`) serve the .onnx compressed, which strips content-length.
+ * That O(n²) loop stalls the read until Chromium kills the stream with a
+ * bare "TypeError: network error" — deterministically, on every cold load.
+ * Without a callback transformers uses one arrayBuffer() read, which is
+ * safe; it re-reads the files we warmed here from the HTTP cache.
+ */
+async function prefetchModelAssets(dtype: keyof typeof MODEL_FILE_BY_DTYPE): Promise<void> {
+  const base = `/models/${EMBED_MODEL_ID}/`;
+  const onnxPath = `${base}onnx/${MODEL_FILE_BY_DTYPE[dtype]}`;
+  await Promise.all(
+    ['config.json', 'tokenizer.json', 'tokenizer_config.json'].map((f) =>
+      fetch(base + f).then((r) => r.arrayBuffer()),
+    ),
+  );
+  // Compressed responses carry no usable content-length, but content-range on
+  // a 1-byte probe always reports the full entity size for the progress bar.
+  let total = 0;
+  try {
+    const probe = await fetch(onnxPath, { headers: { Range: 'bytes=0-0' } });
+    const size = probe.headers.get('content-range')?.match(/\/(\d+)$/);
+    if (probe.status === 206 && size) total = Number(size[1]);
+    await probe.body?.cancel();
+  } catch {
+    /* progress falls back to bytes-only */
+  }
+  const res = await fetch(onnxPath);
+  if (!res.ok || !res.body) throw new Error(`model prefetch failed: HTTP ${res.status}`);
+  const reader = res.body.getReader();
+  let loaded = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    loaded += value.length;
+    respond({ requestId: -1, type: 'model:progress', loaded, total, note: onnxPath });
+  }
+}
+
 async function createExtractor(): Promise<FeatureExtractionPipeline> {
   const { pipeline, env } = await import('@huggingface/transformers');
   // PRIVACY (audit H-1): transformers.js defaults ORT's wasmPaths to
@@ -138,22 +180,18 @@ async function createExtractor(): Promise<FeatureExtractionPipeline> {
   env.allowRemoteModels = false;
   env.localModelPath = '/models/';
 
-  const build = async (backend: { device: 'webgpu' | 'wasm'; dtype: 'fp16' | 'q8' }) =>
-    pipeline('feature-extraction', EMBED_MODEL_ID, {
+  const build = async (backend: { device: 'webgpu' | 'wasm'; dtype: 'fp16' | 'q8' }) => {
+    try {
+      await prefetchModelAssets(backend.dtype);
+    } catch (err) {
+      // Progress UX only — transformers fetches the files itself either way.
+      console.warn('model prefetch failed; loading without progress', err);
+    }
+    return pipeline('feature-extraction', EMBED_MODEL_ID, {
       device: backend.device,
       dtype: backend.dtype,
-      progress_callback: (p: ProgressInfo) => {
-        if (p.status === 'progress') {
-          respond({
-            requestId: -1,
-            type: 'model:progress',
-            loaded: p.loaded,
-            total: p.total,
-            note: p.file,
-          });
-        }
-      },
     });
+  };
 
   const backend = webgpuFailed ? { device: 'wasm' as const, dtype: 'q8' as const } : await pickBackend();
   try {
@@ -317,6 +355,10 @@ async function handle(req: PoolRequest): Promise<void> {
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    // The pool surfaces only `message` to the UI; without the stack a
+    // runtime-generated error (e.g. a bare "network error" TypeError from a
+    // failed fetch inside ORT) is undiagnosable from the console alone.
+    console.error(`[pipeline.worker] ${req.type} failed:`, err);
     const fileId =
       req.type === 'parse' || req.type === 'analyze'
         ? req.fileId

@@ -23,3 +23,5 @@ __pycache__/
 copilot-worktrees/
 document-graph-explorer/
 artifacts/
+.vercel
+.env*

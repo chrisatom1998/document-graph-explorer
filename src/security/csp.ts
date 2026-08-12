@@ -5,7 +5,8 @@
  * vite.config.ts's injectCsp plugin at build time.
  *
  * Any host added here must also be reflected in docker/security-headers.conf,
- * the nginx example in DEPLOYMENT.md, and SECURITY.md's egress table — those
+ * vercel.json, the nginx example in DEPLOYMENT.md, and SECURITY.md's egress
+ * table — those
  * are hand-maintained copies, and a host missing from them is a feature that
  * silently fails in production.
  */

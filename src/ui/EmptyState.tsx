@@ -50,8 +50,10 @@ export default function EmptyState() {
               Turn scattered files into a living map.
             </h1>
             <p className="empty-state__tagline">
-              Build a local interactive 3D graph of ideas and relationships, then explore the
-              shape of your research without sending your documents anywhere.
+              Build a local interactive 3D graph of ideas and relationships. Graph generation,
+              document processing, and storage happen locally in your browser. Your documents
+              never leave your device unless you explicitly enable a cloud AI provider or share
+              exported graph data.
             </p>
           </header>
 
