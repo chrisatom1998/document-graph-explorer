@@ -37,6 +37,10 @@ const SECURITY_HEADERS = {
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
+  // Disable browser features not used by the app. camera/microphone/geolocation
+  // are irrelevant; payment/usb/serial would be surprising in a document viewer.
+  'Permissions-Policy':
+    'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()',
 };
 
 // NOTE: no COOP/COEP headers on purpose — we use transferable Float32Arrays

@@ -10,6 +10,7 @@
 import { OLLAMA_CHAT_ENDPOINT } from '../chat/ollamaClient';
 import { OPENROUTER_CHAT_ENDPOINT, parseOpenRouterSseLine } from '../chat/openRouterClient';
 import { ENRICH_MAX_RETRIES } from '../config';
+import { parseRetryAfter } from '../util/retryAfter';
 
 export type LlmProvider = 'openrouter' | 'ollama';
 
@@ -194,7 +195,12 @@ export async function llmStream(
         retryable = isRetryableStatus(res.status);
         lastError = await describeHttpError(target, res);
         if (!retryable || attempt >= ENRICH_MAX_RETRIES) return { ok: false, error: lastError };
-        await sleep(1000 * 2 ** attempt);
+        // Honour the Retry-After header when the provider specifies a wait
+        // (common on 429 rate-limit responses). Fall back to exponential
+        // backoff otherwise.
+        const retryAfterHeader = res.headers.get('Retry-After');
+        const retryAfterMs = retryAfterHeader ? parseRetryAfter(retryAfterHeader) : null;
+        await sleep(retryAfterMs ?? 1000 * 2 ** attempt);
         continue;
       }
 

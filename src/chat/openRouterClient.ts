@@ -79,6 +79,8 @@ export function parseOpenRouterSseLine(rawLine: string): OpenRouterStreamEvent |
   }
 }
 
+import { parseRetryAfter } from '../util/retryAfter';
+
 async function readOpenRouterError(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as { error?: { message?: unknown } };
@@ -113,7 +115,11 @@ export async function streamOpenRouterChat(options: StreamOptions): Promise<stri
       throw new Error(`OpenRouter HTTP ${response.status}: ${await readOpenRouterError(response)}`);
     }
     options.onRetry(response.status);
-    await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+    // Honour the Retry-After header when the provider specifies a wait (common
+    // on 429 rate-limit responses). Fall back to exponential backoff otherwise.
+    const retryAfter = response.headers.get('Retry-After');
+    const retryAfterMs = retryAfter ? parseRetryAfter(retryAfter) : null;
+    await new Promise((resolve) => setTimeout(resolve, retryAfterMs ?? 1000 * 2 ** attempt));
   }
 
   const reader = response.body?.getReader();
