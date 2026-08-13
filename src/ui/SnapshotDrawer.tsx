@@ -298,6 +298,7 @@ export default function SnapshotDrawer() {
                       disabled={actionId === snap.id}
                       onClick={() => setConfirmDeleteId(snap.id)}
                       title="Delete this snapshot"
+                      aria-label={`Delete snapshot ${snap.name}`}
                     >
                       ✕
                     </button>

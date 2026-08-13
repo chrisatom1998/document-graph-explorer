@@ -207,7 +207,16 @@ export default function ChatPanel() {
         <div className="chat-panel__title-row">
           <h3 className="chat-panel__title">Chat with your docs</h3>
           <span className="chat-panel__doc-count">{docCount} doc{docCount !== 1 ? 's' : ''}</span>
-          {messages.length > 0 && <button type="button" className="chat-panel__export" onClick={exportTranscript}>Export</button>}
+          {messages.length > 0 && (
+            <button
+              type="button"
+              className="chat-panel__export"
+              title="Download this conversation as a Markdown file"
+              onClick={exportTranscript}
+            >
+              Export
+            </button>
+          )}
         </div>
         <button
           type="button"

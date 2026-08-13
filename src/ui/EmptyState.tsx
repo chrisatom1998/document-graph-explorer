@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Button } from '@heroui/react/button';
 import { Chip } from '@heroui/react/chip';
 import { EmptyState as HeroEmptyState } from '@heroui/react/empty-state';
@@ -13,11 +13,21 @@ const HeroConstellation = lazy(() => import('./HeroConstellation'));
 
 /** The editorial, local-first welcome workspace shown before a corpus is loaded. */
 export default function EmptyState() {
+  // The demo fetches its manifest and every sample file before the pipeline
+  // phase changes (which is what swaps this screen for the progress strip),
+  // so without a busy state the button looks dead for seconds on a slow
+  // connection — and a second click would queue a second ingest.
+  const [demoLoading, setDemoLoading] = useState(false);
   const loadDemo = () => {
-    import('../pipeline/coordinatorLazy').then(({ loadDemoCorpus }) => loadDemoCorpus()).catch((err) => {
-      console.warn('demo corpus load failed', err);
-      useUiStore.getState().pushToast("Couldn't load the demo corpus.");
-    });
+    if (demoLoading) return;
+    setDemoLoading(true);
+    import('../pipeline/coordinatorLazy')
+      .then(({ loadDemoCorpus }) => loadDemoCorpus())
+      .catch((err) => {
+        console.warn('demo corpus load failed', err);
+        useUiStore.getState().pushToast("Couldn't load the demo corpus.");
+      })
+      .finally(() => setDemoLoading(false));
   };
 
   const importGraph = () => {
@@ -69,9 +79,10 @@ export default function EmptyState() {
             <Button
               variant="secondary"
               size="lg"
+              isDisabled={demoLoading}
               onPress={loadDemo}
             >
-              Load demo corpus
+              {demoLoading ? 'Loading demo…' : 'Load demo corpus'}
             </Button>
             <Button
               variant="tertiary"
