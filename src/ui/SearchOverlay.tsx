@@ -54,8 +54,12 @@ export default function SearchOverlay() {
   }, [searchOpen]);
 
   useEffect(() => {
-    if (!searchOpen) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    // Invalidate immediately on every query/open-state change. Waiting until
+    // the next debounce fires leaves a window where the previous response can
+    // repaint highlights for a query the user already cleared or closed.
+    const seq = ++requestSeq.current;
+    if (!searchOpen) return;
 
     if (query.trim().length === 0) {
       setResults([]);
@@ -72,7 +76,6 @@ export default function SearchOverlay() {
     setSearching(true);
 
     debounceRef.current = setTimeout(() => {
-      const seq = ++requestSeq.current;
       let landedResults = false;
       const applyResults = (res: ResultRow[]) => {
           if (seq !== requestSeq.current) return; // stale response
@@ -133,6 +136,7 @@ export default function SearchOverlay() {
   if (!searchOpen) return null;
 
   const selectResult = (id: string) => {
+    requestSeq.current++;
     focusNode(id);
     setSearchOpen(false);
   };
@@ -154,6 +158,8 @@ export default function SearchOverlay() {
   };
 
   const closeAndClear = () => {
+    requestSeq.current++;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     setSearchOpen(false);
     setSearchResults(null);
   };

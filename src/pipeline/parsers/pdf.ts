@@ -105,6 +105,7 @@ export interface PdfParseResult {
 
 export interface PdfParseOptions {
   onOcrProgress?: OcrPageProgress;
+  signal?: AbortSignal;
 }
 
 /** TextItem | TextMarkedContent — the root package doesn't re-export item types. */
@@ -127,27 +128,52 @@ async function beforePdfDeadline<T>(
   operation: Promise<T>,
   deadline: number,
   cancel: () => void,
+  signal?: AbortSignal,
 ): Promise<T> {
+  const abortError = (): Error =>
+    signal?.reason instanceof Error
+      ? signal.reason
+      : new DOMException('The operation was aborted.', 'AbortError');
+  const cancelBestEffort = (): void => {
+    try {
+      cancel();
+    } catch {
+      // Timeout/abort is already the result; cleanup is best-effort.
+    }
+  };
+  if (signal?.aborted) {
+    cancelBestEffort();
+    throw abortError();
+  }
   const remaining = deadline - Date.now();
   if (remaining <= 0) {
-    cancel();
+    cancelBestEffort();
     throw new PdfParseTimeoutError();
   }
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      operation,
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => {
-          cancel();
-          reject(new PdfParseTimeoutError());
-        }, remaining);
-      }),
-    ]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const finish = (complete: () => void): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      complete();
+    };
+    const onAbort = (): void => {
+      cancelBestEffort();
+      finish(() => reject(abortError()));
+    };
+    const timer = setTimeout(() => {
+      cancelBestEffort();
+      finish(() => reject(new PdfParseTimeoutError()));
+    }, remaining);
+    signal?.addEventListener('abort', onAbort, { once: true });
+    operation.then(
+      (value) => finish(() => resolve(value)),
+      (error: unknown) => finish(() => reject(error)),
+    );
+  });
 }
 
 function isPasswordError(err: unknown): boolean {
@@ -225,21 +251,51 @@ function stripRepeatedLines(pageTexts: string[]): string[] {
  */
 const PDF_PARSE_MAX_CONCURRENT = 4;
 let pdfParseActive = 0;
-const pdfParseWaiters: Array<() => void> = [];
+interface PdfParseWaiter {
+  resolve: () => void;
+  reject: (error: Error) => void;
+  signal?: AbortSignal;
+  onAbort?: () => void;
+}
+const pdfParseWaiters: PdfParseWaiter[] = [];
 
-async function acquirePdfParseSlot(): Promise<void> {
+function abortReason(signal: AbortSignal): Error {
+  return signal.reason instanceof Error
+    ? signal.reason
+    : new DOMException('The operation was aborted.', 'AbortError');
+}
+
+async function acquirePdfParseSlot(signal?: AbortSignal): Promise<void> {
+  if (signal?.aborted) throw abortReason(signal);
   if (pdfParseActive < PDF_PARSE_MAX_CONCURRENT) {
     pdfParseActive += 1;
     return;
   }
   // released slot is handed over directly — the counter stays saturated
-  await new Promise<void>((resolve) => pdfParseWaiters.push(resolve));
+  await new Promise<void>((resolve, reject) => {
+    const waiter: PdfParseWaiter = { resolve, reject, signal };
+    if (signal) {
+      waiter.onAbort = () => {
+        const index = pdfParseWaiters.indexOf(waiter);
+        if (index >= 0) pdfParseWaiters.splice(index, 1);
+        reject(abortReason(signal));
+      };
+      signal.addEventListener('abort', waiter.onAbort, { once: true });
+    }
+    pdfParseWaiters.push(waiter);
+  });
 }
 
 function releasePdfParseSlot(): void {
   const next = pdfParseWaiters.shift();
-  if (next) next();
-  else pdfParseActive -= 1;
+  if (!next) {
+    pdfParseActive -= 1;
+    return;
+  }
+  if (next.signal && next.onAbort) {
+    next.signal.removeEventListener('abort', next.onAbort);
+  }
+  next.resolve();
 }
 
 export async function parsePdf(
@@ -247,7 +303,7 @@ export async function parsePdf(
   name: string,
   options: PdfParseOptions = {},
 ): Promise<PdfParseResult> {
-  await acquirePdfParseSlot();
+  await acquirePdfParseSlot(options.signal);
   try {
     return await parsePdfNow(bytes, name, options);
   } finally {
@@ -261,14 +317,15 @@ async function parsePdfNow(
   options: PdfParseOptions = {},
 ): Promise<PdfParseResult> {
   const fallbackTitle = cleanFilename(name);
-  await workerSrcReadyOnce();
+  const signal = options.signal;
+  const deadline = Date.now() + PDF_PARSE_TIMEOUT_MS;
+  await beforePdfDeadline(workerSrcReadyOnce(), deadline, () => undefined, signal);
   // NOTE: pdf.js transfers the underlying buffer to its worker; callers must
   // not rely on `bytes` afterwards (the coordinator hashes before parsing).
   const task = pdfjs.getDocument({
     data: new Uint8Array(bytes),
     standardFontDataUrl: PDF_STANDARD_FONT_DATA_URL,
   });
-  const deadline = Date.now() + PDF_PARSE_TIMEOUT_MS;
   let destroyStarted: Promise<void> | null = null;
   const destroyTask = (): void => {
     if (!destroyStarted) destroyStarted = task.destroy().catch(() => undefined);
@@ -279,23 +336,29 @@ async function parsePdfNow(
   const linkLabels = new Map<string, string>();
   let failedPages = 0;
   try {
-    const doc = await beforePdfDeadline(task.promise, deadline, destroyTask);
+    const doc = await beforePdfDeadline(task.promise, deadline, destroyTask, signal);
 
     try {
-      const meta = await beforePdfDeadline(doc.getMetadata(), deadline, destroyTask);
+      const meta = await beforePdfDeadline(doc.getMetadata(), deadline, destroyTask, signal);
       const infoTitle = (meta.info as { Title?: unknown }).Title;
       if (typeof infoTitle === 'string' && infoTitle.trim().length > 0) {
         title = infoTitle.trim();
       }
     } catch (err) {
+      if (signal?.aborted) throw abortReason(signal);
       if (err instanceof PdfParseTimeoutError) throw err;
       // metadata is optional; keep the filename title
     }
 
     for (let pageNo = 1; pageNo <= doc.numPages; pageNo += 1) {
       try {
-        const page = await beforePdfDeadline(doc.getPage(pageNo), deadline, destroyTask);
-        const content = await beforePdfDeadline(page.getTextContent(), deadline, destroyTask);
+        const page = await beforePdfDeadline(doc.getPage(pageNo), deadline, destroyTask, signal);
+        const content = await beforePdfDeadline(
+          page.getTextContent(),
+          deadline,
+          destroyTask,
+          signal,
+        );
         pageTexts.push(extractPageText(content.items));
         // Link annotations carry the URL that the visible text ("click here")
         // never contains — extract them, and recover each link's label from
@@ -308,6 +371,7 @@ async function parsePdfNow(
             page.getAnnotations(),
             deadline,
             destroyTask,
+            signal,
           );
           for (const a of annotations) {
             const annot = a as { subtype?: unknown; url?: unknown; rect?: unknown };
@@ -325,11 +389,13 @@ async function parsePdfNow(
             }
           }
         } catch (err) {
+          if (signal?.aborted) throw abortReason(signal);
           if (err instanceof PdfParseTimeoutError) throw err;
           // annotations are optional — never fail text extraction over them
         }
         page.cleanup();
       } catch (err) {
+        if (signal?.aborted) throw abortReason(signal);
         if (err instanceof PdfParseTimeoutError) throw err;
         failedPages += 1;
         pageTexts.push('');
@@ -349,7 +415,9 @@ async function parsePdfNow(
       // the loading task is destroyed in `finally`.
       try {
         const ocrMaxPages = currentOcrMaxPages();
-        const ocrText = (await ocrPdfPages(doc, ocrMaxPages, options.onOcrProgress)).trim();
+        const ocrText = (
+          await ocrPdfPages(doc, ocrMaxPages, options.onOcrProgress, signal)
+        ).trim();
         if (ocrText.length >= MIN_TEXT_CHARS) {
           const pageLimitNote =
             doc.numPages > ocrMaxPages ? `; first ${ocrMaxPages} pages only` : '';
@@ -362,6 +430,7 @@ async function parsePdfNow(
           };
         }
       } catch (err) {
+        if (signal?.aborted) throw abortReason(signal);
         // OCR is an optional fallback. Missing assets, unsupported WASM, or a
         // recognition failure must preserve the parser's existing unreadable
         // result instead of turning ingestion into a rejected file.
@@ -386,6 +455,7 @@ async function parsePdfNow(
     }
     return { title, text, status: 'ok', links };
   } catch (err) {
+    if (signal?.aborted) throw abortReason(signal);
     if (err instanceof PdfParseTimeoutError) {
       let text = stripRepeatedLines(pageTexts).join('\n');
       text = text.replace(/-\n/g, '').replace(/\n{3,}/g, '\n\n').trim();

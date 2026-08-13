@@ -32,13 +32,48 @@ class OcrTimeoutError extends Error {
   }
 }
 
-function enqueueOcr<T>(job: () => Promise<T>): Promise<T> {
-  const run = queueTail.then(job, job);
+function abortReason(signal: AbortSignal): Error {
+  return signal.reason instanceof Error
+    ? signal.reason
+    : new DOMException('The operation was aborted.', 'AbortError');
+}
+
+function enqueueOcr<T>(job: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+  let started = false;
+  const start = (): Promise<T> => {
+    started = true;
+    return signal?.aborted ? Promise.reject(abortReason(signal)) : job();
+  };
+  const run = queueTail.then(start, start);
   queueTail = run.then(
     () => undefined,
     () => undefined,
   );
-  return run;
+  // A queued OCR call must reject as soon as its ingest is cancelled, not
+  // remain chained behind an unrelated long-running scanned PDF. An already
+  // running job still holds the PDFDocumentProxy, so its caller must wait
+  // until runOcr observes the abort and releases the document — otherwise
+  // parsePdf's finally would destroy the PDF under an active recognition pass.
+  if (!signal) return run;
+  if (signal.aborted) return Promise.reject(abortReason(signal));
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const finish = (complete: () => void): void => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', onAbort);
+      complete();
+    };
+    const onAbort = (): void => {
+      if (started) return;
+      finish(() => reject(abortReason(signal)));
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+    run.then(
+      (value) => finish(() => resolve(value)),
+      (error: unknown) => finish(() => reject(error)),
+    );
+  });
 }
 
 function reportProgress(
@@ -67,31 +102,46 @@ function beforeTimeout<T>(
   timeoutMs: number,
   label: string,
   cancel?: () => void,
+  signal?: AbortSignal,
 ): Promise<T> {
-  if (timeoutMs <= 0) {
+  const cancelBestEffort = (): void => {
     try {
       cancel?.();
     } catch {
-      // Cancellation is best-effort; the timeout result still wins.
+      // Cancellation is best-effort; timeout/abort still wins.
     }
+  };
+  if (signal?.aborted) {
+    cancelBestEffort();
+    return Promise.reject(abortReason(signal));
+  }
+  if (timeoutMs <= 0) {
+    cancelBestEffort();
     return Promise.reject(new OcrTimeoutError(label));
   }
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  return Promise.race([
-    operation,
-    new Promise<never>((_, reject) => {
-      timer = setTimeout(() => {
-        try {
-          cancel?.();
-        } catch {
-          // Cancellation is best-effort; the timeout result still wins.
-        }
-        reject(new OcrTimeoutError(label));
-      }, timeoutMs);
-    }),
-  ]).finally(() => {
-    if (timer) clearTimeout(timer);
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const finish = (complete: () => void): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      complete();
+    };
+    const onAbort = (): void => {
+      cancelBestEffort();
+      finish(() => reject(abortReason(signal!)));
+    };
+    const timer = setTimeout(() => {
+      cancelBestEffort();
+      finish(() => reject(new OcrTimeoutError(label)));
+    }, timeoutMs);
+    signal?.addEventListener('abort', onAbort, { once: true });
+    operation.then(
+      (value) => finish(() => resolve(value)),
+      (error: unknown) => finish(() => reject(error)),
+    );
   });
 }
 
@@ -101,12 +151,14 @@ function beforeDeadline<T>(
   perOperationLimit: number,
   label: string,
   cancel?: () => void,
+  signal?: AbortSignal,
 ): Promise<T> {
   return beforeTimeout(
     operation,
     Math.min(perOperationLimit, deadline - Date.now()),
     label,
     cancel,
+    signal,
   );
 }
 
@@ -114,7 +166,9 @@ async function runOcr(
   doc: PDFDocumentProxy,
   maxPages: number,
   onProgress?: OcrPageProgress,
+  signal?: AbortSignal,
 ): Promise<string> {
+  if (signal?.aborted) throw abortReason(signal);
   const total = Math.min(doc.numPages, Math.max(0, Math.floor(maxPages)));
   if (total === 0) return '';
   if (typeof document === 'undefined') throw new Error('OCR requires browser canvas support');
@@ -128,6 +182,8 @@ async function runOcr(
     deadline,
     OCR_ENGINE_START_TIMEOUT_MS,
     'Loading the OCR engine',
+    undefined,
+    signal,
   );
   const workerPromise = createWorker(currentOcrLanguage(), undefined, {
     workerPath: OCR_WORKER_PATH,
@@ -147,6 +203,8 @@ async function runOcr(
       deadline,
       OCR_ENGINE_START_TIMEOUT_MS,
       'Starting the OCR engine',
+      undefined,
+      signal,
     );
   } catch (err) {
     // createWorker exposes no handle until initialization resolves. If it
@@ -158,8 +216,13 @@ async function runOcr(
   }
 
   const pageTexts: string[] = [];
+  let termination: ReturnType<typeof worker.terminate> | null = null;
+  const stopWorker = (): void => {
+    if (!termination) termination = worker.terminate();
+  };
   try {
     for (let pageNumber = 1; pageNumber <= total; pageNumber += 1) {
+      if (signal?.aborted) throw abortReason(signal);
       let canvas: HTMLCanvasElement | null = null;
       let page: Awaited<ReturnType<PDFDocumentProxy['getPage']>> | null = null;
       try {
@@ -168,6 +231,8 @@ async function runOcr(
           deadline,
           OCR_PAGE_OPERATION_TIMEOUT_MS,
           `Loading PDF page ${pageNumber} for OCR`,
+          undefined,
+          signal,
         );
         // Compute a scale with a pixel ceiling before allocating the canvas so
         // pathological page sizes cannot create a hundreds-of-megabytes bitmap.
@@ -183,16 +248,20 @@ async function runOcr(
           OCR_PAGE_OPERATION_TIMEOUT_MS,
           `Rendering PDF page ${pageNumber} for OCR`,
           () => renderTask.cancel(),
+          signal,
         );
         const result = await beforeDeadline(
           worker.recognize(canvas),
           deadline,
           OCR_PAGE_OPERATION_TIMEOUT_MS,
           `Recognizing PDF page ${pageNumber}`,
+          stopWorker,
+          signal,
         );
         const text = result.data.text.trim();
         if (text) pageTexts.push(text);
       } catch (err) {
+        if (signal?.aborted) throw abortReason(signal);
         if (err instanceof OcrTimeoutError) throw err;
         // One malformed page should not discard text recognized from the
         // remaining pages. parsePdf will retain its unreadable fallback if no
@@ -205,22 +274,32 @@ async function runOcr(
           canvas.width = 0;
           canvas.height = 0;
         }
-        reportProgress(onProgress, pageNumber, total);
+        if (!signal?.aborted) reportProgress(onProgress, pageNumber, total);
       }
 
       // Yield between pages so React can paint the progress update and the tab
       // remains responsive during long scanned documents.
       if (pageNumber < total) {
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        await beforeDeadline(
+          new Promise<void>((resolve) => setTimeout(resolve, 0)),
+          deadline,
+          OCR_PAGE_OPERATION_TIMEOUT_MS,
+          'Yielding between OCR pages',
+          undefined,
+          signal,
+        );
       }
     }
   } finally {
+    stopWorker();
     await beforeTimeout(
-      worker.terminate(),
+      termination!,
       OCR_WORKER_STOP_TIMEOUT_MS,
       'Stopping the OCR engine',
+      stopWorker,
+      signal,
     ).catch((err: unknown) => {
-      console.warn('[knowledge-nebula] OCR worker cleanup failed', err);
+      if (!signal?.aborted) console.warn('[knowledge-nebula] OCR worker cleanup failed', err);
     });
   }
 
@@ -232,6 +311,7 @@ export function ocrPdfPages(
   doc: PDFDocumentProxy,
   maxPages: number,
   onProgress?: OcrPageProgress,
+  signal?: AbortSignal,
 ): Promise<string> {
-  return enqueueOcr(() => runOcr(doc, maxPages, onProgress));
+  return enqueueOcr(() => runOcr(doc, maxPages, onProgress, signal), signal);
 }

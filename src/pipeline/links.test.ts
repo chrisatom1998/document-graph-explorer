@@ -807,6 +807,33 @@ describe('referenceEdges wikilinks', () => {
     expect(linkEdges(referenceEdges(docs, 5))).toEqual([]);
   });
 
+  it('resolves vault-root, absolute, and explicit relative paths from a folder ingest', () => {
+    const targets = [
+      `${WIKILINK_PREFIX}folder/note`,
+      `${WIKILINK_PREFIX}/folder/note`,
+      `${WIKILINK_PREFIX}./note`,
+    ];
+    for (const target of targets) {
+      const docs = [
+        pathDoc('source', 'index.md', 'Vault/folder/index.md', '', {
+          mdLinkTargets: [target],
+        }),
+        pathDoc('note', 'note.md', 'Vault/folder/note.md', 'target note'),
+      ];
+      expect(linkEdges(referenceEdges(docs, 5))).toHaveLength(1);
+    }
+  });
+
+  it('does not fall back from a missing path-qualified wikilink to a same-basename note', () => {
+    const docs = [
+      pathDoc('source', 'index.md', 'Vault/index.md', '', {
+        mdLinkTargets: [`${WIKILINK_PREFIX}missing/note`],
+      }),
+      pathDoc('other', 'note.md', 'Vault/other/note.md', 'unrelated note'),
+    ];
+    expect(linkEdges(referenceEdges(docs, 5))).toEqual([]);
+  });
+
   it('resolves a path-style wikilink after a folder ingest, without fanning out', () => {
     // MyVault/projects/alpha.md and MyVault/inbox/alpha.md share a bare stem;
     // [[projects/alpha]] disambiguates by directory and must hit only the

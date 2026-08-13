@@ -131,6 +131,25 @@ describe('computeEmphasis', () => {
     expect(set).toEqual(new Set(['b']));
   });
 
+  it('filter: minDegree ignores synthetic topic-hub edges', () => {
+    const mixed = [
+      mkNode({ id: 'topic-only', degree: 1 }),
+      mkNode({ id: 'connected', degree: 2 }),
+      mkNode({ id: 'peer', degree: 1 }),
+      mkNode({ id: 'topic:shared', kind: 'topic', fileType: 'other', degree: 2 }),
+    ];
+    const mixedEdges = [
+      mkEdge('topic-only', 'topic:shared', 0.5, 'topic'),
+      mkEdge('connected', 'topic:shared', 0.5, 'topic'),
+      mkEdge('connected', 'peer', 0.8, 'reference'),
+    ];
+    const set = computeEmphasis(mixed, mixedEdges, null, null, null, {
+      ...NO_FILTER,
+      minDegree: 1,
+    });
+    expect(set).toEqual(new Set(['connected', 'peer']));
+  });
+
   // --- regression: link-strength (minEdgeWeight) filter must also dim nodes ---
   it('filter: minEdgeWeight-only filter returns a non-null set (regression)', () => {
     // a-b and c-d clear the 0.5 floor; b-c and d-e don't. e has no

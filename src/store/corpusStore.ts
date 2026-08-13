@@ -21,15 +21,20 @@ interface CorpusState {
   setSwitching: (switching: boolean) => void;
   setLocalState: (corpora: CorpusSummary[], activeCorpusId: string | null) => void;
   setEphemeral: (name: string, mode: Exclude<CorpusMode, 'local'>) => void;
+  reset: () => void;
 }
 
-export const useCorpusStore = create<CorpusState>((set) => ({
+const INITIAL_CORPUS_STATE = {
   initialized: false,
   switching: false,
   activeCorpusId: null,
   activeName: 'My corpus',
-  mode: 'local',
-  corpora: [],
+  mode: 'local' as const,
+  corpora: [] as CorpusSummary[],
+};
+
+export const useCorpusStore = create<CorpusState>((set) => ({
+  ...INITIAL_CORPUS_STATE,
   setInitialized: (initialized) => set({ initialized }),
   setSwitching: (switching) => set({ switching }),
   setLocalState: (corpora, activeCorpusId) => {
@@ -44,4 +49,5 @@ export const useCorpusStore = create<CorpusState>((set) => ({
   },
   setEphemeral: (activeName, mode) =>
     set({ activeCorpusId: null, activeName, mode, switching: false }),
+  reset: () => set({ ...INITIAL_CORPUS_STATE, corpora: [] }),
 }));

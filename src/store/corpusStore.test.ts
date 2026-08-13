@@ -69,4 +69,20 @@ describe('useCorpusStore', () => {
       mode: 'local',
     });
   });
+
+  it('resets the live corpus catalog after all persisted data is cleared', () => {
+    useCorpusStore.getState().setLocalState(corpora, 'work');
+    useCorpusStore.getState().setSwitching(true);
+
+    useCorpusStore.getState().reset();
+
+    expect(useCorpusStore.getState()).toMatchObject({
+      initialized: false,
+      switching: false,
+      corpora: [],
+      activeCorpusId: null,
+      activeName: 'My corpus',
+      mode: 'local',
+    });
+  });
 });

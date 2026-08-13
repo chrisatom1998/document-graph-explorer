@@ -23,13 +23,15 @@ import {
 import type { DocNode } from '../model/types';
 import { isOffline, OFFLINE_MESSAGE } from '../offline';
 import { useGraphStore } from '../store/graphStore';
-import { textStore } from '../store/runtimeStores';
+import { markDocsDirty, textStore } from '../store/runtimeStores';
 import {
   DEFAULT_OLLAMA_MODEL,
   DEFAULT_OPENROUTER_ENRICH_MODEL,
   useSettingsStore,
 } from '../store/settingsStore';
 import { prepareDocumentContext } from './documentContext';
+import { enqueueRun } from '../pipeline/runQueue';
+import { synthesizeTopicNodes } from '../pipeline/topicNodes';
 
 const CLUSTER_TITLES_CAP = 30;
 const TOPICS_PER_DOC = 5;
@@ -366,7 +368,18 @@ export async function askDocAi(
 
 let running = false;
 
-export async function runEnrichment(): Promise<{ ok: boolean; message: string }> {
+function currentDocumentIdsMatch(snapshotIds: string[]): boolean {
+  const currentIds = useGraphStore
+    .getState()
+    .nodes.filter((node) => node.kind === 'document')
+    .map((node) => node.id);
+  return (
+    currentIds.length === snapshotIds.length &&
+    currentIds.every((id, index) => id === snapshotIds[index])
+  );
+}
+
+function enrichmentGate(): { ok: false; message: string } | null {
   if (isOffline()) return { ok: false, message: AIRGAP ? AIRGAP_MESSAGE : OFFLINE_MESSAGE };
   const { enrichEnabled, enrichProvider, openRouterKey } = useSettingsStore.getState();
   if (!enrichEnabled) {
@@ -383,12 +396,29 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
   if (graph.phase !== 'ready') {
     return { ok: false, message: 'Wait for processing to finish before enriching' };
   }
-  if (running) {
-    return { ok: false, message: 'Enrichment is already running' };
-  }
+  return null;
+}
 
-  running = true;
+async function runEnrichmentExclusive(): Promise<{ ok: boolean; message: string }> {
+  // The call may have waited behind an import/restore whose phase was still
+  // ready when this enrichment was enqueued. Revalidate only once the FIFO
+  // lease is ours, then take the snapshot no other queued mutation can alter.
+  const gate = enrichmentGate();
+  if (gate) return gate;
+  const { enrichProvider } = useSettingsStore.getState();
+  const graph = useGraphStore.getState();
+  const docs = graph.nodes.filter((n) => n.kind === 'document');
+  const snapshotIds = docs.map((doc) => doc.id);
+
   graph.setPhase('enriching');
+  const snapshotIsCurrent = (): boolean =>
+    useGraphStore.getState().phase === 'enriching' && currentDocumentIdsMatch(snapshotIds);
+
+  const staleResult = {
+    ok: false,
+    message: 'Corpus changed while enrichment was running; results were discarded',
+  };
+
   const concurrency =
     enrichProvider === 'ollama' ? ENRICH_CONCURRENCY_LOCAL : ENRICH_CONCURRENCY_CLOUD;
   const batches = packEnrichmentBatches(docs);
@@ -396,6 +426,7 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
   const totalSteps = batches.length + 2;
   let doneSteps = 0;
   const step = (note: string): void => {
+    if (!snapshotIsCurrent()) return;
     useGraphStore.getState().setEnrichProgress({ done: doneSteps, total: totalSteps, note });
   };
   try {
@@ -414,6 +445,7 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
       step(`Summarizing ${summarized} of ${docs.length} documents`);
       return outcome;
     });
+    if (!snapshotIsCurrent()) return staleResult;
     for (const { results, error } of batchOutcomes) {
       if (results.size === 0) {
         failedBatches++;
@@ -431,22 +463,31 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
     const uniqueTopics = [...new Set([...enriched.values()].flatMap((e) => e.topics))];
     const canon = await canonicalizeTopics(uniqueTopics);
     doneSteps++;
+    if (!snapshotIsCurrent()) return staleResult;
     const finalTopics = new Map<string, string[]>();
     for (const [id, e] of enriched) {
       finalTopics.set(id, [...new Set(e.topics.map((t) => canon.get(t) ?? t))]);
     }
 
-    // Apply summaries + canonical topics to the graph.
     const patches = new Map<string, Partial<DocNode>>();
     for (const [id, e] of enriched) {
-      patches.set(id, { summary: e.summary, topics: finalTopics.get(id) ?? e.topics, topicsSource: 'gemini' });
+      patches.set(id, {
+        summary: e.summary,
+        topics: finalTopics.get(id) ?? e.topics,
+        topicsSource: 'gemini',
+      });
     }
     useGraphStore.getState().patchNodes(patches);
+    markDocsDirty(enriched.keys());
+    // Topic hubs are derived state. Rebuild them in the same exclusive run so
+    // no frame or autosave can observe enriched docs with old TF-IDF hubs.
+    synthesizeTopicNodes();
 
     // --- Pass 3: cluster names ---
     step('Naming clusters…');
     const clusterNames = await nameClusters(docs, finalTopics);
     doneSteps++;
+    if (!snapshotIsCurrent()) return staleResult;
     step('Done');
     const namedClusters = Object.keys(clusterNames).length;
     if (namedClusters > 0) {
@@ -466,10 +507,24 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
       message: `Enrichment failed: ${err instanceof Error ? err.message : String(err)}`,
     };
   } finally {
-    running = false;
-    useGraphStore.getState().setEnrichProgress(null);
-    // The phase-ready transition also triggers the session auto-save, so
-    // fresh summaries/topics/cluster names persist.
-    useGraphStore.getState().setPhase('ready');
+    const current = useGraphStore.getState();
+    if (current.phase === 'enriching') current.setEnrichProgress(null);
+    // `ready` triggers autosave. Only the still-current corpus may publish it:
+    // Clear All resets the graph synchronously and must remain idle even if an
+    // older provider response lands afterward.
+    if (snapshotIsCurrent()) useGraphStore.getState().setPhase('ready');
   }
+}
+
+export function runEnrichment(): Promise<{ ok: boolean; message: string }> {
+  const gate = enrichmentGate();
+  if (gate) return Promise.resolve(gate);
+  if (running) {
+    return Promise.resolve({ ok: false, message: 'Enrichment is already running' });
+  }
+
+  running = true;
+  return enqueueRun(runEnrichmentExclusive).finally(() => {
+    running = false;
+  });
 }

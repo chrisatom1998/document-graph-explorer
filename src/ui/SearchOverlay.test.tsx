@@ -104,6 +104,51 @@ describe('SearchOverlay', () => {
     expect(screen.queryByRole('option', { name: /Incident Runbook/i })).not.toBeInTheDocument();
   });
 
+  it('does not restore highlights when an in-flight search lands after close', async () => {
+    let resolveLexical!: (hits: Awaited<ReturnType<typeof searchCorpusLexical>>) => void;
+    mockSearchCorpusLexical.mockReturnValue(
+      new Promise((resolve) => {
+        resolveLexical = resolve;
+      }),
+    );
+    mockSearchCorpus.mockResolvedValue([]);
+
+    render(<SearchOverlay />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'architecture' } });
+    await waitFor(() => expect(mockSearchCorpusLexical).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: /close search/i }));
+
+    resolveLexical([{ id: 'architecture', score: 1, matchKind: 'title' }]);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(useUiStore.getState().searchOpen).toBe(false);
+    expect(useUiStore.getState().searchResults).toBeNull();
+  });
+
+  it('invalidates an in-flight search as soon as the query is cleared', async () => {
+    let resolveLexical!: (hits: Awaited<ReturnType<typeof searchCorpusLexical>>) => void;
+    mockSearchCorpusLexical.mockReturnValue(
+      new Promise((resolve) => {
+        resolveLexical = resolve;
+      }),
+    );
+    mockSearchCorpus.mockResolvedValue([]);
+
+    render(<SearchOverlay />);
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, { target: { value: 'architecture' } });
+    await waitFor(() => expect(mockSearchCorpusLexical).toHaveBeenCalled());
+    fireEvent.change(input, { target: { value: '' } });
+
+    resolveLexical([{ id: 'architecture', score: 1, matchKind: 'title' }]);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(useUiStore.getState().searchResults).toBeNull();
+    expect(screen.getByRole('listbox', { name: 'All documents' })).toBeInTheDocument();
+  });
+
   it('frames every match from Show all in graph instead of opening a second topic panel', async () => {
     useGraphStore.setState({
       nodes: [documentNode(), secondDocumentNode()],

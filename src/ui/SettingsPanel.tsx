@@ -25,6 +25,7 @@ import {
 } from '../persistence/quota';
 import { OCR_LANGUAGE_OPTIONS, OCR_PAGE_OPTIONS } from '../pipeline/ocrOptions';
 import { resetCorpus } from '../pipeline/coordinator';
+import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
 import {
   DEFAULT_OLLAMA_MODEL,
@@ -122,6 +123,12 @@ const detailValueStyle: CSSProperties = {
   minWidth: 0,
   overflowWrap: 'anywhere',
 };
+
+/** Clear the two live stores that otherwise survive the IndexedDB wipe. */
+export function resetClearedDataState(): void {
+  resetCorpus();
+  useCorpusStore.getState().reset();
+}
 
 export default function SettingsPanel() {
   const open = useUiStore((s) => s.settingsOpen);
@@ -337,7 +344,7 @@ export default function SettingsPanel() {
   const onClearAll = () => {
     setClearNote(null);
     setClearing(true);
-    resetCorpus();
+    resetClearedDataState();
     // clearAllCaches() catches internally and always resolves (never rejects)
     // — fire-and-forget from this synchronous handler.
     void clearAllCaches()
