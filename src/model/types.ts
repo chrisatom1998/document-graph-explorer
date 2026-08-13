@@ -272,6 +272,8 @@ export interface LexicalDocInput {
   textLower: string; // capped, for title-mention scan + boilerplate
   mdLinkTargets: string[];
   entities: string[]; // for shared-entity edges (entityLinks.ts)
+  /** Top-level symbols defined here (code files); symbol-mention edges. */
+  codeSymbols?: string[];
 }
 
 export type AggRequest =

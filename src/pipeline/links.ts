@@ -1,11 +1,12 @@
 /**
  * Reference edges — the "hard edges" of spec §5.1: explicit markdown links
- * to other documents, and mentions of other documents' titles/filenames in
- * body text. PURE — runs in the aggregator worker and in unit tests.
+ * and wikilinks to other documents, mentions of other documents' titles /
+ * filenames / paths / defined symbols in body text, and test↔source
+ * companion files. PURE — runs in the aggregator worker and in unit tests.
  */
 
 import type { Edge } from '../model/types';
-import { posixBasename, posixJoin, posixNormalize, posixResolveFrom, stripKnownExtension } from '../util/posixPath';
+import { posixBasename, posixDirname, posixJoin, posixNormalize, posixResolveFrom, stripKnownExtension } from '../util/posixPath';
 import { isExternalUrl, normalizeLinkTarget } from './urlUtils';
 
 export interface ReferenceDocInput {
@@ -16,10 +17,22 @@ export interface ReferenceDocInput {
   path?: string;
   textLower: string;
   mdLinkTargets: string[];
+  /** Top-level symbols DEFINED in this file (code parser); mention targets. */
+  codeSymbols?: string[];
 }
+
+/**
+ * Wikilink targets (`[[Note]]`) are marked with this prefix by the markdown
+ * parser: they name a note by title/stem corpus-wide (Obsidian semantics),
+ * so they must not be swallowed by the path-authoritative import resolution.
+ */
+export const WIKILINK_PREFIX = 'wikilink:';
 
 const LINK_WEIGHT = 1.0;
 const MENTION_WEIGHT = 0.85;
+const PATH_MENTION_WEIGHT = 0.95;
+const SYMBOL_MENTION_WEIGHT = 0.8;
+const TEST_COMPANION_WEIGHT = 0.95;
 
 /** Extensions tried when an import omits them (`./foo` → `foo.ts`). */
 const RESOLVE_EXTENSIONS = [
@@ -55,8 +68,25 @@ interface PairAcc {
   evidence: string[];
 }
 
-/** Title (0) is preferred over filename (1) when a doc matches both. */
-type MentionKind = 0 | 1;
+/**
+ * Mention pattern kinds, in preference order when one doc matches several
+ * patterns of the same target: title (0) beats filename (1) beats path (2)
+ * beats symbol (3).
+ */
+type MentionKind = 0 | 1 | 2 | 3;
+
+const MENTION_KIND_WEIGHT: Record<MentionKind, number> = {
+  0: MENTION_WEIGHT,
+  1: MENTION_WEIGHT,
+  2: PATH_MENTION_WEIGHT,
+  3: SYMBOL_MENTION_WEIGHT,
+};
+
+function mentionEvidence(kind: MentionKind, label: string): string {
+  if (kind === 2) return `mentions path '${label}'`;
+  if (kind === 3) return `mentions symbol '${label}'`;
+  return `mentions '${label}'`;
+}
 
 interface MentionPattern {
   targetId: string;
@@ -65,6 +95,8 @@ interface MentionPattern {
   /** Original-case text for the evidence string. */
   label: string;
   kind: MentionKind;
+  /** Path needles get stricter boundary checks (see pathBoundaryOk). */
+  boundary: 'word' | 'path';
   /** First [a-z0-9_] run in the needle, and where it starts. */
   anchor: string;
   anchorOffset: number;
@@ -74,6 +106,20 @@ interface MentionPattern {
 
 const WORD_CHAR = /[a-z0-9_]/;
 const WORD_RUN = /[a-z0-9_]+/g;
+
+/**
+ * Identifier shapes worth mention-matching: camelCase with ≥2 humps or
+ * snake_case with ≥2 parts. Single-word symbols (`Index`, `main`, `run`)
+ * lowercase into common English words and would glue unrelated documents.
+ */
+const CAMEL_SYMBOL = /^[A-Za-z][a-z0-9]*(?:[A-Z][A-Za-z0-9]*)+$/;
+const SNAKE_SYMBOL = /^[A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+$/;
+const MIN_SYMBOL_LEN = 6;
+
+function isLinkableSymbol(symbol: string): boolean {
+  if (symbol.length < MIN_SYMBOL_LEN) return false;
+  return CAMEL_SYMBOL.test(symbol) || SNAKE_SYMBOL.test(symbol);
+}
 
 /** Sentinel owner id for needles shared by multiple documents. */
 const AMBIGUOUS_NEEDLE = '';
@@ -85,6 +131,7 @@ function buildMentionPatterns(
   const patterns: MentionPattern[] = [];
   const push = (targetId: string, raw: string, kind: MentionKind): void => {
     const needle = raw.toLowerCase();
+    const boundary: 'word' | 'path' = kind === 2 ? 'path' : 'word';
     const anchorMatch = /[a-z0-9_]+/.exec(needle);
     patterns.push(
       anchorMatch
@@ -93,12 +140,13 @@ function buildMentionPatterns(
             needle,
             label: raw,
             kind,
+            boundary,
             anchor: anchorMatch[0],
             anchorOffset: anchorMatch.index,
           }
         : // No word characters to anchor on (e.g. "-----"); rare enough to
           // scan with the original regex instead of indexing.
-          { targetId, needle, label: raw, kind, anchor: '', anchorOffset: 0, rx: mentionRegex(needle) },
+          { targetId, needle, label: raw, kind, boundary, anchor: '', anchorOffset: 0, rx: mentionRegex(needle) },
     );
   };
 
@@ -106,8 +154,8 @@ function buildMentionPatterns(
   // on a folder drop, several unrelated `util.ts` / `README.md` files share a
   // basename (and the titles derived from it), so a body-text mention of that
   // name says nothing about WHICH file is meant. Those needles are dropped
-  // entirely rather than fanned out across the tree; unique titles and
-  // filenames still mention-match as before.
+  // entirely rather than fanned out across the tree; unique titles,
+  // filenames, path suffixes, and defined symbols still mention-match.
   const needleOwner = new Map<string, string>();
   const claim = (targetId: string, raw: string): void => {
     const needle = raw.toLowerCase();
@@ -123,6 +171,27 @@ function buildMentionPatterns(
       if (fileName.length >= minTitleLen && fileName.toLowerCase() !== title.toLowerCase()) {
         visit(target.id, fileName, 1);
       }
+      // Multi-segment path suffixes: `docs/notes.md` says "see
+      // src/auth/util.ts" — the directory disambiguates same-name files
+      // that the bare-filename rule above must drop as ambiguous. The
+      // extensionless variant catches prose like `src/pipeline/links`.
+      const path = posixNormalize(target.path ?? '').replace(/^\//, '');
+      if (path.includes('/')) {
+        const segments = path.split('/');
+        for (let i = 0; i < segments.length - 1; i += 1) {
+          const suffix = segments.slice(i).join('/');
+          if (suffix.length >= minTitleLen) visit(target.id, suffix, 2);
+          const stemmed = stripKnownExtension(suffix);
+          if (stemmed !== suffix && stemmed.includes('/') && stemmed.length >= minTitleLen) {
+            visit(target.id, stemmed, 2);
+          }
+        }
+      }
+      // Symbols DEFINED here: prose naming `DropZone` or `refresh_token_flow`
+      // connects to the one file that defines it (cross-type docs↔code).
+      for (const symbol of target.codeSymbols ?? []) {
+        if (isLinkableSymbol(symbol)) visit(target.id, symbol, 3);
+      }
     }
   };
   forEachNeedle(claim);
@@ -131,6 +200,37 @@ function buildMentionPatterns(
     push(targetId, raw, kind);
   });
   return patterns;
+}
+
+/**
+ * Boundary rule for path needles, stricter than the word-char lookarounds:
+ * a suffix of a LONGER path (`vendor/src/auth/util.ts` when the needle is
+ * `src/auth/util.ts`) names a different file, so a preceding `/` is only
+ * legal for relative prefixes (`./`, `../`) or a leading `/`. Trailing
+ * `.`/`-`/`/` continuing into more word characters (`links.md` vs the
+ * extensionless needle `…/links`) also rejects the match.
+ */
+function pathBoundaryOk(textLower: string, start: number, end: number): boolean {
+  const before = start > 0 ? textLower[start - 1] : '';
+  if (before) {
+    if (WORD_CHAR.test(before) || before === '.' || before === '-') return false;
+    if (before === '/') {
+      const before2 = start > 1 ? textLower[start - 2] : '';
+      if (before2 !== '' && before2 !== '.') return false;
+    }
+  }
+  const after = end < textLower.length ? textLower[end] : '';
+  if (after) {
+    if (WORD_CHAR.test(after)) return false;
+    if (
+      (after === '.' || after === '-' || after === '/') &&
+      end + 1 < textLower.length &&
+      WORD_CHAR.test(textLower[end + 1])
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 interface MentionIndex {
@@ -180,8 +280,12 @@ function scanMentions(textLower: string, index: MentionIndex): MentionPattern[] 
       const start = run.index - pattern.anchorOffset;
       if (start < 0) continue;
       const end = start + pattern.needle.length;
-      if (start > 0 && WORD_CHAR.test(textLower[start - 1])) continue;
-      if (end < textLower.length && WORD_CHAR.test(textLower[end])) continue;
+      if (pattern.boundary === 'path') {
+        if (!pathBoundaryOk(textLower, start, end)) continue;
+      } else {
+        if (start > 0 && WORD_CHAR.test(textLower[start - 1])) continue;
+        if (end < textLower.length && WORD_CHAR.test(textLower[end])) continue;
+      }
       if (!textLower.startsWith(pattern.needle, start)) continue;
       seen.add(pattern);
       found.push(pattern);
@@ -200,9 +304,11 @@ export function referenceEdges(
   docs: ReferenceDocInput[],
   minTitleLen: number,
 ): Edge[] {
-  // index docs by lowercased filename basename, stem (no extension), and path
+  // index docs by lowercased filename basename, stem (no extension), title,
+  // and path
   const byFileName = new Map<string, ReferenceDocInput[]>();
   const byStem = new Map<string, ReferenceDocInput[]>();
+  const byTitle = new Map<string, ReferenceDocInput[]>();
   const byPath = new Map<string, ReferenceDocInput[]>();
   const indexPush = (map: Map<string, ReferenceDocInput[]>, key: string, doc: ReferenceDocInput): void => {
     if (!key) return;
@@ -217,6 +323,7 @@ export function referenceEdges(
     const fileKey = normalizeLinkTarget(doc.fileName);
     indexPush(byFileName, fileKey, doc);
     indexPush(byStem, stripKnownExtension(fileKey), doc);
+    indexPush(byTitle, doc.title.trim().toLowerCase(), doc);
     const pathKey = posixNormalize(doc.path ?? '').toLowerCase();
     if (pathKey) indexPush(byPath, pathKey, doc);
   }
@@ -247,6 +354,29 @@ export function referenceEdges(
         found.push(hit);
       }
     };
+    if (target.startsWith(WIKILINK_PREFIX)) {
+      // Wikilinks name a note by title or filename stem across the whole
+      // corpus (Obsidian semantics) — path-authoritative resolution does not
+      // apply. A name claimed by several documents is ambiguous and drops.
+      let wiki = target.slice(WIKILINK_PREFIX.length).trim();
+      const wikiHash = wiki.indexOf('#');
+      if (wikiHash >= 0) wiki = wiki.slice(0, wikiHash).trim();
+      if (!wiki) return found;
+      for (const candidate of importPathCandidates(from.path, wiki)) {
+        take(byPath.get(candidate));
+      }
+      if (found.length > 0) return found;
+      const takeUnique = (hits: ReferenceDocInput[] | undefined): void => {
+        if (hits && hits.length === 1) take(hits);
+      };
+      const wikiBase = normalizeLinkTarget(wiki);
+      takeUnique(byFileName.get(wikiBase));
+      if (found.length > 0) return found;
+      takeUnique(byTitle.get(wiki.toLowerCase()));
+      if (found.length > 0) return found;
+      takeUnique(byStem.get(stripKnownExtension(wikiBase)));
+      return found;
+    }
     for (const candidate of importPathCandidates(from.path, target)) {
       take(byPath.get(candidate));
     }
@@ -268,13 +398,53 @@ export function referenceEdges(
     return found;
   };
 
-  // 1) explicit md / import targets -> another doc (path-aware, then basename)
+  // 1) explicit md / import / wikilink targets -> another doc
   for (const doc of docs) {
     for (const target of doc.mdLinkTargets) {
       if (isExternalUrl(target)) continue; // external web links aren't doc refs
       for (const other of matchesFor(target, doc)) {
         addRef(doc.id, other.id, LINK_WEIGHT, `links to '${other.fileName}'`);
       }
+    }
+  }
+
+  // 1b) test↔source companions by naming convention. Import edges already
+  // cover tests that import their subject; this catches the layouts that
+  // don't (Go same-package tests, `tests/test_foo.py` trees, C, Java).
+  for (const doc of docs) {
+    const subject = testSubjectOf(doc.fileName);
+    if (!subject) continue;
+    const candidates = (byStem.get(subject.stem) ?? []).filter(
+      (c) =>
+        c.id !== doc.id &&
+        subject.exts.has(fileExtOf(c.fileName)) &&
+        testSubjectOf(c.fileName) === null,
+    );
+    if (candidates.length === 0) continue;
+    const testDir = docDirOf(doc);
+    const sameDir = candidates.filter((c) => docDirOf(c) === testDir);
+    let chosen: ReferenceDocInput[];
+    if (sameDir.length > 0) {
+      chosen = sameDir;
+    } else {
+      // Mirrored trees (`tests/pipeline/…` ↔ `src/pipeline/…`): prefer the
+      // candidate sharing the most trailing directory segments. A tie means
+      // the subject is ambiguous — drop rather than guess.
+      let best = -1;
+      let winners: ReferenceDocInput[] = [];
+      for (const c of candidates) {
+        const score = sharedTrailingSegments(testDir, docDirOf(c));
+        if (score > best) {
+          best = score;
+          winners = [c];
+        } else if (score === best) {
+          winners.push(c);
+        }
+      }
+      chosen = winners.length === 1 ? winners : [];
+    }
+    for (const c of chosen) {
+      addRef(doc.id, c.id, TEST_COMPANION_WEIGHT, `test file for '${c.fileName}'`);
     }
   }
 
@@ -309,7 +479,12 @@ export function referenceEdges(
     const perTarget = hitsByTarget.get(target.id);
     if (!perTarget) continue;
     for (const [docId, pattern] of perTarget) {
-      addRef(docId, target.id, MENTION_WEIGHT, `mentions '${pattern.label}'`);
+      addRef(
+        docId,
+        target.id,
+        MENTION_KIND_WEIGHT[pattern.kind],
+        mentionEvidence(pattern.kind, pattern.label),
+      );
     }
   }
 
@@ -323,6 +498,66 @@ export function referenceEdges(
       evidence: pair.evidence,
     }),
   );
+}
+
+// ---------------------------------------------------------------------------
+// test↔source naming conventions
+// ---------------------------------------------------------------------------
+
+const JS_SOURCE_EXTS = new Set(['ts', 'tsx', 'mts', 'cts', 'js', 'jsx', 'mjs', 'cjs', 'vue', 'svelte']);
+const PY_SOURCE_EXTS = new Set(['py', 'pyi']);
+const C_SOURCE_EXTS = new Set(['c', 'cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx']);
+const JVM_SOURCE_EXTS = new Set(['java', 'kt', 'kts', 'scala']);
+
+interface TestSubject {
+  /** Lowercased stem of the file under test (`links` for `links.test.ts`). */
+  stem: string;
+  /** Extensions a matching source file may carry. */
+  exts: Set<string>;
+}
+
+/**
+ * If `fileName` follows a test-file naming convention, the stem of the file
+ * it exercises; null for non-test files. Exported for unit tests.
+ */
+export function testSubjectOf(fileName: string): TestSubject | null {
+  const base = posixBasename(fileName.trim());
+  const lower = base.toLowerCase();
+  let m = /^(.+)\.(?:test|spec)\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs)$/.exec(lower);
+  if (m) return { stem: m[1], exts: JS_SOURCE_EXTS };
+  m = /^(.+)_test\.go$/.exec(lower);
+  if (m) return { stem: m[1], exts: new Set(['go']) };
+  m = /^test_(.+)\.py$/.exec(lower) ?? /^(.+)_tests?\.py$/.exec(lower);
+  if (m) return { stem: m[1], exts: PY_SOURCE_EXTS };
+  m = /^(.+)_(?:spec|test)\.rb$/.exec(lower);
+  if (m) return { stem: m[1], exts: new Set(['rb']) };
+  m = /^(.+)_test\.(?:c|cc|cpp|cxx)$/.exec(lower) ?? /^test_(.+)\.(?:c|cc|cpp|cxx)$/.exec(lower);
+  if (m) return { stem: m[1], exts: C_SOURCE_EXTS };
+  // Case-sensitive on purpose: `FooTest.java` is a test of Foo, while
+  // `contest.java` is not a test of `con`.
+  const jvm = /^(.+)Tests?\.(?:java|kt|kts|scala)$/.exec(base);
+  if (jvm) return { stem: jvm[1].toLowerCase(), exts: JVM_SOURCE_EXTS };
+  return null;
+}
+
+function fileExtOf(fileName: string): string {
+  const base = posixBasename(fileName).toLowerCase();
+  const dot = base.lastIndexOf('.');
+  return dot >= 0 ? base.slice(dot + 1) : '';
+}
+
+function docDirOf(doc: ReferenceDocInput): string {
+  return posixDirname(posixNormalize(doc.path ?? doc.fileName)).toLowerCase();
+}
+
+function sharedTrailingSegments(a: string, b: string): number {
+  const as = a ? a.split('/') : [];
+  const bs = b ? b.split('/') : [];
+  let n = 0;
+  while (n < as.length && n < bs.length && as[as.length - 1 - n] === bs[bs.length - 1 - n]) {
+    n += 1;
+  }
+  return n;
 }
 
 /**

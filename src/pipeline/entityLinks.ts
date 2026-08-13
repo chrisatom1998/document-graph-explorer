@@ -28,6 +28,16 @@ const MAX_EVIDENCE_ENTITIES = 4;
  */
 const MAX_ENTITY_DF_FOR_PAIRING = 150;
 
+/** Minimum length for a corpus-unique entity to link a pair on its own. */
+const UNIQUE_ENTITY_MIN_LEN = 6;
+
+/**
+ * The unique-entity rule needs a corpus large enough for df === 2 to mean
+ * something: in a 5-doc drop every shared entity is "rare", and keyword +
+ * semantic edges already connect small corpora densely.
+ */
+const UNIQUE_ENTITY_MIN_CORPUS = 8;
+
 interface PairAcc {
   a: string;
   b: string;
@@ -85,7 +95,25 @@ export function entityEdges(
   // threshold on shared count, then strongest-first per-doc cap
   const kept: PairAcc[] = [];
   for (const pair of pairs.values()) {
-    if (pair.shared.length >= params.minShared) kept.push(pair);
+    if (pair.shared.length >= params.minShared) {
+      kept.push(pair);
+      continue;
+    }
+    // Below the shared-count floor, a single entity still links the pair when
+    // NO other document in the corpus mentions it (df === 2 means exactly
+    // these two): a corpus-unique identifier like `refresh_token_flow` is a
+    // near-certain relationship, unlike one shared common acronym. The length
+    // floor keeps short acronym coincidences ('QA', 'CI') out.
+    if (
+      n >= UNIQUE_ENTITY_MIN_CORPUS &&
+      pair.shared.some(
+        (entity) =>
+          entity.length >= UNIQUE_ENTITY_MIN_LEN &&
+          (docsByEntity.get(entity)?.length ?? 0) === 2,
+      )
+    ) {
+      kept.push(pair);
+    }
   }
   kept.sort((x, y) => y.score - x.score);
 

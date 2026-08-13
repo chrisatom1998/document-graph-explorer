@@ -153,6 +153,11 @@ function collectSymbols(text: string, family: CodeFamily): string[] {
   return names;
 }
 
+/** Top-level symbol names defined in `text` (functions/classes/types…). */
+export function extractCodeSymbols(text: string, name: string): string[] {
+  return collectSymbols(text, familyOf(name));
+}
+
 export function extractCodeImports(text: string, name: string): string[] {
   const family = familyOf(name);
   const targets: string[] = [];

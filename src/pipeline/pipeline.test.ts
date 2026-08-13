@@ -83,6 +83,33 @@ describe('parseMarkdown', () => {
     expect(parsed.title).toBe('Customer Onboarding Playbook');
     expect(parsed.headings).toEqual(['Introduction']);
   });
+
+  it('extracts Obsidian wikilinks as marked link targets', () => {
+    const markdown = [
+      'Start with [[Deploy Guide]] and [[incident-runbook#steps]].',
+      'Also [[Oncall Rotation|the rotation]] but not `plain [brackets]`.',
+      '![[embedded-diagram.png]]',
+    ].join('\n');
+    const bytes = new TextEncoder().encode(markdown).buffer;
+
+    const parsed = parseMarkdown(bytes, 'index.md');
+
+    expect(parsed.mdLinkTargets).toEqual([
+      'wikilink:Deploy Guide',
+      'wikilink:incident-runbook#steps',
+      'wikilink:Oncall Rotation',
+      'wikilink:embedded-diagram.png',
+    ]);
+    // labelled links keep the alias (or the note name); embeds are excluded
+    expect(parsed.docLinks).toEqual([
+      { text: 'Deploy Guide', url: 'Deploy Guide' },
+      { text: 'incident-runbook', url: 'incident-runbook' },
+      { text: 'the rotation', url: 'Oncall Rotation' },
+    ]);
+    // readable text keeps the note name / alias, not the brackets
+    expect(parsed.text).toContain('Start with Deploy Guide and incident-runbook#steps.');
+    expect(parsed.text).toContain('Also the rotation but');
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -8,7 +8,13 @@
  * weights, and the order of merged evidence strings.
  */
 import { describe, expect, it } from 'vitest';
-import { importPathCandidates, referenceEdges, type ReferenceDocInput } from './links';
+import {
+  importPathCandidates,
+  referenceEdges,
+  testSubjectOf,
+  WIKILINK_PREFIX,
+  type ReferenceDocInput,
+} from './links';
 import type { Edge } from '../model/types';
 import { isExternalUrl, normalizeLinkTarget } from './urlUtils';
 
@@ -515,6 +521,55 @@ describe('referenceEdges path-aware import resolution', () => {
     expect(importPathCandidates('src/main.py', 'os')).not.toContain('src/os');
   });
 
+  it('mixed-language integration: true structural edges, no same-name gluing', () => {
+    // A mixed folder: markdown docs + source + two same-basename files in
+    // different directories (the "done when" scenario).
+    const d = (
+      id: string,
+      fileName: string,
+      path: string,
+      text: string,
+      mdLinkTargets: string[] = [],
+      codeSymbols: string[] = [],
+    ): ReferenceDocInput => ({
+      id,
+      title: fileName.replace(/\.\w+$/, ''),
+      fileName,
+      path,
+      textLower: text.toLowerCase(),
+      mdLinkTargets,
+      codeSymbols,
+    });
+    const docs = [
+      d('readme', 'README.md', 'README.md',
+        'overview. drag files onto the DropZone component. see src/auth/util.ts for token helpers.',
+        ['docs/user-guide.md']),
+      d('guide', 'user-guide.md', 'docs/user-guide.md', 'the user guide body.'),
+      d('dropzone', 'DropZone.tsx', 'src/ingest/DropZone.tsx',
+        'export function DropZone() {}', ['./util'], ['DropZone']),
+      d('ingestutil', 'util.ts', 'src/ingest/util.ts', 'ingest helpers'),
+      d('authutil', 'util.ts', 'src/auth/util.ts',
+        '// documented in docs/user-guide.md\nexport const token = 1;'),
+      d('authtest', 'util.test.ts', 'src/auth/util.test.ts', 'test body without imports'),
+    ];
+    const edges = referenceEdges(docs, 5);
+    const pair = (a: string, b: string): Edge | undefined =>
+      edges.find(
+        (e) => (e.source === a && e.target === b) || (e.source === b && e.target === a),
+      );
+    // true structural edges exist:
+    expect(pair('readme', 'guide')).toBeDefined(); // explicit md link
+    expect(pair('readme', 'dropzone')).toBeDefined(); // unique symbol mention
+    expect(pair('readme', 'authutil')).toBeDefined(); // path mention picks the right util.ts
+    expect(pair('dropzone', 'ingestutil')).toBeDefined(); // relative import
+    expect(pair('authutil', 'guide')).toBeDefined(); // code comment names the doc path
+    expect(pair('authtest', 'authutil')).toBeDefined(); // test↔source companion
+    // and no false ones:
+    expect(pair('readme', 'ingestutil')).toBeUndefined(); // wrong same-name util.ts
+    expect(pair('ingestutil', 'authutil')).toBeUndefined(); // same basename ≠ related
+    expect(pair('authtest', 'ingestutil')).toBeUndefined(); // test binds to its own dir
+  });
+
   it('does not attach a bare python import to an unrelated same-stem file', () => {
     const docs: ReferenceDocInput[] = [
       {
@@ -537,5 +592,250 @@ describe('referenceEdges path-aware import resolution', () => {
     const edges = referenceEdges(docs, 5);
     const linkEdges = edges.filter((e) => e.evidence.some((ev) => ev.startsWith('links to')));
     expect(linkEdges).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// path mentions — prose naming a file by (partial) path
+// ---------------------------------------------------------------------------
+
+function pathDoc(
+  id: string,
+  fileName: string,
+  path: string,
+  text: string,
+  extra: Partial<ReferenceDocInput> = {},
+): ReferenceDocInput {
+  return {
+    id,
+    title: fileName.replace(/\.\w+$/, ''),
+    fileName,
+    path,
+    textLower: text.toLowerCase(),
+    mdLinkTargets: [],
+    ...extra,
+  };
+}
+
+describe('referenceEdges path mentions', () => {
+  const utils = (): ReferenceDocInput[] => [
+    pathDoc('auth', 'util.ts', 'src/auth/util.ts', 'export const a = 1;'),
+    pathDoc('billing', 'util.ts', 'src/billing/util.ts', 'export const b = 2;'),
+  ];
+  const mentionsOf = (edges: Edge[]): Edge[] =>
+    edges.filter((e) => e.evidence.some((ev) => ev.startsWith('mentions path')));
+
+  it('connects a doc naming a shared-basename file by its unique path', () => {
+    const docs = [
+      pathDoc('notes', 'notes.md', 'docs/notes.md', 'token helpers live in src/auth/util.ts today.'),
+      ...utils(),
+    ];
+    const mentions = mentionsOf(referenceEdges(docs, 5));
+    expect(mentions.map((e) => [e.source, e.target].sort().join('-'))).toEqual(['auth-notes']);
+    expect(mentions[0].evidence).toEqual(["mentions path 'src/auth/util.ts'"]);
+    expect(mentions[0].weight).toBeCloseTo(0.95);
+  });
+
+  it('matches ./-prefixed and extensionless path mentions', () => {
+    const docs = [
+      pathDoc('a', 'a.md', 'docs/a.md', 'see ./src/auth/util.ts for details.'),
+      pathDoc('b', 'b.md', 'docs/b.md', 'the helper in src/auth/util does it.'),
+      ...utils(),
+    ];
+    const mentions = mentionsOf(referenceEdges(docs, 5));
+    expect(mentions.map((e) => [e.source, e.target].sort().join('-')).sort()).toEqual([
+      'a-auth',
+      'auth-b',
+    ]);
+  });
+
+  it('does not match a suffix of a longer, different path', () => {
+    const docs = [
+      pathDoc('notes', 'notes.md', 'docs/notes.md', 'the copy in vendor/src/auth/util.ts differs.'),
+      ...utils(),
+    ];
+    expect(mentionsOf(referenceEdges(docs, 5))).toEqual([]);
+  });
+
+  it('does not match an extensionless mention that continues into another extension', () => {
+    const docs = [
+      pathDoc('notes', 'notes.md', 'docs/notes.md', 'read src/auth/util.rs instead.'),
+      ...utils(),
+    ];
+    expect(mentionsOf(referenceEdges(docs, 5))).toEqual([]);
+  });
+
+  it('drops path suffixes shared by two files', () => {
+    const docs = [
+      pathDoc('notes', 'notes.md', 'docs/notes.md', 'check auth/util.ts here.'),
+      pathDoc('auth', 'util.ts', 'src/auth/util.ts', ''),
+      pathDoc('auth2', 'util.ts', 'other/auth/util.ts', ''),
+    ];
+    // `auth/util.ts` is claimed by both — ambiguous, no edge; the full paths
+    // (src/… vs other/…) remain distinct needles but don't appear in the text.
+    expect(mentionsOf(referenceEdges(docs, 5))).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// symbol mentions — prose naming a symbol defined in exactly one code file
+// ---------------------------------------------------------------------------
+
+describe('referenceEdges symbol mentions', () => {
+  const symbolMentions = (edges: Edge[]): Edge[] =>
+    edges.filter((e) => e.evidence.some((ev) => ev.startsWith('mentions symbol')));
+
+  it('connects a doc naming a uniquely defined identifier to its definer', () => {
+    const docs = [
+      pathDoc('guide', 'guide.md', 'docs/guide.md', 'call refresh_token_flow to rotate keys.'),
+      pathDoc('auth', 'auth.py', 'src/auth.py', 'def refresh_token_flow(): pass', {
+        codeSymbols: ['refresh_token_flow'],
+      }),
+    ];
+    const mentions = symbolMentions(referenceEdges(docs, 5));
+    expect(mentions.map((e) => [e.source, e.target].sort().join('-'))).toEqual(['auth-guide']);
+    expect(mentions[0].evidence).toEqual(["mentions symbol 'refresh_token_flow'"]);
+  });
+
+  it('drops symbols defined in more than one file', () => {
+    const docs = [
+      pathDoc('guide', 'guide.md', 'docs/guide.md', 'the AuthClient handles retries.'),
+      pathDoc('a', 'a.ts', 'src/a.ts', 'export class AuthClient {}', { codeSymbols: ['AuthClient'] }),
+      pathDoc('b', 'b.ts', 'src/b.ts', 'export class AuthClient {}', { codeSymbols: ['AuthClient'] }),
+    ];
+    expect(symbolMentions(referenceEdges(docs, 5))).toEqual([]);
+  });
+
+  it('never turns single-word or short symbols into needles', () => {
+    const docs = [
+      pathDoc('guide', 'guide.md', 'docs/guide.md', 'the index of the main run and props.'),
+      pathDoc('code', 'app.ts', 'src/app.ts', '…', {
+        codeSymbols: ['Index', 'main', 'run', 'Props', 'AppD'],
+      }),
+    ];
+    expect(symbolMentions(referenceEdges(docs, 5))).toEqual([]);
+  });
+
+  it('requires word boundaries around the symbol', () => {
+    const docs = [
+      pathDoc('guide', 'guide.md', 'docs/guide.md', 'use myDropZones here.'),
+      pathDoc('code', 'DropZone.tsx', 'src/DropZone.tsx', '…', { codeSymbols: ['DropZone'] }),
+    ];
+    expect(symbolMentions(referenceEdges(docs, 5))).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// wikilinks — [[Note]] resolves corpus-wide by name, never by fan-out
+// ---------------------------------------------------------------------------
+
+describe('referenceEdges wikilinks', () => {
+  const linkEdges = (edges: Edge[]): Edge[] =>
+    edges.filter((e) => e.evidence.some((ev) => ev.startsWith('links to')));
+
+  it('resolves [[Title]] to the unique doc with that title, despite paths', () => {
+    const docs = [
+      pathDoc('a', 'index.md', 'vault/index.md', 'see the deploy guide', {
+        mdLinkTargets: [`${WIKILINK_PREFIX}Deploy Guide`],
+      }),
+      { ...pathDoc('b', 'deploy-guide.md', 'vault/ops/deploy-guide.md', 'guide body'), title: 'Deploy Guide' },
+    ];
+    const links = linkEdges(referenceEdges(docs, 5));
+    expect(links.map((e) => [e.source, e.target].sort().join('-'))).toEqual(['a-b']);
+  });
+
+  it('resolves [[stem]] and [[stem#section]] by filename stem', () => {
+    const docs = [
+      pathDoc('a', 'index.md', 'vault/index.md', '', {
+        mdLinkTargets: [`${WIKILINK_PREFIX}deploy-guide#rollout`],
+      }),
+      pathDoc('b', 'deploy-guide.md', 'vault/ops/deploy-guide.md', 'guide body'),
+    ];
+    const links = linkEdges(referenceEdges(docs, 5));
+    expect(links.map((e) => [e.source, e.target].sort().join('-'))).toEqual(['a-b']);
+  });
+
+  it('drops wikilinks whose name matches several docs', () => {
+    const docs = [
+      pathDoc('a', 'index.md', 'vault/index.md', '', {
+        mdLinkTargets: [`${WIKILINK_PREFIX}notes`],
+      }),
+      pathDoc('b', 'notes.md', 'vault/one/notes.md', 'one'),
+      pathDoc('c', 'notes.md', 'vault/two/notes.md', 'two'),
+    ];
+    expect(linkEdges(referenceEdges(docs, 5))).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// test↔source companions
+// ---------------------------------------------------------------------------
+
+describe('testSubjectOf', () => {
+  it('recognizes common test naming conventions', () => {
+    expect(testSubjectOf('links.test.ts')?.stem).toBe('links');
+    expect(testSubjectOf('links.spec.tsx')?.stem).toBe('links');
+    expect(testSubjectOf('parser_test.go')?.stem).toBe('parser');
+    expect(testSubjectOf('test_ingest.py')?.stem).toBe('ingest');
+    expect(testSubjectOf('ingest_test.py')?.stem).toBe('ingest');
+    expect(testSubjectOf('worker_spec.rb')?.stem).toBe('worker');
+    expect(testSubjectOf('AuthServiceTest.java')?.stem).toBe('authservice');
+  });
+
+  it('rejects non-test files and lookalikes', () => {
+    expect(testSubjectOf('links.ts')).toBeNull();
+    expect(testSubjectOf('contest.java')).toBeNull(); // no case-folded 'Test' suffix
+    expect(testSubjectOf('protest.py')).toBeNull();
+    expect(testSubjectOf('latest.go')).toBeNull();
+  });
+});
+
+describe('referenceEdges test↔source companions', () => {
+  const companions = (edges: Edge[]): Edge[] =>
+    edges.filter((e) => e.evidence.some((ev) => ev.startsWith('test file for')));
+
+  it('links a Go same-package test to its source without imports', () => {
+    const docs = [
+      pathDoc('src', 'parser.go', 'pkg/parser.go', 'package pkg'),
+      pathDoc('test', 'parser_test.go', 'pkg/parser_test.go', 'package pkg'),
+    ];
+    const found = companions(referenceEdges(docs, 5));
+    expect(found.map((e) => [e.source, e.target].sort().join('-'))).toEqual(['src-test']);
+    expect(found[0].evidence).toContain("test file for 'parser.go'");
+  });
+
+  it('prefers the mirrored directory when trees are parallel', () => {
+    const docs = [
+      pathDoc('right', 'links.py', 'src/pipeline/links.py', ''),
+      pathDoc('wrong', 'links.py', 'src/graph/links.py', ''),
+      pathDoc('test', 'test_links.py', 'tests/pipeline/test_links.py', ''),
+    ];
+    const found = companions(referenceEdges(docs, 5));
+    expect(found.map((e) => [e.source, e.target].sort().join('-'))).toEqual(['right-test']);
+  });
+
+  it('links a unique corpus-wide subject across unrelated directories', () => {
+    const docs = [
+      pathDoc('src', 'links.py', 'src/links.py', ''),
+      pathDoc('test', 'test_links.py', 'tests/test_links.py', ''),
+    ];
+    expect(companions(referenceEdges(docs, 5))).toHaveLength(1);
+  });
+
+  it('drops ambiguous subjects instead of guessing', () => {
+    const docs = [
+      pathDoc('a', 'util.py', 'src/auth/util.py', ''),
+      pathDoc('b', 'util.py', 'src/billing/util.py', ''),
+      pathDoc('test', 'test_util.py', 'tests/test_util.py', ''),
+    ];
+    expect(companions(referenceEdges(docs, 5))).toEqual([]);
+  });
+
+  it('never pairs across language families', () => {
+    const docs = [
+      pathDoc('src', 'links.rs', 'src/links.rs', ''),
+      pathDoc('test', 'links.test.ts', 'src/links.test.ts', ''),
+    ];
+    expect(companions(referenceEdges(docs, 5))).toEqual([]);
   });
 });

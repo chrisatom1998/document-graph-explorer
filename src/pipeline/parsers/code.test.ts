@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractCodeImports, parseCode, pythonRelativeToSpecifier } from './code';
+import { extractCodeImports, extractCodeSymbols, parseCode, pythonRelativeToSpecifier } from './code';
 
 function bytes(text: string): ArrayBuffer {
   return new TextEncoder().encode(text).buffer;
@@ -51,6 +51,17 @@ import os, mypkg.utils
     ]);
     expect(extractCodeImports('#include "local.h"\n#include <stdio.h>\n', 'main.c')).toEqual([
       'local.h',
+    ]);
+  });
+});
+
+describe('extractCodeSymbols', () => {
+  it('re-derives defined symbols from source text (cache backfill path)', () => {
+    expect(
+      extractCodeSymbols('export function loadSession() {}\nexport class AuthClient {}\n', 'x.ts'),
+    ).toEqual(['loadSession', 'AuthClient']);
+    expect(extractCodeSymbols('def refresh_token_flow():\n    pass\n', 'auth.py')).toEqual([
+      'refresh_token_flow',
     ]);
   });
 });

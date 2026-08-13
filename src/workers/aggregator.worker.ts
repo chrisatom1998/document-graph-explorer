@@ -67,6 +67,7 @@ function handleLexical(req: Extract<AggRequest, { type: 'lexical' }>): void {
       path: d.path,
       textLower: d.textLower,
       mdLinkTargets: d.mdLinkTargets,
+      codeSymbols: d.codeSymbols,
     })),
     params.minTitleLen,
   );

@@ -7,6 +7,7 @@
  */
 
 import type { LinkRef } from '../../model/types';
+import { WIKILINK_PREFIX } from '../links';
 import { cleanFilename, decodeText, type ParserResult } from './txt';
 
 const ATX_HEADING_RE = /^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$/;
@@ -14,6 +15,10 @@ const SETEXT_HEADING_RE = /^\s{0,3}(=+|-+)\s*$/;
 const DEFINITION_RE = /^\s{0,3}\[([^\]]+)]:\s*(<[^>]+>|\S+)/;
 const INLINE_LINK_RE = /!?\[[^\]]*]\(\s*(<[^>]+>|[^)\s]+)(?:\s+['"][^'"]*['"])?\s*\)/g;
 const REFERENCE_LINK_RE = /!?\[[^\]]+]\[([^\]]*)]/g;
+// Obsidian-style [[Note]] / [[Note#Section]] / [[Note|Alias]] wikilinks
+// (and ![[embeds]]). The reader (markdownAst + linkResolver) already renders
+// these as in-app jumps; extracting them here is what turns them into edges.
+const WIKILINK_RE = /!?\[\[([^\][\n|#]+)(#[^\][\n|]*)?(?:\|([^\][\n]*))?]]/g;
 const COLLAPSE_MARKERS_RE = /[*_~`]+/g;
 
 function cleanHeading(text: string): string {
@@ -37,6 +42,21 @@ function collectLinks(raw: string, definitions: Map<string, string>): string[] {
     const key = match[1].trim().toLowerCase();
     const url = definitions.get(key);
     if (url) targets.push(url);
+  }
+  return targets;
+}
+
+/**
+ * Wikilink targets, marked with WIKILINK_PREFIX so reference-edge resolution
+ * knows to match them by note title/stem corpus-wide instead of treating them
+ * as path-authoritative import specifiers. The #fragment (if any) is kept for
+ * links.ts to strip, mirroring how markdown hrefs carry theirs.
+ */
+function collectWikilinkTargets(raw: string): string[] {
+  const targets: string[] = [];
+  for (const match of raw.matchAll(WIKILINK_RE)) {
+    const target = match[1].trim();
+    if (target) targets.push(`${WIKILINK_PREFIX}${target}${match[2] ?? ''}`);
   }
   return targets;
 }
@@ -65,6 +85,12 @@ function collectDocLinks(raw: string, definitions: Map<string, string>): LinkRef
     const url = definitions.get(key);
     if (url) links.push({ text: cleanLabel(m[2]), url });
   }
+  for (const m of raw.matchAll(WIKILINK_RE)) {
+    if (m[0].startsWith('!')) continue; // embed, not a link
+    const target = m[1].trim();
+    // Raw note name as the url: resolveLinkTarget's title fallback handles it.
+    if (target) links.push({ text: cleanLabel(m[3] ?? '') || target, url: target });
+  }
   return links;
 }
 
@@ -75,6 +101,10 @@ function textLine(line: string): string {
     .replace(/^\s{0,3}>\s?/, '')
     .replace(/^\s*([-+*]|\d+[.)])\s+/, '')
     .replace(/^\s{0,3}(```|~~~).*$/, '')
+    // wikilinks first (before the generic [..] unwraps eat their brackets):
+    // aliased links keep the alias, plain ones keep the target
+    .replace(/!?\[\[[^\][\n|]*\|([^\][\n]*)]]/g, '$1')
+    .replace(/!?\[\[([^\][\n|]*)]]/g, '$1')
     .replace(/\|/g, ' ')
     .replace(/!\[([^\]]*)]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]+)]\([^)]*\)/g, '$1')
@@ -130,7 +160,11 @@ export function parseMarkdown(bytes: ArrayBuffer, name: string): ParserResult {
     title: cleanFilename(name),
     text: textBlocks.join('\n'),
     headings,
-    mdLinkTargets: [...definitions.values(), ...collectLinks(raw, definitions)],
+    mdLinkTargets: [
+      ...definitions.values(),
+      ...collectLinks(raw, definitions),
+      ...collectWikilinkTargets(raw),
+    ],
     docLinks: collectDocLinks(raw, definitions),
     status: 'ok',
   };
