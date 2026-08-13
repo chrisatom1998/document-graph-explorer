@@ -1,20 +1,22 @@
 /**
  * Corpus insights drawer (left side): orphaned docs, possible duplicates,
- * bridge documents, stale documents. Each row focuses the node; each section
- * has a highlight toggle that feeds the ids into the scene's existing
- * search-emphasis dimming (uiStore.searchResults), so "show me these in the
- * graph" costs nothing new.
+ * bridge documents, hub documents, cluster stats, stale documents. Each row
+ * focuses the node (or frames the cluster); each section has a highlight
+ * toggle that feeds the ids into the scene's existing search-emphasis
+ * dimming (uiStore.searchResults), so "show me these in the graph" costs
+ * nothing new.
+ *
+ * Cheap scans (orphans/duplicates/stale) stay synchronous; the heavy
+ * analytics (betweenness bridges, hub ranking, cluster stats) run in the
+ * dedicated insights worker so opening the panel never blocks the main
+ * thread — those sections show "Analyzing…" until the worker answers.
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import {
-  BRIDGE_MAX_PIVOTS,
-  BRIDGE_MIN_SCORE,
-  BRIDGE_TOP_N,
-  DUP_SIM_THRESHOLD,
-  STALE_DOC_DAYS,
-} from '../config';
-import { computeBridges, computeOrphans, computeStaleDocs } from '../graph/insights';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { DUP_SIM_THRESHOLD, STALE_DOC_DAYS } from '../config';
+import { computeOrphans, computeStaleDocs } from '../graph/insights';
+import { requestInsights, type InsightsResult } from '../pipeline/insightsClient';
+import { hexFor } from '../scene/palette';
 import { annotationKey, useAnnotationStore } from '../store/annotationStore';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -22,7 +24,14 @@ import { timeAgo } from '../util/relativeTime';
 import { focusNode } from './focusNode';
 import IngestReportSection from './IngestReportSection';
 
-type SectionKey = 'pinned' | 'orphans' | 'duplicates' | 'bridges' | 'stale';
+type SectionKey =
+  | 'pinned'
+  | 'orphans'
+  | 'duplicates'
+  | 'bridges'
+  | 'hubs'
+  | 'clusters'
+  | 'stale';
 
 const STALE_MONTHS = Math.round(STALE_DOC_DAYS / 30);
 
@@ -30,16 +39,23 @@ export default function InsightsPanel() {
   const open = useUiStore((s) => s.insightsOpen);
   const setInsightsOpen = useUiStore((s) => s.setInsightsOpen);
   const setSearchResults = useUiStore((s) => s.setSearchResults);
+  const sendCamera = useUiStore((s) => s.sendCamera);
   const highlightOwner = useUiStore((s) => s.highlightOwner);
 
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
   const edges = useGraphStore((s) => s.edges);
   const duplicatePairs = useGraphStore((s) => s.duplicatePairs);
+  const clusterNames = useGraphStore((s) => s.clusterNames);
+  const localClusterNames = useGraphStore((s) => s.localClusterNames);
   const phase = useGraphStore((s) => s.phase);
   const annotations = useAnnotationStore((s) => s.annotations);
 
   const [highlighted, setHighlighted] = useState<SectionKey | null>(null);
+  const [analysis, setAnalysis] = useState<InsightsResult | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisFailed, setAnalysisFailed] = useState(false);
+  const requestSeq = useRef(0);
 
   // The Escape ladder (App.tsx) can close the drawer from outside — it clears
   // the scene highlight itself, so just drop the stale section marker here.
@@ -53,22 +69,59 @@ export default function InsightsPanel() {
     if (highlightOwner !== 'insights') setHighlighted(null);
   }, [highlightOwner]);
 
+  // Cheap synchronous scans only — O(nodes + edges) each. The expensive
+  // analytics live in the worker request below.
   const insights = useMemo(() => {
-    if (!open) return null; // betweenness is the only non-trivial cost — skip while closed
+    if (!open) return null; // skip all scanning while closed
     return {
       pinned: nodes.filter(
         (n) => n.kind === 'document' && annotations[annotationKey(n)]?.pinned,
       ),
       orphans: computeOrphans(nodes, edges),
       duplicates: duplicatePairs,
-      bridges: computeBridges(nodes, edges, {
-        topN: BRIDGE_TOP_N,
-        minScore: BRIDGE_MIN_SCORE,
-        maxPivots: BRIDGE_MAX_PIVOTS,
-      }),
       stale: computeStaleDocs(nodes, Date.now(), STALE_DOC_DAYS),
     };
   }, [open, nodes, edges, duplicatePairs, annotations]);
+
+  // Bridges / hubs / cluster stats arrive async from the insights worker.
+  // Store churn while open (patchNodes/setEdges always produce new arrays)
+  // re-requests; the client coalesces to the latest request, and the
+  // requestSeq counter drops responses that a newer request has already
+  // superseded (the SearchOverlay stale-guard idiom).
+  useEffect(() => {
+    if (!open) return;
+    const seq = ++requestSeq.current;
+    setAnalyzing(true);
+    requestInsights(nodes, edges)
+      .then((result) => {
+        if (seq !== requestSeq.current) return; // stale response
+        setAnalysis(result);
+        setAnalysisFailed(false);
+        setAnalyzing(false);
+      })
+      .catch((err: unknown) => {
+        if (seq !== requestSeq.current) return; // superseded by a newer request
+        console.warn('insights analysis failed', err);
+        // Keep the last good result; flag the failure so an absent result
+        // isn't rendered as a successfully computed empty analysis.
+        setAnalysisFailed(true);
+        setAnalyzing(false);
+      });
+  }, [open, nodes, edges]);
+
+  // Cluster membership for the Clusters section's frame/highlight actions —
+  // a single cheap pass, main-thread-safe.
+  const clusterMembers = useMemo(() => {
+    if (!open) return new Map<number, string[]>();
+    const members = new Map<number, string[]>();
+    for (const n of nodes) {
+      if (n.kind !== 'document' || n.cluster < 0) continue;
+      const list = members.get(n.cluster);
+      if (list) list.push(n.id);
+      else members.set(n.cluster, [n.id]);
+    }
+    return members;
+  }, [open, nodes]);
 
   if (!open || !insights) return null;
 
@@ -92,19 +145,40 @@ export default function InsightsPanel() {
 
   const dupIds = [...new Set(insights.duplicates.flatMap((d) => [d.a, d.b]))];
 
+  // Worker-computed sections: keep showing the last result while a refresh
+  // is in flight; only the very first computation gets the pending row. A
+  // failure with no result to fall back on gets its own row so it can't be
+  // mistaken for a corpus with no bridges/hubs/clusters.
+  const pendingAnalysis = analysis === null && analyzing;
+  const failedAnalysis = analysis === null && !analyzing && analysisFailed;
+  const bridges = analysis?.bridges ?? [];
+  const hubs = analysis?.hubs ?? [];
+  const clusterStats = analysis?.clusterStats ?? [];
+  const analyzingRow = <p className="insights__hint">Analyzing…</p>;
+  const failedRow = (
+    <p className="side-panel__summary is-fallback">
+      Analysis didn't complete — close and reopen this panel to retry.
+    </p>
+  );
+
+  const clusterName = (c: number): string =>
+    clusterNames[c] ?? localClusterNames[c] ?? `Cluster ${c}`;
+
+  // A pending section shows "(…)" and no highlight button — the ids aren't
+  // known yet, so a highlight toggle would be a lie.
   const section = (
     key: SectionKey,
     label: string,
-    count: number,
+    count: number | null,
     ids: string[],
     body: ReactNode,
   ) => (
     <div className="insights__section">
       <div className="insights__section-head">
         <p className="side-panel__section-label">
-          {label} ({count})
+          {label} ({count ?? '…'})
         </p>
-        {count > 0 && (
+        {count !== null && count > 0 && (
           <button
             type="button"
             className={`insights__highlight-btn${highlighted === key ? ' is-active' : ''}`}
@@ -236,9 +310,13 @@ export default function InsightsPanel() {
           {section(
             'bridges',
             'Bridge documents',
-            insights.bridges.length,
-            insights.bridges.map((b) => b.id),
-            insights.bridges.length === 0 ? (
+            pendingAnalysis || failedAnalysis ? null : bridges.length,
+            bridges.map((b) => b.id),
+            pendingAnalysis ? (
+              analyzingRow
+            ) : failedAnalysis ? (
+              failedRow
+            ) : bridges.length === 0 ? (
               <p className="side-panel__summary is-fallback">
                 No strong bridges — the corpus has no single connector doc.
               </p>
@@ -248,7 +326,7 @@ export default function InsightsPanel() {
                   Shortest paths between clusters run through these — either the most
                   important docs in the corpus, or the most confused.
                 </p>
-                {insights.bridges.map((b) => (
+                {bridges.map((b) => (
                   <div className="insights__bridge" key={b.id}>
                     <button type="button" className="insights__row" title={`${titleOf(b.id)} — click to focus in the graph`} onClick={() => focusNode(b.id)}>
                       {titleOf(b.id)}
@@ -260,6 +338,95 @@ export default function InsightsPanel() {
                       />
                     </div>
                   </div>
+                ))}
+              </>
+            ),
+          )}
+
+          <hr className="hairline" />
+
+          {section(
+            'hubs',
+            'Hub documents',
+            pendingAnalysis || failedAnalysis ? null : hubs.length,
+            hubs.map((h) => h.id),
+            pendingAnalysis ? (
+              analyzingRow
+            ) : failedAnalysis ? (
+              failedRow
+            ) : hubs.length === 0 ? (
+              <p className="side-panel__summary is-fallback">
+                No hubs yet — no document has direct connections.
+              </p>
+            ) : (
+              <>
+                <p className="insights__hint">
+                  The most-connected documents by direct doc-to-doc links (topic
+                  groupings don't count) — the corpus's reference points.
+                </p>
+                {hubs.map((h) => (
+                  <button
+                    key={h.id}
+                    type="button"
+                    className="insights__row"
+                    title={`${titleOf(h.id)} — click to focus in the graph`}
+                    onClick={() => focusNode(h.id)}
+                  >
+                    {titleOf(h.id)}
+                    <span className="insights__pair-sim">
+                      {h.docDegree} {h.docDegree === 1 ? 'connection' : 'connections'}
+                    </span>
+                  </button>
+                ))}
+              </>
+            ),
+          )}
+
+          <hr className="hairline" />
+
+          {section(
+            'clusters',
+            'Clusters',
+            pendingAnalysis || failedAnalysis ? null : clusterStats.length,
+            clusterStats.flatMap((c) => clusterMembers.get(c.cluster) ?? []),
+            pendingAnalysis ? (
+              analyzingRow
+            ) : failedAnalysis ? (
+              failedRow
+            ) : clusterStats.length === 0 ? (
+              <p className="side-panel__summary is-fallback">
+                No clusters yet — communities appear once documents connect.
+              </p>
+            ) : (
+              <>
+                <p className="insights__hint">
+                  Detected communities: size, internal links, and the keywords
+                  that set each one apart.
+                </p>
+                {clusterStats.map((c) => (
+                  <button
+                    key={c.cluster}
+                    type="button"
+                    className="insights__row"
+                    title={`${clusterName(c.cluster)} — click to frame its documents in the graph`}
+                    onClick={() => {
+                      const members = clusterMembers.get(c.cluster);
+                      if (members && members.length > 0) sendCamera('frameSet', members);
+                    }}
+                  >
+                    <span
+                      className="insights__dot"
+                      style={{ background: hexFor(c.cluster) }}
+                      aria-hidden="true"
+                    />
+                    {clusterName(c.cluster)}
+                    <span className="insights__cluster-meta">
+                      {c.docCount} {c.docCount === 1 ? 'doc' : 'docs'} · {c.internalEdges}{' '}
+                      internal {c.internalEdges === 1 ? 'link' : 'links'}
+                      {c.internalEdges > 0 && ` · avg weight ${(c.avgWeight * 100).toFixed(0)}%`}
+                      {c.topKeywords.length > 0 && ` · ${c.topKeywords.join(', ')}`}
+                    </span>
+                  </button>
                 ))}
               </>
             ),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DocNode, Edge } from '../model/types';
-import { computeBridges, computeOrphans, computeStaleDocs } from './insights';
+import { computeBridges, computeHubs, computeOrphans, computeStaleDocs } from './insights';
 
 function mkNode(
   id: string,
@@ -110,6 +110,63 @@ describe('computeBridges', () => {
     expect(bridges.length).toBeGreaterThan(0);
     expect(['c', 'm', 'd']).toContain(bridges[0].id);
     expect(bridges.map((b) => b.id).slice(0, 3)).toContain('m');
+  });
+});
+
+describe('computeHubs', () => {
+  it('ranks by doc-edge degree, ignoring topic edges entirely', () => {
+    // hub connects to three docs; topical connects only to a topic node —
+    // topic popularity must not count as connectivity
+    const nodes = [
+      mkNode('hub'),
+      mkNode('a'),
+      mkNode('b'),
+      mkNode('c'),
+      mkNode('topical'),
+      mkNode('t', 'topic'),
+    ];
+    const edges = [
+      mkEdge('hub', 'a'),
+      mkEdge('hub', 'b', 'reference'),
+      mkEdge('hub', 'c', 'keyword'),
+      mkEdge('a', 'b'),
+      mkEdge('topical', 't', 'topic'),
+      mkEdge('t', 'hub', 'topic'),
+    ];
+    const hubs = computeHubs(nodes, edges, 8);
+    expect(hubs[0]).toEqual({ id: 'hub', docDegree: 3 });
+    expect(hubs.map((h) => h.id)).not.toContain('topical');
+    expect(hubs.map((h) => h.id)).not.toContain('t');
+  });
+
+  it('counts a multiply-connected pair once', () => {
+    const nodes = [mkNode('a'), mkNode('b'), mkNode('c')];
+    const edges = [
+      mkEdge('a', 'b'),
+      mkEdge('a', 'b', 'reference'),
+      mkEdge('a', 'b', 'keyword'),
+      mkEdge('a', 'c'),
+    ];
+    const hubs = computeHubs(nodes, edges, 8);
+    expect(hubs[0]).toEqual({ id: 'a', docDegree: 2 });
+  });
+
+  it('respects topN and breaks degree ties by id', () => {
+    const nodes = ['a', 'b', 'c', 'd'].map((id) => mkNode(id));
+    // square: every node has degree 2
+    const edges = [
+      mkEdge('a', 'b'),
+      mkEdge('b', 'c'),
+      mkEdge('c', 'd'),
+      mkEdge('d', 'a'),
+    ];
+    expect(computeHubs(nodes, edges, 2).map((h) => h.id)).toEqual(['a', 'b']);
+  });
+
+  it('never surfaces zero-degree docs', () => {
+    const nodes = [mkNode('a'), mkNode('b'), mkNode('lonely')];
+    const edges = [mkEdge('a', 'b')];
+    expect(computeHubs(nodes, edges, 8).map((h) => h.id)).toEqual(['a', 'b']);
   });
 });
 

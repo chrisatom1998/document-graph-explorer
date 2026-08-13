@@ -22,6 +22,15 @@
 
 import type { DocNode, Edge } from '../model/types';
 
+/**
+ * The minimal node/edge shapes the insight computations actually read.
+ * The insights worker ships slimmed copies over postMessage (no titles,
+ * summaries, or text), so the pure functions are typed against these picks —
+ * full DocNode/Edge values remain assignable for main-thread callers.
+ */
+export type InsightNode = Pick<DocNode, 'id' | 'kind' | 'cluster' | 'keywords'>;
+export type InsightEdge = Pick<Edge, 'source' | 'target' | 'kind' | 'weight'>;
+
 export interface BridgeDoc {
   id: string;
   /** Betweenness normalized to [0, 1] by the (n-1)(n-2)/2 pair count. */
@@ -32,7 +41,7 @@ export interface BridgeDoc {
  * The "counts as a real document-to-document connection" policy, shared with
  * pathfinding.ts so route-finding and insights can never disagree on it.
  */
-export function isDocEdge(e: Edge): boolean {
+export function isDocEdge(e: Pick<Edge, 'kind'>): boolean {
   return e.kind !== 'topic';
 }
 
@@ -56,8 +65,8 @@ export function computeOrphans(nodes: DocNode[], edges: Edge[]): string[] {
  * before exact scores do. Cost: O(pivots · E).
  */
 export function computeBridges(
-  nodes: DocNode[],
-  edges: Edge[],
+  nodes: InsightNode[],
+  edges: InsightEdge[],
   opts: { topN: number; minScore: number; maxPivots: number },
 ): BridgeDoc[] {
   const ids = nodes.filter((n) => n.kind === 'document').map((n) => n.id);
@@ -129,6 +138,50 @@ export function computeBridges(
   }
   out.sort((x, y) => y.score - x.score);
   return out.slice(0, opts.topN);
+}
+
+export interface HubDoc {
+  id: string;
+  /**
+   * Count of distinct document-to-document connections. NOT DocNode.degree:
+   * the store's degree includes topic edges, which would inflate any doc
+   * carrying a popular topic without it being genuinely well-connected.
+   */
+  docDegree: number;
+}
+
+/**
+ * Top hub documents by document-edge degree. Parallel edges of different
+ * kinds between the same pair count once — a neighbor is a neighbor, however
+ * many ways it is connected. Ties break by id so the ranking is stable across
+ * runs. Docs with no doc-edges never appear (degree 0 is not a hub).
+ */
+export function computeHubs(
+  nodes: InsightNode[],
+  edges: InsightEdge[],
+  topN: number,
+): HubDoc[] {
+  const docIds = new Set(
+    nodes.filter((n) => n.kind === 'document').map((n) => n.id),
+  );
+  const neighbors = new Map<string, Set<string>>();
+  for (const e of edges) {
+    if (!isDocEdge(e)) continue;
+    if (e.source === e.target) continue;
+    if (!docIds.has(e.source) || !docIds.has(e.target)) continue;
+    let a = neighbors.get(e.source);
+    if (!a) neighbors.set(e.source, (a = new Set()));
+    a.add(e.target);
+    let b = neighbors.get(e.target);
+    if (!b) neighbors.set(e.target, (b = new Set()));
+    b.add(e.source);
+  }
+  const out: HubDoc[] = [...neighbors.entries()].map(([id, set]) => ({
+    id,
+    docDegree: set.size,
+  }));
+  out.sort((x, y) => y.docDegree - x.docDegree || x.id.localeCompare(y.id));
+  return out.slice(0, Math.max(0, topN));
 }
 
 export interface StaleDoc {
