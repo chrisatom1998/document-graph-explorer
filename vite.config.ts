@@ -62,6 +62,10 @@ export default defineConfig(({ mode }) => ({
         // chunk and accidentally turning an async scene into an eager preload.
         onlyExplicitManualChunks: true,
         manualChunks(id) {
+          // Follow-mode framing is used by the eager collaboration store, but
+          // keeping that feature seam separate prevents camera sync growth from
+          // consuming the tightly budgeted application entry chunk.
+          if (/[/\\]src[/\\]collab[/\\]viewFrame\.ts$/.test(id)) return 'collab-view';
           if (!id.includes('node_modules')) return undefined;
           // React is the only eager framework vendor. Feature libraries stay
           // with their lazy route/panel so they cannot leak into index.html.

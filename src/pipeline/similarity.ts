@@ -59,6 +59,28 @@ function boundedDupInsert(list: DuplicatePair[], pair: DuplicatePair): void {
   if (list.length > MAX_DUPLICATE_PAIRS) list.pop();
 }
 
+export interface SemanticProgress {
+  processed: number;
+  total: number;
+  note: string;
+}
+
+function pairCountFor(n: number): number {
+  return n < 2 ? 0 : (n * (n - 1)) / 2;
+}
+
+function shouldYield(progress: SemanticProgress, chunkSize: number): boolean {
+  return progress.processed > 0 && progress.processed % chunkSize === 0;
+}
+
+function progressFor(processed: number, total: number): SemanticProgress {
+  return {
+    processed,
+    total,
+    note: `Scanning ${processed.toLocaleString()} / ${total.toLocaleString()} semantic pairs`,
+  };
+}
+
 /**
  * Bounded per-doc top-k candidates + duplicate pairs, plus the ids/vectors
  * they were computed over. This is the mutable state an incremental caller
@@ -130,6 +152,37 @@ export function buildSemanticIndex(
       }
     }
   }
+  return { ids, vectors, dims, top, duplicates };
+}
+
+export async function buildSemanticIndexChunked(
+  ids: string[],
+  vectors: Float32Array,
+  dims: number,
+  params: SemanticParams,
+  onProgress?: (progress: SemanticProgress) => void,
+): Promise<SemanticIndex> {
+  const n = ids.length;
+  const top: Candidate[][] = Array.from({ length: n }, () => []);
+  const duplicates: DuplicatePair[] = [];
+  const totalPairs = pairCountFor(n);
+  const progressChunk = Math.max(256, Math.min(2048, Math.ceil(totalPairs / 40)));
+
+  if (n >= 2 && dims > 0 && params.topK > 0) {
+    let processedPairs = 0;
+    for (let i = 0; i < n; i += 1) {
+      for (let j = i + 1; j < n; j += 1) {
+        considerPair(ids, vectors, dims, top, duplicates, params, i, j);
+        processedPairs += 1;
+
+        if (onProgress && shouldYield(progressFor(processedPairs, totalPairs), progressChunk)) {
+          onProgress(progressFor(processedPairs, totalPairs));
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+      }
+    }
+  }
+
   return { ids, vectors, dims, top, duplicates };
 }
 

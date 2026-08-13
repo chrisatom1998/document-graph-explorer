@@ -17,6 +17,7 @@ import { easing } from 'maath';
 import { CAMERA_GLIDE_MS } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { noteLocalCameraActivity, useCollabStore } from '../collab/store';
 import type { CameraCommand } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { cameraPose } from './cameraPose';
@@ -29,6 +30,7 @@ const ARRIVE_EPS_SQ = 0.25; // "< 0.5u" arrival check, squared
 // Arrow-key pan rate as a fraction of the target distance per second, so the
 // pan feels the same whether zoomed into one node or viewing the whole nebula.
 const PAN_SPEED = 0.8;
+const COLLAB_POSE_INTERVAL_MS = 100;
 
 // module-level temps — single rig instance, zero per-frame allocations
 const desiredPos = new THREE.Vector3();
@@ -45,6 +47,7 @@ export default function CameraRig() {
 
   const lastNonce = useRef(0);
   const tweenActive = useRef(false);
+  const lastCollabPoseAt = useRef(0);
   const lastInteraction = useRef(
     typeof performance !== 'undefined' ? performance.now() : 0,
   );
@@ -161,6 +164,7 @@ export default function CameraRig() {
     const cmd = ui.cameraCommand;
     if (cmd && cmd.nonce !== lastNonce.current) {
       lastNonce.current = cmd.nonce;
+      if (cmd.kind !== 'pose') noteLocalCameraActivity();
       beginCommand(cmd, state.camera, controls);
     }
 
@@ -168,6 +172,10 @@ export default function CameraRig() {
     // camera and the orbit target by the same screen-space delta preserves the
     // orbit angle/distance, so controls.update() below leaves it untouched.
     if (panInput.x !== 0 || panInput.y !== 0) {
+      noteLocalCameraActivity();
+      if (useCollabStore.getState().followMode) {
+        useCollabStore.getState().setFollowMode(false);
+      }
       tweenActive.current = false; // a manual pan cancels any active glide
       const cam = state.camera;
       const dist = Math.max(cam.position.distanceTo(controls.target), 1);
@@ -216,9 +224,19 @@ export default function CameraRig() {
     const persp = state.camera as THREE.PerspectiveCamera;
     cameraPose.fov = persp.fov ?? 55;
     cameraPose.aspect = persp.aspect ?? 16 / 9;
+
+    const now = performance.now();
+    if (now - lastCollabPoseAt.current >= COLLAB_POSE_INTERVAL_MS) {
+      lastCollabPoseAt.current = now;
+      useCollabStore.getState().syncCameraPose();
+    }
   });
 
   const onStart = (): void => {
+    noteLocalCameraActivity();
+    if (useCollabStore.getState().followMode) {
+      useCollabStore.getState().setFollowMode(false);
+    }
     lastInteraction.current = performance.now();
     tweenActive.current = false; // user input cancels the active glide
   };

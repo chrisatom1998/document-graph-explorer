@@ -154,6 +154,7 @@ async function enrichBatch(
     '- "summary": one crisp sentence (max 25 words) saying what the document covers',
     `- "topics": 3-${TOPICS_PER_DOC} short lowercase topic labels (1-3 words each), specific over generic`,
     'Respond with ONLY a JSON array of these objects — no prose, no code fences.',
+    'Do not invent topics that are not explicitly grounded in the document.',
     '',
     `Documents (JSON): ${JSON.stringify(payload)}`,
   ].join('\n');
@@ -175,12 +176,22 @@ async function enrichBatch(
     // caps keep the blast radius to this doc's own fields instead of letting
     // an oversized summary or a topic label carrying a paragraph of
     // instructions propagate into pass 2, cluster names, and exports.
+    if (rec.summary.includes('```')) continue;
     const topics = Array.isArray(rec.topics)
       ? rec.topics
           .filter((t): t is string => typeof t === 'string' && t.trim() !== '')
-          .map((t) => t.trim().toLowerCase().slice(0, MAX_TOPIC_CHARS))
+          .map((t) =>
+            t
+              .trim()
+              .toLowerCase()
+              .replace(/[^a-z0-9+#.\s/-]/g, '')
+              .replace(/[\s/\\_,-]+/g, ' ')
+              .trim()
+              .slice(0, MAX_TOPIC_CHARS),
+          )
           .slice(0, TOPICS_PER_DOC)
       : [];
+    if (topics.length === 0) continue;
     results.set(rec.docId, {
       summary: rec.summary.trim().slice(0, MAX_SUMMARY_CHARS),
       topics,
@@ -202,6 +213,7 @@ async function canonicalizeTopics(topics: string[]): Promise<Map<string, string>
     '(e.g. "auth", "authentication", "authn" all become "authentication").',
     'Respond with ONLY the JSON object {"canon": [{"from": existing label, "to": canonical label}, ...]},',
     'listing only labels that should change. Keep canonical forms concise and lowercase.',
+    'Do not merge unrelated labels just because they share a few letters.',
     '',
     `Labels (JSON): ${JSON.stringify(topics)}`,
   ].join('\n');

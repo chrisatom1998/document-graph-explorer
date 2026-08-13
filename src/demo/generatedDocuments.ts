@@ -14,6 +14,7 @@ import { textToPdfBytes } from './pdfWriter';
  * "keeps every cross-reference inside the corpus" test.
  */
 export const GENERATED_DEMO_DOCUMENT_COUNT = 64;
+export const BENCHMARK_DEMO_DOCUMENT_COUNT = 2000;
 export const GENERATED_DEMO_FILENAME_PREFIX = 'knowledge-record-';
 
 type DemoTheme = {
@@ -353,16 +354,17 @@ function dayOfYear(index: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-export function generatedDemoFilename(index: number): string {
+export function generatedDemoFilename(index: number, count = GENERATED_DEMO_DOCUMENT_COUNT): string {
   const theme = THEMES[(index - 1) % THEMES.length]!;
-  return `${GENERATED_DEMO_FILENAME_PREFIX}${String(index).padStart(4, '0')}-${theme.slug}.pdf`;
+  const paddedIndex = String(index).padStart(Math.max(4, String(count).length), '0');
+  return `${GENERATED_DEMO_FILENAME_PREFIX}${paddedIndex}-${theme.slug}.pdf`;
 }
 
 export function isGeneratedDemoFilename(name: string, count: number): boolean {
-  const match = new RegExp(`^${GENERATED_DEMO_FILENAME_PREFIX}(\\d{4})-[a-z-]+\\.pdf$`).exec(name);
+  const match = new RegExp(`^${GENERATED_DEMO_FILENAME_PREFIX}(\\d+)-[a-z-]+\\.pdf$`).exec(name);
   if (!match) return false;
   const index = Number(match[1]);
-  return index >= 1 && index <= count && generatedDemoFilename(index) === name;
+  return index >= 1 && index <= count && generatedDemoFilename(index, count) === name;
 }
 
 /**
@@ -417,7 +419,11 @@ const PRESSURES = [
  * in entities, narrative, and numbers so embedding cosine stays below the
  * duplicate threshold used by Insights.
  */
-export function generatedDemoText(index: number, theme: DemoTheme = THEMES[(index - 1) % THEMES.length]!): string {
+export function generatedDemoText(
+  index: number,
+  theme: DemoTheme = THEMES[(index - 1) % THEMES.length]!,
+  count = GENERATED_DEMO_DOCUMENT_COUNT,
+): string {
   const rng = mulberry32(index * 2654435761);
   const owner = pick(rng, PEOPLE);
   const reviewer = pick(rng, PEOPLE.filter((p) => p !== owner));
@@ -445,7 +451,7 @@ export function generatedDemoText(index: number, theme: DemoTheme = THEMES[(inde
   const samples = 20 + ((index * 19) % 180);
   const latencyMs = 40 + ((index * 23) % 900);
   const date = dayOfYear(index);
-  const ref = `KNEB-${String(index).padStart(4, '0')}`;
+  const ref = `KNEB-${String(index).padStart(Math.max(4, String(count).length), '0')}`;
   const alias = `${theme.slug.slice(0, 3).toUpperCase()}-${(index * 41) % 9000 + 1000}`;
   const metricA = theme.measures.split(',')[0]!.trim();
   const metricB = theme.measures.split(',')[1]?.trim() ?? theme.measures;
@@ -480,12 +486,21 @@ export function generatedDemoText(index: number, theme: DemoTheme = THEMES[(inde
   // the reference-edge pass (mentions in body text) yields real, predictable
   // connections: chains within a theme, bridges across themes, and citations
   // into the committed sample PDFs.
-  const prevInTheme = index - THEMES.length >= 1 ? index - THEMES.length : index + THEMES.length * 2;
+  const prevInTheme =
+    count > THEMES.length * 2
+      ? index - THEMES.length >= 1
+        ? index - THEMES.length
+        : index + THEMES.length * 2
+      : ((index - THEMES.length - 1 + count) % count) + 1;
   const nextInTheme =
-    index + THEMES.length <= GENERATED_DEMO_DOCUMENT_COUNT ? index + THEMES.length : index - THEMES.length * 2;
-  let partner = ((index * 137 + 71) % GENERATED_DEMO_DOCUMENT_COUNT) + 1;
-  if (partner === index || (partner - index) % THEMES.length === 0) {
-    partner = (partner % GENERATED_DEMO_DOCUMENT_COUNT) + 1;
+    count > THEMES.length * 2
+      ? index + THEMES.length <= count
+        ? index + THEMES.length
+        : index - THEMES.length * 2
+      : ((index + THEMES.length - 1) % count) + 1;
+  let partner = ((index * 137 + 71) % count) + 1;
+  if (partner === index || (partner - index + count) % THEMES.length === 0) {
+    partner = (partner % count) + 1;
   }
   const partnerTheme = THEMES[(partner - 1) % THEMES.length]!;
   const citations = SAMPLE_CITATIONS[theme.slug] ?? [];
@@ -495,19 +510,19 @@ export function generatedDemoText(index: number, theme: DemoTheme = THEMES[(inde
   // honest while the filenames themselves stay deterministic.
   const relRng = mulberry32(index * 96487 + 17);
   const prevLine = pick(relRng, [
-    `- Continuity: ${generatedDemoFilename(prevInTheme)} carries the prior cycle of this ${theme.title} thread.`,
-    `- Earlier chapter: ${generatedDemoFilename(prevInTheme)} holds where this stood last cycle.`,
-    `- Backstory lives in ${generatedDemoFilename(prevInTheme)}, the previous pass over the same ground.`,
+    `- Continuity: ${generatedDemoFilename(prevInTheme, count)} carries the prior cycle of this ${theme.title} thread.`,
+    `- Earlier chapter: ${generatedDemoFilename(prevInTheme, count)} holds where this stood last cycle.`,
+    `- Backstory lives in ${generatedDemoFilename(prevInTheme, count)}, the previous pass over the same ground.`,
   ]);
   const nextLine = pick(relRng, [
-    `- Follow-up: ${generatedDemoFilename(nextInTheme)} picks up the open actions in the next cycle.`,
-    `- Next in line: ${generatedDemoFilename(nextInTheme)} inherits whatever stays unresolved here.`,
-    `- Handoff lands in ${generatedDemoFilename(nextInTheme)} once this record closes out.`,
+    `- Follow-up: ${generatedDemoFilename(nextInTheme, count)} picks up the open actions in the next cycle.`,
+    `- Next in line: ${generatedDemoFilename(nextInTheme, count)} inherits whatever stays unresolved here.`,
+    `- Handoff lands in ${generatedDemoFilename(nextInTheme, count)} once this record closes out.`,
   ]);
   const partnerLine = pick(relRng, [
-    `- Cross-team view: ${generatedDemoFilename(partner)} reads the same pressure from the ${partnerTheme.title} side.`,
-    `- Sibling signal: ${generatedDemoFilename(partner)} watches a parallel symptom inside ${partnerTheme.title}.`,
-    `- Outside angle: ${generatedDemoFilename(partner)} frames this from ${partnerTheme.title}'s vantage.`,
+    `- Cross-team view: ${generatedDemoFilename(partner, count)} reads the same pressure from the ${partnerTheme.title} side.`,
+    `- Sibling signal: ${generatedDemoFilename(partner, count)} watches a parallel symptom inside ${partnerTheme.title}.`,
+    `- Outside angle: ${generatedDemoFilename(partner, count)} frames this from ${partnerTheme.title}'s vantage.`,
   ]);
   const citationLine = citation
     ? pick(relRng, [
@@ -571,11 +586,12 @@ ${detailLines.join('\n')}
 
 /** Build the synthetic, browser-local portion of the large demo corpus — real PDFs. */
 export function createGeneratedDemoDocuments(count: number): IngestFile[] {
+  const effectiveCount = Math.max(GENERATED_DEMO_DOCUMENT_COUNT, count);
   return Array.from({ length: count }, (_, offset) => {
     const index = offset + 1;
     const theme = THEMES[offset % THEMES.length]!;
-    const name = generatedDemoFilename(index);
-    const text = generatedDemoText(index, theme);
+    const name = generatedDemoFilename(index, effectiveCount);
+    const text = generatedDemoText(index, theme, effectiveCount);
     const title = text.split('\n')[0]!.replace(/^#\s*/, '');
     return {
       fileId: crypto.randomUUID(),
@@ -589,4 +605,8 @@ export function createGeneratedDemoDocuments(count: number): IngestFile[] {
       // optimization was sized for the old 1,964-doc text corpus.
     };
   });
+}
+
+export function createBenchmarkDemoDocuments(count = BENCHMARK_DEMO_DOCUMENT_COUNT): IngestFile[] {
+  return createGeneratedDemoDocuments(count);
 }

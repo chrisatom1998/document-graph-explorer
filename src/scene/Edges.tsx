@@ -155,6 +155,8 @@ fatMaterial.onBeforeCompile = (shader) => {
 
 export default function Edges() {
   const edges = useGraphStore((s) => s.edges);
+  const dims = useUiStore((s) => s.dims);
+  const qualityTier = useUiStore((s) => s.qualityTier);
   // Bezier resolution follows the auto-quality ladder (spec §7.4): degraded
   // tiers drop to coarser arcs. Selector collapses to a boolean so the
   // component only re-renders (and rebuilds buffers) when crossing the line.
@@ -164,6 +166,12 @@ export default function Edges() {
   // Ribbons cost ~4x the vertices of GL_LINES, so they ride the top of the
   // quality ladder only; the 2D star chart keeps hairlines by design.
   const fat = useUiStore((s) => s.dims === 3 && s.qualityTier < 2);
+  const renderEdges = useMemo(() => {
+    if (edges.length <= 1800) return edges;
+    const cap = dims === 2 ? 900 : qualityTier >= 2 ? 1200 : 1500;
+    const ranked = [...edges].sort((a, b) => b.weight - a.weight);
+    return ranked.slice(0, Math.max(cap, 1));
+  }, [dims, edges, qualityTier]);
   const raycaster = useThree((s) => s.raycaster);
 
   // LineMaterial needs the viewport size to convert linewidth px -> clip
@@ -186,20 +194,20 @@ export default function Edges() {
   // owns `segments` line segments = 2*segments vertices. positions fill per
   // frame; colors fill on edges/hover/selection/search/filter changes.
   const attrs = useMemo(() => {
-    const floats = edges.length * segments * 6;
+    const floats = renderEdges.length * segments * 6;
     const positions = new THREE.BufferAttribute(new Float32Array(floats), 3);
     positions.setUsage(THREE.DynamicDrawUsage);
     const colors = new THREE.BufferAttribute(new Float32Array(floats), 3);
     colors.setUsage(THREE.DynamicDrawUsage);
     return { positions, colors };
-  }, [edges, segments]);
+  }, [renderEdges, segments]);
 
   // Fat path wraps the SAME arrays in instanced interleaved buffers
   // (setPositions/setColors keep a Float32Array by reference, no copy), so
   // the per-frame fill below feeds both paths; only the needsUpdate flags
   // differ. Rebuilt with attrs identity; disposed below.
   const fatGeom = useMemo(() => {
-    if (!fat || edges.length === 0) return null;
+    if (!fat || renderEdges.length === 0) return null;
     const g = new LineSegmentsGeometry();
     g.setPositions(attrs.positions.array as Float32Array);
     g.setColors(attrs.colors.array as Float32Array);
@@ -210,7 +218,7 @@ export default function Edges() {
       THREE.DynamicDrawUsage,
     );
     return g;
-  }, [attrs, fat, edges.length]);
+  }, [attrs, fat, renderEdges.length]);
 
   const fatLine = useMemo(() => {
     if (!fatGeom) return null;
@@ -287,7 +295,7 @@ export default function Edges() {
     const { hoveredId, selectedId, searchResults, filter } = ui;
     const emphasis = computeEmphasis(
       nodes,
-      edges,
+      renderEdges,
       hoveredId,
       selectedId,
       searchResults,
@@ -299,12 +307,12 @@ export default function Edges() {
     for (const n of nodes) clusterOf.set(n.id, n.cluster);
     // Count visible edges for density fade (hidden edges shouldn't dim the rest)
     let visibleCount = 0;
-    for (const e of edges) if (!isEdgeHidden(e, ui)) visibleCount++;
+    for (const e of renderEdges) if (!isEdgeHidden(e, ui)) visibleCount++;
     const fade = densityFade(visibleCount);
     const col = attrs.colors.array as Float32Array;
     const vertsPerEdge = segments * 2;
-    for (let i = 0; i < edges.length; i++) {
-      const e = edges[i];
+    for (let i = 0; i < renderEdges.length; i++) {
+      const e = renderEdges[i];
       const base = i * vertsPerEdge * 3;
       // Hidden: weight below the hairball slider, collapse mode, or a topic
       // edge whose hub octahedron isn't rendered (toggle off).
@@ -370,7 +378,7 @@ export default function Edges() {
   };
 
   useFrame(() => {
-    if (edges.length === 0) return;
+    if (renderEdges.length === 0) return;
     if (colorsDirty.current) {
       recomputeColors();
       colorsDirty.current = false;
@@ -387,8 +395,8 @@ export default function Edges() {
     // 2D star chart: control point at the chord midpoint degenerates the
     // bezier to a straight line — same buffers, no bow.
     const flat = useUiStore.getState().dims === 2;
-    for (let i = 0; i < edges.length; i++) {
-      const e = edges[i];
+    for (let i = 0; i < renderEdges.length; i++) {
+      const e = renderEdges[i];
       const s = slotOfId.get(e.source);
       const t = slotOfId.get(e.target);
       if (s === undefined || t === undefined || s >= count || t >= count) {
@@ -435,7 +443,7 @@ export default function Edges() {
     }
   });
 
-  if (edges.length === 0) return null;
+  if (renderEdges.length === 0) return null;
 
   if (fatLine) return <primitive object={fatLine} />;
 

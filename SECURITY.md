@@ -13,6 +13,7 @@ is no server, no account, no telemetry, and no analytics.
 | `npm run build`, AI enrichment **on** with the **OpenRouter** provider (opt-in, user supplies an OpenRouter key) | Each document's full stored text is sent to `openrouter.ai`, which routes it to the model the user selected, **only** for the AI features the user explicitly triggers. Enormous files are capped at 240,000 characters. Off by default. |
 | `npm run build`, chat provider set to **OpenRouter** (opt-in, user supplies an OpenRouter key) | The question and the document passages retrieved for it are sent to `openrouter.ai`, which routes them to the model the user selected. Only when the user picks this provider and asks a question. Off by default. |
 | `npm run build`, enrichment or chat provider set to **Ollama** (opt-in) | **No external network.** Requests go to a user-run Ollama server on this machine (`127.0.0.1:11434` / `localhost:11434`); nothing leaves the device. The CSP admits only those two loopback hosts for it. |
+| `npm run build`, collaboration session started | Signaling WebSocket to `signaling.yjs.dev` so peers can find each other. Annotations and presence may leave the browser over the encrypted room; the corpus stays local. Off until the user starts or joins a session. |
 
 > **Offline mode (Settings toggle) vs the air-gapped build:** the normal build
 > includes an "Offline mode" toggle that blocks all external requests in
@@ -49,7 +50,7 @@ can decode the fragment locally.
 Three independent layers:
 
 1. **Content-Security-Policy.** In the airgap build the CSP's `connect-src`
-   drops every named host (OpenRouter and the Ollama loopback ports),
+   drops every named host (OpenRouter, the Ollama loopback ports, and the yjs signaling server),
    leaving `'self' blob:` only, so the browser physically blocks every
    off-origin request — even from a buggy dependency.
 2. **Runtime refusal.** The `AIRGAP` flag makes the enrichment/chat functions

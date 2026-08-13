@@ -19,7 +19,7 @@ export function buildCsp({ airgap }: { airgap: boolean }): string {
   // from airgap builds anyway so its "no host anywhere" guarantee holds.
   const connectSrc = airgap
     ? "connect-src 'self' blob:"
-    : "connect-src 'self' blob: https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434";
+    : "connect-src 'self' blob: https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434 wss://signaling.yjs.dev";
   return [
     "default-src 'self'",
     // 'wasm-unsafe-eval' + blob: are both for onnxruntime: it compiles WASM and

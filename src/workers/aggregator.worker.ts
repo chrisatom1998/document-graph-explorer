@@ -12,7 +12,7 @@ import type { AggRequest, AggResponse, Edge } from '../model/types';
 import { findBoilerplateLines } from '../pipeline/boilerplate';
 import { entityEdges } from '../pipeline/entityLinks';
 import { referenceEdges } from '../pipeline/links';
-import { buildSemanticIndex, edgesFromIndex } from '../pipeline/similarity';
+import { buildSemanticIndexChunked, edgesFromIndex } from '../pipeline/similarity';
 import { computeIdf, keywordEdges, topKeywords } from '../pipeline/tfidf';
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -137,10 +137,18 @@ function clusterFromEdges(
   return clusters;
 }
 
-function handleSemantic(req: Extract<AggRequest, { type: 'semantic' }>): void {
+async function handleSemantic(req: Extract<AggRequest, { type: 'semantic' }>): Promise<void> {
   const { ids, vectors, dims, existingEdges, params } = req;
 
-  const index = buildSemanticIndex(ids, vectors, dims, params);
+  const index = await buildSemanticIndexChunked(ids, vectors, dims, params, (progress) => {
+    self.postMessage({
+      requestId: req.requestId,
+      type: 'semantic:progress',
+      processed: progress.processed,
+      total: progress.total,
+      note: progress.note,
+    } satisfies AggResponse);
+  });
   const semEdges = edgesFromIndex(index, params.threshold);
 
   const clusters = clusterFromEdges(ids, [
@@ -172,7 +180,7 @@ self.onmessage = (ev: MessageEvent<AggRequest>) => {
   void (async () => {
     try {
       if (req.type === 'lexical') handleLexical(req);
-      else if (req.type === 'semantic') handleSemantic(req);
+      else if (req.type === 'semantic') await handleSemantic(req);
       else handleCluster(req);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

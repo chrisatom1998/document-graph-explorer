@@ -321,6 +321,13 @@ export type AggResponse =
     }
   | {
       requestId: number;
+      type: 'semantic:progress';
+      processed: number;
+      total: number;
+      note: string;
+    }
+  | {
+      requestId: number;
       type: 'semantic:done';
       edges: Edge[]; // semantic edges only
       clusters: Record<string, number>; // docId -> community (over full edge set)
@@ -395,11 +402,11 @@ export type LayoutRequest =
   | { type: 'reheat'; alpha: number }
   | { type: 'pin'; id: string; x: number; y: number; z: number }
   | { type: 'unpin'; id: string }
-  | { type: 'setDims'; dims: 2 | 3 }
+  | { type: 'setDims'; dims: 2 | 3; epoch?: number }
   | { type: 'pause' }
   | { type: 'resume' }
   | { type: 'returnBuffer'; buffer: ArrayBuffer };
 
 export type LayoutResponse =
   | { type: 'tick'; buffer: ArrayBuffer; count: number; alpha: number }
-  | { type: 'settled' };
+  | { type: 'settled'; epoch?: number };

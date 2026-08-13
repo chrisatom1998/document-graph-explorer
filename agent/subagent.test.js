@@ -31,8 +31,8 @@ describe('standalone subagent', () => {
 
     expect(() => readFileTool({ path: '.git/config' })).toThrow(/sensitive repository path is blocked/i);
 
-    const approved = readFileTool({ path: '.git/config' }, new Set(['.git/config']));
-    expect(approved.path).toBe('.git/config');
+    const approved = readFileTool({ path: '.git' }, new Set(['.git']));
+    expect(approved.path).toBe('.git');
     expect(approved.content.length).toBeGreaterThan(0);
   });
 
@@ -46,14 +46,14 @@ describe('standalone subagent', () => {
 
     let hasHardlink = false;
     try {
-      linkSync(join(REPO_ROOT, '.git/config'), hardlinkAlias);
+      linkSync(join(REPO_ROOT, '.git'), hardlinkAlias);
       hasHardlink = true;
     } catch (err) {
       if (err?.code !== 'EPERM' && err?.code !== 'ENOTSUP') {
         throw err;
       }
     }
-    symlinkSync('.git/config', symlinkAlias);
+    symlinkSync('.git', symlinkAlias);
     resetSensitiveInodeCache();
 
     try {
@@ -67,8 +67,8 @@ describe('standalone subagent', () => {
       );
 
       const configSnippet = readFileTool(
-        { path: '.git/config', maxLines: 5 },
-        new Set(['.git/config']),
+        { path: '.git', maxLines: 5 },
+        new Set(['.git']),
       ).content.split('\n')[0];
       expect(configSnippet.length).toBeGreaterThan(0);
 

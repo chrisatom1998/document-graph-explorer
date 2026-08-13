@@ -70,6 +70,31 @@ describe('annotationStore', () => {
     expect(useAnnotationStore.getState().annotations['k']).toBeUndefined();
   });
 
+  it('persists collaboration updates without replacing their conflict timestamp', async () => {
+    await ensureAnnotationsLoaded('corpus-1');
+    useAnnotationStore.getState().applyRemote('doc', {
+      note: 'from peer',
+      tags: ['shared'],
+      pinned: true,
+      updatedAt: 42,
+    });
+    expect(useAnnotationStore.getState().annotations.doc?.updatedAt).toBe(42);
+
+    await vi.advanceTimersByTimeAsync(400);
+    const [, patch] = updateCorpusAnnotationsMock.mock.calls.at(-1)!;
+    expect(patch.doc).toEqual({
+      note: 'from peer',
+      tags: ['shared'],
+      pinned: true,
+      updatedAt: 42,
+    });
+
+    useAnnotationStore.getState().applyRemote('doc', null);
+    await vi.advanceTimersByTimeAsync(400);
+    const [, deletePatch] = updateCorpusAnnotationsMock.mock.calls.at(-1)!;
+    expect(deletePatch.doc).toBeNull();
+  });
+
   it('pending edits for the outgoing corpus land before re-hydration replaces them', async () => {
     await ensureAnnotationsLoaded('corpus-A');
     useAnnotationStore.getState().update('doc', { note: 'A note' });
