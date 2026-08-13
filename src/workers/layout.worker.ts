@@ -84,6 +84,9 @@ let dims: 2 | 3 = 3;
 let paused = false;
 let settledSent = false;
 let lastPost = 0;
+/** Mirrors the main-thread setDims epoch so settled messages can be matched
+ * to the dims change that caused that reheat. */
+let epoch = 0;
 
 // --- transferable buffer pool (grow 1.5x, drop undersized returns) ---------
 const pool: ArrayBuffer[] = [];
@@ -238,7 +241,7 @@ function settle(alpha: number): void {
   // Final tick post first so main-thread positions are current, then settle.
   postPositions(alpha);
   settledSent = true;
-  self.postMessage({ type: 'settled' } satisfies LayoutResponse);
+  self.postMessage({ type: 'settled', epoch } satisfies LayoutResponse);
   sim.stop();
 }
 
@@ -391,6 +394,7 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
     }
 
     case 'setDims': {
+      epoch = typeof msg.epoch === 'number' ? msg.epoch : epoch + 1;
       dims = msg.dims;
       sim.numDimensions(dims);
       if (dims === 2) {

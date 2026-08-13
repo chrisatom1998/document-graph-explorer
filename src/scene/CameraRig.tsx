@@ -17,7 +17,7 @@ import { easing } from 'maath';
 import { CAMERA_GLIDE_MS } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { useCollabStore } from '../collab/store';
+import { noteLocalCameraActivity, useCollabStore } from '../collab/store';
 import type { CameraCommand } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { cameraPose } from './cameraPose';
@@ -164,6 +164,7 @@ export default function CameraRig() {
     const cmd = ui.cameraCommand;
     if (cmd && cmd.nonce !== lastNonce.current) {
       lastNonce.current = cmd.nonce;
+      if (cmd.kind !== 'pose') noteLocalCameraActivity();
       beginCommand(cmd, state.camera, controls);
     }
 
@@ -171,6 +172,7 @@ export default function CameraRig() {
     // camera and the orbit target by the same screen-space delta preserves the
     // orbit angle/distance, so controls.update() below leaves it untouched.
     if (panInput.x !== 0 || panInput.y !== 0) {
+      noteLocalCameraActivity();
       if (useCollabStore.getState().followMode) {
         useCollabStore.getState().setFollowMode(false);
       }
@@ -231,6 +233,7 @@ export default function CameraRig() {
   });
 
   const onStart = (): void => {
+    noteLocalCameraActivity();
     if (useCollabStore.getState().followMode) {
       useCollabStore.getState().setFollowMode(false);
     }

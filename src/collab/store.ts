@@ -1,11 +1,19 @@
 import { create } from 'zustand';
 import type { YMapEvent } from 'yjs';
-import { layoutSetDims } from '../layout/layoutBridge';
+import { layoutEpoch, layoutSetDims, layoutSettledEpoch, onLayoutSettled } from '../layout/layoutBridge';
 import { cameraPose } from '../scene/cameraPose';
+import { useGraphStore } from '../store/graphStore';
 import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
 import type { DocAnnotationRecord } from '../persistence/db';
 import type { EdgeKind, FileType } from '../model/types';
 import type { CollabSession } from './session';
+import {
+  buildFollowDebugSnapshot,
+  computeCollabCameraAnchor,
+  parseCameraAnchor,
+  remapCameraPose,
+  type CollabCameraAnchor,
+} from './viewFrame';
 
 export interface CollabPeer {
   id: string;
@@ -20,8 +28,9 @@ export interface CollabSharedView {
   selectedId?: string | null;
   topicNodesEnabled?: boolean;
   clusterCollapsed?: boolean;
-  filter?: Partial<GraphFilter>;
+  filter?: GraphFilter;
   camera?: CameraPose;
+  cameraAnchor?: CollabCameraAnchor;
 }
 
 interface CollaborationState {
@@ -68,6 +77,43 @@ function collectPeers(session: CollabSession): Record<string, CollabPeer> {
   return next;
 }
 
+function cloneFilter(filter: GraphFilter): GraphFilter {
+  return {
+    fileTypes: filter.fileTypes ? [...filter.fileTypes] : null,
+    clusters: filter.clusters ? [...filter.clusters] : null,
+    minDegree: filter.minDegree,
+    minEdgeWeight: filter.minEdgeWeight,
+    edgeKinds: filter.edgeKinds ? [...filter.edgeKinds] : null,
+    modifiedWithinDays: filter.modifiedWithinDays,
+  };
+}
+
+/** Stable semantic compare for follow-mode divergence detection. */
+export function graphFiltersEqual(a: GraphFilter, b: GraphFilter): boolean {
+  return JSON.stringify(cloneFilter(a)) === JSON.stringify(cloneFilter(b));
+}
+
+function readLocalCameraPose(): CameraPose {
+  return {
+    px: cameraPose.px,
+    py: cameraPose.py,
+    pz: cameraPose.pz,
+    tx: cameraPose.tx,
+    ty: cameraPose.ty,
+    tz: cameraPose.tz,
+  };
+}
+
+function readLocalCameraAnchor(selectedId: string | null, filter: GraphFilter): CollabCameraAnchor | undefined {
+  const graph = useGraphStore.getState();
+  return computeCollabCameraAnchor({
+    selectedId,
+    filter,
+    nodes: graph.nodes,
+    edges: graph.edges,
+  }) ?? undefined;
+}
+
 function readSharedView(): CollabSharedView {
   const ui = useUiStore.getState();
   const next: CollabSharedView = {
@@ -75,15 +121,9 @@ function readSharedView(): CollabSharedView {
     selectedId: ui.selectedId,
     topicNodesEnabled: ui.topicNodesEnabled,
     clusterCollapsed: ui.clusterCollapsed,
-    filter: { ...ui.filter },
-    camera: {
-      px: cameraPose.px,
-      py: cameraPose.py,
-      pz: cameraPose.pz,
-      tx: cameraPose.tx,
-      ty: cameraPose.ty,
-      tz: cameraPose.tz,
-    },
+    filter: cloneFilter(ui.filter),
+    camera: readLocalCameraPose(),
+    cameraAnchor: readLocalCameraAnchor(ui.selectedId, ui.filter),
   };
   return next;
 }
@@ -167,16 +207,109 @@ export function sanitizeSharedFilter(value: unknown): Partial<GraphFilter> | und
   return found ? next : undefined;
 }
 
-let queuedRemoteCameraPose: CameraPose | null = null;
+interface PendingRemoteCamera {
+  pose: CameraPose;
+  anchor?: CollabCameraAnchor;
+  requireFollow: boolean;
+  localCameraActivityEpoch: number;
+}
 
-function scheduleRemoteCameraPose(pose: CameraPose | null): void {
+let queuedRemoteCamera: PendingRemoteCamera | null = null;
+let pendingSettleCamera: PendingRemoteCamera | null = null;
+let stopSettleWait: (() => void) | null = null;
+let localCameraActivityEpoch = 0;
+let lastFollowDebugAt = 0;
+
+/** Cancel rAF/settle-queued remote poses. */
+export function clearDeferredRemoteCameras(): void {
+  queuedRemoteCamera = null;
+  pendingSettleCamera = null;
+  if (stopSettleWait) {
+    stopSettleWait();
+    stopSettleWait = null;
+  }
+}
+
+/** Mark deliberate local camera input so a delayed join pose cannot override it. */
+export function noteLocalCameraActivity(): void {
+  localCameraActivityEpoch += 1;
+}
+
+function resolveLocalFollowPose(pending: PendingRemoteCamera): CameraPose {
+  if (!pending.anchor) return pending.pose;
+  const ui = useUiStore.getState();
+  const graph = useGraphStore.getState();
+  const localAnchor = computeCollabCameraAnchor({
+    selectedId: ui.selectedId,
+    preferId: pending.anchor.id,
+    filter: ui.filter,
+    nodes: graph.nodes,
+    edges: graph.edges,
+  });
+  if (!localAnchor) return pending.pose;
+  if (pending.anchor.id !== localAnchor.id) {
+    return remapCameraPose(
+      pending.pose,
+      pending.anchor,
+      { ...localAnchor, radius: pending.anchor.radius },
+    );
+  }
+  return remapCameraPose(pending.pose, pending.anchor, localAnchor);
+}
+
+function deliverRemoteCameraPose(pending: PendingRemoteCamera): void {
+  const { session, followMode } = useCollabStore.getState();
+  if (!session) return;
+  if (pending.requireFollow && !followMode) return;
+  if (!pending.requireFollow && pending.localCameraActivityEpoch !== localCameraActivityEpoch) return;
+  useUiStore.getState().sendCameraPose(resolveLocalFollowPose(pending));
+}
+
+function scheduleRemoteCameraPose(
+  pose: CameraPose | null,
+  anchor: CollabCameraAnchor | undefined,
+  opts: { waitForSettle?: boolean } = {},
+): void {
   if (!pose) return;
-  queuedRemoteCameraPose = pose;
+  const pending: PendingRemoteCamera = {
+    pose,
+    anchor,
+    requireFollow: useCollabStore.getState().followMode,
+    localCameraActivityEpoch,
+  };
+
+  // While a dims-driven settle is outstanding, keep coalescing into that
+  // callback instead of also firing a same-frame rAF pose against mid-flatten
+  // coordinates.
+  if (opts.waitForSettle || stopSettleWait) {
+    pendingSettleCamera = pending;
+    // Drop any camera-only rAF already scheduled; it would apply against
+    // mid-transition coordinates before the post-settle pose.
+    queuedRemoteCamera = null;
+    if (opts.waitForSettle) {
+      // Re-arm for THIS setDims. Ignore settles tagged with an older epoch
+      // (already-queued cooling, or a previous dims toggle still in flight).
+      const minEpoch = layoutEpoch();
+      stopSettleWait?.();
+      stopSettleWait = onLayoutSettled(() => {
+        if (layoutSettledEpoch() < minEpoch) return;
+        stopSettleWait?.();
+        stopSettleWait = null;
+        const settled = pendingSettleCamera;
+        pendingSettleCamera = null;
+        if (!settled) return;
+        deliverRemoteCameraPose(settled);
+      });
+    }
+    return;
+  }
+
+  queuedRemoteCamera = pending;
   const run = () => {
-    const pending = queuedRemoteCameraPose;
-    queuedRemoteCameraPose = null;
-    if (!pending) return;
-    useUiStore.getState().sendCameraPose(pending);
+    const next = queuedRemoteCamera;
+    queuedRemoteCamera = null;
+    if (!next) return;
+    deliverRemoteCameraPose(next);
   };
   if (typeof requestAnimationFrame === 'function') {
     requestAnimationFrame(run);
@@ -185,26 +318,91 @@ function scheduleRemoteCameraPose(pose: CameraPose | null): void {
   setTimeout(run, 0);
 }
 
-function applySharedView(view: Partial<Record<string, unknown>>): void {
+function maybeLogFollowDebug(
+  remote: CollabSharedView,
+  localUi: ReturnType<typeof useUiStore.getState>,
+): void {
+  if (!import.meta.env.DEV) return;
+  if (typeof window === 'undefined') return;
+  const enabled = (window as Window & { __nebulaFollowDebug?: boolean }).__nebulaFollowDebug;
+  if (!enabled) return;
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  if (now - lastFollowDebugAt < 1000) return;
+  lastFollowDebugAt = now;
+  const graph = useGraphStore.getState();
+  const local = buildFollowDebugSnapshot({
+    dims: localUi.dims,
+    selectedId: localUi.selectedId,
+    filter: localUi.filter,
+    nodes: graph.nodes,
+    edges: graph.edges,
+    cameraPose: readLocalCameraPose(),
+  });
+  console.info('[collab-follow]', {
+    remote: {
+      dims: remote.dims,
+      selectedId: remote.selectedId,
+      cameraPose: remote.camera,
+      cameraAnchor: remote.cameraAnchor,
+    },
+    local,
+  });
+}
+
+/** Apply a remote shared-view snapshot. Exported for unit tests. */
+export function applySharedView(view: Partial<Record<string, unknown>>): void {
   const ui = useUiStore.getState();
-  const next: CollabSharedView = {
-    dims: typeof view.dims === 'number' && (view.dims === 2 || view.dims === 3) ? view.dims : undefined,
-    selectedId: 'selectedId' in view ? (typeof view.selectedId === 'string' ? view.selectedId : null) : undefined,
-    topicNodesEnabled: 'topicNodesEnabled' in view && typeof view.topicNodesEnabled === 'boolean' ? view.topicNodesEnabled : undefined,
-    clusterCollapsed: 'clusterCollapsed' in view && typeof view.clusterCollapsed === 'boolean' ? view.clusterCollapsed : undefined,
-    filter: sanitizeSharedFilter(view.filter),
-    camera: parseCameraPose(view.camera),
-  };
-  if (next.dims !== undefined) {
-    ui.setDims(next.dims);
-    layoutSetDims(next.dims);
+  const remoteFilter = sanitizeSharedFilter(view.filter);
+  const remoteCamera = parseCameraPose(view.camera);
+  const remoteAnchor = parseCameraAnchor(view.cameraAnchor);
+  const nextDims =
+    typeof view.dims === 'number' && (view.dims === 2 || view.dims === 3) ? view.dims : undefined;
+  const nextSelectedId =
+    'selectedId' in view ? (typeof view.selectedId === 'string' ? view.selectedId : null) : undefined;
+  const nextTopicNodes =
+    'topicNodesEnabled' in view && typeof view.topicNodesEnabled === 'boolean'
+      ? view.topicNodesEnabled
+      : undefined;
+  const nextCollapsed =
+    'clusterCollapsed' in view && typeof view.clusterCollapsed === 'boolean'
+      ? view.clusterCollapsed
+      : undefined;
+
+  let dimsChanged = false;
+  if (nextDims !== undefined && nextDims !== ui.dims) {
+    ui.setDims(nextDims);
+    layoutSetDims(nextDims);
+    dimsChanged = true;
   }
-  if (next.selectedId !== undefined) ui.setSelected(next.selectedId);
-  if (next.topicNodesEnabled !== undefined) ui.setTopicNodes(next.topicNodesEnabled);
-  if (next.clusterCollapsed !== undefined) ui.setClusterCollapsed(next.clusterCollapsed);
-  if (next.filter) ui.setFilter(next.filter);
-  scheduleRemoteCameraPose(next.camera ?? null);
-  useCollabStore.setState({ lastRemoteView: next });
+  if (nextSelectedId !== undefined && nextSelectedId !== ui.selectedId) {
+    ui.setSelected(nextSelectedId);
+  }
+  if (nextTopicNodes !== undefined && nextTopicNodes !== ui.topicNodesEnabled) {
+    ui.setTopicNodes(nextTopicNodes);
+  }
+  if (nextCollapsed !== undefined && nextCollapsed !== ui.clusterCollapsed) {
+    ui.setClusterCollapsed(nextCollapsed);
+  }
+  if (remoteFilter) {
+    const merged = { ...ui.filter, ...remoteFilter };
+    if (!graphFiltersEqual(ui.filter, merged)) {
+      ui.setFilter(remoteFilter);
+    }
+  }
+
+  const appliedUi = useUiStore.getState();
+  const applied: CollabSharedView = {
+    dims: appliedUi.dims,
+    selectedId: appliedUi.selectedId,
+    topicNodesEnabled: appliedUi.topicNodesEnabled,
+    clusterCollapsed: appliedUi.clusterCollapsed,
+    filter: cloneFilter(appliedUi.filter),
+    camera: remoteCamera,
+    cameraAnchor: remoteAnchor,
+  };
+  useCollabStore.setState({ lastRemoteView: applied });
+  maybeLogFollowDebug(applied, appliedUi);
+  scheduleRemoteCameraPose(remoteCamera ?? null, remoteAnchor, { waitForSettle: dimsChanged });
 }
 
 function annotationTimestamp(value: DocAnnotationRecord | undefined): number {
@@ -383,6 +581,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
   leaveSession: () => {
     stopAnnotationSync?.();
     stopAnnotationSync = null;
+    clearDeferredRemoteCameras();
     const { session } = get();
     if (!session) {
       set({ roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {}, followMode: false, lastRemoteView: null });
@@ -408,6 +607,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
   },
 
   setFollowMode: (enabled) => {
+    if (!enabled) clearDeferredRemoteCameras();
     set({ followMode: enabled });
     const { session } = get();
     if (!session) return;
@@ -423,26 +623,28 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     if (!session || followMode) return;
     const view = readSharedView();
     const map = session.view;
-    map.set('dims', view.dims ?? useUiStore.getState().dims);
-    map.set('selectedId', view.selectedId ?? null);
-    map.set('topicNodesEnabled', view.topicNodesEnabled ?? useUiStore.getState().topicNodesEnabled);
-    map.set('clusterCollapsed', view.clusterCollapsed ?? useUiStore.getState().clusterCollapsed);
-    map.set('filter', view.filter ?? useUiStore.getState().filter);
-    map.set('camera', view.camera ?? null);
+    session.doc.transact(() => {
+      map.set('dims', view.dims ?? useUiStore.getState().dims);
+      map.set('selectedId', view.selectedId ?? null);
+      map.set('topicNodesEnabled', view.topicNodesEnabled ?? useUiStore.getState().topicNodesEnabled);
+      map.set('clusterCollapsed', view.clusterCollapsed ?? useUiStore.getState().clusterCollapsed);
+      map.set('filter', view.filter ?? useUiStore.getState().filter);
+      map.set('camera', view.camera ?? null);
+      map.set('cameraAnchor', view.cameraAnchor ?? null);
+    });
     set({ lastRemoteView: { ...view } });
   },
 
   syncCameraPose: () => {
     const { session, followMode } = get();
     if (!session || followMode) return;
-    session.view.set('camera', {
-      px: cameraPose.px,
-      py: cameraPose.py,
-      pz: cameraPose.pz,
-      tx: cameraPose.tx,
-      ty: cameraPose.ty,
-      tz: cameraPose.tz,
-    } satisfies CameraPose);
+    const ui = useUiStore.getState();
+    const pose = readLocalCameraPose();
+    const anchor = readLocalCameraAnchor(ui.selectedId, ui.filter) ?? null;
+    session.doc.transact(() => {
+      session.view.set('camera', pose);
+      session.view.set('cameraAnchor', anchor);
+    });
   },
 
   refreshPeers: () => {

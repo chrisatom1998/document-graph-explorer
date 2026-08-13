@@ -156,21 +156,19 @@ export default function App() {
     syncSharedView();
   }, [selectedId, dims, filter, topicNodesEnabled, clusterCollapsed]);
 
+  // Semantic divergence only — camera/anchor ticks must not drop follow mode.
   useEffect(() => {
     if (!followMode || !lastRemoteView) return;
-    const localView = {
-      dims,
-      selectedId,
-      topicNodesEnabled,
-      clusterCollapsed,
-      filter,
-    };
+    const remoteFilter = lastRemoteView.filter;
     const changed =
-      localView.dims !== lastRemoteView.dims ||
-      localView.selectedId !== lastRemoteView.selectedId ||
-      localView.topicNodesEnabled !== lastRemoteView.topicNodesEnabled ||
-      localView.clusterCollapsed !== lastRemoteView.clusterCollapsed ||
-      JSON.stringify(localView.filter) !== JSON.stringify(lastRemoteView.filter);
+      (lastRemoteView.dims !== undefined && dims !== lastRemoteView.dims) ||
+      (lastRemoteView.selectedId !== undefined && selectedId !== lastRemoteView.selectedId) ||
+      (lastRemoteView.topicNodesEnabled !== undefined &&
+        topicNodesEnabled !== lastRemoteView.topicNodesEnabled) ||
+      (lastRemoteView.clusterCollapsed !== undefined &&
+        clusterCollapsed !== lastRemoteView.clusterCollapsed) ||
+      (remoteFilter !== undefined &&
+        JSON.stringify(filter) !== JSON.stringify(remoteFilter));
     if (changed) {
       useCollabStore.getState().setFollowMode(false);
     }
