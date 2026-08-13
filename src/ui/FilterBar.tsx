@@ -4,6 +4,7 @@ import { hexFor } from '../scene/palette';
 import type { EdgeKind, FileType } from '../model/types';
 import { DEFAULT_FILTER, useUiStore } from '../store/uiStore';
 import { isFilterActive } from '../scene/emphasis';
+import SnapshotDiffBanner from './SnapshotDiffBanner';
 
 const EDGE_KIND_ORDER: { kind: EdgeKind; label: string }[] = [
   { kind: 'reference', label: 'links' },
@@ -112,6 +113,8 @@ export default function FilterBar() {
   const clearAll = () => setFilter({ ...DEFAULT_FILTER });
 
   return (
+    <>
+      <SnapshotDiffBanner />
     <div className="filter-bar-layer">
       <div className="filter-bar__toggle-wrap">
         <button
@@ -268,5 +271,6 @@ export default function FilterBar() {
         </div>
       )}
     </div>
+    </>
   );
 }
