@@ -12,6 +12,7 @@ import type { FeatureExtractionPipeline, Tensor } from '@huggingface/transformer
 import { EMBED_DIMS, EMBED_MODEL_ID } from '../config';
 import type { LinkRef, NodeStatus, ParsedDoc, PoolRequest, PoolResponse } from '../model/types';
 import { extractEntities } from '../pipeline/entities';
+import { summarize } from '../pipeline/summarize';
 import { tokenize, termFreq } from '../pipeline/tokenize';
 import { parseHtml } from '../pipeline/parsers/html';
 import { parseMarkdown } from '../pipeline/parsers/markdown';
@@ -54,6 +55,7 @@ function analyzeText(
     tf,
     totalTerms: total,
     chunks: [], // the coordinator chunks after corpus-wide boilerplate strip
+    summary: summarize(text),
     status,
     warning,
   };

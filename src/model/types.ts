@@ -173,6 +173,8 @@ export interface ParsedDoc {
   tf: Record<string, number>; // term frequency (tokenized)
   totalTerms: number;
   chunks: string[]; // pre-chunked for embedding
+  /** Extractive TextRank summary computed in the worker; '' when nothing usable. */
+  summary: string;
   status: NodeStatus;
   warning?: string;
 }

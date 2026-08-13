@@ -23,6 +23,7 @@ function makeDoc(): ParsedDoc {
     tf: {},
     totalTerms: 1,
     chunks: [],
+    summary: '',
     status: 'ok',
   };
 }

@@ -536,7 +536,11 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<voi
         fileType: p.fileType,
         path: p.relPath,
         folderKey: parentDir(p.file.path),
-        summary: makeSummary(doc.text),
+        // Worker-computed TextRank summary; the 200-char head is the fallback
+        // for docs where nothing usable was extracted. Cache-restored docs
+        // keep their persisted summary, and optional LLM enrichment may still
+        // overwrite it later via patchNodes.
+        summary: doc.summary || makeSummary(doc.text),
         topics: [],
         entities: doc.entities,
         keywords: [],

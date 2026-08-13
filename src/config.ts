@@ -17,6 +17,11 @@ export const CHUNK_OVERLAP = 0.15; // 15% overlap between chunks
 export const MAX_EMBED_TEXT_BYTES = 200 * 1024; // cap text used for embedding (spec §4.3)
 export const MIN_MENTION_TITLE_LEN = 5; // ignore very short titles for mention matching
 
+// --- Local extractive summaries (sentence TextRank at parse time, item 14) ---
+export const SUMMARY_SENTENCES = 4; // sentences kept per document summary
+export const SUMMARY_MAX_CHARS = 600; // summary cap, truncated on a word boundary
+export const SUMMARY_MAX_INPUT_SENTENCES = 300; // bounds the O(n²) similarity matrix
+
 // --- Embedding model ---
 export const EMBED_MODEL_ID = 'Xenova/bge-small-en-v1.5';
 export const EMBED_DIMS = 384;
