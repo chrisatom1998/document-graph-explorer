@@ -67,6 +67,9 @@ import os, mypkg.utils
       './helpers.sh',
       './lib.sh',
     ]);
+    expect(
+      extractCodeImports('ls . ./lib.sh\ncp . ./backup\nfoo; . ./lib.sh\n  source ./helpers.sh\n', 'setup.sh'),
+    ).toEqual(['./lib.sh', './helpers.sh']);
   });
 
   it('treats Astro files as the JS import family', () => {

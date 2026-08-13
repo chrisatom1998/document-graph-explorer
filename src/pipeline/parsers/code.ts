@@ -23,7 +23,7 @@ const PY_IMPORT_RE = /^[ \t]*import[ \t]+([A-Za-z_][\w.]*(?:[ \t]*,[ \t]*[A-Za-z
 const GO_SINGLE_RE = /^import[ \t]+(?:[A-Za-z_]\w*[ \t]+)?"([^"]{1,512})"/gm;
 const C_INCLUDE_RE = /^[ \t]*#[ \t]*(?:include|import)[ \t]+"([^"]{1,512})"/gm;
 const CS_USING_RE = /^[ \t]*using[ \t]+(?:static[ \t]+)?(?:[A-Za-z_]\w*[ \t]+=[ \t]+)?([A-Za-z_][\w.]*)[ \t]*;/gm;
-const SH_SOURCE_RE = /(?:^|[ \t;])(?:source|\.)[ \t]+(?:['"]([^'"]{1,512})['"]|(\.[^\s;|&]+))/gm;
+const SH_SOURCE_RE = /(?:^|[;|&])[ \t]*(?:source|\.)[ \t]+(?:['"]([^'"]{1,512})['"]|(\.[^\s;|&]+))/gm;
 const LUA_REQUIRE_RE = /\brequire\s*\(\s*['"]([^'"]{1,512})['"]\s*\)/g;
 const DART_IMPORT_RE = /^[ \t]*import[ \t]+['"]([^'"]{1,512})['"]/gm;
 const HS_IMPORT_RE = /^import[ \t]+(?:qualified[ \t]+)?([A-Za-z][\w.]*)/gm;
