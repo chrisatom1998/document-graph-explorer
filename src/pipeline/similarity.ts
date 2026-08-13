@@ -36,18 +36,26 @@ export interface Candidate {
 /** Insert into a descending-by-sim list bounded at topK. */
 function boundedInsert(list: Candidate[], j: number, sim: number, topK: number): void {
   if (list.length === topK && list[list.length - 1].sim >= sim) return;
-  let idx = list.length;
-  while (idx > 0 && list[idx - 1].sim < sim) idx -= 1;
-  list.splice(idx, 0, { j, sim });
+  let i = list.length;
+  list.push({ j, sim });
+  while (i > 0 && list[i - 1].sim < sim) {
+    list[i] = list[i - 1];
+    i--;
+  }
+  list[i] = { j, sim };
   if (list.length > topK) list.pop();
 }
 
 /** Same bounded-descending insert, for the duplicate-pair side channel. */
 function boundedDupInsert(list: DuplicatePair[], pair: DuplicatePair): void {
   if (list.length === MAX_DUPLICATE_PAIRS && list[list.length - 1].sim >= pair.sim) return;
-  let idx = list.length;
-  while (idx > 0 && list[idx - 1].sim < pair.sim) idx -= 1;
-  list.splice(idx, 0, pair);
+  let i = list.length;
+  list.push(pair);
+  while (i > 0 && list[i - 1].sim < pair.sim) {
+    list[i] = list[i - 1];
+    i--;
+  }
+  list[i] = pair;
   if (list.length > MAX_DUPLICATE_PAIRS) list.pop();
 }
 

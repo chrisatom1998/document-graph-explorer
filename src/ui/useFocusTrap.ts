@@ -56,7 +56,9 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, active = true):
     return () => {
       container.removeEventListener('keydown', onKeyDown);
       // Restore focus to whatever had it before the dialog opened.
-      previouslyFocused?.focus?.();
+      if (previouslyFocused && previouslyFocused.isConnected) {
+        previouslyFocused.focus();
+      }
     };
   }, [ref, active]);
 }

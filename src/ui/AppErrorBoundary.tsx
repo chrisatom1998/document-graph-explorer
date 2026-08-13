@@ -20,13 +20,13 @@ export default class AppErrorBoundary extends Component<
   AppErrorBoundaryProps,
   AppErrorBoundaryState
 > {
-  state: AppErrorBoundaryState = { error: null, exportNote: null };
+  override state: AppErrorBoundaryState = { error: null, exportNote: null };
 
   static getDerivedStateFromError(error: Error): Partial<AppErrorBoundaryState> {
     return { error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo): void {
+  override componentDidCatch(error: Error, info: ErrorInfo): void {
     useUiStore.getState().setLastError({
       message: messageFor(error),
       stack: [error.stack, info.componentStack].filter(Boolean).join('\n'),
@@ -34,7 +34,7 @@ export default class AppErrorBoundary extends Component<
     });
   }
 
-  render() {
+  override render() {
     if (!this.state.error) return this.props.children;
     const hasGraph = useGraphStore.getState().nodes.length > 0;
 

@@ -14,8 +14,10 @@ import { AIRGAP } from '../airgap';
 import { focusNode } from './focusNode';
 import { openDocument } from './openDocument';
 import VirtualText from './VirtualText';
-import DocumentMarkdown, { MAX_RENDER_CHARS as MD_MAX_RENDER_CHARS } from './DocumentMarkdown';
-import HtmlPreview, { MAX_RENDER_CHARS as HTML_MAX_RENDER_CHARS } from './HtmlPreview';
+import CloseButton from './CloseButton';
+import DocumentMarkdown from './DocumentMarkdown';
+import HtmlPreview from './HtmlPreview';
+import { MAX_RENDER_CHARS } from './readerUtils';
 import CsvPreview from './CsvPreview';
 import JsonPreview from './JsonPreview';
 import YamlPreview from './YamlPreview';
@@ -170,9 +172,9 @@ export default function SidePanel() {
         const buf = await original.blob.arrayBuffer();
         const raw = decodeText(buf);
         if (cancelled) return;
-        if (mdDocId && raw.length <= MD_MAX_RENDER_CHARS) {
+        if (mdDocId && raw.length <= MAX_RENDER_CHARS) {
           setMdSource({ id: mdDocId, text: raw });
-        } else if (htmlDocId && raw.length <= HTML_MAX_RENDER_CHARS) {
+        } else if (htmlDocId && raw.length <= MAX_RENDER_CHARS) {
           setHtmlSource({ id: htmlDocId, text: raw });
         }
       } catch {
@@ -284,16 +286,12 @@ export default function SidePanel() {
               </button>
             </div>
           )}
-          <button
+          <CloseButton
             ref={closeButtonRef}
-            type="button"
-            className="icon-btn-close"
             title="Back to graph"
             aria-label="Back to graph"
             onClick={() => setSelected(null)}
-          >
-            ✕
-          </button>
+          />
         </div>
         <div className="side-panel__scroll">
           <div className="side-panel__badges">

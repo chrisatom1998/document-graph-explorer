@@ -13,6 +13,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { focusNode } from './focusNode';
 import { openDocument } from './openDocument';
 import { chatTranscriptMarkdown } from '../persistence/chatHistory';
+import CloseButton from './CloseButton';
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString(undefined, {
@@ -223,15 +224,12 @@ export default function ChatPanel() {
             </button>
           )}
         </div>
-        <button
-          type="button"
+        <CloseButton
           className="chat-panel__close"
-          onClick={() => setIsOpen(false)}
-          aria-label="Close chat"
           title="Close chat"
-        >
-          ✕
-        </button>
+          aria-label="Close chat"
+          onClick={() => setIsOpen(false)}
+        />
       </div>
 
       {/* Messages */}
