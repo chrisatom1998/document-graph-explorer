@@ -7,6 +7,7 @@ describe('posix path helpers', () => {
     expect(posixJoin('src/auth', './token')).toBe('src/auth/token');
     expect(posixResolveFrom('src/auth/session.ts', './token')).toBe('src/auth/token');
     expect(posixResolveFrom('src/auth/session.ts', '../types')).toBe('src/types');
+    expect(posixResolveFrom('src/auth/session.ts', '/docs/guide.md')).toBe('docs/guide.md');
     expect(stripKnownExtension('session.ts')).toBe('session');
   });
 });

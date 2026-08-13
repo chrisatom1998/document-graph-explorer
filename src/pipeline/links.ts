@@ -362,15 +362,34 @@ export function referenceEdges(
       const wikiHash = wiki.indexOf('#');
       if (wikiHash >= 0) wiki = wiki.slice(0, wikiHash).trim();
       if (!wiki) return found;
-      // A path-style wikilink ([[folder/note]]) resolves vault-root-relative
-      // with Obsidian's implicit `.md`. Exact lookups only — the import-style
-      // extension fan-out would bind [[util]] to a root-level util.ts.
-      const wikiPath = posixNormalize(wiki).replace(/^\//, '').toLowerCase();
-      take(byPath.get(wikiPath));
-      if (found.length === 0 && !posixBasename(wikiPath).includes('.')) {
-        take(byPath.get(`${wikiPath}.md`));
+      // Folder ingest retains the picked root name (`Vault/folder/note.md`).
+      // Obsidian-style paths do not: `[[folder/note]]` and `/folder/note`
+      // are vault-root-relative, while `[[./note]]` is importer-relative.
+      // Try exact path candidates only and preserve the implicit `.md` rule.
+      const normalizedWiki = posixNormalize(wiki);
+      const pathQualified =
+        normalizedWiki.startsWith('.') || normalizedWiki.startsWith('/') || normalizedWiki.includes('/');
+      const wikiPaths: string[] = [];
+      const addWikiPath = (path: string): void => {
+        const key = posixNormalize(path).replace(/^\/+/, '').toLowerCase();
+        if (key && !wikiPaths.includes(key)) wikiPaths.push(key);
+      };
+      addWikiPath(normalizedWiki);
+      if (from.path && pathQualified) {
+        const storedFromPath = posixNormalize(from.path).replace(/^\/+/, '');
+        const pickedRoot = storedFromPath.split('/')[0] ?? '';
+        if (normalizedWiki.startsWith('.')) {
+          addWikiPath(posixResolveFrom(storedFromPath, normalizedWiki));
+        } else {
+          const vaultRelative = normalizedWiki.replace(/^\/+/, '');
+          addWikiPath(posixJoin(pickedRoot, vaultRelative));
+        }
       }
-      if (found.length > 0) return found;
+      for (const wikiPath of wikiPaths) {
+        take(byPath.get(wikiPath));
+        if (!posixBasename(wikiPath).includes('.')) take(byPath.get(`${wikiPath}.md`));
+      }
+      if (found.length > 0 || pathQualified) return found;
       const takeUnique = (hits: ReferenceDocInput[] | undefined): void => {
         if (hits && hits.length === 1) take(hits);
       };

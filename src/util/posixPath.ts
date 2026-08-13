@@ -32,7 +32,12 @@ export function posixJoin(left: string, right: string): string {
 export function posixResolveFrom(fromFilePath: string, specifier: string): string {
   const fromDir = posixDirname(fromFilePath);
   const spec = posixNormalize(specifier);
-  const parts = (fromDir ? fromDir.split('/') : []).concat(spec.split('/'));
+  // A leading slash is corpus/repository-root-relative. It must not inherit
+  // the importing file's directory (`/docs/x` from `src/a.ts` is `docs/x`,
+  // not `src/docs/x`). Consumers that retain a picked folder's display-name
+  // prefix can add that prefix after this root-relative resolution.
+  const fromParts = spec.startsWith('/') ? [] : fromDir ? fromDir.split('/') : [];
+  const parts = fromParts.concat(spec.split('/'));
   const out: string[] = [];
   for (const part of parts) {
     if (!part || part === '.') continue;

@@ -26,8 +26,6 @@ import {
   SIM_THRESHOLD,
   SIM_TOP_K,
   TFIDF_TOP_N,
-  TOPIC_MAX_DOC_FRACTION,
-  TOPIC_MIN_DOCS,
 } from '../config';
 import { embeddingQueryText } from '../ai/embeddingPolicy';
 import { estimateStorage, formatStorageSummary, storagePressure } from '../persistence/quota';
@@ -49,7 +47,6 @@ import { repoArtifactReason } from '../ingest/repoArtifacts';
 import {
   layoutAddNodes,
   layoutReheat,
-  layoutRemoveNodes,
   layoutReset,
   layoutSetClusters,
   layoutSetLinks,
@@ -97,7 +94,7 @@ import { publishIngestReport } from './ingestReport';
 import { enqueueRun } from './runQueue';
 import { randomSpherePoint } from './spawnPosition';
 import { addToSemanticIndex, edgesFromIndex, type SemanticIndex } from './similarity';
-import { groupTopics } from './topics';
+import { synthesizeTopicNodes } from './topicNodes';
 import { createGeneratedDemoDocuments } from '../demo/generatedDocuments';
 import { fetchDemoManifest } from '../demo/manifest';
 
@@ -475,12 +472,14 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<voi
       misses.map((p) => ({ fileId: p.file.fileId, name: p.file.name, stage: 'parsing' as const })),
     );
     const parseTasks = misses.map(async (p): Promise<ParsedResult> => {
+      throwIfAborted(signal);
       let done: ParseDone;
       // pdf.js extracts labelled links from the annotation layer; the worker's
       // 'analyze' path can't (it only sees text), so carry them across here.
       let pdfLinks: LinkRef[] = [];
       if (p.fileType === 'pdf') {
         const pdf = await parsePdf(p.file.bytes, p.file.name, {
+          signal,
           onOcrProgress: (completed, total) => {
             store().setModelProgress({
               kind: 'ocr',
@@ -1096,114 +1095,6 @@ async function computeCorpusHash(): Promise<string> {
     .map((n) => n.id)
     .sort();
   return sha256Hex(sortedIds.join(''));
-}
-
-// ---------------------------------------------------------------------------
-// topic node synthesis (spec §5.4)
-// ---------------------------------------------------------------------------
-
-const TOPIC_EDGE_WEIGHT = 0.5;
-
-/**
- * Create synthetic topic-concept nodes for topics shared by ≥TOPIC_MIN_DOCS
- * documents. groupTopics folds label variants (case / separators, and safe
- * singular/plural pairs) into one hub and drops corpus-ubiquitous topics that
- * would only tangle unrelated clusters. Each hub connects via topic edges to
- * every document that carries it. Must run AFTER clustering (so hubs inherit
- * the majority cluster). Existing topic nodes from a previous run are removed
- * first (idempotent).
- */
-function synthesizeTopicNodes(): void {
-  const store = useGraphStore.getState;
-
-  // Remove any previously synthesized topic nodes + edges before rebuilding
-  const existingTopics = store().nodes.filter((n) => n.kind === 'topic').map((n) => n.id);
-  if (existingTopics.length > 0) store().removeNodes(existingTopics);
-
-  const groups = groupTopics(
-    documentNodes().map((n) => ({ id: n.id, topics: n.topics })),
-    { minDocs: TOPIC_MIN_DOCS, maxDocFraction: TOPIC_MAX_DOC_FRACTION },
-  );
-
-  const newNodes: DocNode[] = [];
-  const newEdges: Edge[] = [];
-
-  for (const { key, label, docIds } of groups) {
-    const topicId = `topic:${key}`;
-
-    // Inherit the majority cluster from connected documents
-    const clusterVotes = new Map<number, number>();
-    for (const docId of docIds) {
-      const idx = store().nodeIndex[docId];
-      if (idx === undefined) continue;
-      const c = store().nodes[idx].cluster;
-      if (c >= 0) clusterVotes.set(c, (clusterVotes.get(c) ?? 0) + 1);
-    }
-    let bestCluster = -1;
-    let bestCount = 0;
-    for (const [c, count] of clusterVotes) {
-      if (count > bestCount) { bestCluster = c; bestCount = count; }
-    }
-
-    const topicNode: DocNode = {
-      id: topicId,
-      kind: 'topic',
-      title: label,
-      fileType: 'other',
-      topics: [label],
-      entities: [],
-      keywords: [],
-      wordCount: 0,
-      cluster: bestCluster,
-      degree: docIds.length,
-      status: 'ok',
-    };
-    newNodes.push(topicNode);
-
-    // Create topic edges from each doc to the topic node
-    for (const docId of docIds) {
-      newEdges.push({
-        id: `${docId}->${topicId}:topic`,
-        source: docId,
-        target: topicId,
-        kind: 'topic',
-        weight: TOPIC_EDGE_WEIGHT,
-        evidence: [`Shared topic: "${label}"`],
-      });
-    }
-  }
-
-  // Free the layout slots of topic hubs that no longer exist — without this,
-  // per-ingest topic churn leaks slots toward MAX_NODES and leaves ghost
-  // geometry at the stale positions. Surviving hubs keep their slot (and
-  // position): layoutAddNodes skips ids that already have one.
-  const newIds = new Set(newNodes.map((n) => n.id));
-  const staleTopicIds = existingTopics.filter((id) => !newIds.has(id));
-  if (staleTopicIds.length > 0) layoutRemoveNodes(staleTopicIds);
-
-  if (newNodes.length === 0) return;
-
-  // Place in layout FIRST: hubs dropped at node capacity must not enter the
-  // store (invisible phantoms) or keep edges (dangling endpoints crash the
-  // layout worker — same hazard validateImport guards imports against).
-  const layoutInputs = newNodes.map((n) => ({
-    id: n.id,
-    cluster: n.cluster,
-    spawn: randomSpawn() as [number, number, number],
-  }));
-  const droppedIds = new Set(layoutAddNodes(layoutInputs));
-  const placedNodes = newNodes.filter((n) => !droppedIds.has(n.id));
-  const placedEdges = newEdges.filter(
-    (e) => !droppedIds.has(e.source) && !droppedIds.has(e.target),
-  );
-  if (placedNodes.length === 0) return;
-  store().addNodes(placedNodes);
-
-  // Merge new topic edges with existing edges
-  const currentEdges = store().edges;
-  store().setEdges([...currentEdges, ...placedEdges]);
-  layoutSetLinks(toLinkInput([...currentEdges, ...placedEdges]));
-  layoutReheat(0.3);
 }
 
 // ---------------------------------------------------------------------------

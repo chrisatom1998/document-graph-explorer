@@ -21,7 +21,10 @@ export default function ShowMePanel() {
   const requestSeq = useRef(0);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      requestSeq.current++;
+      return;
+    }
     const t = setTimeout(() => inputRef.current?.focus(), 0);
     return () => clearTimeout(t);
   }, [open]);
@@ -32,6 +35,7 @@ export default function ShowMePanel() {
     e.preventDefault();
     const q = topic.trim();
     if (!q) {
+      requestSeq.current++;
       setResults([]);
       setStatus('idle');
       setSearchResults(null);
@@ -63,7 +67,17 @@ export default function ShowMePanel() {
   };
 
   const close = () => {
+    requestSeq.current++;
     setOpen(false);
+    setSearchResults(null);
+  };
+
+  const changeTopic = (value: string) => {
+    setTopic(value);
+    if (value.trim() !== '') return;
+    requestSeq.current++;
+    setResults([]);
+    setStatus('idle');
     setSearchResults(null);
   };
 
@@ -78,7 +92,7 @@ export default function ShowMePanel() {
             value={topic}
             placeholder="Show me a topic..."
             aria-label="Topic to show in the graph"
-            onChange={(e) => setTopic(e.target.value)}
+            onChange={(e) => changeTopic(e.target.value)}
           />
           <button type="submit" className="show-me-panel__submit">
             Show me

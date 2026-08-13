@@ -143,4 +143,42 @@ describe('ocrPdfPages', () => {
     expect(stalledWorker.terminate).toHaveBeenCalledOnce();
     expect(tesseract.createWorker).toHaveBeenCalledTimes(2);
   });
+
+  it('rejects cancelled queued OCR immediately and never starts its worker', async () => {
+    const firstRecognition = deferred<{ data: { text: string } }>();
+    const firstWorker = {
+      recognize: vi.fn(() => firstRecognition.promise),
+      terminate: vi.fn().mockResolvedValue({}),
+    };
+    tesseract.createWorker.mockResolvedValue(firstWorker);
+    const first = ocrPdfPages(fakeDoc([fakePage()]), 1);
+    await vi.waitFor(() => expect(firstWorker.recognize).toHaveBeenCalledOnce());
+
+    const controller = new AbortController();
+    const queued = ocrPdfPages(fakeDoc([fakePage()]), 1, undefined, controller.signal);
+    controller.abort();
+    await expect(queued).rejects.toMatchObject({ name: 'AbortError' });
+    expect(tesseract.createWorker).toHaveBeenCalledTimes(1);
+
+    firstRecognition.resolve({ data: { text: 'First' } });
+    await expect(first).resolves.toBe('First');
+    await Promise.resolve();
+    expect(tesseract.createWorker).toHaveBeenCalledTimes(1);
+  });
+
+  it('terminates active OCR and rejects when its signal aborts', async () => {
+    const worker = {
+      recognize: vi.fn(() => new Promise(() => {})),
+      terminate: vi.fn().mockResolvedValue({}),
+    };
+    tesseract.createWorker.mockResolvedValue(worker);
+    const controller = new AbortController();
+
+    const active = ocrPdfPages(fakeDoc([fakePage()]), 1, undefined, controller.signal);
+    await vi.waitFor(() => expect(worker.recognize).toHaveBeenCalledOnce());
+    controller.abort();
+
+    await expect(active).rejects.toMatchObject({ name: 'AbortError' });
+    expect(worker.terminate).toHaveBeenCalledOnce();
+  });
 });

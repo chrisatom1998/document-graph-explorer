@@ -54,7 +54,7 @@ describe('parsePdf OCR fallback', () => {
       warning: 'Text recognized via OCR (scanned document)',
     });
 
-    expect(ocr.ocrPdfPages).toHaveBeenCalledWith(doc, 20, onOcrProgress);
+    expect(ocr.ocrPdfPages).toHaveBeenCalledWith(doc, 20, onOcrProgress, undefined);
     expect(destroy).toHaveBeenCalledOnce();
   });
 

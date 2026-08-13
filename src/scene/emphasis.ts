@@ -76,11 +76,24 @@ export function nodesMatchingFilter(
   if (!isFilterActive(filter)) return null;
   const byWeight = weightOk(edges, filter);
   const byKind = kindOk(edges, filter);
+  const topicDegree = new Map<string, number>();
+  if (filter.minDegree > 0) {
+    for (const edge of edges) {
+      if (edge.kind !== 'topic') continue;
+      topicDegree.set(edge.source, (topicDegree.get(edge.source) ?? 0) + 1);
+      topicDegree.set(edge.target, (topicDegree.get(edge.target) ?? 0) + 1);
+    }
+  }
   const set = new Set<string>();
   for (const n of nodes) {
     if (filter.fileTypes && !filter.fileTypes.includes(n.fileType)) continue;
     if (filter.clusters && !filter.clusters.includes(n.cluster)) continue;
-    if (n.degree < filter.minDegree) continue;
+    // Node.degree intentionally includes topic-hub edges for sizing and hub
+    // displays. The filter is labelled "connections to other documents", so
+    // subtract those synthetic edges rather than letting hidden hubs inflate
+    // a document past the selected floor.
+    const documentDegree = n.degree - (topicDegree.get(n.id) ?? 0);
+    if (documentDegree < filter.minDegree) continue;
     if (byWeight && !byWeight.has(n.id)) continue;
     if (byKind && n.kind === 'document' && !byKind.has(n.id)) continue;
     if (!recencyOk(n, filter, now)) continue;
