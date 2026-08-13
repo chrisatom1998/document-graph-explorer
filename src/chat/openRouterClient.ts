@@ -1,4 +1,5 @@
 import type { ChatMessage } from '../store/chatStore';
+import { parseRetryAfter } from '../util/retryAfter';
 
 export const OPENROUTER_CHAT_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const MAX_RETRIES = 3;
@@ -78,8 +79,6 @@ export function parseOpenRouterSseLine(rawLine: string): OpenRouterStreamEvent |
     return null;
   }
 }
-
-import { parseRetryAfter } from '../util/retryAfter';
 
 async function readOpenRouterError(response: Response): Promise<string> {
   try {

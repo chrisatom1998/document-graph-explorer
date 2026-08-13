@@ -7,9 +7,13 @@ This project follows the Keep a Changelog format.
 ## [Unreleased]
 
 ### Added
+- Security headers on all deployment targets: `Permissions-Policy` (camera/microphone/geolocation/payment/usb/serial disabled) and `Strict-Transport-Security` (`max-age=63072000; includeSubDomains`) in `vercel.json`, Docker nginx headers, and the `DEPLOYMENT.md` nginx example. Vite dev headers get `Permissions-Policy` only (no HSTS on plain HTTP).
 - usd-agent (`tools/usd_pipeline/usd_agent.py`): an LLM agent whose tools are OpenUSD stage operations — ask natural-language questions about an exported corpus stage (clusters, documents, connections with evidence, view variants) and it answers by querying prims via `usd-core`, never by guessing. Providers: OpenRouter (cloud), Ollama (local), or a network-free mock used by its `selftest` mode, which exercises every tool plus the full agent loop against a real stage.
 - Performance benchmarks (`docs/benchmarks.md`): measured ingest throughput (~11 docs/s end-to-end on the 100-PDF demo corpus), layout convergence from 100 to 2,000 nodes (under 6 s to settle at 2,000 via the production worker driven headless by `npm run bench:layout`), render frame rate (holds the 120 Hz display cap through 2,000 nodes / 8,400 edges), and OpenUSD export build time (linear, 19 ms at 2,000 nodes), with methodology and caveats.
 - OpenUSD export: **Data → Export OpenUSD scene** serializes the graph as a composed `.usda` stage — document/topic nodes as Sphere prims carrying a `docGraph:` custom-attribute schema (title, topics, entities, keywords, status), edges as one BasisCurves prim per kind with parallel weight/evidence arrays, translucent cluster hulls, and a `graphView` variantSet switching detailed vs summary views. Validated against stock `usdchecker`. A new Python pipeline CLI (`tools/usd_pipeline/usd_pipeline.py`, Pixar `usd-core`) re-validates every schema invariant, exercises the variants through composition, and packages `.usdz`; see `docs/openusd-pipeline.md`.
+
+### Changed
+- OpenRouter chat and enrichment LLM clients honour the `Retry-After` response header on 429/502/503 (shared `parseRetryAfter` helper, capped at 60s) before falling back to exponential backoff.
 
 ## [1.1.14] - 2026-07-29
 
