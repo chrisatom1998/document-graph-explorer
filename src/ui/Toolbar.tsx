@@ -11,6 +11,9 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { layoutSetDims } from '../layout/layoutBridge';
 import { openFilePicker } from '../ingest/DropZone';
+// Imported eagerly so the activation-gated picker opens synchronously with
+// the click; folderPicker demand-loads the heavy scanner itself.
+import { openFolderPicker } from '../ingest/folderPicker';
 
 const ExportImportMenu = lazy(() => import('./ExportImportMenu'));
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
@@ -229,6 +232,23 @@ function IconPlus() {
     >
       <path d="M9 3.2V14.8" />
       <path d="M3.2 9H14.8" />
+    </svg>
+  );
+}
+
+/** Folder with a plus badge — the one-shot "Add folder" ingest action. */
+function IconFolderPlus() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1.8 5a1.2 1.2 0 0 1 1.2-1.2h3.3l1.7 1.9h7a1.2 1.2 0 0 1 1.2 1.2v6.3a1.2 1.2 0 0 1-1.2 1.2H3a1.2 1.2 0 0 1-1.2-1.2Z" />
+      <path d="M9.5 8.1v3.4M7.8 9.8h3.4" />
     </svg>
   );
 }
@@ -613,6 +633,16 @@ export default function Toolbar() {
         }}
       >
         <IconPlus />
+      </button>
+
+      <button
+        type="button"
+        className="btn-icon"
+        title="Add a folder — every relevant file inside it is added, subfolders included"
+        aria-label="Add folder"
+        onClick={openFolderPicker}
+      >
+        <IconFolderPlus />
       </button>
     </div>
   );

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { scanFolder } from './folderScanner';
+import { scanFolder, scanPickedFolderFiles } from './folderScanner';
 
 type HandleEntry = [string, FileSystemHandle];
 
@@ -158,5 +158,75 @@ describe('scanFolder', () => {
     ]);
     expect(out.getFile).not.toHaveBeenCalled();
     expect(nodeModules.entries).not.toHaveBeenCalled();
+  });
+});
+
+// Fake File as produced by <input webkitdirectory>: a flat list where every
+// entry carries its full "root/…/name" path in webkitRelativePath.
+function pickedFile(relativePath: string, text = ''): File {
+  const segments = relativePath.split('/');
+  return {
+    name: segments[segments.length - 1],
+    webkitRelativePath: relativePath,
+    text: vi.fn().mockResolvedValue(text),
+  } as unknown as File;
+}
+
+describe('scanPickedFolderFiles', () => {
+  it('rebuilds the tree and returns supported files with sorted root-relative paths', async () => {
+    const rootDoc = pickedFile('vault/zeta.txt');
+    const nestedDoc = pickedFile('vault/notes/alpha.md');
+    const deepDoc = pickedFile('vault/notes/deep/report.pdf');
+
+    await expect(scanPickedFolderFiles([rootDoc, deepDoc, nestedDoc])).resolves.toEqual([
+      { file: nestedDoc, path: 'vault/notes/alpha.md' },
+      { file: deepDoc, path: 'vault/notes/deep/report.pdf' },
+      { file: rootDoc, path: 'vault/zeta.txt' },
+    ]);
+  });
+
+  it('applies the same relevance filters as a folder drop', async () => {
+    const readme = pickedFile('repo/README.md');
+    const app = pickedFile('repo/src/app.ts');
+    const gitignore = pickedFile('repo/.gitignore', '*.log\n');
+    const files = [
+      readme,
+      app,
+      gitignore,
+      pickedFile('repo/package-lock.json'), // lockfile
+      pickedFile('repo/image.png'), // unsupported type
+      pickedFile('repo/.env.md'), // dotfile
+      pickedFile('repo/.private/secret.md'), // hidden dir
+      pickedFile('repo/node_modules/dep/package.md'), // ignored dir
+      pickedFile('repo/dist/out.md'), // ignored dir
+      pickedFile('repo/src/debug.log'), // gitignored
+    ];
+
+    await expect(scanPickedFolderFiles(files)).resolves.toEqual([
+      { file: readme, path: 'repo/README.md' },
+      { file: app, path: 'repo/src/app.ts' },
+    ]);
+  });
+
+  it('honors a gitignore negation reaching into a default-ignored dir', async () => {
+    const keep = pickedFile('repo/dist/keep.md');
+    const readme = pickedFile('repo/README.md');
+    const files = [
+      pickedFile('repo/.gitignore', 'dist/*\n!dist/keep.md\n'),
+      keep,
+      pickedFile('repo/dist/out.md'),
+      readme,
+    ];
+
+    await expect(scanPickedFolderFiles(files)).resolves.toEqual([
+      { file: keep, path: 'repo/dist/keep.md' },
+      { file: readme, path: 'repo/README.md' },
+    ]);
+  });
+
+  it('returns no files for an empty or pathless selection', async () => {
+    await expect(scanPickedFolderFiles([])).resolves.toEqual([]);
+    const loose = { name: 'a.md', webkitRelativePath: '' } as unknown as File;
+    await expect(scanPickedFolderFiles([loose])).resolves.toEqual([]);
   });
 });

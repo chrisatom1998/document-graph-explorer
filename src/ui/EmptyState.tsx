@@ -3,6 +3,7 @@ import { Button } from '@heroui/react/button';
 import { Chip } from '@heroui/react/chip';
 import { EmptyState as HeroEmptyState } from '@heroui/react/empty-state';
 import { openFilePicker } from '../ingest/DropZone';
+import { openFolderPicker } from '../ingest/folderPicker';
 import { useUiStore } from '../store/uiStore';
 import ConstellationSvg from './ConstellationSvg';
 
@@ -79,6 +80,14 @@ export default function EmptyState() {
             <Button
               variant="secondary"
               size="lg"
+              aria-label="Add a folder — every relevant file inside it is added, subfolders included"
+              onPress={openFolderPicker}
+            >
+              Add a folder
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
               isDisabled={demoLoading}
               onPress={loadDemo}
             >
@@ -93,7 +102,10 @@ export default function EmptyState() {
             </Button>
           </div>
           <Suspense fallback={null}><CorpusSwitcher variant="empty" /></Suspense>
-          <p className="empty-state__hint">or drag files and folders anywhere</p>
+          <p className="empty-state__hint">
+            Pick a folder once and every relevant file inside it is pulled in, subfolders
+            included — or drag files and folders anywhere
+          </p>
         </div>
 
         <div className="empty-state__workflow" aria-label="How Document Graph Explorer works">

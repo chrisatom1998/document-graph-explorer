@@ -97,3 +97,66 @@ export async function scanFolder(handle: FileSystemDirectoryHandle): Promise<Nam
   const output = await readFiles(pending);
   return output.sort((a, b) => (a.path ?? '').localeCompare(b.path ?? ''));
 }
+
+// ---------------------------------------------------------------------------
+// <input webkitdirectory> support: the browser hands back a FLAT file list
+// (each File carrying webkitRelativePath), so rebuild the directory tree and
+// run it through the exact same walk as scanFolder — one filtering
+// implementation (gitignore, ignored dirs, dotfiles, lockfiles) for both the
+// File System Access picker and the fallback input.
+// ---------------------------------------------------------------------------
+
+interface SyntheticDirectory {
+  name: string;
+  directories: Map<string, SyntheticDirectory>;
+  files: Map<string, File>;
+}
+
+function syntheticHandle(directory: SyntheticDirectory): FileSystemDirectoryHandle {
+  const handle = {
+    kind: 'directory' as const,
+    name: directory.name,
+    entries: async function* entries(): AsyncIterableIterator<[string, FileSystemHandle]> {
+      for (const [name, child] of directory.directories) {
+        yield [name, syntheticHandle(child) as unknown as FileSystemHandle];
+      }
+      for (const [name, file] of directory.files) {
+        const fileHandle = { kind: 'file' as const, name, getFile: () => Promise.resolve(file) };
+        yield [name, fileHandle as unknown as FileSystemHandle];
+      }
+    },
+  };
+  return handle as unknown as FileSystemDirectoryHandle;
+}
+
+/**
+ * scanFolder over a flat `<input webkitdirectory>` selection. Returns the
+ * same NamedFile[] (filtered, sorted, `rootName/`-prefixed paths) a
+ * showDirectoryPicker walk of the same folder would produce.
+ */
+export async function scanPickedFolderFiles(files: File[]): Promise<NamedFile[]> {
+  let rootName: string | null = null;
+  const root: SyntheticDirectory = { name: '', directories: new Map(), files: new Map() };
+  for (const file of files) {
+    const relative = file.webkitRelativePath;
+    const segments = relative ? relative.split('/').filter(Boolean) : [];
+    // webkitdirectory always reports "root/…/name"; anything shorter is not
+    // part of a folder selection.
+    if (segments.length < 2) continue;
+    if (rootName === null) rootName = segments[0];
+    else if (segments[0] !== rootName) continue; // a folder pick has one root
+    let directory = root;
+    for (const segment of segments.slice(1, -1)) {
+      let child = directory.directories.get(segment);
+      if (!child) {
+        child = { name: segment, directories: new Map(), files: new Map() };
+        directory.directories.set(segment, child);
+      }
+      directory = child;
+    }
+    directory.files.set(segments[segments.length - 1], file);
+  }
+  if (rootName === null) return [];
+  root.name = rootName;
+  return scanFolder(syntheticHandle(root));
+}
