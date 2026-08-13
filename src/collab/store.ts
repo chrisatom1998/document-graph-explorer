@@ -265,10 +265,23 @@ function clearSettleWait(): void {
   }
 }
 
-function deliverSettledCamera(): void {
-  clearSettleWait();
+function deliverSettledCamera(final = true): void {
+  if (final) {
+    clearSettleWait();
+    const settled = pendingSettleCamera;
+    pendingSettleCamera = null;
+    if (!settled) return;
+    deliverRemoteCameraPose(settled);
+    return;
+  }
+  // Timeout fallback: apply now so a hung layout cannot pin the camera, but
+  // keep the settle listener so a later genuine settle can remap against
+  // finished positions (and so later poses still coalesce into that wait).
+  if (settleWaitTimer != null) {
+    clearTimeout(settleWaitTimer);
+    settleWaitTimer = null;
+  }
   const settled = pendingSettleCamera;
-  pendingSettleCamera = null;
   if (!settled) return;
   deliverRemoteCameraPose(settled);
 }
@@ -340,7 +353,7 @@ function scheduleRemoteCameraPose(
       });
       settleWaitTimer = setTimeout(() => {
         settleWaitTimer = null;
-        deliverSettledCamera();
+        deliverSettledCamera(false);
       }, FOLLOW_SETTLE_WAIT_MS);
     }
     return;
@@ -395,6 +408,13 @@ function maybeLogFollowDebug(
 
 /** Apply a remote shared-view snapshot. Exported for unit tests. */
 export function applySharedView(view: Partial<Record<string, unknown>>): void {
+  const { followMode, lastRemoteView } = useCollabStore.getState();
+  // Join snapshot (no view applied yet) may run while follow is off. After
+  // that, unfollow must ignore presenter writes — requireFollow is copied
+  // from followMode at schedule time, so later poses would be treated as
+  // join poses and still snap camera/dims/selection/filters.
+  if (!followMode && lastRemoteView) return;
+
   const ui = useUiStore.getState();
   const remoteFilter = sanitizeSharedFilter(view.filter);
   const remoteCamera = parseCameraPose(view.camera);
@@ -601,9 +621,12 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       session.provider?.awareness.on('change', () => {
         set({ peers: collectPeers(session) });
       });
-      // Joiner: always apply presenter updates. Camera delivery is gated
-      // inside scheduleRemoteCameraPose via requireFollow, not here.
+      // Joiner: apply the first snapshot even before follow is on (join pose
+      // / late Yjs sync). After that, only follow mode may keep applying
+      // presenter view — requireFollow is snapshotted at schedule time and
+      // does not restore independent control on unfollow.
       session.view.observe(() => {
+        if (!get().followMode && get().lastRemoteView) return;
         applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
       });
       session.provider?.awareness.setLocalState({

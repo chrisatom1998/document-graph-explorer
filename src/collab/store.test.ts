@@ -287,6 +287,79 @@ describe('applySharedView', () => {
     ]);
   });
 
+  it('remaps again on the real layout settle after the settle-wait timeout', () => {
+    seedNode('doc', 0, [0, 0, 0]);
+    applySharedView({
+      dims: 2,
+      selectedId: 'doc',
+      camera: { px: 10, py: 0, pz: 40, tx: 10, ty: 0, tz: 0 },
+      cameraAnchor: { id: 'doc', x: 10, y: 0, z: 0, radius: 2, count: 1 },
+    });
+    vi.advanceTimersByTime(FOLLOW_SETTLE_WAIT_MS);
+    expect(delivered).toEqual([
+      { px: 0, py: 0, pz: 40, tx: 0, ty: 0, tz: 0 },
+    ]);
+
+    seedNode('doc', 0, [100, 50, -20]);
+    fireSettled(layoutTest.postedEpoch);
+    expect(delivered.at(-1)).toEqual({
+      px: 100,
+      py: 50,
+      pz: 20,
+      tx: 100,
+      ty: 50,
+      tz: -20,
+    });
+  });
+
+  it('still waits for layout settle before applying a later pose after timeout', () => {
+    applySharedView({
+      dims: 2,
+      camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    });
+    vi.advanceTimersByTime(FOLLOW_SETTLE_WAIT_MS);
+    expect(delivered).toHaveLength(1);
+
+    applySharedView({
+      dims: 2,
+      camera: { px: 7, py: 8, pz: 9, tx: 10, ty: 11, tz: 12 },
+    });
+    vi.advanceTimersByTime(0);
+    expect(delivered).toHaveLength(1);
+
+    fireSettled(layoutTest.postedEpoch);
+    expect(delivered).toEqual([
+      { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+      { px: 7, py: 8, pz: 9, tx: 10, ty: 11, tz: 12 },
+    ]);
+  });
+
+  it('does not apply presenter view after follow mode is turned off', () => {
+    applySharedView({
+      dims: 3,
+      topicNodesEnabled: true,
+      camera: { px: 0, py: 0, pz: 40, tx: 0, ty: 0, tz: 0 },
+    });
+    vi.runOnlyPendingTimers();
+    expect(useUiStore.getState().topicNodesEnabled).toBe(true);
+    expect(delivered).toHaveLength(1);
+
+    useCollabStore.getState().setFollowMode(false);
+    applySharedView({
+      dims: 2,
+      topicNodesEnabled: false,
+      filter: { ...DEFAULT_FILTER, minDegree: 4 },
+      camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    });
+    vi.runOnlyPendingTimers();
+
+    expect(useUiStore.getState().dims).toBe(3);
+    expect(useUiStore.getState().topicNodesEnabled).toBe(true);
+    expect(useUiStore.getState().filter.minDegree).toBe(DEFAULT_FILTER.minDegree);
+    expect(layoutSetDims).not.toHaveBeenCalled();
+    expect(delivered).toHaveLength(1);
+  });
+
   it('cancels a delayed join pose after deliberate local camera activity', () => {
     useCollabStore.setState({ followMode: false });
     applySharedView({
