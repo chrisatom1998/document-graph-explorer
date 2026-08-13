@@ -60,6 +60,10 @@ export default function CameraRig() {
     if (dims === 2) {
       controls.minPolarAngle = Math.PI / 2;
       controls.maxPolarAngle = Math.PI / 2;
+      tweenActive.current = false;
+      // Rewriting sphericalDelta to a no-op drops leftover 3D yaw so the
+      // next damped update cannot sweep the snapped pose edge-on again.
+      controls.setAzimuthalAngle(controls.getAzimuthalAngle());
       const cam = controls.object;
       const next = faceLayoutPlane(
         cam.position.x,
@@ -71,6 +75,8 @@ export default function CameraRig() {
       );
       cam.position.set(next.px, next.py, next.pz);
       controls.target.set(next.tx, next.ty, next.tz);
+      desiredPos.set(next.px, next.py, next.pz);
+      desiredTarget.set(next.tx, next.ty, next.tz);
       controls.update();
     } else {
       controls.minPolarAngle = 0;
