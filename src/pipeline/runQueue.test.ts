@@ -58,6 +58,33 @@ describe('enqueueRun', () => {
     await expect(second).resolves.toBe('two');
   });
 
+  it('a run whose signal aborts while it waits never starts, and the queue moves on', async () => {
+    const events: string[] = [];
+    const controller = new AbortController();
+
+    const first = enqueueRun(async () => {
+      events.push('first');
+      controller.abort(); // cancel arrives while the next run is still queued
+    });
+    const cancelled = enqueueRun(async () => {
+      events.push('cancelled');
+    }, { signal: controller.signal });
+    const after = enqueueRun(async () => {
+      events.push('after');
+    });
+
+    await first;
+    await expect(cancelled).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(after).resolves.toBeUndefined();
+    expect(events).toEqual(['first', 'after']);
+  });
+
+  it('a signal that never aborts leaves the run untouched', async () => {
+    const controller = new AbortController();
+    const run = enqueueRun(() => Promise.resolve('ok'), { signal: controller.signal });
+    await expect(run).resolves.toBe('ok');
+  });
+
   it('a run enqueued only after an earlier one settles still queues behind it', async () => {
     const events: string[] = [];
     await enqueueRun(async () => {

@@ -40,6 +40,15 @@ export interface PipelineWorkerLike {
   onmessageerror: ((ev: MessageEvent) => void) | null;
 }
 
+function abortReason(signal: AbortSignal): Error {
+  const reason: unknown = signal.reason;
+  return reason instanceof Error
+    ? reason
+    : new DOMException('The operation was aborted.', 'AbortError');
+}
+
+function noop(): void {}
+
 function spawnPipelineWorker(): PipelineWorkerLike {
   return new Worker(new URL('./pipeline.worker.ts', import.meta.url), {
     type: 'module',
@@ -163,23 +172,62 @@ export class WorkerPool {
     return 0;
   }
 
-  request<T extends PoolResponse>(msg: PoolRequest, transfer?: Transferable[]): Promise<T> {
+  request<T extends PoolResponse>(
+    msg: PoolRequest,
+    transfer?: Transferable[],
+    options?: { signal?: AbortSignal },
+  ): Promise<T> {
     if (this.disposed) return Promise.reject(new Error('WorkerPool is disposed'));
+    const signal = options?.signal;
+    if (signal?.aborted) return Promise.reject(abortReason(signal));
     const requestId = this.nextRequestId;
     this.nextRequestId += 1;
     const payload = { ...msg, requestId } as PoolRequest;
     return new Promise<T>((resolve, reject) => {
+      const onAbort = signal ? () => this.abortRequest(requestId, abortReason(signal)) : null;
+      // Detach the abort listener however the request settles — one long
+      // ingest signal is shared by thousands of requests, so leaving dead
+      // listeners behind would accumulate for the whole run.
+      const settled =
+        <A,>(fn: (arg: A) => void) =>
+        (arg: A): void => {
+          if (signal && onAbort) signal.removeEventListener('abort', onAbort);
+          fn(arg);
+        };
+      if (signal && onAbort) signal.addEventListener('abort', onAbort);
       this.queue.push({
         payload,
         transfer,
         // runtime correlation by requestId guarantees the response matches
         // the request; the caller asserts the concrete response type T
-        resolve: resolve as unknown as (response: PoolResponse) => void,
-        reject,
+        resolve: settled(resolve) as unknown as (response: PoolResponse) => void,
+        reject: settled(reject),
         timeoutMs: this.requestTimeoutMs(msg),
       });
       this.pump();
     });
+  }
+
+  /**
+   * Cancel one request. Still queued → drop it before it ever reaches a
+   * worker. Already dispatched → settle the caller now, but keep the pending
+   * entry (with no-op callbacks) so the worker's eventual response, timeout,
+   * or crash still releases its slot through the normal bookkeeping path —
+   * workers can't be interrupted mid-job without terminating them (and losing
+   * the warm embedding model).
+   */
+  private abortRequest(requestId: number, reason: Error): void {
+    const queued = this.queue.findIndex((job) => job.payload.requestId === requestId);
+    if (queued >= 0) {
+      const [job] = this.queue.splice(queued, 1);
+      job.reject(reason);
+      return;
+    }
+    const entry = this.pending.get(requestId);
+    if (!entry) return;
+    entry.reject(reason);
+    entry.resolve = noop;
+    entry.reject = noop;
   }
 
   /**

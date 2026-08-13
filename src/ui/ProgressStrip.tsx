@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Chip } from '@heroui/react/chip';
 import { ProgressBar } from '@heroui/react/progress-bar';
 import { useGraphStore } from '../store/graphStore';
+import {
+  cancelIngest,
+  hasCancellableIngest,
+  subscribeIngestCancellation,
+} from '../pipeline/ingestCancellation';
 import type { FileStage, PipelinePhase } from '../model/types';
 
 const AUTO_HIDE_MS = 2500;
@@ -43,6 +48,16 @@ export default function ProgressStrip() {
 
   const [ignoredOpen, setIgnoredOpen] = useState(false);
   const [lingering, setLingering] = useState(false);
+
+  // True while a cancellable ingest run is live (registered by ingestFiles);
+  // false during other active phases (watched-folder rescans, enrichment,
+  // embedding rebuilds), where the button would be a dead control.
+  const cancellable = useSyncExternalStore(subscribeIngestCancellation, hasCancellableIngest);
+  const [cancelRequested, setCancelRequested] = useState(false);
+  useEffect(() => {
+    // re-arm once the cancelled run has fully wound down
+    if (!cancellable) setCancelRequested(false);
+  }, [cancellable]);
 
   // Keep the strip mounted for AUTO_HIDE_MS after the phase reaches 'ready'
   // so it can animate out instead of popping away.
@@ -120,23 +135,46 @@ export default function ProgressStrip() {
         }`}
         aria-busy={active}
       >
-        <div className="progress-strip__top" role="status" aria-live="polite" aria-atomic="true">
-          <span className="progress-strip__phase">{phaseLabel}</span>
-          <ProgressBar
-            className="progress-strip__progress"
-            aria-label={phaseLabel}
-            minValue={0}
-            maxValue={total || 1}
-            value={total > 0 ? done : 0}
-            valueLabel={total > 0 ? `${done} of ${total}` : phaseLabel}
+        <div className="progress-strip__top">
+          {/* the live region wraps only the phase/progress text — the Cancel
+              button sits outside it so its label flip doesn't re-announce */}
+          <div
+            className="progress-strip__status"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
           >
-            <ProgressBar.Track className="progress-strip__bar-track">
-              <ProgressBar.Fill className="progress-strip__bar-fill" />
-            </ProgressBar.Track>
-          </ProgressBar>
-          <span className="progress-strip__count">
-            {done}/{total || 0}
-          </span>
+            <span className="progress-strip__phase">{phaseLabel}</span>
+            <ProgressBar
+              className="progress-strip__progress"
+              aria-label={phaseLabel}
+              minValue={0}
+              maxValue={total || 1}
+              value={total > 0 ? done : 0}
+              valueLabel={total > 0 ? `${done} of ${total}` : phaseLabel}
+            >
+              <ProgressBar.Track className="progress-strip__bar-track">
+                <ProgressBar.Fill className="progress-strip__bar-fill" />
+              </ProgressBar.Track>
+            </ProgressBar>
+            <span className="progress-strip__count">
+              {done}/{total || 0}
+            </span>
+          </div>
+          {active && cancellable && (
+            <button
+              type="button"
+              className="progress-strip__cancel"
+              disabled={cancelRequested}
+              title="Stop this ingest — documents already placed stay in the graph"
+              onClick={() => {
+                setCancelRequested(true);
+                cancelIngest();
+              }}
+            >
+              {cancelRequested ? 'Cancelling…' : 'Cancel'}
+            </button>
+          )}
         </div>
 
         {recentFiles.length > 0 && (

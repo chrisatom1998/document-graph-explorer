@@ -193,6 +193,45 @@ describe('WorkerPool scheduling', () => {
     await expect(second).rejects.toThrow(/disposed/);
   });
 
+  it('aborting a queued job rejects it and it is never dispatched', async () => {
+    const controller = new AbortController();
+    const first = pool.request(parseMsg());
+    const second = pool.request(parseMsg(), undefined, { signal: controller.signal });
+
+    controller.abort();
+    await expect(second).rejects.toMatchObject({ name: 'AbortError' });
+
+    // only the first job ever reaches the worker; it still completes normally
+    workers[0].respondToLast();
+    await expect(first).resolves.toMatchObject({ type: 'parse:done' });
+    expect(workers[0].messages).toHaveLength(1);
+  });
+
+  it('aborting an in-flight job rejects it now, and the late response still frees the worker', async () => {
+    const controller = new AbortController();
+    const first = pool.request(parseMsg(), undefined, { signal: controller.signal });
+    const second = pool.request(parseMsg());
+
+    controller.abort();
+    await expect(first).rejects.toMatchObject({ name: 'AbortError' });
+    // the worker is still crunching the aborted job — nothing new dispatched
+    expect(workers[0].messages).toHaveLength(1);
+
+    // its (discarded) response releases the slot and the queued job proceeds
+    workers[0].respondToLast();
+    expect(workers[0].messages).toHaveLength(2);
+    workers[0].respondToLast();
+    await expect(second).resolves.toMatchObject({ type: 'parse:done' });
+  });
+
+  it('a request made with an already-aborted signal rejects without touching the pool', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(pool.request(parseMsg(), undefined, { signal: controller.signal }))
+      .rejects.toMatchObject({ name: 'AbortError' });
+    expect(workers).toHaveLength(0);
+  });
+
   it('lets the only worker take general work once its embed finishes', () => {
     // size 1: refusing here would starve parses forever on a 2-core machine.
     pool.request(embedMsg()).catch(() => undefined);

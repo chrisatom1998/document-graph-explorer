@@ -2427,6 +2427,33 @@ input {
   gap: 12px;
 }
 
+.progress-strip__status {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-strip__cancel {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: rgba(255, 128, 128, 0.08);
+  border: 1px solid rgba(255, 128, 128, 0.28);
+  color: var(--danger);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.progress-strip__cancel:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .progress-strip__phase {
   flex: none;
   font-size: 12.5px;
@@ -2538,7 +2565,6 @@ input {
   flex-direction: column;
   gap: 6px;
 }
-
 .ignored-tray__toggle {
   align-self: flex-start;
   display: inline-flex;
@@ -3338,7 +3364,8 @@ input {
   .toolbar { padding: 7px; }
   .toolbar .btn-icon { min-width: 42px; min-height: 42px; }
   .filter-bar__clear,
-  .ignored-tray__toggle { min-height: 40px; }
+  .ignored-tray__toggle,
+  .progress-strip__cancel { min-height: 40px; }
   .chat-bubble-btn { width: 58px; height: 58px; }
 }
 

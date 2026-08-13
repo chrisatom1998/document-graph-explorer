@@ -89,6 +89,7 @@ import { documentContentId } from './documentId';
 import { chunkText } from './chunker';
 import { sha256Hex } from './hash';
 import { parsePdf } from './parsers/pdf';
+import { clearIngestAbort, registerIngestAbort } from './ingestCancellation';
 import { enqueueRun } from './runQueue';
 import { randomSpherePoint } from './spawnPosition';
 import { addToSemanticIndex, edgesFromIndex, type SemanticIndex } from './similarity';
@@ -190,10 +191,24 @@ function ensureAggregator(): Worker {
   return aggWorker;
 }
 
+function abortError(signal: AbortSignal): Error {
+  const reason: unknown = signal.reason;
+  return reason instanceof Error
+    ? reason
+    : new DOMException('The operation was aborted.', 'AbortError');
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw abortError(signal);
+}
+
 function aggRequest<T extends AggResponse>(
   msg: AggRequest,
   transfer?: Transferable[],
+  options?: { signal?: AbortSignal },
 ): Promise<T> {
+  const signal = options?.signal;
+  if (signal?.aborted) return Promise.reject(abortError(signal));
   const worker = ensureAggregator();
   const requestId = aggNextRequestId;
   aggNextRequestId += 1;
@@ -212,10 +227,28 @@ function aggRequest<T extends AggResponse>(
         new Error(`aggregator worker request timed out after ${timeoutMs}ms`),
       );
     }, timeoutMs);
+    const onAbort = signal
+      ? () => {
+          if (!aggPending.has(requestId)) return;
+          // A cancelled corpus-wide pass is pure CPU burn with no model state
+          // to protect (unlike the embed pool) — discard the worker outright
+          // rather than letting it run to completion under the next ingest.
+          discardAggregator(abortError(signal));
+        }
+      : null;
+    // Detach the abort listener however the request settles, so a shared
+    // per-run signal doesn't accumulate dead listeners.
+    const settled =
+      <A,>(fn: (arg: A) => void) =>
+      (arg: A): void => {
+        if (signal && onAbort) signal.removeEventListener('abort', onAbort);
+        fn(arg);
+      };
+    if (signal && onAbort) signal.addEventListener('abort', onAbort);
     aggPending.set(requestId, {
       // correlated by requestId at runtime; caller asserts the subtype
-      resolve: resolve as unknown as (response: AggResponse) => void,
-      reject,
+      resolve: settled(resolve) as unknown as (response: AggResponse) => void,
+      reject: settled(reject),
       timer,
     });
     if (transfer && transfer.length > 0) worker.postMessage(payload, transfer);
@@ -318,8 +351,9 @@ interface PendingFile {
   original: Blob;
 }
 
-async function runIngest(files: IngestFile[]): Promise<void> {
+async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<void> {
   wireModelProgress();
+  throwIfAborted(signal);
   const store = useGraphStore.getState; // fresh state per call; actions are stable
 
   // (a) route by extension; unsupported → ignored tray
@@ -338,6 +372,8 @@ async function runIngest(files: IngestFile[]): Promise<void> {
   const seenIds = new Set<string>();
   const pending: PendingFile[] = [];
   for (const { file, fileType } of routed) {
+    // hashing a large drop takes real time — bail between files, not after
+    throwIfAborted(signal);
     const relPath = file.path ?? file.name;
     const id = await documentContentId(relPath, file.bytes);
     // Reconstructable sources (generated demo docs) skip original retention:
@@ -364,6 +400,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
       cached: await lookupDocCache(p.id).catch(() => undefined),
     })),
   );
+  throwIfAborted(signal);
   const misses: PendingFile[] = [];
   for (const { p, cached } of lookups) {
     fileIdOfDoc.set(p.id, p.file.fileId);
@@ -434,19 +471,23 @@ async function runIngest(files: IngestFile[]): Promise<void> {
           },
         });
         pdfLinks = pdf.links;
-        done = await pool.request<ParseDone>({
-          requestId: 0,
-          type: 'analyze',
-          fileId: p.file.fileId,
-          name: p.file.name,
-          path: p.file.path,
-          fileType: p.fileType,
-          docId: p.id,
-          title: pdf.title,
-          text: pdf.text,
-          status: pdf.status,
-          warning: pdf.warning,
-        });
+        done = await pool.request<ParseDone>(
+          {
+            requestId: 0,
+            type: 'analyze',
+            fileId: p.file.fileId,
+            name: p.file.name,
+            path: p.file.path,
+            fileType: p.fileType,
+            docId: p.id,
+            title: pdf.title,
+            text: pdf.text,
+            status: pdf.status,
+            warning: pdf.warning,
+          },
+          undefined,
+          { signal },
+        );
       } else {
         done = await pool.request<ParseDone>(
           {
@@ -459,6 +500,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
             bytes: p.file.bytes,
           },
           [p.file.bytes],
+          { signal },
         );
       }
       return { p, doc: done.doc, pdfLinks };
@@ -559,6 +601,9 @@ async function runIngest(files: IngestFile[]): Promise<void> {
     );
     const settled = await Promise.allSettled(trackedTasks);
     flushCompleted();
+    // Docs parsed before the abort landed stay committed (finished work is
+    // kept); bail before painting the cancellation rejections as error chips.
+    throwIfAborted(signal);
     // OCR calls are serialized but parse tasks are concurrent. Clear only
     // after every parse task settles so one PDF cannot erase the next queued
     // PDF's freshly-published progress update.
@@ -585,7 +630,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
 
   // (e) lexical aggregation over the WHOLE corpus (idf + title mentions
   // are corpus-wide, so every drop rebuilds them)
-  const { lexEdges, boilerplate } = await runLexicalPass(pool);
+  const { lexEdges, boilerplate } = await runLexicalPass(pool, signal);
 
   // (f) embeddings for docs that still need a vector
   const embedTargets = documentNodes().filter(
@@ -593,9 +638,10 @@ async function runIngest(files: IngestFile[]): Promise<void> {
   );
   if (embedTargets.length > 0) {
     store().setPhase('embedding');
-    await runEmbeddingPass(pool, embedTargets, boilerplate);
+    await runEmbeddingPass(pool, embedTargets, boilerplate, signal);
     store().setModelProgress(null);
   }
+  throwIfAborted(signal);
 
   // (f2) eager KB flush: the parse + embed work of THIS drop reaches
   // IndexedDB now, not 1.5s after 'ready' — a tab closed mid-run re-drops as
@@ -622,7 +668,7 @@ async function runIngest(files: IngestFile[]): Promise<void> {
   }
 
   // (g) semantic edges + Louvain clustering over the full edge set
-  await runSemanticPass(lexEdges);
+  await runSemanticPass(lexEdges, signal);
 
   // (h) synthesize topic concept nodes (spec §5.4)
   synthesizeTopicNodes();
@@ -691,6 +737,7 @@ async function runEmbeddingPass(
   pool: WorkerPool,
   nodes: DocNode[],
   boilerplate: Set<string>,
+  signal?: AbortSignal,
 ): Promise<void> {
   const store = useGraphStore.getState;
   const targets: EmbedTarget[] = [];
@@ -712,13 +759,18 @@ async function runEmbeddingPass(
   );
 
   for (let start = 0; start < targets.length; start += EMBED_DOCS_PER_REQUEST) {
+    throwIfAborted(signal);
     const batch = targets.slice(start, start + EMBED_DOCS_PER_REQUEST);
     try {
-      const done = await pool.request<EmbedBatchDone>({
-        requestId: 0,
-        type: 'embedBatch',
-        docs: batch.map((t) => ({ docId: t.id, chunks: t.chunks })),
-      });
+      const done = await pool.request<EmbedBatchDone>(
+        {
+          requestId: 0,
+          type: 'embedBatch',
+          docs: batch.map((t) => ({ docId: t.id, chunks: t.chunks })),
+        },
+        undefined,
+        { signal },
+      );
       const chunksById = new Map(batch.map((t) => [t.id, t.chunks]));
       const embeddedIds: string[] = [];
       const placedStatuses: FileStatus[] = [];
@@ -739,6 +791,8 @@ async function runEmbeddingPass(
       store().setFileStatuses(placedStatuses);
       markDocsDirty(embeddedIds);
     } catch (err) {
+      // cancellation is not an embedding failure — no error chips
+      if (signal?.aborted) throw err;
       const message = err instanceof Error ? err.message : String(err);
       const errorStatuses: FileStatus[] = [];
       for (const t of batch) {
@@ -761,8 +815,10 @@ async function runEmbeddingPass(
 /** Ingest step (e): lexical edges, keywords, boilerplate — whole corpus. */
 async function runLexicalPass(
   pool: WorkerPool,
+  signal?: AbortSignal,
 ): Promise<{ lexEdges: Edge[]; boilerplate: Set<string> }> {
   const store = useGraphStore.getState;
+  throwIfAborted(signal);
   store().setPhase('linking');
   await backfillLexMeta(pool);
   const lexicalDocs: LexicalDocInput[] = documentNodes().map((n) => {
@@ -783,19 +839,23 @@ async function runLexicalPass(
   let lexEdges: Edge[] = [];
   let boilerplate = new Set<string>();
   try {
-    const lexical = await aggRequest<LexicalDone>({
-      requestId: 0,
-      type: 'lexical',
-      docs: lexicalDocs,
-      params: {
-        tfidfTopN: TFIDF_TOP_N,
-        minShared: KEYWORD_EDGE_MIN_SHARED,
-        edgesPerDoc: KEYWORD_EDGES_PER_DOC,
-        minTitleLen: MIN_MENTION_TITLE_LEN,
-        entityMinShared: ENTITY_EDGE_MIN_SHARED,
-        entityEdgesPerDoc: ENTITY_EDGES_PER_DOC,
+    const lexical = await aggRequest<LexicalDone>(
+      {
+        requestId: 0,
+        type: 'lexical',
+        docs: lexicalDocs,
+        params: {
+          tfidfTopN: TFIDF_TOP_N,
+          minShared: KEYWORD_EDGE_MIN_SHARED,
+          edgesPerDoc: KEYWORD_EDGES_PER_DOC,
+          minTitleLen: MIN_MENTION_TITLE_LEN,
+          entityMinShared: ENTITY_EDGE_MIN_SHARED,
+          entityEdgesPerDoc: ENTITY_EDGES_PER_DOC,
+        },
       },
-    });
+      undefined,
+      { signal },
+    );
     lexEdges = lexical.edges;
     boilerplate = new Set(lexical.boilerplateLines);
 
@@ -817,6 +877,8 @@ async function runLexicalPass(
     layoutSetLinks(toLinkInput(lexEdges));
     layoutReheat(0.8);
   } catch (err) {
+    // cancellation must propagate, not degrade into a "linking failed" toast
+    if (signal?.aborted) throw err;
     console.error('lexical aggregation failed', err);
     lexEdges = store().edges;
     useUiStore
@@ -862,8 +924,9 @@ function vectorsFor(ids: string[]): Float32Array {
 }
 
 /** Ingest step (g): semantic edges + Louvain clustering over the full edge set. */
-async function runSemanticPass(lexEdges: Edge[]): Promise<void> {
+async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<void> {
   const store = useGraphStore.getState;
+  throwIfAborted(signal);
   store().setPhase('connecting');
   const embedded = documentNodes().filter((n) => docVectorStore.has(n.id));
   if (embedded.length === 0) return;
@@ -902,6 +965,7 @@ async function runSemanticPass(lexEdges: Edge[]): Promise<void> {
           params: SIM_PARAMS,
         },
         [vectors.buffer], // `vectors` is a copy; the doc vectors stay in the store
+        { signal },
       );
       edges = semantic.edges;
       duplicates = semantic.duplicates;
@@ -936,12 +1000,16 @@ async function runSemanticPass(lexEdges: Edge[]): Promise<void> {
       for (const edge of [...lexEdges, ...edges]) {
         if (!mergedForCluster.has(edge.id)) mergedForCluster.set(edge.id, edge);
       }
-      const clusterResp = await aggRequest<ClusterDone>({
-        requestId: 0,
-        type: 'cluster',
-        ids,
-        edges: toLinkInput([...mergedForCluster.values()]),
-      });
+      const clusterResp = await aggRequest<ClusterDone>(
+        {
+          requestId: 0,
+          type: 'cluster',
+          ids,
+          edges: toLinkInput([...mergedForCluster.values()]),
+        },
+        undefined,
+        { signal },
+      );
       clusters = clusterResp.clusters;
     }
 
@@ -967,10 +1035,12 @@ async function runSemanticPass(lexEdges: Edge[]): Promise<void> {
     layoutSetClusters(clusters);
     layoutReheat(0.5);
   } catch (err) {
-    console.error('semantic aggregation failed', err);
     // Whatever's cached may not match what actually landed in the store —
     // force a full rebuild next time rather than compounding a bad state.
     resetSemanticIndex();
+    // cancellation must propagate, not degrade into a "similarity failed" toast
+    if (signal?.aborted) throw err;
+    console.error('semantic aggregation failed', err);
     useUiStore
       .getState()
       .pushToast(
@@ -1239,14 +1309,51 @@ async function backfillLexMeta(pool: WorkerPool): Promise<void> {
 // ---------------------------------------------------------------------------
 
 /**
+ * Settle the UI after a cancelled ingest run: whatever chips/progress the run
+ * left behind are cleared, and docs committed before the abort landed stay in
+ * the graph (the next drop re-runs the corpus-wide passes over them anyway).
+ */
+function settleCancelledIngest(): void {
+  const store = useGraphStore.getState;
+  store().setModelProgress(null); // an OCR/model banner must not outlive the run
+  store().clearIngestTray();
+  const { phase } = store();
+  // A run cancelled before it changed phase — or after an earlier cancelled
+  // run in the same batch already settled the strip — has nothing to announce.
+  if (phase === 'idle' || phase === 'ready') return;
+  store().setPhase(documentNodes().length > 0 ? 'ready' : 'idle');
+  useUiStore.getState().pushToast('Ingest cancelled.', 'info');
+}
+
+/**
  * Serializes runs via the shared FIFO run-queue (runQueue.ts): a drop during
  * an active run — or an in-flight import/snapshot-restore (exportImport.ts,
  * session.ts route through the same `enqueueRun`) — queues after it, so
  * these mutations of shared graph/runtime-store/layout state can never
  * interleave.
+ *
+ * Cancellable via the ProgressStrip's Cancel button (ingestCancellation.ts).
+ * The controller is registered at enqueue time, not run start, so cancelling
+ * also flushes drops still queued behind the running run — enqueueRun skips
+ * them before they start.
  */
 export function ingestFiles(files: IngestFile[]): Promise<void> {
-  const run = enqueueRun(() => runIngest(files));
+  const controller = new AbortController();
+  registerIngestAbort(controller);
+  const run = enqueueRun(() => runIngest(files, controller.signal), {
+    signal: controller.signal,
+  })
+    .catch((err) => {
+      // Cancellation is a user action, not a failure — settle the returned
+      // promise cleanly so fire-and-forget drops and loadDemoCorpus don't
+      // surface it as an error.
+      if (controller.signal.aborted) {
+        settleCancelledIngest();
+        return;
+      }
+      throw err;
+    })
+    .finally(() => clearIngestAbort(controller));
   // Attached separately from the returned promise so a caller that doesn't
   // itself .catch() the result (e.g. a fire-and-forget drop) doesn't produce
   // an unhandled rejection warning; it doesn't change what `run` resolves to.

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { useGraphStore } from '../store/graphStore';
+import { clearIngestAbort, registerIngestAbort } from '../pipeline/ingestCancellation';
 import ProgressStrip from './ProgressStrip';
 
 describe('ProgressStrip accessibility', () => {
@@ -46,5 +47,37 @@ describe('ProgressStrip accessibility', () => {
     expect(screen.getByText('OCR scan.pdf — page 2 of 7')).toBeInTheDocument();
     expect(screen.getByRole('progressbar', { name: 'Recognizing scanned PDF text' }))
       .toHaveAttribute('aria-valuetext', '2 of 7 pages');
+  });
+});
+
+describe('ProgressStrip cancellation', () => {
+  beforeEach(() => {
+    useGraphStore.getState().reset();
+    useGraphStore.setState({
+      phase: 'parsing',
+      fileStatuses: {
+        first: { fileId: 'first', name: 'first.md', stage: 'parsing' },
+      },
+    });
+  });
+
+  afterEach(cleanup);
+
+  it('shows no Cancel button when nothing cancellable is registered', () => {
+    render(<ProgressStrip />);
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+  });
+
+  it('aborts the registered ingest on click and flips to a disabled "Cancelling…"', () => {
+    const controller = new AbortController();
+    registerIngestAbort(controller);
+    try {
+      render(<ProgressStrip />);
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(controller.signal.aborted).toBe(true);
+      expect(screen.getByRole('button', { name: 'Cancelling…' })).toBeDisabled();
+    } finally {
+      clearIngestAbort(controller);
+    }
   });
 });
