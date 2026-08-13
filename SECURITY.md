@@ -37,8 +37,9 @@ browser's File System Access API; rescans happen only while the app is open and
 permission may need to be granted again after a restart or browser policy change.
 
 **Shareable URLs are an explicit disclosure action.** The Data menu shows a
-confirmation before copying a link. The URL fragment contains titles, short source
-excerpts of up to 2000 characters (summaries can be up to 2000 characters; connection evidence is capped at 200), topics, entities, keywords, warnings, cluster data, and connection evidence, so anyone who
+confirmation before copying a link. The URL fragment contains titles, summaries
+(up to 2000 characters), topics, entities, keywords, warnings, cluster data, and
+connection evidence (up to 200 characters), so anyone who
 receives the link can read that graph metadata. It excludes full document text,
 original file bytes, local paths, modification times, embeddings, file handles,
 and settings, and replaces content-derived node and edge IDs. URL fragments are
