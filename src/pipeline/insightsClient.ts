@@ -1,10 +1,18 @@
 /**
- * RPC client for the insights worker, cloned from the coordinator's
+ * RPC client for the insights worker, adapted from the coordinator's
  * aggregator-client pattern: lazy spawn on first request, requestId
  * correlation, and on any crash / undecodable message / timeout the worker
- * is discarded (reject everything in flight, terminate) so the next request
- * respawns a clean one. The worker is stateless per-request, so a respawn
- * costs nothing but the module load.
+ * is discarded (terminated) so the next post respawns a clean one. The
+ * worker is stateless per-request, so a respawn costs nothing but the
+ * module load.
+ *
+ * Unlike the aggregator — whose callers serialize runs, so at most one
+ * request is ever in flight — the insights panel fires a request on every
+ * store update while open. This client therefore serializes them itself:
+ * one request runs at a time, its timeout is armed only while it is
+ * actually running (a busy worker can't time out work it hasn't started),
+ * and at most one newer request waits behind it. An even newer graph
+ * supersedes the waiting one, so obsolete Brandes passes are never computed.
  */
 
 import type { DocNode, Edge, InsightsRequest, InsightsResponse } from '../model/types';
@@ -22,29 +30,54 @@ const BASE_TIMEOUT_MS = 30_000;
 const PER_DOC_TIMEOUT_MS = 30;
 const MAX_TIMEOUT_MS = 120_000;
 
+interface PendingRequest {
+  request: InsightsRequest;
+  resolve: (result: InsightsResult) => void;
+  reject: (error: Error) => void;
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
 let worker: Worker | null = null;
 let nextRequestId = 1;
-const pending = new Map<
-  number,
-  {
-    resolve: (result: InsightsResult) => void;
-    reject: (error: Error) => void;
-    timer: ReturnType<typeof setTimeout>;
-  }
->();
+let inFlight: PendingRequest | null = null;
+let queued: PendingRequest | null = null;
 
 /**
- * Reject everything in flight and drop the worker so the next request
- * respawns a clean one — after a crash or timeout its state can't be trusted.
+ * Reject the running request and drop the worker so the next post respawns
+ * a clean one — after a crash or timeout its state can't be trusted. The
+ * queued request (if any) never reached the bad worker, so it still runs.
  */
 function discardWorker(error: Error): void {
-  for (const [id, entry] of [...pending]) {
-    pending.delete(id);
-    clearTimeout(entry.timer);
-    entry.reject(error);
+  const failed = inFlight;
+  inFlight = null;
+  if (failed) {
+    if (failed.timer !== null) clearTimeout(failed.timer);
+    failed.reject(error);
   }
   worker?.terminate();
   worker = null;
+  postNext();
+}
+
+/**
+ * Post the queued request if the worker is idle. The timeout starts here —
+ * at run start, not at enqueue — so it measures the job itself and a slow
+ * predecessor can't burn a waiting request's budget.
+ */
+function postNext(): void {
+  if (inFlight || !queued) return;
+  const entry = queued;
+  queued = null;
+  inFlight = entry;
+  const timeoutMs = Math.min(
+    MAX_TIMEOUT_MS,
+    BASE_TIMEOUT_MS + PER_DOC_TIMEOUT_MS * entry.request.nodes.length,
+  );
+  entry.timer = setTimeout(() => {
+    if (inFlight !== entry) return;
+    discardWorker(new Error(`insights analysis timed out after ${timeoutMs}ms`));
+  }, timeoutMs);
+  ensureWorker().postMessage(entry.request);
 }
 
 function ensureWorker(): Worker {
@@ -54,12 +87,13 @@ function ensureWorker(): Worker {
   });
   worker.onmessage = (ev: MessageEvent<InsightsResponse>) => {
     const msg = ev.data;
-    const entry = pending.get(msg.requestId);
-    if (!entry) return;
-    pending.delete(msg.requestId);
-    clearTimeout(entry.timer);
+    const entry = inFlight;
+    if (!entry || entry.request.requestId !== msg.requestId) return;
+    inFlight = null;
+    if (entry.timer !== null) clearTimeout(entry.timer);
     if (msg.type === 'error') entry.reject(new Error(msg.message));
     else entry.resolve({ bridges: msg.bridges, hubs: msg.hubs, clusterStats: msg.clusterStats });
+    postNext();
   };
   worker.onerror = (ev: ErrorEvent) => {
     discardWorker(new Error(ev.message || 'insights worker crashed'));
@@ -77,7 +111,6 @@ function ensureWorker(): Worker {
  * would dominate the structured-clone cost for zero analytical value.
  */
 export function requestInsights(nodes: DocNode[], edges: Edge[]): Promise<InsightsResult> {
-  const docCount = nodes.length;
   const request: InsightsRequest = {
     requestId: nextRequestId++,
     type: 'insights',
@@ -95,15 +128,10 @@ export function requestInsights(nodes: DocNode[], edges: Edge[]): Promise<Insigh
     })),
   };
   return new Promise<InsightsResult>((resolve, reject) => {
-    const timeoutMs = Math.min(
-      MAX_TIMEOUT_MS,
-      BASE_TIMEOUT_MS + PER_DOC_TIMEOUT_MS * docCount,
-    );
-    const timer = setTimeout(() => {
-      if (!pending.has(request.requestId)) return;
-      discardWorker(new Error(`insights analysis timed out after ${timeoutMs}ms`));
-    }, timeoutMs);
-    pending.set(request.requestId, { resolve, reject, timer });
-    ensureWorker().postMessage(request);
+    // Latest-only coalescing: a newer graph makes the waiting request
+    // obsolete, so replace (and reject) it rather than queueing behind it.
+    queued?.reject(new Error('insights request superseded by a newer one'));
+    queued = { request, resolve, reject, timer: null };
+    postNext();
   });
 }

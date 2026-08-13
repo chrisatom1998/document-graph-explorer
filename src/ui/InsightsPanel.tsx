@@ -54,6 +54,7 @@ export default function InsightsPanel() {
   const [highlighted, setHighlighted] = useState<SectionKey | null>(null);
   const [analysis, setAnalysis] = useState<InsightsResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analysisFailed, setAnalysisFailed] = useState(false);
   const requestSeq = useRef(0);
 
   // The Escape ladder (App.tsx) can close the drawer from outside — it clears
@@ -84,8 +85,9 @@ export default function InsightsPanel() {
 
   // Bridges / hubs / cluster stats arrive async from the insights worker.
   // Store churn while open (patchNodes/setEdges always produce new arrays)
-  // re-requests; the requestSeq counter drops responses that a newer request
-  // has already superseded (the SearchOverlay stale-guard idiom).
+  // re-requests; the client coalesces to the latest request, and the
+  // requestSeq counter drops responses that a newer request has already
+  // superseded (the SearchOverlay stale-guard idiom).
   useEffect(() => {
     if (!open) return;
     const seq = ++requestSeq.current;
@@ -94,12 +96,15 @@ export default function InsightsPanel() {
       .then((result) => {
         if (seq !== requestSeq.current) return; // stale response
         setAnalysis(result);
+        setAnalysisFailed(false);
         setAnalyzing(false);
       })
       .catch((err: unknown) => {
+        if (seq !== requestSeq.current) return; // superseded by a newer request
         console.warn('insights analysis failed', err);
-        if (seq !== requestSeq.current) return;
-        setAnalysis(null);
+        // Keep the last good result; flag the failure so an absent result
+        // isn't rendered as a successfully computed empty analysis.
+        setAnalysisFailed(true);
         setAnalyzing(false);
       });
   }, [open, nodes, edges]);
@@ -141,12 +146,20 @@ export default function InsightsPanel() {
   const dupIds = [...new Set(insights.duplicates.flatMap((d) => [d.a, d.b]))];
 
   // Worker-computed sections: keep showing the last result while a refresh
-  // is in flight; only the very first computation gets the pending row.
+  // is in flight; only the very first computation gets the pending row. A
+  // failure with no result to fall back on gets its own row so it can't be
+  // mistaken for a corpus with no bridges/hubs/clusters.
   const pendingAnalysis = analysis === null && analyzing;
+  const failedAnalysis = analysis === null && !analyzing && analysisFailed;
   const bridges = analysis?.bridges ?? [];
   const hubs = analysis?.hubs ?? [];
   const clusterStats = analysis?.clusterStats ?? [];
   const analyzingRow = <p className="insights__hint">Analyzing…</p>;
+  const failedRow = (
+    <p className="side-panel__summary is-fallback">
+      Analysis didn't complete — close and reopen this panel to retry.
+    </p>
+  );
 
   const clusterName = (c: number): string =>
     clusterNames[c] ?? localClusterNames[c] ?? `Cluster ${c}`;
@@ -297,10 +310,12 @@ export default function InsightsPanel() {
           {section(
             'bridges',
             'Bridge documents',
-            pendingAnalysis ? null : bridges.length,
+            pendingAnalysis || failedAnalysis ? null : bridges.length,
             bridges.map((b) => b.id),
             pendingAnalysis ? (
               analyzingRow
+            ) : failedAnalysis ? (
+              failedRow
             ) : bridges.length === 0 ? (
               <p className="side-panel__summary is-fallback">
                 No strong bridges — the corpus has no single connector doc.
@@ -333,10 +348,12 @@ export default function InsightsPanel() {
           {section(
             'hubs',
             'Hub documents',
-            pendingAnalysis ? null : hubs.length,
+            pendingAnalysis || failedAnalysis ? null : hubs.length,
             hubs.map((h) => h.id),
             pendingAnalysis ? (
               analyzingRow
+            ) : failedAnalysis ? (
+              failedRow
             ) : hubs.length === 0 ? (
               <p className="side-panel__summary is-fallback">
                 No hubs yet — no document has direct connections.
@@ -370,10 +387,12 @@ export default function InsightsPanel() {
           {section(
             'clusters',
             'Clusters',
-            pendingAnalysis ? null : clusterStats.length,
+            pendingAnalysis || failedAnalysis ? null : clusterStats.length,
             clusterStats.flatMap((c) => clusterMembers.get(c.cluster) ?? []),
             pendingAnalysis ? (
               analyzingRow
+            ) : failedAnalysis ? (
+              failedRow
             ) : clusterStats.length === 0 ? (
               <p className="side-panel__summary is-fallback">
                 No clusters yet — communities appear once documents connect.
