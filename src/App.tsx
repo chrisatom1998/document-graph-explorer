@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import DropZone from './ingest/DropZone';
-import Toolbar from './ui/Toolbar';
 import Tooltip from './ui/Tooltip';
 import ChatLauncher from './ui/ChatLauncher';
 import ToastHost from './ui/ToastHost';
@@ -24,6 +23,7 @@ const NebulaCanvas = lazy(() => import('./scene/NebulaCanvas'));
 // to delay the interactive shell or graph bundle on a restored workspace.
 const EmptyState = lazy(() => import('./ui/EmptyState'));
 const ProgressStrip = lazy(() => import('./ui/ProgressStrip'));
+const Toolbar = lazy(() => import('./ui/Toolbar'));
 const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
 const PathPanel = lazy(() => import('./ui/PathPanel'));
 const SidePanel = lazy(() => import('./ui/SidePanel'));
@@ -279,7 +279,9 @@ export default function App() {
       {!hasNodes && phase === 'idle' && (
         <Suspense fallback={null}><EmptyState /></Suspense>
       )}
-      {phase === 'ready' && <Toolbar />}
+      {phase === 'ready' && (
+        <Suspense fallback={null}><Toolbar /></Suspense>
+      )}
       {phase === 'ready' && (
         <Suspense fallback={null}><GraphNavigator /></Suspense>
       )}
