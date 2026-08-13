@@ -31,9 +31,10 @@ interface DocumentMarkdownProps {
   linkIndex: LinkIndex;
   onNavigate: (docId: string) => void;
   className?: string;
+  highlight?: string | null;
 }
 
-export default function DocumentMarkdown({ text, linkIndex, onNavigate, className }: DocumentMarkdownProps) {
+export default function DocumentMarkdown({ text, linkIndex, onNavigate, className, highlight }: DocumentMarkdownProps) {
   const tree = useMemo<Root | null>(() => {
     if (text.length > MAX_RENDER_CHARS) return null;
     try {
@@ -49,7 +50,7 @@ export default function DocumentMarkdown({ text, linkIndex, onNavigate, classNam
   // instead of mounting an 8 MB+ text node that freezes the main thread.
   if (!tree) {
     const excerpt = getFallbackExcerpt(text);
-    return <VirtualText text={excerpt} className={wrapClass} />;
+    return <VirtualText text={excerpt} className={wrapClass} highlight={highlight} />;
   }
 
   return (

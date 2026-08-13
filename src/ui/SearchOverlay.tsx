@@ -5,6 +5,7 @@ import { nodesMatchingFilter } from '../scene/emphasis';
 import { searchCorpus, searchCorpusLexical } from '../search/semanticSearch';
 import type { RetrievalMatchKind } from '../search/retrieval';
 import { focusNode } from './focusNode';
+import { showSimilarTo } from './showSimilar';
 import { useActiveOptionScroll } from './useActiveOptionScroll';
 import CloseButton from './CloseButton';
 
@@ -15,6 +16,7 @@ interface ResultRow {
   score: number;
   matchKind: RetrievalMatchKind;
   snippet?: string;
+  passageIndex?: number;
 }
 
 export default function SearchOverlay() {
@@ -136,9 +138,9 @@ export default function SearchOverlay() {
 
   if (!searchOpen) return null;
 
-  const selectResult = (id: string) => {
+  const selectResult = (row: ResultRow) => {
     requestSeq.current++;
-    focusNode(id);
+    focusNode(row.id, { index: row.passageIndex, text: row.snippet });
     setSearchOpen(false);
   };
 
@@ -152,7 +154,7 @@ export default function SearchOverlay() {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const row = displayedResults[activeIndex];
-      if (row) selectResult(row.id);
+      if (row) selectResult(row);
     }
     // Escape intentionally left unhandled here so it bubbles to App's
     // window-level listener (owns Esc / closes + clears search results).
@@ -245,7 +247,7 @@ export default function SearchOverlay() {
                 className={`search-result-row${i === activeIndex ? ' is-active' : ''}`}
                 title={`${node?.title ?? row.id} — click to open`}
                 onMouseEnter={() => setActiveIndex(i)}
-                onClick={() => selectResult(row.id)}
+                onClick={() => selectResult(row)}
               >
                 <div className="search-result-row__top">
                   <span className="search-result-row__title">
@@ -254,6 +256,23 @@ export default function SearchOverlay() {
                   <span className={`match-kind-badge kind-${row.matchKind}`}>
                     {browsing ? 'document' : row.matchKind}
                   </span>
+                  <button
+                    type="button"
+                    className="search-result-row__similar"
+                    tabIndex={-1}
+                    title="Show documents similar to this one"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const count = showSimilarTo(row.id);
+                      if (count === 0) {
+                        useUiStore.getState().pushToast('No similar documents in this corpus', 'info');
+                      } else {
+                        setSearchOpen(false);
+                      }
+                    }}
+                  >
+                    Similar
+                  </button>
                 </div>
                 {!browsing && (
                   <div className="search-result-row__score-track">

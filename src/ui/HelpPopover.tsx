@@ -75,6 +75,8 @@ export default function HelpPopover() {
             </div>
             <p className="help-popover__hint">
               Hover, selection, search, and filters dim unrelated nodes without deleting them.
+              Search also matches notes, tags, and cluster names. Chat citations and search
+              hits open the matching passage in the reader.
             </p>
           </section>
 

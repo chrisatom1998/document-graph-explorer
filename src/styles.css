@@ -1460,6 +1460,27 @@ input {
   color: var(--text-faint);
 }
 
+.side-panel__passage-banner {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  background: rgba(255, 214, 90, 0.1);
+  border: 1px solid rgba(255, 214, 90, 0.28);
+  border-radius: 8px;
+}
+.side-panel__passage-banner-text {
+  color: var(--text-primary);
+}
+
+mark.passage-mark {
+  background: rgba(255, 214, 90, 0.38);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
 .side-panel__summary {
   margin: 0;
   font-size: 14px;
@@ -3056,6 +3077,24 @@ input {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.search-result-row__similar {
+  flex: none;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-family: var(--font-ui);
+  color: var(--text-secondary);
+  background: none;
+  border: 1px solid var(--border-glass);
+  border-radius: 999px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.search-result-row__similar:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .match-kind-badge {

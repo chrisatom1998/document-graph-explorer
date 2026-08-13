@@ -8,6 +8,7 @@ import {
   type ChunkData,
 } from '../store/runtimeStores';
 import { useGraphStore } from '../store/graphStore';
+import { annotationKey, useAnnotationStore } from '../store/annotationStore';
 import { diversifyRanked, reciprocalRankFusion } from './hybridRank';
 
 export type RetrievalMatchKind = 'title' | 'keyword' | 'semantic' | 'hybrid';
@@ -40,6 +41,10 @@ export interface RetrievalDependencies {
   docVectors: ReadonlyMap<string, Float32Array>;
   texts: ReadonlyMap<string, string>;
   embedQuery: (query: string) => Promise<Float32Array>;
+  /** Notes/tags keyed by document id (not annotationKey) — search overlay. */
+  annotations?: ReadonlyMap<string, { note: string; tags: string[] }>;
+  /** Resolved cluster label per document id (AI name ?? local name). */
+  clusterNameById?: ReadonlyMap<string, string>;
 }
 
 interface Candidate {
@@ -154,6 +159,46 @@ function upsertCandidate(
   return created;
 }
 
+function extraText(
+  node: DocNode,
+  annotations: RetrievalDependencies['annotations'],
+  clusterNameById: RetrievalDependencies['clusterNameById'],
+): string {
+  const parts: string[] = [];
+  const cluster = clusterNameById?.get(node.id);
+  if (cluster) parts.push(`Cluster: ${cluster}`);
+  const annotation = annotations?.get(node.id);
+  if (annotation?.tags.length) parts.push(`Tags: ${annotation.tags.join(', ')}`);
+  const note = annotation?.note.trim();
+  if (note) parts.push(note);
+  return parts.join('\n');
+}
+
+function liveDependencies(): RetrievalDependencies {
+  const graph = useGraphStore.getState();
+  const records = useAnnotationStore.getState().annotations;
+  const annotations = new Map<string, { note: string; tags: string[] }>();
+  const clusterNameById = new Map<string, string>();
+  for (const node of graph.nodes) {
+    if (node.kind !== 'document') continue;
+    const record = records[annotationKey(node)];
+    if (record && (record.note.trim() !== '' || record.tags.length > 0)) {
+      annotations.set(node.id, { note: record.note, tags: record.tags });
+    }
+    const name = graph.clusterNames[node.cluster] ?? graph.localClusterNames[node.cluster];
+    if (name) clusterNameById.set(node.id, name);
+  }
+  return {
+    nodes: graph.nodes,
+    chunks: defaultChunkStore,
+    docVectors: defaultDocVectorStore,
+    texts: defaultTextStore,
+    embedQuery: defaultEmbedQuery,
+    annotations,
+    clusterNameById,
+  };
+}
+
 function passagesForDocument(
   node: DocNode,
   chunks: ReadonlyMap<string, ChunkData>,
@@ -189,13 +234,7 @@ export async function retrieveCorpus(
   const q = query.trim();
   if (!q) return [];
 
-  const deps: RetrievalDependencies = dependencies ?? {
-    nodes: useGraphStore.getState().nodes,
-    chunks: defaultChunkStore,
-    docVectors: defaultDocVectorStore,
-    texts: defaultTextStore,
-    embedQuery: defaultEmbedQuery,
-  };
+  const deps: RetrievalDependencies = dependencies ?? liveDependencies();
   const documentNodes = deps.nodes.filter((node) => node.kind === 'document');
   if (documentNodes.length === 0) return [];
 
@@ -209,17 +248,33 @@ export async function retrieveCorpus(
   // Lexical pass always runs, including when embeddings are unavailable.
   for (const node of documentNodes) {
     const passages = passagesForDocument(node, deps.chunks, deps.texts);
+    const extra = extraText(node, deps.annotations, deps.clusterNameById);
+    const extraLex = extra ? lexicalRelevance(q, extra, '') : { score: 0, titleMatch: false };
+    let matchedBody = false;
     for (let passageIndex = 0; passageIndex < passages.length; passageIndex++) {
       const text = passages[passageIndex];
       const lexical = lexicalRelevance(q, text, node.title);
       if (lexical.score <= 0) continue;
+      matchedBody = true;
       upsertCandidate(candidates, {
         docId: node.id,
         docTitle: node.title,
         passageIndex,
         text: text.slice(0, maxPassageChars),
-        lexicalScore: lexical.score,
+        lexicalScore: lexical.score + extraLex.score,
         titleMatch: lexical.titleMatch,
+      });
+    }
+    // Notes, tags, and cluster names are first-class lexical evidence when
+    // the body itself does not mention the query (e.g. "legal-hold").
+    if (!matchedBody && extraLex.score > 0) {
+      upsertCandidate(candidates, {
+        docId: node.id,
+        docTitle: node.title,
+        passageIndex: 0,
+        text: extra.slice(0, maxPassageChars),
+        lexicalScore: extraLex.score,
+        titleMatch: false,
       });
     }
   }

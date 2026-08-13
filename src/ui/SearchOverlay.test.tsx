@@ -46,6 +46,9 @@ describe('SearchOverlay', () => {
       searchResults: null,
       highlightOwner: null,
       filter: { ...DEFAULT_FILTER },
+      selectedId: null,
+      readerHighlight: null,
+      toasts: [],
     });
     mockSearchCorpus.mockReset();
     mockSearchCorpusLexical.mockReset();
@@ -246,5 +249,38 @@ describe('SearchOverlay', () => {
 
     fireEvent.keyDown(input, { key: 'Tab', shiftKey: true });
     expect(showAll).toHaveFocus();
+  });
+
+  it('opens the matching passage when a search hit is chosen', async () => {
+    mockSearchCorpusLexical.mockResolvedValue([{
+      id: 'architecture',
+      score: 1,
+      matchKind: 'keyword',
+      snippet: 'Architecture details live here',
+      passageIndex: 2,
+    }]);
+    mockSearchCorpus.mockResolvedValue([{
+      id: 'architecture',
+      score: 1,
+      matchKind: 'keyword',
+      snippet: 'Architecture details live here',
+      passageIndex: 2,
+    }]);
+
+    render(<SearchOverlay />);
+    fireEvent.change(
+      screen.getByRole('combobox', { name: /search your documents/i }),
+      { target: { value: 'architecture' } },
+    );
+    const option = await screen.findByRole('option', { name: /Architecture Overview/i });
+    fireEvent.click(option);
+
+    expect(useUiStore.getState().searchOpen).toBe(false);
+    expect(useUiStore.getState().selectedId).toBe('architecture');
+    expect(useUiStore.getState().readerHighlight).toEqual({
+      docId: 'architecture',
+      text: 'Architecture details live here',
+      passageIndex: 2,
+    });
   });
 });

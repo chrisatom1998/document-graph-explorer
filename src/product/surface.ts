@@ -55,13 +55,13 @@ export const CAPABILITIES: readonly Capability[] = [
     id: 'read',
     layer: 'core',
     chrome: 'overlay',
-    summary: 'Click a node to read the document and see why it is connected.',
+    summary: 'Click a node to read the document; search and chat citations scroll to the matching passage.',
   },
   {
     id: 'search',
     layer: 'core',
     chrome: 'overlay',
-    summary: '⌘K lexical + semantic search; “Show all in graph” frames matches.',
+    summary: '⌘K lexical + semantic search over text, notes, tags, and cluster names; “Show all in graph” frames matches.',
   },
   {
     id: 'persist',

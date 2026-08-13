@@ -175,4 +175,46 @@ describe('shared hybrid retrieval', () => {
     expect(await retrieveCorpus('   ', {}, deps)).toEqual([]);
     expect(await retrieveCorpus('quantum entanglement', { minSemanticScore: 0.3 }, deps)).toEqual([]);
   });
+
+  it('matches notes and tags when the document body does not', async () => {
+    const tagged = node('policy', 'Vendor Policy');
+    const result = await retrieveCorpus(
+      'legal-hold',
+      { semantic: false },
+      {
+        ...dependencies(
+          [tagged],
+          new Map(),
+          async () => { throw new Error('offline'); },
+          new Map([['policy', 'This policy covers procurement and onboarding.']]),
+        ),
+        annotations: new Map([['policy', { note: 'Keep for counsel', tags: ['legal-hold'] }]]),
+      },
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      docId: 'policy',
+      matchKind: 'keyword',
+      text: expect.stringMatching(/legal-hold/i),
+    });
+  });
+
+  it('matches resolved cluster names', async () => {
+    const result = await retrieveCorpus(
+      'payments',
+      { semantic: false },
+      {
+        ...dependencies(
+          [node('invoice', 'Q3 Invoice Notes')],
+          new Map(),
+          async () => { throw new Error('offline'); },
+          new Map([['invoice', 'Line items and purchase orders for September.']]),
+        ),
+        clusterNameById: new Map([['invoice', 'Payments & revenue']]),
+      },
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0].docId).toBe('invoice');
+    expect(result[0].text).toMatch(/Payments & revenue/);
+  });
 });

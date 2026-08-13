@@ -22,7 +22,8 @@
  * ClusterCollapse's centroid tracking).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type UIEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type UIEvent } from 'react';
+import { findPassageRange, PASSAGE_MARK_CLASS, scrollPassageIntoView } from './passageHighlight';
 
 const BLOCK_LINES = 60;
 const LINE_HEIGHT_PX = 22.2; // 13.5px font × 1.65 line-height
@@ -36,6 +37,8 @@ const HEIGHT_EPSILON = 0.5;
 interface VirtualTextProps {
   text: string;
   className?: string;
+  /** Retrieved passage to scroll into view and wrap in <mark>. */
+  highlight?: string | null;
 }
 
 /** Index i such that offsets[i] <= target < offsets[i+1] (offsets is sorted, length >= 1). */
@@ -51,7 +54,26 @@ function blockIndexAtOffset(offsets: Float64Array, target: number): number {
   return lo;
 }
 
-export default function VirtualText({ text, className }: VirtualTextProps) {
+function markRange(text: string, range: { start: number; end: number } | null): ReactNode {
+  if (!range) return text;
+  return (
+    <>
+      {text.slice(0, range.start)}
+      <mark className={PASSAGE_MARK_CLASS}>{text.slice(range.start, range.end)}</mark>
+      {text.slice(range.end)}
+    </>
+  );
+}
+
+function charOffsetsForBlocks(blocks: string[]): Float64Array {
+  const out = new Float64Array(blocks.length + 1);
+  for (let i = 0; i < blocks.length; i++) {
+    out[i + 1] = out[i] + blocks[i].length + (i + 1 < blocks.length ? 1 : 0);
+  }
+  return out;
+}
+
+export default function VirtualText({ text, className, highlight }: VirtualTextProps) {
   // Re-split whenever `text` changes; a ref cache would pin the first
   // document's text forever when this instance is reused across selections.
   const blocks = useMemo(() => {
@@ -161,9 +183,32 @@ export default function VirtualText({ text, className }: VirtualTextProps) {
     recomputeVisibleRange(el.scrollTop, el.clientHeight);
   }, [offsets, recomputeVisibleRange]);
 
+  const passageRange = useMemo(
+    () => (highlight ? findPassageRange(text, highlight) : null),
+    [highlight, text],
+  );
+  const blockCharOffsets = useMemo(() => charOffsetsForBlocks(blocks), [blocks]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !passageRange) return;
+    if (totalBlocks > 3) {
+      const blockIndex = blockIndexAtOffset(blockCharOffsets, passageRange.start);
+      el.scrollTop = offsets[blockIndex] ?? 0;
+      recomputeVisibleRange(el.scrollTop, el.clientHeight);
+    }
+    requestAnimationFrame(() => {
+      scrollPassageIntoView(el.querySelector(`mark.${PASSAGE_MARK_CLASS}`));
+    });
+  }, [passageRange, totalBlocks, blockCharOffsets, offsets, recomputeVisibleRange]);
+
   // For small documents, skip virtualization entirely
   if (totalBlocks <= 3) {
-    return <div className={className}>{text}</div>;
+    return (
+      <div className={className} ref={containerRef}>
+        {markRange(text, passageRange)}
+      </div>
+    );
   }
 
   const [start, end] = visibleRange;
@@ -183,6 +228,16 @@ export default function VirtualText({ text, className }: VirtualTextProps) {
       >
         {blocks.slice(clampedStart, clampedEnd).map((block, i) => {
           const idx = clampedStart + i;
+          const blockStart = blockCharOffsets[idx] ?? 0;
+          const localRange =
+            passageRange &&
+            passageRange.end > blockStart &&
+            passageRange.start < blockStart + block.length
+              ? {
+                  start: Math.max(0, passageRange.start - blockStart),
+                  end: Math.min(block.length, passageRange.end - blockStart),
+                }
+              : null;
           return (
             <span
               key={idx}
@@ -190,7 +245,7 @@ export default function VirtualText({ text, className }: VirtualTextProps) {
               data-block-index={idx}
               style={{ display: 'block' }}
             >
-              {block}
+              {markRange(block, localRange)}
               {'\n'}
             </span>
           );
