@@ -243,4 +243,15 @@ describe('parseOffice', () => {
     expect(parsed.headings).toEqual(['Slide Title']);
     expect(parsed.text).toContain('Slide1: Slide Title\nSlide Text');
   });
+
+  it('extracts ODG drawing text', async () => {
+    const bytes = await zipBuffer({
+      'meta.xml': '<office:document-meta><office:meta><dc:title>Test ODG</dc:title></office:meta></office:document-meta>',
+      'content.xml': '<office:document-content><office:body><office:drawing><draw:page draw:name="Page1"><draw:frame><draw:text-box><text:p>Shape Title</text:p><text:p>Shape Text</text:p></draw:text-box></draw:frame></draw:page></office:drawing></office:body></office:document-content>'
+    });
+    const parsed = await parseOffice(bytes, 'test.odg', 'odg');
+    expect(parsed.title).toBe('Test ODG');
+    expect(parsed.headings).toEqual(['Shape Title']);
+    expect(parsed.text).toContain('Page1: Shape Title\nShape Text');
+  });
 });

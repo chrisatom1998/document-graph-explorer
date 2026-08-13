@@ -184,7 +184,7 @@ const LANGUAGES: LangDef[] = [
   { id: 'hlsl', label: 'HLSL', short: 'hlsl', family: 'other', mime: 'text/plain', exts: ['hlsl', 'fx'] },
   { id: 'wgsl', label: 'WGSL', short: 'wgsl', family: 'other', mime: 'text/plain', exts: ['wgsl'] },
   { id: 'metal', label: 'Metal', short: 'metal', family: 'c', mime: 'text/plain', exts: ['metal'] },
-  { id: 'opencl', label: 'OpenCL', short: 'cl', family: 'c', mime: 'text/plain', exts: ['cl'] },
+  { id: 'opencl', label: 'OpenCL', short: 'ocl', family: 'c', mime: 'text/plain', exts: ['ocl', 'opencl'] },
   { id: 'vyper', label: 'Vyper', short: 'vy', family: 'other', mime: 'text/plain', exts: ['vy'] },
   { id: 'move', label: 'Move', short: 'move', family: 'other', mime: 'text/plain', exts: ['move'] },
   { id: 'cairo', label: 'Cairo', short: 'cairo', family: 'other', mime: 'text/plain', exts: ['cairo'] },
@@ -211,8 +211,14 @@ function publicLang(def: LangDef): CodeLanguage {
 
 for (const def of LANGUAGES) {
   const lang = publicLang(def);
-  for (const ext of def.exts ?? []) BY_EXT.set(ext, lang);
-  for (const base of def.basenames ?? []) BY_BASENAME.set(base, lang);
+  // First registration wins so later languages cannot steal an extension
+  // already claimed (e.g. OpenCL must not overwrite Lisp's `.cl`).
+  for (const ext of def.exts ?? []) {
+    if (!BY_EXT.has(ext)) BY_EXT.set(ext, lang);
+  }
+  for (const base of def.basenames ?? []) {
+    if (!BY_BASENAME.has(base)) BY_BASENAME.set(base, lang);
+  }
 }
 
 const FILE_TYPE_LABELS: Record<FileType, string> = {

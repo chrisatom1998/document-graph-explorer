@@ -2,7 +2,7 @@ import { MAX_INGEST_FILE_BYTES, MAX_INGEST_TOTAL_BYTES } from '../config';
 import type { IngestFile } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { routeFile } from './fileRouter';
+import { isIngestCandidate, routeFileWithSniff } from './fileRouter';
 
 export interface NamedFile {
   file: File;
@@ -43,12 +43,12 @@ export async function prepareIngestFiles(
   let totalCapHit = false;
 
   for (const { file, path } of named) {
-    const fileType = routeFile(file.name);
-    if (fileType !== null && file.size > MAX_INGEST_FILE_BYTES) {
+    const shouldRead = isIngestCandidate(file.name);
+    if (shouldRead && file.size > MAX_INGEST_FILE_BYTES) {
       useGraphStore.getState().addIgnored(file.name, `too large (over ${MAX_INGEST_MB} MB)`);
       continue;
     }
-    if (fileType !== null && totalBytes + file.size > MAX_INGEST_TOTAL_BYTES) {
+    if (shouldRead && totalBytes + file.size > MAX_INGEST_TOTAL_BYTES) {
       // Deferred, not rejected: this file is within the per-file limit and only
       // lost the race for room in this batch.
       deferredPaths.add(path ?? file.name);
@@ -69,14 +69,15 @@ export async function prepareIngestFiles(
       continue;
     }
 
-    const bytes = fileType !== null ? await file.arrayBuffer() : new ArrayBuffer(0);
-    totalBytes += bytes.byteLength;
+    const bytes = shouldRead ? await file.arrayBuffer() : new ArrayBuffer(0);
+    const fileType = routeFileWithSniff(file.name, bytes);
+    totalBytes += fileType !== null ? bytes.byteLength : 0;
     output.push({
       fileId: crypto.randomUUID(),
       name: file.name,
       path,
       fileType: fileType ?? 'other',
-      bytes,
+      bytes: fileType !== null ? bytes : new ArrayBuffer(0),
       lastModified: file.lastModified > 0 ? file.lastModified : undefined,
     });
   }

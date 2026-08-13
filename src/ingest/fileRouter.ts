@@ -63,6 +63,13 @@ const KNOWN_BINARY_EXTS = new Set([
   'a', 'lib', 'bin', 'dat', 'db', 'sqlite'
 ]);
 
+function extensionOf(name: string): string {
+  const base = posixBasename(name);
+  const dot = base.lastIndexOf('.');
+  if (dot <= 0 || dot === base.length - 1) return '';
+  return base.slice(dot + 1).toLowerCase();
+}
+
 export function routeFile(name: string): FileType | null {
   const base = posixBasename(name);
   if (repoArtifactReason(base)) return null;
@@ -70,21 +77,30 @@ export function routeFile(name: string): FileType | null {
   // a trailing extension so a Makefile isn't dropped and CMakeLists.txt is
   // code rather than plain text.
   if (isCodeBasename(base)) return 'code';
-  const dot = base.lastIndexOf('.');
-  // no extension, or a dotfile like ".gitignore", or a trailing dot
-  if (dot <= 0 || dot === base.length - 1) return null;
-  const ext = base.slice(dot + 1).toLowerCase();
+  const ext = extensionOf(base);
+  if (!ext) return null;
   return EXT_MAP[ext] ?? (isCodeExtension(ext) ? 'code' : null);
+}
+
+/**
+ * Name-only gate used before bytes are available. Known types and
+ * sniffable unknowns (LICENSE, *.rules) are kept; lockfiles and known
+ * binaries are not.
+ */
+export function isIngestCandidate(name: string): boolean {
+  if (routeFile(name)) return true;
+  const base = posixBasename(name);
+  if (repoArtifactReason(base)) return false;
+  const ext = extensionOf(base);
+  if (ext && KNOWN_BINARY_EXTS.has(ext)) return false;
+  return true;
 }
 
 export function routeFileWithSniff(name: string, bytes: ArrayBuffer): FileType | null {
   const type = routeFile(name);
   if (type) return type;
 
-  const base = posixBasename(name);
-  const dot = base.lastIndexOf('.');
-  const ext = dot > 0 ? base.slice(dot + 1).toLowerCase() : '';
-
+  const ext = extensionOf(name);
   if (ext && KNOWN_BINARY_EXTS.has(ext)) {
     return null;
   }

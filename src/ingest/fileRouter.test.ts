@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { routeFile, routeFileWithSniff } from './fileRouter';
+import { isIngestCandidate, routeFile, routeFileWithSniff } from './fileRouter';
 
 describe('routeFile', () => {
   it('routes every supported extension to its FileType', () => {
@@ -130,5 +130,16 @@ describe('routeFileWithSniff', () => {
     const textBytes = new TextEncoder().encode('Fake image').buffer;
     expect(routeFileWithSniff('image.png', textBytes)).toBeNull();
     expect(routeFileWithSniff('data.zip', textBytes)).toBeNull();
+  });
+});
+
+describe('isIngestCandidate', () => {
+  it('keeps known types and sniffable unknowns, skips binaries and lockfiles', () => {
+    expect(isIngestCandidate('notes.md')).toBe(true);
+    expect(isIngestCandidate('LICENSE')).toBe(true);
+    expect(isIngestCandidate('custom.rules')).toBe(true);
+    expect(isIngestCandidate('image.png')).toBe(false);
+    expect(isIngestCandidate('archive.zip')).toBe(false);
+    expect(isIngestCandidate('package-lock.json')).toBe(false);
   });
 });

@@ -42,7 +42,7 @@ import type {
   LinkRef,
   PoolResponse,
 } from '../model/types';
-import { routeFile } from '../ingest/fileRouter';
+import { routeFile, routeFileWithSniff } from '../ingest/fileRouter';
 import { repoArtifactReason } from '../ingest/repoArtifacts';
 import {
   layoutAddNodes,
@@ -379,7 +379,7 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<voi
       store().addIgnored(file.name, artifact);
       continue;
     }
-    const fileType = routeFile(file.name);
+    const fileType = routeFileWithSniff(file.name, file.bytes);
     if (!fileType) {
       store().addIgnored(file.name, 'unsupported type');
       continue;

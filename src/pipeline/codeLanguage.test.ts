@@ -49,6 +49,7 @@ describe('codeLanguageOf', () => {
     expect(codeLanguageOf('Main.mojo')?.short).toBe('mojo');
     expect(codeLanguageOf('Lib.purs')?.short).toBe('purs');
     expect(codeLanguageOf('shader.glsl')?.short).toBe('glsl');
+    expect(codeLanguageOf('kernel.ocl')?.short).toBe('ocl');
     expect(codeLanguageOf('build.ninja')?.short).toBe('ninja');
     expect(codeLanguageOf('taskfile.yml')?.short).toBe('task');
     expect(codeLanguageOf('data.avsc')?.short).toBe('avsc');
@@ -57,6 +58,13 @@ describe('codeLanguageOf', () => {
   it('returns null for non-code names', () => {
     expect(codeLanguageOf('notes.md')).toBeNull();
     expect(codeLanguageOf('LICENSE')).toBeNull();
+  });
+
+  it('keeps Common Lisp on .cl instead of OpenCL', () => {
+    expect(codeLanguageOf('util.cl')?.id).toBe('lisp');
+    expect(codeLanguageOf('util.cl')?.family).toBe('other');
+    expect(codeLanguageOf('kernel.ocl')?.id).toBe('opencl');
+    expect(codeLanguageOf('kernel.opencl')?.id).toBe('opencl');
   });
 });
 

@@ -407,7 +407,9 @@ export async function parseOffice(
     case 'ods':
       return parseOds(zip, name);
     case 'odp':
-      return parseOdp(zip, name);
+      return parseOdfPages(zip, name, 'ODP');
+    case 'odg':
+      return parseOdfPages(zip, name, 'ODG');
   }
   throw new Error(`Unsupported Office type: ${String(fileType)}`);
 }
@@ -488,9 +490,9 @@ async function parseOds(zip: JSZip, name: string): Promise<ParserResult> {
     : emptyResult(name, 'No readable ODS text found');
 }
 
-async function parseOdp(zip: JSZip, name: string): Promise<ParserResult> {
+async function parseOdfPages(zip: JSZip, name: string, kind: 'ODP' | 'ODG'): Promise<ParserResult> {
   const contentXml = await zipText(zip, 'content.xml');
-  if (!contentXml) return emptyResult(name, 'No ODP content found');
+  if (!contentXml) return emptyResult(name, `No ${kind} content found`);
   
   const title = await readOdfTitle(zip);
   const tree = parseXml(contentXml);
@@ -519,5 +521,5 @@ async function parseOdp(zip: JSZip, name: string): Promise<ParserResult> {
   const text = normalizeLines(lines);
   return text
     ? result(name, title || cleanFilename(name), text, headings, [])
-    : emptyResult(name, 'No readable ODP text found');
+    : emptyResult(name, `No readable ${kind} text found`);
 }

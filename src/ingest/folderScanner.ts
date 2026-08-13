@@ -1,9 +1,8 @@
 import { IGNORED_DIRS } from '../config';
 import { posixJoin } from '../util/posixPath';
-import { routeFile } from './fileRouter';
+import { isIngestCandidate } from './fileRouter';
 import { hasUnignoreUnder, mergeGitIgnoreRules, pathIsGitIgnored, type GitIgnoreRule } from './gitignore';
 import type { NamedFile } from './localFiles';
-import { repoArtifactReason } from './repoArtifacts';
 
 interface DirectoryHandleLike {
   name: string;
@@ -59,7 +58,7 @@ async function walk(
       continue;
     }
     if (entry.kind !== 'file') continue;
-    if (repoArtifactReason(name) || routeFile(name) === null) continue;
+    if (!isIngestCandidate(name)) continue;
     const relativePath = relativeDir ? posixJoin(relativeDir, name) : name;
     if (pathIsGitIgnored(relativePath, false, rules)) continue;
     output.push({
