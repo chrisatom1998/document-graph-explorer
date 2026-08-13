@@ -58,6 +58,9 @@ interface CollaborationState {
 
 let stopAnnotationSync: (() => void) | null = null;
 
+const WEAK_KEY_WARNING =
+  'This session key is short enough to guess — anyone who finds the room can read and edit shared notes.';
+
 function randomCollabToken(byteLength: number): string {
   const bytes = new Uint8Array(byteLength);
   crypto.getRandomValues(bytes);
@@ -801,7 +804,11 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     const nextKey = sessionKey ?? randomCollabToken(16);
     set({ status: 'connecting' });
     try {
-      const { buildCollabInvite, createCollabSession } = await import('./session');
+      const { buildCollabInvite, createCollabSession, isWeakCollabKey } = await import('./session');
+      // Only reachable for a key the caller typed; generated keys are 16 bytes.
+      if (sessionKey && isWeakCollabKey(sessionKey)) {
+        useUiStore.getState().pushToast(WEAK_KEY_WARNING, 'warning');
+      }
       const session = createCollabSession({ roomId: nextRoom, sessionKey: nextKey });
       const invite = buildCollabInvite(session.roomId, session.sessionKey);
       if (get().shareNotes) {
@@ -852,7 +859,10 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     }
     set({ status: 'connecting' });
     try {
-      const { buildCollabInvite, createCollabSession } = await import('./session');
+      const { buildCollabInvite, createCollabSession, isWeakCollabKey } = await import('./session');
+      if (isWeakCollabKey(sessionKey)) {
+        useUiStore.getState().pushToast(WEAK_KEY_WARNING, 'warning');
+      }
       const session = createCollabSession({ roomId, sessionKey });
       const invite = buildCollabInvite(session.roomId, session.sessionKey);
       if (get().shareNotes) {

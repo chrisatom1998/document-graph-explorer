@@ -56,6 +56,28 @@ export function sanitizeCollabToken(value: string): string {
     .slice(0, 64);
 }
 
+/**
+ * Minimum length for a session key to be worth calling a secret. Generated
+ * keys are 32 hex chars (16 random bytes); this only ever fires on a key a
+ * user typed in by hand.
+ */
+const MIN_STRONG_KEY_CHARS = 16;
+
+/**
+ * True when a session key is guessable enough to be worth warning about.
+ * Deliberately not enforced in sanitizeCollabToken: the key is the room's only
+ * access control, but rejecting short ones would break invites already in
+ * circulation and hand-made room names peers agreed on out of band. Callers
+ * warn and proceed.
+ */
+export function isWeakCollabKey(key: string): boolean {
+  const safe = sanitizeCollabToken(key);
+  if (safe.length < MIN_STRONG_KEY_CHARS) return true;
+  // A long key drawn from one character class (all digits, all one case) has
+  // far less entropy than its length suggests.
+  return /^[0-9]+$/.test(safe) || /^[a-z]+$/.test(safe) || /^[A-Z]+$/.test(safe);
+}
+
 export function buildCollabInvite(roomId: string, sessionKey: string): string {
   const safeRoom = sanitizeCollabToken(roomId);
   const safeKey = sanitizeCollabToken(sessionKey);
