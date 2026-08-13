@@ -8,7 +8,7 @@
  * weights, and the order of merged evidence strings.
  */
 import { describe, expect, it } from 'vitest';
-import { referenceEdges, type ReferenceDocInput } from './links';
+import { importPathCandidates, referenceEdges, type ReferenceDocInput } from './links';
 import type { Edge } from '../model/types';
 import { isExternalUrl, normalizeLinkTarget } from './urlUtils';
 
@@ -310,6 +310,100 @@ describe('referenceEdges path-aware import resolution', () => {
     const edges = referenceEdges(docs, 5);
     const linkEdges = edges.filter((e) => e.evidence.some((ev) => ev.startsWith('links to')));
     expect(linkEdges).toEqual([]);
+  });
+
+  it('keeps a markdown link edge when the href carries a #fragment (folder drop)', () => {
+    // `[see](guide.md#install)` from a doc WITH a path: resolution is
+    // path-authoritative, so the fragment must not poison the byPath key.
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Intro',
+        fileName: 'intro.md',
+        path: 'docs/intro.md',
+        textLower: 'see the guide',
+        mdLinkTargets: ['guide.md#install'],
+      },
+      {
+        id: 'b',
+        title: 'Guide',
+        fileName: 'guide.md',
+        path: 'docs/guide.md',
+        textLower: 'installation steps',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    const link = edges.find((e) => e.evidence.some((ev) => ev.startsWith('links to')));
+    expect(link).toMatchObject({ source: 'a', target: 'b' });
+    expect(link?.evidence).toContain("links to 'guide.md'");
+  });
+
+  it('resolves ./relative markdown links with fragments and queries', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Intro',
+        fileName: 'intro.md',
+        path: 'docs/intro.md',
+        textLower: '',
+        mdLinkTargets: ['./guide.md#section', './faq.md?highlight=x'],
+      },
+      {
+        id: 'b',
+        title: 'Guide',
+        fileName: 'guide.md',
+        path: 'docs/guide.md',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'c',
+        title: 'Faq',
+        fileName: 'faq.md',
+        path: 'docs/faq.md',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    const linked = edges
+      .filter((e) => e.evidence.some((ev) => ev.startsWith('links to')))
+      .map((e) => [e.source, e.target].sort().join('-'))
+      .sort();
+    expect(linked).toEqual(['a-b', 'a-c']);
+  });
+
+  it('does not fan out an in-page-only #fragment link', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Intro',
+        fileName: 'intro.md',
+        path: 'docs/intro.md',
+        textLower: '',
+        mdLinkTargets: ['#only-hash'],
+      },
+      {
+        id: 'b',
+        title: 'Guide',
+        fileName: 'guide.md',
+        path: 'docs/guide.md',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    expect(edges.filter((e) => e.evidence.some((ev) => ev.startsWith('links to')))).toEqual([]);
+  });
+
+  it('importPathCandidates strips fragments/queries and resolves sibling filenames', () => {
+    expect(importPathCandidates('docs/intro.md', 'guide.md#install')).toContain('docs/guide.md');
+    expect(importPathCandidates('docs/intro.md', './guide.md#section')).toContain('docs/guide.md');
+    expect(importPathCandidates('docs/intro.md', 'guide.md?query=1')).toContain('docs/guide.md');
+    expect(importPathCandidates('docs/intro.md', '#install')).toEqual([]);
+    // bare module names still do NOT resolve against the importing file's dir
+    expect(importPathCandidates('src/main.py', 'os')).not.toContain('src/os');
   });
 
   it('does not attach a bare python import to an unrelated same-stem file', () => {

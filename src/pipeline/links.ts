@@ -308,14 +308,30 @@ export function referenceEdges(
  * suffixes and directory index files.
  */
 export function importPathCandidates(fromPath: string | undefined, specifier: string): string[] {
-  const spec = specifier.trim();
+  let spec = specifier.trim();
   if (!spec || isExternalUrl(spec)) return [];
+  // Markdown hrefs may carry a #fragment / ?query; only the document path
+  // resolves. A pure in-page link (`#section`) targets the linking document
+  // itself and yields no candidates.
+  const hash = spec.indexOf('#');
+  if (hash >= 0) spec = spec.slice(0, hash);
+  const query = spec.indexOf('?');
+  if (query >= 0) spec = spec.slice(0, query);
+  spec = spec.trim();
+  if (!spec) return [];
   const roots: string[] = [];
   const relative = spec.startsWith('.') || spec.startsWith('/');
   if (relative && fromPath) roots.push(posixResolveFrom(fromPath, spec));
   else if (!relative) {
     roots.push(posixNormalize(spec).replace(/^\//, ''));
-    if (fromPath && spec.includes('/')) roots.push(posixResolveFrom(fromPath, spec));
+    // A slashless bare specifier still resolves against the linking file's
+    // directory when it names an explicit file (`guide.md`, `util.h`) —
+    // markdown hrefs and C includes are sibling-relative without `./`. Bare
+    // module names (`os`, `react`) stay root-only so language imports don't
+    // attach to whatever file shares their stem.
+    if (fromPath && (spec.includes('/') || posixBasename(spec).includes('.'))) {
+      roots.push(posixResolveFrom(fromPath, spec));
+    }
   }
   const out: string[] = [];
   const seen = new Set<string>();
