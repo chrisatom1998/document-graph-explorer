@@ -6,7 +6,7 @@ import { distDirFor } from '../../scripts/serve.mjs';
 // @ts-expect-error - scripts/staticServer.cjs is a plain Node CJS module (no
 // allowJs/.d.ts for the scripts/ dir); imported here purely for its pure,
 // unit-testable helpers. Shared by serve.mjs, serve-exe.cjs, and desktop/main.cjs.
-import { contentTypeFor, resolveSafe } from '../../scripts/staticServer.cjs';
+import { SECURITY_HEADERS, contentTypeFor, createRequestHandler, resolveSafe } from '../../scripts/staticServer.cjs';
 
 describe('distDirFor', () => {
   it('defaults to the normal build (dist)', () => {
@@ -107,5 +107,38 @@ describe('resolveSafe', () => {
 
   it('rejects malformed percent-encoding instead of throwing', () => {
     expect(resolveSafe(root, '/%')).toBeNull();
+  });
+});
+
+describe('SECURITY_HEADERS', () => {
+  it('carries the anti-clickjacking and sniffing protections', () => {
+    expect(SECURITY_HEADERS).toEqual({
+      'X-Frame-Options': 'DENY',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'no-referrer',
+    });
+  });
+
+  it('sets static and per-response headers together', () => {
+    // Electron's server needs both at once: the shared security headers plus
+    // its own Cache-Control. Passing `headers` must not displace
+    // `getResponseHeaders`, which is why the two are asserted in one handler.
+    const handler = createRequestHandler(path.resolve('.'), {
+      headers: SECURITY_HEADERS,
+      getResponseHeaders: () => ({ 'Cache-Control': 'no-cache' }),
+      log: () => {},
+    });
+
+    const set = new Map<string, string>();
+    const res = {
+      setHeader: (name: string, value: string) => set.set(name, value),
+      writeHead: () => {},
+      end: () => {},
+    };
+    handler({ url: '/definitely-missing-file', method: 'GET' }, res);
+
+    expect(set.get('X-Frame-Options')).toBe('DENY');
+    expect(set.get('X-Content-Type-Options')).toBe('nosniff');
+    expect(set.get('Referrer-Policy')).toBe('no-referrer');
   });
 });

@@ -2,7 +2,11 @@ const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
-const { createRequestHandler, hasIndexHtml } = require('../scripts/staticServer.cjs');
+const {
+  SECURITY_HEADERS,
+  createRequestHandler,
+  hasIndexHtml,
+} = require('../scripts/staticServer.cjs');
 
 // Fixed port: the renderer's origin (http://127.0.0.1:<port>) is what
 // Chromium partitions IndexedDB/localStorage by. A random port per launch
@@ -94,6 +98,7 @@ function startStaticServer() {
 
     const handleRequest = createRequestHandler(distPath, {
       spaFallback: true,
+      headers: SECURITY_HEADERS,
       getResponseHeaders: (target, ext) => ({
         // Public filenames are not content-hashed. In particular, caching the
         // demo manifest as immutable made upgraded apps keep loading the old
