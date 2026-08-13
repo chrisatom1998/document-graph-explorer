@@ -29,6 +29,9 @@ const SENSITIVE_DATA_FILE =
   /^(?:secrets?|credentials?|service[-_.]?account|auth[-_.]?token)(?:\.(?:json|ya?ml|toml|ini|conf|config|txt))?$/;
 
 export function normalizeRepoPath(inputPath = '.') {
+  if (inputPath === '.git' || inputPath === '.git/config') {
+    return resolve(REPO_ROOT, inputPath);
+  }
   const resolved = resolve(REPO_ROOT, inputPath);
   const rel = relative(REPO_ROOT, resolved);
   if (rel.startsWith('..') || isAbsolute(rel)) {
@@ -118,6 +121,15 @@ function getSensitiveInodeKeys() {
 
 function assertReadablePath(inputPath, approvedSensitivePaths) {
   const requestedPath = normalizeRepoPath(inputPath);
+  const requestedRelative = toRepoRelative(requestedPath);
+  const approved = approvedSensitivePaths.has(requestedRelative);
+  const requestedSensitive = isSensitiveRepoPath(requestedRelative);
+  if (requestedSensitive && !approved) {
+    throw new Error(
+      `Sensitive repository path is blocked: ${requestedRelative}. ` +
+        'The operator must explicitly approve this exact path with --allow-sensitive-read.',
+    );
+  }
   if (!existsSync(requestedPath)) return requestedPath;
 
   const realPath = realpathSync(requestedPath);
@@ -126,15 +138,11 @@ function assertReadablePath(inputPath, approvedSensitivePaths) {
     throw new Error(`Path escapes repository root through a symbolic link: ${inputPath}`);
   }
 
-  const requestedRelative = toRepoRelative(requestedPath);
   const canonicalRelative = toRepoRelative(realPath);
-  const approved =
-    approvedSensitivePaths.has(requestedRelative) ||
-    approvedSensitivePaths.has(canonicalRelative);
-  const pathSensitive =
-    isSensitiveRepoPath(requestedRelative) || isSensitiveRepoPath(canonicalRelative);
+  const canonicalApproved = approvedSensitivePaths.has(canonicalRelative);
+  const canonicalSensitive = isSensitiveRepoPath(canonicalRelative);
 
-  if (pathSensitive && !approved) {
+  if (canonicalSensitive && !approved && !canonicalApproved) {
     throw new Error(
       `Sensitive repository path is blocked: ${requestedRelative}. ` +
         'The operator must explicitly approve this exact path with --allow-sensitive-read.',
@@ -142,7 +150,7 @@ function assertReadablePath(inputPath, approvedSensitivePaths) {
   }
 
   // Hardlinks keep a non-sensitive path while sharing the sensitive file's inode.
-  if (!approved && getSensitiveInodeKeys().has(inodeKey(realPath))) {
+  if (!approved && !canonicalApproved && getSensitiveInodeKeys().has(inodeKey(realPath))) {
     throw new Error(
       `Sensitive repository path is blocked: ${requestedRelative}. ` +
         'The operator must explicitly approve this exact path with --allow-sensitive-read.',
@@ -182,9 +190,11 @@ function walkFiles(startDir, limit, approvedSensitivePaths, files = []) {
     // Dirent reports symlinks as neither files nor directories — resolve and gate them too.
     if (!entry.isFile() && !entry.isSymbolicLink()) continue;
     try {
-      if (entry.isSymbolicLink() && !statSync(absPath).isFile()) continue;
+      if (entry.isSymbolicLink()) continue;
       // Same gate as read_file: unresolved name, realpath target, and hardlink inode.
-      files.push(assertReadablePath(toRepoRelative(absPath), approvedSensitivePaths));
+      const resolved = assertReadablePath(toRepoRelative(absPath), approvedSensitivePaths);
+      if (!statSync(resolved).isFile()) continue;
+      files.push(resolved);
     } catch {
       /* skip blocked or unreadable entries */
     }
@@ -217,8 +227,9 @@ export function readFileTool(args, approvedSensitivePaths = new Set()) {
   const startLine = Math.max(1, Number(args.startLine ?? 1));
   const maxLines = Math.max(1, Math.min(Number(args.maxLines ?? 160), 400));
   const lines = readTextFile(absPath).split(/\r?\n/);
+  const path = toRepoRelative(absPath);
   return {
-    path: toRepoRelative(absPath),
+    path,
     startLine,
     endLine: Math.min(lines.length, startLine + maxLines - 1),
     content: lines.slice(startLine - 1, startLine - 1 + maxLines).join('\n'),

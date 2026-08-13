@@ -46,6 +46,10 @@ function documentsOf(slice: GraphSlice): DocNode[] {
   return slice.nodes.filter((n) => n.kind === 'document');
 }
 
+function sameEndpointPair(a: string, b: string, x: string, y: string): boolean {
+  return (a === x && b === y) || (a === y && b === x);
+}
+
 /** Multiset of edge signatures keyed by endpoint doc-keys + kind. */
 function edgeSignatures(slice: GraphSlice): Map<string, number> {
   const keyById = new Map<string, string>();
@@ -56,8 +60,7 @@ function edgeSignatures(slice: GraphSlice): Map<string, number> {
     const b = keyById.get(edge.target);
     if (a === undefined || b === undefined) continue; // dangling edge — skip
     // Direction is not meaningful for "are these still connected?" — collapse.
-    const [lo, hi] = a <= b ? [a, b] : [b, a];
-    const sig = `${lo}::${hi}::${edge.kind}`;
+    const sig = `${a}::${b}::${edge.kind}`;
     signatures.set(sig, (signatures.get(sig) ?? 0) + 1);
   }
   return signatures;
@@ -99,10 +102,26 @@ export function diffGraphs(before: GraphSlice, after: GraphSlice): GraphDiffSumm
   let addedEdges = 0;
   let removedEdges = 0;
   for (const [sig, count] of afterSigs) {
-    addedEdges += Math.max(0, count - (beforeSigs.get(sig) ?? 0));
+    const [a, b, kind] = sig.split('::');
+    let beforeCount = 0;
+    for (const [beforeSig, beforeValue] of beforeSigs) {
+      const [x, y, beforeKind] = beforeSig.split('::');
+      if (beforeKind !== kind) continue;
+      if (!sameEndpointPair(a, b, x, y)) continue;
+      beforeCount += beforeValue;
+    }
+    addedEdges += Math.max(0, count - beforeCount);
   }
   for (const [sig, count] of beforeSigs) {
-    removedEdges += Math.max(0, count - (afterSigs.get(sig) ?? 0));
+    const [a, b, kind] = sig.split('::');
+    let afterCount = 0;
+    for (const [afterSig, afterValue] of afterSigs) {
+      const [x, y, afterKind] = afterSig.split('::');
+      if (afterKind !== kind) continue;
+      if (!sameEndpointPair(a, b, x, y)) continue;
+      afterCount += afterValue;
+    }
+    removedEdges += Math.max(0, count - afterCount);
   }
 
   return {

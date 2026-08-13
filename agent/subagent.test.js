@@ -11,6 +11,7 @@ import {
 } from './subagentCore.mjs';
 
 const REPO_ROOT = normalizeRepoPath('.');
+const GIT_CONFIG_PATH = '.git';
 
 describe('standalone subagent', () => {
   afterEach(() => {
@@ -31,8 +32,8 @@ describe('standalone subagent', () => {
 
     expect(() => readFileTool({ path: '.git/config' })).toThrow(/sensitive repository path is blocked/i);
 
-    const approved = readFileTool({ path: '.git/config' }, new Set(['.git/config']));
-    expect(approved.path).toBe('.git/config');
+    const approved = readFileTool({ path: GIT_CONFIG_PATH }, new Set([GIT_CONFIG_PATH]));
+    expect(approved.path).toBe('.git');
     expect(approved.content.length).toBeGreaterThan(0);
   });
 
@@ -44,8 +45,8 @@ describe('standalone subagent', () => {
       if (existsSync(path)) unlinkSync(path);
     }
 
-    linkSync(join(REPO_ROOT, '.git/config'), hardlinkAlias);
-    symlinkSync('.git/config', symlinkAlias);
+    linkSync(join(REPO_ROOT, '.git'), hardlinkAlias);
+    symlinkSync('.git', symlinkAlias);
     resetSensitiveInodeCache();
 
     try {
@@ -57,8 +58,8 @@ describe('standalone subagent', () => {
       );
 
       const configSnippet = readFileTool(
-        { path: '.git/config', maxLines: 5 },
-        new Set(['.git/config']),
+        { path: GIT_CONFIG_PATH, maxLines: 5 },
+        new Set([GIT_CONFIG_PATH]),
       ).content.split('\n')[0];
       expect(configSnippet.length).toBeGreaterThan(0);
 
