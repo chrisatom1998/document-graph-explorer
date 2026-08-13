@@ -53,9 +53,15 @@ export const ENRICH_MAX_RETRIES = 3;
 // starving the stream's idle deadline while they wait for a free slot.
 export const ENRICH_CONCURRENCY_CLOUD = 4;
 export const ENRICH_CONCURRENCY_LOCAL = 1;
-// Kept far below typical model context limits. Large documents are selected by
-// relevant/representative sections before they leave the browser.
+// Last-resort ceiling on stored document text sent to a provider. Prefer the
+// full body — this is only so an enormous file cannot overflow a typical
+// 200k-token context window. Ask AI samples representative/relevant sections
+// once a document exceeds this; batch enrichment sends the prefix.
 export const DOCUMENT_AI_MAX_CONTEXT_CHARS = 240_000;
+// Total stored-text budget for one pass-1 enrichment request. Small docs still
+// share a batch of ENRICH_BATCH_SIZE; a large doc gets its own request so its
+// body is not sliced down to make room for neighbors.
+export const ENRICH_BATCH_MAX_CHARS = 400_000;
 
 // --- Search ---
 export const SEARCH_MIN_SCORE = 0.35; // semantic search relevance floor

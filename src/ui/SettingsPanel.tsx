@@ -8,6 +8,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AIRGAP } from '../airgap';
+import { DOCUMENT_AI_MAX_CONTEXT_CHARS } from '../config';
 import { useFocusTrap } from './useFocusTrap';
 import {
   fetchModelCatalog,
@@ -578,9 +579,10 @@ export default function SettingsPanel() {
             </p>
           )}
           <p style={helpStyle}>
-            Your documents are processed locally. With enrichment ON, excerpts (first ~1,200
-            chars per doc) are sent to the enrichment provider selected above — OpenRouter
-            (cloud, may incur model charges) or your local Ollama server. &quot;Ask AI&quot; sends the
+            Your documents are processed locally. With enrichment ON, each document&apos;s full
+            stored text is sent to the enrichment provider selected above — OpenRouter
+            (cloud, may incur model charges) or your local Ollama server. Enormous files are
+            capped at {DOCUMENT_AI_MAX_CONTEXT_CHARS.toLocaleString('en-US')} characters so they fit the model. &quot;Ask AI&quot; sends the
             selected document to that provider. Chat sends only retrieved passages and recent
             chat history to the chat provider.
           </p>

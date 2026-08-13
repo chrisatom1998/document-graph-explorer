@@ -10,7 +10,7 @@ is no server, no account, no telemetry, and no analytics.
 |---|---|
 | `npm run build:airgap` (air-gapped) | **None.** Zero external destinations — enforced, see below. |
 | `npm run build`, AI enrichment **off** (default) | **None.** No document content leaves the browser. |
-| `npm run build`, AI enrichment **on** with the **OpenRouter** provider (opt-in, user supplies an OpenRouter key) | Document excerpts are sent to `openrouter.ai`, which routes them to the model the user selected, **only** for the AI features the user explicitly triggers. Off by default. |
+| `npm run build`, AI enrichment **on** with the **OpenRouter** provider (opt-in, user supplies an OpenRouter key) | Each document's full stored text is sent to `openrouter.ai`, which routes it to the model the user selected, **only** for the AI features the user explicitly triggers. Enormous files are capped at 240,000 characters. Off by default. |
 | `npm run build`, chat provider set to **OpenRouter** (opt-in, user supplies an OpenRouter key) | The question and the document passages retrieved for it are sent to `openrouter.ai`, which routes them to the model the user selected. Only when the user picks this provider and asks a question. Off by default. |
 | `npm run build`, enrichment or chat provider set to **Ollama** (opt-in) | **No external network.** Requests go to a user-run Ollama server on this machine (`127.0.0.1:11434` / `localhost:11434`); nothing leaves the device. The CSP admits only those two loopback hosts for it. |
 

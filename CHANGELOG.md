@@ -24,6 +24,9 @@ This project follows the Keep a Changelog format.
 - Roadmaps and SECURITY.md now match the shipped BGE-small embedding model (leftover unused `all-MiniLM-L6-v2` tokenizer files removed).
 - OpenRouter chat and enrichment LLM clients honour the `Retry-After` response header on 429/502/503 (shared `parseRetryAfter` helper, capped at 60s) before falling back to exponential backoff.
 
+### Fixed
+- Batch enrichment now sends each document's **full stored text** to the provider. Previously only the first 1,200 characters were included, so summaries and topics were written from a stub. Enormous files are truncated only as a last resort at `DOCUMENT_AI_MAX_CONTEXT_CHARS` (240,000 characters); batches split when that would overflow a typical model context window. Settings, SECURITY.md, and the user guide disclose the full-text send.
+
 ## [1.1.14] - 2026-07-29
 
 ### Added
