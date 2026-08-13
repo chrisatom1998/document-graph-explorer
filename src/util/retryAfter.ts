@@ -8,11 +8,14 @@
  * cannot stall retries indefinitely.
  */
 export function parseRetryAfter(value: string): number | null {
-  const seconds = Number(value);
-  if (!Number.isNaN(seconds) && seconds >= 0) {
-    return Math.min(seconds, 60) * 1000;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  // Delay-seconds must be an integer token; reject decimals/empty via /^\d+$/.
+  if (/^\d+$/.test(trimmed)) {
+    return Math.min(Number(trimmed), 60) * 1000;
   }
-  const date = new Date(value);
+  const date = new Date(trimmed);
   if (!Number.isNaN(date.getTime())) {
     const delta = date.getTime() - Date.now();
     return Math.min(Math.max(delta, 0), 60_000);
