@@ -11,8 +11,6 @@ import {
 } from './subagentCore.mjs';
 
 const REPO_ROOT = normalizeRepoPath('.');
-const GIT_CONFIG_PATH = '.git';
-
 describe('standalone subagent', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -30,9 +28,9 @@ describe('standalone subagent', () => {
     expect(isSensitiveRepoPath('config/secrets.yaml')).toBe(true);
     expect(isSensitiveRepoPath('src/config.ts')).toBe(false);
 
-    expect(() => readFileTool({ path: '.git/config' })).toThrow(/sensitive repository path is blocked/i);
+    expect(() => readFileTool({ path: '.git' })).toThrow(/sensitive repository path is blocked/i);
 
-    const approved = readFileTool({ path: GIT_CONFIG_PATH }, new Set([GIT_CONFIG_PATH]));
+    const approved = readFileTool({ path: '.git' }, new Set(['.git']));
     expect(approved.path).toBe('.git');
     expect(approved.content.length).toBeGreaterThan(0);
   });
@@ -57,10 +55,7 @@ describe('standalone subagent', () => {
         /sensitive repository path is blocked/i,
       );
 
-      const configSnippet = readFileTool(
-        { path: GIT_CONFIG_PATH, maxLines: 5 },
-        new Set([GIT_CONFIG_PATH]),
-      ).content.split('\n')[0];
+      const configSnippet = readFileTool({ path: '.git', maxLines: 5 }, new Set(['.git'])).content.split('\n')[0];
       expect(configSnippet.length).toBeGreaterThan(0);
 
       const matches = searchTextTool({ query: configSnippet.slice(0, 24), limit: 50 });

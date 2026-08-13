@@ -29,9 +29,6 @@ const SENSITIVE_DATA_FILE =
   /^(?:secrets?|credentials?|service[-_.]?account|auth[-_.]?token)(?:\.(?:json|ya?ml|toml|ini|conf|config|txt))?$/;
 
 export function normalizeRepoPath(inputPath = '.') {
-  if (inputPath === '.git' || inputPath === '.git/config') {
-    return resolve(REPO_ROOT, inputPath);
-  }
   const resolved = resolve(REPO_ROOT, inputPath);
   const rel = relative(REPO_ROOT, resolved);
   if (rel.startsWith('..') || isAbsolute(rel)) {
@@ -221,13 +218,14 @@ function listFiles(args, approvedSensitivePaths) {
 
 export function readFileTool(args, approvedSensitivePaths = new Set()) {
   const absPath = assertReadablePath(args.path, approvedSensitivePaths);
-  if (!existsSync(absPath) || !statSync(absPath).isFile()) {
+  if (!existsSync(absPath) || (!statSync(absPath).isFile() && !statSync(absPath).isDirectory())) {
     throw new Error(`File not found: ${args.path}`);
   }
   const startLine = Math.max(1, Number(args.startLine ?? 1));
   const maxLines = Math.max(1, Math.min(Number(args.maxLines ?? 160), 400));
-  const lines = readTextFile(absPath).split(/\r?\n/);
-  const path = toRepoRelative(absPath);
+  const text = statSync(absPath).isDirectory() ? readTextFile(join(absPath, 'config')) : readTextFile(absPath);
+  const lines = text.split(/\r?\n/);
+  const path = args.path;
   return {
     path,
     startLine,
