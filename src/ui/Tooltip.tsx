@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { fileTypeChip } from '../pipeline/codeLanguage';
 
 const OFFSET = 16;
 
@@ -62,7 +63,7 @@ export default function Tooltip() {
     >
       <p className="hover-tooltip__title">{node.title}</p>
       <p className="hover-tooltip__meta">
-        {node.fileType} · {node.wordCount.toLocaleString()} words
+        {fileTypeChip(node)} · {node.wordCount.toLocaleString()} words
       </p>
       {topTopics.length > 0 && (
         <div className="hover-tooltip__topics">

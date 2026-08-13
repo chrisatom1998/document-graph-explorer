@@ -39,13 +39,14 @@ const RESOLVE_EXTENSIONS = [
   '.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs',
   '.py', '.pyi', '.go', '.rs', '.java', '.kt', '.kts',
   '.h', '.hpp', '.hh', '.c', '.cc', '.cpp', '.cs',
-  '.rb', '.php', '.vue', '.svelte', '.css', '.scss',
-  '.json', '.md', '.toml',
+  '.rb', '.php', '.vue', '.svelte', '.astro', '.css', '.scss',
+  '.json', '.md', '.toml', '.swift', '.lua', '.dart',
+  '.ex', '.exs', '.hs', '.jl', '.fs',
 ];
 
 const INDEX_BASENAMES = [
   'index.ts', 'index.tsx', 'index.js', 'index.jsx', 'index.mjs',
-  'index.py', '__init__.py', 'mod.rs', 'index.go',
+  'index.py', '__init__.py', 'mod.rs', 'index.go', 'index.astro',
 ];
 
 function escapeRegExp(s: string): string {

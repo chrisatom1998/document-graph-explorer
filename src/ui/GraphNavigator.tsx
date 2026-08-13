@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useActiveOptionScroll } from './useActiveOptionScroll';
+import { fileTypeChip, selectedDocumentTitle } from '../pipeline/codeLanguage';
 
 const SUMMARY_ID = 'graph-navigator-summary';
 const INSTRUCTIONS_ID = 'graph-navigator-instructions';
@@ -128,11 +129,11 @@ export default function GraphNavigator() {
               sendCamera('frameNode', [node.id]);
             }}
           >
-            <span>{node.title}</span>
+            <span>{node.id === selectedId ? selectedDocumentTitle(node) : node.title}</span>
             <span className="graph-navigator__meta">
               {node.kind === 'topic'
                 ? 'Topic hub'
-                : `${node.fileType.toUpperCase()} · ${node.degree} connection${node.degree === 1 ? '' : 's'}`}
+                : `${fileTypeChip(node).toUpperCase()} · ${node.degree} connection${node.degree === 1 ? '' : 's'}`}
             </span>
           </div>
         ))}

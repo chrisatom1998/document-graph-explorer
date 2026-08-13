@@ -168,7 +168,7 @@ Ingestion is a pipeline that runs off the main thread:
 
 **parse → boilerplate strip → chunk → tokenize → TF-IDF → embeddings → similarity links → Louvain clustering → topic synthesis**
 
-- **Parsing** ([src/pipeline/parsers/](src/pipeline/parsers/)) handles Markdown, HTML, plain text, PDF (including link annotations and local OCR fallback for scanned pages), Office formats (DOCX, PPTX, XLSX), and source code (TypeScript, Python, Go, Rust, and similar). Dropping a repository folder walks the tree, honors `.gitignore`, skips `node_modules`/`vendor`/`target` and lockfiles, and turns relative imports into graph edges.
+- **Parsing** ([src/pipeline/parsers/](src/pipeline/parsers/)) handles Markdown, HTML, plain text, PDF (including link annotations and local OCR fallback for scanned pages), Office formats (DOCX, PPTX, XLSX), and source code (TypeScript, JavaScript, Python, Go, Rust, and many other text-based languages — selected files show `ts` / `py` / `js` on the name and reader). Dropping a repository folder walks the tree, honors `.gitignore`, skips `node_modules`/`vendor`/`target` and lockfiles, and turns relative imports into graph edges.
 - **Embeddings** use a self-hosted `bge-small-en-v1.5` model in [public/models/](public/models/) via transformers.js — no third-party API.
 - **Optional AI enrichment** (summaries, topics, cluster names, document Q&A, chat) runs through the provider and model the user picks in Settings: any model on OpenRouter (with their API key) or any model on their local Ollama server.
 - **The 3D scene** ([src/scene/](src/scene/)) is React Three Fiber over Three.js, with instanced nodes/edges, a force-directed layout worker, and a cluster-collapse view for large graphs.

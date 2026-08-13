@@ -5,27 +5,14 @@
  */
 
 import type { LinkRef } from '../../model/types';
-import { posixBasename } from '../../util/posixPath';
+import { codeLanguageOf, type CodeFamily } from '../codeLanguage';
 import { cleanFilename, decodeText, type ParserResult } from './txt';
 
 const MAX_HEADINGS = 24;
 const MAX_IMPORTS = 80;
 
-type CodeFamily = 'js' | 'python' | 'go' | 'rust' | 'c' | 'java' | 'ruby' | 'php' | 'css' | 'other';
-
 function familyOf(name: string): CodeFamily {
-  const base = posixBasename(name).toLowerCase();
-  const ext = base.includes('.') ? base.slice(base.lastIndexOf('.') + 1) : base;
-  if (['ts', 'tsx', 'mts', 'cts', 'js', 'jsx', 'mjs', 'cjs', 'vue', 'svelte'].includes(ext)) return 'js';
-  if (ext === 'py' || ext === 'pyi') return 'python';
-  if (ext === 'go') return 'go';
-  if (ext === 'rs') return 'rust';
-  if (['c', 'h', 'cc', 'cpp', 'cxx', 'hh', 'hpp', 'hxx'].includes(ext)) return 'c';
-  if (['java', 'kt', 'kts', 'scala'].includes(ext)) return 'java';
-  if (ext === 'rb' || base === 'rakefile' || base === 'gemfile') return 'ruby';
-  if (ext === 'php') return 'php';
-  if (ext === 'css' || ext === 'scss' || ext === 'less') return 'css';
-  return 'other';
+  return codeLanguageOf(name)?.family ?? 'other';
 }
 
 const JS_FROM_RE =
@@ -34,7 +21,12 @@ const JS_REQUIRE_RE = /\b(?:require|import)\s*\(\s*['"]([^'"]{1,512})['"]\s*\)/g
 const PY_FROM_RE = /^[ \t]*from[ \t]+(\.*[A-Za-z_][\w.]*)[ \t]+import\b/gm;
 const PY_IMPORT_RE = /^[ \t]*import[ \t]+([A-Za-z_][\w.]*(?:[ \t]*,[ \t]*[A-Za-z_][\w.]*)*)/gm;
 const GO_SINGLE_RE = /^import[ \t]+(?:[A-Za-z_]\w*[ \t]+)?"([^"]{1,512})"/gm;
-const C_INCLUDE_RE = /^[ \t]*#[ \t]*include[ \t]+"([^"]{1,512})"/gm;
+const C_INCLUDE_RE = /^[ \t]*#[ \t]*(?:include|import)[ \t]+"([^"]{1,512})"/gm;
+const CS_USING_RE = /^[ \t]*using[ \t]+(?:static[ \t]+)?(?:[A-Za-z_]\w*[ \t]+=[ \t]+)?([A-Za-z_][\w.]*)[ \t]*;/gm;
+const SH_SOURCE_RE = /(?:^|[ \t;])(?:source|\.)[ \t]+(?:['"]([^'"]{1,512})['"]|(\.[^\s;|&]+))/gm;
+const LUA_REQUIRE_RE = /\brequire\s*\(\s*['"]([^'"]{1,512})['"]\s*\)/g;
+const DART_IMPORT_RE = /^[ \t]*import[ \t]+['"]([^'"]{1,512})['"]/gm;
+const HS_IMPORT_RE = /^import[ \t]+(?:qualified[ \t]+)?([A-Za-z][\w.]*)/gm;
 const RUBY_REL_RE = /\brequire_relative[ \t]+['"]([^'"]{1,512})['"]/g;
 const PHP_REQUIRE_RE = /\b(?:require|include)(?:_once)?[ \t]*(?:\(?[ \t]*)['"]([^'"]{1,512})['"]/g;
 const CSS_IMPORT_RE = /@(?:import|use|forward)\s+(?:url\()?['"]([^'"]{1,512})['"]/g;
@@ -140,6 +132,56 @@ function collectJava(text: string, targets: string[]): void {
   }
 }
 
+function collectCSharp(text: string, targets: string[]): void {
+  CS_USING_RE.lastIndex = 0;
+  for (const match of text.matchAll(CS_USING_RE)) {
+    const spec = match[1].trim();
+    if (!spec) continue;
+    pushUnique(targets, spec.replace(/\./g, '/'), MAX_IMPORTS);
+  }
+}
+
+function collectShell(text: string, targets: string[]): void {
+  SH_SOURCE_RE.lastIndex = 0;
+  for (const match of text.matchAll(SH_SOURCE_RE)) {
+    const spec = (match[1] ?? match[2] ?? '').trim();
+    if (!spec) continue;
+    if (spec.startsWith('.') || spec.startsWith('/')) pushUnique(targets, spec, MAX_IMPORTS);
+  }
+}
+
+function collectLua(text: string, targets: string[]): void {
+  LUA_REQUIRE_RE.lastIndex = 0;
+  for (const match of text.matchAll(LUA_REQUIRE_RE)) {
+    const spec = match[1].trim();
+    if (!spec) continue;
+    if (spec.startsWith('.') || spec.includes('.') || spec.includes('/')) {
+      pushUnique(targets, spec.replace(/\./g, '/'), MAX_IMPORTS);
+    }
+  }
+}
+
+function collectDart(text: string, targets: string[]): void {
+  DART_IMPORT_RE.lastIndex = 0;
+  for (const match of text.matchAll(DART_IMPORT_RE)) {
+    const spec = match[1].trim();
+    if (isSkippableBare(spec)) continue;
+    if (spec.startsWith('dart:') || spec.startsWith('package:')) continue;
+    if (spec.startsWith('.') || spec.startsWith('/')) {
+      pushUnique(targets, spec, MAX_IMPORTS);
+    }
+  }
+}
+
+function collectHaskell(text: string, targets: string[]): void {
+  HS_IMPORT_RE.lastIndex = 0;
+  for (const match of text.matchAll(HS_IMPORT_RE)) {
+    const spec = match[1].trim();
+    if (!spec) continue;
+    pushUnique(targets, spec.replace(/\./g, '/'), MAX_IMPORTS);
+  }
+}
+
 function collectSymbols(text: string, family: CodeFamily): string[] {
   const names: string[] = [];
   const add = (re: RegExp) => {
@@ -181,7 +223,11 @@ export function extractCodeImports(text: string, name: string): string[] {
   } else if (family === 'css') {
     CSS_IMPORT_RE.lastIndex = 0;
     for (const match of text.matchAll(CSS_IMPORT_RE)) pushUnique(targets, match[1].trim(), MAX_IMPORTS);
-  }
+  } else if (family === 'csharp') collectCSharp(text, targets);
+  else if (family === 'shell') collectShell(text, targets);
+  else if (family === 'lua') collectLua(text, targets);
+  else if (family === 'dart') collectDart(text, targets);
+  else if (family === 'haskell') collectHaskell(text, targets);
   return targets;
 }
 
