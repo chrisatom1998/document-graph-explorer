@@ -62,9 +62,10 @@ export default function EmptyState() {
             </h1>
             <p className="empty-state__tagline">
               Build a local interactive 3D graph of ideas and relationships. Graph generation,
-              document processing, and storage happen locally in your browser. Your documents
-              never leave your device unless you explicitly enable a cloud AI provider or share
-              exported graph data.
+              document processing, and storage happen locally in this browser. Files you add are
+              read directly from your device and cached in browser-local storage on this device
+              only. Your documents never leave your device unless you explicitly enable a cloud AI
+              provider or share exported graph data.
             </p>
           </header>
 
