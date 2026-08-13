@@ -18,10 +18,9 @@ import type { IngestFile } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { posixJoin } from '../util/posixPath';
-import { routeFile } from './fileRouter';
+import { isIngestCandidate, routeFileWithSniff } from './fileRouter';
 import { hasUnignoreUnder, mergeGitIgnoreRules, pathIsGitIgnored, type GitIgnoreRule } from './gitignore';
 import type { NamedFile } from './localFiles';
-import { repoArtifactReason } from './repoArtifacts';
 
 // ---------------------------------------------------------------------------
 // directory walking (webkitGetAsEntry API is callback-based; promisify it)
@@ -87,7 +86,7 @@ async function walkDirectory(
       continue;
     }
     if (!child.isFile) continue;
-    if (repoArtifactReason(child.name) || routeFile(child.name) === null) continue;
+    if (!isIngestCandidate(child.name)) continue;
     if (pathIsGitIgnored(childRel, false, rules)) continue;
     const file = await entryFile(child as FileSystemFileEntry);
     const relPath = child.fullPath.replace(/^\/+/, '');
@@ -153,14 +152,14 @@ async function toIngestFiles(named: NamedFile[]): Promise<IngestFile[]> {
   let totalBytes = 0;
   let totalCapHit = false;
   for (const { file, path } of named) {
-    const fileType = routeFile(file.name);
-    if (fileType !== null && file.size > MAX_INGEST_FILE_BYTES) {
+    const shouldRead = isIngestCandidate(file.name);
+    if (shouldRead && file.size > MAX_INGEST_FILE_BYTES) {
       useGraphStore.getState().addIgnored(file.name, `too large (over ${MAX_INGEST_MB} MB)`);
       continue;
     }
     // Every file is read fully into memory before the pipeline runs, so the
     // per-file cap alone can't stop a huge folder drop from OOMing the tab.
-    if (fileType !== null && totalBytes + file.size > MAX_INGEST_TOTAL_BYTES) {
+    if (shouldRead && totalBytes + file.size > MAX_INGEST_TOTAL_BYTES) {
       useGraphStore
         .getState()
         .addIgnored(file.name, `drop exceeds ${MAX_INGEST_TOTAL_MB} MB total — add it separately`);
@@ -177,15 +176,17 @@ async function toIngestFiles(named: NamedFile[]): Promise<IngestFile[]> {
     }
     // Unsupported files are still forwarded (with empty bytes, so huge
     // binaries are never read) — the coordinator routes them by name into
-    // the ignored tray.
-    const bytes = fileType !== null ? await file.arrayBuffer() : new ArrayBuffer(0);
-    totalBytes += bytes.byteLength;
+    // the ignored tray. Sniffable unknowns (LICENSE, *.rules) are read so
+    // the text-fallback can run.
+    const bytes = shouldRead ? await file.arrayBuffer() : new ArrayBuffer(0);
+    const fileType = routeFileWithSniff(file.name, bytes);
+    totalBytes += fileType !== null ? bytes.byteLength : 0;
     out.push({
       fileId: crypto.randomUUID(),
       name: file.name,
       path,
       fileType: fileType ?? 'other',
-      bytes,
+      bytes: fileType !== null ? bytes : new ArrayBuffer(0),
       lastModified: file.lastModified > 0 ? file.lastModified : undefined,
     });
   }

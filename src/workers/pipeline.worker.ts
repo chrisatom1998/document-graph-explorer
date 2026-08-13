@@ -66,6 +66,7 @@ function analyzeText(
 }
 
 async function runParser(req: Extract<PoolRequest, { type: 'parse' }>): Promise<ParserResult> {
+  const ext = req.name.split('.').pop()?.toLowerCase() ?? '';
   switch (req.fileType) {
     case 'md':
       return parseMarkdown(req.bytes, req.name);
@@ -75,11 +76,29 @@ async function runParser(req: Extract<PoolRequest, { type: 'parse' }>): Promise<
     case 'pptx':
     case 'xlsx':
       return parseOffice(req.bytes, req.name, req.fileType);
-    case 'txt':
     case 'json':
+      if (ext === 'ipynb') {
+        const { parseIpynb } = await import('../pipeline/parsers/ipynb');
+        return parseIpynb(req.bytes, req.name);
+      }
+      return parseTxt(req.bytes, req.name);
+    case 'other': {
+      if (ext === 'epub') {
+        const { parseEpub } = await import('../pipeline/parsers/epub');
+        return parseEpub(req.bytes, req.name);
+      }
+      if (ext === 'rtf') {
+        const { parseRtf } = await import('../pipeline/parsers/rtf');
+        return parseRtf(req.bytes, req.name);
+      }
+      if (ext === 'odt' || ext === 'ods' || ext === 'odp' || ext === 'odg') {
+        return parseOffice(req.bytes, req.name, ext);
+      }
+      return parseTxt(req.bytes, req.name);
+    }
+    case 'txt':
     case 'yaml':
     case 'csv':
-    case 'other':
       return parseTxt(req.bytes, req.name);
     case 'code':
       return parseCode(req.bytes, req.name);

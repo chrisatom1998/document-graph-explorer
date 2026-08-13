@@ -172,6 +172,34 @@ const LANGUAGES: LangDef[] = [
   { id: 'earthfile', label: 'Earthfile', short: 'earthfile', family: 'other', mime: 'text/plain', basenames: ['earthfile'] },
   { id: 'caddyfile', label: 'Caddyfile', short: 'caddy', family: 'other', mime: 'text/plain', basenames: ['caddyfile'] },
   { id: 'meson', label: 'Meson', short: 'meson', family: 'other', mime: 'text/plain', basenames: ['meson.build'] },
+  { id: 'mojo', label: 'Mojo', short: 'mojo', family: 'python', mime: 'text/plain', exts: ['mojo'] },
+  { id: 'purescript', label: 'PureScript', short: 'purs', family: 'haskell', mime: 'text/plain', exts: ['purs'] },
+  { id: 'sml', label: 'Standard ML', short: 'sml', family: 'other', mime: 'text/plain', exts: ['sml', 'sig'] },
+  { id: 'fennel', label: 'Fennel', short: 'fnl', family: 'other', mime: 'text/plain', exts: ['fnl'] },
+  { id: 'hy', label: 'Hy', short: 'hy', family: 'other', mime: 'text/plain', exts: ['hy'] },
+  { id: 'lean', label: 'Lean', short: 'lean', family: 'other', mime: 'text/plain', exts: ['lean'] },
+  { id: 'agda', label: 'Agda', short: 'agda', family: 'other', mime: 'text/plain', exts: ['agda'] },
+  { id: 'idris', label: 'Idris', short: 'idr', family: 'other', mime: 'text/plain', exts: ['idr'] },
+  { id: 'glsl', label: 'GLSL', short: 'glsl', family: 'other', mime: 'text/plain', exts: ['glsl', 'vert', 'frag', 'geom', 'comp'] },
+  { id: 'hlsl', label: 'HLSL', short: 'hlsl', family: 'other', mime: 'text/plain', exts: ['hlsl', 'fx'] },
+  { id: 'wgsl', label: 'WGSL', short: 'wgsl', family: 'other', mime: 'text/plain', exts: ['wgsl'] },
+  { id: 'metal', label: 'Metal', short: 'metal', family: 'c', mime: 'text/plain', exts: ['metal'] },
+  { id: 'opencl', label: 'OpenCL', short: 'ocl', family: 'c', mime: 'text/plain', exts: ['ocl', 'opencl'] },
+  { id: 'vyper', label: 'Vyper', short: 'vy', family: 'other', mime: 'text/plain', exts: ['vy'] },
+  { id: 'move', label: 'Move', short: 'move', family: 'other', mime: 'text/plain', exts: ['move'] },
+  { id: 'cairo', label: 'Cairo', short: 'cairo', family: 'other', mime: 'text/plain', exts: ['cairo'] },
+  { id: 'bicep', label: 'Bicep', short: 'bicep', family: 'other', mime: 'text/plain', exts: ['bicep'] },
+  { id: 'flatbuffers', label: 'FlatBuffers', short: 'fbs', family: 'other', mime: 'text/plain', exts: ['fbs'] },
+  { id: 'capnp', label: 'Cap\'n Proto', short: 'capnp', family: 'other', mime: 'text/plain', exts: ['capnp'] },
+  { id: 'avro', label: 'Avro Schema', short: 'avsc', family: 'other', mime: 'text/plain', exts: ['avsc'] },
+  { id: 'raml', label: 'RAML', short: 'raml', family: 'other', mime: 'text/plain', exts: ['raml'] },
+  { id: 'sas', label: 'SAS', short: 'sas', family: 'other', mime: 'text/plain', exts: ['sas'] },
+  { id: 'stata', label: 'Stata', short: 'do', family: 'other', mime: 'text/plain', exts: ['do', 'ado'] },
+  { id: 'spss', label: 'SPSS', short: 'sps', family: 'other', mime: 'text/plain', exts: ['sps'] },
+  { id: 'ninja', label: 'Ninja Build', short: 'ninja', family: 'other', mime: 'text/plain', exts: ['ninja'], basenames: ['build.ninja'] },
+  { id: 'taskfile', label: 'Taskfile', short: 'task', family: 'other', mime: 'text/plain', basenames: ['taskfile.yml', 'taskfile.yaml'] },
+  { id: 'liquid', label: 'Liquid', short: 'liquid', family: 'other', mime: 'text/plain', exts: ['liquid'] },
+  { id: 'typst', label: 'Typst', short: 'typ', family: 'other', mime: 'text/plain', exts: ['typ'] },
 ];
 
 const BY_EXT = new Map<string, CodeLanguage>();
@@ -183,8 +211,14 @@ function publicLang(def: LangDef): CodeLanguage {
 
 for (const def of LANGUAGES) {
   const lang = publicLang(def);
-  for (const ext of def.exts ?? []) BY_EXT.set(ext, lang);
-  for (const base of def.basenames ?? []) BY_BASENAME.set(base, lang);
+  // First registration wins so later languages cannot steal an extension
+  // already claimed (e.g. OpenCL must not overwrite Lisp's `.cl`).
+  for (const ext of def.exts ?? []) {
+    if (!BY_EXT.has(ext)) BY_EXT.set(ext, lang);
+  }
+  for (const base of def.basenames ?? []) {
+    if (!BY_BASENAME.has(base)) BY_BASENAME.set(base, lang);
+  }
 }
 
 const FILE_TYPE_LABELS: Record<FileType, string> = {
