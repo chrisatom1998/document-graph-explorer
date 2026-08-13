@@ -64,6 +64,7 @@ export default function FilterBar() {
   const setFilter = useUiStore((s) => s.setFilter);
 
   const [collapsed, setCollapsed] = useState(true);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const fileTypeCounts = useMemo(() => {
     const counts: Partial<Record<FileType, number>> = {};
@@ -109,8 +110,17 @@ export default function FilterBar() {
   };
 
   const hasActiveFilter = isFilterActive(filter);
+  const advancedActive =
+    filter.minDegree > 0 ||
+    filter.minEdgeWeight > 0 ||
+    filter.edgeKinds !== null ||
+    filter.modifiedWithinDays !== null;
+  const showAdvanced = advancedOpen || advancedActive;
 
-  const clearAll = () => setFilter({ ...DEFAULT_FILTER });
+  const clearAll = () => {
+    setFilter({ ...DEFAULT_FILTER });
+    setAdvancedOpen(false);
+  };
 
   return (
     <>
@@ -174,6 +184,20 @@ export default function FilterBar() {
             </div>
           )}
 
+          {!showAdvanced && (
+            <button
+              type="button"
+              className="filter-bar__more"
+              title="Connection count, link strength, kind, and recency"
+              aria-expanded={false}
+              onClick={() => setAdvancedOpen(true)}
+            >
+              More filters
+            </button>
+          )}
+
+          {showAdvanced && (
+            <>
           <div className="filter-bar__group">
             <span
               className="filter-bar__group-label"
@@ -257,6 +281,19 @@ export default function FilterBar() {
               </button>
             ))}
           </div>
+            {!advancedActive && (
+              <button
+                type="button"
+                className="filter-bar__more"
+                title="Hide connection, strength, kind, and recency filters"
+                aria-expanded={true}
+                onClick={() => setAdvancedOpen(false)}
+              >
+                Fewer filters
+              </button>
+            )}
+            </>
+          )}
 
           {hasActiveFilter && (
             <button

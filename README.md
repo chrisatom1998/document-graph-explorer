@@ -4,7 +4,7 @@ A drag-and-drop **3D mind map for your documents**. Drop a folder of text, Markd
 
 The result is more than a picture: it is a **queryable 3D model of your document collection** — a lightweight digital twin of a knowledge base that can stay synchronized with a live folder on disk, be measured against [published benchmarks](docs/benchmarks.md), and travel as an [OpenUSD stage](docs/openusd-pipeline.md) into usdview, NVIDIA Omniverse, and other scene-description toolchains.
 
-The graph exports as an [OpenUSD stage](docs/openusd-pipeline.md) that other tools can open directly — no NVIDIA hardware required to verify:
+The graph exports as an [OpenUSD stage](docs/openusd-pipeline.md) that other tools can open directly — no NVIDIA hardware required to verify. That sidecar is **interop**, not the default product: the in-app loop is drop files → explore the graph → read and search. See [docs/product-surface.md](docs/product-surface.md) for what stays on the canvas vs. what lives in menus and packaging.
 
 | Pixar Storm (`usdrecord`), detailed view | Pixar Storm, `summary` variant (cluster hulls) | Apple Reality Composer Pro |
 | --- | --- | --- |

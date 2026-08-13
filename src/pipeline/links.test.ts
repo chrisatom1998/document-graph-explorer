@@ -570,6 +570,47 @@ describe('referenceEdges path-aware import resolution', () => {
     expect(pair('authtest', 'ingestutil')).toBeUndefined(); // test binds to its own dir
   });
 
+  it('resolves a leading-slash href vault-root-relative, not file-relative', () => {
+    const candidates = importPathCandidates('MyVault/src/nested.md', '/docs/guide.md');
+    expect(candidates).toContain('myvault/docs/guide.md');
+    expect(candidates).not.toContain('myvault/src/docs/guide.md');
+    // no folder-drop prefix on fromPath: the leading slash just strips
+    expect(importPathCandidates('nested.md', '/docs/guide.md')).toContain('docs/guide.md');
+  });
+
+  it('links a leading-slash markdown href to the vault-root file, not a nested miss', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Nested',
+        fileName: 'nested.md',
+        path: 'MyVault/src/nested.md',
+        textLower: '',
+        mdLinkTargets: ['/docs/guide.md'],
+      },
+      {
+        id: 'b',
+        title: 'Guide',
+        fileName: 'guide.md',
+        path: 'MyVault/docs/guide.md',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'c',
+        title: 'Wrong Guide',
+        fileName: 'guide.md',
+        path: 'MyVault/src/docs/guide.md',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    const linkEdges = edges.filter((e) => e.evidence.some((ev) => ev.startsWith('links to')));
+    expect(linkEdges).toHaveLength(1);
+    expect(linkEdges[0]).toMatchObject({ source: 'a', target: 'b' });
+  });
+
   it('does not attach a bare python import to an unrelated same-stem file', () => {
     const docs: ReferenceDocInput[] = [
       {
@@ -791,6 +832,21 @@ describe('referenceEdges wikilinks', () => {
       pathDoc('other', 'note.md', 'Vault/other/note.md', 'unrelated note'),
     ];
     expect(linkEdges(referenceEdges(docs, 5))).toEqual([]);
+  });
+
+  it('resolves a path-style wikilink after a folder ingest, without fanning out', () => {
+    // MyVault/projects/alpha.md and MyVault/inbox/alpha.md share a bare stem;
+    // [[projects/alpha]] disambiguates by directory and must hit only the
+    // projects one, while the bare [[alpha]] must still drop.
+    const docs = [
+      pathDoc('note', 'index.md', 'MyVault/index.md', '', {
+        mdLinkTargets: [`${WIKILINK_PREFIX}projects/alpha`, `${WIKILINK_PREFIX}alpha`],
+      }),
+      pathDoc('projectsAlpha', 'alpha.md', 'MyVault/projects/alpha.md', 'projects alpha'),
+      pathDoc('inboxAlpha', 'alpha.md', 'MyVault/inbox/alpha.md', 'inbox alpha'),
+    ];
+    const links = linkEdges(referenceEdges(docs, 5));
+    expect(links.map((e) => [e.source, e.target].sort().join('-'))).toEqual(['note-projectsAlpha']);
   });
 });
 

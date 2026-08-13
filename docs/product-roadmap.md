@@ -65,6 +65,7 @@ Make internal documentation **explorable, connected, and alive** — transformin
 | Feature | Priority | Business Value |
 |---|---|---|
 | **Guided onboarding tour** | ✅ Shipped | Interactive walkthrough for first-time users. |
+| **Simple default chrome** | ✅ Shipped | Core loop on the toolbar; Analyze / View / Data / Add menus; Show-me folded into Search. See [product-surface.md](./product-surface.md). |
 | **Keyboard navigation** | Low | Full keyboard support for navigating nodes, edges, and panels. Accessibility compliance. |
 | **PWA install** | ✅ Shipped | Add-to-home-screen / standalone display via a same-origin web app manifest (no service worker). |
 
@@ -80,8 +81,8 @@ Make internal documentation **explorable, connected, and alive** — transformin
 |---|---|---|
 | **Comparative analytics** | ✅ Shipped | Snapshot compare reports added/removed/updated docs and connection churn, and paints the live graph. |
 | **Quota-aware caching** | ✅ Shipped | Settings shows origin storage use; embedding and original-file caches can be cleared independently. |
-| **Export to Notion/Confluence** | Low | Push graph structure and summaries into existing wiki platforms |
-| **Plugin API** | Low | Allow custom parsers, enrichment providers, and visualization modes |
+| **Export to Notion/Confluence** | Deferred | Do not add until the core loop is the only first-run chrome. |
+| **Plugin API** | Deferred | Same — a plugin surface would re-bloat the tool. |
 
 ---
 
@@ -117,5 +118,6 @@ No accounts, no installations, no configuration. Drop files → see your knowled
 ## Related Documents
 
 - [Project Plan](./project-plan.md) — Business context, users, capabilities, success metrics
+- [Product surface](./product-surface.md) — Core loop vs. studio / interop / packaging
 - [Feature Playbook: Snapshots](./feature-playbook-snapshots.md) — Detailed playbook for save/load snapshots
 - [Technical Specification](../knowledge-nebula-spec.md) — Full engineering spec
