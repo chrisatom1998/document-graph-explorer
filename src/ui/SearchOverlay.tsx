@@ -27,6 +27,7 @@ export default function SearchOverlay() {
   const [results, setResults] = useState<ResultRow[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [searched, setSearched] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -40,6 +41,7 @@ export default function SearchOverlay() {
     setResults([]);
     setActiveIndex(0);
     setSearched(false);
+    setFailed(false);
     const t = setTimeout(() => inputRef.current?.focus(), 0);
     return () => clearTimeout(t);
   }, [searchOpen]);
@@ -51,17 +53,21 @@ export default function SearchOverlay() {
     if (query.trim().length === 0) {
       setResults([]);
       setSearched(false);
+      setFailed(false);
       setSearchResults(null);
       return;
     }
 
     debounceRef.current = setTimeout(() => {
       const seq = ++requestSeq.current;
+      let landedResults = false;
       const applyResults = (res: ResultRow[]) => {
           if (seq !== requestSeq.current) return; // stale response
+          landedResults = res.length > 0;
           setResults(res);
           setActiveIndex(0);
           setSearched(true);
+          setFailed(false);
           setSearchResults(res.map((r) => r.id), 'search');
       };
       void (async () => {
@@ -72,6 +78,9 @@ export default function SearchOverlay() {
           console.warn('search failed', err);
           if (seq !== requestSeq.current) return;
           setSearched(true);
+          // Only report a failure when no pass landed results — the lexical
+          // pass may have already applied hits before the semantic one broke.
+          setFailed(!landedResults);
         }
       })();
     }, DEBOUNCE_MS);
@@ -218,8 +227,10 @@ export default function SearchOverlay() {
           })}
 
           {results.length === 0 && searched && (
-            <div className="search-overlay__empty">
-              No matches — the model may still be loading
+            <div className="search-overlay__empty" role="status">
+              {failed
+                ? 'Search didn’t complete — try again in a moment.'
+                : 'No matches — the model may still be loading'}
             </div>
           )}
         </div>

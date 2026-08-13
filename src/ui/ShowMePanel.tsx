@@ -16,7 +16,7 @@ export default function ShowMePanel() {
 
   const [topic, setTopic] = useState('');
   const [results, setResults] = useState<SearchHit[]>([]);
-  const [status, setStatus] = useState<'idle' | 'searching' | 'done' | 'empty'>('idle');
+  const [status, setStatus] = useState<'idle' | 'searching' | 'done' | 'empty' | 'error'>('idle');
   const inputRef = useRef<HTMLInputElement | null>(null);
   const requestSeq = useRef(0);
 
@@ -55,7 +55,9 @@ export default function ShowMePanel() {
       } catch (err) {
         console.warn('show me failed', err);
         if (seq !== requestSeq.current) return;
-        setStatus('empty');
+        // Only surface an error when no pass produced results — the lexical
+        // pass may already have applied hits before the semantic pass failed.
+        setStatus((prev) => (prev === 'done' ? prev : 'error'));
       }
     })();
   };
@@ -84,16 +86,20 @@ export default function ShowMePanel() {
           <button
             type="button"
             className="icon-btn-close"
-            title="Close"
+            title="Close topic highlighter"
+            aria-label="Close topic highlighter"
             onClick={close}
           >
-            x
+            ✕
           </button>
         </form>
 
         <div className="show-me-panel__body" aria-live="polite">
-          {status === 'searching' && <p className="show-me-panel__note">Finding matches...</p>}
+          {status === 'searching' && <p className="show-me-panel__note">Finding matches…</p>}
           {status === 'empty' && <p className="show-me-panel__note">No matching nodes found.</p>}
+          {status === 'error' && (
+            <p className="show-me-panel__note">Search didn’t complete — try again in a moment.</p>
+          )}
           {status === 'done' && (
             <>
               <p className="show-me-panel__count">

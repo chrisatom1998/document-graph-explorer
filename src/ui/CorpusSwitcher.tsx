@@ -208,7 +208,7 @@ export default function CorpusSwitcher({ variant = 'toolbar' }: { variant?: 'too
                   }}
                 >
                   <span>{corpus.name}</span>
-                  <small>{corpus.documentCount} docs</small>
+                  <small>{corpus.documentCount} doc{corpus.documentCount === 1 ? '' : 's'}</small>
                 </button>
                 <button
                   type="button"
