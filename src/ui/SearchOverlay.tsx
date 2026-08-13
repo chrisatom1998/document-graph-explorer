@@ -28,6 +28,7 @@ export default function SearchOverlay() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [searched, setSearched] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [searching, setSearching] = useState(false);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -42,6 +43,7 @@ export default function SearchOverlay() {
     setActiveIndex(0);
     setSearched(false);
     setFailed(false);
+    setSearching(false);
     const t = setTimeout(() => inputRef.current?.focus(), 0);
     return () => clearTimeout(t);
   }, [searchOpen]);
@@ -54,9 +56,15 @@ export default function SearchOverlay() {
       setResults([]);
       setSearched(false);
       setFailed(false);
+      setSearching(false);
       setSearchResults(null);
       return;
     }
+
+    // Feedback starts with the keystroke, not the debounce: semantic search
+    // can take a moment (the model may still be warming up), and an unchanged
+    // list with no status reads as "search is broken".
+    setSearching(true);
 
     debounceRef.current = setTimeout(() => {
       const seq = ++requestSeq.current;
@@ -74,9 +82,11 @@ export default function SearchOverlay() {
         try {
           applyResults(await searchCorpusLexical(query));
           applyResults(await searchCorpus(query));
+          if (seq === requestSeq.current) setSearching(false);
         } catch (err) {
           console.warn('search failed', err);
           if (seq !== requestSeq.current) return;
+          setSearching(false);
           setSearched(true);
           // Only report a failure when no pass landed results — the lexical
           // pass may have already applied hits before the semantic one broke.
@@ -234,7 +244,12 @@ export default function SearchOverlay() {
           })}
         </div>
 
-        {results.length === 0 && searched && (
+        {!browsing && searching && results.length === 0 && (
+          <div className="search-overlay__empty" role="status">
+            Searching…
+          </div>
+        )}
+        {results.length === 0 && searched && !searching && (
           <div className="search-overlay__empty" role="status">
             {failed
               ? 'Search didn’t complete — try again in a moment.'

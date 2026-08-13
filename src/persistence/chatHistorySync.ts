@@ -27,6 +27,20 @@ let started = false;
 let unsubscribers: (() => void)[] = [];
 let pending: { scope: string; timer: ReturnType<typeof setTimeout> } | null = null;
 let lastLoadedScope: string | null = null;
+let saveFailureToastShown = false;
+
+/** Toast lazily to avoid a static ui-store dependency from persistence code. */
+function toastSaveFailureOnce(): void {
+  if (saveFailureToastShown) return;
+  saveFailureToastShown = true;
+  void import('../store/uiStore')
+    .then(({ useUiStore }) =>
+      useUiStore
+        .getState()
+        .pushToast("Couldn't save the chat transcript — it may not survive a reload.", 'warning'),
+    )
+    .catch(() => undefined);
+}
 
 /** The workspace a transcript belongs to, or null when nothing should persist. */
 function currentScope(): string | null {
@@ -53,8 +67,10 @@ async function writeIfStillValid(scope: string): Promise<void> {
   if (useCorpusStore.getState().switching || currentScope() !== scope) return;
   try {
     await saveChatHistory(scope, chat.messages);
+    saveFailureToastShown = false;
   } catch (error) {
     console.warn('chat history save failed', error);
+    toastSaveFailureOnce();
   }
 }
 
@@ -150,5 +166,6 @@ export function _resetChatHistorySyncForTests(): void {
   unsubscribers = [];
   clearPending();
   lastLoadedScope = null;
+  saveFailureToastShown = false;
   started = false;
 }

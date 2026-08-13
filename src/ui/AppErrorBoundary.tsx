@@ -8,6 +8,8 @@ interface AppErrorBoundaryProps {
 
 interface AppErrorBoundaryState {
   error: Error | null;
+  /** Feedback for the emergency export — ToastHost is gone in this state. */
+  exportNote: string | null;
 }
 
 function messageFor(error: unknown): string {
@@ -18,9 +20,9 @@ export default class AppErrorBoundary extends Component<
   AppErrorBoundaryProps,
   AppErrorBoundaryState
 > {
-  state: AppErrorBoundaryState = { error: null };
+  state: AppErrorBoundaryState = { error: null, exportNote: null };
 
-  static getDerivedStateFromError(error: Error): AppErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): Partial<AppErrorBoundaryState> {
     return { error };
   }
 
@@ -60,14 +62,26 @@ export default class AppErrorBoundary extends Component<
                   : 'No graph is loaded to export'
               }
               onClick={() => {
+                this.setState({ exportNote: null });
                 void import('../persistence/exportImport')
                   .then(({ exportGraphJSON }) => exportGraphJSON())
-                  .catch((error) => console.warn('emergency graph export failed', error));
+                  .then(() => this.setState({ exportNote: 'Graph export started — check your downloads.' }))
+                  .catch((error) => {
+                    console.warn('emergency graph export failed', error);
+                    this.setState({
+                      exportNote: `Couldn't export the graph: ${messageFor(error)}`,
+                    });
+                  });
               }}
             >
               Export your graph (JSON)
             </button>
           </div>
+          {this.state.exportNote && (
+            <p className="app-error-panel__message" role="status">
+              {this.state.exportNote}
+            </p>
+          )}
         </section>
       </div>
     );

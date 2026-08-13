@@ -102,7 +102,12 @@ const MessageBubble = memo(function MessageBubble({
 
   return (
     <div className={`chat-message chat-message--${msg.role}`}>
-      <div className={`chat-bubble chat-bubble--${msg.role}`}>
+      <div
+        className={`chat-bubble chat-bubble--${msg.role}${msg.isError ? ' chat-bubble--error' : ''}`}
+        // A failed answer is the only bubble a user could mistake for a real
+        // one — announce it and tint it instead of styling it like an answer.
+        role={msg.isError ? 'alert' : undefined}
+      >
         {isAssistant ? <ChatMarkdown text={msg.text} /> : <p className="chat-bubble__text">{msg.text}</p>}
         {msg.sources && msg.sources.length > 0 && (
           <SourceChips sources={msg.sources} onSourceClick={onSourceClick} />
