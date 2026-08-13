@@ -110,11 +110,15 @@ function selfMatchIgnored(path: string, isDirectory: boolean, rules: readonly Gi
 export function hasUnignoreUnder(dirPath: string, rules: readonly GitIgnoreRule[]): boolean {
   const dir = posixNormalize(dirPath);
   if (!dir) return false;
+  const target = dir.toLowerCase();
   for (const rule of rules) {
     if (!rule.negative) continue;
     if (rule.unanchored) return true; // could match at any depth, including under dir
-    const scope = rule.baseDir ? posixJoin(rule.baseDir, rule.pattern) : rule.pattern;
-    if (scope === dir || scope.startsWith(`${dir}/`)) return true;
+    // Case-insensitive like the match regexes (git core.ignorecase=true): a
+    // negation written as `!Dist/keep.md` must still keep an on-disk `dist/`
+    // walkable, since pathIsGitIgnored would un-ignore the file inside it.
+    const scope = (rule.baseDir ? posixJoin(rule.baseDir, rule.pattern) : rule.pattern).toLowerCase();
+    if (scope === target || scope.startsWith(`${target}/`)) return true;
   }
   return false;
 }
