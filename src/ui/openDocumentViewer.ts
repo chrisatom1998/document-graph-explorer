@@ -5,14 +5,8 @@
  */
 
 import type { DocNode, LinkRef } from '../model/types';
+import { fileTypeLabel, selectedDocumentTitle } from '../pipeline/codeLanguage';
 import { hexFor } from '../scene/palette';
-
-const MIME_MAP: Record<string, string> = {
-  md: 'Markdown', txt: 'Plain Text', html: 'HTML',
-  json: 'JSON', yaml: 'YAML', csv: 'CSV',
-  docx: 'Word', pptx: 'PowerPoint', xlsx: 'Excel',
-  pdf: 'PDF', other: 'Document', code: 'Source',
-};
 
 /** Exported for unit tests — internal helpers used while building the viewer HTML. */
 export function escapeHtml(str: string): string {
@@ -80,10 +74,11 @@ export function linkifyLine(raw: string): string {
  * Lightly format text for display: detect markdown headings, fenced code
  * blocks, horizontal rules, and blank lines. Returns HTML string.
  */
-function formatContent(text: string, fileType: string): string {
+function formatContent(text: string, fileType: string, langLabel?: string): string {
   // For structured data files, wrap the entire content in a code block
   if (['json', 'yaml', 'csv', 'code'].includes(fileType)) {
-    return `<pre class="code-block"><code>${escapeHtml(text)}</code></pre>`;
+    const langAttr = langLabel ? ` data-lang="${escapeHtml(langLabel)}"` : '';
+    return `<pre class="code-block"${langAttr}><code>${escapeHtml(text)}</code></pre>`;
   }
 
   const lines = text.split('\n');
@@ -158,12 +153,12 @@ export function openDocumentViewer(
   links: LinkRef[] = [],
 ): void {
   const isMono = ['txt', 'json', 'yaml', 'csv', 'other', 'code'].includes(node.fileType);
-  const typeLabel = MIME_MAP[node.fileType] ?? 'Document';
+  const typeLabel = fileTypeLabel(node);
   const clusterColor = hexFor(node.cluster);
   const wordCount = node.wordCount.toLocaleString();
   const readTime = Math.max(1, Math.ceil(node.wordCount / 238));
-  const content = formatContent(fullText, node.fileType);
-  const title = escapeHtml(node.title);
+  const content = formatContent(fullText, node.fileType, typeLabel);
+  const title = escapeHtml(selectedDocumentTitle(node));
   const topics = node.topics.slice(0, 6);
 
   // Web links the original document contained — including those hidden behind
@@ -479,6 +474,9 @@ export function openDocumentViewer(
     text-transform: uppercase;
     color: var(--text-faint);
     opacity: 0.6;
+  }
+  .code-block[data-lang] {
+    padding-top: 36px;
   }
   .code-block code {
     font-family: inherit;

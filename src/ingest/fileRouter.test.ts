@@ -28,6 +28,16 @@ describe('routeFile', () => {
     expect(routeFile('Widget.java')).toBe('code');
     expect(routeFile('Dockerfile')).toBe('code');
     expect(routeFile('Makefile')).toBe('code');
+    expect(routeFile('CMakeLists.txt')).toBe('code');
+    expect(routeFile('go.mod')).toBe('code');
+    expect(routeFile('mix.exs')).toBe('code');
+    expect(routeFile('Main.hs')).toBe('code');
+    expect(routeFile('Page.astro')).toBe('code');
+    expect(routeFile('schema.prisma')).toBe('code');
+    expect(routeFile('setup.ps1')).toBe('code');
+    expect(routeFile('analysis.jl')).toBe('code');
+    expect(routeFile('notebook.ipynb')).toBe('json');
+    expect(routeFile('notes.rmd')).toBe('md');
   });
 
   it('is case-insensitive on the extension', () => {

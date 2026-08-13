@@ -52,6 +52,46 @@ import os, mypkg.utils
     expect(extractCodeImports('#include "local.h"\n#include <stdio.h>\n', 'main.c')).toEqual([
       'local.h',
     ]);
+    expect(extractCodeImports('#import "Session.h"\n', 'Session.m')).toEqual(['Session.h']);
+  });
+
+  it('collects C# usings, Dart relative imports, and shell sources', () => {
+    expect(extractCodeImports('using System;\nusing MyApp.Auth;\n', 'Program.cs')).toEqual([
+      'System',
+      'MyApp/Auth',
+    ]);
+    expect(extractCodeImports("import './session.dart';\nimport 'package:flutter/material.dart';\n", 'main.dart')).toEqual([
+      './session.dart',
+    ]);
+    expect(extractCodeImports('source ./helpers.sh\n. ./lib.sh\n', 'setup.sh')).toEqual([
+      './helpers.sh',
+      './lib.sh',
+    ]);
+    expect(
+      extractCodeImports('ls . ./lib.sh\ncp . ./backup\nfoo; . ./lib.sh\n  source ./helpers.sh\n', 'setup.sh'),
+    ).toEqual(['./lib.sh', './helpers.sh']);
+  });
+
+  it('keeps Lua relative require paths intact and slashes dotted modules', () => {
+    const src = `
+      require('./foo')
+      require('../bar')
+      require('./lib/util.lua')
+      require('socket.http')
+      require('plain')
+    `;
+    expect(extractCodeImports(src, 'init.lua')).toEqual([
+      './foo',
+      '../bar',
+      './lib/util.lua',
+      'socket/http',
+    ]);
+  });
+
+  it('treats Astro files as the JS import family', () => {
+    expect(extractCodeImports("import Layout from '../Layout.astro';\n", 'Page.astro')).toEqual([
+      '../Layout.astro',
+    ]);
   });
 });
 

@@ -24,6 +24,7 @@ import { getOriginal } from '../persistence/originals';
 import { decodeText } from '../pipeline/parsers/txt';
 import { useSettingsStore } from '../store/settingsStore';
 import type { DocNode, Edge } from '../model/types';
+import { codeLanguageForNode, fileTypeChip } from '../pipeline/codeLanguage';
 
 interface ConnectionRow {
   edge: Edge;
@@ -210,12 +211,22 @@ export default function SidePanel() {
     clusterNames[node.cluster] ?? localClusterNames[node.cluster] ?? `Cluster ${node.cluster}`;
   const clusterColor = hexFor(node.cluster);
   const entities = node.entities.slice(0, 8);
+  const codeLang = codeLanguageForNode(node);
+  const typeChip = fileTypeChip(node);
+  const readerLabel = codeLang?.label ?? 'Document';
 
   return (
     <div className="side-panel-layer">
-      <div className="side-panel glass-panel" role="dialog" aria-label={node.title}>
+      <div className="side-panel glass-panel" role="dialog" aria-label={codeLang ? `${node.title} (${codeLang.label})` : node.title}>
         <div className="side-panel__header">
-          <h2 className="side-panel__title">{node.title}</h2>
+          <h2 className="side-panel__title">
+            <span className="side-panel__title-text">{node.title}</span>
+            {codeLang && (
+              <span className="side-panel__title-lang" title={codeLang.label}>
+                {codeLang.short}
+              </span>
+            )}
+          </h2>
           {node.kind === 'document' && (
             <button
               type="button"
@@ -286,7 +297,7 @@ export default function SidePanel() {
         </div>
         <div className="side-panel__scroll">
           <div className="side-panel__badges">
-            <span className="chip">{node.fileType}</span>
+            <span className="chip">{typeChip}</span>
             <span className="chip">
               <span
                 className="chip-dot"
@@ -484,7 +495,13 @@ export default function SidePanel() {
           <hr className="hairline" />
 
           <div className="side-panel__section">
-            <p className="side-panel__section-label">Document</p>
+            <p className="side-panel__section-label">{readerLabel}</p>
+            <div className={`side-panel__reader-frame${codeLang ? ' is-code' : ''}`}>
+            {codeLang && (
+              <span className="side-panel__reader-lang" title={codeLang.label}>
+                {codeLang.short}
+              </span>
+            )}
             {pdfPreview && pdfPreview.id === node.id ? (
               <Suspense fallback={<div className="side-panel__reader is-unavailable">Loading preview…</div>}>
                 <PdfPreview
@@ -538,6 +555,7 @@ export default function SidePanel() {
                 text unavailable
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>

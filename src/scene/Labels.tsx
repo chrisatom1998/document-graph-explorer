@@ -26,6 +26,7 @@ import { useUiStore } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { kindOfSlot } from './Nodes';
 import { FLAT_BG, FLAT_LABEL } from './palette';
+import { selectedDocumentTitle } from '../pipeline/codeLanguage';
 
 const REFRESH_MS = 120;
 const TRUNCATE_AT = 34;
@@ -102,6 +103,7 @@ export default function Labels() {
   const hoverSlot = useRef(-1);
   const selectedSlot = useRef(-1);
   const titleOfSlot = useRef<string[]>([]);
+  const displayTitleOfSlot = useRef<string[]>([]);
   const titlesDirty = useRef(true);
   const labelsDirty = useRef(true);
   const lastCount = useRef(-1);
@@ -136,9 +138,13 @@ export default function Labels() {
     // Rebuild from scratch: freed slots (removed nodes) must not keep stale
     // titles, or the pool renders phantom labels at their old positions.
     titleOfSlot.current = [];
+    displayTitleOfSlot.current = [];
     for (const n of nodes) {
       const slot = slotOfId.get(n.id);
-      if (slot !== undefined && slot < MAX_NODES) titleOfSlot.current[slot] = n.title;
+      if (slot !== undefined && slot < MAX_NODES) {
+        titleOfSlot.current[slot] = n.title;
+        displayTitleOfSlot.current[slot] = selectedDocumentTitle(n);
+      }
     }
   };
 
@@ -222,15 +228,21 @@ export default function Labels() {
     const hover = hoverRef.current;
     if (hover) {
       const slot = hoverSlot.current;
-      if (slot >= 0 && slot < count && titles[slot]) applyText(hover, titles[slot], 1);
-      else hover.visible = false;
+      if (slot >= 0 && slot < count && titles[slot]) {
+        const hoverText =
+          slot === selectedSlot.current
+            ? (displayTitleOfSlot.current[slot] ?? titles[slot])
+            : titles[slot];
+        applyText(hover, hoverText, 1);
+      } else hover.visible = false;
     }
     const selected = selectedRef.current;
     if (selected) {
       const slot = selectedSlot.current;
+      const selectedTitle = displayTitleOfSlot.current[slot] ?? titles[slot];
       // when hovered === selected the hover label already covers it
-      if (slot >= 0 && slot < count && slot !== hoverSlot.current && titles[slot]) {
-        applyText(selected, titles[slot], 1);
+      if (slot >= 0 && slot < count && slot !== hoverSlot.current && selectedTitle) {
+        applyText(selected, selectedTitle, 1);
       } else {
         selected.visible = false;
       }
