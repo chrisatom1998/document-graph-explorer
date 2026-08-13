@@ -11,14 +11,25 @@ import {
 
 const layoutSetDims = vi.fn();
 const settledListeners = new Set<() => void>();
+const layoutTest = { postedEpoch: 0, settledEpoch: 0 };
 
 vi.mock('../layout/layoutBridge', () => ({
-  layoutSetDims: (...args: unknown[]) => layoutSetDims(...args),
+  layoutSetDims: (...args: unknown[]) => {
+    layoutTest.postedEpoch += 1;
+    layoutSetDims(...args);
+  },
+  layoutEpoch: () => layoutTest.postedEpoch,
+  layoutSettledEpoch: () => layoutTest.settledEpoch,
   onLayoutSettled: (fn: () => void) => {
     settledListeners.add(fn);
     return () => settledListeners.delete(fn);
   },
 }));
+
+function fireSettled(epoch: number): void {
+  layoutTest.settledEpoch = epoch;
+  for (const listener of [...settledListeners]) listener();
+}
 
 import {
   applySharedView,
@@ -83,6 +94,8 @@ describe('applySharedView', () => {
     });
     layoutSetDims.mockClear();
     settledListeners.clear();
+    layoutTest.postedEpoch = 0;
+    layoutTest.settledEpoch = 0;
     delivered.length = 0;
     resetPositionBuffer();
     clearDeferredRemoteCameras();
@@ -147,7 +160,65 @@ describe('applySharedView', () => {
     expect(useUiStore.getState().dims).toBe(2);
     expect(delivered).toHaveLength(0);
 
-    for (const listener of [...settledListeners]) listener();
+    fireSettled(layoutTest.postedEpoch);
+    expect(delivered).toEqual([
+      { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    ]);
+  });
+
+  it('ignores a stale settle that predates the dims change', () => {
+    applySharedView({
+      dims: 2,
+      camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    });
+    expect(delivered).toHaveLength(0);
+
+    fireSettled(0);
+    expect(delivered).toHaveLength(0);
+
+    fireSettled(layoutTest.postedEpoch);
+    expect(delivered).toEqual([
+      { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    ]);
+  });
+
+  it('waits for the later dims settle when dims toggle again before cooling', () => {
+    applySharedView({
+      dims: 2,
+      camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    });
+    applySharedView({
+      dims: 3,
+      camera: { px: 7, py: 8, pz: 9, tx: 10, ty: 11, tz: 12 },
+    });
+    expect(layoutSetDims).toHaveBeenNthCalledWith(1, 2);
+    expect(layoutSetDims).toHaveBeenNthCalledWith(2, 3);
+    expect(delivered).toHaveLength(0);
+
+    fireSettled(1);
+    expect(delivered).toHaveLength(0);
+
+    fireSettled(2);
+    expect(delivered).toEqual([
+      { px: 7, py: 8, pz: 9, tx: 10, ty: 11, tz: 12 },
+    ]);
+  });
+
+  it('does not apply a queued rAF pose while waiting for a dims settle', () => {
+    applySharedView({
+      dims: 3,
+      camera: { px: 0, py: 0, pz: 40, tx: 0, ty: 0, tz: 0 },
+    });
+    applySharedView({
+      dims: 2,
+      camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    });
+    expect(delivered).toHaveLength(0);
+
+    vi.runOnlyPendingTimers();
+    expect(delivered).toHaveLength(0);
+
+    fireSettled(layoutTest.postedEpoch);
     expect(delivered).toEqual([
       { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
     ]);

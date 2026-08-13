@@ -29,6 +29,10 @@ let nextSlot = 0;
  * toward MAX_NODES until real documents get dropped as invisible. */
 const freeSlots: number[] = [];
 const settledListeners = new Set<() => void>();
+/** Bumped on each layoutSetDims post; echoed on settled so callers can ignore
+ * a settle that was already in flight before that dims change. */
+let postedEpoch = 0;
+let settledEpoch = 0;
 /** One capacity toast per corpus — every over-cap add repeats the console line. */
 let warnedCapacity = false;
 
@@ -85,6 +89,7 @@ function wireWorker(w: Worker): void {
         );
       }
     } else if (msg.type === 'settled') {
+      if (typeof msg.epoch === 'number') settledEpoch = msg.epoch;
       settledListeners.forEach((fn) => fn());
     }
   };
@@ -121,7 +126,7 @@ function reseed(w: Worker): void {
   if (lastLinks.length > 0) {
     w.postMessage({ type: 'links', links: lastLinks } satisfies LayoutRequest);
   }
-  if (lastDims !== 3) w.postMessage({ type: 'setDims', dims: lastDims } satisfies LayoutRequest);
+  if (lastDims !== 3) w.postMessage({ type: 'setDims', dims: lastDims, epoch: postedEpoch } satisfies LayoutRequest);
   if (paused) w.postMessage({ type: 'pause' } satisfies LayoutRequest);
 }
 
@@ -157,6 +162,16 @@ export function ensureLayout(): Worker {
 function post(msg: LayoutRequest): void {
   if (layoutDisabled) return; // no worker left, and we've decided not to respawn again
   ensureLayout().postMessage(msg);
+}
+
+/** Epoch of the most recently posted setDims (0 if none). */
+export function layoutEpoch(): number {
+  return postedEpoch;
+}
+
+/** Epoch carried by the last settled message (0 if none / untagged). */
+export function layoutSettledEpoch(): number {
+  return settledEpoch;
 }
 
 /** Fires whenever the simulation cools below its alpha floor. */
@@ -267,7 +282,8 @@ export function layoutUnpin(id: string): void {
 
 export function layoutSetDims(dims: 2 | 3): void {
   lastDims = dims;
-  post({ type: 'setDims', dims });
+  postedEpoch += 1;
+  post({ type: 'setDims', dims, epoch: postedEpoch });
 }
 
 export function layoutPause(): void {

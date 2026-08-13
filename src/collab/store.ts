@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { YMapEvent } from 'yjs';
-import { layoutSetDims, onLayoutSettled } from '../layout/layoutBridge';
+import { layoutEpoch, layoutSetDims, layoutSettledEpoch, onLayoutSettled } from '../layout/layoutBridge';
 import { cameraPose } from '../scene/cameraPose';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
@@ -267,15 +267,24 @@ function scheduleRemoteCameraPose(
   // coordinates.
   if (opts.waitForSettle || stopSettleWait) {
     pendingSettleCamera = pending;
-    if (stopSettleWait) return;
-    stopSettleWait = onLayoutSettled(() => {
+    // Drop any camera-only rAF already scheduled; it would apply against
+    // mid-transition coordinates before the post-settle pose.
+    queuedRemoteCamera = null;
+    if (opts.waitForSettle) {
+      // Re-arm for THIS setDims. Ignore settles tagged with an older epoch
+      // (already-queued cooling, or a previous dims toggle still in flight).
+      const minEpoch = layoutEpoch();
       stopSettleWait?.();
-      stopSettleWait = null;
-      const settled = pendingSettleCamera;
-      pendingSettleCamera = null;
-      if (!settled) return;
-      deliverRemoteCameraPose(settled);
-    });
+      stopSettleWait = onLayoutSettled(() => {
+        if (layoutSettledEpoch() < minEpoch) return;
+        stopSettleWait?.();
+        stopSettleWait = null;
+        const settled = pendingSettleCamera;
+        pendingSettleCamera = null;
+        if (!settled) return;
+        deliverRemoteCameraPose(settled);
+      });
+    }
     return;
   }
 
