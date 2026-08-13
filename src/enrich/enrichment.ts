@@ -14,6 +14,8 @@
 import { AIRGAP, AIRGAP_MESSAGE } from '../airgap';
 import { llmComplete, llmStream, type LlmTarget } from '../ai/llmClient';
 import {
+  DOCUMENT_AI_MAX_CONTEXT_CHARS,
+  ENRICH_BATCH_MAX_CHARS,
   ENRICH_BATCH_SIZE,
   ENRICH_CONCURRENCY_CLOUD,
   ENRICH_CONCURRENCY_LOCAL,
@@ -29,12 +31,48 @@ import {
 } from '../store/settingsStore';
 import { prepareDocumentContext } from './documentContext';
 
-const EXCERPT_CHARS = 1_200; // Matches the consent disclosure shown before enrichment is enabled.
 const CLUSTER_TITLES_CAP = 30;
 const TOPICS_PER_DOC = 5;
 /** Caps on model-authored per-doc fields (see the parse loop for why). */
 const MAX_SUMMARY_CHARS = 1200;
 const MAX_TOPIC_CHARS = 48;
+
+/**
+ * Full stored body for a document, with only the model-context ceiling as a
+ * last resort. The old 1,200-character excerpt is gone — summaries and topics
+ * must be written from the document, not a stub.
+ */
+export function enrichmentDocumentText(node: DocNode): string {
+  const text = textStore.get(node.id) ?? node.summary ?? '';
+  return text.length > DOCUMENT_AI_MAX_CONTEXT_CHARS
+    ? text.slice(0, DOCUMENT_AI_MAX_CONTEXT_CHARS)
+    : text;
+}
+
+/**
+ * Pack pass-1 docs so each request stays inside ENRICH_BATCH_MAX_CHARS while
+ * still sending each body in full (up to DOCUMENT_AI_MAX_CONTEXT_CHARS).
+ */
+export function packEnrichmentBatches(docs: DocNode[]): DocNode[][] {
+  const batches: DocNode[][] = [];
+  let current: DocNode[] = [];
+  let used = 0;
+  for (const doc of docs) {
+    const len = enrichmentDocumentText(doc).length;
+    const wouldExceed =
+      current.length >= ENRICH_BATCH_SIZE ||
+      (current.length > 0 && used + len > ENRICH_BATCH_MAX_CHARS);
+    if (wouldExceed) {
+      batches.push(current);
+      current = [];
+      used = 0;
+    }
+    current.push(doc);
+    used += len;
+  }
+  if (current.length > 0) batches.push(current);
+  return batches;
+}
 
 /** The provider + model enrichment and doc AI currently target, from Settings. */
 export function enrichmentTarget(): LlmTarget {
@@ -105,7 +143,7 @@ async function enrichBatch(
   const payload = batch.map((n) => ({
     id: n.id,
     title: n.title,
-    excerpt: (textStore.get(n.id) ?? n.summary ?? '').slice(0, EXCERPT_CHARS),
+    text: enrichmentDocumentText(n),
   }));
   const prompt = [
     'You are an analyst summarizing internal documentation for a knowledge map.',
@@ -130,11 +168,11 @@ async function enrichBatch(
     const rec = item as { docId?: unknown; summary?: unknown; topics?: unknown };
     if (typeof rec.docId !== 'string' || !known.has(rec.docId)) continue;
     if (typeof rec.summary !== 'string' || rec.summary.trim() === '') continue;
-    // Bound what one document's model output can become. Excerpts are
-    // untrusted document text, so an injected instruction can steer this
-    // response; caps keep the blast radius to this doc's own fields instead
-    // of letting an oversized summary or a topic label carrying a paragraph
-    // of instructions propagate into pass 2, cluster names, and exports.
+    // Bound what one document's model output can become. Document bodies are
+    // untrusted text, so an injected instruction can steer this response;
+    // caps keep the blast radius to this doc's own fields instead of letting
+    // an oversized summary or a topic label carrying a paragraph of
+    // instructions propagate into pass 2, cluster names, and exports.
     const topics = Array.isArray(rec.topics)
       ? rec.topics
           .filter((t): t is string => typeof t === 'string' && t.trim() !== '')
@@ -353,9 +391,9 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
   graph.setPhase('enriching');
   const concurrency =
     enrichProvider === 'ollama' ? ENRICH_CONCURRENCY_LOCAL : ENRICH_CONCURRENCY_CLOUD;
+  const batches = packEnrichmentBatches(docs);
   // progress = pass-1 batches + canonicalize + cluster naming
-  const batchCount = Math.ceil(docs.length / ENRICH_BATCH_SIZE);
-  const totalSteps = batchCount + 2;
+  const totalSteps = batches.length + 2;
   let doneSteps = 0;
   const step = (note: string): void => {
     useGraphStore.getState().setEnrichProgress({ done: doneSteps, total: totalSteps, note });
@@ -365,10 +403,6 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
     const enriched = new Map<string, DocEnrichment>();
     let failedBatches = 0;
     let lastError = '';
-    const batches: DocNode[][] = [];
-    for (let i = 0; i < docs.length; i += ENRICH_BATCH_SIZE) {
-      batches.push(docs.slice(i, i + ENRICH_BATCH_SIZE));
-    }
     let summarized = 0;
     step(`Summarizing 0 of ${docs.length} documents`);
     const batchOutcomes = await mapWithConcurrency(batches, concurrency, async (batch) => {
