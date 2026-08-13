@@ -89,6 +89,8 @@ interface AnnotationState {
   hydrate: (scope: string, annotations: Record<string, DocAnnotationRecord>) => void;
   /** Merge one doc's annotation and schedule a persist to the hydrated scope. */
   update: (key: string, patch: Partial<Omit<DocAnnotationRecord, 'updatedAt'>>) => void;
+  /** Apply a collaboration update while preserving its conflict timestamp. */
+  applyRemote: (key: string, annotation: DocAnnotationRecord | null) => void;
 }
 
 let loadingScope: string | null = null;
@@ -198,6 +200,18 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     const next: DocAnnotationRecord = { ...current, ...patch, updatedAt: Date.now() };
     const nextAll = { ...annotations };
     if (isEmpty(next)) delete nextAll[key];
+    else nextAll[key] = next;
+    set({ annotations: nextAll });
+    dirtyScope = scope;
+    dirty.set(key, ++editGeneration);
+    schedulePersist();
+  },
+  applyRemote: (key, annotation) => {
+    const { scope, annotations } = get();
+    if (!scope) return;
+    const nextAll = { ...annotations };
+    const next = annotation ? sanitize({ [key]: annotation })[key] : undefined;
+    if (!next || isEmpty(next)) delete nextAll[key];
     else nextAll[key] = next;
     set({ annotations: nextAll });
     dirtyScope = scope;

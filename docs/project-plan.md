@@ -132,12 +132,20 @@ Bloom, edge pulses, live materialization, camera choreography, starfield, auto-q
 - ✅ 2D toggle mode
 - ✅ Source-code / repository ingest
 
-### Phase 5 — Collaboration & Scale
+### Phase 5 ✅ — Collaboration & Scale
 - ✅ Shareable graph URLs (sanitized fragments; JSON export for oversized graphs)
 - ✅ Comparative diff view between a snapshot and the live graph
 - ✅ OCR for scanned PDFs (Tesseract.js, configurable language/pages)
 - ✅ Multi-corpus workspaces
 - ✅ Quota meter + selective embedding/original cache eviction
+
+### Phase 6 — Real-Time Collaboration & 2000+ Doc Scale
+- ✅ Privacy-first collaboration foundation: room/session creation, invite fragments, peer presence, follow mode
+- ✅ Cooperative semantic similarity chunking to prevent worker lockups on large corpora
+- ✅ Large-graph render budget with weighted edge capping for dense scenes
+- ✅ Chunked IndexedDB writes for large corpus persistence
+- ✅ 2000-doc synthetic benchmark generator for dev/local scale smoke tests
+- 🔜 Finalize the docs and publish the collaboration/privacy model for self-hosted signaling
 
 ---
 

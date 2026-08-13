@@ -44,6 +44,21 @@ describe('collaboration invites', () => {
     expect(parseCollabInvite('#collab=v1.')).toBeNull();
     expect(parseCollabInvite('https://example.test/#graph=v1.abc')).toBeNull();
   });
+
+  it('sanitizes dots out of room and key before encoding the invite', () => {
+    const invite = buildCollabInvite('team.alpha', 'secret.key');
+    expect(invite).toBe(`${COLLAB_FRAGMENT_PREFIX}teamalpha.secretkey`);
+    expect(parseCollabInvite(invite)).toEqual({
+      roomId: 'teamalpha',
+      sessionKey: 'secretkey',
+    });
+  });
+
+  it('returns null for invalid encoding or tokens that sanitize empty', () => {
+    expect(parseCollabInvite(`${COLLAB_FRAGMENT_PREFIX}%E0%A4%A.key`)).toBeNull();
+    expect(parseCollabInvite(`${COLLAB_FRAGMENT_PREFIX}room.%E0%A4%A`)).toBeNull();
+    expect(parseCollabInvite(`${COLLAB_FRAGMENT_PREFIX}!!!.@@@`)).toBeNull();
+  });
 });
 
 describe('annotation sync map', () => {

@@ -22,6 +22,8 @@ export interface CollabSessionConfig {
 export interface CollabSession {
   doc: Y.Doc;
   provider: WebrtcProvider | null;
+  view: Y.Map<any>;
+  annotations: Y.Map<DocAnnotationRecord>;
   roomId: string;
   sessionKey: string;
   signaling: string[];
@@ -41,11 +43,13 @@ export function sanitizeCollabToken(value: string): string {
 }
 
 export function buildCollabInvite(roomId: string, sessionKey: string): string {
-  if (!roomId || !sessionKey) {
+  const safeRoom = sanitizeCollabToken(roomId);
+  const safeKey = sanitizeCollabToken(sessionKey);
+  if (!safeRoom || !safeKey) {
     throw new Error('Both roomId and sessionKey are required to build a collaboration invite.');
   }
   requireCollabEnabled();
-  return `${COLLAB_FRAGMENT_PREFIX}${encodeURIComponent(roomId)}.${encodeURIComponent(sessionKey)}`;
+  return `${COLLAB_FRAGMENT_PREFIX}${encodeURIComponent(safeRoom)}.${encodeURIComponent(safeKey)}`;
 }
 
 export function parseCollabInvite(value: string): CollabSessionConfig | null {
@@ -57,12 +61,17 @@ export function parseCollabInvite(value: string): CollabSessionConfig | null {
     : null;
   if (!raw) return null;
 
-  const [roomId, sessionKey] = raw.split('.').map((part) => decodeURIComponent(part));
-  if (!roomId || !sessionKey) return null;
-  return {
-    roomId: sanitizeCollabToken(roomId),
-    sessionKey: sanitizeCollabToken(sessionKey),
-  };
+  const sep = raw.indexOf('.');
+  if (sep <= 0 || sep === raw.length - 1) return null;
+
+  try {
+    const roomId = sanitizeCollabToken(decodeURIComponent(raw.slice(0, sep)));
+    const sessionKey = sanitizeCollabToken(decodeURIComponent(raw.slice(sep + 1)));
+    if (!roomId || !sessionKey) return null;
+    return { roomId, sessionKey };
+  } catch {
+    return null;
+  }
 }
 
 export function createCollabSession(config: CollabSessionConfig): CollabSession {
@@ -79,11 +88,15 @@ export function createCollabSession(config: CollabSessionConfig): CollabSession 
     signaling,
     password: sessionKey,
   });
+  const view = doc.getMap<any>('view');
+  const annotations = createAnnotationMap(doc);
   provider.awareness.setLocalState({ displayName: 'Local user', cursor: null });
 
   return {
     doc,
     provider,
+    view,
+    annotations,
     roomId,
     sessionKey,
     signaling,

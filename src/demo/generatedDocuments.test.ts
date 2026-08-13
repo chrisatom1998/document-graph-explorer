@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import {
+  BENCHMARK_DEMO_DOCUMENT_COUNT,
   GENERATED_DEMO_DOCUMENT_COUNT,
+  createBenchmarkDemoDocuments,
   createGeneratedDemoDocuments,
   generatedDemoFilename,
   generatedDemoText,
@@ -178,6 +180,17 @@ describe('generated demo documents', () => {
     expect(headers.every((h) => h === '%PDF-')).toBe(true);
     // distinct content per record, same as the old text corpus guarantee
     expect(new Set(files.map((f) => f.bytes.byteLength)).size).toBeGreaterThan(20);
+  });
+
+  it('supports a 2000-doc benchmark corpus without drifting filenames or references', () => {
+    const files = createBenchmarkDemoDocuments(BENCHMARK_DEMO_DOCUMENT_COUNT);
+    expect(files).toHaveLength(BENCHMARK_DEMO_DOCUMENT_COUNT);
+    expect(files[0]!.name).toBe(generatedDemoFilename(1, BENCHMARK_DEMO_DOCUMENT_COUNT));
+    expect(files.at(-1)!.name).toBe(generatedDemoFilename(BENCHMARK_DEMO_DOCUMENT_COUNT, BENCHMARK_DEMO_DOCUMENT_COUNT));
+    expect(new Set(files.map((f) => f.path)).size).toBe(BENCHMARK_DEMO_DOCUMENT_COUNT);
+    expect(generatedDemoText(2000, undefined, BENCHMARK_DEMO_DOCUMENT_COUNT)).toContain(
+      generatedDemoFilename(1980, BENCHMARK_DEMO_DOCUMENT_COUNT),
+    );
   });
 
   it('round-trips a generated record through real pdf.js extraction', async () => {

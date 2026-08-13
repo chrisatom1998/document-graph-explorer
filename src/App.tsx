@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
-import DropZone from './ingest/DropZone';
 import Tooltip from './ui/Tooltip';
 import ChatLauncher from './ui/ChatLauncher';
 import ToastHost from './ui/ToastHost';
@@ -16,9 +15,11 @@ import { initPersistence, restoreSession } from './persistence/session';
 import { initializeCorpusRepository } from './persistence/corpusRepository';
 import { reportPersistenceUnavailable } from './persistence/cache';
 import { initChatHistorySync } from './persistence/chatHistorySync';
+import { useCollabStore } from './collab/store';
 import './styles.css';
 
 const NebulaCanvas = lazy(() => import('./scene/NebulaCanvas'));
+const DropZone = lazy(() => import('./ingest/DropZone'));
 // The welcome and ingest UI pull in the component library, but neither needs
 // to delay the interactive shell or graph bundle on a restored workspace.
 const EmptyState = lazy(() => import('./ui/EmptyState'));
@@ -67,12 +68,30 @@ export default function App() {
   const snapshotsOpen = useUiStore((s) => s.snapshotsOpen);
   const helpOpen = useUiStore((s) => s.helpOpen);
   const pathMode = useUiStore((s) => s.pathMode);
+  const dims = useUiStore((s) => s.dims);
+  const filter = useUiStore((s) => s.filter);
+  const topicNodesEnabled = useUiStore((s) => s.topicNodesEnabled);
+  const clusterCollapsed = useUiStore((s) => s.clusterCollapsed);
+  const followMode = useCollabStore((s) => s.followMode);
+  const lastRemoteView = useCollabStore((s) => s.lastRemoteView);
   const chatOpen = useChatStore((s) => s.isOpen);
 
   // Session restore + persistence hooks, once. Fresh starts stay empty until
   // the user adds files or explicitly loads the demo corpus from EmptyState.
   useEffect(() => {
     initPersistence();
+    if (window.location.hash.startsWith('#collab=')) {
+      const invite = window.location.hash;
+      const join = useCollabStore.getState().joinInvite(invite);
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `${window.location.pathname}${window.location.search}`,
+      );
+      void join.catch((error: unknown) => {
+        console.warn('Collaboration invite rejected', error);
+      });
+    }
     void (async () => {
       try {
         const { decodeShareFragment, hasShareFragment } = await import('./persistence/shareUrl');
@@ -126,6 +145,36 @@ export default function App() {
   useEffect(() => {
     initChatHistorySync();
   }, []);
+
+  useEffect(() => {
+    useCollabStore.getState().setLocalPresence({ selectedId: selectedId ?? null });
+  }, [selectedId]);
+
+  useEffect(() => {
+    const { session, followMode, syncSharedView } = useCollabStore.getState();
+    if (!session || followMode) return;
+    syncSharedView();
+  }, [selectedId, dims, filter, topicNodesEnabled, clusterCollapsed]);
+
+  useEffect(() => {
+    if (!followMode || !lastRemoteView) return;
+    const localView = {
+      dims,
+      selectedId,
+      topicNodesEnabled,
+      clusterCollapsed,
+      filter,
+    };
+    const changed =
+      localView.dims !== lastRemoteView.dims ||
+      localView.selectedId !== lastRemoteView.selectedId ||
+      localView.topicNodesEnabled !== lastRemoteView.topicNodesEnabled ||
+      localView.clusterCollapsed !== lastRemoteView.clusterCollapsed ||
+      JSON.stringify(localView.filter) !== JSON.stringify(lastRemoteView.filter);
+    if (changed) {
+      useCollabStore.getState().setFollowMode(false);
+    }
+  }, [clusterCollapsed, dims, filter, followMode, lastRemoteView, selectedId, topicNodesEnabled]);
 
   // Auto-frame: while a fresh corpus is forming, re-fit the camera on every
   // layout settle so the nebula is always in view; stop after the settle that
@@ -291,7 +340,7 @@ export default function App() {
       <Suspense fallback={<div className="scene-loading" role="status" aria-label="Loading interactive graph" />}>
         <NebulaCanvas />
       </Suspense>
-      <DropZone />
+      <Suspense fallback={null}><DropZone /></Suspense>
       {!hasNodes && phase === 'idle' && (
         <Suspense fallback={null}><EmptyState /></Suspense>
       )}
