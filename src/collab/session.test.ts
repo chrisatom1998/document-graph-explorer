@@ -28,6 +28,7 @@ vi.mock('y-webrtc', () => {
 import { useSettingsStore } from '../store/settingsStore';
 import {
   COLLAB_FRAGMENT_PREFIX,
+  COLLAB_OFFLINE_MESSAGE,
   COLLAB_PEER_OPTS,
   buildCollabInvite,
   createAnnotationMap,
@@ -120,7 +121,10 @@ describe('collab runtime', () => {
   it('refuses to create a session while offline mode is on', () => {
     useSettingsStore.getState().setOfflineMode(true);
     try {
-      expect(() => createCollabSession({ roomId: 'room-off', sessionKey: 'abcd-1234' })).toThrow(/offline mode/i);
+      expect(() => createCollabSession({ roomId: 'room-off', sessionKey: 'abcd-1234' })).toThrow(
+        COLLAB_OFFLINE_MESSAGE,
+      );
+      expect(COLLAB_OFFLINE_MESSAGE).not.toMatch(/\bAI\b/i);
     } finally {
       useSettingsStore.getState().setOfflineMode(false);
     }

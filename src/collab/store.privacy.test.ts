@@ -126,6 +126,31 @@ describe('collab privacy: notes default-off and no disk paths', () => {
     expect(JSON.stringify(session?.annotations.toJSON() ?? {})).not.toContain('secret note');
   });
 
+  it('pulls existing peer notes when opting in mid-session', async () => {
+    useCorpusStore.getState().setLocalState(
+      [{ id: 'c1', name: 'C', updatedAt: 1, documentCount: 1, watching: false }],
+      'c1',
+    );
+    useAnnotationStore.getState().hydrate('c1', {});
+
+    await useCollabStore.getState().startSession('room-optin', 'key-optin');
+    const session = useCollabStore.getState().session;
+    expect(session).not.toBeNull();
+    session!.annotations.set('doc-peer', {
+      note: 'peer note',
+      tags: ['shared'],
+      pinned: false,
+      updatedAt: 20,
+    });
+    expect(useAnnotationStore.getState().annotations['doc-peer']).toBeUndefined();
+
+    useCollabStore.getState().setShareNotes(true);
+    await vi.waitFor(() => {
+      expect(useAnnotationStore.getState().annotations['doc-peer']?.note).toBe('peer note');
+      expect(useAnnotationStore.getState().annotations['doc-peer']?.tags).toEqual(['shared']);
+    });
+  });
+
   it('pushes local notes only after the user opts in', async () => {
     useCorpusStore.getState().setLocalState(
       [{ id: 'c1', name: 'C', updatedAt: 1, documentCount: 1, watching: false }],

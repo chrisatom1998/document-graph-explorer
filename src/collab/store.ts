@@ -723,6 +723,10 @@ async function bindAnnotationSync(session: CollabSession): Promise<() => void> {
       if (!remote || annotationTimestamp(local) >= annotationTimestamp(remote)) map.set(key, local);
       else applyMapChange(key);
     }
+    // Mid-session opt-in: apply peer notes already in the map that we do not have locally.
+    for (const key of map.keys()) {
+      if (!(key in localAtBind)) applyMapChange(key);
+    }
   });
 
   const unsubscribe = useAnnotationStore.subscribe((state, previous) => {

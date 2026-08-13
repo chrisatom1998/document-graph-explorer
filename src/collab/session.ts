@@ -10,11 +10,13 @@
 import * as Y from 'yjs';
 import { WebrtcProvider } from 'y-webrtc';
 import { AIRGAP, AIRGAP_MESSAGE } from '../airgap';
-import { isOffline, OFFLINE_MESSAGE } from '../offline';
+import { isOffline } from '../offline';
 import type { DocAnnotationRecord } from '../persistence/db';
 
 export const COLLAB_FRAGMENT_PREFIX = '#collab=v1.';
 export const DEFAULT_COLLAB_SIGNALING = ['wss://signaling.yjs.dev'];
+export const COLLAB_OFFLINE_MESSAGE =
+  'Offline mode is on — collaboration is disabled (no external network).';
 
 /**
  * y-webrtc / simple-peer default to Google + Twilio STUN when `iceServers` is
@@ -88,7 +90,7 @@ export function parseCollabInvite(value: string): CollabSessionConfig | null {
 export function createCollabSession(config: CollabSessionConfig): CollabSession {
   requireCollabEnabled();
   if (isOffline()) {
-    throw new Error(OFFLINE_MESSAGE);
+    throw new Error(COLLAB_OFFLINE_MESSAGE);
   }
   const roomId = sanitizeCollabToken(config.roomId);
   const sessionKey = sanitizeCollabToken(config.sessionKey);
