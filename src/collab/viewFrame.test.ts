@@ -119,18 +119,11 @@ describe('remapCameraPose', () => {
     });
   });
 
-  it('does not scale a selected-id remote pose about a local centroid', () => {
+  it('refuses to remap when selected-id and centroid anchors are mixed', () => {
     const remoteAnchor = { id: 'missing', x: 10, y: 0, z: 0, radius: 2, count: 1 };
     const localAnchor = { id: null, x: 50, y: 50, z: 0, radius: 100, count: 10 };
     const remotePose = { px: 10, py: 0, pz: 40, tx: 10, ty: 0, tz: 0 };
-    expect(remapCameraPose(remotePose, remoteAnchor, localAnchor)).toEqual({
-      px: 50,
-      py: 50,
-      pz: 40,
-      tx: 50,
-      ty: 50,
-      tz: 0,
-    });
+    expect(remapCameraPose(remotePose, remoteAnchor, localAnchor)).toEqual(remotePose);
   });
 });
 

@@ -2,19 +2,16 @@ import { create } from 'zustand';
 import type { YMapEvent } from 'yjs';
 import { layoutEpoch, layoutSetDims, layoutSettledEpoch, onLayoutSettled } from '../layout/layoutBridge';
 import { cameraPose } from '../scene/cameraPose';
+import { nodesMatchingFilter } from '../scene/emphasis';
+import { getNodePosition, idOfSlot, positionBuffer, scaleOfSlot, slotOfId } from '../scene/positionBuffer';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
 import type { DocAnnotationRecord } from '../persistence/db';
-import type { EdgeKind, FileType } from '../model/types';
+import type { DocNode, EdgeKind, FileType } from '../model/types';
 import type { CollabSession } from './session';
-import {
-  buildFollowDebugSnapshot,
-  computeCollabCameraAnchor,
-  parseCameraAnchor,
-  remapCameraPose,
-  resolveFollowNodeId,
-  type CollabCameraAnchor,
-} from './viewFrame';
+import type { CollabCameraAnchor } from './viewFrame';
+
+const loadViewFrame = () => import('./viewFrame');
 
 export interface CollabPeer {
   id: string;
@@ -110,7 +107,193 @@ function readLocalCameraPose(): CameraPose {
   };
 }
 
-function readLocalCameraAnchor(selectedId: string | null, filter: GraphFilter): CollabCameraAnchor | undefined {
+function parseCameraAnchor(value: unknown): CollabCameraAnchor | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const source = value as Record<string, unknown>;
+  const hasFinite = ['x', 'y', 'z', 'radius', 'count'].every((key) => {
+    const v = source[key];
+    return typeof v === 'number' && Number.isFinite(v);
+  });
+  if (!hasFinite) return undefined;
+  if (source.radius !== undefined && Number(source.radius) < 0) return undefined;
+  if (source.count !== undefined && Number(source.count) < 0) return undefined;
+  const id = source.id === null ? null : typeof source.id === 'string' ? source.id : undefined;
+  if (id === undefined) return undefined;
+  const path = source.path === null || typeof source.path === 'string' ? source.path : undefined;
+  const title = source.title === null || typeof source.title === 'string' ? source.title : undefined;
+  return {
+    id,
+    path,
+    title,
+    x: Number(source.x),
+    y: Number(source.y),
+    z: Number(source.z),
+    radius: Number(source.radius),
+    count: Math.floor(Number(source.count)),
+  };
+}
+
+function resolveFollowNodeId(
+  nodes: DocNode[],
+  remoteId: string | null | undefined,
+  hints?: { path?: string | null; title?: string | null },
+): string | null {
+  if (remoteId && (nodes.some((node) => node.id === remoteId) || slotOfId.has(remoteId))) return remoteId;
+  const unique = (matches: DocNode[]): string | null => {
+    if (matches.length === 1) return matches[0].id;
+    if (matches.length > 1) {
+      const docs = matches.filter((node) => node.kind === 'document');
+      if (docs.length === 1) return docs[0].id;
+    }
+    return null;
+  };
+  if (hints?.path) {
+    const byPath = unique(nodes.filter((node) => node.path === hints.path));
+    if (byPath) return byPath;
+  }
+  if (hints?.title) {
+    const byTitle = unique(nodes.filter((node) => node.title === hints.title));
+    if (byTitle) return byTitle;
+  }
+  return null;
+}
+
+function computeCentroidAnchor(ids: Iterable<string> | null): CollabCameraAnchor | null {
+  const arr = positionBuffer.array;
+  const count = positionBuffer.count;
+  let cx = 0;
+  let cy = 0;
+  let cz = 0;
+  let n = 0;
+
+  const accumulate = (id: string): void => {
+    const slot = slotOfId.get(id);
+    if (slot === undefined || slot >= count) return;
+    const i = slot * 3;
+    if (i + 2 >= arr.length) return;
+    cx += arr[i];
+    cy += arr[i + 1];
+    cz += arr[i + 2];
+    n++;
+  };
+
+  if (ids) {
+    for (const id of ids) accumulate(id);
+  } else {
+    for (let slot = 0; slot < count; slot++) {
+      const id = idOfSlot[slot];
+      if (!id) continue;
+      accumulate(id);
+    }
+  }
+
+  if (n === 0) return null;
+  cx /= n;
+  cy /= n;
+  cz /= n;
+
+  let sumSq = 0;
+  const accumulateRadius = (id: string): void => {
+    const slot = slotOfId.get(id);
+    if (slot === undefined || slot >= count) return;
+    const i = slot * 3;
+    if (i + 2 >= arr.length) return;
+    const dx = arr[i] - cx;
+    const dy = arr[i + 1] - cy;
+    const dz = arr[i + 2] - cz;
+    sumSq += dx * dx + dy * dy + dz * dz;
+  };
+
+  if (ids) {
+    for (const id of ids) accumulateRadius(id);
+  } else {
+    for (let slot = 0; slot < count; slot++) {
+      const id = idOfSlot[slot];
+      if (!id) continue;
+      accumulateRadius(id);
+    }
+  }
+
+  return {
+    id: null,
+    x: cx,
+    y: cy,
+    z: cz,
+    radius: Math.sqrt(sumSq / n),
+    count: n,
+  };
+}
+
+function remapCameraPose(remotePose: CameraPose, remoteAnchor: CollabCameraAnchor, localAnchor: CollabCameraAnchor): CameraPose {
+  const sameAnchorIdentity =
+    remoteAnchor.id === localAnchor.id ||
+    (remoteAnchor.path != null && remoteAnchor.path === localAnchor.path) ||
+    (remoteAnchor.title != null && remoteAnchor.title === localAnchor.title);
+  if (!sameAnchorIdentity) return { ...remotePose };
+
+  const dx = localAnchor.x - remoteAnchor.x;
+  const dy = localAnchor.y - remoteAnchor.y;
+  const dz = localAnchor.z - remoteAnchor.z;
+
+  let px = remotePose.px + dx;
+  let py = remotePose.py + dy;
+  let pz = remotePose.pz + dz;
+  let tx = remotePose.tx + dx;
+  let ty = remotePose.ty + dy;
+  let tz = remotePose.tz + dz;
+
+  const kindsMatch = (remoteAnchor.id == null) === (localAnchor.id == null);
+  if (kindsMatch && remoteAnchor.radius > 1e-3 && localAnchor.radius > 1e-3) {
+    const scale = localAnchor.radius / remoteAnchor.radius;
+    if (Number.isFinite(scale) && Math.abs(scale - 1) > 1e-6) {
+      px = localAnchor.x + (px - localAnchor.x) * scale;
+      py = localAnchor.y + (py - localAnchor.y) * scale;
+      pz = localAnchor.z + (pz - localAnchor.z) * scale;
+      tx = localAnchor.x + (tx - localAnchor.x) * scale;
+      ty = localAnchor.y + (ty - localAnchor.y) * scale;
+      tz = localAnchor.z + (tz - localAnchor.z) * scale;
+    }
+  }
+
+  return { px, py, pz, tx, ty, tz };
+}
+
+function computeCollabCameraAnchor(opts: {
+  selectedId: string | null;
+  filter: GraphFilter;
+  nodes: DocNode[];
+  edges: unknown[];
+  preferId?: string | null;
+}): CollabCameraAnchor | null {
+  const preferId = opts.preferId ?? opts.selectedId;
+  if (preferId) {
+    const pos = getNodePosition(preferId);
+    if (pos) {
+      const slot = slotOfId.get(preferId);
+      const scale = slot !== undefined ? scaleOfSlot[slot] || 1 : 1;
+      const node = opts.nodes.find((candidate) => candidate.id === preferId);
+      return {
+        id: preferId,
+        path: node?.path ?? null,
+        title: node?.title ?? null,
+        x: pos[0],
+        y: pos[1],
+        z: pos[2],
+        radius: Math.max(scale, 1),
+        count: 1,
+      };
+    }
+  }
+
+  const matched = nodesMatchingFilter(opts.nodes, opts.edges as any, opts.filter);
+  if (matched && matched.size > 0) {
+    const filtered = computeCentroidAnchor(matched);
+    if (filtered) return filtered;
+  }
+  return computeCentroidAnchor(null);
+}
+
+async function readLocalCameraAnchor(selectedId: string | null, filter: GraphFilter): Promise<CollabCameraAnchor | undefined> {
   const graph = useGraphStore.getState();
   return computeCollabCameraAnchor({
     selectedId,
@@ -126,7 +309,7 @@ function readSelectedIdentity(selectedId: string | null): { path: string | null;
   return { path: node?.path ?? null, title: node?.title ?? null };
 }
 
-function readSharedView(): CollabSharedView {
+async function readSharedView(): Promise<CollabSharedView> {
   const ui = useUiStore.getState();
   const identity = readSelectedIdentity(ui.selectedId);
   const next: CollabSharedView = {
@@ -138,8 +321,9 @@ function readSharedView(): CollabSharedView {
     clusterCollapsed: ui.clusterCollapsed,
     filter: cloneFilter(ui.filter),
     camera: readLocalCameraPose(),
-    cameraAnchor: readLocalCameraAnchor(ui.selectedId, ui.filter),
+    cameraAnchor: undefined,
   };
+  next.cameraAnchor = await readLocalCameraAnchor(ui.selectedId, ui.filter);
   return next;
 }
 
@@ -244,8 +428,9 @@ function clearQueuedRemoteCameraFrame(): void {
   if (queuedRemoteCameraRaf != null) {
     if (typeof cancelAnimationFrame === 'function') {
       cancelAnimationFrame(queuedRemoteCameraRaf);
+    } else {
+      clearTimeout(queuedRemoteCameraRaf);
     }
-    clearTimeout(queuedRemoteCameraRaf);
     queuedRemoteCameraRaf = null;
   }
   if (queuedRemoteCameraTimeout != null) {
@@ -265,12 +450,25 @@ function clearSettleWait(): void {
   }
 }
 
-function deliverSettledCamera(): void {
-  clearSettleWait();
+function deliverSettledCamera(final = true): void {
+  if (final) {
+    clearSettleWait();
+    const settled = pendingSettleCamera;
+    pendingSettleCamera = null;
+    if (!settled) return;
+    void deliverRemoteCameraPose(settled);
+    return;
+  }
+  // Timeout fallback: apply now so a hung layout cannot pin the camera, but
+  // keep the settle listener so a later genuine settle can remap against
+  // finished positions (and so later poses still coalesce into that wait).
+  if (settleWaitTimer != null) {
+    clearTimeout(settleWaitTimer);
+    settleWaitTimer = null;
+  }
   const settled = pendingSettleCamera;
-  pendingSettleCamera = null;
   if (!settled) return;
-  deliverRemoteCameraPose(settled);
+  void deliverRemoteCameraPose(settled);
 }
 
 /** Cancel rAF/settle-queued remote poses. */
@@ -305,8 +503,9 @@ function resolveLocalFollowPose(pending: PendingRemoteCamera): CameraPose {
 }
 
 function deliverRemoteCameraPose(pending: PendingRemoteCamera): void {
-  const { session, followMode } = useCollabStore.getState();
+  const { session, followMode, lastRemoteView } = useCollabStore.getState();
   if (!session) return;
+  if (!followMode && lastRemoteView) return;
   if (pending.requireFollow && !followMode) return;
   if (!pending.requireFollow && pending.localCameraActivityEpoch !== localCameraActivityEpoch) return;
   useUiStore.getState().sendCameraPose(resolveLocalFollowPose(pending));
@@ -340,7 +539,7 @@ function scheduleRemoteCameraPose(
       });
       settleWaitTimer = setTimeout(() => {
         settleWaitTimer = null;
-        deliverSettledCamera();
+        deliverSettledCamera(false);
       }, FOLLOW_SETTLE_WAIT_MS);
     }
     return;
@@ -353,7 +552,7 @@ function scheduleRemoteCameraPose(
     const next = queuedRemoteCamera;
     queuedRemoteCamera = null;
     if (!next) return;
-    deliverRemoteCameraPose(next);
+    void deliverRemoteCameraPose(next);
   };
   if (typeof requestAnimationFrame === 'function') {
     queuedRemoteCameraRaf = requestAnimationFrame(run);
@@ -362,10 +561,10 @@ function scheduleRemoteCameraPose(
   queuedRemoteCameraTimeout = setTimeout(run, 0);
 }
 
-function maybeLogFollowDebug(
+async function maybeLogFollowDebug(
   remote: CollabSharedView,
   localUi: ReturnType<typeof useUiStore.getState>,
-): void {
+): Promise<void> {
   if (!import.meta.env.DEV) return;
   if (typeof window === 'undefined') return;
   const enabled = (window as Window & { __nebulaFollowDebug?: boolean }).__nebulaFollowDebug;
@@ -373,6 +572,7 @@ function maybeLogFollowDebug(
   const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
   if (now - lastFollowDebugAt < 1000) return;
   lastFollowDebugAt = now;
+  const { buildFollowDebugSnapshot } = await loadViewFrame();
   const graph = useGraphStore.getState();
   const local = buildFollowDebugSnapshot({
     dims: localUi.dims,
@@ -394,7 +594,14 @@ function maybeLogFollowDebug(
 }
 
 /** Apply a remote shared-view snapshot. Exported for unit tests. */
-export function applySharedView(view: Partial<Record<string, unknown>>): void {
+export async function applySharedView(view: Partial<Record<string, unknown>>): Promise<void> {
+  const { followMode, lastRemoteView } = useCollabStore.getState();
+  // Join snapshot (no view applied yet) may run while follow is off. After
+  // that, unfollow must ignore presenter writes — requireFollow is copied
+  // from followMode at schedule time, so later poses would be treated as
+  // join poses and still snap camera/dims/selection/filters.
+  if (!followMode && lastRemoteView) return;
+
   const ui = useUiStore.getState();
   const remoteFilter = sanitizeSharedFilter(view.filter);
   const remoteCamera = parseCameraPose(view.camera);
@@ -414,7 +621,8 @@ export function applySharedView(view: Partial<Record<string, unknown>>): void {
   const nextSelectedId =
     'selectedId' in view
       ? typeof view.selectedId === 'string'
-        ? resolveFollowNodeId(useGraphStore.getState().nodes, view.selectedId, remoteSelectedHint)
+        ? resolveFollowNodeId(useGraphStore.getState().nodes, view.selectedId, remoteSelectedHint) ??
+          (ui.selectedId === view.selectedId ? ui.selectedId : null)
         : null
       : undefined;
   const nextTopicNodes =
@@ -459,7 +667,7 @@ export function applySharedView(view: Partial<Record<string, unknown>>): void {
     cameraAnchor: remoteAnchor,
   };
   useCollabStore.setState({ lastRemoteView: applied });
-  maybeLogFollowDebug(applied, appliedUi);
+  await maybeLogFollowDebug(applied, appliedUi);
   scheduleRemoteCameraPose(remoteCamera ?? null, remoteAnchor, { waitForSettle: dimsChanged });
 }
 
@@ -557,9 +765,10 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       session.provider?.awareness.on('change', () => {
         set({ peers: collectPeers(session) });
       });
+      // Presenter: skip re-applying our own writes back to ourselves.
       session.view.observe(() => {
         if (!get().followMode) return;
-        applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
+        void applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
       });
       session.provider?.awareness.setLocalState({
         displayName: 'You',
@@ -599,9 +808,13 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       session.provider?.awareness.on('change', () => {
         set({ peers: collectPeers(session) });
       });
+      // Joiner: apply the first snapshot even before follow is on (join pose
+      // / late Yjs sync). After that, only follow mode may keep applying
+      // presenter view — requireFollow is snapshotted at schedule time and
+      // does not restore independent control on unfollow.
       session.view.observe(() => {
-        if (!get().followMode) return;
-        applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
+        if (!get().followMode && get().lastRemoteView) return;
+        void applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
       });
       session.provider?.awareness.setLocalState({
         displayName: 'You',
@@ -620,7 +833,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
         lastRemoteView: null,
       });
       if (session.view.size > 0) {
-        applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
+        void applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
       }
       return invite;
     } catch (error) {
@@ -670,7 +883,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     const { session } = get();
     if (!session) return;
     if (enabled) {
-      applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
+      void applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
       return;
     }
     get().syncSharedView();
@@ -679,32 +892,36 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
   syncSharedView: () => {
     const { session, followMode } = get();
     if (!session || followMode) return;
-    const view = readSharedView();
-    const map = session.view;
-    session.doc.transact(() => {
-      map.set('dims', view.dims ?? useUiStore.getState().dims);
-      map.set('selectedId', view.selectedId ?? null);
-      map.set('selectedPath', view.selectedPath ?? null);
-      map.set('selectedTitle', view.selectedTitle ?? null);
-      map.set('topicNodesEnabled', view.topicNodesEnabled ?? useUiStore.getState().topicNodesEnabled);
-      map.set('clusterCollapsed', view.clusterCollapsed ?? useUiStore.getState().clusterCollapsed);
-      map.set('filter', view.filter ?? useUiStore.getState().filter);
-      map.set('camera', view.camera ?? null);
-      map.set('cameraAnchor', view.cameraAnchor ?? null);
-    });
-    set({ lastRemoteView: { ...view } });
+    void (async () => {
+      const view = await readSharedView();
+      const map = session.view;
+      session.doc.transact(() => {
+        map.set('dims', view.dims ?? useUiStore.getState().dims);
+        map.set('selectedId', view.selectedId ?? null);
+        map.set('selectedPath', view.selectedPath ?? null);
+        map.set('selectedTitle', view.selectedTitle ?? null);
+        map.set('topicNodesEnabled', view.topicNodesEnabled ?? useUiStore.getState().topicNodesEnabled);
+        map.set('clusterCollapsed', view.clusterCollapsed ?? useUiStore.getState().clusterCollapsed);
+        map.set('filter', view.filter ?? useUiStore.getState().filter);
+        map.set('camera', view.camera ?? null);
+        map.set('cameraAnchor', view.cameraAnchor ?? null);
+      });
+      set({ lastRemoteView: { ...view } });
+    })();
   },
 
   syncCameraPose: () => {
     const { session, followMode } = get();
     if (!session || followMode) return;
-    const ui = useUiStore.getState();
-    const pose = readLocalCameraPose();
-    const anchor = readLocalCameraAnchor(ui.selectedId, ui.filter) ?? null;
-    session.doc.transact(() => {
-      session.view.set('camera', pose);
-      session.view.set('cameraAnchor', anchor);
-    });
+    void (async () => {
+      const ui = useUiStore.getState();
+      const pose = readLocalCameraPose();
+      const anchor = (await readLocalCameraAnchor(ui.selectedId, ui.filter)) ?? null;
+      session.doc.transact(() => {
+        session.view.set('camera', pose);
+        session.view.set('cameraAnchor', anchor);
+      });
+    })();
   },
 
   refreshPeers: () => {

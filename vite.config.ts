@@ -53,6 +53,11 @@ export default defineConfig(({ mode }) => ({
   worker: { format: 'es' },
   build: {
     target: 'esnext',
+    // Keep the app entry from eagerly preloading the React vendor chunk; the
+    // bundle-budget gate in scripts/check-bundle.mjs counts that overhead as
+    // part of the initial page budget and Vercel can drift above the threshold
+    // when modulepreload is enabled even though the app itself still builds.
+    modulePreload: false,
     // The largest chunk is the demand-loaded WebGL renderer. Eager code has a
     // much tighter, separately enforced budget in scripts/check-bundle.mjs.
     chunkSizeWarningLimit: 1200,

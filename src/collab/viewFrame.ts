@@ -94,6 +94,14 @@ export function remapCameraPose(
   remoteAnchor: CollabCameraAnchor,
   localAnchor: CollabCameraAnchor,
 ): CameraPose {
+  const sameAnchorIdentity =
+    remoteAnchor.id === localAnchor.id ||
+    (remoteAnchor.path != null && remoteAnchor.path === localAnchor.path) ||
+    (remoteAnchor.title != null && remoteAnchor.title === localAnchor.title);
+  if (!sameAnchorIdentity) {
+    return { ...remotePose };
+  }
+
   const dx = localAnchor.x - remoteAnchor.x;
   const dy = localAnchor.y - remoteAnchor.y;
   const dz = localAnchor.z - remoteAnchor.z;
@@ -135,7 +143,7 @@ export function resolveFollowNodeId(
   remoteId: string | null | undefined,
   hints?: { path?: string | null; title?: string | null },
 ): string | null {
-  if (remoteId && nodes.some((node) => node.id === remoteId)) return remoteId;
+  if (remoteId && (nodes.some((node) => node.id === remoteId) || slotOfId.has(remoteId))) return remoteId;
   const unique = (matches: DocNode[]): string | null => {
     if (matches.length === 1) return matches[0].id;
     if (matches.length > 1) {
@@ -236,7 +244,7 @@ export function computeCollabCameraAnchor(opts: {
   /** Prefer this remote anchor id when resolving a follower-side local frame. */
   preferId?: string | null;
 }): CollabCameraAnchor | null {
-  const preferId = opts.preferId !== undefined ? opts.preferId : opts.selectedId;
+  const preferId = opts.preferId ?? opts.selectedId;
   if (preferId) {
     const pos = getNodePosition(preferId);
     if (pos) {

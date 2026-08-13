@@ -148,8 +148,8 @@ describe('applySharedView', () => {
     vi.useRealTimers();
   });
 
-  it('does not call layoutSetDims when remote dims match the local value', () => {
-    applySharedView({
+  it('does not call layoutSetDims when remote dims match the local value', async () => {
+    await applySharedView({
       dims: 3,
       selectedId: null,
       topicNodesEnabled: false,
@@ -160,8 +160,8 @@ describe('applySharedView', () => {
     expect(layoutSetDims).not.toHaveBeenCalled();
   });
 
-  it('calls layoutSetDims once when dims change and waits for layout settle before posing', () => {
-    applySharedView({
+  it('calls layoutSetDims once when dims change and waits for layout settle before posing', async () => {
+    await applySharedView({
       dims: 2,
       camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
     });
@@ -176,8 +176,8 @@ describe('applySharedView', () => {
     ]);
   });
 
-  it('ignores a stale settle that predates the dims change', () => {
-    applySharedView({
+  it('ignores a stale settle that predates the dims change', async () => {
+    await applySharedView({
       dims: 2,
       camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
     });
@@ -192,12 +192,12 @@ describe('applySharedView', () => {
     ]);
   });
 
-  it('waits for the later dims settle when dims toggle again before cooling', () => {
-    applySharedView({
+  it('waits for the later dims settle when dims toggle again before cooling', async () => {
+    await applySharedView({
       dims: 2,
       camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
     });
-    applySharedView({
+    await applySharedView({
       dims: 3,
       camera: { px: 7, py: 8, pz: 9, tx: 10, ty: 11, tz: 12 },
     });
@@ -214,12 +214,12 @@ describe('applySharedView', () => {
     ]);
   });
 
-  it('does not apply a queued rAF pose while waiting for a dims settle', () => {
-    applySharedView({
+  it('does not apply a queued rAF pose while waiting for a dims settle', async () => {
+    await applySharedView({
       dims: 3,
       camera: { px: 0, py: 0, pz: 40, tx: 0, ty: 0, tz: 0 },
     });
-    applySharedView({
+    await applySharedView({
       dims: 2,
       camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
     });
@@ -234,11 +234,11 @@ describe('applySharedView', () => {
     ]);
   });
 
-  it('remaps the remote pose into the local selected-node frame', () => {
+  it('remaps the remote pose into the local selected-node frame', async () => {
     seedNode('doc', 0, [100, 50, -20]);
     useUiStore.setState({ selectedId: 'doc' });
 
-    applySharedView({
+    await applySharedView({
       dims: 3,
       selectedId: 'doc',
       camera: { px: 10, py: 0, pz: 40, tx: 10, ty: 0, tz: 0 },
@@ -258,11 +258,11 @@ describe('applySharedView', () => {
     ]);
   });
 
-  it('uses translation only when a remote selected-node anchor is missing locally', () => {
+  it('does not remap a selected-id remote pose onto a local centroid when the id is missing', async () => {
     seedNode('a', 0, [0, 0, 0]);
     seedNode('b', 1, [100, 0, 0]);
 
-    applySharedView({
+    await applySharedView({
       dims: 3,
       selectedId: 'missing',
       camera: { px: 0, py: 0, pz: 20, tx: 0, ty: 0, tz: 0 },
@@ -271,20 +271,98 @@ describe('applySharedView', () => {
 
     vi.runOnlyPendingTimers();
     expect(delivered).toEqual([
-      {
-        px: 50,
-        py: 0,
-        pz: 20,
-        tx: 50,
-        ty: 0,
-        tz: 0,
-      },
+      { px: 0, py: 0, pz: 20, tx: 0, ty: 0, tz: 0 },
     ]);
   });
 
-  it('cancels a delayed join pose after deliberate local camera activity', () => {
+  it('delivers the settle-wait pose after timeout if layout never settles', async () => {
+    await applySharedView({
+      dims: 2,
+      camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    });
+    expect(delivered).toHaveLength(0);
+    vi.advanceTimersByTime(FOLLOW_SETTLE_WAIT_MS);
+    expect(delivered).toEqual([
+      { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    ]);
+  });
+
+  it('remaps again on the real layout settle after the settle-wait timeout', async () => {
+    seedNode('doc', 0, [0, 0, 0]);
+    await applySharedView({
+      dims: 2,
+      selectedId: 'doc',
+      camera: { px: 10, py: 0, pz: 40, tx: 10, ty: 0, tz: 0 },
+      cameraAnchor: { id: 'doc', x: 10, y: 0, z: 0, radius: 2, count: 1 },
+    });
+    vi.advanceTimersByTime(FOLLOW_SETTLE_WAIT_MS);
+    expect(delivered).toEqual([
+      { px: 0, py: 0, pz: 40, tx: 0, ty: 0, tz: 0 },
+    ]);
+
+    seedNode('doc', 0, [100, 50, -20]);
+    fireSettled(layoutTest.postedEpoch);
+    expect(delivered.at(-1)).toEqual({
+      px: 100,
+      py: 50,
+      pz: 20,
+      tx: 100,
+      ty: 50,
+      tz: -20,
+    });
+  });
+
+  it('still waits for layout settle before applying a later pose after timeout', async () => {
+    await applySharedView({
+      dims: 2,
+      camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    });
+    vi.advanceTimersByTime(FOLLOW_SETTLE_WAIT_MS);
+    expect(delivered).toHaveLength(1);
+
+    await applySharedView({
+      dims: 2,
+      camera: { px: 7, py: 8, pz: 9, tx: 10, ty: 11, tz: 12 },
+    });
+    vi.advanceTimersByTime(0);
+    expect(delivered).toHaveLength(1);
+
+    fireSettled(layoutTest.postedEpoch);
+    expect(delivered).toEqual([
+      { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+      { px: 7, py: 8, pz: 9, tx: 10, ty: 11, tz: 12 },
+    ]);
+  });
+
+  it('does not apply presenter view after follow mode is turned off', async () => {
+    await applySharedView({
+      dims: 3,
+      topicNodesEnabled: true,
+      camera: { px: 0, py: 0, pz: 40, tx: 0, ty: 0, tz: 0 },
+    });
+    vi.runOnlyPendingTimers();
+    expect(useUiStore.getState().topicNodesEnabled).toBe(true);
+    expect(delivered).toHaveLength(1);
+
+    useCollabStore.getState().setFollowMode(false);
+    await applySharedView({
+      dims: 2,
+      topicNodesEnabled: false,
+      filter: { ...DEFAULT_FILTER, minDegree: 4 },
+      camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    });
+    vi.runOnlyPendingTimers();
+
+    expect(useUiStore.getState().dims).toBe(3);
+    expect(useUiStore.getState().topicNodesEnabled).toBe(true);
+    expect(useUiStore.getState().filter.minDegree).toBe(DEFAULT_FILTER.minDegree);
+    expect(layoutSetDims).not.toHaveBeenCalled();
+    expect(delivered).toHaveLength(1);
+  });
+
+  it('cancels a delayed join pose after deliberate local camera activity', async () => {
     useCollabStore.setState({ followMode: false });
-    applySharedView({
+    await applySharedView({
       dims: 2,
       camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
     });
@@ -294,8 +372,8 @@ describe('applySharedView', () => {
     expect(delivered).toHaveLength(0);
   });
 
-  it('skips a deferred follow pose after follow mode is turned off', () => {
-    applySharedView({
+  it('skips a deferred follow pose after follow mode is turned off', async () => {
+    await applySharedView({
       dims: 3,
       camera: { px: 0, py: 0, pz: 40, tx: 0, ty: 0, tz: 0 },
     });
@@ -304,7 +382,7 @@ describe('applySharedView', () => {
     expect(delivered).toHaveLength(0);
   });
 
-  it('applies follow selection and camera onto a local node matched by path/title', () => {
+  it('applies follow selection and camera onto a local node matched by path/title', async () => {
     const local: DocNode = {
       id: 'local-sla',
       title: 'Enterprise Service Level Agreement',
@@ -323,7 +401,7 @@ describe('applySharedView', () => {
     useGraphStore.getState().addNodes([local]);
     seedNode('local-sla', 0, [100, 50, -20]);
 
-    applySharedView({
+    await applySharedView({
       dims: 3,
       selectedId: 'host-sla',
       selectedPath: 'demo/sla-agreement-enterprise.pdf',
@@ -355,8 +433,8 @@ describe('applySharedView', () => {
     ]);
   });
 
-  it('delivers the settle-wait pose after timeout if layout never settles', () => {
-    applySharedView({
+  it('delivers the settle-wait pose after timeout if layout never settles', async () => {
+    await applySharedView({
       dims: 2,
       camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
     });
