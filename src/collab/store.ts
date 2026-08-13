@@ -12,6 +12,7 @@ import {
   computeCollabCameraAnchor,
   parseCameraAnchor,
   remapCameraPose,
+  resolveFollowNodeId,
   type CollabCameraAnchor,
 } from './viewFrame';
 
@@ -26,6 +27,8 @@ export interface CollabPeer {
 export interface CollabSharedView {
   dims?: 2 | 3;
   selectedId?: string | null;
+  selectedPath?: string | null;
+  selectedTitle?: string | null;
   topicNodesEnabled?: boolean;
   clusterCollapsed?: boolean;
   filter?: GraphFilter;
@@ -61,13 +64,13 @@ function randomCollabToken(byteLength: number): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-function collectPeers(session: CollabSession): Record<string, CollabPeer> {
+export function collectPeers(session: CollabSession): Record<string, CollabPeer> {
   const next: Record<string, CollabPeer> = {};
-  const states = session.provider?.awareness.getStates() ?? new Map();
-  const localClientId = session.provider?.awareness.clientID;
+  const awareness = session.provider?.awareness;
+  const states = awareness?.getStates() ?? new Map();
+  const localId = awareness?.clientID;
   for (const [clientId, state] of states.entries()) {
-    // Exclude the local client — the peer count should reflect remote peers only.
-    if (localClientId !== undefined && clientId === localClientId) continue;
+    if (localId !== undefined && clientId === localId) continue;
     const peer = state as Partial<CollabPeer> & { displayName?: string };
     next[String(clientId)] = {
       id: String(clientId),
@@ -117,11 +120,20 @@ function readLocalCameraAnchor(selectedId: string | null, filter: GraphFilter): 
   }) ?? undefined;
 }
 
+function readSelectedIdentity(selectedId: string | null): { path: string | null; title: string | null } {
+  if (!selectedId) return { path: null, title: null };
+  const node = useGraphStore.getState().nodes.find((candidate) => candidate.id === selectedId);
+  return { path: node?.path ?? null, title: node?.title ?? null };
+}
+
 function readSharedView(): CollabSharedView {
   const ui = useUiStore.getState();
+  const identity = readSelectedIdentity(ui.selectedId);
   const next: CollabSharedView = {
     dims: ui.dims,
     selectedId: ui.selectedId,
+    selectedPath: identity.path,
+    selectedTitle: identity.title,
     topicNodesEnabled: ui.topicNodesEnabled,
     clusterCollapsed: ui.clusterCollapsed,
     filter: cloneFilter(ui.filter),
@@ -230,7 +242,7 @@ let settleWaitTimer: ReturnType<typeof setTimeout> | null = null;
 function clearQueuedRemoteCameraFrame(): void {
   queuedRemoteCamera = null;
   if (queuedRemoteCameraRaf != null) {
-    if (typeof cancelAnimationFrame === "function") {
+    if (typeof cancelAnimationFrame === 'function') {
       cancelAnimationFrame(queuedRemoteCameraRaf);
     }
     clearTimeout(queuedRemoteCameraRaf);
@@ -277,9 +289,13 @@ function resolveLocalFollowPose(pending: PendingRemoteCamera): CameraPose {
   if (!pending.anchor) return pending.pose;
   const ui = useUiStore.getState();
   const graph = useGraphStore.getState();
+  const resolvedId = resolveFollowNodeId(graph.nodes, pending.anchor.id, {
+    path: pending.anchor.path,
+    title: pending.anchor.title,
+  });
   const localAnchor = computeCollabCameraAnchor({
     selectedId: ui.selectedId,
-    preferId: pending.anchor.id,
+    preferId: resolvedId,
     filter: ui.filter,
     nodes: graph.nodes,
     edges: graph.edges,
@@ -385,8 +401,23 @@ export function applySharedView(view: Partial<Record<string, unknown>>): void {
   const remoteAnchor = parseCameraAnchor(view.cameraAnchor);
   const nextDims =
     typeof view.dims === 'number' && (view.dims === 2 || view.dims === 3) ? view.dims : undefined;
+  const remoteSelectedHint = {
+    path:
+      typeof view.selectedPath === 'string'
+        ? view.selectedPath
+        : remoteAnchor?.path,
+    title:
+      typeof view.selectedTitle === 'string'
+        ? view.selectedTitle
+        : remoteAnchor?.title,
+  };
   const nextSelectedId =
-    'selectedId' in view ? (typeof view.selectedId === 'string' ? view.selectedId : null) : undefined;
+    'selectedId' in view
+      ? typeof view.selectedId === 'string'
+        ? resolveFollowNodeId(useGraphStore.getState().nodes, view.selectedId, remoteSelectedHint) ??
+          (ui.selectedId === view.selectedId ? ui.selectedId : null)
+        : null
+      : undefined;
   const nextTopicNodes =
     'topicNodesEnabled' in view && typeof view.topicNodesEnabled === 'boolean'
       ? view.topicNodesEnabled
@@ -656,6 +687,8 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     session.doc.transact(() => {
       map.set('dims', view.dims ?? useUiStore.getState().dims);
       map.set('selectedId', view.selectedId ?? null);
+      map.set('selectedPath', view.selectedPath ?? null);
+      map.set('selectedTitle', view.selectedTitle ?? null);
       map.set('topicNodesEnabled', view.topicNodesEnabled ?? useUiStore.getState().topicNodesEnabled);
       map.set('clusterCollapsed', view.clusterCollapsed ?? useUiStore.getState().clusterCollapsed);
       map.set('filter', view.filter ?? useUiStore.getState().filter);

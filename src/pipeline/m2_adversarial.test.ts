@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { MAX_EMBED_TEXT_BYTES } from '../config';
 import { chunkText } from './chunker';
-import { sha256Hex } from './hash';
+import { fnv1a32, fnv1a32Hex, sha256Hex } from './hash';
 import {
   addToSemanticIndex,
   buildSemanticIndex,
@@ -35,6 +35,47 @@ describe('Adversarial Test Suite - Milestone 2', () => {
         const actualFromBuffer = await sha256Hex(bytes.buffer);
         expect(actualFromBuffer).toBe(expected);
       }
+    });
+
+    it('fnv1a32 and fnv1a32Hex consistency and standard FNV-1a 32-bit test vectors', () => {
+      // Standard FNV-1a 32 test vectors reference values:
+      // "" -> 0x811c9dc5 = 2166136261
+      // "a" -> 0xe40c292c = 3826002220
+      // "foobar" -> 0xbf9cf968 = 3214735720
+      expect(fnv1a32('')).toBe(2166136261);
+      expect(fnv1a32Hex('')).toBe('811c9dc5');
+
+      expect(fnv1a32('a')).toBe(3826002220);
+      expect(fnv1a32Hex('a')).toBe('e40c292c');
+
+      expect(fnv1a32('foobar')).toBe(3214735720);
+      expect(fnv1a32Hex('foobar')).toBe('bf9cf968');
+
+      // Check invariant: fnv1a32Hex(s) MUST ALWAYS equal fnv1a32(s).toString(16).padStart(8, '0')
+      const samples = [
+        '',
+        'a',
+        'b',
+        'hello',
+        'world',
+        'document-graph-explorer',
+        '1234567890',
+        '🎉',
+      ];
+      for (const sample of samples) {
+        const num = fnv1a32(sample);
+        const hex = fnv1a32Hex(sample);
+        expect(hex).toBe(num.toString(16).padStart(8, '0'));
+        expect(num).toBeGreaterThanOrEqual(0);
+        expect(num).toBeLessThanOrEqual(0xffffffff);
+      }
+    });
+
+    it('fnv1a32 treats string and Uint8Array identical for multi-byte UTF-8', () => {
+      const text = 'Complex 🌟 Multi-Byte UTF-8 String: €100 for café & naïve';
+      const bytes = new TextEncoder().encode(text);
+      expect(fnv1a32(bytes)).toBe(fnv1a32(text));
+      expect(fnv1a32Hex(bytes)).toBe(fnv1a32Hex(text));
     });
   });
 

@@ -13,6 +13,7 @@ import {
   computeCollabCameraAnchor,
   parseCameraAnchor,
   remapCameraPose,
+  resolveFollowNodeId,
 } from './viewFrame';
 
 function seedLayout(entries: Array<{ id: string; slot: number; pos: [number, number, number]; scale?: number }>): void {
@@ -140,6 +141,8 @@ describe('computeCollabCameraAnchor', () => {
     });
     expect(anchor).toEqual({
       id: 'b',
+      path: 'b',
+      title: 'b',
       x: 10,
       y: 0,
       z: 0,
@@ -178,5 +181,22 @@ describe('computeCollabCameraAnchor', () => {
     });
     expect(anchor?.id).toBe('a');
     expect(anchor).toMatchObject({ x: 1, y: 2, z: 3 });
+  });
+});
+
+describe('resolveFollowNodeId', () => {
+  it('matches exact id first, then unique path, then unique title', () => {
+    const nodes = [doc('local-a'), doc('local-b')];
+    nodes[0] = { ...nodes[0], path: 'demo/sla-agreement-enterprise.pdf', title: 'Enterprise Service Level Agreement' };
+    nodes[1] = { ...nodes[1], path: 'demo/other.pdf', title: 'Other' };
+
+    expect(resolveFollowNodeId(nodes, 'local-a')).toBe('local-a');
+    expect(
+      resolveFollowNodeId(nodes, 'host-a', { path: 'demo/sla-agreement-enterprise.pdf' }),
+    ).toBe('local-a');
+    expect(
+      resolveFollowNodeId(nodes, 'host-a', { title: 'Enterprise Service Level Agreement' }),
+    ).toBe('local-a');
+    expect(resolveFollowNodeId(nodes, 'host-a', { path: 'demo/missing.pdf', title: 'Nope' })).toBeNull();
   });
 });

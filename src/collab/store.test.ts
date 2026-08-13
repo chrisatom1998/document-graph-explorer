@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CameraPose } from '../store/uiStore';
 import { DEFAULT_FILTER, useUiStore } from '../store/uiStore';
+import { useGraphStore } from '../store/graphStore';
+import type { DocNode } from '../model/types';
 import {
   idOfSlot,
   positionBuffer,
@@ -34,6 +36,7 @@ function fireSettled(epoch: number): void {
 import {
   applySharedView,
   clearDeferredRemoteCameras,
+  collectPeers,
   FOLLOW_SETTLE_WAIT_MS,
   noteLocalCameraActivity,
   sanitizeSharedFilter,
@@ -94,12 +97,16 @@ describe('applySharedView', () => {
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       return setTimeout(() => cb(performance.now()), 0) as unknown as number;
     });
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+      clearTimeout(id);
+    });
     layoutSetDims.mockClear();
     settledListeners.clear();
     layoutTest.postedEpoch = 0;
     layoutTest.settledEpoch = 0;
     delivered.length = 0;
     resetPositionBuffer();
+    useGraphStore.getState().reset();
     clearDeferredRemoteCameras();
     realSendCameraPose = useUiStore.getState().sendCameraPose;
     useUiStore.setState({
@@ -136,6 +143,7 @@ describe('applySharedView', () => {
     useUiStore.setState({ sendCameraPose: realSendCameraPose });
     useCollabStore.setState({ session: null, followMode: false, lastRemoteView: null });
     resetPositionBuffer();
+    useGraphStore.getState().reset();
     vi.unstubAllGlobals();
     vi.useRealTimers();
   });
@@ -299,5 +307,88 @@ describe('applySharedView', () => {
     useCollabStore.getState().setFollowMode(false);
     vi.runOnlyPendingTimers();
     expect(delivered).toHaveLength(0);
+  });
+
+  it('applies follow selection and camera onto a local node matched by path/title', () => {
+    const local: DocNode = {
+      id: 'local-sla',
+      title: 'Enterprise Service Level Agreement',
+      path: 'demo/sla-agreement-enterprise.pdf',
+      fileType: 'pdf',
+      kind: 'document',
+      cluster: 0,
+      degree: 1,
+      status: 'ok',
+      keywords: [],
+      topics: [],
+      entities: [],
+      summary: '',
+      wordCount: 10,
+    };
+    useGraphStore.getState().addNodes([local]);
+    seedNode('local-sla', 0, [100, 50, -20]);
+
+    applySharedView({
+      dims: 3,
+      selectedId: 'host-sla',
+      selectedPath: 'demo/sla-agreement-enterprise.pdf',
+      selectedTitle: 'Enterprise Service Level Agreement',
+      camera: { px: 10, py: 0, pz: 40, tx: 10, ty: 0, tz: 0 },
+      cameraAnchor: {
+        id: 'host-sla',
+        path: 'demo/sla-agreement-enterprise.pdf',
+        title: 'Enterprise Service Level Agreement',
+        x: 10,
+        y: 0,
+        z: 0,
+        radius: 2,
+        count: 1,
+      },
+    });
+
+    expect(useUiStore.getState().selectedId).toBe('local-sla');
+    vi.runOnlyPendingTimers();
+    expect(delivered).toEqual([
+      {
+        px: 100,
+        py: 50,
+        pz: 20,
+        tx: 100,
+        ty: 50,
+        tz: -20,
+      },
+    ]);
+  });
+
+  it('delivers the settle-wait pose after timeout if layout never settles', () => {
+    applySharedView({
+      dims: 2,
+      camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    });
+    expect(delivered).toHaveLength(0);
+    vi.advanceTimersByTime(FOLLOW_SETTLE_WAIT_MS);
+    expect(delivered).toEqual([
+      { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    ]);
+  });
+});
+
+describe('collectPeers', () => {
+  it('excludes the local awareness client from the peer list', () => {
+    const states = new Map<number, { displayName: string }>([
+      [7, { displayName: 'You' }],
+      [9, { displayName: 'Peer' }],
+    ]);
+    const session = {
+      provider: {
+        awareness: {
+          clientID: 7,
+          getStates: () => states,
+        },
+      },
+    };
+    expect(collectPeers(session as never)).toEqual({
+      '9': { id: '9', displayName: 'Peer', cursor: null, selectedId: null, camera: null },
+    });
   });
 });

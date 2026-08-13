@@ -86,6 +86,23 @@ describe('scanFolder', () => {
     expect(unsupported.getFile).not.toHaveBeenCalled();
   });
 
+  it('includes extensionless and unknown-extension files for text sniffing', async () => {
+    const license = fileHandle('LICENSE');
+    const rules = fileHandle('team.rules');
+    const png = fileHandle('icon.png');
+    const root = directoryHandle('vault', [
+      ['LICENSE', license.handle],
+      ['team.rules', rules.handle],
+      ['icon.png', png.handle],
+    ]);
+
+    await expect(scanFolder(root.handle)).resolves.toEqual([
+      { file: license.file, path: 'vault/LICENSE' },
+      { file: rules.file, path: 'vault/team.rules' },
+    ]);
+    expect(png.getFile).not.toHaveBeenCalled();
+  });
+
   it('includes source files and skips lockfiles, vendor trees, and gitignored paths', async () => {
     const app = fileHandle('app.ts');
     const readme = fileHandle('README.md');

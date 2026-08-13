@@ -158,6 +158,40 @@ describe('parseHtml', () => {
 
     expect(parsed.title).toBe('Canonical HTML Title');
   });
+
+  it('unwraps MHTML multipart archives before extracting visible text', () => {
+    const mhtml = [
+      'From: <Saved by Blink>',
+      'MIME-Version: 1.0',
+      'Content-Type: multipart/related;',
+      '\ttype="text/html";',
+      '\tboundary="----=_Boundary"',
+      '',
+      '------=_Boundary',
+      'Content-Type: text/html; charset="utf-8"',
+      'Content-Transfer-Encoding: quoted-printable',
+      'Content-Location: https://example.com/',
+      '',
+      '<html><head><title>Saved Page</title></head><body>',
+      '<h1>Hello</h1>',
+      '<p>Quoted=20printable text.</p>',
+      '</body></html>',
+      '------=_Boundary',
+      'Content-Type: image/png',
+      'Content-Transfer-Encoding: base64',
+      '',
+      'iVBORw0KGgo=',
+      '------=_Boundary--',
+      '',
+    ].join('\r\n');
+    const parsed = parseHtml(new TextEncoder().encode(mhtml).buffer, 'page.mhtml');
+
+    expect(parsed.title).toBe('Saved Page');
+    expect(parsed.headings).toEqual(['Hello']);
+    expect(parsed.text).toContain('Quoted printable text.');
+    expect(parsed.text).not.toContain('MIME-Version');
+    expect(parsed.text).not.toContain('iVBORw0KGgo=');
+  });
 });
 
 // ---------------------------------------------------------------------------
