@@ -89,4 +89,49 @@ describe('entityEdges', () => {
     );
     expect(edges).toHaveLength(0);
   });
+
+  it('links a pair on ONE corpus-unique entity in a large corpus', () => {
+    // 10 docs; only a and b mention `refresh_token_flow` — that single shared
+    // identifier is a near-certain relationship even below minShared.
+    const filler = Array.from({ length: 8 }, (_, i) => ({
+      id: `f${i}`,
+      entities: [`Filler${i}`],
+    }));
+    const edges = entityEdges(
+      [
+        { id: 'a', entities: ['refresh_token_flow'] },
+        { id: 'b', entities: ['refresh_token_flow'] },
+        ...filler,
+      ],
+      params,
+    );
+    expect(edges.map((e) => e.id)).toEqual(['a->b:entity']);
+    expect(edges[0].evidence[0]).toContain('refresh_token_flow');
+  });
+
+  it('does not apply the unique-entity rule to short entities or small corpora', () => {
+    const filler = Array.from({ length: 8 }, (_, i) => ({
+      id: `f${i}`,
+      entities: [`Filler${i}`],
+    }));
+    // short acronym shared by exactly two docs in a big corpus: still no edge
+    const shortShared = entityEdges(
+      [
+        { id: 'a', entities: ['QA'] },
+        { id: 'b', entities: ['QA'] },
+        ...filler,
+      ],
+      params,
+    );
+    expect(shortShared).toHaveLength(0);
+    // long identifier, but a 2-doc corpus (df === 2 is meaningless): no edge
+    const tinyCorpus = entityEdges(
+      [
+        { id: 'a', entities: ['refresh_token_flow'] },
+        { id: 'b', entities: ['refresh_token_flow'] },
+      ],
+      params,
+    );
+    expect(tinyCorpus).toHaveLength(0);
+  });
 });

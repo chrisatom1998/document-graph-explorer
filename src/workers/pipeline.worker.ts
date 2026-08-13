@@ -15,7 +15,7 @@ import { extractEntities } from '../pipeline/entities';
 import { extractPhraseTf } from '../pipeline/phrases';
 import { summarize } from '../pipeline/summarize';
 import { tokenize, termFreq } from '../pipeline/tokenize';
-import { parseCode } from '../pipeline/parsers/code';
+import { extractCodeSymbols, parseCode } from '../pipeline/parsers/code';
 import { parseHtml } from '../pipeline/parsers/html';
 import { parseMarkdown } from '../pipeline/parsers/markdown';
 import { parseOffice } from '../pipeline/parsers/office';
@@ -340,10 +340,14 @@ async function handle(req: PoolRequest): Promise<void> {
         break;
       }
       case 'analyze': {
-        // pre-extracted text (pdf path): tokenize/entities/wordCount only,
-        // echoing the given title/status/warning. docLinks for pdf come from
-        // parsePdf on the main thread, so the worker leaves them empty.
-        const doc = analyzeText(req.text, req.title, [], [], [], req.status, req.warning);
+        // pre-extracted text (pdf path + cache backfill): tokenize/entities/
+        // wordCount only, echoing the given title/status/warning. docLinks for
+        // pdf come from parsePdf on the main thread, so the worker leaves them
+        // empty. Code files re-derive their defined symbols from the text so
+        // cache-hydrated corpora keep symbol-mention edges.
+        const headings =
+          req.fileType === 'code' ? extractCodeSymbols(req.text, req.name) : [];
+        const doc = analyzeText(req.text, req.title, headings, [], [], req.status, req.warning);
         respond({ requestId: req.requestId, type: 'parse:done', fileId: req.fileId, doc });
         break;
       }

@@ -276,6 +276,8 @@ interface LexMeta {
   phraseTf: Record<string, number>;
   totalTerms: number;
   fileName: string;
+  /** Top-level symbols defined in a code file (empty for other types). */
+  symbols: string[];
 }
 const lexMeta = new Map<string, LexMeta>();
 
@@ -541,7 +543,13 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<voi
         });
         return null;
       }
-      lexMeta.set(p.id, { tf: doc.tf, phraseTf: doc.phraseTf, totalTerms: doc.totalTerms, fileName: p.file.name });
+      lexMeta.set(p.id, {
+        tf: doc.tf,
+        phraseTf: doc.phraseTf,
+        totalTerms: doc.totalTerms,
+        fileName: p.file.name,
+        symbols: p.fileType === 'code' ? doc.headings : [],
+      });
       mdLinkTargetsStore.set(
         p.id,
         p.fileType === 'pdf' ? pdfLinks.map((l) => l.url) : doc.mdLinkTargets,
@@ -860,6 +868,7 @@ async function runLexicalPass(
       textLower: truncateToBytes(text, MAX_EMBED_TEXT_BYTES).toLowerCase(),
       mdLinkTargets: mdLinkTargetsStore.get(n.id) ?? [],
       entities: n.entities, // shared-entity edges (persisted on the node)
+      codeSymbols: meta?.symbols ?? [],
     };
   });
 
@@ -1331,6 +1340,7 @@ async function backfillLexMeta(pool: WorkerPool): Promise<void> {
         phraseTf: done.doc.phraseTf,
         totalTerms: done.doc.totalTerms,
         fileName,
+        symbols: n.fileType === 'code' ? done.doc.headings : [],
       });
     }),
   );
