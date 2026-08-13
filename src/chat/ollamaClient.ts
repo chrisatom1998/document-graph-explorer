@@ -9,6 +9,7 @@
 
 import type { ChatMessage } from '../store/chatStore';
 import { buildOpenRouterMessages, parseOpenRouterSseLine } from './openRouterClient';
+import { readSseErrorMessage, readSseStream } from './sseStream';
 
 export const OLLAMA_CHAT_ENDPOINT = 'http://127.0.0.1:11434/v1/chat/completions';
 
@@ -21,8 +22,8 @@ interface StreamOptions {
 }
 
 function describeOllamaFailure(err: unknown): Error {
-  // A connection refused surfaces as an opaque TypeError("Failed to fetch").
-  // Name the by-far-likeliest cause instead of echoing that.
+  // A connection refusal surfaces as an opaque TypeError("Failed to fetch").
+  // Name the most likely cause instead of echoing the browser's generic error.
   if (err instanceof TypeError) {
     return new Error(
       'Could not reach Ollama at 127.0.0.1:11434. Is Ollama installed and running? (ollama serve)',
@@ -32,14 +33,7 @@ function describeOllamaFailure(err: unknown): Error {
 }
 
 async function readOllamaError(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: { message?: unknown } | string };
-    if (typeof body.error === 'string') return body.error.slice(0, 200);
-    if (typeof body.error?.message === 'string') return body.error.message.slice(0, 200);
-  } catch {
-    // Fall through to the status-only error.
-  }
-  return response.statusText || 'Request failed';
+  return (await readSseErrorMessage(response)) ?? (response.statusText || 'Request failed');
 }
 
 export async function streamOllamaChat(options: StreamOptions): Promise<string> {
@@ -75,36 +69,11 @@ export async function streamOllamaChat(options: StreamOptions): Promise<string> 
   const reader = response.body?.getReader();
   if (!reader) throw new Error("Ollama's streaming response had no body. Please try again.");
 
-  const decoder = new TextDecoder();
-  let pending = '';
-  let accumulated = '';
-  let streamError: string | undefined;
-  let finishReason: string | undefined;
-
-  const consume = (line: string) => {
-    const event = parseOpenRouterSseLine(line);
-    if (!event) return;
-    if (event.error) streamError = event.error;
-    if (event.finishReason) finishReason = event.finishReason;
-    if (event.text) accumulated += event.text;
-  };
-
-  for (;;) {
-    const { done, value } = await reader.read();
-    const before = accumulated;
-    if (value) {
-      pending += decoder.decode(value, { stream: true });
-      const lines = pending.split('\n');
-      pending = lines.pop() ?? '';
-      lines.forEach(consume);
-    }
-    if (done) {
-      pending += decoder.decode();
-      if (pending) consume(pending);
-    }
-    if (accumulated !== before) options.onText(accumulated);
-    if (done) break;
-  }
+  const { text: accumulated, error: streamError, finishReason } = await readSseStream(
+    reader,
+    parseOpenRouterSseLine,
+    options.onText,
+  );
 
   if (!accumulated.trim()) {
     if (streamError) throw new Error(`Ollama stream failed: ${streamError.slice(0, 200)}`);

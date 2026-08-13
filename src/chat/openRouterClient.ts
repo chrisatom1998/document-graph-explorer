@@ -1,4 +1,5 @@
 import type { ChatMessage } from '../store/chatStore';
+import { readSseErrorMessage, readSseStream } from './sseStream';
 import { parseRetryAfter } from '../util/retryAfter';
 
 export const OPENROUTER_CHAT_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
@@ -81,13 +82,7 @@ export function parseOpenRouterSseLine(rawLine: string): OpenRouterStreamEvent |
 }
 
 async function readOpenRouterError(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: { message?: unknown } };
-    if (typeof body.error?.message === 'string') return body.error.message.slice(0, 200);
-  } catch {
-    // Fall through to the status-only error.
-  }
-  return response.statusText || 'Request failed';
+  return (await readSseErrorMessage(response)) ?? (response.statusText || 'Request failed');
 }
 
 export async function streamOpenRouterChat(options: StreamOptions): Promise<string> {
@@ -124,36 +119,11 @@ export async function streamOpenRouterChat(options: StreamOptions): Promise<stri
   const reader = response.body?.getReader();
   if (!reader) throw new Error("OpenRouter's streaming response had no body. Please try again.");
 
-  const decoder = new TextDecoder();
-  let pending = '';
-  let accumulated = '';
-  let streamError: string | undefined;
-  let finishReason: string | undefined;
-
-  const consume = (line: string) => {
-    const event = parseOpenRouterSseLine(line);
-    if (!event) return;
-    if (event.error) streamError = event.error;
-    if (event.finishReason) finishReason = event.finishReason;
-    if (event.text) accumulated += event.text;
-  };
-
-  for (;;) {
-    const { done, value } = await reader.read();
-    const before = accumulated;
-    if (value) {
-      pending += decoder.decode(value, { stream: true });
-      const lines = pending.split('\n');
-      pending = lines.pop() ?? '';
-      lines.forEach(consume);
-    }
-    if (done) {
-      pending += decoder.decode();
-      if (pending) consume(pending);
-    }
-    if (accumulated !== before) options.onText(accumulated);
-    if (done) break;
-  }
+  const { text: accumulated, error: streamError, finishReason } = await readSseStream(
+    reader,
+    parseOpenRouterSseLine,
+    options.onText,
+  );
 
   if (!accumulated.trim()) {
     if (streamError) throw new Error(`OpenRouter stream failed: ${streamError.slice(0, 200)}`);

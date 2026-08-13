@@ -173,6 +173,7 @@ Ingestion is a pipeline that runs off the main thread:
 - **Optional AI enrichment** (summaries, topics, cluster names, document Q&A, chat) runs through the provider and model the user picks in Settings: any model on OpenRouter (with their API key) or any model on their local Ollama server.
 - **The 3D scene** ([src/scene/](src/scene/)) is React Three Fiber over Three.js, with instanced nodes/edges, a force-directed layout worker, and a cluster-collapse view for large graphs.
 - **State** lives in Zustand stores ([src/store/](src/store/)); named corpora, computed graphs, layouts, and watched-folder metadata persist to IndexedDB so you can switch workspaces without re-parsing every session. The toolbar Data menu exposes sanitized share URLs, JSON export/import, and PNG scene export.
+- **Workers & offline mode:** parsing, embedding, layout, and analytics run in dedicated web workers coordinated by [src/pipeline/coordinator.ts](src/pipeline/coordinator.ts); see [docs/architecture-workers-offline.md](docs/architecture-workers-offline.md) for the worker pool, per-worker responsibilities, and how offline mode / the airgap build are enforced.
 
 For the full design, see [knowledge-nebula-spec.md](knowledge-nebula-spec.md) and [docs/](docs/).
 
