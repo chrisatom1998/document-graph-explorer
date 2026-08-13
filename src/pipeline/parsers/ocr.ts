@@ -38,8 +38,23 @@ function abortReason(signal: AbortSignal): Error {
     : new DOMException('The operation was aborted.', 'AbortError');
 }
 
-function withAbort<T>(operation: Promise<T>, signal?: AbortSignal): Promise<T> {
-  if (!signal) return operation;
+function enqueueOcr<T>(job: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+  let started = false;
+  const start = (): Promise<T> => {
+    started = true;
+    return signal?.aborted ? Promise.reject(abortReason(signal)) : job();
+  };
+  const run = queueTail.then(start, start);
+  queueTail = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  // A queued OCR call must reject as soon as its ingest is cancelled, not
+  // remain chained behind an unrelated long-running scanned PDF. An already
+  // running job still holds the PDFDocumentProxy, so its caller must wait
+  // until runOcr observes the abort and releases the document — otherwise
+  // parsePdf's finally would destroy the PDF under an active recognition pass.
+  if (!signal) return run;
   if (signal.aborted) return Promise.reject(abortReason(signal));
   return new Promise<T>((resolve, reject) => {
     let settled = false;
@@ -49,27 +64,16 @@ function withAbort<T>(operation: Promise<T>, signal?: AbortSignal): Promise<T> {
       signal.removeEventListener('abort', onAbort);
       complete();
     };
-    const onAbort = (): void => finish(() => reject(abortReason(signal)));
+    const onAbort = (): void => {
+      if (started) return;
+      finish(() => reject(abortReason(signal)));
+    };
     signal.addEventListener('abort', onAbort, { once: true });
-    operation.then(
+    run.then(
       (value) => finish(() => resolve(value)),
       (error: unknown) => finish(() => reject(error)),
     );
   });
-}
-
-function enqueueOcr<T>(job: () => Promise<T>, signal?: AbortSignal): Promise<T> {
-  const start = (): Promise<T> =>
-    signal?.aborted ? Promise.reject(abortReason(signal)) : job();
-  const run = queueTail.then(start, start);
-  queueTail = run.then(
-    () => undefined,
-    () => undefined,
-  );
-  // A queued OCR call must reject as soon as its ingest is cancelled, not
-  // remain chained behind an unrelated long-running scanned PDF. The queued
-  // `start` still observes the signal later and skips creating a worker.
-  return withAbort(run, signal);
 }
 
 function reportProgress(

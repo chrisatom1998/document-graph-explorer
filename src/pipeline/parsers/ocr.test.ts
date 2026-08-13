@@ -181,4 +181,40 @@ describe('ocrPdfPages', () => {
     await expect(active).rejects.toMatchObject({ name: 'AbortError' });
     expect(worker.terminate).toHaveBeenCalledOnce();
   });
+
+  it('does not reject in-flight OCR until the job stops using the PDF', async () => {
+    const page1 = fakePage();
+    const page2 = fakePage();
+    const page2Load = deferred<PDFPageProxy>();
+    let destroyed = false;
+    let usedAfterDestroy = 0;
+    const doc = {
+      numPages: 2,
+      getPage: vi.fn((pageNumber: number) => {
+        if (destroyed) usedAfterDestroy += 1;
+        if (pageNumber === 1) return Promise.resolve(page1);
+        return page2Load.promise.then((page) => {
+          if (destroyed) usedAfterDestroy += 1;
+          return page;
+        });
+      }),
+    } as unknown as PDFDocumentProxy;
+    tesseract.createWorker.mockResolvedValue({
+      recognize: vi.fn().mockResolvedValue({ data: { text: 'First' } }),
+      terminate: vi.fn().mockResolvedValue({}),
+    });
+    const controller = new AbortController();
+    const active = ocrPdfPages(doc, 2, undefined, controller.signal);
+    await vi.waitFor(() => expect(doc.getPage).toHaveBeenCalledTimes(2));
+
+    const caller = active.finally(() => {
+      destroyed = true;
+    });
+    controller.abort();
+    page2Load.resolve(page2);
+
+    await expect(caller).rejects.toMatchObject({ name: 'AbortError' });
+    await Promise.resolve();
+    expect(usedAfterDestroy).toBe(0);
+  });
 });
