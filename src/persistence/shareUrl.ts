@@ -11,6 +11,10 @@ export const MAX_SHARE_COMPRESSED_BYTES = 48 * 1024;
 export const MAX_SHARE_FRAGMENT_CHARS = 64 * 1024 + 64;
 /** Hard post-decompression ceiling, enforced while the stream is read. */
 export const MAX_SHARE_DECODED_BYTES = 2 * 1024 * 1024;
+/** Share-link summaries match the confirm copy (import sanitizer allows 2000). */
+export const SHARE_SUMMARY_CHARS = 200;
+/** Connection evidence stays at the import list-item cap. */
+export const SHARE_EVIDENCE_CHARS = 200;
 
 export type ShareUrlErrorCode =
   | 'invalid_graph'
@@ -65,7 +69,12 @@ export function createShareGraph(input: unknown): GraphExport {
       degree: node.degree,
       status: node.status,
     };
-    if (node.summary !== undefined) shared.summary = node.summary;
+    if (node.summary !== undefined) {
+      shared.summary =
+        node.summary.length > SHARE_SUMMARY_CHARS
+          ? node.summary.slice(0, SHARE_SUMMARY_CHARS)
+          : node.summary;
+    }
     if (node.warning !== undefined) shared.warning = node.warning;
     return shared;
   });
@@ -76,7 +85,9 @@ export function createShareGraph(input: unknown): GraphExport {
     target: idMap.get(edge.target)!,
     kind: edge.kind,
     weight: edge.weight,
-    evidence: [...edge.evidence],
+    evidence: edge.evidence.map((item) =>
+      item.length > SHARE_EVIDENCE_CHARS ? item.slice(0, SHARE_EVIDENCE_CHARS) : item,
+    ),
   }));
 
   return {

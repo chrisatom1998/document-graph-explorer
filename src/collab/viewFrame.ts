@@ -24,8 +24,7 @@ const SELECTED_RADIUS_FLOOR = 1;
 export interface CollabCameraAnchor {
   /** Prefer selected node id when that node exists in the publisher's layout. */
   id: string | null;
-  /** Stable identity for independent corpora (not the per-tab node id). */
-  path?: string | null;
+  /** Document title for follow matching across independent corpora. */
   title?: string | null;
   x: number;
   y: number;
@@ -70,11 +69,9 @@ export function parseCameraAnchor(value: unknown): CollabCameraAnchor | undefine
   if (source.radius < 0 || source.count < 0) return undefined;
   const id = source.id === null ? null : typeof source.id === 'string' ? source.id : undefined;
   if (id === undefined) return undefined;
-  const path = source.path === null || typeof source.path === 'string' ? source.path : undefined;
   const title = source.title === null || typeof source.title === 'string' ? source.title : undefined;
   return {
     id,
-    path,
     title,
     x: source.x,
     y: source.y,
@@ -96,7 +93,6 @@ export function remapCameraPose(
 ): CameraPose {
   const sameAnchorIdentity =
     remoteAnchor.id === localAnchor.id ||
-    (remoteAnchor.path != null && remoteAnchor.path === localAnchor.path) ||
     (remoteAnchor.title != null && remoteAnchor.title === localAnchor.title);
   if (!sameAnchorIdentity) {
     return { ...remotePose };
@@ -134,14 +130,13 @@ export function remapCameraPose(
 }
 
 /**
- * Map a presenter node id onto the follower graph. Exact id wins; otherwise
- * a unique path, then a unique title. Independent corpora do not share
- * per-tab ids even when the documents are the same.
+ * Map a presenter node id onto the follower graph. Exact id (content hash)
+ * wins; otherwise a unique title. Disk paths are never used as identity.
  */
 export function resolveFollowNodeId(
   nodes: DocNode[],
   remoteId: string | null | undefined,
-  hints?: { path?: string | null; title?: string | null },
+  hints?: { title?: string | null },
 ): string | null {
   if (remoteId && (nodes.some((node) => node.id === remoteId) || slotOfId.has(remoteId))) return remoteId;
   const unique = (matches: DocNode[]): string | null => {
@@ -152,10 +147,6 @@ export function resolveFollowNodeId(
     }
     return null;
   };
-  if (hints?.path) {
-    const byPath = unique(nodes.filter((node) => node.path === hints.path));
-    if (byPath) return byPath;
-  }
   if (hints?.title) {
     const byTitle = unique(nodes.filter((node) => node.title === hints.title));
     if (byTitle) return byTitle;
@@ -253,7 +244,6 @@ export function computeCollabCameraAnchor(opts: {
       const node = opts.nodes.find((candidate) => candidate.id === preferId);
       return {
         id: preferId,
-        path: node?.path ?? null,
         title: node?.title ?? null,
         x: pos[0],
         y: pos[1],

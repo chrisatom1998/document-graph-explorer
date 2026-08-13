@@ -69,9 +69,17 @@ describe('offline module', () => {
   });
 
   describe('navigator.sendBeacon guard', () => {
-    const realSendBeacon = navigator.sendBeacon;
+    const nav = globalThis.navigator as Navigator | undefined;
+    const realSendBeacon = nav?.sendBeacon;
+    if (!nav) {
+      Object.defineProperty(globalThis, 'navigator', {
+        value: { sendBeacon: () => false },
+        configurable: true,
+      });
+    }
+
     afterEach(() => {
-      navigator.sendBeacon = realSendBeacon;
+      if (realSendBeacon) navigator.sendBeacon = realSendBeacon;
     });
 
     it('blocks cross-origin sendBeacon while offline, returning false', () => {
@@ -133,6 +141,40 @@ describe('offline module', () => {
       installOfflineFetchGuard();
       const ws = new WebSocket('wss://example.com/socket');
       expect(ws).toBeInstanceOf(MockWebSocket);
+    });
+  });
+
+  describe('RTCPeerConnection STUN guard', () => {
+    const RealRTC = globalThis.RTCPeerConnection;
+    class MockRTCPeerConnection {
+      config: RTCConfiguration | undefined;
+      constructor(configuration?: RTCConfiguration) {
+        this.config = configuration;
+      }
+      setConfiguration(configuration?: RTCConfiguration) {
+        this.config = configuration;
+      }
+    }
+    afterEach(() => {
+      globalThis.RTCPeerConnection = RealRTC;
+    });
+
+    it('strips iceServers while offline so default STUN cannot fire', () => {
+      globalThis.RTCPeerConnection = MockRTCPeerConnection as unknown as typeof RTCPeerConnection;
+      installOfflineFetchGuard();
+      useSettingsStore.getState().setOfflineMode(true);
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+      });
+      expect((pc as unknown as MockRTCPeerConnection).config?.iceServers).toEqual([]);
+    });
+
+    it('leaves iceServers untouched when offline mode is off', () => {
+      globalThis.RTCPeerConnection = MockRTCPeerConnection as unknown as typeof RTCPeerConnection;
+      installOfflineFetchGuard();
+      const servers = [{ urls: 'stun:stun.l.google.com:19302' }];
+      const pc = new RTCPeerConnection({ iceServers: servers });
+      expect((pc as unknown as MockRTCPeerConnection).config?.iceServers).toEqual(servers);
     });
   });
 });

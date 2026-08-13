@@ -131,6 +131,7 @@ describe('applySharedView', () => {
         view: {
           toJSON: () => ({}),
           set: vi.fn(),
+          delete: vi.fn(),
         },
       } as never,
       followMode: true,
@@ -382,7 +383,7 @@ describe('applySharedView', () => {
     expect(delivered).toHaveLength(0);
   });
 
-  it('applies follow selection and camera onto a local node matched by path/title', async () => {
+  it('applies follow selection and camera onto a local node matched by title/hash', async () => {
     const local: DocNode = {
       id: 'local-sla',
       title: 'Enterprise Service Level Agreement',

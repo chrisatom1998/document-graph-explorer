@@ -25,7 +25,8 @@ This project follows the Keep a Changelog format.
 - OpenRouter chat and enrichment LLM clients honour the `Retry-After` response header on 429/502/503 (shared `parseRetryAfter` helper, capped at 60s) before falling back to exponential backoff.
 
 ### Fixed
-- Follow mode now maps presenter selection and camera onto the follower's local documents by path/title (not only per-tab node id), delivers a hung layout-settle camera after 8s, and labels collaboration as "You + N others" instead of counting the local client as a peer.
+- Follow mode now maps presenter selection and camera onto the follower's local documents by title/hash (not disk path), delivers a hung layout-settle camera after 8s, and labels collaboration as "You + N others" instead of counting the local client as a peer.
+- Collaboration invite hashes ask before joining; notes/tags stay local unless opted in; public STUN is disabled (host ICE only); share-link summaries are capped at 200 characters to match the confirm copy.
 - Batch enrichment now sends each document's **full stored text** to the provider. Previously only the first 1,200 characters were included, so summaries and topics were written from a stub. Enormous files are truncated only as a last resort at `DOCUMENT_AI_MAX_CONTEXT_CHARS` (240,000 characters); batches split when that would overflow a typical model context window. Settings, SECURITY.md, and the user guide disclose the full-text send.
 
 ## [1.1.14] - 2026-07-29

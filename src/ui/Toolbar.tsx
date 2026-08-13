@@ -320,6 +320,8 @@ export default function Toolbar() {
   const remotePeerCount = Object.keys(collabPeers).length;
   const followMode = useCollabStore((s) => s.followMode);
   const setFollowMode = useCollabStore((s) => s.setFollowMode);
+  const shareNotes = useCollabStore((s) => s.shareNotes);
+  const setShareNotes = useCollabStore((s) => s.setShareNotes);
   const startSession = useCollabStore((s) => s.startSession);
   const joinInvite = useCollabStore((s) => s.joinInvite);
   const leaveSession = useCollabStore((s) => s.leaveSession);
@@ -753,18 +755,34 @@ export default function Toolbar() {
                   <IconCollab />
                   <span>{followMode ? 'Stop following' : 'Follow presenter'}</span>
                 </button>
-                <div
-                  role="separator"
-                  style={{ borderTop: '1px solid rgba(255,255,255,0.14)', margin: '4px 0' }}
-                />
-                <div style={{ padding: '2px 10px 6px', fontSize: 12, opacity: 0.8 }}>
-                  {remotePeerCount <= 0
-                    ? 'Just you — waiting for peers'
-                    : remotePeerCount === 1
-                      ? 'You + 1 other'
-                      : `You + ${remotePeerCount} others`}
-                </div>
               </>
+            )}
+            <div
+              role="separator"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.14)', margin: '4px 0' }}
+            />
+            <button
+              type="button"
+              className={`toolbar__menu-item${shareNotes ? ' is-active' : ''}`}
+              title={
+                shareNotes
+                  ? 'Stop syncing notes and tags with the room'
+                  : 'Keep notes and tags on this device (default)'
+              }
+              aria-pressed={shareNotes}
+              onClick={() => setShareNotes(!shareNotes)}
+            >
+              <IconCollab />
+              <span>{shareNotes ? 'Sharing notes & tags' : 'Notes & tags stay local'}</span>
+            </button>
+            {collabSession && (
+              <div style={{ padding: '2px 10px 6px', fontSize: 12, opacity: 0.8 }}>
+                {remotePeerCount <= 0
+                  ? 'Just you — waiting for peers'
+                  : remotePeerCount === 1
+                    ? 'You + 1 other'
+                    : `You + ${remotePeerCount} others`}
+              </div>
             )}
           </div>
         )}

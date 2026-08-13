@@ -42,11 +42,17 @@ function isExternal(input: RequestInfo | URL): boolean {
 let installed = false;
 
 /**
- * Defense-in-depth: wrap fetch, `navigator.sendBeacon`, and the `WebSocket`
- * constructor so that while offline, ANY cross-origin call fails before
- * hitting the network — covering future code paths nobody remembered to
- * gate. Installed once at app startup (main.tsx).
+ * Defense-in-depth: wrap fetch, `navigator.sendBeacon`, the `WebSocket`
+ * constructor, and `RTCPeerConnection` so that while offline, ANY
+ * cross-origin call fails before hitting the network — covering future code
+ * paths nobody remembered to gate. Installed once at app startup (main.tsx).
+ * RTCPeerConnection is forced to `iceServers: []` so a default Google/Twilio
+ * STUN list cannot fire while the user thinks they are offline.
  */
+function sanitizeRtcConfiguration(configuration?: RTCConfiguration): RTCConfiguration {
+  return { ...(configuration ?? {}), iceServers: [] };
+}
+
 export function installOfflineFetchGuard(): void {
   if (installed && import.meta.env.MODE !== 'test') return;
   installed = true;
@@ -87,5 +93,19 @@ export function installOfflineFetchGuard(): void {
         super(url, protocols);
       }
     } as typeof WebSocket;
+  }
+
+  if (typeof globalThis.RTCPeerConnection === 'function') {
+    const RealRTCPeerConnection = globalThis.RTCPeerConnection;
+    globalThis.RTCPeerConnection = class OfflineGuardedRTCPeerConnection extends RealRTCPeerConnection {
+      constructor(configuration?: RTCConfiguration) {
+        super(isOffline() ? sanitizeRtcConfiguration(configuration) : configuration);
+      }
+      override setConfiguration(configuration?: RTCConfiguration): void {
+        super.setConfiguration(
+          isOffline() ? sanitizeRtcConfiguration(configuration) : configuration,
+        );
+      }
+    } as typeof RTCPeerConnection;
   }
 }

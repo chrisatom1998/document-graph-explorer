@@ -6,8 +6,29 @@ vi.mock('../airgap', () => ({
   AIRGAP_MESSAGE: 'AIRGAP_TEST_MSG',
 }));
 
+vi.mock('y-webrtc', () => {
+  class WebrtcProvider {
+    awareness = {
+      setLocalState() {},
+      on() {},
+      getStates() {
+        return new Map();
+      },
+      clientID: 1,
+    };
+    destroy() {}
+    peerOpts: unknown;
+    constructor(_room: string, _doc: unknown, opts: { peerOpts?: unknown }) {
+      this.peerOpts = opts.peerOpts;
+    }
+  }
+  return { WebrtcProvider };
+});
+
+import { useSettingsStore } from '../store/settingsStore';
 import {
   COLLAB_FRAGMENT_PREFIX,
+  COLLAB_PEER_OPTS,
   buildCollabInvite,
   createAnnotationMap,
   createCollabSession,
@@ -85,5 +106,23 @@ describe('collab runtime', () => {
     expect(session.sessionKey).toBe('abcd-1234');
     session.provider?.destroy();
     session.doc.destroy();
+  });
+
+  it('disables default public STUN by passing empty iceServers', () => {
+    const session = createCollabSession({ roomId: 'room-stun', sessionKey: 'abcd-1234' });
+    expect(COLLAB_PEER_OPTS.config.iceServers).toEqual([]);
+    const provider = session.provider as { peerOpts?: { config?: { iceServers?: unknown } } } | null;
+    expect(provider?.peerOpts?.config?.iceServers).toEqual([]);
+    session.provider?.destroy();
+    session.doc.destroy();
+  });
+
+  it('refuses to create a session while offline mode is on', () => {
+    useSettingsStore.getState().setOfflineMode(true);
+    try {
+      expect(() => createCollabSession({ roomId: 'room-off', sessionKey: 'abcd-1234' })).toThrow(/offline mode/i);
+    } finally {
+      useSettingsStore.getState().setOfflineMode(false);
+    }
   });
 });
