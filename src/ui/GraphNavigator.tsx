@@ -130,7 +130,9 @@ export default function GraphNavigator() {
           >
             <span>{node.title}</span>
             <span className="graph-navigator__meta">
-              {node.kind === 'topic' ? 'Topic hub' : `${node.fileType.toUpperCase()} · ${node.degree} connections`}
+              {node.kind === 'topic'
+                ? 'Topic hub'
+                : `${node.fileType.toUpperCase()} · ${node.degree} connection${node.degree === 1 ? '' : 's'}`}
             </span>
           </div>
         ))}

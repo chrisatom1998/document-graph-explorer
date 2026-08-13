@@ -35,6 +35,9 @@ interface PageEntry {
 export default function PdfPreview({ blob, className }: PdfPreviewProps) {
   const [pages, setPages] = useState<PageEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Pages whose rasterization threw — otherwise a failed page is just a
+  // silent blank rectangle. Cleared when a later attempt succeeds.
+  const [failedPages, setFailedPages] = useState<ReadonlySet<number>>(new Set());
   const docRef = useRef<pdfjs.PDFDocumentProxy | null>(null);
   const taskRef = useRef<pdfjs.PDFDocumentLoadingTask | null>(null);
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map());
@@ -46,6 +49,7 @@ export default function PdfPreview({ blob, className }: PdfPreviewProps) {
     let cancelled = false;
     setPages(null);
     setError(null);
+    setFailedPages(new Set());
     renderedRef.current = new Set();
     canvasRefs.current = new Map();
 
@@ -102,9 +106,16 @@ export default function PdfPreview({ blob, className }: PdfPreviewProps) {
       canvas.height = viewport.height;
       await page.render({ canvas, viewport }).promise;
       page.cleanup();
+      setFailedPages((prev) => {
+        if (!prev.has(pageNo)) return prev;
+        const next = new Set(prev);
+        next.delete(pageNo);
+        return next;
+      });
     } catch (err) {
       console.error('[PdfPreview] renderPage failed', pageNo, err);
       renderedRef.current.delete(pageNo); // allow a retry on next intersection
+      setFailedPages((prev) => (prev.has(pageNo) ? prev : new Set(prev).add(pageNo)));
     }
   };
 
@@ -154,12 +165,19 @@ export default function PdfPreview({ blob, className }: PdfPreviewProps) {
         <div key={pageNo} className="pdf-preview__page">
           <canvas
             data-page-no={pageNo}
+            role="img"
+            aria-label={`Page ${pageNo}`}
             ref={(el) => {
               if (el) canvasRefs.current.set(pageNo, el);
               else canvasRefs.current.delete(pageNo);
             }}
             style={{ aspectRatio: `${width} / ${height}` }}
           />
+          {failedPages.has(pageNo) && (
+            <span className="pdf-preview__page-error" role="status">
+              Couldn’t render page {pageNo} — scroll away and back to retry.
+            </span>
+          )}
           <span className="pdf-preview__page-num">{pageNo}</span>
         </div>
       ))}

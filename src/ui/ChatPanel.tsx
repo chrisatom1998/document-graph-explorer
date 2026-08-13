@@ -102,7 +102,12 @@ const MessageBubble = memo(function MessageBubble({
 
   return (
     <div className={`chat-message chat-message--${msg.role}`}>
-      <div className={`chat-bubble chat-bubble--${msg.role}`}>
+      <div
+        className={`chat-bubble chat-bubble--${msg.role}${msg.isError ? ' chat-bubble--error' : ''}`}
+        // A failed answer is the only bubble a user could mistake for a real
+        // one — announce it and tint it instead of styling it like an answer.
+        role={msg.isError ? 'alert' : undefined}
+      >
         {isAssistant ? <ChatMarkdown text={msg.text} /> : <p className="chat-bubble__text">{msg.text}</p>}
         {msg.sources && msg.sources.length > 0 && (
           <SourceChips sources={msg.sources} onSourceClick={onSourceClick} />
@@ -207,7 +212,16 @@ export default function ChatPanel() {
         <div className="chat-panel__title-row">
           <h3 className="chat-panel__title">Chat with your docs</h3>
           <span className="chat-panel__doc-count">{docCount} doc{docCount !== 1 ? 's' : ''}</span>
-          {messages.length > 0 && <button type="button" className="chat-panel__export" onClick={exportTranscript}>Export</button>}
+          {messages.length > 0 && (
+            <button
+              type="button"
+              className="chat-panel__export"
+              title="Download this conversation as a Markdown file"
+              onClick={exportTranscript}
+            >
+              Export
+            </button>
+          )}
         </div>
         <button
           type="button"

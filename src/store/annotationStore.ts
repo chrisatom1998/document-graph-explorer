@@ -103,16 +103,19 @@ let failureToastShown = false;
 let lifecycleArmed = false;
 
 /** Toast lazily to avoid a static ui-store dependency from persistence code. */
-function toastSaveFailure(): void {
-  if (failureToastShown) return;
-  failureToastShown = true;
+function toastAnnotationFailure(message: string, gate?: () => boolean): void {
+  if (gate && !gate()) return;
   void import('../store/uiStore')
-    .then(({ useUiStore }) =>
-      useUiStore
-        .getState()
-        .pushToast("Couldn't save your notes — will keep retrying.", 'warning'),
-    )
+    .then(({ useUiStore }) => useUiStore.getState().pushToast(message, 'warning'))
     .catch(() => undefined);
+}
+
+function toastSaveFailure(): void {
+  toastAnnotationFailure("Couldn't save your notes — will keep retrying.", () => {
+    if (failureToastShown) return false;
+    failureToastShown = true;
+    return true;
+  });
 }
 
 /** The patch for one dirty key, read fresh from the store at write time. */
@@ -223,6 +226,10 @@ export async function ensureAnnotationsLoaded(corpusId: string): Promise<void> {
     useAnnotationStore.getState().hydrate(corpusId, record?.annotations ?? {});
   } catch (error) {
     console.warn('[knowledge-nebula] annotation restore failed', error);
+    // The Notes & Tags section stays hidden while the store isn't hydrated
+    // for this corpus (hydrating empty here could overwrite real notes on the
+    // next edit) — so without a toast this failure is completely invisible.
+    toastAnnotationFailure("Couldn't load your notes and tags for this workspace.");
   } finally {
     if (loadingScope === corpusId) loadingScope = null;
   }

@@ -1838,6 +1838,19 @@ input {
   height: auto;
   background: #fff;
 }
+.pdf-preview__page-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+  font-size: 11.5px;
+  font-family: var(--font-ui);
+  color: var(--danger);
+  background: rgba(0, 0, 0, 0.35);
+}
 .pdf-preview__page-num {
   position: absolute;
   right: 6px;
@@ -3845,6 +3858,13 @@ input {
   border: 1px solid rgba(255, 207, 107, 0.16);
   color: var(--warning);
   border-bottom-left-radius: 2px;
+}
+
+/* Failed answers (isError) must not read like real ones — danger tint. */
+.chat-bubble--error {
+  background: rgba(255, 128, 128, 0.08);
+  border: 1px solid rgba(255, 128, 128, 0.22);
+  color: var(--danger);
 }
 
 .chat-bubble__text {
