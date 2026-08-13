@@ -9,6 +9,7 @@
 
 import { OLLAMA_CHAT_ENDPOINT } from '../chat/ollamaClient';
 import { OPENROUTER_CHAT_ENDPOINT, parseOpenRouterSseLine } from '../chat/openRouterClient';
+import { readSseErrorMessage } from '../chat/sseStream';
 import { ENRICH_MAX_RETRIES } from '../config';
 import { parseRetryAfter } from '../util/retryAfter';
 
@@ -78,24 +79,12 @@ function requestBody(target: LlmTarget, system: string, prompt: string): string 
   });
 }
 
-/** Both providers' error bodies: `{"error":{"message":...}}` or `{"error":"..."}`. */
-async function readErrorDetail(res: Response): Promise<string | null> {
-  try {
-    const body = (await res.json()) as { error?: { message?: unknown } | string };
-    if (typeof body.error === 'string') return body.error.slice(0, 200);
-    if (typeof body.error?.message === 'string') return body.error.message.slice(0, 200);
-  } catch {
-    /* error body wasn't JSON */
-  }
-  return null;
-}
-
 function isRetryableStatus(status: number): boolean {
   return status === 429 || status === 502 || status === 503;
 }
 
 async function describeHttpError(target: LlmTarget, res: Response): Promise<string> {
-  const detail = await readErrorDetail(res);
+  const detail = await readSseErrorMessage(res);
   if (target.provider === 'ollama' && res.status === 404 && detail && /model/i.test(detail)) {
     return `Ollama does not have the model "${target.model}". Pull it first: ollama pull ${target.model}`;
   }
