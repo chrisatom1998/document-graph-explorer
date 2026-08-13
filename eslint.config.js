@@ -35,6 +35,7 @@ export default tseslint.config(
       '.codex',
       '.cursor',
       '.vercel',
+      '.agents',
     ],
   },
   js.configs.recommended,

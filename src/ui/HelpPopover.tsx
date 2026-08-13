@@ -4,6 +4,7 @@ import { EDGE_KIND_HEX, EDGE_KIND_LABEL } from '../scene/palette';
 import { useUiStore } from '../store/uiStore';
 import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './FirstRunGuide';
 import { useFocusTrap } from './useFocusTrap';
+import CloseButton from './CloseButton';
 
 const EDGE_KINDS = Object.keys(EDGE_KIND_LABEL) as EdgeKind[];
 
@@ -36,15 +37,11 @@ export default function HelpPopover() {
             <p className="help-popover__eyebrow">Knowledge Nebula</p>
             <h2 className="help-popover__title">Help &amp; graph legend</h2>
           </div>
-          <button
-            type="button"
-            className="icon-btn-close"
+          <CloseButton
             title="Close help"
             aria-label="Close help"
             onClick={() => setOpen(false)}
-          >
-            ×
-          </button>
+          />
         </header>
 
         <div className="help-popover__scroll">

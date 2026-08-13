@@ -15,6 +15,8 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitOverride": true,
     "types": ["vite/client"]
   },
   "include": ["src", "vite.config.ts"]

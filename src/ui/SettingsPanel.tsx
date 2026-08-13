@@ -10,6 +10,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AIRGAP } from '../airgap';
 import { DOCUMENT_AI_MAX_CONTEXT_CHARS } from '../config';
 import { useFocusTrap } from './useFocusTrap';
+import CloseButton from './CloseButton';
 import {
   fetchModelCatalog,
   openRouterModelOptions,
@@ -387,15 +388,12 @@ export default function SettingsPanel() {
       >
         <div className="settings-panel__header" style={headerRowStyle}>
           <h2 style={titleStyle}>Settings</h2>
-          <button
-            type="button"
+          <CloseButton
             style={closeBtnStyle}
-            onClick={() => setSettingsOpen(false)}
-            aria-label="Close settings"
             title="Close settings"
-          >
-            ✕
-          </button>
+            aria-label="Close settings"
+            onClick={() => setSettingsOpen(false)}
+          />
         </div>
 
         {AIRGAP && (

@@ -41,6 +41,22 @@ const RetrievalBenchmarkPanel = import.meta.env.DEV
   ? lazy(() => import('./dev/RetrievalBenchmarkPanel'))
   : null;
 
+declare global {
+  interface Window {
+    __nebula?: () => {
+      phase: string;
+      nodes: number;
+      edges: number;
+      posCount: number;
+      meanR: number;
+      maxR: number;
+      minPair: number | null;
+      enrich: { done: number; total: number; note: string } | null;
+    };
+  }
+}
+
+
 export default function App() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const phase = useGraphStore((s) => s.phase);
@@ -130,7 +146,7 @@ export default function App() {
   // Dev-only introspection for automated verification (position spread etc.).
   useEffect(() => {
     if (!import.meta.env.DEV) return;
-    (window as unknown as Record<string, unknown>).__nebula = () => {
+    window.__nebula = () => {
       const g = useGraphStore.getState();
       const { array, count } = positionBuffer;
       let meanR = 0;

@@ -20,12 +20,12 @@ import { computeClusterStats } from '../graph/clusterStats';
 import { computeBridges, computeHubs } from '../graph/insights';
 import type { InsightsRequest, InsightsResponse } from '../model/types';
 
-const ctx = self as unknown as DedicatedWorkerGlobalScope;
+declare const self: DedicatedWorkerGlobalScope;
 
-ctx.onmessage = (ev: MessageEvent<InsightsRequest>) => {
+self.onmessage = (ev: MessageEvent<InsightsRequest>) => {
   const req = ev.data;
   try {
-    ctx.postMessage({
+    self.postMessage({
       requestId: req.requestId,
       type: 'insights:done',
       bridges: computeBridges(req.nodes, req.edges, {
@@ -38,7 +38,7 @@ ctx.onmessage = (ev: MessageEvent<InsightsRequest>) => {
     } satisfies InsightsResponse);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    ctx.postMessage({
+    self.postMessage({
       requestId: req.requestId,
       type: 'error',
       message,

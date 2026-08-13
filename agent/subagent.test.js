@@ -43,14 +43,24 @@ describe('standalone subagent', () => {
       if (existsSync(path)) unlinkSync(path);
     }
 
-    linkSync(join(REPO_ROOT, '.git'), hardlinkAlias);
+    let hasHardlink = false;
+    try {
+      linkSync(join(REPO_ROOT, '.git'), hardlinkAlias);
+      hasHardlink = true;
+    } catch (err) {
+      if (err?.code !== 'EPERM' && err?.code !== 'ENOTSUP') {
+        throw err;
+      }
+    }
     symlinkSync('.git', symlinkAlias);
     resetSensitiveInodeCache();
 
     try {
-      expect(() => readFileTool({ path: '.codex-test-hardlink-alias.txt' })).toThrow(
-        /sensitive repository path is blocked/i,
-      );
+      if (hasHardlink) {
+        expect(() => readFileTool({ path: '.codex-test-hardlink-alias.txt' })).toThrow(
+          /sensitive repository path is blocked/i,
+        );
+      }
       expect(() => readFileTool({ path: '.codex-test-symlink-alias.txt' })).toThrow(
         /sensitive repository path is blocked/i,
       );

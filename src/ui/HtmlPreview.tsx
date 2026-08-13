@@ -48,11 +48,9 @@ const SIMPLE_TAGS = new Set([
   'pre', 'code', 'small', 'sub', 'sup', 'figure', 'figcaption',
 ]);
 
-/** Above this, skip the DOM walk (perf safety net) and fall back to a plain dump. */
-export const MAX_RENDER_CHARS = 8_000_000;
+import { MAX_RENDER_CHARS, getFallbackExcerpt } from './readerUtils';
 
-/** Cap on the plain-text fallback so a single huge line can't freeze the DOM. */
-const FALLBACK_EXCERPT_CHARS = 200_000;
+export { MAX_RENDER_CHARS };
 
 function renderChildren(node: Node, keyPrefix: string): ReactNode[] {
   const out: ReactNode[] = [];
@@ -155,10 +153,7 @@ export default function HtmlPreview({ html, className }: HtmlPreviewProps) {
   // instead of mounting an 8 MB+ text node (or a single unwrapped mega-line)
   // that freezes the main thread.
   if (!tree) {
-    const excerpt =
-      html.length > FALLBACK_EXCERPT_CHARS
-        ? `${html.slice(0, FALLBACK_EXCERPT_CHARS)}\n\n… (truncated)`
-        : html;
+    const excerpt = getFallbackExcerpt(html);
     return <VirtualText text={excerpt} className={wrapClass} />;
   }
 

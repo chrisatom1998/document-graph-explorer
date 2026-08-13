@@ -50,6 +50,7 @@ import { collectPositions, saveGraphRecord, saveSession } from './sessionSave';
 import { sanitizeGraphExport } from './validateImport';
 import { deleteOriginals } from './originals';
 import { fetchDemoManifest } from '../demo/manifest';
+import { flushPendingChatSave } from './chatHistorySync';
 
 export { saveSession } from './sessionSave';
 
@@ -393,7 +394,6 @@ async function doRestoreSnapshotById(id: number): Promise<boolean> {
     // whichever corpus happens to be active when the debounce fires. Without
     // this, restoring a snapshot owned by another corpus could overwrite that
     // corpus's saved history with an empty one.
-    const { flushPendingChatSave } = await import('./chatHistorySync');
     await flushPendingChatSave();
     const switchingCorpus = Boolean(rec.corpusId && (await getCorpusRecord(rec.corpusId)));
     if (switchingCorpus) {

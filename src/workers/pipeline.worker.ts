@@ -21,11 +21,11 @@ import { parseMarkdown } from '../pipeline/parsers/markdown';
 import { parseOffice } from '../pipeline/parsers/office';
 import { parseTxt, type ParserResult } from '../pipeline/parsers/txt';
 
-const ctx = self as unknown as DedicatedWorkerGlobalScope;
+declare const self: DedicatedWorkerGlobalScope;
 
 function respond(msg: PoolResponse, transfer?: Transferable[]): void {
-  if (transfer && transfer.length > 0) ctx.postMessage(msg, transfer);
-  else ctx.postMessage(msg);
+  if (transfer && transfer.length > 0) self.postMessage(msg, transfer);
+  else self.postMessage(msg);
 }
 
 // ---------------------------------------------------------------------------
@@ -381,6 +381,6 @@ async function handle(req: PoolRequest): Promise<void> {
   }
 }
 
-ctx.onmessage = (ev: MessageEvent<PoolRequest>) => {
+self.onmessage = (ev: MessageEvent<PoolRequest>) => {
   void handle(ev.data);
 };

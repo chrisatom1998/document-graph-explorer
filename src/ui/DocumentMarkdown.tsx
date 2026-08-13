@@ -22,18 +22,9 @@ import VirtualText from './VirtualText';
 
 const processor = unified().use(remarkParse).use(remarkGfm);
 
-/**
- * Above this, skip the mdast walk (perf safety net for pathological inputs)
- * and fall back to a plain dump. Real-world exported docs (e.g. a Google
- * Docs "Download as Markdown") can easily run several MB — a 400 KB cap
- * silently downgraded those to the raw, unstripped-syntax plain-text
- * reader, which looked broken. 8 MB comfortably covers realistic docs while
- * still guarding against multi-MB one-off pastes tanking the main thread.
- */
-export const MAX_RENDER_CHARS = 8_000_000;
+import { MAX_RENDER_CHARS, getFallbackExcerpt } from './readerUtils';
 
-/** Cap on the plain-text fallback so a single huge line can't freeze the DOM. */
-const FALLBACK_EXCERPT_CHARS = 200_000;
+export { MAX_RENDER_CHARS };
 
 interface DocumentMarkdownProps {
   text: string;
@@ -57,10 +48,7 @@ export default function DocumentMarkdown({ text, linkIndex, onNavigate, classNam
   // Oversized / unparseable: show a bounded plain-text excerpt via VirtualText
   // instead of mounting an 8 MB+ text node that freezes the main thread.
   if (!tree) {
-    const excerpt =
-      text.length > FALLBACK_EXCERPT_CHARS
-        ? `${text.slice(0, FALLBACK_EXCERPT_CHARS)}\n\n… (truncated)`
-        : text;
+    const excerpt = getFallbackExcerpt(text);
     return <VirtualText text={excerpt} className={wrapClass} />;
   }
 
