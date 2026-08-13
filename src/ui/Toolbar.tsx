@@ -33,16 +33,6 @@ function IconSearch() {
   );
 }
 
-function IconShowMe() {
-  return (
-    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2.3 9S4.9 4 9 4s6.7 5 6.7 5-2.6 5-6.7 5-6.7-5-6.7-5Z" />
-      <circle cx="9" cy="9" r="2" />
-      <path d="M9 1.8v1.1M9 15.1v1.1M16.2 9h-1.1M2.9 9H1.8" opacity="0.65" />
-    </svg>
-  );
-}
-
 function IconFit() {
   return (
     <svg
@@ -253,6 +243,18 @@ function IconFolderPlus() {
   );
 }
 
+/** Analyze ▾ — path, insights, snapshots live behind one control. */
+function IconAnalyze() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="4.2" cy="12.8" r="1.7" />
+      <circle cx="9" cy="4.2" r="1.7" />
+      <circle cx="13.8" cy="12.8" r="1.7" />
+      <path d="M5.6 11.6 8 5.8M10 5.8l2.4 5.8M5.7 12.8h6.6" />
+    </svg>
+  );
+}
+
 /* Dragged toolbar position, persisted across reloads. */
 const TOOLBAR_POS_KEY = 'knowledge-nebula-toolbar-pos';
 
@@ -288,15 +290,13 @@ function placeToolbar(el: HTMLElement, x: number, y: number): { x: number; y: nu
   return { x: cx, y: cy };
 }
 
-type MenuKey = 'view' | 'data';
+type MenuKey = 'view' | 'analyze' | 'data' | 'add';
 
 export default function Toolbar() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const dims = useUiStore((s) => s.dims);
   const topicNodesEnabled = useUiStore((s) => s.topicNodesEnabled);
   const setSearchOpen = useUiStore((s) => s.setSearchOpen);
-  const showMeOpen = useUiStore((s) => s.showMeOpen);
-  const setShowMeOpen = useUiStore((s) => s.setShowMeOpen);
   const searchOpen = useUiStore((s) => s.searchOpen);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
   const snapshotsOpen = useUiStore((s) => s.snapshotsOpen);
@@ -320,7 +320,9 @@ export default function Toolbar() {
   const [dataDialogOpen, setDataDialogOpen] = useState(false);
 
   const viewMenuWrapRef = useRef<HTMLDivElement | null>(null);
+  const analyzeMenuWrapRef = useRef<HTMLDivElement | null>(null);
   const dataMenuWrapRef = useRef<HTMLDivElement | null>(null);
+  const addMenuWrapRef = useRef<HTMLDivElement | null>(null);
 
   // Drag-to-move. The position is written straight to the element (not React
   // state): it changes on every pointer move and nothing else reads it. Until
@@ -363,8 +365,15 @@ export default function Toolbar() {
   useEffect(() => {
     if (!openMenu || dataDialogOpen) return;
     const handlePointerDown = (e: PointerEvent) => {
-      const activeRef = openMenu === 'view' ? viewMenuWrapRef : dataMenuWrapRef;
-      if (activeRef.current && !activeRef.current.contains(e.target as Node)) {
+      const wrap =
+        openMenu === 'view'
+          ? viewMenuWrapRef.current
+          : openMenu === 'analyze'
+            ? analyzeMenuWrapRef.current
+            : openMenu === 'add'
+              ? addMenuWrapRef.current
+              : dataMenuWrapRef.current;
+      if (wrap && !wrap.contains(e.target as Node)) {
         setOpenMenu(null);
       }
     };
@@ -386,8 +395,8 @@ export default function Toolbar() {
   // (e.g. Cmd+K search while the View menu is up), close the menu so its
   // capture-phase Escape handler can't swallow the modal's own Escape.
   useEffect(() => {
-    if (searchOpen || showMeOpen || settingsOpen || snapshotsOpen || helpOpen) setOpenMenu(null);
-  }, [searchOpen, showMeOpen, settingsOpen, snapshotsOpen, helpOpen]);
+    if (searchOpen || settingsOpen || snapshotsOpen || helpOpen) setOpenMenu(null);
+  }, [searchOpen, settingsOpen, snapshotsOpen, helpOpen]);
 
   if (!hasNodes) return null;
 
@@ -443,27 +452,11 @@ export default function Toolbar() {
         title="Search (⌘K)"
         aria-label="Search documents"
         onClick={() => {
-          setShowMeOpen(false);
           setSearchResults(null);
           setSearchOpen(true);
         }}
       >
         <IconSearch />
-      </button>
-
-      <button
-        type="button"
-        className={`btn-icon${showMeOpen ? ' is-active' : ''}`}
-        title="Show me a topic"
-        aria-label="Show me a topic"
-        onClick={() => {
-          const nextShowMeOpen = !showMeOpen;
-          setSearchOpen(false);
-          setShowMeOpen(nextShowMeOpen);
-          if (!nextShowMeOpen) setSearchResults(null);
-        }}
-      >
-        <IconShowMe />
       </button>
 
       <button
@@ -476,12 +469,9 @@ export default function Toolbar() {
         <IconFit />
       </button>
 
-      {/* View ▾ — 2D/3D and topic nodes */}
       <div className="toolbar__menu-wrap" ref={viewMenuWrapRef}>
         <button
           type="button"
-          // Lit when the menu is open OR any view mode is active, so the
-          // collapsed toolbar still signals "something is on" at a glance.
           className={`btn-icon${
             openMenu === 'view' || dims === 2 || topicNodesEnabled || clusterCollapsed
               ? ' is-active'
@@ -531,39 +521,91 @@ export default function Toolbar() {
               <span>Collapse clusters</span>
             </button>
 
-            {/* Saved views: camera + filter bookmarks, per corpus (lazy chunk) */}
             <Suspense fallback={null}>
               <SavedViewsSection onApplied={() => setOpenMenu(null)} />
             </Suspense>
+
+            <div
+              role="separator"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.14)', margin: '4px 0' }}
+            />
+            <button
+              type="button"
+              className="toolbar__menu-item"
+              title="Help and graph legend"
+              onClick={() => {
+                setOpenMenu(null);
+                setHelpOpen(true);
+              }}
+            >
+              <IconHelp />
+              <span>Help & legend</span>
+            </button>
           </div>
         )}
       </div>
 
-      <button
-        type="button"
-        className={`btn-icon${pathMode ? ' is-active' : ''}`}
-        title={pathMode ? 'Exit path mode' : 'How are these connected? (pick two nodes)'}
-        aria-label={pathMode ? 'Exit path mode' : 'Find a path between two nodes'}
-        onClick={() => {
-          // Both directions clear the shared highlight channel: exiting drops
-          // the path highlight, entering drops any search/insights highlight
-          // so the first endpoint pick doesn't silently clobber it later.
-          setSearchResults(null);
-          setPathMode(!pathMode);
-        }}
-      >
-        <IconPath />
-      </button>
-
-      <button
-        type="button"
-        className={`btn-icon${insightsOpen ? ' is-active' : ''}`}
-        title="Corpus insights"
-        aria-label="Corpus insights"
-        onClick={() => setInsightsOpen(!insightsOpen)}
-      >
-        <IconBulb />
-      </button>
+      <div className="toolbar__menu-wrap" ref={analyzeMenuWrapRef}>
+        <button
+          type="button"
+          className={`btn-icon${
+            openMenu === 'analyze' || pathMode || insightsOpen || snapshotsOpen ? ' is-active' : ''
+          }`}
+          title="Analyze the corpus"
+          aria-label="Analyze"
+          aria-haspopup="true"
+          aria-expanded={openMenu === 'analyze'}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleMenu('analyze');
+          }}
+        >
+          <IconAnalyze />
+        </button>
+        {openMenu === 'analyze' && (
+          <div className="toolbar__menu glass-panel">
+            <button
+              type="button"
+              className={`toolbar__menu-item${pathMode ? ' is-active' : ''}`}
+              title={pathMode ? 'Exit path mode' : 'How are these connected? (pick two nodes)'}
+              aria-pressed={pathMode}
+              onClick={() => {
+                setSearchResults(null);
+                setPathMode(!pathMode);
+                setOpenMenu(null);
+              }}
+            >
+              <IconPath />
+              <span>How are these connected?</span>
+            </button>
+            <button
+              type="button"
+              className={`toolbar__menu-item${insightsOpen ? ' is-active' : ''}`}
+              title="Corpus insights"
+              aria-pressed={insightsOpen}
+              onClick={() => {
+                setInsightsOpen(!insightsOpen);
+                setOpenMenu(null);
+              }}
+            >
+              <IconBulb />
+              <span>Corpus insights</span>
+            </button>
+            <button
+              type="button"
+              className="toolbar__menu-item"
+              title="Saved snapshots"
+              onClick={() => {
+                setSnapshotsOpen(true);
+                setOpenMenu(null);
+              }}
+            >
+              <IconHistory />
+              <span>Snapshots</span>
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="toolbar__menu-wrap" ref={dataMenuWrapRef}>
         <button
@@ -592,17 +634,6 @@ export default function Toolbar() {
 
       <div className="toolbar__divider" />
 
-      {/* Snapshots drawer — also hosts saving the current graph */}
-      <button
-        type="button"
-        className="btn-icon"
-        title="Saved snapshots"
-        aria-label="Saved snapshots"
-        onClick={() => setSnapshotsOpen(true)}
-      >
-        <IconHistory />
-      </button>
-
       <button
         type="button"
         className="btn-icon"
@@ -613,37 +644,50 @@ export default function Toolbar() {
         <IconGear />
       </button>
 
-      <button
-        type="button"
-        className="btn-icon"
-        title="Help and graph legend"
-        aria-label="Help and graph legend"
-        onClick={() => setHelpOpen(true)}
-      >
-        <IconHelp />
-      </button>
-
-      <button
-        type="button"
-        className="btn-icon"
-        title="Add files"
-        aria-label="Add files"
-        onClick={() => {
-          openFilePicker();
-        }}
-      >
-        <IconPlus />
-      </button>
-
-      <button
-        type="button"
-        className="btn-icon"
-        title="Add a folder — every relevant file inside it is added, subfolders included"
-        aria-label="Add folder"
-        onClick={openFolderPicker}
-      >
-        <IconFolderPlus />
-      </button>
+      <div className="toolbar__menu-wrap" ref={addMenuWrapRef}>
+        <button
+          type="button"
+          className={`btn-icon${openMenu === 'add' ? ' is-active' : ''}`}
+          title="Add documents"
+          aria-label="Add documents"
+          aria-haspopup="true"
+          aria-expanded={openMenu === 'add'}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleMenu('add');
+          }}
+        >
+          <IconPlus />
+        </button>
+        {openMenu === 'add' && (
+          <div className="toolbar__menu glass-panel">
+            <button
+              type="button"
+              className="toolbar__menu-item"
+              title="Add files"
+              onClick={() => {
+                setOpenMenu(null);
+                openFilePicker();
+              }}
+            >
+              <IconPlus />
+              <span>Add files</span>
+            </button>
+            <button
+              type="button"
+              className="toolbar__menu-item"
+              title="Add a folder — every relevant file inside it is added, subfolders included"
+              onClick={() => {
+                setOpenMenu(null);
+                openFolderPicker();
+              }}
+            >
+              <IconFolderPlus />
+              <span>Add folder</span>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

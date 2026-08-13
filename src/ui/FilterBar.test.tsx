@@ -46,6 +46,8 @@ describe('FilterBar', () => {
     expect(screen.getByRole('button', { name: /txt.*1/i })).toBeVisible();
     expect(screen.queryByRole('button', { name: /other/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cluster.*1/i })).toBeVisible();
+    expect(screen.getByRole('button', { name: /more filters/i })).toBeVisible();
+    expect(screen.queryByRole('button', { name: /^links$/i })).not.toBeInTheDocument();
   });
 
   it('toggles edge-kind and recency facets', () => {
@@ -59,6 +61,7 @@ describe('FilterBar', () => {
     });
     render(<FilterBar />);
     fireEvent.click(screen.getByTitle('Show filters'));
+    fireEvent.click(screen.getByRole('button', { name: /more filters/i }));
 
     fireEvent.click(screen.getByRole('button', { name: /^links$/i }));
     expect(useUiStore.getState().filter.edgeKinds).toEqual(['reference']);

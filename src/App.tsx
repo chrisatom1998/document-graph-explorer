@@ -29,7 +29,6 @@ const PathPanel = lazy(() => import('./ui/PathPanel'));
 const SidePanel = lazy(() => import('./ui/SidePanel'));
 const SnapshotDrawer = lazy(() => import('./ui/SnapshotDrawer'));
 const SearchOverlay = lazy(() => import('./ui/SearchOverlay'));
-const ShowMePanel = lazy(() => import('./ui/ShowMePanel'));
 const GraphNavigator = lazy(() => import('./ui/GraphNavigator'));
 const FilterBar = lazy(() => import('./ui/FilterBar'));
 const Minimap = lazy(() => import('./ui/Minimap'));
@@ -47,7 +46,6 @@ export default function App() {
   const phase = useGraphStore((s) => s.phase);
   const selectedId = useUiStore((s) => s.selectedId);
   const searchOpen = useUiStore((s) => s.searchOpen);
-  const showMeOpen = useUiStore((s) => s.showMeOpen);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
   const insightsOpen = useUiStore((s) => s.insightsOpen);
   const snapshotsOpen = useUiStore((s) => s.snapshotsOpen);
@@ -206,7 +204,6 @@ export default function App() {
         const nextSearchOpen = !ui.searchOpen;
         ui.setSearchOpen(nextSearchOpen);
         if (nextSearchOpen) {
-          ui.setShowMeOpen(false);
           ui.setSearchResults(null);
         }
         return;
@@ -223,8 +220,9 @@ export default function App() {
         if (ui.searchOpen) {
           ui.setSearchOpen(false);
           ui.setSearchResults(null);
-        } else if (ui.showMeOpen) {
-          ui.setShowMeOpen(false);
+        } else if (ui.highlightOwner === 'showMe') {
+          // Show-all leaves a golden match set with the overlay closed; Esc
+          // must dismiss that highlight before falling through to fitAll.
           ui.setSearchResults(null);
         } else if (ui.pathMode) {
           ui.setPathMode(false);
@@ -304,9 +302,6 @@ export default function App() {
       <Tooltip />
       {phase === 'ready' && searchOpen && (
         <Suspense fallback={null}><SearchOverlay /></Suspense>
-      )}
-      {showMeOpen && (
-        <Suspense fallback={null}><ShowMePanel /></Suspense>
       )}
       {settingsOpen && (
         <Suspense fallback={null}><SettingsPanel /></Suspense>
