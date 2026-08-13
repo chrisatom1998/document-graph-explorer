@@ -11,6 +11,8 @@ import { CHUNK_OVERLAP, CHUNK_TOKENS, MAX_EMBED_TEXT_BYTES } from '../config';
 const TOKENS_PER_WORD = 1.3;
 const MIN_CHUNK_WORDS = 16;
 
+const encoder = new TextEncoder();
+
 export interface ChunkResult {
   chunks: string[];
   /**
@@ -41,8 +43,8 @@ export function chunkText(
   // paragraphs receive overlap twice and can exceed the model budget.
   const segments: string[][] = [];
   for (const para of cleaned.split(/\n\s*\n+/)) {
-    const words = para.trim().split(/\s+/).filter((w) => w.length > 0);
-    if (words.length === 0) continue;
+    const words = para.match(/\S+/g);
+    if (!words || words.length === 0) continue;
     if (words.length <= targetWords) {
       segments.push(words);
       continue;
@@ -80,7 +82,6 @@ export function chunkText(
   }
 
   // 3) enforce the per-document embed byte budget (truncate further chunks)
-  const encoder = new TextEncoder();
   const out: string[] = [];
   let usedBytes = 0;
   let truncated = false;

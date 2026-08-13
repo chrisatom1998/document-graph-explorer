@@ -6,6 +6,7 @@ import { searchCorpus, searchCorpusLexical } from '../search/semanticSearch';
 import type { RetrievalMatchKind } from '../search/retrieval';
 import { focusNode } from './focusNode';
 import { useActiveOptionScroll } from './useActiveOptionScroll';
+import CloseButton from './CloseButton';
 
 const DEBOUNCE_MS = 250;
 
@@ -219,16 +220,12 @@ export default function SearchOverlay() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <button
+          <CloseButton
             ref={closeButtonRef}
-            type="button"
-            className="icon-btn-close"
             title="Close search"
             aria-label="Close search"
             onClick={closeAndClear}
-          >
-            ×
-          </button>
+          />
         </div>
 
         <div

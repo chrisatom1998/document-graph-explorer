@@ -13,6 +13,7 @@ import { shortestPath } from '../graph/pathfinding';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { focusNode } from './focusNode';
+import CloseButton from './CloseButton';
 
 export default function PathPanel() {
   const pathMode = useUiStore((s) => s.pathMode);
@@ -107,15 +108,11 @@ export default function PathPanel() {
     <div className="path-panel glass-panel" role="dialog" aria-label="Connection path finder">
       <div className="path-panel__header">
         <h2 className="path-panel__title">How are these connected?</h2>
-        <button
-          type="button"
-          className="icon-btn-close"
+        <CloseButton
           title="Close path finder"
           aria-label="Close path finder"
           onClick={close}
-        >
-          ✕
-        </button>
+        />
       </div>
       <div className="path-panel__body">{body}</div>
     </div>

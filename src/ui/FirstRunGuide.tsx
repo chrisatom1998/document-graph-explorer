@@ -4,6 +4,7 @@ import { AIRGAP } from '../airgap';
 import { useGraphStore } from '../store/graphStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
+import CloseButton from './CloseButton';
 
 // v4: shorter core-loop tour after the toolbar was collapsed into menus.
 const KEY = 'knowledge-nebula-first-graph-guide-v4';
@@ -135,14 +136,11 @@ export default function FirstRunGuide() {
         <div className="first-run-spotlight" style={spotlightStyle} aria-hidden="true" />
       )}
       <aside className="first-run-guide glass-panel" aria-label="Getting started">
-        <button
-          type="button"
+        <CloseButton
           className="first-run-guide__close"
-          onClick={close}
           aria-label="Dismiss getting started"
-        >
-          ×
-        </button>
+          onClick={close}
+        />
         <span className="first-run-guide__step">Step {step + 1} of {TOUR_STEPS.length}</span>
         <strong>{current.title}</strong>
         <p>{body}</p>

@@ -16,6 +16,7 @@ import { restoreSnapshotById, saveCurrentSnapshot } from '../persistence/session
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useFocusTrap } from './useFocusTrap';
+import CloseButton from './CloseButton';
 
 const panelStyle: CSSProperties = {
   width: 'min(480px, 92vw)',
@@ -202,15 +203,12 @@ export default function SnapshotDrawer() {
       >
         <div style={headerRowStyle}>
           <h2 style={titleStyle}>Saved Snapshots</h2>
-          <button
-            type="button"
+          <CloseButton
             style={closeBtnStyle}
-            onClick={() => setOpen(false)}
-            aria-label="Close snapshots"
             title="Close snapshots"
-          >
-            ✕
-          </button>
+            aria-label="Close snapshots"
+            onClick={() => setOpen(false)}
+          />
         </div>
 
         <div className="snapshot-save-row">

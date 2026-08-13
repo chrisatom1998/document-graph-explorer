@@ -15,7 +15,7 @@ import { referenceEdges } from '../pipeline/links';
 import { buildSemanticIndex, edgesFromIndex } from '../pipeline/similarity';
 import { computeIdf, keywordEdges, topKeywords } from '../pipeline/tfidf';
 
-const ctx = self as unknown as DedicatedWorkerGlobalScope;
+declare const self: DedicatedWorkerGlobalScope;
 
 // Higher resolution -> more, smaller communities (more distinct hues). Tuned
 // so a densely cross-linked corpus separates into several colored clusters
@@ -87,7 +87,7 @@ function handleLexical(req: Extract<AggRequest, { type: 'lexical' }>): void {
 
   const boilerplate = findBoilerplateLines(docs.map((d) => d.textLower.split('\n')));
 
-  ctx.postMessage({
+  self.postMessage({
     requestId: req.requestId,
     type: 'lexical:done',
     keywordsByDoc,
@@ -148,7 +148,7 @@ function handleSemantic(req: Extract<AggRequest, { type: 'semantic' }>): void {
     ...semEdges.map((e) => ({ source: e.source, target: e.target, weight: e.weight })),
   ]);
 
-  ctx.postMessage({
+  self.postMessage({
     requestId: req.requestId,
     type: 'semantic:done',
     edges: semEdges,
@@ -160,14 +160,14 @@ function handleSemantic(req: Extract<AggRequest, { type: 'semantic' }>): void {
 
 function handleCluster(req: Extract<AggRequest, { type: 'cluster' }>): void {
   const clusters = clusterFromEdges(req.ids, req.edges);
-  ctx.postMessage({
+  self.postMessage({
     requestId: req.requestId,
     type: 'cluster:done',
     clusters,
   } satisfies AggResponse);
 }
 
-ctx.onmessage = (ev: MessageEvent<AggRequest>) => {
+self.onmessage = (ev: MessageEvent<AggRequest>) => {
   const req = ev.data;
   void (async () => {
     try {
@@ -176,7 +176,7 @@ ctx.onmessage = (ev: MessageEvent<AggRequest>) => {
       else handleCluster(req);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      ctx.postMessage({ requestId: req.requestId, type: 'error', message } satisfies AggResponse);
+      self.postMessage({ requestId: req.requestId, type: 'error', message } satisfies AggResponse);
     }
   })();
 };

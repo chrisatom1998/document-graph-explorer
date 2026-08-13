@@ -23,6 +23,7 @@ import { useUiStore } from '../store/uiStore';
 import { timeAgo } from '../util/relativeTime';
 import { focusNode } from './focusNode';
 import IngestReportSection from './IngestReportSection';
+import CloseButton from './CloseButton';
 
 type SectionKey =
   | 'pinned'
@@ -198,15 +199,11 @@ export default function InsightsPanel() {
       <div className="insights glass-panel" role="dialog" aria-label="Corpus insights">
         <div className="side-panel__header insights__header">
           <h2 className="side-panel__title">Corpus insights</h2>
-          <button
-            type="button"
-            className="icon-btn-close"
+          <CloseButton
             title="Close insights"
             aria-label="Close insights"
             onClick={close}
-          >
-            ✕
-          </button>
+          />
         </div>
         <div className="insights__scroll">
           {phase !== 'ready' && (
