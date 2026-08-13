@@ -227,9 +227,21 @@ export function referenceEdges(
     for (const candidate of importPathCandidates(from.path, target)) {
       take(byPath.get(candidate));
     }
+    // Path-aware resolution is authoritative: once a specifier resolves,
+    // name-based fallbacks would only add unrelated same-name files. Likewise,
+    // an unresolved relative specifier from a doc with a known path points at
+    // a file that isn't in the corpus — not at same-name files elsewhere.
+    if (found.length > 0) return found;
+    const spec = target.trim();
+    if (from.path && (spec.startsWith('.') || spec.startsWith('/'))) return found;
     const base = normalizeLinkTarget(target);
     take(byFileName.get(base));
-    take(byStem.get(stripKnownExtension(base)));
+    // Extensionless stem matching is a guess; keep it for bare names only so
+    // module paths (`net/http`, `@scope/pkg`) don't attach to arbitrary files
+    // sharing their last segment.
+    if (!spec.replace(/^(?:\.\/)+/, '').includes('/')) {
+      take(byStem.get(stripKnownExtension(base)));
+    }
     return found;
   };
 

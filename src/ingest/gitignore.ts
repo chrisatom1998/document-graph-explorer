@@ -78,6 +78,10 @@ function pathMatchesRule(path: string, isDirectory: boolean, rule: GitIgnoreRule
   if (local === null) return false;
   const selfMatches = matchCandidates(local, rule.unanchored).some((candidate) => rule.regex.test(candidate));
   if (selfMatches && (!rule.directoryOnly || isDirectory)) return true;
+  // A rule matching a parent directory ignores everything beneath it, but a
+  // negation only un-ignores the directory entry itself (so the walk can
+  // descend); children stay ignored until a rule names them, as in git.
+  if (rule.negative) return false;
   return parentDirs(local).some((dir) =>
     matchCandidates(dir, rule.unanchored).some((candidate) => rule.regex.test(candidate)),
   );
