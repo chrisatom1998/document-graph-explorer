@@ -81,6 +81,13 @@ export default function SearchOverlay() {
           // Only report a failure when no pass landed results — the lexical
           // pass may have already applied hits before the semantic one broke.
           setFailed(!landedResults);
+          if (!landedResults) {
+            // Drop any hits left over from a previous query so the failure
+            // notice is visible instead of stale results.
+            setResults([]);
+            setActiveIndex(0);
+            setSearchResults(null);
+          }
         }
       })();
     }, DEBOUNCE_MS);
@@ -225,15 +232,15 @@ export default function SearchOverlay() {
               </div>
             );
           })}
-
-          {results.length === 0 && searched && (
-            <div className="search-overlay__empty" role="status">
-              {failed
-                ? 'Search didn’t complete — try again in a moment.'
-                : 'No matches — the model may still be loading'}
-            </div>
-          )}
         </div>
+
+        {results.length === 0 && searched && (
+          <div className="search-overlay__empty" role="status">
+            {failed
+              ? 'Search didn’t complete — try again in a moment.'
+              : 'No matches — the model may still be loading'}
+          </div>
+        )}
       </div>
     </div>
   );
