@@ -362,8 +362,13 @@ export function referenceEdges(
       const wikiHash = wiki.indexOf('#');
       if (wikiHash >= 0) wiki = wiki.slice(0, wikiHash).trim();
       if (!wiki) return found;
-      for (const candidate of importPathCandidates(from.path, wiki)) {
-        take(byPath.get(candidate));
+      // A path-style wikilink ([[folder/note]]) resolves vault-root-relative
+      // with Obsidian's implicit `.md`. Exact lookups only — the import-style
+      // extension fan-out would bind [[util]] to a root-level util.ts.
+      const wikiPath = posixNormalize(wiki).replace(/^\//, '').toLowerCase();
+      take(byPath.get(wikiPath));
+      if (found.length === 0 && !posixBasename(wikiPath).includes('.')) {
+        take(byPath.get(`${wikiPath}.md`));
       }
       if (found.length > 0) return found;
       const takeUnique = (hits: ReferenceDocInput[] | undefined): void => {
