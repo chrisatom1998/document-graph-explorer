@@ -5,45 +5,27 @@ import { useGraphStore } from '../store/graphStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 
-// v3: added saved views, folder sync, snapshot compare, and chat-provider
-// steps — bumping the key shows the enhanced tour once to users who
-// dismissed the shorter v2 tour.
-const KEY = 'knowledge-nebula-first-graph-guide-v3';
+// v4: shorter core-loop tour after the toolbar was collapsed into menus.
+const KEY = 'knowledge-nebula-first-graph-guide-v4';
 export const FIRST_RUN_GUIDE_REOPEN_EVENT = 'knowledge-nebula-reopen-first-run-guide';
 
 const TOUR_STEPS = [
   {
     selector: '.nebula-canvas',
     title: 'Explore the map',
-    body: 'Drag to orbit, scroll to zoom, and select a node to read the source behind it — plus add your own notes, tags, and pins.',
+    body: 'Drag to orbit, scroll to zoom, and click a node to read it. Notes, tags, and pins live on the document panel when you need them.',
   },
   {
     selector: '.toolbar',
     title: 'Find and shape the view',
-    body: 'Search, trace paths, switch between 2D and 3D, collapse clusters, and add files here.',
-  },
-  {
-    selector: '[aria-label="View options"]',
-    title: 'Save your favorite views',
-    body: 'View options also bookmarks the current camera angle, 2D/3D mode, and filters as a named view you can jump back to anytime.',
+    body: 'Search, fit the camera, and add files here. View, Analyze, and Data keep the extra tools — 2D, snapshots, insights, export — one click down, not on the bar.',
   },
   {
     selector: '.filter-bar-layer',
     title: 'Reduce visual noise',
-    body: 'Open Filters to focus by file type, cluster, connection kind, or recency, or raise Link Strength to hide weaker connections.',
+    body: 'Open Filters for file type and cluster. More filters hides weaker links, connection kinds, and recency until you ask.',
   },
   {
-    selector: '[aria-label^="Current corpus"]',
-    title: 'Keep a folder in sync',
-    body: 'Connect a folder from the corpus switcher and edits are re-indexed automatically — within a second in the desktop app.',
-  },
-  {
-    selector: '[aria-label="Saved snapshots"]',
-    title: 'Snapshot and compare',
-    body: 'Save named snapshots of the graph, then use Compare to see what changed since — documents added, removed, or updated, and connections gained or lost.',
-  },
-  {
-    // The bubble hides while the chat panel is open — anchor to either.
     selector: '.chat-bubble-btn, .chat-panel',
     title: 'Ask the corpus',
     body: 'Open chat for grounded answers that cite the documents used. Answers can come from local passages, OpenRouter, or a fully local Ollama model — pick a provider in Settings.',

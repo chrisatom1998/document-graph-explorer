@@ -103,4 +103,34 @@ describe('SearchOverlay', () => {
     expect(screen.getByRole('option', { name: /Architecture Overview/i })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /Incident Runbook/i })).not.toBeInTheDocument();
   });
+
+  it('frames every match from Show all in graph instead of opening a second topic panel', async () => {
+    useGraphStore.setState({
+      nodes: [documentNode(), secondDocumentNode()],
+      nodeIndex: { architecture: 0, runbook: 1 },
+    });
+    mockSearchCorpusLexical.mockResolvedValue([
+      { id: 'architecture', score: 1, matchKind: 'title' },
+      { id: 'runbook', score: 0.8, matchKind: 'keyword' },
+    ]);
+    mockSearchCorpus.mockResolvedValue([
+      { id: 'architecture', score: 1, matchKind: 'title' },
+      { id: 'runbook', score: 0.8, matchKind: 'keyword' },
+    ]);
+
+    render(<SearchOverlay />);
+    fireEvent.change(
+      screen.getByRole('combobox', { name: /search your documents/i }),
+      { target: { value: 'ops' } },
+    );
+
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2));
+    fireEvent.click(screen.getByRole('button', { name: /show all in graph/i }));
+
+    expect(useUiStore.getState().searchOpen).toBe(false);
+    expect(useUiStore.getState().highlightOwner).toBe('showMe');
+    expect(useUiStore.getState().searchResults).toEqual(['architecture', 'runbook']);
+    expect(useUiStore.getState().cameraCommand?.kind).toBe('frameSet');
+    expect(useUiStore.getState().cameraCommand?.ids).toEqual(['architecture', 'runbook']);
+  });
 });

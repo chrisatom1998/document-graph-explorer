@@ -589,7 +589,11 @@ export default function SettingsPanel() {
         </section>
         )}
 
-        <section style={sectionStyle}>
+        <details className="settings-advanced">
+          <summary style={{ ...headingStyle, cursor: 'pointer', listStyle: 'revert' }}>
+            Advanced
+          </summary>
+          <div style={{ ...sectionStyle, marginTop: 12 }}>
           <h3 style={headingStyle}>Recognition</h3>
           <label style={labelStyle}>
             Semantic search language
@@ -644,10 +648,6 @@ export default function SettingsPanel() {
             <code>public/ocr/lang/</code>. Without the pack, recognition falls back to whatever
             English can read.
           </p>
-        </section>
-
-        <section style={sectionStyle}>
-          <h3 style={headingStyle}>Export</h3>
           <label
             style={checkboxRowStyle}
             title="Embed document vectors in the exported JSON so semantic search/chat work after re-import. Makes the file much larger."
@@ -659,7 +659,8 @@ export default function SettingsPanel() {
             />
             Include embeddings in JSON export (larger file)
           </label>
-        </section>
+          </div>
+        </details>
 
         <section style={sectionStyle}>
           <h3 style={headingStyle}>Performance</h3>

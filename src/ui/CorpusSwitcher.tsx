@@ -82,7 +82,7 @@ export default function CorpusSwitcher({ variant = 'toolbar' }: { variant?: 'too
   // capture-phase Escape above would otherwise consume the key meant for the
   // overlay the user is actually looking at.
   const overlayOpen = useUiStore(
-    (s) => s.searchOpen || s.showMeOpen || s.settingsOpen || s.snapshotsOpen || s.helpOpen,
+    (s) => s.searchOpen || s.settingsOpen || s.snapshotsOpen || s.helpOpen,
   );
   useEffect(() => {
     if (overlayOpen) setOpen(false);

@@ -26,6 +26,7 @@ export interface CameraCommand {
  * same way; tracking the owner lets each panel tell whether its highlight is
  * still the active one instead of clobbering the others silently.
  */
+/** `showMe` is the “frame this match set” highlight, now owned by Search. */
 export type HighlightOwner = 'search' | 'insights' | 'path' | 'showMe' | 'snapshot';
 
 export type ToastKind = 'error' | 'warning' | 'info';
@@ -80,7 +81,6 @@ interface UiState {
   hoveredId: string | null;
   selectedId: string | null;
   searchOpen: boolean;
-  showMeOpen: boolean;
   searchResults: string[] | null; // null = no active highlight (shared channel)
   highlightOwner: HighlightOwner | null; // which feature set searchResults
   filter: GraphFilter;
@@ -105,7 +105,6 @@ interface UiState {
   setHovered: (id: string | null) => void;
   setSelected: (id: string | null) => void;
   setSearchOpen: (open: boolean) => void;
-  setShowMeOpen: (open: boolean) => void;
   setSearchResults: (ids: string[] | null, owner?: HighlightOwner) => void;
   setFilter: (f: Partial<GraphFilter>) => void;
   setSnapshotOverlay: (overlay: SnapshotOverlay | null) => void;
@@ -135,7 +134,6 @@ export const useUiStore = create<UiState>((set) => ({
   hoveredId: null,
   selectedId: null,
   searchOpen: false,
-  showMeOpen: false,
   searchResults: null,
   highlightOwner: null,
   filter: { ...DEFAULT_FILTER },
@@ -159,7 +157,6 @@ export const useUiStore = create<UiState>((set) => ({
   setSelected: (selectedId) =>
     set({ selectedId }),
   setSearchOpen: (searchOpen) => set({ searchOpen }),
-  setShowMeOpen: (showMeOpen) => set({ showMeOpen }),
   setSearchResults: (searchResults, owner) =>
     set({ searchResults, highlightOwner: searchResults ? (owner ?? null) : null }),
   setFilter: (f) => set((s) => ({ filter: { ...s.filter, ...f } })),

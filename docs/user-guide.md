@@ -123,44 +123,42 @@ Re-dropping a file you've already added is detected by content hash and is an in
 
 **What you're looking at:** documents are glossy spheres in cluster colors, sized by connection count. Edges are curved filaments colored by relationship kind. Hovering or selecting a node sends **pulses of light** flowing along its edges, and a tooltip shows the title, type, word count, and topics. Labels appear on the nearest ~40 nodes and fade with distance. A teal **AI core** at the center of the nebula flares while chat answers stream. After 10 seconds idle, the nebula slowly auto-rotates (this and other motion effects respect your OS "reduced motion" setting).
 
-**2D mode & topic nodes:** the toolbar's **View options ▾** menu has two toggles — **2D view** (flattens the layout to a plane; same clustering and interactions, much lighter on the GPU) and **Topic nodes** (adds octahedron hubs for topics shared by two or more documents; off by default).
+**2D mode & topic nodes:** **View options ▾** holds **2D view** (flattens the layout; same clustering, lighter on the GPU), **Topic nodes** (octahedron hubs for shared topics; off by default), cluster collapse, saved camera views, and the graph legend.
 
 **Auto-quality:** by default the app watches frame rate and steps effects down (and back up) to stay smooth — depth-of-field first, then bloom resolution, then label count and pulses. If it still struggles, a toast offers **"Switch to 2D"**. Pin maximum quality by unchecking Settings → **Auto-adjust quality for smooth performance**.
 
 ## The toolbar
 
-Appears once the graph has nodes, and can be dragged anywhere by its grip handle (position is remembered). Left to right:
+Appears once the graph has nodes, and can be dragged anywhere by its grip handle (position is remembered). The bar is the core loop only; studio tools sit one click down. Left to right:
 
-| Button | What it does |
+| Control | What it does |
 | --- | --- |
-| **Search (⌘K)** | Opens the search overlay |
-| **Show me a topic** | Highlights every document matching a topic phrase |
+| **Corpus switcher** | Named workspaces and optional live folder sync |
+| **Search (⌘K)** | Opens search; **Show all in graph** frames every match |
 | **Fit view** | Frames the whole graph |
-| **View options ▾** | 2D view and Topic nodes toggles |
-| **How are these connected?** | Path mode — pick two nodes, see the route |
-| **Corpus insights** | Orphans, duplicates, bridges, stale docs |
-| **Saved snapshots** | Save, reload, and visually compare graph states |
-| **Settings** | AI enrichment, recognition, storage, performance, data |
-| **＋ Add files** | File picker (individual files) |
-| **Add folder** | Folder picker — one pick ingests every relevant file in the folder and its subfolders |
+| **View ▾** | 2D, topic nodes, collapse clusters, saved views, help/legend |
+| **Analyze ▾** | Path finding, corpus insights, snapshots |
+| **Data ▾** | JSON import/export, PNG, share URL, OpenUSD |
+| **Settings** | AI, storage, performance; OCR and export embeddings under **Advanced** |
+| **Add ▾** | Add files or add a folder |
+
+The product-surface map is in [docs/product-surface.md](./product-surface.md).
 
 ## Search (`Ctrl+K` / `⌘K`)
 
-One search box, two engines. As you type (results update after a brief pause), you get instant **lexical** matches — title substrings and keyword/topic/entity hits — followed by **semantic** matches: the query is embedded with the same local model as your documents and compared by meaning, so "how do we deploy" finds the release runbook even if it never says "deploy". Each of the up-to-12 results shows a match-kind badge (`title` / `keyword` / `semantic`), a relevance bar, and a snippet for semantic hits. Matching nodes highlight live in the scene while you type.
+One search box, two engines. As you type (results update after a brief pause), you get instant **lexical** matches — title substrings and keyword/topic/entity hits — followed by **semantic** matches: the query is embedded with the same local model as your documents and compared by meaning, so "how do we deploy" finds the release runbook even if it never says "deploy". Each result shows a match-kind badge (`title` / `keyword` / `semantic`), a relevance bar, and a snippet for semantic hits. Matching nodes highlight live in the scene while you type.
+
+**Show all in graph** (when there is more than one hit) frames the whole match set and lights those nodes with the same golden pulse the old “Show me a topic” panel used. That is the one-move answer to "where is everything about X?" — not a second search UI.
 
 Navigate with `↓`/`↑`, open with `Enter` (selects the node and flies the camera to it), close with `Esc`. An active graph filter also hides non-matching hits in this list and in the scene.
 
-## Show me a topic
-
-Toolbar → **Show me a topic**. Type a phrase ("machine learning", "invoices", "Q3 planning") and press **Show me**: up to 40 matching documents light up with a pulsing golden glow and the camera frames the whole set — a one-move answer to "where is everything about X?" The panel lists the top matches as clickable buttons.
-
 ## How are these connected? (path finder)
 
-Toolbar → the path icon. Click one node, then another: the app finds the **fewest-hop route** between them through the graph, highlights it, frames it, and lists it hop-by-hop in a panel (each hop is clickable). Useful for questions like "what chain of documents links this contract to that email thread?" If no route exists you'll get "No connection found between these documents." Clicking a third node starts a new path from there; topic hubs can't be path endpoints.
+**Analyze ▾ → How are these connected?** Click one node, then another: the app finds the **fewest-hop route** between them through the graph, highlights it, frames it, and lists it hop-by-hop in a panel (each hop is clickable). Useful for questions like "what chain of documents links this contract to that email thread?" If no route exists you'll get "No connection found between these documents." Clicking a third node starts a new path from there; topic hubs can't be path endpoints.
 
 ## Corpus insights
 
-Toolbar → **Corpus insights**. Four automatic health checks over the whole corpus, each with a **Highlight** toggle that dims everything else in the scene:
+**Analyze ▾ → Corpus insights**. Automatic health checks over the whole corpus, each with a **Highlight** toggle that dims everything else in the scene:
 
 - **Orphaned documents** — connected to nothing; likely stale or out-of-scope.
 - **Possible duplicates** — pairs at ≥93% semantic similarity, with the match percentage shown.
@@ -186,7 +184,7 @@ Click any node. The right-hand panel shows:
 
 ## Filters
 
-The funnel button (top-left) opens the filter bar: toggle **file-type chips** and **cluster chips** (each shows its count), keep only certain **connection kinds** (links / similar / keywords / entities), restrict to documents **modified** recently (any time / 30d / 90d / 1y), require a minimum number of **connections** (slider 0–10), or hide weak edges with the **Link Strength** slider. Filtered-out nodes dim in the scene; search results are intersected with the active filter. **Clear** resets everything.
+The funnel button (top-left) opens the filter bar on **file-type** and **cluster** chips. **More filters** reveals connection-count, link-strength, connection-kind, and recency controls. Filtered-out nodes dim in the scene; search results are intersected with the active filter. **Clear** resets everything.
 
 ## Minimap
 
@@ -222,7 +220,7 @@ The enrichment list is deliberately short. Enrichment sends one request per 15 d
 
 ## Snapshots
 
-Toolbar → **Saved snapshots**. Type a name (a sensible default is pre-filled) and press **Save** to capture the current graph — documents, layout positions, and state. **Load** any saved snapshot to restore it (target: under 3 seconds), **Compare** paints added (green) and updated (amber) documents on the live graph and lists titles that exist only in the snapshot, **✕** deletes just the snapshot record. Snapshots reference cached documents rather than duplicating them, so they're cheap to keep.
+Toolbar → **Analyze ▾ → Snapshots**. Type a name (a sensible default is pre-filled) and press **Save** to capture the current graph — documents, layout positions, and state. **Load** any saved snapshot to restore it (target: under 3 seconds), **Compare** paints added (green) and updated (amber) documents on the live graph and lists titles that exist only in the snapshot, **✕** deletes just the snapshot record. Snapshots reference cached documents rather than duplicating them, so they're cheap to keep.
 
 ## Sessions & your data
 
@@ -230,11 +228,11 @@ Everything persists automatically to your browser's IndexedDB: the session saves
 
 Settings → **About** shows how much of this origin's browser storage the app is using. Settings → **Data** can drop **cached embeddings** (reload then re-embeds from saved text) or **original files** (Open falls back to the text viewer) without wiping the graph. Uncheck **Cache embeddings for instant reload** to stop writing vectors and free space on large corpora.
 
-Settings → **Recognition** picks scanned-PDF OCR language and page cap, and whether semantic search uses BGE's English instruction prefix or a language-neutral query.
+Settings → **Advanced** picks scanned-PDF OCR language and page cap, whether semantic search uses BGE's English instruction prefix or a language-neutral query, and whether JSON exports include document embeddings.
 
 Settings → **Data** → **Clear all data** (two-step confirm) wipes the graph and every cached document, embedding, and snapshot; your settings and API key are kept.
 
-Toolbar -> **Data** opens local export/import tools. **Export graph JSON** downloads the current graph; **Export image PNG** saves the visible scene; **Import graph JSON** loads a previous export and asks for confirmation before replacing a live graph. Settings -> **Export** still controls whether JSON exports include document embeddings for semantic search after re-import.
+Toolbar → **Data ▾** opens local export/import tools. **Export graph JSON** downloads the current graph; **Export image PNG** saves the visible scene; **Import graph JSON** loads a previous export and asks for confirmation before replacing a live graph.
 
 Generated PDF copies of this guide should be produced from this Markdown source (render + print-to-PDF) rather than edited directly.
 

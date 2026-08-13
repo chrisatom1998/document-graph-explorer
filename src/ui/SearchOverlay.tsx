@@ -20,6 +20,7 @@ export default function SearchOverlay() {
   const searchOpen = useUiStore((s) => s.searchOpen);
   const setSearchOpen = useUiStore((s) => s.setSearchOpen);
   const setSearchResults = useUiStore((s) => s.setSearchResults);
+  const sendCamera = useUiStore((s) => s.sendCamera);
 
   const nodes = useGraphStore((s) => s.nodes);
   const edges = useGraphStore((s) => s.edges);
@@ -153,6 +154,14 @@ export default function SearchOverlay() {
     setSearchResults(null);
   };
 
+  const showAllInGraph = () => {
+    const ids = displayedResults.map((row) => row.id);
+    if (ids.length === 0) return;
+    setSearchResults(ids, 'showMe');
+    sendCamera('frameSet', ids);
+    setSearchOpen(false);
+  };
+
   const handleDialogKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'Tab') return;
     const input = inputRef.current;
@@ -190,7 +199,7 @@ export default function SearchOverlay() {
             aria-label="Search your documents by meaning, not just keywords"
             value={query}
             title="Search your documents by meaning, not just keywords"
-            placeholder="Search your nebula… (semantic + title)"
+            placeholder="Search documents… (meaning + title)"
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
           />
@@ -259,6 +268,18 @@ export default function SearchOverlay() {
             {failed
               ? 'Search didn’t complete — try again in a moment.'
               : 'No matches — the model may still be loading'}
+          </div>
+        )}
+        {!browsing && displayedResults.length > 1 && (
+          <div className="search-overlay__actions">
+            <button
+              type="button"
+              className="search-overlay__show-all"
+              title="Highlight every match and frame them in the graph"
+              onClick={showAllInGraph}
+            >
+              Show all in graph ({displayedResults.length})
+            </button>
           </div>
         )}
       </div>
