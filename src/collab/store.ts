@@ -244,8 +244,9 @@ function clearQueuedRemoteCameraFrame(): void {
   if (queuedRemoteCameraRaf != null) {
     if (typeof cancelAnimationFrame === 'function') {
       cancelAnimationFrame(queuedRemoteCameraRaf);
+    } else {
+      clearTimeout(queuedRemoteCameraRaf);
     }
-    clearTimeout(queuedRemoteCameraRaf);
     queuedRemoteCameraRaf = null;
   }
   if (queuedRemoteCameraTimeout != null) {
@@ -318,8 +319,9 @@ function resolveLocalFollowPose(pending: PendingRemoteCamera): CameraPose {
 }
 
 function deliverRemoteCameraPose(pending: PendingRemoteCamera): void {
-  const { session, followMode } = useCollabStore.getState();
+  const { session, followMode, lastRemoteView } = useCollabStore.getState();
   if (!session) return;
+  if (!followMode && lastRemoteView) return;
   if (pending.requireFollow && !followMode) return;
   if (!pending.requireFollow && pending.localCameraActivityEpoch !== localCameraActivityEpoch) return;
   useUiStore.getState().sendCameraPose(resolveLocalFollowPose(pending));
