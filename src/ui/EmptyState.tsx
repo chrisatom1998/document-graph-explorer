@@ -30,6 +30,18 @@ export default function EmptyState() {
       .finally(() => setDemoLoading(false));
   };
 
+  // Demand-loaded like the graph importer: the folder scanner sits behind the
+  // entry chunk's size budget, and the picker still opens within the click's
+  // user-activation window.
+  const addFolder = () => {
+    void import('../ingest/folderPicker')
+      .then(({ openFolderPicker }) => openFolderPicker())
+      .catch((error) => {
+        console.warn('folder picker failed to load', error);
+        useUiStore.getState().pushToast("Couldn't open the folder picker.");
+      });
+  };
+
   const importGraph = () => {
     void import('./ExportImportMenu').then(({ importGraphJsonFileWithToast, openGraphJsonPicker }) => {
       openGraphJsonPicker((file) => {
@@ -79,6 +91,14 @@ export default function EmptyState() {
             <Button
               variant="secondary"
               size="lg"
+              aria-label="Add a folder — every relevant file inside it is added, subfolders included"
+              onPress={addFolder}
+            >
+              Add a folder
+            </Button>
+            <Button
+              variant="secondary"
+              size="lg"
               isDisabled={demoLoading}
               onPress={loadDemo}
             >
@@ -93,7 +113,10 @@ export default function EmptyState() {
             </Button>
           </div>
           <Suspense fallback={null}><CorpusSwitcher variant="empty" /></Suspense>
-          <p className="empty-state__hint">or drag files and folders anywhere</p>
+          <p className="empty-state__hint">
+            Pick a folder once and every relevant file inside it is pulled in, subfolders
+            included — or drag files and folders anywhere
+          </p>
         </div>
 
         <div className="empty-state__workflow" aria-label="How Document Graph Explorer works">

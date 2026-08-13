@@ -83,14 +83,15 @@ Produces `Knowledge Nebula-<version>-arm64.dmg` and `.zip` under `release/`. Rec
 
 ## Adding documents
 
-There are four ways to get documents in:
+There are five ways to get documents in:
 
 1. **Drag & drop** files *or entire folders* anywhere on the window (folders are walked recursively; the overlay reads "Drop to add to your nebula").
-2. The **Add files** button on the welcome screen.
-3. The **＋ Add files** button on the toolbar (multi-select file picker — note the picker selects files; use drag & drop for folders).
-4. **Load demo corpus** on the welcome screen, for an instant tour with sample documents.
+2. The **Add files** button on the welcome screen (multi-select file picker for individual files).
+3. The **Add a folder** button on the welcome screen — pick one folder and every relevant file inside it is pulled in automatically, subfolders included, with no need to drill into them (like adding a folder in Google Drive). Browsers with the File System Access API get the native directory picker; everywhere else a standard folder-upload picker is used, still recursive.
+4. The **＋ Add files** and **Add folder** buttons on the toolbar — the same two pickers, available once a graph is loaded.
+5. **Load demo corpus** on the welcome screen, for an instant tour with sample documents.
 
-**Supported formats:** `txt`, `log`, `md`, `mdx`, `pdf`, `html`/`htm`, `docx`/`docm`, `pptx`/`pptm`, `xlsx`/`xlsm`, `json`, `yaml`/`yml`, `csv`, and source code (`ts`/`tsx`/`js`/`jsx`, `py`, `go`, `rs`, `java`/`kt`, `c`/`cpp`/`h`, `rb`, `php`, `css`, `vue`/`svelte`, Dockerfiles, Makefiles, and similar). Anything else lands in the collapsible **ignored tray** with a reason rather than failing silently. Dotfiles, lockfiles, minified bundles, and development directories (`node_modules`, `.git`, `dist`, `build`, `vendor`, `target`, `.venv`, …) are skipped automatically when dropping folders. If the folder contains a `.gitignore`, those patterns are applied too — so dropping a git checkout indexes the project, not its build output.
+**Supported formats:** `txt`, `log`, `md`, `mdx`, `pdf`, `html`/`htm`, `docx`/`docm`, `pptx`/`pptm`, `xlsx`/`xlsm`, `json`, `yaml`/`yml`, `csv`, and source code (`ts`/`tsx`/`js`/`jsx`, `py`, `go`, `rs`, `java`/`kt`, `c`/`cpp`/`h`, `rb`, `php`, `css`, `vue`/`svelte`, Dockerfiles, Makefiles, and similar). Anything else lands in the collapsible **ignored tray** with a reason rather than failing silently. Dotfiles, lockfiles, minified bundles, and development directories (`node_modules`, `.git`, `dist`, `build`, `vendor`, `target`, `.venv`, …) are skipped automatically when dropping folders — and the same filters apply when adding a folder through **Add a folder**. If the folder contains a `.gitignore`, those patterns are applied too — so dropping (or picking) a git checkout indexes the project, not its build output.
 
 **What happens next:** ingestion runs entirely off the main thread — parse → boilerplate strip → chunk → TF-IDF → embeddings (self-hosted BGE model) → similarity links + Louvain clustering → topic synthesis. A **progress strip** shows the current phase (`Parsing…`, `Finding connections…`, `Embedding meaning…`, `Clustering…`, `Ready`), a percentage bar, and per-file status chips. The first run also shows a one-time banner while the embedding model loads.
 
@@ -140,7 +141,8 @@ Appears once the graph has nodes, and can be dragged anywhere by its grip handle
 | **Corpus insights** | Orphans, duplicates, bridges, stale docs |
 | **Saved snapshots** | Save, reload, and visually compare graph states |
 | **Settings** | AI enrichment, recognition, storage, performance, data |
-| **＋ Add files** | File picker |
+| **＋ Add files** | File picker (individual files) |
+| **Add folder** | Folder picker — one pick ingests every relevant file in the folder and its subfolders |
 
 ## Search (`Ctrl+K` / `⌘K`)
 
