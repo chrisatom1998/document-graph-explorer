@@ -38,8 +38,8 @@ function normalizePathTarget(target: string): string {
   while (t.startsWith('./')) t = t.slice(2);
   return t
     .replace(/\\/g, '/')
-    .replace(/^\/+/g, '')
-    .replace(/\/+$/g, '')
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '')
     .toLowerCase();
 }
 
