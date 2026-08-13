@@ -21,7 +21,7 @@
  */
 
 import type { DocNode } from '../model/types';
-import { posixNormalize } from '../util/posixPath';
+import { posixBasename, posixNormalize } from '../util/posixPath';
 import { isExternalUrl, normalizeLinkTarget } from '../pipeline/urlUtils';
 
 function stripExt(s: string): string {
@@ -116,6 +116,12 @@ export function resolveLinkTarget(target: string, index: LinkIndex): string | nu
   if (pathTarget.includes('/')) {
     const byPath = index.byPathSuffix.get(pathTarget);
     if (byPath) return byPath;
+    // Obsidian [[folder/note]] omits the implicit .md that the path index stores
+    // from the real file (same rule as pipeline/links.ts graph edges).
+    if (!posixBasename(pathTarget).includes('.')) {
+      const byMd = index.byPathSuffix.get(`${pathTarget}.md`);
+      if (byMd) return byMd;
+    }
   }
   const norm = normalizeLinkTarget(raw);
   if (!norm) return null;

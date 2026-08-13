@@ -86,6 +86,20 @@ describe('buildLinkIndex + resolveLinkTarget', () => {
     expect(resolveLinkTarget('README.md', index)).toBeNull();
   });
 
+  it('resolves an extensionless path-style wikilink via implicit .md', () => {
+    // Same-stem notes in different folders: [[projects/alpha]] must hit the
+    // projects file, not fall through to an ambiguous title/basename (null).
+    const index = buildLinkIndex([
+      doc('a', { path: 'MyVault/projects/alpha.md', title: 'alpha' }),
+      doc('b', { path: 'MyVault/inbox/alpha.md', title: 'alpha' }),
+    ]);
+    expect(resolveLinkTarget('projects/alpha', index)).toBe('a');
+    expect(resolveLinkTarget('inbox/alpha', index)).toBe('b');
+    expect(resolveLinkTarget('MyVault/projects/alpha', index)).toBe('a');
+    expect(resolveLinkTarget('alpha', index)).toBeNull();
+    expect(resolveLinkTarget('alpha.md', index)).toBeNull();
+  });
+
   it('still resolves unique setup.md cases alongside ambiguous README.md files', () => {
     const index = buildLinkIndex([
       doc('a', { path: 'pkg/one/README.md' }),
