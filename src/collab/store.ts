@@ -31,6 +31,12 @@ interface CollaborationState {
   refreshPeers: () => void;
 }
 
+function randomCollabToken(byteLength: number): string {
+  const bytes = new Uint8Array(byteLength);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 function collectPeers(session: CollabSession): Record<string, CollabPeer> {
   const next: Record<string, CollabPeer> = {};
   const states = session.provider?.awareness.getStates() ?? new Map();
@@ -56,10 +62,13 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
   peers: {},
 
   startSession: (roomId, sessionKey) => {
-    const nextRoom = roomId ?? `graph-${Math.random().toString(36).slice(2, 10)}`;
-    const nextKey = sessionKey ?? Math.random().toString(36).slice(2, 12);
+    if (get().session) {
+      get().leaveSession();
+    }
+    const nextRoom = roomId ?? `graph-${randomCollabToken(8)}`;
+    const nextKey = sessionKey ?? randomCollabToken(16);
     const session = createCollabSession({ roomId: nextRoom, sessionKey: nextKey });
-    const invite = buildCollabInvite(nextRoom, nextKey);
+    const invite = buildCollabInvite(session.roomId, session.sessionKey);
     session.provider?.awareness.on('change', () => {
       set({ peers: collectPeers(session) });
     });
@@ -71,8 +80,8 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     });
     set({
       session,
-      roomId: nextRoom,
-      sessionKey: nextKey,
+      roomId: session.roomId,
+      sessionKey: session.sessionKey,
       invite,
       status: 'connected',
       peers: collectPeers(session),
@@ -86,7 +95,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       get().leaveSession();
     }
     const session = createCollabSession({ roomId, sessionKey });
-    const invite = buildCollabInvite(roomId, sessionKey);
+    const invite = buildCollabInvite(session.roomId, session.sessionKey);
     session.provider?.awareness.on('change', () => {
       set({ peers: collectPeers(session) });
     });
@@ -98,8 +107,8 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     });
     set({
       session,
-      roomId,
-      sessionKey,
+      roomId: session.roomId,
+      sessionKey: session.sessionKey,
       invite,
       status: 'connected',
       peers: collectPeers(session),
@@ -127,13 +136,13 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     const { session } = get();
     if (!session?.provider) return;
     const current = session.provider.awareness.getLocalState() ?? {};
+    const next = { ...current, ...patch };
     session.provider.awareness.setLocalState({
-      ...current,
-      ...patch,
-      displayName: typeof patch.displayName === 'string' ? patch.displayName : current.displayName ?? 'You',
-      selectedId: typeof patch.selectedId === 'string' ? patch.selectedId : current.selectedId ?? null,
-      camera: patch.camera ?? current.camera ?? null,
-      cursor: patch.cursor ?? current.cursor ?? null,
+      ...next,
+      displayName: typeof next.displayName === 'string' ? next.displayName : 'You',
+      selectedId: typeof next.selectedId === 'string' ? next.selectedId : null,
+      camera: next.camera && typeof next.camera === 'object' ? next.camera : null,
+      cursor: next.cursor && typeof next.cursor === 'object' ? next.cursor : null,
     });
   },
 
