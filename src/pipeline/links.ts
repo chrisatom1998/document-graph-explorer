@@ -328,6 +328,17 @@ export function referenceEdges(
     if (pathKey) indexPush(byPath, pathKey, doc);
   }
 
+  // Every distinct top-level folder the corpus was dropped under
+  // (`MyVault/projects/alpha.md` -> `myvault`). Path-style wikilinks are
+  // written relative to that dropped root, which isn't part of the note's
+  // own vault-relative name, so it has to be tried as a prefix explicitly.
+  const firstPathSegments = new Set<string>();
+  for (const doc of docs) {
+    const p = posixNormalize(doc.path ?? '');
+    const slash = p.indexOf('/');
+    if (slash > 0) firstPathSegments.add(p.slice(0, slash).toLowerCase());
+  }
+
   const pairs = new Map<string, PairAcc>();
   const addRef = (idA: string, idB: string, weight: number, evidence: string): void => {
     if (idA === idB) return; // skip self-references
@@ -371,6 +382,32 @@ export function referenceEdges(
         take(byPath.get(`${wikiPath}.md`));
       }
       if (found.length > 0) return found;
+      // A path-style wikilink ([[projects/alpha]]) is written relative to the
+      // vault, but stored paths after a folder ingest carry the dropped
+      // folder as their first segment (`MyVault/projects/alpha.md`), so the
+      // plain lookup above misses. Try each root the corpus actually has;
+      // exact lookups only, and a hit under more than one root is still
+      // ambiguous and drops rather than guesses.
+      if (wikiPath.includes('/') && firstPathSegments.size > 0) {
+        const rootHits: ReferenceDocInput[] = [];
+        const rootSeen = new Set<string>();
+        const takeRoot = (hits: ReferenceDocInput[] | undefined): void => {
+          if (!hits) return;
+          for (const hit of hits) {
+            if (rootSeen.has(hit.id)) continue;
+            rootSeen.add(hit.id);
+            rootHits.push(hit);
+          }
+        };
+        for (const root of firstPathSegments) {
+          takeRoot(byPath.get(`${root}/${wikiPath}`));
+          if (!posixBasename(wikiPath).includes('.')) {
+            takeRoot(byPath.get(`${root}/${wikiPath}.md`));
+          }
+        }
+        if (rootHits.length === 1) take(rootHits);
+        if (found.length > 0) return found;
+      }
       const takeUnique = (hits: ReferenceDocInput[] | undefined): void => {
         if (hits && hits.length === 1) take(hits);
       };
@@ -566,6 +603,19 @@ function sharedTrailingSegments(a: string, b: string): number {
 }
 
 /**
+ * A leading-slash href (`/docs/guide.md`) is vault-root-relative, not
+ * file-relative: the root is the dropped folder, i.e. fromPath's first path
+ * segment. A fromPath with no folder prefix (no slash of its own) has no
+ * root to prepend, so the leading slash is just stripped.
+ */
+function resolveVaultRootRelative(fromPath: string, specifier: string): string {
+  const rest = posixNormalize(specifier).replace(/^\/+/, '');
+  const slash = fromPath.indexOf('/');
+  const root = slash >= 0 ? fromPath.slice(0, slash) : '';
+  return root ? posixJoin(root, rest) : rest;
+}
+
+/**
  * Paths to look up for an import / markdown href. Relative specifiers resolve
  * against the importing file; extensionless names expand to common source
  * suffixes and directory index files.
@@ -584,8 +634,9 @@ export function importPathCandidates(fromPath: string | undefined, specifier: st
   if (!spec) return [];
   const roots: string[] = [];
   const relative = spec.startsWith('.') || spec.startsWith('/');
-  if (relative && fromPath) roots.push(posixResolveFrom(fromPath, spec));
-  else if (!relative) {
+  if (relative && fromPath) {
+    roots.push(spec.startsWith('/') ? resolveVaultRootRelative(fromPath, spec) : posixResolveFrom(fromPath, spec));
+  } else if (!relative) {
     roots.push(posixNormalize(spec).replace(/^\//, ''));
     // A slashless bare specifier still resolves against the linking file's
     // directory when it names an explicit file (`guide.md`, `util.h`) —
