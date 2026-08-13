@@ -64,7 +64,10 @@ function randomCollabToken(byteLength: number): string {
 function collectPeers(session: CollabSession): Record<string, CollabPeer> {
   const next: Record<string, CollabPeer> = {};
   const states = session.provider?.awareness.getStates() ?? new Map();
+  const localClientId = session.provider?.awareness.clientID;
   for (const [clientId, state] of states.entries()) {
+    // Exclude the local client — the peer count should reflect remote peers only.
+    if (localClientId !== undefined && clientId === localClientId) continue;
     const peer = state as Partial<CollabPeer> & { displayName?: string };
     next[String(clientId)] = {
       id: String(clientId),
@@ -524,6 +527,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       session.provider?.awareness.on('change', () => {
         set({ peers: collectPeers(session) });
       });
+      // Presenter: skip re-applying our own writes back to ourselves.
       session.view.observe(() => {
         if (!get().followMode) return;
         applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
@@ -566,8 +570,9 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       session.provider?.awareness.on('change', () => {
         set({ peers: collectPeers(session) });
       });
+      // Joiner: always apply presenter updates. Camera delivery is gated
+      // inside scheduleRemoteCameraPose via requireFollow, not here.
       session.view.observe(() => {
-        if (!get().followMode) return;
         applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
       });
       session.provider?.awareness.setLocalState({
