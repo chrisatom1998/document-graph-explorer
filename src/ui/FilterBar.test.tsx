@@ -4,6 +4,7 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { DocNode } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
+import { DEFAULT_FILTER, useUiStore } from '../store/uiStore';
 import FilterBar from './FilterBar';
 
 function node(id: string, kind: DocNode['kind'], fileType: DocNode['fileType']): DocNode {
@@ -26,6 +27,7 @@ describe('FilterBar', () => {
   afterEach(() => {
     cleanup();
     useGraphStore.getState().reset();
+    useUiStore.setState({ filter: { ...DEFAULT_FILTER } });
   });
 
   it('counts document file types without labeling topic nodes as other files', () => {
@@ -44,5 +46,27 @@ describe('FilterBar', () => {
     expect(screen.getByRole('button', { name: /txt.*1/i })).toBeVisible();
     expect(screen.queryByRole('button', { name: /other/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cluster.*1/i })).toBeVisible();
+  });
+
+  it('toggles edge-kind and recency facets', () => {
+    const nodes = [node('doc', 'document', 'txt')];
+    useGraphStore.setState({
+      nodes,
+      nodeIndex: { doc: 0 },
+      edges: [],
+      phase: 'ready',
+      clusterNames: { 0: 'Cluster' },
+    });
+    render(<FilterBar />);
+    fireEvent.click(screen.getByTitle('Show filters'));
+
+    fireEvent.click(screen.getByRole('button', { name: /^links$/i }));
+    expect(useUiStore.getState().filter.edgeKinds).toEqual(['reference']);
+
+    fireEvent.click(screen.getByRole('button', { name: /^30d$/i }));
+    expect(useUiStore.getState().filter.modifiedWithinDays).toBe(30);
+
+    fireEvent.click(screen.getByRole('button', { name: /clear/i }));
+    expect(useUiStore.getState().filter).toEqual(DEFAULT_FILTER);
   });
 });

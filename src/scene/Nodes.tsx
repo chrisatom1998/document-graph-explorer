@@ -247,7 +247,7 @@ export default function Nodes() {
     if (!core?.instanceColor || !halo?.instanceColor) return false;
     const topic = topicRef.current;
     const { nodes, edges } = useGraphStore.getState();
-    const { hoveredId, selectedId, searchResults, highlightOwner, filter, dims } =
+    const { hoveredId, selectedId, searchResults, highlightOwner, filter, dims, snapshotOverlay } =
       useUiStore.getState();
     const isFlat = dims === 2;
     const showMeIds = highlightOwner === 'showMe' && searchResults ? new Set(searchResults) : null;
@@ -274,6 +274,10 @@ export default function Nodes() {
       if (emphasis && !emphasis.has(n.id)) tmpColor.multiplyScalar(DIM_FACTOR);
       if (n.id === hoveredId || n.id === selectedId) tmpColor.multiplyScalar(1.9);
       if (showMeIds?.has(n.id)) tmpColor.setRGB(1, 0.96, 0.62);
+      if (highlightOwner === 'snapshot' && snapshotOverlay) {
+        if (snapshotOverlay.addedIds.includes(n.id)) tmpColor.setRGB(0.35, 0.95, 0.55);
+        else if (snapshotOverlay.updatedIds.includes(n.id)) tmpColor.setRGB(1, 0.78, 0.28);
+      }
       tmpColor.r = Math.min(tmpColor.r, 1);
       tmpColor.g = Math.min(tmpColor.g, 1);
       tmpColor.b = Math.min(tmpColor.b, 1);
@@ -321,6 +325,7 @@ export default function Nodes() {
         s.searchResults !== prev.searchResults ||
         s.highlightOwner !== prev.highlightOwner ||
         s.filter !== prev.filter ||
+        s.snapshotOverlay !== prev.snapshotOverlay ||
         s.clusterCollapsed !== prev.clusterCollapsed
       ) {
         colorsDirty.current = true;

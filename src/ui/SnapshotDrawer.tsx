@@ -161,7 +161,18 @@ export default function SnapshotDrawer() {
         { nodes: exportData.nodes, edges: exportData.edges ?? [] },
         { nodes: current.nodes, edges: current.edges },
       );
-      setDiffById((prev) => ({ ...prev, [id]: `Since this snapshot: ${formatDiffSummary(diff)}` }));
+      const summary = formatDiffSummary(diff);
+      setDiffById((prev) => ({ ...prev, [id]: `Since this snapshot: ${summary}` }));
+      const overlayIds = [...diff.addedIds, ...diff.updatedIds];
+      useUiStore.getState().setSnapshotOverlay({
+        summary,
+        addedIds: diff.addedIds,
+        updatedIds: diff.updatedIds,
+        removedLabels: diff.removedLabels,
+      });
+      useUiStore.getState().setSearchResults(overlayIds.length > 0 ? overlayIds : null, 'snapshot');
+      if (overlayIds.length > 0) useUiStore.getState().sendCamera('frameSet', overlayIds);
+      setOpen(false);
     } finally {
       setActionId(null);
     }
@@ -267,7 +278,7 @@ export default function SnapshotDrawer() {
                     className="snapshot-btn"
                     disabled={phase !== 'ready' || actionId === snap.id}
                     onClick={() => void handleCompare(snap.id)}
-                    title="Summarize what changed between this snapshot and the current graph"
+                    title="Highlight what changed between this snapshot and the current graph"
                   >
                     Compare
                   </button>

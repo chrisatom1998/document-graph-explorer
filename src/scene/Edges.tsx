@@ -275,7 +275,11 @@ export default function Edges() {
   ): boolean =>
     ui.clusterCollapsed ||
     e.weight < ui.filter.minEdgeWeight ||
-    (e.kind === 'topic' && !ui.topicNodesEnabled);
+    (e.kind === 'topic' && !ui.topicNodesEnabled) ||
+    (e.kind !== 'topic' &&
+      ui.filter.edgeKinds !== null &&
+      ui.filter.edgeKinds.length > 0 &&
+      !ui.filter.edgeKinds.includes(e.kind));
 
   const recomputeColors = (): void => {
     const { nodes } = useGraphStore.getState();

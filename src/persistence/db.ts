@@ -122,6 +122,8 @@ export interface SavedViewRecord {
     clusters: number[] | null;
     minDegree: number;
     minEdgeWeight: number;
+    edgeKinds?: import('../model/types').EdgeKind[] | null;
+    modifiedWithinDays?: number | null;
   };
 }
 

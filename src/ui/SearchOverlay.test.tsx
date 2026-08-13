@@ -11,7 +11,7 @@ vi.mock('../search/semanticSearch', () => ({
 
 import { searchCorpus, searchCorpusLexical } from '../search/semanticSearch';
 import { useGraphStore } from '../store/graphStore';
-import { useUiStore } from '../store/uiStore';
+import { DEFAULT_FILTER, useUiStore } from '../store/uiStore';
 import SearchOverlay from './SearchOverlay';
 
 const mockSearchCorpus = vi.mocked(searchCorpus);
@@ -41,7 +41,12 @@ describe('SearchOverlay', () => {
   beforeEach(() => {
     useGraphStore.getState().reset();
     useGraphStore.setState({ nodes: [documentNode()], nodeIndex: { architecture: 0 } });
-    useUiStore.setState({ searchOpen: true, searchResults: null, highlightOwner: null });
+    useUiStore.setState({
+      searchOpen: true,
+      searchResults: null,
+      highlightOwner: null,
+      filter: { ...DEFAULT_FILTER },
+    });
     mockSearchCorpus.mockReset();
     mockSearchCorpusLexical.mockReset();
   });
@@ -84,5 +89,18 @@ describe('SearchOverlay', () => {
     expect(mockSearchCorpusLexical).toHaveBeenCalledWith('architecture');
     expect(mockSearchCorpus).toHaveBeenCalledWith('architecture');
     expect(useUiStore.getState().searchResults).toEqual(['architecture']);
+  });
+
+  it('hides documents that fail the active file-type filter', () => {
+    useGraphStore.setState({
+      nodes: [documentNode(), { ...secondDocumentNode(), fileType: 'pdf' }],
+      nodeIndex: { architecture: 0, runbook: 1 },
+    });
+    useUiStore.setState({ filter: { ...DEFAULT_FILTER, fileTypes: ['md'] } });
+
+    render(<SearchOverlay />);
+
+    expect(screen.getByRole('option', { name: /Architecture Overview/i })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Incident Runbook/i })).not.toBeInTheDocument();
   });
 });

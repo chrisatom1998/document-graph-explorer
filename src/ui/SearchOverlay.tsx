@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { nodesMatchingFilter } from '../scene/emphasis';
 import { searchCorpus, searchCorpusLexical } from '../search/semanticSearch';
 import type { RetrievalMatchKind } from '../search/retrieval';
 import { focusNode } from './focusNode';
@@ -21,7 +22,9 @@ export default function SearchOverlay() {
   const setSearchResults = useUiStore((s) => s.setSearchResults);
 
   const nodes = useGraphStore((s) => s.nodes);
+  const edges = useGraphStore((s) => s.edges);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
+  const filter = useUiStore((s) => s.filter);
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ResultRow[]>([]);
@@ -109,11 +112,13 @@ export default function SearchOverlay() {
   }, [query, searchOpen]);
 
   const browsing = query.trim().length === 0;
-  const displayedResults: ResultRow[] = browsing
+  const allowed = nodesMatchingFilter(nodes, edges, filter);
+  const displayedResults: ResultRow[] = (browsing
     ? nodes
         .filter((node) => node.kind === 'document')
-        .map((node) => ({ id: node.id, score: 0, matchKind: 'title' }))
-    : results;
+        .map((node) => ({ id: node.id, score: 0, matchKind: 'title' as const }))
+    : results
+  ).filter((row) => !allowed || allowed.has(row.id));
   const hasDisplayedResults = displayedResults.length > 0;
   const activeOptionId = hasDisplayedResults ? `search-option-${activeIndex}` : undefined;
   // Must run before the closed-overlay early return: hooks cannot be

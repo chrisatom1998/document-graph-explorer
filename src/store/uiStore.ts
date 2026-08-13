@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { FileType } from '../model/types';
+import type { EdgeKind, FileType } from '../model/types';
 
 export type QualityTier = 0 | 1 | 2 | 3 | 4; // 0 = ultra … 4 = suggest 2D
 
@@ -26,7 +26,7 @@ export interface CameraCommand {
  * same way; tracking the owner lets each panel tell whether its highlight is
  * still the active one instead of clobbering the others silently.
  */
-export type HighlightOwner = 'search' | 'insights' | 'path' | 'showMe';
+export type HighlightOwner = 'search' | 'insights' | 'path' | 'showMe' | 'snapshot';
 
 export type ToastKind = 'error' | 'warning' | 'info';
 
@@ -54,6 +54,26 @@ export interface GraphFilter {
   clusters: number[] | null;
   minDegree: number;
   minEdgeWeight: number; // 0..1 — hide edges below this weight (spec §9 hairball slider)
+  /** null = every kind; topic edges still follow the topic-nodes toggle. */
+  edgeKinds: EdgeKind[] | null;
+  /** Keep documents modified within this many days; null = any age. */
+  modifiedWithinDays: number | null;
+}
+
+export const DEFAULT_FILTER: GraphFilter = {
+  fileTypes: null,
+  clusters: null,
+  minDegree: 0,
+  minEdgeWeight: 0,
+  edgeKinds: null,
+  modifiedWithinDays: null,
+};
+
+export interface SnapshotOverlay {
+  summary: string;
+  addedIds: string[];
+  updatedIds: string[];
+  removedLabels: string[];
 }
 
 interface UiState {
@@ -64,6 +84,7 @@ interface UiState {
   searchResults: string[] | null; // null = no active highlight (shared channel)
   highlightOwner: HighlightOwner | null; // which feature set searchResults
   filter: GraphFilter;
+  snapshotOverlay: SnapshotOverlay | null;
   dims: 2 | 3;
   topicNodesEnabled: boolean;
   clusterCollapsed: boolean; // super-node collapse mode (spec §9)
@@ -87,6 +108,7 @@ interface UiState {
   setShowMeOpen: (open: boolean) => void;
   setSearchResults: (ids: string[] | null, owner?: HighlightOwner) => void;
   setFilter: (f: Partial<GraphFilter>) => void;
+  setSnapshotOverlay: (overlay: SnapshotOverlay | null) => void;
   setDims: (d: 2 | 3) => void;
   setTopicNodes: (v: boolean) => void;
   setClusterCollapsed: (v: boolean) => void;
@@ -116,7 +138,8 @@ export const useUiStore = create<UiState>((set) => ({
   showMeOpen: false,
   searchResults: null,
   highlightOwner: null,
-  filter: { fileTypes: null, clusters: null, minDegree: 0, minEdgeWeight: 0 },
+  filter: { ...DEFAULT_FILTER },
+  snapshotOverlay: null,
   dims: 3,
   topicNodesEnabled: false,
   clusterCollapsed: false,
@@ -140,6 +163,7 @@ export const useUiStore = create<UiState>((set) => ({
   setSearchResults: (searchResults, owner) =>
     set({ searchResults, highlightOwner: searchResults ? (owner ?? null) : null }),
   setFilter: (f) => set((s) => ({ filter: { ...s.filter, ...f } })),
+  setSnapshotOverlay: (snapshotOverlay) => set({ snapshotOverlay }),
   setDims: (dims) => set({ dims }),
   setTopicNodes: (topicNodesEnabled) => set({ topicNodesEnabled }),
   setClusterCollapsed: (clusterCollapsed) => set({ clusterCollapsed }),

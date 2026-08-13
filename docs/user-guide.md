@@ -138,7 +138,7 @@ Appears once the graph has nodes, and can be dragged anywhere by its grip handle
 | **View options ▾** | 2D view and Topic nodes toggles |
 | **How are these connected?** | Path mode — pick two nodes, see the route |
 | **Corpus insights** | Orphans, duplicates, bridges, stale docs |
-| **Saved snapshots** | Save and reload graph states |
+| **Saved snapshots** | Save, reload, and visually compare graph states |
 | **Settings** | AI enrichment, offline mode, performance, data |
 | **＋ Add files** | File picker |
 
@@ -146,7 +146,7 @@ Appears once the graph has nodes, and can be dragged anywhere by its grip handle
 
 One search box, two engines. As you type (results update after a brief pause), you get instant **lexical** matches — title substrings and keyword/topic/entity hits — followed by **semantic** matches: the query is embedded with the same local model as your documents and compared by meaning, so "how do we deploy" finds the release runbook even if it never says "deploy". Each of the up-to-12 results shows a match-kind badge (`title` / `keyword` / `semantic`), a relevance bar, and a snippet for semantic hits. Matching nodes highlight live in the scene while you type.
 
-Navigate with `↓`/`↑`, open with `Enter` (selects the node and flies the camera to it), close with `Esc`.
+Navigate with `↓`/`↑`, open with `Enter` (selects the node and flies the camera to it), close with `Esc`. An active graph filter also hides non-matching hits in this list and in the scene.
 
 ## Show me a topic
 
@@ -184,7 +184,7 @@ Click any node. The right-hand panel shows:
 
 ## Filters
 
-The funnel button (top-left) opens the filter bar: toggle **file-type chips** and **cluster chips** (each shows its count), require a minimum number of **connections** (slider 0–10), or hide weak edges with the **Link Strength** slider. Filtered-out nodes dim in the scene; **Clear** resets everything.
+The funnel button (top-left) opens the filter bar: toggle **file-type chips** and **cluster chips** (each shows its count), keep only certain **connection kinds** (links / similar / keywords / entities), restrict to documents **modified** recently (any time / 30d / 90d / 1y), require a minimum number of **connections** (slider 0–10), or hide weak edges with the **Link Strength** slider. Filtered-out nodes dim in the scene; search results are intersected with the active filter. **Clear** resets everything.
 
 ## Minimap
 
@@ -220,7 +220,7 @@ The enrichment list is deliberately short. Enrichment sends one request per 15 d
 
 ## Snapshots
 
-Toolbar → **Saved snapshots**. Type a name (a sensible default is pre-filled) and press **Save** to capture the current graph — documents, layout positions, and state. **Load** any saved snapshot to restore it (target: under 3 seconds), **✕** deletes just the snapshot record. Snapshots reference cached documents rather than duplicating them, so they're cheap to keep.
+Toolbar → **Saved snapshots**. Type a name (a sensible default is pre-filled) and press **Save** to capture the current graph — documents, layout positions, and state. **Load** any saved snapshot to restore it (target: under 3 seconds), **Compare** paints added (green) and updated (amber) documents on the live graph and lists titles that exist only in the snapshot, **✕** deletes just the snapshot record. Snapshots reference cached documents rather than duplicating them, so they're cheap to keep.
 
 ## Sessions & your data
 

@@ -55,6 +55,9 @@ describe('diffGraphs', () => {
     const after = slice([doc('a-v2', 'x/a.md'), doc('b', 'x/b.md')]);
     const d = diffGraphs(before, after);
     expect(d).toMatchObject({ addedDocs: 0, removedDocs: 0, updatedDocs: 1 });
+    expect(d.updatedIds).toEqual(['a-v2']);
+    expect(d.addedIds).toEqual([]);
+    expect(d.removedLabels).toEqual([]);
   });
 
   it('an edited doc that kept its connections contributes zero edge churn', () => {
