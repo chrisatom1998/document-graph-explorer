@@ -48,7 +48,6 @@
     "tesseract.js": "^7.0.0",
     "three": "0.185.1",
     "unified": "^11.0.5",
-    "unist-util-visit": "^5.1.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {
@@ -73,6 +72,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.1",
     "vite": "^7.3.6",
+    "vite-node": "^3.0.0",
     "vitest": "^4.1.9"
   },
   "build": {

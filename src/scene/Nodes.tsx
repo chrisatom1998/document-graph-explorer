@@ -294,8 +294,10 @@ export default function Nodes() {
   // Pre-create instance color attributes at full capacity. setColorAt would
   // otherwise size the buffer from the CURRENT count and break when it grows.
   useEffect(() => {
-    for (const mesh of [coreRef.current, haloRef.current, topicRef.current]) {
-      if (!mesh) continue;
+    const meshes = [coreRef.current, haloRef.current, topicRef.current].filter(
+      (m): m is THREE.InstancedMesh => m !== null,
+    );
+    for (const mesh of meshes) {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       if (!mesh.instanceColor) {
         const attr = new THREE.InstancedBufferAttribute(
@@ -308,6 +310,15 @@ export default function Nodes() {
     }
     colorsDirty.current = true;
     matricesDirty.current = true; // topic mesh may have just (un)mounted
+
+    return () => {
+      for (const mesh of meshes) {
+        if (mesh.instanceColor) {
+          mesh.instanceColor.dispose();
+          mesh.instanceColor = null;
+        }
+      }
+    };
   }, [topicNodesEnabled]);
 
   // Store subscriptions -> dirty flags (no hooks-per-frame, no re-renders).
