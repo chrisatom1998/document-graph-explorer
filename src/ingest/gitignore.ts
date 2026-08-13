@@ -7,7 +7,7 @@
  * safe; this is not a full git implementation.
  */
 
-import { posixNormalize } from '../util/posixPath';
+import { posixJoin, posixNormalize } from '../util/posixPath';
 
 export interface GitIgnoreRule {
   negative: boolean;
@@ -16,6 +16,8 @@ export interface GitIgnoreRule {
   baseDir: string;
   /** True when the pattern has no slash (matches in any subdirectory). */
   unanchored: boolean;
+  /** Pattern text (post !, trailing /, leading / stripped), pre-glob-compile. */
+  pattern: string;
   regex: RegExp;
 }
 
@@ -51,13 +53,22 @@ export function parseGitignore(text: string, baseDir: string): GitIgnoreRule[] {
       directoryOnly,
       baseDir: base,
       unanchored,
+      pattern: body,
       regex: globToRegExp(body),
     });
   }
   return rules;
 }
 
-/** Last matching rule wins; negation un-ignores. */
+/**
+ * Last matching rule wins at each level; negation un-ignores. Mirrors real
+ * git: a directory excluded by a rule that matches the directory itself
+ * cannot be re-included by a deeper negation (`dist/` + `!dist/keep.md`
+ * still ignores `dist/keep.md`) — only a rule that stops short of matching
+ * the directory itself (`dist/*`) leaves room for a later per-file negation.
+ * So each ancestor is resolved bottom-up; once one is ignored, nothing below
+ * it can flip that back.
+ */
 export function pathIsGitIgnored(
   relativePath: string,
   isDirectory: boolean,
@@ -65,26 +76,47 @@ export function pathIsGitIgnored(
 ): boolean {
   const path = posixNormalize(relativePath);
   if (!path) return false;
+  const segments = path.split('/');
+  let ignored = false;
+  let current = '';
+  for (let i = 0; i < segments.length; i += 1) {
+    current = current ? `${current}/${segments[i]}` : segments[i];
+    if (ignored) continue; // ancestor already excluded; no rule can re-include a descendant
+    const isFinal = i === segments.length - 1;
+    ignored = selfMatchIgnored(current, isFinal ? isDirectory : true, rules);
+  }
+  return ignored;
+}
+
+/** Whether `path` itself (not its descendants) matches an ignore rule. */
+function selfMatchIgnored(path: string, isDirectory: boolean, rules: readonly GitIgnoreRule[]): boolean {
   let ignored = false;
   for (const rule of rules) {
-    if (!pathMatchesRule(path, isDirectory, rule)) continue;
+    const local = stripBase(path, rule.baseDir);
+    if (local === null) continue;
+    if (rule.directoryOnly && !isDirectory) continue;
+    const matches = matchCandidates(local, rule.unanchored).some((candidate) => rule.regex.test(candidate));
+    if (!matches) continue;
     ignored = !rule.negative;
   }
   return ignored;
 }
 
-function pathMatchesRule(path: string, isDirectory: boolean, rule: GitIgnoreRule): boolean {
-  const local = stripBase(path, rule.baseDir);
-  if (local === null) return false;
-  const selfMatches = matchCandidates(local, rule.unanchored).some((candidate) => rule.regex.test(candidate));
-  if (selfMatches && (!rule.directoryOnly || isDirectory)) return true;
-  // A rule matching a parent directory ignores everything beneath it, but a
-  // negation only un-ignores the directory entry itself (so the walk can
-  // descend); children stay ignored until a rule names them, as in git.
-  if (rule.negative) return false;
-  return parentDirs(local).some((dir) =>
-    matchCandidates(dir, rule.unanchored).some((candidate) => rule.regex.test(candidate)),
-  );
+/**
+ * True when a negation rule could un-ignore some path under `dirPath` — used
+ * to decide whether a default-ignored directory (node_modules, dist, …) is
+ * still worth walking instead of skipping outright for performance.
+ */
+export function hasUnignoreUnder(dirPath: string, rules: readonly GitIgnoreRule[]): boolean {
+  const dir = posixNormalize(dirPath);
+  if (!dir) return false;
+  for (const rule of rules) {
+    if (!rule.negative) continue;
+    if (rule.unanchored) return true; // could match at any depth, including under dir
+    const scope = rule.baseDir ? posixJoin(rule.baseDir, rule.pattern) : rule.pattern;
+    if (scope === dir || scope.startsWith(`${dir}/`)) return true;
+  }
+  return false;
 }
 
 function stripBase(path: string, baseDir: string): string | null {
@@ -103,15 +135,6 @@ function matchCandidates(local: string, unanchored: boolean): string[] {
     out.push(segments.slice(i).join('/'));
   }
   return out;
-}
-
-function parentDirs(path: string): string[] {
-  const parts = path.split('/');
-  const dirs: string[] = [];
-  for (let i = 1; i < parts.length; i += 1) {
-    dirs.push(parts.slice(0, i).join('/'));
-  }
-  return dirs;
 }
 
 function stripTrailingUnescapedSpaces(line: string): string {

@@ -18,8 +18,20 @@ describe('parseGitignore + pathIsGitIgnored', () => {
     expect(pathIsGitIgnored('pkg/build', true, rules)).toBe(false);
   });
 
-  it('lets a later negation un-ignore a path (last match wins)', () => {
+  it('cannot re-include a file whose parent directory is fully excluded', () => {
+    // Real git: `dist/` excludes the directory itself, so a deeper negation
+    // can't reach inside it — matches "It is not possible to re-include a
+    // file if a parent directory of that file is excluded."
     const rules = parseGitignore('dist/\n!dist/keep.md\n', '');
+    expect(pathIsGitIgnored('dist/out.js', false, rules)).toBe(true);
+    expect(pathIsGitIgnored('dist/keep.md', false, rules)).toBe(true);
+  });
+
+  it('lets a later negation un-ignore a path when the directory itself is not excluded', () => {
+    // `dist/*` only matches direct contents, not the `dist` entry itself, so
+    // the directory stays walkable and a specific negation can re-include it.
+    const rules = parseGitignore('dist/*\n!dist/keep.md\n', '');
+    expect(pathIsGitIgnored('dist', true, rules)).toBe(false);
     expect(pathIsGitIgnored('dist/out.js', false, rules)).toBe(true);
     expect(pathIsGitIgnored('dist/keep.md', false, rules)).toBe(false);
   });

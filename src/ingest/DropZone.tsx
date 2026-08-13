@@ -19,7 +19,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { posixJoin } from '../util/posixPath';
 import { routeFile } from './fileRouter';
-import { mergeGitIgnoreRules, pathIsGitIgnored, type GitIgnoreRule } from './gitignore';
+import { hasUnignoreUnder, mergeGitIgnoreRules, pathIsGitIgnored, type GitIgnoreRule } from './gitignore';
 import type { NamedFile } from './localFiles';
 import { repoArtifactReason } from './repoArtifacts';
 
@@ -68,7 +68,9 @@ async function walkDirectory(
   ancestorRules: GitIgnoreRule[],
   out: NamedFile[],
 ): Promise<void> {
-  if (isIgnoredDir(dir.name) || (dir.name.startsWith('.') && dir.name !== rootName)) return;
+  // Ignored-dir skipping for descendants happens at the call site (gated on
+  // hasUnignoreUnder); this only covers the directly-dropped root itself.
+  if ((depth === 0 && isIgnoredDir(dir.name)) || (dir.name.startsWith('.') && dir.name !== rootName)) return;
   const children = await readDirectoryEntries(dir);
   const rules = mergeGitIgnoreRules(ancestorRules, await readGitignoreText(children), repoRel);
   for (const child of children) {
@@ -76,7 +78,11 @@ async function walkDirectory(
     if (child.name.startsWith('.')) continue;
     const childRel = repoRel ? posixJoin(repoRel, child.name) : child.name;
     if (child.isDirectory) {
-      if (isIgnoredDir(child.name) || pathIsGitIgnored(childRel, true, rules)) continue;
+      // A default-ignored dir (node_modules, dist, …) is only worth walking
+      // when a gitignore negation might reach inside it; otherwise skip it
+      // outright rather than enumerating a huge vendor tree.
+      if (isIgnoredDir(child.name) && !hasUnignoreUnder(childRel, rules)) continue;
+      if (pathIsGitIgnored(childRel, true, rules)) continue;
       await walkDirectory(child as FileSystemDirectoryEntry, rootName, childRel, depth + 1, rules, out);
       continue;
     }

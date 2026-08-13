@@ -277,4 +277,62 @@ describe('referenceEdges path-aware import resolution', () => {
     const edges = referenceEdges(docs, 5);
     expect(edges.some((e) => e.source === 'a' && e.target === 'b')).toBe(true);
   });
+
+  // Not run through expectParity: the oracle is basename-only and would
+  // deliberately fan out to both same-name files, which is the bug under test.
+  it('does not fan out a bare #include to an unrelated same-name header', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Main',
+        fileName: 'main.c',
+        path: 'src/main.c',
+        textLower: '#include "util.h"',
+        mdLinkTargets: ['util.h'],
+      },
+      {
+        id: 'b',
+        title: 'Inc Util',
+        fileName: 'util.h',
+        path: 'inc/util.h',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'c',
+        title: 'Other Util',
+        fileName: 'util.h',
+        path: 'other/util.h',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    const linkEdges = edges.filter((e) => e.evidence.some((ev) => ev.startsWith('links to')));
+    expect(linkEdges).toEqual([]);
+  });
+
+  it('does not attach a bare python import to an unrelated same-stem file', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Main',
+        fileName: 'main.py',
+        path: 'src/main.py',
+        textLower: 'import os',
+        mdLinkTargets: ['os'],
+      },
+      {
+        id: 'b',
+        title: 'Os Module',
+        fileName: 'os.ts',
+        path: 'src/os.ts',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    const linkEdges = edges.filter((e) => e.evidence.some((ev) => ev.startsWith('links to')));
+    expect(linkEdges).toEqual([]);
+  });
 });

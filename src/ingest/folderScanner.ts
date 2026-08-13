@@ -1,7 +1,7 @@
 import { IGNORED_DIRS } from '../config';
 import { posixJoin } from '../util/posixPath';
 import { routeFile } from './fileRouter';
-import { mergeGitIgnoreRules, pathIsGitIgnored, type GitIgnoreRule } from './gitignore';
+import { hasUnignoreUnder, mergeGitIgnoreRules, pathIsGitIgnored, type GitIgnoreRule } from './gitignore';
 import type { NamedFile } from './localFiles';
 import { repoArtifactReason } from './repoArtifacts';
 
@@ -49,8 +49,11 @@ async function walk(
     if (name === '.gitignore') continue;
     if (name.startsWith('.')) continue;
     if (entry.kind === 'directory') {
-      if (ignoredDirectory(name)) continue;
       const childPath = relativeDir ? posixJoin(relativeDir, name) : name;
+      // A default-ignored dir (node_modules, dist, …) is only worth walking
+      // when a gitignore negation might reach inside it; otherwise skip it
+      // outright rather than enumerating a huge vendor tree.
+      if (ignoredDirectory(name) && !hasUnignoreUnder(childPath, rules)) continue;
       if (pathIsGitIgnored(childPath, true, rules)) continue;
       await walk(entry as FileSystemDirectoryHandle, rootName, childPath, rules, output);
       continue;
