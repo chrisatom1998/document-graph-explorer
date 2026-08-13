@@ -240,6 +240,89 @@ describe('tfidf', () => {
 });
 
 // ---------------------------------------------------------------------------
+// multiword keyphrases + keyword-edge IDF (item 15)
+// ---------------------------------------------------------------------------
+describe("phrase-aware keywordEdges", () => {
+  it("phrase keys sharing across docs produce non-flat edge weights", () => {
+    // Combined unigram+phrase maps, as handleLexical builds. Three pairs:
+    // A-B shares two rare phrases (high IDF) plus a common one; A-C and B-C
+    // share only the common phrase plus one mid-IDF phrase each.
+    const docs = [
+      {
+        id: "a",
+        tf: {
+          kafka: 1,
+          "rate limiting": 4,
+          "circuit breaker": 3,
+          "machine learning": 2,
+          "neural network": 2,
+        },
+      },
+      {
+        id: "b",
+        tf: {
+          kafka: 1,
+          "rate limiting": 4,
+          "circuit breaker": 3,
+          "machine learning": 2,
+          "feature store": 2,
+        },
+      },
+      {
+        id: "c",
+        tf: {
+          kafka: 1,
+          "machine learning": 2,
+          "feature store": 2,
+          "neural network": 5,
+        },
+      },
+    ];
+    const idf = computeIdf(docs);
+    expect(idf.get("rate limiting")!).toBeGreaterThan(0);
+    expect(idf.get("rate limiting")!).toBeGreaterThan(idf.get("machine learning")!);
+    const keywordsByDoc: Record<string, string[]> = {
+      a: ["rate limiting", "circuit breaker", "machine learning", "neural network"],
+      b: ["rate limiting", "circuit breaker", "machine learning", "feature store"],
+      c: ["machine learning", "feature store", "neural network"],
+    };
+    const edges = keywordEdges(docs, keywordsByDoc, idf, { minShared: 2, edgesPerDoc: 5 });
+    expect(edges.length).toBeGreaterThanOrEqual(3);
+    const weights = [...new Set(edges.map((e) => e.weight))];
+    expect(weights.length).toBeGreaterThanOrEqual(2);
+    for (const e of edges) {
+      expect(e.evidence.join(" ")).toMatch(/rate limiting|circuit breaker|machine learning|feature store|neural network/);
+    }
+  });
+
+  it("phrases + unigram-only idf flatten every keyword edge to 0.85 (the trap)", () => {
+    const phraseDocs = [
+      { id: "a", tf: { "rate limiting": 3, "circuit breaker": 2 } },
+      { id: "b", tf: { "rate limiting": 3, "circuit breaker": 2 } },
+      { id: "c", tf: { "rate limiting": 2, "circuit breaker": 2 } },
+    ];
+    const unigramOnlyIdf = computeIdf([
+      { id: "a", tf: { rate: 3, limiting: 3, circuit: 2, breaker: 2 } },
+      { id: "b", tf: { rate: 3, limiting: 3, circuit: 2, breaker: 2 } },
+      { id: "c", tf: { rate: 2, limiting: 2, circuit: 2, breaker: 2 } },
+    ]);
+    const keywordsByDoc: Record<string, string[]> = {
+      a: ["rate limiting", "circuit breaker"],
+      b: ["rate limiting", "circuit breaker"],
+      c: ["rate limiting", "circuit breaker"],
+    };
+    const edges = keywordEdges(phraseDocs, keywordsByDoc, unigramOnlyIdf, {
+      minShared: 2,
+      edgesPerDoc: 5,
+    });
+    expect(edges.length).toBeGreaterThanOrEqual(3);
+    for (const e of edges) {
+      expect(e.weight).toBeCloseTo(0.85);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // reference edges (links + title mentions)
 // ---------------------------------------------------------------------------
 describe('referenceEdges', () => {

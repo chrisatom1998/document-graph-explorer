@@ -37,10 +37,18 @@ function mulberry32(seed: number): () => number {
 function handleLexical(req: Extract<AggRequest, { type: 'lexical' }>): void {
   const { docs, params } = req;
 
-  const idf = computeIdf(docs.map((d) => ({ id: d.id, tf: d.tf })));
+  // Combine unigram tf with phraseTf so phrases get real document frequencies.
+  // Phrase keys contain spaces and never collide with unigrams. keywordEdges is
+  // unchanged: once idf covers phrases, pair scores stay non-zero (the 0.85 trap).
+  const combined = docs.map((d) => ({
+    id: d.id,
+    tf: { ...d.tf, ...d.phraseTf },
+    totalTerms: d.totalTerms,
+  }));
+  const idf = computeIdf(combined.map((d) => ({ id: d.id, tf: d.tf })));
 
   const keywordsByDoc: Record<string, string[]> = {};
-  for (const doc of docs) {
+  for (const doc of combined) {
     keywordsByDoc[doc.id] = topKeywords(doc.tf, doc.totalTerms, idf, params.tfidfTopN);
   }
 

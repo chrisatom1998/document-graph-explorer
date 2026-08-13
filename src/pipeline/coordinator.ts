@@ -270,6 +270,7 @@ function aggRequest<T extends AggResponse>(
  */
 interface LexMeta {
   tf: Record<string, number>;
+  phraseTf: Record<string, number>;
   totalTerms: number;
   fileName: string;
 }
@@ -521,7 +522,7 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<voi
         });
         return null;
       }
-      lexMeta.set(p.id, { tf: doc.tf, totalTerms: doc.totalTerms, fileName: p.file.name });
+      lexMeta.set(p.id, { tf: doc.tf, phraseTf: doc.phraseTf, totalTerms: doc.totalTerms, fileName: p.file.name });
       mdLinkTargetsStore.set(
         p.id,
         p.fileType === 'pdf' ? pdfLinks.map((l) => l.url) : doc.mdLinkTargets,
@@ -834,6 +835,7 @@ async function runLexicalPass(
       title: n.title,
       fileName: meta?.fileName ?? basename(n.path ?? n.title),
       tf: meta?.tf ?? {},
+      phraseTf: meta?.phraseTf ?? {},
       totalTerms: meta?.totalTerms ?? 0,
       textLower: truncateToBytes(text, MAX_EMBED_TEXT_BYTES).toLowerCase(),
       mdLinkTargets: mdLinkTargetsStore.get(n.id) ?? [],
@@ -869,12 +871,16 @@ async function runLexicalPass(
     for (const [docId, keywords] of Object.entries(lexical.keywordsByDoc)) {
       const existing = nodesById.get(docId);
       if (!existing) continue;
-      // topics = TF-IDF fallback; never clobber canonical (enriched) topics
+      // Overwrite empty topics or the previous TF-IDF fallback (phrases may
+      // have changed). Never clobber Gemini topics, or legacy caches where
+      // provenance is unknown (undefined + non-empty topics).
+      const overwrite =
+        existing.topics.length === 0 || existing.topicsSource === 'tfidf';
       patches.set(
         docId,
-        existing.topics.length > 0
-          ? { keywords }
-          : { keywords, topics: keywords.slice(0, 5) },
+        overwrite
+          ? { keywords, topics: keywords.slice(0, 5), topicsSource: 'tfidf' }
+          : { keywords },
       );
     }
     store().patchNodes(patches);
@@ -1302,6 +1308,7 @@ async function backfillLexMeta(pool: WorkerPool): Promise<void> {
       });
       lexMeta.set(n.id, {
         tf: done.doc.tf,
+        phraseTf: done.doc.phraseTf,
         totalTerms: done.doc.totalTerms,
         fileName,
       });

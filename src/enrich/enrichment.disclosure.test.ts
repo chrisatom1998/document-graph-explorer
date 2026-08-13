@@ -73,3 +73,54 @@ describe('enrichment disclosure boundary', () => {
     expect(payload[0].excerpt).toBe('x'.repeat(1_200));
   });
 });
+
+describe("enrichment overwrite path (item 15)", () => {
+  beforeEach(() => {
+    useSettingsStore.getState().setOfflineMode(false);
+    useSettingsStore.getState().setEnrichEnabled(true);
+    useSettingsStore.getState().setEnrichProvider("openrouter");
+    useSettingsStore.getState().setOpenRouterKey("test-key");
+    useGraphStore.setState({
+      nodes: [
+        {
+          ...documentNode,
+          summary: "Local TextRank extractive summary of the document contents.",
+          topics: ["rate limiting"],
+          topicsSource: "tfidf",
+        },
+      ],
+      phase: "ready",
+    });
+    textStore.set(documentNode.id, "rate limiting rate limiting circuit breaker notes");
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    textStore.clear();
+    useSettingsStore.getState().setEnrichEnabled(false);
+    useSettingsStore.getState().setOpenRouterKey("");
+    useGraphStore.setState({ nodes: [], phase: "idle" });
+  });
+
+  it("Gemini patch overwrites TextRank summary and stamps topicsSource gemini", async () => {
+    const geminiSummary = "Gemini-authored summary of the rate-limiting design.";
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        completionResponse(
+          JSON.stringify([
+            { docId: documentNode.id, summary: geminiSummary, topics: ["rate limiting"] },
+          ]),
+        ),
+      )
+      .mockResolvedValueOnce(
+        completionResponse(JSON.stringify([{ cluster: 0, name: "Rate Limits" }])),
+      );
+
+    await expect(runEnrichment()).resolves.toMatchObject({ ok: true });
+
+    const node = useGraphStore.getState().nodes.find((n) => n.id === documentNode.id);
+    expect(node?.summary).toBe(geminiSummary);
+    expect(node?.topicsSource).toBe("gemini");
+    expect(node?.topics).toContain("rate limiting");
+  });
+});

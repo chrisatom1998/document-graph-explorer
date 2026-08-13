@@ -12,6 +12,7 @@ import type { FeatureExtractionPipeline, Tensor } from '@huggingface/transformer
 import { EMBED_DIMS, EMBED_MODEL_ID } from '../config';
 import type { LinkRef, NodeStatus, ParsedDoc, PoolRequest, PoolResponse } from '../model/types';
 import { extractEntities } from '../pipeline/entities';
+import { extractPhraseTf } from '../pipeline/phrases';
 import { summarize } from '../pipeline/summarize';
 import { tokenize, termFreq } from '../pipeline/tokenize';
 import { parseHtml } from '../pipeline/parsers/html';
@@ -41,6 +42,7 @@ function analyzeText(
 ): ParsedDoc {
   const tokens = tokenize(text);
   const { tf, total } = termFreq(tokens);
+  const phraseTf = extractPhraseTf(text);
   let wordCount = 0;
   for (const word of text.split(/\s+/)) if (word.length > 0) wordCount += 1;
   return {
@@ -53,6 +55,7 @@ function analyzeText(
     docLinks,
     entities: extractEntities(text),
     tf,
+    phraseTf,
     totalTerms: total,
     chunks: [], // the coordinator chunks after corpus-wide boilerplate strip
     summary: summarize(text),

@@ -22,6 +22,11 @@ export const SUMMARY_SENTENCES = 4; // sentences kept per document summary
 export const SUMMARY_MAX_CHARS = 600; // summary cap, truncated on a word boundary
 export const SUMMARY_MAX_INPUT_SENTENCES = 300; // bounds the O(n²) similarity matrix
 
+// --- Multiword keyphrases (RAKE-style n-grams at parse time, item 15) ---
+export const PHRASE_MAX_WORDS = 3; // longest candidate n-gram (2..this)
+export const PHRASE_MIN_TF = 2; // drop phrases seen fewer times in a doc
+export const PHRASE_TOP_PER_DOC = 100; // payload bound on phraseTf shipped per doc
+
 // --- Embedding model ---
 export const EMBED_MODEL_ID = 'Xenova/bge-small-en-v1.5';
 export const EMBED_DIMS = 384;

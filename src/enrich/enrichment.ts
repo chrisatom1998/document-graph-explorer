@@ -405,7 +405,7 @@ export async function runEnrichment(): Promise<{ ok: boolean; message: string }>
     // Apply summaries + canonical topics to the graph.
     const patches = new Map<string, Partial<DocNode>>();
     for (const [id, e] of enriched) {
-      patches.set(id, { summary: e.summary, topics: finalTopics.get(id) ?? e.topics });
+      patches.set(id, { summary: e.summary, topics: finalTopics.get(id) ?? e.topics, topicsSource: 'gemini' });
     }
     useGraphStore.getState().patchNodes(patches);
 

@@ -31,6 +31,12 @@ export interface DocNode {
   folderKey?: string; // layout hint only — never an edge
   summary?: string; // AI-enriched or first ~200 chars
   topics: string[]; // canonical (enriched) or TF-IDF fallback
+  /**
+   * Who last wrote `topics`. `tfidf` may be overwritten on the next lexical
+   * pass; `gemini` (and legacy undefined + non-empty topics) is never clobbered
+   * by the TF-IDF fallback.
+   */
+  topicsSource?: 'tfidf' | 'gemini';
   entities: string[];
   keywords: string[]; // raw TF-IDF top-N
   wordCount: number;
@@ -178,6 +184,8 @@ export interface ParsedDoc {
   docLinks: LinkRef[]; // labelled links for the reader view (label ↔ url pairing)
   entities: string[];
   tf: Record<string, number>; // term frequency (tokenized)
+  /** RAKE-style 2..3-gram counts; keys contain spaces (no unigram collision). */
+  phraseTf: Record<string, number>;
   totalTerms: number;
   chunks: string[]; // pre-chunked for embedding
   /** Extractive TextRank summary computed in the worker; '' when nothing usable. */
@@ -256,6 +264,7 @@ export interface LexicalDocInput {
   title: string;
   fileName: string; // for mention matching
   tf: Record<string, number>;
+  phraseTf: Record<string, number>;
   totalTerms: number;
   textLower: string; // capped, for title-mention scan + boilerplate
   mdLinkTargets: string[];

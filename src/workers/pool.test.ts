@@ -21,6 +21,7 @@ function makeDoc(): ParsedDoc {
     docLinks: [],
     entities: [],
     tf: {},
+    phraseTf: {},
     totalTerms: 1,
     chunks: [],
     summary: '',
