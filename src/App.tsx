@@ -3,7 +3,6 @@ import DropZone from './ingest/DropZone';
 import Toolbar from './ui/Toolbar';
 import Tooltip from './ui/Tooltip';
 import ChatLauncher from './ui/ChatLauncher';
-import GraphNavigator from './ui/GraphNavigator';
 import ToastHost from './ui/ToastHost';
 import { shouldIgnoreGlobalKey } from './ui/globalKeyboard';
 import { useGraphStore } from './store/graphStore';
@@ -31,8 +30,8 @@ const SidePanel = lazy(() => import('./ui/SidePanel'));
 const SnapshotDrawer = lazy(() => import('./ui/SnapshotDrawer'));
 const SearchOverlay = lazy(() => import('./ui/SearchOverlay'));
 const ShowMePanel = lazy(() => import('./ui/ShowMePanel'));
+const GraphNavigator = lazy(() => import('./ui/GraphNavigator'));
 const FilterBar = lazy(() => import('./ui/FilterBar'));
-const SnapshotDiffBanner = lazy(() => import('./ui/SnapshotDiffBanner'));
 const Minimap = lazy(() => import('./ui/Minimap'));
 const SettingsPanel = lazy(() => import('./ui/SettingsPanel'));
 const ChatPanel = lazy(() => import('./ui/ChatPanel'));
@@ -52,7 +51,6 @@ export default function App() {
   const settingsOpen = useUiStore((s) => s.settingsOpen);
   const insightsOpen = useUiStore((s) => s.insightsOpen);
   const snapshotsOpen = useUiStore((s) => s.snapshotsOpen);
-  const snapshotOverlay = useUiStore((s) => s.snapshotOverlay);
   const helpOpen = useUiStore((s) => s.helpOpen);
   const pathMode = useUiStore((s) => s.pathMode);
   const chatOpen = useChatStore((s) => s.isOpen);
@@ -284,9 +282,8 @@ export default function App() {
         <Suspense fallback={null}><EmptyState /></Suspense>
       )}
       {phase === 'ready' && <Toolbar />}
-      {phase === 'ready' && <GraphNavigator />}
-      {phase === 'ready' && snapshotOverlay && (
-        <Suspense fallback={null}><SnapshotDiffBanner /></Suspense>
+      {phase === 'ready' && (
+        <Suspense fallback={null}><GraphNavigator /></Suspense>
       )}
       {phase === 'ready' && (
         <Suspense fallback={null}><FilterBar /></Suspense>
