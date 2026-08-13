@@ -1,12 +1,6 @@
 import { create } from 'zustand';
 import { useUiStore, type GraphFilter } from '../store/uiStore';
-import {
-  buildCollabInvite,
-  createCollabSession,
-  destroyCollabSession,
-  parseCollabInvite,
-  type CollabSession,
-} from './session';
+import type { CollabSession } from './session';
 
 export interface CollabPeer {
   id: string;
@@ -33,9 +27,9 @@ interface CollaborationState {
   peers: Record<string, CollabPeer>;
   followMode: boolean;
   lastRemoteView: CollabSharedView | null;
-  startSession: (roomId?: string, sessionKey?: string) => string | null;
-  joinSession: (roomId: string, sessionKey: string) => string | null;
-  joinInvite: (invite: string) => string | null;
+  startSession: (roomId?: string, sessionKey?: string) => Promise<string | null>;
+  joinSession: (roomId: string, sessionKey: string) => Promise<string | null>;
+  joinInvite: (invite: string) => Promise<string | null>;
   leaveSession: () => void;
   setLocalPresence: (patch: Partial<CollabPeer>) => void;
   setFollowMode: (enabled: boolean) => void;
@@ -104,78 +98,93 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
   followMode: false,
   lastRemoteView: null,
 
-  startSession: (roomId, sessionKey) => {
+  startSession: async (roomId, sessionKey) => {
     if (get().session) {
       get().leaveSession();
     }
     const nextRoom = roomId ?? `graph-${randomCollabToken(8)}`;
     const nextKey = sessionKey ?? randomCollabToken(16);
-    const session = createCollabSession({ roomId: nextRoom, sessionKey: nextKey });
-    const invite = buildCollabInvite(session.roomId, session.sessionKey);
-    session.provider?.awareness.on('change', () => {
-      set({ peers: collectPeers(session) });
-    });
-    session.view.observe(() => {
-      if (!get().followMode) return;
-      applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
-    });
-    session.provider?.awareness.setLocalState({
-      displayName: 'You',
-      cursor: null,
-      selectedId: useUiStore.getState().selectedId,
-      camera: null,
-    });
-    set({
-      session,
-      roomId: session.roomId,
-      sessionKey: session.sessionKey,
-      invite,
-      status: 'connected',
-      peers: collectPeers(session),
-      followMode: false,
-      lastRemoteView: null,
-    });
-    get().syncSharedView();
-    return invite;
+    set({ status: 'connecting' });
+    try {
+      const { buildCollabInvite, createCollabSession } = await import('./session');
+      const session = createCollabSession({ roomId: nextRoom, sessionKey: nextKey });
+      const invite = buildCollabInvite(session.roomId, session.sessionKey);
+      session.provider?.awareness.on('change', () => {
+        set({ peers: collectPeers(session) });
+      });
+      session.view.observe(() => {
+        if (!get().followMode) return;
+        applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
+      });
+      session.provider?.awareness.setLocalState({
+        displayName: 'You',
+        cursor: null,
+        selectedId: useUiStore.getState().selectedId,
+        camera: null,
+      });
+      set({
+        session,
+        roomId: session.roomId,
+        sessionKey: session.sessionKey,
+        invite,
+        status: 'connected',
+        peers: collectPeers(session),
+        followMode: false,
+        lastRemoteView: null,
+      });
+      get().syncSharedView();
+      return invite;
+    } catch (error) {
+      set({ status: 'idle' });
+      throw error;
+    }
   },
 
-  joinSession: (roomId, sessionKey) => {
+  joinSession: async (roomId, sessionKey) => {
     const current = get();
     if (current.session) {
       get().leaveSession();
     }
-    const session = createCollabSession({ roomId, sessionKey });
-    const invite = buildCollabInvite(session.roomId, session.sessionKey);
-    session.provider?.awareness.on('change', () => {
-      set({ peers: collectPeers(session) });
-    });
-    session.view.observe(() => {
-      if (!get().followMode) return;
-      applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
-    });
-    session.provider?.awareness.setLocalState({
-      displayName: 'You',
-      cursor: null,
-      selectedId: useUiStore.getState().selectedId,
-      camera: null,
-    });
-    set({
-      session,
-      roomId: session.roomId,
-      sessionKey: session.sessionKey,
-      invite,
-      status: 'connected',
-      peers: collectPeers(session),
-      followMode: false,
-      lastRemoteView: null,
-    });
-    if (session.view.size > 0) {
-      applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
+    set({ status: 'connecting' });
+    try {
+      const { buildCollabInvite, createCollabSession } = await import('./session');
+      const session = createCollabSession({ roomId, sessionKey });
+      const invite = buildCollabInvite(session.roomId, session.sessionKey);
+      session.provider?.awareness.on('change', () => {
+        set({ peers: collectPeers(session) });
+      });
+      session.view.observe(() => {
+        if (!get().followMode) return;
+        applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
+      });
+      session.provider?.awareness.setLocalState({
+        displayName: 'You',
+        cursor: null,
+        selectedId: useUiStore.getState().selectedId,
+        camera: null,
+      });
+      set({
+        session,
+        roomId: session.roomId,
+        sessionKey: session.sessionKey,
+        invite,
+        status: 'connected',
+        peers: collectPeers(session),
+        followMode: false,
+        lastRemoteView: null,
+      });
+      if (session.view.size > 0) {
+        applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
+      }
+      return invite;
+    } catch (error) {
+      set({ status: 'idle' });
+      throw error;
     }
-    return invite;
   },
 
-  joinInvite: (invite) => {
+  joinInvite: async (invite) => {
+    const { parseCollabInvite } = await import('./session');
     const config = parseCollabInvite(invite);
     if (!config) return null;
     return get().joinSession(config.roomId, config.sessionKey);
@@ -187,7 +196,8 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       set({ roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {}, followMode: false, lastRemoteView: null });
       return;
     }
-    destroyCollabSession(session);
+    session.provider?.destroy();
+    session.doc.destroy();
     set({ session: null, roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {}, followMode: false, lastRemoteView: null });
   },
 

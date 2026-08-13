@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
-import DropZone from './ingest/DropZone';
 import Tooltip from './ui/Tooltip';
 import ChatLauncher from './ui/ChatLauncher';
 import ToastHost from './ui/ToastHost';
@@ -20,6 +19,7 @@ import { useCollabStore } from './collab/store';
 import './styles.css';
 
 const NebulaCanvas = lazy(() => import('./scene/NebulaCanvas'));
+const DropZone = lazy(() => import('./ingest/DropZone'));
 // The welcome and ingest UI pull in the component library, but neither needs
 // to delay the interactive shell or graph bundle on a restored workspace.
 const EmptyState = lazy(() => import('./ui/EmptyState'));
@@ -81,12 +81,10 @@ export default function App() {
   useEffect(() => {
     initPersistence();
     if (window.location.hash.startsWith('#collab=')) {
-      try {
-        const invite = window.location.hash;
-        useCollabStore.getState().joinInvite(invite);
-      } catch (error) {
+      const invite = window.location.hash;
+      void useCollabStore.getState().joinInvite(invite).catch((error: unknown) => {
         console.warn('Collaboration invite rejected', error);
-      }
+      });
     }
     void (async () => {
       try {
@@ -336,7 +334,7 @@ export default function App() {
       <Suspense fallback={<div className="scene-loading" role="status" aria-label="Loading interactive graph" />}>
         <NebulaCanvas />
       </Suspense>
-      <DropZone />
+      <Suspense fallback={null}><DropZone /></Suspense>
       {!hasNodes && phase === 'idle' && (
         <Suspense fallback={null}><EmptyState /></Suspense>
       )}

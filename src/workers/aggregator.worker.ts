@@ -180,7 +180,7 @@ self.onmessage = (ev: MessageEvent<AggRequest>) => {
   void (async () => {
     try {
       if (req.type === 'lexical') handleLexical(req);
-      else if (req.type === 'semantic') handleSemantic(req);
+      else if (req.type === 'semantic') await handleSemantic(req);
       else handleCluster(req);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

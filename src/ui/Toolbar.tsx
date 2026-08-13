@@ -452,9 +452,9 @@ export default function Toolbar() {
     layoutSetDims(next);
   };
 
-  const handleCollabHost = () => {
+  const handleCollabHost = async () => {
     try {
-      const invite = startSession();
+      const invite = await startSession();
       setOpenMenu(null);
       if (invite) {
         useUiStore.getState().pushToast('Collaboration session ready. Copy the invite and share it with a peer.', 'info');
@@ -468,7 +468,7 @@ export default function Toolbar() {
     const raw = window.prompt('Paste a collaboration invite link or fragment');
     if (!raw) return;
     try {
-      const invite = joinInvite(raw);
+      const invite = await joinInvite(raw);
       setOpenMenu(null);
       if (invite) {
         useUiStore.getState().pushToast('Joined a collaboration session.', 'info');
