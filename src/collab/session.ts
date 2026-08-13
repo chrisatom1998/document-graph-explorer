@@ -23,6 +23,7 @@ export interface CollabSession {
   doc: Y.Doc;
   provider: WebrtcProvider | null;
   view: Y.Map<any>;
+  annotations: Y.Map<DocAnnotationRecord>;
   roomId: string;
   sessionKey: string;
   signaling: string[];
@@ -88,12 +89,14 @@ export function createCollabSession(config: CollabSessionConfig): CollabSession 
     password: sessionKey,
   });
   const view = doc.getMap<any>('view');
+  const annotations = createAnnotationMap(doc);
   provider.awareness.setLocalState({ displayName: 'Local user', cursor: null });
 
   return {
     doc,
     provider,
     view,
+    annotations,
     roomId,
     sessionKey,
     signaling,

@@ -12,22 +12,24 @@ function peerColor(id: string): string {
 }
 
 function PeerMarker({ peerId, selectedId, displayName }: { peerId: string; selectedId: string | null; displayName?: string }) {
-  const ref = useRef<THREE.Mesh>(null);
+  const groupRef = useRef<THREE.Group>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
   const color = useMemo(() => new THREE.Color(peerColor(peerId)), [peerId]);
 
   useFrame(({ camera }) => {
-    const mesh = ref.current;
-    if (!mesh || !selectedId) return;
+    const group = groupRef.current;
+    const mesh = meshRef.current;
+    if (!group || !mesh || !selectedId) return;
     const slot = slotOfId.get(selectedId);
     if (slot === undefined || slot >= positionBuffer.count) {
-      mesh.visible = false;
+      group.visible = false;
       return;
     }
     const idx = slot * 3;
     const arr = positionBuffer.array;
-    mesh.visible = true;
-    mesh.position.set(arr[idx], arr[idx + 1], arr[idx + 2]);
-    mesh.quaternion.copy(camera.quaternion);
+    group.visible = true;
+    group.position.set(arr[idx], arr[idx + 1], arr[idx + 2]);
+    group.quaternion.copy(camera.quaternion);
     const baseScale = scaleOfSlot[slot] || 1.1;
     mesh.scale.setScalar(baseScale * 2.4);
   });
@@ -38,8 +40,8 @@ function PeerMarker({ peerId, selectedId, displayName }: { peerId: string; selec
   if (slot === undefined || slot >= positionBuffer.count) return null;
 
   return (
-    <group>
-      <mesh ref={ref} frustumCulled={false} renderOrder={10}>
+    <group ref={groupRef}>
+      <mesh ref={meshRef} frustumCulled={false} renderOrder={10}>
         <torusGeometry args={[1.1, 0.08, 10, 32]} />
         <meshBasicMaterial color={color} transparent opacity={0.95} />
       </mesh>

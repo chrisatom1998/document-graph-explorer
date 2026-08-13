@@ -1,5 +1,9 @@
 import { create } from 'zustand';
-import { useUiStore, type GraphFilter } from '../store/uiStore';
+import type { YMapEvent } from 'yjs';
+import { layoutSetDims } from '../layout/layoutBridge';
+import { cameraPose } from '../scene/cameraPose';
+import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
+import type { DocAnnotationRecord } from '../persistence/db';
 import type { CollabSession } from './session';
 
 export interface CollabPeer {
@@ -16,6 +20,7 @@ export interface CollabSharedView {
   topicNodesEnabled?: boolean;
   clusterCollapsed?: boolean;
   filter?: Partial<GraphFilter>;
+  camera?: CameraPose;
 }
 
 interface CollaborationState {
@@ -34,8 +39,11 @@ interface CollaborationState {
   setLocalPresence: (patch: Partial<CollabPeer>) => void;
   setFollowMode: (enabled: boolean) => void;
   syncSharedView: () => void;
+  syncCameraPose: () => void;
   refreshPeers: () => void;
 }
+
+let stopAnnotationSync: (() => void) | null = null;
 
 function randomCollabToken(byteLength: number): string {
   const bytes = new Uint8Array(byteLength);
@@ -67,8 +75,33 @@ function readSharedView(): CollabSharedView {
     topicNodesEnabled: ui.topicNodesEnabled,
     clusterCollapsed: ui.clusterCollapsed,
     filter: { ...ui.filter },
+    camera: {
+      px: cameraPose.px,
+      py: cameraPose.py,
+      pz: cameraPose.pz,
+      tx: cameraPose.tx,
+      ty: cameraPose.ty,
+      tz: cameraPose.tz,
+    },
   };
   return next;
+}
+
+function parseCameraPose(value: unknown): CameraPose | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const source = value as Partial<Record<keyof CameraPose, unknown>>;
+  const keys: (keyof CameraPose)[] = ['px', 'py', 'pz', 'tx', 'ty', 'tz'];
+  if (!keys.every((key) => typeof source[key] === 'number' && Number.isFinite(source[key]))) {
+    return undefined;
+  }
+  return {
+    px: source.px as number,
+    py: source.py as number,
+    pz: source.pz as number,
+    tx: source.tx as number,
+    ty: source.ty as number,
+    tz: source.tz as number,
+  };
 }
 
 function applySharedView(view: Partial<Record<string, unknown>>): void {
@@ -79,13 +112,87 @@ function applySharedView(view: Partial<Record<string, unknown>>): void {
     topicNodesEnabled: 'topicNodesEnabled' in view && typeof view.topicNodesEnabled === 'boolean' ? view.topicNodesEnabled : undefined,
     clusterCollapsed: 'clusterCollapsed' in view && typeof view.clusterCollapsed === 'boolean' ? view.clusterCollapsed : undefined,
     filter: view.filter && typeof view.filter === 'object' ? (view.filter as Partial<GraphFilter>) : undefined,
+    camera: parseCameraPose(view.camera),
   };
-  if (next.dims !== undefined) ui.setDims(next.dims);
+  if (next.dims !== undefined) {
+    ui.setDims(next.dims);
+    layoutSetDims(next.dims);
+  }
   if (next.selectedId !== undefined) ui.setSelected(next.selectedId);
   if (next.topicNodesEnabled !== undefined) ui.setTopicNodes(next.topicNodesEnabled);
   if (next.clusterCollapsed !== undefined) ui.setClusterCollapsed(next.clusterCollapsed);
   if (next.filter) ui.setFilter(next.filter);
+  if (next.camera) ui.sendCameraPose(next.camera);
   useCollabStore.setState({ lastRemoteView: next });
+}
+
+function annotationTimestamp(value: DocAnnotationRecord | undefined): number {
+  return value && typeof value.updatedAt === 'number' ? value.updatedAt : 0;
+}
+
+async function bindAnnotationSync(session: CollabSession): Promise<() => void> {
+  const [{ ensureAnnotationsLoaded, useAnnotationStore }, { useCorpusStore }] = await Promise.all([
+    import('../store/annotationStore'),
+    import('../store/corpusStore'),
+  ]);
+  const corpus = useCorpusStore.getState();
+  if (corpus.mode !== 'local' || !corpus.activeCorpusId) return () => undefined;
+  await ensureAnnotationsLoaded(corpus.activeCorpusId);
+  if (useAnnotationStore.getState().scope !== corpus.activeCorpusId) return () => undefined;
+
+  const map = session.annotations;
+  let applyingRemote = false;
+
+  const applyMapChange = (key: string): void => {
+    const remote = map.get(key);
+    const local = useAnnotationStore.getState().annotations[key];
+    if (remote && local && annotationTimestamp(local) > annotationTimestamp(remote)) {
+      map.set(key, local);
+      return;
+    }
+    applyingRemote = true;
+    try {
+      useAnnotationStore.getState().applyRemote(key, remote ?? null);
+    } finally {
+      applyingRemote = false;
+    }
+  };
+
+  const onRemoteChange = (event: YMapEvent<DocAnnotationRecord>): void => {
+    for (const key of event.changes.keys.keys()) applyMapChange(key);
+  };
+  map.observe(onRemoteChange);
+
+  const localAtBind = useAnnotationStore.getState().annotations;
+  session.doc.transact(() => {
+    for (const [key, local] of Object.entries(localAtBind)) {
+      const remote = map.get(key);
+      if (!remote || annotationTimestamp(local) >= annotationTimestamp(remote)) map.set(key, local);
+      else applyMapChange(key);
+    }
+  });
+
+  const unsubscribe = useAnnotationStore.subscribe((state, previous) => {
+    if (applyingRemote || state.annotations === previous.annotations) return;
+    const keys = new Set([
+      ...Object.keys(previous.annotations),
+      ...Object.keys(state.annotations),
+    ]);
+    session.doc.transact(() => {
+      for (const key of keys) {
+        const before = previous.annotations[key];
+        const after = state.annotations[key];
+        if (before === after) continue;
+        if (after) map.set(key, after);
+        else map.delete(key);
+      }
+    });
+  });
+
+  return () => {
+    unsubscribe();
+    map.unobserve(onRemoteChange);
+  };
 }
 
 export const useCollabStore = create<CollaborationState>((set, get) => ({
@@ -109,6 +216,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       const { buildCollabInvite, createCollabSession } = await import('./session');
       const session = createCollabSession({ roomId: nextRoom, sessionKey: nextKey });
       const invite = buildCollabInvite(session.roomId, session.sessionKey);
+      stopAnnotationSync = await bindAnnotationSync(session);
       session.provider?.awareness.on('change', () => {
         set({ peers: collectPeers(session) });
       });
@@ -150,6 +258,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       const { buildCollabInvite, createCollabSession } = await import('./session');
       const session = createCollabSession({ roomId, sessionKey });
       const invite = buildCollabInvite(session.roomId, session.sessionKey);
+      stopAnnotationSync = await bindAnnotationSync(session);
       session.provider?.awareness.on('change', () => {
         set({ peers: collectPeers(session) });
       });
@@ -191,6 +300,8 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
   },
 
   leaveSession: () => {
+    stopAnnotationSync?.();
+    stopAnnotationSync = null;
     const { session } = get();
     if (!session) {
       set({ roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {}, followMode: false, lastRemoteView: null });
@@ -236,7 +347,21 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     map.set('topicNodesEnabled', view.topicNodesEnabled ?? useUiStore.getState().topicNodesEnabled);
     map.set('clusterCollapsed', view.clusterCollapsed ?? useUiStore.getState().clusterCollapsed);
     map.set('filter', view.filter ?? useUiStore.getState().filter);
+    map.set('camera', view.camera ?? null);
     set({ lastRemoteView: { ...view } });
+  },
+
+  syncCameraPose: () => {
+    const { session, followMode } = get();
+    if (!session || followMode) return;
+    session.view.set('camera', {
+      px: cameraPose.px,
+      py: cameraPose.py,
+      pz: cameraPose.pz,
+      tx: cameraPose.tx,
+      ty: cameraPose.ty,
+      tz: cameraPose.tz,
+    } satisfies CameraPose);
   },
 
   refreshPeers: () => {
