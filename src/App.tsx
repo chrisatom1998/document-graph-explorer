@@ -82,7 +82,13 @@ export default function App() {
     initPersistence();
     if (window.location.hash.startsWith('#collab=')) {
       const invite = window.location.hash;
-      void useCollabStore.getState().joinInvite(invite).catch((error: unknown) => {
+      const join = useCollabStore.getState().joinInvite(invite);
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `${window.location.pathname}${window.location.search}`,
+      );
+      void join.catch((error: unknown) => {
         console.warn('Collaboration invite rejected', error);
       });
     }

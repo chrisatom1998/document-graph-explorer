@@ -4,6 +4,7 @@ import { layoutSetDims } from '../layout/layoutBridge';
 import { cameraPose } from '../scene/cameraPose';
 import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
 import type { DocAnnotationRecord } from '../persistence/db';
+import type { EdgeKind, FileType } from '../model/types';
 import type { CollabSession } from './session';
 
 export interface CollabPeer {
@@ -104,6 +105,68 @@ function parseCameraPose(value: unknown): CameraPose | undefined {
   };
 }
 
+const FILE_TYPES = new Set<FileType>([
+  'md', 'txt', 'pdf', 'html', 'json', 'yaml', 'csv', 'docx', 'pptx', 'xlsx', 'code', 'other',
+]);
+const EDGE_KINDS = new Set<EdgeKind>(['reference', 'semantic', 'keyword', 'entity', 'topic']);
+
+export function sanitizeSharedFilter(value: unknown): Partial<GraphFilter> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const source = value as Record<string, unknown>;
+  const next: Partial<GraphFilter> = {};
+  let found = false;
+
+  if (Object.hasOwn(source, 'fileTypes')) {
+    const fileTypes = source.fileTypes;
+    if (fileTypes === null) {
+      next.fileTypes = null;
+      found = true;
+    } else if (Array.isArray(fileTypes) && fileTypes.every((item): item is FileType => FILE_TYPES.has(item as FileType))) {
+      next.fileTypes = [...fileTypes];
+      found = true;
+    }
+  }
+  if (Object.hasOwn(source, 'clusters')) {
+    const clusters = source.clusters;
+    if (clusters === null) {
+      next.clusters = null;
+      found = true;
+    } else if (Array.isArray(clusters) && clusters.every((item) => Number.isInteger(item))) {
+      next.clusters = [...clusters] as number[];
+      found = true;
+    }
+  }
+  if (Object.hasOwn(source, 'minDegree') && typeof source.minDegree === 'number' && Number.isFinite(source.minDegree) && source.minDegree >= 0) {
+    next.minDegree = source.minDegree;
+    found = true;
+  }
+  if (Object.hasOwn(source, 'minEdgeWeight') && typeof source.minEdgeWeight === 'number' && Number.isFinite(source.minEdgeWeight) && source.minEdgeWeight >= 0 && source.minEdgeWeight <= 1) {
+    next.minEdgeWeight = source.minEdgeWeight;
+    found = true;
+  }
+  if (Object.hasOwn(source, 'edgeKinds')) {
+    const edgeKinds = source.edgeKinds;
+    if (edgeKinds === null) {
+      next.edgeKinds = null;
+      found = true;
+    } else if (Array.isArray(edgeKinds) && edgeKinds.every((item): item is EdgeKind => EDGE_KINDS.has(item as EdgeKind))) {
+      next.edgeKinds = [...edgeKinds];
+      found = true;
+    }
+  }
+  if (Object.hasOwn(source, 'modifiedWithinDays')) {
+    const days = source.modifiedWithinDays;
+    if (days === null) {
+      next.modifiedWithinDays = null;
+      found = true;
+    } else if (typeof days === 'number' && Number.isFinite(days) && days >= 0) {
+      next.modifiedWithinDays = days;
+      found = true;
+    }
+  }
+  return found ? next : undefined;
+}
+
 function applySharedView(view: Partial<Record<string, unknown>>): void {
   const ui = useUiStore.getState();
   const next: CollabSharedView = {
@@ -111,7 +174,7 @@ function applySharedView(view: Partial<Record<string, unknown>>): void {
     selectedId: 'selectedId' in view ? (typeof view.selectedId === 'string' ? view.selectedId : null) : undefined,
     topicNodesEnabled: 'topicNodesEnabled' in view && typeof view.topicNodesEnabled === 'boolean' ? view.topicNodesEnabled : undefined,
     clusterCollapsed: 'clusterCollapsed' in view && typeof view.clusterCollapsed === 'boolean' ? view.clusterCollapsed : undefined,
-    filter: view.filter && typeof view.filter === 'object' ? (view.filter as Partial<GraphFilter>) : undefined,
+    filter: sanitizeSharedFilter(view.filter),
     camera: parseCameraPose(view.camera),
   };
   if (next.dims !== undefined) {
