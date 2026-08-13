@@ -48,6 +48,8 @@ export async function saveCurrentView(name: string): Promise<SavedViewRecord | n
       clusters: ui.filter.clusters ? [...ui.filter.clusters] : null,
       minDegree: ui.filter.minDegree,
       minEdgeWeight: ui.filter.minEdgeWeight,
+      edgeKinds: ui.filter.edgeKinds ? [...ui.filter.edgeKinds] : null,
+      modifiedWithinDays: ui.filter.modifiedWithinDays,
     },
   };
   const existing = (await getCorpusRecord(corpusId))?.views ?? [];
@@ -70,6 +72,8 @@ export function applySavedView(view: SavedViewRecord): void {
     clusters: view.filter.clusters,
     minDegree: view.filter.minDegree,
     minEdgeWeight: view.filter.minEdgeWeight,
+    edgeKinds: view.filter.edgeKinds ?? null,
+    modifiedWithinDays: view.filter.modifiedWithinDays ?? null,
   });
   ui.sendCameraPose(view.pose);
 }

@@ -11,6 +11,10 @@ describe('embedding model policy', () => {
     expect(embeddingQueryText('  rate limits  ')).toBe(`${EMBED_QUERY_PREFIX}rate limits`);
   });
 
+  it('omits the English instruction prefix in language-neutral mode', () => {
+    expect(embeddingQueryText('  límites de tasa  ', 'neutral')).toBe('límites de tasa');
+  });
+
   it('includes the document-vector model in the cache fingerprint', () => {
     expect(EMBEDDING_FINGERPRINT).toContain('Xenova/bge-small-en-v1.5');
   });

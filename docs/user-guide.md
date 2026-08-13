@@ -18,7 +18,7 @@ This guide covers why the tool exists, what it can do, and how to use every feat
 
 ## What it can do
 
-- **Ingest real-world formats**: plain text, Markdown, HTML, PDF (including link annotations), and Office files (Word, PowerPoint, Excel), plus CSV/JSON/YAML with dedicated viewers.
+- **Ingest real-world formats**: plain text, Markdown, HTML, PDF (including link annotations), Office files (Word, PowerPoint, Excel), CSV/JSON/YAML with dedicated viewers, and source code / repositories (imports become reference edges).
 - **Build the graph automatically**: semantic similarity links, explicit cross-document links (e.g. Markdown/PDF links between files), entity co-mention links, and named topic clusters.
 - **Let you explore in 3D**: orbit/zoom/pan a force-directed layout, hover for details, click to read, pin nodes by dragging, with an adaptive quality system (and a 2D mode) that keeps the scene smooth.
 - **Answer questions from your documents**: a built-in chat panel retrieves the most relevant passages and answers extractively — fully offline — or streams richer answers via an opt-in AI provider (OpenRouter or a local Ollama server), always with clickable source citations.
@@ -90,7 +90,7 @@ There are four ways to get documents in:
 3. The **＋ Add files** button on the toolbar (multi-select file picker — note the picker selects files; use drag & drop for folders).
 4. **Load demo corpus** on the welcome screen, for an instant tour with sample documents.
 
-**Supported formats:** `txt`, `log`, `md`, `mdx`, `pdf`, `html`/`htm`, `docx`/`docm`, `pptx`/`pptm`, `xlsx`/`xlsm`, `json`, `yaml`/`yml`, `csv`. Anything else lands in the collapsible **ignored tray** with a reason rather than failing silently. Dotfiles and development directories (`node_modules`, `.git`, `dist`, `build`, `.venv`, …) are skipped automatically when dropping folders.
+**Supported formats:** `txt`, `log`, `md`, `mdx`, `pdf`, `html`/`htm`, `docx`/`docm`, `pptx`/`pptm`, `xlsx`/`xlsm`, `json`, `yaml`/`yml`, `csv`, and source code (`ts`/`tsx`/`js`/`jsx`, `py`, `go`, `rs`, `java`/`kt`, `c`/`cpp`/`h`, `rb`, `php`, `css`, `vue`/`svelte`, Dockerfiles, Makefiles, and similar). Anything else lands in the collapsible **ignored tray** with a reason rather than failing silently. Dotfiles, lockfiles, minified bundles, and development directories (`node_modules`, `.git`, `dist`, `build`, `vendor`, `target`, `.venv`, …) are skipped automatically when dropping folders. If the folder contains a `.gitignore`, those patterns are applied too — so dropping a git checkout indexes the project, not its build output.
 
 **What happens next:** ingestion runs entirely off the main thread — parse → boilerplate strip → chunk → TF-IDF → embeddings (self-hosted BGE model) → similarity links + Louvain clustering → topic synthesis. A **progress strip** shows the current phase (`Parsing…`, `Finding connections…`, `Embedding meaning…`, `Clustering…`, `Ready`), a percentage bar, and per-file status chips. The first run also shows a one-time banner while the embedding model loads.
 
@@ -138,15 +138,15 @@ Appears once the graph has nodes, and can be dragged anywhere by its grip handle
 | **View options ▾** | 2D view and Topic nodes toggles |
 | **How are these connected?** | Path mode — pick two nodes, see the route |
 | **Corpus insights** | Orphans, duplicates, bridges, stale docs |
-| **Saved snapshots** | Save and reload graph states |
-| **Settings** | AI enrichment, offline mode, performance, data |
+| **Saved snapshots** | Save, reload, and visually compare graph states |
+| **Settings** | AI enrichment, recognition, storage, performance, data |
 | **＋ Add files** | File picker |
 
 ## Search (`Ctrl+K` / `⌘K`)
 
 One search box, two engines. As you type (results update after a brief pause), you get instant **lexical** matches — title substrings and keyword/topic/entity hits — followed by **semantic** matches: the query is embedded with the same local model as your documents and compared by meaning, so "how do we deploy" finds the release runbook even if it never says "deploy". Each of the up-to-12 results shows a match-kind badge (`title` / `keyword` / `semantic`), a relevance bar, and a snippet for semantic hits. Matching nodes highlight live in the scene while you type.
 
-Navigate with `↓`/`↑`, open with `Enter` (selects the node and flies the camera to it), close with `Esc`.
+Navigate with `↓`/`↑`, open with `Enter` (selects the node and flies the camera to it), close with `Esc`. An active graph filter also hides non-matching hits in this list and in the scene.
 
 ## Show me a topic
 
@@ -184,7 +184,7 @@ Click any node. The right-hand panel shows:
 
 ## Filters
 
-The funnel button (top-left) opens the filter bar: toggle **file-type chips** and **cluster chips** (each shows its count), require a minimum number of **connections** (slider 0–10), or hide weak edges with the **Link Strength** slider. Filtered-out nodes dim in the scene; **Clear** resets everything.
+The funnel button (top-left) opens the filter bar: toggle **file-type chips** and **cluster chips** (each shows its count), keep only certain **connection kinds** (links / similar / keywords / entities), restrict to documents **modified** recently (any time / 30d / 90d / 1y), require a minimum number of **connections** (slider 0–10), or hide weak edges with the **Link Strength** slider. Filtered-out nodes dim in the scene; search results are intersected with the active filter. **Clear** resets everything.
 
 ## Minimap
 
@@ -220,11 +220,15 @@ The enrichment list is deliberately short. Enrichment sends one request per 15 d
 
 ## Snapshots
 
-Toolbar → **Saved snapshots**. Type a name (a sensible default is pre-filled) and press **Save** to capture the current graph — documents, layout positions, and state. **Load** any saved snapshot to restore it (target: under 3 seconds), **✕** deletes just the snapshot record. Snapshots reference cached documents rather than duplicating them, so they're cheap to keep.
+Toolbar → **Saved snapshots**. Type a name (a sensible default is pre-filled) and press **Save** to capture the current graph — documents, layout positions, and state. **Load** any saved snapshot to restore it (target: under 3 seconds), **Compare** paints added (green) and updated (amber) documents on the live graph and lists titles that exist only in the snapshot, **✕** deletes just the snapshot record. Snapshots reference cached documents rather than duplicating them, so they're cheap to keep.
 
 ## Sessions & your data
 
 Everything persists automatically to your browser's IndexedDB: the session saves itself shortly after the graph is ready, and again once the layout settles, so the next launch restores your corpus — same shape, same positions — in a few seconds, fully offline. Re-parsing only happens for new or changed files.
+
+Settings → **About** shows how much of this origin's browser storage the app is using. Settings → **Data** can drop **cached embeddings** (reload then re-embeds from saved text) or **original files** (Open falls back to the text viewer) without wiping the graph. Uncheck **Cache embeddings for instant reload** to stop writing vectors and free space on large corpora.
+
+Settings → **Recognition** picks scanned-PDF OCR language and page cap, and whether semantic search uses BGE's English instruction prefix or a language-neutral query.
 
 Settings → **Data** → **Clear all data** (two-step confirm) wipes the graph and every cached document, embedding, and snapshot; your settings and API key are kept.
 

@@ -89,6 +89,14 @@ export default function EdgePulses() {
         if (e.weight < minW) continue; // respect edge-density slider
         // no pulses along edges the scene isn't drawing (hidden topic hubs)
         if (e.kind === 'topic' && !topicNodesEnabled) continue;
+        if (
+          e.kind !== 'topic' &&
+          filter.edgeKinds !== null &&
+          filter.edgeKinds.length > 0 &&
+          !filter.edgeKinds.includes(e.kind)
+        ) {
+          continue;
+        }
         const from = slotOfId.get(focus);
         const to = slotOfId.get(e.source === focus ? e.target : e.source);
         if (from === undefined || to === undefined) continue;

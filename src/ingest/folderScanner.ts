@@ -1,6 +1,9 @@
 import { IGNORED_DIRS } from '../config';
+import { posixJoin } from '../util/posixPath';
 import { routeFile } from './fileRouter';
+import { hasUnignoreUnder, mergeGitIgnoreRules, pathIsGitIgnored, type GitIgnoreRule } from './gitignore';
 import type { NamedFile } from './localFiles';
+import { repoArtifactReason } from './repoArtifacts';
 
 interface DirectoryHandleLike {
   name: string;
@@ -18,22 +21,47 @@ function ignoredDirectory(name: string): boolean {
   return name.startsWith('.') || IGNORED_DIRS.has(name) || IGNORED_DIRS.has(name.toLowerCase());
 }
 
+async function readGitignore(
+  children: [string, FileSystemHandle][],
+): Promise<string | null> {
+  const hit = children.find(([name, entry]) => name === '.gitignore' && entry.kind === 'file');
+  if (!hit) return null;
+  try {
+    const file = await (hit[1] as FileSystemFileHandle).getFile();
+    return await file.text();
+  } catch {
+    return null;
+  }
+}
+
 async function walk(
   directory: DirectoryHandleLike,
   rootName: string,
   relativeDir: string,
+  ancestorRules: GitIgnoreRule[],
   output: PendingFile[],
 ): Promise<void> {
-  for await (const [name, entry] of directory.entries()) {
+  const children: [string, FileSystemHandle][] = [];
+  for await (const child of directory.entries()) children.push(child);
+  const rules = mergeGitIgnoreRules(ancestorRules, await readGitignore(children), relativeDir);
+
+  for (const [name, entry] of children) {
+    if (name === '.gitignore') continue;
     if (name.startsWith('.')) continue;
     if (entry.kind === 'directory') {
-      if (ignoredDirectory(name)) continue;
-      const childPath = relativeDir ? `${relativeDir}/${name}` : name;
-      await walk(entry as FileSystemDirectoryHandle, rootName, childPath, output);
+      const childPath = relativeDir ? posixJoin(relativeDir, name) : name;
+      // A default-ignored dir (node_modules, dist, …) is only worth walking
+      // when a gitignore negation might reach inside it; otherwise skip it
+      // outright rather than enumerating a huge vendor tree.
+      if (ignoredDirectory(name) && !hasUnignoreUnder(childPath, rules)) continue;
+      if (pathIsGitIgnored(childPath, true, rules)) continue;
+      await walk(entry as FileSystemDirectoryHandle, rootName, childPath, rules, output);
       continue;
     }
-    if (entry.kind !== 'file' || routeFile(name) === null) continue;
-    const relativePath = relativeDir ? `${relativeDir}/${name}` : name;
+    if (entry.kind !== 'file') continue;
+    if (repoArtifactReason(name) || routeFile(name) === null) continue;
+    const relativePath = relativeDir ? posixJoin(relativeDir, name) : name;
+    if (pathIsGitIgnored(relativePath, false, rules)) continue;
     output.push({
       handle: entry as FileSystemFileHandle,
       path: `${rootName}/${relativePath}`,
@@ -65,7 +93,7 @@ async function readFiles(pending: PendingFile[]): Promise<NamedFile[]> {
 /** Recursively enumerate supported files with stable root-relative paths. */
 export async function scanFolder(handle: FileSystemDirectoryHandle): Promise<NamedFile[]> {
   const pending: PendingFile[] = [];
-  await walk(handle, handle.name, '', pending);
+  await walk(handle, handle.name, '', [], pending);
   const output = await readFiles(pending);
   return output.sort((a, b) => (a.path ?? '').localeCompare(b.path ?? ''));
 }

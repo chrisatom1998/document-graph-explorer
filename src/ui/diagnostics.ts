@@ -7,6 +7,7 @@ export interface DiagnosticsInput {
   nodeCount: number;
   edgeCount: number;
   lastError: LastError | null;
+  storage?: string;
 }
 
 export function getAppVersion(): string {
@@ -21,6 +22,7 @@ export function buildDiagnosticsText(input: DiagnosticsInput): string {
     `User agent: ${input.userAgent}`,
     `Corpus: ${input.nodeCount} nodes, ${input.edgeCount} edges`,
   ];
+  if (input.storage) lines.push(`Storage: ${input.storage}`);
 
   if (input.lastError) {
     lines.push(`Last error: ${input.lastError.message}`);

@@ -26,6 +26,7 @@ const MIME_TYPES = {
   '.svg': 'image/svg+xml',
   '.txt': 'text/plain; charset=utf-8',
   '.wasm': 'application/wasm', // required for WASM streaming instantiation
+  '.webmanifest': 'application/manifest+json',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
   '.xml': 'application/xml; charset=utf-8',

@@ -99,7 +99,7 @@ export default function EmptyState() {
         <div className="empty-state__workflow" aria-label="How Document Graph Explorer works">
           <div className="empty-state__step">
             <span className="empty-state__step-number">01</span>
-            <span><strong>Bring your files</strong>PDF, Office, Markdown, HTML, or text.</span>
+            <span><strong>Bring your files</strong>Docs, PDFs, Office, or a source repo.</span>
           </div>
           <div className="empty-state__step">
             <span className="empty-state__step-number">02</span>

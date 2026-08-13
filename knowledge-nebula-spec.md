@@ -70,7 +70,7 @@ Fully client-side single-page app. No backend required for v1; an optional LLM e
 | Post-processing | `@react-three/postprocessing` (Bloom, DoF, Vignette) | The "spectacular" budget lives here |
 | PDF parsing | **pdf.js** (Mozilla) | De facto standard, runs in a worker |
 | Markdown/text | `unified`/`remark` for structure-aware MD parsing | Headings become sub-topics for free |
-| Embeddings (local) | **transformers.js** with `all-MiniLM-L6-v2` (~25 MB, quantized) | Real semantic similarity, no API key, runs in a Web Worker via WASM/WebGPU |
+| Embeddings (local) | **transformers.js** with `bge-small-en-v1.5` (self-hosted under `public/models/`) | Real semantic similarity, no API key, runs in a Web Worker via WASM/WebGPU |
 | Enrichment (optional) | Anthropic API (`claude-sonnet-4-6`) | Topic naming, summaries, entity extraction |
 | State | Zustand | Simple, plays nicely with R3F render loop |
 | Persistence | IndexedDB (via `idb`) | Cache parsed text, embeddings, and graph JSON |
@@ -117,7 +117,7 @@ For each document, extract:
 - **Folder/path structure:** if a folder was dropped, sibling files get a weak "same directory" affinity used as a layout hint, not a visible edge.
 
 ### 5.2 Layer 2 — Semantic embeddings (local, private)
-- Chunk each document (~512 tokens, 15% overlap), embed each chunk with MiniLM in a worker.
+- Chunk each document (~192 tokens, 15% overlap), embed each chunk with BGE-small in a worker.
 - Document vector = mean of chunk vectors (store chunk vectors too, for search).
 - Compute cosine similarity between all doc pairs. **Do not connect everything to everything.** Edge rule: connect doc pairs where similarity ≥ 0.62 **and** the pair is within each doc's top-k (k=5) neighbors. The top-k constraint is what keeps a 300-doc corpus from becoming a hairball.
 - Edge weight = normalized similarity; drives edge thickness, glow intensity, and force-layout spring strength.

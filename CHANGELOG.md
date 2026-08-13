@@ -7,12 +7,20 @@ This project follows the Keep a Changelog format.
 ## [Unreleased]
 
 ### Added
+- Source-code and repository ingest: dropping a project folder (or picking `.ts`/`.py`/`.go`/`.rs` and similar files) parses them as graph documents. Relative imports, includes, and `mod` declarations become high-confidence reference edges, resolved against the importing file's path (including extensionless specifiers and `index.ts` / `__init__.py`). Folder walks honor `.gitignore`, skip lockfiles and minified bundles, and ignore additional build trees (`vendor`, `target`, `coverage`, …).
+- Visual snapshot compare: **Compare** in the snapshots drawer paints added (green) and updated (amber) documents on the live graph, lists titles that exist only in the snapshot, and frames the changed set.
+- Graph filter facets for connection kind (links / similar / keywords / entities) and recency (any time / 30d / 90d / 1y). Search results and scene emphasis intersect the active filter (search ∩ filter).
+- Settings **About** shows this origin's IndexedDB usage vs quota, with a warning toast when ingest starts and storage is ≥90% full.
+- Selective cache eviction: uncheck **Cache embeddings for instant reload**, or **Clear embeddings** / **Clear original files**, without wiping the graph.
+- Recognition settings: scanned-PDF OCR language (English bundled; extra Tesseract packs drop into `public/ocr/lang/`) and page cap (10/20/40/80). Semantic search can skip BGE's English instruction prefix for mixed-language queries.
+- Installable web app: `manifest.webmanifest` plus theme-color / apple-touch metadata (no service worker — keeps the air-gap CSP). Linux AppImage target via `npm run dist:linux`.
 - Security headers on all deployment targets: `Permissions-Policy` (camera/microphone/geolocation/payment/usb/serial disabled) and `Strict-Transport-Security` (`max-age=63072000; includeSubDomains`) in `vercel.json`, Docker nginx headers, and the `DEPLOYMENT.md` nginx example. Vite dev headers get `Permissions-Policy` only (no HSTS on plain HTTP).
 - usd-agent (`tools/usd_pipeline/usd_agent.py`): an LLM agent whose tools are OpenUSD stage operations — ask natural-language questions about an exported corpus stage (clusters, documents, connections with evidence, view variants) and it answers by querying prims via `usd-core`, never by guessing. Providers: OpenRouter (cloud), Ollama (local), or a network-free mock used by its `selftest` mode, which exercises every tool plus the full agent loop against a real stage.
 - Performance benchmarks (`docs/benchmarks.md`): measured ingest throughput (~11 docs/s end-to-end on the 100-PDF demo corpus), layout convergence from 100 to 2,000 nodes (under 6 s to settle at 2,000 via the production worker driven headless by `npm run bench:layout`), render frame rate (holds the 120 Hz display cap through 2,000 nodes / 8,400 edges), and OpenUSD export build time (linear, 19 ms at 2,000 nodes), with methodology and caveats.
 - OpenUSD export: **Data → Export OpenUSD scene** serializes the graph as a composed `.usda` stage — document/topic nodes as Sphere prims carrying a `docGraph:` custom-attribute schema (title, topics, entities, keywords, status), edges as one BasisCurves prim per kind with parallel weight/evidence arrays, translucent cluster hulls, and a `graphView` variantSet switching detailed vs summary views. Validated against stock `usdchecker`. A new Python pipeline CLI (`tools/usd_pipeline/usd_pipeline.py`, Pixar `usd-core`) re-validates every schema invariant, exercises the variants through composition, and packages `.usdz`; see `docs/openusd-pipeline.md`.
 
 ### Changed
+- Roadmaps and SECURITY.md now match the shipped BGE-small embedding model (leftover unused `all-MiniLM-L6-v2` tokenizer files removed).
 - OpenRouter chat and enrichment LLM clients honour the `Retry-After` response header on 429/502/503 (shared `parseRetryAfter` helper, capped at 60s) before falling back to exponential backoff.
 
 ## [1.1.14] - 2026-07-29

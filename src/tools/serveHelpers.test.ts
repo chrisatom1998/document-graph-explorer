@@ -33,6 +33,7 @@ describe('contentTypeFor', () => {
     ['logo.png', 'image/png'],
     ['favicon.ico', 'image/x-icon'],
     ['model.wasm', 'application/wasm'],
+    ['site.webmanifest', 'application/manifest+json'],
     ['font.woff', 'font/woff'],
     ['font.woff2', 'font/woff2'],
     ['notes.txt', 'text/plain; charset=utf-8'],

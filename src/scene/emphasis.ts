@@ -22,19 +22,78 @@ export function adjacencyFor(edges: Edge[]): Map<string, Set<string>> {
   return adjacencyCache;
 }
 
+export function isFilterActive(filter: GraphFilter): boolean {
+  return (
+    filter.fileTypes !== null ||
+    filter.clusters !== null ||
+    filter.minDegree > 0 ||
+    filter.minEdgeWeight > 0 ||
+    (filter.edgeKinds !== null && filter.edgeKinds.length > 0) ||
+    (filter.modifiedWithinDays !== null && filter.modifiedWithinDays > 0)
+  );
+}
+
+function kindOk(edges: Edge[], filter: GraphFilter): Set<string> | null {
+  const kinds = filter.edgeKinds;
+  if (!kinds || kinds.length === 0) return null;
+  const allowed = new Set(kinds);
+  const ok = new Set<string>();
+  for (const e of edges) {
+    if (e.kind === 'topic') continue;
+    if (!allowed.has(e.kind)) continue;
+    ok.add(e.source);
+    ok.add(e.target);
+  }
+  return ok;
+}
+
+function weightOk(edges: Edge[], filter: GraphFilter): Set<string> | null {
+  if (filter.minEdgeWeight <= 0) return null;
+  const ok = new Set<string>();
+  for (const e of edges) {
+    if (e.weight >= filter.minEdgeWeight) {
+      ok.add(e.source);
+      ok.add(e.target);
+    }
+  }
+  return ok;
+}
+
+function recencyOk(node: DocNode, filter: GraphFilter, now: number): boolean {
+  const days = filter.modifiedWithinDays;
+  if (days === null || days <= 0) return true;
+  if (node.lastModified === undefined) return false;
+  return now - node.lastModified <= days * 86_400_000;
+}
+
+/** Nodes that pass the active filter facets (AND). Empty filter → every node. */
+export function nodesMatchingFilter(
+  nodes: DocNode[],
+  edges: Edge[],
+  filter: GraphFilter,
+  now: number = Date.now(),
+): Set<string> | null {
+  if (!isFilterActive(filter)) return null;
+  const byWeight = weightOk(edges, filter);
+  const byKind = kindOk(edges, filter);
+  const set = new Set<string>();
+  for (const n of nodes) {
+    if (filter.fileTypes && !filter.fileTypes.includes(n.fileType)) continue;
+    if (filter.clusters && !filter.clusters.includes(n.cluster)) continue;
+    if (n.degree < filter.minDegree) continue;
+    if (byWeight && !byWeight.has(n.id)) continue;
+    if (byKind && n.kind === 'document' && !byKind.has(n.id)) continue;
+    if (!recencyOk(n, filter, now)) continue;
+    set.add(n.id);
+  }
+  return set;
+}
+
 /**
  * The emphasis set for the active dim trigger, or null when nothing dims.
- * Precedence: hover > selection > search > filter (spec §7.3).
- *  - hover: node + adjacency neighbors
- *  - selection (focus mode): selected node + neighbors — clicking a node
- *    dims everything not directly connected until it's deselected
- *  - search: results + their neighbors
- *  - filter: matching nodes only. fileTypes/clusters/minDegree/minEdgeWeight
- *    all compose with AND. minEdgeWeight keeps a node only if it is incident
- *    to at least one edge that clears the floor — the same floor Edges.tsx's
- *    isEdgeHidden applies (`e.weight < filter.minEdgeWeight` hides an edge,
- *    so `>=` is what keeps it, and its endpoints, visible), so the
- *    link-strength slider dims nodes and edges in agreement.
+ * Precedence: hover > selection > (search ∩ filter) > filter (spec §7.3).
+ * Search and filters compose: search hits that fail the active filter drop
+ * out, then neighbors of the remaining hits are added for context.
  */
 export function computeEmphasis(
   nodes: DocNode[],
@@ -43,6 +102,7 @@ export function computeEmphasis(
   selectedId: string | null,
   searchResults: string[] | null,
   filter: GraphFilter,
+  now: number = Date.now(),
 ): Set<string> | null {
   const focusId = hoveredId ?? selectedId;
   if (focusId) {
@@ -51,41 +111,17 @@ export function computeEmphasis(
     if (neighbors) for (const id of neighbors) set.add(id);
     return set;
   }
+  const allowed = nodesMatchingFilter(nodes, edges, filter, now);
   if (searchResults) {
+    const hits = allowed ? searchResults.filter((id) => allowed.has(id)) : searchResults;
     const set = new Set<string>();
     const adjacency = adjacencyFor(edges);
-    for (const id of searchResults) {
+    for (const id of hits) {
       set.add(id);
       const neighbors = adjacency.get(id);
       if (neighbors) for (const n of neighbors) set.add(n);
     }
     return set;
   }
-  const filterActive =
-    filter.fileTypes !== null ||
-    filter.clusters !== null ||
-    filter.minDegree > 0 ||
-    filter.minEdgeWeight > 0;
-  if (filterActive) {
-    let weightOk: Set<string> | null = null;
-    if (filter.minEdgeWeight > 0) {
-      weightOk = new Set<string>();
-      for (const e of edges) {
-        if (e.weight >= filter.minEdgeWeight) {
-          weightOk.add(e.source);
-          weightOk.add(e.target);
-        }
-      }
-    }
-    const set = new Set<string>();
-    for (const n of nodes) {
-      if (filter.fileTypes && !filter.fileTypes.includes(n.fileType)) continue;
-      if (filter.clusters && !filter.clusters.includes(n.cluster)) continue;
-      if (n.degree < filter.minDegree) continue;
-      if (weightOk && !weightOk.has(n.id)) continue;
-      set.add(n.id);
-    }
-    return set;
-  }
-  return null;
+  return allowed;
 }

@@ -18,6 +18,19 @@ describe('buildDiagnosticsText', () => {
     expect(text).toContain('Last error: none');
   });
 
+  it('includes a storage line when provided', () => {
+    const text = buildDiagnosticsText({
+      version: '1.0.0',
+      buildFlavor: 'standard',
+      userAgent: 'Vitest',
+      nodeCount: 1,
+      edgeCount: 0,
+      lastError: null,
+      storage: '12.0 MB of 100.0 MB (12%)',
+    });
+    expect(text).toContain('Storage: 12.0 MB of 100.0 MB (12%)');
+  });
+
   it('includes last error details when present', () => {
     const text = buildDiagnosticsText({
       version: '1.0.0',

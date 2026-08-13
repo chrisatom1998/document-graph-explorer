@@ -11,7 +11,7 @@ const MIME_MAP: Record<string, string> = {
   md: 'Markdown', txt: 'Plain Text', html: 'HTML',
   json: 'JSON', yaml: 'YAML', csv: 'CSV',
   docx: 'Word', pptx: 'PowerPoint', xlsx: 'Excel',
-  pdf: 'PDF', other: 'Document',
+  pdf: 'PDF', other: 'Document', code: 'Source',
 };
 
 /** Exported for unit tests — internal helpers used while building the viewer HTML. */
@@ -82,7 +82,7 @@ export function linkifyLine(raw: string): string {
  */
 function formatContent(text: string, fileType: string): string {
   // For structured data files, wrap the entire content in a code block
-  if (['json', 'yaml', 'csv'].includes(fileType)) {
+  if (['json', 'yaml', 'csv', 'code'].includes(fileType)) {
     return `<pre class="code-block"><code>${escapeHtml(text)}</code></pre>`;
   }
 
@@ -157,7 +157,7 @@ export function openDocumentViewer(
   clusterName: string,
   links: LinkRef[] = [],
 ): void {
-  const isMono = ['txt', 'json', 'yaml', 'csv', 'other'].includes(node.fileType);
+  const isMono = ['txt', 'json', 'yaml', 'csv', 'other', 'code'].includes(node.fileType);
   const typeLabel = MIME_MAP[node.fileType] ?? 'Document';
   const clusterColor = hexFor(node.cluster);
   const wordCount = node.wordCount.toLocaleString();

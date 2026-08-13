@@ -85,4 +85,78 @@ describe('scanFolder', () => {
     expect(hiddenFile.getFile).not.toHaveBeenCalled();
     expect(unsupported.getFile).not.toHaveBeenCalled();
   });
+
+  it('includes source files and skips lockfiles, vendor trees, and gitignored paths', async () => {
+    const app = fileHandle('app.ts');
+    const readme = fileHandle('README.md');
+    const lock = fileHandle('package-lock.json');
+    const ignoredLog = fileHandle('debug.log');
+    const vendorDoc = fileHandle('lib.go');
+    const gitignore = {
+      file: { name: '.gitignore', text: vi.fn().mockResolvedValue('*.log\n') } as unknown as File,
+      getFile: vi.fn(),
+    };
+    gitignore.getFile.mockResolvedValue(gitignore.file);
+    const gitignoreHandle = {
+      kind: 'file',
+      name: '.gitignore',
+      getFile: gitignore.getFile,
+    } as unknown as FileSystemFileHandle;
+    const vendor = directoryHandle('vendor', [['lib.go', vendorDoc.handle]]);
+    const src = directoryHandle('src', [
+      ['app.ts', app.handle],
+      ['debug.log', ignoredLog.handle],
+    ]);
+    const root = directoryHandle('repo', [
+      ['.gitignore', gitignoreHandle],
+      ['README.md', readme.handle],
+      ['package-lock.json', lock.handle],
+      ['vendor', vendor.handle],
+      ['src', src.handle],
+    ]);
+
+    await expect(scanFolder(root.handle)).resolves.toEqual([
+      { file: readme.file, path: 'repo/README.md' },
+      { file: app.file, path: 'repo/src/app.ts' },
+    ]);
+    expect(lock.getFile).not.toHaveBeenCalled();
+    expect(ignoredLog.getFile).not.toHaveBeenCalled();
+    expect(vendor.entries).not.toHaveBeenCalled();
+    expect(gitignore.getFile).toHaveBeenCalled();
+  });
+
+  it('walks a default-ignored dir only far enough to honor a gitignore negation', async () => {
+    const keep = fileHandle('keep.md');
+    const out = fileHandle('out.js');
+    const readme = fileHandle('README.md');
+    const depDoc = fileHandle('package.md');
+    const gitignore = {
+      file: { name: '.gitignore', text: vi.fn().mockResolvedValue('dist/*\n!dist/keep.md\n') } as unknown as File,
+      getFile: vi.fn(),
+    };
+    gitignore.getFile.mockResolvedValue(gitignore.file);
+    const gitignoreHandle = {
+      kind: 'file',
+      name: '.gitignore',
+      getFile: gitignore.getFile,
+    } as unknown as FileSystemFileHandle;
+    const dist = directoryHandle('dist', [
+      ['keep.md', keep.handle],
+      ['out.js', out.handle],
+    ]);
+    const nodeModules = directoryHandle('node_modules', [['package.md', depDoc.handle]]);
+    const root = directoryHandle('repo', [
+      ['.gitignore', gitignoreHandle],
+      ['dist', dist.handle],
+      ['node_modules', nodeModules.handle],
+      ['README.md', readme.handle],
+    ]);
+
+    await expect(scanFolder(root.handle)).resolves.toEqual([
+      { file: keep.file, path: 'repo/dist/keep.md' },
+      { file: readme.file, path: 'repo/README.md' },
+    ]);
+    expect(out.getFile).not.toHaveBeenCalled();
+    expect(nodeModules.entries).not.toHaveBeenCalled();
+  });
 });

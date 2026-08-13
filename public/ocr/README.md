@@ -5,7 +5,7 @@ offline, and air-gapped builds. Runtime code uses only these same-origin paths:
 
 - `worker.min.js` — Tesseract.js 7.0.0 browser worker
 - `core/` — the LSTM WebAssembly wrappers selected by Tesseract.js feature detection
-- `lang/eng.traineddata.gz` — English LSTM language data
+- `lang/eng.traineddata.gz` — English LSTM language data (bundled). Additional Tesseract 4 `*_best_int` packs can be dropped beside it (e.g. `spa.traineddata.gz`) and selected in Settings → Recognition.
 
 The worker and core files come from the matching `tesseract.js` and
 `tesseract.js-core` npm packages. The English data is from

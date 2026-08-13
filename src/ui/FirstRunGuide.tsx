@@ -30,7 +30,7 @@ const TOUR_STEPS = [
   {
     selector: '.filter-bar-layer',
     title: 'Reduce visual noise',
-    body: 'Open Filters to focus by file type or cluster, or raise Link Strength to hide weaker connections.',
+    body: 'Open Filters to focus by file type, cluster, connection kind, or recency, or raise Link Strength to hide weaker connections.',
   },
   {
     selector: '[aria-label^="Current corpus"]',

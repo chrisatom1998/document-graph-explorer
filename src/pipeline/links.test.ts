@@ -8,7 +8,7 @@
  * weights, and the order of merged evidence strings.
  */
 import { describe, expect, it } from 'vitest';
-import { referenceEdges, type ReferenceDocInput } from './links';
+import { importPathCandidates, referenceEdges, type ReferenceDocInput } from './links';
 import type { Edge } from '../model/types';
 import { isExternalUrl, normalizeLinkTarget } from './urlUtils';
 
@@ -218,5 +218,324 @@ describe('referenceEdges mention scanning matches the pairwise oracle', () => {
     );
     const edges = expectParity(docs);
     expect(edges.length).toBeGreaterThan(10);
+  });
+});
+
+// Not run through expectParity: the oracle deliberately fans a shared-name
+// mention out to every same-name doc, which is the bug under test.
+describe('referenceEdges mention ambiguity on folder drops', () => {
+  it('does not reconnect same-name files via filename mentions', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Notes',
+        fileName: 'notes.md',
+        path: 'docs/notes.md',
+        textLower: 'see util.ts for the helper',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'b',
+        title: 'Util',
+        fileName: 'util.ts',
+        path: 'src/auth/util.ts',
+        textLower: 'export helper',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'c',
+        title: 'Util',
+        fileName: 'util.ts',
+        path: 'src/billing/util.ts',
+        textLower: 'export other helper',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    expect(edges.filter((e) => e.evidence.some((ev) => ev.startsWith('mentions')))).toEqual([]);
+  });
+
+  it('drops duplicated filename-derived titles too', () => {
+    // Two README.md files share both the fileName needle and the title
+    // cleanFilename derives from it; neither may fan out.
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Notes',
+        fileName: 'notes.md',
+        path: 'docs/notes.md',
+        textLower: 'check the README and README.md in each package',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'b',
+        title: 'README',
+        fileName: 'README.md',
+        path: 'pkg/one/README.md',
+        textLower: 'one',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'c',
+        title: 'README',
+        fileName: 'README.md',
+        path: 'pkg/two/README.md',
+        textLower: 'two',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    expect(edges.filter((e) => e.evidence.some((ev) => ev.startsWith('mentions')))).toEqual([]);
+  });
+
+  it('still mention-edges unique titles alongside ambiguous filenames', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Notes',
+        fileName: 'notes.md',
+        path: 'docs/notes.md',
+        textLower: 'the capacity plan mentions util.ts',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'b',
+        title: 'Capacity Plan',
+        fileName: 'capacity-plan.md',
+        path: 'docs/capacity-plan.md',
+        textLower: 'plan body',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'c',
+        title: 'Util',
+        fileName: 'util.ts',
+        path: 'src/auth/util.ts',
+        textLower: 'export helper',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'd',
+        title: 'Util',
+        fileName: 'util.ts',
+        path: 'src/billing/util.ts',
+        textLower: 'export other helper',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    const mentions = edges.filter((e) => e.evidence.some((ev) => ev.startsWith('mentions')));
+    expect(mentions.map((e) => [e.source, e.target].sort().join('-'))).toEqual(['a-b']);
+    expect(mentions[0].evidence).toEqual(["mentions 'Capacity Plan'"]);
+  });
+});
+
+describe('referenceEdges path-aware import resolution', () => {
+  it('resolves extensionless relative imports to the neighboring source file', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Session',
+        fileName: 'session.ts',
+        path: 'src/auth/session.ts',
+        textLower: 'import token',
+        mdLinkTargets: ['./token'],
+      },
+      {
+        id: 'b',
+        title: 'Token',
+        fileName: 'token.ts',
+        path: 'src/auth/token.ts',
+        textLower: 'export token',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'c',
+        title: 'Other Token',
+        fileName: 'token.ts',
+        path: 'src/other/token.ts',
+        textLower: 'unrelated',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    const ref = edges.find((e) => e.kind === 'reference' && e.evidence.some((ev) => ev.startsWith('links to')));
+    expect(ref).toMatchObject({ source: 'a', target: 'b' });
+    expect(ref?.evidence).toContain("links to 'token.ts'");
+  });
+
+  it('resolves ./dir to dir/index.ts', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'App',
+        fileName: 'app.ts',
+        path: 'src/app.ts',
+        textLower: 'import helpers',
+        mdLinkTargets: ['./helpers'],
+      },
+      {
+        id: 'b',
+        title: 'Index',
+        fileName: 'index.ts',
+        path: 'src/helpers/index.ts',
+        textLower: 'export helpers',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    expect(edges.some((e) => e.source === 'a' && e.target === 'b')).toBe(true);
+  });
+
+  // Not run through expectParity: the oracle is basename-only and would
+  // deliberately fan out to both same-name files, which is the bug under test.
+  it('does not fan out a bare #include to an unrelated same-name header', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Main',
+        fileName: 'main.c',
+        path: 'src/main.c',
+        textLower: '#include "util.h"',
+        mdLinkTargets: ['util.h'],
+      },
+      {
+        id: 'b',
+        title: 'Inc Util',
+        fileName: 'util.h',
+        path: 'inc/util.h',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'c',
+        title: 'Other Util',
+        fileName: 'util.h',
+        path: 'other/util.h',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    const linkEdges = edges.filter((e) => e.evidence.some((ev) => ev.startsWith('links to')));
+    expect(linkEdges).toEqual([]);
+  });
+
+  it('keeps a markdown link edge when the href carries a #fragment (folder drop)', () => {
+    // `[see](guide.md#install)` from a doc WITH a path: resolution is
+    // path-authoritative, so the fragment must not poison the byPath key.
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Intro',
+        fileName: 'intro.md',
+        path: 'docs/intro.md',
+        textLower: 'see the guide',
+        mdLinkTargets: ['guide.md#install'],
+      },
+      {
+        id: 'b',
+        title: 'Guide',
+        fileName: 'guide.md',
+        path: 'docs/guide.md',
+        textLower: 'installation steps',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    const link = edges.find((e) => e.evidence.some((ev) => ev.startsWith('links to')));
+    expect(link).toMatchObject({ source: 'a', target: 'b' });
+    expect(link?.evidence).toContain("links to 'guide.md'");
+  });
+
+  it('resolves ./relative markdown links with fragments and queries', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Intro',
+        fileName: 'intro.md',
+        path: 'docs/intro.md',
+        textLower: '',
+        mdLinkTargets: ['./guide.md#section', './faq.md?highlight=x'],
+      },
+      {
+        id: 'b',
+        title: 'Guide',
+        fileName: 'guide.md',
+        path: 'docs/guide.md',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'c',
+        title: 'Faq',
+        fileName: 'faq.md',
+        path: 'docs/faq.md',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    const linked = edges
+      .filter((e) => e.evidence.some((ev) => ev.startsWith('links to')))
+      .map((e) => [e.source, e.target].sort().join('-'))
+      .sort();
+    expect(linked).toEqual(['a-b', 'a-c']);
+  });
+
+  it('does not fan out an in-page-only #fragment link', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Intro',
+        fileName: 'intro.md',
+        path: 'docs/intro.md',
+        textLower: '',
+        mdLinkTargets: ['#only-hash'],
+      },
+      {
+        id: 'b',
+        title: 'Guide',
+        fileName: 'guide.md',
+        path: 'docs/guide.md',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    expect(edges.filter((e) => e.evidence.some((ev) => ev.startsWith('links to')))).toEqual([]);
+  });
+
+  it('importPathCandidates strips fragments/queries and resolves sibling filenames', () => {
+    expect(importPathCandidates('docs/intro.md', 'guide.md#install')).toContain('docs/guide.md');
+    expect(importPathCandidates('docs/intro.md', './guide.md#section')).toContain('docs/guide.md');
+    expect(importPathCandidates('docs/intro.md', 'guide.md?query=1')).toContain('docs/guide.md');
+    expect(importPathCandidates('docs/intro.md', '#install')).toEqual([]);
+    // bare module names still do NOT resolve against the importing file's dir
+    expect(importPathCandidates('src/main.py', 'os')).not.toContain('src/os');
+  });
+
+  it('does not attach a bare python import to an unrelated same-stem file', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Main',
+        fileName: 'main.py',
+        path: 'src/main.py',
+        textLower: 'import os',
+        mdLinkTargets: ['os'],
+      },
+      {
+        id: 'b',
+        title: 'Os Module',
+        fileName: 'os.ts',
+        path: 'src/os.ts',
+        textLower: '',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    const linkEdges = edges.filter((e) => e.evidence.some((ev) => ev.startsWith('links to')));
+    expect(linkEdges).toEqual([]);
   });
 });

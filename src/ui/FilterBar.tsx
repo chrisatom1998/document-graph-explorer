@@ -1,8 +1,24 @@
 import { useMemo, useState } from 'react';
 import { useGraphStore } from '../store/graphStore';
-import { useUiStore } from '../store/uiStore';
 import { hexFor } from '../scene/palette';
-import type { FileType } from '../model/types';
+import type { EdgeKind, FileType } from '../model/types';
+import { DEFAULT_FILTER, useUiStore } from '../store/uiStore';
+import { isFilterActive } from '../scene/emphasis';
+import SnapshotDiffBanner from './SnapshotDiffBanner';
+
+const EDGE_KIND_ORDER: { kind: EdgeKind; label: string }[] = [
+  { kind: 'reference', label: 'links' },
+  { kind: 'semantic', label: 'similar' },
+  { kind: 'keyword', label: 'keywords' },
+  { kind: 'entity', label: 'entities' },
+];
+
+const RECENCY_OPTIONS: { days: number | null; label: string }[] = [
+  { days: null, label: 'any time' },
+  { days: 30, label: '30d' },
+  { days: 90, label: '90d' },
+  { days: 365, label: '1y' },
+];
 
 const FILE_TYPE_ORDER: FileType[] = [
   'md',
@@ -15,6 +31,7 @@ const FILE_TYPE_ORDER: FileType[] = [
   'json',
   'yaml',
   'csv',
+  'code',
   'other',
 ];
 
@@ -85,12 +102,19 @@ export default function FilterBar() {
     setFilter({ clusters: next.length > 0 ? next : null });
   };
 
-  const hasActiveFilter =
-    filter.fileTypes !== null || filter.clusters !== null || filter.minDegree > 0 || filter.minEdgeWeight > 0;
+  const toggleKind = (kind: EdgeKind) => {
+    const active = filter.edgeKinds ?? [];
+    const next = active.includes(kind) ? active.filter((k) => k !== kind) : [...active, kind];
+    setFilter({ edgeKinds: next.length > 0 ? next : null });
+  };
 
-  const clearAll = () => setFilter({ fileTypes: null, clusters: null, minDegree: 0, minEdgeWeight: 0 });
+  const hasActiveFilter = isFilterActive(filter);
+
+  const clearAll = () => setFilter({ ...DEFAULT_FILTER });
 
   return (
+    <>
+      <SnapshotDiffBanner />
     <div className="filter-bar-layer">
       <div className="filter-bar__toggle-wrap">
         <button
@@ -194,11 +218,51 @@ export default function FilterBar() {
             </div>
           </div>
 
+          <div className="filter-bar__group">
+            <span className="filter-bar__group-label" title="Keep only connections of these kinds. Leave all off to show every kind.">
+              Links
+            </span>
+            {EDGE_KIND_ORDER.map(({ kind, label }) => (
+              <button
+                key={kind}
+                type="button"
+                className={`chip chip-selectable${
+                  (filter.edgeKinds ?? []).includes(kind) ? ' is-active' : ''
+                }`}
+                aria-pressed={(filter.edgeKinds ?? []).includes(kind)}
+                title={`Toggle ${label} connections`}
+                onClick={() => toggleKind(kind)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="filter-bar__group">
+            <span className="filter-bar__group-label" title="Keep documents modified within this window. Files without a known date hide when a window is set.">
+              Modified
+            </span>
+            {RECENCY_OPTIONS.map(({ days, label }) => (
+              <button
+                key={label}
+                type="button"
+                className={`chip chip-selectable${
+                  (filter.modifiedWithinDays ?? null) === days ? ' is-active' : ''
+                }`}
+                aria-pressed={(filter.modifiedWithinDays ?? null) === days}
+                title={days === null ? 'Show documents of any age' : `Show documents modified in the last ${label}`}
+                onClick={() => setFilter({ modifiedWithinDays: days })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           {hasActiveFilter && (
             <button
               type="button"
               className="filter-bar__clear"
-              title="Reset all filters (file types, clusters, connection and link-strength minimums)"
+              title="Reset all filters (file types, clusters, connection kinds, recency, and strength minimums)"
               onClick={clearAll}
             >
               Clear
@@ -207,5 +271,6 @@ export default function FilterBar() {
         </div>
       )}
     </div>
+    </>
   );
 }

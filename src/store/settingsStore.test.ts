@@ -207,3 +207,29 @@ describe('offlineMode', () => {
     expect(useSettingsStore.getState().offlineMode).toBe(false);
   });
 });
+
+describe('storage and recognition settings', () => {
+  it('caches embeddings by default and round-trips the toggle', async () => {
+    const { useSettingsStore } = await import('./settingsStore');
+    expect(useSettingsStore.getState().cacheEmbeddings).toBe(true);
+    useSettingsStore.getState().setCacheEmbeddings(false);
+    expect(useSettingsStore.getState().cacheEmbeddings).toBe(false);
+    useSettingsStore.getState().setCacheEmbeddings(true);
+  });
+
+  it('defaults to English query style and bundled OCR', async () => {
+    const { useSettingsStore } = await import('./settingsStore');
+    expect(useSettingsStore.getState().embeddingQueryStyle).toBe('english');
+    expect(useSettingsStore.getState().ocrLanguage).toBe('eng');
+    expect(useSettingsStore.getState().ocrMaxPages).toBe(20);
+    useSettingsStore.getState().setEmbeddingQueryStyle('neutral');
+    useSettingsStore.getState().setOcrLanguage('fra');
+    useSettingsStore.getState().setOcrMaxPages(40);
+    expect(useSettingsStore.getState().embeddingQueryStyle).toBe('neutral');
+    expect(useSettingsStore.getState().ocrLanguage).toBe('fra');
+    expect(useSettingsStore.getState().ocrMaxPages).toBe(40);
+    useSettingsStore.getState().setEmbeddingQueryStyle('english');
+    useSettingsStore.getState().setOcrLanguage('eng');
+    useSettingsStore.getState().setOcrMaxPages(20);
+  });
+});

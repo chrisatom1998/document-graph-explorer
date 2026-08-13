@@ -2,7 +2,7 @@
 
 **Owner:** Chris Johnson  
 **Status:** Active Development (v1)  
-**Last Updated:** July 2, 2026
+**Last Updated:** August 13, 2026
 
 ---
 
@@ -46,7 +46,7 @@ The tool runs **entirely client-side** (zero server cost, zero data exposure), m
 ## Key Capabilities (v1)
 
 ### Ingestion
-- Drag-and-drop files or folders (`.md`, `.txt`, `.pdf`, `.html`, `.docx`, `.pptx`, `.xlsx`, and `.json`/`.yaml`/`.csv` as text)
+- Drag-and-drop files or folders (`.md`, `.txt`, `.pdf`, `.html`, `.docx`, `.pptx`, `.xlsx`, `.json`/`.yaml`/`.csv`, and source code / repositories)
 - Real-time progress with nodes materializing live into the 3D scene
 - Web Worker pool ensures zero UI jank during processing
 
@@ -55,13 +55,13 @@ The tool runs **entirely client-side** (zero server cost, zero data exposure), m
 - **TF-IDF keyword edges**: shared rare terms create connections
 - **Semantic embeddings**: local BGE small model (no API needed) computes document similarity
 - **Community detection**: Louvain clustering groups related documents into color-coded constellations
-- **Optional AI enrichment**: Gemini API for summaries, canonical topics, cluster names
+- **Optional AI enrichment**: OpenRouter or local Ollama for summaries, canonical topics, cluster names
 
 ### Visualization
 - 3D force-directed graph with cinematic bloom, edge pulses, and camera choreography
 - Click-to-read side panel with full document text
 - Semantic search (⌘K) that finds relevant docs even without keyword matches
-- Filter by file type, cluster, or connectivity
+- Filter by file type, cluster, connectivity, connection kind, or recency
 
 ### Distribution & Security
 - **Air-gapped build** (`npm run build:airgap`): zero external network, enforced by a host-free CSP, runtime refusal, and a post-build verify gate. See [SECURITY.md](../SECURITY.md).
@@ -101,7 +101,8 @@ The tool runs **entirely client-side** (zero server cost, zero data exposure), m
 │                      │                ▼          │
 │              ┌──────────────┐  ┌──────────────┐  │
 │              │ Optional:    │  │ Three.js/R3F │  │
-│              │ Gemini API   │  │ 3D Renderer  │  │
+│              │ OpenRouter / │  │ 3D Renderer  │  │
+│              │ Ollama       │  │              │  │
 │              └──────────────┘  └──────────────┘  │
 │                                       │          │
 │                    IndexedDB (cache + snapshots)  │
@@ -124,17 +125,19 @@ PDF parsing, semantic embeddings, similarity edges, search, clustering, IndexedD
 Bloom, edge pulses, live materialization, camera choreography, starfield, auto-quality
 
 ### Phase 4 (Current) — Polish & Persistence
-- ✅ AI enrichment (Gemini summaries, topics, cluster names)
-- ✅ Named snapshots (save/load/delete)
+- ✅ AI enrichment (OpenRouter / Ollama summaries, topics, cluster names)
+- ✅ Named snapshots (save/load/delete) and visual compare
 - ✅ Document removal & re-indexing
-- ☐ Folder watching via File System Access API
+- ✅ Folder watching via File System Access API
 - ✅ 2D toggle mode
+- ✅ Source-code / repository ingest
 
-### Phase 5 (Future) — Collaboration & Scale
-- ☐ Shareable snapshot URLs (via exported JSON hosting)
-- ☐ Comparative diff view between two snapshots
-- ☐ OCR for scanned PDFs (Tesseract.js)
-- ☐ Multi-corpus workspaces
+### Phase 5 — Collaboration & Scale
+- ✅ Shareable graph URLs (sanitized fragments; JSON export for oversized graphs)
+- ✅ Comparative diff view between a snapshot and the live graph
+- ✅ OCR for scanned PDFs (Tesseract.js, configurable language/pages)
+- ✅ Multi-corpus workspaces
+- ✅ Quota meter + selective embedding/original cache eviction
 
 ---
 
@@ -146,7 +149,7 @@ Bloom, edge pulses, live materialization, camera choreography, starfield, auto-q
 | Boilerplate docs all look "similar" | TF-IDF weighting discounts ubiquitous terms; top-k neighbor constraint prevents hairball graphs |
 | 3D performance degrades at scale | Auto-quality ladder (bloom → label culling → 2D fallback) |
 | 25MB embedding model download | Lazy-load after first drop, cache in browser, honest progress indicator |
-| IndexedDB quota limits on large corpora | Graceful degradation — app works without persistence |
+| IndexedDB quota limits on large corpora | Settings quota meter + selective embedding/original eviction; app still works without persistence |
 
 ---
 

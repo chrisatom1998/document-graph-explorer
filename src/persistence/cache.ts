@@ -1,5 +1,6 @@
 import { EMBED_DIMS, EMBEDDING_FINGERPRINT } from '../config';
 import type { DocNode, GraphExport, LinkRef } from '../model/types';
+import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 import { getDb, type DocumentRecord, type EmbeddingRecord, type SnapshotRecord } from './db';
 
@@ -159,8 +160,9 @@ export async function saveDocsToCache(
         docLinks: d.docLinks,
       };
       ops.push(docStore.put(docRec));
-      const docVector = nonEmpty(d.docVector);
-      const chunkVectors = nonEmpty(d.chunkVectors);
+      const persistVectors = useSettingsStore.getState().cacheEmbeddings;
+      const docVector = persistVectors ? nonEmpty(d.docVector) : null;
+      const chunkVectors = persistVectors ? nonEmpty(d.chunkVectors) : null;
       if (docVector || chunkVectors) {
         const embRec: EmbeddingRecord = {
           hash,
@@ -174,6 +176,30 @@ export async function saveDocsToCache(
     }
     ops.push(tx.done);
     await Promise.all(ops);
+    return true;
+  } catch (err) {
+    cacheUnavailable(err);
+    return false;
+  }
+}
+
+/** Drops persisted vectors only — document text and originals stay. */
+export async function clearEmbeddingsCache(): Promise<boolean> {
+  try {
+    const db = await getDb();
+    await db.clear('embeddings');
+    return true;
+  } catch (err) {
+    cacheUnavailable(err);
+    return false;
+  }
+}
+
+/** Drops retained original file bytes. "Open original" falls back to the text viewer. */
+export async function clearOriginalsCache(): Promise<boolean> {
+  try {
+    const db = await getDb();
+    await db.clear('originals');
     return true;
   } catch (err) {
     cacheUnavailable(err);

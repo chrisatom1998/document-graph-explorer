@@ -5,18 +5,35 @@
  */
 
 import type { Edge } from '../model/types';
+import { posixBasename, posixJoin, posixNormalize, posixResolveFrom, stripKnownExtension } from '../util/posixPath';
 import { isExternalUrl, normalizeLinkTarget } from './urlUtils';
 
 export interface ReferenceDocInput {
   id: string;
   title: string;
   fileName: string;
+  /** Repo-relative path when the file was dropped as part of a folder. */
+  path?: string;
   textLower: string;
   mdLinkTargets: string[];
 }
 
 const LINK_WEIGHT = 1.0;
 const MENTION_WEIGHT = 0.85;
+
+/** Extensions tried when an import omits them (`./foo` → `foo.ts`). */
+const RESOLVE_EXTENSIONS = [
+  '.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs',
+  '.py', '.pyi', '.go', '.rs', '.java', '.kt', '.kts',
+  '.h', '.hpp', '.hh', '.c', '.cc', '.cpp', '.cs',
+  '.rb', '.php', '.vue', '.svelte', '.css', '.scss',
+  '.json', '.md', '.toml',
+];
+
+const INDEX_BASENAMES = [
+  'index.ts', 'index.tsx', 'index.js', 'index.jsx', 'index.mjs',
+  'index.py', '__init__.py', 'mod.rs', 'index.go',
+];
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -58,6 +75,9 @@ interface MentionPattern {
 const WORD_CHAR = /[a-z0-9_]/;
 const WORD_RUN = /[a-z0-9_]+/g;
 
+/** Sentinel owner id for needles shared by multiple documents. */
+const AMBIGUOUS_NEEDLE = '';
+
 function buildMentionPatterns(
   docs: ReferenceDocInput[],
   minTitleLen: number,
@@ -82,14 +102,34 @@ function buildMentionPatterns(
     );
   };
 
-  for (const target of docs) {
-    const title = target.title.trim();
-    if (title.length >= minTitleLen) push(target.id, title, 0);
-    const fileName = target.fileName.trim();
-    if (fileName.length >= minTitleLen && fileName.toLowerCase() !== title.toLowerCase()) {
-      push(target.id, fileName, 1);
+  // A needle claimed by more than one document is not a unique identifier:
+  // on a folder drop, several unrelated `util.ts` / `README.md` files share a
+  // basename (and the titles derived from it), so a body-text mention of that
+  // name says nothing about WHICH file is meant. Those needles are dropped
+  // entirely rather than fanned out across the tree; unique titles and
+  // filenames still mention-match as before.
+  const needleOwner = new Map<string, string>();
+  const claim = (targetId: string, raw: string): void => {
+    const needle = raw.toLowerCase();
+    const owner = needleOwner.get(needle);
+    if (owner === undefined) needleOwner.set(needle, targetId);
+    else if (owner !== targetId) needleOwner.set(needle, AMBIGUOUS_NEEDLE);
+  };
+  const forEachNeedle = (visit: (targetId: string, raw: string, kind: MentionKind) => void): void => {
+    for (const target of docs) {
+      const title = target.title.trim();
+      if (title.length >= minTitleLen) visit(target.id, title, 0);
+      const fileName = target.fileName.trim();
+      if (fileName.length >= minTitleLen && fileName.toLowerCase() !== title.toLowerCase()) {
+        visit(target.id, fileName, 1);
+      }
     }
-  }
+  };
+  forEachNeedle(claim);
+  forEachNeedle((targetId, raw, kind) => {
+    if (needleOwner.get(raw.toLowerCase()) === AMBIGUOUS_NEEDLE) return;
+    push(targetId, raw, kind);
+  });
   return patterns;
 }
 
@@ -160,17 +200,25 @@ export function referenceEdges(
   docs: ReferenceDocInput[],
   minTitleLen: number,
 ): Edge[] {
-  // index docs by lowercased filename basename
+  // index docs by lowercased filename basename, stem (no extension), and path
   const byFileName = new Map<string, ReferenceDocInput[]>();
-  for (const doc of docs) {
-    const key = normalizeLinkTarget(doc.fileName);
-    if (!key) continue;
-    let list = byFileName.get(key);
+  const byStem = new Map<string, ReferenceDocInput[]>();
+  const byPath = new Map<string, ReferenceDocInput[]>();
+  const indexPush = (map: Map<string, ReferenceDocInput[]>, key: string, doc: ReferenceDocInput): void => {
+    if (!key) return;
+    let list = map.get(key);
     if (!list) {
       list = [];
-      byFileName.set(key, list);
+      map.set(key, list);
     }
     list.push(doc);
+  };
+  for (const doc of docs) {
+    const fileKey = normalizeLinkTarget(doc.fileName);
+    indexPush(byFileName, fileKey, doc);
+    indexPush(byStem, stripKnownExtension(fileKey), doc);
+    const pathKey = posixNormalize(doc.path ?? '').toLowerCase();
+    if (pathKey) indexPush(byPath, pathKey, doc);
   }
 
   const pairs = new Map<string, PairAcc>();
@@ -188,15 +236,43 @@ export function referenceEdges(
     if (!cur.evidence.includes(evidence)) cur.evidence.push(evidence); // merge evidence
   };
 
-  // 1) explicit md link targets -> another doc's fileName
+  const matchesFor = (target: string, from: ReferenceDocInput): ReferenceDocInput[] => {
+    const found: ReferenceDocInput[] = [];
+    const seen = new Set<string>();
+    const take = (hits: ReferenceDocInput[] | undefined): void => {
+      if (!hits) return;
+      for (const hit of hits) {
+        if (seen.has(hit.id)) continue;
+        seen.add(hit.id);
+        found.push(hit);
+      }
+    };
+    for (const candidate of importPathCandidates(from.path, target)) {
+      take(byPath.get(candidate));
+    }
+    // Path-aware resolution is authoritative whenever the importing doc has a
+    // known path: a specifier from a real source file resolves against that
+    // file's location, and a miss means the target isn't in the corpus — not
+    // that it's fair game for a same-name file elsewhere in the tree. Name/stem
+    // fallback only makes sense for markdown-only drops with no path metadata.
+    if (from.path) return found;
+    const spec = target.trim();
+    const base = normalizeLinkTarget(target);
+    take(byFileName.get(base));
+    // Extensionless stem matching is a guess; keep it for bare names only so
+    // module paths (`net/http`, `@scope/pkg`) don't attach to arbitrary files
+    // sharing their last segment.
+    if (!spec.replace(/^(?:\.\/)+/, '').includes('/')) {
+      take(byStem.get(stripKnownExtension(base)));
+    }
+    return found;
+  };
+
+  // 1) explicit md / import targets -> another doc (path-aware, then basename)
   for (const doc of docs) {
     for (const target of doc.mdLinkTargets) {
       if (isExternalUrl(target)) continue; // external web links aren't doc refs
-      const base = normalizeLinkTarget(target);
-      if (!base) continue;
-      const matches = byFileName.get(base);
-      if (!matches) continue;
-      for (const other of matches) {
+      for (const other of matchesFor(target, doc)) {
         addRef(doc.id, other.id, LINK_WEIGHT, `links to '${other.fileName}'`);
       }
     }
@@ -247,4 +323,55 @@ export function referenceEdges(
       evidence: pair.evidence,
     }),
   );
+}
+
+/**
+ * Paths to look up for an import / markdown href. Relative specifiers resolve
+ * against the importing file; extensionless names expand to common source
+ * suffixes and directory index files.
+ */
+export function importPathCandidates(fromPath: string | undefined, specifier: string): string[] {
+  let spec = specifier.trim();
+  if (!spec || isExternalUrl(spec)) return [];
+  // Markdown hrefs may carry a #fragment / ?query; only the document path
+  // resolves. A pure in-page link (`#section`) targets the linking document
+  // itself and yields no candidates.
+  const hash = spec.indexOf('#');
+  if (hash >= 0) spec = spec.slice(0, hash);
+  const query = spec.indexOf('?');
+  if (query >= 0) spec = spec.slice(0, query);
+  spec = spec.trim();
+  if (!spec) return [];
+  const roots: string[] = [];
+  const relative = spec.startsWith('.') || spec.startsWith('/');
+  if (relative && fromPath) roots.push(posixResolveFrom(fromPath, spec));
+  else if (!relative) {
+    roots.push(posixNormalize(spec).replace(/^\//, ''));
+    // A slashless bare specifier still resolves against the linking file's
+    // directory when it names an explicit file (`guide.md`, `util.h`) —
+    // markdown hrefs and C includes are sibling-relative without `./`. Bare
+    // module names (`os`, `react`) stay root-only so language imports don't
+    // attach to whatever file shares their stem.
+    if (fromPath && (spec.includes('/') || posixBasename(spec).includes('.'))) {
+      roots.push(posixResolveFrom(fromPath, spec));
+    }
+  }
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const add = (path: string): void => {
+    const key = path.toLowerCase();
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    out.push(key);
+  };
+  for (const root of roots) {
+    if (!root) continue;
+    add(root);
+    const base = posixBasename(root);
+    if (!base.includes('.')) {
+      for (const ext of RESOLVE_EXTENSIONS) add(`${root}${ext}`);
+      for (const index of INDEX_BASENAMES) add(posixJoin(root, index));
+    }
+  }
+  return out;
 }

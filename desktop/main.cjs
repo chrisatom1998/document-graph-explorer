@@ -99,7 +99,9 @@ function startStaticServer() {
         // demo manifest as immutable made upgraded apps keep loading the old
         // corpus definition for a year.
         'Cache-Control':
-          ext === '.html' || target.endsWith(path.join('demo', 'manifest.json'))
+          ext === '.html' ||
+          ext === '.webmanifest' ||
+          target.endsWith(path.join('demo', 'manifest.json'))
             ? 'no-cache'
             : 'public, max-age=31536000, immutable',
       }),

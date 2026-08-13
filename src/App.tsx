@@ -3,7 +3,6 @@ import DropZone from './ingest/DropZone';
 import Toolbar from './ui/Toolbar';
 import Tooltip from './ui/Tooltip';
 import ChatLauncher from './ui/ChatLauncher';
-import GraphNavigator from './ui/GraphNavigator';
 import ToastHost from './ui/ToastHost';
 import { shouldIgnoreGlobalKey } from './ui/globalKeyboard';
 import { useGraphStore } from './store/graphStore';
@@ -31,6 +30,7 @@ const SidePanel = lazy(() => import('./ui/SidePanel'));
 const SnapshotDrawer = lazy(() => import('./ui/SnapshotDrawer'));
 const SearchOverlay = lazy(() => import('./ui/SearchOverlay'));
 const ShowMePanel = lazy(() => import('./ui/ShowMePanel'));
+const GraphNavigator = lazy(() => import('./ui/GraphNavigator'));
 const FilterBar = lazy(() => import('./ui/FilterBar'));
 const Minimap = lazy(() => import('./ui/Minimap'));
 const SettingsPanel = lazy(() => import('./ui/SettingsPanel'));
@@ -282,7 +282,9 @@ export default function App() {
         <Suspense fallback={null}><EmptyState /></Suspense>
       )}
       {phase === 'ready' && <Toolbar />}
-      {phase === 'ready' && <GraphNavigator />}
+      {phase === 'ready' && (
+        <Suspense fallback={null}><GraphNavigator /></Suspense>
+      )}
       {phase === 'ready' && (
         <Suspense fallback={null}><FilterBar /></Suspense>
       )}

@@ -20,6 +20,14 @@ describe('routeFile', () => {
     expect(routeFile('deck.pptm')).toBe('pptx');
     expect(routeFile('sheet.xlsx')).toBe('xlsx');
     expect(routeFile('sheet.xlsm')).toBe('xlsx');
+    expect(routeFile('app.ts')).toBe('code');
+    expect(routeFile('App.tsx')).toBe('code');
+    expect(routeFile('main.py')).toBe('code');
+    expect(routeFile('main.go')).toBe('code');
+    expect(routeFile('lib.rs')).toBe('code');
+    expect(routeFile('Widget.java')).toBe('code');
+    expect(routeFile('Dockerfile')).toBe('code');
+    expect(routeFile('Makefile')).toBe('code');
   });
 
   it('is case-insensitive on the extension', () => {
@@ -33,9 +41,17 @@ describe('routeFile', () => {
     expect(routeFile('binary.exe')).toBeNull();
   });
 
+  it('returns null for lockfiles and generated bundles even when the extension is known', () => {
+    expect(routeFile('package-lock.json')).toBeNull();
+    expect(routeFile('yarn.lock')).toBeNull();
+    expect(routeFile('pnpm-lock.yaml')).toBeNull();
+    expect(routeFile('app.min.js')).toBeNull();
+    expect(routeFile('bundle.js.map')).toBeNull();
+  });
+
   it('returns null for files with no extension', () => {
-    expect(routeFile('Makefile')).toBeNull();
     expect(routeFile('LICENSE')).toBeNull();
+    expect(routeFile('CHANGELOG')).toBeNull();
   });
 
   it('returns null for dotfiles (leading dot, no real extension)', () => {

@@ -17,8 +17,11 @@ import { IGNORED_DIRS, MAX_INGEST_FILE_BYTES, MAX_INGEST_TOTAL_BYTES } from '../
 import type { IngestFile } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { posixJoin } from '../util/posixPath';
 import { routeFile } from './fileRouter';
+import { hasUnignoreUnder, mergeGitIgnoreRules, pathIsGitIgnored, type GitIgnoreRule } from './gitignore';
 import type { NamedFile } from './localFiles';
+import { repoArtifactReason } from './repoArtifacts';
 
 // ---------------------------------------------------------------------------
 // directory walking (webkitGetAsEntry API is callback-based; promisify it)
@@ -36,18 +39,69 @@ function isIgnoredDir(name: string): boolean {
   return IGNORED_DIRS.has(name) || IGNORED_DIRS.has(name.toLowerCase());
 }
 
-async function walkEntry(entry: FileSystemEntry, depth: number, out: NamedFile[]): Promise<void> {
-  if (entry.name.startsWith('.')) return; // dotfiles and dot-directories
-  if (entry.isDirectory) {
-    if (isIgnoredDir(entry.name)) return;
-    const reader = (entry as FileSystemDirectoryEntry).createReader();
-    // readEntries returns batches (~100); keep reading until empty
-    for (;;) {
-      const batch = await readAllEntries(reader);
-      if (batch.length === 0) break;
-      for (const child of batch) await walkEntry(child, depth + 1, out);
+async function readDirectoryEntries(dir: FileSystemDirectoryEntry): Promise<FileSystemEntry[]> {
+  const reader = dir.createReader();
+  const entries: FileSystemEntry[] = [];
+  for (;;) {
+    const batch = await readAllEntries(reader);
+    if (batch.length === 0) break;
+    entries.push(...batch);
+  }
+  return entries;
+}
+
+async function readGitignoreText(entries: FileSystemEntry[]): Promise<string | null> {
+  const hit = entries.find((entry) => entry.isFile && entry.name === '.gitignore');
+  if (!hit) return null;
+  try {
+    return await (await entryFile(hit as FileSystemFileEntry)).text();
+  } catch {
+    return null;
+  }
+}
+
+async function walkDirectory(
+  dir: FileSystemDirectoryEntry,
+  rootName: string,
+  repoRel: string,
+  depth: number,
+  ancestorRules: GitIgnoreRule[],
+  out: NamedFile[],
+): Promise<void> {
+  // Ignored-dir skipping for descendants happens at the call site (gated on
+  // hasUnignoreUnder); this only covers the directly-dropped root itself.
+  if ((depth === 0 && isIgnoredDir(dir.name)) || (dir.name.startsWith('.') && dir.name !== rootName)) return;
+  const children = await readDirectoryEntries(dir);
+  const rules = mergeGitIgnoreRules(ancestorRules, await readGitignoreText(children), repoRel);
+  for (const child of children) {
+    if (child.name === '.gitignore') continue;
+    if (child.name.startsWith('.')) continue;
+    const childRel = repoRel ? posixJoin(repoRel, child.name) : child.name;
+    if (child.isDirectory) {
+      // A default-ignored dir (node_modules, dist, …) is only worth walking
+      // when a gitignore negation might reach inside it; otherwise skip it
+      // outright rather than enumerating a huge vendor tree.
+      if (isIgnoredDir(child.name) && !hasUnignoreUnder(childRel, rules)) continue;
+      if (pathIsGitIgnored(childRel, true, rules)) continue;
+      await walkDirectory(child as FileSystemDirectoryEntry, rootName, childRel, depth + 1, rules, out);
+      continue;
     }
-  } else if (entry.isFile) {
+    if (!child.isFile) continue;
+    if (repoArtifactReason(child.name) || routeFile(child.name) === null) continue;
+    if (pathIsGitIgnored(childRel, false, rules)) continue;
+    const file = await entryFile(child as FileSystemFileEntry);
+    const relPath = child.fullPath.replace(/^\/+/, '');
+    out.push({ file, path: depth >= 0 ? relPath : undefined });
+  }
+}
+
+async function walkEntry(entry: FileSystemEntry, depth: number, out: NamedFile[]): Promise<void> {
+  if (entry.isDirectory) {
+    await walkDirectory(entry as FileSystemDirectoryEntry, entry.name, '', depth, [], out);
+    return;
+  }
+  if (entry.name.startsWith('.')) return;
+  if (entry.isFile) {
     const file = await entryFile(entry as FileSystemFileEntry);
     const relPath = entry.fullPath.replace(/^\/+/, '');
     out.push({ file, path: depth > 0 ? relPath : undefined });

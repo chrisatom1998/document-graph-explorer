@@ -43,6 +43,8 @@ const NO_FILTER: GraphFilter = {
   clusters: null,
   minDegree: 0,
   minEdgeWeight: 0,
+  edgeKinds: null,
+  modifiedWithinDays: null,
 };
 
 describe('adjacencyFor', () => {
@@ -177,6 +179,48 @@ describe('computeEmphasis', () => {
       fileTypes: ['md'],
       minEdgeWeight: 0.5,
     });
+    expect(set).toEqual(new Set(['a']));
+  });
+
+  it('filter: edgeKinds keeps nodes incident to an allowed kind', () => {
+    const set = computeEmphasis(
+      [mkNode({ id: 'a' }), mkNode({ id: 'b' }), mkNode({ id: 'c' })],
+      [mkEdge('a', 'b', 0.9, 'reference'), mkEdge('b', 'c', 0.9, 'semantic')],
+      null,
+      null,
+      null,
+      { ...NO_FILTER, edgeKinds: ['reference'] },
+    );
+    expect(set).toEqual(new Set(['a', 'b']));
+  });
+
+  it('filter: modifiedWithinDays drops old and undated docs', () => {
+    const now = 1_000_000_000_000;
+    const set = computeEmphasis(
+      [
+        mkNode({ id: 'fresh', lastModified: now - 2 * 86_400_000 }),
+        mkNode({ id: 'old', lastModified: now - 40 * 86_400_000 }),
+        mkNode({ id: 'unknown' }),
+      ],
+      [],
+      null,
+      null,
+      null,
+      { ...NO_FILTER, modifiedWithinDays: 7 },
+      now,
+    );
+    expect(set).toEqual(new Set(['fresh']));
+  });
+
+  it('search ∩ filter: search hits that fail the filter drop out', () => {
+    const set = computeEmphasis(
+      [mkNode({ id: 'a', fileType: 'md' }), mkNode({ id: 'b', fileType: 'pdf' })],
+      [],
+      null,
+      null,
+      ['a', 'b'],
+      { ...NO_FILTER, fileTypes: ['md'] },
+    );
     expect(set).toEqual(new Set(['a']));
   });
 });

@@ -15,6 +15,7 @@ import { extractEntities } from '../pipeline/entities';
 import { extractPhraseTf } from '../pipeline/phrases';
 import { summarize } from '../pipeline/summarize';
 import { tokenize, termFreq } from '../pipeline/tokenize';
+import { parseCode } from '../pipeline/parsers/code';
 import { parseHtml } from '../pipeline/parsers/html';
 import { parseMarkdown } from '../pipeline/parsers/markdown';
 import { parseOffice } from '../pipeline/parsers/office';
@@ -80,6 +81,8 @@ async function runParser(req: Extract<PoolRequest, { type: 'parse' }>): Promise<
     case 'csv':
     case 'other':
       return parseTxt(req.bytes, req.name);
+    case 'code':
+      return parseCode(req.bytes, req.name);
     case 'pdf':
       throw new Error('PDF parsing runs on the main thread (pdf.js owns its own worker)');
     default:
