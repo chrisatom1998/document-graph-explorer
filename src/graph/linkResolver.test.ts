@@ -67,11 +67,33 @@ describe('buildLinkIndex + resolveLinkTarget', () => {
     expect(resolveLinkTarget('setup.md', index)).toBe('a');
   });
 
-  it('first-doc-wins when two documents share a normalized basename', () => {
+  it('drops (does not first-doc-win) when two documents share a normalized basename', () => {
     const index = buildLinkIndex([
       doc('a', { path: 'v1/readme.md' }),
       doc('b', { path: 'v2/readme.md' }),
     ]);
-    expect(resolveLinkTarget('readme.md', index)).toBe('a');
+    expect(resolveLinkTarget('readme.md', index)).toBeNull();
+  });
+
+  it('resolves a path-qualified target to the doc with a unique matching path suffix', () => {
+    const index = buildLinkIndex([
+      doc('a', { path: 'pkg/one/README.md' }),
+      doc('b', { path: 'pkg/two/README.md' }),
+    ]);
+    expect(resolveLinkTarget('pkg/two/README.md', index)).toBe('b');
+    expect(resolveLinkTarget('pkg/one/README.md', index)).toBe('a');
+    // bare, ambiguous basename still refuses to guess
+    expect(resolveLinkTarget('README.md', index)).toBeNull();
+  });
+
+  it('still resolves unique setup.md cases alongside ambiguous README.md files', () => {
+    const index = buildLinkIndex([
+      doc('a', { path: 'pkg/one/README.md' }),
+      doc('b', { path: 'pkg/two/README.md' }),
+      doc('c', { path: 'pkg/two/setup.md' }),
+    ]);
+    expect(resolveLinkTarget('setup.md', index)).toBe('c');
+    expect(resolveLinkTarget('pkg/two/setup.md', index)).toBe('c');
+    expect(resolveLinkTarget('README.md', index)).toBeNull();
   });
 });
