@@ -105,6 +105,28 @@ export interface FileStatus {
   error?: string;
 }
 
+/** Why a file appears in the ingest report (spec: Phase B #13). */
+export type IngestIssueKind =
+  | 'ignored' // rejected before the pipeline: unsupported type, size limits
+  | 'failed' // parse or embedding failure
+  | 'skipped' // ingest cancelled before the file finished processing
+  | 'capped'; // dropped at the MAX_NODES node limit
+
+export interface IngestReportEntry {
+  name: string;
+  reason: string;
+  kind: IngestIssueKind;
+}
+
+/**
+ * Snapshot of every outstanding problem file, taken when an ingest run
+ * settles. Persisted per corpus so it outlives the ProgressStrip's auto-hide.
+ */
+export interface IngestReport {
+  finishedAt: number; // epoch ms
+  entries: IngestReportEntry[];
+}
+
 export type PipelinePhase =
   | 'idle'
   | 'parsing'

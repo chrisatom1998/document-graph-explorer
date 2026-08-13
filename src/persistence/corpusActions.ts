@@ -36,6 +36,8 @@ export async function restoreCorpusById(id: string): Promise<boolean> {
       const restored = record.exportData
         ? await hydrateFromRecord(record.exportData, record.positions ?? {}, record.corpusHash)
         : true;
+      // resetCorpus wiped the previous corpus's report; bring this one's back.
+      useGraphStore.getState().setIngestReport(record.ingestReport ?? null);
       await bindFolderWatcherToActiveCorpus();
       return restored;
     } finally {
@@ -102,6 +104,7 @@ export async function deleteCorpusById(id: string): Promise<boolean> {
     if (next.exportData) {
       await hydrateFromRecord(next.exportData, next.positions ?? {}, next.corpusHash);
     }
+    useGraphStore.getState().setIngestReport(next.ingestReport ?? null);
     await bindFolderWatcherToActiveCorpus();
     return true;
   });

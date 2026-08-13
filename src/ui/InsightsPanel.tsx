@@ -20,6 +20,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { timeAgo } from '../util/relativeTime';
 import { focusNode } from './focusNode';
+import IngestReportSection from './IngestReportSection';
 
 type SectionKey = 'pinned' | 'orphans' | 'duplicates' | 'bridges' | 'stale';
 
@@ -137,6 +138,8 @@ export default function InsightsPanel() {
           {phase !== 'ready' && (
             <p className="insights__hint">Still processing — results may be partial.</p>
           )}
+
+          <IngestReportSection />
 
           {insights.pinned.length > 0 && (
             <>

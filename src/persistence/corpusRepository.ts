@@ -1,4 +1,4 @@
-import type { DocNode, GraphExport } from '../model/types';
+import type { DocNode, GraphExport, IngestReport } from '../model/types';
 import { useCorpusStore, type CorpusSummary } from '../store/corpusStore';
 import { getSetting, lookupGraphCache, setSetting } from './cache';
 import {
@@ -318,6 +318,22 @@ export async function updateCorpusAnnotations(
     current.updatedAt = Date.now();
   });
   await publish(undefined, record);
+}
+
+/**
+ * Persist the last ingest run's failure report on the corpus record.
+ * Deliberately does NOT bump updatedAt or publish: this is background
+ * bookkeeping after every run, and neither the switcher ordering nor the
+ * summary list should churn because of it.
+ */
+export async function updateCorpusIngestReport(
+  id: string,
+  report: IngestReport | null,
+): Promise<void> {
+  await mutateCorpus(id, (current) => {
+    if (report) current.ingestReport = report;
+    else delete current.ingestReport;
+  });
 }
 
 /** Candidates not referenced by any saved corpus or named snapshot may be purged safely. */

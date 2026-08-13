@@ -88,7 +88,13 @@ export async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
     // A one-shot selection has no manifest to retry against, so deferred files
     // stay reported-and-skipped exactly as before.
     const { files } = await prepareIngestFiles(named);
-    if (files.length === 0) return;
+    if (files.length === 0) {
+      // Fully rejected — no run will settle, so snapshot the rejections into
+      // the persistent report here.
+      const { publishIngestReport } = await import('../pipeline/ingestReport');
+      publishIngestReport();
+      return;
+    }
     const { ingestFiles } = await import('../pipeline/coordinatorLazy');
     await ingestFiles(files);
   } catch (error) {

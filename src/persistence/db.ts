@@ -15,7 +15,7 @@
  */
 
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { DocNode, GraphExport, LinkRef } from '../model/types';
+import type { DocNode, GraphExport, IngestReport, LinkRef } from '../model/types';
 
 export const DB_NAME = 'knowledge-nebula';
 export const DB_VERSION = 5;
@@ -142,6 +142,8 @@ export interface CorpusRecord {
   watch?: WatchedFolderRecord;
   views?: SavedViewRecord[];
   annotations?: Record<string, DocAnnotationRecord>;
+  /** Last settled ingest run's problem files (optional — no DB version bump). */
+  ingestReport?: IngestReport;
 }
 
 export interface NebulaDB extends DBSchema {

@@ -272,6 +272,10 @@ export async function restoreSession(): Promise<boolean> {
   try {
     const activeId = await initializeCorpusRepository();
     const activeCorpus = await getCorpusRecord(activeId);
+    // Restore the persisted ingest report up front: it exists even for a
+    // corpus that never reached 'ready' (e.g. a first ingest that failed in
+    // full), which is exactly when the report matters most.
+    useGraphStore.getState().setIngestReport(activeCorpus?.ingestReport ?? null);
     const lastCorpusHash = activeCorpus?.corpusHash;
     if (!lastCorpusHash) return false; // no prior session — first visit, not a failure
 

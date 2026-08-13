@@ -2328,6 +2328,62 @@ input {
   color: var(--warning);
 }
 
+.ingest-report__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  font-size: 12.5px;
+  min-width: 0;
+}
+
+.ingest-report__kind {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+}
+
+.ingest-report__kind.is-failed {
+  color: var(--danger);
+  border-color: rgba(255, 128, 128, 0.28);
+  background: rgba(255, 128, 128, 0.08);
+}
+
+.ingest-report__kind.is-capped {
+  color: var(--warning);
+  border-color: rgba(255, 207, 107, 0.28);
+  background: rgba(255, 207, 107, 0.08);
+}
+
+.ingest-report__kind.is-ignored,
+.ingest-report__kind.is-skipped {
+  color: var(--text-faint);
+  border-color: rgba(160, 170, 200, 0.25);
+  background: rgba(160, 170, 200, 0.08);
+}
+
+.ingest-report__name {
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ingest-report__reason {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-faint);
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
 .insights__bridge {
   padding: 4px 0;
 }
@@ -2565,6 +2621,13 @@ input {
   flex-direction: column;
   gap: 6px;
 }
+
+.ignored-tray__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .ignored-tray__toggle {
   align-self: flex-start;
   display: inline-flex;

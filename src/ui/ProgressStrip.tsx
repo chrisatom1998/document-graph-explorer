@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Chip } from '@heroui/react/chip';
 import { ProgressBar } from '@heroui/react/progress-bar';
 import { useGraphStore } from '../store/graphStore';
+import { useUiStore } from '../store/uiStore';
 import {
   cancelIngest,
   hasCancellableIngest,
@@ -45,6 +46,8 @@ export default function ProgressStrip() {
   const ignoredFiles = useGraphStore((s) => s.ignoredFiles);
   const modelProgress = useGraphStore((s) => s.modelProgress);
   const enrichProgress = useGraphStore((s) => s.enrichProgress);
+  const ingestReport = useGraphStore((s) => s.ingestReport);
+  const setInsightsOpen = useUiStore((s) => s.setInsightsOpen);
 
   const [ignoredOpen, setIgnoredOpen] = useState(false);
   const [lingering, setLingering] = useState(false);
@@ -214,14 +217,26 @@ export default function ProgressStrip() {
 
         {ignoredFiles.length > 0 && (
           <div className="ignored-tray">
-            <button
-              type="button"
-              className="ignored-tray__toggle"
-              title="Show or hide the files that were skipped during ingestion"
-              onClick={() => setIgnoredOpen((v) => !v)}
-            >
-              {ignoredFiles.length} ignored {ignoredOpen ? '▾' : '▸'}
-            </button>
+            <div className="ignored-tray__actions">
+              <button
+                type="button"
+                className="ignored-tray__toggle"
+                title="Show or hide the files that were skipped during ingestion"
+                onClick={() => setIgnoredOpen((v) => !v)}
+              >
+                {ignoredFiles.length} ignored {ignoredOpen ? '▾' : '▸'}
+              </button>
+              {ingestReport && (
+                <button
+                  type="button"
+                  className="ignored-tray__toggle"
+                  title="Open the full ingest report in the Insights panel — it stays available after this strip hides"
+                  onClick={() => setInsightsOpen(true)}
+                >
+                  View full report
+                </button>
+              )}
+            </div>
             {ignoredOpen && (
               <div className="ignored-tray__list">
                 {ignoredFiles.map((f, i) => (

@@ -4,6 +4,7 @@ import type {
   DuplicatePair,
   Edge,
   FileStatus,
+  IngestReport,
   PipelinePhase,
   PipelineTaskProgress,
 } from '../model/types';
@@ -19,6 +20,11 @@ interface GraphState {
   modelProgress: PipelineTaskProgress | null;
   /** Live enrichment progress (AI passes); null outside 'enriching'. */
   enrichProgress: { done: number; total: number; note: string } | null;
+  /**
+   * Ignored/failed/skipped/capped files from the last settled ingest run,
+   * kept (and persisted per corpus) after the ProgressStrip auto-hides.
+   */
+  ingestReport: IngestReport | null;
   corpusHash: string | null;
   /** Near-duplicate pairs from the last semantic pass (spec: insights panel). */
   duplicatePairs: DuplicatePair[];
@@ -40,6 +46,7 @@ interface GraphState {
   addIgnored: (name: string, reason: string) => void;
   setModelProgress: (p: GraphState['modelProgress']) => void;
   setEnrichProgress: (p: GraphState['enrichProgress']) => void;
+  setIngestReport: (report: IngestReport | null) => void;
   setCorpusHash: (h: string | null) => void;
   setDuplicatePairs: (pairs: DuplicatePair[]) => void;
   setLocalClusterNames: (names: Record<number, string>) => void;
@@ -68,6 +75,7 @@ export const useGraphStore = create<GraphState>((set) => ({
   ignoredFiles: [],
   modelProgress: null,
   enrichProgress: null,
+  ingestReport: null,
   corpusHash: null,
   duplicatePairs: [],
   localClusterNames: {},
@@ -147,6 +155,7 @@ export const useGraphStore = create<GraphState>((set) => ({
     set((s) => ({ ignoredFiles: [...s.ignoredFiles, { name, reason }] })),
   setModelProgress: (modelProgress) => set({ modelProgress }),
   setEnrichProgress: (enrichProgress) => set({ enrichProgress }),
+  setIngestReport: (ingestReport) => set({ ingestReport }),
   setCorpusHash: (corpusHash) => set({ corpusHash }),
   setDuplicatePairs: (duplicatePairs) => set({ duplicatePairs }),
   setLocalClusterNames: (localClusterNames) => set({ localClusterNames }),
@@ -162,6 +171,7 @@ export const useGraphStore = create<GraphState>((set) => ({
       ignoredFiles: [],
       modelProgress: null,
       enrichProgress: null,
+      ingestReport: null,
       corpusHash: null,
       duplicatePairs: [],
       localClusterNames: {},

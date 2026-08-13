@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { useGraphStore } from '../store/graphStore';
+import { useUiStore } from '../store/uiStore';
 import { clearIngestAbort, registerIngestAbort } from '../pipeline/ingestCancellation';
 import ProgressStrip from './ProgressStrip';
 
@@ -79,5 +80,37 @@ describe('ProgressStrip cancellation', () => {
     } finally {
       clearIngestAbort(controller);
     }
+  });
+});
+
+describe('ProgressStrip ingest report link', () => {
+  beforeEach(() => {
+    useGraphStore.getState().reset();
+    useUiStore.setState({ insightsOpen: false });
+    useGraphStore.setState({
+      phase: 'parsing',
+      ignoredFiles: [{ name: 'b.exe', reason: 'unsupported type' }],
+    });
+  });
+
+  afterEach(cleanup);
+
+  it('offers no report link while no report has been published', () => {
+    render(<ProgressStrip />);
+    expect(screen.queryByRole('button', { name: 'View full report' })).not.toBeInTheDocument();
+  });
+
+  it('opens the Insights panel where the persisted report lives', () => {
+    useGraphStore.setState({
+      ingestReport: {
+        finishedAt: Date.now(),
+        entries: [{ name: 'b.exe', reason: 'unsupported type', kind: 'ignored' }],
+      },
+    });
+
+    render(<ProgressStrip />);
+    fireEvent.click(screen.getByRole('button', { name: 'View full report' }));
+
+    expect(useUiStore.getState().insightsOpen).toBe(true);
   });
 });

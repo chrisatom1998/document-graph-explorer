@@ -90,6 +90,7 @@ import { chunkText } from './chunker';
 import { sha256Hex } from './hash';
 import { parsePdf } from './parsers/pdf';
 import { clearIngestAbort, registerIngestAbort } from './ingestCancellation';
+import { publishIngestReport } from './ingestReport';
 import { enqueueRun } from './runQueue';
 import { randomSpherePoint } from './spawnPosition';
 import { addToSemanticIndex, edgesFromIndex, type SemanticIndex } from './similarity';
@@ -1315,6 +1316,10 @@ async function backfillLexMeta(pool: WorkerPool): Promise<void> {
  */
 function settleCancelledIngest(): void {
   const store = useGraphStore.getState;
+  // Snapshot BEFORE the tray is cleared: still-pending files become 'skipped'
+  // entries and existing failures are kept, so the report is the only place
+  // the cancelled run's problems survive.
+  publishIngestReport({ cancelled: true });
   store().setModelProgress(null); // an OCR/model banner must not outlive the run
   store().clearIngestTray();
   const { phase } = store();
@@ -1343,6 +1348,10 @@ export function ingestFiles(files: IngestFile[]): Promise<void> {
   const run = enqueueRun(() => runIngest(files, controller.signal), {
     signal: controller.signal,
   })
+    // Snapshot the run's ignored/failed/capped files into the persistent
+    // report the moment the run settles (cancellation publishes inside
+    // settleCancelledIngest instead, before the tray is cleared).
+    .then(() => publishIngestReport())
     .catch((err) => {
       // Cancellation is a user action, not a failure — settle the returned
       // promise cleanly so fire-and-forget drops and loadDemoCorpus don't
@@ -1351,6 +1360,7 @@ export function ingestFiles(files: IngestFile[]): Promise<void> {
         settleCancelledIngest();
         return;
       }
+      publishIngestReport();
       throw err;
     })
     .finally(() => clearIngestAbort(controller));
@@ -1412,6 +1422,7 @@ export function reconcileWatchedFiles(
       .map(({ oldId }) => oldId);
     const removing = [...new Set([...removeIds, ...supersededIds])];
     if (removing.length > 0) await runRemove(removing);
+    publishIngestReport();
     return acceptedIds;
   });
   run.catch((error) => console.error('watched-folder reconciliation failed', error));

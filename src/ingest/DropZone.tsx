@@ -144,6 +144,11 @@ async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
     if (files.length > 0) {
       const { ingestFiles } = await import('../pipeline/coordinatorLazy');
       await ingestFiles(files);
+    } else {
+      // Every file was rejected by size gating — no run will settle, so
+      // snapshot the rejections into the persistent report here.
+      const { publishIngestReport } = await import('../pipeline/ingestReport');
+      publishIngestReport();
     }
   } catch (err) {
     console.error('ingestion failed', err);
