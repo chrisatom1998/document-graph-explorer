@@ -155,7 +155,9 @@ function collectLua(text: string, targets: string[]): void {
   for (const match of text.matchAll(LUA_REQUIRE_RE)) {
     const spec = match[1].trim();
     if (!spec) continue;
-    if (spec.startsWith('.') || spec.includes('.') || spec.includes('/')) {
+    if (spec.startsWith('.') || spec.startsWith('/')) {
+      pushUnique(targets, spec, MAX_IMPORTS);
+    } else if (spec.includes('.') || spec.includes('/')) {
       pushUnique(targets, spec.replace(/\./g, '/'), MAX_IMPORTS);
     }
   }

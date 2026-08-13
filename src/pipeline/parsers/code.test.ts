@@ -72,6 +72,22 @@ import os, mypkg.utils
     ).toEqual(['./lib.sh', './helpers.sh']);
   });
 
+  it('keeps Lua relative require paths intact and slashes dotted modules', () => {
+    const src = `
+      require('./foo')
+      require('../bar')
+      require('./lib/util.lua')
+      require('socket.http')
+      require('plain')
+    `;
+    expect(extractCodeImports(src, 'init.lua')).toEqual([
+      './foo',
+      '../bar',
+      './lib/util.lua',
+      'socket/http',
+    ]);
+  });
+
   it('treats Astro files as the JS import family', () => {
     expect(extractCodeImports("import Layout from '../Layout.astro';\n", 'Page.astro')).toEqual([
       '../Layout.astro',
