@@ -3,6 +3,7 @@ import { Button } from '@heroui/react/button';
 import { Chip } from '@heroui/react/chip';
 import { EmptyState as HeroEmptyState } from '@heroui/react/empty-state';
 import { openFilePicker } from '../ingest/DropZone';
+import { openFolderPicker } from '../ingest/folderPicker';
 import { useUiStore } from '../store/uiStore';
 import ConstellationSvg from './ConstellationSvg';
 
@@ -28,18 +29,6 @@ export default function EmptyState() {
         useUiStore.getState().pushToast("Couldn't load the demo corpus.");
       })
       .finally(() => setDemoLoading(false));
-  };
-
-  // Demand-loaded like the graph importer: the folder scanner sits behind the
-  // entry chunk's size budget, and the picker still opens within the click's
-  // user-activation window.
-  const addFolder = () => {
-    void import('../ingest/folderPicker')
-      .then(({ openFolderPicker }) => openFolderPicker())
-      .catch((error) => {
-        console.warn('folder picker failed to load', error);
-        useUiStore.getState().pushToast("Couldn't open the folder picker.");
-      });
   };
 
   const importGraph = () => {
@@ -92,7 +81,7 @@ export default function EmptyState() {
               variant="secondary"
               size="lg"
               aria-label="Add a folder — every relevant file inside it is added, subfolders included"
-              onPress={addFolder}
+              onPress={openFolderPicker}
             >
               Add a folder
             </Button>

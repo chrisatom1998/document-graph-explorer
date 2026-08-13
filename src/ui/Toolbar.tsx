@@ -11,20 +11,9 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { layoutSetDims } from '../layout/layoutBridge';
 import { openFilePicker } from '../ingest/DropZone';
-
-/**
- * Demand-loaded: the folder scanner sits behind the entry chunk's size
- * budget, and the picker still opens within the click's user-activation
- * window (same pattern as the graph importer).
- */
-function addFolder(): void {
-  void import('../ingest/folderPicker')
-    .then(({ openFolderPicker }) => openFolderPicker())
-    .catch((error) => {
-      console.warn('folder picker failed to load', error);
-      useUiStore.getState().pushToast("Couldn't open the folder picker.");
-    });
-}
+// Imported eagerly so the activation-gated picker opens synchronously with
+// the click; folderPicker demand-loads the heavy scanner itself.
+import { openFolderPicker } from '../ingest/folderPicker';
 
 const ExportImportMenu = lazy(() => import('./ExportImportMenu'));
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
@@ -651,7 +640,7 @@ export default function Toolbar() {
         className="btn-icon"
         title="Add a folder — every relevant file inside it is added, subfolders included"
         aria-label="Add folder"
-        onClick={addFolder}
+        onClick={openFolderPicker}
       >
         <IconFolderPlus />
       </button>
