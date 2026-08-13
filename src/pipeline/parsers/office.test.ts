@@ -214,4 +214,33 @@ describe('parseOffice', () => {
       loadSpy.mockRestore();
     }
   });
+
+  it('extracts ODT content', async () => {
+    const bytes = await zipBuffer({
+      'meta.xml': '<office:document-meta><office:meta><dc:title>Test ODT</dc:title></office:meta></office:document-meta>',
+      'content.xml': '<office:document-content><office:body><office:text><text:h text:outline-level="1">Heading</text:h><text:p>Paragraph</text:p></office:text></office:body></office:document-content>'
+    });
+    const parsed = await parseOffice(bytes, 'test.odt', 'odt');
+    expect(parsed.title).toBe('Test ODT');
+    expect(parsed.headings).toEqual(['Heading']);
+    expect(parsed.text).toContain('Heading\nParagraph');
+  });
+
+  it('extracts ODS content', async () => {
+    const bytes = await zipBuffer({
+      'content.xml': '<office:document-content><office:body><office:spreadsheet><table:table table:name="Sheet1"><table:table-row><table:table-cell><text:p>CellA1</text:p></table:table-cell><table:table-cell><text:p>CellB1</text:p></table:table-cell></table:table-row></table:table></office:spreadsheet></office:body></office:document-content>'
+    });
+    const parsed = await parseOffice(bytes, 'test.ods', 'ods');
+    expect(parsed.headings).toEqual(['Sheet1']);
+    expect(parsed.text).toContain('Sheet: Sheet1\nCellA1 | CellB1');
+  });
+
+  it('extracts ODP content', async () => {
+    const bytes = await zipBuffer({
+      'content.xml': '<office:document-content><office:body><office:presentation><draw:page draw:name="Slide1"><draw:frame><draw:text-box><text:p>Slide Title</text:p><text:p>Slide Text</text:p></draw:text-box></draw:frame></draw:page></office:presentation></office:body></office:document-content>'
+    });
+    const parsed = await parseOffice(bytes, 'test.odp', 'odp');
+    expect(parsed.headings).toEqual(['Slide Title']);
+    expect(parsed.text).toContain('Slide1: Slide Title\nSlide Text');
+  });
 });

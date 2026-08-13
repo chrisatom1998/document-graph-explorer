@@ -46,6 +46,12 @@ describe('codeLanguageOf', () => {
     expect(codeLanguageOf('setup.ps1')?.short).toBe('ps1');
     expect(codeLanguageOf('schema.prisma')?.short).toBe('prisma');
     expect(codeLanguageOf('Page.astro')?.short).toBe('astro');
+    expect(codeLanguageOf('Main.mojo')?.short).toBe('mojo');
+    expect(codeLanguageOf('Lib.purs')?.short).toBe('purs');
+    expect(codeLanguageOf('shader.glsl')?.short).toBe('glsl');
+    expect(codeLanguageOf('build.ninja')?.short).toBe('ninja');
+    expect(codeLanguageOf('taskfile.yml')?.short).toBe('task');
+    expect(codeLanguageOf('data.avsc')?.short).toBe('avsc');
   });
 
   it('returns null for non-code names', () => {

@@ -6,7 +6,7 @@
 
 import JSZip from 'jszip';
 import { XMLParser } from 'fast-xml-parser';
-import type { FileType, LinkRef, NodeStatus } from '../../model/types';
+import type { LinkRef, NodeStatus } from '../../model/types';
 import { cleanFilename, type ParserResult } from './txt';
 
 type XmlNode = Record<string, unknown>;
@@ -392,7 +392,7 @@ async function parseXlsx(zip: JSZip, name: string): Promise<ParserResult> {
 export async function parseOffice(
   bytes: ArrayBuffer,
   name: string,
-  fileType: Extract<FileType, 'docx' | 'pptx' | 'xlsx'>,
+  fileType: string,
 ): Promise<ParserResult> {
   const zip = await JSZip.loadAsync(bytes);
   switch (fileType) {
@@ -402,6 +402,122 @@ export async function parseOffice(
       return parsePptx(zip, name);
     case 'xlsx':
       return parseXlsx(zip, name);
+    case 'odt':
+      return parseOdt(zip, name);
+    case 'ods':
+      return parseOds(zip, name);
+    case 'odp':
+      return parseOdp(zip, name);
   }
   throw new Error(`Unsupported Office type: ${String(fileType)}`);
+}
+
+async function readOdfTitle(zip: JSZip): Promise<string> {
+  const xml = await zipText(zip, 'meta.xml');
+  if (!xml) return '';
+  const titles = elements(parseXml(xml), new Set(['dc:title']));
+  return titles
+    .map((title) => collectText(children(title)).replace(/\s+/g, ' ').trim())
+    .find(Boolean) ?? '';
+}
+
+async function parseOdt(zip: JSZip, name: string): Promise<ParserResult> {
+  const contentXml = await zipText(zip, 'content.xml');
+  if (!contentXml) return emptyResult(name, 'No ODT content found');
+  
+  const title = await readOdfTitle(zip);
+  const tree = parseXml(contentXml);
+  const headings: string[] = [];
+  const lines: string[] = [];
+  
+  walk(tree, (node, nodeName) => {
+    if (nodeName === 'text:p' || nodeName === 'text:h') {
+      const text = collectText(children(node)).replace(/\s+/g, ' ').trim();
+      if (text) {
+        lines.push(text);
+        if (nodeName === 'text:h') {
+          headings.push(text);
+        }
+      }
+    }
+  });
+  
+  const text = normalizeLines(lines);
+  return text
+    ? result(name, title || cleanFilename(name), text, headings, [])
+    : emptyResult(name, 'No readable ODT text found');
+}
+
+async function parseOds(zip: JSZip, name: string): Promise<ParserResult> {
+  const contentXml = await zipText(zip, 'content.xml');
+  if (!contentXml) return emptyResult(name, 'No ODS content found');
+  
+  const title = await readOdfTitle(zip);
+  const tree = parseXml(contentXml);
+  const lines: string[] = [];
+  const headings: string[] = [];
+  
+  for (const table of elements(tree, new Set(['table:table']))) {
+    const tableName = attr(table, 'name') ?? 'Sheet';
+    headings.push(tableName);
+    lines.push(`Sheet: ${tableName}`);
+    
+    for (const row of elements(children(table), new Set(['table:table-row']))) {
+      const rowValues: string[] = [];
+      for (const cell of elements(children(row), new Set(['table:table-cell']))) {
+        const pTags = elements(children(cell), new Set(['text:p']));
+        let cellText = '';
+        if (pTags.length > 0) {
+          cellText = pTags.map(p => collectText(children(p))).join(' ');
+        } else {
+          // Sometimes text is directly in cell or other elements, though typically in text:p
+          cellText = collectText(children(cell));
+        }
+        cellText = cellText.replace(/\s+/g, ' ').trim();
+        if (cellText) rowValues.push(cellText);
+      }
+      if (rowValues.length > 0) {
+        lines.push(rowValues.join(' | '));
+      }
+    }
+  }
+  
+  const text = normalizeLines(lines);
+  return text
+    ? result(name, title || cleanFilename(name), text, headings, [])
+    : emptyResult(name, 'No readable ODS text found');
+}
+
+async function parseOdp(zip: JSZip, name: string): Promise<ParserResult> {
+  const contentXml = await zipText(zip, 'content.xml');
+  if (!contentXml) return emptyResult(name, 'No ODP content found');
+  
+  const title = await readOdfTitle(zip);
+  const tree = parseXml(contentXml);
+  const lines: string[] = [];
+  const headings: string[] = [];
+  
+  const pages = elements(tree, new Set(['draw:page']));
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i];
+    const pageName = attr(page, 'name') ?? `Slide ${i + 1}`;
+    const pageLines: string[] = [];
+    
+    walk([page], (node, nodeName) => {
+      if (nodeName === 'text:p') {
+        const text = collectText(children(node)).replace(/\s+/g, ' ').trim();
+        if (text) pageLines.push(text);
+      }
+    });
+    
+    if (pageLines.length > 0) {
+      headings.push(pageLines[0]);
+      lines.push(`${pageName}: ${pageLines[0]}`, ...pageLines.slice(1));
+    }
+  }
+  
+  const text = normalizeLines(lines);
+  return text
+    ? result(name, title || cleanFilename(name), text, headings, [])
+    : emptyResult(name, 'No readable ODP text found');
 }

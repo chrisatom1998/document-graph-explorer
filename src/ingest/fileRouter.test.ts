@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { routeFile } from './fileRouter';
+import { routeFile, routeFileWithSniff } from './fileRouter';
 
 describe('routeFile', () => {
   it('routes every supported extension to its FileType', () => {
@@ -38,6 +38,31 @@ describe('routeFile', () => {
     expect(routeFile('analysis.jl')).toBe('code');
     expect(routeFile('notebook.ipynb')).toBe('json');
     expect(routeFile('notes.rmd')).toBe('md');
+    // New extensions
+    expect(routeFile('book.epub')).toBe('other');
+    expect(routeFile('doc.rtf')).toBe('other');
+    expect(routeFile('text.odt')).toBe('other');
+    expect(routeFile('sheet.ods')).toBe('other');
+    expect(routeFile('pres.odp')).toBe('other');
+    expect(routeFile('draw.odg')).toBe('other');
+    expect(routeFile('a.markdown')).toBe('md');
+    expect(routeFile('a.mdown')).toBe('md');
+    expect(routeFile('a.mkd')).toBe('md');
+    expect(routeFile('a.mdtext')).toBe('md');
+    expect(routeFile('a.mdtxt')).toBe('md');
+    expect(routeFile('a.workbook')).toBe('md');
+    expect(routeFile('data.tsv')).toBe('csv');
+    expect(routeFile('data.psv')).toBe('csv');
+    expect(routeFile('data.tab')).toBe('csv');
+    expect(routeFile('data.jsonl')).toBe('json');
+    expect(routeFile('data.ndjson')).toBe('json');
+    expect(routeFile('data.geojson')).toBe('json');
+    expect(routeFile('data.jsonld')).toBe('json');
+    expect(routeFile('data.xml')).toBe('code');
+    expect(routeFile('img.svg')).toBe('html');
+    expect(routeFile('page.xhtml')).toBe('html');
+    expect(routeFile('page.mhtml')).toBe('html');
+    expect(routeFile('page.mht')).toBe('html');
   });
 
   it('is case-insensitive on the extension', () => {
@@ -80,5 +105,30 @@ describe('routeFile', () => {
   it('uses only the final extension for multi-dot filenames', () => {
     expect(routeFile('archive.tar.gz')).toBeNull(); // 'gz' isn't a routed extension
     expect(routeFile('report.v2.pdf')).toBe('pdf');
+  });
+});
+
+describe('routeFileWithSniff', () => {
+  it('routes known extensions normally', () => {
+    const emptyBytes = new ArrayBuffer(0);
+    expect(routeFileWithSniff('notes.txt', emptyBytes)).toBe('txt');
+    expect(routeFileWithSniff('report.pdf', emptyBytes)).toBe('pdf');
+  });
+
+  it('returns txt for unknown files containing text', () => {
+    const textBytes = new TextEncoder().encode('Hello world').buffer;
+    expect(routeFileWithSniff('LICENSE', textBytes)).toBe('txt');
+    expect(routeFileWithSniff('unknown.ext', textBytes)).toBe('txt');
+  });
+
+  it('returns null for unknown files containing binary data', () => {
+    const binaryBytes = new Uint8Array([0x00, 0x01, 0x02, 0x00, 0x00]).buffer;
+    expect(routeFileWithSniff('unknown.bin', binaryBytes)).toBeNull();
+  });
+
+  it('returns null for known binary extensions even if they appear to contain text', () => {
+    const textBytes = new TextEncoder().encode('Fake image').buffer;
+    expect(routeFileWithSniff('image.png', textBytes)).toBeNull();
+    expect(routeFileWithSniff('data.zip', textBytes)).toBeNull();
   });
 });
