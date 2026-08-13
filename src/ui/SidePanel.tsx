@@ -36,7 +36,7 @@ const CONNECTIONS_COLLAPSED = 8;
 const EVIDENCE_COLLAPSED = 1;
 
 function isMonoFileType(fileType: DocNode['fileType']): boolean {
-  return fileType === 'txt' || fileType === 'other';
+  return fileType === 'txt' || fileType === 'other' || fileType === 'code';
 }
 
 // Lazy: pulls in pdfjs-dist, which needs DOM globals (DOMMatrix) absent in

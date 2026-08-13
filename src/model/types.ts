@@ -18,6 +18,7 @@ export type FileType =
   | 'docx'
   | 'pptx'
   | 'xlsx'
+  | 'code'
   | 'other';
 export type NodeStatus = 'ok' | 'partial' | 'unreadable';
 export type EdgeKind = 'reference' | 'semantic' | 'keyword' | 'entity' | 'topic';
@@ -255,6 +256,8 @@ export interface LexicalDocInput {
   id: string;
   title: string;
   fileName: string; // for mention matching
+  /** Folder-relative path when known; used to resolve ./imports. */
+  path?: string;
   tf: Record<string, number>;
   totalTerms: number;
   textLower: string; // capped, for title-mention scan + boilerplate

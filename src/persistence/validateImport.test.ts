@@ -118,6 +118,16 @@ describe('sanitizeGraphExport — node sanitization', () => {
     );
     expect(out.nodes.map((n) => n.fileType)).toEqual(['docx', 'pptx', 'xlsx']);
   });
+
+  it('preserves the code file type during export/import sanitization', () => {
+    const out = sanitizeGraphExport(
+      validExport({
+        nodes: [validNode('a', { fileType: 'code' })],
+        edges: [],
+      }),
+    );
+    expect(out.nodes[0].fileType).toBe('code');
+  });
 });
 
 describe('sanitizeGraphExport — edge sanitization', () => {

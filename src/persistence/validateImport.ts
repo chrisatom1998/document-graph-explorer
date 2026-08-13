@@ -48,6 +48,7 @@ const FILE_TYPES: ReadonlySet<string> = new Set([
   'docx',
   'pptx',
   'xlsx',
+  'code',
   'other',
 ]);
 const NODE_STATUSES: ReadonlySet<string> = new Set(['ok', 'partial', 'unreadable']);

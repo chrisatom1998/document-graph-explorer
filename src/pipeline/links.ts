@@ -5,18 +5,35 @@
  */
 
 import type { Edge } from '../model/types';
+import { posixBasename, posixJoin, posixNormalize, posixResolveFrom, stripKnownExtension } from '../util/posixPath';
 import { isExternalUrl, normalizeLinkTarget } from './urlUtils';
 
 export interface ReferenceDocInput {
   id: string;
   title: string;
   fileName: string;
+  /** Repo-relative path when the file was dropped as part of a folder. */
+  path?: string;
   textLower: string;
   mdLinkTargets: string[];
 }
 
 const LINK_WEIGHT = 1.0;
 const MENTION_WEIGHT = 0.85;
+
+/** Extensions tried when an import omits them (`./foo` → `foo.ts`). */
+const RESOLVE_EXTENSIONS = [
+  '.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs',
+  '.py', '.pyi', '.go', '.rs', '.java', '.kt', '.kts',
+  '.h', '.hpp', '.hh', '.c', '.cc', '.cpp', '.cs',
+  '.rb', '.php', '.vue', '.svelte', '.css', '.scss',
+  '.json', '.md', '.toml',
+];
+
+const INDEX_BASENAMES = [
+  'index.ts', 'index.tsx', 'index.js', 'index.jsx', 'index.mjs',
+  'index.py', '__init__.py', 'mod.rs', 'index.go',
+];
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -160,17 +177,25 @@ export function referenceEdges(
   docs: ReferenceDocInput[],
   minTitleLen: number,
 ): Edge[] {
-  // index docs by lowercased filename basename
+  // index docs by lowercased filename basename, stem (no extension), and path
   const byFileName = new Map<string, ReferenceDocInput[]>();
-  for (const doc of docs) {
-    const key = normalizeLinkTarget(doc.fileName);
-    if (!key) continue;
-    let list = byFileName.get(key);
+  const byStem = new Map<string, ReferenceDocInput[]>();
+  const byPath = new Map<string, ReferenceDocInput[]>();
+  const indexPush = (map: Map<string, ReferenceDocInput[]>, key: string, doc: ReferenceDocInput): void => {
+    if (!key) return;
+    let list = map.get(key);
     if (!list) {
       list = [];
-      byFileName.set(key, list);
+      map.set(key, list);
     }
     list.push(doc);
+  };
+  for (const doc of docs) {
+    const fileKey = normalizeLinkTarget(doc.fileName);
+    indexPush(byFileName, fileKey, doc);
+    indexPush(byStem, stripKnownExtension(fileKey), doc);
+    const pathKey = posixNormalize(doc.path ?? '').toLowerCase();
+    if (pathKey) indexPush(byPath, pathKey, doc);
   }
 
   const pairs = new Map<string, PairAcc>();
@@ -188,15 +213,31 @@ export function referenceEdges(
     if (!cur.evidence.includes(evidence)) cur.evidence.push(evidence); // merge evidence
   };
 
-  // 1) explicit md link targets -> another doc's fileName
+  const matchesFor = (target: string, from: ReferenceDocInput): ReferenceDocInput[] => {
+    const found: ReferenceDocInput[] = [];
+    const seen = new Set<string>();
+    const take = (hits: ReferenceDocInput[] | undefined): void => {
+      if (!hits) return;
+      for (const hit of hits) {
+        if (seen.has(hit.id)) continue;
+        seen.add(hit.id);
+        found.push(hit);
+      }
+    };
+    for (const candidate of importPathCandidates(from.path, target)) {
+      take(byPath.get(candidate));
+    }
+    const base = normalizeLinkTarget(target);
+    take(byFileName.get(base));
+    take(byStem.get(stripKnownExtension(base)));
+    return found;
+  };
+
+  // 1) explicit md / import targets -> another doc (path-aware, then basename)
   for (const doc of docs) {
     for (const target of doc.mdLinkTargets) {
       if (isExternalUrl(target)) continue; // external web links aren't doc refs
-      const base = normalizeLinkTarget(target);
-      if (!base) continue;
-      const matches = byFileName.get(base);
-      if (!matches) continue;
-      for (const other of matches) {
+      for (const other of matchesFor(target, doc)) {
         addRef(doc.id, other.id, LINK_WEIGHT, `links to '${other.fileName}'`);
       }
     }
@@ -247,4 +288,39 @@ export function referenceEdges(
       evidence: pair.evidence,
     }),
   );
+}
+
+/**
+ * Paths to look up for an import / markdown href. Relative specifiers resolve
+ * against the importing file; extensionless names expand to common source
+ * suffixes and directory index files.
+ */
+export function importPathCandidates(fromPath: string | undefined, specifier: string): string[] {
+  const spec = specifier.trim();
+  if (!spec || isExternalUrl(spec)) return [];
+  const roots: string[] = [];
+  const relative = spec.startsWith('.') || spec.startsWith('/');
+  if (relative && fromPath) roots.push(posixResolveFrom(fromPath, spec));
+  else if (!relative) {
+    roots.push(posixNormalize(spec).replace(/^\//, ''));
+    if (fromPath && spec.includes('/')) roots.push(posixResolveFrom(fromPath, spec));
+  }
+  const out: string[] = [];
+  const seen = new Set<string>();
+  const add = (path: string): void => {
+    const key = path.toLowerCase();
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    out.push(key);
+  };
+  for (const root of roots) {
+    if (!root) continue;
+    add(root);
+    const base = posixBasename(root);
+    if (!base.includes('.')) {
+      for (const ext of RESOLVE_EXTENSIONS) add(`${root}${ext}`);
+      for (const index of INDEX_BASENAMES) add(posixJoin(root, index));
+    }
+  }
+  return out;
 }

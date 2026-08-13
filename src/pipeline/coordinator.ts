@@ -44,6 +44,7 @@ import type {
   PoolResponse,
 } from '../model/types';
 import { routeFile } from '../ingest/fileRouter';
+import { repoArtifactReason } from '../ingest/repoArtifacts';
 import {
   layoutAddNodes,
   layoutReheat,
@@ -360,6 +361,11 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<voi
   // (a) route by extension; unsupported → ignored tray
   const routed: { file: IngestFile; fileType: FileType }[] = [];
   for (const file of files) {
+    const artifact = repoArtifactReason(file.name);
+    if (artifact) {
+      store().addIgnored(file.name, artifact);
+      continue;
+    }
     const fileType = routeFile(file.name);
     if (!fileType) {
       store().addIgnored(file.name, 'unsupported type');
@@ -833,6 +839,7 @@ async function runLexicalPass(
       id: n.id,
       title: n.title,
       fileName: meta?.fileName ?? basename(n.path ?? n.title),
+      path: n.path,
       tf: meta?.tf ?? {},
       totalTerms: meta?.totalTerms ?? 0,
       textLower: truncateToBytes(text, MAX_EMBED_TEXT_BYTES).toLowerCase(),

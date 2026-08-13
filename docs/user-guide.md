@@ -18,7 +18,7 @@ This guide covers why the tool exists, what it can do, and how to use every feat
 
 ## What it can do
 
-- **Ingest real-world formats**: plain text, Markdown, HTML, PDF (including link annotations), and Office files (Word, PowerPoint, Excel), plus CSV/JSON/YAML with dedicated viewers.
+- **Ingest real-world formats**: plain text, Markdown, HTML, PDF (including link annotations), Office files (Word, PowerPoint, Excel), CSV/JSON/YAML with dedicated viewers, and source code / repositories (imports become reference edges).
 - **Build the graph automatically**: semantic similarity links, explicit cross-document links (e.g. Markdown/PDF links between files), entity co-mention links, and named topic clusters.
 - **Let you explore in 3D**: orbit/zoom/pan a force-directed layout, hover for details, click to read, pin nodes by dragging, with an adaptive quality system (and a 2D mode) that keeps the scene smooth.
 - **Answer questions from your documents**: a built-in chat panel retrieves the most relevant passages and answers extractively — fully offline — or streams richer answers via an opt-in AI provider (OpenRouter or a local Ollama server), always with clickable source citations.
@@ -90,7 +90,7 @@ There are four ways to get documents in:
 3. The **＋ Add files** button on the toolbar (multi-select file picker — note the picker selects files; use drag & drop for folders).
 4. **Load demo corpus** on the welcome screen, for an instant tour with sample documents.
 
-**Supported formats:** `txt`, `log`, `md`, `mdx`, `pdf`, `html`/`htm`, `docx`/`docm`, `pptx`/`pptm`, `xlsx`/`xlsm`, `json`, `yaml`/`yml`, `csv`. Anything else lands in the collapsible **ignored tray** with a reason rather than failing silently. Dotfiles and development directories (`node_modules`, `.git`, `dist`, `build`, `.venv`, …) are skipped automatically when dropping folders.
+**Supported formats:** `txt`, `log`, `md`, `mdx`, `pdf`, `html`/`htm`, `docx`/`docm`, `pptx`/`pptm`, `xlsx`/`xlsm`, `json`, `yaml`/`yml`, `csv`, and source code (`ts`/`tsx`/`js`/`jsx`, `py`, `go`, `rs`, `java`/`kt`, `c`/`cpp`/`h`, `rb`, `php`, `css`, `vue`/`svelte`, Dockerfiles, Makefiles, and similar). Anything else lands in the collapsible **ignored tray** with a reason rather than failing silently. Dotfiles, lockfiles, minified bundles, and development directories (`node_modules`, `.git`, `dist`, `build`, `vendor`, `target`, `.venv`, …) are skipped automatically when dropping folders. If the folder contains a `.gitignore`, those patterns are applied too — so dropping a git checkout indexes the project, not its build output.
 
 **What happens next:** ingestion runs entirely off the main thread — parse → boilerplate strip → chunk → TF-IDF → embeddings (self-hosted BGE model) → similarity links + Louvain clustering → topic synthesis. A **progress strip** shows the current phase (`Parsing…`, `Finding connections…`, `Embedding meaning…`, `Clustering…`, `Ready`), a percentage bar, and per-file status chips. The first run also shows a one-time banner while the embedding model loads.
 

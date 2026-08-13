@@ -15,6 +15,7 @@ const FILE_TYPE_ORDER: FileType[] = [
   'json',
   'yaml',
   'csv',
+  'code',
   'other',
 ];
 

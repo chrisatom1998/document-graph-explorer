@@ -85,4 +85,43 @@ describe('scanFolder', () => {
     expect(hiddenFile.getFile).not.toHaveBeenCalled();
     expect(unsupported.getFile).not.toHaveBeenCalled();
   });
+
+  it('includes source files and skips lockfiles, vendor trees, and gitignored paths', async () => {
+    const app = fileHandle('app.ts');
+    const readme = fileHandle('README.md');
+    const lock = fileHandle('package-lock.json');
+    const ignoredLog = fileHandle('debug.log');
+    const vendorDoc = fileHandle('lib.go');
+    const gitignore = {
+      file: { name: '.gitignore', text: vi.fn().mockResolvedValue('*.log\n') } as unknown as File,
+      getFile: vi.fn(),
+    };
+    gitignore.getFile.mockResolvedValue(gitignore.file);
+    const gitignoreHandle = {
+      kind: 'file',
+      name: '.gitignore',
+      getFile: gitignore.getFile,
+    } as unknown as FileSystemFileHandle;
+    const vendor = directoryHandle('vendor', [['lib.go', vendorDoc.handle]]);
+    const src = directoryHandle('src', [
+      ['app.ts', app.handle],
+      ['debug.log', ignoredLog.handle],
+    ]);
+    const root = directoryHandle('repo', [
+      ['.gitignore', gitignoreHandle],
+      ['README.md', readme.handle],
+      ['package-lock.json', lock.handle],
+      ['vendor', vendor.handle],
+      ['src', src.handle],
+    ]);
+
+    await expect(scanFolder(root.handle)).resolves.toEqual([
+      { file: readme.file, path: 'repo/README.md' },
+      { file: app.file, path: 'repo/src/app.ts' },
+    ]);
+    expect(lock.getFile).not.toHaveBeenCalled();
+    expect(ignoredLog.getFile).not.toHaveBeenCalled();
+    expect(vendor.entries).not.toHaveBeenCalled();
+    expect(gitignore.getFile).toHaveBeenCalled();
+  });
 });

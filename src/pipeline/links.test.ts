@@ -220,3 +220,61 @@ describe('referenceEdges mention scanning matches the pairwise oracle', () => {
     expect(edges.length).toBeGreaterThan(10);
   });
 });
+
+describe('referenceEdges path-aware import resolution', () => {
+  it('resolves extensionless relative imports to the neighboring source file', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'Session',
+        fileName: 'session.ts',
+        path: 'src/auth/session.ts',
+        textLower: 'import token',
+        mdLinkTargets: ['./token'],
+      },
+      {
+        id: 'b',
+        title: 'Token',
+        fileName: 'token.ts',
+        path: 'src/auth/token.ts',
+        textLower: 'export token',
+        mdLinkTargets: [],
+      },
+      {
+        id: 'c',
+        title: 'Other Token',
+        fileName: 'token.ts',
+        path: 'src/other/token.ts',
+        textLower: 'unrelated',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    const ref = edges.find((e) => e.kind === 'reference' && e.evidence.some((ev) => ev.startsWith('links to')));
+    expect(ref).toMatchObject({ source: 'a', target: 'b' });
+    expect(ref?.evidence).toContain("links to 'token.ts'");
+  });
+
+  it('resolves ./dir to dir/index.ts', () => {
+    const docs: ReferenceDocInput[] = [
+      {
+        id: 'a',
+        title: 'App',
+        fileName: 'app.ts',
+        path: 'src/app.ts',
+        textLower: 'import helpers',
+        mdLinkTargets: ['./helpers'],
+      },
+      {
+        id: 'b',
+        title: 'Index',
+        fileName: 'index.ts',
+        path: 'src/helpers/index.ts',
+        textLower: 'export helpers',
+        mdLinkTargets: [],
+      },
+    ];
+    const edges = referenceEdges(docs, 5);
+    expect(edges.some((e) => e.source === 'a' && e.target === 'b')).toBe(true);
+  });
+});
