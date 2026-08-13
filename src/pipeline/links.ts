@@ -75,6 +75,9 @@ interface MentionPattern {
 const WORD_CHAR = /[a-z0-9_]/;
 const WORD_RUN = /[a-z0-9_]+/g;
 
+/** Sentinel owner id for needles shared by multiple documents. */
+const AMBIGUOUS_NEEDLE = '';
+
 function buildMentionPatterns(
   docs: ReferenceDocInput[],
   minTitleLen: number,
@@ -99,14 +102,34 @@ function buildMentionPatterns(
     );
   };
 
-  for (const target of docs) {
-    const title = target.title.trim();
-    if (title.length >= minTitleLen) push(target.id, title, 0);
-    const fileName = target.fileName.trim();
-    if (fileName.length >= minTitleLen && fileName.toLowerCase() !== title.toLowerCase()) {
-      push(target.id, fileName, 1);
+  // A needle claimed by more than one document is not a unique identifier:
+  // on a folder drop, several unrelated `util.ts` / `README.md` files share a
+  // basename (and the titles derived from it), so a body-text mention of that
+  // name says nothing about WHICH file is meant. Those needles are dropped
+  // entirely rather than fanned out across the tree; unique titles and
+  // filenames still mention-match as before.
+  const needleOwner = new Map<string, string>();
+  const claim = (targetId: string, raw: string): void => {
+    const needle = raw.toLowerCase();
+    const owner = needleOwner.get(needle);
+    if (owner === undefined) needleOwner.set(needle, targetId);
+    else if (owner !== targetId) needleOwner.set(needle, AMBIGUOUS_NEEDLE);
+  };
+  const forEachNeedle = (visit: (targetId: string, raw: string, kind: MentionKind) => void): void => {
+    for (const target of docs) {
+      const title = target.title.trim();
+      if (title.length >= minTitleLen) visit(target.id, title, 0);
+      const fileName = target.fileName.trim();
+      if (fileName.length >= minTitleLen && fileName.toLowerCase() !== title.toLowerCase()) {
+        visit(target.id, fileName, 1);
+      }
     }
-  }
+  };
+  forEachNeedle(claim);
+  forEachNeedle((targetId, raw, kind) => {
+    if (needleOwner.get(raw.toLowerCase()) === AMBIGUOUS_NEEDLE) return;
+    push(targetId, raw, kind);
+  });
   return patterns;
 }
 
