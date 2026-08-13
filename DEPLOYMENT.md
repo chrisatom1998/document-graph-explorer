@@ -26,6 +26,8 @@ must send them too:
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()
+Strict-Transport-Security: max-age=63072000; includeSubDomains
 ```
 
 Also serve the Content-Security-Policy as an HTTP response header. The build
@@ -64,6 +66,8 @@ server {
   add_header X-Frame-Options "DENY" always;
   add_header X-Content-Type-Options "nosniff" always;
   add_header Referrer-Policy "no-referrer" always;
+  add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()" always;
+  add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
   add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'" always;
 
   location / {
