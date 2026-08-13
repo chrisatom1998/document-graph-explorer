@@ -26,7 +26,7 @@ This project follows the Keep a Changelog format.
 
 ### Fixed
 - Follow mode now maps presenter selection and camera onto the follower's local documents by title/hash (not disk path), delivers a hung layout-settle camera after 8s, and labels collaboration as "You + N others" instead of counting the local client as a peer.
-- Collaboration invite hashes ask before joining; notes/tags stay local unless opted in; public STUN is disabled (host ICE only); share-link summaries are capped at 200 characters to match the confirm copy.
+- Collaboration invite hashes ask before joining; notes/tags stay local unless opted in; public STUN is disabled (host ICE only); share-link summaries can be up to 2000 characters (connection evidence is capped at 200).
 - Batch enrichment now sends each document's **full stored text** to the provider. Previously only the first 1,200 characters were included, so summaries and topics were written from a stub. Enormous files are truncated only as a last resort at `DOCUMENT_AI_MAX_CONTEXT_CHARS` (240,000 characters); batches split when that would overflow a typical model context window. Settings, SECURITY.md, and the user guide disclose the full-text send.
 
 ## [1.1.14] - 2026-07-29

@@ -11,8 +11,8 @@ export const MAX_SHARE_COMPRESSED_BYTES = 48 * 1024;
 export const MAX_SHARE_FRAGMENT_CHARS = 64 * 1024 + 64;
 /** Hard post-decompression ceiling, enforced while the stream is read. */
 export const MAX_SHARE_DECODED_BYTES = 2 * 1024 * 1024;
-/** Share-link summaries match the confirm copy (import sanitizer allows 2000). */
-export const SHARE_SUMMARY_CHARS = 200;
+/** Share-link summaries match the import sanitizer and confirm copy (2000). */
+export const SHARE_SUMMARY_CHARS = 2000;
 /** Connection evidence stays at the import list-item cap. */
 export const SHARE_EVIDENCE_CHARS = 200;
 

@@ -391,8 +391,8 @@ export default function ExportImportMenu({
             >
               <h2 style={confirmTitleStyle}>Share This Graph?</h2>
               <p style={confirmTextStyle}>
-                The link contains titles, short source excerpts (up to 200 characters), topics,
-                entities, keywords, warnings, cluster labels, and connection evidence. It excludes
+                The link contains titles, summaries (up to 2000 characters), topics,
+                entities, keywords, warnings, cluster labels, and connection evidence (up to 200 characters). It excludes
                 full document text, local paths, embeddings, file handles, and settings. Anyone
                 with the link can view the included graph metadata.
               </p>
