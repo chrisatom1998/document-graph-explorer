@@ -168,14 +168,21 @@ export function sanitizeSharedFilter(value: unknown): Partial<GraphFilter> | und
 }
 
 let queuedRemoteCameraPose: CameraPose | null = null;
+let queuedRemoteCameraRequiresFollow = false;
 
 function scheduleRemoteCameraPose(pose: CameraPose | null): void {
   if (!pose) return;
   queuedRemoteCameraPose = pose;
+  queuedRemoteCameraRequiresFollow = useCollabStore.getState().followMode;
   const run = () => {
     const pending = queuedRemoteCameraPose;
+    const requireFollow = queuedRemoteCameraRequiresFollow;
     queuedRemoteCameraPose = null;
+    queuedRemoteCameraRequiresFollow = false;
     if (!pending) return;
+    const { session, followMode } = useCollabStore.getState();
+    if (!session) return;
+    if (requireFollow && !followMode) return;
     useUiStore.getState().sendCameraPose(pending);
   };
   if (typeof requestAnimationFrame === 'function') {
