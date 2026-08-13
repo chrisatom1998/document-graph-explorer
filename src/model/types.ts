@@ -1,5 +1,12 @@
 /** Graph data model (spec §6) + pipeline message shapes. */
 
+// Type-only imports of insight result shapes (erased at compile time, so the
+// graph-module → types → graph-module cycle never exists at runtime): the
+// insights worker's wire format and the pure functions must be the same type
+// or they drift.
+import type { ClusterStat } from '../graph/clusterStats';
+import type { BridgeDoc, HubDoc } from '../graph/insights';
+
 export type FileType =
   | 'md'
   | 'txt'
@@ -310,6 +317,48 @@ export type AggResponse =
       top: { j: number; sim: number }[][];
     }
   | { requestId: number; type: 'cluster:done'; clusters: Record<string, number> }
+  | { requestId: number; type: 'error'; message: string };
+
+// ---------------------------------------------------------------------------
+// Insights worker protocol
+// ---------------------------------------------------------------------------
+
+/**
+ * Slimmed node copy shipped to the insights worker — everything the pure
+ * functions read and nothing else (no titles/summaries/text; structured-
+ * cloning those for a 4k-node corpus would cost more than the analysis).
+ * `kind` is load-bearing: computeBridges/computeHubs filter on it, so
+ * without it every node looks like a non-document and the results are empty.
+ */
+export interface InsightsNodeInput {
+  id: string;
+  kind: 'document' | 'topic';
+  cluster: number;
+  keywords: string[];
+}
+
+export interface InsightsEdgeInput {
+  source: string;
+  target: string;
+  weight: number;
+  kind: EdgeKind;
+}
+
+export interface InsightsRequest {
+  requestId: number;
+  type: 'insights';
+  nodes: InsightsNodeInput[];
+  edges: InsightsEdgeInput[];
+}
+
+export type InsightsResponse =
+  | {
+      requestId: number;
+      type: 'insights:done';
+      bridges: BridgeDoc[];
+      hubs: HubDoc[];
+      clusterStats: ClusterStat[];
+    }
   | { requestId: number; type: 'error'; message: string };
 
 // ---------------------------------------------------------------------------

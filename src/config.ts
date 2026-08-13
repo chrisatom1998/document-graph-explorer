@@ -67,6 +67,7 @@ export const STALE_DOC_DAYS = 180; // file mtime older than this -> "stale doc" 
 export const BRIDGE_TOP_N = 8; // bridge documents surfaced in the insights panel
 export const BRIDGE_MIN_SCORE = 0.05; // normalized betweenness floor for a "bridge"
 export const BRIDGE_MAX_PIVOTS = 512; // sample sources above this corpus size (approx. betweenness)
+export const HUB_TOP_N = 8; // hub documents (highest doc-edge degree) surfaced in the panel
 
 // --- Layout / render budgets (spec §7) ---
 export const MAX_NODES = 4096; // instanced mesh capacity
