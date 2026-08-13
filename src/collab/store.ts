@@ -219,15 +219,50 @@ let pendingSettleCamera: PendingRemoteCamera | null = null;
 let stopSettleWait: (() => void) | null = null;
 let localCameraActivityEpoch = 0;
 let lastFollowDebugAt = 0;
+export const FOLLOW_SETTLE_WAIT_MS = 8_000;
+let queuedRemoteCameraRaf: number | null = null;
+let queuedRemoteCameraTimeout: ReturnType<typeof setTimeout> | null = null;
+let settleWaitTimer: ReturnType<typeof setTimeout> | null = null;
 
-/** Cancel rAF/settle-queued remote poses. */
-export function clearDeferredRemoteCameras(): void {
+function clearQueuedRemoteCameraFrame(): void {
   queuedRemoteCamera = null;
-  pendingSettleCamera = null;
+  if (queuedRemoteCameraRaf != null) {
+    if (typeof cancelAnimationFrame === "function") {
+      cancelAnimationFrame(queuedRemoteCameraRaf);
+    }
+    clearTimeout(queuedRemoteCameraRaf);
+    queuedRemoteCameraRaf = null;
+  }
+  if (queuedRemoteCameraTimeout != null) {
+    clearTimeout(queuedRemoteCameraTimeout);
+    queuedRemoteCameraTimeout = null;
+  }
+}
+
+function clearSettleWait(): void {
+  if (settleWaitTimer != null) {
+    clearTimeout(settleWaitTimer);
+    settleWaitTimer = null;
+  }
   if (stopSettleWait) {
     stopSettleWait();
     stopSettleWait = null;
   }
+}
+
+function deliverSettledCamera(): void {
+  clearSettleWait();
+  const settled = pendingSettleCamera;
+  pendingSettleCamera = null;
+  if (!settled) return;
+  deliverRemoteCameraPose(settled);
+}
+
+/** Cancel rAF/settle-queued remote poses. */
+export function clearDeferredRemoteCameras(): void {
+  clearQueuedRemoteCameraFrame();
+  pendingSettleCamera = null;
+  clearSettleWait();
 }
 
 /** Mark deliberate local camera input so a delayed join pose cannot override it. */
@@ -247,13 +282,6 @@ function resolveLocalFollowPose(pending: PendingRemoteCamera): CameraPose {
     edges: graph.edges,
   });
   if (!localAnchor) return pending.pose;
-  if (pending.anchor.id !== localAnchor.id) {
-    return remapCameraPose(
-      pending.pose,
-      pending.anchor,
-      { ...localAnchor, radius: pending.anchor.radius },
-    );
-  }
   return remapCameraPose(pending.pose, pending.anchor, localAnchor);
 }
 
@@ -283,39 +311,36 @@ function scheduleRemoteCameraPose(
   // coordinates.
   if (opts.waitForSettle || stopSettleWait) {
     pendingSettleCamera = pending;
-    // Drop any camera-only rAF already scheduled; it would apply against
-    // mid-transition coordinates before the post-settle pose.
-    queuedRemoteCamera = null;
+    clearQueuedRemoteCameraFrame();
     if (opts.waitForSettle) {
-      // Re-arm for THIS setDims. Ignore settles tagged with an older epoch
-      // (already-queued cooling, or a previous dims toggle still in flight).
       const minEpoch = layoutEpoch();
-      stopSettleWait?.();
+      clearSettleWait();
       stopSettleWait = onLayoutSettled(() => {
         if (layoutSettledEpoch() < minEpoch) return;
-        stopSettleWait?.();
-        stopSettleWait = null;
-        const settled = pendingSettleCamera;
-        pendingSettleCamera = null;
-        if (!settled) return;
-        deliverRemoteCameraPose(settled);
+        deliverSettledCamera();
       });
+      settleWaitTimer = setTimeout(() => {
+        settleWaitTimer = null;
+        deliverSettledCamera();
+      }, FOLLOW_SETTLE_WAIT_MS);
     }
     return;
   }
 
   queuedRemoteCamera = pending;
   const run = () => {
+    queuedRemoteCameraRaf = null;
+    queuedRemoteCameraTimeout = null;
     const next = queuedRemoteCamera;
     queuedRemoteCamera = null;
     if (!next) return;
     deliverRemoteCameraPose(next);
   };
   if (typeof requestAnimationFrame === 'function') {
-    requestAnimationFrame(run);
+    queuedRemoteCameraRaf = requestAnimationFrame(run);
     return;
   }
-  setTimeout(run, 0);
+  queuedRemoteCameraTimeout = setTimeout(run, 0);
 }
 
 function maybeLogFollowDebug(

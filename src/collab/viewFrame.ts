@@ -87,6 +87,10 @@ export function remapCameraPose(
   remoteAnchor: CollabCameraAnchor,
   localAnchor: CollabCameraAnchor,
 ): CameraPose {
+  if (remoteAnchor.id !== localAnchor.id) {
+    return { ...remotePose };
+  }
+
   const dx = localAnchor.x - remoteAnchor.x;
   const dy = localAnchor.y - remoteAnchor.y;
   const dz = localAnchor.z - remoteAnchor.z;

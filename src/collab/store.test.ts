@@ -34,6 +34,7 @@ function fireSettled(epoch: number): void {
 import {
   applySharedView,
   clearDeferredRemoteCameras,
+  FOLLOW_SETTLE_WAIT_MS,
   noteLocalCameraActivity,
   sanitizeSharedFilter,
   useCollabStore,
@@ -216,7 +217,7 @@ describe('applySharedView', () => {
     });
     expect(delivered).toHaveLength(0);
 
-    vi.runOnlyPendingTimers();
+    vi.advanceTimersByTime(0);
     expect(delivered).toHaveLength(0);
 
     fireSettled(layoutTest.postedEpoch);
@@ -249,7 +250,7 @@ describe('applySharedView', () => {
     ]);
   });
 
-  it('uses translation only when a remote selected-node anchor is missing locally', () => {
+  it('does not remap a selected-id remote pose onto a local centroid when the id is missing', () => {
     seedNode('a', 0, [0, 0, 0]);
     seedNode('b', 1, [100, 0, 0]);
 
@@ -262,14 +263,19 @@ describe('applySharedView', () => {
 
     vi.runOnlyPendingTimers();
     expect(delivered).toEqual([
-      {
-        px: 50,
-        py: 0,
-        pz: 20,
-        tx: 50,
-        ty: 0,
-        tz: 0,
-      },
+      { px: 0, py: 0, pz: 20, tx: 0, ty: 0, tz: 0 },
+    ]);
+  });
+
+  it('delivers the settle-wait pose after timeout if layout never settles', () => {
+    applySharedView({
+      dims: 2,
+      camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    });
+    expect(delivered).toHaveLength(0);
+    vi.advanceTimersByTime(FOLLOW_SETTLE_WAIT_MS);
+    expect(delivered).toEqual([
+      { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
     ]);
   });
 
