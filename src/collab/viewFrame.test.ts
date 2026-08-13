@@ -13,6 +13,7 @@ import {
   computeCollabCameraAnchor,
   parseCameraAnchor,
   remapCameraPose,
+  resolveFollowNodeId,
 } from './viewFrame';
 
 function seedLayout(entries: Array<{ id: string; slot: number; pos: [number, number, number]; scale?: number }>): void {
@@ -117,6 +118,20 @@ describe('remapCameraPose', () => {
       tz: 0,
     });
   });
+
+  it('does not scale a selected-id remote pose about a local centroid', () => {
+    const remoteAnchor = { id: 'missing', x: 10, y: 0, z: 0, radius: 2, count: 1 };
+    const localAnchor = { id: null, x: 50, y: 50, z: 0, radius: 100, count: 10 };
+    const remotePose = { px: 10, py: 0, pz: 40, tx: 10, ty: 0, tz: 0 };
+    expect(remapCameraPose(remotePose, remoteAnchor, localAnchor)).toEqual({
+      px: 50,
+      py: 50,
+      pz: 40,
+      tx: 50,
+      ty: 50,
+      tz: 0,
+    });
+  });
 });
 
 describe('computeCollabCameraAnchor', () => {
@@ -133,6 +148,8 @@ describe('computeCollabCameraAnchor', () => {
     });
     expect(anchor).toEqual({
       id: 'b',
+      path: 'b',
+      title: 'b',
       x: 10,
       y: 0,
       z: 0,
@@ -171,5 +188,22 @@ describe('computeCollabCameraAnchor', () => {
     });
     expect(anchor?.id).toBe('a');
     expect(anchor).toMatchObject({ x: 1, y: 2, z: 3 });
+  });
+});
+
+describe('resolveFollowNodeId', () => {
+  it('matches exact id first, then unique path, then unique title', () => {
+    const nodes = [doc('local-a'), doc('local-b')];
+    nodes[0] = { ...nodes[0], path: 'demo/sla-agreement-enterprise.pdf', title: 'Enterprise Service Level Agreement' };
+    nodes[1] = { ...nodes[1], path: 'demo/other.pdf', title: 'Other' };
+
+    expect(resolveFollowNodeId(nodes, 'local-a')).toBe('local-a');
+    expect(
+      resolveFollowNodeId(nodes, 'host-a', { path: 'demo/sla-agreement-enterprise.pdf' }),
+    ).toBe('local-a');
+    expect(
+      resolveFollowNodeId(nodes, 'host-a', { title: 'Enterprise Service Level Agreement' }),
+    ).toBe('local-a');
+    expect(resolveFollowNodeId(nodes, 'host-a', { path: 'demo/missing.pdf', title: 'Nope' })).toBeNull();
   });
 });

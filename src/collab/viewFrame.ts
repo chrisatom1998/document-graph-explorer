@@ -24,6 +24,9 @@ const SELECTED_RADIUS_FLOOR = 1;
 export interface CollabCameraAnchor {
   /** Prefer selected node id when that node exists in the publisher's layout. */
   id: string | null;
+  /** Stable identity for independent corpora (not the per-tab node id). */
+  path?: string | null;
+  title?: string | null;
   x: number;
   y: number;
   z: number;
@@ -67,8 +70,12 @@ export function parseCameraAnchor(value: unknown): CollabCameraAnchor | undefine
   if (source.radius < 0 || source.count < 0) return undefined;
   const id = source.id === null ? null : typeof source.id === 'string' ? source.id : undefined;
   if (id === undefined) return undefined;
+  const path = source.path === null || typeof source.path === 'string' ? source.path : undefined;
+  const title = source.title === null || typeof source.title === 'string' ? source.title : undefined;
   return {
     id,
+    path,
+    title,
     x: source.x,
     y: source.y,
     z: source.z,
@@ -98,7 +105,12 @@ export function remapCameraPose(
   let ty = remotePose.ty + dy;
   let tz = remotePose.tz + dz;
 
-  if (remoteAnchor.radius > ANCHOR_RADIUS_EPS && localAnchor.radius > ANCHOR_RADIUS_EPS) {
+  const kindsMatch = (remoteAnchor.id == null) === (localAnchor.id == null);
+  if (
+    kindsMatch &&
+    remoteAnchor.radius > ANCHOR_RADIUS_EPS &&
+    localAnchor.radius > ANCHOR_RADIUS_EPS
+  ) {
     const scale = localAnchor.radius / remoteAnchor.radius;
     if (Number.isFinite(scale) && Math.abs(scale - 1) > 1e-6) {
       px = localAnchor.x + (px - localAnchor.x) * scale;
@@ -111,6 +123,36 @@ export function remapCameraPose(
   }
 
   return { px, py, pz, tx, ty, tz };
+}
+
+/**
+ * Map a presenter node id onto the follower graph. Exact id wins; otherwise
+ * a unique path, then a unique title. Independent corpora do not share
+ * per-tab ids even when the documents are the same.
+ */
+export function resolveFollowNodeId(
+  nodes: DocNode[],
+  remoteId: string | null | undefined,
+  hints?: { path?: string | null; title?: string | null },
+): string | null {
+  if (remoteId && nodes.some((node) => node.id === remoteId)) return remoteId;
+  const unique = (matches: DocNode[]): string | null => {
+    if (matches.length === 1) return matches[0].id;
+    if (matches.length > 1) {
+      const docs = matches.filter((node) => node.kind === 'document');
+      if (docs.length === 1) return docs[0].id;
+    }
+    return null;
+  };
+  if (hints?.path) {
+    const byPath = unique(nodes.filter((node) => node.path === hints.path));
+    if (byPath) return byPath;
+  }
+  if (hints?.title) {
+    const byTitle = unique(nodes.filter((node) => node.title === hints.title));
+    if (byTitle) return byTitle;
+  }
+  return null;
 }
 
 /** Centroid + RMS radius over an explicit id set that has live slots. */
@@ -200,8 +242,11 @@ export function computeCollabCameraAnchor(opts: {
     if (pos) {
       const slot = slotOfId.get(preferId);
       const scale = slot !== undefined ? scaleOfSlot[slot] || SELECTED_RADIUS_FLOOR : SELECTED_RADIUS_FLOOR;
+      const node = opts.nodes.find((candidate) => candidate.id === preferId);
       return {
         id: preferId,
+        path: node?.path ?? null,
+        title: node?.title ?? null,
         x: pos[0],
         y: pos[1],
         z: pos[2],

@@ -317,6 +317,7 @@ export default function Toolbar() {
   const collabSession = useCollabStore((s) => s.session);
   const collabInvite = useCollabStore((s) => s.invite);
   const collabPeers = useCollabStore((s) => s.peers);
+  const remotePeerCount = Object.keys(collabPeers).length;
   const followMode = useCollabStore((s) => s.followMode);
   const setFollowMode = useCollabStore((s) => s.setFollowMode);
   const startSession = useCollabStore((s) => s.startSession);
@@ -757,9 +758,11 @@ export default function Toolbar() {
                   style={{ borderTop: '1px solid rgba(255,255,255,0.14)', margin: '4px 0' }}
                 />
                 <div style={{ padding: '2px 10px 6px', fontSize: 12, opacity: 0.8 }}>
-                  {collabPeers && Object.keys(collabPeers).length > 0
-                    ? `${Object.keys(collabPeers).length} peer${Object.keys(collabPeers).length === 1 ? '' : 's'} connected`
-                    : 'Waiting for peers'}
+                  {remotePeerCount <= 0
+                    ? 'Just you — waiting for peers'
+                    : remotePeerCount === 1
+                      ? 'You + 1 other'
+                      : `You + ${remotePeerCount} others`}
                 </div>
               </>
             )}
