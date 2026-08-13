@@ -21,7 +21,7 @@
  */
 
 import type { DocNode } from '../model/types';
-import { posixNormalize } from '../util/posixPath';
+import { posixBasename, posixNormalize } from '../util/posixPath';
 import { isExternalUrl, normalizeLinkTarget } from '../pipeline/urlUtils';
 
 function stripExt(s: string): string {
@@ -50,6 +50,8 @@ export interface LinkIndex {
   byTitle: Map<string, string>;
   /** normalized multi-segment path suffix -> docId; omitted when ambiguous */
   byPathSuffix: Map<string, string>;
+  /** first path segments of folder-ingested docs (dropped-folder roots) */
+  pathRoots: string[];
 }
 
 /** A key claimed by more than one document owner is not stored as a winner. */
@@ -75,6 +77,9 @@ export function buildLinkIndex(nodes: DocNode[]): LinkIndex {
   const titleAmbiguous = new Set<string>();
   const pathSuffixOwner = new Map<string, string>();
   const pathSuffixAmbiguous = new Set<string>();
+  const exactPathOwner = new Map<string, string>();
+  const exactPathAmbiguous = new Set<string>();
+  const pathRoots = new Set<string>();
 
   for (const n of nodes) {
     if (n.kind !== 'document') continue;
@@ -83,7 +88,10 @@ export function buildLinkIndex(nodes: DocNode[]): LinkIndex {
     const title = n.title.trim().toLowerCase();
     claim(titleOwner, titleAmbiguous, title, n.id);
     const path = posixNormalize(n.path ?? '').toLowerCase();
+    if (!path) continue;
+    claim(exactPathOwner, exactPathAmbiguous, path, n.id);
     if (path.includes('/')) {
+      pathRoots.add(path.slice(0, path.indexOf('/')));
       const segments = path.split('/');
       // All multi-segment suffixes, from the full path down to `dir/file` —
       // the same directory-disambiguates-same-name-files idea as the path
@@ -96,11 +104,50 @@ export function buildLinkIndex(nodes: DocNode[]): LinkIndex {
     }
   }
 
+  // A shorter file path that is also a suffix of a longer one (`docs/guide.md`
+  // vs `src/docs/guide.md`) is marked ambiguous above. Exact paths still
+  // resolve to the document that actually lives there — same as byPath in
+  // pipeline/links.ts.
+  const byPathSuffix = withoutAmbiguous(pathSuffixOwner, pathSuffixAmbiguous);
+  for (const [path, id] of withoutAmbiguous(exactPathOwner, exactPathAmbiguous)) {
+    byPathSuffix.set(path, id);
+  }
+
   return {
     byFileName: withoutAmbiguous(fileNameOwner, fileNameAmbiguous),
     byTitle: withoutAmbiguous(titleOwner, titleAmbiguous),
-    byPathSuffix: withoutAmbiguous(pathSuffixOwner, pathSuffixAmbiguous),
+    byPathSuffix,
+    pathRoots: [...pathRoots],
   };
+}
+
+/** Obsidian path wikilinks omit `.md`; only that implicit extension is tried. */
+function withImplicitMd(pathTarget: string): string | null {
+  if (posixBasename(pathTarget).includes('.')) return null;
+  return `${pathTarget}.md`;
+}
+
+/**
+ * Path-style targets: unique suffix / exact path, then implicit `.md`, then
+ * each dropped-folder root as a prefix (unique hit only) — the same order
+ * as wikilink / leading-slash matching in pipeline/links.ts.
+ */
+function resolvePathTarget(index: LinkIndex, pathTarget: string): string | null {
+  const direct = index.byPathSuffix.get(pathTarget);
+  if (direct) return direct;
+  const md = withImplicitMd(pathTarget);
+  if (md) {
+    const mdHit = index.byPathSuffix.get(md);
+    if (mdHit) return mdHit;
+  }
+  let unique: string | undefined;
+  for (const root of index.pathRoots) {
+    const hit = index.byPathSuffix.get(`${root}/${pathTarget}`) ?? (md ? index.byPathSuffix.get(`${root}/${md}`) : undefined);
+    if (!hit) continue;
+    if (unique !== undefined && unique !== hit) return null;
+    unique = hit;
+  }
+  return unique ?? null;
 }
 
 /**
@@ -114,7 +161,7 @@ export function resolveLinkTarget(target: string, index: LinkIndex): string | nu
   const pathTarget = normalizePathTarget(raw);
   if (!pathTarget) return null;
   if (pathTarget.includes('/')) {
-    const byPath = index.byPathSuffix.get(pathTarget);
+    const byPath = resolvePathTarget(index, pathTarget);
     if (byPath) return byPath;
   }
   const norm = normalizeLinkTarget(raw);

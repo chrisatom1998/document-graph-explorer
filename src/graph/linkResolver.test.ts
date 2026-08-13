@@ -96,4 +96,37 @@ describe('buildLinkIndex + resolveLinkTarget', () => {
     expect(resolveLinkTarget('pkg/two/setup.md', index)).toBe('c');
     expect(resolveLinkTarget('README.md', index)).toBeNull();
   });
+
+  it('resolves a path-style wikilink with implicit .md when same-named notes exist', () => {
+    const index = buildLinkIndex([
+      doc('note', { path: 'MyVault/index.md', title: 'Index' }),
+      doc('projectsAlpha', { path: 'MyVault/projects/alpha.md', title: 'Alpha' }),
+      doc('inboxAlpha', { path: 'MyVault/inbox/alpha.md', title: 'Alpha' }),
+    ]);
+    expect(resolveLinkTarget('projects/alpha', index)).toBe('projectsAlpha');
+    expect(resolveLinkTarget('inbox/alpha', index)).toBe('inboxAlpha');
+    expect(resolveLinkTarget('alpha', index)).toBeNull();
+    expect(resolveLinkTarget('alpha.md', index)).toBeNull();
+  });
+
+  it('resolves a leading-slash href to the vault-root file, not a nested suffix', () => {
+    const index = buildLinkIndex([
+      doc('nested', { path: 'MyVault/src/nested.md' }),
+      doc('guide', { path: 'MyVault/docs/guide.md' }),
+      doc('wrong', { path: 'MyVault/src/docs/guide.md' }),
+    ]);
+    expect(resolveLinkTarget('/docs/guide.md', index)).toBe('guide');
+    expect(resolveLinkTarget('docs/guide.md', index)).toBe('guide');
+    expect(resolveLinkTarget('src/docs/guide.md', index)).toBe('wrong');
+  });
+
+  it('still resolves a document whose exact path is a suffix of another path', () => {
+    const index = buildLinkIndex([
+      doc('a', { path: 'docs/guide.md' }),
+      doc('b', { path: 'src/docs/guide.md' }),
+    ]);
+    expect(resolveLinkTarget('docs/guide.md', index)).toBe('a');
+    expect(resolveLinkTarget('/docs/guide.md', index)).toBe('a');
+    expect(resolveLinkTarget('src/docs/guide.md', index)).toBe('b');
+  });
 });
