@@ -36,6 +36,7 @@ export default function SearchOverlay() {
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const showAllButtonRef = useRef<HTMLButtonElement | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestSeq = useRef(0);
 
@@ -108,6 +109,9 @@ export default function SearchOverlay() {
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      // Closing (or a newer keystroke) must drop in-flight lexical/semantic
+      // passes — otherwise a late applyResults can overwrite a showMe highlight.
+      requestSeq.current += 1;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, searchOpen]);
@@ -157,6 +161,9 @@ export default function SearchOverlay() {
   const showAllInGraph = () => {
     const ids = displayedResults.map((row) => row.id);
     if (ids.length === 0) return;
+    // Invalidate any in-flight semantic pass before the overlay unmounts so a
+    // late applyResults cannot rewrite this highlight as owner `search`.
+    requestSeq.current += 1;
     setSearchResults(ids, 'showMe');
     sendCamera('frameSet', ids);
     setSearchOpen(false);
@@ -167,13 +174,16 @@ export default function SearchOverlay() {
     const input = inputRef.current;
     const closeButton = closeButtonRef.current;
     if (!input || !closeButton) return;
-    if (e.shiftKey && document.activeElement === input) {
-      e.preventDefault();
-      closeButton.focus();
-    } else if (!e.shiftKey && document.activeElement === closeButton) {
-      e.preventDefault();
-      input.focus();
-    }
+    const cycle: HTMLElement[] = [input, closeButton];
+    const showAllButton = showAllButtonRef.current;
+    if (showAllButton) cycle.push(showAllButton);
+    const index = cycle.indexOf(document.activeElement as HTMLElement);
+    if (index === -1) return;
+    e.preventDefault();
+    const next = e.shiftKey
+      ? cycle[(index - 1 + cycle.length) % cycle.length]
+      : cycle[(index + 1) % cycle.length];
+    next.focus();
   };
 
   return (
@@ -273,6 +283,7 @@ export default function SearchOverlay() {
         {!browsing && displayedResults.length > 1 && (
           <div className="search-overlay__actions">
             <button
+              ref={showAllButtonRef}
               type="button"
               className="search-overlay__show-all"
               title="Highlight every match and frame them in the graph"

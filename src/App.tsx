@@ -220,6 +220,10 @@ export default function App() {
         if (ui.searchOpen) {
           ui.setSearchOpen(false);
           ui.setSearchResults(null);
+        } else if (ui.highlightOwner === 'showMe') {
+          // Show-all leaves a golden match set with the overlay closed; Esc
+          // must dismiss that highlight before falling through to fitAll.
+          ui.setSearchResults(null);
         } else if (ui.pathMode) {
           ui.setPathMode(false);
           ui.setSearchResults(null);

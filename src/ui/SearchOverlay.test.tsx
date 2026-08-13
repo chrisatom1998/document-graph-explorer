@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocNode } from '../model/types';
@@ -132,5 +132,74 @@ describe('SearchOverlay', () => {
     expect(useUiStore.getState().searchResults).toEqual(['architecture', 'runbook']);
     expect(useUiStore.getState().cameraCommand?.kind).toBe('frameSet');
     expect(useUiStore.getState().cameraCommand?.ids).toEqual(['architecture', 'runbook']);
+  });
+
+  it('keeps a Show-all highlight when the in-flight semantic pass lands later', async () => {
+    useGraphStore.setState({
+      nodes: [documentNode(), secondDocumentNode()],
+      nodeIndex: { architecture: 0, runbook: 1 },
+    });
+    mockSearchCorpusLexical.mockResolvedValue([
+      { id: 'architecture', score: 1, matchKind: 'title' },
+      { id: 'runbook', score: 0.8, matchKind: 'keyword' },
+    ]);
+    let finishSemantic: (value: Awaited<ReturnType<typeof searchCorpus>>) => void = () => {};
+    mockSearchCorpus.mockReturnValue(
+      new Promise((resolve) => {
+        finishSemantic = resolve;
+      }),
+    );
+
+    render(<SearchOverlay />);
+    fireEvent.change(
+      screen.getByRole('combobox', { name: /search your documents/i }),
+      { target: { value: 'ops' } },
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /show all in graph/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /show all in graph/i }));
+    expect(useUiStore.getState().highlightOwner).toBe('showMe');
+    expect(useUiStore.getState().searchResults).toEqual(['architecture', 'runbook']);
+
+    await act(async () => {
+      finishSemantic([{ id: 'architecture', score: 1, matchKind: 'semantic' }]);
+    });
+    expect(useUiStore.getState().highlightOwner).toBe('showMe');
+    expect(useUiStore.getState().searchResults).toEqual(['architecture', 'runbook']);
+  });
+
+  it('cycles Tab from the close button onto Show all in graph', async () => {
+    useGraphStore.setState({
+      nodes: [documentNode(), secondDocumentNode()],
+      nodeIndex: { architecture: 0, runbook: 1 },
+    });
+    mockSearchCorpusLexical.mockResolvedValue([
+      { id: 'architecture', score: 1, matchKind: 'title' },
+      { id: 'runbook', score: 0.8, matchKind: 'keyword' },
+    ]);
+    mockSearchCorpus.mockResolvedValue([
+      { id: 'architecture', score: 1, matchKind: 'title' },
+      { id: 'runbook', score: 0.8, matchKind: 'keyword' },
+    ]);
+
+    render(<SearchOverlay />);
+    fireEvent.change(
+      screen.getByRole('combobox', { name: /search your documents/i }),
+      { target: { value: 'ops' } },
+    );
+
+    const showAll = await screen.findByRole('button', { name: /show all in graph/i });
+    const close = screen.getByRole('button', { name: /close search/i });
+    const input = screen.getByRole('combobox', { name: /search your documents/i });
+
+    close.focus();
+    fireEvent.keyDown(close, { key: 'Tab' });
+    expect(showAll).toHaveFocus();
+
+    fireEvent.keyDown(showAll, { key: 'Tab' });
+    expect(input).toHaveFocus();
+
+    fireEvent.keyDown(input, { key: 'Tab', shiftKey: true });
+    expect(showAll).toHaveFocus();
   });
 });
