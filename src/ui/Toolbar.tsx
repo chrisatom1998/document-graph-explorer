@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { useCollabStore } from '../collab/store';
 import { layoutSetDims } from '../layout/layoutBridge';
 import { openFilePicker } from '../ingest/DropZone';
 // Imported eagerly so the activation-gated picker opens synchronously with
@@ -255,6 +256,17 @@ function IconAnalyze() {
   );
 }
 
+function IconCollab() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="6.5" r="2.2" />
+      <circle cx="12.5" cy="5.7" r="2" />
+      <path d="M2.2 13.2c.5-1.8 2.2-2.8 4.1-2.8s3.6 1 4.1 2.8" />
+      <path d="M9.5 12.9c.4-1.5 1.6-2.3 3.1-2.3 1.4 0 2.6.8 3.1 2.3" />
+    </svg>
+  );
+}
+
 /* Dragged toolbar position, persisted across reloads. */
 const TOOLBAR_POS_KEY = 'knowledge-nebula-toolbar-pos';
 
@@ -290,7 +302,7 @@ function placeToolbar(el: HTMLElement, x: number, y: number): { x: number; y: nu
   return { x: cx, y: cy };
 }
 
-type MenuKey = 'view' | 'analyze' | 'data' | 'add';
+type MenuKey = 'view' | 'analyze' | 'data' | 'add' | 'collab';
 
 export default function Toolbar() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
@@ -302,6 +314,14 @@ export default function Toolbar() {
   const snapshotsOpen = useUiStore((s) => s.snapshotsOpen);
   const helpOpen = useUiStore((s) => s.helpOpen);
   const setDims = useUiStore((s) => s.setDims);
+  const collabSession = useCollabStore((s) => s.session);
+  const collabInvite = useCollabStore((s) => s.invite);
+  const collabPeers = useCollabStore((s) => s.peers);
+  const followMode = useCollabStore((s) => s.followMode);
+  const setFollowMode = useCollabStore((s) => s.setFollowMode);
+  const startSession = useCollabStore((s) => s.startSession);
+  const joinInvite = useCollabStore((s) => s.joinInvite);
+  const leaveSession = useCollabStore((s) => s.leaveSession);
   const setTopicNodes = useUiStore((s) => s.setTopicNodes);
   const insightsOpen = useUiStore((s) => s.insightsOpen);
   const setInsightsOpen = useUiStore((s) => s.setInsightsOpen);
@@ -322,6 +342,7 @@ export default function Toolbar() {
   const viewMenuWrapRef = useRef<HTMLDivElement | null>(null);
   const analyzeMenuWrapRef = useRef<HTMLDivElement | null>(null);
   const dataMenuWrapRef = useRef<HTMLDivElement | null>(null);
+  const collabMenuWrapRef = useRef<HTMLDivElement | null>(null);
   const addMenuWrapRef = useRef<HTMLDivElement | null>(null);
 
   // Drag-to-move. The position is written straight to the element (not React
@@ -372,7 +393,9 @@ export default function Toolbar() {
             ? analyzeMenuWrapRef.current
             : openMenu === 'add'
               ? addMenuWrapRef.current
-              : dataMenuWrapRef.current;
+              : openMenu === 'collab'
+                ? collabMenuWrapRef.current
+                : dataMenuWrapRef.current;
       if (wrap && !wrap.contains(e.target as Node)) {
         setOpenMenu(null);
       }
@@ -427,6 +450,44 @@ export default function Toolbar() {
     const next = dims === 3 ? 2 : 3;
     setDims(next);
     layoutSetDims(next);
+  };
+
+  const handleCollabHost = () => {
+    try {
+      const invite = startSession();
+      setOpenMenu(null);
+      if (invite) {
+        useUiStore.getState().pushToast('Collaboration session ready. Copy the invite and share it with a peer.', 'info');
+      }
+    } catch (error) {
+      useUiStore.getState().pushToast(error instanceof Error ? error.message : 'Collaboration is unavailable in this build.', 'error');
+    }
+  };
+
+  const handleCollabJoin = async () => {
+    const raw = window.prompt('Paste a collaboration invite link or fragment');
+    if (!raw) return;
+    try {
+      const invite = joinInvite(raw);
+      setOpenMenu(null);
+      if (invite) {
+        useUiStore.getState().pushToast('Joined a collaboration session.', 'info');
+        return;
+      }
+      useUiStore.getState().pushToast('This collaboration invite is invalid.', 'error');
+    } catch (error) {
+      useUiStore.getState().pushToast(error instanceof Error ? error.message : 'Collaboration is unavailable in this build.', 'error');
+    }
+  };
+
+  const handleCopyInvite = async () => {
+    if (!collabInvite) return;
+    try {
+      await navigator.clipboard.writeText(collabInvite);
+      useUiStore.getState().pushToast('Collaboration invite copied to the clipboard.', 'info');
+    } catch {
+      useUiStore.getState().pushToast('Clipboard access is unavailable in this browser.', 'error');
+    }
   };
 
   return (
@@ -629,6 +690,80 @@ export default function Toolbar() {
               onDialogOpenChange={setDataDialogOpen}
             />
           </Suspense>
+        )}
+      </div>
+
+      <div className="toolbar__menu-wrap" ref={collabMenuWrapRef}>
+        <button
+          type="button"
+          className={`btn-icon${openMenu === 'collab' || collabSession ? ' is-active' : ''}`}
+          title={collabSession ? `Collaboration active (${collabSession.roomId})` : 'Collaboration'}
+          aria-label="Collaboration"
+          aria-haspopup="true"
+          aria-expanded={openMenu === 'collab'}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleMenu('collab');
+          }}
+        >
+          <IconCollab />
+        </button>
+        {openMenu === 'collab' && (
+          <div className="toolbar__menu glass-panel">
+            {!collabSession ? (
+              <>
+                <button type="button" className="toolbar__menu-item" onClick={handleCollabHost}>
+                  <IconCollab />
+                  <span>Start session</span>
+                </button>
+                <button type="button" className="toolbar__menu-item" onClick={handleCollabJoin}>
+                  <IconCollab />
+                  <span>Join invite</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="toolbar__menu-item" onClick={handleCopyInvite}>
+                  <IconCollab />
+                  <span>Copy invite</span>
+                </button>
+                <button
+                  type="button"
+                  className="toolbar__menu-item"
+                  onClick={() => {
+                    leaveSession();
+                    setOpenMenu(null);
+                    useUiStore.getState().pushToast('Collaboration session closed.', 'info');
+                  }}
+                >
+                  <IconCollab />
+                  <span>Leave session</span>
+                </button>
+                <button
+                  type="button"
+                  className={`toolbar__menu-item${followMode ? ' is-active' : ''}`}
+                  title={followMode ? 'Release local control and resume editing the graph' : 'Follow the presenter and mirror their view'}
+                  aria-pressed={followMode}
+                  onClick={() => {
+                    setFollowMode(!followMode);
+                    setOpenMenu(null);
+                  }}
+                >
+                  <IconCollab />
+                  <span>{followMode ? 'Stop following' : 'Follow presenter'}</span>
+                </button>
+                <div
+                  role="separator"
+                  style={{ borderTop: '1px solid rgba(255,255,255,0.14)', margin: '4px 0' }}
+                />
+                <div style={{ padding: '2px 10px 6px', fontSize: 12, opacity: 0.8 }}>
+                  {collabPeers && Object.keys(collabPeers).length > 0
+                    ? `${Object.keys(collabPeers).length} peer${Object.keys(collabPeers).length === 1 ? '' : 's'} connected`
+                    : 'Waiting for peers'}
+                </div>
+              </>
+            )}
+          </div>
         )}
       </div>
 

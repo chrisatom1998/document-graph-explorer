@@ -22,6 +22,7 @@ export interface CollabSessionConfig {
 export interface CollabSession {
   doc: Y.Doc;
   provider: WebrtcProvider | null;
+  view: Y.Map<any>;
   roomId: string;
   sessionKey: string;
   signaling: string[];
@@ -86,11 +87,13 @@ export function createCollabSession(config: CollabSessionConfig): CollabSession 
     signaling,
     password: sessionKey,
   });
+  const view = doc.getMap<any>('view');
   provider.awareness.setLocalState({ displayName: 'Local user', cursor: null });
 
   return {
     doc,
     provider,
+    view,
     roomId,
     sessionKey,
     signaling,

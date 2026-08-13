@@ -126,6 +126,64 @@ export async function lookupGraphCache(
   }
 }
 
+const DOC_CACHE_WRITE_CHUNK_SIZE = 100;
+
+function waitForIdleBudget(timeout = 100): Promise<void> {
+  if (typeof globalThis.requestIdleCallback === 'function') {
+    return new Promise((resolve) => {
+      globalThis.requestIdleCallback(() => resolve(), { timeout });
+    });
+  }
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+async function saveDocsChunk(
+  docs: {
+    node: DocNode;
+    text: string;
+    chunkTexts: string[];
+    chunkVectors: Float32Array | null;
+    docVector: Float32Array | null;
+    mdLinkTargets: string[];
+    docLinks: LinkRef[];
+  }[],
+): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction(['documents', 'embeddings'], 'readwrite', {
+    durability: 'relaxed',
+  });
+  const docStore = tx.objectStore('documents');
+  const embStore = tx.objectStore('embeddings');
+  const ops: Promise<unknown>[] = [];
+  for (const d of docs) {
+    const hash = d.node.id;
+    const docRec: DocumentRecord = {
+      hash,
+      node: d.node,
+      text: d.text,
+      chunkTexts: d.chunkTexts,
+      mdLinkTargets: d.mdLinkTargets,
+      docLinks: d.docLinks,
+    };
+    ops.push(docStore.put(docRec));
+    const persistVectors = useSettingsStore.getState().cacheEmbeddings;
+    const docVector = persistVectors ? nonEmpty(d.docVector) : null;
+    const chunkVectors = persistVectors ? nonEmpty(d.chunkVectors) : null;
+    if (docVector || chunkVectors) {
+      const embRec: EmbeddingRecord = {
+        hash,
+        fingerprint: EMBEDDING_FINGERPRINT,
+        docVector: docVector ?? new Float32Array(0),
+        chunkVectors: chunkVectors ?? new Float32Array(0),
+        nChunks: chunkVectors ? Math.floor(chunkVectors.length / EMBED_DIMS) : 0,
+      };
+      ops.push(embStore.put(embRec));
+    }
+  }
+  ops.push(tx.done);
+  await Promise.all(ops);
+}
+
 export async function saveDocsToCache(
   docs: {
     node: DocNode;
@@ -142,40 +200,18 @@ export async function saveDocsToCache(
 ): Promise<boolean> {
   if (docs.length === 0) return true;
   try {
-    const db = await getDb();
-    const tx = db.transaction(['documents', 'embeddings'], 'readwrite', {
-      durability: 'relaxed',
-    });
-    const docStore = tx.objectStore('documents');
-    const embStore = tx.objectStore('embeddings');
-    const ops: Promise<unknown>[] = [];
-    for (const d of docs) {
-      const hash = d.node.id; // DocNode.id IS the content hash
-      const docRec: DocumentRecord = {
-        hash,
-        node: d.node,
-        text: d.text,
-        chunkTexts: d.chunkTexts,
-        mdLinkTargets: d.mdLinkTargets,
-        docLinks: d.docLinks,
-      };
-      ops.push(docStore.put(docRec));
-      const persistVectors = useSettingsStore.getState().cacheEmbeddings;
-      const docVector = persistVectors ? nonEmpty(d.docVector) : null;
-      const chunkVectors = persistVectors ? nonEmpty(d.chunkVectors) : null;
-      if (docVector || chunkVectors) {
-        const embRec: EmbeddingRecord = {
-          hash,
-          fingerprint: EMBEDDING_FINGERPRINT,
-          docVector: docVector ?? new Float32Array(0),
-          chunkVectors: chunkVectors ?? new Float32Array(0),
-          nChunks: chunkVectors ? Math.floor(chunkVectors.length / EMBED_DIMS) : 0,
-        };
-        ops.push(embStore.put(embRec));
-      }
+    const chunks: typeof docs[] = [];
+    for (let i = 0; i < docs.length; i += DOC_CACHE_WRITE_CHUNK_SIZE) {
+      chunks.push(docs.slice(i, i + DOC_CACHE_WRITE_CHUNK_SIZE));
     }
-    ops.push(tx.done);
-    await Promise.all(ops);
+    if (chunks.length > 1) {
+      for (const chunk of chunks) {
+        await waitForIdleBudget();
+        await saveDocsChunk(chunk);
+      }
+      return true;
+    }
+    await saveDocsChunk(docs);
     return true;
   } catch (err) {
     cacheUnavailable(err);

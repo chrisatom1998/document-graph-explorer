@@ -143,7 +143,8 @@ const aggPending = new Map<
     resolve: (response: AggResponse) => void;
     reject: (error: Error) => void;
     timer: ReturnType<typeof setTimeout>;
-  }
+  onProgress?: (msg: Extract<AggResponse, { type: 'semantic:progress' }>) => void;
+}
 >();
 
 function failAllPending(error: Error): void {
@@ -174,6 +175,12 @@ function ensureAggregator(): Worker {
     const msg = ev.data;
     const entry = aggPending.get(msg.requestId);
     if (!entry) return;
+
+    if (msg.type === 'semantic:progress') {
+      entry.onProgress?.(msg);
+      return;
+    }
+
     aggPending.delete(msg.requestId);
     clearTimeout(entry.timer);
     if (msg.type === 'error') entry.reject(new Error(msg.message));
@@ -206,7 +213,10 @@ function throwIfAborted(signal?: AbortSignal): void {
 function aggRequest<T extends AggResponse>(
   msg: AggRequest,
   transfer?: Transferable[],
-  options?: { signal?: AbortSignal },
+  options?: {
+    signal?: AbortSignal;
+    onProgress?: (msg: Extract<AggResponse, { type: 'semantic:progress' }>) => void;
+  },
 ): Promise<T> {
   const signal = options?.signal;
   if (signal?.aborted) return Promise.reject(abortError(signal));
@@ -251,6 +261,7 @@ function aggRequest<T extends AggResponse>(
       resolve: settled(resolve) as unknown as (response: AggResponse) => void,
       reject: settled(reject),
       timer,
+      onProgress: options?.onProgress,
     });
     if (transfer && transfer.length > 0) worker.postMessage(payload, transfer);
     else worker.postMessage(payload);

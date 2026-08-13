@@ -39,6 +39,7 @@ import Effects from './Effects';
 import AutoQuality from './AutoQuality';
 import ClusterCollapse from './ClusterCollapse';
 import SelectionHalo from './SelectionHalo';
+import PeerPresence from './PeerPresence';
 
 const COARSE_POINTER =
   typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches);
@@ -170,6 +171,7 @@ export default function NebulaCanvas() {
       <EdgePulses />
       <Labels />
       <SelectionHalo />
+      <PeerPresence />
       <ClusterCollapse />
       <Effects />
       <AutoQuality />

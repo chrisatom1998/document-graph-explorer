@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { useUiStore } from '../store/uiStore';
+import { useUiStore, type GraphFilter } from '../store/uiStore';
 import {
   buildCollabInvite,
   createCollabSession,
@@ -16,6 +16,14 @@ export interface CollabPeer {
   camera?: Record<string, number> | null;
 }
 
+export interface CollabSharedView {
+  dims?: 2 | 3;
+  selectedId?: string | null;
+  topicNodesEnabled?: boolean;
+  clusterCollapsed?: boolean;
+  filter?: Partial<GraphFilter>;
+}
+
 interface CollaborationState {
   session: CollabSession | null;
   roomId: string | null;
@@ -23,11 +31,15 @@ interface CollaborationState {
   invite: string | null;
   status: 'idle' | 'connecting' | 'connected';
   peers: Record<string, CollabPeer>;
+  followMode: boolean;
+  lastRemoteView: CollabSharedView | null;
   startSession: (roomId?: string, sessionKey?: string) => string | null;
   joinSession: (roomId: string, sessionKey: string) => string | null;
   joinInvite: (invite: string) => string | null;
   leaveSession: () => void;
   setLocalPresence: (patch: Partial<CollabPeer>) => void;
+  setFollowMode: (enabled: boolean) => void;
+  syncSharedView: () => void;
   refreshPeers: () => void;
 }
 
@@ -53,6 +65,35 @@ function collectPeers(session: CollabSession): Record<string, CollabPeer> {
   return next;
 }
 
+function readSharedView(): CollabSharedView {
+  const ui = useUiStore.getState();
+  const next: CollabSharedView = {
+    dims: ui.dims,
+    selectedId: ui.selectedId,
+    topicNodesEnabled: ui.topicNodesEnabled,
+    clusterCollapsed: ui.clusterCollapsed,
+    filter: { ...ui.filter },
+  };
+  return next;
+}
+
+function applySharedView(view: Partial<Record<string, unknown>>): void {
+  const ui = useUiStore.getState();
+  const next: CollabSharedView = {
+    dims: typeof view.dims === 'number' && (view.dims === 2 || view.dims === 3) ? view.dims : undefined,
+    selectedId: 'selectedId' in view ? (typeof view.selectedId === 'string' ? view.selectedId : null) : undefined,
+    topicNodesEnabled: 'topicNodesEnabled' in view && typeof view.topicNodesEnabled === 'boolean' ? view.topicNodesEnabled : undefined,
+    clusterCollapsed: 'clusterCollapsed' in view && typeof view.clusterCollapsed === 'boolean' ? view.clusterCollapsed : undefined,
+    filter: view.filter && typeof view.filter === 'object' ? (view.filter as Partial<GraphFilter>) : undefined,
+  };
+  if (next.dims !== undefined) ui.setDims(next.dims);
+  if (next.selectedId !== undefined) ui.setSelected(next.selectedId);
+  if (next.topicNodesEnabled !== undefined) ui.setTopicNodes(next.topicNodesEnabled);
+  if (next.clusterCollapsed !== undefined) ui.setClusterCollapsed(next.clusterCollapsed);
+  if (next.filter) ui.setFilter(next.filter);
+  useCollabStore.setState({ lastRemoteView: next });
+}
+
 export const useCollabStore = create<CollaborationState>((set, get) => ({
   session: null,
   roomId: null,
@@ -60,6 +101,8 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
   invite: null,
   status: 'idle',
   peers: {},
+  followMode: false,
+  lastRemoteView: null,
 
   startSession: (roomId, sessionKey) => {
     if (get().session) {
@@ -71,6 +114,10 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     const invite = buildCollabInvite(session.roomId, session.sessionKey);
     session.provider?.awareness.on('change', () => {
       set({ peers: collectPeers(session) });
+    });
+    session.view.observe(() => {
+      if (!get().followMode) return;
+      applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
     });
     session.provider?.awareness.setLocalState({
       displayName: 'You',
@@ -85,7 +132,10 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       invite,
       status: 'connected',
       peers: collectPeers(session),
+      followMode: false,
+      lastRemoteView: null,
     });
+    get().syncSharedView();
     return invite;
   },
 
@@ -99,6 +149,10 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     session.provider?.awareness.on('change', () => {
       set({ peers: collectPeers(session) });
     });
+    session.view.observe(() => {
+      if (!get().followMode) return;
+      applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
+    });
     session.provider?.awareness.setLocalState({
       displayName: 'You',
       cursor: null,
@@ -112,7 +166,12 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       invite,
       status: 'connected',
       peers: collectPeers(session),
+      followMode: false,
+      lastRemoteView: null,
     });
+    if (session.view.size > 0) {
+      applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
+    }
     return invite;
   },
 
@@ -125,11 +184,11 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
   leaveSession: () => {
     const { session } = get();
     if (!session) {
-      set({ roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {} });
+      set({ roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {}, followMode: false, lastRemoteView: null });
       return;
     }
     destroyCollabSession(session);
-    set({ session: null, roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {} });
+    set({ session: null, roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {}, followMode: false, lastRemoteView: null });
   },
 
   setLocalPresence: (patch) => {
@@ -144,6 +203,30 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       camera: next.camera && typeof next.camera === 'object' ? next.camera : null,
       cursor: next.cursor && typeof next.cursor === 'object' ? next.cursor : null,
     });
+  },
+
+  setFollowMode: (enabled) => {
+    set({ followMode: enabled });
+    const { session } = get();
+    if (!session) return;
+    if (enabled) {
+      applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
+      return;
+    }
+    get().syncSharedView();
+  },
+
+  syncSharedView: () => {
+    const { session, followMode } = get();
+    if (!session || followMode) return;
+    const view = readSharedView();
+    const map = session.view;
+    map.set('dims', view.dims ?? useUiStore.getState().dims);
+    map.set('selectedId', view.selectedId ?? null);
+    map.set('topicNodesEnabled', view.topicNodesEnabled ?? useUiStore.getState().topicNodesEnabled);
+    map.set('clusterCollapsed', view.clusterCollapsed ?? useUiStore.getState().clusterCollapsed);
+    map.set('filter', view.filter ?? useUiStore.getState().filter);
+    set({ lastRemoteView: { ...view } });
   },
 
   refreshPeers: () => {

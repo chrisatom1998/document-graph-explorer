@@ -56,22 +56,25 @@ Make internal documentation **explorable, connected, and alive** — transformin
 
 ---
 
-## Q4 2026 — Collaboration & Polish
+## Q4 2026 — Collaboration & Scale
 
-> *Goal: Make graphs shareable and the tool usable by non-technical users.*
+> *Goal: Make graphs shareable without compromising the privacy-first architecture and keep large corpora interactive.*
 
 ### Planned Features
 
 | Feature | Priority | Business Value |
 |---|---|---|
-| **Guided onboarding tour** | ✅ Shipped | Interactive walkthrough for first-time users. |
-| **Simple default chrome** | ✅ Shipped | Core loop on the toolbar; Analyze / View / Data / Add menus; Show-me folded into Search. See [product-surface.md](./product-surface.md). |
-| **Keyboard navigation** | Low | Full keyboard support for navigating nodes, edges, and panels. Accessibility compliance. |
+| **Privacy-first peer collaboration** | ✅ Shipped | Yjs/WebRTC rooms sync annotations, peer presence, and shared view state without moving source documents off-device. |
+| **Follow-presenter mode** | ✅ Shipped | Shared camera/selection flow lets a presenter guide a distributed team without breaking local control. |
+| **Large-corpus rendering budget** | ✅ Shipped | Dense graphs cap and prioritize edges by weight so 2000+ docs stay viewable and responsive. |
+| **Chunked persistence for large saves** | ✅ Shipped | IndexedDB writes are segmented to reduce main-thread stalls while saving large corpora. |
+| **2000-doc synthetic benchmark mode** | ✅ Shipped | Local dev benchmark mode exercises the large-corpus path without shipping a production-only fixture. |
 | **PWA install** | ✅ Shipped | Add-to-home-screen / standalone display via a same-origin web app manifest (no service worker). |
+| **Keyboard navigation** | Low | Full keyboard support for navigating nodes, edges, and panels. Accessibility compliance. |
 
 ---
 
-## H1 2027 — Scale & Enterprise Readiness
+## H1 2027 — Enterprise Readiness
 
 > *Goal: Handle large corpora (2000+ docs) and support team workflows.*
 
