@@ -1,17 +1,30 @@
 /**
  * Minimal collaboration primitives for the browser-only graph app.
  *
- * The privacy model is intentionally narrow: annotations and presence can leave
- * the browser, while the corpus itself stays local to each peer.
+ * Privacy model: view + presence can leave the browser over the room.
+ * Notes/tags leave only when the user opts in (default off). Corpus text/bytes
+ * and local filesystem paths stay local. Public STUN is disabled (host ICE
+ * only); NAT traversal may fail without it.
  */
 
 import * as Y from 'yjs';
 import { WebrtcProvider } from 'y-webrtc';
 import { AIRGAP, AIRGAP_MESSAGE } from '../airgap';
+import { isOffline } from '../offline';
 import type { DocAnnotationRecord } from '../persistence/db';
 
 export const COLLAB_FRAGMENT_PREFIX = '#collab=v1.';
 export const DEFAULT_COLLAB_SIGNALING = ['wss://signaling.yjs.dev'];
+export const COLLAB_OFFLINE_MESSAGE =
+  'Offline mode is on — collaboration is disabled (no external network).';
+
+/**
+ * y-webrtc / simple-peer default to Google + Twilio STUN when `iceServers` is
+ * unset. We pass an empty list so collab never contacts those hosts. Peers on
+ * the same LAN can still connect via host ICE; NAT traversal may fail.
+ */
+export const COLLAB_ICE_SERVERS: RTCIceServer[] = [];
+export const COLLAB_PEER_OPTS = { config: { iceServers: COLLAB_ICE_SERVERS } };
 
 export interface CollabSessionConfig {
   roomId: string;
@@ -76,6 +89,9 @@ export function parseCollabInvite(value: string): CollabSessionConfig | null {
 
 export function createCollabSession(config: CollabSessionConfig): CollabSession {
   requireCollabEnabled();
+  if (isOffline()) {
+    throw new Error(COLLAB_OFFLINE_MESSAGE);
+  }
   const roomId = sanitizeCollabToken(config.roomId);
   const sessionKey = sanitizeCollabToken(config.sessionKey);
   if (!roomId || !sessionKey) {
@@ -87,6 +103,7 @@ export function createCollabSession(config: CollabSessionConfig): CollabSession 
   const provider = new WebrtcProvider(roomId, doc, {
     signaling,
     password: sessionKey,
+    peerOpts: COLLAB_PEER_OPTS,
   });
   const view = doc.getMap<any>('view');
   const annotations = createAnnotationMap(doc);

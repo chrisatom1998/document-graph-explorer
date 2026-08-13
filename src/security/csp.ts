@@ -17,6 +17,9 @@ export function buildCsp({ airgap }: { airgap: boolean }): string {
   // opt-in Ollama provider (a local server, port 11434) — listed under
   // both spellings because browsers match CSP hosts literally, and dropped
   // from airgap builds anyway so its "no host anywhere" guarantee holds.
+  // Collaboration signaling is wss://signaling.yjs.dev. Public STUN is
+  // disabled in createCollabSession (iceServers: []), so no stun: hosts
+  // belong here; re-enable only together with SECURITY.md and the header copies.
   const connectSrc = airgap
     ? "connect-src 'self' blob:"
     : "connect-src 'self' blob: https://openrouter.ai http://127.0.0.1:11434 http://localhost:11434 wss://signaling.yjs.dev";

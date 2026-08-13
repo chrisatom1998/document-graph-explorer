@@ -4,6 +4,7 @@ import { layoutEpoch, layoutSetDims, layoutSettledEpoch, onLayoutSettled } from 
 import { cameraPose } from '../scene/cameraPose';
 import { nodesMatchingFilter } from '../scene/emphasis';
 import { getNodePosition, idOfSlot, positionBuffer, scaleOfSlot, slotOfId } from '../scene/positionBuffer';
+import { annotationKey, useAnnotationStore } from '../store/annotationStore';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
 import type { DocAnnotationRecord } from '../persistence/db';
@@ -24,7 +25,6 @@ export interface CollabPeer {
 export interface CollabSharedView {
   dims?: 2 | 3;
   selectedId?: string | null;
-  selectedPath?: string | null;
   selectedTitle?: string | null;
   topicNodesEnabled?: boolean;
   clusterCollapsed?: boolean;
@@ -41,6 +41,8 @@ interface CollaborationState {
   status: 'idle' | 'connecting' | 'connected';
   peers: Record<string, CollabPeer>;
   followMode: boolean;
+  /** Push local notes/tags into the room. Default OFF. */
+  shareNotes: boolean;
   lastRemoteView: CollabSharedView | null;
   startSession: (roomId?: string, sessionKey?: string) => Promise<string | null>;
   joinSession: (roomId: string, sessionKey: string) => Promise<string | null>;
@@ -48,6 +50,7 @@ interface CollaborationState {
   leaveSession: () => void;
   setLocalPresence: (patch: Partial<CollabPeer>) => void;
   setFollowMode: (enabled: boolean) => void;
+  setShareNotes: (enabled: boolean) => void;
   syncSharedView: () => void;
   syncCameraPose: () => void;
   refreshPeers: () => void;
@@ -119,11 +122,9 @@ function parseCameraAnchor(value: unknown): CollabCameraAnchor | undefined {
   if (source.count !== undefined && Number(source.count) < 0) return undefined;
   const id = source.id === null ? null : typeof source.id === 'string' ? source.id : undefined;
   if (id === undefined) return undefined;
-  const path = source.path === null || typeof source.path === 'string' ? source.path : undefined;
   const title = source.title === null || typeof source.title === 'string' ? source.title : undefined;
   return {
     id,
-    path,
     title,
     x: Number(source.x),
     y: Number(source.y),
@@ -136,7 +137,7 @@ function parseCameraAnchor(value: unknown): CollabCameraAnchor | undefined {
 function resolveFollowNodeId(
   nodes: DocNode[],
   remoteId: string | null | undefined,
-  hints?: { path?: string | null; title?: string | null },
+  hints?: { title?: string | null },
 ): string | null {
   if (remoteId && (nodes.some((node) => node.id === remoteId) || slotOfId.has(remoteId))) return remoteId;
   const unique = (matches: DocNode[]): string | null => {
@@ -147,10 +148,6 @@ function resolveFollowNodeId(
     }
     return null;
   };
-  if (hints?.path) {
-    const byPath = unique(nodes.filter((node) => node.path === hints.path));
-    if (byPath) return byPath;
-  }
   if (hints?.title) {
     const byTitle = unique(nodes.filter((node) => node.title === hints.title));
     if (byTitle) return byTitle;
@@ -227,7 +224,6 @@ function computeCentroidAnchor(ids: Iterable<string> | null): CollabCameraAnchor
 function remapCameraPose(remotePose: CameraPose, remoteAnchor: CollabCameraAnchor, localAnchor: CollabCameraAnchor): CameraPose {
   const sameAnchorIdentity =
     remoteAnchor.id === localAnchor.id ||
-    (remoteAnchor.path != null && remoteAnchor.path === localAnchor.path) ||
     (remoteAnchor.title != null && remoteAnchor.title === localAnchor.title);
   if (!sameAnchorIdentity) return { ...remotePose };
 
@@ -274,7 +270,6 @@ function computeCollabCameraAnchor(opts: {
       const node = opts.nodes.find((candidate) => candidate.id === preferId);
       return {
         id: preferId,
-        path: node?.path ?? null,
         title: node?.title ?? null,
         x: pos[0],
         y: pos[1],
@@ -303,28 +298,47 @@ async function readLocalCameraAnchor(selectedId: string | null, filter: GraphFil
   }) ?? undefined;
 }
 
-function readSelectedIdentity(selectedId: string | null): { path: string | null; title: string | null } {
-  if (!selectedId) return { path: null, title: null };
+function readSelectedTitle(selectedId: string | null): string | null {
+  if (!selectedId) return null;
   const node = useGraphStore.getState().nodes.find((candidate) => candidate.id === selectedId);
-  return { path: node?.path ?? null, title: node?.title ?? null };
+  return node?.title ?? null;
 }
 
-async function readSharedView(): Promise<CollabSharedView> {
+function stripAnchorPath(anchor: CollabCameraAnchor | undefined): CollabCameraAnchor | undefined {
+  if (!anchor) return undefined;
+  return {
+    id: anchor.id,
+    title: anchor.title,
+    x: anchor.x,
+    y: anchor.y,
+    z: anchor.z,
+    radius: anchor.radius,
+    count: anchor.count,
+  };
+}
+
+/** Snapshot of the local view that is safe to publish (no disk paths). */
+export function buildSharedView(): CollabSharedView {
   const ui = useUiStore.getState();
-  const identity = readSelectedIdentity(ui.selectedId);
-  const next: CollabSharedView = {
+  return {
     dims: ui.dims,
     selectedId: ui.selectedId,
-    selectedPath: identity.path,
-    selectedTitle: identity.title,
+    selectedTitle: readSelectedTitle(ui.selectedId),
     topicNodesEnabled: ui.topicNodesEnabled,
     clusterCollapsed: ui.clusterCollapsed,
     filter: cloneFilter(ui.filter),
     camera: readLocalCameraPose(),
-    cameraAnchor: undefined,
+    cameraAnchor: stripAnchorPath(computeCollabCameraAnchor({
+      selectedId: ui.selectedId,
+      filter: ui.filter,
+      nodes: useGraphStore.getState().nodes,
+      edges: useGraphStore.getState().edges,
+    }) ?? undefined),
   };
-  next.cameraAnchor = await readLocalCameraAnchor(ui.selectedId, ui.filter);
-  return next;
+}
+
+async function readSharedView(): Promise<CollabSharedView> {
+  return buildSharedView();
 }
 
 function parseCameraPose(value: unknown): CameraPose | undefined {
@@ -488,7 +502,6 @@ function resolveLocalFollowPose(pending: PendingRemoteCamera): CameraPose {
   const ui = useUiStore.getState();
   const graph = useGraphStore.getState();
   const resolvedId = resolveFollowNodeId(graph.nodes, pending.anchor.id, {
-    path: pending.anchor.path,
     title: pending.anchor.title,
   });
   const localAnchor = computeCollabCameraAnchor({
@@ -609,10 +622,6 @@ export async function applySharedView(view: Partial<Record<string, unknown>>): P
   const nextDims =
     typeof view.dims === 'number' && (view.dims === 2 || view.dims === 3) ? view.dims : undefined;
   const remoteSelectedHint = {
-    path:
-      typeof view.selectedPath === 'string'
-        ? view.selectedPath
-        : remoteAnchor?.path,
     title:
       typeof view.selectedTitle === 'string'
         ? view.selectedTitle
@@ -675,29 +684,51 @@ function annotationTimestamp(value: DocAnnotationRecord | undefined): number {
   return value && typeof value.updatedAt === 'number' ? value.updatedAt : 0;
 }
 
-async function bindAnnotationSync(session: CollabSession): Promise<() => void> {
-  const [{ ensureAnnotationsLoaded, useAnnotationStore }, { useCorpusStore }] = await Promise.all([
+async function bindAnnotationSync(session: CollabSession, token: number): Promise<() => void> {
+  const [{ ensureAnnotationsLoaded, useAnnotationStore }, { useCorpusStore }, { useGraphStore }] = await Promise.all([
     import('../store/annotationStore'),
     import('../store/corpusStore'),
+    import('../store/graphStore'),
   ]);
   const corpus = useCorpusStore.getState();
   if (corpus.mode !== 'local' || !corpus.activeCorpusId) return () => undefined;
   await ensureAnnotationsLoaded(corpus.activeCorpusId);
   if (useAnnotationStore.getState().scope !== corpus.activeCorpusId) return () => undefined;
+  if (token !== annotationBindingToken) return () => undefined;
 
   const map = session.annotations;
   let applyingRemote = false;
+  const mappedKeys = new Map<string, string>(); // shared key -> local annotation key
+
+  const annotationKeyForLocal = (key: string): string => {
+    const hit = useGraphStore.getState().nodes.find(
+      (node) => node.id === key || node.path === key || `${node.title} ${node.id}` === key,
+    );
+    if (hit) {
+      mappedKeys.set(hit.id, key);
+      return hit.id;
+    }
+    return key;
+  };
+
+  const localKeyForShared = (sharedKey: string): string => {
+    const localKey = mappedKeys.get(sharedKey);
+    if (localKey) return localKey;
+    const hit = useGraphStore.getState().nodes.find((node) => node.id === sharedKey);
+    return hit ? annotationKey(hit) : sharedKey;
+  };
 
   const applyMapChange = (key: string): void => {
     const remote = map.get(key);
-    const local = useAnnotationStore.getState().annotations[key];
+    const localKey = localKeyForShared(key);
+    const local = useAnnotationStore.getState().annotations[localKey];
     if (remote && local && annotationTimestamp(local) > annotationTimestamp(remote)) {
       map.set(key, local);
       return;
     }
     applyingRemote = true;
     try {
-      useAnnotationStore.getState().applyRemote(key, remote ?? null);
+      useAnnotationStore.getState().applyRemote(localKey, remote ?? null);
     } finally {
       applyingRemote = false;
     }
@@ -711,9 +742,17 @@ async function bindAnnotationSync(session: CollabSession): Promise<() => void> {
   const localAtBind = useAnnotationStore.getState().annotations;
   session.doc.transact(() => {
     for (const [key, local] of Object.entries(localAtBind)) {
-      const remote = map.get(key);
-      if (!remote || annotationTimestamp(local) >= annotationTimestamp(remote)) map.set(key, local);
-      else applyMapChange(key);
+      const sharedKey = annotationKeyForLocal(key);
+      const remote = map.get(sharedKey);
+      if (!remote || annotationTimestamp(local) >= annotationTimestamp(remote)) {
+        map.set(sharedKey, local);
+      } else {
+        applyMapChange(sharedKey);
+      }
+    }
+    for (const key of map.keys()) {
+      const localKey = localKeyForShared(key);
+      if (!(localKey in localAtBind)) applyMapChange(key);
     }
   });
 
@@ -727,9 +766,10 @@ async function bindAnnotationSync(session: CollabSession): Promise<() => void> {
       for (const key of keys) {
         const before = previous.annotations[key];
         const after = state.annotations[key];
+        const sharedKey = annotationKeyForLocal(key);
         if (before === after) continue;
-        if (after) map.set(key, after);
-        else map.delete(key);
+        if (after) map.set(sharedKey, after);
+        else map.delete(sharedKey);
       }
     });
   });
@@ -740,6 +780,8 @@ async function bindAnnotationSync(session: CollabSession): Promise<() => void> {
   };
 }
 
+let annotationBindingToken = 0;
+
 export const useCollabStore = create<CollaborationState>((set, get) => ({
   session: null,
   roomId: null,
@@ -748,6 +790,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
   status: 'idle',
   peers: {},
   followMode: false,
+  shareNotes: false,
   lastRemoteView: null,
 
   startSession: async (roomId, sessionKey) => {
@@ -761,7 +804,15 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       const { buildCollabInvite, createCollabSession } = await import('./session');
       const session = createCollabSession({ roomId: nextRoom, sessionKey: nextKey });
       const invite = buildCollabInvite(session.roomId, session.sessionKey);
-      stopAnnotationSync = await bindAnnotationSync(session);
+      if (get().shareNotes) {
+        const token = ++annotationBindingToken;
+        const stop = await bindAnnotationSync(session, token);
+        if (get().shareNotes && token === annotationBindingToken) {
+          stopAnnotationSync = stop;
+        } else {
+          stop();
+        }
+      }
       session.provider?.awareness.on('change', () => {
         set({ peers: collectPeers(session) });
       });
@@ -804,7 +855,15 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       const { buildCollabInvite, createCollabSession } = await import('./session');
       const session = createCollabSession({ roomId, sessionKey });
       const invite = buildCollabInvite(session.roomId, session.sessionKey);
-      stopAnnotationSync = await bindAnnotationSync(session);
+      if (get().shareNotes) {
+        const token = ++annotationBindingToken;
+        const stop = await bindAnnotationSync(session, token);
+        if (get().shareNotes && token === annotationBindingToken) {
+          stopAnnotationSync = stop;
+        } else {
+          stop();
+        }
+      }
       session.provider?.awareness.on('change', () => {
         set({ peers: collectPeers(session) });
       });
@@ -855,12 +914,12 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     clearDeferredRemoteCameras();
     const { session } = get();
     if (!session) {
-      set({ roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {}, followMode: false, lastRemoteView: null });
+      set({ roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {}, followMode: false, shareNotes: false, lastRemoteView: null });
       return;
     }
     session.provider?.destroy();
     session.doc.destroy();
-    set({ session: null, roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {}, followMode: false, lastRemoteView: null });
+    set({ session: null, roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {}, followMode: false, shareNotes: false, lastRemoteView: null });
   },
 
   setLocalPresence: (patch) => {
@@ -874,6 +933,36 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       selectedId: typeof next.selectedId === 'string' ? next.selectedId : null,
       camera: next.camera && typeof next.camera === 'object' ? next.camera : null,
       cursor: next.cursor && typeof next.cursor === 'object' ? next.cursor : null,
+    });
+  },
+
+  setShareNotes: (enabled) => {
+    if (get().shareNotes === enabled) return;
+    const { session } = get();
+    const token = ++annotationBindingToken;
+    stopAnnotationSync?.();
+    stopAnnotationSync = null;
+    if (session && !enabled) {
+      session.doc.transact(() => {
+        for (const key of Object.keys(useAnnotationStore.getState().annotations)) {
+          const candidate = useGraphStore.getState().nodes.find(
+            (node) => node.id === key || node.path === key || `${node.title} ${node.id}` === key,
+          );
+          const sharedKey = candidate ? candidate.id : key;
+          if (session.annotations.has(sharedKey)) session.annotations.delete(sharedKey);
+        }
+      });
+    }
+    set({ shareNotes: enabled });
+    if (!session || !enabled) return;
+    void bindAnnotationSync(session, token).then((stop) => {
+      if (get().shareNotes && get().session === session && token === annotationBindingToken) {
+        stopAnnotationSync = stop;
+      } else {
+        stop();
+      }
+    }).catch((error) => {
+      console.warn('[knowledge-nebula] annotation sync bind failed', error);
     });
   },
 
@@ -898,7 +987,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       session.doc.transact(() => {
         map.set('dims', view.dims ?? useUiStore.getState().dims);
         map.set('selectedId', view.selectedId ?? null);
-        map.set('selectedPath', view.selectedPath ?? null);
+        map.delete('selectedPath');
         map.set('selectedTitle', view.selectedTitle ?? null);
         map.set('topicNodesEnabled', view.topicNodesEnabled ?? useUiStore.getState().topicNodesEnabled);
         map.set('clusterCollapsed', view.clusterCollapsed ?? useUiStore.getState().clusterCollapsed);

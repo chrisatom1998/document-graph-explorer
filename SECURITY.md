@@ -13,12 +13,12 @@ is no server, no account, no telemetry, and no analytics.
 | `npm run build`, AI enrichment **on** with the **OpenRouter** provider (opt-in, user supplies an OpenRouter key) | Each document's full stored text is sent to `openrouter.ai`, which routes it to the model the user selected, **only** for the AI features the user explicitly triggers. Enormous files are capped at 240,000 characters. Off by default. |
 | `npm run build`, chat provider set to **OpenRouter** (opt-in, user supplies an OpenRouter key) | The question and the document passages retrieved for it are sent to `openrouter.ai`, which routes them to the model the user selected. Only when the user picks this provider and asks a question. Off by default. |
 | `npm run build`, enrichment or chat provider set to **Ollama** (opt-in) | **No external network.** Requests go to a user-run Ollama server on this machine (`127.0.0.1:11434` / `localhost:11434`); nothing leaves the device. The CSP admits only those two loopback hosts for it. |
-| `npm run build`, collaboration session started | Signaling WebSocket to `signaling.yjs.dev` so peers can find each other. Annotations and presence may leave the browser over the encrypted room; the corpus stays local. Off until the user starts or joins a session. |
+| `npm run build`, collaboration session started | Signaling WebSocket to `signaling.yjs.dev` so peers can find each other. Direct WebRTC uses **host ICE only** — public STUN (Google/Twilio) is disabled, so NAT traversal may fail. Shared over the room: view (selection id/title, camera, filters) and presence. Notes and tags sync **only if the user opts in** (off by default). Corpus text/bytes and local filesystem paths never leave this browser. A collab invite hash does not connect until the user confirms. Offline mode refuses collab/WebRTC the same way it guards fetch and WebSocket. Off until the user starts or confirms joining a session. |
 
 > **Offline mode (Settings toggle) vs the air-gapped build:** the normal build
 > includes an "Offline mode" toggle that blocks all external requests in
-> JavaScript (per-call refusal plus a global fetch guard) and answers chat from
-> your documents locally. It is a **behavioral** setting a user can flip off.
+> JavaScript (per-call refusal plus a global fetch / WebSocket / WebRTC guard) and answers chat from
+> your documents locally. Collaboration sessions cannot start while it is on, and RTCPeerConnection is given empty iceServers so default STUN cannot fire. It is a **behavioral** setting a user can flip off.
 > For distribution where the guarantee must be enforced rather than configured,
 > use the air-gapped build — its CSP physically removes the external network at
 > the browser level and cannot be re-enabled at runtime.
@@ -37,8 +37,9 @@ browser's File System Access API; rescans happen only while the app is open and
 permission may need to be granted again after a restart or browser policy change.
 
 **Shareable URLs are an explicit disclosure action.** The Data menu shows a
-confirmation before copying a link. The URL fragment contains titles, short source
-excerpts of up to 200 characters, topics, entities, keywords, warnings, cluster data, and connection evidence, so anyone who
+confirmation before copying a link. The URL fragment contains titles, summaries
+(up to 2000 characters), topics, entities, keywords, warnings, cluster data, and
+connection evidence (up to 200 characters), so anyone who
 receives the link can read that graph metadata. It excludes full document text,
 original file bytes, local paths, modification times, embeddings, file handles,
 and settings, and replaces content-derived node and edge IDs. URL fragments are

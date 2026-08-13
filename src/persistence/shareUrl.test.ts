@@ -7,6 +7,7 @@ import {
   SHARE_FRAGMENT_PREFIX,
   SHARE_RAW_TAG,
   ShareUrlError,
+  SHARE_SUMMARY_CHARS,
   createShareGraph,
   createShareUrl,
   decodeShareFragment,
@@ -120,6 +121,20 @@ describe('portable share-link graph', () => {
     expect(serialized).not.toContain('full private document text');
     expect(serialized).not.toContain('secret-key');
     expect(serialized).not.toContain('private-folder');
+  });
+
+  it('caps summaries at 2000 characters to match the share confirm copy', () => {
+    const source = graph();
+    source.nodes[0].summary = 'S'.repeat(3000);
+    source.edges[0].evidence = ['E'.repeat(500)];
+    source.nodes[0].path = 'C:\\Users\\secret-user\\Private\\long.md';
+    const shared = createShareGraph(source);
+    expect(SHARE_SUMMARY_CHARS).toBe(2000);
+    expect(shared.nodes[0].summary).toHaveLength(2000);
+    expect(shared.nodes[0].summary).toBe('S'.repeat(2000));
+    expect(shared.edges[0].evidence[0]).toHaveLength(200);
+    expect(JSON.stringify(shared)).not.toContain('secret-user');
+    expect(shared.nodes[0]).not.toHaveProperty('path');
   });
 
   it('round-trips gzip JSON and Unicode through a full URL', async () => {

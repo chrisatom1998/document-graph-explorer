@@ -141,7 +141,6 @@ describe('computeCollabCameraAnchor', () => {
     });
     expect(anchor).toEqual({
       id: 'b',
-      path: 'b',
       title: 'b',
       x: 10,
       y: 0,
@@ -149,6 +148,7 @@ describe('computeCollabCameraAnchor', () => {
       radius: 2.5,
       count: 1,
     });
+    expect(anchor).not.toHaveProperty('path');
   });
 
   it('falls back to the centroid of live slots when nothing is selected', () => {
@@ -185,18 +185,15 @@ describe('computeCollabCameraAnchor', () => {
 });
 
 describe('resolveFollowNodeId', () => {
-  it('matches exact id first, then unique path, then unique title', () => {
+  it('matches exact id first, then unique title, never disk path', () => {
     const nodes = [doc('local-a'), doc('local-b')];
     nodes[0] = { ...nodes[0], path: 'demo/sla-agreement-enterprise.pdf', title: 'Enterprise Service Level Agreement' };
     nodes[1] = { ...nodes[1], path: 'demo/other.pdf', title: 'Other' };
 
     expect(resolveFollowNodeId(nodes, 'local-a')).toBe('local-a');
     expect(
-      resolveFollowNodeId(nodes, 'host-a', { path: 'demo/sla-agreement-enterprise.pdf' }),
-    ).toBe('local-a');
-    expect(
       resolveFollowNodeId(nodes, 'host-a', { title: 'Enterprise Service Level Agreement' }),
     ).toBe('local-a');
-    expect(resolveFollowNodeId(nodes, 'host-a', { path: 'demo/missing.pdf', title: 'Nope' })).toBeNull();
+    expect(resolveFollowNodeId(nodes, 'host-a', { title: 'Nope' })).toBeNull();
   });
 });
