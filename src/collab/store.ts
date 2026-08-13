@@ -4,6 +4,7 @@ import { layoutEpoch, layoutSetDims, layoutSettledEpoch, onLayoutSettled } from 
 import { cameraPose } from '../scene/cameraPose';
 import { nodesMatchingFilter } from '../scene/emphasis';
 import { getNodePosition, idOfSlot, positionBuffer, scaleOfSlot, slotOfId } from '../scene/positionBuffer';
+import { annotationKey, useAnnotationStore } from '../store/annotationStore';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
 import type { DocAnnotationRecord } from '../persistence/db';
@@ -683,29 +684,51 @@ function annotationTimestamp(value: DocAnnotationRecord | undefined): number {
   return value && typeof value.updatedAt === 'number' ? value.updatedAt : 0;
 }
 
-async function bindAnnotationSync(session: CollabSession): Promise<() => void> {
-  const [{ ensureAnnotationsLoaded, useAnnotationStore }, { useCorpusStore }] = await Promise.all([
+async function bindAnnotationSync(session: CollabSession, token: number): Promise<() => void> {
+  const [{ ensureAnnotationsLoaded, useAnnotationStore }, { useCorpusStore }, { useGraphStore }] = await Promise.all([
     import('../store/annotationStore'),
     import('../store/corpusStore'),
+    import('../store/graphStore'),
   ]);
   const corpus = useCorpusStore.getState();
   if (corpus.mode !== 'local' || !corpus.activeCorpusId) return () => undefined;
   await ensureAnnotationsLoaded(corpus.activeCorpusId);
   if (useAnnotationStore.getState().scope !== corpus.activeCorpusId) return () => undefined;
+  if (token !== annotationBindingToken) return () => undefined;
 
   const map = session.annotations;
   let applyingRemote = false;
+  const mappedKeys = new Map<string, string>(); // shared key -> local annotation key
+
+  const annotationKeyForLocal = (key: string): string => {
+    const hit = useGraphStore.getState().nodes.find(
+      (node) => node.id === key || node.path === key || `${node.title} ${node.id}` === key,
+    );
+    if (hit) {
+      mappedKeys.set(hit.id, key);
+      return hit.id;
+    }
+    return key;
+  };
+
+  const localKeyForShared = (sharedKey: string): string => {
+    const localKey = mappedKeys.get(sharedKey);
+    if (localKey) return localKey;
+    const hit = useGraphStore.getState().nodes.find((node) => node.id === sharedKey);
+    return hit ? annotationKey(hit) : sharedKey;
+  };
 
   const applyMapChange = (key: string): void => {
     const remote = map.get(key);
-    const local = useAnnotationStore.getState().annotations[key];
+    const localKey = localKeyForShared(key);
+    const local = useAnnotationStore.getState().annotations[localKey];
     if (remote && local && annotationTimestamp(local) > annotationTimestamp(remote)) {
       map.set(key, local);
       return;
     }
     applyingRemote = true;
     try {
-      useAnnotationStore.getState().applyRemote(key, remote ?? null);
+      useAnnotationStore.getState().applyRemote(localKey, remote ?? null);
     } finally {
       applyingRemote = false;
     }
@@ -719,13 +742,17 @@ async function bindAnnotationSync(session: CollabSession): Promise<() => void> {
   const localAtBind = useAnnotationStore.getState().annotations;
   session.doc.transact(() => {
     for (const [key, local] of Object.entries(localAtBind)) {
-      const remote = map.get(key);
-      if (!remote || annotationTimestamp(local) >= annotationTimestamp(remote)) map.set(key, local);
-      else applyMapChange(key);
+      const sharedKey = annotationKeyForLocal(key);
+      const remote = map.get(sharedKey);
+      if (!remote || annotationTimestamp(local) >= annotationTimestamp(remote)) {
+        map.set(sharedKey, local);
+      } else {
+        applyMapChange(sharedKey);
+      }
     }
-    // Mid-session opt-in: apply peer notes already in the map that we do not have locally.
     for (const key of map.keys()) {
-      if (!(key in localAtBind)) applyMapChange(key);
+      const localKey = localKeyForShared(key);
+      if (!(localKey in localAtBind)) applyMapChange(key);
     }
   });
 
@@ -739,9 +766,10 @@ async function bindAnnotationSync(session: CollabSession): Promise<() => void> {
       for (const key of keys) {
         const before = previous.annotations[key];
         const after = state.annotations[key];
+        const sharedKey = annotationKeyForLocal(key);
         if (before === after) continue;
-        if (after) map.set(key, after);
-        else map.delete(key);
+        if (after) map.set(sharedKey, after);
+        else map.delete(sharedKey);
       }
     });
   });
@@ -751,6 +779,8 @@ async function bindAnnotationSync(session: CollabSession): Promise<() => void> {
     map.unobserve(onRemoteChange);
   };
 }
+
+let annotationBindingToken = 0;
 
 export const useCollabStore = create<CollaborationState>((set, get) => ({
   session: null,
@@ -774,7 +804,15 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       const { buildCollabInvite, createCollabSession } = await import('./session');
       const session = createCollabSession({ roomId: nextRoom, sessionKey: nextKey });
       const invite = buildCollabInvite(session.roomId, session.sessionKey);
-      if (get().shareNotes) stopAnnotationSync = await bindAnnotationSync(session);
+      if (get().shareNotes) {
+        const token = ++annotationBindingToken;
+        const stop = await bindAnnotationSync(session, token);
+        if (get().shareNotes && token === annotationBindingToken) {
+          stopAnnotationSync = stop;
+        } else {
+          stop();
+        }
+      }
       session.provider?.awareness.on('change', () => {
         set({ peers: collectPeers(session) });
       });
@@ -817,7 +855,15 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       const { buildCollabInvite, createCollabSession } = await import('./session');
       const session = createCollabSession({ roomId, sessionKey });
       const invite = buildCollabInvite(session.roomId, session.sessionKey);
-      if (get().shareNotes) stopAnnotationSync = await bindAnnotationSync(session);
+      if (get().shareNotes) {
+        const token = ++annotationBindingToken;
+        const stop = await bindAnnotationSync(session, token);
+        if (get().shareNotes && token === annotationBindingToken) {
+          stopAnnotationSync = stop;
+        } else {
+          stop();
+        }
+      }
       session.provider?.awareness.on('change', () => {
         set({ peers: collectPeers(session) });
       });
@@ -892,17 +938,31 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
 
   setShareNotes: (enabled) => {
     if (get().shareNotes === enabled) return;
-    set({ shareNotes: enabled });
     const { session } = get();
+    const token = ++annotationBindingToken;
     stopAnnotationSync?.();
     stopAnnotationSync = null;
+    if (session && !enabled) {
+      session.doc.transact(() => {
+        for (const key of Object.keys(useAnnotationStore.getState().annotations)) {
+          const candidate = useGraphStore.getState().nodes.find(
+            (node) => node.id === key || node.path === key || `${node.title} ${node.id}` === key,
+          );
+          const sharedKey = candidate ? candidate.id : key;
+          if (session.annotations.has(sharedKey)) session.annotations.delete(sharedKey);
+        }
+      });
+    }
+    set({ shareNotes: enabled });
     if (!session || !enabled) return;
-    void bindAnnotationSync(session).then((stop) => {
-      if (get().shareNotes && get().session === session) {
+    void bindAnnotationSync(session, token).then((stop) => {
+      if (get().shareNotes && get().session === session && token === annotationBindingToken) {
         stopAnnotationSync = stop;
       } else {
         stop();
       }
+    }).catch((error) => {
+      console.warn('[knowledge-nebula] annotation sync bind failed', error);
     });
   },
 

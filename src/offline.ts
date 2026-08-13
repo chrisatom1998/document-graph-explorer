@@ -99,9 +99,10 @@ export function installOfflineFetchGuard(): void {
     const RealRTCPeerConnection = globalThis.RTCPeerConnection;
     globalThis.RTCPeerConnection = class OfflineGuardedRTCPeerConnection extends RealRTCPeerConnection {
       constructor(configuration?: RTCConfiguration) {
-        super(isOffline() ? sanitizeRtcConfiguration(configuration) : configuration);
+        super(isOffline() ? sanitizeRtcConfiguration(configuration) : configuration ?? {});
       }
       override setConfiguration(configuration?: RTCConfiguration): void {
+        if (configuration === undefined) return;
         super.setConfiguration(
           isOffline() ? sanitizeRtcConfiguration(configuration) : configuration,
         );
