@@ -167,6 +167,24 @@ export function sanitizeSharedFilter(value: unknown): Partial<GraphFilter> | und
   return found ? next : undefined;
 }
 
+let queuedRemoteCameraPose: CameraPose | null = null;
+
+function scheduleRemoteCameraPose(pose: CameraPose | null): void {
+  if (!pose) return;
+  queuedRemoteCameraPose = pose;
+  const run = () => {
+    const pending = queuedRemoteCameraPose;
+    queuedRemoteCameraPose = null;
+    if (!pending) return;
+    useUiStore.getState().sendCameraPose(pending);
+  };
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(run);
+    return;
+  }
+  setTimeout(run, 0);
+}
+
 function applySharedView(view: Partial<Record<string, unknown>>): void {
   const ui = useUiStore.getState();
   const next: CollabSharedView = {
@@ -185,7 +203,7 @@ function applySharedView(view: Partial<Record<string, unknown>>): void {
   if (next.topicNodesEnabled !== undefined) ui.setTopicNodes(next.topicNodesEnabled);
   if (next.clusterCollapsed !== undefined) ui.setClusterCollapsed(next.clusterCollapsed);
   if (next.filter) ui.setFilter(next.filter);
-  if (next.camera) ui.sendCameraPose(next.camera);
+  scheduleRemoteCameraPose(next.camera ?? null);
   useCollabStore.setState({ lastRemoteView: next });
 }
 
