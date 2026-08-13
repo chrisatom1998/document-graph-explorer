@@ -211,14 +211,16 @@ interface PendingRemoteCamera {
   pose: CameraPose;
   anchor?: CollabCameraAnchor;
   requireFollow: boolean;
+  localCameraActivityEpoch: number;
 }
 
 let queuedRemoteCamera: PendingRemoteCamera | null = null;
 let pendingSettleCamera: PendingRemoteCamera | null = null;
 let stopSettleWait: (() => void) | null = null;
+let localCameraActivityEpoch = 0;
 let lastFollowDebugAt = 0;
 
-/** Cancel rAF/settle-queued remote poses. Exported for unit tests. */
+/** Cancel rAF/settle-queued remote poses. */
 export function clearDeferredRemoteCameras(): void {
   queuedRemoteCamera = null;
   pendingSettleCamera = null;
@@ -226,6 +228,11 @@ export function clearDeferredRemoteCameras(): void {
     stopSettleWait();
     stopSettleWait = null;
   }
+}
+
+/** Mark deliberate local camera input so a delayed join pose cannot override it. */
+export function noteLocalCameraActivity(): void {
+  localCameraActivityEpoch += 1;
 }
 
 function resolveLocalFollowPose(pending: PendingRemoteCamera): CameraPose {
@@ -240,6 +247,13 @@ function resolveLocalFollowPose(pending: PendingRemoteCamera): CameraPose {
     edges: graph.edges,
   });
   if (!localAnchor) return pending.pose;
+  if (pending.anchor.id !== localAnchor.id) {
+    return remapCameraPose(
+      pending.pose,
+      pending.anchor,
+      { ...localAnchor, radius: pending.anchor.radius },
+    );
+  }
   return remapCameraPose(pending.pose, pending.anchor, localAnchor);
 }
 
@@ -247,6 +261,7 @@ function deliverRemoteCameraPose(pending: PendingRemoteCamera): void {
   const { session, followMode } = useCollabStore.getState();
   if (!session) return;
   if (pending.requireFollow && !followMode) return;
+  if (!pending.requireFollow && pending.localCameraActivityEpoch !== localCameraActivityEpoch) return;
   useUiStore.getState().sendCameraPose(resolveLocalFollowPose(pending));
 }
 
@@ -260,6 +275,7 @@ function scheduleRemoteCameraPose(
     pose,
     anchor,
     requireFollow: useCollabStore.getState().followMode,
+    localCameraActivityEpoch,
   };
 
   // While a dims-driven settle is outstanding, keep coalescing into that

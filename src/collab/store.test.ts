@@ -34,6 +34,7 @@ function fireSettled(epoch: number): void {
 import {
   applySharedView,
   clearDeferredRemoteCameras,
+  noteLocalCameraActivity,
   sanitizeSharedFilter,
   useCollabStore,
 } from './store';
@@ -246,6 +247,42 @@ describe('applySharedView', () => {
         tz: -20,
       },
     ]);
+  });
+
+  it('uses translation only when a remote selected-node anchor is missing locally', () => {
+    seedNode('a', 0, [0, 0, 0]);
+    seedNode('b', 1, [100, 0, 0]);
+
+    applySharedView({
+      dims: 3,
+      selectedId: 'missing',
+      camera: { px: 0, py: 0, pz: 20, tx: 0, ty: 0, tz: 0 },
+      cameraAnchor: { id: 'missing', x: 0, y: 0, z: 0, radius: 1, count: 1 },
+    });
+
+    vi.runOnlyPendingTimers();
+    expect(delivered).toEqual([
+      {
+        px: 50,
+        py: 0,
+        pz: 20,
+        tx: 50,
+        ty: 0,
+        tz: 0,
+      },
+    ]);
+  });
+
+  it('cancels a delayed join pose after deliberate local camera activity', () => {
+    useCollabStore.setState({ followMode: false });
+    applySharedView({
+      dims: 2,
+      camera: { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+    });
+
+    noteLocalCameraActivity();
+    fireSettled(layoutTest.postedEpoch);
+    expect(delivered).toHaveLength(0);
   });
 
   it('skips a deferred follow pose after follow mode is turned off', () => {
