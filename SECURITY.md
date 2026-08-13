@@ -22,7 +22,7 @@ is no server, no account, no telemetry, and no analytics.
 > use the air-gapped build — its CSP physically removes the external network at
 > the browser level and cannot be re-enabled at runtime.
 
-The embedding model (MiniLM), its WASM runtime, and the Tesseract.js OCR worker,
+The embedding model (BGE-small English), its WASM runtime, and the Tesseract.js OCR worker,
 WASM core, and English language data are **self-hosted** in the app (`/models`,
 `/assets`, `/ocr`) — they are never fetched from HuggingFace or a CDN
 (`allowRemoteModels = false`, ORT and OCR asset paths pinned same-origin).

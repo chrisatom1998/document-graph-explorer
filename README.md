@@ -25,7 +25,7 @@ Then open the printed local URL and drag documents onto the window — or click 
 
 ## Feature highlights
 
-- **Scanned-PDF OCR:** when a PDF has too little embedded text, the app falls back to the bundled Tesseract.js runtime. OCR is local, uses the bundled English model, and is limited to the first 20 pages of each PDF.
+- **Scanned-PDF OCR:** when a PDF has too little embedded text, the app falls back to the bundled Tesseract.js runtime. English is bundled; other languages can be selected in Settings if you add the matching `traineddata.gz` under `public/ocr/lang/`. The page cap is configurable (default: first 20 pages).
 - **Live folder sources:** connect a folder from the corpus switcher to add changed files and remove deleted files automatically. This requires a browser with the File System Access API and runs only while the app is open; the app checks about every eight seconds while visible and again when the tab regains focus. In the desktop app, a native filesystem watch additionally triggers a sync within about a second of a change — no waiting for the next poll. Drag-and-drop remains available everywhere as a one-time import, including whole source repositories (`.gitignore` is honored).
 - **Shareable graph URLs:** **Data → Copy shareable URL** creates a backend-free URL fragment containing a portable graph view. The link includes titles, short source excerpts (up to 200 characters), topics, entities, keywords, warnings, cluster labels, and connection evidence, but excludes full document text and original file bytes, local paths, embeddings, file handles, and settings. Large graphs that exceed browser-safe URL limits should be shared with JSON export instead.
 - **OpenUSD export:** **Data → Export OpenUSD scene** writes the graph as a composed OpenUSD stage (`.usda`) — documents as prims with a `docGraph:` attribute schema, edges as per-kind curves with evidence, cluster hulls, and a detailed⇄summary variantSet — making the corpus a portable digital-twin asset for usdview, NVIDIA Omniverse, and any USD toolchain. A Python companion CLI ([tools/usd_pipeline](tools/usd_pipeline/usd_pipeline.py)) validates the schema and packages `.usdz`. See the [OpenUSD pipeline guide](docs/openusd-pipeline.md).
@@ -103,6 +103,7 @@ Full schema tables, the validation contract, and third-party tooling notes are i
 | `npm run build:airgap` | `dist-airgap/` | **Zero external network** — host-free CSP + runtime refusal + post-build verify gate |
 | `npm run build:desktop` | `release/mac-arm64/Document Graph Explorer.app`, installed to `/Applications` | Normal app build wrapped as a local macOS desktop executable |
 | `npm run dist:mac` | `Document Graph Explorer-<version>-arm64.dmg` and `.zip` under `release/` | Distributable macOS installer images (see [Distributing the app](#distributing-the-app-dmg)) |
+| `npm run dist:linux` | AppImage under `release/` | Linux desktop package (electron-builder). Not notarized. |
 
 See [SECURITY.md](SECURITY.md) for the full privacy guarantee and how to verify it.
 

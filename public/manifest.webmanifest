@@ -1,0 +1,18 @@
+{
+  "name": "Document Graph Explorer",
+  "short_name": "Doc Graph",
+  "description": "Local-first 3D graph explorer for documents and source repositories. Parsing and embeddings stay in the browser.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050510",
+  "theme_color": "#050510",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

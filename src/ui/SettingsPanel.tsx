@@ -15,14 +15,24 @@ import {
   SUGGESTED_OLLAMA_MODELS,
 } from '../ai/modelCatalog';
 import { runEnrichment } from '../enrich/enrichment';
-import { clearAllCaches } from '../persistence/cache';
+import { clearAllCaches, clearEmbeddingsCache, clearOriginalsCache } from '../persistence/cache';
+import {
+  estimateStorage,
+  formatStorageSummary,
+  storagePressure,
+  type StoragePressure,
+} from '../persistence/quota';
+import { OCR_LANGUAGE_OPTIONS, OCR_PAGE_OPTIONS } from '../pipeline/ocrOptions';
 import { resetCorpus } from '../pipeline/coordinator';
 import { useGraphStore } from '../store/graphStore';
 import {
   DEFAULT_OLLAMA_MODEL,
   useSettingsStore,
   type ChatProvider,
+  type EmbeddingQueryStyle,
   type EnrichProvider,
+  type OcrLanguageId,
+  type OcrMaxPages,
 } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 import { buildDiagnosticsText, getAppVersion } from './diagnostics';
@@ -137,6 +147,10 @@ export default function SettingsPanel() {
   const enrichEnabled = useSettingsStore((s) => s.enrichEnabled);
   const includeEmbeddings = useSettingsStore((s) => s.includeEmbeddingsInExport);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
+  const cacheEmbeddings = useSettingsStore((s) => s.cacheEmbeddings);
+  const embeddingQueryStyle = useSettingsStore((s) => s.embeddingQueryStyle);
+  const ocrLanguage = useSettingsStore((s) => s.ocrLanguage);
+  const ocrMaxPages = useSettingsStore((s) => s.ocrMaxPages);
   const setChatProvider = useSettingsStore((s) => s.setChatProvider);
   const setEnrichProvider = useSettingsStore((s) => s.setEnrichProvider);
   const setOpenRouterKey = useSettingsStore((s) => s.setOpenRouterKey);
@@ -148,6 +162,10 @@ export default function SettingsPanel() {
   const setEnrichEnabled = useSettingsStore((s) => s.setEnrichEnabled);
   const setIncludeEmbeddings = useSettingsStore((s) => s.setIncludeEmbeddingsInExport);
   const setOfflineMode = useSettingsStore((s) => s.setOfflineMode);
+  const setCacheEmbeddings = useSettingsStore((s) => s.setCacheEmbeddings);
+  const setEmbeddingQueryStyle = useSettingsStore((s) => s.setEmbeddingQueryStyle);
+  const setOcrLanguage = useSettingsStore((s) => s.setOcrLanguage);
+  const setOcrMaxPages = useSettingsStore((s) => s.setOcrMaxPages);
 
   const [enrichResult, setEnrichResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [enrichBusy, setEnrichBusy] = useState(false);
@@ -155,6 +173,9 @@ export default function SettingsPanel() {
   const [diagnosticsNote, setDiagnosticsNote] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [storageLabel, setStorageLabel] = useState<string | null>(null);
+  const [storageLevel, setStorageLevel] = useState<StoragePressure | null>(null);
+  const [cacheNote, setCacheNote] = useState<string | null>(null);
 
   const dialogRef = useRef<HTMLDivElement>(null);
   useFocusTrap(dialogRef, open);
@@ -220,6 +241,24 @@ export default function SettingsPanel() {
     };
   }, [open, offlineMode, needsOllama, ollamaReloads]);
 
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void estimateStorage().then((est) => {
+      if (cancelled) return;
+      if (!est) {
+        setStorageLabel('Unavailable in this browser');
+        setStorageLevel(null);
+        return;
+      }
+      setStorageLabel(formatStorageSummary(est));
+      setStorageLevel(storagePressure(est));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, cacheNote, clearNote]);
+
   if (!open) return null;
 
   // Chat and enrichment pick independently from purpose-specific shortlists —
@@ -278,6 +317,7 @@ export default function SettingsPanel() {
     nodeCount,
     edgeCount,
     lastError,
+    storage: storageLabel ?? undefined,
   });
 
   const onEnrichNow = () => {
@@ -548,6 +588,63 @@ export default function SettingsPanel() {
         )}
 
         <section style={sectionStyle}>
+          <h3 style={headingStyle}>Recognition</h3>
+          <label style={labelStyle}>
+            Semantic search language
+            <select
+              value={embeddingQueryStyle}
+              onChange={(e) => setEmbeddingQueryStyle(e.target.value as EmbeddingQueryStyle)}
+              title="English uses BGE's retrieval instruction prefix. Language-neutral skips it for mixed-language corpora."
+              style={inputStyle}
+            >
+              <option value="english">English (best for English corpora)</option>
+              <option value="neutral">Language-neutral (mixed / non-English queries)</option>
+            </select>
+          </label>
+          <p style={helpStyle}>
+            Vectors still come from the bundled English BGE-small model. Language-neutral mode
+            only drops the English search instruction so non-English queries are not prefixed
+            with English text. Keyword, import, and title links are language-agnostic.
+          </p>
+          <label style={labelStyle}>
+            OCR language (scanned PDFs)
+            <select
+              value={ocrLanguage}
+              onChange={(e) => setOcrLanguage(e.target.value as OcrLanguageId)}
+              title="English is bundled. Other languages need a matching traineddata.gz under /ocr/lang/."
+              style={inputStyle}
+            >
+              {OCR_LANGUAGE_OPTIONS.map((lang) => (
+                <option key={lang.id} value={lang.id}>
+                  {lang.label}
+                  {lang.bundled ? ' (bundled)' : ' (needs language pack)'}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={labelStyle}>
+            OCR page limit
+            <select
+              value={ocrMaxPages}
+              onChange={(e) => setOcrMaxPages(Number(e.target.value) as OcrMaxPages)}
+              title="More pages take longer and use more memory. Applies to the next scanned PDF."
+              style={inputStyle}
+            >
+              {OCR_PAGE_OPTIONS.map((pages) => (
+                <option key={pages} value={pages}>
+                  First {pages} pages
+                </option>
+              ))}
+            </select>
+          </label>
+          <p style={helpStyle}>
+            Extra Tesseract packs are files like <code>spa.traineddata.gz</code> in{' '}
+            <code>public/ocr/lang/</code>. Without the pack, recognition falls back to whatever
+            English can read.
+          </p>
+        </section>
+
+        <section style={sectionStyle}>
           <h3 style={headingStyle}>Export</h3>
           <label
             style={checkboxRowStyle}
@@ -579,6 +676,67 @@ export default function SettingsPanel() {
 
         <section style={sectionStyle}>
           <h3 style={headingStyle}>Data</h3>
+          <label
+            style={checkboxRowStyle}
+            title="Store document vectors in IndexedDB so the next visit skips re-embedding. Turn off to free space; the next reload re-embeds from cached text."
+          >
+            <input
+              type="checkbox"
+              checked={cacheEmbeddings}
+              onChange={(e) => {
+                const on = e.target.checked;
+                setCacheEmbeddings(on);
+                if (on) {
+                  setCacheNote('Embeddings will be stored on the next save.');
+                  return;
+                }
+                setCacheNote(null);
+                void clearEmbeddingsCache().then((ok) =>
+                  setCacheNote(
+                    ok
+                      ? 'Cached embeddings removed. The next reload will re-embed from saved text.'
+                      : 'Could not clear cached embeddings (storage unavailable).',
+                  ),
+                );
+              }}
+            />
+            Cache embeddings for instant reload (uses more storage)
+          </label>
+          <div style={confirmRowStyle}>
+            <button
+              type="button"
+              onClick={() => {
+                setCacheNote(null);
+                void clearEmbeddingsCache().then((ok) =>
+                  setCacheNote(
+                    ok ? 'Cached embeddings removed.' : 'Could not clear embeddings.',
+                  ),
+                );
+              }}
+              title="Delete stored vectors only. Document text stays; the next reload re-embeds."
+              style={buttonStyle}
+            >
+              Clear embeddings
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCacheNote(null);
+                void clearOriginalsCache().then((ok) =>
+                  setCacheNote(
+                    ok
+                      ? 'Original files removed. Open falls back to the text viewer.'
+                      : 'Could not clear original files.',
+                  ),
+                );
+              }}
+              title="Delete retained original file bytes. Extracted text and the graph stay."
+              style={buttonStyle}
+            >
+              Clear original files
+            </button>
+          </div>
+          {cacheNote && <p style={noteStyle}>{cacheNote}</p>}
           {!confirmClear ? (
             <button
               type="button"
@@ -640,6 +798,12 @@ export default function SettingsPanel() {
               {documentCount} document{documentCount === 1 ? '' : 's'}
               {topicCount > 0 && ` / ${topicCount} topic node${topicCount === 1 ? '' : 's'}`}
               {' / '}{edgeCount} connection{edgeCount === 1 ? '' : 's'}
+            </span>
+            <span style={detailLabelStyle}>Storage</span>
+            <span style={detailValueStyle}>
+              {storageLabel ?? 'Measuring…'}
+              {storageLevel === 'warn' && ' — getting full'}
+              {storageLevel === 'critical' && ' — nearly full'}
             </span>
             <span style={detailLabelStyle}>Last error</span>
             <span style={detailValueStyle}>

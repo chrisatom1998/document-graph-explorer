@@ -1,7 +1,7 @@
 # Consolidated Roadmap — Phases A–E + P
 
-**Date:** 2026-07-05
-**Status:** Approved; Phase A quick wins and Phase P import safety shipped July 2026
+**Date:** 2026-08-13
+**Status:** Living document; several originally-future items have shipped (folder watch, OCR, multi-corpus, snapshot compare, quota UI, source ingest).
 **Supersedes:** the sequencing of Phases 3-5 in `2026-07-04-improvement-program-design.md` (its content is folded in below). Sources: that program spec, a full-codebase cloud review, and a production-readiness gap analysis. Some original spot-checks have since shipped and are marked below.
 
 **Standing constraints (bind every phase):** airgap gates (sanitize/verify/CI) intact; no telemetry ever; new ML/wasm assets self-hosted; enrichment opt-in; no renaming of internal `knowledge-nebula` storage slugs without migration; each phase = spec/plan → subagent implementation → per-task review → final whole-branch review → merge to main.
@@ -33,18 +33,21 @@
 ## Phase D — Reach (= program Phase 4)
 17. Accessibility: node-list roving-focus nav, panel ARIA + focus restore, `aria-live` (chat/toasts/progress), SearchOverlay focus trap.
 18. Bundle diet: manualChunks, lazy pdf.js, panel lazy-load, CI bundle-size assertion (main chunk currently 2.09 MB).
-19. IndexedDB quota resilience (`storage.estimate()`, selective caching) + scoped hover recolor (perf at 4k nodes).
+19. **Shipped August 2026:** IndexedDB quota meter (`storage.estimate()`), selective embedding/original eviction, ingest warning at ≥90% origin quota.
 
 ## Phase E — Product depth
 20. Chat: per-corpus persistence; history-aware extractive answers; retrieval transparency.
-21. Snapshot diff/compare; non-destructive snapshot load.
-22. Search↔filter unification; edge-kind + date facets.
+21. **Shipped August 2026:** Snapshot visual compare (added/updated paint + removed titles) plus quantitative summary.
+22. **Shipped August 2026:** Search↔filter unification; edge-kind + recency facets.
 23. Legend/help popover; shortcut cheatsheet.
 24. `noUncheckedIndexedAccess` migration (module-by-module).
-25. OCR for scanned PDFs (self-hosted Tesseract; stretch).
+25. **Shipped:** OCR for scanned PDFs (self-hosted Tesseract). **August 2026:** language + page-cap settings; extra packs drop into `public/ocr/lang/`.
 
-## Deferred
-Shareable snapshot URLs, multi-corpus workspaces, folder watching, Notion/Confluence export, plugin API. 2D toggle shipped in July 2026.
+## Also shipped (originally deferred)
+Shareable graph URLs, multi-corpus workspaces, folder watching, source-code / repository ingest, first-run tour, 2D toggle.
+
+## Still deferred
+Notion/Confluence export, plugin API. A second self-hosted multilingual embedding model is not bundled (BGE-small remains English); Settings offers a language-neutral query prefix instead.
 
 ## Strengths to preserve (do not regress)
 Three-level dup detection; incremental parse/embed with cache hits; transferable-buffer recycling; dirty-flag rendering; chat streaming retry/cancel/block-reason handling; crash-safe auto-save ordering; CI-enforced airgap guarantee.

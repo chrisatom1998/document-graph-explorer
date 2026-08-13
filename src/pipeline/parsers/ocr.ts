@@ -9,6 +9,7 @@
  */
 
 import type { PDFDocumentProxy } from 'pdfjs-dist';
+import { currentOcrLanguage } from '../ocrOptions';
 
 const OCR_WORKER_PATH = '/ocr/worker.min.js';
 const OCR_CORE_PATH = '/ocr/core';
@@ -128,7 +129,7 @@ async function runOcr(
     OCR_ENGINE_START_TIMEOUT_MS,
     'Loading the OCR engine',
   );
-  const workerPromise = createWorker('eng', undefined, {
+  const workerPromise = createWorker(currentOcrLanguage(), undefined, {
     workerPath: OCR_WORKER_PATH,
     corePath: OCR_CORE_PATH,
     langPath: OCR_LANGUAGE_PATH,

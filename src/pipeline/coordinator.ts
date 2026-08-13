@@ -30,6 +30,7 @@ import {
   TOPIC_MIN_DOCS,
 } from '../config';
 import { embeddingQueryText } from '../ai/embeddingPolicy';
+import { estimateStorage, formatStorageSummary, storagePressure } from '../persistence/quota';
 import type {
   AggRequest,
   AggResponse,
@@ -83,6 +84,7 @@ import {
 } from '../store/runtimeStores';
 import { useChatStore } from '../store/chatStore';
 import { cancelChat } from '../chat/chatCancellation';
+import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 import { getPool, type WorkerPool } from '../workers/pool';
 import { stripBoilerplate } from './boilerplate';
@@ -353,9 +355,20 @@ interface PendingFile {
   original: Blob;
 }
 
+async function warnIfStorageCritical(): Promise<void> {
+  const estimate = await estimateStorage();
+  if (!estimate) return;
+  if (storagePressure(estimate) !== 'critical') return;
+  useUiStore.getState().pushToast(
+    `Browser storage is nearly full (${formatStorageSummary(estimate)}). Session caching may fail — turn off embedding cache or clear originals in Settings.`,
+    'warning',
+  );
+}
+
 async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<void> {
   wireModelProgress();
   throwIfAborted(signal);
+  void warnIfStorageCritical();
   const store = useGraphStore.getState; // fresh state per call; actions are stable
 
   // (a) route by extension; unsupported → ignored tray
@@ -1576,7 +1589,7 @@ export async function embedQuery(text: string): Promise<Float32Array> {
   const done = await getPool().request<EmbedQueryDone>({
     requestId: 0,
     type: 'embedQuery',
-    text: embeddingQueryText(text),
+    text: embeddingQueryText(text, useSettingsStore.getState().embeddingQueryStyle),
   });
   return done.vector;
 }

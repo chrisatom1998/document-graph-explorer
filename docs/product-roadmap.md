@@ -1,7 +1,7 @@
 # Document Graph Explorer — Product Roadmap
 
 **Owner:** Chris Johnson  
-**Last Updated:** July 13, 2026
+**Last Updated:** August 13, 2026
 
 ---
 
@@ -44,6 +44,9 @@ Make internal documentation **explorable, connected, and alive** — transformin
 | Multi-corpus workspaces | ✅ Shipped | July 2026 |
 | Local OCR fallback for scanned PDFs | ✅ Shipped | July 2026 |
 | Annotation layer (notes, tags, pins per document) | ✅ Shipped | July 2026 |
+| Source-code / repository ingest (gitignore + import edges) | ✅ Shipped | August 2026 |
+| Visual snapshot compare + quantitative diff | ✅ Shipped | August 2026 |
+| Edge-kind and recency filters (search ∩ filter) | ✅ Shipped | August 2026 |
 
 ### Key Results
 - **50 files → useful graph in <30s** on mid-tier hardware
@@ -61,9 +64,9 @@ Make internal documentation **explorable, connected, and alive** — transformin
 
 | Feature | Priority | Business Value |
 |---|---|---|
-| **Snapshot diff view** | High | Compare two snapshots visually — see what docs/connections changed over time. Enables documentation health tracking. |
-| **Guided onboarding tour** | Medium | Interactive walkthrough for first-time users — drag, search, explore. Reduces support burden. |
+| **Guided onboarding tour** | ✅ Shipped | Interactive walkthrough for first-time users. |
 | **Keyboard navigation** | Low | Full keyboard support for navigating nodes, edges, and panels. Accessibility compliance. |
+| **PWA install** | ✅ Shipped | Add-to-home-screen / standalone display via a same-origin web app manifest (no service worker). |
 
 ---
 
@@ -75,7 +78,8 @@ Make internal documentation **explorable, connected, and alive** — transformin
 
 | Feature | Priority | Business Value |
 |---|---|---|
-| **Comparative analytics** | Medium | Quantitative comparison between snapshots: "12 new docs, 3 removed, 47 new connections since last month" |
+| **Comparative analytics** | ✅ Shipped | Snapshot compare reports added/removed/updated docs and connection churn, and paints the live graph. |
+| **Quota-aware caching** | ✅ Shipped | Settings shows origin storage use; embedding and original-file caches can be cleared independently. |
 | **Export to Notion/Confluence** | Low | Push graph structure and summaries into existing wiki platforms |
 | **Plugin API** | Low | Allow custom parsers, enrichment providers, and visualization modes |
 
@@ -87,7 +91,7 @@ Make internal documentation **explorable, connected, and alive** — transformin
 Document Graph Explorer's client-side architecture is a **competitive differentiator**. Enterprises with sensitive documentation (legal, financial, healthcare) need tools that don't require uploading documents to third-party servers. Every feature is designed to work fully offline.
 
 ### 2. Intelligence Without API Keys
-Local semantic embeddings (transformers.js) provide real AI-powered connections without requiring users to configure API keys or incur per-request costs. The optional Gemini enrichment adds value but is never required.
+Local semantic embeddings (transformers.js, BGE-small) provide real AI-powered connections without requiring users to configure API keys or incur per-request costs. Optional OpenRouter or local Ollama enrichment adds value but is never required.
 
 ### 3. Visual-First Knowledge Management
 Traditional documentation tools are text-first. Document Graph Explorer inverts this — the primary interface is spatial and visual. Users build a mental model of their documentation landscape through exploration, not reading.
@@ -102,11 +106,11 @@ No accounts, no installations, no configuration. Drop files → see your knowled
 | Dependency | Risk Level | Mitigation |
 |---|---|---|
 | WebGPU browser support (for fast embeddings) | Low | Falls back to WASM backend; performance degrades gracefully |
-| IndexedDB quota limits | Medium | Large corpora (1000+ docs with embeddings) may hit ~500MB limits on some browsers. Future: offer selective caching. |
-| PDF/OCR extraction quality | Medium | PDFs with little embedded text fall back to bundled English OCR, capped at the first 20 pages. Unreadable status and warnings remain when extraction is insufficient. |
+| IndexedDB quota limits | Medium | Large corpora (1000+ docs with embeddings) may hit origin quota. Settings shows usage; embedding cache and original-file bytes can be dropped independently. |
+| PDF/OCR extraction quality | Medium | PDFs with little embedded text fall back to bundled English OCR (other Tesseract packs optional). Page cap is configurable. Unreadable status and warnings remain when extraction is insufficient. |
 | File System Access browser support | Medium | Live folder polling is offered only in supporting browsers and while the app is open; one-time drag-and-drop remains the universal fallback. |
 | Share-link size and disclosure | Medium | Links use bounded, sanitized URL fragments and require confirmation. Oversized graphs fall back to JSON export; original bytes, paths, and embeddings are excluded. |
-| Gemini API pricing changes | Low | Enrichment is optional. Core tool works without any API. |
+| OpenRouter / Ollama availability | Low | Enrichment and cloud chat are optional. Core tool works without any API. |
 
 ---
 

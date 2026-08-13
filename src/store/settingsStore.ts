@@ -10,6 +10,42 @@
 import { create } from 'zustand';
 const STORAGE_KEY = 'knowledge-nebula-settings';
 
+export type EmbeddingQueryStyle = 'english' | 'neutral';
+export type OcrLanguageId =
+  | 'eng'
+  | 'spa'
+  | 'fra'
+  | 'deu'
+  | 'por'
+  | 'ita'
+  | 'nld'
+  | 'rus'
+  | 'chi_sim'
+  | 'jpn';
+export type OcrMaxPages = 10 | 20 | 40 | 80;
+
+const OCR_LANGUAGE_IDS: ReadonlySet<string> = new Set([
+  'eng',
+  'spa',
+  'fra',
+  'deu',
+  'por',
+  'ita',
+  'nld',
+  'rus',
+  'chi_sim',
+  'jpn',
+]);
+const OCR_MAX_PAGES_VALUES: ReadonlySet<number> = new Set([10, 20, 40, 80]);
+
+function isOcrLanguage(value: unknown): value is OcrLanguageId {
+  return typeof value === 'string' && OCR_LANGUAGE_IDS.has(value);
+}
+
+function isOcrMaxPages(value: unknown): value is OcrMaxPages {
+  return typeof value === 'number' && OCR_MAX_PAGES_VALUES.has(value);
+}
+
 interface PersistedSettings {
   chatProvider: ChatProvider;
   enrichProvider: EnrichProvider;
@@ -22,6 +58,12 @@ interface PersistedSettings {
   enrichEnabled: boolean;
   includeEmbeddingsInExport: boolean;
   offlineMode: boolean;
+  /** Persist chunk/doc vectors in IndexedDB (off = smaller quota, re-embed on reload). */
+  cacheEmbeddings: boolean;
+  /** English instruction prefix vs raw query text for the bundled BGE model. */
+  embeddingQueryStyle: EmbeddingQueryStyle;
+  ocrLanguage: OcrLanguageId;
+  ocrMaxPages: OcrMaxPages;
 }
 
 export type ChatProvider = 'local' | 'openrouter' | 'ollama';
@@ -50,6 +92,10 @@ export interface SettingsState extends PersistedSettings {
   setEnrichEnabled: (enabled: boolean) => void;
   setIncludeEmbeddingsInExport: (include: boolean) => void;
   setOfflineMode: (offline: boolean) => void;
+  setCacheEmbeddings: (cache: boolean) => void;
+  setEmbeddingQueryStyle: (style: EmbeddingQueryStyle) => void;
+  setOcrLanguage: (lang: OcrLanguageId) => void;
+  setOcrMaxPages: (pages: OcrMaxPages) => void;
 }
 
 const DEFAULTS: PersistedSettings = {
@@ -64,6 +110,10 @@ const DEFAULTS: PersistedSettings = {
   enrichEnabled: false,
   includeEmbeddingsInExport: false,
   offlineMode: false,
+  cacheEmbeddings: true,
+  embeddingQueryStyle: 'english',
+  ocrLanguage: 'eng',
+  ocrMaxPages: 20,
 };
 
 function loadPersisted(): PersistedSettings {
@@ -139,6 +189,16 @@ function loadPersisted(): PersistedSettings {
           : DEFAULTS.includeEmbeddingsInExport,
       offlineMode:
         typeof parsed.offlineMode === 'boolean' ? parsed.offlineMode : DEFAULTS.offlineMode,
+      cacheEmbeddings:
+        typeof parsed.cacheEmbeddings === 'boolean'
+          ? parsed.cacheEmbeddings
+          : DEFAULTS.cacheEmbeddings,
+      embeddingQueryStyle:
+        parsed.embeddingQueryStyle === 'neutral' || parsed.embeddingQueryStyle === 'english'
+          ? parsed.embeddingQueryStyle
+          : DEFAULTS.embeddingQueryStyle,
+      ocrLanguage: isOcrLanguage(parsed.ocrLanguage) ? parsed.ocrLanguage : DEFAULTS.ocrLanguage,
+      ocrMaxPages: isOcrMaxPages(parsed.ocrMaxPages) ? parsed.ocrMaxPages : DEFAULTS.ocrMaxPages,
     };
     // Eagerly rewrite storage when it still carries fields from removed
     // features (the Gemini key/model era) or a session-only OpenRouter key.
@@ -185,6 +245,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setIncludeEmbeddingsInExport: (includeEmbeddingsInExport) =>
     set({ includeEmbeddingsInExport }),
   setOfflineMode: (offlineMode) => set({ offlineMode }),
+  setCacheEmbeddings: (cacheEmbeddings) => set({ cacheEmbeddings }),
+  setEmbeddingQueryStyle: (embeddingQueryStyle) => set({ embeddingQueryStyle }),
+  setOcrLanguage: (ocrLanguage) => set({ ocrLanguage }),
+  setOcrMaxPages: (ocrMaxPages) => set({ ocrMaxPages }),
 }));
 
 // Persist on every change (tiny payload; no middleware needed). Turning
@@ -203,6 +267,10 @@ useSettingsStore.subscribe((s) => {
       enrichEnabled: s.enrichEnabled,
       includeEmbeddingsInExport: s.includeEmbeddingsInExport,
       offlineMode: s.offlineMode,
+      cacheEmbeddings: s.cacheEmbeddings,
+      embeddingQueryStyle: s.embeddingQueryStyle,
+      ocrLanguage: s.ocrLanguage,
+      ocrMaxPages: s.ocrMaxPages,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
   } catch {

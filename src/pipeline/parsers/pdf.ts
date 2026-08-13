@@ -10,7 +10,7 @@
  */
 
 import * as pdfjs from 'pdfjs-dist';
-import { OCR_MAX_PAGES } from '../../config';
+import { currentOcrMaxPages } from '../ocrOptions';
 import type { LinkRef, NodeStatus } from '../../model/types';
 import { cleanFilename } from './txt';
 import { ocrPdfPages, type OcrPageProgress } from './ocr';
@@ -348,10 +348,11 @@ async function parsePdfNow(
       // fallback must rasterize from the still-open PDFDocumentProxy before
       // the loading task is destroyed in `finally`.
       try {
-        const ocrText = (await ocrPdfPages(doc, OCR_MAX_PAGES, options.onOcrProgress)).trim();
+        const ocrMaxPages = currentOcrMaxPages();
+        const ocrText = (await ocrPdfPages(doc, ocrMaxPages, options.onOcrProgress)).trim();
         if (ocrText.length >= MIN_TEXT_CHARS) {
           const pageLimitNote =
-            doc.numPages > OCR_MAX_PAGES ? `; first ${OCR_MAX_PAGES} pages only` : '';
+            doc.numPages > ocrMaxPages ? `; first ${ocrMaxPages} pages only` : '';
           return {
             title,
             text: ocrText,

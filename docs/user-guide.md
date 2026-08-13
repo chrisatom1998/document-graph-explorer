@@ -139,7 +139,7 @@ Appears once the graph has nodes, and can be dragged anywhere by its grip handle
 | **How are these connected?** | Path mode — pick two nodes, see the route |
 | **Corpus insights** | Orphans, duplicates, bridges, stale docs |
 | **Saved snapshots** | Save, reload, and visually compare graph states |
-| **Settings** | AI enrichment, offline mode, performance, data |
+| **Settings** | AI enrichment, recognition, storage, performance, data |
 | **＋ Add files** | File picker |
 
 ## Search (`Ctrl+K` / `⌘K`)
@@ -225,6 +225,10 @@ Toolbar → **Saved snapshots**. Type a name (a sensible default is pre-filled) 
 ## Sessions & your data
 
 Everything persists automatically to your browser's IndexedDB: the session saves itself shortly after the graph is ready, and again once the layout settles, so the next launch restores your corpus — same shape, same positions — in a few seconds, fully offline. Re-parsing only happens for new or changed files.
+
+Settings → **About** shows how much of this origin's browser storage the app is using. Settings → **Data** can drop **cached embeddings** (reload then re-embeds from saved text) or **original files** (Open falls back to the text viewer) without wiping the graph. Uncheck **Cache embeddings for instant reload** to stop writing vectors and free space on large corpora.
+
+Settings → **Recognition** picks scanned-PDF OCR language and page cap, and whether semantic search uses BGE's English instruction prefix or a language-neutral query.
 
 Settings → **Data** → **Clear all data** (two-step confirm) wipes the graph and every cached document, embedding, and snapshot; your settings and API key are kept.
 
