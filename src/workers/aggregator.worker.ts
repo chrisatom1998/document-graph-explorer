@@ -141,7 +141,7 @@ async function handleSemantic(req: Extract<AggRequest, { type: 'semantic' }>): P
   const { ids, vectors, dims, existingEdges, params } = req;
 
   const index = await buildSemanticIndexChunked(ids, vectors, dims, params, (progress) => {
-    ctx.postMessage({
+    self.postMessage({
       requestId: req.requestId,
       type: 'semantic:progress',
       processed: progress.processed,
