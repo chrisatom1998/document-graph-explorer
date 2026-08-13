@@ -26,6 +26,12 @@ import {
   getCorpusRecord,
   updateCorpusAnnotations,
 } from '../persistence/corpusRepository';
+import {
+  MAX_ANNOTATION_RECORDS,
+  isValidAnnotationKey,
+  sanitizeAnnotationMap,
+  sanitizeAnnotationRecord,
+} from './annotationSanitize';
 
 const SAVE_DEBOUNCE_MS = 350;
 const RETRY_AFTER_FAILURE_MS = 15_000;
@@ -61,24 +67,14 @@ function isHusk(a: DocAnnotationRecord): boolean {
   return a.note.trim() === '' && a.tags.length === 0 && !a.pinned;
 }
 
-/** Persisted records cross a trust boundary — normalize shape on the way in. */
+/**
+ * Persisted and peer-supplied records cross a trust boundary — normalize shape
+ * and bound size on the way in (see annotationSanitize.ts for the limits).
+ */
 function sanitize(
   raw: Record<string, DocAnnotationRecord> | undefined,
 ): Record<string, DocAnnotationRecord> {
-  const out: Record<string, DocAnnotationRecord> = {};
-  if (!raw || typeof raw !== 'object') return out;
-  for (const [key, value] of Object.entries(raw)) {
-    if (!value || typeof value !== 'object') continue;
-    out[key] = {
-      note: typeof value.note === 'string' ? value.note : '',
-      tags: Array.isArray(value.tags)
-        ? value.tags.filter((t): t is string => typeof t === 'string')
-        : [],
-      pinned: value.pinned === true,
-      updatedAt: typeof value.updatedAt === 'number' ? value.updatedAt : 0,
-    };
-  }
-  return out;
+  return sanitizeAnnotationMap(raw);
 }
 
 interface AnnotationState {
@@ -209,8 +205,15 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   applyRemote: (key, annotation) => {
     const { scope, annotations } = get();
     if (!scope) return;
+    if (!isValidAnnotationKey(key)) return;
+    // Peers apply one key at a time, so the map-wide cap in sanitize() never
+    // sees them as a batch. Refuse only NEW keys once full: edits and deletes
+    // of records already held must keep working, or a full store would freeze
+    // out the legitimate collaborator too.
+    const isNew = !(key in annotations);
+    if (annotation && isNew && Object.keys(annotations).length >= MAX_ANNOTATION_RECORDS) return;
     const nextAll = { ...annotations };
-    const next = annotation ? sanitize({ [key]: annotation })[key] : undefined;
+    const next = annotation ? sanitizeAnnotationRecord(annotation) : null;
     if (!next || isEmpty(next)) delete nextAll[key];
     else nextAll[key] = next;
     set({ annotations: nextAll });

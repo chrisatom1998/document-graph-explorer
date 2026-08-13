@@ -12,6 +12,7 @@ import { WebrtcProvider } from 'y-webrtc';
 import { AIRGAP, AIRGAP_MESSAGE } from '../airgap';
 import { isOffline } from '../offline';
 import type { DocAnnotationRecord } from '../persistence/db';
+import { sanitizeAnnotationMap } from '../store/annotationSanitize';
 
 export const COLLAB_FRAGMENT_PREFIX = '#collab=v1.';
 export const DEFAULT_COLLAB_SIGNALING = ['wss://signaling.yjs.dev'];
@@ -134,25 +135,13 @@ export function hydrateAnnotationMap(
   annotations: Record<string, DocAnnotationRecord>,
 ): void {
   map.clear();
-  for (const [key, value] of Object.entries(annotations ?? {})) {
-    map.set(key, {
-      note: typeof value.note === 'string' ? value.note : '',
-      tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string') : [],
-      pinned: value.pinned === true,
-      updatedAt: typeof value.updatedAt === 'number' ? value.updatedAt : Date.now(),
-    });
+  for (const [key, value] of Object.entries(sanitizeAnnotationMap(annotations, Date.now()))) {
+    map.set(key, value);
   }
 }
 
 export function snapshotAnnotationMap(map: Y.Map<DocAnnotationRecord>): Record<string, DocAnnotationRecord> {
-  const next: Record<string, DocAnnotationRecord> = {};
-  for (const [key, value] of map.entries()) {
-    next[key] = {
-      note: typeof value.note === 'string' ? value.note : '',
-      tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string') : [],
-      pinned: value.pinned === true,
-      updatedAt: typeof value.updatedAt === 'number' ? value.updatedAt : 0,
-    };
-  }
-  return next;
+  // Every value here was authored by a peer, so it is bounded on the way out
+  // of the shared doc as well as on the way in.
+  return sanitizeAnnotationMap(Object.fromEntries(map.entries()));
 }

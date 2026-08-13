@@ -10,6 +10,12 @@ vi.mock('../persistence/corpusRepository', () => ({
 }));
 
 import {
+  MAX_ANNOTATION_KEY_CHARS,
+  MAX_ANNOTATION_NOTE_CHARS,
+  MAX_ANNOTATION_RECORDS,
+  MAX_ANNOTATION_TAGS,
+} from './annotationSanitize';
+import {
   _resetAnnotationsForTests,
   annotationKey,
   ensureAnnotationsLoaded,
@@ -93,6 +99,58 @@ describe('annotationStore', () => {
     await vi.advanceTimersByTimeAsync(400);
     const [, deletePatch] = updateCorpusAnnotationsMock.mock.calls.at(-1)!;
     expect(deletePatch.doc).toBeNull();
+  });
+
+  it('bounds an oversized record pushed by a peer', async () => {
+    await ensureAnnotationsLoaded('corpus-1');
+    useAnnotationStore.getState().applyRemote('doc', {
+      note: 'x'.repeat(MAX_ANNOTATION_NOTE_CHARS + 1000),
+      tags: Array.from({ length: MAX_ANNOTATION_TAGS + 10 }, (_, i) => `tag-${i}`),
+      pinned: false,
+      updatedAt: 10,
+    });
+    const stored = useAnnotationStore.getState().annotations.doc!;
+    expect(stored.note).toHaveLength(MAX_ANNOTATION_NOTE_CHARS);
+    expect(stored.tags).toHaveLength(MAX_ANNOTATION_TAGS);
+  });
+
+  it('refuses new remote keys at capacity but keeps serving existing ones', async () => {
+    const annotations: Record<string, unknown> = {};
+    for (let i = 0; i < MAX_ANNOTATION_RECORDS; i++) {
+      annotations[`key-${i}`] = { note: 'n', tags: [], pinned: false, updatedAt: 1 };
+    }
+    getCorpusRecordMock.mockResolvedValue({ annotations });
+    await ensureAnnotationsLoaded('corpus-full');
+
+    // A peer cannot grow the store past the cap...
+    useAnnotationStore
+      .getState()
+      .applyRemote('flood', { note: 'flood', tags: [], pinned: false, updatedAt: 5 });
+    expect(useAnnotationStore.getState().annotations.flood).toBeUndefined();
+
+    // ...but edits and deletes of records already held still apply, so a full
+    // store does not freeze out the legitimate collaborator.
+    useAnnotationStore
+      .getState()
+      .applyRemote('key-0', { note: 'edited', tags: [], pinned: false, updatedAt: 9 });
+    expect(useAnnotationStore.getState().annotations['key-0']?.note).toBe('edited');
+
+    useAnnotationStore.getState().applyRemote('key-1', null);
+    expect(useAnnotationStore.getState().annotations['key-1']).toBeUndefined();
+  });
+
+  it('ignores a remote write under an unusable key', async () => {
+    await ensureAnnotationsLoaded('corpus-1');
+    const before = { ...useAnnotationStore.getState().annotations };
+    useAnnotationStore
+      .getState()
+      .applyRemote('k'.repeat(MAX_ANNOTATION_KEY_CHARS + 1), {
+        note: 'n',
+        tags: [],
+        pinned: false,
+        updatedAt: 1,
+      });
+    expect(useAnnotationStore.getState().annotations).toEqual(before);
   });
 
   it('pending edits for the outgoing corpus land before re-hydration replaces them', async () => {
