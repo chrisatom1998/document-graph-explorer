@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { YMapEvent } from 'yjs';
 import { layoutEpoch, layoutSetDims, layoutSettledEpoch, onLayoutSettled } from '../layout/layoutBridge';
-import { cameraPose } from '../scene/cameraPose';
+import { cameraPose, faceLayoutPlane } from '../scene/cameraPose';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
 import type { DocAnnotationRecord } from '../persistence/db';
@@ -262,7 +262,11 @@ function deliverRemoteCameraPose(pending: PendingRemoteCamera): void {
   if (!session) return;
   if (pending.requireFollow && !followMode) return;
   if (!pending.requireFollow && pending.localCameraActivityEpoch !== localCameraActivityEpoch) return;
-  useUiStore.getState().sendCameraPose(resolveLocalFollowPose(pending));
+  let pose = resolveLocalFollowPose(pending);
+  if (useUiStore.getState().dims === 2) {
+    pose = faceLayoutPlane(pose.px, pose.py, pose.pz, pose.tx, pose.ty, pose.tz);
+  }
+  useUiStore.getState().sendCameraPose(pose);
 }
 
 function scheduleRemoteCameraPose(

@@ -15,3 +15,22 @@ export const cameraPose = {
   fov: 55, // vertical, degrees — sizes the minimap viewport box
   aspect: 16 / 9,
 };
+
+/**
+ * Place the camera on +Z of the current target so a 2D (z=0) layout is
+ * seen face-on. Polar-equator clamp alone keeps a leftover 3D azimuth,
+ * which can look edge-on at the flattened graph (blank main view, live
+ * minimap).
+ */
+export function faceLayoutPlane(
+  px: number,
+  py: number,
+  pz: number,
+  tx: number,
+  ty: number,
+  tz: number,
+  minDist = 40,
+): { px: number; py: number; pz: number; tx: number; ty: number; tz: number } {
+  const dist = Math.max(Math.hypot(px - tx, py - ty, pz - tz), minDist);
+  return { px: tx, py: ty, pz: tz + dist, tx, ty, tz };
+}

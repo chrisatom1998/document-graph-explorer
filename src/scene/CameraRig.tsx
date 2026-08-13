@@ -20,7 +20,7 @@ import { useUiStore } from '../store/uiStore';
 import { noteLocalCameraActivity, useCollabStore } from '../collab/store';
 import type { CameraCommand } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
-import { cameraPose } from './cameraPose';
+import { cameraPose, faceLayoutPlane } from './cameraPose';
 import { panInput } from './panInput';
 import { prefersReducedMotion } from '../util/motion';
 
@@ -52,13 +52,26 @@ export default function CameraRig() {
     typeof performance !== 'undefined' ? performance.now() : 0,
   );
 
-  // 2D mode: lock the polar angle to the equator while active (spec §7.3).
+  // 2D mode: lock the polar angle to the equator while active (spec §7.3)
+  // and face the XY layout plane so a leftover 3D azimuth is not edge-on.
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls) return;
     if (dims === 2) {
       controls.minPolarAngle = Math.PI / 2;
       controls.maxPolarAngle = Math.PI / 2;
+      const cam = controls.object;
+      const next = faceLayoutPlane(
+        cam.position.x,
+        cam.position.y,
+        cam.position.z,
+        controls.target.x,
+        controls.target.y,
+        controls.target.z,
+      );
+      cam.position.set(next.px, next.py, next.pz);
+      controls.target.set(next.tx, next.ty, next.tz);
+      controls.update();
     } else {
       controls.minPolarAngle = 0;
       controls.maxPolarAngle = Math.PI;

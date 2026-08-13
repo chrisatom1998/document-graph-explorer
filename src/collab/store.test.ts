@@ -163,7 +163,7 @@ describe('applySharedView', () => {
 
     fireSettled(layoutTest.postedEpoch);
     expect(delivered).toEqual([
-      { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+      { px: 4, py: 5, pz: 46, tx: 4, ty: 5, tz: 6 },
     ]);
   });
 
@@ -179,7 +179,7 @@ describe('applySharedView', () => {
 
     fireSettled(layoutTest.postedEpoch);
     expect(delivered).toEqual([
-      { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+      { px: 4, py: 5, pz: 46, tx: 4, ty: 5, tz: 6 },
     ]);
   });
 
@@ -221,7 +221,7 @@ describe('applySharedView', () => {
 
     fireSettled(layoutTest.postedEpoch);
     expect(delivered).toEqual([
-      { px: 1, py: 2, pz: 3, tx: 4, ty: 5, tz: 6 },
+      { px: 4, py: 5, pz: 46, tx: 4, ty: 5, tz: 6 },
     ]);
   });
 

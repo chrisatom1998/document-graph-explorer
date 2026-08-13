@@ -16,12 +16,36 @@
  * tension (luminanceThreshold here is the other half of that contract).
  */
 
-import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { Component, useMemo, useRef, type ErrorInfo, type ReactElement, type ReactNode } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import { Bloom, DepthOfField, EffectComposer, Vignette } from '@react-three/postprocessing';
 import type { DepthOfFieldEffect } from 'postprocessing';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
+import { shouldUseEffectComposer } from './composerSupport';
+
+/** Isolate composer throws so a pass-add cannot unmount the whole app. */
+class EffectsBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  override state = { failed: false };
+
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true };
+  }
+
+  override componentDidCatch(error: Error, info: ErrorInfo): void {
+    console.warn('Post-processing disabled after composer error', error, info.componentStack);
+    useUiStore.getState().setLastError({
+      message: error.message,
+      stack: [error.stack, info.componentStack].filter(Boolean).join('\n'),
+      at: Date.now(),
+    });
+  }
+
+  override render() {
+    if (this.state.failed) return null;
+    return this.props.children;
+  }
+}
 
 // Threshold/smoothing are half of the label-vs-bloom contract (Labels.tsx) —
 // intensity and radius are safe to tune; the threshold is not.
@@ -54,7 +78,7 @@ function FocusedDoF() {
   );
 }
 
-export default function Effects() {
+function EffectsChain() {
   const qualityTier = useUiStore((s) => s.qualityTier);
   const flat = useUiStore((s) => s.dims === 2);
   const dofOn = useUiStore(
@@ -87,8 +111,19 @@ export default function Effects() {
           radius={0.9}
         />
       )}
-      {dofOn ? <FocusedDoF /> : (null as unknown as React.ReactElement)}
+      {dofOn ? <FocusedDoF /> : (null as unknown as ReactElement)}
       <Vignette darkness={flat ? FLAT_VIGNETTE : 0.55} offset={0.18} />
     </EffectComposer>
+  );
+}
+
+export default function Effects() {
+  const gl = useThree((s) => s.gl);
+  const enabled = useMemo(() => shouldUseEffectComposer(gl), [gl]);
+  if (!enabled) return null;
+  return (
+    <EffectsBoundary>
+      <EffectsChain />
+    </EffectsBoundary>
   );
 }

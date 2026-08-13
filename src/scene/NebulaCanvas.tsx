@@ -24,6 +24,7 @@ import * as THREE from 'three';
 import { useUiStore } from '../store/uiStore';
 import { registerSceneCapture } from './sceneCapture';
 import { FLAT_BG } from './palette';
+import { patchContextAttributes } from './composerSupport';
 import CameraRig from './CameraRig';
 import Starfield from './Starfield';
 import NebulaClouds from './NebulaClouds';
@@ -106,6 +107,9 @@ export default function NebulaCanvas() {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.08;
+        // postprocessing reads getContextAttributes().alpha when adding a
+        // pass; software / lost contexts can return null and crash render.
+        patchContextAttributes(gl);
       }}
       onPointerMissed={() => {
         // Clicking empty space dismisses whatever is selected.
