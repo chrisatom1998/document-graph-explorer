@@ -59,6 +59,23 @@ jobs:
           "
           test -f docker/downloads/Document\ Graph\ Explorer.exe || (echo "exe was not staged for Docker downloads" && exit 1)
 
+  viewport-camera-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Viewport camera smoke
+        run: npx vitest run src/scene/cameraFocusPolicy.test.ts
+
   docker:
     runs-on: ubuntu-latest
     steps:
