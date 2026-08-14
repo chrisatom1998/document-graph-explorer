@@ -318,10 +318,14 @@ export default function Minimap() {
       const sceneDue = now - lastSceneAt >= SCENE_MS;
       if (!poseChanged && !sceneDue) return;
       let sceneDrawn = false;
-      if (sceneDue && sceneNeedsRedraw()) {
-        drawScene();
+      if (sceneDue) {
+        if (sceneNeedsRedraw()) {
+          drawScene();
+          sceneDrawn = true;
+        }
+        // Advance the cadence even when nothing needed redrawing, so the
+        // change check itself stays at SCENE_MS instead of running every rAF.
         lastSceneAt = now;
-        sceneDrawn = true;
       }
       // Nothing moved and the map is current — skip the composite too.
       if (!poseChanged && !sceneDrawn) return;

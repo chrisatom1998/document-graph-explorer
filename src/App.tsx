@@ -80,12 +80,15 @@ export default function App() {
 
   // Sticky readiness: re-ingests cycle `phase` back through parsing/linking,
   // and gating the chrome on `phase === 'ready'` directly would unmount and
-  // remount every panel each time, replaying their entry animations.
-  const [chromeReady, setChromeReady] = useState(false);
-  useEffect(() => {
-    if (phase === 'ready') setChromeReady(true);
-    else if (phase === 'idle' && !hasNodes) setChromeReady(false);
-  }, [phase, hasNodes]);
+  // remount every panel each time, replaying their entry animations. The flag
+  // is adjusted DURING render (not in an effect) so it can never trail the
+  // store by a paint — an effect-based flip left the chrome mounted for one
+  // frame on top of a freshly-reset empty state, and one frame late on first
+  // ready. React re-renders immediately on a render-time set, before commit.
+  const [chromeWasReady, setChromeWasReady] = useState(false);
+  const chromeReady =
+    phase === 'ready' || (chromeWasReady && !(phase === 'idle' && !hasNodes));
+  if (chromeReady !== chromeWasReady) setChromeWasReady(chromeReady);
 
   // Session restore + persistence hooks, once. Fresh starts stay empty until
   // the user adds files or explicitly loads the demo corpus from EmptyState.
