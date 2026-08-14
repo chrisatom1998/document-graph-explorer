@@ -3,22 +3,10 @@ import { settleBloomBoost, triggerSettleCue } from './settleCue';
 
 describe('settleCue', () => {
   afterEach(() => {
-    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
   it('returns a decaying bloom boost after trigger', () => {
-    vi.spyOn(window, 'matchMedia').mockReturnValue({
-      matches: false,
-      media: '',
-      onchange: null,
-      addListener: () => {},
-      removeListener: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: () => false,
-    } as MediaQueryList);
-
     const t0 = 1_000_000;
     vi.spyOn(performance, 'now').mockReturnValue(t0);
     triggerSettleCue();
