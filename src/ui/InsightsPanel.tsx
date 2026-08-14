@@ -76,6 +76,15 @@ export default function InsightsPanel() {
   // fresh result must not immediately re-trigger the request effect).
   const analysisRef = useRef<InsightsResult | null>(null);
 
+  // A corpus switch invalidates the previous corpus's analysis entirely:
+  // clear it (and the ref) so stale results don't linger on screen and the
+  // first-load spinner shows again for the new corpus.
+  useEffect(() => {
+    analysisRef.current = null;
+    setAnalysis(null);
+    setAnalysisFailed(false);
+  }, [corpusId]);
+
   useEffect(() => {
     if (!open || corpusMode !== 'local' || !corpusId) return;
     void ensureAnnotationsLoaded(corpusId);

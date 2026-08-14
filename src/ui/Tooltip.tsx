@@ -58,14 +58,15 @@ export default function Tooltip() {
   }, []);
 
   // Measure once per content change, then position before the browser paints —
-  // the card must never be visible at its un-translated origin.
+  // the card must never be visible at its un-translated origin. Deps cover
+  // everything that can change the card's rendered size or presence.
   useLayoutEffect(() => {
     const el = elRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     sizeRef.current = { width: rect.width, height: rect.height };
     place(el);
-  });
+  }, [visible, node, pathMode]);
 
   if (!visible || !node) return null;
 
