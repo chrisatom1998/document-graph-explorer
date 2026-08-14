@@ -114,7 +114,7 @@ function createRequestHandler(root, options = {}) {
       return;
     }
 
-    let stats = null;
+    let stats;
     try {
       stats = statSync(target);
     } catch {
