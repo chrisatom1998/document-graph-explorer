@@ -39,6 +39,7 @@ import {
 } from './positionBuffer';
 import { clusterColor, FLAT_NODE, FLAT_NODE_CLUSTER_BLEND } from './palette';
 import { prefersReducedMotion } from '../util/motion';
+import { startNodeDragLifecycle } from './nodeDragLifecycle';
 
 // ---------------------------------------------------------------------------
 // Shared slot metadata (imported by Edges/EdgePulses/Labels)
@@ -218,6 +219,7 @@ export default function Nodes() {
   const lastVersion = useRef(-1);
   const lastCount = useRef(-1);
   const dragRef = useRef<DragState | null>(null);
+  const finishDragRef = useRef<(() => void) | null>(null);
 
   // ---- per-slot metadata from the graph store --------------------------------
   const refreshSlotMeta = (): void => {
@@ -397,17 +399,14 @@ export default function Nodes() {
       }
     };
     const onUp = (): void => {
-      if (!dragRef.current) return;
-      dragRef.current = null; // node STAYS pinned (drag fixes; dblclick releases)
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      const controls = rootGet().controls as unknown as OrbitControlsImpl | null;
-      if (controls) controls.enabled = true;
-      document.body.style.cursor = '';
+      finishDragRef.current?.();
     };
     const start = (id: string, startX: number, startY: number): void => {
       const slot = slotOfId.get(id);
       if (slot === undefined) return;
+      // Defensive reset in case a second pointer begins before the browser
+      // delivered the first pointer's end signal.
+      finishDragRef.current?.();
       const arr = positionBuffer.array;
       dragOrigin.set(arr[slot * 3], arr[slot * 3 + 1], arr[slot * 3 + 2]);
       rootGet().camera.getWorldDirection(dragNormal);
@@ -415,12 +414,22 @@ export default function Nodes() {
       dragRef.current = { id, lastPin: 0, startX, startY, engaged: false };
       const controls = rootGet().controls as unknown as OrbitControlsImpl | null;
       // Orbit goes off immediately (not at the threshold) so a plain click can
-      // never nudge the camera; onUp re-enables it either way.
-      if (controls) controls.enabled = false;
+      // never nudge the camera. The shared lifecycle restores it for release,
+      // cancellation, focus loss, or component cleanup.
       // The grabbing cursor waits for the threshold — showing it during a plain
       // click would promise a drag that isn't happening.
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
+      let finish = (): void => {};
+      finish = startNodeDragLifecycle({
+        target: window,
+        controls,
+        onMove,
+        onFinish: () => {
+          dragRef.current = null; // node STAYS pinned (drag fixes; dblclick releases)
+          document.body.style.cursor = '';
+          if (finishDragRef.current === finish) finishDragRef.current = null;
+        },
+      });
+      finishDragRef.current = finish;
     };
     return { start, onMove, onUp };
   }, [rootGet]);
