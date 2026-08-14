@@ -97,6 +97,7 @@ export default function NebulaCanvas() {
     <Canvas
       className="nebula-canvas"
       role="application"
+      tabIndex={-1}
       aria-label="Interactive document graph. Drag to orbit, use toolbar buttons for search, filtering, path finding and view controls."
       style={{ position: 'fixed', inset: 0 }}
       dpr={INITIAL_DPR}

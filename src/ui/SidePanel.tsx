@@ -74,7 +74,14 @@ export default function SidePanel() {
       if (previouslyFocused && previouslyFocused !== document.body && previouslyFocused.isConnected) {
         previouslyFocused.focus();
       } else {
-        document.querySelector<HTMLElement>('.graph-navigator__list')?.focus();
+        // A canvas click leaves document.body as the active element. Sending
+        // focus to GraphNavigator here made its normally-hidden panel slide
+        // over most of compact viewports and intercept both orbit and node
+        // clicks. Return focus to the graph surface instead; tabIndex=-1 keeps
+        // it out of the normal keyboard order while allowing this restoration.
+        const graphSurface = document.querySelector<HTMLElement>('.nebula-canvas');
+        if (graphSurface) graphSurface.focus({ preventScroll: true });
+        else document.querySelector<HTMLElement>('.graph-navigator__list')?.focus();
       }
     };
   }, [nodeId]);
