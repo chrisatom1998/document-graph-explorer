@@ -54,7 +54,8 @@ interface SpotlightRect {
 /** Dragged guide position, persisted across reloads (same contract as the toolbar). */
 const POS_KEY = 'knowledge-nebula-first-run-guide-pos';
 const GUIDE_MARGIN = 18;
-const GUIDE_MINIMAP_CLEARANCE = 154;
+/** Matches CSS `right: 236px` — clears the bottom-right minimap (200 + 10 pad + 8 gap). */
+const GUIDE_RIGHT_INSET = 236;
 
 function loadGuidePos(): { x: number; y: number } | null {
   try {
@@ -94,11 +95,11 @@ function placeGuide(el: HTMLElement, x: number, y: number): { x: number; y: numb
   return { x: cx, y: cy };
 }
 
-/** Bottom-right resting spot, measured from the live element size. */
+/** Bottom-right resting spot, left of the minimap, measured from the live element size. */
 function defaultGuidePos(el: HTMLElement): { x: number; y: number } {
   const { width, height } = el.getBoundingClientRect();
   return {
-    x: window.innerWidth - width - GUIDE_MARGIN - GUIDE_MINIMAP_CLEARANCE,
+    x: window.innerWidth - width - GUIDE_RIGHT_INSET,
     y: window.innerHeight - height - GUIDE_MARGIN,
   };
 }
