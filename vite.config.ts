@@ -110,5 +110,6 @@ export default defineConfig(({ mode }) => ({
   test: {
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}', 'agent/**/*.test.js'],
+    setupFiles: ['src/test/setup.ts'],
   },
 }));

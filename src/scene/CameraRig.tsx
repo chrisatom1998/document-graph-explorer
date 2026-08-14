@@ -24,10 +24,10 @@ import { cameraPose } from './cameraPose';
 import { panInput } from './panInput';
 import { prefersReducedMotion } from '../util/motion';
 import { commitPendingFocusIf } from '../ui/focusNode';
+import { decideFrameNode, isAlreadyNear, shouldCommitOnTweenCancel } from './cameraFocusPolicy';
 
 const IDLE_MS = 10_000;
 const SMOOTH_TIME = (CAMERA_GLIDE_MS / 1000) * 0.45; // ~800ms glide feel
-const ARRIVE_EPS_SQ = 0.25; // "< 0.5u" arrival check, squared
 // Arrow-key pan rate as a fraction of the target distance per second, so the
 // pan feels the same whether zoomed into one node or viewing the whole nebula.
 const PAN_SPEED = 0.8;
@@ -97,7 +97,8 @@ export default function CameraRig() {
       const id = cmd.ids?.[0];
       framingId.current = id ?? null;
       const slot = id !== undefined ? slotOfId.get(id) : undefined;
-      if (slot === undefined || slot >= count) {
+      const hasSlot = slot !== undefined && slot < count;
+      if (!hasSlot) {
         // No layout slot — still open the panel so search/list picks work.
         commitPendingFocusIf(id);
         return;
@@ -106,17 +107,19 @@ export default function CameraRig() {
       const dist = 16 + 5 * (scaleOfSlot[slot] || 1.1);
       desiredPos.copy(desiredTarget).addScaledVector(viewDir, dist);
       lastInteraction.current = performance.now(); // command = engagement
-      if (prefersReducedMotion()) {
-        camera.position.copy(desiredPos);
-        controls.target.copy(desiredTarget);
-        tweenActive.current = false;
-        commitPendingFocusIf(id);
-        return;
-      }
-      if (
-        camera.position.distanceToSquared(desiredPos) < ARRIVE_EPS_SQ &&
-        controls.target.distanceToSquared(desiredTarget) < ARRIVE_EPS_SQ
-      ) {
+      const decision = decideFrameNode({
+        hasSlot: true,
+        reducedMotion: prefersReducedMotion(),
+        alreadyNear: isAlreadyNear(
+          camera.position.distanceToSquared(desiredPos),
+          controls.target.distanceToSquared(desiredTarget),
+        ),
+      });
+      if (decision.action === 'commit') {
+        if (decision.reason === 'reduced-motion') {
+          camera.position.copy(desiredPos);
+          controls.target.copy(desiredTarget);
+        }
         tweenActive.current = false;
         commitPendingFocusIf(id);
         return;
@@ -202,7 +205,9 @@ export default function CameraRig() {
       if (useCollabStore.getState().followMode) {
         useCollabStore.getState().setFollowMode(false);
       }
-      if (tweenActive.current) commitPendingFocusIf(framingId.current ?? undefined);
+      if (shouldCommitOnTweenCancel(tweenActive.current)) {
+        commitPendingFocusIf(framingId.current ?? undefined);
+      }
       tweenActive.current = false; // a manual pan cancels any active glide
       const cam = state.camera;
       const dist = Math.max(cam.position.distanceTo(controls.target), 1);
@@ -222,8 +227,10 @@ export default function CameraRig() {
       easing.damp3(state.camera.position, desiredPos, SMOOTH_TIME, delta);
       easing.damp3(controls.target, desiredTarget, SMOOTH_TIME, delta);
       if (
-        state.camera.position.distanceToSquared(desiredPos) < ARRIVE_EPS_SQ &&
-        controls.target.distanceToSquared(desiredTarget) < ARRIVE_EPS_SQ
+        isAlreadyNear(
+          state.camera.position.distanceToSquared(desiredPos),
+          controls.target.distanceToSquared(desiredTarget),
+        )
       ) {
         tweenActive.current = false;
         commitPendingFocusIf(framingId.current ?? undefined);
@@ -267,7 +274,9 @@ export default function CameraRig() {
       useCollabStore.getState().setFollowMode(false);
     }
     lastInteraction.current = performance.now();
-    if (tweenActive.current) commitPendingFocusIf(framingId.current ?? undefined);
+    if (shouldCommitOnTweenCancel(tweenActive.current)) {
+      commitPendingFocusIf(framingId.current ?? undefined);
+    }
     tweenActive.current = false; // user input cancels the active glide
   };
   const onEnd = (): void => {
