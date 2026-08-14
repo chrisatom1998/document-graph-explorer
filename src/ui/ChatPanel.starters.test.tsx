@@ -63,8 +63,8 @@ describe('ChatPanel corpus starters', () => {
     });
     render(<ChatPanel />);
     fireEvent.click(screen.getByRole('button', { name: 'Why is this orphan isolated?' }));
-    expect(screen.getByLabelText('Ask a question about your documents')).toHaveValue(
-      expect.stringContaining('orphaned document'),
-    );
+    expect(
+      (screen.getByLabelText('Ask a question about your documents') as HTMLTextAreaElement).value,
+    ).toContain('orphaned document');
   });
 });

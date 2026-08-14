@@ -14,7 +14,10 @@ describe('nearestOrphanNeighbors', () => {
       ['far', vec(0, 1)], // cosine 0
     ]);
     const hints = nearestOrphanNeighbors(['orphan'], vectors, ['orphan', 'near', 'far']);
-    expect(hints).toEqual([{ orphanId: 'orphan', neighborId: 'near', sim: 0.8 }]);
+    expect(hints).toHaveLength(1);
+    expect(hints[0].orphanId).toBe('orphan');
+    expect(hints[0].neighborId).toBe('near');
+    expect(hints[0].sim).toBeCloseTo(0.8, 5);
     expect(hints[0].sim).toBeGreaterThan(SIM_THRESHOLD);
   });
 
