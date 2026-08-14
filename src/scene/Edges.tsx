@@ -34,7 +34,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
-import { clusterColor, EDGE_TINTS, FLAT_EDGE } from './palette';
+import { clusterColor, EDGE_TINTS, FLAT_EDGE, FLAT_EDGE_FOCUS } from './palette';
 import { computeEmphasis } from './emphasis';
 import {
   EDGE_SEGMENTS,
@@ -43,16 +43,15 @@ import {
   evalEdgePoint,
 } from './edgeCurve';
 
-const DIM_FACTOR = 0.08;
-const FOCUS_BOOST = 2.0;
+const FOCUS_BOOST = 2.5;
 // Mid-curve brightness relative to the endpoints: the arc thins out where it
 // is farthest from either node, reading as a faint gradient filament.
 const MID_TAPER = 0.68;
 // 2D star chart: hairlines are fainter than the nebula filaments and carry a
 // single uniform tint (weight still maps to brightness; kind moves to the
 // popover/legend and the pulse colors).
-const FLAT_BRIGHT_BASE = 0.1;
-const FLAT_BRIGHT_WEIGHT = 0.3;
+const FLAT_BRIGHT_BASE = 0.14;
+const FLAT_BRIGHT_WEIGHT = 0.34;
 
 // Additive edges sum brightness where they overlap, so a fixed per-edge
 // opacity turns dense graphs into a glowing hairball that hides the nodes.
@@ -340,12 +339,16 @@ export default function Edges() {
         (flat ? FLAT_BRIGHT_BASE + FLAT_BRIGHT_WEIGHT * e.weight : 0.16 + 0.55 * e.weight) *
         fade;
       if (emphasis && !(emphasis.has(e.source) && emphasis.has(e.target))) {
-        brightness *= DIM_FACTOR;
+        brightness *= 0.05;
       }
       if (focusId && (e.source === focusId || e.target === focusId)) {
         // undo the density fade: the edges you're inspecting must stay vivid
         // precisely when the rest of the graph is at its faintest
         brightness *= FOCUS_BOOST / fade;
+        if (flat) {
+          srcColor.set(FLAT_EDGE_FOCUS);
+          dstColor.set(FLAT_EDGE_FOCUS);
+        }
       }
       srcColor.multiplyScalar(brightness);
       dstColor.multiplyScalar(brightness);

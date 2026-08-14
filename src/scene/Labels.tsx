@@ -25,7 +25,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { kindOfSlot } from './Nodes';
-import { FLAT_BG, FLAT_LABEL } from './palette';
+import { FLAT_BG, FLAT_LABEL, FLAT_LABEL_MUTED, FLAT_SELECTION } from './palette';
 import { selectedDocumentTitle } from '../pipeline/codeLanguage';
 
 const REFRESH_MS = 120;
@@ -38,7 +38,7 @@ const LABEL_FONT = '/fonts/Inter-Regular.woff';
 // 2D star chart: monospace labels beside the dot (anchored left, centered
 // vertically) instead of above it — same pool/eviction machinery.
 const FLAT_FONT = '/fonts/JetBrainsMono-Regular.ttf';
-const FLAT_GAP = 1.4; // world units between dot edge and label
+const FLAT_GAP = 1.85; // world units between dot edge and label
 // Everything in 2D sits on the z=0 plane, so node spheres (radius up to 1.3
 // toward the camera) would z-clip the glyph quads — lift labels off the plane
 // and skip the depth test so text always reads over dots and edges.
@@ -77,11 +77,11 @@ function opacityFor(distance: number): number {
 function labelProps(reserved: boolean, flat: boolean) {
   return {
     font: flat ? FLAT_FONT : LABEL_FONT,
-    fontSize: 2.3,
-    color: flat ? FLAT_LABEL : LABEL_COLOR,
-    outlineWidth: 0.06,
+    fontSize: flat ? 2.35 : 2.3,
+    color: flat ? (reserved ? FLAT_LABEL : FLAT_LABEL_MUTED) : LABEL_COLOR,
+    outlineWidth: flat ? 0.14 : 0.06,
     outlineColor: flat ? FLAT_BG : '#050510',
-    outlineOpacity: 0.85,
+    outlineOpacity: flat ? 1 : 0.85,
     anchorX: (flat ? 'left' : 'center') as 'left' | 'center',
     anchorY: (flat ? 'middle' : 'bottom') as 'middle' | 'bottom',
     visible: false,
@@ -260,12 +260,14 @@ export default function Labels() {
         arr[o + 1],
         arr[o + 2] + FLAT_LIFT,
       );
+      label.scale.setScalar(1.05);
     } else {
       label.position.set(
         arr[o],
         arr[o + 1] + (scaleOfSlot[slot] || 1.1) + 1.6,
         arr[o + 2],
       );
+      label.scale.setScalar(1);
     }
     label.quaternion.copy(camera.quaternion);
   };
@@ -317,6 +319,7 @@ export default function Labels() {
             hoverRef.current = t;
           }}
           {...labelProps(true, flat)}
+          color={flat ? FLAT_SELECTION : LABEL_COLOR}
         >
           {''}
         </Text>

@@ -32,8 +32,8 @@ const BLOOM_THRESHOLD = 0.34;
 const BLOOM_SMOOTHING = 0.18;
 // 2D star chart: bloom drops to a faint dot glow (the halo shells are off),
 // DoF makes no sense on a flat plane, vignette lightens to a soft frame.
-const FLAT_BLOOM_INTENSITY = 0.5;
-const FLAT_VIGNETTE = 0.4;
+const FLAT_BLOOM_INTENSITY = 0.52;
+const FLAT_VIGNETTE = 0.34;
 
 /** DepthOfField that keeps its focus target on the selected node. */
 function FocusedDoF() {
@@ -101,7 +101,7 @@ export default function Effects() {
         />
       )}
       {dofOn ? <FocusedDoF /> : (null as unknown as React.ReactElement)}
-      <Vignette darkness={flat ? FLAT_VIGNETTE : 0.62 - densitySoftening * 0.08} offset={0.18} />
+      <Vignette darkness={flat ? FLAT_VIGNETTE : 0.62 - densitySoftening * 0.08} offset={flat ? 0.28 : 0.18} />
     </EffectComposer>
   );
 }

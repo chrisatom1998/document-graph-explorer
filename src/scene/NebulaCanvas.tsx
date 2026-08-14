@@ -25,6 +25,12 @@ import { useUiStore } from '../store/uiStore';
 import { dismissGraphFocus } from './cameraFocusPolicy';
 import { registerSceneCapture } from './sceneCapture';
 import { FLAT_BG } from './palette';
+import {
+  BACKDROP_RENDER_ORDER,
+  BACKDROP_SIZE,
+  BACKDROP_Z,
+  flatBackdropMaterial,
+} from './flatMapBackdrop';
 import CameraRig from './CameraRig';
 import Starfield from './Starfield';
 import NebulaClouds from './NebulaClouds';
@@ -73,6 +79,21 @@ function supportsWebGL(): boolean {
   }
 }
 
+// The 2D backdrop's material/placement constants (and the occlusion contract
+// that keeps it from hiding the graph) live in ./flatMapBackdrop.
+function FlatMapBackdrop() {
+  return (
+    <mesh
+      position={[0, 0, BACKDROP_Z]}
+      renderOrder={BACKDROP_RENDER_ORDER}
+      frustumCulled={false}
+    >
+      <planeGeometry args={[BACKDROP_SIZE, BACKDROP_SIZE]} />
+      <primitive object={flatBackdropMaterial} attach="material" />
+    </mesh>
+  );
+}
+
 function WebGLFallback() {
   return (
     <section className="webgl-fallback" role="status" aria-live="polite">
@@ -119,6 +140,7 @@ export default function NebulaCanvas() {
       {/* density tracks the layout shell radius — the wider spacing would
           otherwise fog out the nebula's far side */}
       <fogExp2 attach="fog" args={[bg, 0.001]} />
+      {flat ? <FlatMapBackdrop /> : null}
       {/* base fill so shadowed sides keep their hue */}
       <ambientLight intensity={0.38} />
       <hemisphereLight color="#b7c9ff" groundColor="#130a2c" intensity={0.34} />
