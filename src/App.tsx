@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import Tooltip from './ui/Tooltip';
 import ChatLauncher from './ui/ChatLauncher';
 import InsightsDigest from './ui/InsightsDigest';
@@ -77,6 +77,15 @@ export default function App() {
   const helpOpen = useUiStore((s) => s.helpOpen);
   const pathMode = useUiStore((s) => s.pathMode);
   const chatOpen = useChatStore((s) => s.isOpen);
+
+  // Sticky readiness: re-ingests cycle `phase` back through parsing/linking,
+  // and gating the chrome on `phase === 'ready'` directly would unmount and
+  // remount every panel each time, replaying their entry animations.
+  const [chromeReady, setChromeReady] = useState(false);
+  useEffect(() => {
+    if (phase === 'ready') setChromeReady(true);
+    else if (phase === 'idle' && !hasNodes) setChromeReady(false);
+  }, [phase, hasNodes]);
 
   // Session restore + persistence hooks, once. Fresh starts stay empty until
   // the user adds files or explicitly loads the demo corpus from EmptyState.
@@ -348,13 +357,13 @@ export default function App() {
       {!hasNodes && phase === 'idle' && (
         <Suspense fallback={null}><EmptyState /></Suspense>
       )}
-      {phase === 'ready' && (
+      {chromeReady && (
         <Suspense fallback={null}><Toolbar /></Suspense>
       )}
-      {phase === 'ready' && (
+      {chromeReady && (
         <Suspense fallback={null}><GraphNavigator /></Suspense>
       )}
-      {phase === 'ready' && (
+      {chromeReady && (
         <Suspense fallback={null}><FilterBar /></Suspense>
       )}
       <Suspense fallback={null}><ProgressStrip /></Suspense>
@@ -368,11 +377,11 @@ export default function App() {
       {selectedId && (
         <Suspense fallback={null}><SidePanel /></Suspense>
       )}
-      {phase === 'ready' && (
+      {chromeReady && (
         <Suspense fallback={null}><Minimap /></Suspense>
       )}
       <Tooltip />
-      {phase === 'ready' && searchOpen && (
+      {chromeReady && searchOpen && (
         <Suspense fallback={null}><SearchOverlay /></Suspense>
       )}
       {settingsOpen && (
@@ -381,8 +390,8 @@ export default function App() {
       {snapshotsOpen && (
         <Suspense fallback={null}><SnapshotDrawer /></Suspense>
       )}
-      {phase === 'ready' && <ChatLauncher />}
-      {phase === 'ready' && chatOpen && (
+      {chromeReady && <ChatLauncher />}
+      {chromeReady && chatOpen && (
         <Suspense fallback={null}><ChatPanel /></Suspense>
       )}
       {helpOpen && (

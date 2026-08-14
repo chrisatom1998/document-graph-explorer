@@ -61,6 +61,13 @@ const frustum = new THREE.Frustum();
 const tmpVec = new THREE.Vector3();
 const bestD2 = new Float64Array(LABEL_BUDGET);
 const bestSlot = new Int32Array(LABEL_BUDGET);
+const incumbentFlag = new Uint8Array(MAX_NODES);
+// Eviction hysteresis: a slot that already holds a label ranks as if it were
+// this much closer, so a challenger must be decisively nearer to displace it.
+// Without the bias, nodes straddling the budget boundary flip in and out on
+// every ~120ms re-rank while the camera drifts (idle auto-orbit guarantees
+// drift), which reads as constant label popping.
+const INCUMBENT_BIAS = 0.85;
 
 function truncate(title: string): string {
   return title.length > TRUNCATE_AT ? `${title.slice(0, TRUNCATE_AT - 1)}…` : title;
@@ -191,6 +198,11 @@ export default function Labels() {
     projScreen.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     frustum.setFromProjectionMatrix(projScreen);
 
+    for (let j = 0; j < LABEL_BUDGET; j++) {
+      const s = assignedSlot.current[j];
+      if (s >= 0 && s < MAX_NODES) incumbentFlag[s] = 1;
+    }
+
     let filled = 0;
     for (let i = 0; i < count; i++) {
       if (i === hoverSlot.current || i === selectedSlot.current) continue; // reserved
@@ -198,7 +210,10 @@ export default function Labels() {
       if (!titles[i]) continue;
       tmpVec.set(arr[i * 3], arr[i * 3 + 1], arr[i * 3 + 2]);
       if (!frustum.containsPoint(tmpVec)) continue;
-      const d2 = tmpVec.distanceToSquared(camera.position);
+      // Effective (biased) distance ranks the pool; the ~7% opacity edge this
+      // gives incumbents is invisible next to the popping it prevents.
+      let d2 = tmpVec.distanceToSquared(camera.position);
+      if (incumbentFlag[i]) d2 *= INCUMBENT_BIAS;
       if (filled === budget && d2 >= bestD2[filled - 1]) continue;
       let j = Math.min(filled, budget - 1);
       while (j > 0 && bestD2[j - 1] > d2) {
@@ -209,6 +224,11 @@ export default function Labels() {
       bestD2[j] = d2;
       bestSlot[j] = i;
       if (filled < budget) filled++;
+    }
+
+    for (let j = 0; j < LABEL_BUDGET; j++) {
+      const s = assignedSlot.current[j];
+      if (s >= 0 && s < MAX_NODES) incumbentFlag[s] = 0;
     }
 
     for (let j = 0; j < LABEL_BUDGET; j++) {

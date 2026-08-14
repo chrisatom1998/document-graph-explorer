@@ -1,50 +1,71 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { fileTypeChip } from '../pipeline/codeLanguage';
 
 const OFFSET = 16;
 
+// Last cursor position, tracked by the persistent listener below so the card
+// can be placed the moment it appears — waiting for the next mousemove used to
+// leave the first paint sitting at the viewport origin (styles.css pins
+// .hover-tooltip at top/left 0).
+const cursor = { x: -9999, y: -9999 };
+
 /**
  * Hover card that tracks the cursor without triggering a React re-render
  * per mousemove: the listener writes directly to the div's transform via
- * a ref, flipping near the right/bottom viewport edges.
+ * a ref, flipping near the right/bottom viewport edges. The card's size is
+ * measured once per content change — measuring inside the mousemove handler
+ * would force a synchronous layout on every mouse event.
  */
 export default function Tooltip() {
   const hoveredId = useUiStore((s) => s.hoveredId);
   const selectedId = useUiStore((s) => s.selectedId);
   const pathMode = useUiStore((s) => s.pathMode);
 
-  const nodes = useGraphStore((s) => s.nodes);
-  const nodeIndex = useGraphStore((s) => s.nodeIndex);
+  const node = useGraphStore((s) => (hoveredId ? s.nodes[s.nodeIndex[hoveredId]] : undefined));
 
   const elRef = useRef<HTMLDivElement | null>(null);
+  const sizeRef = useRef({ width: 0, height: 0 });
 
   const visible = !!hoveredId && hoveredId !== selectedId;
-  const node = hoveredId ? nodes[nodeIndex[hoveredId]] : undefined;
 
+  const place = (el: HTMLDivElement) => {
+    const { width, height } = sizeRef.current;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const flipX = cursor.x + OFFSET + width > vw;
+    const flipY = cursor.y + OFFSET + height > vh;
+
+    const x = flipX ? cursor.x - OFFSET - width : cursor.x + OFFSET;
+    const y = flipY ? cursor.y - OFFSET - height : cursor.y + OFFSET;
+
+    el.style.transform = `translate(${Math.max(4, x)}px, ${Math.max(4, y)}px)`;
+  };
+
+  // One persistent tracker: keeps `cursor` current while the card is hidden
+  // (so it mounts in place) and steers the transform while it shows.
   useEffect(() => {
-    if (!visible) return;
-    const el = elRef.current;
-    if (!el) return;
-
     const move = (e: MouseEvent) => {
-      const rect = el.getBoundingClientRect();
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-
-      const flipX = e.clientX + OFFSET + rect.width > vw;
-      const flipY = e.clientY + OFFSET + rect.height > vh;
-
-      const x = flipX ? e.clientX - OFFSET - rect.width : e.clientX + OFFSET;
-      const y = flipY ? e.clientY - OFFSET - rect.height : e.clientY + OFFSET;
-
-      el.style.transform = `translate(${Math.max(4, x)}px, ${Math.max(4, y)}px)`;
+      cursor.x = e.clientX;
+      cursor.y = e.clientY;
+      const el = elRef.current;
+      if (el) place(el);
     };
-
     window.addEventListener('mousemove', move);
     return () => window.removeEventListener('mousemove', move);
-  }, [visible]);
+  }, []);
+
+  // Measure once per content change, then position before the browser paints —
+  // the card must never be visible at its un-translated origin.
+  useLayoutEffect(() => {
+    const el = elRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    sizeRef.current = { width: rect.width, height: rect.height };
+    place(el);
+  });
 
   if (!visible || !node) return null;
 

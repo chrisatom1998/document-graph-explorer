@@ -2917,7 +2917,6 @@ mark.passage-mark {
   border-radius: 3px;
   background: linear-gradient(90deg, var(--accent), var(--edge-blue));
   transition: width 220ms ease;
-  animation: kn-pulse 1.8s ease-in-out infinite;
 }
 
 .progress-strip__count {

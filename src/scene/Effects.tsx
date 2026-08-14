@@ -14,12 +14,19 @@
  * toneMapped={false}, so brightness authored in scene colors survives to the
  * bloom luminance pass. See Labels.tsx for the label-vs-bloom threshold
  * tension (luminanceThreshold here is the other half of that contract).
+ *
+ * Everything that changes at interaction rate — hover/selection focus boost,
+ * node-count density softening — is steered imperatively in useFrame via the
+ * effects' runtime setters. Re-rendering the composer with new children or
+ * props rebuilds the EffectPass (a shader recompile + render-target
+ * reallocation), which shows up as a one-frame flash; only rare structural
+ * switches (quality tier, 2D/3D) are allowed to do that.
  */
 
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Bloom, DepthOfField, EffectComposer, Vignette } from '@react-three/postprocessing';
-import type { DepthOfFieldEffect } from 'postprocessing';
+import type { BloomEffect, DepthOfFieldEffect, VignetteEffect } from 'postprocessing';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
@@ -34,15 +41,33 @@ const BLOOM_SMOOTHING = 0.18;
 // DoF makes no sense on a flat plane, vignette lightens to a soft frame.
 const FLAT_BLOOM_INTENSITY = 0.52;
 const FLAT_VIGNETTE = 0.34;
+const FOCUS_BOOST = 0.12;
+const DOF_BOKEH_SCALE = 2.2;
 
-/** DepthOfField that keeps its focus target on the selected node. */
+function densitySoftening(nodeCount: number): number {
+  if (nodeCount <= VISUAL_DENSITY_SOFTEN_START) return 0;
+  const span = VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START;
+  return Math.min(1, (nodeCount - VISUAL_DENSITY_SOFTEN_START) / span);
+}
+
+/**
+ * DepthOfField that keeps its focus target on the selected node. Mounted
+ * whenever tier-0 3D allows it — NOT gated on selection, because adding or
+ * removing the effect rebuilds the composer's EffectPass mid-interaction.
+ * With nothing selected the bokeh scale drops to 0, leaving the pass
+ * visually inert.
+ */
 function FocusedDoF() {
   const ref = useRef<DepthOfFieldEffect>(null);
   useFrame(() => {
     const effect = ref.current;
     if (!effect || !effect.target) return;
     const id = useUiStore.getState().selectedId;
-    if (!id) return;
+    if (!id) {
+      if (effect.bokehScale !== 0) effect.bokehScale = 0;
+      return;
+    }
+    if (effect.bokehScale !== DOF_BOKEH_SCALE) effect.bokehScale = DOF_BOKEH_SCALE;
     const slot = slotOfId.get(id);
     if (slot === undefined || slot >= positionBuffer.count) return;
     const arr = positionBuffer.array;
@@ -52,29 +77,32 @@ function FocusedDoF() {
   // it imperatively above (checked against installed typings: target is
   // `Vector3 | null` on DepthOfFieldEffect).
   return (
-    <DepthOfField ref={ref} target={[0, 0, 0]} worldFocusRange={70} bokehScale={2.2} />
+    <DepthOfField ref={ref} target={[0, 0, 0]} worldFocusRange={70} bokehScale={0} />
   );
 }
 
 export default function Effects() {
   const qualityTier = useUiStore((s) => s.qualityTier);
   const flat = useUiStore((s) => s.dims === 2);
-  const hoveredId = useUiStore((s) => s.hoveredId);
-  const selectedId = useUiStore((s) => s.selectedId);
-  const nodeCount = useGraphStore((s) => s.nodes.length);
-  const dofOn = useUiStore(
-    (s) => s.qualityTier === 0 && s.selectedId !== null && s.dims === 3,
-  );
+  const dofOn = useUiStore((s) => s.qualityTier === 0 && s.dims === 3);
   const halfRes = qualityTier >= 2;
-  const densitySoftening = useMemo(() => {
-    if (nodeCount <= VISUAL_DENSITY_SOFTEN_START) return 0;
-    const span = VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START;
-    return Math.min(1, (nodeCount - VISUAL_DENSITY_SOFTEN_START) / span);
-  }, [nodeCount]);
-  const focusBoost = hoveredId || selectedId ? 0.12 : 0;
-  const intensity = flat
-    ? FLAT_BLOOM_INTENSITY
-    : BLOOM_INTENSITY - densitySoftening * 0.26 + focusBoost;
+
+  const bloomRef = useRef<BloomEffect>(null);
+  const vignetteRef = useRef<VignetteEffect>(null);
+  // Interaction-rate parameters bypass React: R3F runs useFrame subscribers
+  // before the composer renders, so values written here land the same frame.
+  useFrame(() => {
+    const bloom = bloomRef.current;
+    const vignette = vignetteRef.current;
+    if (!bloom || !vignette) return;
+    const softening = densitySoftening(useGraphStore.getState().nodes.length);
+    const { hoveredId, selectedId } = useUiStore.getState();
+    const focusBoost = hoveredId || selectedId ? FOCUS_BOOST : 0;
+    bloom.intensity = flat
+      ? FLAT_BLOOM_INTENSITY
+      : BLOOM_INTENSITY - softening * 0.26 + focusBoost;
+    vignette.darkness = flat ? FLAT_VIGNETTE : 0.62 - softening * 0.08;
+  });
 
   // Geometry antialiasing lives HERE, not on the canvas: the composer renders
   // the scene into its own framebuffer, so the WebGL context's MSAA (off in
@@ -85,23 +113,25 @@ export default function Effects() {
     <EffectComposer multisampling={halfRes ? 0 : 4}>
       {halfRes ? (
         <Bloom
+          ref={bloomRef}
           mipmapBlur={false}
           resolutionScale={0.5}
-          intensity={intensity}
+          intensity={BLOOM_INTENSITY}
           luminanceThreshold={BLOOM_THRESHOLD}
           luminanceSmoothing={BLOOM_SMOOTHING}
         />
       ) : (
         <Bloom
+          ref={bloomRef}
           mipmapBlur
-          intensity={intensity}
+          intensity={BLOOM_INTENSITY}
           luminanceThreshold={BLOOM_THRESHOLD}
           luminanceSmoothing={BLOOM_SMOOTHING}
           radius={0.9}
         />
       )}
       {dofOn ? <FocusedDoF /> : (null as unknown as React.ReactElement)}
-      <Vignette darkness={flat ? FLAT_VIGNETTE : 0.62 - densitySoftening * 0.08} offset={flat ? 0.28 : 0.18} />
+      <Vignette ref={vignetteRef} darkness={0.62} offset={flat ? 0.28 : 0.18} />
     </EffectComposer>
   );
 }
