@@ -92,7 +92,13 @@ import { parsePdf } from './parsers/pdf';
 import { clearIngestAbort, registerIngestAbort } from './ingestCancellation';
 import { publishIngestReport } from './ingestReport';
 import { enqueueRun } from './runQueue';
-import { randomSpherePoint } from './spawnPosition';
+import { prefersReducedMotion } from '../util/motion';
+import {
+  beginIngestBirth,
+  endIngestBirth,
+  snapshotIngestOrigin,
+  type Vec3,
+} from '../scene/ingestBirth';
 import { addToSemanticIndex, edgesFromIndex, type SemanticIndex } from './similarity';
 import { synthesizeTopicNodes } from './topicNodes';
 import { createGeneratedDemoDocuments } from '../demo/generatedDocuments';
@@ -107,9 +113,7 @@ type LexicalDone = Extract<AggResponse, { type: 'lexical:done' }>;
 type SemanticDone = Extract<AggResponse, { type: 'semantic:done' }>;
 type ClusterDone = Extract<AggResponse, { type: 'cluster:done' }>;
 
-// fly-in spawn shell (contract: random point on a ~140 radius shell, ±25 jitter)
-const SPAWN_RADIUS = 140;
-const SPAWN_JITTER = 25;
+// fly-in origin is the drop / Add / canvas-center point (ingestBirth).
 
 // ---------------------------------------------------------------------------
 // aggregator worker client (single dedicated worker)
@@ -338,10 +342,6 @@ function makeSummary(text: string): string {
   return flat.length > 200 ? `${flat.slice(0, 200).trimEnd()}…` : flat;
 }
 
-function randomSpawn(): [number, number, number] {
-  return randomSpherePoint(SPAWN_RADIUS, SPAWN_JITTER);
-}
-
 function documentNodes(): DocNode[] {
   return useGraphStore.getState().nodes.filter((n) => n.kind === 'document');
 }
@@ -376,12 +376,36 @@ async function warnIfStorageCritical(): Promise<void> {
   );
 }
 
-async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boolean> {
+async function runIngest(
+  files: IngestFile[],
+  signal: AbortSignal | undefined,
+  spawnOrigin: Vec3,
+): Promise<boolean> {
   wireModelProgress();
   throwIfAborted(signal);
   void warnIfStorageCritical();
-  const store = useGraphStore.getState; // fresh state per call; actions are stable
   const initialDocumentCount = documentNodes().length;
+  beginIngestBirth({
+    corpusWasEmpty: initialDocumentCount === 0,
+    reducedMotion: prefersReducedMotion(),
+  });
+  try {
+    return await runIngestBody(files, signal, spawnOrigin, initialDocumentCount);
+  } finally {
+    const { shouldFinalFit } = endIngestBirth();
+    if (shouldFinalFit && documentNodes().length > 0) {
+      useUiStore.getState().sendCamera('fitAll');
+    }
+  }
+}
+
+async function runIngestBody(
+  files: IngestFile[],
+  signal: AbortSignal | undefined,
+  spawnOrigin: Vec3,
+  initialDocumentCount: number,
+): Promise<boolean> {
+  const store = useGraphStore.getState;
 
   // (a) route by extension; unsupported → ignored tray
   const routed: { file: IngestFile; fileType: FileType }[] = [];
@@ -441,7 +465,7 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boo
       misses.push(p);
       continue;
     }
-    const dropped = layoutAddNodes([{ id: p.id, cluster: cached.node.cluster, spawn: randomSpawn() }]);
+    const dropped = layoutAddNodes([{ id: p.id, cluster: cached.node.cluster, spawn: spawnOrigin }]);
     if (dropped.length > 0) {
       store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
       store().setFileStatus({
@@ -543,7 +567,7 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boo
     // Commit one parsed result into the runtime stores + layout. Returns the
     // node to add and the placed status, or null when the node-cap was hit.
     const commitParsed = ({ p, doc, pdfLinks }: ParsedResult): { node: DocNode } | null => {
-      const dropped = layoutAddNodes([{ id: p.id, cluster: -1, spawn: randomSpawn() }]);
+      const dropped = layoutAddNodes([{ id: p.id, cluster: -1, spawn: spawnOrigin }]);
       if (dropped.length > 0) {
         store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
         store().setFileStatus({
@@ -1309,9 +1333,12 @@ function settleCancelledIngest(): void {
  * them before they start.
  */
 export function ingestFiles(files: IngestFile[]): Promise<void> {
+  const spawnOrigin = snapshotIngestOrigin({
+    flat: useUiStore.getState().dims === 2,
+  });
   const controller = new AbortController();
   registerIngestAbort(controller);
-  const run = enqueueRun(() => runIngest(files, controller.signal), {
+  const run = enqueueRun(() => runIngest(files, controller.signal, spawnOrigin), {
     signal: controller.signal,
   })
     // Snapshot the run's ignored/failed/capped files into the persistent

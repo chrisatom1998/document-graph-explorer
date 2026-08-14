@@ -9,6 +9,7 @@ import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { useCorpusStore } from './store/corpusStore';
 import { onLayoutSettled } from './layout/layoutBridge';
+import { isIngestFraming } from './scene/ingestBirth';
 import { enqueueRun } from './pipeline/runQueue';
 import { positionBuffer, slotOfId } from './scene/positionBuffer';
 import { cameraPose } from './scene/cameraPose';
@@ -147,6 +148,9 @@ export default function App() {
     }
     return onLayoutSettled(() => {
       if (!needsFrame.current) return;
+      // Live first-ingest framing is owned by CameraRig (slow ease-out).
+      // Incremental add never sets that flag; session restore still fit-alls here.
+      if (isIngestFraming()) return;
       useUiStore.getState().sendCamera('fitAll');
       if (useGraphStore.getState().phase === 'ready') needsFrame.current = false;
     });

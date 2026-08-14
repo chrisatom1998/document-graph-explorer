@@ -25,9 +25,16 @@ import { panInput } from './panInput';
 import { prefersReducedMotion } from '../util/motion';
 import { commitPendingFocusIf } from '../ui/focusNode';
 import { decideFrameNode, isAlreadyNear, shouldCommitOnTweenCancel } from './cameraFocusPolicy';
+import {
+  computeFitAllPose,
+  isIngestFraming,
+  noteIngestCameraSteer,
+} from './ingestBirth';
 
 const IDLE_MS = 10_000;
 const SMOOTH_TIME = (CAMERA_GLIDE_MS / 1000) * 0.45; // ~800ms glide feel
+/** First-ingest framing eases out slower so the growing set is followed, not yanked. */
+const INGEST_SMOOTH_TIME = 1.15;
 // Arrow-key pan rate as a fraction of the target distance per second, so the
 // pan feels the same whether zoomed into one node or viewing the whole nebula.
 const PAN_SPEED = 0.8;
@@ -165,47 +172,44 @@ export default function CameraRig() {
     framingId.current = null;
 
     // frameSet / fitAll: bounding sphere over the id set (or every live slot)
+    if (cmd.kind === 'fitAll') {
+      const fov = (camera as THREE.PerspectiveCamera).fov ?? 55;
+      const fit = computeFitAllPose({
+        array: arr,
+        count,
+        viewDir: [viewDir.x, viewDir.y, viewDir.z],
+        fovDeg: fov,
+      });
+      if (fit.radius === 0 && count === 0) return;
+      desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
+      desiredPos.set(fit.position[0], fit.position[1], fit.position[2]);
+      tweenActive.current = true;
+      lastInteraction.current = performance.now();
+      return;
+    }
+
     centroid.set(0, 0, 0);
     let n = 0;
-    if (cmd.kind === 'fitAll') {
-      for (let i = 0; i < count; i++) {
-        centroid.x += arr[i * 3];
-        centroid.y += arr[i * 3 + 1];
-        centroid.z += arr[i * 3 + 2];
-        n++;
-      }
-    } else {
-      for (const id of cmd.ids ?? []) {
-        const slot = slotOfId.get(id);
-        if (slot === undefined || slot >= count) continue;
-        centroid.x += arr[slot * 3];
-        centroid.y += arr[slot * 3 + 1];
-        centroid.z += arr[slot * 3 + 2];
-        n++;
-      }
+    for (const id of cmd.ids ?? []) {
+      const slot = slotOfId.get(id);
+      if (slot === undefined || slot >= count) continue;
+      centroid.x += arr[slot * 3];
+      centroid.y += arr[slot * 3 + 1];
+      centroid.z += arr[slot * 3 + 2];
+      n++;
     }
     if (n === 0) return;
     centroid.multiplyScalar(1 / n);
 
     let maxDistSq = 0;
-    if (cmd.kind === 'fitAll') {
-      for (let i = 0; i < count; i++) {
-        const dx = arr[i * 3] - centroid.x;
-        const dy = arr[i * 3 + 1] - centroid.y;
-        const dz = arr[i * 3 + 2] - centroid.z;
-        const d = dx * dx + dy * dy + dz * dz;
-        if (d > maxDistSq) maxDistSq = d;
-      }
-    } else {
-      for (const id of cmd.ids ?? []) {
-        const slot = slotOfId.get(id);
-        if (slot === undefined || slot >= count) continue;
-        const dx = arr[slot * 3] - centroid.x;
-        const dy = arr[slot * 3 + 1] - centroid.y;
-        const dz = arr[slot * 3 + 2] - centroid.z;
-        const d = dx * dx + dy * dy + dz * dz;
-        if (d > maxDistSq) maxDistSq = d;
-      }
+    for (const id of cmd.ids ?? []) {
+      const slot = slotOfId.get(id);
+      if (slot === undefined || slot >= count) continue;
+      const dx = arr[slot * 3] - centroid.x;
+      const dy = arr[slot * 3 + 1] - centroid.y;
+      const dz = arr[slot * 3 + 2] - centroid.z;
+      const d = dx * dx + dy * dy + dz * dz;
+      if (d > maxDistSq) maxDistSq = d;
     }
     const radius = Math.sqrt(maxDistSq);
     const fov = (camera as THREE.PerspectiveCamera).fov ?? 55;
@@ -227,8 +231,33 @@ export default function CameraRig() {
     const cmd = ui.cameraCommand;
     if (cmd && cmd.nonce !== lastNonce.current) {
       lastNonce.current = cmd.nonce;
+      if (cmd.kind === 'frameNode' || cmd.kind === 'pose') noteIngestCameraSteer();
       if (cmd.kind !== 'pose') noteLocalCameraActivity();
       beginCommand(cmd, state.camera, controls);
+    }
+
+    // First ingest of an empty corpus: keep the growing set framed (eased).
+    // Incremental add never sets this flag — do not steal the camera.
+    if (isIngestFraming() && positionBuffer.count > 0) {
+      viewDir.copy(state.camera.position).sub(controls.target);
+      if (viewDir.lengthSq() < 1e-6) viewDir.set(0, 0, 1);
+      viewDir.normalize();
+      const fov = (state.camera as THREE.PerspectiveCamera).fov ?? 55;
+      const fit = computeFitAllPose({
+        array: positionBuffer.array,
+        count: positionBuffer.count,
+        viewDir: [viewDir.x, viewDir.y, viewDir.z],
+        fovDeg: fov,
+      });
+      desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
+      desiredPos.set(fit.position[0], fit.position[1], fit.position[2]);
+      if (prefersReducedMotion()) {
+        state.camera.position.copy(desiredPos);
+        controls.target.copy(desiredTarget);
+        tweenActive.current = false;
+      } else {
+        tweenActive.current = true;
+      }
     }
 
     // Arrow-key pan (App writes the direction to panInput). Nudging BOTH the
@@ -242,6 +271,7 @@ export default function CameraRig() {
       if (shouldCommitOnTweenCancel(tweenActive.current)) {
         commitPendingFocusIf(framingId.current ?? undefined);
       }
+      noteIngestCameraSteer();
       tweenActive.current = false; // a manual pan cancels any active glide
       const cam = state.camera;
       const dist = Math.max(cam.position.distanceTo(controls.target), 1);
@@ -258,8 +288,9 @@ export default function CameraRig() {
     }
 
     if (tweenActive.current) {
-      easing.damp3(state.camera.position, desiredPos, SMOOTH_TIME, delta);
-      easing.damp3(controls.target, desiredTarget, SMOOTH_TIME, delta);
+      const smooth = isIngestFraming() ? INGEST_SMOOTH_TIME : SMOOTH_TIME;
+      easing.damp3(state.camera.position, desiredPos, smooth, delta);
+      easing.damp3(controls.target, desiredTarget, smooth, delta);
       if (
         isAlreadyNear(
           state.camera.position.distanceToSquared(desiredPos),
@@ -311,6 +342,7 @@ export default function CameraRig() {
     if (shouldCommitOnTweenCancel(tweenActive.current)) {
       commitPendingFocusIf(framingId.current ?? undefined);
     }
+    noteIngestCameraSteer();
     tweenActive.current = false; // user input cancels the active glide
   };
   const onEnd = (): void => {

@@ -33,9 +33,11 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { positionBuffer, slotOfId } from './positionBuffer';
+import { positionBuffer, slotOfId, spawnAtOfSlot } from './positionBuffer';
 import { clusterColor, EDGE_TINTS, FLAT_EDGE, FLAT_EDGE_FOCUS } from './palette';
 import { computeEmphasis } from './emphasis';
+import { prefersReducedMotion } from '../util/motion';
+import { edgeKey, edgeRevealFactor, writeSlotTravelPosition } from './ingestBirth';
 import {
   EDGE_SEGMENTS,
   EDGE_SEGMENTS_DEGRADED,
@@ -74,6 +76,9 @@ const srcColor = new THREE.Color();
 const dstColor = new THREE.Color();
 const ctrl = new Float32Array(3);
 const pt = new Float32Array(3);
+const edgeSrc = { x: 0, y: 0, z: 0 };
+const edgeDst = { x: 0, y: 0, z: 0 };
+const edgeAppearAt = new Map<string, number>();
 
 // Aerial perspective for the filaments: brightness eases toward uFadeMin as
 // view distance runs uFadeNear -> uFadeFar, so near edges read crisper and the
@@ -236,6 +241,10 @@ export default function Edges() {
   // culling — make it permissive instead (we already skip frustum culling).
   const geomRef = useRef<THREE.BufferGeometry>(null);
   useEffect(() => {
+    const live = new Set(renderEdges.map((e) => edgeKey(e.source, e.target, e.kind)));
+    for (const key of edgeAppearAt.keys()) {
+      if (!live.has(key)) edgeAppearAt.delete(key);
+    }
     forcePositions.current = true;
     colorsDirty.current = true;
     const geom = geomRef.current;
@@ -288,7 +297,7 @@ export default function Edges() {
       ui.filter.edgeKinds.length > 0 &&
       !ui.filter.edgeKinds.includes(e.kind));
 
-  const recomputeColors = (): void => {
+  const recomputeColors = (): boolean => {
     const { nodes } = useGraphStore.getState();
     const ui = useUiStore.getState();
     const { hoveredId, selectedId, searchResults, filter } = ui;
@@ -310,9 +319,27 @@ export default function Edges() {
     const fade = densityFade(visibleCount);
     const col = attrs.colors.array as Float32Array;
     const vertsPerEdge = segments * 2;
+    const now = performance.now();
+    const reducedMotion = prefersReducedMotion();
+    const count = positionBuffer.count;
+    let stillRevealing = false;
     for (let i = 0; i < renderEdges.length; i++) {
       const e = renderEdges[i];
       const base = i * vertsPerEdge * 3;
+      const srcSlot = slotOfId.get(e.source);
+      const dstSlot = slotOfId.get(e.target);
+      const bothExist =
+        srcSlot !== undefined && dstSlot !== undefined && srcSlot < count && dstSlot < count;
+      const key = edgeKey(e.source, e.target, e.kind);
+      const reveal = edgeRevealFactor({
+        bothEndpointsExist: bothExist,
+        appearAt: edgeAppearAt.get(key),
+        now,
+        reducedMotion,
+      });
+      if (reveal.appearAt !== undefined) edgeAppearAt.set(key, reveal.appearAt);
+      else edgeAppearAt.delete(key);
+      if (reveal.factor < 1 && bothExist) stillRevealing = true;
       // Hidden: weight below the hairball slider, collapse mode, or a topic
       // edge whose hub octahedron isn't rendered (toggle off).
       if (isEdgeHidden(e, ui)) {
@@ -337,7 +364,8 @@ export default function Edges() {
       }
       let brightness =
         (flat ? FLAT_BRIGHT_BASE + FLAT_BRIGHT_WEIGHT * e.weight : 0.16 + 0.55 * e.weight) *
-        fade;
+        fade *
+        reveal.factor;
       if (emphasis && !(emphasis.has(e.source) && emphasis.has(e.target))) {
         brightness *= 0.05;
       }
@@ -378,26 +406,36 @@ export default function Edges() {
       (fatGeom.attributes.instanceColorStart as THREE.InterleavedBufferAttribute).data.needsUpdate =
         true;
     }
+    return stillRevealing;
   };
 
   useFrame(() => {
     if (renderEdges.length === 0) return;
     if (colorsDirty.current) {
-      recomputeColors();
-      colorsDirty.current = false;
+      colorsDirty.current = recomputeColors();
     }
     const version = positionBuffer.version;
-    if (version === lastVersion.current && !forcePositions.current) return;
+    const countNow = positionBuffer.count;
+    let liveTravel = false;
+    for (let i = 0; i < countNow; i++) {
+      if ((spawnAtOfSlot[i] ?? -1) >= 0) {
+        liveTravel = true;
+        break;
+      }
+    }
+    if (version === lastVersion.current && !forcePositions.current && !liveTravel) return;
     lastVersion.current = version;
     forcePositions.current = false;
 
-    const arr = positionBuffer.array;
     const count = positionBuffer.count;
     const pos = attrs.positions.array as Float32Array;
     const floatsPerEdge = segments * 6;
     // 2D star chart: control point at the chord midpoint degenerates the
     // bezier to a straight line — same buffers, no bow.
     const flat = useUiStore.getState().dims === 2;
+    const now = performance.now();
+    const reducedMotion = prefersReducedMotion();
+    const travelOpts = { reducedMotion, flat };
     for (let i = 0; i < renderEdges.length; i++) {
       const e = renderEdges[i];
       const s = slotOfId.get(e.source);
@@ -405,14 +443,14 @@ export default function Edges() {
       if (s === undefined || t === undefined || s >= count || t >= count) {
         continue; // endpoint not placed yet: keep previous (zeros collapse to a point)
       }
-      const so = s * 3;
-      const to = t * 3;
-      const ax = arr[so];
-      const ay = arr[so + 1];
-      const az = arr[so + 2];
-      const bx = arr[to];
-      const by = arr[to + 1];
-      const bz = arr[to + 2];
+      writeSlotTravelPosition(edgeSrc, s, now, travelOpts);
+      writeSlotTravelPosition(edgeDst, t, now, travelOpts);
+      const ax = edgeSrc.x;
+      const ay = edgeSrc.y;
+      const az = edgeSrc.z;
+      const bx = edgeDst.x;
+      const by = edgeDst.y;
+      const bz = edgeDst.z;
       if (flat) {
         ctrl[0] = (ax + bx) * 0.5;
         ctrl[1] = (ay + by) * 0.5;

@@ -27,6 +27,8 @@ import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { kindOfSlot } from './Nodes';
 import { FLAT_BG, FLAT_LABEL, FLAT_LABEL_MUTED, FLAT_SELECTION } from './palette';
 import { selectedDocumentTitle } from '../pipeline/codeLanguage';
+import { prefersReducedMotion } from '../util/motion';
+import { writeSlotTravelPosition } from './ingestBirth';
 
 const REFRESH_MS = 120;
 const TRUNCATE_AT = 34;
@@ -59,6 +61,7 @@ interface TroikaLabel extends THREE.Mesh {
 const projScreen = new THREE.Matrix4();
 const frustum = new THREE.Frustum();
 const tmpVec = new THREE.Vector3();
+const labelTravel = { x: 0, y: 0, z: 0 };
 const bestD2 = new Float64Array(LABEL_BUDGET);
 const bestSlot = new Int32Array(LABEL_BUDGET);
 
@@ -182,8 +185,9 @@ export default function Labels() {
 
     const budget = qualityTier >= 3 ? Math.min(DEGRADED_BUDGET, LABEL_BUDGET) : LABEL_BUDGET;
     const count = Math.min(positionBuffer.count, MAX_NODES);
-    const arr = positionBuffer.array;
     const titles = titleOfSlot.current;
+    const now = performance.now();
+    const reducedMotion = prefersReducedMotion();
 
     hoverSlot.current = hoveredId ? (slotOfId.get(hoveredId) ?? -1) : -1;
     selectedSlot.current = selectedId ? (slotOfId.get(selectedId) ?? -1) : -1;
@@ -196,7 +200,8 @@ export default function Labels() {
       if (i === hoverSlot.current || i === selectedSlot.current) continue; // reserved
       if (kindOfSlot[i] === 1 && !topicNodesEnabled) continue; // hidden topic node
       if (!titles[i]) continue;
-      tmpVec.set(arr[i * 3], arr[i * 3 + 1], arr[i * 3 + 2]);
+      writeSlotTravelPosition(labelTravel, i, now, { reducedMotion, flat });
+      tmpVec.set(labelTravel.x, labelTravel.y, labelTravel.z);
       if (!frustum.containsPoint(tmpVec)) continue;
       const d2 = tmpVec.distanceToSquared(camera.position);
       if (filled === budget && d2 >= bestD2[filled - 1]) continue;
@@ -251,21 +256,23 @@ export default function Labels() {
 
   /** Cheap per-frame pass: track node motion + billboard toward the camera. */
   const place = (label: TroikaLabel, slot: number, camera: THREE.Camera): void => {
-    const arr = positionBuffer.array;
-    const o = slot * 3;
+    writeSlotTravelPosition(labelTravel, slot, performance.now(), {
+      reducedMotion: prefersReducedMotion(),
+      flat,
+    });
     if (flat) {
       // star chart: label sits to the RIGHT of the dot, vertically centered
       label.position.set(
-        arr[o] + (scaleOfSlot[slot] || 1.1) + FLAT_GAP,
-        arr[o + 1],
-        arr[o + 2] + FLAT_LIFT,
+        labelTravel.x + (scaleOfSlot[slot] || 1.1) + FLAT_GAP,
+        labelTravel.y,
+        labelTravel.z + FLAT_LIFT,
       );
       label.scale.setScalar(1.05);
     } else {
       label.position.set(
-        arr[o],
-        arr[o + 1] + (scaleOfSlot[slot] || 1.1) + 1.6,
-        arr[o + 2],
+        labelTravel.x,
+        labelTravel.y + (scaleOfSlot[slot] || 1.1) + 1.6,
+        labelTravel.z,
       );
       label.scale.setScalar(1);
     }

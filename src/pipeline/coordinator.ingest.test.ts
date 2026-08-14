@@ -25,6 +25,7 @@ import {
   removeDocuments,
   resetCorpus,
 } from './coordinator';
+import { rememberWorldOrigin } from '../scene/ingestBirth';
 
 const layout = vi.hoisted(() => ({
   layoutAddNodes: vi.fn(() => [] as string[]),
@@ -317,7 +318,13 @@ beforeEach(() => {
   persistence.lookupDocCache.mockResolvedValue(undefined);
   persistence.unreferencedDocumentIds.mockImplementation(async (ids: string[]) => ids);
   persistence.estimateStorage.mockResolvedValue(null);
-  useUiStore.setState({ toasts: [], selectedId: null, pendingFocus: null, lastError: null });
+  useUiStore.setState({
+    toasts: [],
+    selectedId: null,
+    pendingFocus: null,
+    lastError: null,
+    cameraCommand: null,
+  });
   resetCorpus();
 });
 
@@ -348,6 +355,27 @@ describe('coordinator ingest', () => {
       expect(textStore.has(id)).toBe(true);
       expect(docVectorStore.has(id)).toBe(true);
     }
+  });
+
+  it('spawns live nodes at the recorded ingest origin, not a random shell', async () => {
+    rememberWorldOrigin([12, -4, 3]);
+    await ingestFiles([textFile('origin.txt', 'Kafka consumer retry notes for origin spawn.')]);
+
+    expect(layout.layoutAddNodes).toHaveBeenCalled();
+    const firstBatch = layout.layoutAddNodes.mock.calls[0][0] as { spawn?: number[] }[];
+    expect(firstBatch.length).toBeGreaterThan(0);
+    expect(firstBatch[0]?.spawn).toEqual([12, -4, 3]);
+  });
+
+  it('does not steal the camera when adding files to an existing corpus', async () => {
+    await ingestFiles([textFile('first.txt', 'Initial kafka consumer documentation.')]);
+    const afterFirst = useUiStore.getState().cameraCommand;
+    expect(afterFirst?.kind).toBe('fitAll');
+    const nonce = afterFirst?.nonce;
+
+    await ingestFiles([textFile('second.txt', 'Added kafka consumer lag runbook.')]);
+    expect(documentIds()).toHaveLength(2);
+    expect(useUiStore.getState().cameraCommand?.nonce).toBe(nonce);
   });
 
   it('isolates a per-file parse failure and still settles the rest', async () => {
