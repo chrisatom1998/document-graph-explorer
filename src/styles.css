@@ -159,13 +159,15 @@
 
   /* HeroUI's glass-dark theme drives component surfaces. These app tokens
      translate it to our graph shell so old and new controls feel unified. */
-  --background: #060914;
+  --background: #050510;
   --foreground: #edf2ff;
   --focus: #77e5ff;
   --radius: 0.625rem;
   --glass-blur: 22px;
 
-  --bg-void: #060914;
+  /* Must match palette.ts VOID / spec §7.1 so the canvas/chrome seam disappears. */
+  --bg-void: #050510;
+  --side-panel-width: min(640px, 42vw);
   --bg-glass: rgba(11, 16, 34, 0.72);
   --bg-glass-strong: rgba(10, 15, 31, 0.9);
   --bg-glass-soft: rgba(10, 15, 31, 0.52);
@@ -225,7 +227,7 @@
    win over the stock theme without needing a second provider or theme layer. */
 html.glass-dark {
   --glass-blur: 22px;
-  --background: #060914;
+  --background: #050510;
   --foreground: #edf2ff;
   --focus: #77e5ff;
   --accent: #8e7dff;
@@ -302,6 +304,18 @@ input {
   height: 100vh;
   overflow: hidden;
   background: var(--bg-void);
+}
+
+/* Canvas Suspense placeholder — same void as the scene so first paint is not
+   an unstyled flash before NebulaCanvas mounts. */
+.scene-loading {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-canvas);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(21, 27, 56, 0.55) 0%, transparent 52%),
+    var(--bg-void);
+  pointer-events: none;
 }
 
 /* Keyboard-accessible companion to the WebGL graph. It enters the normal Tab
