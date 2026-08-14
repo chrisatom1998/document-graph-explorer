@@ -146,7 +146,7 @@ describe('corpusRepository data mutations', () => {
       corpusHash: 'old-hash',
       docHashes: ['doc-a'],
       exportData: {
-        version: 1,
+        version: 1 as const,
         createdAt: '2024-01-01',
         generator: 'knowledge-nebula',
         includeEmbeddings: false,
@@ -201,7 +201,7 @@ describe('corpusRepository data mutations', () => {
       corpusHash: 'snapshot-hash',
       docHashes: ['doc-d', 'doc-b'],
       exportData: {
-        version: 1,
+        version: 1 as const,
         createdAt: '2024-01-01',
         generator: 'knowledge-nebula',
         includeEmbeddings: false,

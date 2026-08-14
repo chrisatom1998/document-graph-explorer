@@ -77,6 +77,7 @@ vi.mock('../pipeline/runQueue', () => ({
   enqueueRun: vi.fn((fn) => fn()),
 }));
 
+import type { GraphExport } from '../model/types';
 import { hydrateFromRecord, restoreSession } from './session';
 import { fetchDemoManifest } from '../demo/manifest';
 
@@ -112,7 +113,7 @@ describe('session persistence', () => {
 
   it('hydrates a saved graph back into the runtime stores and layout', async () => {
     const node = makeNode('doc-1', 'Doc One');
-    const exportData = {
+    const exportData: GraphExport = {
       version: 1,
       createdAt: '2024-01-01T00:00:00.000Z',
       generator: 'knowledge-nebula',
@@ -156,7 +157,7 @@ describe('session persistence', () => {
 
   it('purges demo-only sessions and clears the active corpus before returning to a fresh state', async () => {
     const node = makeNode('demo-1', 'demo-file.md');
-    const exportData = {
+    const exportData: GraphExport = {
       version: 1,
       createdAt: '2024-01-01T00:00:00.000Z',
       generator: 'knowledge-nebula',
