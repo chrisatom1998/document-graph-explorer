@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import type { EdgeKind } from '../model/types';
 import { EDGE_KIND_HEX, EDGE_KIND_LABEL } from '../scene/palette';
 import { useUiStore } from '../store/uiStore';
-import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './FirstRunGuide';
+import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 import { useFocusTrap } from './useFocusTrap';
 import CloseButton from './CloseButton';
 
