@@ -34,6 +34,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
+import { clusterOfNodes } from './clusterMap';
 import { clusterColor, EDGE_TINTS, FLAT_EDGE, FLAT_EDGE_FOCUS } from './palette';
 import { computeEmphasis } from './emphasis';
 import {
@@ -302,8 +303,7 @@ export default function Edges() {
     );
     const focusId = hoveredId ?? selectedId;
     const flat = ui.dims === 2;
-    const clusterOf = new Map<string, number>();
-    for (const n of nodes) clusterOf.set(n.id, n.cluster);
+    const clusterOf = clusterOfNodes(nodes);
     // Count visible edges for density fade (hidden edges shouldn't dim the rest)
     let visibleCount = 0;
     for (const e of renderEdges) if (!isEdgeHidden(e, ui)) visibleCount++;

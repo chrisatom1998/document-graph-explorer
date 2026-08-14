@@ -383,8 +383,11 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boo
   const store = useGraphStore.getState; // fresh state per call; actions are stable
   const initialDocumentCount = documentNodes().length;
 
-  // (a) route by extension; unsupported → ignored tray
+  // (a) route by extension; unsupported → ignored tray. Statuses are
+  // committed as one batch — setFileStatus clones the whole status map, so
+  // per-file writes are quadratic over a large drop.
   const routed: { file: IngestFile; fileType: FileType }[] = [];
+  const queuedStatuses: FileStatus[] = [];
   for (const file of files) {
     const artifact = repoArtifactReason(file.name);
     if (artifact) {
@@ -396,13 +399,15 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boo
       store().addIgnored(file.name, 'unsupported type');
       continue;
     }
-    store().setFileStatus({ fileId: file.fileId, name: file.name, stage: 'queued' });
+    queuedStatuses.push({ fileId: file.fileId, name: file.name, stage: 'queued' });
     routed.push({ file, fileType });
   }
+  if (queuedStatuses.length > 0) store().setFileStatuses(queuedStatuses);
 
   // (b) content ids; duplicates (within the drop or vs the store) → cached
   const seenIds = new Set<string>();
   const pending: PendingFile[] = [];
+  const duplicateStatuses: FileStatus[] = [];
   for (const { file, fileType } of routed) {
     // hashing a large drop takes real time — bail between files, not after
     throwIfAborted(signal);
@@ -417,12 +422,13 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boo
     if (seenIds.has(id) || store().nodeIndex[id] !== undefined) {
       // known doc — backfill the original if it predates original retention
       if (!file.reconstructable) void putOriginalIfMissing(id, file.name, original);
-      store().setFileStatus({ fileId: file.fileId, name: file.name, stage: 'cached' });
+      duplicateStatuses.push({ fileId: file.fileId, name: file.name, stage: 'cached' });
       continue;
     }
     seenIds.add(id);
     pending.push({ file, fileType, id, relPath, original });
   }
+  if (duplicateStatuses.length > 0) store().setFileStatuses(duplicateStatuses);
   if (pending.length === 0) return false; // nothing new — leave the corpus untouched
 
   // (c) IndexedDB cache lookup (persistence subsystem)
@@ -434,6 +440,11 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boo
   );
   throwIfAborted(signal);
   const misses: PendingFile[] = [];
+  // Cache hits commit as ONE addNodes + ONE setFileStatuses: a restore of an
+  // n-file corpus through this loop used to clone the node array and status
+  // map once per file (O(n²)) and render the app once per file.
+  const restoredNodes: DocNode[] = [];
+  const restoredStatuses: FileStatus[] = [];
   for (const { p, cached } of lookups) {
     fileIdOfDoc.set(p.id, p.file.fileId);
     nameOfDoc.set(p.id, p.file.name);
@@ -444,7 +455,7 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boo
     const dropped = layoutAddNodes([{ id: p.id, cluster: cached.node.cluster, spawn: randomSpawn() }]);
     if (dropped.length > 0) {
       store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
-      store().setFileStatus({
+      restoredStatuses.push({
         fileId: p.file.fileId,
         name: p.file.name,
         stage: 'error',
@@ -452,7 +463,7 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boo
       });
       continue;
     }
-    store().addNodes([cached.node]);
+    restoredNodes.push(cached.node);
     textStore.set(p.id, cached.text);
     chunkStore.set(p.id, {
       texts: cached.chunkTexts,
@@ -463,8 +474,10 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boo
     mdLinkTargetsStore.set(p.id, cached.mdLinkTargets);
     docLinksStore.set(p.id, cached.docLinks);
     if (!p.file.reconstructable) void putOriginalIfMissing(p.id, p.file.name, p.original);
-    store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
+    restoredStatuses.push({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
   }
+  if (restoredNodes.length > 0) store().addNodes(restoredNodes);
+  if (restoredStatuses.length > 0) store().setFileStatuses(restoredStatuses);
 
   // (d) parse misses — pdf on the main thread, everything else in the pool
   const pool = getPool();
@@ -652,19 +665,21 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boo
     // after every parse task settles so one PDF cannot erase the next queued
     // PDF's freshly-published progress update.
     if (store().modelProgress?.kind === 'ocr') store().setModelProgress(null);
+    // failed files keep an error chip; no ghosted node is added
+    const errorStatuses: FileStatus[] = [];
     settled.forEach((result, i) => {
       if (result.status !== 'rejected') return;
       const p = misses[i];
       const message =
         result.reason instanceof Error ? result.reason.message : String(result.reason);
-      // failed files keep an error chip; no ghosted node is added
-      store().setFileStatus({
+      errorStatuses.push({
         fileId: p.file.fileId,
         name: p.file.name,
         stage: 'error',
         error: message,
       });
     });
+    if (errorStatuses.length > 0) store().setFileStatuses(errorStatuses);
   }
 
   if (documentNodes().length === 0) {

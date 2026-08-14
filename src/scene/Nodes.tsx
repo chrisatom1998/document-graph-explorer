@@ -270,6 +270,11 @@ export default function Nodes() {
     const isFlat = dims === 2;
     const soften = densitySoftening(nodes.length);
     const showMeIds = highlightOwner === 'showMe' && searchResults ? new Set(searchResults) : null;
+    // Set lookups once per recolor — .includes inside the node loop made
+    // snapshot-overlay mode O(nodes × overlay ids)
+    const snapshotActive = highlightOwner === 'snapshot' && snapshotOverlay;
+    const addedIds = snapshotActive ? new Set(snapshotOverlay.addedIds) : null;
+    const updatedIds = snapshotActive ? new Set(snapshotOverlay.updatedIds) : null;
     const emphasis = computeEmphasis(
       nodes,
       edges,
@@ -321,11 +326,11 @@ export default function Nodes() {
         tmpColor.setRGB(1, 0.96, 0.62);
         tmpOuterColor.setRGB(0.9, 0.82, 0.42);
       }
-      if (highlightOwner === 'snapshot' && snapshotOverlay) {
-        if (snapshotOverlay.addedIds.includes(n.id)) {
+      if (addedIds && updatedIds) {
+        if (addedIds.has(n.id)) {
           tmpColor.setRGB(0.35, 0.95, 0.55);
           tmpOuterColor.setRGB(0.18, 0.62, 0.34);
-        } else if (snapshotOverlay.updatedIds.includes(n.id)) {
+        } else if (updatedIds.has(n.id)) {
           tmpColor.setRGB(1, 0.78, 0.28);
           tmpOuterColor.setRGB(0.65, 0.38, 0.1);
         }
@@ -409,6 +414,17 @@ export default function Nodes() {
         s.clusterCollapsed !== prev.clusterCollapsed
       ) {
         colorsDirty.current = true;
+      }
+      // The matrix pass only reads the show-me pulse inputs (searchResults /
+      // highlightOwner / selectedId) and collapse state — hover, filter and
+      // snapshot overlays are pure recolors, and flagging them here used to
+      // rewrite 3×MAX_NODES instance matrices on every hover change.
+      if (
+        s.selectedId !== prev.selectedId ||
+        s.searchResults !== prev.searchResults ||
+        s.highlightOwner !== prev.highlightOwner ||
+        s.clusterCollapsed !== prev.clusterCollapsed
+      ) {
         matricesDirty.current = true;
       }
       // 2D/3D toggle reshapes sizes AND recolors (flat cyan vs cluster hues)
