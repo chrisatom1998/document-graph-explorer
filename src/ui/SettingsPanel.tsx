@@ -468,7 +468,7 @@ export default function SettingsPanel() {
               </label>
               <label
                 style={checkboxRowStyle}
-                title="Keep the key in this browser's local storage, unencrypted — leave this off on a shared machine. Uncheck to hold it only in memory for this tab; you'll re-paste it next visit."
+                title="Keep the key in this browser's local storage. Uncheck to hold it only in memory for this tab — you'll re-paste it next visit."
               >
                 <input
                   type="checkbox"

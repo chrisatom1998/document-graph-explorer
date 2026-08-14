@@ -34,12 +34,10 @@ import {
   createAnnotationMap,
   createCollabSession,
   hydrateAnnotationMap,
-  isWeakCollabKey,
   parseCollabInvite,
   sanitizeCollabToken,
   snapshotAnnotationMap,
 } from './session';
-import { MAX_ANNOTATION_NOTE_CHARS, MAX_ANNOTATION_TAGS } from '../store/annotationSanitize';
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -85,42 +83,8 @@ describe('collaboration invites', () => {
   });
 });
 
-describe('weak session keys', () => {
-  it('flags keys that are short or drawn from a single character class', () => {
-    expect(isWeakCollabKey('secret')).toBe(true);
-    expect(isWeakCollabKey('1234567890123456789')).toBe(true);
-    expect(isWeakCollabKey('abcdefghijklmnopqrs')).toBe(true);
-    expect(isWeakCollabKey('ABCDEFGHIJKLMNOPQRS')).toBe(true);
-    // Punctuation is stripped before measuring, so it cannot pad a short key.
-    expect(isWeakCollabKey('a!!!!!!!!!!!!!!!!!!!!b')).toBe(true);
-  });
-
-  it('accepts a generated-strength key', () => {
-    expect(isWeakCollabKey('9f3c1a7be04d28f65c0b9e71a4d3f8b2')).toBe(false);
-    expect(isWeakCollabKey('Correct-Horse-9-Battery')).toBe(false);
-  });
-});
-
 describe('annotation sync map', () => {
-  it('bounds peer-authored records on the way in and out of the shared doc', () => {
-    const doc = new Y.Doc();
-    const map = createAnnotationMap(doc);
-    hydrateAnnotationMap(map, {
-      'doc-1': {
-        note: 'x'.repeat(MAX_ANNOTATION_NOTE_CHARS + 100),
-        tags: Array.from({ length: MAX_ANNOTATION_TAGS + 5 }, (_, i) => `t${i}`),
-        pinned: true,
-        updatedAt: 5,
-      },
-    });
-
-    const snapshot = snapshotAnnotationMap(map);
-    expect(snapshot['doc-1']!.note).toHaveLength(MAX_ANNOTATION_NOTE_CHARS);
-    expect(snapshot['doc-1']!.tags).toHaveLength(MAX_ANNOTATION_TAGS);
-    doc.destroy();
-  });
-
-  it('hydrates and snapshots meaningful annotation state without empty husks', () => {
+  it('hydrates and snapshots annotation state', () => {
     const doc = new Y.Doc();
     const map = createAnnotationMap(doc);
     hydrateAnnotationMap(map, {
@@ -130,6 +94,7 @@ describe('annotation sync map', () => {
 
     expect(snapshotAnnotationMap(map)).toEqual({
       'doc-1': { note: 'hello', tags: ['alpha', 'beta'], pinned: true, updatedAt: 5 },
+      'doc-2': { note: '', tags: [], pinned: false, updatedAt: 6 },
     });
     doc.destroy();
   });

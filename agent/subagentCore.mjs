@@ -165,7 +165,7 @@ function parseJsonArgs(value, fallback = {}) {
   try {
     return JSON.parse(value);
   } catch (error) {
-    throw new Error(`Tool arguments must be JSON: ${error.message}`, { cause: error });
+    throw new Error(`Tool arguments must be JSON: ${error.message}`);
   }
 }
 
@@ -470,7 +470,7 @@ async function callModel({ baseUrl, apiKey, model, messages, timeoutMs }) {
     });
   } catch (error) {
     if (error.name === 'AbortError') {
-      throw new Error(`Model request timed out after ${timeoutMs}ms`, { cause: error });
+      throw new Error(`Model request timed out after ${timeoutMs}ms`);
     }
     throw error;
   } finally {

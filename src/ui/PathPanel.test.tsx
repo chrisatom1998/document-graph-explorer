@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { DocNode, Edge } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { commitPendingFocus } from './focusNode';
 import PathPanel from './PathPanel';
 
 function makeDoc(id: string, title: string): DocNode {
@@ -130,10 +131,12 @@ describe('PathPanel', () => {
     const docBBtn = screen.getByRole('button', { name: 'Document B' });
     fireEvent.click(docBBtn);
 
-    const ui = useUiStore.getState();
-    expect(ui.selectedId).toBe('docB');
-    expect(ui.cameraCommand?.kind).toBe('frameNode');
-    expect(ui.cameraCommand?.ids).toEqual(['docB']);
+    expect(useUiStore.getState().selectedId).toBeNull();
+    expect(useUiStore.getState().pendingFocus?.id).toBe('docB');
+    expect(useUiStore.getState().cameraCommand?.kind).toBe('frameNode');
+    expect(useUiStore.getState().cameraCommand?.ids).toEqual(['docB']);
+    commitPendingFocus();
+    expect(useUiStore.getState().selectedId).toBe('docB');
   });
 
   it('clears highlights and exits path mode when close button is clicked', () => {

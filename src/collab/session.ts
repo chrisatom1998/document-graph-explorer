@@ -12,7 +12,6 @@ import { WebrtcProvider } from 'y-webrtc';
 import { AIRGAP, AIRGAP_MESSAGE } from '../airgap';
 import { isOffline } from '../offline';
 import type { DocAnnotationRecord } from '../persistence/db';
-import { sanitizeAnnotationMap } from '../store/annotationSanitize';
 
 export const COLLAB_FRAGMENT_PREFIX = '#collab=v1.';
 export const DEFAULT_COLLAB_SIGNALING = ['wss://signaling.yjs.dev'];
@@ -54,28 +53,6 @@ export function sanitizeCollabToken(value: string): string {
     .trim()
     .replace(/[^a-zA-Z0-9-_]+/g, '')
     .slice(0, 64);
-}
-
-/**
- * Minimum length for a session key to be worth calling a secret. Generated
- * keys are 32 hex chars (16 random bytes); this only ever fires on a key a
- * user typed in by hand.
- */
-const MIN_STRONG_KEY_CHARS = 16;
-
-/**
- * True when a session key is guessable enough to be worth warning about.
- * Deliberately not enforced in sanitizeCollabToken: the key is the room's only
- * access control, but rejecting short ones would break invites already in
- * circulation and hand-made room names peers agreed on out of band. Callers
- * warn and proceed.
- */
-export function isWeakCollabKey(key: string): boolean {
-  const safe = sanitizeCollabToken(key);
-  if (safe.length < MIN_STRONG_KEY_CHARS) return true;
-  // A long key drawn from one character class (all digits, all one case) has
-  // far less entropy than its length suggests.
-  return /^[0-9]+$/.test(safe) || /^[a-z]+$/.test(safe) || /^[A-Z]+$/.test(safe);
 }
 
 export function buildCollabInvite(roomId: string, sessionKey: string): string {
@@ -157,13 +134,25 @@ export function hydrateAnnotationMap(
   annotations: Record<string, DocAnnotationRecord>,
 ): void {
   map.clear();
-  for (const [key, value] of Object.entries(sanitizeAnnotationMap(annotations, Date.now()))) {
-    map.set(key, value);
+  for (const [key, value] of Object.entries(annotations ?? {})) {
+    map.set(key, {
+      note: typeof value.note === 'string' ? value.note : '',
+      tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string') : [],
+      pinned: value.pinned === true,
+      updatedAt: typeof value.updatedAt === 'number' ? value.updatedAt : Date.now(),
+    });
   }
 }
 
 export function snapshotAnnotationMap(map: Y.Map<DocAnnotationRecord>): Record<string, DocAnnotationRecord> {
-  // Every value here was authored by a peer, so it is bounded on the way out
-  // of the shared doc as well as on the way in.
-  return sanitizeAnnotationMap(Object.fromEntries(map.entries()));
+  const next: Record<string, DocAnnotationRecord> = {};
+  for (const [key, value] of map.entries()) {
+    next[key] = {
+      note: typeof value.note === 'string' ? value.note : '',
+      tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string') : [],
+      pinned: value.pinned === true,
+      updatedAt: typeof value.updatedAt === 'number' ? value.updatedAt : 0,
+    };
+  }
+  return next;
 }

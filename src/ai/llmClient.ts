@@ -144,13 +144,13 @@ export async function llmStream(
   const body = requestBody(target, llmSystemInstruction(task), prompt);
   const label = providerLabel(target.provider);
 
-  let lastError: string;
+  let lastError = `Unknown ${label} error`;
   for (let attempt = 0; ; attempt++) {
     // Checked per attempt, not just on entry: cancellation can land during a
     // retry backoff, and the next attempt would then issue another request
     // for an answer the user has already navigated away from.
     if (signal?.aborted) return { ok: false, error: 'Cancelled' };
-    let retryable: boolean;
+    let retryable = false;
     const controller = new AbortController();
     let idleTimer: ReturnType<typeof setTimeout> | undefined;
     const clearIdle = () => {

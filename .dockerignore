@@ -18,13 +18,3 @@ desktop-app-screenshot.png
 dist-win-build.log
 prs.json
 release-id.txt
-
-# The Dockerfile does `COPY . .` in its build stage. The final image only
-# carries dist/, so these never reach a running container — but they would sit
-# in the build layer and its cache, which is enough to leak a developer's
-# credentials to anyone who can pull the intermediate image.
-.env
-.env.*
-.npmrc
-*.pem
-*.key

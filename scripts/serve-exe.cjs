@@ -5,7 +5,7 @@ const { createServer } = require('node:http');
 const { existsSync } = require('node:fs');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const { SECURITY_HEADERS, createRequestHandler } = require('./staticServer.cjs');
+const { createRequestHandler } = require('./staticServer.cjs');
 
 const AIRGAP_MODE = process.argv.includes('--airgap');
 const APP_BASE = process.pkg ? path.dirname(process.execPath) : path.resolve(__dirname, '..');
@@ -13,6 +13,12 @@ const ROOT = path.join(APP_BASE, AIRGAP_MODE ? 'dist-airgap' : 'dist');
 const INDEX_HTML = path.join(ROOT, 'index.html');
 const DEFAULT_PORT = 8317;
 const MAX_PORT_ATTEMPTS = 10;
+
+const SECURITY_HEADERS = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'no-referrer',
+};
 
 function logLine(req, status) {
   console.log(`${status} ${req.method} ${req.url}`);

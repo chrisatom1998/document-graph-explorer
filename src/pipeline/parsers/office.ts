@@ -468,13 +468,14 @@ async function parseOds(zip: JSZip, name: string): Promise<ParserResult> {
       const rowValues: string[] = [];
       for (const cell of elements(children(row), new Set(['table:table-cell']))) {
         const pTags = elements(children(cell), new Set(['text:p']));
-        // Sometimes text is directly in the cell or other elements, though
-        // typically it lives in text:p nodes.
-        const cellText = (pTags.length > 0
-          ? pTags.map(p => collectText(children(p))).join(' ')
-          : collectText(children(cell)))
-          .replace(/\s+/g, ' ')
-          .trim();
+        let cellText = '';
+        if (pTags.length > 0) {
+          cellText = pTags.map(p => collectText(children(p))).join(' ');
+        } else {
+          // Sometimes text is directly in cell or other elements, though typically in text:p
+          cellText = collectText(children(cell));
+        }
+        cellText = cellText.replace(/\s+/g, ' ').trim();
         if (cellText) rowValues.push(cellText);
       }
       if (rowValues.length > 0) {

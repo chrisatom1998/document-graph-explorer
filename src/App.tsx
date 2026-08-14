@@ -256,7 +256,7 @@ export default function App() {
         } else if (ui.insightsOpen) {
           ui.setInsightsOpen(false);
           ui.setSearchResults(null); // drop any section highlight with it
-        } else if (ui.selectedId) {
+        } else if (ui.selectedId || ui.pendingFocus) {
           ui.setSelected(null);
         } else {
           ui.sendCamera('fitAll'); // overview (spec §7.3)

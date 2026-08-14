@@ -108,9 +108,10 @@ export default function NebulaCanvas() {
         gl.toneMappingExposure = 1.08;
       }}
       onPointerMissed={() => {
-        // Clicking empty space dismisses whatever is selected.
+        // Clicking empty space dismisses the open panel and any in-flight
+        // camera-then-panel focus so a later arrival cannot reopen it.
         const ui = useUiStore.getState();
-        if (ui.selectedId) ui.setSelected(null);
+        if (ui.selectedId || ui.pendingFocus) ui.setSelected(null);
       }}
     >
       <color attach="background" args={[bg]} />
