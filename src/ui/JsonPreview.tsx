@@ -53,9 +53,10 @@ function renderHighlighted(text: string): ReactNode[] {
 interface JsonPreviewProps {
   text: string;
   className?: string;
+  highlight?: string | null;
 }
 
-export default function JsonPreview({ text, className }: JsonPreviewProps) {
+export default function JsonPreview({ text, className, highlight }: JsonPreviewProps) {
   const pretty = useMemo(() => {
     if (text.length > MAX_RENDER_CHARS) return null;
     try {
@@ -68,7 +69,7 @@ export default function JsonPreview({ text, className }: JsonPreviewProps) {
   const wrapClass = className ? `json-preview ${className}` : 'json-preview';
 
   if (text.length > MAX_RENDER_CHARS) {
-    return <VirtualText text={text} className={wrapClass} />;
+    return <VirtualText text={text} className={wrapClass} highlight={highlight} />;
   }
 
   if (pretty === null) {

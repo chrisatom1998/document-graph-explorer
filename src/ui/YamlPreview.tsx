@@ -64,13 +64,14 @@ function renderLine(line: string, key: string): ReactNode {
 interface YamlPreviewProps {
   text: string;
   className?: string;
+  highlight?: string | null;
 }
 
-export default function YamlPreview({ text, className }: YamlPreviewProps) {
+export default function YamlPreview({ text, className, highlight }: YamlPreviewProps) {
   const wrapClass = className ? `yaml-preview ${className}` : 'yaml-preview';
 
   if (text.length > MAX_RENDER_CHARS) {
-    return <VirtualText text={text} className={wrapClass} />;
+    return <VirtualText text={text} className={wrapClass} highlight={highlight} />;
   }
 
   const lines = text.split('\n');

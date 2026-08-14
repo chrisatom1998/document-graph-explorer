@@ -12,6 +12,7 @@ vi.mock('../search/semanticSearch', () => ({
 import { searchCorpus, searchCorpusLexical } from '../search/semanticSearch';
 import { useGraphStore } from '../store/graphStore';
 import { DEFAULT_FILTER, useUiStore } from '../store/uiStore';
+import { docVectorStore } from '../store/runtimeStores';
 import SearchOverlay from './SearchOverlay';
 
 const mockSearchCorpus = vi.mocked(searchCorpus);
@@ -39,6 +40,7 @@ function secondDocumentNode(): DocNode {
 
 describe('SearchOverlay', () => {
   beforeEach(() => {
+    docVectorStore.clear();
     useGraphStore.getState().reset();
     useGraphStore.setState({ nodes: [documentNode()], nodeIndex: { architecture: 0 } });
     useUiStore.setState({
@@ -46,6 +48,10 @@ describe('SearchOverlay', () => {
       searchResults: null,
       highlightOwner: null,
       filter: { ...DEFAULT_FILTER },
+      selectedId: null,
+      readerHighlight: null,
+      cameraCommand: null,
+      toasts: [],
     });
     mockSearchCorpus.mockReset();
     mockSearchCorpusLexical.mockReset();
@@ -246,5 +252,66 @@ describe('SearchOverlay', () => {
 
     fireEvent.keyDown(input, { key: 'Tab', shiftKey: true });
     expect(showAll).toHaveFocus();
+  });
+
+  it('opens the matching passage when a search hit is chosen', async () => {
+    mockSearchCorpusLexical.mockResolvedValue([{
+      id: 'architecture',
+      score: 1,
+      matchKind: 'keyword',
+      snippet: 'Architecture details live here',
+      passageIndex: 2,
+    }]);
+    mockSearchCorpus.mockResolvedValue([{
+      id: 'architecture',
+      score: 1,
+      matchKind: 'keyword',
+      snippet: 'Architecture details live here',
+      passageIndex: 2,
+    }]);
+
+    render(<SearchOverlay />);
+    fireEvent.change(
+      screen.getByRole('combobox', { name: /search your documents/i }),
+      { target: { value: 'architecture' } },
+    );
+    const option = await screen.findByRole('option', { name: /Architecture Overview/i });
+    fireEvent.click(option);
+
+    expect(useUiStore.getState().searchOpen).toBe(false);
+    expect(useUiStore.getState().selectedId).toBe('architecture');
+    expect(useUiStore.getState().readerHighlight).toEqual({
+      docId: 'architecture',
+      text: 'Architecture details live here',
+      passageIndex: 2,
+    });
+  });
+
+  it('shows similar documents for the active result with Alt+Enter', () => {
+    useGraphStore.setState({
+      nodes: [documentNode(), secondDocumentNode()],
+      nodeIndex: { architecture: 0, runbook: 1 },
+      edges: [{
+        id: 'similar',
+        source: 'architecture',
+        target: 'runbook',
+        kind: 'semantic',
+        weight: 0.9,
+        evidence: ['similar'],
+      }],
+    });
+
+    render(<SearchOverlay />);
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-keyshortcuts', 'Alt+Enter');
+    for (const button of screen.getAllByRole('button', { name: 'Similar' })) {
+      expect(button).not.toHaveAttribute('tabindex', '-1');
+    }
+    fireEvent.keyDown(input, { key: 'Enter', altKey: true });
+
+    expect(useUiStore.getState().searchOpen).toBe(false);
+    expect(useUiStore.getState().highlightOwner).toBe('showMe');
+    expect(useUiStore.getState().searchResults).toEqual(['architecture', 'runbook']);
+    expect(useUiStore.getState().cameraCommand?.kind).toBe('frameSet');
   });
 });
