@@ -54,6 +54,24 @@ describe('arrival and cancel', () => {
     expect(shouldCommitOnTweenCancel(true)).toBe(true);
     expect(shouldCommitOnTweenCancel(false)).toBe(false);
   });
+
+  it('keeps camera framing math finite and readable for a normal focus move', () => {
+    const cameraPos = { x: 24, y: -12, z: 160 };
+    const target = { x: 5, y: 3, z: 0 };
+
+    const cameraDistSq =
+      (cameraPos.x - target.x) ** 2 +
+      (cameraPos.y - target.y) ** 2 +
+      (cameraPos.z - target.z) ** 2;
+    const targetDistSq = 0;
+
+    expect(Number.isFinite(cameraDistSq)).toBe(true);
+    expect(Number.isFinite(targetDistSq)).toBe(true);
+    expect(isAlreadyNear(cameraDistSq, targetDistSq)).toBe(false);
+    expect(decideFrameNode({ hasSlot: true, reducedMotion: false, alreadyNear: false })).toEqual({
+      action: 'tween',
+    });
+  });
 });
 
 describe('empty-space dismiss vs late camera arrival', () => {
