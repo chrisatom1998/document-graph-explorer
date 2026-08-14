@@ -197,6 +197,35 @@ describe('collab privacy: notes default-off and no disk paths', () => {
     });
   });
 
+  it('removes peer-authored husks from both the room and local capacity', async () => {
+    useCorpusStore.getState().setLocalState(
+      [{ id: 'c1', name: 'C', updatedAt: 1, documentCount: 1, watching: false }],
+      'c1',
+    );
+    useAnnotationStore.getState().hydrate('c1', {});
+    useCollabStore.getState().setShareNotes(true);
+    await useCollabStore.getState().startSession('room-husks', 'key-husks');
+    const session = useCollabStore.getState().session;
+    expect(session).not.toBeNull();
+
+    session!.doc.transact(() => {
+      for (let i = 0; i < 10; i++) {
+        session!.annotations.set(`husk-${i}`, {
+          note: '   ',
+          tags: [],
+          pinned: false,
+          updatedAt: i,
+        });
+      }
+    });
+
+    await vi.waitFor(() => {
+      expect(session!.annotations.size).toBe(0);
+      expect(useAnnotationStore.getState().annotationCount).toBe(0);
+      expect(useAnnotationStore.getState().annotations).toEqual({});
+    });
+  });
+
   it('omits filesystem paths from the published shared view', () => {
     const node = doc('local-sla');
     useGraphStore.getState().addNodes([node]);

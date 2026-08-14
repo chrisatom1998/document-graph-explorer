@@ -23,6 +23,12 @@ export const MAX_ANNOTATION_TAG_CHARS = 200; // matches MAX_LIST_ITEM_CHARS
 export const MAX_ANNOTATION_RECORDS = 4096; // matches MAX_NODES
 export const MAX_SCANNED_ENTRIES = 100_000;
 /**
+ * Existing local work may predate the 4,096-record admission limit. Keep it
+ * readable after upgrade while retaining a hard ceiling for a corrupted
+ * IndexedDB record.
+ */
+export const MAX_PERSISTED_ANNOTATION_RECORDS = MAX_SCANNED_ENTRIES;
+/**
  * Tolerance for a peer whose clock runs ahead of ours. Conflicts resolve by
  * last-write-wins on updatedAt, so an unclamped far-future stamp would let one
  * peer's record win against every later edit, permanently.
@@ -72,6 +78,11 @@ export function sanitizeAnnotationRecord(
   };
 }
 
+/** Empty annotations are not user data and must not consume the record cap. */
+export function isAnnotationHusk(value: DocAnnotationRecord): boolean {
+  return value.note.trim() === '' && value.tags.length === 0 && !value.pinned;
+}
+
 /** True when the key itself is unusable — reject the whole record. */
 export function isValidAnnotationKey(key: string): boolean {
   if (key.length === 0 || key.length > MAX_ANNOTATION_KEY_CHARS) return false;
@@ -89,18 +100,46 @@ export function isValidAnnotationKey(key: string): boolean {
 export function sanitizeAnnotationMap(
   raw: Record<string, unknown> | undefined,
   fallbackUpdatedAt = 0,
+  maxRecords = MAX_ANNOTATION_RECORDS,
 ): Record<string, DocAnnotationRecord> {
   const out: Record<string, DocAnnotationRecord> = {};
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  const keepLimit = Math.max(
+    0,
+    Math.min(Math.floor(maxRecords), MAX_SCANNED_ENTRIES),
+  );
   let kept = 0;
   let examined = 0;
   for (const [key, value] of Object.entries(raw)) {
-    if (kept >= MAX_ANNOTATION_RECORDS || ++examined > MAX_SCANNED_ENTRIES) break;
+    if (kept >= keepLimit || ++examined > MAX_SCANNED_ENTRIES) break;
     if (!isValidAnnotationKey(key)) continue;
     const record = sanitizeAnnotationRecord(value, fallbackUpdatedAt);
-    if (!record) continue;
+    if (!record || isAnnotationHusk(record)) continue;
     out[key] = record;
     kept++;
   }
   return out;
+}
+
+/**
+ * Visit at most the configured number of keys from an untrusted iterable.
+ * Yjs can deliver a single transaction containing an arbitrary number of map
+ * changes, so live collaboration needs the same scan ceiling as map hydration.
+ */
+export function forEachBoundedAnnotationKey(
+  keys: Iterable<string>,
+  visit: (key: string) => void,
+  maxEntries = MAX_SCANNED_ENTRIES,
+): number {
+  const limit = Math.max(
+    0,
+    Math.min(Math.floor(maxEntries), MAX_SCANNED_ENTRIES),
+  );
+  let examined = 0;
+  for (const key of keys) {
+    if (examined >= limit) break;
+    examined++;
+    visit(key);
+  }
+  return examined;
 }

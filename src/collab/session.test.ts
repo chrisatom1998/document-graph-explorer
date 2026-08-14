@@ -120,7 +120,7 @@ describe('annotation sync map', () => {
     doc.destroy();
   });
 
-  it('hydrates and snapshots annotation state', () => {
+  it('hydrates and snapshots meaningful annotation state without empty husks', () => {
     const doc = new Y.Doc();
     const map = createAnnotationMap(doc);
     hydrateAnnotationMap(map, {
@@ -130,7 +130,6 @@ describe('annotation sync map', () => {
 
     expect(snapshotAnnotationMap(map)).toEqual({
       'doc-1': { note: 'hello', tags: ['alpha', 'beta'], pinned: true, updatedAt: 5 },
-      'doc-2': { note: '', tags: [], pinned: false, updatedAt: 6 },
     });
     doc.destroy();
   });

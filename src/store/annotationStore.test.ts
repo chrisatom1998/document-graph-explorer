@@ -316,6 +316,59 @@ describe('annotationStore', () => {
     expect(useAnnotationStore.getState().annotations['doc-0'].note).toBe('edited');
   });
 
+  it('keeps legacy local annotations beyond the new admission cap readable', async () => {
+    const legacy: Record<string, DocAnnotationRecord> = {};
+    for (let i = 0; i <= MAX_ANNOTATION_RECORDS; i++) {
+      legacy[`legacy-${i}`] = {
+        note: `note ${i}`,
+        tags: [],
+        pinned: false,
+        updatedAt: i,
+      };
+    }
+    getCorpusRecordMock.mockResolvedValue({ annotations: legacy });
+    await ensureAnnotationsLoaded('corpus-legacy');
+
+    const state = useAnnotationStore.getState();
+    expect(Object.keys(state.annotations)).toHaveLength(MAX_ANNOTATION_RECORDS + 1);
+    expect(state.annotations[`legacy-${MAX_ANNOTATION_RECORDS}`]?.note).toBe(
+      `note ${MAX_ANNOTATION_RECORDS}`,
+    );
+
+    // Existing durable work remains editable, while a brand-new key is still
+    // refused until the workspace falls back below the admission limit.
+    state.update(`legacy-${MAX_ANNOTATION_RECORDS}`, { note: 'still editable' });
+    state.update('new-after-upgrade', { note: 'must wait' });
+    expect(
+      useAnnotationStore.getState().annotations[`legacy-${MAX_ANNOTATION_RECORDS}`]?.note,
+    ).toBe('still editable');
+    expect(useAnnotationStore.getState().annotations['new-after-upgrade']).toBeUndefined();
+  });
+
+  it('ignores remote annotation husks without consuming in-memory capacity', async () => {
+    getCorpusRecordMock.mockResolvedValue({ annotations: {} });
+    await ensureAnnotationsLoaded('corpus-1');
+
+    for (let i = 0; i < MAX_ANNOTATION_RECORDS + 10; i++) {
+      useAnnotationStore.getState().applyRemote(`husk-${i}`, {
+        note: '   ',
+        tags: [],
+        pinned: false,
+        updatedAt: i,
+      });
+    }
+    useAnnotationStore.getState().applyRemote('real-peer-note', {
+      note: 'shared',
+      tags: [],
+      pinned: false,
+      updatedAt: 1,
+    });
+
+    const state = useAnnotationStore.getState();
+    expect(state.annotationCount).toBe(1);
+    expect(Object.keys(state.annotations)).toEqual(['real-peer-note']);
+  });
+
   it('ignores a local edit under a key that would reshape the map', async () => {
     getCorpusRecordMock.mockResolvedValue({ annotations: {} });
     await ensureAnnotationsLoaded('corpus-1');

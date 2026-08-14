@@ -4,7 +4,11 @@ import { layoutEpoch, layoutSetDims, layoutSettledEpoch, onLayoutSettled } from 
 import { cameraPose } from '../scene/cameraPose';
 import { nodesMatchingFilter } from '../scene/emphasis';
 import { getNodePosition, idOfSlot, positionBuffer, scaleOfSlot, slotOfId } from '../scene/positionBuffer';
-import { clampUpdatedAt } from '../store/annotationSanitize';
+import {
+  MAX_ANNOTATION_RECORDS,
+  clampUpdatedAt,
+  forEachBoundedAnnotationKey,
+} from '../store/annotationSanitize';
 import { annotationKey, useAnnotationStore } from '../store/annotationStore';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
@@ -731,28 +735,36 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
       return;
     }
     applyingRemote = true;
+    let accepted: DocAnnotationRecord | null | undefined;
     try {
-      useAnnotationStore.getState().applyRemote(localKey, remote ?? null);
+      accepted = useAnnotationStore.getState().applyRemote(localKey, remote ?? null);
     } finally {
       applyingRemote = false;
+    }
+    // Whitespace-only/empty peer records are not user data. Remove them from
+    // the shared map as well as the local store so they cannot occupy the room
+    // indefinitely and be replayed on every bind.
+    if (accepted === null && remote) {
+      map.delete(key);
+      return;
     }
     // applyRemote clamps far-future stamps, but applyingRemote suppresses the
     // store subscription, so write the sanitized record back or later LWW
     // compares keep losing to the raw peer stamp.
-    const applied = useAnnotationStore.getState().annotations[localKey];
-    if (applied && remote && applied.updatedAt !== remote.updatedAt) {
-      map.set(key, applied);
+    if (accepted && remote && accepted.updatedAt !== remote.updatedAt) {
+      map.set(key, accepted);
     }
   };
 
   const onRemoteChange = (event: YMapEvent<DocAnnotationRecord>): void => {
-    for (const key of event.changes.keys.keys()) applyMapChange(key);
+    forEachBoundedAnnotationKey(event.changes.keys.keys(), applyMapChange);
   };
   map.observe(onRemoteChange);
 
   const localAtBind = useAnnotationStore.getState().annotations;
   session.doc.transact(() => {
-    for (const [key, local] of Object.entries(localAtBind)) {
+    forEachBoundedAnnotationKey(Object.keys(localAtBind), (key) => {
+      const local = localAtBind[key];
       const sharedKey = annotationKeyForLocal(key);
       const remote = map.get(sharedKey);
       if (!remote || annotationTimestamp(local) >= annotationTimestamp(remote)) {
@@ -760,11 +772,11 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
       } else {
         applyMapChange(sharedKey);
       }
-    }
-    for (const key of map.keys()) {
+    }, MAX_ANNOTATION_RECORDS);
+    forEachBoundedAnnotationKey(map.keys(), (key) => {
       const localKey = localKeyForShared(key);
-      if (!(localKey in localAtBind)) applyMapChange(key);
-    }
+      if (!Object.hasOwn(localAtBind, localKey)) applyMapChange(key);
+    });
   });
 
   const unsubscribe = useAnnotationStore.subscribe((state, previous) => {

@@ -6,6 +6,7 @@ import {
   MAX_ANNOTATION_TAGS,
   MAX_ANNOTATION_TAG_CHARS,
   MAX_CLOCK_SKEW_MS,
+  forEachBoundedAnnotationKey,
   isValidAnnotationKey,
   sanitizeAnnotationMap,
   sanitizeAnnotationRecord,
@@ -100,6 +101,17 @@ describe('sanitizeAnnotationMap', () => {
     expect(Object.keys(sanitizeAnnotationMap(raw))).toHaveLength(MAX_ANNOTATION_RECORDS);
   });
 
+  it('does not let whitespace-only husks consume the record cap', () => {
+    const raw: Record<string, unknown> = {};
+    for (let i = 0; i < MAX_ANNOTATION_RECORDS; i++) {
+      raw[`husk-${i}`] = { note: '   ', tags: [], pinned: false };
+    }
+    raw['real-note'] = { note: 'keep me', tags: [], pinned: false };
+
+    const out = sanitizeAnnotationMap(raw);
+    expect(Object.keys(out)).toEqual(['real-note']);
+  });
+
   it('terminates on a large map of entries that are all invalid', () => {
     const raw: Record<string, unknown> = {};
     for (let i = 0; i < 5000; i++) raw[`bad-${i}`] = null;
@@ -119,5 +131,19 @@ describe('sanitizeAnnotationMap', () => {
     expect(Object.keys(out)).toEqual(['good']);
     expect(({} as Record<string, unknown>).note).toBeUndefined();
     expect(Object.prototype).not.toHaveProperty('note');
+  });
+});
+
+describe('forEachBoundedAnnotationKey', () => {
+  it('stops visiting an untrusted key stream at the requested ceiling', () => {
+    const visited: string[] = [];
+    const examined = forEachBoundedAnnotationKey(
+      ['one', 'two', 'three', 'four'],
+      (key) => visited.push(key),
+      2,
+    );
+
+    expect(examined).toBe(2);
+    expect(visited).toEqual(['one', 'two']);
   });
 });

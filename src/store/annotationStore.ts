@@ -27,7 +27,9 @@ import {
   updateCorpusAnnotations,
 } from '../persistence/corpusRepository';
 import {
+  MAX_PERSISTED_ANNOTATION_RECORDS,
   MAX_ANNOTATION_RECORDS,
+  isAnnotationHusk,
   isValidAnnotationKey,
   sanitizeAnnotationMap,
   sanitizeAnnotationRecord,
@@ -62,31 +64,36 @@ function isEmpty(a: DocAnnotationRecord): boolean {
   return a.note === '' && a.tags.length === 0 && !a.pinned;
 }
 
-/** Husk at rest (whitespace-only note, nothing else) — prune on the way to disk. */
-function isHusk(a: DocAnnotationRecord): boolean {
-  return a.note.trim() === '' && a.tags.length === 0 && !a.pinned;
-}
-
 /**
- * Persisted and peer-supplied records cross a trust boundary — normalize shape
- * and bound size on the way in (see annotationSanitize.ts for the limits).
+ * Normalize persisted records without hiding valid local work created before
+ * the 4,096-record admission limit existed. New records are still refused at
+ * that limit, while the larger scan ceiling protects against corrupted data.
  */
-function sanitize(
+function sanitizePersisted(
   raw: Record<string, DocAnnotationRecord> | undefined,
 ): Record<string, DocAnnotationRecord> {
-  return sanitizeAnnotationMap(raw);
+  return sanitizeAnnotationMap(raw, 0, MAX_PERSISTED_ANNOTATION_RECORDS);
 }
 
 interface AnnotationState {
   /** Corpus id these annotations belong to; null until first hydration. */
   scope: string | null;
   annotations: Record<string, DocAnnotationRecord>;
+  /** Cached own-key count so hostile peer batches do not repeatedly scan the map. */
+  annotationCount: number;
   /** Replace everything (hydration). */
   hydrate: (scope: string, annotations: Record<string, DocAnnotationRecord>) => void;
   /** Merge one doc's annotation and schedule a persist to the hydrated scope. */
   update: (key: string, patch: Partial<Omit<DocAnnotationRecord, 'updatedAt'>>) => void;
-  /** Apply a collaboration update while preserving its conflict timestamp. */
-  applyRemote: (key: string, annotation: DocAnnotationRecord | null) => void;
+  /**
+   * Apply a collaboration update while preserving its conflict timestamp.
+   * Returns the accepted record, null for a deletion/husk, or undefined when
+   * the write is rejected.
+   */
+  applyRemote: (
+    key: string,
+    annotation: DocAnnotationRecord | null,
+  ) => DocAnnotationRecord | null | undefined;
 }
 
 let loadingScope: string | null = null;
@@ -119,7 +126,7 @@ function toastSaveFailure(): void {
 /** The patch for one dirty key, read fresh from the store at write time. */
 function patchFor(key: string): DocAnnotationRecord | null {
   const record = useAnnotationStore.getState().annotations[key];
-  if (!record || isHusk(record)) return null;
+  if (!record || isAnnotationHusk(record)) return null;
   return record;
 }
 
@@ -188,11 +195,20 @@ export async function flushAnnotationSave(): Promise<void> {
 export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   scope: null,
   annotations: {},
-  hydrate: (scope, annotations) => set({ scope, annotations: sanitize(annotations) }),
+  annotationCount: 0,
+  hydrate: (scope, annotations) => {
+    const next = sanitizePersisted(annotations);
+    set({
+      scope,
+      annotations: next,
+      annotationCount: Object.keys(next).length,
+    });
+  },
   update: (key, patch) => {
-    const { scope, annotations } = get();
+    const { scope, annotations, annotationCount } = get();
     if (!scope) return; // nowhere to persist — the UI gates on scope
     if (!isValidAnnotationKey(key)) return;
+    const existed = Object.hasOwn(annotations, key);
     const current = annotations[key] ?? emptyAnnotation();
     // Bound local edits with the limits hydration enforces. Clamping only on
     // the way in would accept and persist an oversized note, then silently
@@ -207,8 +223,8 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     // to decide later which records survive.
     if (
       !isEmpty(next) &&
-      !Object.hasOwn(annotations, key) &&
-      Object.keys(annotations).length >= MAX_ANNOTATION_RECORDS
+      !existed &&
+      annotationCount >= MAX_ANNOTATION_RECORDS
     ) {
       toastAnnotationFailure(
         `This workspace is at its limit of ${MAX_ANNOTATION_RECORDS} annotated documents.`,
@@ -216,31 +232,49 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
       return;
     }
     const nextAll = { ...annotations };
-    if (isEmpty(next)) delete nextAll[key];
+    const remove = isEmpty(next);
+    if (remove) delete nextAll[key];
     else nextAll[key] = next;
-    set({ annotations: nextAll });
+    set({
+      annotations: nextAll,
+      annotationCount:
+        annotationCount + (remove ? (existed ? -1 : 0) : existed ? 0 : 1),
+    });
     dirtyScope = scope;
     dirty.set(key, ++editGeneration);
     schedulePersist();
   },
   applyRemote: (key, annotation) => {
-    const { scope, annotations } = get();
-    if (!scope) return;
-    if (!isValidAnnotationKey(key)) return;
+    const { scope, annotations, annotationCount } = get();
+    if (!scope) return undefined;
+    if (!isValidAnnotationKey(key)) return undefined;
+    const existed = Object.hasOwn(annotations, key);
+    const next = annotation
+      ? sanitizeAnnotationRecord(annotation, Date.now())
+      : null;
+    const remove = !next || isAnnotationHusk(next);
+    // A blank peer-authored record is not user data. Ignoring an absent husk
+    // also avoids scheduling thousands of pointless IndexedDB deletions.
+    if (remove && !existed) return null;
     // Peers apply one key at a time, so the map-wide cap in sanitize() never
     // sees them as a batch. Refuse only NEW keys once full: edits and deletes
     // of records already held must keep working, or a full store would freeze
     // out the legitimate collaborator too.
-    const isNew = !Object.hasOwn(annotations, key);
-    if (annotation && isNew && Object.keys(annotations).length >= MAX_ANNOTATION_RECORDS) return;
+    if (!remove && !existed && annotationCount >= MAX_ANNOTATION_RECORDS) {
+      return undefined;
+    }
     const nextAll = { ...annotations };
-    const next = annotation ? sanitizeAnnotationRecord(annotation) : null;
-    if (!next || isEmpty(next)) delete nextAll[key];
+    if (remove) delete nextAll[key];
     else nextAll[key] = next;
-    set({ annotations: nextAll });
+    set({
+      annotations: nextAll,
+      annotationCount:
+        annotationCount + (remove ? -1 : existed ? 0 : 1),
+    });
     dirtyScope = scope;
     dirty.set(key, ++editGeneration);
     schedulePersist();
+    return remove ? null : next;
   },
 }));
 
@@ -283,5 +317,5 @@ export function _resetAnnotationsForTests(): void {
   dirtyScope = null;
   loadingScope = null;
   failureToastShown = false;
-  useAnnotationStore.setState({ scope: null, annotations: {} });
+  useAnnotationStore.setState({ scope: null, annotations: {}, annotationCount: 0 });
 }
