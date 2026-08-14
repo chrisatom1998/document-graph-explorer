@@ -192,8 +192,29 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   update: (key, patch) => {
     const { scope, annotations } = get();
     if (!scope) return; // nowhere to persist — the UI gates on scope
+    if (!isValidAnnotationKey(key)) return;
     const current = annotations[key] ?? emptyAnnotation();
-    const next: DocAnnotationRecord = { ...current, ...patch, updatedAt: Date.now() };
+    // Bound local edits with the limits hydration enforces. Clamping only on
+    // the way in would accept and persist an oversized note, then silently
+    // drop the tail on the next load — a save has to reload intact.
+    const next = sanitizeAnnotationRecord(
+      { ...current, ...patch, updatedAt: Date.now() },
+      Date.now(),
+    );
+    if (!next) return;
+    // Annotations outlive the documents they describe, so a long-lived corpus
+    // can reach the cap. Refuse a new key loudly rather than leave hydration
+    // to decide later which records survive.
+    if (
+      !isEmpty(next) &&
+      !Object.hasOwn(annotations, key) &&
+      Object.keys(annotations).length >= MAX_ANNOTATION_RECORDS
+    ) {
+      toastAnnotationFailure(
+        `This workspace is at its limit of ${MAX_ANNOTATION_RECORDS} annotated documents.`,
+      );
+      return;
+    }
     const nextAll = { ...annotations };
     if (isEmpty(next)) delete nextAll[key];
     else nextAll[key] = next;

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { DocAnnotationRecord } from '../persistence/db';
 
 const { getCorpusRecordMock, updateCorpusAnnotationsMock } = vi.hoisted(() => ({
   getCorpusRecordMock: vi.fn(),
@@ -272,5 +273,55 @@ describe('annotationStore', () => {
   it('edits without a hydrated scope are ignored rather than persisted nowhere', () => {
     useAnnotationStore.getState().update('doc', { note: 'orphan' });
     expect(useAnnotationStore.getState().annotations['doc']).toBeUndefined();
+  });
+
+  // Caps only bound untrusted writes if a local save survives its own reload.
+  // Clamping at hydration alone silently ate the tail of a long local note.
+  it('bounds a local edit at write time so it reloads byte-identical', async () => {
+    getCorpusRecordMock.mockResolvedValue({ annotations: {} });
+    await ensureAnnotationsLoaded('corpus-1');
+    useAnnotationStore.getState().update('doc', {
+      note: 'x'.repeat(MAX_ANNOTATION_NOTE_CHARS + 500),
+      tags: Array.from({ length: MAX_ANNOTATION_TAGS + 10 }, (_, i) => `t${i}`),
+    });
+
+    const saved = useAnnotationStore.getState().annotations['doc'];
+    expect(saved.note).toHaveLength(MAX_ANNOTATION_NOTE_CHARS);
+    expect(saved.tags).toHaveLength(MAX_ANNOTATION_TAGS);
+
+    await flushAnnotationSave();
+    const [, patch] = updateCorpusAnnotationsMock.mock.calls.at(-1) as [
+      string,
+      Record<string, unknown>,
+    ];
+    getCorpusRecordMock.mockResolvedValue({ annotations: patch });
+    _resetAnnotationsForTests();
+    await ensureAnnotationsLoaded('corpus-1');
+    expect(useAnnotationStore.getState().annotations['doc']).toEqual(saved);
+  });
+
+  it('refuses a new local key at capacity instead of losing it on reload', async () => {
+    const full: Record<string, DocAnnotationRecord> = {};
+    for (let i = 0; i < MAX_ANNOTATION_RECORDS; i++) {
+      full[`doc-${i}`] = { note: 'n', tags: [], pinned: false, updatedAt: 1 };
+    }
+    getCorpusRecordMock.mockResolvedValue({ annotations: full });
+    await ensureAnnotationsLoaded('corpus-1');
+
+    useAnnotationStore.getState().update('one-too-many', { note: 'dropped' });
+    expect(useAnnotationStore.getState().annotations['one-too-many']).toBeUndefined();
+
+    // Editing a record already held still works at the cap.
+    useAnnotationStore.getState().update('doc-0', { note: 'edited' });
+    expect(useAnnotationStore.getState().annotations['doc-0'].note).toBe('edited');
+  });
+
+  it('ignores a local edit under a key that would reshape the map', async () => {
+    getCorpusRecordMock.mockResolvedValue({ annotations: {} });
+    await ensureAnnotationsLoaded('corpus-1');
+    useAnnotationStore.getState().update('__proto__', { note: 'polluted' });
+    const a = useAnnotationStore.getState().annotations;
+    expect(Object.getPrototypeOf(a)).toBe(Object.prototype);
+    expect(Object.keys(a)).toEqual([]);
   });
 });
