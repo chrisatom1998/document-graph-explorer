@@ -91,7 +91,7 @@ export const CAPABILITIES: readonly Capability[] = [
     id: 'insights',
     layer: 'studio',
     chrome: 'menu',
-    summary: 'Orphans, duplicates, bridges, stale docs.',
+    summary: 'Orphans, duplicates, bridges, stale docs — plus a post-ingest findings card.',
   },
   {
     id: 'snapshots',

@@ -15,12 +15,20 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DUP_SIM_THRESHOLD, STALE_DOC_DAYS } from '../config';
 import { computeOrphans, computeStaleDocs } from '../graph/insights';
+import { nearestOrphanNeighbors } from '../graph/orphanNeighbors';
 import { requestInsights, type InsightsResult } from '../pipeline/insightsClient';
 import { hexFor } from '../scene/palette';
-import { annotationKey, useAnnotationStore } from '../store/annotationStore';
+import {
+  annotationKey,
+  ensureAnnotationsLoaded,
+  useAnnotationStore,
+} from '../store/annotationStore';
+import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
+import { docVectorStore } from '../store/runtimeStores';
 import { useUiStore } from '../store/uiStore';
 import { timeAgo } from '../util/relativeTime';
+import { addTagToDocuments, documentsAlreadyTagged, DUPLICATE_TAG } from './insightActions';
 import { focusNode } from './focusNode';
 import IngestReportSection from './IngestReportSection';
 import CloseButton from './CloseButton';
@@ -42,6 +50,11 @@ export default function InsightsPanel() {
   const setSearchResults = useUiStore((s) => s.setSearchResults);
   const sendCamera = useUiStore((s) => s.sendCamera);
   const highlightOwner = useUiStore((s) => s.highlightOwner);
+  const insightsFocus = useUiStore((s) => s.insightsFocus);
+  const corpusId = useCorpusStore((s) => s.activeCorpusId);
+  const corpusMode = useCorpusStore((s) => s.mode);
+  const annotationScope = useAnnotationStore((s) => s.scope);
+  const canTag = corpusMode === 'local' && Boolean(corpusId) && annotationScope === corpusId;
 
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
@@ -57,6 +70,11 @@ export default function InsightsPanel() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisFailed, setAnalysisFailed] = useState(false);
   const requestSeq = useRef(0);
+
+  useEffect(() => {
+    if (!open || corpusMode !== 'local' || !corpusId) return;
+    void ensureAnnotationsLoaded(corpusId);
+  }, [open, corpusMode, corpusId]);
 
   // The Escape ladder (App.tsx) can close the drawer from outside — it clears
   // the scene highlight itself, so just drop the stale section marker here.
@@ -124,6 +142,43 @@ export default function InsightsPanel() {
     return members;
   }, [open, nodes]);
 
+  const orphanNeighbors = useMemo(() => {
+    if (!open) return new Map<string, { neighborId: string; sim: number }>();
+    const orphans = computeOrphans(nodes, edges);
+    if (orphans.length === 0) return new Map();
+    const docIds = nodes.filter((n) => n.kind === 'document').map((n) => n.id);
+    const hints = nearestOrphanNeighbors(orphans, docVectorStore, docIds);
+    return new Map(hints.map((h) => [h.orphanId, { neighborId: h.neighborId, sim: h.sim }]));
+  }, [open, nodes, edges]);
+
+  // Jump links (digest card, etc.) open this drawer on a section. Apply the
+  // highlight once, then drop the focus so later graph churn doesn't steal
+  // a highlight the user already cleared.
+  useEffect(() => {
+    if (!open || !insightsFocus) return;
+    const orphans = computeOrphans(nodes, edges);
+    const stale = computeStaleDocs(nodes, Date.now(), STALE_DOC_DAYS);
+    const dupIds = [...new Set(duplicatePairs.flatMap((d) => [d.a, d.b]))];
+    const clusterIds = [...clusterMembers.values()].flat();
+    const ids =
+      insightsFocus === 'orphans'
+        ? orphans
+        : insightsFocus === 'duplicates'
+          ? dupIds
+          : insightsFocus === 'stale'
+            ? stale.map((d) => d.id)
+            : clusterIds;
+    if (ids.length > 0) {
+      setHighlighted(insightsFocus);
+      setSearchResults(ids, 'insights');
+    }
+    const sectionId = insightsFocus;
+    useUiStore.getState().setInsightsFocus(null);
+    requestAnimationFrame(() => {
+      document.getElementById(`insights-section-${sectionId}`)?.scrollIntoView({ block: 'nearest' });
+    });
+  }, [open, insightsFocus, nodes, edges, duplicatePairs, clusterMembers, setSearchResults]);
+
   if (!open || !insights) return null;
 
   const titleOf = (id: string): string => nodes[nodeIndex[id]]?.title ?? id;
@@ -136,6 +191,20 @@ export default function InsightsPanel() {
       setHighlighted(section);
       setSearchResults(ids, 'insights');
     }
+  };
+
+  const showInGraph = (section: SectionKey, ids: string[]): void => {
+    setHighlighted(section);
+    setSearchResults(ids, 'insights');
+    sendCamera('frameSet', ids);
+  };
+
+  const tagDuplicatePair = (a: string, b: string): void => {
+    const tagged = addTagToDocuments(nodes, [a, b], DUPLICATE_TAG);
+    if (tagged === 0) return;
+    useUiStore
+      .getState()
+      .pushToast(tagged === 2 ? 'Tagged both as duplicate.' : 'Tagged as duplicate.', 'info');
   };
 
   const close = (): void => {
@@ -174,7 +243,7 @@ export default function InsightsPanel() {
     ids: string[],
     body: ReactNode,
   ) => (
-    <div className="insights__section">
+    <div className="insights__section" id={`insights-section-${key}`}>
       <div className="insights__section-head">
         <p className="side-panel__section-label">
           {label} ({count ?? '…'})
@@ -252,20 +321,46 @@ export default function InsightsPanel() {
             ) : (
               <>
                 <p className="insights__hint">
-                  Nothing references these and nothing resembles them — likely stale
-                  or out-of-scope docs.
+                  Nothing references these and nothing resembles them strongly enough
+                  to form a link — likely stale or out-of-scope docs. Suggested
+                  neighbors below the connection threshold still show here.
                 </p>
-                {insights.orphans.map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className="insights__row"
-                    title={`${titleOf(id)} — click to focus in the graph`}
-                    onClick={() => focusNode(id)}
-                  >
-                    {titleOf(id)}
-                  </button>
-                ))}
+                {insights.orphans.map((id) => {
+                  const neighbor = orphanNeighbors.get(id);
+                  return (
+                    <div className="insights__orphan" key={id}>
+                      <button
+                        type="button"
+                        className="insights__row"
+                        title={`${titleOf(id)} — click to focus in the graph`}
+                        onClick={() => focusNode(id)}
+                      >
+                        {titleOf(id)}
+                      </button>
+                      {neighbor && (
+                        <div className="insights__row-actions">
+                          <button
+                            type="button"
+                            className="insights__action"
+                            title={`Not connected, but ${(neighbor.sim * 100).toFixed(0)}% similar to ${titleOf(neighbor.neighborId)}`}
+                            onClick={() => focusNode(neighbor.neighborId)}
+                          >
+                            not connected, but {(neighbor.sim * 100).toFixed(0)}% similar to{' '}
+                            {titleOf(neighbor.neighborId)}
+                          </button>
+                          <button
+                            type="button"
+                            className="insights__action"
+                            title="Highlight this document and its closest neighbor in the graph"
+                            onClick={() => showInGraph('orphans', [id, neighbor.neighborId])}
+                          >
+                            Show both
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </>
             ),
           )}
@@ -285,19 +380,47 @@ export default function InsightsPanel() {
                   Pairs with ≥{Math.round(DUP_SIM_THRESHOLD * 100)}% semantic similarity —
                   these might be the same doc.
                 </p>
-                {insights.duplicates.map((d) => (
-                  <div className="insights__pair" key={`${d.a}|${d.b}`}>
-                    <button type="button" className="insights__row" title={`${titleOf(d.a)} — click to focus in the graph`} onClick={() => focusNode(d.a)}>
-                      {titleOf(d.a)}
-                    </button>
-                    <span className="insights__pair-sim">
-                      ≈ {(d.sim * 100).toFixed(1)}%
-                    </span>
-                    <button type="button" className="insights__row" title={`${titleOf(d.b)} — click to focus in the graph`} onClick={() => focusNode(d.b)}>
-                      {titleOf(d.b)}
-                    </button>
-                  </div>
-                ))}
+                {insights.duplicates.map((d) => {
+                  const alreadyTagged = documentsAlreadyTagged(nodes, [d.a, d.b], DUPLICATE_TAG);
+                  return (
+                    <div className="insights__pair" key={`${d.a}|${d.b}`}>
+                      <button type="button" className="insights__row" title={`${titleOf(d.a)} — click to focus in the graph`} onClick={() => focusNode(d.a)}>
+                        {titleOf(d.a)}
+                      </button>
+                      <span className="insights__pair-sim">
+                        ≈ {(d.sim * 100).toFixed(1)}%
+                      </span>
+                      <button type="button" className="insights__row" title={`${titleOf(d.b)} — click to focus in the graph`} onClick={() => focusNode(d.b)}>
+                        {titleOf(d.b)}
+                      </button>
+                      <div className="insights__row-actions">
+                        <button
+                          type="button"
+                          className="insights__action"
+                          title="Highlight both documents and frame them in the graph"
+                          onClick={() => showInGraph('duplicates', [d.a, d.b])}
+                        >
+                          Show both
+                        </button>
+                        {canTag && (
+                          <button
+                            type="button"
+                            className="insights__action"
+                            title={
+                              alreadyTagged
+                                ? 'Both documents already have the duplicate tag'
+                                : 'Add a duplicate tag to both documents'
+                            }
+                            disabled={alreadyTagged}
+                            onClick={() => tagDuplicatePair(d.a, d.b)}
+                          >
+                            {alreadyTagged ? 'Tagged duplicate' : 'Tag both duplicate'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </>
             ),
           )}

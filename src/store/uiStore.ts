@@ -29,6 +29,9 @@ export interface CameraCommand {
 /** `showMe` is the “frame this match set” highlight, now owned by Search. */
 export type HighlightOwner = 'search' | 'insights' | 'path' | 'showMe' | 'snapshot';
 
+/** Insights drawer section to scroll/highlight when the panel opens from a jump link. */
+export type InsightsFocus = 'orphans' | 'duplicates' | 'clusters' | 'stale' | null;
+
 export type ToastKind = 'error' | 'warning' | 'info';
 
 /** Optional action button rendered inside a toast (e.g. "Switch to 2D"). */
@@ -93,6 +96,8 @@ interface UiState {
   cameraCommand: CameraCommand | null;
   settingsOpen: boolean;
   insightsOpen: boolean;
+  /** Section to focus the next time Insights opens; cleared after the panel applies it. */
+  insightsFocus: InsightsFocus;
   snapshotsOpen: boolean;
   helpOpen: boolean;
   toasts: Toast[];
@@ -116,7 +121,8 @@ interface UiState {
   sendCamera: (kind: CameraCommand['kind'], ids?: string[]) => void;
   sendCameraPose: (pose: CameraPose) => void;
   setSettingsOpen: (v: boolean) => void;
-  setInsightsOpen: (v: boolean) => void;
+  setInsightsOpen: (v: boolean, focus?: InsightsFocus) => void;
+  setInsightsFocus: (focus: InsightsFocus) => void;
   setSnapshotsOpen: (v: boolean) => void;
   setHelpOpen: (v: boolean) => void;
   pushToast: (message: string, kind?: ToastKind, action?: ToastAction) => void;
@@ -146,6 +152,7 @@ export const useUiStore = create<UiState>((set) => ({
   cameraCommand: null,
   settingsOpen: false,
   insightsOpen: false,
+  insightsFocus: null,
   snapshotsOpen: false,
   helpOpen: false,
   toasts: [],
@@ -175,7 +182,12 @@ export const useUiStore = create<UiState>((set) => ({
       cameraCommand: { nonce: (s.cameraCommand?.nonce ?? 0) + 1, kind: 'pose', pose },
     })),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
-  setInsightsOpen: (insightsOpen) => set({ insightsOpen }),
+  setInsightsOpen: (insightsOpen, focus) =>
+    set({
+      insightsOpen,
+      insightsFocus: insightsOpen ? (focus ?? null) : null,
+    }),
+  setInsightsFocus: (insightsFocus) => set({ insightsFocus }),
   setSnapshotsOpen: (snapshotsOpen) => set({ snapshotsOpen }),
   setHelpOpen: (helpOpen) => set({ helpOpen }),
   pushToast: (message, kind = 'error', action) =>
