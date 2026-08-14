@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { DocNode } from '../model/types';
-import type { ChunkData } from '../store/runtimeStores';
+import { useAnnotationStore } from '../store/annotationStore';
+import { useGraphStore } from '../store/graphStore';
+import { textStore, type ChunkData } from '../store/runtimeStores';
 
 vi.mock('../pipeline/coordinator', () => ({
   embedQuery: vi.fn().mockRejectedValue(new Error('default embedder is not used in unit tests')),
@@ -198,6 +200,50 @@ describe('shared hybrid retrieval', () => {
       text: expect.stringMatching(/legal-hold/i),
     });
     expect(result[0].passageIndex).toBeUndefined();
+  });
+
+  it('excludes local search metadata when a caller disables it', async () => {
+    const result = await retrieveCorpus(
+      'legal-hold',
+      { semantic: false, includeSearchMetadata: false },
+      {
+        ...dependencies(
+          [node('policy', 'Vendor Policy')],
+          new Map(),
+          async () => { throw new Error('offline'); },
+          new Map([['policy', 'This policy covers procurement and onboarding.']]),
+        ),
+        annotations: new Map([['policy', { note: 'Keep for counsel', tags: ['legal-hold'] }]]),
+        clusterNameById: new Map([['policy', 'Payments & revenue']]),
+      },
+    );
+
+    expect(result).toEqual([]);
+  });
+
+  it('ignores inherited annotation properties for imported document paths', async () => {
+    const previousGraph = useGraphStore.getState();
+    const previousAnnotations = useAnnotationStore.getState();
+    const hazardous = { ...node('hazard', 'Safety Policy'), path: 'constructor' };
+
+    try {
+      textStore.set('hazard', 'This document explains constructor safety.');
+      useGraphStore.setState({
+        nodes: [hazardous],
+        nodeIndex: { hazard: 0 },
+        clusterNames: {},
+        localClusterNames: {},
+      });
+      useAnnotationStore.setState({ annotations: {} });
+
+      await expect(retrieveCorpus('safety', { semantic: false })).resolves.toMatchObject([
+        { docId: 'hazard' },
+      ]);
+    } finally {
+      textStore.delete('hazard');
+      useGraphStore.setState(previousGraph, true);
+      useAnnotationStore.setState(previousAnnotations, true);
+    }
   });
 
   it('does not fuse tag evidence onto chunk 0 during semantic upsert', async () => {

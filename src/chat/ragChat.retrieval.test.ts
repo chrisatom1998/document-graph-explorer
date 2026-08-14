@@ -4,7 +4,7 @@ vi.mock('../pipeline/coordinator', () => ({
   embedQuery: vi.fn(),
 }));
 
-import { buildPrompt, diversifyChunks, keywordEvidence } from './ragChat';
+import { buildPrompt, diversifyChunks, keywordEvidence, retrievalOptionsForChat } from './ragChat';
 
 describe('RAG retrieval helpers', () => {
   it('caps passages from one document to preserve corpus diversity', () => {
@@ -51,5 +51,9 @@ describe('RAG retrieval helpers', () => {
     }]);
     expect(prompt).toContain('[Source 1: "Vendor Policy"]');
     expect(prompt).not.toContain(', passage');
+  });
+
+  it('keeps local notes and tags out of chat retrieval', () => {
+    expect(retrievalOptionsForChat()).toMatchObject({ includeSearchMetadata: false });
   });
 });

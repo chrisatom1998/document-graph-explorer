@@ -89,14 +89,21 @@ export function keywordEvidence(text: string, terms: string[], maxChars: number)
   return text.slice(start, end).trim();
 }
 
-async function retrieveChunks(query: string): Promise<RetrievedChunk[]> {
-  const hits = await retrieveCorpus(query, {
+export function retrievalOptionsForChat() {
+  return {
     limit: RAG_TOP_K,
     perDocument: RAG_MAX_CHUNKS_PER_DOC,
     timeoutMs: 15_000,
     minSemanticScore: RAG_MIN_SCORE,
     maxPassageChars: CHUNK_CONTEXT_CHARS,
-  });
+    // Notes, tags, and cluster labels are local search metadata. Keep them out
+    // of chat prompts, especially when the selected provider is cloud-hosted.
+    includeSearchMetadata: false,
+  };
+}
+
+async function retrieveChunks(query: string): Promise<RetrievedChunk[]> {
+  const hits = await retrieveCorpus(query, retrievalOptionsForChat());
   return hits.map((hit) => ({
     docId: hit.docId,
     docTitle: hit.docTitle,

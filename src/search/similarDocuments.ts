@@ -112,5 +112,11 @@ export function similarDocuments(
     hits.push({ id: node.id, score });
   }
   hits.sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
-  return hits.slice(0, limit);
+  const cosineHits = hits.slice(0, limit);
+  if (cosineHits.length > 0) return cosineHits;
+
+  // A seed vector can exist while candidate vectors are absent (partial
+  // imports/caches). Preserve the advertised edge fallback in that state.
+  const semantic = fromSemanticNeighbors(seedId, deps, limit);
+  return semantic.length > 0 ? semantic : fromAnyNeighbors(seedId, deps, limit);
 }

@@ -57,4 +57,17 @@ describe('similarDocuments', () => {
     });
     expect(hits).toEqual([{ id: 'b', score: 0.7 }]);
   });
+
+  it('falls back to edges when the seed vector exists but candidates are missing', () => {
+    const edges: Edge[] = [
+      { id: 'e1', source: 'seed', target: 'a', kind: 'semantic', weight: 0.82, evidence: ['sim'] },
+    ];
+    const hits = similarDocuments('seed', { limit: 5 }, {
+      nodes: [doc('seed'), doc('a')],
+      edges,
+      vectors: new Map([['seed', new Float32Array([1, 0])]]),
+    });
+
+    expect(hits).toEqual([{ id: 'a', score: 0.82 }]);
+  });
 });

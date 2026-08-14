@@ -19,8 +19,8 @@ import DocumentMarkdown from './DocumentMarkdown';
 import HtmlPreview from './HtmlPreview';
 import { MAX_RENDER_CHARS } from './readerUtils';
 import CsvPreview from './CsvPreview';
-import JsonPreview from './JsonPreview';
-import YamlPreview from './YamlPreview';
+import JsonPreview, { MAX_RENDER_CHARS as JSON_MAX_RENDER_CHARS } from './JsonPreview';
+import YamlPreview, { MAX_RENDER_CHARS as YAML_MAX_RENDER_CHARS } from './YamlPreview';
 import PassageTarget from './PassageTarget';
 import { showSimilarTo } from './showSimilar';
 import { buildLinkIndex } from '../graph/linkResolver';
@@ -570,7 +570,7 @@ export default function SidePanel() {
                   className="side-panel__reader side-panel__reader--csv"
                 />
               </PassageTarget>
-            ) : node.fileType === 'json' && fullText ? (
+            ) : node.fileType === 'json' && fullText && fullText.length <= JSON_MAX_RENDER_CHARS ? (
               <PassageTarget needle={passageNeedle} contentKey={passageKey}>
                 <JsonPreview
                   key={node.id}
@@ -579,7 +579,14 @@ export default function SidePanel() {
                   highlight={passageNeedle}
                 />
               </PassageTarget>
-            ) : node.fileType === 'yaml' && fullText ? (
+            ) : node.fileType === 'json' && fullText ? (
+              <JsonPreview
+                key={node.id}
+                text={fullText}
+                className="side-panel__reader side-panel__reader--json"
+                highlight={passageNeedle}
+              />
+            ) : node.fileType === 'yaml' && fullText && fullText.length <= YAML_MAX_RENDER_CHARS ? (
               <PassageTarget needle={passageNeedle} contentKey={passageKey}>
                 <YamlPreview
                   key={node.id}
@@ -588,6 +595,13 @@ export default function SidePanel() {
                   highlight={passageNeedle}
                 />
               </PassageTarget>
+            ) : node.fileType === 'yaml' && fullText ? (
+              <YamlPreview
+                key={node.id}
+                text={fullText}
+                className="side-panel__reader side-panel__reader--yaml"
+                highlight={passageNeedle}
+              />
             ) : fullText ? (
               <VirtualText
                 key={node.id}

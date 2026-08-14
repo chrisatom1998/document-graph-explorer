@@ -47,7 +47,10 @@ function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSour
         // Sibling buttons, not nested (nested <button> is invalid HTML): the
         // chip flies to the node, the paired icon opens the document itself.
         return (
-          <span key={`${source.docId}:${source.chunkIndex ?? 0}`} className="chat-source">
+          <span
+            key={`${source.docId}:${source.chunkIndex === undefined ? 'metadata' : source.chunkIndex}`}
+            className="chat-source"
+          >
             <button
               type="button"
               className="chat-source-chip"

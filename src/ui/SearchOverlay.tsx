@@ -144,6 +144,17 @@ export default function SearchOverlay() {
     setSearchOpen(false);
   };
 
+  const showSimilarResult = (row: ResultRow) => {
+    const count = showSimilarTo(row.id);
+    if (count === 0) {
+      useUiStore.getState().pushToast('No similar documents in this corpus', 'info');
+      return;
+    }
+    // Prevent a late semantic response from replacing the similar-doc set.
+    requestSeq.current += 1;
+    setSearchOpen(false);
+  };
+
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -151,6 +162,10 @@ export default function SearchOverlay() {
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter' && e.altKey) {
+      e.preventDefault();
+      const row = displayedResults[activeIndex];
+      if (row) showSimilarResult(row);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const row = displayedResults[activeIndex];
@@ -215,6 +230,7 @@ export default function SearchOverlay() {
             aria-controls="search-overlay-results"
             aria-activedescendant={activeOptionId}
             aria-autocomplete="list"
+            aria-keyshortcuts="Alt+Enter"
             aria-label="Search your documents by meaning, not just keywords"
             value={query}
             title="Search your documents by meaning, not just keywords"
@@ -259,16 +275,10 @@ export default function SearchOverlay() {
                   <button
                     type="button"
                     className="search-result-row__similar"
-                    tabIndex={-1}
-                    title="Show documents similar to this one"
+                    title="Show documents similar to this one (Alt/Option+Enter)"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const count = showSimilarTo(row.id);
-                      if (count === 0) {
-                        useUiStore.getState().pushToast('No similar documents in this corpus', 'info');
-                      } else {
-                        setSearchOpen(false);
-                      }
+                      showSimilarResult(row);
                     }}
                   >
                     Similar

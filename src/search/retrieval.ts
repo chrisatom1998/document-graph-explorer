@@ -34,6 +34,8 @@ export interface RetrievalOptions {
   minSemanticScore?: number;
   maxPassageChars?: number;
   semantic?: boolean;
+  /** Include local notes, tags, and cluster labels as search-only evidence. */
+  includeSearchMetadata?: boolean;
 }
 
 export interface RetrievalDependencies {
@@ -201,7 +203,10 @@ function liveDependencies(): RetrievalDependencies {
   const clusterNameById = new Map<string, string>();
   for (const node of graph.nodes) {
     if (node.kind !== 'document') continue;
-    const record = records[annotationKey(node)];
+    const key = annotationKey(node);
+    const record = Object.prototype.hasOwnProperty.call(records, key)
+      ? records[key]
+      : undefined;
     if (record && (record.note.trim() !== '' || record.tags.length > 0)) {
       annotations.set(node.id, { note: record.note, tags: record.tags });
     }
@@ -263,12 +268,15 @@ export async function retrieveCorpus(
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const minSemanticScore = options.minSemanticScore ?? DEFAULT_MIN_SEMANTIC_SCORE;
   const maxPassageChars = options.maxPassageChars ?? DEFAULT_MAX_PASSAGE_CHARS;
+  const includeSearchMetadata = options.includeSearchMetadata !== false;
   const candidates = new Map<string, Candidate>();
 
   // Lexical pass always runs, including when embeddings are unavailable.
   for (const node of documentNodes) {
     const passages = passagesForDocument(node, deps.chunks, deps.texts);
-    const extra = extraEvidence(node, deps.annotations, deps.clusterNameById);
+    const extra = includeSearchMetadata
+      ? extraEvidence(node, deps.annotations, deps.clusterNameById)
+      : { cluster: '', tags: [], note: '' };
     const extraBody = extraSearchText(extra);
     const extraLex = extraBody
       ? lexicalRelevance(q, extraBody, '')
