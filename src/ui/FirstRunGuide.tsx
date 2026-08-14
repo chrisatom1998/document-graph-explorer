@@ -54,6 +54,7 @@ interface SpotlightRect {
 /** Dragged guide position, persisted across reloads (same contract as the toolbar). */
 const POS_KEY = 'knowledge-nebula-first-run-guide-pos';
 const GUIDE_MARGIN = 18;
+const GUIDE_MINIMAP_CLEARANCE = 154;
 
 function loadGuidePos(): { x: number; y: number } | null {
   try {
@@ -97,7 +98,7 @@ function placeGuide(el: HTMLElement, x: number, y: number): { x: number; y: numb
 function defaultGuidePos(el: HTMLElement): { x: number; y: number } {
   const { width, height } = el.getBoundingClientRect();
   return {
-    x: window.innerWidth - width - GUIDE_MARGIN,
+    x: window.innerWidth - width - GUIDE_MARGIN - GUIDE_MINIMAP_CLEARANCE,
     y: window.innerHeight - height - GUIDE_MARGIN,
   };
 }
@@ -268,6 +269,7 @@ export default function FirstRunGuide() {
           onPointerMove={handleDragMove}
           onPointerUp={handleDragEnd}
           onPointerCancel={handleDragEnd}
+          onLostPointerCapture={handleDragEnd}
         >
           <span className="first-run-guide__grip" aria-hidden="true"><IconGrip /></span>
           <span className="first-run-guide__step">Step {step + 1} of {TOUR_STEPS.length}</span>
