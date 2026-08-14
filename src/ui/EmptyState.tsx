@@ -48,7 +48,6 @@ export default function EmptyState() {
         <aside className="empty-state__visual" aria-label="Local-first knowledge mapping">
           <div className="empty-state__visual-label" aria-hidden="true">
             <span>Local observatory</span>
-            <span>01 / 03</span>
           </div>
           <div className="empty-state__hero">
             <Suspense fallback={<ConstellationSvg />}><HeroConstellation /></Suspense>
