@@ -11,6 +11,7 @@ import ChatPanel from './ChatPanel';
 import { useChatStore } from '../store/chatStore';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { commitPendingFocus } from './focusNode';
 
 Element.prototype.scrollIntoView = vi.fn();
 
@@ -40,12 +41,15 @@ describe('ChatPanel source citations', () => {
   it('flies to the cited passage when a source chip is clicked', () => {
     render(<ChatPanel />);
     fireEvent.click(screen.getByRole('button', { name: /runbook · 2/i }));
+    expect(useUiStore.getState().selectedId).toBeNull();
+    expect(useUiStore.getState().pendingFocus?.id).toBe('doc1');
+    expect(useUiStore.getState().cameraCommand?.kind).toBe('frameNode');
+    commitPendingFocus();
     expect(useUiStore.getState().selectedId).toBe('doc1');
     expect(useUiStore.getState().readerHighlight).toEqual({
       docId: 'doc1',
       text: 'failover steps for the primary region',
       passageIndex: 1,
     });
-    expect(useUiStore.getState().cameraCommand?.kind).toBe('frameNode');
   });
 });
