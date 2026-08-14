@@ -7,6 +7,7 @@ import type {
   IngestReport,
   PipelinePhase,
   PipelineTaskProgress,
+  SemanticNeighbor,
 } from '../model/types';
 
 interface GraphState {
@@ -28,6 +29,10 @@ interface GraphState {
   corpusHash: string | null;
   /** Near-duplicate pairs from the last semantic pass (spec: insights panel). */
   duplicatePairs: DuplicatePair[];
+  /** Closest semantic candidate per document, computed during the existing similarity pass. */
+  semanticNeighbors: SemanticNeighbor[];
+  /** Monotonic signal emitted only after a real ingest completes successfully. */
+  successfulIngestCount: number;
   /**
    * Keyword-derived cluster names, recomputed locally after every cluster
    * pass — no API needed. Display fallback order everywhere:
@@ -49,6 +54,8 @@ interface GraphState {
   setIngestReport: (report: IngestReport | null) => void;
   setCorpusHash: (h: string | null) => void;
   setDuplicatePairs: (pairs: DuplicatePair[]) => void;
+  setSemanticNeighbors: (neighbors: SemanticNeighbor[]) => void;
+  markIngestSuccessful: () => void;
   setLocalClusterNames: (names: Record<number, string>) => void;
   clearIngestTray: () => void;
   reset: () => void;
@@ -78,6 +85,8 @@ export const useGraphStore = create<GraphState>((set) => ({
   ingestReport: null,
   corpusHash: null,
   duplicatePairs: [],
+  semanticNeighbors: [],
+  successfulIngestCount: 0,
   localClusterNames: {},
 
   addNodes: (incoming) =>
@@ -158,6 +167,9 @@ export const useGraphStore = create<GraphState>((set) => ({
   setIngestReport: (ingestReport) => set({ ingestReport }),
   setCorpusHash: (corpusHash) => set({ corpusHash }),
   setDuplicatePairs: (duplicatePairs) => set({ duplicatePairs }),
+  setSemanticNeighbors: (semanticNeighbors) => set({ semanticNeighbors }),
+  markIngestSuccessful: () =>
+    set((state) => ({ successfulIngestCount: state.successfulIngestCount + 1 })),
   setLocalClusterNames: (localClusterNames) => set({ localClusterNames }),
   clearIngestTray: () => set({ fileStatuses: {}, ignoredFiles: [] }),
   reset: () =>
@@ -174,6 +186,7 @@ export const useGraphStore = create<GraphState>((set) => ({
       ingestReport: null,
       corpusHash: null,
       duplicatePairs: [],
+      semanticNeighbors: [],
       localClusterNames: {},
     }),
 }));
