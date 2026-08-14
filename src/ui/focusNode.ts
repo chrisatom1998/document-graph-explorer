@@ -29,7 +29,13 @@ function resolveHighlight(id: string, passage?: FocusPassage): ReaderHighlight |
 export function focusNode(id: string, passage?: FocusPassage): void {
   const ui = useUiStore.getState();
   ui.sendCamera('frameNode', [id]);
-  ui.setPendingFocus({ id, ...(passage ? { passage } : {}) });
+  // Close any already-open panel (and its highlight) so neighbor/duplicate
+  // jumps and search picks don't keep showing the previous document.
+  useUiStore.setState({
+    selectedId: null,
+    readerHighlight: null,
+    pendingFocus: { id, ...(passage ? { passage } : {}) },
+  });
 }
 
 /**

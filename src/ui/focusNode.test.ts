@@ -15,6 +15,10 @@ describe('focusNode', () => {
   });
 
   it('frames the camera first and leaves the side panel closed', () => {
+    useUiStore.setState({
+      selectedId: 'doc-old',
+      readerHighlight: { docId: 'doc-old', text: 'previous passage' },
+    });
     focusNode('doc-a');
     expect(useUiStore.getState().selectedId).toBeNull();
     expect(useUiStore.getState().readerHighlight).toBeNull();

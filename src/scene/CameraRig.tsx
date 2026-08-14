@@ -23,7 +23,7 @@ import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { cameraPose } from './cameraPose';
 import { panInput } from './panInput';
 import { prefersReducedMotion } from '../util/motion';
-import { commitPendingFocusIf } from '../ui/focusNode';
+import { commitPendingFocus, commitPendingFocusIf } from '../ui/focusNode';
 
 const IDLE_MS = 10_000;
 const SMOOTH_TIME = (CAMERA_GLIDE_MS / 1000) * 0.45; // ~800ms glide feel
@@ -80,6 +80,9 @@ export default function CameraRig() {
     // target — no framing math, no dependence on current node positions.
     if (cmd.kind === 'pose') {
       if (!cmd.pose) return;
+      // This command replaced a focus glide — open the panel now so
+      // pendingFocus cannot wait for a frameNode arrival that will never come.
+      commitPendingFocus();
       framingId.current = null;
       desiredPos.set(cmd.pose.px, cmd.pose.py, cmd.pose.pz);
       desiredTarget.set(cmd.pose.tx, cmd.pose.ty, cmd.pose.tz);
@@ -125,6 +128,9 @@ export default function CameraRig() {
       return;
     }
 
+    // fitAll / frameSet replaced a focus glide. Commit now: arrival will
+    // report no framing id, so a later commitPendingFocusIf would no-op.
+    commitPendingFocus();
     framingId.current = null;
 
     // frameSet / fitAll: bounding sphere over the id set (or every live slot)
@@ -266,7 +272,13 @@ export default function CameraRig() {
       useCollabStore.getState().setFollowMode(false);
     }
     lastInteraction.current = performance.now();
-    if (tweenActive.current) commitPendingFocusIf(framingId.current ?? undefined);
+    if (tweenActive.current) {
+      // Drop the in-flight focus instead of committing. pointerdown fires
+      // here; empty-space dismiss runs later on click (onPointerMissed).
+      // Committing now would open the panel before that cancel can run,
+      // and a drag may skip onPointerMissed entirely.
+      useUiStore.getState().setPendingFocus(null);
+    }
     tweenActive.current = false; // user input cancels the active glide
   };
   const onEnd = (): void => {
