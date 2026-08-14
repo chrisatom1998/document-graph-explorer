@@ -16,13 +16,15 @@
  * tension (luminanceThreshold here is the other half of that contract).
  */
 
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Bloom, DepthOfField, EffectComposer, Vignette } from '@react-three/postprocessing';
 import type { DepthOfFieldEffect } from 'postprocessing';
+import { onLayoutSettled } from '../layout/layoutBridge';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
+import { settleBloomBoost, triggerSettleCue } from './settleCue';
 import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../config';
 
 // Threshold/smoothing are half of the label-vs-bloom contract (Labels.tsx) —
@@ -62,6 +64,21 @@ export default function Effects() {
   const hoveredId = useUiStore((s) => s.hoveredId);
   const selectedId = useUiStore((s) => s.selectedId);
   const nodeCount = useGraphStore((s) => s.nodes.length);
+  const [settleTick, setSettleTick] = useState(0);
+
+  useEffect(() => {
+    let timeout = 0;
+    const off = onLayoutSettled(() => {
+      triggerSettleCue();
+      setSettleTick((n) => n + 1);
+      window.clearTimeout(timeout);
+      timeout = window.setTimeout(() => setSettleTick((n) => n + 1), 820);
+    });
+    return () => {
+      off();
+      window.clearTimeout(timeout);
+    };
+  }, []);
   const dofOn = useUiStore(
     (s) => s.qualityTier === 0 && s.selectedId !== null && s.dims === 3,
   );
@@ -74,7 +91,8 @@ export default function Effects() {
   const focusBoost = hoveredId || selectedId ? 0.12 : 0;
   const intensity = flat
     ? FLAT_BLOOM_INTENSITY
-    : BLOOM_INTENSITY - densitySoftening * 0.26 + focusBoost;
+    : BLOOM_INTENSITY - densitySoftening * 0.26 + focusBoost + settleBloomBoost();
+  void settleTick;
 
   // Geometry antialiasing lives HERE, not on the canvas: the composer renders
   // the scene into its own framebuffer, so the WebGL context's MSAA (off in
