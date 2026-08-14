@@ -72,6 +72,13 @@ export interface DuplicatePair {
   sim: number;
 }
 
+/** Closest semantic candidate retained while the pipeline already scans pairs. */
+export interface SemanticNeighbor {
+  id: string;
+  neighborId: string;
+  sim: number;
+}
+
 export interface GraphExport {
   version: 1;
   createdAt: string;
@@ -332,6 +339,8 @@ export type AggResponse =
       edges: Edge[]; // semantic edges only
       clusters: Record<string, number>; // docId -> community (over full edge set)
       duplicates: DuplicatePair[]; // pairs >= dupThreshold, independent of the edge set
+      /** Closest candidate per document, regardless of the edge threshold. */
+      nearest: ({ j: number; sim: number } | null)[];
       /** Per-doc bounded top-k candidates, indices into the request's `ids` —
        * cached by the caller so the next incremental pass can skip the full
        * O(n²) rescan (see similarity.ts's SemanticIndex). */

@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { DocNode } from '../model/types';
-import type { ChunkData } from '../store/runtimeStores';
+import { useAnnotationStore } from '../store/annotationStore';
+import { useGraphStore } from '../store/graphStore';
+import { textStore, type ChunkData } from '../store/runtimeStores';
 
 vi.mock('../pipeline/coordinator', () => ({
   embedQuery: vi.fn().mockRejectedValue(new Error('default embedder is not used in unit tests')),
@@ -174,5 +176,135 @@ describe('shared hybrid retrieval', () => {
     );
     expect(await retrieveCorpus('   ', {}, deps)).toEqual([]);
     expect(await retrieveCorpus('quantum entanglement', { minSemanticScore: 0.3 }, deps)).toEqual([]);
+  });
+
+  it('matches notes and tags when the document body does not', async () => {
+    const tagged = node('policy', 'Vendor Policy');
+    const result = await retrieveCorpus(
+      'legal-hold',
+      { semantic: false },
+      {
+        ...dependencies(
+          [tagged],
+          new Map(),
+          async () => { throw new Error('offline'); },
+          new Map([['policy', 'This policy covers procurement and onboarding.']]),
+        ),
+        annotations: new Map([['policy', { note: 'Keep for counsel', tags: ['legal-hold'] }]]),
+      },
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      docId: 'policy',
+      matchKind: 'keyword',
+      text: expect.stringMatching(/legal-hold/i),
+    });
+    expect(result[0].passageIndex).toBeUndefined();
+  });
+
+  it('excludes local search metadata when a caller disables it', async () => {
+    const result = await retrieveCorpus(
+      'legal-hold',
+      { semantic: false, includeSearchMetadata: false },
+      {
+        ...dependencies(
+          [node('policy', 'Vendor Policy')],
+          new Map(),
+          async () => { throw new Error('offline'); },
+          new Map([['policy', 'This policy covers procurement and onboarding.']]),
+        ),
+        annotations: new Map([['policy', { note: 'Keep for counsel', tags: ['legal-hold'] }]]),
+        clusterNameById: new Map([['policy', 'Payments & revenue']]),
+      },
+    );
+
+    expect(result).toEqual([]);
+  });
+
+  it('ignores inherited annotation properties for imported document paths', async () => {
+    const previousGraph = useGraphStore.getState();
+    const previousAnnotations = useAnnotationStore.getState();
+    const hazardous = { ...node('hazard', 'Safety Policy'), path: 'constructor' };
+
+    try {
+      textStore.set('hazard', 'This document explains constructor safety.');
+      useGraphStore.setState({
+        nodes: [hazardous],
+        nodeIndex: { hazard: 0 },
+        clusterNames: {},
+        localClusterNames: {},
+      });
+      useAnnotationStore.setState({ annotations: {} });
+
+      await expect(retrieveCorpus('safety', { semantic: false })).resolves.toMatchObject([
+        { docId: 'hazard' },
+      ]);
+    } finally {
+      textStore.delete('hazard');
+      useGraphStore.setState(previousGraph, true);
+      useAnnotationStore.setState(previousAnnotations, true);
+    }
+  });
+
+  it('does not fuse tag evidence onto chunk 0 during semantic upsert', async () => {
+    const tagged = node('policy', 'Vendor Policy');
+    const result = await retrieveCorpus(
+      'legal-hold',
+      { minSemanticScore: 0, limit: 2, perDocument: 2 },
+      {
+        ...dependencies(
+          [tagged],
+          new Map([['policy', {
+            texts: ['This policy covers procurement and onboarding.'],
+            vectors: new Float32Array([1, 0]),
+            dims: 2,
+          }]]),
+          async () => new Float32Array([1, 0]),
+        ),
+        annotations: new Map([['policy', { note: 'Keep for counsel', tags: ['legal-hold'] }]]),
+      },
+    );
+    expect(result.some((hit) => hit.docId === 'policy')).toBe(true);
+    expect(result.some((hit) => hit.passageIndex === 0 && /legal-hold/i.test(hit.text))).toBe(false);
+    const tagHit = result.find((hit) => /legal-hold/i.test(hit.text));
+    expect(tagHit?.passageIndex).toBeUndefined();
+  });
+
+  it('does not treat Cluster/Tags label prefixes as query terms', async () => {
+    const tagged = node('policy', 'Vendor Policy');
+    const deps = {
+      ...dependencies(
+        [tagged],
+        new Map(),
+        async () => { throw new Error('offline'); },
+        new Map([['policy', 'This policy covers procurement and onboarding.']]),
+      ),
+      annotations: new Map([['policy', { note: 'Keep for counsel', tags: ['legal-hold'] }]]),
+      clusterNameById: new Map([['policy', 'Payments & revenue']]),
+    };
+    expect(await retrieveCorpus('cluster', { semantic: false }, deps)).toEqual([]);
+    expect(await retrieveCorpus('tags', { semantic: false }, deps)).toEqual([]);
+    expect(await retrieveCorpus('tag', { semantic: false }, deps)).toEqual([]);
+    expect((await retrieveCorpus('legal-hold', { semantic: false }, deps))[0]?.docId).toBe('policy');
+    expect((await retrieveCorpus('payments', { semantic: false }, deps))[0]?.docId).toBe('policy');
+  });
+
+  it('matches resolved cluster names', async () => {
+    const result = await retrieveCorpus(
+      'payments',
+      { semantic: false },
+      {
+        ...dependencies(
+          [node('invoice', 'Q3 Invoice Notes')],
+          new Map(),
+          async () => { throw new Error('offline'); },
+          new Map([['invoice', 'Line items and purchase orders for September.']]),
+        ),
+        clusterNameById: new Map([['invoice', 'Payments & revenue']]),
+      },
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0].docId).toBe('invoice');
+    expect(result[0].text).toMatch(/Payments & revenue/);
   });
 });

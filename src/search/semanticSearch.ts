@@ -8,6 +8,7 @@ export interface SearchHit {
   score: number;
   matchKind: RetrievalMatchKind;
   snippet?: string;
+  passageIndex?: number;
 }
 
 /** Label preference when scores tie: title > hybrid > semantic > keyword. */
@@ -28,7 +29,12 @@ export function mergeHit(hits: Map<string, SearchHit>, hit: SearchHit): void {
   if (hit.score > prev.score) {
     hits.set(hit.id, { ...hit, snippet: hit.snippet ?? prev.snippet });
   } else if (hit.score === prev.score && KIND_RANK[hit.matchKind] < KIND_RANK[prev.matchKind]) {
-    hits.set(hit.id, { ...prev, matchKind: hit.matchKind, snippet: prev.snippet ?? hit.snippet });
+    hits.set(hit.id, {
+      ...prev,
+      matchKind: hit.matchKind,
+      snippet: prev.snippet ?? hit.snippet,
+      passageIndex: hit.passageIndex ?? prev.passageIndex,
+    });
   } else if (!prev.snippet && hit.snippet) {
     hits.set(hit.id, { ...prev, snippet: hit.snippet });
   }
@@ -45,6 +51,7 @@ function toSearchHits(retrieved: Awaited<ReturnType<typeof retrieveCorpus>>): Se
     ...(hit.text
       ? { snippet: hit.text.replace(/\s+/g, ' ').trim().slice(0, 140) }
       : {}),
+    ...(hit.passageIndex === undefined ? {} : { passageIndex: hit.passageIndex }),
   }));
 }
 

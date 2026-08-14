@@ -83,6 +83,7 @@ describe('addToSemanticIndex — incremental vs. full rebuild', () => {
     const fullEdges = edgesFromIndex(fullRebuild, params.threshold);
     expect(sortEdges(incrementalEdges)).toEqual(sortEdges(fullEdges));
     expect(sortDuplicates(incremental.duplicates)).toEqual(sortDuplicates(fullRebuild.duplicates));
+    expect(incremental.nearest).toEqual(fullRebuild.nearest);
   });
 
   it('adding several docs across multiple incremental calls matches one full rebuild over all of them', () => {
@@ -113,6 +114,7 @@ describe('addToSemanticIndex — incremental vs. full rebuild', () => {
       sortEdges(edgesFromIndex(fullRebuild, params.threshold)),
     );
     expect(index.ids).toEqual(allIds);
+    expect(index.nearest).toEqual(fullRebuild.nearest);
   });
 
   it('adding zero new docs is a no-op that returns the same index', () => {
@@ -132,5 +134,18 @@ describe('addToSemanticIndex — incremental vs. full rebuild', () => {
     const index = buildSemanticIndex(ids, vectors, dims, params);
     expect(sortEdges(edges)).toEqual(sortEdges(edgesFromIndex(index, params.threshold)));
     expect(sortDuplicates(duplicates)).toEqual(sortDuplicates(index.duplicates));
+  });
+
+  it('retains a closest candidate even when it is below the edge threshold', () => {
+    const ids = ['orphan', 'almost'];
+    const vectors = pack([
+      [1, 0, 0, 0],
+      [0.58, Math.sqrt(1 - 0.58 ** 2), 0, 0],
+    ]);
+    const index = buildSemanticIndex(ids, vectors, dims, params);
+
+    expect(edgesFromIndex(index, params.threshold)).toEqual([]);
+    expect(index.nearest[0]?.j).toBe(1);
+    expect(index.nearest[0]?.sim).toBeCloseTo(0.58, 5);
   });
 });

@@ -376,11 +376,12 @@ async function warnIfStorageCritical(): Promise<void> {
   );
 }
 
-async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<void> {
+async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boolean> {
   wireModelProgress();
   throwIfAborted(signal);
   void warnIfStorageCritical();
   const store = useGraphStore.getState; // fresh state per call; actions are stable
+  const initialDocumentCount = documentNodes().length;
 
   // (a) route by extension; unsupported → ignored tray
   const routed: { file: IngestFile; fileType: FileType }[] = [];
@@ -422,7 +423,7 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<voi
     seenIds.add(id);
     pending.push({ file, fileType, id, relPath, original });
   }
-  if (pending.length === 0) return; // nothing new — leave the corpus untouched
+  if (pending.length === 0) return false; // nothing new — leave the corpus untouched
 
   // (c) IndexedDB cache lookup (persistence subsystem)
   const lookups = await Promise.all(
@@ -668,7 +669,7 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<voi
 
   if (documentNodes().length === 0) {
     store().setPhase('idle');
-    return;
+    return false;
   }
 
   // (e) lexical aggregation over the WHOLE corpus (idf + title mentions
@@ -711,7 +712,7 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<voi
   }
 
   // (g) semantic edges + Louvain clustering over the full edge set
-  await runSemanticPass(lexEdges, signal);
+  const insightsAreCurrent = await runSemanticPass(lexEdges, signal);
 
   // (h) synthesize topic concept nodes (spec §5.4)
   synthesizeTopicNodes();
@@ -722,6 +723,7 @@ async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<voi
   // Persist the completed uploaded corpus immediately, so quitting right after
   // ingest still restores these files on the next launch.
   await saveSession();
+  return insightsAreCurrent && documentNodes().length > initialDocumentCount;
 }
 
 // ---------------------------------------------------------------------------
@@ -974,12 +976,15 @@ function vectorsFor(ids: string[]): Float32Array {
 }
 
 /** Ingest step (g): semantic edges + Louvain clustering over the full edge set. */
-async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<void> {
+async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<boolean> {
   const store = useGraphStore.getState;
   throwIfAborted(signal);
   store().setPhase('connecting');
   const embedded = documentNodes().filter((n) => docVectorStore.has(n.id));
-  if (embedded.length === 0) return;
+  if (embedded.length === 0) {
+    store().setSemanticNeighbors([]);
+    return true;
+  }
   const ids = embedded.map((n) => n.id);
 
   const cachedIds = semanticIndex?.ids ?? [];
@@ -1028,6 +1033,7 @@ async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<
         vectors: vectorsFor(ids),
         dims: EMBED_DIMS,
         top: semantic.top,
+        nearest: semantic.nearest,
         duplicates,
       };
       additionsSinceRebuild = 0;
@@ -1063,7 +1069,21 @@ async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<
       clusters = clusterResp.clusters;
     }
 
+    const currentIndex = semanticIndex!;
     store().setDuplicatePairs(duplicates);
+    store().setSemanticNeighbors(
+      currentIndex.nearest.flatMap((candidate, index) =>
+        candidate
+          ? [
+              {
+                id: currentIndex.ids[index],
+                neighborId: currentIndex.ids[candidate.j],
+                sim: candidate.sim,
+              },
+            ]
+          : [],
+      ),
+    );
     const merged = new Map<string, Edge>();
     for (const edge of [...lexEdges, ...edges]) {
       if (!merged.has(edge.id)) merged.set(edge.id, edge);
@@ -1084,10 +1104,12 @@ async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<
     layoutSetLinks(toLinkInput(allEdges));
     layoutSetClusters(clusters);
     layoutReheat(0.5);
+    return true;
   } catch (err) {
     // Whatever's cached may not match what actually landed in the store —
     // force a full rebuild next time rather than compounding a bad state.
     resetSemanticIndex();
+    store().setSemanticNeighbors([]);
     // cancellation must propagate, not degrade into a "similarity failed" toast
     if (signal?.aborted) throw err;
     console.error('semantic aggregation failed', err);
@@ -1097,6 +1119,7 @@ async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<
         'Similarity analysis failed — semantic connections and clusters may be stale.',
         'warning',
       );
+    return false;
   }
 }
 
@@ -1294,7 +1317,10 @@ export function ingestFiles(files: IngestFile[]): Promise<void> {
     // Snapshot the run's ignored/failed/capped files into the persistent
     // report the moment the run settles (cancellation publishes inside
     // settleCancelledIngest instead, before the tray is cleared).
-    .then(() => publishIngestReport())
+    .then((changed) => {
+      publishIngestReport();
+      if (changed) useGraphStore.getState().markIngestSuccessful();
+    })
     .catch((err) => {
       // Cancellation is a user action, not a failure — settle the returned
       // promise cleanly so fire-and-forget drops and loadDemoCorpus don't
@@ -1357,7 +1383,7 @@ export function reconcileWatchedFiles(
   expectedIds: string[] = [],
 ): Promise<string[]> {
   const run = enqueueRun(async () => {
-    if (files.length > 0) await runIngest(files);
+    const changed = files.length > 0 ? await runIngest(files) : false;
     const present = new Set(documentNodes().map((node) => node.id));
     const acceptedIds = expectedIds.filter((id) => present.has(id));
     const supersededIds = replacements
@@ -1366,6 +1392,7 @@ export function reconcileWatchedFiles(
     const removing = [...new Set([...removeIds, ...supersededIds])];
     if (removing.length > 0) await runRemove(removing);
     publishIngestReport();
+    if (changed) useGraphStore.getState().markIngestSuccessful();
     return acceptedIds;
   });
   run.catch((error) => console.error('watched-folder reconciliation failed', error));

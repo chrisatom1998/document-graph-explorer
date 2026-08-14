@@ -3,13 +3,16 @@
  * a chat interface. Uses RAG over all uploaded documents.
  */
 
-import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import ChatMarkdown from '../chat/ChatMarkdown';
+import { corpusChatStarters } from '../chat/chatStarters';
 import { cancelChat, sendChatMessage } from '../chat/ragChat';
 import { AIRGAP } from '../airgap';
+import { computeOrphans } from '../graph/insights';
 import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
 import { useGraphStore } from '../store/graphStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { useUiStore } from '../store/uiStore';
 import { focusNode } from './focusNode';
 import { openDocument } from './openDocument';
 import { chatTranscriptMarkdown } from '../persistence/chatHistory';
@@ -31,7 +34,7 @@ function IconStop() {
   );
 }
 
-function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSourceClick: (id: string) => void }) {
+function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSourceClick: (source: ChatSource) => void }) {
   // nodeIndex lookup, not a rebuilt Map: this renders per streaming delta,
   // and a 4k-doc corpus would pay a 4k-entry Map construction each time.
   const nodes = useGraphStore((s) => s.nodes);
@@ -47,12 +50,15 @@ function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSour
         // Sibling buttons, not nested (nested <button> is invalid HTML): the
         // chip flies to the node, the paired icon opens the document itself.
         return (
-          <span key={source.docId} className="chat-source">
+          <span
+            key={`${source.docId}:${source.chunkIndex === undefined ? 'metadata' : source.chunkIndex}`}
+            className="chat-source"
+          >
             <button
               type="button"
               className="chat-source-chip"
               title={`${pct}% match${passage} — ${source.snippet}`}
-              onClick={() => onSourceClick(source.docId)}
+              onClick={() => onSourceClick(source)}
             >
               📄 {title.length > 30 ? title.slice(0, 28) + '…' : title}{source.chunkIndex === undefined ? '' : ` · ${source.chunkIndex + 1}`}
             </button>
@@ -95,7 +101,7 @@ const MessageBubble = memo(function MessageBubble({
   onSourceClick,
 }: {
   msg: ChatMessage;
-  onSourceClick: (id: string) => void;
+  onSourceClick: (source: ChatSource) => void;
 }) {
   const isUser = msg.role === 'user';
   const isSystem = msg.role === 'system';
@@ -127,7 +133,13 @@ export default function ChatPanel() {
   const messages = useChatStore((s) => s.messages);
   const isStreaming = useChatStore((s) => s.isStreaming);
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
-  const docCount = useGraphStore((s) => s.nodes.filter((n) => n.kind === 'document').length);
+  const nodes = useGraphStore((s) => s.nodes);
+  const nodeIndex = useGraphStore((s) => s.nodeIndex);
+  const edges = useGraphStore((s) => s.edges);
+  const clusterNames = useGraphStore((s) => s.clusterNames);
+  const localClusterNames = useGraphStore((s) => s.localClusterNames);
+  const docCount = nodes.filter((n) => n.kind === 'document').length;
+  const pathEndpoints = useUiStore((s) => s.pathEndpoints);
   const chatProvider = useSettingsStore((s) => s.chatProvider);
   const openRouterKey = useSettingsStore((s) => s.openRouterKey);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
@@ -137,6 +149,33 @@ export default function ChatPanel() {
     chatProvider === 'local' ||
     (chatProvider === 'openrouter' && openRouterKey.trim() === '');
 
+  const starters = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const n of nodes) {
+      if (n.kind !== 'document' || n.cluster < 0) continue;
+      counts.set(n.cluster, (counts.get(n.cluster) ?? 0) + 1);
+    }
+    let largest: { cluster: number; size: number } | null = null;
+    for (const [cluster, size] of counts) {
+      if (!largest || size > largest.size) largest = { cluster, size };
+    }
+    const largestClusterName =
+      largest && largest.size >= 2
+        ? (clusterNames[largest.cluster] ?? localClusterNames[largest.cluster] ?? `Cluster ${largest.cluster}`)
+        : undefined;
+    const pathTitles =
+      pathEndpoints.length === 2
+        ? ([
+            nodes[nodeIndex[pathEndpoints[0]]]?.title ?? pathEndpoints[0],
+            nodes[nodeIndex[pathEndpoints[1]]]?.title ?? pathEndpoints[1],
+          ] as const)
+        : undefined;
+    return corpusChatStarters({
+      orphanCount: computeOrphans(nodes, edges).length,
+      largestClusterName,
+      pathTitles,
+    });
+  }, [nodes, nodeIndex, edges, clusterNames, localClusterNames, pathEndpoints]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -190,8 +229,8 @@ export default function ChatPanel() {
 
   // Stable reference — an inline handler would defeat MessageBubble's memo.
   // (zustand action references are stable, so this never actually re-creates.)
-  const handleSourceClick = useCallback((docId: string) => {
-    focusNode(docId);
+  const handleSourceClick = useCallback((source: ChatSource) => {
+    focusNode(source.docId, { index: source.chunkIndex, text: source.snippet });
   }, []);
 
   const exportTranscript = () => {
@@ -245,10 +284,16 @@ export default function ChatPanel() {
         )}
         {messages.length === 0 && (
           <div className="chat-panel__workflows">
-            <button type="button" onClick={() => setInput('Compare the main positions and evidence across these documents.')}>Compare documents</button>
-            <button type="button" onClick={() => setInput('Identify contradictions or unresolved disagreements in this corpus, with citations.')}>Find contradictions</button>
-            <button type="button" onClick={() => setInput('Build a timeline of key events, decisions, and dates with citations.')}>Build a timeline</button>
-            <button type="button" onClick={() => setInput('Extract decisions, owners, and action items from these documents with citations.')}>Decisions & actions</button>
+            {starters.map((starter) => (
+              <button
+                key={starter.label}
+                type="button"
+                title={starter.prompt}
+                onClick={() => setInput(starter.prompt)}
+              >
+                {starter.label}
+              </button>
+            ))}
           </div>
         )}
         {messages.map((msg) => (

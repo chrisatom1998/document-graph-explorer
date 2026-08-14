@@ -162,6 +162,7 @@ async function handleSemantic(req: Extract<AggRequest, { type: 'semantic' }>): P
     edges: semEdges,
     clusters,
     duplicates: index.duplicates,
+    nearest: index.nearest,
     top: index.top,
   } satisfies AggResponse);
 }

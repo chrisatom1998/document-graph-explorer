@@ -588,8 +588,8 @@ export default function SettingsPanel() {
             stored text is sent to the enrichment provider selected above — OpenRouter
             (cloud, may incur model charges) or your local Ollama server. Enormous files are
             capped at {DOCUMENT_AI_MAX_CONTEXT_CHARS.toLocaleString('en-US')} characters so they fit the model. &quot;Ask AI&quot; sends the
-            selected document to that provider. Chat sends only retrieved passages and recent
-            chat history to the chat provider.
+            selected document to that provider. Chat sends only retrieved document passages and
+            recent chat history to the chat provider; your notes and tags are excluded.
           </p>
         </section>
         )}

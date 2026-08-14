@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import Tooltip from './ui/Tooltip';
 import ChatLauncher from './ui/ChatLauncher';
+import InsightsDigest from './ui/InsightsDigest';
 import ToastHost from './ui/ToastHost';
 import { shouldIgnoreGlobalKey } from './ui/globalKeyboard';
 import { useGraphStore } from './store/graphStore';
@@ -310,6 +311,7 @@ export default function App() {
       {insightsOpen && (
         <Suspense fallback={null}><InsightsPanel /></Suspense>
       )}
+      <InsightsDigest />
       {pathMode && (
         <Suspense fallback={null}><PathPanel /></Suspense>
       )}

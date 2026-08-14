@@ -137,6 +137,7 @@ describe('Adversarial Test Suite - Milestone 2', () => {
       expect(incIndex.ids).toEqual(fullIndex.ids);
       expect(incIndex.dims).toBe(fullIndex.dims);
       expect(incIndex.top).toEqual(fullIndex.top);
+      expect(incIndex.nearest).toEqual(fullIndex.nearest);
       expect(incIndex.duplicates).toEqual(fullIndex.duplicates);
     });
 
