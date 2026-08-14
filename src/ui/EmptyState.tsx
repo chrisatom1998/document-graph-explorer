@@ -4,8 +4,10 @@ import { Chip } from '@heroui/react/chip';
 import { EmptyState as HeroEmptyState } from '@heroui/react/empty-state';
 import { openFilePicker } from '../ingest/DropZone';
 import { openFolderPicker } from '../ingest/folderPicker';
+import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import ConstellationSvg from './ConstellationSvg';
+import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
 // Split out so the welcome screen paints without waiting on three.js; the flat
@@ -24,6 +26,13 @@ export default function EmptyState() {
     setDemoLoading(true);
     import('../pipeline/coordinatorLazy')
       .then(({ loadDemoCorpus }) => loadDemoCorpus())
+      .then(() => {
+        // Only show the guide when the demo actually produced a graph; a
+        // mid-run cancellation resolves the promise but leaves nodes empty.
+        if (useGraphStore.getState().nodes.length > 0) {
+          window.dispatchEvent(new Event(FIRST_RUN_GUIDE_REOPEN_EVENT));
+        }
+      })
       .catch((err) => {
         console.warn('demo corpus load failed', err);
         useUiStore.getState().pushToast("Couldn't load the demo corpus.");

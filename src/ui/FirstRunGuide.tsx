@@ -13,10 +13,11 @@ import { useGraphStore } from '../store/graphStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 import CloseButton from './CloseButton';
+import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 
 // v4: shorter core-loop tour after the toolbar was collapsed into menus.
 const KEY = 'knowledge-nebula-first-graph-guide-v4';
-export const FIRST_RUN_GUIDE_REOPEN_EVENT = 'knowledge-nebula-reopen-first-run-guide';
+export { FIRST_RUN_GUIDE_REOPEN_EVENT };
 
 const TOUR_STEPS = [
   {
