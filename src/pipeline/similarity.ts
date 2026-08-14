@@ -93,6 +93,7 @@ export interface SemanticIndex {
   vectors: Float32Array; // flattened [n * dims], unit vectors
   dims: number;
   top: Candidate[][]; // per-doc bounded top-k candidates (indices into `ids`)
+  nearest: (Candidate | null)[]; // closest candidate per doc, including below-threshold pairs
   duplicates: DuplicatePair[];
 }
 
@@ -116,6 +117,7 @@ function considerPair(
   vectors: Float32Array,
   dims: number,
   top: Candidate[][],
+  nearest: (Candidate | null)[],
   duplicates: DuplicatePair[],
   params: SemanticParams,
   i: number,
@@ -124,6 +126,8 @@ function considerPair(
   const { threshold, topK } = params;
   const dupThreshold = params.dupThreshold ?? Infinity;
   const sim = dot(vectors, dims, i, j);
+  if (!nearest[i] || sim > nearest[i].sim) nearest[i] = { j, sim };
+  if (!nearest[j] || sim > nearest[j].sim) nearest[j] = { j: i, sim };
   if (sim >= dupThreshold) {
     const a = ids[i] < ids[j] ? ids[i] : ids[j];
     const b = ids[i] < ids[j] ? ids[j] : ids[i];
@@ -144,15 +148,16 @@ export function buildSemanticIndex(
 ): SemanticIndex {
   const n = ids.length;
   const top: Candidate[][] = Array.from({ length: n }, () => []);
+  const nearest: (Candidate | null)[] = Array.from({ length: n }, () => null);
   const duplicates: DuplicatePair[] = [];
   if (n >= 2 && dims > 0 && params.topK > 0) {
     for (let i = 0; i < n; i += 1) {
       for (let j = i + 1; j < n; j += 1) {
-        considerPair(ids, vectors, dims, top, duplicates, params, i, j);
+        considerPair(ids, vectors, dims, top, nearest, duplicates, params, i, j);
       }
     }
   }
-  return { ids, vectors, dims, top, duplicates };
+  return { ids, vectors, dims, top, nearest, duplicates };
 }
 
 export async function buildSemanticIndexChunked(
@@ -164,6 +169,7 @@ export async function buildSemanticIndexChunked(
 ): Promise<SemanticIndex> {
   const n = ids.length;
   const top: Candidate[][] = Array.from({ length: n }, () => []);
+  const nearest: (Candidate | null)[] = Array.from({ length: n }, () => null);
   const duplicates: DuplicatePair[] = [];
   const totalPairs = pairCountFor(n);
   const progressChunk = Math.max(256, Math.min(2048, Math.ceil(totalPairs / 40)));
@@ -172,7 +178,7 @@ export async function buildSemanticIndexChunked(
     let processedPairs = 0;
     for (let i = 0; i < n; i += 1) {
       for (let j = i + 1; j < n; j += 1) {
-        considerPair(ids, vectors, dims, top, duplicates, params, i, j);
+        considerPair(ids, vectors, dims, top, nearest, duplicates, params, i, j);
         processedPairs += 1;
 
         if (onProgress && shouldYield(progressFor(processedPairs, totalPairs), progressChunk)) {
@@ -183,7 +189,7 @@ export async function buildSemanticIndexChunked(
     }
   }
 
-  return { ids, vectors, dims, top, duplicates };
+  return { ids, vectors, dims, top, nearest, duplicates };
 }
 
 /**
@@ -218,6 +224,10 @@ export function addToSemanticIndex(
     ...index.top.map((candidates) => [...candidates]),
     ...Array.from({ length: m }, () => []),
   ];
+  const nearest: (Candidate | null)[] = [
+    ...index.nearest.map((candidate) => (candidate ? { ...candidate } : null)),
+    ...Array.from({ length: m }, () => null),
+  ];
   const duplicates: DuplicatePair[] = [...index.duplicates];
 
   if (dims > 0 && params.topK > 0) {
@@ -225,18 +235,18 @@ export function addToSemanticIndex(
     for (let ni = 0; ni < m; ni += 1) {
       const j = n0 + ni;
       for (let i = 0; i < n0; i += 1) {
-        considerPair(ids, vectors, dims, top, duplicates, params, i, j);
+        considerPair(ids, vectors, dims, top, nearest, duplicates, params, i, j);
       }
     }
     // new × new
     for (let a = 0; a < m; a += 1) {
       for (let b = a + 1; b < m; b += 1) {
-        considerPair(ids, vectors, dims, top, duplicates, params, n0 + a, n0 + b);
+        considerPair(ids, vectors, dims, top, nearest, duplicates, params, n0 + a, n0 + b);
       }
     }
   }
 
-  return { ids, vectors, dims, top, duplicates };
+  return { ids, vectors, dims, top, nearest, duplicates };
 }
 
 /** Derive mutual-top-k semantic edges (spec §5.2) from a bounded top-k index. */

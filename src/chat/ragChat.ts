@@ -53,7 +53,7 @@ function isAbortLike(err: unknown): boolean {
 interface RetrievedChunk {
   docId: string;
   docTitle: string;
-  chunkIndex: number;
+  chunkIndex?: number;
   text: string;
   score: number;
 }
@@ -89,14 +89,21 @@ export function keywordEvidence(text: string, terms: string[], maxChars: number)
   return text.slice(start, end).trim();
 }
 
-async function retrieveChunks(query: string): Promise<RetrievedChunk[]> {
-  const hits = await retrieveCorpus(query, {
+export function retrievalOptionsForChat() {
+  return {
     limit: RAG_TOP_K,
     perDocument: RAG_MAX_CHUNKS_PER_DOC,
     timeoutMs: 15_000,
     minSemanticScore: RAG_MIN_SCORE,
     maxPassageChars: CHUNK_CONTEXT_CHARS,
-  });
+    // Notes, tags, and cluster labels are local search metadata. Keep them out
+    // of chat prompts, especially when the selected provider is cloud-hosted.
+    includeSearchMetadata: false,
+  };
+}
+
+async function retrieveChunks(query: string): Promise<RetrievedChunk[]> {
+  const hits = await retrieveCorpus(query, retrievalOptionsForChat());
   return hits.map((hit) => ({
     docId: hit.docId,
     docTitle: hit.docTitle,
@@ -141,9 +148,11 @@ function contextNonce(): string {
 
 export function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
   const nonce = contextNonce();
-  const contextParts = chunks.map(
-    (c, i) => `[Source ${i + 1}: "${c.docTitle}", passage ${c.chunkIndex + 1}]\n${c.text}`,
-  );
+  const contextParts = chunks.map((c, i) => {
+    const passage =
+      c.chunkIndex === undefined || c.chunkIndex < 0 ? '' : `, passage ${c.chunkIndex + 1}`;
+    return `[Source ${i + 1}: "${c.docTitle}"${passage}]\n${c.text}`;
+  });
 
   return [
     'You are a knowledgeable assistant answering questions about the user\'s document collection.',

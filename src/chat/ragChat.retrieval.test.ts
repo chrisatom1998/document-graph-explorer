@@ -4,7 +4,7 @@ vi.mock('../pipeline/coordinator', () => ({
   embedQuery: vi.fn(),
 }));
 
-import { buildPrompt, diversifyChunks, keywordEvidence } from './ragChat';
+import { buildPrompt, diversifyChunks, keywordEvidence, retrievalOptionsForChat } from './ragChat';
 
 describe('RAG retrieval helpers', () => {
   it('caps passages from one document to preserve corpus diversity', () => {
@@ -40,5 +40,20 @@ describe('RAG retrieval helpers', () => {
     expect(prompt).toContain('[Source 1: "Rate Limits", passage 3]');
     expect(prompt).toContain('Every factual claim must be supported');
     expect(prompt).toContain('inline as [Source N]');
+  });
+
+  it('omits a passage number for annotation-only evidence', () => {
+    const prompt = buildPrompt('What is on legal hold?', [{
+      docId: 'policy',
+      docTitle: 'Vendor Policy',
+      text: 'Tags: legal-hold',
+      score: 0.8,
+    }]);
+    expect(prompt).toContain('[Source 1: "Vendor Policy"]');
+    expect(prompt).not.toContain(', passage');
+  });
+
+  it('keeps local notes and tags out of chat retrieval', () => {
+    expect(retrievalOptionsForChat()).toMatchObject({ includeSearchMetadata: false });
   });
 });

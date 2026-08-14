@@ -80,9 +80,18 @@ export interface SnapshotOverlay {
   removedLabels: string[];
 }
 
+/** Passage a search hit or chat citation asked the reader to scroll to. */
+export interface ReaderHighlight {
+  docId: string;
+  text: string;
+  passageIndex?: number;
+}
+
 interface UiState {
   hoveredId: string | null;
   selectedId: string | null;
+  /** Matching passage to scroll/highlight in the side-panel reader. */
+  readerHighlight: ReaderHighlight | null;
   searchOpen: boolean;
   searchResults: string[] | null; // null = no active highlight (shared channel)
   highlightOwner: HighlightOwner | null; // which feature set searchResults
@@ -109,6 +118,7 @@ interface UiState {
 
   setHovered: (id: string | null) => void;
   setSelected: (id: string | null) => void;
+  setReaderHighlight: (highlight: ReaderHighlight | null) => void;
   setSearchOpen: (open: boolean) => void;
   setSearchResults: (ids: string[] | null, owner?: HighlightOwner) => void;
   setFilter: (f: Partial<GraphFilter>) => void;
@@ -139,6 +149,7 @@ let nextToastId = 1;
 export const useUiStore = create<UiState>((set) => ({
   hoveredId: null,
   selectedId: null,
+  readerHighlight: null,
   searchOpen: false,
   searchResults: null,
   highlightOwner: null,
@@ -162,7 +173,8 @@ export const useUiStore = create<UiState>((set) => ({
 
   setHovered: (hoveredId) => set({ hoveredId }),
   setSelected: (selectedId) =>
-    set({ selectedId }),
+    set({ selectedId, readerHighlight: null }),
+  setReaderHighlight: (readerHighlight) => set({ readerHighlight }),
   setSearchOpen: (searchOpen) => set({ searchOpen }),
   setSearchResults: (searchResults, owner) =>
     set({ searchResults, highlightOwner: searchResults ? (owner ?? null) : null }),

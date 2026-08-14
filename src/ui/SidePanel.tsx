@@ -19,8 +19,10 @@ import DocumentMarkdown from './DocumentMarkdown';
 import HtmlPreview from './HtmlPreview';
 import { MAX_RENDER_CHARS } from './readerUtils';
 import CsvPreview from './CsvPreview';
-import JsonPreview from './JsonPreview';
-import YamlPreview from './YamlPreview';
+import JsonPreview, { MAX_RENDER_CHARS as JSON_MAX_RENDER_CHARS } from './JsonPreview';
+import YamlPreview, { MAX_RENDER_CHARS as YAML_MAX_RENDER_CHARS } from './YamlPreview';
+import PassageTarget from './PassageTarget';
+import { showSimilarTo } from './showSimilar';
 import { buildLinkIndex } from '../graph/linkResolver';
 import { getOriginal } from '../persistence/originals';
 import { decodeText } from '../pipeline/parsers/txt';
@@ -50,6 +52,8 @@ const PdfPreview = lazy(() => import('./PdfPreview'));
 export default function SidePanel() {
   const selectedId = useUiStore((s) => s.selectedId);
   const setSelected = useUiStore((s) => s.setSelected);
+  const readerHighlight = useUiStore((s) => s.readerHighlight);
+  const pushToast = useUiStore((s) => s.pushToast);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
 
   const nodes = useGraphStore((s) => s.nodes);
@@ -216,6 +220,9 @@ export default function SidePanel() {
   const codeLang = codeLanguageForNode(node);
   const typeChip = fileTypeChip(node);
   const readerLabel = codeLang?.label ?? 'Document';
+  const passageNeedle =
+    readerHighlight?.docId === node.id ? readerHighlight.text : undefined;
+  const passageKey = `${node.id}:${mdSource?.text.length ?? htmlSource?.text.length ?? fullText?.length ?? 0}`;
 
   return (
     <div className="side-panel-layer">
@@ -242,6 +249,21 @@ export default function SidePanel() {
                 <path d="M12 9v4.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5H7" />
               </svg>
               Open
+            </button>
+          )}
+          {node.kind === 'document' && (
+            <button
+              type="button"
+              className="side-panel__open-btn"
+              title="Highlight documents similar to this one in the graph"
+              onClick={() => {
+                const count = showSimilarTo(node.id);
+                if (count === 0) {
+                  pushToast('No similar documents in this corpus', 'info');
+                }
+              }}
+            >
+              More like this
             </button>
           )}
           {node.kind === 'document' && !confirmRemove && (
@@ -494,6 +516,18 @@ export default function SidePanel() {
 
           <div className="side-panel__section">
             <p className="side-panel__section-label">{readerLabel}</p>
+            {readerHighlight?.docId === node.id && (
+              <p className="side-panel__passage-banner" role="status">
+                Matching passage
+                {readerHighlight.passageIndex !== undefined
+                  ? ` · ${readerHighlight.passageIndex + 1}`
+                  : ''}
+                {': '}
+                <span className="side-panel__passage-banner-text">
+                  {readerHighlight.text.replace(/\s+/g, ' ').trim().slice(0, 220)}
+                </span>
+              </p>
+            )}
             <div className={`side-panel__reader-frame${codeLang ? ' is-code' : ''}`}>
             {codeLang && (
               <span className="side-panel__reader-lang" title={codeLang.label}>
@@ -509,41 +543,70 @@ export default function SidePanel() {
                 />
               </Suspense>
             ) : mdSource && mdSource.id === node.id ? (
-              <DocumentMarkdown
-                key={node.id}
-                text={mdSource.text}
-                linkIndex={linkIndex}
-                onNavigate={(id) => focusNode(id)}
-                className="side-panel__reader side-panel__reader--markdown"
-              />
+              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
+                <DocumentMarkdown
+                  key={node.id}
+                  text={mdSource.text}
+                  linkIndex={linkIndex}
+                  onNavigate={(id) => focusNode(id)}
+                  className="side-panel__reader side-panel__reader--markdown"
+                  highlight={passageNeedle}
+                />
+              </PassageTarget>
             ) : htmlSource && htmlSource.id === node.id ? (
-              <HtmlPreview
-                key={node.id}
-                html={htmlSource.text}
-                className="side-panel__reader side-panel__reader--html"
-              />
+              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
+                <HtmlPreview
+                  key={node.id}
+                  html={htmlSource.text}
+                  className="side-panel__reader side-panel__reader--html"
+                  highlight={passageNeedle}
+                />
+              </PassageTarget>
             ) : node.fileType === 'csv' && fullText ? (
-              <CsvPreview
-                key={node.id}
-                text={fullText}
-                className="side-panel__reader side-panel__reader--csv"
-              />
+              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
+                <CsvPreview
+                  key={node.id}
+                  text={fullText}
+                  className="side-panel__reader side-panel__reader--csv"
+                />
+              </PassageTarget>
+            ) : node.fileType === 'json' && fullText && fullText.length <= JSON_MAX_RENDER_CHARS ? (
+              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
+                <JsonPreview
+                  key={node.id}
+                  text={fullText}
+                  className="side-panel__reader side-panel__reader--json"
+                  highlight={passageNeedle}
+                />
+              </PassageTarget>
             ) : node.fileType === 'json' && fullText ? (
               <JsonPreview
                 key={node.id}
                 text={fullText}
                 className="side-panel__reader side-panel__reader--json"
+                highlight={passageNeedle}
               />
+            ) : node.fileType === 'yaml' && fullText && fullText.length <= YAML_MAX_RENDER_CHARS ? (
+              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
+                <YamlPreview
+                  key={node.id}
+                  text={fullText}
+                  className="side-panel__reader side-panel__reader--yaml"
+                  highlight={passageNeedle}
+                />
+              </PassageTarget>
             ) : node.fileType === 'yaml' && fullText ? (
               <YamlPreview
                 key={node.id}
                 text={fullText}
                 className="side-panel__reader side-panel__reader--yaml"
+                highlight={passageNeedle}
               />
             ) : fullText ? (
               <VirtualText
                 key={node.id}
                 text={fullText}
+                highlight={passageNeedle}
                 className={`side-panel__reader${
                   isMonoFileType(node.fileType) ? ' is-mono' : ''
                 }`}

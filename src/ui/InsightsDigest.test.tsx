@@ -65,7 +65,7 @@ describe('InsightsDigest', () => {
     expect(screen.queryByLabelText('What we found')).not.toBeInTheDocument();
   });
 
-  it('appears after an ingest phase and jump links open Insights', () => {
+  it('appears after a successful ingest and jump links open Insights', () => {
     useGraphStore.setState({
       phase: 'connecting',
       nodes: [doc('a', 0), doc('b', 0), doc('orphan', 1)],
@@ -76,6 +76,7 @@ describe('InsightsDigest', () => {
     render(<InsightsDigest />);
     act(() => {
       useGraphStore.setState({ phase: 'ready' });
+      useGraphStore.getState().markIngestSuccessful();
     });
 
     expect(screen.getByLabelText('What we found')).toBeInTheDocument();
@@ -98,6 +99,7 @@ describe('InsightsDigest', () => {
     });
     act(() => {
       useGraphStore.setState({ phase: 'ready' });
+      useGraphStore.getState().markIngestSuccessful();
     });
     render(<InsightsDigest />);
     expect(screen.getByLabelText('What we found')).toBeInTheDocument();
@@ -107,6 +109,20 @@ describe('InsightsDigest', () => {
   it('does not appear after enrichment', () => {
     useGraphStore.setState({
       phase: 'enriching',
+      nodes: [doc('a', 0), doc('b', 1)],
+      edges: [],
+      duplicatePairs: [],
+    });
+    render(<InsightsDigest />);
+    act(() => {
+      useGraphStore.setState({ phase: 'ready' });
+    });
+    expect(screen.queryByLabelText('What we found')).not.toBeInTheDocument();
+  });
+
+  it('does not appear when an ingest phase returns to ready without success', () => {
+    useGraphStore.setState({
+      phase: 'connecting',
       nodes: [doc('a', 0), doc('b', 1)],
       edges: [],
       duplicatePairs: [],

@@ -3,13 +3,13 @@
  * same corner as the Insights drawer so a jump link opens the panel in
  * place — no new toolbar chrome.
  *
- * Phase tracking is module-level so a late-mounted (lazy) card still sees
- * connecting → ready. The subscriber keeps at most one pending digest.
+ * The pipeline emits an explicit success counter after persistence completes,
+ * so cancelled/failed runs cannot masquerade as completed ingests. The
+ * subscriber keeps at most one pending digest for a late-mounted card.
  */
 
 import { useEffect, useState } from 'react';
 import {
-  isIngestPhase,
   shouldOfferInsightsDigest,
   summarizeInsights,
   formatInsightsDigest,
@@ -20,15 +20,11 @@ import { useUiStore, type InsightsFocus } from '../store/uiStore';
 import { openInsights } from './openInsights';
 import CloseButton from './CloseButton';
 
-let trackedPhase = useGraphStore.getState().phase;
 let pending: Digest | null = null;
 const listeners = new Set<(digest: Digest) => void>();
 
-useGraphStore.subscribe((state) => {
-  const from = trackedPhase;
-  if (state.phase === from) return;
-  trackedPhase = state.phase;
-  if (state.phase !== 'ready' || !isIngestPhase(from)) return;
+useGraphStore.subscribe((state, previous) => {
+  if (state.successfulIngestCount === previous.successfulIngestCount) return;
   const next = summarizeInsights(state.nodes, state.edges, state.duplicatePairs);
   if (!shouldOfferInsightsDigest(next)) {
     pending = null;
@@ -57,7 +53,6 @@ function subscribeDigest(listener: (digest: Digest) => void): () => void {
 /** Test seam: drop a leftover pending card between cases. */
 export function _resetInsightsDigestForTests(): void {
   pending = null;
-  trackedPhase = useGraphStore.getState().phase;
   listeners.clear();
 }
 

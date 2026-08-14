@@ -34,7 +34,7 @@ function IconStop() {
   );
 }
 
-function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSourceClick: (id: string) => void }) {
+function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSourceClick: (source: ChatSource) => void }) {
   // nodeIndex lookup, not a rebuilt Map: this renders per streaming delta,
   // and a 4k-doc corpus would pay a 4k-entry Map construction each time.
   const nodes = useGraphStore((s) => s.nodes);
@@ -50,12 +50,15 @@ function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSour
         // Sibling buttons, not nested (nested <button> is invalid HTML): the
         // chip flies to the node, the paired icon opens the document itself.
         return (
-          <span key={source.docId} className="chat-source">
+          <span
+            key={`${source.docId}:${source.chunkIndex === undefined ? 'metadata' : source.chunkIndex}`}
+            className="chat-source"
+          >
             <button
               type="button"
               className="chat-source-chip"
               title={`${pct}% match${passage} — ${source.snippet}`}
-              onClick={() => onSourceClick(source.docId)}
+              onClick={() => onSourceClick(source)}
             >
               📄 {title.length > 30 ? title.slice(0, 28) + '…' : title}{source.chunkIndex === undefined ? '' : ` · ${source.chunkIndex + 1}`}
             </button>
@@ -98,7 +101,7 @@ const MessageBubble = memo(function MessageBubble({
   onSourceClick,
 }: {
   msg: ChatMessage;
-  onSourceClick: (id: string) => void;
+  onSourceClick: (source: ChatSource) => void;
 }) {
   const isUser = msg.role === 'user';
   const isSystem = msg.role === 'system';
@@ -226,8 +229,8 @@ export default function ChatPanel() {
 
   // Stable reference — an inline handler would defeat MessageBubble's memo.
   // (zustand action references are stable, so this never actually re-creates.)
-  const handleSourceClick = useCallback((docId: string) => {
-    focusNode(docId);
+  const handleSourceClick = useCallback((source: ChatSource) => {
+    focusNode(source.docId, { index: source.chunkIndex, text: source.snippet });
   }, []);
 
   const exportTranscript = () => {

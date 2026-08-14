@@ -25,7 +25,6 @@ import {
 } from '../store/annotationStore';
 import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
-import { docVectorStore } from '../store/runtimeStores';
 import { useUiStore } from '../store/uiStore';
 import { timeAgo } from '../util/relativeTime';
 import { addTagToDocuments, documentsAlreadyTagged, DUPLICATE_TAG } from './insightActions';
@@ -60,6 +59,7 @@ export default function InsightsPanel() {
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
   const edges = useGraphStore((s) => s.edges);
   const duplicatePairs = useGraphStore((s) => s.duplicatePairs);
+  const semanticNeighbors = useGraphStore((s) => s.semanticNeighbors);
   const clusterNames = useGraphStore((s) => s.clusterNames);
   const localClusterNames = useGraphStore((s) => s.localClusterNames);
   const phase = useGraphStore((s) => s.phase);
@@ -143,21 +143,20 @@ export default function InsightsPanel() {
   }, [open, nodes]);
 
   const orphanNeighbors = useMemo(() => {
-    if (!open) return new Map<string, { neighborId: string; sim: number }>();
-    const orphans = computeOrphans(nodes, edges);
-    if (orphans.length === 0) return new Map();
-    const docIds = nodes.filter((n) => n.kind === 'document').map((n) => n.id);
-    const hints = nearestOrphanNeighbors(orphans, docVectorStore, docIds);
+    if (!open || !insights || insights.orphans.length === 0) {
+      return new Map<string, { neighborId: string; sim: number }>();
+    }
+    const hints = nearestOrphanNeighbors(insights.orphans, semanticNeighbors);
     return new Map(hints.map((h) => [h.orphanId, { neighborId: h.neighborId, sim: h.sim }]));
-  }, [open, nodes, edges]);
+  }, [open, insights, semanticNeighbors]);
 
   // Jump links (digest card, etc.) open this drawer on a section. Apply the
   // highlight once, then drop the focus so later graph churn doesn't steal
   // a highlight the user already cleared.
   useEffect(() => {
     if (!open || !insightsFocus) return;
-    const orphans = computeOrphans(nodes, edges);
-    const stale = computeStaleDocs(nodes, Date.now(), STALE_DOC_DAYS);
+    const orphans = insights?.orphans ?? [];
+    const stale = insights?.stale ?? [];
     const dupIds = [...new Set(duplicatePairs.flatMap((d) => [d.a, d.b]))];
     const clusterIds = [...clusterMembers.values()].flat();
     const ids =
@@ -177,7 +176,7 @@ export default function InsightsPanel() {
     requestAnimationFrame(() => {
       document.getElementById(`insights-section-${sectionId}`)?.scrollIntoView({ block: 'nearest' });
     });
-  }, [open, insightsFocus, nodes, edges, duplicatePairs, clusterMembers, setSearchResults]);
+  }, [open, insightsFocus, insights, duplicatePairs, clusterMembers, setSearchResults]);
 
   if (!open || !insights) return null;
 

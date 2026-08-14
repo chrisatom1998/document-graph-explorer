@@ -20,7 +20,6 @@ describe('insightActions', () => {
 
   afterEach(() => {
     _resetAnnotationsForTests();
-    useAnnotationStore.getState().hydrate(null as unknown as string, {});
   });
 
   it('tags each listed document once and reports how many were new', () => {

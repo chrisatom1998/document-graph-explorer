@@ -134,9 +134,10 @@ function renderNode(node: Node, key: string): ReactNode {
 interface HtmlPreviewProps {
   html: string;
   className?: string;
+  highlight?: string | null;
 }
 
-export default function HtmlPreview({ html, className }: HtmlPreviewProps) {
+export default function HtmlPreview({ html, className, highlight }: HtmlPreviewProps) {
   const tree = useMemo<ReactNode[] | null>(() => {
     if (html.length > MAX_RENDER_CHARS) return null;
     try {
@@ -154,7 +155,7 @@ export default function HtmlPreview({ html, className }: HtmlPreviewProps) {
   // that freezes the main thread.
   if (!tree) {
     const excerpt = getFallbackExcerpt(html);
-    return <VirtualText text={excerpt} className={wrapClass} />;
+    return <VirtualText text={excerpt} className={wrapClass} highlight={highlight} />;
   }
 
   return <div className={wrapClass}>{tree}</div>;

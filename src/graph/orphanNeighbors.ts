@@ -3,9 +3,12 @@
  * document-to-document edge, but a cosine that almost (or even did)
  * clear SIM_THRESHOLD without becoming a mutual top-k edge.
  *
- * PURE over id lists + unit vectors so Insights can unit-test ranking
- * without the runtime stores.
+ * The expensive ranking happens during the pipeline's existing semantic
+ * pass. This helper only filters that retained result for the current orphan
+ * ids, keeping React rendering proportional to the number of rows shown.
  */
+
+import type { SemanticNeighbor } from '../model/types';
 
 /** Floor below which "similar" is noise, not a suggested link. */
 export const ORPHAN_NEIGHBOR_MIN_SIM = 0.25;
@@ -16,43 +19,22 @@ export interface OrphanNeighbor {
   sim: number;
 }
 
-function cosine(a: Float32Array, b: Float32Array): number {
-  if (a.length !== b.length || a.length === 0) return 0;
-  let d = 0;
-  for (let i = 0; i < a.length; i += 1) d += a[i] * b[i];
-  return d;
-}
-
 /**
- * One nearest neighbor per orphan. Neighbors at or above SIM_THRESHOLD are
- * kept: an orphan by definition has no edge, so a high score means the pair
- * was crowded out of mutual top-k — still a suggested link. Below-threshold
- * scores are the common case ("not connected, but 0.58 similar").
+ * One retained nearest neighbor per orphan. Scores below the noise floor are
+ * omitted; scores below the connection threshold are intentionally kept.
  */
 export function nearestOrphanNeighbors(
   orphanIds: readonly string[],
-  vectors: ReadonlyMap<string, Float32Array>,
-  allDocIds: readonly string[],
+  semanticNeighbors: readonly SemanticNeighbor[],
   opts?: { minSim?: number },
 ): OrphanNeighbor[] {
   const minSim = opts?.minSim ?? ORPHAN_NEIGHBOR_MIN_SIM;
-  const out: OrphanNeighbor[] = [];
-  for (const orphanId of orphanIds) {
-    const va = vectors.get(orphanId);
-    if (!va) continue;
-    let bestId: string | null = null;
-    let bestSim = minSim;
-    for (const otherId of allDocIds) {
-      if (otherId === orphanId) continue;
-      const vb = vectors.get(otherId);
-      if (!vb) continue;
-      const sim = cosine(va, vb);
-      if (sim > bestSim) {
-        bestSim = sim;
-        bestId = otherId;
-      }
-    }
-    if (bestId) out.push({ orphanId, neighborId: bestId, sim: bestSim });
-  }
-  return out;
+  const orphanSet = new Set(orphanIds);
+  return semanticNeighbors
+    .filter((candidate) => orphanSet.has(candidate.id) && candidate.sim > minSim)
+    .map((candidate) => ({
+      orphanId: candidate.id,
+      neighborId: candidate.neighborId,
+      sim: candidate.sim,
+    }));
 }

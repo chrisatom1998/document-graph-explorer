@@ -1,21 +1,13 @@
 /**
- * One-shot "what we found" summary after ingest settles. Cheap scans only —
+ * One-shot "what we found" summary after a successful ingest. Cheap scans only —
  * orphans, near-duplicates, cluster count, stale docs — so the digest can
  * fire on the main thread the moment phase becomes `ready` without waiting
  * for the insights worker (bridges/hubs).
  */
 
-import type { DocNode, DuplicatePair, Edge, PipelinePhase } from '../model/types';
+import type { DocNode, DuplicatePair, Edge } from '../model/types';
 import { computeOrphans, computeStaleDocs } from './insights';
 import { STALE_DOC_DAYS } from '../config';
-
-/** Pipeline phases that mean a real ingest/relink just ran (not restore or enrichment). */
-export const INGEST_PHASES: ReadonlySet<PipelinePhase> = new Set([
-  'parsing',
-  'linking',
-  'embedding',
-  'connecting',
-]);
 
 export interface InsightsDigest {
   docCount: number;
@@ -73,8 +65,4 @@ export function shouldOfferInsightsDigest(digest: InsightsDigest): boolean {
     digest.clusterCount > 1 ||
     digest.staleCount > 0
   );
-}
-
-export function isIngestPhase(phase: PipelinePhase): boolean {
-  return INGEST_PHASES.has(phase);
 }

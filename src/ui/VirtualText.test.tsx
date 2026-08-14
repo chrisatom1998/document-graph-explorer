@@ -105,4 +105,13 @@ describe('VirtualText', () => {
     const lines = Array.from({ length: 600 }, (_, i) => `line ${i}`);
     expect(() => render(<VirtualText text={lines.join('\n')} />)).not.toThrow();
   });
+
+  it('wraps a matching passage in a mark on short documents', () => {
+    const { container } = render(
+      <VirtualText text="The disaster recovery procedure is tested quarterly." highlight="disaster recovery procedure" />,
+    );
+    const mark = container.querySelector('mark.passage-mark');
+    expect(mark).not.toBeNull();
+    expect(mark?.textContent).toMatch(/disaster recovery procedure/i);
+  });
 });

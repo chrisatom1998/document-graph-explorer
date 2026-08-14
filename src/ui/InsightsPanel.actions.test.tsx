@@ -15,7 +15,6 @@ vi.mock('../persistence/corpusRepository', () => ({
 import { _resetAnnotationsForTests, useAnnotationStore } from '../store/annotationStore';
 import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
-import { docVectorStore } from '../store/runtimeStores';
 import { useUiStore } from '../store/uiStore';
 import InsightsPanel from './InsightsPanel';
 
@@ -58,14 +57,12 @@ describe('InsightsPanel actions', () => {
     });
     useCorpusStore.setState({ activeCorpusId: 'c1', mode: 'local' });
     useAnnotationStore.getState().hydrate('c1', {});
-    docVectorStore.clear();
   });
 
   afterEach(() => {
     cleanup();
     _resetAnnotationsForTests();
     useGraphStore.getState().reset();
-    docVectorStore.clear();
     useCorpusStore.setState({ activeCorpusId: null, mode: 'local' });
   });
 
@@ -97,10 +94,12 @@ describe('InsightsPanel actions', () => {
       nodeIndex: { lonely: 0, cousin: 1 },
       edges: [],
       duplicatePairs: [],
+      semanticNeighbors: [
+        { id: 'lonely', neighborId: 'cousin', sim: 0.6 },
+        { id: 'cousin', neighborId: 'lonely', sim: 0.6 },
+      ],
       phase: 'ready',
     });
-    docVectorStore.set('lonely', new Float32Array([1, 0]));
-    docVectorStore.set('cousin', new Float32Array([0.6, 0.8]));
 
     render(<InsightsPanel />);
     expect(screen.getByText('Lonely')).toBeInTheDocument();

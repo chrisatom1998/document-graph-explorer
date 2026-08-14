@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { DocNode, DuplicatePair, Edge } from '../model/types';
 import {
   formatInsightsDigest,
-  isIngestPhase,
   shouldOfferInsightsDigest,
   summarizeInsights,
 } from './insightsDigest';
@@ -72,15 +71,5 @@ describe('summarizeInsights', () => {
 
   it('hides the card when the graph is empty', () => {
     expect(shouldOfferInsightsDigest(summarizeInsights([], [], []))).toBe(false);
-  });
-});
-
-describe('isIngestPhase', () => {
-  it('treats parse/link/embed/cluster as ingest, not restore or enrichment', () => {
-    expect(isIngestPhase('parsing')).toBe(true);
-    expect(isIngestPhase('connecting')).toBe(true);
-    expect(isIngestPhase('ready')).toBe(false);
-    expect(isIngestPhase('idle')).toBe(false);
-    expect(isIngestPhase('enriching')).toBe(false);
   });
 });
