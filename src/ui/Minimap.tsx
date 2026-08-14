@@ -135,6 +135,9 @@ export default function Minimap() {
       const toX = (u: number): number => W / 2 + (u - f.cx) * f.scale;
       const toY = (v: number): number => H / 2 + (v - f.cy) * f.scale;
 
+      sctx.fillStyle = ui.dims === 2 ? FLAT_PANEL : '#050510';
+      sctx.fillRect(0, 0, W, H);
+
       // --- edges: faintest possible filaments, straight is fine at this size
       if (edges.length <= EDGE_DRAW_CAP && !ui.clusterCollapsed) {
         sctx.strokeStyle = ui.dims === 2 ? FLAT_EDGE_FAINT : 'rgba(140, 150, 255, 0.10)';
@@ -161,8 +164,6 @@ export default function Minimap() {
       }
 
       // --- nodes: cluster-colored dots, hubs slightly larger ---------------
-      sctx.fillStyle = ui.dims === 2 ? FLAT_PANEL : '#050510';
-      sctx.fillRect(0, 0, W, H);
       for (const n of nodes) {
         const slot = slotOfId.get(n.id);
         if (slot === undefined || slot >= count) continue;

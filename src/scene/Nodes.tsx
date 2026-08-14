@@ -63,6 +63,7 @@ export { ghostOfSlot, kindOfSlot } from './positionBuffer';
 const MATERIALIZE_MS = 700;
 const HALO_SCALE = 2.2;
 const HALO_INTENSITY = 0.7;
+const FLAT_CORE_SCALE = 0.58;
 // Additive halos stack like the edges do: in crowded graphs the overlapping
 // shells (and the bloom they feed) wash out the core spheres, so halo
 // intensity eases down with node count. Floor keeps sparse regions of a big
@@ -582,8 +583,9 @@ export default function Nodes() {
     }
 
     core.count = count;
-    // 2D star chart: no halo shells — the gentle bloom pass supplies the glow
-    halo.count = useUiStore.getState().dims === 2 ? 0 : count;
+    // In 2D the "halo" mesh is repurposed into the bright inner map core, so
+    // it must stay enabled. Only the 3D path uses the large additive shell.
+    halo.count = count;
     if (topic) topic.count = count;
 
     // Dirty heuristic: skip the matrix loop when nothing moved or animates.
@@ -625,13 +627,16 @@ export default function Nodes() {
       }
 
       let scale = scaleOfSlot[i] || 1.1;
-      let haloScale = scale * HALO_SCALE;
+      let haloScale = ui.dims === 2 ? scale * FLAT_CORE_SCALE : scale * HALO_SCALE;
       const showMePulse = showMeIds?.has(idOfSlot[i] ?? '') && !reducedMotion;
       if (showMePulse) {
         const wave = (Math.sin((now / SHOW_ME_PULSE_PERIOD_MS) * Math.PI * 2) + 1) * 0.5;
         const pulse = 1.16 + wave * 0.34;
         scale *= pulse;
-        haloScale = scale * HALO_SCALE * (1.25 + wave * 1.1);
+        haloScale =
+          ui.dims === 2
+            ? scale * FLAT_CORE_SCALE * pulse
+            : scale * HALO_SCALE * (1.25 + wave * 1.1);
         stillAnimating = true;
       }
 
@@ -652,7 +657,10 @@ export default function Nodes() {
           if (t < 1) {
             const f = easeOutBack(Math.max(t, 0));
             scale *= f;
-            haloScale = scale * HALO_SCALE * (1 + 1.5 * (1 - t));
+            haloScale =
+              ui.dims === 2
+                ? scale * FLAT_CORE_SCALE * f
+                : scale * HALO_SCALE * (1 + 1.5 * (1 - t));
             stillAnimating = true;
           } else {
             spawnAtOfSlot[i] = -1; // animation done
