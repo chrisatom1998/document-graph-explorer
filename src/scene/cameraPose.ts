@@ -14,4 +14,6 @@ export const cameraPose = {
   tz: 0,
   fov: 55, // vertical, degrees — sizes the minimap viewport box
   aspect: 16 / 9,
+  /** Live OrbitControls gate, exposed through the dev verification probe. */
+  controlsEnabled: true,
 };

@@ -39,6 +39,7 @@ import {
 } from './positionBuffer';
 import { clusterColor, FLAT_NODE, FLAT_NODE_CLUSTER_BLEND } from './palette';
 import { prefersReducedMotion } from '../util/motion';
+import { startNodeDragLifecycle } from './nodeDragLifecycle';
 
 // ---------------------------------------------------------------------------
 // Shared slot metadata (imported by Edges/EdgePulses/Labels)
@@ -218,6 +219,8 @@ export default function Nodes() {
   const lastVersion = useRef(-1);
   const lastCount = useRef(-1);
   const dragRef = useRef<DragState | null>(null);
+  const engageDragRef = useRef<(() => void) | null>(null);
+  const finishDragRef = useRef<(() => void) | null>(null);
 
   // ---- per-slot metadata from the graph store --------------------------------
   const refreshSlotMeta = (): void => {
@@ -380,6 +383,7 @@ export default function Nodes() {
         const travel = Math.hypot(ev.clientX - state.startX, ev.clientY - state.startY);
         if (travel <= DRAG_THRESHOLD_PX) return; // still a click, not a drag
         state.engaged = true;
+        engageDragRef.current?.();
         document.body.style.cursor = 'grabbing';
       }
       const now = performance.now();
@@ -397,30 +401,40 @@ export default function Nodes() {
       }
     };
     const onUp = (): void => {
-      if (!dragRef.current) return;
-      dragRef.current = null; // node STAYS pinned (drag fixes; dblclick releases)
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      const controls = rootGet().controls as unknown as OrbitControlsImpl | null;
-      if (controls) controls.enabled = true;
-      document.body.style.cursor = '';
+      finishDragRef.current?.();
     };
     const start = (id: string, startX: number, startY: number): void => {
       const slot = slotOfId.get(id);
       if (slot === undefined) return;
+      // Defensive reset in case a second pointer begins before the browser
+      // delivered the first pointer's end signal.
+      finishDragRef.current?.();
       const arr = positionBuffer.array;
       dragOrigin.set(arr[slot * 3], arr[slot * 3 + 1], arr[slot * 3 + 2]);
       rootGet().camera.getWorldDirection(dragNormal);
       dragPlane.setFromNormalAndCoplanarPoint(dragNormal, dragOrigin);
       dragRef.current = { id, lastPin: 0, startX, startY, engaged: false };
       const controls = rootGet().controls as unknown as OrbitControlsImpl | null;
-      // Orbit goes off immediately (not at the threshold) so a plain click can
-      // never nudge the camera; onUp re-enables it either way.
-      if (controls) controls.enabled = false;
-      // The grabbing cursor waits for the threshold — showing it during a plain
-      // click would promise a drag that isn't happening.
-      window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
+      // A plain selection must never disable camera input. The shared lifecycle
+      // begins listening now, but OrbitControls are locked only if pointer
+      // movement crosses the drag threshold in onMove above.
+      let engage = (): void => {};
+      let finish = (): void => {};
+      const lifecycle = startNodeDragLifecycle({
+        target: window,
+        controls,
+        onMove,
+        onFinish: () => {
+          dragRef.current = null; // node STAYS pinned (drag fixes; dblclick releases)
+          document.body.style.cursor = '';
+          if (engageDragRef.current === engage) engageDragRef.current = null;
+          if (finishDragRef.current === finish) finishDragRef.current = null;
+        },
+      });
+      engage = lifecycle.engage;
+      finish = lifecycle.finish;
+      engageDragRef.current = engage;
+      finishDragRef.current = finish;
     };
     return { start, onMove, onUp };
   }, [rootGet]);
@@ -463,6 +477,10 @@ export default function Nodes() {
     const id = idOf(e);
     if (!id) return;
     e.stopPropagation();
+    // Selection opens UI and ends the pointer gesture. Explicitly finish here
+    // as a final invariant even if an embedded browser failed to deliver the
+    // normal pointerup to window.
+    drag.onUp();
     const ui = useUiStore.getState();
     if (ui.pathMode) {
       // Topic hubs can't be endpoints: pathfinding skips 'topic' edges, so a

@@ -10,7 +10,8 @@ import { useChatStore } from './store/chatStore';
 import { useCorpusStore } from './store/corpusStore';
 import { onLayoutSettled } from './layout/layoutBridge';
 import { enqueueRun } from './pipeline/runQueue';
-import { positionBuffer } from './scene/positionBuffer';
+import { positionBuffer, slotOfId } from './scene/positionBuffer';
+import { cameraPose } from './scene/cameraPose';
 import { panInput } from './scene/panInput';
 import { initPersistence, restoreSession } from './persistence/session';
 import { initializeCorpusRepository } from './persistence/corpusRepository';
@@ -54,6 +55,12 @@ declare global {
       maxR: number;
       minPair: number | null;
       enrich: { done: number; total: number; note: string } | null;
+      selectedId: string | null;
+      controlsEnabled: boolean;
+      camera: typeof cameraPose;
+      canvasFocused: boolean;
+      navigatorFocusWithin: boolean;
+      projectedNodes: Array<{ id: string; title: string; x: number; y: number; visible: boolean }>;
     };
   }
 }
@@ -163,6 +170,43 @@ export default function App() {
       }
       if (count > 0) meanR /= count;
 
+      // Project document centers using the published camera pose. Browser
+      // acceptance tests use these coordinates to exercise the real R3F click
+      // path without guessing where a force-directed node settled.
+      const fx0 = cameraPose.tx - cameraPose.px;
+      const fy0 = cameraPose.ty - cameraPose.py;
+      const fz0 = cameraPose.tz - cameraPose.pz;
+      const fl = Math.hypot(fx0, fy0, fz0) || 1;
+      const fx = fx0 / fl;
+      const fy = fy0 / fl;
+      const fz = fz0 / fl;
+      const rl = Math.hypot(-fz, fx) || 1;
+      const rx = -fz / rl;
+      const rz = fx / rl;
+      const ux = -rz * fy;
+      const uy = rz * fx - rx * fz;
+      const uz = rx * fy;
+      const tanHalfFov = Math.tan((cameraPose.fov * Math.PI) / 360);
+      const projectedNodes = g.nodes.flatMap((node) => {
+        if (node.kind !== 'document') return [];
+        const slot = slotOfId.get(node.id);
+        if (slot === undefined || slot >= count) return [];
+        const dx = array[slot * 3] - cameraPose.px;
+        const dy = array[slot * 3 + 1] - cameraPose.py;
+        const dz = array[slot * 3 + 2] - cameraPose.pz;
+        const depth = dx * fx + dy * fy + dz * fz;
+        if (depth <= 0) return [];
+        const ndcX = (dx * rx + dz * rz) / (depth * tanHalfFov * cameraPose.aspect);
+        const ndcY = (dx * ux + dy * uy + dz * uz) / (depth * tanHalfFov);
+        return [{
+          id: node.id,
+          title: node.title,
+          x: ((ndcX + 1) / 2) * window.innerWidth,
+          y: ((1 - ndcY) / 2) * window.innerHeight,
+          visible: Math.abs(ndcX) <= 1 && Math.abs(ndcY) <= 1,
+        }];
+      });
+
       // minPair is an O(n^2) all-pairs scan — fine for the small demo corpus
       // this was written against, but it'd hang the tab on a large one.
       // Sample a capped, evenly-strided subset of nodes instead of every
@@ -195,6 +239,12 @@ export default function App() {
         maxR,
         minPair: count > 1 ? minPair : null,
         enrich: g.enrichProgress,
+        selectedId: useUiStore.getState().selectedId,
+        controlsEnabled: cameraPose.controlsEnabled,
+        camera: { ...cameraPose },
+        canvasFocused: document.activeElement?.classList.contains('nebula-canvas') ?? false,
+        navigatorFocusWithin: document.querySelector('.graph-navigator:focus-within') !== null,
+        projectedNodes,
       };
     };
   }, []);

@@ -252,6 +252,7 @@ export default function CameraRig() {
     const persp = state.camera as THREE.PerspectiveCamera;
     cameraPose.fov = persp.fov ?? 55;
     cameraPose.aspect = persp.aspect ?? 16 / 9;
+    cameraPose.controlsEnabled = controls.enabled;
 
     const now = performance.now();
     if (now - lastCollabPoseAt.current >= COLLAB_POSE_INTERVAL_MS) {
