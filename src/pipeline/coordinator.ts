@@ -884,7 +884,7 @@ async function runLexicalPass(
     };
   });
 
-  let lexEdges: Edge[] = [];
+  let lexEdges: Edge[];
   let boilerplate = new Set<string>();
   try {
     const lexical = await aggRequest<LexicalDone>(
