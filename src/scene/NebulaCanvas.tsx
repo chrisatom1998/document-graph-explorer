@@ -22,6 +22,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
 import { useUiStore } from '../store/uiStore';
+import { dismissGraphFocus } from './cameraFocusPolicy';
 import { registerSceneCapture } from './sceneCapture';
 import { FLAT_BG } from './palette';
 import CameraRig from './CameraRig';
@@ -111,8 +112,7 @@ export default function NebulaCanvas() {
       onPointerMissed={() => {
         // Clicking empty space dismisses the open panel and any in-flight
         // camera-then-panel focus so a later arrival cannot reopen it.
-        const ui = useUiStore.getState();
-        if (ui.selectedId || ui.pendingFocus) ui.setSelected(null);
+        dismissGraphFocus();
       }}
     >
       <color attach="background" args={[bg]} />

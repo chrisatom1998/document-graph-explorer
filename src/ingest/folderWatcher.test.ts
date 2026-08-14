@@ -74,18 +74,29 @@ describe('bindFolderWatcherToActiveCorpus inside the run queue', () => {
       }),
     );
 
-    const switchRun = enqueueRun(async () => {
-      await bindFolderWatcherToActiveCorpus();
-      order.push('switch-complete');
-    });
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      const switchRun = enqueueRun(async () => {
+        await bindFolderWatcherToActiveCorpus();
+        order.push('switch-complete');
+      });
 
-    const outcome = await Promise.race([
-      switchRun.then(() => 'resolved'),
-      new Promise((resolve) => setTimeout(() => resolve('deadlocked'), 500)),
-    ]);
+      const outcomePromise = Promise.race([
+        switchRun.then(() => 'resolved' as const),
+        new Promise<'deadlocked'>((resolve) => {
+          setTimeout(() => resolve('deadlocked'), 500);
+        }),
+      ]);
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(500);
 
-    expect(outcome).toBe('resolved');
-    expect(order).toContain('switch-complete');
+      expect(await outcomePromise).toBe('resolved');
+      expect(order).toContain('switch-complete');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('still performs the catch-up reconcile, just after the queued run finishes', async () => {

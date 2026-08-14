@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { chunkStore } from '../store/runtimeStores';
 import { useUiStore } from '../store/uiStore';
+import { dismissGraphFocus } from '../scene/cameraFocusPolicy';
 import { commitPendingFocus, commitPendingFocusIf, focusNode } from './focusNode';
 
 describe('focusNode', () => {
@@ -94,5 +95,12 @@ describe('focusNode', () => {
     expect(useUiStore.getState().selectedId).toBeNull();
     expect(commitPendingFocusIf('doc-a')).toBe(true);
     expect(useUiStore.getState().selectedId).toBe('doc-a');
+  });
+
+  it('does not commit after an empty-space dismiss', () => {
+    focusNode('doc-a');
+    dismissGraphFocus();
+    expect(commitPendingFocusIf('doc-a')).toBe(false);
+    expect(useUiStore.getState().selectedId).toBeNull();
   });
 });
