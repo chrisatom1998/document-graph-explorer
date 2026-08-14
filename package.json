@@ -43,6 +43,8 @@
     "mdast-util-to-string": "^4.0.0",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.2.8",
+    "react-aria": "^3.51.0",
+    "react-aria-components": "^1.20.0",
     "react-dom": "^19.2.8",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
