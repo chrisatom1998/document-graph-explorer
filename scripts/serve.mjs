@@ -13,7 +13,12 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { contentTypeFor, createRequestHandler, resolveSafe } from './staticServer.cjs';
+import {
+  SECURITY_HEADERS,
+  contentTypeFor,
+  createRequestHandler,
+  resolveSafe,
+} from './staticServer.cjs';
 
 /** Which build directory a given argv selects: `dist` unless `--airgap`. */
 export function distDirFor(argv) {
@@ -26,17 +31,6 @@ const ROOT = fileURLToPath(new URL(`../${DIST_DIR}/`, import.meta.url));
 const INDEX_HTML = path.join(ROOT, 'index.html');
 const DEFAULT_PORT = 8317;
 const MAX_PORT_ATTEMPTS = 10; // try basePort .. basePort + 10 before giving up
-
-// Mirrors SECURITY_HEADERS in vite.config.ts (anti-clickjacking + misc
-// hardening) so the same protections apply whether the app is served by Vite
-// or by this script. The CSP itself already ships as a <meta> tag in the
-// built index.html (see injectCsp() in vite.config.ts) — not duplicated here
-// as a header, to keep this script's scope minimal.
-const SECURITY_HEADERS = {
-  'X-Frame-Options': 'DENY',
-  'X-Content-Type-Options': 'nosniff',
-  'Referrer-Policy': 'no-referrer',
-};
 
 function logLine(req, status) {
   console.log(`${status} ${req.method} ${req.url}`);

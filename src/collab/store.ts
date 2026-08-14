@@ -4,6 +4,11 @@ import { layoutEpoch, layoutSetDims, layoutSettledEpoch, onLayoutSettled } from 
 import { cameraPose } from '../scene/cameraPose';
 import { nodesMatchingFilter } from '../scene/emphasis';
 import { getNodePosition, idOfSlot, positionBuffer, scaleOfSlot, slotOfId } from '../scene/positionBuffer';
+import {
+  MAX_ANNOTATION_RECORDS,
+  clampUpdatedAt,
+  forEachBoundedAnnotationKey,
+} from '../store/annotationSanitize';
 import { annotationKey, useAnnotationStore } from '../store/annotationStore';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
@@ -57,6 +62,9 @@ interface CollaborationState {
 }
 
 let stopAnnotationSync: (() => void) | null = null;
+
+const WEAK_KEY_WARNING =
+  'This session key is short enough to guess — anyone who finds the room can read and edit shared notes.';
 
 function randomCollabToken(byteLength: number): string {
   const bytes = new Uint8Array(byteLength);
@@ -681,7 +689,7 @@ export async function applySharedView(view: Partial<Record<string, unknown>>): P
 }
 
 function annotationTimestamp(value: DocAnnotationRecord | undefined): number {
-  return value && typeof value.updatedAt === 'number' ? value.updatedAt : 0;
+  return value ? clampUpdatedAt(value.updatedAt, 0) : 0;
 }
 
 async function bindAnnotationSync(session: CollabSession, token: number): Promise<() => void> {
@@ -727,21 +735,36 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
       return;
     }
     applyingRemote = true;
+    let accepted: DocAnnotationRecord | null | undefined;
     try {
-      useAnnotationStore.getState().applyRemote(localKey, remote ?? null);
+      accepted = useAnnotationStore.getState().applyRemote(localKey, remote ?? null);
     } finally {
       applyingRemote = false;
+    }
+    // Whitespace-only/empty peer records are not user data. Remove them from
+    // the shared map as well as the local store so they cannot occupy the room
+    // indefinitely and be replayed on every bind.
+    if (accepted === null && remote) {
+      map.delete(key);
+      return;
+    }
+    // applyRemote clamps far-future stamps, but applyingRemote suppresses the
+    // store subscription, so write the sanitized record back or later LWW
+    // compares keep losing to the raw peer stamp.
+    if (accepted && remote && accepted.updatedAt !== remote.updatedAt) {
+      map.set(key, accepted);
     }
   };
 
   const onRemoteChange = (event: YMapEvent<DocAnnotationRecord>): void => {
-    for (const key of event.changes.keys.keys()) applyMapChange(key);
+    forEachBoundedAnnotationKey(event.changes.keys.keys(), applyMapChange);
   };
   map.observe(onRemoteChange);
 
   const localAtBind = useAnnotationStore.getState().annotations;
   session.doc.transact(() => {
-    for (const [key, local] of Object.entries(localAtBind)) {
+    forEachBoundedAnnotationKey(Object.keys(localAtBind), (key) => {
+      const local = localAtBind[key];
       const sharedKey = annotationKeyForLocal(key);
       const remote = map.get(sharedKey);
       if (!remote || annotationTimestamp(local) >= annotationTimestamp(remote)) {
@@ -749,11 +772,11 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
       } else {
         applyMapChange(sharedKey);
       }
-    }
-    for (const key of map.keys()) {
+    }, MAX_ANNOTATION_RECORDS);
+    forEachBoundedAnnotationKey(map.keys(), (key) => {
       const localKey = localKeyForShared(key);
-      if (!(localKey in localAtBind)) applyMapChange(key);
-    }
+      if (!Object.hasOwn(localAtBind, localKey)) applyMapChange(key);
+    });
   });
 
   const unsubscribe = useAnnotationStore.subscribe((state, previous) => {
@@ -801,7 +824,11 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     const nextKey = sessionKey ?? randomCollabToken(16);
     set({ status: 'connecting' });
     try {
-      const { buildCollabInvite, createCollabSession } = await import('./session');
+      const { buildCollabInvite, createCollabSession, isWeakCollabKey } = await import('./session');
+      // Only reachable for a key the caller typed; generated keys are 16 bytes.
+      if (sessionKey && isWeakCollabKey(sessionKey)) {
+        useUiStore.getState().pushToast(WEAK_KEY_WARNING, 'warning');
+      }
       const session = createCollabSession({ roomId: nextRoom, sessionKey: nextKey });
       const invite = buildCollabInvite(session.roomId, session.sessionKey);
       if (get().shareNotes) {
@@ -852,7 +879,10 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     }
     set({ status: 'connecting' });
     try {
-      const { buildCollabInvite, createCollabSession } = await import('./session');
+      const { buildCollabInvite, createCollabSession, isWeakCollabKey } = await import('./session');
+      if (isWeakCollabKey(sessionKey)) {
+        useUiStore.getState().pushToast(WEAK_KEY_WARNING, 'warning');
+      }
       const session = createCollabSession({ roomId, sessionKey });
       const invite = buildCollabInvite(session.roomId, session.sessionKey);
       if (get().shareNotes) {

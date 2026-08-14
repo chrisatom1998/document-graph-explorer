@@ -18,8 +18,14 @@ import {
   flushAnnotationSave,
   useAnnotationStore,
 } from '../store/annotationStore';
+import {
+  MAX_ANNOTATION_NOTE_CHARS,
+  MAX_ANNOTATION_TAGS,
+  MAX_ANNOTATION_TAG_CHARS,
+} from '../store/annotationSanitize';
 import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
+import { useUiStore } from '../store/uiStore';
 
 interface NotesTagsSectionProps {
   docKey: string;
@@ -67,10 +73,29 @@ export default function NotesTagsSection({ docKey }: NotesTagsSectionProps) {
   const addTag = (raw: string) => {
     setTagDraft(''); // clear even when rejected, so a stale draft can't linger
     const incoming = [
-      ...new Set(raw.split(',').map((t) => t.trim()).filter(Boolean)),
+      ...new Set(
+        raw
+          .split(',')
+          .map((t) => t.trim().slice(0, MAX_ANNOTATION_TAG_CHARS))
+          .filter(Boolean),
+      ),
     ].filter((tag) => !current.tags.includes(tag));
     if (incoming.length === 0) return;
-    update(docKey, { tags: [...current.tags, ...incoming] });
+    // The store clamps to the same cap; say so here rather than let tags
+    // disappear between save and reload.
+    const room = MAX_ANNOTATION_TAGS - current.tags.length;
+    if (room <= 0) {
+      useUiStore
+        .getState()
+        .pushToast(`A document can carry at most ${MAX_ANNOTATION_TAGS} tags.`, 'warning');
+      return;
+    }
+    if (incoming.length > room) {
+      useUiStore
+        .getState()
+        .pushToast(`Only ${room} more tag${room === 1 ? '' : 's'} fit on this document.`, 'warning');
+    }
+    update(docKey, { tags: [...current.tags, ...incoming.slice(0, room)] });
   };
 
   return (
@@ -94,6 +119,9 @@ export default function NotesTagsSection({ docKey }: NotesTagsSectionProps) {
         placeholder="Add a note about this document…"
         aria-label="Document note"
         rows={3}
+        // Stops an oversized paste at the source: the store clamps to the same
+        // cap, and a note saved longer than this would come back short.
+        maxLength={MAX_ANNOTATION_NOTE_CHARS}
       />
       <div className="side-panel__chip-row">
         {current.tags.map((tag) => (

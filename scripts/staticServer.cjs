@@ -11,6 +11,21 @@
 const path = require('node:path');
 const { existsSync, statSync, createReadStream } = require('node:fs');
 
+// Mirrors SECURITY_HEADERS in vite.config.ts so the same protections apply
+// however the built app is served — Vite, the local launcher, the packaged
+// .exe, or Electron. The CSP itself ships as a <meta> tag in the built
+// index.html (injectCsp() in vite.config.ts) rather than being duplicated as
+// a header here.
+//
+// Shared rather than copied per caller: Electron was the one server that
+// silently had none of these, which is exactly what a fourth private copy
+// invites.
+const SECURITY_HEADERS = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'no-referrer',
+};
+
 const MIME_TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.gif': 'image/gif',
@@ -156,6 +171,7 @@ function hasIndexHtml(root) {
 
 module.exports = {
   MIME_TYPES,
+  SECURITY_HEADERS,
   contentTypeFor,
   resolveSafe,
   createRequestHandler,

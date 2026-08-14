@@ -23,7 +23,8 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "bench:layout": "vite-node scripts/bench-layout.mjs",
-    "check:bundle": "node scripts/check-bundle.mjs dist && node scripts/check-bundle.mjs dist-airgap"
+    "check:bundle": "node scripts/check-bundle.mjs dist && node scripts/check-bundle.mjs dist-airgap",
+    "audit:ci": "audit-ci --config .audit-ci.jsonc --skip-dev"
   },
   "dependencies": {
     "@heroui/react": "^3.2.2",
@@ -63,6 +64,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.0",
     "@vitejs/plugin-react": "^5.2.0",
+    "audit-ci": "7.1.0",
     "electron": "^43.2.0",
     "electron-builder": "^26.15.3",
     "eslint": "^9.39.4",

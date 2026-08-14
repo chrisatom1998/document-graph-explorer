@@ -1,0 +1,23 @@
+// Vulnerability gate for CI. Runs against production dependencies only —
+// build tooling never reaches a user's browser, and gating on it would mean
+// blocking releases on advisories in a bundler's transitive test helper.
+//
+// Anything allowlisted here needs a reason and a recheck condition. An
+// allowlist entry is a decision that the advisory does not apply to how this
+// app ships, not a snooze button.
+{
+  "$schema": "https://raw.githubusercontent.com/IBM/audit-ci/main/docs/schema.json",
+  "moderate": true,
+  "allowlist": [
+    // sharp and adm-zip arrive under @huggingface/transformers via
+    // onnxruntime-node, which is the Node-side ONNX runtime. This app runs
+    // transformers.js in the browser against onnxruntime-web and self-hosted
+    // weights in public/models, so neither package is reachable at runtime and
+    // neither appears in the bundle. Neither advisory has a fix available.
+    //
+    // Recheck when @huggingface/transformers is upgraded: if the bundle ever
+    // gains a Node-side execution path, these stop being inapplicable.
+    "GHSA-f88m-g3jw-g9cj", // sharp: inherited libvips CVEs
+    "GHSA-xcpc-8h2w-3j85" // adm-zip: crafted ZIP triggers 4GB allocation
+  ]
+}
