@@ -42,6 +42,8 @@ type SectionKey =
   | 'stale';
 
 const STALE_MONTHS = Math.round(STALE_DOC_DAYS / 30);
+// Trailing debounce over store churn before re-requesting worker analytics.
+const ANALYSIS_DEBOUNCE_MS = 400;
 
 export default function InsightsPanel() {
   const open = useUiStore((s) => s.insightsOpen);
@@ -70,6 +72,9 @@ export default function InsightsPanel() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisFailed, setAnalysisFailed] = useState(false);
   const requestSeq = useRef(0);
+  // Mirrors `analysis` for the effect below without adding it as a dep (a
+  // fresh result must not immediately re-trigger the request effect).
+  const analysisRef = useRef<InsightsResult | null>(null);
 
   useEffect(() => {
     if (!open || corpusMode !== 'local' || !corpusId) return;
@@ -103,29 +108,36 @@ export default function InsightsPanel() {
   }, [open, nodes, edges, duplicatePairs, annotations]);
 
   // Bridges / hubs / cluster stats arrive async from the insights worker.
-  // Store churn while open (patchNodes/setEdges always produce new arrays)
-  // re-requests; the client coalesces to the latest request, and the
-  // requestSeq counter drops responses that a newer request has already
-  // superseded (the SearchOverlay stale-guard idiom).
+  // Store churn while open (ingest batches, enrichment patches) re-requests;
+  // the trailing debounce coalesces a burst of store updates into one worker
+  // round trip, and the requestSeq counter drops responses that a newer
+  // request has already superseded (the SearchOverlay stale-guard idiom).
+  // Stale-while-revalidate: an existing analysis stays on screen — the
+  // spinner only shows for the FIRST load, so mid-ingest churn doesn't
+  // flicker the panel between content and "Analyzing…".
   useEffect(() => {
     if (!open) return;
     const seq = ++requestSeq.current;
-    setAnalyzing(true);
-    requestInsights(nodes, edges)
-      .then((result) => {
-        if (seq !== requestSeq.current) return; // stale response
-        setAnalysis(result);
-        setAnalysisFailed(false);
-        setAnalyzing(false);
-      })
-      .catch((err: unknown) => {
-        if (seq !== requestSeq.current) return; // superseded by a newer request
-        console.warn('insights analysis failed', err);
-        // Keep the last good result; flag the failure so an absent result
-        // isn't rendered as a successfully computed empty analysis.
-        setAnalysisFailed(true);
-        setAnalyzing(false);
-      });
+    if (!analysisRef.current) setAnalyzing(true);
+    const t = setTimeout(() => {
+      requestInsights(nodes, edges)
+        .then((result) => {
+          if (seq !== requestSeq.current) return; // stale response
+          setAnalysis(result);
+          analysisRef.current = result;
+          setAnalysisFailed(false);
+          setAnalyzing(false);
+        })
+        .catch((err: unknown) => {
+          if (seq !== requestSeq.current) return; // superseded by a newer request
+          console.warn('insights analysis failed', err);
+          // Keep the last good result; flag the failure so an absent result
+          // isn't rendered as a successfully computed empty analysis.
+          setAnalysisFailed(true);
+          setAnalyzing(false);
+        });
+    }, ANALYSIS_DEBOUNCE_MS);
+    return () => clearTimeout(t);
   }, [open, nodes, edges]);
 
   // Cluster membership for the Clusters section's frame/highlight actions —

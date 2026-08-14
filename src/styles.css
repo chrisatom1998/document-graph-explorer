@@ -428,6 +428,15 @@ input {
   z-index: var(--z-canvas);
 }
 
+/* Suspense fallback while the lazy scene chunk loads — paints the scene's own
+   deep-space background so startup shows a calm dark frame, not a bare page. */
+.scene-loading {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-canvas);
+  background: #050510;
+}
+
 /* Thin dark scrollbars everywhere inside overlay UI */
 .app-root ::-webkit-scrollbar {
   width: 8px;
@@ -2325,7 +2334,7 @@ mark.passage-mark {
   font-family: var(--font-ui);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: all 160ms ease;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
   white-space: nowrap;
 }
 .side-panel__open-btn:hover {

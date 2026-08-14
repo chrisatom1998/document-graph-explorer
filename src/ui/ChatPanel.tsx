@@ -194,7 +194,12 @@ export default function ChatPanel() {
   };
   useEffect(() => {
     if (!stickToBottomRef.current) return;
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // While streaming, a per-token 'smooth' scroll keeps restarting its own
+    // animation and never settles — the transcript visibly jitters. Jump
+    // instantly per delta; save the smooth glide for completed messages.
+    messagesEndRef.current?.scrollIntoView({
+      behavior: useChatStore.getState().isStreaming ? 'auto' : 'smooth',
+    });
   }, [messages]);
 
   // Focus input when panel opens

@@ -54,7 +54,19 @@ interface TroikaLabel extends THREE.Mesh {
   sync: (onSync?: () => void) => void;
 }
 
+/**
+ * Thin gate: collapse mode is off almost all the time, but the inner
+ * component's cluster/edge aggregation memos re-ran on every nodes/edges
+ * change regardless — during ingest that's repeated O(n + e) work for a
+ * feature that renders nothing. Mount the heavy part only while active.
+ */
 export default function ClusterCollapse() {
+  const clusterCollapsed = useUiStore((s) => s.clusterCollapsed);
+  if (!clusterCollapsed) return null;
+  return <ClusterCollapseInner />;
+}
+
+function ClusterCollapseInner() {
   const clusterCollapsed = useUiStore((s) => s.clusterCollapsed);
   const nodes = useGraphStore((s) => s.nodes);
   const edges = useGraphStore((s) => s.edges);

@@ -521,13 +521,14 @@ export default function Nodes() {
     e.stopPropagation();
     const ui = useUiStore.getState();
     if (ui.hoveredId !== id) ui.setHovered(id);
-    document.body.style.cursor = 'pointer';
+    // guard: an unconditional style write per pointermove dirties style state
+    if (document.body.style.cursor !== 'pointer') document.body.style.cursor = 'pointer';
   };
 
   const handlePointerOut = (): void => {
     if (dragRef.current) return;
     useUiStore.getState().setHovered(null);
-    document.body.style.cursor = '';
+    if (document.body.style.cursor !== '') document.body.style.cursor = '';
   };
 
   const handlePointerDown = (e: ThreeEvent<PointerEvent>): void => {

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -116,19 +116,19 @@ export default function SidePanel() {
   };
 
   const connections = useMemo<ConnectionRow[]>(() => {
-    if (!node) return [];
+    if (!nodeId) return [];
     const rows: ConnectionRow[] = [];
     for (const edge of edges) {
       let neighborId: string | null = null;
-      if (edge.source === node.id) neighborId = edge.target;
-      else if (edge.target === node.id) neighborId = edge.source;
+      if (edge.source === nodeId) neighborId = edge.target;
+      else if (edge.target === nodeId) neighborId = edge.source;
       if (!neighborId) continue;
       const neighbor = nodes[nodeIndex[neighborId]];
       rows.push({ edge, neighborId, neighbor });
     }
     rows.sort((a, b) => b.edge.weight - a.edge.weight);
     return rows;
-  }, [node, edges, nodes, nodeIndex]);
+  }, [nodeId, edges, nodes, nodeIndex]);
 
   const visibleConnections = showAllConnections
     ? connections
@@ -141,12 +141,12 @@ export default function SidePanel() {
   // near-duplicates (see similarity.ts), so scanning edges alone would miss
   // it. O(n) for the selected node only, cheap enough for the main thread.
   const duplicatesOf = useMemo<{ id: string; sim: number }[]>(() => {
-    if (!node) return [];
-    const va = docVectorStore.get(node.id);
+    if (!nodeId) return [];
+    const va = docVectorStore.get(nodeId);
     if (!va) return [];
     const out: { id: string; sim: number }[] = [];
     for (const other of nodes) {
-      if (other.id === node.id || other.kind !== 'document') continue;
+      if (other.id === nodeId || other.kind !== 'document') continue;
       const vb = docVectorStore.get(other.id);
       if (!vb || vb.length !== va.length) continue;
       let dot = 0;
@@ -155,11 +155,13 @@ export default function SidePanel() {
     }
     out.sort((x, y) => y.sim - x.sim);
     return out;
-  }, [node, nodes]);
+  }, [nodeId, nodes]);
 
   // Resolves a markdown link / [[wikilink]] target to a doc already in the
   // graph, so DocumentMarkdown can turn it into an in-app jump.
   const linkIndex = useMemo(() => buildLinkIndex(nodes), [nodes]);
+  // Stable identity so DocumentMarkdown's memoized element tree can bail out.
+  const navigateToDoc = useCallback((id: string) => focusNode(id), []);
 
   // Rendered markdown/HTML previews need the RAW source (link/heading/tag
   // syntax intact) — the pipeline's extracted text has already stripped it.
@@ -555,7 +557,7 @@ export default function SidePanel() {
                   key={node.id}
                   text={mdSource.text}
                   linkIndex={linkIndex}
-                  onNavigate={(id) => focusNode(id)}
+                  onNavigate={navigateToDoc}
                   className="side-panel__reader side-panel__reader--markdown"
                   highlight={passageNeedle}
                 />
