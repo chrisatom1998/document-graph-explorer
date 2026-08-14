@@ -22,6 +22,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
 import { useUiStore } from '../store/uiStore';
+import { commitPendingFocus } from '../ui/focusNode';
 import { registerSceneCapture } from './sceneCapture';
 import { FLAT_BG } from './palette';
 import CameraRig from './CameraRig';
@@ -72,7 +73,15 @@ function supportsWebGL(): boolean {
   }
 }
 
-function WebGLFallback() {
+export function WebGLFallback() {
+  const pendingFocus = useUiStore((s) => s.pendingFocus);
+
+  useEffect(() => {
+    // There is no CameraRig in fallback mode to finish the usual
+    // camera-then-panel handoff, so open the requested document immediately.
+    if (pendingFocus) commitPendingFocus();
+  }, [pendingFocus]);
+
   return (
     <section className="webgl-fallback" role="status" aria-live="polite">
       <span className="webgl-fallback__mark" aria-hidden="true">✦</span>
