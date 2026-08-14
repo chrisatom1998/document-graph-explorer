@@ -14,6 +14,7 @@ import { prefersReducedMotion } from '../util/motion';
 import { computeClusterFields, type ClusterPoint } from './clusterFields';
 import { clusterColor } from './palette';
 import { positionBuffer, slotOfId } from './positionBuffer';
+import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../config';
 
 const MAX_FIELDS = 48;
 const UPDATE_INTERVAL_SECONDS = 0.1;
@@ -102,8 +103,14 @@ export default function ClusterAtmosphere() {
   useFrame(({ clock }) => {
     const mesh = meshRef.current;
     if (!mesh || !visible) return;
+    const densitySoftening = Math.min(
+      1,
+      Math.max(0, (nodes.length - VISUAL_DENSITY_SOFTEN_START) /
+        (VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START)),
+    );
 
-    fieldMaterial.uniforms.uIntensity.value = qualityTier >= 2 ? 0.072 : 0.105;
+    fieldMaterial.uniforms.uIntensity.value =
+      (qualityTier >= 2 ? 0.058 : 0.082) * (1 - densitySoftening * 0.45);
     fieldMaterial.uniforms.uTime.value = prefersReducedMotion() ? 0 : clock.elapsedTime;
 
     if (

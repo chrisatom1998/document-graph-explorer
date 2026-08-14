@@ -18,8 +18,10 @@
  */
 
 import * as THREE from 'three';
+import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { makeCloudTexture } from './proceduralTextures';
+import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../config';
 
 const NO_RAYCAST = (): void => {
   /* decoration — must never intercept node picking */
@@ -89,6 +91,7 @@ function buildClouds(
         toneMapped: false,
       }),
     });
+    specs[specs.length - 1].material.userData.baseOpacity = specs[specs.length - 1].material.opacity;
   }
   return specs;
 }
@@ -127,8 +130,20 @@ export default function NebulaClouds() {
   // hidden in flat (2D ambient) mode — the clean constellation look has no
   // colorful volumetric clouds.
   const visible = useUiStore((s) => s.qualityTier < 3 && s.dims === 3);
+  const hasFocus = useUiStore((s) => s.hoveredId !== null || s.selectedId !== null);
+  const nodeCount = useGraphStore((s) => s.nodes.length);
 
   const clouds = getCloudSpecs();
+  const densitySoftening = Math.min(
+    1,
+    Math.max(0, (nodeCount - VISUAL_DENSITY_SOFTEN_START) /
+      (VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START)),
+  );
+  const opacityScale = (hasFocus ? 0.76 : 1) * (1 - densitySoftening * 0.4);
+
+  for (const cloud of clouds) {
+    cloud.material.opacity = cloud.material.userData.baseOpacity * opacityScale;
+  }
 
   return (
     <group visible={visible}>

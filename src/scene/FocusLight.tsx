@@ -7,6 +7,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { clusterColor } from './palette';
 import { positionBuffer, slotOfId } from './positionBuffer';
+import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../config';
 
 const targetPosition = new THREE.Vector3();
 const white = new THREE.Color('white');
@@ -22,6 +23,11 @@ export default function FocusLight() {
     [nodes],
   );
   const focusId = hoveredId ?? selectedId;
+  const densitySoftening = Math.min(
+    1,
+    Math.max(0, (nodes.length - VISUAL_DENSITY_SOFTEN_START) /
+      (VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START)),
+  );
 
   useEffect(() => {
     const light = lightRef.current;
@@ -45,9 +51,11 @@ export default function FocusLight() {
       light.position.y = THREE.MathUtils.damp(light.position.y, targetPosition.y, 12, delta);
       light.position.z = THREE.MathUtils.damp(light.position.z, targetPosition.z, 12, delta);
     }
-    const targetIntensity = hasTarget ? (hoveredId ? 7.5 : 5.5) : 0;
+    const targetIntensity = hasTarget
+      ? (hoveredId ? 8.2 : 6.4) * (1 - densitySoftening * 0.18)
+      : 0;
     light.intensity = THREE.MathUtils.damp(light.intensity, targetIntensity, 8, delta);
   });
 
-  return <pointLight ref={lightRef} intensity={0} distance={48} decay={2} />;
+  return <pointLight ref={lightRef} intensity={0} distance={58} decay={2} />;
 }

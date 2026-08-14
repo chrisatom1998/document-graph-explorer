@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { DocNode } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -24,6 +24,40 @@ const node: DocNode = {
 describe('FirstRunGuide', () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.restoreAllMocks();
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('first-run-guide')) {
+        return {
+          x: 0,
+          y: 0,
+          top: 0,
+          left: 0,
+          right: 330,
+          bottom: 192,
+          width: 330,
+          height: 192,
+          toJSON: () => ({}),
+        } as DOMRect;
+      }
+      return {
+        x: 32,
+        y: 48,
+        top: 48,
+        left: 32,
+        right: 232,
+        bottom: 148,
+        width: 200,
+        height: 100,
+        toJSON: () => ({}),
+      } as DOMRect;
+    });
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 900 });
+    Object.defineProperty(window, 'innerHeight', { writable: true, configurable: true, value: 700 });
+    Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
+      writable: true,
+      configurable: true,
+      value: vi.fn(),
+    });
     useGraphStore.setState({
       nodes: [node],
       nodeIndex: { doc: 0 },
@@ -95,5 +129,41 @@ describe('FirstRunGuide', () => {
       'Ask the corpus',
     ]);
     expect(screen.getByRole('button', { name: 'Got it' })).toBeVisible();
+  });
+
+  it('rests left of the minimap by default', async () => {
+    render(<FirstRunGuide />);
+    const guide = await screen.findByLabelText('Getting started');
+    expect(guide).toHaveStyle({ left: '334px', top: '490px' });
+  });
+
+  it('restores a saved drag position and clamps it on resize', async () => {
+    localStorage.setItem('knowledge-nebula-first-run-guide-pos', JSON.stringify({ x: 640, y: 620 }));
+    render(<FirstRunGuide />);
+    const guide = await screen.findByLabelText('Getting started');
+    expect(guide).toHaveStyle({ left: '552px', top: '490px' });
+
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 520 });
+    Object.defineProperty(window, 'innerHeight', { writable: true, configurable: true, value: 420 });
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+
+    expect(guide).toHaveStyle({ left: '172px', top: '210px' });
+  });
+
+  it('persists the final drag position on lost pointer capture', async () => {
+    render(<FirstRunGuide />);
+    const grip = await screen.findByTitle('Drag to move');
+    await screen.findByLabelText('Getting started');
+
+    fireEvent.pointerDown(grip, { clientX: 440, clientY: 510, pointerId: 1 });
+    fireEvent.pointerMove(grip, { clientX: 560, clientY: 290, pointerId: 1 });
+
+    fireEvent(grip, new Event('lostpointercapture', { bubbles: true }));
+    expect(localStorage.getItem('knowledge-nebula-first-run-guide-pos')).toBeTruthy();
+    expect(() =>
+      JSON.parse(localStorage.getItem('knowledge-nebula-first-run-guide-pos') ?? 'null'),
+    ).not.toThrow();
   });
 });
