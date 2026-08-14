@@ -3,7 +3,6 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useActiveOptionScroll } from './useActiveOptionScroll';
 import { fileTypeChip, selectedDocumentTitle } from '../pipeline/codeLanguage';
-import { focusNode } from './focusNode';
 
 const SUMMARY_ID = 'graph-navigator-summary';
 const INSTRUCTIONS_ID = 'graph-navigator-instructions';
@@ -23,6 +22,8 @@ export default function GraphNavigator() {
   const nodes = useGraphStore((state) => state.nodes);
   const edgeCount = useGraphStore((state) => state.edges.length);
   const selectedId = useUiStore((state) => state.selectedId);
+  const setSelected = useUiStore((state) => state.setSelected);
+  const sendCamera = useUiStore((state) => state.sendCamera);
   const listRef = useRef<HTMLDivElement>(null);
 
   const orderedNodes = useMemo(
@@ -78,7 +79,8 @@ export default function GraphNavigator() {
       event.stopPropagation();
       const node = orderedNodes[activeIndex];
       if (!node) return;
-      focusNode(node.id);
+      setSelected(node.id);
+      sendCamera('frameNode', [node.id]);
     } else if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
@@ -123,7 +125,8 @@ export default function GraphNavigator() {
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => {
               setActiveId(node.id);
-              focusNode(node.id);
+              setSelected(node.id);
+              sendCamera('frameNode', [node.id]);
             }}
           >
             <span>{node.id === selectedId ? selectedDocumentTitle(node) : node.title}</span>

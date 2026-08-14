@@ -5,7 +5,6 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { DocNode } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { commitPendingFocus } from './focusNode';
 import GraphNavigator from './GraphNavigator';
 
 const nodes: DocNode[] = [
@@ -47,11 +46,8 @@ describe('GraphNavigator', () => {
     expect(list).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-1');
 
     fireEvent.keyDown(list, { key: 'Enter' });
-    expect(useUiStore.getState().selectedId).toBeNull();
-    expect(useUiStore.getState().pendingFocus?.id).toBe('zeta');
-    expect(useUiStore.getState().cameraCommand).toMatchObject({ kind: 'frameNode', ids: ['zeta'] });
-    commitPendingFocus();
     expect(useUiStore.getState().selectedId).toBe('zeta');
+    expect(useUiStore.getState().cameraCommand).toMatchObject({ kind: 'frameNode', ids: ['zeta'] });
   });
 
   it('scrolls the newly active option into view as the highlight moves', () => {

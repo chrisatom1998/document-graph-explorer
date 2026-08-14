@@ -23,7 +23,6 @@ import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { cameraPose } from './cameraPose';
 import { panInput } from './panInput';
 import { prefersReducedMotion } from '../util/motion';
-import { commitPendingFocus, commitPendingFocusIf } from '../ui/focusNode';
 
 const IDLE_MS = 10_000;
 const SMOOTH_TIME = (CAMERA_GLIDE_MS / 1000) * 0.45; // ~800ms glide feel
@@ -48,8 +47,6 @@ export default function CameraRig() {
 
   const lastNonce = useRef(0);
   const tweenActive = useRef(false);
-  /** Node id of the in-flight frameNode command, for pending-focus commit. */
-  const framingId = useRef<string | null>(null);
   const lastCollabPoseAt = useRef(0);
   const lastInteraction = useRef(
     typeof performance !== 'undefined' ? performance.now() : 0,
@@ -80,10 +77,6 @@ export default function CameraRig() {
     // target — no framing math, no dependence on current node positions.
     if (cmd.kind === 'pose') {
       if (!cmd.pose) return;
-      // This command replaced a focus glide — open the panel now so
-      // pendingFocus cannot wait for a frameNode arrival that will never come.
-      commitPendingFocus();
-      framingId.current = null;
       desiredPos.set(cmd.pose.px, cmd.pose.py, cmd.pose.pz);
       desiredTarget.set(cmd.pose.tx, cmd.pose.ty, cmd.pose.tz);
       tweenActive.current = true;
@@ -98,40 +91,15 @@ export default function CameraRig() {
 
     if (cmd.kind === 'frameNode') {
       const id = cmd.ids?.[0];
-      framingId.current = id ?? null;
       const slot = id !== undefined ? slotOfId.get(id) : undefined;
-      if (slot === undefined || slot >= count) {
-        // No layout slot — still open the panel so search/list picks work.
-        commitPendingFocusIf(id);
-        return;
-      }
+      if (slot === undefined || slot >= count) return;
       desiredTarget.set(arr[slot * 3], arr[slot * 3 + 1], arr[slot * 3 + 2]);
       const dist = 16 + 5 * (scaleOfSlot[slot] || 1.1);
       desiredPos.copy(desiredTarget).addScaledVector(viewDir, dist);
-      lastInteraction.current = performance.now(); // command = engagement
-      if (prefersReducedMotion()) {
-        camera.position.copy(desiredPos);
-        controls.target.copy(desiredTarget);
-        tweenActive.current = false;
-        commitPendingFocusIf(id);
-        return;
-      }
-      if (
-        camera.position.distanceToSquared(desiredPos) < ARRIVE_EPS_SQ &&
-        controls.target.distanceToSquared(desiredTarget) < ARRIVE_EPS_SQ
-      ) {
-        tweenActive.current = false;
-        commitPendingFocusIf(id);
-        return;
-      }
       tweenActive.current = true;
+      lastInteraction.current = performance.now(); // command = engagement
       return;
     }
-
-    // fitAll / frameSet replaced a focus glide. Commit now: arrival will
-    // report no framing id, so a later commitPendingFocusIf would no-op.
-    commitPendingFocus();
-    framingId.current = null;
 
     // frameSet / fitAll: bounding sphere over the id set (or every live slot)
     centroid.set(0, 0, 0);
@@ -208,7 +176,6 @@ export default function CameraRig() {
       if (useCollabStore.getState().followMode) {
         useCollabStore.getState().setFollowMode(false);
       }
-      if (tweenActive.current) commitPendingFocusIf(framingId.current ?? undefined);
       tweenActive.current = false; // a manual pan cancels any active glide
       const cam = state.camera;
       const dist = Math.max(cam.position.distanceTo(controls.target), 1);
@@ -232,7 +199,6 @@ export default function CameraRig() {
         controls.target.distanceToSquared(desiredTarget) < ARRIVE_EPS_SQ
       ) {
         tweenActive.current = false;
-        commitPendingFocusIf(framingId.current ?? undefined);
       }
     }
 
@@ -272,13 +238,6 @@ export default function CameraRig() {
       useCollabStore.getState().setFollowMode(false);
     }
     lastInteraction.current = performance.now();
-    if (tweenActive.current) {
-      // Drop the in-flight focus instead of committing. pointerdown fires
-      // here; empty-space dismiss runs later on click (onPointerMissed).
-      // Committing now would open the panel before that cancel can run,
-      // and a drag may skip onPointerMissed entirely.
-      useUiStore.getState().setPendingFocus(null);
-    }
     tweenActive.current = false; // user input cancels the active glide
   };
   const onEnd = (): void => {
