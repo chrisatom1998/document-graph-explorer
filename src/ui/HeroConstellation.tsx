@@ -4,11 +4,11 @@
  * It deliberately borrows from the live scene rather than inventing a look:
  * satellite hues come from the same `clusterColor` walk the graph uses, and
  * the corona is the Fresnel halo from Nodes.tsx. What you see here is what a
- * corpus actually renders as, at eight nodes instead of thousands.
+ * corpus actually renders as, at a few clustered nodes instead of thousands.
  *
  * Budget: this canvas is a SECOND WebGL context, layered over the (node-less)
  * nebula scene behind the card, so everything is batched — one draw call each
- * for cores, halos, filaments and pulses, against the old per-satellite
+ * for cores, halos, filaments, pulses and ambient dust, against the old per-satellite
  * mesh-and-material approach. It also holds no drei imports, keeping the lazy
  * chunk to three + fiber, which NebulaCanvas has already paid for.
  *
@@ -29,7 +29,8 @@ import ConstellationSvg from './ConstellationSvg';
 type Vec3 = readonly [number, number, number];
 
 /**
- * Index 0 is the core; 1..8 are satellites laid out to read well at 4:3.
+ * Index 0 is the core; the remaining nodes form three communities at different
+ * depths so the graph reads as a miniature world instead of a flat logo.
  *
  * Cluster ids are chosen, not sequential. `clusterColor` walks the golden
  * angle from a blue anchor, so 0..7 spans the whole wheel — authentic to a
@@ -43,15 +44,21 @@ const CYAN = 5;
 const MAGENTA = 6; // lone warm accent, so the composition isn't monochrome
 
 const NODES: readonly { position: Vec3; size: number; color: THREE.Color }[] = [
-  { position: [0, 0, 0], size: 0.36, color: new THREE.Color('#ded6ff') },
-  { position: [-2.45, 0.95, -0.35], size: 0.15, color: clusterColor(VIOLET).clone() },
-  { position: [-1.55, -1.62, 0.55], size: 0.11, color: clusterColor(BLUE).clone() },
-  { position: [-2.75, -0.45, 0.3], size: 0.09, color: clusterColor(BLUE).clone() },
-  { position: [0.15, 2.05, 0.45], size: 0.13, color: clusterColor(VIOLET).clone() },
-  { position: [1.85, 1.35, -0.4], size: 0.1, color: clusterColor(CYAN).clone() },
-  { position: [2.65, -0.35, 0.25], size: 0.16, color: clusterColor(CYAN).clone() },
-  { position: [1.35, -1.85, 0.6], size: 0.12, color: clusterColor(MAGENTA).clone() },
-  { position: [-0.55, 1.35, -0.85], size: 0.085, color: clusterColor(VIOLET).clone() },
+  { position: [0, 0, 0.2], size: 0.42, color: new THREE.Color('#eeeaff') },
+  { position: [-2.45, 0.95, -0.35], size: 0.17, color: clusterColor(VIOLET).clone() },
+  { position: [-1.55, -1.62, 0.55], size: 0.12, color: clusterColor(BLUE).clone() },
+  { position: [-2.75, -0.45, 0.3], size: 0.1, color: clusterColor(BLUE).clone() },
+  { position: [0.15, 2.05, 0.45], size: 0.15, color: clusterColor(VIOLET).clone() },
+  { position: [1.85, 1.35, -0.4], size: 0.11, color: clusterColor(CYAN).clone() },
+  { position: [2.65, -0.35, 0.25], size: 0.18, color: clusterColor(CYAN).clone() },
+  { position: [1.35, -1.85, 0.6], size: 0.14, color: clusterColor(MAGENTA).clone() },
+  { position: [-0.55, 1.35, -0.85], size: 0.095, color: clusterColor(VIOLET).clone() },
+  { position: [-3.05, 1.65, -1.15], size: 0.075, color: clusterColor(VIOLET).clone() },
+  { position: [-2.2, -2.15, -0.65], size: 0.08, color: clusterColor(BLUE).clone() },
+  { position: [2.8, 1.45, -1.25], size: 0.075, color: clusterColor(CYAN).clone() },
+  { position: [3.1, -1.25, -0.75], size: 0.09, color: clusterColor(CYAN).clone() },
+  { position: [0.45, -2.55, -0.3], size: 0.075, color: clusterColor(MAGENTA).clone() },
+  { position: [-0.65, 2.65, -0.4], size: 0.08, color: clusterColor(VIOLET).clone() },
 ];
 
 /**
@@ -63,6 +70,9 @@ const EDGES: readonly (readonly [number, number])[] = [
   [0, 1], [0, 2], [0, 4], [0, 5], [0, 6],
   [1, 8], [8, 4], [3, 2], [5, 6],
   [1, 3], [4, 5], [6, 7], [7, 2],
+  [1, 9], [9, 8], [2, 10], [10, 3],
+  [5, 11], [11, 6], [6, 12], [12, 7],
+  [7, 13], [13, 2], [4, 14], [14, 8],
 ];
 
 const CORE_GLOW = new THREE.Color('#a99bff');
@@ -71,6 +81,28 @@ const EDGE_BRIGHTNESS = 0.42;
 const PULSE_SPEED = 0.24; // laps per second along a filament
 /** Viewing tilt. Shallow angles collapse the orbit rings to flat lines. */
 const TILT_X = 0.3;
+const DUST_COUNT = 120;
+
+function seededRandom(seed: number): () => number {
+  let value = seed >>> 0;
+  return () => {
+    value = (value * 1664525 + 1013904223) >>> 0;
+    return value / 0x100000000;
+  };
+}
+
+const dustPositions = (() => {
+  const random = seededRandom(0x5eedc0de);
+  const positions = new Float32Array(DUST_COUNT * 3);
+  for (let i = 0; i < DUST_COUNT; i++) {
+    const radius = 2.7 + random() * 2.7;
+    const angle = random() * Math.PI * 2;
+    positions[i * 3] = Math.cos(angle) * radius;
+    positions[i * 3 + 1] = (random() - 0.5) * 5.8;
+    positions[i * 3 + 2] = (random() - 0.5) * 4.2 - 0.8;
+  }
+  return new THREE.BufferAttribute(positions, 3);
+})();
 
 /**
  * Fresnel corona, lifted from the scene's node halos: glow concentrates at the
@@ -165,7 +197,17 @@ const lineMaterial = new LineMaterial({
 const ringMaterial = new THREE.MeshBasicMaterial({
   color: '#8f9bff',
   transparent: true,
-  opacity: 0.32,
+  opacity: 0.24,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+});
+
+const dustMaterial = new THREE.PointsMaterial({
+  color: '#9fb6ff',
+  size: 0.026,
+  transparent: true,
+  opacity: 0.42,
+  sizeAttenuation: true,
   blending: THREE.AdditiveBlending,
   depthWrite: false,
 });
@@ -175,6 +217,8 @@ const tmpColor = new THREE.Color();
 
 function Constellation({ reduced }: { reduced: boolean }) {
   const spinRef = useRef<THREE.Group>(null);
+  const dustRef = useRef<THREE.Points>(null);
+  const coreShellRef = useRef<THREE.Mesh>(null);
   const coreRef = useRef<THREE.InstancedMesh>(null);
   const haloRef = useRef<THREE.InstancedMesh>(null);
   const pulsePosRef = useRef<THREE.BufferAttribute>(null);
@@ -265,6 +309,8 @@ function Constellation({ reduced }: { reduced: boolean }) {
 
   useFrame((state, delta) => {
     const spin = spinRef.current;
+    const dust = dustRef.current;
+    const coreShell = coreShellRef.current;
     if (spin) {
       if (!reduced) spin.rotation.y += delta * 0.16;
       // Damped tilt toward the pointer; the constant keeps it a drift, not a
@@ -273,6 +319,14 @@ function Constellation({ reduced }: { reduced: boolean }) {
       const targetZ = reduced ? 0 : -pointer.current.x * 0.06;
       spin.rotation.x += (targetX - spin.rotation.x) * Math.min(1, delta * 2.4);
       spin.rotation.z += (targetZ - spin.rotation.z) * Math.min(1, delta * 2.4);
+    }
+    if (dust && !reduced) {
+      dust.rotation.y -= delta * 0.025;
+      dust.rotation.z += delta * 0.012;
+    }
+    if (coreShell && !reduced) {
+      coreShell.rotation.x += delta * 0.12;
+      coreShell.rotation.y -= delta * 0.18;
     }
 
     const positions = pulsePosRef.current;
@@ -298,7 +352,15 @@ function Constellation({ reduced }: { reduced: boolean }) {
   });
 
   return (
-    <group ref={spinRef} rotation={[TILT_X, 0, 0]}>
+    <>
+      <points ref={dustRef} rotation={[0.18, 0, -0.08]}>
+        <bufferGeometry>
+          <primitive object={dustPositions} attach="attributes-position" />
+        </bufferGeometry>
+        <primitive object={dustMaterial} attach="material" />
+      </points>
+
+      <group ref={spinRef} rotation={[TILT_X, 0, 0]}>
       {/* Lit, not unlit: a flat fill reads as a sticker at this size. A single
           key from the upper-left puts the specular hotspot in the same
           screen-relative spot on every sphere — the trick the live scene uses
@@ -322,7 +384,7 @@ function Constellation({ reduced }: { reduced: boolean }) {
 
       {/* Faceted shell around the core: gives the brightest object some
           internal structure so it reads as a lit hub rather than a white dot. */}
-      <mesh scale={NODES[0].size * 1.75}>
+      <mesh ref={coreShellRef} position={NODES[0].position} scale={NODES[0].size * 1.95}>
         {/* Detail 0 on purpose: subdividing puts more wireframe edges inside a
             ~25px circle than can resolve, and it turns to scribble. */}
         <icosahedronGeometry args={[1, 0]} />
@@ -330,7 +392,18 @@ function Constellation({ reduced }: { reduced: boolean }) {
           color="#b9aaff"
           wireframe
           transparent
-          opacity={0.22}
+          opacity={0.34}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      <mesh position={NODES[0].position} scale={NODES[0].size * 2.8}>
+        <sphereGeometry args={[1, 24, 18]} />
+        <meshBasicMaterial
+          color="#8b7cff"
+          transparent
+          opacity={0.045}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
@@ -358,7 +431,12 @@ function Constellation({ reduced }: { reduced: boolean }) {
         <torusGeometry args={[2.5, 0.006, 6, 96]} />
         <primitive object={ringMaterial} attach="material" />
       </mesh>
-    </group>
+      <mesh rotation={[Math.PI / 2, 0, 0.38]}>
+        <torusGeometry args={[3.55, 0.005, 6, 112]} />
+        <primitive object={ringMaterial} attach="material" />
+      </mesh>
+      </group>
+    </>
   );
 }
 
@@ -391,7 +469,7 @@ export default function HeroConstellation() {
     <Canvas
       className="empty-state__hero-canvas"
       aria-hidden="true"
-      camera={{ fov: 34, near: 0.1, far: 40, position: [0, 0, 9.4] }}
+      camera={{ fov: 36, near: 0.1, far: 40, position: [0, 0, 8.8] }}
       // Capped below the scene's ceiling: this is a ~330px decorative canvas
       // sharing the GPU with the nebula behind the card.
       dpr={[1, 1.75]}
@@ -400,7 +478,7 @@ export default function HeroConstellation() {
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.1;
+        gl.toneMappingExposure = 1.24;
       }}
     >
       <Constellation reduced={reduced} />
