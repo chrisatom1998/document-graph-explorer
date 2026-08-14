@@ -1410,7 +1410,14 @@ export function reconcileWatchedFiles(
   expectedIds: string[] = [],
 ): Promise<string[]> {
   const run = enqueueRun(async () => {
-    const changed = files.length > 0 ? await runIngest(files) : false;
+    const changed =
+      files.length > 0
+        ? await runIngest(
+            files,
+            undefined,
+            snapshotIngestOrigin({ flat: useUiStore.getState().dims === 2 }),
+          )
+        : false;
     const present = new Set(documentNodes().map((node) => node.id));
     const acceptedIds = expectedIds.filter((id) => present.has(id));
     const supersededIds = replacements

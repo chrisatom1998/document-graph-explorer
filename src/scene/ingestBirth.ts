@@ -197,7 +197,11 @@ export function resolveIngestOrigin(opts?: {
 }
 
 /** Capture the current pending origin for this ingest run. */
-export function snapshotIngestOrigin(opts?: { flat?: boolean }): Vec3 {
+export function snapshotIngestOrigin(opts?: {
+  flat?: boolean;
+  pose?: CameraPoseInput;
+  rect?: { left: number; top: number; width: number; height: number };
+}): Vec3 {
   runOrigin = resolveIngestOrigin(opts);
   pending = null;
   return runOrigin;

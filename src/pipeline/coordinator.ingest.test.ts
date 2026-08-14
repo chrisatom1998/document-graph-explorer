@@ -362,7 +362,10 @@ describe('coordinator ingest', () => {
     await ingestFiles([textFile('origin.txt', 'Kafka consumer retry notes for origin spawn.')]);
 
     expect(layout.layoutAddNodes).toHaveBeenCalled();
-    const firstBatch = layout.layoutAddNodes.mock.calls[0][0] as { spawn?: number[] }[];
+    const firstCall = layout.layoutAddNodes.mock.calls[0] as unknown as [
+      { spawn?: number[] }[],
+    ];
+    const firstBatch = firstCall[0];
     expect(firstBatch.length).toBeGreaterThan(0);
     expect(firstBatch[0]?.spawn).toEqual([12, -4, 3]);
   });
