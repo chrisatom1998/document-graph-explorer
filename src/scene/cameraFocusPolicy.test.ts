@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import { commitPendingFocusIf, focusNode } from '../ui/focusNode';
 import { useUiStore } from '../store/uiStore';
 import {
@@ -9,6 +10,7 @@ import {
   shouldCommitOnTweenCancel,
   shouldDismissGraphFocus,
 } from './cameraFocusPolicy';
+import { computeFrameNodePose } from './CameraRig';
 
 describe('decideFrameNode', () => {
   it('commits immediately when the node has no layout slot', () => {
@@ -55,20 +57,26 @@ describe('arrival and cancel', () => {
     expect(shouldCommitOnTweenCancel(false)).toBe(false);
   });
 
-  it('keeps camera framing math finite and readable for a normal focus move', () => {
-    const cameraPos = { x: 24, y: -12, z: 160 };
-    const target = { x: 5, y: 3, z: 0 };
+  it('uses the production framing math before deciding whether a focus move is already near', () => {
+    const cameraPosition = new THREE.Vector3(24, -12, 160);
+    const controlsTarget = new THREE.Vector3(0, 0, 0);
+    const targetPosition = new THREE.Vector3(5, 3, 0);
+    const viewDir = new THREE.Vector3(0, 0, 1).normalize();
 
-    const cameraDistSq =
-      (cameraPos.x - target.x) ** 2 +
-      (cameraPos.y - target.y) ** 2 +
-      (cameraPos.z - target.z) ** 2;
-    const targetDistSq = 0;
+    const pose = computeFrameNodePose({
+      cameraPosition,
+      controlsTarget,
+      targetPosition,
+      viewDir,
+      nodeScale: 1.1,
+    });
 
-    expect(Number.isFinite(cameraDistSq)).toBe(true);
-    expect(Number.isFinite(targetDistSq)).toBe(true);
-    expect(isAlreadyNear(cameraDistSq, targetDistSq)).toBe(false);
-    expect(decideFrameNode({ hasSlot: true, reducedMotion: false, alreadyNear: false })).toEqual({
+    expect(Number.isFinite(pose.desiredTarget.x)).toBe(true);
+    expect(Number.isFinite(pose.desiredPos.x)).toBe(true);
+    expect(pose.desiredTarget.toArray()).toEqual([5, 3, 0]);
+    expect(pose.desiredPos.toArray()).toEqual([5, 3, 21.5]);
+    expect(pose.alreadyNear).toBe(false);
+    expect(decideFrameNode({ hasSlot: true, reducedMotion: false, alreadyNear: pose.alreadyNear })).toEqual({
       action: 'tween',
     });
   });

@@ -42,6 +42,32 @@ const panRight = new THREE.Vector3();
 const panUp = new THREE.Vector3();
 const panDelta = new THREE.Vector3();
 
+export function computeFrameNodePose(opts: {
+  cameraPosition: THREE.Vector3;
+  controlsTarget: THREE.Vector3;
+  targetPosition: THREE.Vector3;
+  viewDir: THREE.Vector3;
+  nodeScale: number;
+}): {
+  desiredTarget: THREE.Vector3;
+  desiredPos: THREE.Vector3;
+  alreadyNear: boolean;
+} {
+  const desiredTarget = opts.targetPosition.clone();
+  const desiredPos = desiredTarget
+    .clone()
+    .addScaledVector(opts.viewDir, 16 + 5 * (opts.nodeScale || 1.1));
+
+  return {
+    desiredTarget,
+    desiredPos,
+    alreadyNear: isAlreadyNear(
+      opts.cameraPosition.distanceToSquared(desiredPos),
+      opts.controlsTarget.distanceToSquared(desiredTarget),
+    ),
+  };
+}
+
 export default function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const dims = useUiStore((s) => s.dims);
@@ -103,17 +129,25 @@ export default function CameraRig() {
         commitPendingFocusIf(id);
         return;
       }
-      desiredTarget.set(arr[slot * 3], arr[slot * 3 + 1], arr[slot * 3 + 2]);
-      const dist = 16 + 5 * (scaleOfSlot[slot] || 1.1);
-      desiredPos.copy(desiredTarget).addScaledVector(viewDir, dist);
+      const targetPoint = new THREE.Vector3(
+        arr[slot * 3],
+        arr[slot * 3 + 1],
+        arr[slot * 3 + 2],
+      );
+      const pose = computeFrameNodePose({
+        cameraPosition: camera.position.clone(),
+        controlsTarget: controls.target.clone(),
+        targetPosition: targetPoint,
+        viewDir: viewDir.clone(),
+        nodeScale: scaleOfSlot[slot] || 1.1,
+      });
+      desiredTarget.copy(pose.desiredTarget);
+      desiredPos.copy(pose.desiredPos);
       lastInteraction.current = performance.now(); // command = engagement
       const decision = decideFrameNode({
         hasSlot: true,
         reducedMotion: prefersReducedMotion(),
-        alreadyNear: isAlreadyNear(
-          camera.position.distanceToSquared(desiredPos),
-          controls.target.distanceToSquared(desiredTarget),
-        ),
+        alreadyNear: pose.alreadyNear,
       });
       if (decision.action === 'commit') {
         if (decision.reason === 'reduced-motion') {
