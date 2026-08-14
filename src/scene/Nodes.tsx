@@ -731,7 +731,7 @@ export default function Nodes() {
       >
         <sphereGeometry args={flat ? [0.58, 18, 14] : [1, 24, 18]} />
         {flat ? (
-          <meshBasicMaterial toneMapped={false} depthTest={false} />
+          <meshBasicMaterial toneMapped={false} depthTest={false} depthWrite={false} />
         ) : (
           <primitive object={haloMaterial} attach="material" />
         )}
