@@ -4,6 +4,7 @@ import { layoutEpoch, layoutSetDims, layoutSettledEpoch, onLayoutSettled } from 
 import { cameraPose } from '../scene/cameraPose';
 import { nodesMatchingFilter } from '../scene/emphasis';
 import { getNodePosition, idOfSlot, positionBuffer, scaleOfSlot, slotOfId } from '../scene/positionBuffer';
+import { clampUpdatedAt } from '../store/annotationSanitize';
 import { annotationKey, useAnnotationStore } from '../store/annotationStore';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
@@ -684,7 +685,7 @@ export async function applySharedView(view: Partial<Record<string, unknown>>): P
 }
 
 function annotationTimestamp(value: DocAnnotationRecord | undefined): number {
-  return value && typeof value.updatedAt === 'number' ? value.updatedAt : 0;
+  return value ? clampUpdatedAt(value.updatedAt, 0) : 0;
 }
 
 async function bindAnnotationSync(session: CollabSession, token: number): Promise<() => void> {
@@ -734,6 +735,13 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
       useAnnotationStore.getState().applyRemote(localKey, remote ?? null);
     } finally {
       applyingRemote = false;
+    }
+    // applyRemote clamps far-future stamps, but applyingRemote suppresses the
+    // store subscription, so write the sanitized record back or later LWW
+    // compares keep losing to the raw peer stamp.
+    const applied = useAnnotationStore.getState().annotations[localKey];
+    if (applied && remote && applied.updatedAt !== remote.updatedAt) {
+      map.set(key, applied);
     }
   };
 

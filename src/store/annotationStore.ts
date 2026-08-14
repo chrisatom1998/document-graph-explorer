@@ -210,7 +210,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     // sees them as a batch. Refuse only NEW keys once full: edits and deletes
     // of records already held must keep working, or a full store would freeze
     // out the legitimate collaborator too.
-    const isNew = !(key in annotations);
+    const isNew = !Object.hasOwn(annotations, key);
     if (annotation && isNew && Object.keys(annotations).length >= MAX_ANNOTATION_RECORDS) return;
     const nextAll = { ...annotations };
     const next = annotation ? sanitizeAnnotationRecord(annotation) : null;

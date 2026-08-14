@@ -12,6 +12,7 @@ import {
   scaleOfSlot,
   slotOfId,
 } from '../scene/positionBuffer';
+import { MAX_CLOCK_SKEW_MS } from '../store/annotationSanitize';
 import { buildSharedView, useCollabStore } from './store';
 
 vi.mock('../persistence/corpusRepository', () => ({
@@ -164,6 +165,35 @@ describe('collab privacy: notes default-off and no disk paths', () => {
     await useCollabStore.getState().startSession('room-notes', 'key-notes');
     await vi.waitFor(() => {
       expect(useCollabStore.getState().session?.annotations.get('doc-1')?.note).toBe('secret note');
+    });
+  });
+
+  it('writes a clamped far-future peer stamp back so later local edits can win LWW', async () => {
+    useCorpusStore.getState().setLocalState(
+      [{ id: 'c1', name: 'C', updatedAt: 1, documentCount: 1, watching: false }],
+      'c1',
+    );
+    useAnnotationStore.getState().hydrate('c1', {});
+    useCollabStore.getState().setShareNotes(true);
+    await useCollabStore.getState().startSession('room-lww', 'key-lww');
+    const session = useCollabStore.getState().session;
+    expect(session).not.toBeNull();
+
+    session!.annotations.set('doc-future', {
+      note: 'from peer',
+      tags: [],
+      pinned: false,
+      updatedAt: Number.MAX_SAFE_INTEGER,
+    });
+
+    await vi.waitFor(() => {
+      const mapped = session!.annotations.get('doc-future');
+      expect(mapped?.note).toBe('from peer');
+      expect(mapped?.updatedAt).not.toBe(Number.MAX_SAFE_INTEGER);
+      expect(mapped?.updatedAt).toBeLessThanOrEqual(Date.now() + MAX_CLOCK_SKEW_MS);
+      expect(useAnnotationStore.getState().annotations['doc-future']?.updatedAt).toBe(
+        mapped?.updatedAt,
+      );
     });
   });
 

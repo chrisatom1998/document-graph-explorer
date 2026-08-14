@@ -76,6 +76,13 @@ describe('isValidAnnotationKey', () => {
     expect(isValidAnnotationKey('')).toBe(false);
     expect(isValidAnnotationKey('k'.repeat(MAX_ANNOTATION_KEY_CHARS + 1))).toBe(false);
   });
+
+  it('rejects prototype-polluting keys', () => {
+    expect(isValidAnnotationKey('__proto__')).toBe(false);
+    expect(isValidAnnotationKey('constructor')).toBe(false);
+    expect(isValidAnnotationKey('toString')).toBe(false);
+    expect(isValidAnnotationKey('hasOwnProperty')).toBe(false);
+  });
 });
 
 describe('sanitizeAnnotationMap', () => {
@@ -102,5 +109,15 @@ describe('sanitizeAnnotationMap', () => {
   it('returns an empty map for non-object input', () => {
     expect(sanitizeAnnotationMap(undefined)).toEqual({});
     expect(sanitizeAnnotationMap([] as unknown as Record<string, unknown>)).toEqual({});
+  });
+
+  it('drops prototype-polluting keys instead of assigning them', () => {
+    const raw = JSON.parse(
+      '{"__proto__":{"note":"pwned"},"constructor":{"note":"pwned"},"good":{"note":"kept"}}',
+    ) as Record<string, unknown>;
+    const out = sanitizeAnnotationMap(raw);
+    expect(Object.keys(out)).toEqual(['good']);
+    expect(({} as Record<string, unknown>).note).toBeUndefined();
+    expect(Object.prototype).not.toHaveProperty('note');
   });
 });

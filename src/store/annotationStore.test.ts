@@ -153,6 +153,48 @@ describe('annotationStore', () => {
     expect(useAnnotationStore.getState().annotations).toEqual(before);
   });
 
+  it('ignores a remote write under a prototype-polluting key', async () => {
+    await ensureAnnotationsLoaded('corpus-1');
+    useAnnotationStore.getState().applyRemote('__proto__', {
+      note: 'pwned',
+      tags: [],
+      pinned: false,
+      updatedAt: 1,
+    });
+    useAnnotationStore.getState().applyRemote('constructor', {
+      note: 'pwned',
+      tags: [],
+      pinned: false,
+      updatedAt: 1,
+    });
+    const stored = useAnnotationStore.getState().annotations;
+    expect(Object.hasOwn(stored, '__proto__')).toBe(false);
+    expect(Object.hasOwn(stored, 'constructor')).toBe(false);
+    expect(Object.prototype).not.toHaveProperty('note');
+  });
+
+  it('does not treat inherited prototype names as existing records at capacity', async () => {
+    const annotations: Record<string, unknown> = {};
+    for (let i = 0; i < MAX_ANNOTATION_RECORDS; i++) {
+      annotations[`key-${i}`] = { note: 'n', tags: [], pinned: false, updatedAt: 1 };
+    }
+    getCorpusRecordMock.mockResolvedValue({ annotations });
+    await ensureAnnotationsLoaded('corpus-full');
+
+    useAnnotationStore.getState().applyRemote('constructor', {
+      note: 'bypass',
+      tags: [],
+      pinned: false,
+      updatedAt: 5,
+    });
+    expect(Object.hasOwn(useAnnotationStore.getState().annotations, 'constructor')).toBe(
+      false,
+    );
+    expect(Object.keys(useAnnotationStore.getState().annotations)).toHaveLength(
+      MAX_ANNOTATION_RECORDS,
+    );
+  });
+
   it('pending edits for the outgoing corpus land before re-hydration replaces them', async () => {
     await ensureAnnotationsLoaded('corpus-A');
     useAnnotationStore.getState().update('doc', { note: 'A note' });

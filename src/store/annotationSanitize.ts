@@ -45,7 +45,8 @@ function sanitizeTags(value: unknown): string[] {
   return out;
 }
 
-function clampUpdatedAt(value: unknown, fallback: number): number {
+/** Clamp a peer-supplied stamp so last-write-wins cannot be locked forever. */
+export function clampUpdatedAt(value: unknown, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
   if (value < 0) return 0;
   const ceiling = Date.now() + MAX_CLOCK_SKEW_MS;
@@ -73,7 +74,10 @@ export function sanitizeAnnotationRecord(
 
 /** True when the key itself is unusable — reject the whole record. */
 export function isValidAnnotationKey(key: string): boolean {
-  return key.length > 0 && key.length <= MAX_ANNOTATION_KEY_CHARS;
+  if (key.length === 0 || key.length > MAX_ANNOTATION_KEY_CHARS) return false;
+  // `__proto__` assignment pollutes a normal object; inherited names like
+  // `constructor` make `key in annotations` look like an existing record.
+  return key !== '__proto__' && !Object.hasOwn(Object.prototype, key);
 }
 
 /**
