@@ -23,14 +23,14 @@ export function focusNode(id: string, passage?: FocusPassage): void {
   const ui = useUiStore.getState();
   ui.setSelected(id);
   ui.sendCamera('frameNode', [id]);
-  const chunkText =
-    passage?.index !== undefined ? chunkStore.get(id)?.texts[passage.index] : undefined;
+  const chunkIndex = passage?.index !== undefined && passage.index >= 0 ? passage.index : undefined;
+  const chunkText = chunkIndex !== undefined ? chunkStore.get(id)?.texts[chunkIndex] : undefined;
   const text = chunkText?.trim() || passage?.text?.trim() || '';
   if (text) {
     ui.setReaderHighlight({
       docId: id,
       text,
-      ...(passage?.index === undefined ? {} : { passageIndex: passage.index }),
+      ...(chunkIndex === undefined ? {} : { passageIndex: chunkIndex }),
     });
   }
 }

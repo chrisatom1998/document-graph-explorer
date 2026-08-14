@@ -197,6 +197,50 @@ describe('shared hybrid retrieval', () => {
       matchKind: 'keyword',
       text: expect.stringMatching(/legal-hold/i),
     });
+    expect(result[0].passageIndex).toBeUndefined();
+  });
+
+  it('does not fuse tag evidence onto chunk 0 during semantic upsert', async () => {
+    const tagged = node('policy', 'Vendor Policy');
+    const result = await retrieveCorpus(
+      'legal-hold',
+      { minSemanticScore: 0, limit: 2, perDocument: 2 },
+      {
+        ...dependencies(
+          [tagged],
+          new Map([['policy', {
+            texts: ['This policy covers procurement and onboarding.'],
+            vectors: new Float32Array([1, 0]),
+            dims: 2,
+          }]]),
+          async () => new Float32Array([1, 0]),
+        ),
+        annotations: new Map([['policy', { note: 'Keep for counsel', tags: ['legal-hold'] }]]),
+      },
+    );
+    expect(result.some((hit) => hit.docId === 'policy')).toBe(true);
+    expect(result.some((hit) => hit.passageIndex === 0 && /legal-hold/i.test(hit.text))).toBe(false);
+    const tagHit = result.find((hit) => /legal-hold/i.test(hit.text));
+    expect(tagHit?.passageIndex).toBeUndefined();
+  });
+
+  it('does not treat Cluster/Tags label prefixes as query terms', async () => {
+    const tagged = node('policy', 'Vendor Policy');
+    const deps = {
+      ...dependencies(
+        [tagged],
+        new Map(),
+        async () => { throw new Error('offline'); },
+        new Map([['policy', 'This policy covers procurement and onboarding.']]),
+      ),
+      annotations: new Map([['policy', { note: 'Keep for counsel', tags: ['legal-hold'] }]]),
+      clusterNameById: new Map([['policy', 'Payments & revenue']]),
+    };
+    expect(await retrieveCorpus('cluster', { semantic: false }, deps)).toEqual([]);
+    expect(await retrieveCorpus('tags', { semantic: false }, deps)).toEqual([]);
+    expect(await retrieveCorpus('tag', { semantic: false }, deps)).toEqual([]);
+    expect((await retrieveCorpus('legal-hold', { semantic: false }, deps))[0]?.docId).toBe('policy');
+    expect((await retrieveCorpus('payments', { semantic: false }, deps))[0]?.docId).toBe('policy');
   });
 
   it('matches resolved cluster names', async () => {

@@ -2,8 +2,9 @@
  * Locate a retrieved passage inside reader text and wrap it for display.
  *
  * Chunks are space-joined words (see chunker.ts) while source documents keep
- * newlines, so matching always collapses whitespace. The returned range maps
- * back onto the original haystack so the reader can scroll and <mark> it.
+ * newlines, and rendered markdown/HTML/CSV often concatenate blocks without
+ * those separators. Matching collapses or strips delimiters, then maps the
+ * range back onto the original haystack so the reader can scroll and <mark> it.
  */
 
 export interface PassageRange {
@@ -41,10 +42,49 @@ function collapsedNeedle(needle: string): string {
   return needle.replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
+function compactWithMap(value: string, keep: (ch: string) => boolean): Normalized {
+  const chars: string[] = [];
+  const map: number[] = [];
+  for (let i = 0; i < value.length; i++) {
+    if (!keep(value[i])) continue;
+    chars.push(value[i].toLowerCase());
+    map.push(i);
+  }
+  return { text: chars.join(''), map };
+}
+
+function rangeAt(h: Normalized, idx: number, length: number): PassageRange | null {
+  if (idx < 0 || length <= 0 || idx + length > h.map.length) return null;
+  return { start: h.map[idx], end: h.map[idx + length - 1] + 1 };
+}
+
+function searchCompact(
+  haystack: string,
+  needle: string,
+  keep: (ch: string) => boolean,
+): PassageRange | null {
+  const n = compactWithMap(needle, keep);
+  if (!n.text) return null;
+  const h = compactWithMap(haystack, keep);
+  if (!h.text) return null;
+  const idx = h.text.indexOf(n.text);
+  if (idx >= 0) return rangeAt(h, idx, n.text.length);
+  if (n.text.length > 48) {
+    const probe = n.text.slice(0, 48);
+    const p = h.text.indexOf(probe);
+    if (p >= 0) {
+      const span = Math.min(n.text.length, 160, h.map.length - p);
+      return rangeAt(h, p, span);
+    }
+  }
+  return null;
+}
+
 /**
  * First range in `haystack` that matches `needle`, or null. Prefers an exact
- * substring, then a whitespace-normalized match, then the leading 48 chars of
- * a long needle (chat snippets are truncated).
+ * substring, then a whitespace-normalized match, then delimiter-stripped
+ * matches (block-level DOM / pretty-printed JSON), then the leading 48 chars
+ * of a long needle (chat snippets are truncated).
  */
 export function findPassageRange(haystack: string, needle: string): PassageRange | null {
   const trimmed = needle.trim();
@@ -76,7 +116,10 @@ export function findPassageRange(haystack: string, needle: string): PassageRange
     }
   }
 
-  return null;
+  return (
+    searchCompact(haystack, trimmed, (ch) => !/\s/.test(ch)) ??
+    searchCompact(haystack, trimmed, (ch) => /[a-zA-Z0-9]/.test(ch))
+  );
 }
 
 export const PASSAGE_MARK_CLASS = 'passage-mark';

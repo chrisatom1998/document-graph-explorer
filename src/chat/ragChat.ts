@@ -53,7 +53,7 @@ function isAbortLike(err: unknown): boolean {
 interface RetrievedChunk {
   docId: string;
   docTitle: string;
-  chunkIndex: number;
+  chunkIndex?: number;
   text: string;
   score: number;
 }
@@ -141,9 +141,11 @@ function contextNonce(): string {
 
 export function buildPrompt(question: string, chunks: RetrievedChunk[]): string {
   const nonce = contextNonce();
-  const contextParts = chunks.map(
-    (c, i) => `[Source ${i + 1}: "${c.docTitle}", passage ${c.chunkIndex + 1}]\n${c.text}`,
-  );
+  const contextParts = chunks.map((c, i) => {
+    const passage =
+      c.chunkIndex === undefined || c.chunkIndex < 0 ? '' : `, passage ${c.chunkIndex + 1}`;
+    return `[Source ${i + 1}: "${c.docTitle}"${passage}]\n${c.text}`;
+  });
 
   return [
     'You are a knowledgeable assistant answering questions about the user\'s document collection.',

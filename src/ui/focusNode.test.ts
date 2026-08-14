@@ -39,6 +39,19 @@ describe('focusNode', () => {
     });
   });
 
+  it('keeps annotation snippets when chunks exist but no passage index is given', () => {
+    chunkStore.set('doc-a', {
+      texts: ['opening body chunk that should not be highlighted'],
+      vectors: null,
+      dims: 0,
+    });
+    focusNode('doc-a', { text: 'Tags: legal-hold' });
+    expect(useUiStore.getState().readerHighlight).toEqual({
+      docId: 'doc-a',
+      text: 'Tags: legal-hold',
+    });
+  });
+
   it('clears a previous highlight when selecting a different node', () => {
     focusNode('doc-a', { text: 'passage a' });
     focusNode('doc-b');

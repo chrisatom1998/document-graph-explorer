@@ -16,7 +16,8 @@ export type RetrievalMatchKind = 'title' | 'keyword' | 'semantic' | 'hybrid';
 export interface RetrievalHit {
   docId: string;
   docTitle: string;
-  passageIndex: number;
+  /** Omitted for notes/tags/cluster hits that are not a real chunk. */
+  passageIndex?: number;
   text: string;
   semanticScore?: number;
   lexicalScore?: number;
@@ -66,6 +67,8 @@ const DEFAULT_PER_DOCUMENT = 1;
 const DEFAULT_TIMEOUT_MS = 15_000;
 const DEFAULT_MIN_SEMANTIC_SCORE = 0.3;
 const DEFAULT_MAX_PASSAGE_CHARS = 3_000;
+/** Notes/tags/cluster evidence — not a real chunk, must not collide with index 0. */
+const EXTRA_PASSAGE_INDEX = -1;
 
 const STOP_WORDS = new Set([
   'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'did', 'do', 'does', 'for',
@@ -159,18 +162,35 @@ function upsertCandidate(
   return created;
 }
 
-function extraText(
+interface ExtraEvidence {
+  cluster: string;
+  tags: string[];
+  note: string;
+}
+
+function extraEvidence(
   node: DocNode,
   annotations: RetrievalDependencies['annotations'],
   clusterNameById: RetrievalDependencies['clusterNameById'],
-): string {
-  const parts: string[] = [];
-  const cluster = clusterNameById?.get(node.id);
-  if (cluster) parts.push(`Cluster: ${cluster}`);
+): ExtraEvidence {
   const annotation = annotations?.get(node.id);
-  if (annotation?.tags.length) parts.push(`Tags: ${annotation.tags.join(', ')}`);
-  const note = annotation?.note.trim();
-  if (note) parts.push(note);
+  return {
+    cluster: clusterNameById?.get(node.id) ?? '',
+    tags: annotation?.tags ?? [],
+    note: annotation?.note.trim() ?? '',
+  };
+}
+
+/** Raw cluster/tag/note text for scoring — labels like "Tags:" are display-only. */
+function extraSearchText(extra: ExtraEvidence): string {
+  return [extra.cluster, extra.tags.join(' '), extra.note].filter(Boolean).join('\n');
+}
+
+function extraSnippet(extra: ExtraEvidence): string {
+  const parts: string[] = [];
+  if (extra.cluster) parts.push(`Cluster: ${extra.cluster}`);
+  if (extra.tags.length) parts.push(`Tags: ${extra.tags.join(', ')}`);
+  if (extra.note) parts.push(extra.note);
   return parts.join('\n');
 }
 
@@ -248,8 +268,11 @@ export async function retrieveCorpus(
   // Lexical pass always runs, including when embeddings are unavailable.
   for (const node of documentNodes) {
     const passages = passagesForDocument(node, deps.chunks, deps.texts);
-    const extra = extraText(node, deps.annotations, deps.clusterNameById);
-    const extraLex = extra ? lexicalRelevance(q, extra, '') : { score: 0, titleMatch: false };
+    const extra = extraEvidence(node, deps.annotations, deps.clusterNameById);
+    const extraBody = extraSearchText(extra);
+    const extraLex = extraBody
+      ? lexicalRelevance(q, extraBody, '')
+      : { score: 0, titleMatch: false };
     let matchedBody = false;
     for (let passageIndex = 0; passageIndex < passages.length; passageIndex++) {
       const text = passages[passageIndex];
@@ -271,8 +294,8 @@ export async function retrieveCorpus(
       upsertCandidate(candidates, {
         docId: node.id,
         docTitle: node.title,
-        passageIndex: 0,
-        text: extra.slice(0, maxPassageChars),
+        passageIndex: EXTRA_PASSAGE_INDEX,
+        text: extraSnippet(extra).slice(0, maxPassageChars),
         lexicalScore: extraLex.score,
         titleMatch: false,
       });
@@ -341,7 +364,7 @@ export async function retrieveCorpus(
   return diversifyRanked(fused, limit, perDocument).map((candidate) => ({
     docId: candidate.docId,
     docTitle: candidate.docTitle,
-    passageIndex: candidate.passageIndex,
+    ...(candidate.passageIndex >= 0 ? { passageIndex: candidate.passageIndex } : {}),
     text: candidate.text,
     ...(candidate.semanticScore === undefined ? {} : { semanticScore: candidate.semanticScore }),
     ...(candidate.lexicalScore === undefined ? {} : { lexicalScore: candidate.lexicalScore }),

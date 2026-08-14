@@ -41,4 +41,15 @@ describe('RAG retrieval helpers', () => {
     expect(prompt).toContain('Every factual claim must be supported');
     expect(prompt).toContain('inline as [Source N]');
   });
+
+  it('omits a passage number for annotation-only evidence', () => {
+    const prompt = buildPrompt('What is on legal hold?', [{
+      docId: 'policy',
+      docTitle: 'Vendor Policy',
+      text: 'Tags: legal-hold',
+      score: 0.8,
+    }]);
+    expect(prompt).toContain('[Source 1: "Vendor Policy"]');
+    expect(prompt).not.toContain(', passage');
+  });
 });
