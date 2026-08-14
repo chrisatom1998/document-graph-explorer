@@ -63,7 +63,6 @@ export { ghostOfSlot, kindOfSlot } from './positionBuffer';
 const MATERIALIZE_MS = 700;
 const HALO_SCALE = 2.2;
 const HALO_INTENSITY = 0.7;
-const FLAT_CORE_SCALE = 0.58;
 // Additive halos stack like the edges do: in crowded graphs the overlapping
 // shells (and the bloom they feed) wash out the core spheres, so halo
 // intensity eases down with node count. Floor keeps sparse regions of a big
@@ -218,8 +217,8 @@ const DRAG_THRESHOLD_PX = 4;
 
 export default function Nodes() {
   const topicNodesEnabled = useUiStore((s) => s.topicNodesEnabled);
-  // 2D constellation mode: flat unlit dots instead of glossy marbles (the
-  // material swap below), smaller near-uniform sizing, halos off.
+  // 2D constellation mode: flat unlit dual discs instead of glossy marbles
+  // (the material swap below) and smaller near-uniform sizing.
   const flat = useUiStore((s) => s.dims === 2);
   const rootGet = useThree((s) => s.get);
 
@@ -600,6 +599,7 @@ export default function Nodes() {
     const now = performance.now();
     let stillAnimating = false;
     const ui = useUiStore.getState();
+    const isFlat = ui.dims === 2;
     const collapsed = ui.clusterCollapsed;
     // Once the user has picked a node out of the Show-me set (selectedId
     // set), settle down — the pulse is a "look here" cue for an undecided
@@ -627,16 +627,14 @@ export default function Nodes() {
       }
 
       let scale = scaleOfSlot[i] || 1.1;
-      let haloScale = ui.dims === 2 ? scale * FLAT_CORE_SCALE : scale * HALO_SCALE;
+      // 2D reuses this mesh as the inner disc (0.58 geometry), so skip HALO_SCALE.
+      let haloScale = isFlat ? scale : scale * HALO_SCALE;
       const showMePulse = showMeIds?.has(idOfSlot[i] ?? '') && !reducedMotion;
       if (showMePulse) {
         const wave = (Math.sin((now / SHOW_ME_PULSE_PERIOD_MS) * Math.PI * 2) + 1) * 0.5;
         const pulse = 1.16 + wave * 0.34;
         scale *= pulse;
-        haloScale =
-          ui.dims === 2
-            ? scale * FLAT_CORE_SCALE * pulse
-            : scale * HALO_SCALE * (1.25 + wave * 1.1);
+        haloScale = isFlat ? scale : scale * HALO_SCALE * (1.25 + wave * 1.1);
         stillAnimating = true;
       }
 
@@ -657,10 +655,7 @@ export default function Nodes() {
           if (t < 1) {
             const f = easeOutBack(Math.max(t, 0));
             scale *= f;
-            haloScale =
-              ui.dims === 2
-                ? scale * FLAT_CORE_SCALE * f
-                : scale * HALO_SCALE * (1 + 1.5 * (1 - t));
+            haloScale = isFlat ? scale : scale * HALO_SCALE * (1 + 1.5 * (1 - t));
             stillAnimating = true;
           } else {
             spawnAtOfSlot[i] = -1; // animation done
@@ -713,7 +708,7 @@ export default function Nodes() {
             feeds bloom.
             2D: outer map disc — the inner highlight is the halo mesh below. */}
         {flat ? (
-          <meshBasicMaterial toneMapped={false} />
+          <meshBasicMaterial toneMapped={false} depthWrite={false} />
         ) : (
           <meshPhysicalMaterial
             roughness={0.32}
@@ -732,9 +727,14 @@ export default function Nodes() {
         args={[undefined, undefined, MAX_NODES]}
         frustumCulled={false}
         raycast={NO_RAYCAST}
+        renderOrder={flat ? 1 : 0}
       >
         <sphereGeometry args={flat ? [0.58, 18, 14] : [1, 24, 18]} />
-        {flat ? <meshBasicMaterial toneMapped={false} /> : <primitive object={haloMaterial} attach="material" />}
+        {flat ? (
+          <meshBasicMaterial toneMapped={false} depthTest={false} />
+        ) : (
+          <primitive object={haloMaterial} attach="material" />
+        )}
       </instancedMesh>
 
       {/* topic nodes as octahedra (spec §5.4), behind the toggle */}

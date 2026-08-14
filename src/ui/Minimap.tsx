@@ -135,6 +135,7 @@ export default function Minimap() {
       const toX = (u: number): number => W / 2 + (u - f.cx) * f.scale;
       const toY = (v: number): number => H / 2 + (v - f.cy) * f.scale;
 
+      // Map background must paint before edges; a later fill would erase them.
       sctx.fillStyle = ui.dims === 2 ? FLAT_PANEL : '#050510';
       sctx.fillRect(0, 0, W, H);
 
