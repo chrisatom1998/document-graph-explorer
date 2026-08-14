@@ -47,6 +47,7 @@ import AutoQuality from './AutoQuality';
 import ClusterCollapse from './ClusterCollapse';
 import SelectionHalo from './SelectionHalo';
 import PeerPresence from './PeerPresence';
+import PathRoute from './PathRoute';
 
 const COARSE_POINTER =
   typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches);
@@ -193,6 +194,7 @@ export default function NebulaCanvas() {
       {/* 3D only: the 2D star chart keeps its delicate hairline aesthetic */}
       {!flat && <ClusterBridges />}
       <EdgePulses />
+      <PathRoute />
       <Labels />
       <SelectionHalo />
       <PeerPresence />
