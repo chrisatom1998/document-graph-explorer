@@ -87,9 +87,28 @@ export interface ReaderHighlight {
   passageIndex?: number;
 }
 
+/** Passage stashed with a pending camera-then-panel focus. */
+export interface FocusPassage {
+  /** Zero-based chunk index when the retriever scored a real passage. */
+  index?: number;
+  /** Snippet used when chunk text is unavailable (imported graphs). */
+  text?: string;
+}
+
+/** Node the camera is flying to; the side panel opens when this commits. */
+export interface PendingFocus {
+  id: string;
+  passage?: FocusPassage;
+}
+
 interface UiState {
   hoveredId: string | null;
   selectedId: string | null;
+  /**
+   * Camera-first focus in flight. The side panel stays closed until
+   * commitPendingFocus() runs (camera arrival / reduced-motion snap).
+   */
+  pendingFocus: PendingFocus | null;
   /** Matching passage to scroll/highlight in the side-panel reader. */
   readerHighlight: ReaderHighlight | null;
   searchOpen: boolean;
@@ -118,6 +137,7 @@ interface UiState {
 
   setHovered: (id: string | null) => void;
   setSelected: (id: string | null) => void;
+  setPendingFocus: (focus: PendingFocus | null) => void;
   setReaderHighlight: (highlight: ReaderHighlight | null) => void;
   setSearchOpen: (open: boolean) => void;
   setSearchResults: (ids: string[] | null, owner?: HighlightOwner) => void;
@@ -149,6 +169,7 @@ let nextToastId = 1;
 export const useUiStore = create<UiState>((set) => ({
   hoveredId: null,
   selectedId: null,
+  pendingFocus: null,
   readerHighlight: null,
   searchOpen: false,
   searchResults: null,
@@ -173,7 +194,8 @@ export const useUiStore = create<UiState>((set) => ({
 
   setHovered: (hoveredId) => set({ hoveredId }),
   setSelected: (selectedId) =>
-    set({ selectedId, readerHighlight: null }),
+    set({ selectedId, readerHighlight: null, pendingFocus: null }),
+  setPendingFocus: (pendingFocus) => set({ pendingFocus }),
   setReaderHighlight: (readerHighlight) => set({ readerHighlight }),
   setSearchOpen: (searchOpen) => set({ searchOpen }),
   setSearchResults: (searchResults, owner) =>

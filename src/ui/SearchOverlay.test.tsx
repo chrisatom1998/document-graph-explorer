@@ -13,6 +13,7 @@ import { searchCorpus, searchCorpusLexical } from '../search/semanticSearch';
 import { useGraphStore } from '../store/graphStore';
 import { DEFAULT_FILTER, useUiStore } from '../store/uiStore';
 import { docVectorStore } from '../store/runtimeStores';
+import { commitPendingFocus } from './focusNode';
 import SearchOverlay from './SearchOverlay';
 
 const mockSearchCorpus = vi.mocked(searchCorpus);
@@ -279,6 +280,10 @@ describe('SearchOverlay', () => {
     fireEvent.click(option);
 
     expect(useUiStore.getState().searchOpen).toBe(false);
+    expect(useUiStore.getState().selectedId).toBeNull();
+    expect(useUiStore.getState().cameraCommand?.kind).toBe('frameNode');
+    expect(useUiStore.getState().pendingFocus?.id).toBe('architecture');
+    commitPendingFocus();
     expect(useUiStore.getState().selectedId).toBe('architecture');
     expect(useUiStore.getState().readerHighlight).toEqual({
       docId: 'architecture',

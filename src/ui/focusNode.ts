@@ -1,36 +1,62 @@
 /**
- * Shared "select this node and frame the camera on it" helper. The same
- * `setSelected(id)` + `sendCamera('frameNode', [id])` pair was duplicated
- * across every panel that lets you jump to a node from a list (Insights,
- * Path, Search, Chat, SidePanel, ...) — one place to keep them from
- * drifting apart.
+ * Shared "frame the camera on this node, then open the side panel" helper.
+ * Search, Insights, Path, Chat, SidePanel neighbor jumps, and the graph
+ * navigator all go through here so the camera-then-panel order cannot drift.
  *
  * Search hits and chat citations may also pass a passage so the side-panel
  * reader can scroll to the matching chunk instead of opening at the top.
+ * The highlight is applied at commit time, when the panel actually mounts.
  */
 
 import { chunkStore } from '../store/runtimeStores';
-import { useUiStore } from '../store/uiStore';
+import { useUiStore, type FocusPassage, type ReaderHighlight } from '../store/uiStore';
 
-export interface FocusPassage {
-  /** Zero-based chunk index when the retriever scored a real passage. */
-  index?: number;
-  /** Snippet used when chunk text is unavailable (imported graphs). */
-  text?: string;
-}
+export type { FocusPassage };
 
-export function focusNode(id: string, passage?: FocusPassage): void {
-  const ui = useUiStore.getState();
-  ui.setSelected(id);
-  ui.sendCamera('frameNode', [id]);
+function resolveHighlight(id: string, passage?: FocusPassage): ReaderHighlight | null {
   const chunkIndex = passage?.index !== undefined && passage.index >= 0 ? passage.index : undefined;
   const chunkText = chunkIndex !== undefined ? chunkStore.get(id)?.texts[chunkIndex] : undefined;
   const text = chunkText?.trim() || passage?.text?.trim() || '';
-  if (text) {
-    ui.setReaderHighlight({
-      docId: id,
-      text,
-      ...(chunkIndex === undefined ? {} : { passageIndex: chunkIndex }),
-    });
-  }
+  if (!text) return null;
+  return {
+    docId: id,
+    text,
+    ...(chunkIndex === undefined ? {} : { passageIndex: chunkIndex }),
+  };
+}
+
+/** Start a camera-first focus. The side panel stays closed until commit. */
+export function focusNode(id: string, passage?: FocusPassage): void {
+  const ui = useUiStore.getState();
+  ui.sendCamera('frameNode', [id]);
+  // Close any already-open panel (and its highlight) so neighbor/duplicate
+  // jumps and search picks don't keep showing the previous document.
+  useUiStore.setState({
+    selectedId: null,
+    readerHighlight: null,
+    pendingFocus: { id, ...(passage ? { passage } : {}) },
+  });
+}
+
+/**
+ * Open the side panel for the in-flight focus. No-ops if the pending
+ * focus was cancelled (empty-space click, a later setSelected, …).
+ * Returns true when a selection was applied.
+ */
+export function commitPendingFocus(): boolean {
+  const pending = useUiStore.getState().pendingFocus;
+  if (!pending) return false;
+  useUiStore.setState({
+    selectedId: pending.id,
+    readerHighlight: resolveHighlight(pending.id, pending.passage),
+    pendingFocus: null,
+  });
+  return true;
+}
+
+/** Commit only when the arrived/cancelled frame matches the pending node. */
+export function commitPendingFocusIf(id: string | undefined): boolean {
+  const pending = useUiStore.getState().pendingFocus;
+  if (!pending || !id || pending.id !== id) return false;
+  return commitPendingFocus();
 }
