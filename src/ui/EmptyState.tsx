@@ -45,11 +45,26 @@ export default function EmptyState() {
   return (
     <div className="empty-state-layer">
       <HeroEmptyState className="empty-state__card glass-panel">
-        <div className="empty-state__visual">
+        <aside className="empty-state__visual" aria-label="Local-first knowledge mapping">
+          <div className="empty-state__visual-label" aria-hidden="true">
+            <span>Local observatory</span>
+            <span>01 / 03</span>
+          </div>
           <div className="empty-state__hero">
             <Suspense fallback={<ConstellationSvg />}><HeroConstellation /></Suspense>
           </div>
-        </div>
+          <div className="empty-state__visual-copy">
+            <p className="empty-state__visual-kicker">See the structure in your work</p>
+            <p>
+              Documents become a navigable constellation of topics, references, and shared ideas.
+            </p>
+          </div>
+          <ul className="empty-state__trust-list" aria-label="Privacy and access">
+            <li><span aria-hidden="true" />100% local processing</li>
+            <li><span aria-hidden="true" />Private by design</li>
+            <li><span aria-hidden="true" />No account required</li>
+          </ul>
+        </aside>
         <div className="empty-state__content">
           <header className="empty-state__header">
             <Chip className="empty-state__eyebrow" size="sm" variant="secondary">
@@ -61,55 +76,69 @@ export default function EmptyState() {
               Turn scattered files into a living map.
             </h1>
             <p className="empty-state__tagline">
-              Build a local interactive 3D graph of ideas and relationships. Graph generation,
-              document processing, and storage happen locally in this browser. Files you add are
-              read directly from your device and cached in browser-local storage on this device
-              only. Your documents never leave your device unless you explicitly enable a cloud AI
-              provider or share exported graph data.
+              Build an interactive 3D graph of ideas and relationships. Processing and storage stay
+              in this browser, with files cached only on this device. Documents leave your device
+              only when you explicitly enable a cloud AI provider or share exported graph data.
             </p>
           </header>
 
-          <div className="empty-state__actions">
-            <Button
-              variant="primary"
-              size="lg"
-              className="empty-state__primary-action"
-              onPress={openFilePicker}
-            >
-              Add files
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              aria-label="Add a folder — every relevant file inside it is added, subfolders included"
-              onPress={openFolderPicker}
-            >
-              Add a folder
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              isDisabled={demoLoading}
-              onPress={loadDemo}
-            >
-              {demoLoading ? 'Loading demo…' : 'Load demo corpus'}
-            </Button>
-            <Button
-              variant="tertiary"
-              size="lg"
-              onPress={importGraph}
-            >
-              Import a graph
-            </Button>
+          <div className="empty-state__start">
+            <p className="empty-state__section-label">Start a graph</p>
+            <div className="empty-state__actions empty-state__actions--primary">
+              <Button
+                variant="primary"
+                size="lg"
+                className="empty-state__primary-action"
+                onPress={openFilePicker}
+              >
+                Add files
+              </Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                aria-label="Add a folder — every relevant file inside it is added, subfolders included"
+                onPress={openFolderPicker}
+              >
+                Add a folder
+              </Button>
+            </div>
+            <div className="empty-state__actions empty-state__actions--secondary">
+              <Button
+                variant="tertiary"
+                size="md"
+                isDisabled={demoLoading}
+                onPress={loadDemo}
+              >
+                {demoLoading ? 'Loading demo…' : 'Load demo corpus'}
+              </Button>
+              <Button
+                variant="tertiary"
+                size="md"
+                onPress={importGraph}
+              >
+                Import a graph
+              </Button>
+            </div>
+            <p className="empty-state__hint">
+              Drag files or folders anywhere, or choose a folder to include supported files from
+              every subfolder.
+            </p>
           </div>
-          <Suspense fallback={null}><CorpusSwitcher variant="empty" /></Suspense>
-          <p className="empty-state__hint">
-            Pick a folder once and every relevant file inside it is pulled in, subfolders
-            included — or drag files and folders anywhere
-          </p>
+
+          <div className="empty-state__workspace">
+            <div>
+              <p className="empty-state__section-label">Workspace</p>
+              <p className="empty-state__workspace-copy">Open or manage a saved local corpus.</p>
+            </div>
+            <Suspense fallback={null}><CorpusSwitcher variant="empty" /></Suspense>
+          </div>
         </div>
 
         <div className="empty-state__workflow" aria-label="How Document Graph Explorer works">
+          <div className="empty-state__workflow-heading">
+            <span>From files to map</span>
+            <span>Three local steps</span>
+          </div>
           <div className="empty-state__step">
             <span className="empty-state__step-number">01</span>
             <span><strong>Bring your files</strong>Docs, PDFs, Office, or a source repo.</span>
@@ -122,11 +151,6 @@ export default function EmptyState() {
             <span className="empty-state__step-number">03</span>
             <span><strong>Explore the map</strong>Navigate a living graph of your corpus.</span>
           </div>
-        </div>
-        <div className="empty-state__trust-row">
-          <span>100% local</span><i aria-hidden="true" />
-          <span>Private by design</span><i aria-hidden="true" />
-          <span>No account required</span>
         </div>
       </HeroEmptyState>
     </div>

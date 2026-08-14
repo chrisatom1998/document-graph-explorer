@@ -87,6 +87,8 @@ export const FRAME_BUDGET_MS = 22; // auto-quality trip threshold
 export const FRAME_BUDGET_SUSTAIN_MS = 2000; // ...sustained this long before degrading
 export const CAMERA_GLIDE_MS = 800;
 export const MINIMAP_MIN_NODES = 20; // corner minimap appears at this corpus size
+export const VISUAL_DENSITY_SOFTEN_START = 120;
+export const VISUAL_DENSITY_SOFTEN_FULL = 1100;
 
 // --- Ingestion ---
 // Files are read fully into memory (and their text persisted to IndexedDB);

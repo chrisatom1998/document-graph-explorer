@@ -40,6 +40,7 @@ import {
 import { clusterColor, FLAT_NODE, FLAT_NODE_CLUSTER_BLEND } from './palette';
 import { prefersReducedMotion } from '../util/motion';
 import { startNodeDragLifecycle } from './nodeDragLifecycle';
+import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../config';
 
 // ---------------------------------------------------------------------------
 // Shared slot metadata (imported by Edges/EdgePulses/Labels)
@@ -112,7 +113,6 @@ const haloMaterial = new THREE.ShaderMaterial({
     }
   `,
 });
-const DIM_FACTOR = 0.12;
 const GHOST_COLOR_FACTOR = 0.35;
 const GHOST_SCALE_FACTOR = 0.8;
 const PIN_THROTTLE_MS = 33;
@@ -134,6 +134,15 @@ function easeOutBack(t: number): number {
   const c3 = c1 + 1;
   const u = t - 1;
   return 1 + c3 * u * u * u + c1 * u * u;
+}
+
+function densitySoftening(nodeCount: number): number {
+  if (nodeCount <= VISUAL_DENSITY_SOFTEN_START) return 0;
+  return Math.min(
+    1,
+    (nodeCount - VISUAL_DENSITY_SOFTEN_START) /
+      (VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START),
+  );
 }
 
 const NO_RAYCAST = (): void => {
@@ -253,6 +262,7 @@ export default function Nodes() {
     const { hoveredId, selectedId, searchResults, highlightOwner, filter, dims, snapshotOverlay } =
       useUiStore.getState();
     const isFlat = dims === 2;
+    const soften = densitySoftening(nodes.length);
     const showMeIds = highlightOwner === 'showMe' && searchResults ? new Set(searchResults) : null;
     const emphasis = computeEmphasis(
       nodes,
@@ -272,10 +282,12 @@ export default function Nodes() {
       } else {
         tmpColor.copy(clusterColor(n.cluster));
       }
-      if (n.kind === 'topic') tmpColor.multiplyScalar(1.25); // topics slightly brighter
+      if (n.kind === 'topic') tmpColor.multiplyScalar(1.18);
       if (ghostOfSlot[slot]) tmpColor.multiplyScalar(GHOST_COLOR_FACTOR);
-      if (emphasis && !emphasis.has(n.id)) tmpColor.multiplyScalar(DIM_FACTOR);
-      if (n.id === hoveredId || n.id === selectedId) tmpColor.multiplyScalar(1.9);
+      if (emphasis && !emphasis.has(n.id)) tmpColor.multiplyScalar(0.08);
+      if (n.id === hoveredId) tmpColor.multiplyScalar(2.2 - soften * 0.15);
+      else if (n.id === selectedId) tmpColor.multiplyScalar(2.05 - soften * 0.12);
+      else if (emphasis && emphasis.has(n.id)) tmpColor.multiplyScalar(1.08);
       if (showMeIds?.has(n.id)) tmpColor.setRGB(1, 0.96, 0.62);
       if (highlightOwner === 'snapshot' && snapshotOverlay) {
         if (snapshotOverlay.addedIds.includes(n.id)) tmpColor.setRGB(0.35, 0.95, 0.55);

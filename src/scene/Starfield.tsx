@@ -16,6 +16,7 @@
 import { useEffect } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
+import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import {
   blackbodyColor,
@@ -23,6 +24,7 @@ import {
   sampleStarTemperature,
 } from './starColors';
 import { makeSoftSprite, makeStarSprite } from './proceduralTextures';
+import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../config';
 
 const STAR_COUNT = 4200;
 // Must stay OUTSIDE the layout's node shell (layout.worker.ts grows it as
@@ -205,8 +207,16 @@ export default function Starfield() {
   // and mute the colorful nebula dust so it doesn't compete with the
   // constellation of nodes.
   const flat = useUiStore((s) => s.dims === 2);
+  const hasFocus = useUiStore((s) => s.hoveredId !== null || s.selectedId !== null);
+  const nodeCount = useGraphStore((s) => s.nodes.length);
 
   const { stars, heroes, dust, fieldMaterial, heroMaterial, softSprite } = getStarfieldAssets();
+  const densitySoftening = Math.min(
+    1,
+    Math.max(0, (nodeCount - VISUAL_DENSITY_SOFTEN_START) /
+      (VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START)),
+  );
+  const dustOpacity = flat ? 0.12 : 0.28 - densitySoftening * 0.1 - (hasFocus ? 0.06 : 0);
 
   // Keep uScale matched to the drawing buffer (device px) so star discs stay
   // the same physical size across resizes and DPR changes.
@@ -219,9 +229,9 @@ export default function Starfield() {
   }, [height, dpr, fieldMaterial, heroMaterial]);
 
   useEffect(() => {
-    fieldMaterial.uniforms.uDim.value = flat ? 0.55 : 1;
-    heroMaterial.uniforms.uDim.value = flat ? 0.2 : 1; // diffraction spikes read as "3D photo"
-  }, [flat, fieldMaterial, heroMaterial]);
+    fieldMaterial.uniforms.uDim.value = flat ? 0.55 : 0.9 - densitySoftening * 0.18;
+    heroMaterial.uniforms.uDim.value = flat ? 0.2 : 0.9 - densitySoftening * 0.14;
+  }, [densitySoftening, flat, fieldMaterial, heroMaterial]);
 
   return (
     <group>
@@ -236,7 +246,7 @@ export default function Starfield() {
           size={1.7}
           sizeAttenuation
           transparent
-          opacity={flat ? 0.12 : 0.38}
+          opacity={Math.max(0.1, dustOpacity)}
           vertexColors
           blending={THREE.AdditiveBlending}
           depthWrite={false}

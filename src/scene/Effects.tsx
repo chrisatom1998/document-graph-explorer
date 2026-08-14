@@ -16,17 +16,19 @@
  * tension (luminanceThreshold here is the other half of that contract).
  */
 
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Bloom, DepthOfField, EffectComposer, Vignette } from '@react-three/postprocessing';
 import type { DepthOfFieldEffect } from 'postprocessing';
+import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
+import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../config';
 
 // Threshold/smoothing are half of the label-vs-bloom contract (Labels.tsx) —
 // intensity and radius are safe to tune; the threshold is not.
-const BLOOM_INTENSITY = 1.15;
-const BLOOM_THRESHOLD = 0.28;
+const BLOOM_INTENSITY = 1.02;
+const BLOOM_THRESHOLD = 0.34;
 const BLOOM_SMOOTHING = 0.18;
 // 2D star chart: bloom drops to a faint dot glow (the halo shells are off),
 // DoF makes no sense on a flat plane, vignette lightens to a soft frame.
@@ -57,11 +59,22 @@ function FocusedDoF() {
 export default function Effects() {
   const qualityTier = useUiStore((s) => s.qualityTier);
   const flat = useUiStore((s) => s.dims === 2);
+  const hoveredId = useUiStore((s) => s.hoveredId);
+  const selectedId = useUiStore((s) => s.selectedId);
+  const nodeCount = useGraphStore((s) => s.nodes.length);
   const dofOn = useUiStore(
     (s) => s.qualityTier === 0 && s.selectedId !== null && s.dims === 3,
   );
   const halfRes = qualityTier >= 2;
-  const intensity = flat ? FLAT_BLOOM_INTENSITY : BLOOM_INTENSITY;
+  const densitySoftening = useMemo(() => {
+    if (nodeCount <= VISUAL_DENSITY_SOFTEN_START) return 0;
+    const span = VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START;
+    return Math.min(1, (nodeCount - VISUAL_DENSITY_SOFTEN_START) / span);
+  }, [nodeCount]);
+  const focusBoost = hoveredId || selectedId ? 0.12 : 0;
+  const intensity = flat
+    ? FLAT_BLOOM_INTENSITY
+    : BLOOM_INTENSITY - densitySoftening * 0.26 + focusBoost;
 
   // Geometry antialiasing lives HERE, not on the canvas: the composer renders
   // the scene into its own framebuffer, so the WebGL context's MSAA (off in
@@ -88,7 +101,7 @@ export default function Effects() {
         />
       )}
       {dofOn ? <FocusedDoF /> : (null as unknown as React.ReactElement)}
-      <Vignette darkness={flat ? FLAT_VIGNETTE : 0.55} offset={0.18} />
+      <Vignette darkness={flat ? FLAT_VIGNETTE : 0.62 - densitySoftening * 0.08} offset={0.18} />
     </EffectComposer>
   );
 }
