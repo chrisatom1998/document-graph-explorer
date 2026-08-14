@@ -6,6 +6,7 @@ import { openFilePicker } from '../ingest/DropZone';
 import { openFolderPicker } from '../ingest/folderPicker';
 import { useUiStore } from '../store/uiStore';
 import ConstellationSvg from './ConstellationSvg';
+import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './FirstRunGuide';
 
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
 // Split out so the welcome screen paints without waiting on three.js; the flat
@@ -24,6 +25,7 @@ export default function EmptyState() {
     setDemoLoading(true);
     import('../pipeline/coordinatorLazy')
       .then(({ loadDemoCorpus }) => loadDemoCorpus())
+      .then(() => window.dispatchEvent(new Event(FIRST_RUN_GUIDE_REOPEN_EVENT)))
       .catch((err) => {
         console.warn('demo corpus load failed', err);
         useUiStore.getState().pushToast("Couldn't load the demo corpus.");
