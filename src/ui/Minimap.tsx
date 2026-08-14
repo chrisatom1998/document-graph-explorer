@@ -28,7 +28,12 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from '../scene/positionBuffer';
 import { cameraPose } from '../scene/cameraPose';
-import { hexFor } from '../scene/palette';
+import {
+  FLAT_EDGE_FAINT,
+  FLAT_PANEL,
+  FLAT_SELECTION,
+  hexFor,
+} from '../scene/palette';
 import {
   arrowVertices,
   boxCorners,
@@ -130,9 +135,13 @@ export default function Minimap() {
       const toX = (u: number): number => W / 2 + (u - f.cx) * f.scale;
       const toY = (v: number): number => H / 2 + (v - f.cy) * f.scale;
 
+      // Map background must paint before edges; a later fill would erase them.
+      sctx.fillStyle = ui.dims === 2 ? FLAT_PANEL : '#050510';
+      sctx.fillRect(0, 0, W, H);
+
       // --- edges: faintest possible filaments, straight is fine at this size
       if (edges.length <= EDGE_DRAW_CAP && !ui.clusterCollapsed) {
-        sctx.strokeStyle = 'rgba(140, 150, 255, 0.10)';
+        sctx.strokeStyle = ui.dims === 2 ? FLAT_EDGE_FAINT : 'rgba(140, 150, 255, 0.10)';
         sctx.lineWidth = 1;
         sctx.beginPath();
         for (const e of edges) {
@@ -163,12 +172,19 @@ export default function Minimap() {
         const o = slot * 3;
         const x = toX(projU(arr[o], arr[o + 1], arr[o + 2]));
         const y = toY(projV(arr[o + 1], arr[o + 2], dims));
-        const r = 0.9 + 0.5 * (scaleOfSlot[slot] || 1);
-        sctx.globalAlpha = n.status === 'ok' ? 0.9 : 0.35;
-        sctx.fillStyle = hexFor(n.cluster);
+        const r = ui.dims === 2 ? 1.3 + 0.82 * (scaleOfSlot[slot] || 1) : 0.9 + 0.5 * (scaleOfSlot[slot] || 1);
+        sctx.globalAlpha = n.status === 'ok' ? (ui.dims === 2 ? 1 : 0.9) : 0.35;
+        sctx.fillStyle = ui.dims === 2 ? '#eefaff' : hexFor(n.cluster);
         sctx.beginPath();
         sctx.arc(x, y, r, 0, Math.PI * 2);
         sctx.fill();
+        if (ui.dims === 2) {
+          sctx.strokeStyle = 'rgba(18, 52, 77, 0.95)';
+          sctx.lineWidth = 1;
+          sctx.beginPath();
+          sctx.arc(x, y, r + 0.9, 0, Math.PI * 2);
+          sctx.stroke();
+        }
       }
       sctx.globalAlpha = 1;
 
@@ -177,7 +193,7 @@ export default function Minimap() {
         const slot = slotOfId.get(ui.selectedId);
         if (slot !== undefined && slot < count) {
           const o = slot * 3;
-          sctx.strokeStyle = '#a996ff';
+          sctx.strokeStyle = ui.dims === 2 ? FLAT_SELECTION : '#a996ff';
           sctx.lineWidth = 1.5;
           sctx.beginPath();
           sctx.arc(

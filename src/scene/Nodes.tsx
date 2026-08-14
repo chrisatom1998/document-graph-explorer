@@ -37,7 +37,12 @@ import {
   slotOfId,
   spawnAtOfSlot,
 } from './positionBuffer';
-import { clusterColor, FLAT_NODE, FLAT_NODE_CLUSTER_BLEND } from './palette';
+import {
+  clusterColor,
+  FLAT_NODE,
+  FLAT_NODE_CLUSTER_BLEND,
+  FLAT_NODE_OUTER,
+} from './palette';
 import { prefersReducedMotion } from '../util/motion';
 import { startNodeDragLifecycle } from './nodeDragLifecycle';
 import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../config';
@@ -120,6 +125,7 @@ const SHOW_ME_PULSE_PERIOD_MS = 1050;
 
 const dummy = new THREE.Object3D();
 const tmpColor = new THREE.Color();
+const tmpOuterColor = new THREE.Color();
 const rayToCenter = new THREE.Vector3();
 const dragOrigin = new THREE.Vector3();
 const dragNormal = new THREE.Vector3();
@@ -211,8 +217,8 @@ const DRAG_THRESHOLD_PX = 4;
 
 export default function Nodes() {
   const topicNodesEnabled = useUiStore((s) => s.topicNodesEnabled);
-  // 2D constellation mode: flat unlit dots instead of glossy marbles (the
-  // material swap below), smaller near-uniform sizing, halos off.
+  // 2D constellation mode: flat unlit dual discs instead of glossy marbles
+  // (the material swap below) and smaller near-uniform sizing.
   const flat = useUiStore((s) => s.dims === 2);
   const rootGet = useThree((s) => s.get);
 
@@ -244,10 +250,10 @@ export default function Nodes() {
       // size = f(degree), log-scaled so hubs are visibly hubs (spec §5.4).
       // 2D star chart compresses the band — small, near-uniform dots.
       let s = isFlat
-        ? 0.55 * (1 + 0.22 * Math.log2(1 + n.degree))
+        ? 0.72 * (1 + 0.28 * Math.log2(1 + n.degree))
         : 0.7 * (1 + 0.5 * Math.log2(1 + n.degree));
       if (ghost) s *= GHOST_SCALE_FACTOR; // ghosted, never a silent gap (spec §9)
-      scaleOfSlot[slot] = Math.min(s, isFlat ? 1.3 : 2.6);
+      scaleOfSlot[slot] = Math.min(s, isFlat ? 1.75 : 2.6);
     }
   };
 
@@ -276,27 +282,61 @@ export default function Nodes() {
       const slot = slotOfId.get(n.id);
       if (slot === undefined || slot >= MAX_NODES) continue;
       if (isFlat) {
-        // star chart: uniform pale cyan, a whisper of cluster hue so the
-        // legend/filters still read (see palette FLAT_* rationale)
+        // star chart: bright technical-map core plus a darker outer disc for
+        // hierarchy; cluster hue only nudges the color so the map stays clean.
         tmpColor.copy(FLAT_NODE).lerp(clusterColor(n.cluster), FLAT_NODE_CLUSTER_BLEND);
+        tmpOuterColor
+          .copy(FLAT_NODE_OUTER)
+          .lerp(clusterColor(n.cluster), FLAT_NODE_CLUSTER_BLEND * 0.48);
       } else {
         tmpColor.copy(clusterColor(n.cluster));
+        tmpOuterColor.copy(tmpColor);
       }
-      if (n.kind === 'topic') tmpColor.multiplyScalar(1.18);
-      if (ghostOfSlot[slot]) tmpColor.multiplyScalar(GHOST_COLOR_FACTOR);
-      if (emphasis && !emphasis.has(n.id)) tmpColor.multiplyScalar(0.08);
-      if (n.id === hoveredId) tmpColor.multiplyScalar(2.2 - soften * 0.15);
-      else if (n.id === selectedId) tmpColor.multiplyScalar(2.05 - soften * 0.12);
-      else if (emphasis && emphasis.has(n.id)) tmpColor.multiplyScalar(1.08);
-      if (showMeIds?.has(n.id)) tmpColor.setRGB(1, 0.96, 0.62);
+      if (n.kind === 'topic') {
+        tmpColor.multiplyScalar(1.28);
+        tmpOuterColor.multiplyScalar(1.16);
+      }
+      if (ghostOfSlot[slot]) {
+        tmpColor.multiplyScalar(GHOST_COLOR_FACTOR);
+        tmpOuterColor.multiplyScalar(GHOST_COLOR_FACTOR);
+      }
+      if (emphasis && !emphasis.has(n.id)) {
+        tmpColor.multiplyScalar(0.05);
+        tmpOuterColor.multiplyScalar(0.09);
+      }
+      // Core and outer disc must move together, so each state is ONE branch
+      // that sets both. (Interleaving separate `else if` chains for the two
+      // colors silently made the outer-disc branches unreachable.)
+      if (n.id === hoveredId) {
+        tmpColor.multiplyScalar(2.65 - soften * 0.18);
+        tmpOuterColor.multiplyScalar(1.8 - soften * 0.12);
+      } else if (n.id === selectedId) {
+        tmpColor.multiplyScalar(2.45 - soften * 0.16);
+        tmpOuterColor.multiplyScalar(1.7 - soften * 0.1);
+      } else if (emphasis && emphasis.has(n.id)) {
+        tmpColor.multiplyScalar(1.22);
+        tmpOuterColor.multiplyScalar(1.16);
+      }
+      if (showMeIds?.has(n.id)) {
+        tmpColor.setRGB(1, 0.96, 0.62);
+        tmpOuterColor.setRGB(0.9, 0.82, 0.42);
+      }
       if (highlightOwner === 'snapshot' && snapshotOverlay) {
-        if (snapshotOverlay.addedIds.includes(n.id)) tmpColor.setRGB(0.35, 0.95, 0.55);
-        else if (snapshotOverlay.updatedIds.includes(n.id)) tmpColor.setRGB(1, 0.78, 0.28);
+        if (snapshotOverlay.addedIds.includes(n.id)) {
+          tmpColor.setRGB(0.35, 0.95, 0.55);
+          tmpOuterColor.setRGB(0.18, 0.62, 0.34);
+        } else if (snapshotOverlay.updatedIds.includes(n.id)) {
+          tmpColor.setRGB(1, 0.78, 0.28);
+          tmpOuterColor.setRGB(0.65, 0.38, 0.1);
+        }
       }
       tmpColor.r = Math.min(tmpColor.r, 1);
       tmpColor.g = Math.min(tmpColor.g, 1);
       tmpColor.b = Math.min(tmpColor.b, 1);
-      core.setColorAt(slot, tmpColor);
+      tmpOuterColor.r = Math.min(tmpOuterColor.r, 1);
+      tmpOuterColor.g = Math.min(tmpOuterColor.g, 1);
+      tmpOuterColor.b = Math.min(tmpOuterColor.b, 1);
+      core.setColorAt(slot, isFlat ? tmpOuterColor : tmpColor);
       halo.setColorAt(slot, tmpColor);
       if (topic?.instanceColor) topic.setColorAt(slot, tmpColor);
     }
@@ -542,8 +582,9 @@ export default function Nodes() {
     }
 
     core.count = count;
-    // 2D star chart: no halo shells — the gentle bloom pass supplies the glow
-    halo.count = useUiStore.getState().dims === 2 ? 0 : count;
+    // In 2D the "halo" mesh is repurposed into the bright inner map core, so
+    // it must stay enabled. Only the 3D path uses the large additive shell.
+    halo.count = count;
     if (topic) topic.count = count;
 
     // Dirty heuristic: skip the matrix loop when nothing moved or animates.
@@ -558,6 +599,7 @@ export default function Nodes() {
     const now = performance.now();
     let stillAnimating = false;
     const ui = useUiStore.getState();
+    const isFlat = ui.dims === 2;
     const collapsed = ui.clusterCollapsed;
     // Once the user has picked a node out of the Show-me set (selectedId
     // set), settle down — the pulse is a "look here" cue for an undecided
@@ -585,13 +627,14 @@ export default function Nodes() {
       }
 
       let scale = scaleOfSlot[i] || 1.1;
-      let haloScale = scale * HALO_SCALE;
+      // 2D reuses this mesh as the inner disc (0.58 geometry), so skip HALO_SCALE.
+      let haloScale = isFlat ? scale : scale * HALO_SCALE;
       const showMePulse = showMeIds?.has(idOfSlot[i] ?? '') && !reducedMotion;
       if (showMePulse) {
         const wave = (Math.sin((now / SHOW_ME_PULSE_PERIOD_MS) * Math.PI * 2) + 1) * 0.5;
         const pulse = 1.16 + wave * 0.34;
         scale *= pulse;
-        haloScale = scale * HALO_SCALE * (1.25 + wave * 1.1);
+        haloScale = isFlat ? scale : scale * HALO_SCALE * (1.25 + wave * 1.1);
         stillAnimating = true;
       }
 
@@ -612,7 +655,7 @@ export default function Nodes() {
           if (t < 1) {
             const f = easeOutBack(Math.max(t, 0));
             scale *= f;
-            haloScale = scale * HALO_SCALE * (1 + 1.5 * (1 - t));
+            haloScale = isFlat ? scale : scale * HALO_SCALE * (1 + 1.5 * (1 - t));
             stillAnimating = true;
           } else {
             spawnAtOfSlot[i] = -1; // animation done
@@ -663,9 +706,9 @@ export default function Nodes() {
             (NebulaCanvas) so cores read as polished glass orbs rather than
             plastic. The fresnel halo below supplies the nebula glow that
             feeds bloom.
-            2D: flat unlit dot — the sphere renders as a plain disc. */}
+            2D: outer map disc — the inner highlight is the halo mesh below. */}
         {flat ? (
-          <meshBasicMaterial toneMapped={false} />
+          <meshBasicMaterial toneMapped={false} depthWrite={false} />
         ) : (
           <meshPhysicalMaterial
             roughness={0.32}
@@ -677,15 +720,21 @@ export default function Nodes() {
         )}
       </instancedMesh>
 
-      {/* fresnel corona halo (limb-brightened, additive) that feeds bloom */}
+      {/* fresnel corona halo (limb-brightened, additive) that feeds bloom.
+          In 2D this becomes the smaller bright map core above the darker disc. */}
       <instancedMesh
         ref={haloRef}
         args={[undefined, undefined, MAX_NODES]}
         frustumCulled={false}
         raycast={NO_RAYCAST}
+        renderOrder={flat ? 1 : 0}
       >
-        <sphereGeometry args={[1, 24, 18]} />
-        <primitive object={haloMaterial} attach="material" />
+        <sphereGeometry args={flat ? [0.58, 18, 14] : [1, 24, 18]} />
+        {flat ? (
+          <meshBasicMaterial toneMapped={false} depthTest={false} depthWrite={false} />
+        ) : (
+          <primitive object={haloMaterial} attach="material" />
+        )}
       </instancedMesh>
 
       {/* topic nodes as octahedra (spec §5.4), behind the toggle */}
