@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { fileTypeChip } from '../pipeline/codeLanguage';
+import { hexFor } from '../scene/palette';
 
 const OFFSET = 16;
 
@@ -63,7 +64,11 @@ export default function Tooltip() {
     >
       <p className="hover-tooltip__title">{node.title}</p>
       <p className="hover-tooltip__meta">
-        {fileTypeChip(node)} · {node.wordCount.toLocaleString()} words
+        <span className="chip">{fileTypeChip(node)}</span>
+        <span className="hover-tooltip__cluster">
+          <span className="chip-dot" style={{ background: hexFor(node.cluster) }} aria-hidden="true" />
+        </span>
+        <span>{node.wordCount.toLocaleString()} words</span>
       </p>
       {topTopics.length > 0 && (
         <div className="hover-tooltip__topics">
