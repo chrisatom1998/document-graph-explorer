@@ -22,7 +22,6 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
 import { useUiStore } from '../store/uiStore';
-import { useGraphStore } from '../store/graphStore';
 import { dismissGraphFocus } from './cameraFocusPolicy';
 import { registerSceneCapture } from './sceneCapture';
 import { FLAT_BG, VOID } from './palette';
@@ -113,11 +112,6 @@ export default function NebulaCanvas() {
   // 2D constellation mode: flat ink background, no starfield/clouds/core —
   // the graph reads as a star chart, not a nebula (see palette FLAT_* tokens).
   const flat = useUiStore((s) => s.dims === 2);
-  // Empty welcome screen: render on demand only. The animated hero card
-  // (HeroConstellation) is its own canvas; without this the full nebula
-  // pipeline — starfield, clouds, bloom composer — burns a second render
-  // loop at full rate behind it before a single document exists.
-  const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const bg = flat ? FLAT_BG : VOID;
 
   if (!supportsWebGL()) return <WebGLFallback />;
@@ -129,7 +123,6 @@ export default function NebulaCanvas() {
       tabIndex={-1}
       aria-label="Interactive document graph. Drag to orbit, use toolbar buttons for search, filtering, path finding and view controls."
       style={{ position: 'fixed', inset: 0 }}
-      frameloop={hasNodes ? 'always' : 'demand'}
       dpr={INITIAL_DPR}
       camera={{ fov: 55, near: 0.1, far: 4000, position: [0, 0, 160] }}
       gl={{ antialias: false, powerPreference: 'high-performance' }}

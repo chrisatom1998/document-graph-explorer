@@ -11,7 +11,6 @@ import {
 import type { FileStage, PipelinePhase } from '../model/types';
 
 const AUTO_HIDE_MS = 2500;
-const READY_SETTLE_MS = 300;
 const IGNORED_LINGER_MS = 6000;
 const MAX_FILE_CHIPS = 7;
 
@@ -52,7 +51,6 @@ export default function ProgressStrip() {
 
   const [ignoredOpen, setIgnoredOpen] = useState(false);
   const [lingering, setLingering] = useState(false);
-  const [leaving, setLeaving] = useState(false);
 
   // True while a cancellable ingest run is live (registered by ingestFiles);
   // false during other active phases (watched-folder rescans, enrichment,
@@ -65,24 +63,15 @@ export default function ProgressStrip() {
   }, [cancellable]);
 
   // Keep the strip mounted for AUTO_HIDE_MS after the phase reaches 'ready'
-  // so it can animate out instead of popping away. The fade-out class waits
-  // READY_SETTLE_MS: a queued follow-up run (multi-drop batch, folder rescan,
-  // enrichment) leaves 'ready' almost immediately, and a fade that started
-  // would snap back to full opacity mid-animation.
+  // so it can animate out instead of popping away.
   useEffect(() => {
     if (phase !== 'ready') {
       setLingering(false);
-      setLeaving(false);
       return;
     }
     setLingering(true);
-    const fade = setTimeout(() => setLeaving(true), READY_SETTLE_MS);
-    const hide = setTimeout(() => setLingering(false), AUTO_HIDE_MS);
-    return () => {
-      clearTimeout(fade);
-      clearTimeout(hide);
-      setLeaving(false);
-    };
+    const t = setTimeout(() => setLingering(false), AUTO_HIDE_MS);
+    return () => clearTimeout(t);
   }, [phase]);
 
   // A drop that is rejected in full (e.g. every file too large) never starts
@@ -145,7 +134,7 @@ export default function ProgressStrip() {
     <div className="progress-strip-layer">
       <div
         className={`progress-strip glass-panel${
-          !active && leaving && !ignoredFlash ? ' is-leaving' : ''
+          !active && lingering && !ignoredFlash ? ' is-leaving' : ''
         }`}
         aria-busy={active}
       >

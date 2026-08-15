@@ -34,7 +34,6 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
-import { clusterOfNodes } from './clusterMap';
 import { clusterColor } from './palette';
 import { computeEmphasis } from './emphasis';
 import { edgeControlPoint, evalEdgePoint } from './edgeCurve';
@@ -104,7 +103,11 @@ export default function ClusterBridges() {
   }, [size]);
 
   const bridges = useMemo(() => aggregateBridges(nodes, edges), [nodes, edges]);
-  const clusterOfNode = useMemo(() => clusterOfNodes(nodes), [nodes]);
+  const clusterOfNode = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const n of nodes) m.set(n.id, n.cluster);
+    return m;
+  }, [nodes]);
 
   const colorsDirty = useRef(true);
   const forcePositions = useRef(true);

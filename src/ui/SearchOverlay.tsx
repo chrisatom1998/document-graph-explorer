@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { nodesMatchingFilter } from '../scene/emphasis';
@@ -10,8 +10,6 @@ import { useActiveOptionScroll } from './useActiveOptionScroll';
 import CloseButton from './CloseButton';
 
 const DEBOUNCE_MS = 250;
-// Empty-query browse mode caps its DOM at this many rows (see browseOverflow).
-const BROWSE_CAP = 150;
 
 interface ResultRow {
   id: string;
@@ -125,25 +123,13 @@ export default function SearchOverlay() {
   }, [query, searchOpen]);
 
   const browsing = query.trim().length === 0;
-  // O(nodes + edges) — memoized so a keystroke re-render doesn't pay it.
-  const allowed = useMemo(() => nodesMatchingFilter(nodes, edges, filter), [nodes, edges, filter]);
-  const { displayedResults, browseOverflow } = useMemo(() => {
-    const base: ResultRow[] = browsing
-      ? nodes
-          .filter((node) => node.kind === 'document')
-          .map((node) => ({ id: node.id, score: 0, matchKind: 'title' as const }))
-      : results;
-    const filtered = base.filter((row) => !allowed || allowed.has(row.id));
-    // Browse mode (empty query) lists the corpus — cap the DOM at a screenful
-    // instead of building a row per document, and say what was held back.
-    if (browsing && filtered.length > BROWSE_CAP) {
-      return {
-        displayedResults: filtered.slice(0, BROWSE_CAP),
-        browseOverflow: filtered.length - BROWSE_CAP,
-      };
-    }
-    return { displayedResults: filtered, browseOverflow: 0 };
-  }, [browsing, nodes, results, allowed]);
+  const allowed = nodesMatchingFilter(nodes, edges, filter);
+  const displayedResults: ResultRow[] = (browsing
+    ? nodes
+        .filter((node) => node.kind === 'document')
+        .map((node) => ({ id: node.id, score: 0, matchKind: 'title' as const }))
+    : results
+  ).filter((row) => !allowed || allowed.has(row.id));
   const hasDisplayedResults = displayedResults.length > 0;
   const activeOptionId = hasDisplayedResults ? `search-option-${activeIndex}` : undefined;
   // Must run before the closed-overlay early return: hooks cannot be
@@ -314,11 +300,6 @@ export default function SearchOverlay() {
           })}
         </div>
 
-        {browseOverflow > 0 && (
-          <div className="search-overlay__empty" role="status">
-            {browseOverflow} more document{browseOverflow === 1 ? '' : 's'} — type to narrow
-          </div>
-        )}
         {!browsing && searching && results.length === 0 && (
           <div className="search-overlay__empty" role="status">
             Searching…

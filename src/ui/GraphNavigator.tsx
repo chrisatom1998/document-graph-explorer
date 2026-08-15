@@ -7,8 +7,6 @@ import { focusNode } from './focusNode';
 
 const SUMMARY_ID = 'graph-navigator-summary';
 const INSTRUCTIONS_ID = 'graph-navigator-instructions';
-// Rows rendered around the highlight; navigation still spans the full list.
-const NAVIGATOR_WINDOW = 60;
 
 function optionId(index: number): string {
   return `graph-navigator-option-${index}`;
@@ -27,47 +25,30 @@ export default function GraphNavigator() {
   const selectedId = useUiStore((state) => state.selectedId);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const { orderedNodes, indexOfId, documentCount, topicCount, clusterCount } = useMemo(() => {
-    const orderedNodes = [...nodes].sort((a, b) => {
+  const orderedNodes = useMemo(
+    () => [...nodes].sort((a, b) => {
       if (a.kind !== b.kind) return a.kind === 'document' ? -1 : 1;
       return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
-    });
-    const indexOfId = new Map(orderedNodes.map((node, i) => [node.id, i]));
-    let documentCount = 0;
-    const clusters = new Set<number>();
-    for (const node of orderedNodes) {
-      if (node.kind !== 'document') continue;
-      documentCount++;
-      if (node.cluster >= 0) clusters.add(node.cluster);
-    }
-    return {
-      orderedNodes,
-      indexOfId,
-      documentCount,
-      topicCount: orderedNodes.length - documentCount,
-      clusterCount: clusters.size,
-    };
-  }, [nodes]);
+    }),
+    [nodes],
+  );
 
   const [activeId, setActiveId] = useState<string | null>(selectedId ?? orderedNodes[0]?.id ?? null);
 
   useEffect(() => {
-    if (activeId && indexOfId.has(activeId)) return;
-    setActiveId(selectedId && indexOfId.has(selectedId) ? selectedId : orderedNodes[0]?.id ?? null);
-  }, [activeId, orderedNodes, indexOfId, selectedId]);
+    if (activeId && orderedNodes.some((node) => node.id === activeId)) return;
+    setActiveId(selectedId && orderedNodes.some((node) => node.id === selectedId)
+      ? selectedId
+      : orderedNodes[0]?.id ?? null);
+  }, [activeId, orderedNodes, selectedId]);
 
-  const activeIndex = Math.max(0, activeId ? indexOfId.get(activeId) ?? -1 : -1);
+  const activeIndex = Math.max(0, orderedNodes.findIndex((node) => node.id === activeId));
   useActiveOptionScroll(orderedNodes.length > 0 ? optionId(activeIndex) : undefined);
-
-  // The listbox uses aria-activedescendant, so only the rows near the
-  // highlight need to exist in the DOM — rendering all of them put ~12k
-  // permanent elements in the page at the node cap. aria-setsize/posinset
-  // keep the "item N of M" announcements correct over the full model.
-  const windowStart = Math.max(
-    0,
-    Math.min(activeIndex - (NAVIGATOR_WINDOW >> 1), orderedNodes.length - NAVIGATOR_WINDOW),
-  );
-  const windowNodes = orderedNodes.slice(windowStart, windowStart + NAVIGATOR_WINDOW);
+  const documentCount = orderedNodes.filter((node) => node.kind === 'document').length;
+  const topicCount = orderedNodes.length - documentCount;
+  const clusterCount = new Set(
+    orderedNodes.filter((node) => node.kind === 'document' && node.cluster >= 0).map((node) => node.cluster),
+  ).size;
 
   const moveTo = (index: number) => {
     const node = orderedNodes[Math.max(0, Math.min(index, orderedNodes.length - 1))];
@@ -128,21 +109,17 @@ export default function GraphNavigator() {
         aria-describedby={`${SUMMARY_ID} ${INSTRUCTIONS_ID}`}
         aria-activedescendant={optionId(activeIndex)}
         onFocus={() => {
-          if (selectedId && indexOfId.has(selectedId)) setActiveId(selectedId);
+          if (selectedId && orderedNodes.some((node) => node.id === selectedId)) setActiveId(selectedId);
         }}
         onKeyDownCapture={handleKeyDown}
       >
-        {windowNodes.map((node, windowIndex) => {
-          const index = windowStart + windowIndex;
-          return (
+        {orderedNodes.map((node, index) => (
           <div
             id={optionId(index)}
             key={node.id}
             className={`graph-navigator__option${index === activeIndex ? ' is-active' : ''}`}
             role="option"
             aria-selected={node.id === selectedId}
-            aria-setsize={orderedNodes.length}
-            aria-posinset={index + 1}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => {
               setActiveId(node.id);
@@ -156,8 +133,7 @@ export default function GraphNavigator() {
                 : `${fileTypeChip(node).toUpperCase()} · ${node.degree} connection${node.degree === 1 ? '' : 's'}`}
             </span>
           </div>
-          );
-        })}
+        ))}
       </div>
     </aside>
   );

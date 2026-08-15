@@ -46,21 +46,6 @@ export default function DocumentMarkdown({ text, linkIndex, onNavigate, classNam
 
   const wrapClass = className ? `md-doc ${className}` : 'md-doc';
 
-  // The element tree is the expensive part (a long doc yields thousands of
-  // elements) — rebuild it only when the source or link wiring changes, not
-  // on every parent re-render.
-  const rendered = useMemo(
-    () =>
-      tree
-        ? renderMarkdownChildren(tree.children, 'doc', {
-            enableWikilinks: true,
-            resolveInternalLink: (target) => resolveLinkTarget(target, linkIndex),
-            onNavigate,
-          })
-        : null,
-    [tree, linkIndex, onNavigate],
-  );
-
   // Oversized / unparseable: show a bounded plain-text excerpt via VirtualText
   // instead of mounting an 8 MB+ text node that freezes the main thread.
   if (!tree) {
@@ -68,5 +53,13 @@ export default function DocumentMarkdown({ text, linkIndex, onNavigate, classNam
     return <VirtualText text={excerpt} className={wrapClass} highlight={highlight} />;
   }
 
-  return <div className={wrapClass}>{rendered}</div>;
+  return (
+    <div className={wrapClass}>
+      {renderMarkdownChildren(tree.children, 'doc', {
+        enableWikilinks: true,
+        resolveInternalLink: (target) => resolveLinkTarget(target, linkIndex),
+        onNavigate,
+      })}
+    </div>
+  );
 }
