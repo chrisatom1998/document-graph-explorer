@@ -186,7 +186,7 @@ npm run build:desktop
 
 This produces `release/mac-arm64/Document Graph Explorer.app` and copies it to `/Applications`, where it appears in Launchpad and Spotlight. This is the local-install path; it does not package an installer for other machines.
 
-### Distribute the macOS app
+### Distributing the app (dmg)
 
 ```bash
 npm run dist:mac
