@@ -13,7 +13,6 @@ import { useGraphStore } from '../store/graphStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 import CloseButton from './CloseButton';
-import { IconGrip } from './icons';
 import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 
 // v4: shorter core-loop tour after the toolbar was collapsed into menus.
@@ -104,6 +103,19 @@ function defaultGuidePos(el: HTMLElement): { x: number; y: number } {
     x: window.innerWidth - width - GUIDE_RIGHT_INSET,
     y: window.innerHeight - height - GUIDE_MARGIN,
   };
+}
+
+function IconGrip() {
+  return (
+    <svg viewBox="0 0 18 18" fill="currentColor" stroke="none" aria-hidden="true">
+      <circle cx="6.5" cy="4" r="1.3" />
+      <circle cx="11.5" cy="4" r="1.3" />
+      <circle cx="6.5" cy="9" r="1.3" />
+      <circle cx="11.5" cy="9" r="1.3" />
+      <circle cx="6.5" cy="14" r="1.3" />
+      <circle cx="11.5" cy="14" r="1.3" />
+    </svg>
+  );
 }
 
 export default function FirstRunGuide() {

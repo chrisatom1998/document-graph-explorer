@@ -6,7 +6,7 @@
  * panel-specific bits are inlined.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AIRGAP } from '../airgap';
 import { DOCUMENT_AI_MAX_CONTEXT_CHARS } from '../config';
 import { useFocusTrap } from './useFocusTrap';
@@ -39,6 +39,91 @@ import {
 } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 import { buildDiagnosticsText, getAppVersion } from './diagnostics';
+
+const panelStyle: CSSProperties = {
+  width: 'min(460px, 92vw)',
+  maxHeight: '82vh',
+  overflowY: 'auto',
+  padding: '20px 22px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 18,
+};
+const headerRowStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+};
+const titleStyle: CSSProperties = { margin: 0, fontSize: 17, fontWeight: 600, letterSpacing: 0.3 };
+const closeBtnStyle: CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  color: 'inherit',
+  cursor: 'pointer',
+  fontSize: 16,
+  lineHeight: 1,
+  padding: 4,
+  opacity: 0.7,
+};
+const sectionStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 10 };
+const headingStyle: CSSProperties = {
+  margin: 0,
+  fontSize: 12,
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: 1.2,
+  opacity: 0.65,
+};
+const labelStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 };
+const inputStyle: CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '7px 9px',
+  borderRadius: 7,
+  border: '1px solid rgba(255,255,255,0.16)',
+  background: 'rgba(255,255,255,0.06)',
+  color: 'inherit',
+  font: 'inherit',
+  fontSize: 13,
+};
+const checkboxRowStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  fontSize: 13,
+  cursor: 'pointer',
+};
+const buttonStyle: CSSProperties = {
+  alignSelf: 'flex-start',
+  padding: '7px 14px',
+  borderRadius: 8,
+  border: '1px solid rgba(255,255,255,0.2)',
+  background: 'rgba(120,140,255,0.15)',
+  color: 'inherit',
+  font: 'inherit',
+  fontSize: 13,
+  cursor: 'pointer',
+};
+const dangerButtonStyle: CSSProperties = {
+  ...buttonStyle,
+  border: '1px solid rgba(255, 128, 128, 0.35)',
+  background: 'rgba(255, 128, 128, 0.12)',
+  color: '#ff9a9a',
+};
+const confirmRowStyle: CSSProperties = { display: 'flex', gap: 8, alignSelf: 'flex-start' };
+const helpStyle: CSSProperties = { fontSize: 11.5, opacity: 0.6, margin: 0 };
+const noteStyle: CSSProperties = { fontSize: 12.5, margin: 0 };
+const detailGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'auto 1fr',
+  gap: '5px 10px',
+  fontSize: 12.5,
+};
+const detailLabelStyle: CSSProperties = { opacity: 0.6 };
+const detailValueStyle: CSSProperties = {
+  minWidth: 0,
+  overflowWrap: 'anywhere',
+};
 
 /** Clear the two live stores that otherwise survive the IndexedDB wipe. */
 export function resetClearedDataState(): void {
@@ -211,9 +296,9 @@ export default function SettingsPanel() {
     onChange: (next: string) => void,
     options: { id: string; label: string; note?: string }[],
   ) => (
-    <label className="settings-field">
+    <label style={labelStyle}>
       {label}
-      <select value={value} onChange={(e) => onChange(e.target.value)} title={hint} className="settings-input">
+      <select value={value} onChange={(e) => onChange(e.target.value)} title={hint} style={inputStyle}>
         {options.map((option) => (
           <option key={option.id} value={option.id}>
             {option.note ? `${option.label} — ${option.note}` : option.label}
@@ -298,13 +383,13 @@ export default function SettingsPanel() {
         role="dialog"
         aria-modal="true"
         aria-label="Settings"
-       
+        style={panelStyle}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="settings-panel__header">
-          <h2 className="settings-panel__title">Settings</h2>
+        <div className="settings-panel__header" style={headerRowStyle}>
+          <h2 style={titleStyle}>Settings</h2>
           <CloseButton
-           
+            style={closeBtnStyle}
             title="Close settings"
             aria-label="Close settings"
             onClick={() => setSettingsOpen(false)}
@@ -312,19 +397,19 @@ export default function SettingsPanel() {
         </div>
 
         {AIRGAP && (
-          <section className="settings-section">
-            <h3 className="settings-section__heading">AI</h3>
-            <p className="settings-note">
+          <section style={sectionStyle}>
+            <h3 style={headingStyle}>AI</h3>
+            <p style={noteStyle}>
               🔒 Air-gapped build — no external network. AI features are removed
               from this build.
             </p>
           </section>
         )}
         {!AIRGAP && (
-        <section className="settings-section">
-          <h3 className="settings-section__heading">AI (optional)</h3>
+        <section style={sectionStyle}>
+          <h3 style={headingStyle}>AI (optional)</h3>
           <label
-            className="settings-check"
+            style={checkboxRowStyle}
             title="Blocks all external network in the app and answers chat from your documents locally. Behavioral setting — for the sealed, CSP-enforced guarantee, ship the air-gapped build."
           >
             <input
@@ -335,17 +420,17 @@ export default function SettingsPanel() {
             Offline mode — no external network; local answers only
           </label>
           {offlineMode && (
-            <p className="settings-help">
+            <p style={helpStyle}>
               AI features below are disabled while offline. (Behavioral setting — the
               air-gapped build remains the enforced guarantee.)
             </p>
           )}
-          <label className="settings-field">
+          <label style={labelStyle}>
             Chat provider
             <select
               value={chatProvider}
               onChange={(e) => setChatProvider(e.target.value as ChatProvider)}
-              className="settings-input"
+              style={inputStyle}
               disabled={offlineMode}
               title="Choose how document chat answers are generated"
             >
@@ -354,12 +439,12 @@ export default function SettingsPanel() {
               <option value="ollama">Ollama (local)</option>
             </select>
           </label>
-          <label className="settings-field">
+          <label style={labelStyle}>
             Enrichment &amp; document AI provider
             <select
               value={enrichProvider}
               onChange={(e) => setEnrichProvider(e.target.value as EnrichProvider)}
-              className="settings-input"
+              style={inputStyle}
               disabled={offlineMode}
               title="Provider used for corpus enrichment (summaries, topics, cluster names) and the per-document Ask AI panel"
             >
@@ -369,7 +454,7 @@ export default function SettingsPanel() {
           </label>
           {!offlineMode && needsOpenRouter && (
             <>
-              <label className="settings-field">
+              <label style={labelStyle}>
                 OpenRouter API key
                 <input
                   type="password"
@@ -378,11 +463,11 @@ export default function SettingsPanel() {
                   placeholder="Paste your key"
                   autoComplete="off"
                   title="Your OpenRouter API key (openrouter.ai/keys). Required for every OpenRouter feature."
-                  className="settings-input"
+                  style={inputStyle}
                 />
               </label>
               <label
-                className="settings-check"
+                style={checkboxRowStyle}
                 title="Keep the key in this browser's local storage. Uncheck to hold it only in memory for this tab — you'll re-paste it next visit."
               >
                 <input
@@ -393,7 +478,7 @@ export default function SettingsPanel() {
                 Remember OpenRouter key on this device
               </label>
               {!rememberOpenRouterKey && (
-                <p className="settings-help">The OpenRouter key is held in memory for this tab only.</p>
+                <p style={helpStyle}>The OpenRouter key is held in memory for this tab only.</p>
               )}
               {hasOpenRouterKey ? (
                 <>
@@ -414,7 +499,7 @@ export default function SettingsPanel() {
                         setOpenRouterEnrichModel,
                         openRouterEnrichOptions,
                       )}
-                      <p className="settings-help">
+                      <p style={helpStyle}>
                         Enrichment options are all fast-tier models: it sends one request per
                         15 documents across the whole corpus, where a large reasoning model
                         turns minutes into hours. Chat is one request per question, so it can
@@ -422,10 +507,10 @@ export default function SettingsPanel() {
                       </p>
                     </>
                   )}
-                  {openRouterModelsNote && <p className="settings-help">{openRouterModelsNote}</p>}
+                  {openRouterModelsNote && <p style={helpStyle}>{openRouterModelsNote}</p>}
                 </>
               ) : (
-                <p className="settings-help">Paste your OpenRouter API key to choose a model.</p>
+                <p style={helpStyle}>Paste your OpenRouter API key to choose a model.</p>
               )}
             </>
           )}
@@ -447,18 +532,18 @@ export default function SettingsPanel() {
                   setOllamaEnrichModel,
                   ollamaOptionsFor(ollamaEnrichModel).map((m) => ({ id: m, label: m })),
                 )}
-              <div className="settings-confirm">
+              <div style={confirmRowStyle}>
                 <button
                   type="button"
                   onClick={() => setOllamaReloads((n) => n + 1)}
                   title="Re-read the models installed on your Ollama server"
-                  className="settings-btn"
+                  style={buttonStyle}
                 >
                   Recheck installed models
                 </button>
               </div>
-              {ollamaModelsNote && <p className="settings-help">{ollamaModelsNote}</p>}
-              <p className="settings-help">
+              {ollamaModelsNote && <p style={helpStyle}>{ollamaModelsNote}</p>}
+              <p style={helpStyle}>
                 Ollama runs on your own machine at 127.0.0.1:11434 — no API key, nothing
                 leaves this machine. Install from ollama.com, then pull the model (e.g. `ollama
                 pull{' '}
@@ -469,7 +554,7 @@ export default function SettingsPanel() {
             </>
           )}
           <label
-            className="settings-check"
+            style={checkboxRowStyle}
             title="Enable AI enrichment and per-document AI using the enrichment provider selected above."
           >
             <input
@@ -485,8 +570,8 @@ export default function SettingsPanel() {
             onClick={onEnrichNow}
             disabled={enriching || enrichBlocked || offlineMode}
             title={enrichHint}
-            className="settings-btn"
             style={{
+              ...buttonStyle,
               opacity: enriching || enrichBlocked || offlineMode ? 0.55 : 1,
               cursor: enriching || enrichBlocked || offlineMode ? 'default' : 'pointer',
             }}
@@ -494,11 +579,11 @@ export default function SettingsPanel() {
             {enriching ? 'Enriching…' : 'Enrich now'}
           </button>
           {enrichResult && (
-            <p className="settings-note" style={{ color: enrichResult.ok ? '#69db7c' : '#ffc078' }}>
+            <p style={{ ...noteStyle, color: enrichResult.ok ? '#69db7c' : '#ffc078' }}>
               {enrichResult.message}
             </p>
           )}
-          <p className="settings-help">
+          <p style={helpStyle}>
             Your documents are processed locally. With enrichment ON, each document&apos;s full
             stored text is sent to the enrichment provider selected above — OpenRouter
             (cloud, may incur model charges) or your local Ollama server. Enormous files are
@@ -510,35 +595,35 @@ export default function SettingsPanel() {
         )}
 
         <details className="settings-advanced">
-          <summary className="settings-section__heading" style={{ cursor: 'pointer', listStyle: 'revert' }}>
+          <summary style={{ ...headingStyle, cursor: 'pointer', listStyle: 'revert' }}>
             Advanced
           </summary>
-          <div className="settings-section" style={{ marginTop: 12 }}>
-          <h3 className="settings-section__heading">Recognition</h3>
-          <label className="settings-field">
+          <div style={{ ...sectionStyle, marginTop: 12 }}>
+          <h3 style={headingStyle}>Recognition</h3>
+          <label style={labelStyle}>
             Semantic search language
             <select
               value={embeddingQueryStyle}
               onChange={(e) => setEmbeddingQueryStyle(e.target.value as EmbeddingQueryStyle)}
               title="English uses BGE's retrieval instruction prefix. Language-neutral skips it for mixed-language corpora."
-              className="settings-input"
+              style={inputStyle}
             >
               <option value="english">English (best for English corpora)</option>
               <option value="neutral">Language-neutral (mixed / non-English queries)</option>
             </select>
           </label>
-          <p className="settings-help">
+          <p style={helpStyle}>
             Vectors still come from the bundled English BGE-small model. Language-neutral mode
             only drops the English search instruction so non-English queries are not prefixed
             with English text. Keyword, import, and title links are language-agnostic.
           </p>
-          <label className="settings-field">
+          <label style={labelStyle}>
             OCR language (scanned PDFs)
             <select
               value={ocrLanguage}
               onChange={(e) => setOcrLanguage(e.target.value as OcrLanguageId)}
               title="English is bundled. Other languages need a matching traineddata.gz under /ocr/lang/."
-              className="settings-input"
+              style={inputStyle}
             >
               {OCR_LANGUAGE_OPTIONS.map((lang) => (
                 <option key={lang.id} value={lang.id}>
@@ -548,13 +633,13 @@ export default function SettingsPanel() {
               ))}
             </select>
           </label>
-          <label className="settings-field">
+          <label style={labelStyle}>
             OCR page limit
             <select
               value={ocrMaxPages}
               onChange={(e) => setOcrMaxPages(Number(e.target.value) as OcrMaxPages)}
               title="More pages take longer and use more memory. Applies to the next scanned PDF."
-              className="settings-input"
+              style={inputStyle}
             >
               {OCR_PAGE_OPTIONS.map((pages) => (
                 <option key={pages} value={pages}>
@@ -563,13 +648,13 @@ export default function SettingsPanel() {
               ))}
             </select>
           </label>
-          <p className="settings-help">
+          <p style={helpStyle}>
             Extra Tesseract packs are files like <code>spa.traineddata.gz</code> in{' '}
             <code>public/ocr/lang/</code>. Without the pack, recognition falls back to whatever
             English can read.
           </p>
           <label
-            className="settings-check"
+            style={checkboxRowStyle}
             title="Embed document vectors in the exported JSON so semantic search/chat work after re-import. Makes the file much larger."
           >
             <input
@@ -582,10 +667,10 @@ export default function SettingsPanel() {
           </div>
         </details>
 
-        <section className="settings-section">
-          <h3 className="settings-section__heading">Performance</h3>
+        <section style={sectionStyle}>
+          <h3 style={headingStyle}>Performance</h3>
           <label
-            className="settings-check"
+            style={checkboxRowStyle}
             title="Automatically lower visual quality (bloom, labels, depth of field) when the frame rate drops, and restore it when there's headroom. Turn off to keep maximum quality even if a large graph stutters."
           >
             <input
@@ -597,10 +682,10 @@ export default function SettingsPanel() {
           </label>
         </section>
 
-        <section className="settings-section">
-          <h3 className="settings-section__heading">Data</h3>
+        <section style={sectionStyle}>
+          <h3 style={headingStyle}>Data</h3>
           <label
-            className="settings-check"
+            style={checkboxRowStyle}
             title="Store document vectors in IndexedDB so the next visit skips re-embedding. Turn off to free space; the next reload re-embeds from cached text."
           >
             <input
@@ -625,7 +710,7 @@ export default function SettingsPanel() {
             />
             Cache embeddings for instant reload (uses more storage)
           </label>
-          <div className="settings-confirm">
+          <div style={confirmRowStyle}>
             <button
               type="button"
               onClick={() => {
@@ -637,7 +722,7 @@ export default function SettingsPanel() {
                 );
               }}
               title="Delete stored vectors only. Document text stays; the next reload re-embeds."
-              className="settings-btn"
+              style={buttonStyle}
             >
               Clear embeddings
             </button>
@@ -654,12 +739,12 @@ export default function SettingsPanel() {
                 );
               }}
               title="Delete retained original file bytes. Extracted text and the graph stay."
-              className="settings-btn"
+              style={buttonStyle}
             >
               Clear original files
             </button>
           </div>
-          {cacheNote && <p className="settings-note">{cacheNote}</p>}
+          {cacheNote && <p style={noteStyle}>{cacheNote}</p>}
           {!confirmClear ? (
             <button
               type="button"
@@ -668,23 +753,23 @@ export default function SettingsPanel() {
                 setConfirmClear(true);
               }}
               title="Remove every loaded document and all locally cached data (documents, embeddings, graphs, snapshots, chat history, notes and tags). Cannot be undone."
-              className="settings-btn settings-btn--danger"
+              style={dangerButtonStyle}
             >
               Clear all data
             </button>
           ) : (
             <>
-              <p className="settings-note">
+              <p style={noteStyle}>
                 Remove all loaded documents and clear every cached document, embedding,
                 graph, and snapshot from this browser? This cannot be undone.
               </p>
-              <div className="settings-confirm">
+              <div style={confirmRowStyle}>
                 <button
                   type="button"
                   onClick={onClearAll}
                   disabled={clearing}
                   title="Permanently clear everything"
-                  className="settings-btn settings-btn--danger" style={{ opacity: clearing ? 0.6 : 1 }}
+                  style={{ ...dangerButtonStyle, opacity: clearing ? 0.6 : 1 }}
                 >
                   {clearing ? 'Clearing…' : 'Yes, clear everything'}
                 </button>
@@ -693,43 +778,43 @@ export default function SettingsPanel() {
                   onClick={() => setConfirmClear(false)}
                   disabled={clearing}
                   title="Keep my data"
-                  className="settings-btn"
+                  style={buttonStyle}
                 >
                   Cancel
                 </button>
               </div>
             </>
           )}
-          <p className="settings-help">
+          <p style={helpStyle}>
             Wipes the current graph and all locally cached data. Your API keys and settings
             are kept.
           </p>
-          {clearNote && <p className="settings-note">{clearNote}</p>}
+          {clearNote && <p style={noteStyle}>{clearNote}</p>}
         </section>
 
-        <section className="settings-section">
-          <h3 className="settings-section__heading">About</h3>
-          <div className="settings-details">
-            <span className="settings-details__label">Version</span>
-            <span className="settings-details__value">{appVersion}</span>
-            <span className="settings-details__label">Build</span>
-            <span className="settings-details__value">{buildFlavor}</span>
-            <span className="settings-details__label">Browser</span>
-            <span className="settings-details__value">{userAgent}</span>
-            <span className="settings-details__label">Corpus</span>
-            <span className="settings-details__value">
+        <section style={sectionStyle}>
+          <h3 style={headingStyle}>About</h3>
+          <div style={detailGridStyle}>
+            <span style={detailLabelStyle}>Version</span>
+            <span style={detailValueStyle}>{appVersion}</span>
+            <span style={detailLabelStyle}>Build</span>
+            <span style={detailValueStyle}>{buildFlavor}</span>
+            <span style={detailLabelStyle}>Browser</span>
+            <span style={detailValueStyle}>{userAgent}</span>
+            <span style={detailLabelStyle}>Corpus</span>
+            <span style={detailValueStyle}>
               {documentCount} document{documentCount === 1 ? '' : 's'}
               {topicCount > 0 && ` / ${topicCount} topic node${topicCount === 1 ? '' : 's'}`}
               {' / '}{edgeCount} connection{edgeCount === 1 ? '' : 's'}
             </span>
-            <span className="settings-details__label">Storage</span>
-            <span className="settings-details__value">
+            <span style={detailLabelStyle}>Storage</span>
+            <span style={detailValueStyle}>
               {storageLabel ?? 'Measuring…'}
               {storageLevel === 'warn' && ' — getting full'}
               {storageLevel === 'critical' && ' — nearly full'}
             </span>
-            <span className="settings-details__label">Last error</span>
-            <span className="settings-details__value">
+            <span style={detailLabelStyle}>Last error</span>
+            <span style={detailValueStyle}>
               {lastError ? lastError.message : 'None recorded'}
             </span>
           </div>
@@ -737,11 +822,11 @@ export default function SettingsPanel() {
             type="button"
             onClick={onCopyDiagnostics}
             title="Copy local diagnostic details to the clipboard"
-            className="settings-btn"
+            style={buttonStyle}
           >
             Copy diagnostics
           </button>
-          {diagnosticsNote && <p className="settings-note">{diagnosticsNote}</p>}
+          {diagnosticsNote && <p style={noteStyle}>{diagnosticsNote}</p>}
         </section>
       </div>
     </div>

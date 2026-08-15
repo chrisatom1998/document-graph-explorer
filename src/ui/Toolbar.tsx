@@ -16,28 +16,256 @@ import { openFilePicker } from '../ingest/DropZone';
 // the click; folderPicker demand-loads the heavy scanner itself.
 import { openFolderPicker } from '../ingest/folderPicker';
 
-import {
-  IconAnalyze,
-  IconBulb,
-  IconCollab,
-  IconCube,
-  IconData,
-  IconFit,
-  IconFolderPlus,
-  IconGear,
-  IconGrip,
-  IconHelp,
-  IconHistory,
-  IconOctahedron,
-  IconPath,
-  IconPlus,
-  IconSearch,
-  IconView,
-} from './icons';
-
 const ExportImportMenu = lazy(() => import('./ExportImportMenu'));
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
 const SavedViewsSection = lazy(() => import('./SavedViewsSection'));
+
+/* ---------------------------------------------------------------------- */
+/* Inline icon set — no icon library per project rules. Each is a plain   */
+/* 18x18 stroke-based SVG so they inherit currentColor from .btn-icon.    */
+/* ---------------------------------------------------------------------- */
+
+function IconSearch() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="8" cy="8" r="5.25" />
+      <line x1="12.1" y1="12.1" x2="16" y2="16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconFit() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2 6V3a1 1 0 0 1 1-1h3" />
+      <path d="M16 6V3a1 1 0 0 0-1-1h-3" />
+      <path d="M2 12v3a1 1 0 0 0 1 1h3" />
+      <path d="M16 12v3a1 1 0 0 1-1 1h-3" />
+      <rect x="6" y="6" width="6" height="6" rx="1" />
+    </svg>
+  );
+}
+
+function IconCube({ twoD }: { twoD: boolean }) {
+  if (twoD) {
+    return (
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6">
+        <rect x="3" y="3" width="12" height="12" rx="1.5" />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    >
+      <path d="M9 2 L15.5 5.6 V12.4 L9 16 L2.5 12.4 V5.6 Z" />
+      <path d="M9 2 V9 M9 9 L15.5 5.6 M9 9 L2.5 5.6 M9 9 V16" strokeOpacity="0.55" />
+    </svg>
+  );
+}
+
+function IconOctahedron() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
+      <path d="M9 1.5 L15.5 9 L9 16.5 L2.5 9 Z" />
+      <path d="M2.5 9 L15.5 9" strokeOpacity="0.55" />
+    </svg>
+  );
+}
+
+/** Trigger icon for the "View ▾" popover — a simple eye glyph. */
+function IconView() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1.5 9S4.4 3.6 9 3.6 16.5 9 16.5 9 13.6 14.4 9 14.4 1.5 9 1.5 9Z" />
+      <circle cx="9" cy="9" r="2.4" />
+    </svg>
+  );
+}
+
+/**
+ * Settings gear — a classic 8-knob cog. The center hole circle is defined
+ * at (12,12), the exact center of the 24x24 viewBox, so it's always
+ * perfectly centered regardless of render size.
+ */
+function IconGear() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+function IconHelp() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="9" cy="9" r="7" />
+      <path d="M6.9 6.8A2.2 2.2 0 0 1 9 5.4c1.3 0 2.3.8 2.3 2 0 1.7-2.1 1.8-2.1 3.2" />
+      <path d="M9 13.2h.01" />
+    </svg>
+  );
+}
+
+function IconPath() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+      <circle cx="4" cy="14" r="2.2" />
+      <circle cx="14" cy="4" r="2.2" />
+      <path d="M5.6 12.4 L8.5 9.5 M9.5 8.5 L12.4 5.6" strokeDasharray="0.1 2.6" />
+    </svg>
+  );
+}
+
+function IconBulb() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 2.2a4.6 4.6 0 0 0-2.7 8.3c.6.5 1 1.1 1 1.8v.5h3.4v-.5c0-.7.4-1.3 1-1.8A4.6 4.6 0 0 0 9 2.2Z" />
+      <path d="M7.4 14.8h3.2M8.1 16.5h1.8" />
+    </svg>
+  );
+}
+
+function IconHistory() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2.5 9a6.5 6.5 0 1 1 1.2 3.8" />
+      <polyline points="2 5.5 2.5 9 6 8.5" />
+      <polyline points="9 5.5 9 9.5 12 11" />
+    </svg>
+  );
+}
+
+function IconData() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <ellipse cx="9" cy="4.2" rx="5.5" ry="2.2" />
+      <path d="M3.5 4.2v4.8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2V4.2" />
+      <path d="M3.5 9v4.8c0 1.2 2.5 2.2 5.5 2.2s5.5-1 5.5-2.2V9" />
+    </svg>
+  );
+}
+
+function IconGrip() {
+  return (
+    <svg viewBox="0 0 18 18" fill="currentColor" stroke="none">
+      <circle cx="6.5" cy="4" r="1.3" />
+      <circle cx="11.5" cy="4" r="1.3" />
+      <circle cx="6.5" cy="9" r="1.3" />
+      <circle cx="11.5" cy="9" r="1.3" />
+      <circle cx="6.5" cy="14" r="1.3" />
+      <circle cx="11.5" cy="14" r="1.3" />
+    </svg>
+  );
+}
+
+function IconPlus() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    >
+      <path d="M9 3.2V14.8" />
+      <path d="M3.2 9H14.8" />
+    </svg>
+  );
+}
+
+/** Folder with a plus badge — the one-shot "Add folder" ingest action. */
+function IconFolderPlus() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1.8 5a1.2 1.2 0 0 1 1.2-1.2h3.3l1.7 1.9h7a1.2 1.2 0 0 1 1.2 1.2v6.3a1.2 1.2 0 0 1-1.2 1.2H3a1.2 1.2 0 0 1-1.2-1.2Z" />
+      <path d="M9.5 8.1v3.4M7.8 9.8h3.4" />
+    </svg>
+  );
+}
+
+/** Analyze ▾ — path, insights, snapshots live behind one control. */
+function IconAnalyze() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="4.2" cy="12.8" r="1.7" />
+      <circle cx="9" cy="4.2" r="1.7" />
+      <circle cx="13.8" cy="12.8" r="1.7" />
+      <path d="M5.6 11.6 8 5.8M10 5.8l2.4 5.8M5.7 12.8h6.6" />
+    </svg>
+  );
+}
+
+function IconCollab() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="6.5" r="2.2" />
+      <circle cx="12.5" cy="5.7" r="2" />
+      <path d="M2.2 13.2c.5-1.8 2.2-2.8 4.1-2.8s3.6 1 4.1 2.8" />
+      <path d="M9.5 12.9c.4-1.5 1.6-2.3 3.1-2.3 1.4 0 2.6.8 3.1 2.3" />
+    </svg>
+  );
+}
 
 /* Dragged toolbar position, persisted across reloads. */
 const TOOLBAR_POS_KEY = 'knowledge-nebula-toolbar-pos';
@@ -578,7 +806,6 @@ export default function Toolbar() {
           className={`btn-icon${openMenu === 'add' ? ' is-active' : ''}`}
           title="Add documents"
           aria-label="Add documents"
-          data-ingest-add=""
           aria-haspopup="true"
           aria-expanded={openMenu === 'add'}
           onClick={(e) => {

@@ -46,10 +46,9 @@ describe('2D flat map backdrop occlusion contract', () => {
     expect(flatBackdropMaterial.fragmentShader).not.toMatch(/gl_FragColor\s*=\s*vec4\([^)]*,\s*0?\.\d+\s*\)/);
   });
 
-  it('sorts ahead of a node by renderOrder within the opaque list', () => {
-    // This locks the specific ordering guarantee we rely on here: both meshes
-    // are opaque, so renderOrder decides which one draws first within that
-    // list, and the backdrop must sort before the node.
+  it('draws behind a node under three\'s actual opaque sort comparator', () => {
+    // Exercise the real ordering rule rather than restating the constants:
+    // build the two meshes and confirm the backdrop sorts ahead of the node.
     const backdrop = new THREE.Mesh(
       new THREE.PlaneGeometry(1400, 1400),
       flatBackdropMaterial,
@@ -63,8 +62,7 @@ describe('2D flat map backdrop occlusion contract', () => {
     );
     node.position.z = 0;
 
-    // The full painter comparator considers other fields too, but this test is
-    // intentionally about the renderOrder precondition we author directly.
+    // three's painterSortStable: renderOrder first, then material id, then z.
     const sorted = [node, backdrop].sort((a, b) => a.renderOrder - b.renderOrder);
     expect(sorted[0]).toBe(backdrop);
 

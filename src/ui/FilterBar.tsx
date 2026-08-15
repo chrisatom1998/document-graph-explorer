@@ -1,11 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { hexFor } from '../scene/palette';
 import type { EdgeKind, FileType } from '../model/types';
 import { DEFAULT_FILTER, useUiStore } from '../store/uiStore';
 import { isFilterActive } from '../scene/emphasis';
 import SnapshotDiffBanner from './SnapshotDiffBanner';
-import { IconFunnel } from './icons';
 
 const EDGE_KIND_ORDER: { kind: EdgeKind; label: string }[] = [
   { kind: 'reference', label: 'links' },
@@ -36,85 +35,19 @@ const FILE_TYPE_ORDER: FileType[] = [
   'other',
 ];
 
-/**
- * Range sliders emit ~60 change events/second while dragging, and every store
- * write triggers full O(N+E) recolor passes in the scene. This hook keeps the
- * dragged value in local state for instant visual feedback and coalesces store
- * writes through requestAnimationFrame: at most one write per frame, with the
- * trailing value always committed (the pending rAF — or unmount cleanup —
- * flushes the latest value). External store writes (collab, Clear) cancel any
- * in-flight rAF so a trailing drag cannot clobber them; the local value then
- * re-syncs. Our own commit is remembered so its echo does not abort a newer
- * drag. Callers that reset to a value the store already holds (Clear → 0)
- * must also discard the pending write — storeValue will not change.
- */
-function useRafCommittedNumber(
-  storeValue: number,
-  commit: (value: number) => void,
-): [number, (value: number) => void, () => void] {
-  const [local, setLocal] = useState(storeValue);
-  const pendingRef = useRef<{ value: number } | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const commitRef = useRef(commit);
-  commitRef.current = commit;
-  const echoRef = useRef<number | null>(null);
-
-  const cancelPending = () => {
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    pendingRef.current = null;
-  };
-
-  // External store changes win over an in-flight drag. useLayoutEffect so
-  // we cancel before the next paint / rAF.
-  useLayoutEffect(() => {
-    if (echoRef.current !== null && storeValue === echoRef.current) {
-      echoRef.current = null;
-      return;
-    }
-    if (pendingRef.current !== null) {
-      cancelPending();
-      echoRef.current = null;
-    }
-    setLocal(storeValue);
-  }, [storeValue]);
-
-  // Guarantee the trailing write even if the bar unmounts mid-drag.
-  useEffect(
-    () => () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-      const pending = pendingRef.current;
-      pendingRef.current = null;
-      if (pending) commitRef.current(pending.value);
-    },
-    [],
+function IconFunnel() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2.5 3.5h13L10.5 9.2v5l-3 1.6V9.2Z" />
+    </svg>
   );
-
-  const update = (value: number) => {
-    setLocal(value);
-    pendingRef.current = { value };
-    if (rafRef.current !== null) return; // a flush is already scheduled
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      const pending = pendingRef.current;
-      pendingRef.current = null;
-      if (pending) {
-        echoRef.current = pending.value;
-        commitRef.current(pending.value);
-      }
-    });
-  };
-
-  const discard = () => {
-    cancelPending();
-    echoRef.current = null;
-    setLocal(storeValue);
-  };
-
-  return [local, update, discard];
 }
 
 /**
@@ -132,15 +65,6 @@ export default function FilterBar() {
 
   const [collapsed, setCollapsed] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-
-  const [minDegree, setMinDegree, discardMinDegree] = useRafCommittedNumber(
-    filter.minDegree,
-    (minDegree) => setFilter({ minDegree }),
-  );
-  const [minEdgeWeight, setMinEdgeWeight, discardMinEdgeWeight] = useRafCommittedNumber(
-    filter.minEdgeWeight,
-    (minEdgeWeight) => setFilter({ minEdgeWeight }),
-  );
 
   const fileTypeCounts = useMemo(() => {
     const counts: Partial<Record<FileType, number>> = {};
@@ -194,10 +118,6 @@ export default function FilterBar() {
   const showAdvanced = advancedOpen || advancedActive;
 
   const clearAll = () => {
-    // Store fields may already be at default while a slider rAF is pending;
-    // discard so that flush cannot write the dragged value back.
-    discardMinDegree();
-    discardMinEdgeWeight();
     setFilter({ ...DEFAULT_FILTER });
     setAdvancedOpen(false);
   };
@@ -291,12 +211,12 @@ export default function FilterBar() {
                 min={0}
                 max={10}
                 step={1}
-                value={minDegree}
+                value={filter.minDegree}
                 aria-label="Minimum document connections"
-                title={`Showing nodes with ${minDegree}+ connections`}
-                onChange={(e) => setMinDegree(Number(e.target.value))}
+                title={`Showing nodes with ${filter.minDegree}+ connections`}
+                onChange={(e) => setFilter({ minDegree: Number(e.target.value) })}
               />
-              <span className="filter-bar__degree-value">{minDegree}</span>
+              <span className="filter-bar__degree-value">{filter.minDegree}</span>
             </div>
           </div>
 
@@ -313,12 +233,12 @@ export default function FilterBar() {
                 min={0}
                 max={1}
                 step={0.05}
-                value={minEdgeWeight}
+                value={filter.minEdgeWeight}
                 aria-label="Minimum link strength"
-                title={`Hiding links weaker than ${Math.round(minEdgeWeight * 100)}%`}
-                onChange={(e) => setMinEdgeWeight(Number(e.target.value))}
+                title={`Hiding links weaker than ${Math.round(filter.minEdgeWeight * 100)}%`}
+                onChange={(e) => setFilter({ minEdgeWeight: Number(e.target.value) })}
               />
-              <span className="filter-bar__degree-value">{Math.round(minEdgeWeight * 100)}%</span>
+              <span className="filter-bar__degree-value">{Math.round(filter.minEdgeWeight * 100)}%</span>
             </div>
           </div>
 

@@ -24,9 +24,6 @@ const TARGET_L_EVEN = 0.6; // OKLab lightness targets; alternation guarantees
 const TARGET_L_ODD = 0.66; //   a ΔL between consecutive community ids
 const YELLOW_BAND: readonly [number, number] = [35, 95]; // hue range forced bright
 
-/** 3D void / shell background (spec §7.1). CSS `--bg-void` must stay in lockstep. */
-export const VOID = '#050510';
-
 /** Unclustered / unknown community: desaturated blue-violet neutral. */
 const NEUTRAL = new THREE.Color('#8f9bff');
 

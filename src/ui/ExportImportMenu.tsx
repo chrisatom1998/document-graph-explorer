@@ -10,7 +10,6 @@ import { createShareUrl } from '../persistence/shareUrl';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useFocusTrap } from './useFocusTrap';
-import { IconImage, IconImport, IconJson, IconLink, IconUsd } from './icons';
 
 let graphJsonInput: HTMLInputElement | null = null;
 
@@ -91,6 +90,75 @@ const confirmRowStyle: CSSProperties = {
   gap: 8,
   justifyContent: 'flex-end',
 };
+
+function IconJson() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path d="M5.2 2.5H12L15 5.5v10H5.2a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z" />
+      <path d="M12 2.5v3h3" />
+      <path d="M6.4 8.1c-.7.4-1 1-1 1.8s.3 1.4 1 1.8" strokeLinecap="round" />
+      <path d="M11.6 8.1c.7.4 1 1 1 1.8s-.3 1.4-1 1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconImage() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <rect x="2.7" y="3" width="12.6" height="12" rx="1.8" />
+      <circle cx="6.5" cy="6.8" r="1.2" />
+      <path
+        d="M4 13l3.5-3.5 2.2 2.1 1.5-1.5L14 13"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconUsd() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 2.2 15 5.5v7L9 15.8 3 12.5v-7L9 2.2Z" />
+      <path d="M3 5.5 9 8.8l6-3.3" />
+      <path d="M9 8.8v7" />
+    </svg>
+  );
+}
+
+function IconImport() {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 2.5v8" />
+      <path d="M5.8 7.5 9 10.7l3.2-3.2" />
+      <path d="M3.5 12.5v1.8c0 .8.6 1.4 1.4 1.4h8.2c.8 0 1.4-.6 1.4-1.4v-1.8" />
+    </svg>
+  );
+}
+
+function IconLink() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path d="M7.2 10.8 10.8 7.2" strokeLinecap="round" />
+      <path d="M6.1 12.7 4.8 14a2.6 2.6 0 0 1-3.7-3.7l2.4-2.4a2.6 2.6 0 0 1 3.7 0" strokeLinecap="round" />
+      <path d="m11.9 5.3 1.3-1.3a2.6 2.6 0 1 1 3.7 3.7l-2.4 2.4a2.6 2.6 0 0 1-3.7 0" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 async function copyText(text: string): Promise<void> {
   if (navigator.clipboard?.writeText) {

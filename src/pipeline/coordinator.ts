@@ -92,14 +92,7 @@ import { parsePdf } from './parsers/pdf';
 import { clearIngestAbort, registerIngestAbort } from './ingestCancellation';
 import { publishIngestReport } from './ingestReport';
 import { enqueueRun } from './runQueue';
-import { prefersReducedMotion } from '../util/motion';
-import {
-  beginIngestBirth,
-  endIngestBirth,
-  resolveIngestOrigin,
-  snapshotIngestOrigin,
-  type Vec3,
-} from '../scene/ingestBirth';
+import { randomSpherePoint } from './spawnPosition';
 import { addToSemanticIndex, edgesFromIndex, type SemanticIndex } from './similarity';
 import { synthesizeTopicNodes } from './topicNodes';
 import { createGeneratedDemoDocuments } from '../demo/generatedDocuments';
@@ -114,7 +107,9 @@ type LexicalDone = Extract<AggResponse, { type: 'lexical:done' }>;
 type SemanticDone = Extract<AggResponse, { type: 'semantic:done' }>;
 type ClusterDone = Extract<AggResponse, { type: 'cluster:done' }>;
 
-// fly-in origin is the drop / Add / canvas-center point (ingestBirth).
+// fly-in spawn shell (contract: random point on a ~140 radius shell, ±25 jitter)
+const SPAWN_RADIUS = 140;
+const SPAWN_JITTER = 25;
 
 // ---------------------------------------------------------------------------
 // aggregator worker client (single dedicated worker)
@@ -343,6 +338,10 @@ function makeSummary(text: string): string {
   return flat.length > 200 ? `${flat.slice(0, 200).trimEnd()}…` : flat;
 }
 
+function randomSpawn(): [number, number, number] {
+  return randomSpherePoint(SPAWN_RADIUS, SPAWN_JITTER);
+}
+
 function documentNodes(): DocNode[] {
   return useGraphStore.getState().nodes.filter((n) => n.kind === 'document');
 }
@@ -377,44 +376,12 @@ async function warnIfStorageCritical(): Promise<void> {
   );
 }
 
-async function runIngest(
-  files: IngestFile[],
-  signal: AbortSignal | undefined,
-  spawnOrigin: Vec3,
-  options?: { background?: boolean },
-): Promise<boolean> {
+async function runIngest(files: IngestFile[], signal?: AbortSignal): Promise<boolean> {
   wireModelProgress();
   throwIfAborted(signal);
   void warnIfStorageCritical();
+  const store = useGraphStore.getState; // fresh state per call; actions are stable
   const initialDocumentCount = documentNodes().length;
-  // Background runs (watched-folder reconciliation) carry no user gesture —
-  // they must never take over the camera.
-  const background = options?.background === true;
-  if (!background) {
-    beginIngestBirth({
-      corpusWasEmpty: initialDocumentCount === 0,
-      reducedMotion: prefersReducedMotion(),
-    });
-  }
-  try {
-    return await runIngestBody(files, signal, spawnOrigin, initialDocumentCount);
-  } finally {
-    if (!background) {
-      const { shouldFinalFit } = endIngestBirth();
-      if (shouldFinalFit && documentNodes().length > 0) {
-        useUiStore.getState().sendCamera('fitAll');
-      }
-    }
-  }
-}
-
-async function runIngestBody(
-  files: IngestFile[],
-  signal: AbortSignal | undefined,
-  spawnOrigin: Vec3,
-  initialDocumentCount: number,
-): Promise<boolean> {
-  const store = useGraphStore.getState;
 
   // (a) route by extension; unsupported → ignored tray
   const routed: { file: IngestFile; fileType: FileType }[] = [];
@@ -467,49 +434,36 @@ async function runIngestBody(
   );
   throwIfAborted(signal);
   const misses: PendingFile[] = [];
-  const hits: { p: PendingFile; cached: NonNullable<(typeof lookups)[number]['cached']> }[] = [];
   for (const { p, cached } of lookups) {
     fileIdOfDoc.set(p.id, p.file.fileId);
     nameOfDoc.set(p.id, p.file.name);
-    if (!cached) misses.push(p);
-    else hits.push({ p, cached });
-  }
-  if (hits.length > 0) {
-    // ONE layout add for the whole cache-hit set: each add message restarts
-    // the worker sim, so per-file adds re-threw every placed node per file.
-    const hitDropped = new Set(
-      layoutAddNodes(
-        hits.map(({ p, cached }) => ({ id: p.id, cluster: cached.node.cluster, spawn: spawnOrigin })),
-      ),
-    );
-    const hitNodes: DocNode[] = [];
-    const hitStatuses: FileStatus[] = [];
-    for (const { p, cached } of hits) {
-      if (hitDropped.has(p.id)) {
-        store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
-        hitStatuses.push({
-          fileId: p.file.fileId,
-          name: p.file.name,
-          stage: 'error',
-          error: `Node limit reached (${MAX_NODES} max)`,
-        });
-        continue;
-      }
-      hitNodes.push(cached.node);
-      textStore.set(p.id, cached.text);
-      chunkStore.set(p.id, {
-        texts: cached.chunkTexts,
-        vectors: cached.chunkVectors,
-        dims: EMBED_DIMS,
-      });
-      if (cached.docVector) docVectorStore.set(p.id, cached.docVector);
-      mdLinkTargetsStore.set(p.id, cached.mdLinkTargets);
-      docLinksStore.set(p.id, cached.docLinks);
-      if (!p.file.reconstructable) void putOriginalIfMissing(p.id, p.file.name, p.original);
-      hitStatuses.push({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
+    if (!cached) {
+      misses.push(p);
+      continue;
     }
-    if (hitNodes.length > 0) store().addNodes(hitNodes);
-    store().setFileStatuses(hitStatuses);
+    const dropped = layoutAddNodes([{ id: p.id, cluster: cached.node.cluster, spawn: randomSpawn() }]);
+    if (dropped.length > 0) {
+      store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
+      store().setFileStatus({
+        fileId: p.file.fileId,
+        name: p.file.name,
+        stage: 'error',
+        error: `Node limit reached (${MAX_NODES} max)`,
+      });
+      continue;
+    }
+    store().addNodes([cached.node]);
+    textStore.set(p.id, cached.text);
+    chunkStore.set(p.id, {
+      texts: cached.chunkTexts,
+      vectors: cached.chunkVectors,
+      dims: EMBED_DIMS,
+    });
+    if (cached.docVector) docVectorStore.set(p.id, cached.docVector);
+    mdLinkTargetsStore.set(p.id, cached.mdLinkTargets);
+    docLinksStore.set(p.id, cached.docLinks);
+    if (!p.file.reconstructable) void putOriginalIfMissing(p.id, p.file.name, p.original);
+    store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
   }
 
   // (d) parse misses — pdf on the main thread, everything else in the pool
@@ -586,11 +540,20 @@ async function runIngestBody(
       return { p, doc: done.doc, pdfLinks };
     });
 
-    // Commit one parsed result into the runtime stores. The layout add
-    // happens once per flushBatch (below) — a per-file add message restarted
-    // the worker sim per file, so a 300-file ingest re-threw every placed
-    // node 300 times.
-    const commitParsed = ({ p, doc, pdfLinks }: ParsedResult): { node: DocNode } => {
+    // Commit one parsed result into the runtime stores + layout. Returns the
+    // node to add and the placed status, or null when the node-cap was hit.
+    const commitParsed = ({ p, doc, pdfLinks }: ParsedResult): { node: DocNode } | null => {
+      const dropped = layoutAddNodes([{ id: p.id, cluster: -1, spawn: randomSpawn() }]);
+      if (dropped.length > 0) {
+        store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
+        store().setFileStatus({
+          fileId: p.file.fileId,
+          name: p.file.name,
+          stage: 'error',
+          error: `Node limit reached (${MAX_NODES} max)`,
+        });
+        return null;
+      }
       lexMeta.set(p.id, {
         tf: doc.tf,
         phraseTf: doc.phraseTf,
@@ -630,30 +593,17 @@ async function runIngestBody(
       return { node };
     };
 
-    // Flush a group of parsed results as a single batch of store updates and
-    // ONE layout add (per-node spawn origins preserved in the specs).
+    // Flush a group of parsed results as a single batch of store updates.
     const flushBatch = (results: ParsedResult[]): void => {
-      const droppedIds = new Set(
-        layoutAddNodes(results.map((r) => ({ id: r.p.id, cluster: -1, spawn: spawnOrigin }))),
-      );
       const nodes: DocNode[] = [];
       const dirtyIds: string[] = [];
-      const statuses: FileStatus[] = [];
+      const placed: FileStatus[] = [];
       for (const result of results) {
-        if (droppedIds.has(result.p.id)) {
-          store().addIgnored(result.p.file.name, `node limit reached (${MAX_NODES} max)`);
-          statuses.push({
-            fileId: result.p.file.fileId,
-            name: result.p.file.name,
-            stage: 'error',
-            error: `Node limit reached (${MAX_NODES} max)`,
-          });
-          continue;
-        }
         const committed = commitParsed(result);
+        if (!committed) continue;
         nodes.push(committed.node);
         dirtyIds.push(result.p.id);
-        statuses.push({
+        placed.push({
           fileId: result.p.file.fileId,
           name: result.p.file.name,
           stage: 'placed',
@@ -662,8 +612,8 @@ async function runIngestBody(
       if (nodes.length > 0) {
         store().addNodes(nodes);
         markDocsDirty(dirtyIds);
+        store().setFileStatuses(placed);
       }
-      if (statuses.length > 0) store().setFileStatuses(statuses);
     };
 
     // Flush as workers finish rather than retaining every ParseDone until the
@@ -1359,12 +1309,9 @@ function settleCancelledIngest(): void {
  * them before they start.
  */
 export function ingestFiles(files: IngestFile[]): Promise<void> {
-  const spawnOrigin = snapshotIngestOrigin({
-    flat: useUiStore.getState().dims === 2,
-  });
   const controller = new AbortController();
   registerIngestAbort(controller);
-  const run = enqueueRun(() => runIngest(files, controller.signal, spawnOrigin), {
+  const run = enqueueRun(() => runIngest(files, controller.signal), {
     signal: controller.signal,
   })
     // Snapshot the run's ignored/failed/capped files into the persistent
@@ -1436,21 +1383,7 @@ export function reconcileWatchedFiles(
   expectedIds: string[] = [],
 ): Promise<string[]> {
   const run = enqueueRun(async () => {
-    const changed =
-      files.length > 0
-        ? await runIngest(
-            files,
-            undefined,
-            // Canvas-center origin resolved WITHOUT touching the pending
-            // gesture origin — a user's Add click (file picker still open)
-            // must not be consumed by a background watcher event.
-            resolveIngestOrigin({
-              flat: useUiStore.getState().dims === 2,
-              pending: null,
-            }),
-            { background: true },
-          )
-        : false;
+    const changed = files.length > 0 ? await runIngest(files) : false;
     const present = new Set(documentNodes().map((node) => node.id));
     const acceptedIds = expectedIds.filter((id) => present.has(id));
     const supersededIds = replacements

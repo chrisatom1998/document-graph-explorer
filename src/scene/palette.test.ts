@@ -7,10 +7,10 @@
 
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { clusterColor, hexFor, oklabLightness, VOID } from './palette';
+import { clusterColor, hexFor, oklabLightness } from './palette';
 
 const CLUSTERS = 12; // "first N clusters" scope of the audit
-const SURFACE = new THREE.Color(VOID);
+const SURFACE = new THREE.Color('#050510');
 
 /** Full OKLab triple from a THREE.Color (linear working-space components). */
 function oklab(c: THREE.Color): [number, number, number] {
@@ -40,12 +40,6 @@ function contrast(a: THREE.Color, b: THREE.Color): number {
   const [hi, lo] = [relLum(a), relLum(b)].sort((x, y) => y - x);
   return (hi + 0.05) / (lo + 0.05);
 }
-
-describe('void token', () => {
-  it('matches the spec §7.1 observatory background', () => {
-    expect(VOID).toBe('#050510');
-  });
-});
 
 describe('cluster palette', () => {
   it('is stable per cluster id and cached', () => {

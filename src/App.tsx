@@ -9,7 +9,6 @@ import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { useCorpusStore } from './store/corpusStore';
 import { onLayoutSettled } from './layout/layoutBridge';
-import { isIngestFraming } from './scene/ingestGesture';
 import { enqueueRun } from './pipeline/runQueue';
 import { positionBuffer, slotOfId } from './scene/positionBuffer';
 import { cameraPose } from './scene/cameraPose';
@@ -148,18 +147,8 @@ export default function App() {
     }
     return onLayoutSettled(() => {
       if (!needsFrame.current) return;
-      const ready = useGraphStore.getState().phase === 'ready';
-      // Live first-ingest framing is owned by CameraRig (slow ease-out).
-      // Incremental add never sets that flag; session restore still fit-alls
-      // here. A ready-state settle completes the initial framing either way —
-      // leaving needsFrame set would make the NEXT incremental add's settle
-      // fitAll and steal the user's camera.
-      if (isIngestFraming()) {
-        if (ready) needsFrame.current = false;
-        return;
-      }
       useUiStore.getState().sendCamera('fitAll');
-      if (ready) needsFrame.current = false;
+      if (useGraphStore.getState().phase === 'ready') needsFrame.current = false;
     });
   }, [hasNodes]);
 

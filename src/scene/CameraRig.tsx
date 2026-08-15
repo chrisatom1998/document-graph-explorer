@@ -25,18 +25,9 @@ import { panInput } from './panInput';
 import { prefersReducedMotion } from '../util/motion';
 import { commitPendingFocusIf } from '../ui/focusNode';
 import { decideFrameNode, isAlreadyNear, shouldCommitOnTweenCancel } from './cameraFocusPolicy';
-import {
-  computeFitAllPose,
-  computeLiveFitAllPose,
-  isIngestFraming,
-  noteIngestCameraSteer,
-  slotIsLive,
-} from './ingestBirth';
 
 const IDLE_MS = 10_000;
 const SMOOTH_TIME = (CAMERA_GLIDE_MS / 1000) * 0.45; // ~800ms glide feel
-/** First-ingest framing eases out slower so the growing set is followed, not yanked. */
-const INGEST_SMOOTH_TIME = 1.15;
 // Arrow-key pan rate as a fraction of the target distance per second, so the
 // pan feels the same whether zoomed into one node or viewing the whole nebula.
 const PAN_SPEED = 0.8;
@@ -46,6 +37,7 @@ const COLLAB_POSE_INTERVAL_MS = 100;
 const desiredPos = new THREE.Vector3();
 const desiredTarget = new THREE.Vector3();
 const viewDir = new THREE.Vector3();
+const centroid = new THREE.Vector3();
 const panRight = new THREE.Vector3();
 const panUp = new THREE.Vector3();
 const panDelta = new THREE.Vector3();
@@ -85,8 +77,6 @@ export default function CameraRig() {
   /** Node id of the in-flight frameNode command, for pending-focus commit. */
   const framingId = useRef<string | null>(null);
   const lastCollabPoseAt = useRef(0);
-  /** positionBuffer.version last used for the ingest-framing fit recompute. */
-  const lastFitVersion = useRef(-1);
   const lastInteraction = useRef(
     typeof performance !== 'undefined' ? performance.now() : 0,
   );
@@ -133,9 +123,7 @@ export default function CameraRig() {
       const id = cmd.ids?.[0];
       framingId.current = id ?? null;
       const slot = id !== undefined ? slotOfId.get(id) : undefined;
-      // Positions refresh at tick rate: a freshly assigned slot can outrun the
-      // buffer the worker last posted, so bound the read against the array too.
-      const hasSlot = slot !== undefined && slot < count && slot * 3 + 2 < arr.length;
+      const hasSlot = slot !== undefined && slot < count;
       if (!hasSlot) {
         // No layout slot — still open the panel so search/list picks work.
         commitPendingFocusIf(id);
@@ -177,37 +165,56 @@ export default function CameraRig() {
     framingId.current = null;
 
     // frameSet / fitAll: bounding sphere over the id set (or every live slot)
+    centroid.set(0, 0, 0);
+    let n = 0;
     if (cmd.kind === 'fitAll') {
-      const fov = (camera as THREE.PerspectiveCamera).fov ?? 55;
-      const fit = computeLiveFitAllPose({
-        viewDir: [viewDir.x, viewDir.y, viewDir.z],
-        fovDeg: fov,
-      });
-      if (fit.radius === 0 && count === 0) return;
-      desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
-      desiredPos.set(fit.position[0], fit.position[1], fit.position[2]);
-      tweenActive.current = true;
-      lastInteraction.current = performance.now();
-      return;
+      for (let i = 0; i < count; i++) {
+        centroid.x += arr[i * 3];
+        centroid.y += arr[i * 3 + 1];
+        centroid.z += arr[i * 3 + 2];
+        n++;
+      }
+    } else {
+      for (const id of cmd.ids ?? []) {
+        const slot = slotOfId.get(id);
+        if (slot === undefined || slot >= count) continue;
+        centroid.x += arr[slot * 3];
+        centroid.y += arr[slot * 3 + 1];
+        centroid.z += arr[slot * 3 + 2];
+        n++;
+      }
     }
+    if (n === 0) return;
+    centroid.multiplyScalar(1 / n);
 
-    const slots: number[] = [];
-    for (const id of cmd.ids ?? []) {
-      const slot = slotOfId.get(id);
-      if (slot !== undefined && slot < count && slot * 3 + 2 < arr.length) slots.push(slot);
+    let maxDistSq = 0;
+    if (cmd.kind === 'fitAll') {
+      for (let i = 0; i < count; i++) {
+        const dx = arr[i * 3] - centroid.x;
+        const dy = arr[i * 3 + 1] - centroid.y;
+        const dz = arr[i * 3 + 2] - centroid.z;
+        const d = dx * dx + dy * dy + dz * dz;
+        if (d > maxDistSq) maxDistSq = d;
+      }
+    } else {
+      for (const id of cmd.ids ?? []) {
+        const slot = slotOfId.get(id);
+        if (slot === undefined || slot >= count) continue;
+        const dx = arr[slot * 3] - centroid.x;
+        const dy = arr[slot * 3 + 1] - centroid.y;
+        const dz = arr[slot * 3 + 2] - centroid.z;
+        const d = dx * dx + dy * dy + dz * dz;
+        if (d > maxDistSq) maxDistSq = d;
+      }
     }
-    if (slots.length === 0) return;
+    const radius = Math.sqrt(maxDistSq);
     const fov = (camera as THREE.PerspectiveCamera).fov ?? 55;
-    const fit = computeFitAllPose({
-      array: arr,
-      count,
-      viewDir: [viewDir.x, viewDir.y, viewDir.z],
-      fovDeg: fov,
-      slots,
-      isLive: slotIsLive,
-    });
-    desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
-    desiredPos.set(fit.position[0], fit.position[1], fit.position[2]);
+    const dist = Math.max(
+      40,
+      (radius / Math.tan(THREE.MathUtils.degToRad(fov) / 2)) * 1.18,
+    );
+    desiredTarget.copy(centroid);
+    desiredPos.copy(centroid).addScaledVector(viewDir, dist);
     tweenActive.current = true;
     lastInteraction.current = performance.now();
   };
@@ -220,44 +227,8 @@ export default function CameraRig() {
     const cmd = ui.cameraCommand;
     if (cmd && cmd.nonce !== lastNonce.current) {
       lastNonce.current = cmd.nonce;
-      // Every explicit camera command takes ownership from live ingest
-      // framing — a frameSet/fitAll issued during the follow would otherwise
-      // be overwritten by the framing block on the same frame. (The final
-      // fit sent by endIngestBirth arrives after framing has ended, so this
-      // never cancels the ingest's own framing.)
-      noteIngestCameraSteer();
       if (cmd.kind !== 'pose') noteLocalCameraActivity();
       beginCommand(cmd, state.camera, controls);
-    }
-
-    // First ingest of an empty corpus: keep the growing set framed (eased).
-    // Incremental add never sets this flag — do not steal the camera.
-    // Recompute only when the layout actually posted new positions
-    // (positionBuffer.version): positions refresh at tick rate, so a
-    // per-frame recompute just re-derived the identical fit between ticks.
-    if (
-      isIngestFraming() &&
-      positionBuffer.count > 0 &&
-      positionBuffer.version !== lastFitVersion.current
-    ) {
-      lastFitVersion.current = positionBuffer.version;
-      viewDir.copy(state.camera.position).sub(controls.target);
-      if (viewDir.lengthSq() < 1e-6) viewDir.set(0, 0, 1);
-      viewDir.normalize();
-      const fov = (state.camera as THREE.PerspectiveCamera).fov ?? 55;
-      const fit = computeLiveFitAllPose({
-        viewDir: [viewDir.x, viewDir.y, viewDir.z],
-        fovDeg: fov,
-      });
-      desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
-      desiredPos.set(fit.position[0], fit.position[1], fit.position[2]);
-      if (prefersReducedMotion()) {
-        state.camera.position.copy(desiredPos);
-        controls.target.copy(desiredTarget);
-        tweenActive.current = false;
-      } else {
-        tweenActive.current = true;
-      }
     }
 
     // Arrow-key pan (App writes the direction to panInput). Nudging BOTH the
@@ -271,7 +242,6 @@ export default function CameraRig() {
       if (shouldCommitOnTweenCancel(tweenActive.current)) {
         commitPendingFocusIf(framingId.current ?? undefined);
       }
-      noteIngestCameraSteer();
       tweenActive.current = false; // a manual pan cancels any active glide
       const cam = state.camera;
       const dist = Math.max(cam.position.distanceTo(controls.target), 1);
@@ -288,9 +258,8 @@ export default function CameraRig() {
     }
 
     if (tweenActive.current) {
-      const smooth = isIngestFraming() ? INGEST_SMOOTH_TIME : SMOOTH_TIME;
-      easing.damp3(state.camera.position, desiredPos, smooth, delta);
-      easing.damp3(controls.target, desiredTarget, smooth, delta);
+      easing.damp3(state.camera.position, desiredPos, SMOOTH_TIME, delta);
+      easing.damp3(controls.target, desiredTarget, SMOOTH_TIME, delta);
       if (
         isAlreadyNear(
           state.camera.position.distanceToSquared(desiredPos),
@@ -342,7 +311,6 @@ export default function CameraRig() {
     if (shouldCommitOnTweenCancel(tweenActive.current)) {
       commitPendingFocusIf(framingId.current ?? undefined);
     }
-    noteIngestCameraSteer();
     tweenActive.current = false; // user input cancels the active glide
   };
   const onEnd = (): void => {

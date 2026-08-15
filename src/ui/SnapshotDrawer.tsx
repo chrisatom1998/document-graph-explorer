@@ -4,7 +4,7 @@
  * Reuses the settings-backdrop / glass-panel pattern from SettingsPanel.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { diffGraphs, formatDiffSummary } from '../graph/snapshotDiff';
 import {
   deleteSnapshot,
@@ -17,6 +17,37 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useFocusTrap } from './useFocusTrap';
 import CloseButton from './CloseButton';
+
+const panelStyle: CSSProperties = {
+  width: 'min(480px, 92vw)',
+  maxHeight: '82vh',
+  overflowY: 'auto',
+  padding: '20px 22px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 16,
+};
+const headerRowStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+};
+const titleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: 17,
+  fontWeight: 600,
+  letterSpacing: 0.3,
+};
+const closeBtnStyle: CSSProperties = {
+  background: 'transparent',
+  border: 'none',
+  color: 'inherit',
+  cursor: 'pointer',
+  fontSize: 16,
+  lineHeight: 1,
+  padding: 4,
+  opacity: 0.7,
+};
 
 function formatDate(ts: number): string {
   const d = new Date(ts);
@@ -167,11 +198,13 @@ export default function SnapshotDrawer() {
         role="dialog"
         aria-modal="true"
         aria-label="Snapshots"
+        style={panelStyle}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="settings-panel__header">
-          <h2 className="settings-panel__title">Saved Snapshots</h2>
+        <div style={headerRowStyle}>
+          <h2 style={titleStyle}>Saved Snapshots</h2>
           <CloseButton
+            style={closeBtnStyle}
             title="Close snapshots"
             aria-label="Close snapshots"
             onClick={() => setOpen(false)}

@@ -11,16 +11,13 @@
  * - Tints are astronomical (reflection-nebula blue, H-alpha pink/magenta, a
  *   hint of OIII teal) and stay in the app's violet/blue identity.
  * - Everything is static and order-independent (additive): built once, no
- *   sorting; the only per-frame work is damping the shared opacity scale
- *   toward its focus/density target. Brightness is authored below the bloom
+ *   per-frame work, no sorting. Brightness is authored below the bloom
  *   threshold so clouds glow but never bloom-wash the graph.
  * - Pure fill-rate cost, so the group hides at qualityTier >= 3, joining the
  *   existing tier-3 degradations (label cap, pulses off).
  */
 
-import { useRef } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { makeCloudTexture } from './proceduralTextures';
@@ -29,14 +26,6 @@ import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../conf
 const NO_RAYCAST = (): void => {
   /* decoration — must never intercept node picking */
 };
-
-function densitySoftening(nodeCount: number): number {
-  return Math.min(
-    1,
-    Math.max(0, (nodeCount - VISUAL_DENSITY_SOFTEN_START) /
-      (VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START)),
-  );
-}
 
 // weighted toward blue/violet so the pink reads as accent, not bubblegum
 const CLOUD_TINTS: ReadonlyArray<readonly [string, number]> = [
@@ -141,26 +130,20 @@ export default function NebulaClouds() {
   // hidden in flat (2D ambient) mode — the clean constellation look has no
   // colorful volumetric clouds.
   const visible = useUiStore((s) => s.qualityTier < 3 && s.dims === 3);
+  const hasFocus = useUiStore((s) => s.hoveredId !== null || s.selectedId !== null);
+  const nodeCount = useGraphStore((s) => s.nodes.length);
 
   const clouds = getCloudSpecs();
+  const densitySoftening = Math.min(
+    1,
+    Math.max(0, (nodeCount - VISUAL_DENSITY_SOFTEN_START) /
+      (VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START)),
+  );
+  const opacityScale = (hasFocus ? 0.76 : 1) * (1 - densitySoftening * 0.4);
 
-  // Focus (hover/selection) and node density dim the clouds — read
-  // transiently and damped in useFrame so a pointermove neither re-renders
-  // this component nor steps the opacity by a visible jump (and the render
-  // body stays pure: no material mutation here).
-  const opacityScaleRef = useRef(1);
-  useFrame((_, delta) => {
-    const ui = useUiStore.getState();
-    const hasFocus = ui.hoveredId !== null || ui.selectedId !== null;
-    const soften = densitySoftening(useGraphStore.getState().nodes.length);
-    const target = (hasFocus ? 0.76 : 1) * (1 - soften * 0.4);
-    const scale = THREE.MathUtils.damp(opacityScaleRef.current, target, 8, delta);
-    if (scale === opacityScaleRef.current) return;
-    opacityScaleRef.current = scale;
-    for (const cloud of clouds) {
-      cloud.material.opacity = cloud.material.userData.baseOpacity * scale;
-    }
-  });
+  for (const cloud of clouds) {
+    cloud.material.opacity = cloud.material.userData.baseOpacity * opacityScale;
+  }
 
   return (
     <group visible={visible}>
