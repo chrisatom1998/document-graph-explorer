@@ -312,7 +312,7 @@ export default function Toolbar() {
         type="button"
         className={`btn-icon${dims === 2 ? ' is-active' : ''}`}
         title={dims === 3 ? 'Switch to 2D' : 'Switch to 3D'}
-        aria-label="2D view"
+        aria-label={dims === 3 ? 'Switch to 2D view' : 'Switch to 3D view'}
         aria-pressed={dims === 2}
         onClick={handleToggleDims}
       >

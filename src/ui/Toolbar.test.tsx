@@ -78,7 +78,7 @@ describe('Toolbar', () => {
   it('exposes the dimension switch as a first-class button, not a View menu item', () => {
     render(<Toolbar />);
 
-    const toggle = screen.getByRole('button', { name: '2D view' });
+    const toggle = screen.getByRole('button', { name: 'Switch to 2D view' });
     expect(toggle).toBeVisible();
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
 
@@ -86,7 +86,7 @@ describe('Toolbar', () => {
     // this one — two live controls for one state would drift.
     fireEvent.click(screen.getByRole('button', { name: 'View options' }));
     expect(screen.getByRole('button', { name: 'Topic nodes' })).toBeVisible();
-    expect(screen.getAllByRole('button', { name: '2D view' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /Switch to (2D|3D) view/ })).toHaveLength(1);
   });
 
   it('drives both the store flag and the layout worker when toggling dimensions', () => {
@@ -94,18 +94,18 @@ describe('Toolbar', () => {
 
     // Both calls are required: the store flag restyles the scene, the bridge
     // reheats the simulation. Either one alone leaves the view inconsistent.
-    fireEvent.click(screen.getByRole('button', { name: '2D view' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to 2D view' }));
     expect(useUiStore.getState().dims).toBe(2);
     expect(layoutSetDims).toHaveBeenLastCalledWith(2);
-    expect(screen.getByRole('button', { name: '2D view' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Switch to 3D view' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
 
-    fireEvent.click(screen.getByRole('button', { name: '2D view' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to 3D view' }));
     expect(useUiStore.getState().dims).toBe(3);
     expect(layoutSetDims).toHaveBeenLastCalledWith(3);
-    expect(screen.getByRole('button', { name: '2D view' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: 'Switch to 2D view' })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
