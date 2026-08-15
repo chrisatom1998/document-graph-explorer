@@ -16,8 +16,10 @@ describe('uiStore dims persistence', () => {
   });
 
   afterEach(() => {
+    // The private-mode test spies on Storage.prototype; without restoreMocks
+    // in the vitest config the throwing impl would leak into later tests.
+    vi.restoreAllMocks();
     localStorage.clear();
-    vi.unstubAllGlobals();
   });
 
   it('defaults to 3D when nothing is stored', async () => {
