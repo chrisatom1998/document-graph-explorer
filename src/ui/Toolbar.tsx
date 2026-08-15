@@ -578,6 +578,7 @@ export default function Toolbar() {
           className={`btn-icon${openMenu === 'add' ? ' is-active' : ''}`}
           title="Add documents"
           aria-label="Add documents"
+          data-ingest-add=""
           aria-haspopup="true"
           aria-expanded={openMenu === 'add'}
           onClick={(e) => {

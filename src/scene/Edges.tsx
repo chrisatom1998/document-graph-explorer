@@ -33,9 +33,16 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { positionBuffer, slotOfId } from './positionBuffer';
+import { positionBuffer, slotOfId, spawnAtOfSlot } from './positionBuffer';
 import { clusterColor, EDGE_TINTS, FLAT_EDGE, FLAT_EDGE_FOCUS } from './palette';
 import { computeEmphasis } from './emphasis';
+import { prefersReducedMotion } from '../util/motion';
+import {
+  edgeKey,
+  edgeRevealFactor,
+  slotHasMaterialized,
+  writeSlotTravelPosition,
+} from './ingestBirth';
 import { isPathHop, pathHopSet } from './pathRoute';
 import {
   EDGE_SEGMENTS,
@@ -75,6 +82,9 @@ const srcColor = new THREE.Color();
 const dstColor = new THREE.Color();
 const ctrl = new Float32Array(3);
 const pt = new Float32Array(3);
+const edgeSrc = { x: 0, y: 0, z: 0 };
+const edgeDst = { x: 0, y: 0, z: 0 };
+const edgeAppearAt = new Map<string, number>();
 
 // Aerial perspective for the filaments: brightness eases toward uFadeMin as
 // view distance runs uFadeNear -> uFadeFar, so near edges read crisper and the
@@ -83,6 +93,16 @@ const pt = new Float32Array(3);
 const FADE_NEAR = 150;
 const FADE_FAR = 600;
 const FADE_MIN = 0.45;
+
+/** Inputs shared by every edge of one color pass (see colorCtx below). */
+interface EdgeColorCtx {
+  emphasis: ReturnType<typeof computeEmphasis>;
+  focusId: string | null;
+  flat: boolean;
+  fade: number;
+  clusterOf: Map<string, number>;
+  pathHops: ReturnType<typeof pathHopSet> | null;
+}
 
 // Fragment half of the fade is identical for both materials; the vertex-side
 // vViewZ write differs per material (different shader anchors), so each
@@ -184,6 +204,16 @@ export default function Edges() {
   const colorsDirty = useRef(true);
   const forcePositions = useRef(true);
   const lastVersion = useRef(-1);
+  /** positionBuffer.count at the last color pass — a worker tick that registers
+   * new slots can un-hide edges, so a count change re-dirties colors. */
+  const lastColorCount = useRef(-1);
+  /** Shared inputs of the last full color pass, reused by the incremental
+   * reveal pass (any ui/graph change that would invalidate them re-dirties). */
+  const colorCtx = useRef<EdgeColorCtx | null>(null);
+  /** Edge indices whose endpoints have slots but haven't begun materializing. */
+  const waitingEdges = useRef<number[]>([]);
+  /** Edge indices mid fade-in (reveal factor < 1). */
+  const revealingEdges = useRef<number[]>([]);
 
   // Line picking tolerance (world units). Points threshold is irrelevant here.
   useEffect(() => {
@@ -237,6 +267,10 @@ export default function Edges() {
   // culling — make it permissive instead (we already skip frustum culling).
   const geomRef = useRef<THREE.BufferGeometry>(null);
   useEffect(() => {
+    const live = new Set(renderEdges.map((e) => edgeKey(e.source, e.target, e.kind)));
+    for (const key of edgeAppearAt.keys()) {
+      if (!live.has(key)) edgeAppearAt.delete(key);
+    }
     forcePositions.current = true;
     colorsDirty.current = true;
     const geom = geomRef.current;
@@ -290,6 +324,77 @@ export default function Edges() {
       ui.filter.edgeKinds.length > 0 &&
       !ui.filter.edgeKinds.includes(e.kind));
 
+  /** Write one edge's vertex colors at the given reveal factor. */
+  const fillEdgeColor = (
+    i: number,
+    e: (typeof edges)[number],
+    revealFactor: number,
+    ctx: EdgeColorCtx,
+  ): void => {
+    const col = attrs.colors.array as Float32Array;
+    const vertsPerEdge = segments * 2;
+    const base = i * vertsPerEdge * 3;
+    const { emphasis, focusId, flat, fade, clusterOf, pathHops } = ctx;
+    // base: kind tint scaled by weight (opacity/brightness = weight, §7.1)
+    // and by density; kept delicate so links read as fine filaments. Each
+    // end leans toward its node's cluster hue so filaments visibly belong
+    // to the communities they join (gradient across the arc).
+    if (flat) {
+      // star chart: one uniform slate hairline tint, no cluster bleed
+      srcColor.copy(FLAT_EDGE);
+      dstColor.copy(FLAT_EDGE);
+    } else {
+      srcColor.copy(EDGE_TINTS[e.kind]);
+      dstColor.copy(EDGE_TINTS[e.kind]);
+      if (e.kind !== 'reference') {
+        srcColor.lerp(clusterColor(clusterOf.get(e.source) ?? -1), CLUSTER_BLEND);
+        dstColor.lerp(clusterColor(clusterOf.get(e.target) ?? -1), CLUSTER_BLEND);
+      }
+    }
+    let brightness =
+      (flat ? FLAT_BRIGHT_BASE + FLAT_BRIGHT_WEIGHT * e.weight : 0.16 + 0.55 * e.weight) *
+      fade *
+      revealFactor;
+    if (emphasis && !(emphasis.has(e.source) && emphasis.has(e.target))) {
+      brightness *= 0.05;
+    }
+    if (pathHops && isPathHop(e.source, e.target, pathHops)) {
+      brightness *= FOCUS_BOOST / fade;
+      srcColor.set('#77e5ff');
+      dstColor.set('#b4a8ff');
+    } else if (focusId && (e.source === focusId || e.target === focusId)) {
+      // undo the density fade: the edges you're inspecting must stay vivid
+      // precisely when the rest of the graph is at its faintest
+      brightness *= FOCUS_BOOST / fade;
+      if (flat) {
+        srcColor.set(FLAT_EDGE_FOCUS);
+        dstColor.set(FLAT_EDGE_FOCUS);
+      }
+    }
+    srcColor.multiplyScalar(brightness);
+    dstColor.multiplyScalar(brightness);
+    srcColor.r = Math.min(srcColor.r, 1);
+    srcColor.g = Math.min(srcColor.g, 1);
+    srcColor.b = Math.min(srcColor.b, 1);
+    dstColor.r = Math.min(dstColor.r, 1);
+    dstColor.g = Math.min(dstColor.g, 1);
+    dstColor.b = Math.min(dstColor.b, 1);
+    // Vertex k of the polyline sits at curve parameter t=k/segments; blend
+    // src -> dst cluster-leaning tints along the arc and taper brightness
+    // toward the middle. Segment pair layout: vertex 2j is point j, vertex
+    // 2j+1 is point j+1.
+    for (let v = 0; v < vertsPerEdge; v++) {
+      const k = (v >> 1) + (v & 1); // point index this vertex represents
+      const t = k / segments;
+      // 1 at ends, MID_TAPER at t=.5 — straight 2D hairlines stay uniform
+      const taper = flat ? 1 : 1 - (1 - MID_TAPER) * 4 * t * (1 - t);
+      const o = base + v * 3;
+      col[o] = (srcColor.r + (dstColor.r - srcColor.r) * t) * taper;
+      col[o + 1] = (srcColor.g + (dstColor.g - srcColor.g) * t) * taper;
+      col[o + 2] = (srcColor.b + (dstColor.b - srcColor.b) * t) * taper;
+    }
+  };
+
   const recomputeColors = (): void => {
     const { nodes } = useGraphStore.getState();
     const ui = useUiStore.getState();
@@ -306,16 +411,28 @@ export default function Edges() {
       searchResults,
       filter,
     );
-    const focusId = hoveredId ?? selectedId;
     const flat = ui.dims === 2;
     const clusterOf = new Map<string, number>();
     for (const n of nodes) clusterOf.set(n.id, n.cluster);
     // Count visible edges for density fade (hidden edges shouldn't dim the rest)
     let visibleCount = 0;
     for (const e of renderEdges) if (!isEdgeHidden(e, ui)) visibleCount++;
-    const fade = densityFade(visibleCount);
+    const ctx: EdgeColorCtx = {
+      emphasis,
+      focusId: hoveredId ?? selectedId ?? null,
+      flat,
+      fade: densityFade(visibleCount),
+      clusterOf,
+      pathHops,
+    };
+    colorCtx.current = ctx;
+    waitingEdges.current.length = 0;
+    revealingEdges.current.length = 0;
     const col = attrs.colors.array as Float32Array;
     const vertsPerEdge = segments * 2;
+    const now = performance.now();
+    const reducedMotion = prefersReducedMotion();
+    const count = positionBuffer.count;
     for (let i = 0; i < renderEdges.length; i++) {
       const e = renderEdges[i];
       const base = i * vertsPerEdge * 3;
@@ -325,63 +442,34 @@ export default function Edges() {
         col.fill(0, base, base + vertsPerEdge * 3);
         continue;
       }
-      // base: kind tint scaled by weight (opacity/brightness = weight, §7.1)
-      // and by density; kept delicate so links read as fine filaments. Each
-      // end leans toward its node's cluster hue so filaments visibly belong
-      // to the communities they join (gradient across the arc).
-      if (flat) {
-        // star chart: one uniform slate hairline tint, no cluster bleed
-        srcColor.copy(FLAT_EDGE);
-        dstColor.copy(FLAT_EDGE);
-      } else {
-        srcColor.copy(EDGE_TINTS[e.kind]);
-        dstColor.copy(EDGE_TINTS[e.kind]);
-        if (e.kind !== 'reference') {
-          srcColor.lerp(clusterColor(clusterOf.get(e.source) ?? -1), CLUSTER_BLEND);
-          dstColor.lerp(clusterColor(clusterOf.get(e.target) ?? -1), CLUSTER_BLEND);
-        }
+      const srcSlot = slotOfId.get(e.source);
+      const dstSlot = slotOfId.get(e.target);
+      const slotsExist =
+        srcSlot !== undefined && dstSlot !== undefined && srcSlot < count && dstSlot < count;
+      // "exists" means visually arrived: slot registered AND the materialize
+      // pop begun — otherwise edges fade in converging on the invisible
+      // pre-spawn clump at the drop origin.
+      const bothArrived =
+        slotsExist && slotHasMaterialized(srcSlot, now) && slotHasMaterialized(dstSlot, now);
+      const key = edgeKey(e.source, e.target, e.kind);
+      const reveal = edgeRevealFactor({
+        bothEndpointsExist: bothArrived,
+        appearAt: edgeAppearAt.get(key),
+        now,
+        reducedMotion,
+      });
+      if (reveal.appearAt !== undefined) edgeAppearAt.set(key, reveal.appearAt);
+      else edgeAppearAt.delete(key);
+      if (!bothArrived) {
+        // Slots assigned but a spawn still pending: the incremental pass
+        // promotes it. Slots missing entirely: the count-change re-dirty
+        // in useFrame recomputes when the worker tick registers them.
+        if (slotsExist) waitingEdges.current.push(i);
+        col.fill(0, base, base + vertsPerEdge * 3);
+        continue;
       }
-      let brightness =
-        (flat ? FLAT_BRIGHT_BASE + FLAT_BRIGHT_WEIGHT * e.weight : 0.16 + 0.55 * e.weight) *
-        fade;
-      if (emphasis && !(emphasis.has(e.source) && emphasis.has(e.target))) {
-        brightness *= 0.05;
-      }
-      if (pathHops && isPathHop(e.source, e.target, pathHops)) {
-        brightness *= FOCUS_BOOST / fade;
-        srcColor.set('#77e5ff');
-        dstColor.set('#b4a8ff');
-      } else if (focusId && (e.source === focusId || e.target === focusId)) {
-        // undo the density fade: the edges you're inspecting must stay vivid
-        // precisely when the rest of the graph is at its faintest
-        brightness *= FOCUS_BOOST / fade;
-        if (flat) {
-          srcColor.set(FLAT_EDGE_FOCUS);
-          dstColor.set(FLAT_EDGE_FOCUS);
-        }
-      }
-      srcColor.multiplyScalar(brightness);
-      dstColor.multiplyScalar(brightness);
-      srcColor.r = Math.min(srcColor.r, 1);
-      srcColor.g = Math.min(srcColor.g, 1);
-      srcColor.b = Math.min(srcColor.b, 1);
-      dstColor.r = Math.min(dstColor.r, 1);
-      dstColor.g = Math.min(dstColor.g, 1);
-      dstColor.b = Math.min(dstColor.b, 1);
-      // Vertex k of the polyline sits at curve parameter t=k/segments; blend
-      // src -> dst cluster-leaning tints along the arc and taper brightness
-      // toward the middle. Segment pair layout: vertex 2j is point j, vertex
-      // 2j+1 is point j+1.
-      for (let v = 0; v < vertsPerEdge; v++) {
-        const k = (v >> 1) + (v & 1); // point index this vertex represents
-        const t = k / segments;
-        // 1 at ends, MID_TAPER at t=.5 — straight 2D hairlines stay uniform
-        const taper = flat ? 1 : 1 - (1 - MID_TAPER) * 4 * t * (1 - t);
-        const o = base + v * 3;
-        col[o] = (srcColor.r + (dstColor.r - srcColor.r) * t) * taper;
-        col[o + 1] = (srcColor.g + (dstColor.g - srcColor.g) * t) * taper;
-        col[o + 2] = (srcColor.b + (dstColor.b - srcColor.b) * t) * taper;
-      }
+      if (reveal.factor < 1) revealingEdges.current.push(i);
+      fillEdgeColor(i, e, reveal.factor, ctx);
     }
     attrs.colors.needsUpdate = true;
     if (fatGeom) {
@@ -390,24 +478,103 @@ export default function Edges() {
     }
   };
 
+  /**
+   * Per-frame reveal advance: touches ONLY edges still fading in (or waiting
+   * for a pre-spawn endpoint), so a long staggered ingest doesn't rerun the
+   * full O(edges*segments) color pass at 60fps. Returns true when any vertex
+   * colors changed.
+   */
+  const advanceEdgeReveals = (): boolean => {
+    const ctx = colorCtx.current;
+    if (!ctx) return false;
+    const waiting = waitingEdges.current;
+    const revealing = revealingEdges.current;
+    if (waiting.length === 0 && revealing.length === 0) return false;
+    const now = performance.now();
+    const reducedMotion = prefersReducedMotion();
+    // Promote waiting edges whose endpoints have now begun materializing
+    // (compact in place — no per-frame array allocations).
+    let w = 0;
+    for (let k = 0; k < waiting.length; k++) {
+      const i = waiting[k];
+      const e = renderEdges[i];
+      const s = slotOfId.get(e.source);
+      const t = slotOfId.get(e.target);
+      if (
+        s !== undefined &&
+        t !== undefined &&
+        slotHasMaterialized(s, now) &&
+        slotHasMaterialized(t, now)
+      ) {
+        revealing.push(i);
+      } else {
+        waiting[w++] = i;
+      }
+    }
+    waiting.length = w;
+    let touched = false;
+    let r = 0;
+    for (let k = 0; k < revealing.length; k++) {
+      const i = revealing[k];
+      const e = renderEdges[i];
+      const key = edgeKey(e.source, e.target, e.kind);
+      const reveal = edgeRevealFactor({
+        bothEndpointsExist: true,
+        appearAt: edgeAppearAt.get(key),
+        now,
+        reducedMotion,
+      });
+      edgeAppearAt.set(key, reveal.appearAt ?? now);
+      fillEdgeColor(i, e, reveal.factor, ctx);
+      touched = true;
+      if (reveal.factor < 1) revealing[r++] = i;
+    }
+    revealing.length = r;
+    return touched;
+  };
+
   useFrame(() => {
     if (renderEdges.length === 0) return;
+    const countNow = positionBuffer.count;
+    // A worker tick that registers new slots can un-hide edges whose colors
+    // were computed while an endpoint was still missing — without this,
+    // those edges would stay at brightness 0 until an unrelated ui change.
+    if (countNow !== lastColorCount.current) {
+      lastColorCount.current = countNow;
+      colorsDirty.current = true;
+    }
     if (colorsDirty.current) {
-      recomputeColors();
       colorsDirty.current = false;
+      recomputeColors();
+    } else if (advanceEdgeReveals()) {
+      attrs.colors.needsUpdate = true;
+      if (fatGeom) {
+        (
+          fatGeom.attributes.instanceColorStart as THREE.InterleavedBufferAttribute
+        ).data.needsUpdate = true;
+      }
     }
     const version = positionBuffer.version;
-    if (version === lastVersion.current && !forcePositions.current) return;
+    let liveTravel = false;
+    for (let i = 0; i < countNow; i++) {
+      if ((spawnAtOfSlot[i] ?? -1) >= 0) {
+        liveTravel = true;
+        break;
+      }
+    }
+    if (version === lastVersion.current && !forcePositions.current && !liveTravel) return;
     lastVersion.current = version;
     forcePositions.current = false;
 
-    const arr = positionBuffer.array;
     const count = positionBuffer.count;
     const pos = attrs.positions.array as Float32Array;
     const floatsPerEdge = segments * 6;
     // 2D star chart: control point at the chord midpoint degenerates the
     // bezier to a straight line — same buffers, no bow.
     const flat = useUiStore.getState().dims === 2;
+    const now = performance.now();
+    const reducedMotion = prefersReducedMotion();
+    const travelOpts = { reducedMotion, flat };
     for (let i = 0; i < renderEdges.length; i++) {
       const e = renderEdges[i];
       const s = slotOfId.get(e.source);
@@ -415,14 +582,14 @@ export default function Edges() {
       if (s === undefined || t === undefined || s >= count || t >= count) {
         continue; // endpoint not placed yet: keep previous (zeros collapse to a point)
       }
-      const so = s * 3;
-      const to = t * 3;
-      const ax = arr[so];
-      const ay = arr[so + 1];
-      const az = arr[so + 2];
-      const bx = arr[to];
-      const by = arr[to + 1];
-      const bz = arr[to + 2];
+      writeSlotTravelPosition(edgeSrc, s, now, travelOpts);
+      writeSlotTravelPosition(edgeDst, t, now, travelOpts);
+      const ax = edgeSrc.x;
+      const ay = edgeSrc.y;
+      const az = edgeSrc.z;
+      const bx = edgeDst.x;
+      const by = edgeDst.y;
+      const bz = edgeDst.z;
       if (flat) {
         ctrl[0] = (ax + bx) * 0.5;
         ctrl[1] = (ay + by) * 0.5;

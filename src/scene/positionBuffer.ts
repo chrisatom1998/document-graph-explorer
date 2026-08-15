@@ -23,6 +23,10 @@ export const scaleOfSlot: number[] = [];
 /** per-slot spawn timestamp for the materialize animation */
 export const spawnAtOfSlot: number[] = [];
 
+/** World-space fly-in origin (drop / Add / canvas center). Paired with hasOriginOfSlot. */
+export const originOfSlot = new Float32Array(MAX_NODES * 3);
+export const hasOriginOfSlot = new Uint8Array(MAX_NODES);
+
 /** 1 = topic-kind node at this slot. Maintained by <Nodes/>; lives here (with
  * the other slot metadata) so layoutBridge can clear freed slots without a
  * bridge → scene-component import cycle. */
@@ -40,6 +44,8 @@ export function resetPositionBuffer(): void {
   idOfSlot.length = 0;
   scaleOfSlot.length = 0;
   spawnAtOfSlot.length = 0;
+  originOfSlot.fill(0);
+  hasOriginOfSlot.fill(0);
   kindOfSlot.fill(0);
   ghostOfSlot.fill(0);
 }

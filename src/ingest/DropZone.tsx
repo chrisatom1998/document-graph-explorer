@@ -21,6 +21,7 @@ import { posixJoin } from '../util/posixPath';
 import { isIngestCandidate, routeFileWithSniff } from './fileRouter';
 import { hasUnignoreUnder, mergeGitIgnoreRules, pathIsGitIgnored, type GitIgnoreRule } from './gitignore';
 import type { NamedFile } from './localFiles';
+import { rememberAddOrigin, rememberDropOrigin } from '../scene/ingestGesture';
 
 // ---------------------------------------------------------------------------
 // directory walking (webkitGetAsEntry API is callback-based; promisify it)
@@ -218,6 +219,7 @@ async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
 let pickerInput: HTMLInputElement | null = null;
 
 export function openFilePicker(): void {
+  rememberAddOrigin();
   if (typeof document === 'undefined') return;
   if (!pickerInput) {
     pickerInput = document.createElement('input');
@@ -272,6 +274,7 @@ export function DropZone() {
       setVisible(false);
       const dt = e.dataTransfer;
       if (!dt) return;
+      rememberDropOrigin(e.clientX, e.clientY);
       // filesFromDataTransfer captures entries synchronously, then walks async
       void filesFromDataTransfer(dt).then(ingestNamedFiles);
     };
