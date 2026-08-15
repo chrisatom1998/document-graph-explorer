@@ -28,7 +28,7 @@
 ## From folder to knowledge map
 
 1. **Ingest.** Drop files or a whole folder, choose **Add a folder**, connect a watched folder, or load the built-in demo corpus.
-2. **Understand.** Browser workers parse the content, extract topics and entities, create local BGE embeddings, build evidence-backed relationships, and group the result with Louvain community detection.
+2. **Understand.** The browser pipeline parses the content, extracts topics and entities, creates local BGE embeddings, builds evidence-backed relationships, and groups the result with Louvain community detection. Heavy stages run in workers; PDF.js text extraction remains client-side on the main thread.
 3. **Explore.** Navigate the graph in 2D or 3D, open the full reader, search passages, inspect why documents are connected, compare snapshots, annotate findings, and optionally ask an OpenRouter or Ollama model questions.
 
 The product loop is intentionally simple: **drop files → explore the graph → read and search**. OpenUSD, collaboration, AI enrichment, and packaging are powerful extensions, not prerequisites.
@@ -41,7 +41,7 @@ The product loop is intentionally simple: **drop files → explore the graph →
 | 2,000-node / 8,400-edge force layout | **5.93 s** to settle |
 | Settled 2,000-node / 8,400-edge scene | **119.8 FPS**, capped by the 120 Hz display |
 
-These numbers are one calibrated data point measured on an Apple M5 Max with 36 GB RAM in the Chromium-based embedded browser—not a promise for every machine. The methodology, caveats, layout sweep, and OpenUSD export timings are in [docs/benchmarks.md](docs/benchmarks.md).
+These numbers are one calibrated data point from an Apple M5 Max with 36 GB RAM—not a promise for every machine. Ingest and rendering were measured in the Chromium-based embedded browser; the layout benchmark drives the production worker protocol under Node/V8. The full methodology, caveats, layout sweep, and OpenUSD export timings are in [docs/benchmarks.md](docs/benchmarks.md).
 
 ## What it can do
 
@@ -52,7 +52,7 @@ These numbers are one calibrated data point measured on an Apple M5 Max with 36 
 | **Repository understanding** | Drop a source tree, honor `.gitignore`, skip generated/vendor directories, extract symbols, and turn relative imports/includes into high-confidence graph edges. |
 | **Search and reading** | Semantic search, passage highlighting, full document readers, connection evidence, paths between documents, cluster insights, and optional document Q&A. |
 | **Live workspaces** | Create multiple named corpora, persist them in IndexedDB, and connect a watched folder so additions, edits, and deletions stay synchronized while the app is open. |
-| **Notes and change tracking** | Add notes, tags, and pins; save named snapshots; compare graph versions; and highlight added, removed, updated, or reconnected documents. |
+| **Notes and change tracking** | Add notes, tags, and pins; save named snapshots; compare graph versions; report added, removed, and updated documents plus connection churn; and paint changed current documents on the live graph. |
 | **Optional AI** | Use OpenRouter with your own key or a local Ollama server for summaries, topics, cluster names, chat, and per-document questions. Core ingestion and graph intelligence require neither. |
 | **Share and interchange** | Export sanitized share URLs, JSON, PNG, and composed OpenUSD stages. Share URLs exclude original bytes, full text, paths, embeddings, handles, and settings. |
 | **Flexible distribution** | Run as a static web app, local browser app, Electron desktop app, Windows portable app, Linux AppImage, runtime offline mode, or sealed air-gapped build. |
@@ -61,7 +61,7 @@ These numbers are one calibrated data point measured on an Apple M5 Max with 36 
 
 ### Try it in the browser
 
-Open the **[live app](https://document-graph-explorer.vercel.app)** and choose **Load demo corpus** to explore immediately, or add your own files. Processing still happens in that browser; the app does not upload your documents to Vercel.
+Open the **[live app](https://document-graph-explorer.vercel.app)** and choose **Load demo corpus** to explore immediately, or add your own files. Core processing happens in that browser; adding files does not upload them to Vercel.
 
 ### Run it locally
 
@@ -82,7 +82,7 @@ Download the latest published artifacts from [GitHub Releases](https://github.co
 
 Document Graph Explorer treats a document collection the way digital-twin tooling treats a physical asset: ingest operational inputs, build a semantic model, keep it synchronized with reality, and make it portable to other tools.
 
-- **Ingest:** parsing, embedding, and linking run entirely client-side in web workers. A watched folder is the live operational input—the graph tracks the corpus on disk as it changes.
+- **Ingest:** parsing, embedding, and linking run entirely client-side. The compute-heavy pipeline is worker-based, while PDF.js text extraction remains on the main thread. A watched folder is the live operational input—the graph tracks the corpus on disk as it changes.
 - **Model:** topics, entities, evidence-backed edges, and Louvain communities form a queryable knowledge structure, not just a rendering. Every connection can answer “why are these related?”
 - **Synthetic data:** the 100-document demo corpus is 36 committed samples plus 64 records from a synthetic-data generator ([generatedDocuments.ts](src/demo/generatedDocuments.ts)). The generated records are written as real PDFs and pushed through the normal ingest path, with tests pinning every generated cross-reference to a document that exists.
 - **Interchange:** the OpenUSD export carries geometry, the `docGraph:` attribute schema, connection evidence, cluster hulls, and composition variants into downstream USD toolchains.
