@@ -8,7 +8,7 @@ import { useGraphStore } from './store/graphStore';
 import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { useCorpusStore } from './store/corpusStore';
-import { onLayoutSettled } from './layout/layoutBridge';
+import { layoutSetDims, onLayoutSettled } from './layout/layoutBridge';
 import { enqueueRun } from './pipeline/runQueue';
 import { positionBuffer, slotOfId } from './scene/positionBuffer';
 import { cameraPose } from './scene/cameraPose';
@@ -81,6 +81,11 @@ export default function App() {
   // Session restore + persistence hooks, once. Fresh starts stay empty until
   // the user adds files or explicitly loads the demo corpus from EmptyState.
   useEffect(() => {
+    // uiStore restores a persisted 2D choice, but only the flag — the layout
+    // worker still defaults to 3D. Re-post it here, ahead of every hydration
+    // path below, so restored nodes are added to an already-flat simulation
+    // (no visible collapse) and a worker respawn replays the right dims.
+    if (useUiStore.getState().dims === 2) layoutSetDims(2);
     initPersistence();
     void (async () => {
       try {

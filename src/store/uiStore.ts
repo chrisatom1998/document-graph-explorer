@@ -166,6 +166,35 @@ interface UiState {
 
 let nextToastId = 1;
 
+/**
+ * The 2D/3D choice persists across reloads (the toolbar position precedent) —
+ * a user who works flat should not be dropped back into the nebula on every
+ * visit. Stored on its own key rather than in settingsStore: it is a view
+ * preference toggled from the toolbar, not a SettingsPanel field.
+ *
+ * Only the dims flag is persisted here. Re-posting it to the layout worker on
+ * startup is App's job, so this module stays free of a layoutBridge import.
+ */
+const DIMS_KEY = 'knowledge-nebula-dims';
+
+function loadDims(): 2 | 3 {
+  try {
+    if (typeof localStorage === 'undefined') return 3;
+    return localStorage.getItem(DIMS_KEY) === '2' ? 2 : 3;
+  } catch {
+    return 3; // private mode / disabled storage
+  }
+}
+
+function saveDims(dims: 2 | 3): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(DIMS_KEY, String(dims));
+  } catch {
+    /* private mode / quota exceeded — the choice simply won't persist */
+  }
+}
+
 export const useUiStore = create<UiState>((set) => ({
   hoveredId: null,
   selectedId: null,
@@ -176,7 +205,7 @@ export const useUiStore = create<UiState>((set) => ({
   highlightOwner: null,
   filter: { ...DEFAULT_FILTER },
   snapshotOverlay: null,
-  dims: 3,
+  dims: loadDims(),
   topicNodesEnabled: false,
   clusterCollapsed: false,
   qualityTier: 0,
@@ -236,3 +265,11 @@ export const useUiStore = create<UiState>((set) => ({
       return { pathEndpoints: [...s.pathEndpoints, id] };
     }),
 }));
+
+// Persisting from the subscriber rather than from setDims means every route
+// into the flag — toolbar, the AutoQuality "Switch to 2D" toast, saved views,
+// and a collab peer's view — is remembered, with no call-site changes. Last
+// write wins, which is the same precedence those callers already have.
+useUiStore.subscribe((s, prev) => {
+  if (s.dims !== prev.dims) saveDims(s.dims);
+});
