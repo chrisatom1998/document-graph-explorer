@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { hexFor } from '../scene/palette';
 import type { EdgeKind, FileType } from '../model/types';
@@ -42,22 +42,43 @@ const FILE_TYPE_ORDER: FileType[] = [
  * dragged value in local state for instant visual feedback and coalesces store
  * writes through requestAnimationFrame: at most one write per frame, with the
  * trailing value always committed (the pending rAF — or unmount cleanup —
- * flushes the latest value). When the store changes externally (collab, Clear)
- * and no local edit is in flight, the local value re-syncs to the store.
+ * flushes the latest value). External store writes (collab, Clear) cancel any
+ * in-flight rAF so a trailing drag cannot clobber them; the local value then
+ * re-syncs. Our own commit is remembered so its echo does not abort a newer
+ * drag. Callers that reset to a value the store already holds (Clear → 0)
+ * must also discard the pending write — storeValue will not change.
  */
 function useRafCommittedNumber(
   storeValue: number,
   commit: (value: number) => void,
-): [number, (value: number) => void] {
+): [number, (value: number) => void, () => void] {
   const [local, setLocal] = useState(storeValue);
   const pendingRef = useRef<{ value: number } | null>(null);
   const rafRef = useRef<number | null>(null);
   const commitRef = useRef(commit);
   commitRef.current = commit;
+  const echoRef = useRef<number | null>(null);
 
-  // External store changes win only when no local edit is awaiting commit.
-  useEffect(() => {
-    if (pendingRef.current === null) setLocal(storeValue);
+  const cancelPending = () => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    pendingRef.current = null;
+  };
+
+  // External store changes win over an in-flight drag. useLayoutEffect so
+  // we cancel before the next paint / rAF.
+  useLayoutEffect(() => {
+    if (echoRef.current !== null && storeValue === echoRef.current) {
+      echoRef.current = null;
+      return;
+    }
+    if (pendingRef.current !== null) {
+      cancelPending();
+      echoRef.current = null;
+    }
+    setLocal(storeValue);
   }, [storeValue]);
 
   // Guarantee the trailing write even if the bar unmounts mid-drag.
@@ -80,11 +101,20 @@ function useRafCommittedNumber(
       rafRef.current = null;
       const pending = pendingRef.current;
       pendingRef.current = null;
-      if (pending) commitRef.current(pending.value);
+      if (pending) {
+        echoRef.current = pending.value;
+        commitRef.current(pending.value);
+      }
     });
   };
 
-  return [local, update];
+  const discard = () => {
+    cancelPending();
+    echoRef.current = null;
+    setLocal(storeValue);
+  };
+
+  return [local, update, discard];
 }
 
 /**
@@ -103,11 +133,11 @@ export default function FilterBar() {
   const [collapsed, setCollapsed] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  const [minDegree, setMinDegree] = useRafCommittedNumber(
+  const [minDegree, setMinDegree, discardMinDegree] = useRafCommittedNumber(
     filter.minDegree,
     (minDegree) => setFilter({ minDegree }),
   );
-  const [minEdgeWeight, setMinEdgeWeight] = useRafCommittedNumber(
+  const [minEdgeWeight, setMinEdgeWeight, discardMinEdgeWeight] = useRafCommittedNumber(
     filter.minEdgeWeight,
     (minEdgeWeight) => setFilter({ minEdgeWeight }),
   );
@@ -164,6 +194,10 @@ export default function FilterBar() {
   const showAdvanced = advancedOpen || advancedActive;
 
   const clearAll = () => {
+    // Store fields may already be at default while a slider rAF is pending;
+    // discard so that flush cannot write the dragged value back.
+    discardMinDegree();
+    discardMinEdgeWeight();
     setFilter({ ...DEFAULT_FILTER });
     setAdvancedOpen(false);
   };

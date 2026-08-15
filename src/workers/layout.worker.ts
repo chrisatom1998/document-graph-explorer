@@ -160,23 +160,24 @@ function updateShellRadius(): void {
 
 const anchors = new Map<number, [number, number, number]>();
 
-/** Anchor placement is a pure function of the cluster ID over a FIXED domain,
- * never of which clusters currently exist or how many. Deriving the anchor
- * from a cluster's index in the sorted present-cluster list meant any cluster
- * appearing/disappearing (Louvain re-clusters repeatedly during ingest) moved
- * EVERY anchor and dragged the whole nebula into a new arrangement. */
-const ANCHOR_DOMAIN = 32;
+/** Anchor placement is a pure function of the cluster ID via the golden-ratio
+ * Weyl sequence on the sphere — never of which clusters currently exist or
+ * how many. Deriving the anchor from a cluster's index in the sorted
+ * present-cluster list meant any cluster appearing/disappearing (Louvain
+ * re-clusters repeatedly during ingest) moved EVERY anchor. Hashing into a
+ * fixed 32-seat domain avoided that shuffle but collided once Louvain (or
+ * the empty-edge singleton path) produced more than 32 communities. */
+const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
 function rebuildAnchors(): void {
   anchors.clear();
   const seen = new Set<number>();
   for (const n of nodes) if (n.cluster >= 0) seen.add(n.cluster);
-  const golden = Math.PI * (3 - Math.sqrt(5));
   for (const id of seen) {
-    const j = id % ANCHOR_DOMAIN;
-    const y = 1 - (2 * (j + 0.5)) / ANCHOR_DOMAIN;
+    const y = 1 - 2 * (((id + 0.5) * GOLDEN_RATIO) % 1);
     const r = Math.sqrt(Math.max(0, 1 - y * y));
-    const theta = golden * j;
+    const theta = GOLDEN_ANGLE * id;
     anchors.set(id, [
       Math.cos(theta) * r * shellRadius,
       y * shellRadius,
