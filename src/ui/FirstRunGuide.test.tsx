@@ -134,7 +134,7 @@ describe('FirstRunGuide', () => {
   it('rests left of the minimap by default', async () => {
     render(<FirstRunGuide />);
     const guide = await screen.findByLabelText('Getting started');
-    expect(guide).toHaveStyle({ left: '334px', top: '490px' });
+    expect(guide).toHaveStyle({ left: '314px', top: '490px' });
   });
 
   it('restores a saved drag position and clamps it on resize', async () => {
