@@ -16,6 +16,7 @@ export interface ComparePairInput {
 }
 
 export interface CompareEdge {
+  id: string;
   kind: EdgeKind;
   weight: number;
   evidence: string[];
@@ -62,7 +63,7 @@ function pairEdges(leftId: string, rightId: string, edges: readonly Edge[]): Com
       (edge.source === leftId && edge.target === rightId) ||
       (edge.source === rightId && edge.target === leftId);
     if (!matches) continue;
-    out.push({ kind: edge.kind, weight: edge.weight, evidence: edge.evidence });
+    out.push({ id: edge.id, kind: edge.kind, weight: edge.weight, evidence: edge.evidence });
   }
   out.sort((a, b) => b.weight - a.weight || a.kind.localeCompare(b.kind));
   return out;

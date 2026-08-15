@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocNode, Edge } from '../model/types';
@@ -97,6 +97,21 @@ describe('ComparePanel', () => {
     expect(screen.getAllByRole('status').some((el) => /matching passage/i.test(el.textContent ?? ''))).toBe(
       true,
     );
+  });
+
+  it('refreshes similarity after vectors arrive', () => {
+    render(<ComparePanel />);
+    expect(screen.queryByText(/100% similar/i)).not.toBeInTheDocument();
+
+    act(() => {
+      docVectorStore.set('alpha', new Float32Array([1, 0]));
+      docVectorStore.set('beta', new Float32Array([1, 0]));
+      // Vector storage is intentionally non-reactive; the next ordinary panel
+      // render must still observe the newly available vector identities.
+      useUiStore.setState({ comparePick: 'left' });
+    });
+
+    expect(screen.getByText(/100% similar/i)).toBeInTheDocument();
   });
 
   it('closes on Escape before other panels', () => {

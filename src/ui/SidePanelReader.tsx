@@ -31,6 +31,7 @@ interface SidePanelReaderProps {
   readerHighlight: ReaderHighlight | null;
   readerLabel: string;
   codeLang: CodeLanguage | null;
+  onNavigate?: (id: string) => void;
 }
 
 export default function SidePanelReader({
@@ -39,6 +40,7 @@ export default function SidePanelReader({
   readerHighlight,
   readerLabel,
   codeLang,
+  onNavigate = focusNode,
 }: SidePanelReaderProps) {
   const fullText = textStore.get(node.id);
   const passageNeedle =
@@ -141,7 +143,7 @@ export default function SidePanelReader({
               key={node.id}
               text={mdSource.text}
               linkIndex={linkIndex}
-              onNavigate={(id) => focusNode(id)}
+              onNavigate={onNavigate}
               className="side-panel__reader side-panel__reader--markdown"
               highlight={passageNeedle}
             />

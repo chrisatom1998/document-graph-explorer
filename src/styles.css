@@ -5181,3 +5181,44 @@ mark.passage-mark {
 .compare-panel__pane:first-child {
   border-left: none;
 }
+
+@media (max-width: 640px) {
+  .compare-panel {
+    width: 100vw;
+  }
+
+  .compare-panel__header {
+    padding: 12px 10px 10px;
+  }
+
+  .compare-panel__strip {
+    padding-inline: 10px;
+  }
+
+  .compare-panel__evidence {
+    padding-inline: 26px 10px;
+  }
+
+  .compare-panel__panes {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .compare-panel__pane {
+    flex: 0 0 auto;
+    min-height: 50vh;
+    overflow-y: visible;
+    padding-inline: 10px;
+    border-left: none;
+    border-top: 1px solid var(--border-glass);
+  }
+
+  .compare-panel__pane:first-child {
+    border-top: none;
+  }
+
+  .minimap--compare-shifted {
+    display: none;
+  }
+}

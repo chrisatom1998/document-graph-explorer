@@ -17,6 +17,7 @@ import {
   swapCompare,
 } from './openCompare';
 import CloseButton from './CloseButton';
+import { focusNode } from './focusNode';
 import SidePanelReader from './SidePanelReader';
 
 function titleOf(
@@ -40,6 +41,8 @@ export default function ComparePanel() {
 
   const left = leftId ? nodes[nodeIndex[leftId]] : undefined;
   const right = rightId ? nodes[nodeIndex[rightId]] : undefined;
+  const leftVector = left ? docVectorStore.get(left.id) : undefined;
+  const rightVector = right ? docVectorStore.get(right.id) : undefined;
   const complete = leftId !== null && rightId !== null;
 
   useEffect(() => {
@@ -60,10 +63,10 @@ export default function ComparePanel() {
       left,
       right,
       edges,
-      leftVector: docVectorStore.get(left.id),
-      rightVector: docVectorStore.get(right.id),
+      leftVector,
+      rightVector,
     });
-  }, [left, right, edges]);
+  }, [left, right, edges, leftVector, rightVector]);
 
   if (!leftId && !rightId && !comparePick) return null;
 
@@ -95,6 +98,10 @@ export default function ComparePanel() {
   const rightLang = codeLanguageForNode(right);
   const highlightTerm = (term: string) => {
     setNeedles({ left: term, right: term });
+  };
+  const navigateFromCompare = (id: string) => {
+    closeCompare();
+    focusNode(id);
   };
 
   return (
@@ -165,9 +172,9 @@ export default function ComparePanel() {
                 {summary.nearDuplicate ? ' · near-duplicate' : ''}
               </span>
             )}
-            {summary.edges.map((edge, i) => (
+            {summary.edges.map((edge) => (
               <span
-                key={`${edge.kind}-${i}`}
+                key={edge.id}
                 className="chip"
                 title={
                   edge.evidence.length > 0
@@ -227,7 +234,7 @@ export default function ComparePanel() {
           <ul className="compare-panel__evidence">
             {summary.edges.flatMap((edge) =>
               edge.evidence.slice(0, 3).map((line, i) => (
-                <li key={`${edge.kind}-${i}`}>{line}</li>
+                <li key={`${edge.id}:${i}`}>{line}</li>
               )),
             )}
           </ul>
@@ -243,6 +250,7 @@ export default function ComparePanel() {
               }
               readerLabel={leftLang?.label ?? fileTypeLabel(left)}
               codeLang={leftLang}
+              onNavigate={navigateFromCompare}
             />
           </div>
           <div className="compare-panel__pane">
@@ -254,6 +262,7 @@ export default function ComparePanel() {
               }
               readerLabel={rightLang?.label ?? fileTypeLabel(right)}
               codeLang={rightLang}
+              onNavigate={navigateFromCompare}
             />
           </div>
         </div>

@@ -114,8 +114,8 @@ describe('comparePair', () => {
     ];
     const summary = comparePair({ left: doc('a'), right: doc('b'), edges });
     expect(summary.edges).toEqual([
-      { kind: 'reference', weight: 0.9, evidence: ['mentions a.md'] },
-      { kind: 'keyword', weight: 0.4, evidence: ['shared term "quota"'] },
+      { id: 'b->a:reference', kind: 'reference', weight: 0.9, evidence: ['mentions a.md'] },
+      { id: 'a->b:keyword', kind: 'keyword', weight: 0.4, evidence: ['shared term "quota"'] },
     ]);
   });
 
