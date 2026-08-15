@@ -7,6 +7,7 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useCollabStore } from '../collab/store';
@@ -15,6 +16,7 @@ import { openFilePicker } from '../ingest/DropZone';
 // Imported eagerly so the activation-gated picker opens synchronously with
 // the click; folderPicker demand-loads the heavy scanner itself.
 import { openFolderPicker } from '../ingest/folderPicker';
+import { useFocusTrap } from './useFocusTrap';
 
 import {
   IconAnalyze,
@@ -113,6 +115,11 @@ export default function Toolbar() {
   // Which popover menu (if any) is open. Only one at a time.
   const [openMenu, setOpenMenu] = useState<MenuKey | null>(null);
   const [dataDialogOpen, setDataDialogOpen] = useState(false);
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const [joinInviteValue, setJoinInviteValue] = useState('');
+  const [joining, setJoining] = useState(false);
+  const joinDialogRef = useRef<HTMLDivElement | null>(null);
+  useFocusTrap(joinDialogRef, joinDialogOpen);
 
   const viewMenuWrapRef = useRef<HTMLDivElement | null>(null);
   const analyzeMenuWrapRef = useRef<HTMLDivElement | null>(null);
@@ -159,7 +166,7 @@ export default function Toolbar() {
   // meaning dismissing a toolbar menu with Escape doesn't also trigger the
   // app's "nothing else is open, so fit the camera" fallback.
   useEffect(() => {
-    if (!openMenu || dataDialogOpen) return;
+    if (!openMenu || dataDialogOpen || joinDialogOpen) return;
     const handlePointerDown = (e: PointerEvent) => {
       const wrap =
         openMenu === 'view'
@@ -187,13 +194,16 @@ export default function Toolbar() {
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [dataDialogOpen, openMenu]);
+  }, [dataDialogOpen, joinDialogOpen, openMenu]);
 
   // A floating dropdown must not coexist with a modal overlay: if one opens
   // (e.g. Cmd+K search while the View menu is up), close the menu so its
   // capture-phase Escape handler can't swallow the modal's own Escape.
   useEffect(() => {
-    if (searchOpen || settingsOpen || snapshotsOpen || helpOpen) setOpenMenu(null);
+    if (searchOpen || settingsOpen || snapshotsOpen || helpOpen) {
+      setOpenMenu(null);
+      setJoinDialogOpen(false);
+    }
   }, [searchOpen, settingsOpen, snapshotsOpen, helpOpen]);
 
   if (!hasNodes) return null;
@@ -239,19 +249,35 @@ export default function Toolbar() {
     }
   };
 
-  const handleCollabJoin = async () => {
-    const raw = window.prompt('Paste a collaboration invite link or fragment');
-    if (!raw) return;
+  const handleCollabJoin = () => {
+    setOpenMenu(null);
+    setJoinInviteValue('');
+    setJoinDialogOpen(true);
+  };
+
+  const cancelCollabJoin = () => {
+    if (joining) return;
+    setJoinDialogOpen(false);
+    setJoinInviteValue('');
+  };
+
+  const submitCollabJoin = async () => {
+    const raw = joinInviteValue.trim();
+    if (!raw || joining) return;
+    setJoining(true);
     try {
       const invite = await joinInvite(raw);
-      setOpenMenu(null);
       if (invite) {
+        setJoinDialogOpen(false);
+        setJoinInviteValue('');
         useUiStore.getState().pushToast('Joined a collaboration session.', 'info');
         return;
       }
       useUiStore.getState().pushToast('This collaboration invite is invalid.', 'error');
     } catch (error) {
       useUiStore.getState().pushToast(error instanceof Error ? error.message : 'Collaboration is unavailable in this build.', 'error');
+    } finally {
+      setJoining(false);
     }
   };
 
@@ -266,6 +292,7 @@ export default function Toolbar() {
   };
 
   return (
+    <>
     <div ref={rootRef} className="toolbar glass-panel">
       <div
         className="toolbar__grip"
@@ -361,10 +388,7 @@ export default function Toolbar() {
               <SavedViewsSection onApplied={() => setOpenMenu(null)} />
             </Suspense>
 
-            <div
-              role="separator"
-              style={{ borderTop: '1px solid rgba(255,255,255,0.14)', margin: '4px 0' }}
-            />
+            <div role="separator" className="toolbar__menu-sep" />
             <button
               type="button"
               className="toolbar__menu-item"
@@ -529,10 +553,7 @@ export default function Toolbar() {
                 </button>
               </>
             )}
-            <div
-              role="separator"
-              style={{ borderTop: '1px solid rgba(255,255,255,0.14)', margin: '4px 0' }}
-            />
+            <div role="separator" className="toolbar__menu-sep" />
             <button
               type="button"
               className={`toolbar__menu-item${shareNotes ? ' is-active' : ''}`}
@@ -618,5 +639,69 @@ export default function Toolbar() {
         )}
       </div>
     </div>
+    {joinDialogOpen &&
+      createPortal(
+        <div className="settings-backdrop" onClick={cancelCollabJoin}>
+          <div
+            ref={joinDialogRef}
+            className="glass-panel confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="collab-join-title"
+            tabIndex={-1}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.stopPropagation();
+                cancelCollabJoin();
+              }
+            }}
+          >
+            <h2 id="collab-join-title" className="confirm-dialog__title">
+              Join a collaboration session
+            </h2>
+            <p className="confirm-dialog__text">
+              Paste a collaboration invite link or fragment.
+            </p>
+            <label className="sr-only" htmlFor="collab-join-input">
+              Collaboration invite
+            </label>
+            <input
+              id="collab-join-input"
+              className="settings-input confirm-dialog__input"
+              type="text"
+              value={joinInviteValue}
+              onChange={(event) => setJoinInviteValue(event.target.value)}
+              placeholder="#collab=…"
+              autoComplete="off"
+              spellCheck={false}
+              disabled={joining}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') void submitCollabJoin();
+              }}
+            />
+            <div className="confirm-dialog__row">
+              <button
+                type="button"
+                className="snapshot-btn"
+                disabled={joining}
+                onClick={cancelCollabJoin}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="snapshot-btn snapshot-btn--load"
+                disabled={joining || !joinInviteValue.trim()}
+                onClick={() => void submitCollabJoin()}
+              >
+                {joining ? 'Joining…' : 'Join'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }

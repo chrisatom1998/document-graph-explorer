@@ -494,7 +494,7 @@ export default function SettingsPanel() {
             {enriching ? 'Enriching…' : 'Enrich now'}
           </button>
           {enrichResult && (
-            <p className="settings-note" style={{ color: enrichResult.ok ? '#69db7c' : '#ffc078' }}>
+            <p className={`settings-note${enrichResult.ok ? ' settings-note--ok' : ' settings-note--warn'}`}>
               {enrichResult.message}
             </p>
           )}

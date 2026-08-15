@@ -34,7 +34,7 @@ export default function HelpPopover() {
       >
         <header className="help-popover__header">
           <div>
-            <p className="help-popover__eyebrow">Knowledge Nebula</p>
+            <p className="help-popover__eyebrow">Document Graph Explorer</p>
             <h2 className="help-popover__title">Help &amp; graph legend</h2>
           </div>
           <CloseButton

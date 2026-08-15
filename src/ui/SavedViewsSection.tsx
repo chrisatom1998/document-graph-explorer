@@ -27,10 +27,7 @@ export default function SavedViewsSection({ onApplied }: { onApplied: () => void
 
   return (
     <>
-      <div
-        role="separator"
-        style={{ borderTop: '1px solid rgba(255,255,255,0.14)', margin: '4px 0' }}
-      />
+      <div role="separator" className="toolbar__menu-sep" />
       <button
         type="button"
         className="toolbar__menu-item"

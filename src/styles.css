@@ -191,6 +191,7 @@
   --kind-semantic: #7fb4ff;
   --kind-keyword: #6f86e8;
   --kind-topic: #7ee8c4;
+  --kind-entity: #ff9bb3;
 
   --danger: #ff8080;
   --warning: #ffcf6b;
@@ -202,9 +203,13 @@
 
   /* Motion vocabulary: --ease-out for hovers/slides (decisive, settles fast),
      --ease-spring for appearing elements (slight overshoot, matches the 3D
-     materialize pop's easeOutBack). */
+     materialize pop's easeOutBack). Duration tokens keep chrome from drifting
+     across 8 ad-hoc millisecond values. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 140ms;
+  --dur-mid: 280ms;
+  --dur-enter: 200ms;
 
   --font-ui:
     'Space Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
@@ -574,10 +579,10 @@ input {
   cursor: pointer;
   pointer-events: auto;
   transition:
-    background-color 140ms ease,
-    border-color 140ms ease,
-    color 140ms ease,
-    transform 140ms ease;
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    transform var(--dur-fast) ease;
 }
 .btn-icon:hover {
   background: linear-gradient(180deg, rgba(142, 125, 255, 0.16), rgba(119, 229, 255, 0.08));
@@ -618,10 +623,10 @@ input {
   cursor: pointer;
   pointer-events: auto;
   transition:
-    background-color 140ms ease,
-    border-color 140ms ease,
-    box-shadow 140ms ease,
-    transform 140ms ease;
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease,
+    transform var(--dur-fast) ease;
 }
 .btn-pill:hover {
   border-color: var(--accent);
@@ -655,7 +660,7 @@ input {
 .chip.chip-selectable {
   cursor: pointer;
   pointer-events: auto;
-  transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease;
+  transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 .chip.chip-selectable:hover {
   border-color: var(--border-glass-strong);
@@ -692,7 +697,7 @@ input {
   cursor: pointer;
   pointer-events: auto;
   flex: none;
-  transition: background-color 120ms ease, color 120ms ease;
+  transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 .icon-btn-close:hover {
   background: rgba(255, 128, 128, 0.12);
@@ -1445,8 +1450,14 @@ input {
   width: 1px;
   height: 22px;
   margin: 0 4px;
-  background: rgba(140, 150, 255, 0.16);
+  background: var(--border-glass);
   flex: none;
+}
+
+.toolbar__menu-sep {
+  border: none;
+  border-top: 1px solid var(--border-glass);
+  margin: 4px 0;
 }
 
 .toolbar__dims-label {
@@ -1484,7 +1495,7 @@ input {
   flex-direction: column;
   gap: 2px;
   z-index: var(--z-modal);
-  animation: kn-pop-in 200ms var(--ease-spring) both;
+  animation: kn-pop-in var(--dur-enter) var(--ease-spring) both;
 }
 
 .toolbar__menu-item {
@@ -2903,7 +2914,7 @@ mark.passage-mark {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  animation: kn-slide-in-up 260ms var(--ease-out) both;
+  animation: kn-slide-in-up var(--dur-mid) var(--ease-out) both;
   border-color: rgba(137, 224, 255, 0.22);
   background: rgba(9, 14, 30, 0.82);
 }
@@ -3178,7 +3189,7 @@ mark.passage-mark {
   justify-content: center;
   padding-top: 12vh;
   pointer-events: auto;
-  animation: kn-fade-in 140ms ease both;
+  animation: kn-fade-in var(--dur-fast) ease both;
 }
 
 /* Settings modal: same top-layer, click-catching backdrop as search, but
@@ -3193,7 +3204,39 @@ mark.passage-mark {
   align-items: center;
   justify-content: center;
   pointer-events: auto;
-  animation: kn-fade-in 140ms ease both;
+  animation: kn-fade-in var(--dur-fast) ease both;
+}
+
+.confirm-dialog {
+  width: min(420px, 92vw);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: kn-pop-in var(--dur-enter) var(--ease-spring) both;
+}
+
+.confirm-dialog__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.confirm-dialog__text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.confirm-dialog__input {
+  width: 100%;
+}
+
+.confirm-dialog__row {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .help-popover {
@@ -3202,7 +3245,7 @@ mark.passage-mark {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: kn-pop-in 200ms var(--ease-spring) both;
+  animation: kn-pop-in var(--dur-enter) var(--ease-spring) both;
 }
 
 .help-popover__header {
@@ -3406,24 +3449,44 @@ mark.passage-mark {
 
 .settings-btn {
   align-self: flex-start;
-  padding: 7px 14px;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
   border: 1px solid var(--border-glass-strong);
-  background: var(--accent-soft);
-  color: inherit;
+  background: rgba(143, 123, 255, 0.1);
+  color: var(--text-primary);
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease,
+    transform var(--dur-fast) ease;
 }
 
-.settings-btn:hover {
+.settings-btn:hover:not(:disabled) {
   border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(143, 123, 255, 0.25) inset, 0 0 22px rgba(143, 123, 255, 0.22);
+}
+
+.settings-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .settings-btn--danger {
-  border: 1px solid rgba(255, 128, 128, 0.35);
-  background: rgba(255, 128, 128, 0.12);
-  color: #ff9a9a;
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+
+.settings-btn--danger:hover:not(:disabled) {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger) 25%, transparent) inset;
 }
 
 .settings-help {
@@ -3435,6 +3498,14 @@ mark.passage-mark {
 .settings-note {
   font-size: 12.5px;
   margin: 0;
+}
+
+.settings-note--ok {
+  color: var(--success);
+}
+
+.settings-note--warn {
+  color: var(--warning);
 }
 
 .settings-details {
@@ -3573,15 +3644,27 @@ mark.passage-mark {
 }
 .match-kind-badge.kind-title {
   color: var(--kind-topic);
-  border-color: rgba(126, 232, 196, 0.3);
+  border-color: color-mix(in srgb, var(--kind-topic) 30%, transparent);
 }
 .match-kind-badge.kind-semantic {
   color: var(--kind-semantic);
-  border-color: rgba(127, 180, 255, 0.3);
+  border-color: color-mix(in srgb, var(--kind-semantic) 30%, transparent);
 }
 .match-kind-badge.kind-keyword {
   color: var(--kind-keyword);
-  border-color: rgba(111, 134, 232, 0.35);
+  border-color: color-mix(in srgb, var(--kind-keyword) 35%, transparent);
+}
+.match-kind-badge.kind-reference {
+  color: var(--kind-reference);
+  border-color: color-mix(in srgb, var(--kind-reference) 30%, transparent);
+}
+.match-kind-badge.kind-entity {
+  color: var(--kind-entity);
+  border-color: color-mix(in srgb, var(--kind-entity) 30%, transparent);
+}
+.match-kind-badge.kind-hybrid {
+  color: var(--accent-strong);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .search-result-row__score-track {
@@ -3948,10 +4031,18 @@ mark.passage-mark {
     height: 44px;
     flex: 0 0 44px;
   }
-  .icon-btn-close,
-  .chat-panel__close {
+  .icon-btn-close {
     min-width: 44px;
     min-height: 44px;
+  }
+  .progress-strip-layer {
+    /* Sit above the chat FAB and minimap instead of squeezing between them. */
+    bottom: 176px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .progress-strip {
+    width: min(640px, calc(100vw - 24px));
   }
   .graph-navigator {
     top: 8px;
@@ -4204,24 +4295,38 @@ mark.passage-mark {
 .snapshot-item__actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
   flex: none;
 }
 
 .snapshot-btn {
-  padding: 4px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.06);
-  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-glass);
+  background: rgba(140, 150, 255, 0.06);
+  color: var(--text-primary);
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease,
+    transform var(--dur-fast) ease;
 }
 .snapshot-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.24);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(143, 123, 255, 0.25) inset, 0 0 22px rgba(143, 123, 255, 0.22);
+}
+.snapshot-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 .snapshot-btn:disabled {
   opacity: 0.55;
@@ -4229,24 +4334,24 @@ mark.passage-mark {
 }
 
 .snapshot-btn--load {
-  border-color: rgba(120, 140, 255, 0.3);
-  background: rgba(120, 140, 255, 0.15);
+  border-color: var(--border-glass-strong);
+  background: rgba(143, 123, 255, 0.1);
 }
 .snapshot-btn--load:hover:not(:disabled) {
-  background: rgba(120, 140, 255, 0.28);
-  border-color: rgba(120, 140, 255, 0.5);
+  border-color: var(--accent);
 }
 
-.snapshot-btn--delete {
-  padding: 4px 8px;
-  font-size: 13px;
-  opacity: 0.6;
+.snapshot-btn--delete,
+.snapshot-btn--delete-confirm {
+  padding: 8px 12px;
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
 }
-.snapshot-btn--delete:hover:not(:disabled) {
-  opacity: 1;
-  color: #ff6b6b;
-  border-color: rgba(255, 107, 107, 0.3);
-  background: rgba(255, 107, 107, 0.1);
+.snapshot-btn--delete:hover:not(:disabled),
+.snapshot-btn--delete-confirm:hover:not(:disabled) {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger) 25%, transparent) inset;
 }
 
 /* ==========================================================================
@@ -4354,25 +4459,6 @@ mark.passage-mark {
 .chat-panel__doc-count {
   font-size: 10.5px;
   color: var(--text-secondary);
-}
-
-.chat-panel__close {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 15px;
-  cursor: pointer;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: color 120ms, background-color 120ms;
-}
-.chat-panel__close:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.08);
 }
 
 .chat-panel__messages {
@@ -4898,8 +4984,8 @@ mark.passage-mark {
   padding: 5px;
   pointer-events: auto;
   animation: kn-pop-in 240ms var(--ease-spring) both;
-  /* keep pace with the side panel's 280ms slide when dodging it */
-  transition: right 280ms var(--ease-out);
+  /* keep pace with the side panel's slide when dodging it */
+  transition: right var(--dur-mid) var(--ease-out);
   box-shadow: 0 14px 38px rgba(0, 0, 0, 0.38), inset 0 1px rgba(255, 255, 255, 0.04);
 }
 

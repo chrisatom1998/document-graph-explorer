@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   exportGraphJSON,
@@ -67,30 +67,6 @@ export async function importGraphJsonFileWithToast(file: File): Promise<boolean>
     return false;
   }
 }
-
-const confirmPanelStyle: CSSProperties = {
-  width: 'min(420px, 92vw)',
-  padding: '20px 22px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 14,
-};
-const confirmTitleStyle: CSSProperties = {
-  margin: 0,
-  fontSize: 17,
-  fontWeight: 600,
-};
-const confirmTextStyle: CSSProperties = {
-  margin: 0,
-  fontSize: 13,
-  lineHeight: 1.55,
-  opacity: 0.78,
-};
-const confirmRowStyle: CSSProperties = {
-  display: 'flex',
-  gap: 8,
-  justifyContent: 'flex-end',
-};
 
 async function copyText(text: string): Promise<void> {
   if (navigator.clipboard?.writeText) {
@@ -266,22 +242,21 @@ export default function ExportImportMenu({
           <div className="settings-backdrop" onClick={cancelImport}>
           <div
             ref={dialogRef}
-            className="glass-panel"
+            className="glass-panel confirm-dialog"
             role="dialog"
             aria-modal="true"
             aria-label="Replace current graph?"
-            style={confirmPanelStyle}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
               if (e.key === 'Escape') cancelImport();
             }}
           >
-            <h2 style={confirmTitleStyle}>Replace Current Graph?</h2>
-            <p style={confirmTextStyle}>
+            <h2 className="confirm-dialog__title">Replace Current Graph?</h2>
+            <p className="confirm-dialog__text">
               Importing <strong>{pendingFile.name}</strong> will replace the current graph in
               this tab. Existing cached documents and snapshots stay on this device.
             </p>
-            <div style={confirmRowStyle}>
+            <div className="confirm-dialog__row">
               <button
                 type="button"
                 className="snapshot-btn"
@@ -311,24 +286,23 @@ export default function ExportImportMenu({
           <div className="settings-backdrop" onClick={() => !sharing && setShareConfirmOpen(false)}>
             <div
               ref={dialogRef}
-              className="glass-panel"
+              className="glass-panel confirm-dialog"
               role="dialog"
               aria-modal="true"
               aria-label="Copy shareable graph URL?"
-              style={confirmPanelStyle}
               onClick={(event) => event.stopPropagation()}
               onKeyDown={(event) => {
                 if (event.key === 'Escape' && !sharing) setShareConfirmOpen(false);
               }}
             >
-              <h2 style={confirmTitleStyle}>Share This Graph?</h2>
-              <p style={confirmTextStyle}>
+              <h2 className="confirm-dialog__title">Share This Graph?</h2>
+              <p className="confirm-dialog__text">
                 The link contains titles, summaries (up to 2000 characters), topics,
                 entities, keywords, warnings, cluster labels, and connection evidence (up to 200 characters). It excludes
                 full document text, local paths, embeddings, file handles, and settings. Anyone
                 with the link can view the included graph metadata.
               </p>
-              <div style={confirmRowStyle}>
+              <div className="confirm-dialog__row">
                 <button
                   type="button"
                   className="snapshot-btn"

@@ -68,6 +68,7 @@ describe('Accessibility Verification: CloseButton across all 9 UI Panels', () =>
     const btn = screen.getByRole('button', { name: 'Close chat' });
     expect(btn).toBeInTheDocument();
     expect(btn).toHaveAttribute('aria-label', 'Close chat');
+    expect(btn).toHaveClass('icon-btn-close');
   });
 
   it('2. FirstRunGuide has accessible close button', async () => {

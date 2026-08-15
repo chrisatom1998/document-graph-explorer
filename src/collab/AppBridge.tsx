@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
 import { useUiStore } from '../store/uiStore';
 import { useFocusTrap } from '../ui/useFocusTrap';
@@ -10,30 +10,6 @@ import {
   hashLooksLikeCollabInvite,
 } from './joinConsent';
 import { useCollabStore } from './store';
-
-const confirmPanelStyle: CSSProperties = {
-  width: 'min(420px, 92vw)',
-  padding: '20px 22px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 14,
-};
-const confirmTitleStyle: CSSProperties = {
-  margin: 0,
-  fontSize: 17,
-  fontWeight: 600,
-};
-const confirmTextStyle: CSSProperties = {
-  margin: 0,
-  fontSize: 13,
-  lineHeight: 1.55,
-  opacity: 0.78,
-};
-const confirmRowStyle: CSSProperties = {
-  display: 'flex',
-  gap: 8,
-  justifyContent: 'flex-end',
-};
 
 function stripCollabHash(): void {
   window.history.replaceState(
@@ -120,19 +96,18 @@ export default function CollabAppBridge(): ReactElement | null {
           <div className="settings-backdrop" onClick={cancelJoin}>
             <div
               ref={dialogRef}
-              className="glass-panel"
+              className="glass-panel confirm-dialog"
               role="dialog"
               aria-modal="true"
               aria-label={COLLAB_JOIN_TITLE}
-              style={confirmPanelStyle}
               onClick={(event) => event.stopPropagation()}
               onKeyDown={(event) => {
                 if (event.key === 'Escape') cancelJoin();
               }}
             >
-              <h2 style={confirmTitleStyle}>{COLLAB_JOIN_TITLE}</h2>
-              <p style={confirmTextStyle}>{collabJoinDisclosure(shareNotes)}</p>
-              <div style={confirmRowStyle}>
+              <h2 className="confirm-dialog__title">{COLLAB_JOIN_TITLE}</h2>
+              <p className="confirm-dialog__text">{collabJoinDisclosure(shareNotes)}</p>
+              <div className="confirm-dialog__row">
                 <button
                   type="button"
                   className="snapshot-btn"

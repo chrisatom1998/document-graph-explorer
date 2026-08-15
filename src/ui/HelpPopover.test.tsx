@@ -19,6 +19,7 @@ describe('HelpPopover', () => {
     const listener = vi.fn();
     window.addEventListener(FIRST_RUN_GUIDE_REOPEN_EVENT, listener);
     render(<HelpPopover />);
+    expect(screen.getByText('Document Graph Explorer')).toBeInTheDocument();
 
     for (const label of Object.values(EDGE_KIND_LABEL)) {
       expect(screen.getByText(label)).toBeInTheDocument();

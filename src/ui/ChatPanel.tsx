@@ -264,7 +264,6 @@ export default function ChatPanel() {
           )}
         </div>
         <CloseButton
-          className="chat-panel__close"
           title="Close chat"
           aria-label="Close chat"
           onClick={() => setIsOpen(false)}
