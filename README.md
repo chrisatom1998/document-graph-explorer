@@ -48,7 +48,7 @@ These numbers are one calibrated data point from an Apple M5 Max with 36 GB RAMâ
 | Capability | What you get |
 | --- | --- |
 | **Local semantic graph** | Self-hosted `bge-small-en-v1.5` embeddings, lexical signals, references, entities, and Louvain communitiesâ€”all computed client-side without an account or backend. |
-| **Broad document ingestion** | Markdown, HTML, text, PDF, DOCX, PPTX, XLSX, EPUB, RTF, OpenDocument formats, YAML, CSV, notebooks, and many source-code formats. Scanned PDFs fall back to bundled Tesseract OCR. |
+| **Broad document ingestion** | Markdown, HTML, text, PDF, DOCX, PPTX, XLSX, EPUB, RTF, OpenDocument formats, YAML, CSV, notebooks, and many source-code formats. Scanned PDFs fall back to bundled Tesseract OCR; English is included, with extra language packs and the page cap configurable in Settings. |
 | **Repository understanding** | Drop a source tree, honor `.gitignore`, skip generated/vendor directories, extract symbols, and turn relative imports/includes into high-confidence graph edges. |
 | **Search and reading** | Semantic search, passage highlighting, full document readers, connection evidence, paths between documents, cluster insights, and optional document Q&A. |
 | **Live workspaces** | Create multiple named corpora, persist them in IndexedDB, and connect a watched folder so additions, edits, and deletions stay synchronized while the app is open. |
@@ -76,7 +76,7 @@ Open the printed local URL, then drag documents onto the window or click **Add a
 
 ### Use a packaged build
 
-Download the latest published artifacts from [GitHub Releases](https://github.com/chrisatom1998/document-graph-explorer/releases/latest), or build a target yourself using the commands below. Use `npm run build:airgap` when the distribution must enforce zero external destinations.
+Download the latest published artifacts from [GitHub Releases](https://github.com/chrisatom1998/document-graph-explorer/releases/latest), or build a target yourself using the commands below. Published releases can trail `main`; use the live app or build from the current source tree for the newest unreleased changes. Use `npm run build:airgap` when the distribution must enforce zero external destinations.
 
 ## From document pile to digital twin
 
