@@ -1213,6 +1213,9 @@ async function runRemove(ids: string[]): Promise<void> {
     // the dead ids into searchResults after the cleanup above.
     ui.setPathMode(false);
   }
+  for (const id of ui.compareIds) {
+    if (gone.has(id)) ui.removeCompare(id);
+  }
 
   // In-memory removal: graph store, runtime stores, per-run bookkeeping.
   store().removeNodes(removing);
@@ -1621,6 +1624,7 @@ export function resetCorpus(): void {
   ui.setHovered(null);
   ui.setSearchResults(null);
   ui.setPathMode(false); // also clears pathEndpoints — they reference the old corpus
+  ui.clearCompare();
   // Chat answers cite the outgoing corpus — stale context for the next one.
   // Cancel any in-flight stream FIRST: it would otherwise keep running
   // against the wiped stores with isStreaming stuck true for up to 120s.

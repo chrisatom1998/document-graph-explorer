@@ -136,7 +136,7 @@ export default function ProgressStrip() {
   const total = enriching ? enrichProgress?.total ?? 0 : statuses.length;
   const done = enriching
     ? enrichProgress?.done ?? 0
-    : statuses.filter((s) => s.stage === 'placed' || s.stage === 'cached').length;
+    : statuses.filter((s) => s.stage === 'placed' || s.stage === 'cached' || s.stage === 'error').length;
   const recentFiles = enriching ? [] : statuses.slice(-MAX_FILE_CHIPS);
   const phaseLabel =
     phase === 'ready'
@@ -178,7 +178,7 @@ export default function ProgressStrip() {
     <div className="progress-strip-layer">
       <div
         className={`progress-strip glass-panel${
-          !active && lingering && !ignoredFlash ? ' is-leaving' : ''
+          !active && lingering && !holdErrors && !ignoredFlash ? ' is-leaving' : ''
         }`}
         aria-busy={active}
       >
