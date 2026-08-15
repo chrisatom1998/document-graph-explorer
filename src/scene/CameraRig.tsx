@@ -92,12 +92,29 @@ export default function CameraRig() {
   );
 
   // 2D mode: lock the polar angle to the equator while active (spec §7.3).
+  // Also snap the current pose onto that equator — locking min/max alone
+  // leaves a tilted 3D orbit in place, so a flattened graph reads edge-on.
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls) return;
     if (dims === 2) {
       controls.minPolarAngle = Math.PI / 2;
       controls.maxPolarAngle = Math.PI / 2;
+      const cam = controls.object;
+      const target = controls.target;
+      const dx = cam.position.x - target.x;
+      const dy = cam.position.y - target.y;
+      const dz = cam.position.z - target.z;
+      const dist = Math.hypot(dx, dy, dz);
+      const horiz = Math.hypot(dx, dz);
+      if (dist > 1e-6 && horiz > 1e-6) {
+        cam.position.set(
+          target.x + (dx / horiz) * dist,
+          target.y,
+          target.z + (dz / horiz) * dist,
+        );
+        controls.update();
+      }
     } else {
       controls.minPolarAngle = 0;
       controls.maxPolarAngle = Math.PI;

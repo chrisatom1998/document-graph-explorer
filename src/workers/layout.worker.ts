@@ -31,6 +31,7 @@ import {
 } from 'd3-force-3d';
 import type { Force, SimLink } from 'd3-force-3d';
 import type { LayoutRequest, LayoutResponse } from '../model/types';
+import { clusterAnchor } from '../layout/clusterAnchors';
 import { randomSpherePoint } from '../pipeline/spawnPosition';
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -167,22 +168,12 @@ const anchors = new Map<number, [number, number, number]>();
  * re-clusters repeatedly during ingest) moved EVERY anchor. Hashing into a
  * fixed 32-seat domain avoided that shuffle but collided once Louvain (or
  * the empty-edge singleton path) produced more than 32 communities. */
-const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
-const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
-
 function rebuildAnchors(): void {
   anchors.clear();
   const seen = new Set<number>();
   for (const n of nodes) if (n.cluster >= 0) seen.add(n.cluster);
   for (const id of seen) {
-    const y = 1 - 2 * (((id + 0.5) * GOLDEN_RATIO) % 1);
-    const r = Math.sqrt(Math.max(0, 1 - y * y));
-    const theta = GOLDEN_ANGLE * id;
-    anchors.set(id, [
-      Math.cos(theta) * r * shellRadius,
-      y * shellRadius,
-      Math.sin(theta) * r * shellRadius,
-    ]);
+    anchors.set(id, clusterAnchor(id, shellRadius, dims));
   }
 }
 
@@ -196,7 +187,12 @@ function makeClusterForce(): Force<LayoutNode> {
       if (!anchor) continue;
       n.vx += (anchor[0] - n.x) * k;
       n.vy += (anchor[1] - n.y) * k;
-      n.vz += (anchor[2] - n.z) * k;
+      if (dims === 2) {
+        n.z = 0;
+        n.vz = 0;
+      } else {
+        n.vz += (anchor[2] - n.z) * k;
+      }
     }
   };
   return Object.assign(apply, {
@@ -274,7 +270,7 @@ function postPositions(alpha: number, force = false): void {
     const o = n.slot * 3;
     arr[o] = n.x;
     arr[o + 1] = n.y;
-    arr[o + 2] = n.z;
+    arr[o + 2] = dims === 2 ? 0 : n.z;
   }
   inFlight++;
   self.postMessage({ type: 'tick', buffer, count, alpha } satisfies LayoutResponse, [buffer]);
@@ -318,6 +314,11 @@ sim.on('end', () => {
  * node-count-dependent) radius — shares the sphere-sampling math in
  * pipeline/spawnPosition.ts, but that radius is only known here. */
 function randomShellPoint(): [number, number, number] {
+  if (dims === 2) {
+    const phi = Math.random() * Math.PI * 2;
+    const r = shellRadius * 1.8;
+    return [Math.cos(phi) * r, Math.sin(phi) * r, 0];
+  }
   return randomSpherePoint(shellRadius * 1.8);
 }
 
@@ -480,6 +481,7 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
           if (n.fz == null) n.z += (Math.random() - 0.5) * 2;
         }
       }
+      rebuildAnchors();
       reheat(0.5);
       break;
     }

@@ -17,7 +17,7 @@
  * materials stay unlit (basic/additive) and ignore these lights entirely.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
@@ -47,7 +47,7 @@ import AutoQuality from './AutoQuality';
 import ClusterCollapse from './ClusterCollapse';
 import SelectionHalo from './SelectionHalo';
 import PeerPresence from './PeerPresence';
-import PathRoute from './PathRoute.tsx';
+import PathRoute from './PathRoute';
 
 const COARSE_POINTER =
   typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches);
@@ -74,11 +74,50 @@ function supportsWebGL(): boolean {
   if (typeof document === 'undefined') return true;
   try {
     const canvas = document.createElement('canvas');
-    return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'));
+    const ctx = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    // Release the probe: browsers cap live contexts per page and evict the
+    // OLDEST once over the cap — which would be the scene canvas itself,
+    // showing up as the graph blanking out and coming back.
+    ctx?.getExtension('WEBGL_lose_context')?.loseContext();
+    return Boolean(ctx);
   } catch {
     return false;
   }
 }
+
+/* Fully local reflection environment (the CSP forbids the HDR presets' CDN);
+   the sheets echo the scene lights so reflections agree with the shading.
+   Module-level: drei's Environment re-bakes (and briefly clears
+   scene.environment) whenever its children identity changes, and inline JSX
+   would hand it a fresh tree on every NebulaCanvas render. */
+const ENVIRONMENT_SHEETS = (
+  <>
+    <Lightformer
+      form="rect"
+      intensity={4}
+      color="#b9a8ff"
+      position={[-6, 8, 10]}
+      scale={[8, 6, 1]}
+      target={[0, 0, 0]}
+    />
+    <Lightformer
+      form="rect"
+      intensity={2}
+      color="#7fa8ff"
+      position={[8, -3, 6]}
+      scale={[6, 4, 1]}
+      target={[0, 0, 0]}
+    />
+    <Lightformer
+      form="rect"
+      intensity={1.2}
+      color="#ff9bd6"
+      position={[0, -8, -6]}
+      scale={[10, 4, 1]}
+      target={[0, 0, 0]}
+    />
+  </>
+);
 
 // The 2D backdrop's material/placement constants (and the occlusion contract
 // that keeps it from hiding the graph) live in ./flatMapBackdrop.
@@ -113,8 +152,11 @@ export default function NebulaCanvas() {
   // the graph reads as a star chart, not a nebula (see palette FLAT_* tokens).
   const flat = useUiStore((s) => s.dims === 2);
   const bg = flat ? FLAT_BG : VOID;
+  // Probe once — a failed context is a permanent property of the browser,
+  // and probing in the render body would create a context per render.
+  const [webgl] = useState(supportsWebGL);
 
-  if (!supportsWebGL()) return <WebGLFallback />;
+  if (!webgl) return <WebGLFallback />;
 
   return (
     <Canvas
@@ -151,36 +193,8 @@ export default function NebulaCanvas() {
       <pointLight position={[60, -40, 40]} intensity={0.62} color="#7fa8ff" distance={0} />
 
       {/* procedural reflection environment for the glassy node cores — three
-          soft Lightformer sheets rendered once to a PMREM at startup. Fully
-          local: the CSP forbids the HDR presets' CDN, and the sheets echo the
-          scene lights (violet key upper-left, cool blue fill, faint warm
-          floor) so reflections agree with the shading. */}
-      <Environment resolution={64} frames={1}>
-        <Lightformer
-          form="rect"
-          intensity={4}
-          color="#b9a8ff"
-          position={[-6, 8, 10]}
-          scale={[8, 6, 1]}
-          target={[0, 0, 0]}
-        />
-        <Lightformer
-          form="rect"
-          intensity={2}
-          color="#7fa8ff"
-          position={[8, -3, 6]}
-          scale={[6, 4, 1]}
-          target={[0, 0, 0]}
-        />
-        <Lightformer
-          form="rect"
-          intensity={1.2}
-          color="#ff9bd6"
-          position={[0, -8, -6]}
-          scale={[10, 4, 1]}
-          target={[0, 0, 0]}
-        />
-      </Environment>
+          soft Lightformer sheets rendered once to a PMREM at startup. */}
+      <Environment resolution={64} frames={1}>{ENVIRONMENT_SHEETS}</Environment>
 
       <SceneCapture />
       <CameraRig />
