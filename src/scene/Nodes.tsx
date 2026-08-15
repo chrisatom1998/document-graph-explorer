@@ -28,6 +28,8 @@ import { layoutPin, layoutUnpin } from '../layout/layoutBridge';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { computeEmphasis } from './emphasis';
+import { cameraPose } from './cameraPose';
+import { viewDistanceFade } from './viewDistance';
 import {
   ghostOfSlot,
   idOfSlot,
@@ -233,6 +235,7 @@ export default function Nodes() {
   const showMePulsing = useRef(false);
   const lastVersion = useRef(-1);
   const lastCount = useRef(-1);
+  const lastCam = useRef({ x: 0, y: 0, z: 160 });
   const dragRef = useRef<DragState | null>(null);
   const engageDragRef = useRef<(() => void) | null>(null);
   const finishDragRef = useRef<(() => void) | null>(null);
@@ -334,6 +337,23 @@ export default function Nodes() {
           tmpColor.setRGB(1, 0.78, 0.28);
           tmpOuterColor.setRGB(0.65, 0.38, 0.1);
         }
+      }
+      const keepBright =
+        n.id === hoveredId ||
+        n.id === selectedId ||
+        showMeIds?.has(n.id) ||
+        Boolean(emphasis?.has(n.id));
+      if (!isFlat && !keepBright) {
+        const o = slot * 3;
+        const arr = positionBuffer.array;
+        const dist = Math.hypot(
+          arr[o] - cameraPose.px,
+          arr[o + 1] - cameraPose.py,
+          arr[o + 2] - cameraPose.pz,
+        );
+        const fade = viewDistanceFade(dist);
+        tmpColor.multiplyScalar(fade);
+        tmpOuterColor.multiplyScalar(Math.min(1, fade + 0.08));
       }
       tmpColor.r = Math.min(tmpColor.r, 1);
       tmpColor.g = Math.min(tmpColor.g, 1);
@@ -594,6 +614,13 @@ export default function Nodes() {
       metaDirty.current = false;
       matricesDirty.current = true; // scales may have changed
     }
+    const camDx = cameraPose.px - lastCam.current.x;
+    const camDy = cameraPose.py - lastCam.current.y;
+    const camDz = cameraPose.pz - lastCam.current.z;
+    if (camDx * camDx + camDy * camDy + camDz * camDz > 144) {
+      lastCam.current = { x: cameraPose.px, y: cameraPose.py, z: cameraPose.pz };
+      colorsDirty.current = true;
+    }
     if (colorsDirty.current && recomputeColors()) {
       colorsDirty.current = false;
     }
@@ -763,7 +790,19 @@ export default function Nodes() {
           raycast={NO_RAYCAST}
         >
           <octahedronGeometry args={[1, 0]} />
-          <meshBasicMaterial toneMapped={false} />
+          {flat ? (
+            <meshBasicMaterial toneMapped={false} />
+          ) : (
+            <meshPhysicalMaterial
+              roughness={0.14}
+              metalness={0.28}
+              clearcoat={1}
+              clearcoatRoughness={0.18}
+              emissive="#2ad4b8"
+              emissiveIntensity={0.32}
+              envMapIntensity={0.85}
+            />
+          )}
         </instancedMesh>
       )}
     </group>

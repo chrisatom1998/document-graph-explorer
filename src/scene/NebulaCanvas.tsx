@@ -25,7 +25,7 @@ import { useUiStore } from '../store/uiStore';
 import { useGraphStore } from '../store/graphStore';
 import { dismissGraphFocus } from './cameraFocusPolicy';
 import { registerSceneCapture } from './sceneCapture';
-import { FLAT_BG } from './palette';
+import { FLAT_BG, VOID } from './palette';
 import {
   BACKDROP_RENDER_ORDER,
   BACKDROP_SIZE,
@@ -48,6 +48,7 @@ import AutoQuality from './AutoQuality';
 import ClusterCollapse from './ClusterCollapse';
 import SelectionHalo from './SelectionHalo';
 import PeerPresence from './PeerPresence';
+import PathRoute from './PathRoute';
 
 const COARSE_POINTER =
   typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches);
@@ -117,7 +118,7 @@ export default function NebulaCanvas() {
   // pipeline — starfield, clouds, bloom composer — burns a second render
   // loop at full rate behind it before a single document exists.
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
-  const bg = flat ? FLAT_BG : '#050510';
+  const bg = flat ? FLAT_BG : VOID;
 
   if (!supportsWebGL()) return <WebGLFallback />;
 
@@ -200,6 +201,7 @@ export default function NebulaCanvas() {
       {/* 3D only: the 2D star chart keeps its delicate hairline aesthetic */}
       {!flat && <ClusterBridges />}
       <EdgePulses />
+      <PathRoute />
       <Labels />
       <SelectionHalo />
       <PeerPresence />

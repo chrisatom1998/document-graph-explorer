@@ -23,13 +23,15 @@
  * switches (quality tier, 2D/3D) are allowed to do that.
  */
 
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Bloom, DepthOfField, EffectComposer, Vignette } from '@react-three/postprocessing';
 import type { BloomEffect, DepthOfFieldEffect, VignetteEffect } from 'postprocessing';
+import { onLayoutSettled } from '../layout/layoutBridge';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
+import { settleBloomBoost, triggerSettleCue } from './settleCue';
 import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../config';
 
 // Threshold/smoothing are half of the label-vs-bloom contract (Labels.tsx) —
@@ -87,6 +89,11 @@ export default function Effects() {
   const dofOn = useUiStore((s) => s.qualityTier === 0 && s.dims === 3);
   const halfRes = qualityTier >= 2;
 
+  // Settle cue: arm the one-shot bloom lift when the force layout cools.
+  // The decaying boost itself is read per-frame below, so no re-render tick
+  // is needed to animate it.
+  useEffect(() => onLayoutSettled(() => triggerSettleCue()), []);
+
   const bloomRef = useRef<BloomEffect>(null);
   const vignetteRef = useRef<VignetteEffect>(null);
   // Interaction-rate parameters bypass React: R3F runs useFrame subscribers
@@ -100,7 +107,7 @@ export default function Effects() {
     const focusBoost = hoveredId || selectedId ? FOCUS_BOOST : 0;
     bloom.intensity = flat
       ? FLAT_BLOOM_INTENSITY
-      : BLOOM_INTENSITY - softening * 0.26 + focusBoost;
+      : BLOOM_INTENSITY - softening * 0.26 + focusBoost + settleBloomBoost();
     vignette.darkness = flat ? FLAT_VIGNETTE : 0.62 - softening * 0.08;
   });
 

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -244,6 +244,10 @@ export default function SidePanel() {
                 {codeLang.short}
               </span>
             )}
+            <span className="chip side-panel__header-cluster">
+              <span className="chip-dot" style={{ background: clusterColor }} aria-hidden="true" />
+              {clusterLabel}
+            </span>
           </h2>
           {node.kind === 'document' && (
             <button
@@ -445,7 +449,11 @@ export default function SidePanel() {
                   : edge.evidence.slice(0, EVIDENCE_COLLAPSED);
                 const hiddenEvidence = edge.evidence.length - shownEvidence.length;
                 return (
-                  <div className="connection-row" key={edge.id}>
+                  <div
+                    className="connection-row"
+                    key={edge.id}
+                    style={{ '--connection-kind': EDGE_KIND_HEX[edge.kind] } as CSSProperties}
+                  >
                     <div className="connection-row__main">
                       <span
                         className="chip-dot"

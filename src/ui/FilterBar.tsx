@@ -5,6 +5,7 @@ import type { EdgeKind, FileType } from '../model/types';
 import { DEFAULT_FILTER, useUiStore } from '../store/uiStore';
 import { isFilterActive } from '../scene/emphasis';
 import SnapshotDiffBanner from './SnapshotDiffBanner';
+import { IconFunnel } from './icons';
 
 const EDGE_KIND_ORDER: { kind: EdgeKind; label: string }[] = [
   { kind: 'reference', label: 'links' },
@@ -34,21 +35,6 @@ const FILE_TYPE_ORDER: FileType[] = [
   'code',
   'other',
 ];
-
-function IconFunnel() {
-  return (
-    <svg
-      viewBox="0 0 18 18"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M2.5 3.5h13L10.5 9.2v5l-3 1.6V9.2Z" />
-    </svg>
-  );
-}
 
 /**
  * Slim collapsible chip bar (top-left) for file-type / cluster / min-degree /

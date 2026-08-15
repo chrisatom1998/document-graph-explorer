@@ -3,6 +3,13 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { fileTypeChip } from '../pipeline/codeLanguage';
 
+/** Tiny cluster swatch — do not import scene/palette (it pulls THREE into the entry). */
+function clusterDot(cluster: number): string {
+  if (cluster < 0) return '#8f9bff';
+  const hue = (210 + cluster * 137.508) % 360;
+  return `hsl(${hue.toFixed(1)} 72% 66%)`;
+}
+
 const OFFSET = 16;
 
 // Last cursor position, tracked by the persistent listener below so the card
@@ -85,7 +92,11 @@ export default function Tooltip() {
     >
       <p className="hover-tooltip__title">{node.title}</p>
       <p className="hover-tooltip__meta">
-        {fileTypeChip(node)} · {node.wordCount.toLocaleString()} words
+        <span className="chip">{fileTypeChip(node)}</span>
+        <span className="hover-tooltip__cluster">
+          <span className="chip-dot" style={{ background: clusterDot(node.cluster) }} aria-hidden="true" />
+        </span>
+        <span>{node.wordCount.toLocaleString()} words</span>
       </p>
       {topTopics.length > 0 && (
         <div className="hover-tooltip__topics">
