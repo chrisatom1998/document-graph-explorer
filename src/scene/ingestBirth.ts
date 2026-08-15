@@ -309,7 +309,7 @@ export function computeFitAllPose(input: {
    * Freed slots keep stale coordinates in the recycled (non-zeroed) position
    * buffer, so an unfiltered fit jumps to phantom points. Default: all live. */
   isLive?: (slot: number) => boolean;
-}): { target: Vec3; position: Vec3; radius: number } {
+}): { target: Vec3; position: Vec3; radius: number; liveCount: number } {
   const given = input.slots;
   const slots: number[] = [];
   const total = given ? given.length : input.count;
@@ -329,7 +329,7 @@ export function computeFitAllPose(input: {
     cz += input.array[slot * 3 + 2] ?? 0;
   }
   if (n === 0) {
-    return { target: [0, 0, 0], position: [0, 0, 40], radius: 0 };
+    return { target: [0, 0, 0], position: [0, 0, 40], radius: 0, liveCount: 0 };
   }
   cx /= n;
   cy /= n;
@@ -353,6 +353,7 @@ export function computeFitAllPose(input: {
     target: [cx, cy, cz],
     position: [cx + vx * dist, cy + vy * dist, cz + vz * dist],
     radius,
+    liveCount: n,
   };
 }
 
@@ -366,7 +367,7 @@ export function slotIsLive(slot: number): boolean {
 export function computeLiveFitAllPose(input: {
   viewDir: Vec3;
   fovDeg: number;
-}): { target: Vec3; position: Vec3; radius: number } {
+}): { target: Vec3; position: Vec3; radius: number; liveCount: number } {
   return computeFitAllPose({
     array: positionBuffer.array,
     count: positionBuffer.count,
