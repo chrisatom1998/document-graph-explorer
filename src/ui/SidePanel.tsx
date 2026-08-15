@@ -269,7 +269,6 @@ export default function SidePanel() {
             <div className="side-panel__section">
               <p className="side-panel__section-label">Documents</p>
               <SidePanelConnections
-                sourceId={node.id}
                 connections={connections}
                 showAllConnections={showAllConnections}
                 expandedEvidence={expandedEvidence}

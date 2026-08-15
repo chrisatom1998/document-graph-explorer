@@ -5,7 +5,7 @@ import { focusNode } from './focusNode';
 import { openCompare } from './openCompare';
 
 interface SidePanelConnectionsProps {
-  sourceId: string;
+  sourceId?: string;
   connections: ConnectionRow[];
   showAllConnections: boolean;
   expandedEvidence: ReadonlySet<string>;
@@ -61,7 +61,7 @@ export default function SidePanelConnections({
                 >
                   {EDGE_KIND_LABEL[edge.kind]}
                 </span>
-                {neighbor?.kind === 'document' && (
+                {sourceId !== undefined && neighbor?.kind === 'document' && (
                   <button
                     type="button"
                     className="connection-row__compare"
