@@ -2020,6 +2020,7 @@ mark.passage-mark {
 }
 .side-panel__reader-frame.is-code,
 .side-panel__reader-frame.is-mono,
+.side-panel__reader-frame.is-wide,
 .side-panel__reader--pdf,
 .side-panel__reader--csv,
 .side-panel__reader--json,

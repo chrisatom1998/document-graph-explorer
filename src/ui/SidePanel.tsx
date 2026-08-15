@@ -44,6 +44,10 @@ function isMonoFileType(fileType: DocNode['fileType']): boolean {
   return fileType === 'txt' || fileType === 'other' || fileType === 'code';
 }
 
+function isWideReaderFileType(fileType: DocNode['fileType']): boolean {
+  return fileType === 'pdf' || fileType === 'csv' || fileType === 'json' || fileType === 'yaml';
+}
+
 // Lazy: pulls in pdfjs-dist, which needs DOM globals (DOMMatrix) absent in
 // the jsdom test environment — only evaluate it when a PDF preview actually
 // renders, mirroring the coordinator.ts mock seam used by SidePanel tests.
@@ -557,7 +561,7 @@ export default function SidePanel() {
                 </span>
               </p>
             )}
-            <div className={`side-panel__reader-frame${codeLang ? ' is-code' : ''}${isMonoFileType(node.fileType) ? ' is-mono' : ''}`}>
+            <div className={`side-panel__reader-frame${codeLang ? ' is-code' : ''}${isMonoFileType(node.fileType) ? ' is-mono' : ''}${isWideReaderFileType(node.fileType) ? ' is-wide' : ''}`}>
             {codeLang && (
               <span className="side-panel__reader-lang" title={codeLang.label}>
                 {codeLang.short}
