@@ -49,8 +49,8 @@
   position: fixed;
   z-index: var(--z-modal);
   left: auto;
-  /* Sit just left of the 200px-wide minimap (right: 18px) plus an 8px gap. */
-  right: 236px;
+  /* Sit just left of the 220px-wide minimap (right: 18px) plus an 18px gap. */
+  right: 256px;
   bottom: 18px;
   width: min(330px, calc(100vw - 40px));
   padding: 13px 18px 15px;
@@ -2893,7 +2893,7 @@ mark.passage-mark {
   pointer-events: none;
   /* Keep the strip clear of the chat FAB (left) and minimap (right). */
   padding-left: 88px;
-  padding-right: 236px;
+  padding-right: 256px;
 }
 
 .progress-strip {
@@ -3979,7 +3979,7 @@ mark.passage-mark {
   }
   .first-run-guide {
     right: 10px;
-    bottom: 176px;
+    bottom: 184px;
     width: calc(100vw - 20px);
     max-height: calc(100vh - 300px);
     overflow: auto;

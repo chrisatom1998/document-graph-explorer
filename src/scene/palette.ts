@@ -112,19 +112,19 @@ export const EDGE_TINTS: Record<EdgeKind, THREE.Color> = {
  * token: backdrop LINES read as edges and backdrop CIRCLES read as node rings,
  * so the 2D map gets its depth cue from tone alone, never from marks.
  */
-export const FLAT_BG = '#06101a';
-export const FLAT_GRID_FADE = '#0b1825';
-export const FLAT_PANEL = '#0c1620';
-export const FLAT_NODE = new THREE.Color('#f1fbff');
-export const FLAT_NODE_CLUSTER_BLEND = 0.62;
-export const FLAT_NODE_OUTER = new THREE.Color('#12344d');
-export const FLAT_NODE_RING = '#effaff';
-export const FLAT_EDGE = new THREE.Color('#5d89a8');
-export const FLAT_EDGE_FAINT = '#274358';
-export const FLAT_EDGE_FOCUS = '#d8f3ff';
-export const FLAT_LABEL = '#edf7ff';
-export const FLAT_LABEL_MUTED = '#95afc2';
-export const FLAT_SELECTION = '#7fd4ff';
+export const FLAT_BG = '#08131f';
+export const FLAT_GRID_FADE = '#102234';
+export const FLAT_PANEL = '#112435';
+export const FLAT_NODE = new THREE.Color('#f5fbff');
+export const FLAT_NODE_CLUSTER_BLEND = 0.46;
+export const FLAT_NODE_OUTER = new THREE.Color('#23435d');
+export const FLAT_NODE_RING = '#f4fbff';
+export const FLAT_EDGE = new THREE.Color('#78a8c8');
+export const FLAT_EDGE_FAINT = '#355773';
+export const FLAT_EDGE_FOCUS = '#eef9ff';
+export const FLAT_LABEL = '#f3f9ff';
+export const FLAT_LABEL_MUTED = '#aec5d8';
+export const FLAT_SELECTION = '#8ae0ff';
 
 /** Human-readable edge-kind labels for the UI (badges, connection tags). */
 export const EDGE_KIND_LABEL: Record<EdgeKind, string> = {

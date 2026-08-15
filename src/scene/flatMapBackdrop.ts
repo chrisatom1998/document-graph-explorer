@@ -47,11 +47,15 @@ export const flatBackdropMaterial = new THREE.ShaderMaterial({
     uniform vec3 uOuter;
     varying vec2 vUv;
     void main() {
-      float d = length(vUv - 0.5) * 2.0;
-      // smoothstep keeps the falloff bandless — nothing here has an edge the
-      // eye can latch onto as a line or a ring.
-      float t = smoothstep(0.0, 1.05, d);
-      gl_FragColor = vec4(mix(uInner, uOuter, t), 1.0);
+      vec2 p = vUv - 0.5;
+      float d = length(p * vec2(0.92, 1.08)) * 2.0;
+      float verticalLift = smoothstep(-0.34, 0.72, vUv.y);
+      float glow = exp(-7.2 * dot(p, p));
+      // Still lineless, but with a slightly more authored composition: a soft
+      // editorial lift toward the upper viewport and a quiet center glow.
+      vec3 base = mix(uInner, uOuter, smoothstep(0.02, 1.04, d));
+      vec3 lifted = mix(base, uInner, 0.12 * verticalLift + 0.2 * glow);
+      gl_FragColor = vec4(lifted, 1.0);
     }
   `,
 });

@@ -51,8 +51,8 @@ const MID_TAPER = 0.68;
 // 2D star chart: hairlines are fainter than the nebula filaments and carry a
 // single uniform tint (weight still maps to brightness; kind moves to the
 // popover/legend and the pulse colors).
-const FLAT_BRIGHT_BASE = 0.14;
-const FLAT_BRIGHT_WEIGHT = 0.34;
+const FLAT_BRIGHT_BASE = 0.2;
+const FLAT_BRIGHT_WEIGHT = 0.3;
 
 // Additive edges sum brightness where they overlap, so a fixed per-edge
 // opacity turns dense graphs into a glowing hairball that hides the nodes.

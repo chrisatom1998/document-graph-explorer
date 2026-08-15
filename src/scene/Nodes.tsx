@@ -44,6 +44,7 @@ import {
   FLAT_NODE,
   FLAT_NODE_CLUSTER_BLEND,
   FLAT_NODE_OUTER,
+  FLAT_NODE_RING,
 } from './palette';
 import { prefersReducedMotion } from '../util/motion';
 import { startNodeDragLifecycle } from './nodeDragLifecycle';
@@ -128,6 +129,7 @@ const SHOW_ME_PULSE_PERIOD_MS = 1050;
 const dummy = new THREE.Object3D();
 const tmpColor = new THREE.Color();
 const tmpOuterColor = new THREE.Color();
+const tmpRingColor = new THREE.Color(FLAT_NODE_RING);
 const rayToCenter = new THREE.Vector3();
 const dragOrigin = new THREE.Vector3();
 const dragNormal = new THREE.Vector3();
@@ -290,7 +292,7 @@ export default function Nodes() {
         tmpColor.copy(FLAT_NODE).lerp(clusterColor(n.cluster), FLAT_NODE_CLUSTER_BLEND);
         tmpOuterColor
           .copy(FLAT_NODE_OUTER)
-          .lerp(clusterColor(n.cluster), FLAT_NODE_CLUSTER_BLEND * 0.48);
+          .lerp(clusterColor(n.cluster), FLAT_NODE_CLUSTER_BLEND * 0.65);
       } else {
         tmpColor.copy(clusterColor(n.cluster));
         tmpOuterColor.copy(tmpColor);
@@ -304,21 +306,24 @@ export default function Nodes() {
         tmpOuterColor.multiplyScalar(GHOST_COLOR_FACTOR);
       }
       if (emphasis && !emphasis.has(n.id)) {
-        tmpColor.multiplyScalar(0.05);
-        tmpOuterColor.multiplyScalar(0.09);
+        tmpColor.multiplyScalar(isFlat ? 0.12 : 0.05);
+        tmpOuterColor.multiplyScalar(isFlat ? 0.16 : 0.09);
       }
       // Core and outer disc must move together, so each state is ONE branch
       // that sets both. (Interleaving separate `else if` chains for the two
       // colors silently made the outer-disc branches unreachable.)
       if (n.id === hoveredId) {
-        tmpColor.multiplyScalar(2.65 - soften * 0.18);
-        tmpOuterColor.multiplyScalar(1.8 - soften * 0.12);
+        tmpColor.multiplyScalar(isFlat ? 2.15 - soften * 0.12 : 2.65 - soften * 0.18);
+        tmpOuterColor.multiplyScalar(isFlat ? 2.1 - soften * 0.08 : 1.8 - soften * 0.12);
       } else if (n.id === selectedId) {
-        tmpColor.multiplyScalar(2.45 - soften * 0.16);
-        tmpOuterColor.multiplyScalar(1.7 - soften * 0.1);
+        tmpColor.multiplyScalar(isFlat ? 2.0 - soften * 0.1 : 2.45 - soften * 0.16);
+        tmpOuterColor.multiplyScalar(isFlat ? 1.92 - soften * 0.08 : 1.7 - soften * 0.1);
       } else if (emphasis && emphasis.has(n.id)) {
-        tmpColor.multiplyScalar(1.22);
-        tmpOuterColor.multiplyScalar(1.16);
+        tmpColor.multiplyScalar(isFlat ? 1.4 : 1.22);
+        tmpOuterColor.multiplyScalar(isFlat ? 1.34 : 1.16);
+      }
+      if (isFlat && n.kind !== 'topic') {
+        tmpColor.lerp(tmpRingColor, 0.1);
       }
       if (showMeIds?.has(n.id)) {
         tmpColor.setRGB(1, 0.96, 0.62);

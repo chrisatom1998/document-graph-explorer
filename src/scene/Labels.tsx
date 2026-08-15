@@ -38,7 +38,7 @@ const LABEL_FONT = '/fonts/Inter-Regular.woff';
 // 2D star chart: monospace labels beside the dot (anchored left, centered
 // vertically) instead of above it — same pool/eviction machinery.
 const FLAT_FONT = '/fonts/JetBrainsMono-Regular.ttf';
-const FLAT_GAP = 1.85; // world units between dot edge and label
+const FLAT_GAP = 2.15; // world units between dot edge and label
 // Everything in 2D sits on the z=0 plane, so node spheres (radius up to 1.3
 // toward the camera) would z-clip the glyph quads — lift labels off the plane
 // and skip the depth test so text always reads over dots and edges.
@@ -77,9 +77,9 @@ function opacityFor(distance: number): number {
 function labelProps(reserved: boolean, flat: boolean) {
   return {
     font: flat ? FLAT_FONT : LABEL_FONT,
-    fontSize: flat ? 2.35 : 2.3,
+    fontSize: flat ? 2.18 : 2.3,
     color: flat ? (reserved ? FLAT_LABEL : FLAT_LABEL_MUTED) : LABEL_COLOR,
-    outlineWidth: flat ? 0.14 : 0.06,
+    outlineWidth: flat ? 0.18 : 0.06,
     outlineColor: flat ? FLAT_BG : VOID,
     outlineOpacity: flat ? 1 : 0.85,
     anchorX: (flat ? 'left' : 'center') as 'left' | 'center',
