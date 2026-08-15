@@ -169,16 +169,15 @@ Every row is clickable to fly to that document.
 
 ## Document details (side panel)
 
-Click any node. The right-hand panel shows:
+Click any node. The right-hand panel opens on the document itself:
 
-- **Header actions**: **Open** (opens the original file — see below), **Remove** (two-step confirm; removes the doc and its cached data from the graph and rebuilds links — the file on disk is untouched), and close.
-- **Badges**: file type, cluster (with color), warnings (e.g. partially indexed), and clickable **≈ duplicate of …** chips when a near-duplicate exists.
-- **Stats**: word count, connection count, last-modified time.
-- **Summary** (AI-enriched if enrichment ran, otherwise the document's opening lines), **Topics** (topics shared with other docs are clickable hubs), and **Entities**.
-- **Notes & Tags**: your own free-text note, tag chips (with one-click suggestions from tags used elsewhere in the corpus), and a **☆ Pin** toggle. Annotations are saved per corpus, keyed by the document's path — an edited file keeps its notes — and pinned documents appear as a jump list in Corpus insights.
-- **Ask AI** (when enrichment is enabled — see below).
-- **Connections**: every edge sorted by strength, with the relationship kind, a weight bar, evidence for the link, and a click-to-jump neighbor title.
-- **A real document reader**: PDFs render their actual pages (lazily as you scroll); Markdown renders with headings, tables, code, and working cross-document links — a `[[wikilink]]` or relative link to another ingested doc jumps to it *inside the graph*; HTML renders sanitized; CSV becomes a real table; JSON/YAML are syntax-highlighted; everything else gets a clean text reader.
+- **Header actions**: **Open** (opens the original file — see below) and close stay on the title row. **More like this** and **Remove** (two-step confirm; removes the doc and its cached data from the graph and rebuilds links — the file on disk is untouched) sit on a second action row.
+- **Identity**: file type, cluster (with color), warnings (e.g. partially indexed), clickable **≈ duplicate of …** chips when a near-duplicate exists, plus word count, connection count, and last-modified time.
+- **A real document reader** (the first expanded section): PDFs render their actual pages (lazily as you scroll); Markdown renders with headings, tables, code, and working cross-document links — a `[[wikilink]]` or relative link to another ingested doc jumps to it *inside the graph*; HTML renders sanitized; CSV becomes a real table; JSON/YAML are syntax-highlighted; everything else gets a clean text reader. Opening from search or chat jumps here with a matching-passage banner.
+- **About** (collapsed until you open it): **Summary** (AI-enriched if enrichment ran, otherwise the document's opening lines), **Topics** (topics shared with other docs are clickable hubs), **Entities**, **Notes & Tags**, and **Ask AI** (when enrichment is enabled — see below). Notes are saved per corpus, keyed by the document's path — an edited file keeps its notes — and pinned documents appear as a jump list in Corpus insights. Imported or shared graphs explain that notes cannot be saved there.
+- **Connections** (collapsed until you open it): every edge sorted by strength, with the relationship kind, a weight bar, evidence for the link, and a click-to-jump neighbor title.
+
+**Topic hubs** skip the empty reader. The panel lists the documents that share the topic, without Open / Remove / notes / Ask AI.
 
 **Open the original:** if the app retained the exact bytes you dropped (it does, per file), **Open** hands the original file to your OS so it opens in the default app for that type. Otherwise it opens a styled reader tab with the formatted text and a numbered list of every link found in the document.
 
