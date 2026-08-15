@@ -63,8 +63,20 @@ describe('SidePanel connections list', () => {
 
   afterEach(() => cleanup());
 
+  function openConnections(): void {
+    fireEvent.click(screen.getByRole('button', { name: /^connections$/i }));
+  }
+
+  it('keeps the connections list collapsed until the section is opened', () => {
+    render(<SidePanel />);
+    expect(screen.queryByText('Neighbour 0')).not.toBeInTheDocument();
+    openConnections();
+    expect(screen.getByText('Neighbour 0')).toBeInTheDocument();
+  });
+
   it('shows only the strongest connections until expanded', () => {
     render(<SidePanel />);
+    openConnections();
 
     expect(screen.getByText('Neighbour 0')).toBeInTheDocument();
     expect(screen.getByText(`Neighbour ${COLLAPSED - 1}`)).toBeInTheDocument();
@@ -79,6 +91,7 @@ describe('SidePanel connections list', () => {
 
   it('shows one evidence line per row, expandable in place', () => {
     render(<SidePanel />);
+    openConnections();
 
     expect(screen.getByText("mentions 'n0-a.pdf'")).toBeInTheDocument();
     expect(screen.queryByText("mentions 'n0-b.pdf'")).not.toBeInTheDocument();
@@ -94,14 +107,15 @@ describe('SidePanel connections list', () => {
 
   it('does not repeat the connection count in the section header', () => {
     render(<SidePanel />);
-    // The meta row above already reports the degree; a second count here was
+    // The identity row already reports the degree; a second count here was
     // the same number twice in one panel.
-    expect(screen.getByText('Connections')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^connections$/i })).toBeInTheDocument();
     expect(screen.queryByText(`Connections (${NEIGHBOURS})`)).not.toBeInTheDocument();
   });
 
   it('resets expansion when the selection changes', () => {
     render(<SidePanel />);
+    openConnections();
     fireEvent.click(screen.getByRole('button', { name: /show all 12 connections/i }));
     expect(screen.getByText(`Neighbour ${NEIGHBOURS - 1}`)).toBeInTheDocument();
 
@@ -112,6 +126,8 @@ describe('SidePanel connections list', () => {
     act(() => useUiStore.getState().setSelected('n0'));
     act(() => useUiStore.getState().setSelected('doc1'));
 
+    expect(screen.queryByText(`Neighbour ${COLLAPSED}`)).not.toBeInTheDocument();
+    openConnections();
     expect(screen.queryByText(`Neighbour ${COLLAPSED}`)).not.toBeInTheDocument();
   });
 });

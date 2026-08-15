@@ -138,9 +138,10 @@ describe('NotesTagsSection', () => {
     expect(tagInput).toHaveValue('half-typ'); // still visible, not silently saved
   });
 
-  it('renders nothing for an imported/shared graph with no corpus record', () => {
+  it('explains why notes are unavailable on an imported/shared graph', () => {
     useCorpusStore.setState({ activeCorpusId: null, mode: 'imported' });
-    const { container } = render(<NotesTagsSection docKey="docs/a.md" />);
-    expect(container).toBeEmptyDOMElement();
+    render(<NotesTagsSection docKey="docs/a.md" />);
+    expect(screen.getByText(/not available on imported or shared graphs/i)).toBeVisible();
+    expect(screen.queryByLabelText('Document note')).not.toBeInTheDocument();
   });
 });

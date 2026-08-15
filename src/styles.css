@@ -1595,12 +1595,22 @@ input {
   top: 0;
   z-index: 2;
   display: flex;
-  align-items: flex-start;
-  flex-wrap: wrap; /* lets the Remove-confirm row drop to its own line */
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   padding: 20px 24px 14px;
   border-bottom: 1px solid var(--border-glass);
   background: rgba(7, 12, 25, 0.92);
+}
+.side-panel__header-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.side-panel__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .side-panel__title {
@@ -1642,11 +1652,13 @@ input {
   line-height: 1.5;
 }
 
+.side-panel__identity {
+  margin-top: 14px;
+}
 .side-panel__badges {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 14px;
 }
 
 .side-panel__badge-warning {
@@ -1658,7 +1670,7 @@ input {
 .side-panel__stats {
   display: flex;
   gap: 16px;
-  margin-top: 14px;
+  margin-top: 10px;
   font-size: 12px;
   color: var(--text-faint);
 }
@@ -1668,6 +1680,44 @@ input {
   padding-top: 16px;
   border-top: 1px solid rgba(119, 229, 255, 0.08);
   box-shadow: inset 0 1px 0 rgba(119, 229, 255, 0.04);
+}
+.side-panel__section--reader {
+  margin-top: 16px;
+}
+.side-panel__block {
+  margin-top: 16px;
+}
+.side-panel__block:first-child {
+  margin-top: 12px;
+}
+.side-panel__disclose {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.side-panel__disclose:hover {
+  color: var(--text-secondary);
+}
+.side-panel__disclose-hint {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--accent-strong);
+}
+.side-panel__disclose:hover .side-panel__disclose-hint {
+  text-decoration: underline;
 }
 
 .side-panel__section-label {
@@ -1908,7 +1958,7 @@ mark.passage-mark {
 }
 
 .side-panel__reader {
-  max-height: 40vh;
+  max-height: 70vh;
   overflow-y: auto;
   margin-top: 8px;
   padding: 16px 18px;
@@ -2102,7 +2152,7 @@ mark.passage-mark {
 
 /* Live PDF page preview (see ui/PdfPreview.tsx) — renders the actual pages
    of the original PDF as canvas images instead of just extracted text.
-   Unlike the plain-text/markdown readers, this must NOT be capped at 40vh
+   Unlike the plain-text/markdown readers, this must NOT be capped at 70vh
    with its own scrollbar — a multi-page PDF would then only ever show a
    sliver of page 1 in a cramped nested-scroll box. Let it grow to its full
    height instead, so every page renders and the side panel's own scroll
@@ -2171,7 +2221,7 @@ mark.passage-mark {
   overflow: hidden;
 }
 .csv-preview__scroll {
-  max-height: 40vh;
+  max-height: 70vh;
   overflow: auto;
 }
 .csv-preview table {
@@ -2402,9 +2452,8 @@ mark.passage-mark {
   background: rgba(255, 128, 128, 0.08);
 }
 
-/* Confirming Remove needs room for the explanatory copy; the header's
-   flex-wrap (see .side-panel__header) drops this full-width row onto its
-   own line below the title/Open/Close row. */
+/* Confirming Remove needs room for the explanatory copy; the header is a
+   column so this row sits below the title/Open/Close row. */
 .side-panel__remove-confirm {
   display: flex;
   align-items: center;

@@ -5,9 +5,9 @@
  * key={node.id} so per-selection state resets.
  *
  * Annotations persist per corpus (see annotationStore) keyed by the doc's
- * stable path/title key, so an edited file keeps its notes. The section only
+ * stable path/title key, so an edited file keeps its notes. The editor only
  * renders for a local corpus — an imported/shared graph has no corpus record
- * to save into.
+ * to save into, so the section explains that instead of disappearing.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -49,7 +49,18 @@ export default function NotesTagsSection({ docKey }: NotesTagsSectionProps) {
   // Land any debounced write when the panel closes / selection changes.
   useEffect(() => () => void flushAnnotationSave(), []);
 
-  if (mode !== 'local' || !corpusId || scope !== corpusId) return null;
+  if (mode !== 'local') {
+    return (
+      <div className="side-panel__section">
+        <p className="side-panel__section-label">Notes &amp; Tags</p>
+        <p className="side-panel__summary is-fallback">
+          Notes and tags are saved on this device for local corpora. They are
+          not available on imported or shared graphs.
+        </p>
+      </div>
+    );
+  }
+  if (!corpusId || scope !== corpusId) return null;
 
   const current = annotation ?? emptyAnnotation();
 

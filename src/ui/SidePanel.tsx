@@ -1,59 +1,51 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { docVectorStore, textStore } from '../store/runtimeStores';
-import { EDGE_KIND_HEX, EDGE_KIND_LABEL, hexFor } from '../scene/palette';
-import { canonicalizeTopic } from '../pipeline/topics';
-import { removeDocuments } from '../pipeline/coordinator';
+import { hexFor } from '../scene/palette';
 import { timeAgo } from '../util/relativeTime';
-import DocAiSection from './DocAiSection';
-import NotesTagsSection from './NotesTagsSection';
-import { annotationKey } from '../store/annotationStore';
-import { AIRGAP } from '../airgap';
-import { focusNode } from './focusNode';
-import { openDocument } from './openDocument';
-import VirtualText from './VirtualText';
-import CloseButton from './CloseButton';
-import DocumentMarkdown from './DocumentMarkdown';
-import HtmlPreview from './HtmlPreview';
-import { MAX_RENDER_CHARS } from './readerUtils';
-import CsvPreview from './CsvPreview';
-import JsonPreview, { MAX_RENDER_CHARS as JSON_MAX_RENDER_CHARS } from './JsonPreview';
-import YamlPreview, { MAX_RENDER_CHARS as YAML_MAX_RENDER_CHARS } from './YamlPreview';
-import PassageTarget from './PassageTarget';
-import { showSimilarTo } from './showSimilar';
-import { buildLinkIndex } from '../graph/linkResolver';
-import { getOriginal } from '../persistence/originals';
-import { decodeText } from '../pipeline/parsers/txt';
 import { useSettingsStore } from '../store/settingsStore';
-import type { DocNode, Edge } from '../model/types';
-import { codeLanguageForNode, fileTypeChip } from '../pipeline/codeLanguage';
+import { codeLanguageForNode, fileTypeChip, fileTypeLabel } from '../pipeline/codeLanguage';
+import { focusNode } from './focusNode';
+import { type ConnectionRow } from './sidePanelModel';
+import SidePanelAbout from './SidePanelAbout';
+import SidePanelConnections from './SidePanelConnections';
+import SidePanelHeader from './SidePanelHeader';
+import SidePanelReader from './SidePanelReader';
 
-interface ConnectionRow {
-  edge: Edge;
-  neighborId: string;
-  neighbor: DocNode | undefined;
+function Disclose({
+  label,
+  open,
+  onToggle,
+  children,
+}: {
+  label: string;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="side-panel__section">
+      <button
+        type="button"
+        className="side-panel__disclose"
+        aria-expanded={open}
+        aria-label={label}
+        title={open ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+        onClick={onToggle}
+      >
+        {label}
+        <span className="side-panel__disclose-hint">{open ? 'Hide' : 'Show'}</span>
+      </button>
+      {open ? children : null}
+    </div>
+  );
 }
-
-/** Connections shown before "Show all", and evidence lines shown per row. */
-const CONNECTIONS_COLLAPSED = 8;
-const EVIDENCE_COLLAPSED = 1;
-
-function isMonoFileType(fileType: DocNode['fileType']): boolean {
-  return fileType === 'txt' || fileType === 'other' || fileType === 'code';
-}
-
-// Lazy: pulls in pdfjs-dist, which needs DOM globals (DOMMatrix) absent in
-// the jsdom test environment — only evaluate it when a PDF preview actually
-// renders, mirroring the coordinator.ts mock seam used by SidePanel tests.
-const PdfPreview = lazy(() => import('./PdfPreview'));
 
 export default function SidePanel() {
   const selectedId = useUiStore((s) => s.selectedId);
-  const setSelected = useUiStore((s) => s.setSelected);
   const readerHighlight = useUiStore((s) => s.readerHighlight);
-  const pushToast = useUiStore((s) => s.pushToast);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
 
   const nodes = useGraphStore((s) => s.nodes);
@@ -94,9 +86,22 @@ export default function SidePanel() {
     setConfirmRemove(false);
   }, [selectedId]);
 
+  // About / Connections start collapsed so the reader is on screen. Topic
+  // hubs have no reader — their member list is the primary content, so
+  // Connections opens instead. Passage fly-tos keep both closed.
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [connectionsOpen, setConnectionsOpen] = useState(false);
+  useEffect(() => {
+    const graph = useGraphStore.getState();
+    const selected = selectedId !== null ? graph.nodes[graph.nodeIndex[selectedId]] : undefined;
+    const highlight = useUiStore.getState().readerHighlight;
+    const highlightMatches = selected !== undefined && highlight?.docId === selected.id;
+    setAboutOpen(false);
+    setConnectionsOpen(selected?.kind === 'topic' && !highlightMatches);
+  }, [selectedId]);
+
   // Connections are uncapped by nature (a hub document can have dozens, each
-  // with several evidence lines), which pushed everything below them —
-  // notably Ask AI — off screen. Show the strongest few by default; the list
+  // with several evidence lines). Show the strongest few by default; the list
   // is already sorted by weight, so nothing high-signal hides behind this.
   const [showAllConnections, setShowAllConnections] = useState(false);
   // Evidence expands per row (by edge id) — a reference edge can carry a
@@ -130,11 +135,6 @@ export default function SidePanel() {
     return rows;
   }, [node, edges, nodes, nodeIndex]);
 
-  const visibleConnections = showAllConnections
-    ? connections
-    : connections.slice(0, CONNECTIONS_COLLAPSED);
-  const hiddenConnections = connections.length - visibleConnections.length;
-
   // Near-duplicates of THIS doc: exact vector cosine against every other
   // document, not just existing semantic-edge neighbors — a genuine
   // duplicate can be crowded out of the mutual-top-k edge rule by other
@@ -157,482 +157,135 @@ export default function SidePanel() {
     return out;
   }, [node, nodes]);
 
-  // Resolves a markdown link / [[wikilink]] target to a doc already in the
-  // graph, so DocumentMarkdown can turn it into an in-app jump.
-  const linkIndex = useMemo(() => buildLinkIndex(nodes), [nodes]);
-
-  // Rendered markdown/HTML previews need the RAW source (link/heading/tag
-  // syntax intact) — the pipeline's extracted text has already stripped it.
-  // Fetch the retained original bytes lazily per selection; falls back to
-  // the plain-text reader below when no original was kept (imported graphs,
-  // legacy cache, oversized files) or the doc is too large to walk.
-  const [mdSource, setMdSource] = useState<{ id: string; text: string } | null>(null);
-  const [htmlSource, setHtmlSource] = useState<{ id: string; text: string } | null>(null);
-  const mdDocId = node && node.kind === 'document' && node.fileType === 'md' ? node.id : null;
-  const htmlDocId = node && node.kind === 'document' && node.fileType === 'html' ? node.id : null;
-  useEffect(() => {
-    setMdSource(null);
-    setHtmlSource(null);
-    const targetId = mdDocId ?? htmlDocId;
-    if (!targetId) return;
-    let cancelled = false;
-    void (async () => {
-      const original = await getOriginal(targetId);
-      if (cancelled || !original) return;
-      try {
-        const buf = await original.blob.arrayBuffer();
-        const raw = decodeText(buf);
-        if (cancelled) return;
-        if (mdDocId && raw.length <= MAX_RENDER_CHARS) {
-          setMdSource({ id: mdDocId, text: raw });
-        } else if (htmlDocId && raw.length <= MAX_RENDER_CHARS) {
-          setHtmlSource({ id: htmlDocId, text: raw });
-        }
-      } catch {
-        // decode failure — falls back to the extracted-text reader below
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [mdDocId, htmlDocId]);
-
-  // Live PDF preview: renders each page of the original PDF as a canvas
-  // image (see ui/PdfPreview.tsx) instead of just its extracted text — also
-  // needs the retained original bytes, kept as a Blob rather than decoded.
-  const [pdfPreview, setPdfPreview] = useState<{ id: string; blob: Blob } | null>(null);
-  const pdfDocId = node && node.kind === 'document' && node.fileType === 'pdf' ? node.id : null;
-  useEffect(() => {
-    setPdfPreview(null);
-    if (!pdfDocId) return;
-    let cancelled = false;
-    void (async () => {
-      const original = await getOriginal(pdfDocId);
-      if (!cancelled && original) {
-        setPdfPreview({ id: pdfDocId, blob: original.blob });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [pdfDocId]);
-
   if (!node) return null;
 
   const fullText = textStore.get(node.id);
   const clusterLabel =
     clusterNames[node.cluster] ?? localClusterNames[node.cluster] ?? `Cluster ${node.cluster}`;
   const clusterColor = hexFor(node.cluster);
-  const entities = node.entities.slice(0, 8);
   const codeLang = codeLanguageForNode(node);
-  const typeChip = fileTypeChip(node);
-  const readerLabel = codeLang?.label ?? 'Document';
-  const passageNeedle =
-    readerHighlight?.docId === node.id ? readerHighlight.text : undefined;
-  const passageKey = `${node.id}:${mdSource?.text.length ?? htmlSource?.text.length ?? fullText?.length ?? 0}`;
+  const typeChip = node.kind === 'topic' ? 'Topic hub' : fileTypeChip(node);
+  const readerLabel = codeLang?.label ?? fileTypeLabel(node);
+  const isDocument = node.kind === 'document';
+  const isTopic = node.kind === 'topic';
+  const dialogLabel = isTopic
+    ? `${node.title} (topic hub, ${node.degree} document${node.degree === 1 ? '' : 's'})`
+    : codeLang
+      ? `${node.title} (${codeLang.label})`
+      : node.title;
 
   return (
     <div className="side-panel-layer">
-      <div className="side-panel glass-panel" role="dialog" aria-label={codeLang ? `${node.title} (${codeLang.label})` : node.title}>
-        <div className="side-panel__header">
-          <h2 className="side-panel__title">
-            <span className="side-panel__title-text">{node.title}</span>
-            {codeLang && (
-              <span className="side-panel__title-lang" title={codeLang.label}>
-                {codeLang.short}
-              </span>
-            )}
-            <span className="chip side-panel__header-cluster">
-              <span className="chip-dot" style={{ background: clusterColor }} aria-hidden="true" />
-              {clusterLabel}
-            </span>
-          </h2>
-          {node.kind === 'document' && (
-            <button
-              type="button"
-              className="side-panel__open-btn"
-              title="Open the original file — opens with your default app for this type"
-              onClick={() => void openDocument(node.id)}
-            >
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-                <path d="M9 2h5v5" />
-                <path d="M14 2 L7 9" />
-                <path d="M12 9v4.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5H7" />
-              </svg>
-              Open
-            </button>
-          )}
-          {node.kind === 'document' && (
-            <button
-              type="button"
-              className="side-panel__open-btn"
-              title="Highlight documents similar to this one in the graph"
-              onClick={() => {
-                const count = showSimilarTo(node.id);
-                if (count === 0) {
-                  pushToast('No similar documents in this corpus', 'info');
-                }
-              }}
-            >
-              More like this
-            </button>
-          )}
-          {node.kind === 'document' && !confirmRemove && (
-            <button
-              type="button"
-              className="side-panel__open-btn side-panel__remove-btn"
-              title="Remove this document from the graph and delete its cached data — the file on disk is untouched"
-              onClick={() => setConfirmRemove(true)}
-            >
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-                <path d="M3 4.5h10" />
-                <path d="M6 4.5V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v2" />
-                <path d="M4.5 4.5l.6 8.6a1 1 0 0 0 1 .9h3.8a1 1 0 0 0 1-.9l.6-8.6" />
-              </svg>
-              Remove
-            </button>
-          )}
-          {node.kind === 'document' && confirmRemove && (
-            <div className="side-panel__remove-confirm">
-              <span className="side-panel__remove-confirm-text">
-                Remove from graph? This also deletes its cached data — the
-                file on disk is untouched.
-              </span>
-              <button
-                type="button"
-                className="side-panel__open-btn side-panel__remove-btn side-panel__remove-confirm-btn"
-                title="Permanently remove this document and its cached data"
-                onClick={() => {
-                  void removeDocuments([node.id]);
-                  setSelected(null);
-                }}
-              >
-                Confirm
-              </button>
-              <button
-                type="button"
-                className="side-panel__open-btn"
-                title="Keep this document"
-                onClick={() => setConfirmRemove(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-          <CloseButton
-            ref={closeButtonRef}
-            title="Back to graph"
-            aria-label="Back to graph"
-            onClick={() => setSelected(null)}
-          />
-        </div>
+      <div className="side-panel glass-panel" role="dialog" aria-label={dialogLabel}>
+        <SidePanelHeader
+          node={node}
+          codeLang={codeLang}
+          confirmRemove={confirmRemove}
+          onArmRemove={() => setConfirmRemove(true)}
+          onCancelRemove={() => setConfirmRemove(false)}
+          closeButtonRef={closeButtonRef}
+        />
         <div className="side-panel__scroll">
-          <div className="side-panel__badges">
-            <span className="chip">{typeChip}</span>
-            <span className="chip">
-              <span
-                className="chip-dot"
-                style={{ background: clusterColor }}
-                aria-hidden="true"
-              />
-              {clusterLabel}
-            </span>
-            {node.status !== 'ok' && (
-              <span className="chip side-panel__badge-warning">
-                ⚠ {node.warning ?? node.status}
+          <div className="side-panel__identity">
+            <div className="side-panel__badges">
+              <span className="chip">{typeChip}</span>
+              <span className="chip">
+                <span
+                  className="chip-dot"
+                  style={{ background: clusterColor }}
+                  aria-hidden="true"
+                />
+                {clusterLabel}
               </span>
-            )}
-            {duplicatesOf.map((d) => (
-              <button
-                key={d.id}
-                type="button"
-                className="chip chip-selectable side-panel__badge-warning side-panel__dup-chip"
-                title={`${(d.sim * 100).toFixed(1)}% similar — these might be the same doc`}
-                onClick={() => focusNode(d.id)}
-              >
-                ≈ duplicate of {nodes[nodeIndex[d.id]]?.title ?? d.id}
-              </button>
-            ))}
-          </div>
-
-          <div className="side-panel__stats">
-            <span>{node.wordCount.toLocaleString()} words</span>
-            <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
-            {node.lastModified !== undefined && (
-              <span title={new Date(node.lastModified).toLocaleString()}>
-                updated {timeAgo(node.lastModified)}
-              </span>
-            )}
-          </div>
-
-          <div className="side-panel__section">
-            <p className="side-panel__section-label">Summary</p>
-            <p
-              className={`side-panel__summary${node.summary ? '' : ' is-fallback'}`}
-            >
-              {node.summary || 'No summary available yet.'}
-            </p>
-          </div>
-
-          {node.topics.length > 0 && (
-            <div className="side-panel__section">
-              <p className="side-panel__section-label">Topics</p>
-              <div className="side-panel__chip-row">
-                {node.topics.map((t) => {
-                  // A topic becomes a hub node when ≥2 docs share it. When one
-                  // exists, the chip jumps to that hub — where the Connections
-                  // list shows every document carrying the topic — and shows
-                  // how many docs that is. Otherwise it's a plain label.
-                  const hub = nodes[nodeIndex[`topic:${canonicalizeTopic(t)}`]];
-                  if (!hub || hub.id === node.id) {
-                    return (
-                      <span key={t} className="chip">
-                        {t}
-                      </span>
-                    );
-                  }
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      className="chip chip-selectable side-panel__topic-chip"
-                      title={`${hub.degree} document${hub.degree === 1 ? '' : 's'} share this topic — open the topic hub`}
-                      onClick={() => focusNode(hub.id)}
-                    >
-                      {t}
-                      <span className="side-panel__topic-count">{hub.degree}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              {node.status !== 'ok' && (
+                <span className="chip side-panel__badge-warning">
+                  ⚠ {node.warning ?? node.status}
+                </span>
+              )}
+              {duplicatesOf.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  className="chip chip-selectable side-panel__badge-warning side-panel__dup-chip"
+                  title={`${(d.sim * 100).toFixed(1)}% similar — these might be the same doc`}
+                  onClick={() => focusNode(d.id)}
+                >
+                  ≈ duplicate of {nodes[nodeIndex[d.id]]?.title ?? d.id}
+                </button>
+              ))}
             </div>
-          )}
 
-          {entities.length > 0 && (
-            <div className="side-panel__section">
-              <p className="side-panel__section-label">Entities</p>
-              <div className="side-panel__chip-row">
-                {entities.map((e) => (
-                  <span key={e} className="chip chip-muted">
-                    {e}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {node.kind === 'document' && (
-            /* key resets the tag draft when the selection changes */
-            <NotesTagsSection key={node.id} docKey={annotationKey(node)} />
-          )}
-
-          {!(AIRGAP || offlineMode) && fullText && (
-            <>
-              <hr className="hairline" />
-              {/* key resets the Q&A state when the selection changes */}
-              <DocAiSection key={node.id} docId={node.id} title={node.title} />
-            </>
-          )}
-
-          <hr className="hairline" />
-
-          <div className="side-panel__section">
-            {/* Count lives in the meta row above — not repeated here. */}
-            <p className="side-panel__section-label">Connections</p>
-            <div className="side-panel__connections">
-              {visibleConnections.map(({ edge, neighborId, neighbor }) => {
-                const evidenceOpen = expandedEvidence.has(edge.id);
-                const shownEvidence = evidenceOpen
-                  ? edge.evidence
-                  : edge.evidence.slice(0, EVIDENCE_COLLAPSED);
-                const hiddenEvidence = edge.evidence.length - shownEvidence.length;
-                return (
-                  <div
-                    className="connection-row"
-                    key={edge.id}
-                    style={{ '--connection-kind': EDGE_KIND_HEX[edge.kind] } as CSSProperties}
-                  >
-                    <div className="connection-row__main">
-                      <span
-                        className="chip-dot"
-                        style={{ background: EDGE_KIND_HEX[edge.kind] }}
-                        aria-hidden="true"
-                      />
-                      <button
-                        type="button"
-                        className="connection-row__title"
-                        title={neighbor?.title ?? neighborId}
-                        onClick={() => focusNode(neighborId)}
-                      >
-                        {neighbor?.title ?? neighborId}
-                      </button>
-                      <span
-                        className="connection-row__kind"
-                        title={`${EDGE_KIND_LABEL[edge.kind]} connection`}
-                      >
-                        {EDGE_KIND_LABEL[edge.kind]}
-                      </span>
-                    </div>
-                    <div className="connection-row__weight-track">
-                      <div
-                        className="connection-row__weight-fill"
-                        style={{ width: `${Math.round(edge.weight * 100)}%` }}
-                      />
-                    </div>
-                    {shownEvidence.length > 0 && (
-                      <ul className="connection-row__evidence">
-                        {shownEvidence.map((ev, i) => (
-                          <li key={i}>{ev}</li>
-                        ))}
-                      </ul>
-                    )}
-                    {(hiddenEvidence > 0 || evidenceOpen) && (
-                      <button
-                        type="button"
-                        className="connection-row__more"
-                        title={
-                          evidenceOpen
-                            ? 'Collapse this connection’s evidence'
-                            : 'Show the rest of the evidence for this connection'
-                        }
-                        onClick={() => toggleEvidence(edge.id)}
-                      >
-                        {evidenceOpen ? 'Show less evidence' : `+${hiddenEvidence} more`}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-              {connections.length === 0 && (
-                <p className="side-panel__summary is-fallback">
-                  No connections yet.
-                </p>
+            <div className="side-panel__stats">
+              {isTopic ? (
+                <span>
+                  {node.degree} document{node.degree === 1 ? '' : 's'}
+                </span>
+              ) : (
+                <>
+                  <span>{node.wordCount.toLocaleString()} words</span>
+                  <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
+                </>
+              )}
+              {node.lastModified !== undefined && (
+                <span title={new Date(node.lastModified).toLocaleString()}>
+                  updated {timeAgo(node.lastModified)}
+                </span>
               )}
             </div>
-            {(hiddenConnections > 0 || showAllConnections) && (
-              <button
-                type="button"
-                className="side-panel__show-all"
-                title={
-                  showAllConnections
-                    ? 'Show only the strongest connections'
-                    : 'Show every connection for this document'
-                }
-                onClick={() => setShowAllConnections((v) => !v)}
-              >
-                {showAllConnections
-                  ? `Show top ${CONNECTIONS_COLLAPSED}`
-                  : `Show all ${connections.length} connections`}
-              </button>
-            )}
           </div>
 
-          <hr className="hairline" />
+          {isDocument && (
+            <SidePanelReader
+              node={node}
+              nodes={nodes}
+              readerHighlight={readerHighlight}
+              readerLabel={readerLabel}
+              codeLang={codeLang}
+            />
+          )}
 
-          <div className="side-panel__section">
-            <p className="side-panel__section-label">{readerLabel}</p>
-            {readerHighlight?.docId === node.id && (
-              <p className="side-panel__passage-banner" role="status">
-                Matching passage
-                {readerHighlight.passageIndex !== undefined
-                  ? ` · ${readerHighlight.passageIndex + 1}`
-                  : ''}
-                {': '}
-                <span className="side-panel__passage-banner-text">
-                  {readerHighlight.text.replace(/\s+/g, ' ').trim().slice(0, 220)}
-                </span>
-              </p>
-            )}
-            <div className={`side-panel__reader-frame${codeLang ? ' is-code' : ''}`}>
-            {codeLang && (
-              <span className="side-panel__reader-lang" title={codeLang.label}>
-                {codeLang.short}
-              </span>
-            )}
-            {pdfPreview && pdfPreview.id === node.id ? (
-              <Suspense fallback={<div className="side-panel__reader is-unavailable">Loading preview…</div>}>
-                <PdfPreview
-                  key={node.id}
-                  blob={pdfPreview.blob}
-                  className="side-panel__reader side-panel__reader--pdf"
-                />
-              </Suspense>
-            ) : mdSource && mdSource.id === node.id ? (
-              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
-                <DocumentMarkdown
-                  key={node.id}
-                  text={mdSource.text}
-                  linkIndex={linkIndex}
-                  onNavigate={(id) => focusNode(id)}
-                  className="side-panel__reader side-panel__reader--markdown"
-                  highlight={passageNeedle}
-                />
-              </PassageTarget>
-            ) : htmlSource && htmlSource.id === node.id ? (
-              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
-                <HtmlPreview
-                  key={node.id}
-                  html={htmlSource.text}
-                  className="side-panel__reader side-panel__reader--html"
-                  highlight={passageNeedle}
-                />
-              </PassageTarget>
-            ) : node.fileType === 'csv' && fullText ? (
-              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
-                <CsvPreview
-                  key={node.id}
-                  text={fullText}
-                  className="side-panel__reader side-panel__reader--csv"
-                />
-              </PassageTarget>
-            ) : node.fileType === 'json' && fullText && fullText.length <= JSON_MAX_RENDER_CHARS ? (
-              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
-                <JsonPreview
-                  key={node.id}
-                  text={fullText}
-                  className="side-panel__reader side-panel__reader--json"
-                  highlight={passageNeedle}
-                />
-              </PassageTarget>
-            ) : node.fileType === 'json' && fullText ? (
-              <JsonPreview
-                key={node.id}
-                text={fullText}
-                className="side-panel__reader side-panel__reader--json"
-                highlight={passageNeedle}
+          {isDocument && (
+            <Disclose
+              label="About"
+              open={aboutOpen}
+              onToggle={() => setAboutOpen((v) => !v)}
+            >
+              <SidePanelAbout
+                node={node}
+                nodes={nodes}
+                nodeIndex={nodeIndex}
+                fullText={fullText}
+                offlineMode={offlineMode}
               />
-            ) : node.fileType === 'yaml' && fullText && fullText.length <= YAML_MAX_RENDER_CHARS ? (
-              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
-                <YamlPreview
-                  key={node.id}
-                  text={fullText}
-                  className="side-panel__reader side-panel__reader--yaml"
-                  highlight={passageNeedle}
-                />
-              </PassageTarget>
-            ) : node.fileType === 'yaml' && fullText ? (
-              <YamlPreview
-                key={node.id}
-                text={fullText}
-                className="side-panel__reader side-panel__reader--yaml"
-                highlight={passageNeedle}
+            </Disclose>
+          )}
+
+          {isTopic ? (
+            <div className="side-panel__section">
+              <p className="side-panel__section-label">Documents</p>
+              <SidePanelConnections
+                connections={connections}
+                showAllConnections={showAllConnections}
+                expandedEvidence={expandedEvidence}
+                onToggleShowAll={() => setShowAllConnections((v) => !v)}
+                onToggleEvidence={toggleEvidence}
               />
-            ) : fullText ? (
-              <VirtualText
-                key={node.id}
-                text={fullText}
-                highlight={passageNeedle}
-                className={`side-panel__reader${
-                  isMonoFileType(node.fileType) ? ' is-mono' : ''
-                }`}
-              />
-            ) : (
-              <div className="side-panel__reader is-unavailable">
-                text unavailable
-              </div>
-            )}
             </div>
-          </div>
+          ) : (
+            <Disclose
+              label="Connections"
+              open={connectionsOpen}
+              onToggle={() => setConnectionsOpen((v) => !v)}
+            >
+              <SidePanelConnections
+                connections={connections}
+                showAllConnections={showAllConnections}
+                expandedEvidence={expandedEvidence}
+                onToggleShowAll={() => setShowAllConnections((v) => !v)}
+                onToggleEvidence={toggleEvidence}
+              />
+            </Disclose>
+          )}
         </div>
       </div>
     </div>

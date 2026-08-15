@@ -61,6 +61,7 @@ describe('SidePanel passage fly-to and similar docs', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/matching passage/i);
     expect(screen.getByRole('status')).toHaveTextContent(/disaster recovery/i);
     expect(document.querySelector('mark.passage-mark')?.textContent).toMatch(/disaster recovery/i);
+    expect(screen.queryByText('No summary available yet.')).not.toBeInTheDocument();
   });
 
   it('offers More like this without adding toolbar chrome', () => {
