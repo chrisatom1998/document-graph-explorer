@@ -23,6 +23,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { FRAME_BUDGET_MS, FRAME_BUDGET_SUSTAIN_MS } from '../config';
 import { layoutPause, layoutResume, layoutSetDims } from '../layout/layoutBridge';
+import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import type { QualityTier } from '../store/uiStore';
 
@@ -92,6 +93,23 @@ export default function AutoQuality() {
       // Opted out: hold at maximum quality rather than freezing at whatever
       // tier we'd degraded to (the Settings toggle promises "maximum quality").
       if (ui.qualityTier !== 0) ui.setQualityTier(0);
+      overSince.current = null;
+      underSince.current = null;
+      return;
+    }
+
+    // Hold the ladder while no graph exists: the welcome screen's frame cost
+    // is dominated by DOM compositing over the canvas (the empty-state card
+    // and its own hero canvas), not by anything a tier could shed — stepping
+    // tiers there just swaps bloom/dpr under the card, a visible flash for
+    // zero relief. Measurement restarts from a clean baseline once a corpus
+    // produces nodes: the EMA is re-seeded (a stale value from a prior heavy
+    // session would otherwise pre-charge the next ingest's degrade window)
+    // and the grace window is kept armed so the first samples after nodes
+    // appear are ignored, matching startup.
+    if (useGraphStore.getState().nodes.length === 0) {
+      ema.current = 16.7;
+      holdUntil.current = now + GRACE_MS;
       overSince.current = null;
       underSince.current = null;
       return;
