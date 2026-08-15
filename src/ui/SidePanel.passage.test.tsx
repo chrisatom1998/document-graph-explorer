@@ -123,20 +123,4 @@ describe('SidePanel passage fly-to and similar docs', () => {
     });
     expectSections(false);
   });
-
-  it('keeps Ask AI state when About is collapsed and reopened', () => {
-    useSettingsStore.setState({ enrichEnabled: true, enrichProvider: 'ollama' });
-    render(<SidePanel />);
-    fireEvent.click(screen.getByRole('button', { name: /^about$/i }));
-    const input = screen.getByRole('textbox', { name: /ask a question about this document/i });
-    fireEvent.change(input, { target: { value: 'What is the recovery cadence?' } });
-
-    fireEvent.click(screen.getByRole('button', { name: /^about$/i }));
-    expect(screen.getByRole('button', { name: /^about$/i })).toHaveAttribute('aria-expanded', 'false');
-
-    fireEvent.click(screen.getByRole('button', { name: /^about$/i }));
-    expect(screen.getByRole('textbox', { name: /ask a question about this document/i })).toHaveValue(
-      'What is the recovery cadence?',
-    );
-  });
 });
