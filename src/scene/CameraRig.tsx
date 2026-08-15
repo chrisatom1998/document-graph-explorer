@@ -183,13 +183,7 @@ export default function CameraRig() {
         viewDir: [viewDir.x, viewDir.y, viewDir.z],
         fovDeg: fov,
       });
-      // No live nodes contributed — hold the camera. Do NOT gate on
-      // positionBuffer.count instead: it keeps its high-water mark after
-      // per-node removals (no tick resets it on an emptied graph), and
-      // gliding to the degenerate z=40 pose would park the camera inside
-      // the near-dust shell. (radius alone can't discriminate either — a
-      // single-node fit legitimately has radius 0.)
-      if (fit.liveCount === 0) return;
+      if (fit.radius === 0 && count === 0) return;
       desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
       desiredPos.set(fit.position[0], fit.position[1], fit.position[2]);
       tweenActive.current = true;
@@ -212,8 +206,6 @@ export default function CameraRig() {
       slots,
       isLive: slotIsLive,
     });
-    // Every requested slot may have been freed since the command was issued.
-    if (fit.liveCount === 0) return;
     desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
     desiredPos.set(fit.position[0], fit.position[1], fit.position[2]);
     tweenActive.current = true;
@@ -257,16 +249,14 @@ export default function CameraRig() {
         viewDir: [viewDir.x, viewDir.y, viewDir.z],
         fovDeg: fov,
       });
-      if (fit.liveCount > 0) {
-        desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
-        desiredPos.set(fit.position[0], fit.position[1], fit.position[2]);
-        if (prefersReducedMotion()) {
-          state.camera.position.copy(desiredPos);
-          controls.target.copy(desiredTarget);
-          tweenActive.current = false;
-        } else {
-          tweenActive.current = true;
-        }
+      desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
+      desiredPos.set(fit.position[0], fit.position[1], fit.position[2]);
+      if (prefersReducedMotion()) {
+        state.camera.position.copy(desiredPos);
+        controls.target.copy(desiredTarget);
+        tweenActive.current = false;
+      } else {
+        tweenActive.current = true;
       }
     }
 

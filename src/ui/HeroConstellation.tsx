@@ -263,30 +263,22 @@ function Constellation({ reduced }: { reduced: boolean }) {
     return () => window.removeEventListener('pointermove', onMove);
   }, [reduced]);
 
-  const animTime = useRef(0);
-
-  useFrame((_state, delta) => {
-    // Clamp the step: after a main-thread stall (shader compile, GC, ingest
-    // work on the page) the next frame's delta is the whole stall, and an
-    // uncapped step snaps the rotation and teleports the packets — the motion
-    // must resume where it left off, not fast-forward.
-    const dt = Math.min(delta, 0.1);
-    animTime.current += dt;
+  useFrame((state, delta) => {
     const spin = spinRef.current;
     if (spin) {
-      if (!reduced) spin.rotation.y += dt * 0.16;
+      if (!reduced) spin.rotation.y += delta * 0.16;
       // Damped tilt toward the pointer; the constant keeps it a drift, not a
       // snap, and reduced-motion leaves the composed pose untouched.
       const targetX = reduced ? TILT_X : TILT_X + pointer.current.y * 0.1;
       const targetZ = reduced ? 0 : -pointer.current.x * 0.06;
-      spin.rotation.x += (targetX - spin.rotation.x) * Math.min(1, dt * 2.4);
-      spin.rotation.z += (targetZ - spin.rotation.z) * Math.min(1, dt * 2.4);
+      spin.rotation.x += (targetX - spin.rotation.x) * Math.min(1, delta * 2.4);
+      spin.rotation.z += (targetZ - spin.rotation.z) * Math.min(1, delta * 2.4);
     }
 
     const positions = pulsePosRef.current;
     const fades = pulseFadeRef.current;
     if (!positions || !fades || reduced) return;
-    const elapsed = animTime.current;
+    const elapsed = state.clock.elapsedTime;
     const pos = positions.array as Float32Array;
     const fade = fades.array as Float32Array;
     for (let i = 0; i < EDGES.length; i++) {
@@ -404,11 +396,7 @@ export default function HeroConstellation() {
       // sharing the GPU with the nebula behind the card.
       dpr={[1, 1.75]}
       frameloop={reduced || hidden ? 'demand' : 'always'}
-      // Same adapter as NebulaCanvas: asking for 'low-power' here while the
-      // scene behind asks for 'high-performance' makes dual-GPU machines churn
-      // between adapters — whole-window flicker on exactly this screen, the
-      // only one where both contexts are alive.
-      gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+      gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace;
         gl.toneMapping = THREE.ACESFilmicToneMapping;

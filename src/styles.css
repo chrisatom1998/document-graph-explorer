@@ -814,16 +814,9 @@ input {
   text-align: left;
   animation: kn-pop-in 520ms var(--ease-out) both;
   border-color: rgba(141, 168, 255, 0.22);
-  /* No backdrop blur on this one glass panel: it covers most of the viewport
-     over a canvas that repaints every frame, so the browser would re-blur
-     ~1M px of live WebGL output 60×/s — with the hero canvas nested inside
-     the blurred subtree as the worst case. A near-solid fill reads the same
-     and costs nothing; every other (small) panel keeps the frosted look. */
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
   background:
     radial-gradient(circle at 18% 28%, rgba(105, 92, 210, 0.12), transparent 34%),
-    rgba(8, 13, 28, 0.94);
+    rgba(8, 13, 28, 0.8);
   color: var(--text-primary);
 }
 
