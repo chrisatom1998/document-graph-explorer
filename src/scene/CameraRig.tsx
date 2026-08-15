@@ -100,6 +100,8 @@ export default function CameraRig() {
     if (dims === 2) {
       controls.minPolarAngle = Math.PI / 2 - 0.04;
       controls.maxPolarAngle = Math.PI / 2 + 0.04;
+      controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+      controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
       const cam = controls.object;
       const target = controls.target;
       const dx = cam.position.x - target.x;
@@ -118,6 +120,8 @@ export default function CameraRig() {
     } else {
       controls.minPolarAngle = 0;
       controls.maxPolarAngle = Math.PI;
+      controls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+      controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
     }
   }, [dims]);
 
