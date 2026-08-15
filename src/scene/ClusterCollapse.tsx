@@ -30,6 +30,7 @@ import { Text } from '@react-three/drei';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
+import { clusterOfNodes } from './clusterMap';
 import { clusterColor } from './palette';
 
 const MAX_CLUSTERS = 64;
@@ -53,7 +54,19 @@ interface TroikaLabel extends THREE.Mesh {
   sync: (onSync?: () => void) => void;
 }
 
+/**
+ * Thin gate: collapse mode is off almost all the time, but the inner
+ * component's cluster/edge aggregation memos re-ran on every nodes/edges
+ * change regardless — during ingest that's repeated O(n + e) work for a
+ * feature that renders nothing. Mount the heavy part only while active.
+ */
 export default function ClusterCollapse() {
+  const clusterCollapsed = useUiStore((s) => s.clusterCollapsed);
+  if (!clusterCollapsed) return null;
+  return <ClusterCollapseInner />;
+}
+
+function ClusterCollapseInner() {
   const clusterCollapsed = useUiStore((s) => s.clusterCollapsed);
   const nodes = useGraphStore((s) => s.nodes);
   const edges = useGraphStore((s) => s.edges);
@@ -88,11 +101,7 @@ export default function ClusterCollapse() {
 
   // Cluster of each node ID for fast lookup, feeding the inter-cluster edge
   // aggregation below.
-  const nodeCluster = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const n of nodes) m.set(n.id, n.cluster);
-    return m;
-  }, [nodes]);
+  const nodeCluster = useMemo(() => clusterOfNodes(nodes), [nodes]);
 
   // Aggregate inter-cluster edge weights. Structural (from/to/weight), not
   // positional — positions are streamed into edgeAttrs.positions per frame

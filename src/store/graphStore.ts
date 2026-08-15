@@ -103,11 +103,16 @@ export const useGraphStore = create<GraphState>((set) => ({
 
   patchNodes: (patches) =>
     set((s) => {
+      // Keep the array identity when nothing matched — a dozen components
+      // subscribe to the whole array, and a fresh identity re-renders them all.
+      let changed = false;
       const nodes = s.nodes.map((n) => {
         const patch = patches.get(n.id);
-        return patch ? { ...n, ...patch } : n;
+        if (!patch) return n;
+        changed = true;
+        return { ...n, ...patch };
       });
-      return { nodes };
+      return changed ? { nodes } : s;
     }),
 
   removeNodes: (ids) =>
@@ -143,10 +148,16 @@ export const useGraphStore = create<GraphState>((set) => ({
         degree[e.source] = (degree[e.source] ?? 0) + 1;
         degree[e.target] = (degree[e.target] ?? 0) + 1;
       }
-      const nodes = s.nodes.map((n) =>
-        (degree[n.id] ?? 0) !== n.degree ? { ...n, degree: degree[n.id] ?? 0 } : n,
-      );
-      return { edges, nodes };
+      // Keep the node array identity when no degree moved, so an unchanged
+      // edge set doesn't cascade re-renders through node subscribers.
+      let degreeChanged = false;
+      const nodes = s.nodes.map((n) => {
+        const d = degree[n.id] ?? 0;
+        if (d === n.degree) return n;
+        degreeChanged = true;
+        return { ...n, degree: d };
+      });
+      return { edges, nodes: degreeChanged ? nodes : s.nodes };
     }),
 
   setClusterNames: (clusterNames) => set({ clusterNames }),

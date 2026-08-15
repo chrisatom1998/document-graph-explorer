@@ -88,12 +88,39 @@ export default function Minimap() {
     ctx.scale(dpr, dpr);
     sctx.scale(dpr, dpr);
 
+    // Change detection so a settled graph stops re-tracing every node and
+    // edge at 10 Hz forever: redraw only when the layout stream, store
+    // arrays, relevant UI state, or an unconverged fit demand it.
+    let fitSettled = false;
+    const lastDrawn = {
+      version: -1,
+      nodes: null as unknown,
+      edges: null as unknown,
+      uiSig: '',
+    };
+    const uiSigOf = (ui: ReturnType<typeof useUiStore.getState>): string =>
+      `${ui.selectedId ?? ''}|${ui.dims}|${ui.filter.minEdgeWeight}|${ui.topicNodesEnabled}|${ui.clusterCollapsed}`;
+    const sceneNeedsRedraw = (): boolean => {
+      const g = useGraphStore.getState();
+      return (
+        !fitSettled ||
+        positionBuffer.version !== lastDrawn.version ||
+        g.nodes !== lastDrawn.nodes ||
+        g.edges !== lastDrawn.edges ||
+        uiSigOf(useUiStore.getState()) !== lastDrawn.uiSig
+      );
+    };
+
     const drawScene = (): void => {
       const { nodes, edges } = useGraphStore.getState();
       const ui = useUiStore.getState();
       const arr = positionBuffer.array;
       const count = positionBuffer.count;
       const dims = ui.dims;
+      lastDrawn.version = positionBuffer.version;
+      lastDrawn.nodes = nodes;
+      lastDrawn.edges = edges;
+      lastDrawn.uiSig = uiSigOf(ui);
 
       // --- fit the live positions into the canvas (smoothed) ---------------
       let minU = Infinity;
@@ -116,6 +143,7 @@ export default function Minimap() {
       sctx.clearRect(0, 0, W, H);
       if (placed === 0) {
         fit.current = null; // also hides the indicator until positions return
+        fitSettled = true; // an empty map needs no re-trace until data returns
         return;
       }
 
@@ -132,7 +160,14 @@ export default function Minimap() {
         f.scale += (targetScale - f.scale) * SMOOTH;
         f.cx += (targetCx - f.cx) * SMOOTH;
         f.cy += (targetCy - f.cy) * SMOOTH;
+        // Snap when close — the exponential approach never lands exactly,
+        // which kept this redraw loop alive on a fully settled layout.
+        const eps = Math.max(spanU, spanV) * 1e-3;
+        if (Math.abs(targetScale - f.scale) < targetScale * 1e-3) f.scale = targetScale;
+        if (Math.abs(targetCx - f.cx) < eps) f.cx = targetCx;
+        if (Math.abs(targetCy - f.cy) < eps) f.cy = targetCy;
       }
+      fitSettled = f.scale === targetScale && f.cx === targetCx && f.cy === targetCy;
       const toX = (u: number): number => W / 2 + (u - f.cx) * f.scale;
       const toY = (v: number): number => H / 2 + (v - f.cy) * f.scale;
 
@@ -283,10 +318,18 @@ export default function Minimap() {
         cameraPose.aspect !== seen.aspect;
       const sceneDue = now - lastSceneAt >= SCENE_MS;
       if (!poseChanged && !sceneDue) return;
+      let sceneDrawn = false;
       if (sceneDue) {
-        drawScene();
+        if (sceneNeedsRedraw()) {
+          drawScene();
+          sceneDrawn = true;
+        }
+        // Advance the cadence even when nothing needed redrawing, so the
+        // change check itself stays at SCENE_MS instead of running every rAF.
         lastSceneAt = now;
       }
+      // Nothing moved and the map is current — skip the composite too.
+      if (!poseChanged && !sceneDrawn) return;
       seen.px = cameraPose.px;
       seen.py = cameraPose.py;
       seen.pz = cameraPose.pz;
