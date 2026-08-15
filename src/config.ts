@@ -86,6 +86,14 @@ export const LABEL_BUDGET = 40; // nearest-N labels rendered
 export const FRAME_BUDGET_MS = 22; // auto-quality trip threshold
 export const FRAME_BUDGET_SUSTAIN_MS = 2000; // ...sustained this long before degrading
 export const CAMERA_GLIDE_MS = 800;
+/** Stagger between live-ingest materialize starts so a folder is not one clump. */
+export const INGEST_STAGGER_MS = 55;
+/** Cap on how far ahead of now the stagger may schedule a spawn — big batches
+ * (imports, cached re-drops, topic hubs) land within this window instead of
+ * trickling in for N*55ms. */
+export const INGEST_STAGGER_MAX_MS = 1500;
+/** Rest-shell radius when reduced-motion skips fly-in travel. */
+export const INGEST_REST_SHELL_RADIUS = 72;
 export const MINIMAP_MIN_NODES = 20; // corner minimap appears at this corpus size
 export const VISUAL_DENSITY_SOFTEN_START = 120;
 export const VISUAL_DENSITY_SOFTEN_FULL = 1100;
