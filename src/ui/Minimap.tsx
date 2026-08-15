@@ -45,9 +45,9 @@ import {
   viewportHalfExtents,
 } from './minimapMath';
 
-const W = 200;
-const H = 148;
-const PAD = 14;
+const W = 220;
+const H = 156;
+const PAD = 16;
 const SCENE_MS = 100; // graph-layer refresh cadence; the arrow redraws per frame
 const EDGE_DRAW_CAP = 1200; // beyond this, dots alone read better anyway
 const CLICK_RADIUS = 12; // px
@@ -139,6 +139,13 @@ export default function Minimap() {
       // Map background must paint before edges; a later fill would erase them.
       sctx.fillStyle = ui.dims === 2 ? FLAT_PANEL : VOID;
       sctx.fillRect(0, 0, W, H);
+      if (ui.dims === 2) {
+        const panelGradient = sctx.createLinearGradient(0, 0, W, H);
+        panelGradient.addColorStop(0, 'rgba(255,255,255,0.06)');
+        panelGradient.addColorStop(1, 'rgba(255,255,255,0)');
+        sctx.fillStyle = panelGradient;
+        sctx.fillRect(0, 0, W, H);
+      }
 
       // --- edges: faintest possible filaments, straight is fine at this size
       if (edges.length <= EDGE_DRAW_CAP && !ui.clusterCollapsed) {
@@ -180,7 +187,7 @@ export default function Minimap() {
         sctx.arc(x, y, r, 0, Math.PI * 2);
         sctx.fill();
         if (ui.dims === 2) {
-          sctx.strokeStyle = 'rgba(18, 52, 77, 0.95)';
+          sctx.strokeStyle = 'rgba(30, 58, 81, 0.98)';
           sctx.lineWidth = 1;
           sctx.beginPath();
           sctx.arc(x, y, r + 0.9, 0, Math.PI * 2);
@@ -223,8 +230,8 @@ export default function Minimap() {
       const bx = toX(projU(cameraPose.tx, cameraPose.ty, cameraPose.tz));
       const by = toY(projV(cameraPose.ty, cameraPose.tz, dims));
       const corners = boxCorners(bx, by, hu, hv, halfU, halfV);
-      ctx.fillStyle = 'rgba(169, 150, 255, 0.10)';
-      ctx.strokeStyle = 'rgba(169, 150, 255, 0.7)';
+      ctx.fillStyle = dims === 2 ? 'rgba(138, 224, 255, 0.12)' : 'rgba(169, 150, 255, 0.10)';
+      ctx.strokeStyle = dims === 2 ? 'rgba(138, 224, 255, 0.78)' : 'rgba(169, 150, 255, 0.7)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(corners[0][0], corners[0][1]);
@@ -251,7 +258,7 @@ export default function Minimap() {
       ctx.lineTo(tri[1][0], tri[1][1]);
       ctx.lineTo(tri[2][0], tri[2][1]);
       ctx.closePath();
-      ctx.fillStyle = '#a996ff';
+      ctx.fillStyle = dims === 2 ? FLAT_SELECTION : '#a996ff';
       ctx.fill();
       ctx.strokeStyle = 'rgba(12, 10, 30, 0.6)';
       ctx.lineWidth = 1;
