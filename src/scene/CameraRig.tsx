@@ -91,6 +91,11 @@ export default function CameraRig() {
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls || dims !== 2) return;
+    // Same cancel-commit as onStart / arrow-key pan: an in-flight frameNode
+    // from search/chat/insights must open the panel before we drop framingId.
+    if (shouldCommitOnTweenCancel(tweenActive.current)) {
+      commitPendingFocusIf(framingId.current ?? undefined);
+    }
     const camera = controls.object;
     const dist = Math.max(camera.position.distanceTo(controls.target), 1);
     desiredTarget.copy(controls.target);
