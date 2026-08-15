@@ -28,7 +28,7 @@ import { kindOfSlot } from './Nodes';
 import { FLAT_BG, FLAT_LABEL, FLAT_LABEL_MUTED, FLAT_SELECTION } from './palette';
 import { selectedDocumentTitle } from '../pipeline/codeLanguage';
 import { prefersReducedMotion } from '../util/motion';
-import { writeSlotTravelPosition } from './ingestBirth';
+import { slotHasMaterialized, writeSlotTravelPosition } from './ingestBirth';
 
 const REFRESH_MS = 120;
 const TRUNCATE_AT = 34;
@@ -200,6 +200,7 @@ export default function Labels() {
       if (i === hoverSlot.current || i === selectedSlot.current) continue; // reserved
       if (kindOfSlot[i] === 1 && !topicNodesEnabled) continue; // hidden topic node
       if (!titles[i]) continue;
+      if (!slotHasMaterialized(i, now)) continue; // pre-spawn: no label on an invisible node
       writeSlotTravelPosition(labelTravel, i, now, { reducedMotion, flat });
       tmpVec.set(labelTravel.x, labelTravel.y, labelTravel.z);
       if (!frustum.containsPoint(tmpVec)) continue;

@@ -46,7 +46,12 @@ import {
 import { prefersReducedMotion } from '../util/motion';
 import { startNodeDragLifecycle } from './nodeDragLifecycle';
 import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../config';
-import { easeOutBack, materializeDuration, writeSlotTravelPosition } from './ingestBirth';
+import {
+  easeOutBack,
+  materializeDuration,
+  slotHasMaterialized,
+  writeSlotTravelPosition,
+} from './ingestBirth';
 
 // ---------------------------------------------------------------------------
 // Shared slot metadata (imported by Edges/EdgePulses/Labels)
@@ -168,6 +173,7 @@ function instancedSphereRaycast(
   for (let i = 0; i < count; i++) {
     if (!idOfSlot[i]) continue; // freed slot (removed node) -> unpickable
     if (kindOfSlot[i] === 1 && !topicsOn) continue; // invisible -> unpickable
+    if (!slotHasMaterialized(i, now)) continue; // pre-spawn (scale 0) -> unpickable
     const radius = (scaleOfSlot[i] || 1.1) * 1.15; // slight grace margin
     writeSlotTravelPosition(travelPick, i, now, { reducedMotion, flat: isFlat });
     rayToCenter.set(travelPick.x, travelPick.y, travelPick.z).sub(ray.origin);

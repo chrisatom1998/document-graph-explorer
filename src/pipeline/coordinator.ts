@@ -96,6 +96,7 @@ import { prefersReducedMotion } from '../util/motion';
 import {
   beginIngestBirth,
   endIngestBirth,
+  resolveIngestOrigin,
   snapshotIngestOrigin,
   type Vec3,
 } from '../scene/ingestBirth';
@@ -380,21 +381,29 @@ async function runIngest(
   files: IngestFile[],
   signal: AbortSignal | undefined,
   spawnOrigin: Vec3,
+  options?: { background?: boolean },
 ): Promise<boolean> {
   wireModelProgress();
   throwIfAborted(signal);
   void warnIfStorageCritical();
   const initialDocumentCount = documentNodes().length;
-  beginIngestBirth({
-    corpusWasEmpty: initialDocumentCount === 0,
-    reducedMotion: prefersReducedMotion(),
-  });
+  // Background runs (watched-folder reconciliation) carry no user gesture —
+  // they must never take over the camera.
+  const background = options?.background === true;
+  if (!background) {
+    beginIngestBirth({
+      corpusWasEmpty: initialDocumentCount === 0,
+      reducedMotion: prefersReducedMotion(),
+    });
+  }
   try {
     return await runIngestBody(files, signal, spawnOrigin, initialDocumentCount);
   } finally {
-    const { shouldFinalFit } = endIngestBirth();
-    if (shouldFinalFit && documentNodes().length > 0) {
-      useUiStore.getState().sendCamera('fitAll');
+    if (!background) {
+      const { shouldFinalFit } = endIngestBirth();
+      if (shouldFinalFit && documentNodes().length > 0) {
+        useUiStore.getState().sendCamera('fitAll');
+      }
     }
   }
 }
@@ -1415,7 +1424,14 @@ export function reconcileWatchedFiles(
         ? await runIngest(
             files,
             undefined,
-            snapshotIngestOrigin({ flat: useUiStore.getState().dims === 2 }),
+            // Canvas-center origin resolved WITHOUT touching the pending
+            // gesture origin — a user's Add click (file picker still open)
+            // must not be consumed by a background watcher event.
+            resolveIngestOrigin({
+              flat: useUiStore.getState().dims === 2,
+              pending: null,
+            }),
+            { background: true },
           )
         : false;
     const present = new Set(documentNodes().map((node) => node.id));

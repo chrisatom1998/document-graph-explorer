@@ -9,7 +9,6 @@
  * first-ingest camera follow vs incremental no-steal, and edge reveal.
  */
 
-import { INGEST_REST_SHELL_RADIUS, INGEST_STAGGER_MS } from '../config';
 import { cameraPose } from './cameraPose';
 import {
   hasOriginOfSlot,
@@ -21,14 +20,9 @@ import {
 export const MATERIALIZE_MS = 700;
 /** 2D ladder: disc pop + short slide, not a 3D flight. */
 export const MATERIALIZE_MS_FLAT = 420;
-export const STAGGER_MS = INGEST_STAGGER_MS;
 export const EDGE_REVEAL_MS = 380;
-/** Rest-shell radius when reduced-motion skips travel (matches layout min). */
-export const REST_SHELL_RADIUS = INGEST_REST_SHELL_RADIUS;
 
 export type Vec3 = [number, number, number];
-
-export type IngestOriginKind = 'drop' | 'add' | 'center';
 
 export interface CameraPoseInput {
   px: number;
@@ -73,10 +67,6 @@ export function rememberCenterOrigin(): void {
 
 export function rememberWorldOrigin(point: Vec3): void {
   pending = { kind: 'world', point: [point[0], point[1], point[2]] };
-}
-
-export function peekPendingOrigin(): PendingOrigin | null {
-  return pending;
 }
 
 export function clearPendingOrigin(): void {
@@ -207,10 +197,6 @@ export function snapshotIngestOrigin(opts?: {
   return runOrigin;
 }
 
-export function getRunIngestOrigin(): Vec3 | null {
-  return runOrigin;
-}
-
 export function setRunIngestOrigin(point: Vec3 | null): void {
   runOrigin = point;
 }
@@ -253,6 +239,9 @@ export function interpolateTravel(
 /**
  * Reduced-motion / finished / no-origin → home (at rest). Otherwise lerp
  * origin → home with easeOutBack. `t < 0` (stagger wait) stays at origin.
+ *
+ * Pure reference implementation of the travel rule (tests lock it here);
+ * writeSlotTravelPosition below is its allocation-free hot-path twin.
  */
 export function displayTravelPosition(input: {
   origin: Vec3 | null;
@@ -273,9 +262,8 @@ export function displayTravelPosition(input: {
   return interpolateTravel(input.origin, home, raw, input.flat);
 }
 
-const travelOut = { x: 0, y: 0, z: 0 };
-
-/** Allocation-free write of the visual position for a layout slot. */
+/** Allocation-free write of the visual position for a layout slot
+ * (same rule as displayTravelPosition, inlined for the per-frame loops). */
 export function writeSlotTravelPosition(
   out: { x: number; y: number; z: number },
   slot: number,
@@ -290,32 +278,48 @@ export function writeSlotTravelPosition(
     out.z = 0;
     return false;
   }
-  const home: Vec3 = [arr[o], arr[o + 1], arr[o + 2]];
+  const hx = arr[o];
+  const hy = arr[o + 1];
+  const hz = opts.flat ? 0 : arr[o + 2];
   const spawn = spawnAtOfSlot[slot] ?? -1;
-  const origin: Vec3 | null = hasOriginOfSlot[slot]
-    ? [originOfSlot[o], originOfSlot[o + 1], originOfSlot[o + 2]]
-    : null;
-  const pos = displayTravelPosition({
-    origin,
-    home,
-    spawnAt: spawn,
-    now,
-    reducedMotion: opts.reducedMotion,
-    flat: opts.flat,
-  });
-  out.x = pos[0];
-  out.y = pos[1];
-  out.z = pos[2];
-  if (opts.reducedMotion || spawn < 0 || !origin) return false;
-  return now - spawn < materializeDuration(opts.flat);
+  if (opts.reducedMotion || spawn < 0 || !hasOriginOfSlot[slot]) {
+    out.x = hx;
+    out.y = hy;
+    out.z = hz;
+    return false;
+  }
+  const raw = (now - spawn) / materializeDuration(opts.flat);
+  if (raw >= 1) {
+    out.x = hx;
+    out.y = hy;
+    out.z = hz;
+    return false;
+  }
+  const ox = originOfSlot[o];
+  const oy = originOfSlot[o + 1];
+  const oz = opts.flat ? 0 : originOfSlot[o + 2];
+  if (raw <= 0) {
+    out.x = ox;
+    out.y = oy;
+    out.z = oz;
+    return true;
+  }
+  const f = easeOutBack(raw);
+  out.x = ox + (hx - ox) * f;
+  out.y = oy + (hy - oy) * f;
+  out.z = opts.flat ? 0 : oz + (hz - oz) * f;
+  return true;
 }
 
-export function slotTravelStillAnimating(
-  slot: number,
-  now: number,
-  opts: { reducedMotion: boolean; flat: boolean },
-): boolean {
-  return writeSlotTravelPosition(travelOut, slot, now, opts);
+/**
+ * A slot has visually arrived once its materialize pop has begun (or it never
+ * had one — restore / reduced motion / finished). Pre-spawn slots sit at the
+ * drop origin at scale 0, so they must not anchor edges, take raycast hits,
+ * or earn labels.
+ */
+export function slotHasMaterialized(slot: number, now: number): boolean {
+  const spawn = spawnAtOfSlot[slot] ?? -1;
+  return spawn < 0 || now >= spawn;
 }
 
 // ---------------------------------------------------------------------------
@@ -360,25 +364,24 @@ export function isIngestFraming(): boolean {
   return ingestFraming;
 }
 
-export function ingestCameraWasSteered(): boolean {
-  return ingestUserSteered;
-}
-
 export function computeFitAllPose(input: {
   array: ArrayLike<number>;
   count: number;
   viewDir: Vec3;
   fovDeg: number;
+  /** Restrict the bounding sphere to these slots (frameSet); default all < count. */
+  slots?: ArrayLike<number>;
 }): { target: Vec3; position: Vec3; radius: number } {
+  const slots = input.slots;
+  const n = slots ? slots.length : input.count;
   let cx = 0;
   let cy = 0;
   let cz = 0;
-  let n = 0;
-  for (let i = 0; i < input.count; i++) {
-    cx += input.array[i * 3] ?? 0;
-    cy += input.array[i * 3 + 1] ?? 0;
-    cz += input.array[i * 3 + 2] ?? 0;
-    n++;
+  for (let i = 0; i < n; i++) {
+    const slot = slots ? slots[i] : i;
+    cx += input.array[slot * 3] ?? 0;
+    cy += input.array[slot * 3 + 1] ?? 0;
+    cz += input.array[slot * 3 + 2] ?? 0;
   }
   if (n === 0) {
     return { target: [0, 0, 0], position: [0, 0, 40], radius: 0 };
@@ -387,10 +390,11 @@ export function computeFitAllPose(input: {
   cy /= n;
   cz /= n;
   let maxDistSq = 0;
-  for (let i = 0; i < input.count; i++) {
-    const dx = (input.array[i * 3] ?? 0) - cx;
-    const dy = (input.array[i * 3 + 1] ?? 0) - cy;
-    const dz = (input.array[i * 3 + 2] ?? 0) - cz;
+  for (let i = 0; i < n; i++) {
+    const slot = slots ? slots[i] : i;
+    const dx = (input.array[slot * 3] ?? 0) - cx;
+    const dy = (input.array[slot * 3 + 1] ?? 0) - cy;
+    const dz = (input.array[slot * 3 + 2] ?? 0) - cz;
     const d = dx * dx + dy * dy + dz * dz;
     if (d > maxDistSq) maxDistSq = d;
   }

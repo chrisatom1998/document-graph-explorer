@@ -44,7 +44,6 @@ const COLLAB_POSE_INTERVAL_MS = 100;
 const desiredPos = new THREE.Vector3();
 const desiredTarget = new THREE.Vector3();
 const viewDir = new THREE.Vector3();
-const centroid = new THREE.Vector3();
 const panRight = new THREE.Vector3();
 const panUp = new THREE.Vector3();
 const panDelta = new THREE.Vector3();
@@ -188,37 +187,22 @@ export default function CameraRig() {
       return;
     }
 
-    centroid.set(0, 0, 0);
-    let n = 0;
+    const slots: number[] = [];
     for (const id of cmd.ids ?? []) {
       const slot = slotOfId.get(id);
-      if (slot === undefined || slot >= count) continue;
-      centroid.x += arr[slot * 3];
-      centroid.y += arr[slot * 3 + 1];
-      centroid.z += arr[slot * 3 + 2];
-      n++;
+      if (slot !== undefined && slot < count) slots.push(slot);
     }
-    if (n === 0) return;
-    centroid.multiplyScalar(1 / n);
-
-    let maxDistSq = 0;
-    for (const id of cmd.ids ?? []) {
-      const slot = slotOfId.get(id);
-      if (slot === undefined || slot >= count) continue;
-      const dx = arr[slot * 3] - centroid.x;
-      const dy = arr[slot * 3 + 1] - centroid.y;
-      const dz = arr[slot * 3 + 2] - centroid.z;
-      const d = dx * dx + dy * dy + dz * dz;
-      if (d > maxDistSq) maxDistSq = d;
-    }
-    const radius = Math.sqrt(maxDistSq);
+    if (slots.length === 0) return;
     const fov = (camera as THREE.PerspectiveCamera).fov ?? 55;
-    const dist = Math.max(
-      40,
-      (radius / Math.tan(THREE.MathUtils.degToRad(fov) / 2)) * 1.18,
-    );
-    desiredTarget.copy(centroid);
-    desiredPos.copy(centroid).addScaledVector(viewDir, dist);
+    const fit = computeFitAllPose({
+      array: arr,
+      count,
+      viewDir: [viewDir.x, viewDir.y, viewDir.z],
+      fovDeg: fov,
+      slots,
+    });
+    desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
+    desiredPos.set(fit.position[0], fit.position[1], fit.position[2]);
     tweenActive.current = true;
     lastInteraction.current = performance.now();
   };

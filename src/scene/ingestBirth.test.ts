@@ -244,6 +244,19 @@ describe('ingest camera — do not steal on incremental add', () => {
     expect(poseFit.radius).toBeCloseTo(10, 5);
     expect(poseFit.position[2]).toBeGreaterThanOrEqual(40);
   });
+
+  it('restricts the fit to an explicit slot set (frameSet)', () => {
+    const array = new Float32Array([-10, 0, 0, 10, 0, 0, 500, 0, 0]);
+    const poseFit = computeFitAllPose({
+      array,
+      count: 3,
+      viewDir: [0, 0, 1],
+      fovDeg: 55,
+      slots: [0, 1], // the far outlier at slot 2 must not widen the frame
+    });
+    expect(poseFit.target[0]).toBeCloseTo(0, 5);
+    expect(poseFit.radius).toBeCloseTo(10, 5);
+  });
 });
 
 describe('edges appear only after both nodes exist', () => {

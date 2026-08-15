@@ -7,7 +7,12 @@
  * positions from positionBuffer.
  */
 
-import { INGEST_REST_SHELL_RADIUS, INGEST_STAGGER_MS, MAX_NODES } from '../config';
+import {
+  INGEST_REST_SHELL_RADIUS,
+  INGEST_STAGGER_MAX_MS,
+  INGEST_STAGGER_MS,
+  MAX_NODES,
+} from '../config';
 import type { LayoutNodeInput, LayoutRequest, LayoutResponse } from '../model/types';
 import { useUiStore } from '../store/uiStore';
 import { prefersReducedMotion } from '../util/motion';
@@ -206,6 +211,9 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
   const dropped: string[] = [];
   const now = typeof performance !== 'undefined' ? performance.now() : 0;
   if (now > nextSpawnAt) nextSpawnAt = now;
+  // Big synchronous batches (import, cached re-drop, topic hubs) must land
+  // within a bounded window, not trickle in for N*55ms.
+  const staggerCap = now + INGEST_STAGGER_MAX_MS;
   const reducedMotion = prefersReducedMotion();
   for (const n of nodes) {
     if (slotOfId.has(n.id)) continue;
@@ -228,11 +236,22 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
       spawnAtOfSlot[slot] = -1;
       hasOriginOfSlot[slot] = 0;
       originOfSlot[o] = originOfSlot[o + 1] = originOfSlot[o + 2] = 0;
-      const rest = n.initial ?? randomSpherePoint(INGEST_REST_SHELL_RADIUS);
-      payload.push({ id: n.id, slot, cluster: n.cluster, initial: rest });
+      if (n.initial) {
+        payload.push({ id: n.id, slot, cluster: n.cluster, initial: n.initial });
+      } else {
+        // Reduced-motion LIVE add: skip only the scripted travel. Send the
+        // rest point as `spawn`, not `initial`, so the worker still takes the
+        // hot reheat(0.9) path instead of the gentle restore reheat(0.05).
+        payload.push({
+          id: n.id,
+          slot,
+          cluster: n.cluster,
+          spawn: randomSpherePoint(INGEST_REST_SHELL_RADIUS),
+        });
+      }
     } else {
-      spawnAtOfSlot[slot] = nextSpawnAt;
-      nextSpawnAt += INGEST_STAGGER_MS;
+      spawnAtOfSlot[slot] = Math.min(nextSpawnAt, staggerCap);
+      nextSpawnAt = Math.min(nextSpawnAt + INGEST_STAGGER_MS, staggerCap);
       if (n.spawn) {
         hasOriginOfSlot[slot] = 1;
         originOfSlot[o] = n.spawn[0];
