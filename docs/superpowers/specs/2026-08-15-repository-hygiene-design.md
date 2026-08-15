@@ -2,11 +2,11 @@
 
 **Date:** 2026-08-15  
 **Status:** Approved for implementation  
-**Scope:** Tracked local-development artifacts, ignore rules, Docker context, and repository metadata
+**Scope:** Tracked local-development artifacts, ignore rules, and Docker build context
 
 ## Goal
 
-Remove ephemeral tool output from the current repository tree, prevent it from being committed or sent into Docker builds again, and make the public repository easier to discover without changing application behavior or the offline distribution contract.
+Remove ephemeral tool output from the current repository tree and prevent it from being committed or sent into Docker builds again, without changing application behavior or the offline distribution contract.
 
 ## Current findings
 
@@ -21,7 +21,7 @@ Remove ephemeral tool output from the current repository tree, prevent it from b
 
 ### A. Safe current-tree cleanup — selected
 
-Delete the tracked Playwright-MCP and Codex dev-server artifacts, add focused ignore rules, exclude the same output from Docker contexts, and update repository metadata. This is reversible, does not alter runtime assets, and can be verified through the existing CI workflow.
+Delete the tracked Playwright-MCP and Codex dev-server artifacts, add focused ignore rules, and exclude the same output from Docker contexts. This is reversible, does not alter runtime assets, and can be verified through the existing CI workflow.
 
 ### B. Git LFS or release-hosted model assets
 
@@ -42,14 +42,15 @@ Use `git filter-repo` to purge historical copies of generated artifacts and larg
    - `test-results/`
    - `*.trace.zip`
 4. Add matching `.dockerignore` entries, plus existing local agent configuration directories that are unnecessary in the image context.
-5. Set a concise repository description and product-relevant topics.
-6. Keep `.claude/launch.json`, production model assets, documentation binaries, and all runtime/build files unchanged.
+5. Keep `.claude/launch.json`, production model assets, documentation binaries, and all runtime/build files unchanged.
 
-## Repository metadata
+## Deferred repository metadata
 
-**Description:** `Private, local-first 2D/3D knowledge graphs for documents and source repositories.`
+The repository description and topics should be updated separately through a GitHub account surface that exposes repository-settings writes. The available repository integration can read these settings but does not expose the required mutation.
 
-**Topics:**
+**Recommended description:** `Private, local-first 2D/3D knowledge graphs for documents and source repositories.`
+
+**Recommended topics:**
 
 - `knowledge-graph`
 - `document-analysis`
@@ -61,6 +62,8 @@ Use `git filter-repo` to purge historical copies of generated artifacts and larg
 - `openusd`
 - `electron`
 - `typescript`
+
+This out-of-band metadata change is not part of the branch and does not gate the cleanup PR.
 
 ## Validation
 
@@ -75,3 +78,4 @@ Use `git filter-repo` to purge historical copies of generated artifacts and larg
 - No Git LFS introduction.
 - No movement or deletion of ONNX, OCR, demo, icon, installer, or documentation assets.
 - No application, build-command, security-policy, or release-format changes.
+- No repository-settings mutation in this PR.

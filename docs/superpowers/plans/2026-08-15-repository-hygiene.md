@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Remove tracked local-development artifacts, prevent their return, reduce Docker build-context noise, and improve repository discoverability without changing runtime or offline-build behavior.
+**Goal:** Remove tracked local-development artifacts, prevent their return, and reduce Docker build-context noise without changing runtime or offline-build behavior.
 
-**Architecture:** Apply one atomic Git tree commit for all tracked-file deletions and ignore-rule changes. Keep production binaries and model assets in place, then update GitHub repository metadata separately because description and topics are repository settings rather than branch content.
+**Architecture:** Apply one atomic Git tree commit for all tracked-file deletions and ignore-rule changes. Keep production binaries, model assets, application source, build commands, and repository settings unchanged.
 
 **Tech Stack:** GitHub Contents/Git Data APIs, Git ignore rules, Docker ignore rules, existing GitHub Actions CI.
 
@@ -13,7 +13,7 @@
 - Do not rewrite Git history.
 - Do not introduce Git LFS.
 - Do not move or delete ONNX, OCR, demo, icon, installer, or documentation assets.
-- Do not change application source, build commands, security policy, or release formats.
+- Do not change application source, build commands, security policy, release formats, or repository settings.
 - Delete only `.playwright-mcp/*`, `.codex-devserver.log`, and `.codex-devserver.err.log`.
 - Preserve `.claude/launch.json`.
 - The final branch must pass the existing complete CI workflow.
@@ -118,46 +118,7 @@ public/models/Xenova/bge-small-en-v1.5/onnx/model_quantized.onnx remains present
 .claude/launch.json remains present
 ```
 
-### Task 2: Improve repository discovery metadata
-
-**Files:**
-- Repository setting: description
-- Repository setting: topics
-
-**Interfaces:**
-- Consumes: The public GitHub repository settings.
-- Produces: A concise description and ten accurate search topics without changing branch contents.
-
-- [ ] **Step 1: Set the repository description**
-
-Use exactly:
-
-```text
-Private, local-first 2D/3D knowledge graphs for documents and source repositories.
-```
-
-- [ ] **Step 2: Set repository topics**
-
-Use exactly this topic set:
-
-```text
-knowledge-graph
-document-analysis
-local-first
-semantic-search
-threejs
-react-three-fiber
-webgpu
-openusd
-electron
-typescript
-```
-
-- [ ] **Step 3: Read repository metadata back**
-
-Verify the description matches exactly and all ten topics are present once.
-
-### Task 3: Review, open the pull request, and verify CI
+### Task 2: Review, open the pull request, and verify CI
 
 **Files:**
 - Review: `.gitignore`
@@ -167,7 +128,7 @@ Verify the description matches exactly and all ten topics are present once.
 - Review: `docs/superpowers/plans/2026-08-15-repository-hygiene.md`
 
 **Interfaces:**
-- Consumes: The completed cleanup branch and repository metadata.
+- Consumes: The completed cleanup branch.
 - Produces: A focused pull request with CI evidence and no unresolved review findings.
 
 - [ ] **Step 1: Compare the branch with `main`**
@@ -190,7 +151,7 @@ Title:
 chore: remove committed local tooling artifacts
 ```
 
-Body must explain the removed Playwright/Codex files, new ignore rules, unchanged runtime assets, and separate repository metadata update.
+The body must explain the removed Playwright/Codex files, new ignore rules, tighter Docker context, and unchanged runtime assets. It should also include the recommended out-of-band repository description and topics because the available integration does not expose repository-settings writes.
 
 - [ ] **Step 3: Run the complete existing CI workflow**
 
