@@ -103,10 +103,16 @@ export const useGraphStore = create<GraphState>((set) => ({
 
   patchNodes: (patches) =>
     set((s) => {
+      let changed = false;
       const nodes = s.nodes.map((n) => {
         const patch = patches.get(n.id);
-        return patch ? { ...n, ...patch } : n;
+        if (!patch) return n;
+        changed = true;
+        return { ...n, ...patch };
       });
+      // Keep the nodes array identity-stable when no patch applied, so
+      // downstream useMemo([nodes]) consumers (and GPU buffers) don't rebuild.
+      if (!changed) return s;
       return { nodes };
     }),
 
@@ -143,9 +149,16 @@ export const useGraphStore = create<GraphState>((set) => ({
         degree[e.source] = (degree[e.source] ?? 0) + 1;
         degree[e.target] = (degree[e.target] ?? 0) + 1;
       }
-      const nodes = s.nodes.map((n) =>
-        (degree[n.id] ?? 0) !== n.degree ? { ...n, degree: degree[n.id] ?? 0 } : n,
-      );
+      let degreesChanged = false;
+      const nodes = s.nodes.map((n) => {
+        const d = degree[n.id] ?? 0;
+        if (d === n.degree) return n;
+        degreesChanged = true;
+        return { ...n, degree: d };
+      });
+      // Keep the nodes array identity-stable when no degree changed, so
+      // downstream useMemo([nodes]) consumers (and GPU buffers) don't rebuild.
+      if (!degreesChanged) return { edges };
       return { edges, nodes };
     }),
 

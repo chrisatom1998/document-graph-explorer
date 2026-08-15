@@ -64,6 +64,17 @@ const tmpVec = new THREE.Vector3();
 const labelTravel = { x: 0, y: 0, z: 0 };
 const bestD2 = new Float64Array(LABEL_BUDGET);
 const bestSlot = new Int32Array(LABEL_BUDGET);
+// Sticky assignment scratch (cleared each refresh): candidate slots of this
+// re-rank, and slot -> pool label index for slots that keep/gain a label.
+const candidateSlots = new Set<number>();
+const slotToLabel = new Map<number, number>();
+// Hysteresis: a slot already showing a label survives while within ~1.25x the
+// DISTANCE of the worst admitted candidate (compared in squared space below).
+// Binding pool index j to rank j meant small camera motion permuted ranks and
+// swapped which node each label belonged to, firing troika's async sync() and
+// rendering blank/stale text for frames.
+const STICKY_DISTANCE_RATIO = 1.25;
+const STICKY_D2 = STICKY_DISTANCE_RATIO * STICKY_DISTANCE_RATIO;
 
 function truncate(title: string): string {
   return title.length > TRUNCATE_AT ? `${title.slice(0, TRUNCATE_AT - 1)}…` : title;
@@ -109,6 +120,8 @@ export default function Labels() {
   const displayTitleOfSlot = useRef<string[]>([]);
   const titlesDirty = useRef(true);
   const labelsDirty = useRef(true);
+  /** Hover/selection changed: only the two reserved labels need retargeting. */
+  const reservedDirty = useRef(false);
   const lastCount = useRef(-1);
   const accumulator = useRef(REFRESH_MS); // refresh on first frame
 
@@ -120,9 +133,13 @@ export default function Labels() {
       }
     });
     const offUi = useUiStore.subscribe((s, prev) => {
+      // Hover/selection only move the two reserved labels — a full pool
+      // re-rank (and its batch of troika sync() calls) per hover transition
+      // is exactly the flicker this flag split avoids.
+      if (s.hoveredId !== prev.hoveredId || s.selectedId !== prev.selectedId) {
+        reservedDirty.current = true;
+      }
       if (
-        s.hoveredId !== prev.hoveredId ||
-        s.selectedId !== prev.selectedId ||
         s.qualityTier !== prev.qualityTier ||
         s.topicNodesEnabled !== prev.topicNodesEnabled ||
         s.clusterCollapsed !== prev.clusterCollapsed
@@ -217,20 +234,75 @@ export default function Labels() {
       if (filled < budget) filled++;
     }
 
+    // ---- sticky assignment: keep, evict, then hand freed labels to newcomers.
+    candidateSlots.clear();
+    for (let r = 0; r < filled; r++) candidateSlots.add(bestSlot[r]);
+    const keepD2 = filled > 0 ? bestD2[filled - 1] * STICKY_D2 : 0;
+
+    // Pass 1: a label already showing a still-eligible slot keeps it while
+    // the slot is an admitted candidate OR within the hysteresis band of the
+    // worst admitted distance — same node, same text, no sync() churn.
+    slotToLabel.clear();
     for (let j = 0; j < LABEL_BUDGET; j++) {
       const label = poolRefs.current[j];
       if (!label) continue;
-      if (j >= filled) {
+      const slot = assignedSlot.current[j];
+      let keep = false;
+      if (
+        slot >= 0 &&
+        j < budget && // a shrunken (degraded) budget evicts the tail
+        slot < count &&
+        slot !== hoverSlot.current &&
+        slot !== selectedSlot.current &&
+        titles[slot] &&
+        !(kindOfSlot[slot] === 1 && !topicNodesEnabled) &&
+        slotHasMaterialized(slot, now)
+      ) {
+        writeSlotTravelPosition(labelTravel, slot, now, { reducedMotion, flat });
+        tmpVec.set(labelTravel.x, labelTravel.y, labelTravel.z);
+        if (frustum.containsPoint(tmpVec)) {
+          const d2 = tmpVec.distanceToSquared(camera.position);
+          if (candidateSlots.has(slot) || d2 <= keepD2) {
+            keep = true;
+            slotToLabel.set(slot, j);
+            applyText(label, truncate(titles[slot]), opacityFor(Math.sqrt(d2)));
+          }
+        }
+      }
+      if (!keep) {
         assignedSlot.current[j] = -1;
         label.visible = false;
-        continue;
       }
-      const slot = bestSlot[j];
-      assignedSlot.current[j] = slot;
-      applyText(label, truncate(titles[slot]), opacityFor(Math.sqrt(bestD2[j])));
     }
 
-    // Reserved labels: always on, full opacity, FULL title (spec §7.1).
+    // Pass 2: nearest unshown candidates take the freed label indices.
+    let shown = slotToLabel.size;
+    let nextFree = 0;
+    for (let r = 0; r < filled && shown < budget; r++) {
+      const slot = bestSlot[r];
+      if (slotToLabel.has(slot)) continue;
+      while (
+        nextFree < budget &&
+        (assignedSlot.current[nextFree] !== -1 || !poolRefs.current[nextFree])
+      ) {
+        nextFree++;
+      }
+      if (nextFree >= budget) break;
+      const label = poolRefs.current[nextFree];
+      if (!label) break; // unreachable: the scan above skipped unmounted refs
+      assignedSlot.current[nextFree] = slot;
+      slotToLabel.set(slot, nextFree);
+      applyText(label, truncate(titles[slot]), opacityFor(Math.sqrt(bestD2[r])));
+      shown++;
+      nextFree++;
+    }
+
+    applyReservedLabels(count);
+  };
+
+  /** Reserved labels: always on, full opacity, FULL title (spec §7.1). */
+  const applyReservedLabels = (count: number): void => {
+    const titles = titleOfSlot.current;
     const hover = hoverRef.current;
     if (hover) {
       const slot = hoverSlot.current;
@@ -253,6 +325,37 @@ export default function Labels() {
         selected.visible = false;
       }
     }
+  };
+
+  /**
+   * Hover/selection-only update between re-ranks: retarget the two reserved
+   * labels without touching the pool (no full re-rank, no sync() batch). A
+   * pool label already on a newly reserved slot is hidden so the text isn't
+   * doubled under the full-opacity reserved label; the freed index refills at
+   * the next periodic refresh (<= REFRESH_MS away).
+   */
+  const refreshReserved = (): void => {
+    if (titlesDirty.current) {
+      refreshTitles();
+      titlesDirty.current = false;
+    }
+    const { hoveredId, selectedId, clusterCollapsed } = useUiStore.getState();
+    hoverSlot.current = hoveredId ? (slotOfId.get(hoveredId) ?? -1) : -1;
+    selectedSlot.current = selectedId ? (slotOfId.get(selectedId) ?? -1) : -1;
+    if (clusterCollapsed) {
+      if (hoverRef.current) hoverRef.current.visible = false;
+      if (selectedRef.current) selectedRef.current.visible = false;
+      return;
+    }
+    for (let j = 0; j < LABEL_BUDGET; j++) {
+      const slot = assignedSlot.current[j];
+      if (slot >= 0 && (slot === hoverSlot.current || slot === selectedSlot.current)) {
+        assignedSlot.current[j] = -1;
+        const label = poolRefs.current[j];
+        if (label) label.visible = false;
+      }
+    }
+    applyReservedLabels(Math.min(positionBuffer.count, MAX_NODES));
   };
 
   /** Cheap per-frame pass: track node motion + billboard toward the camera. */
@@ -291,7 +394,11 @@ export default function Labels() {
     if (accumulator.current >= REFRESH_MS || labelsDirty.current) {
       accumulator.current = 0;
       labelsDirty.current = false;
+      reservedDirty.current = false; // refresh re-derives the reserved labels too
       refresh(state.camera);
+    } else if (reservedDirty.current) {
+      reservedDirty.current = false;
+      refreshReserved();
     }
     for (let j = 0; j < LABEL_BUDGET; j++) {
       const label = poolRefs.current[j];

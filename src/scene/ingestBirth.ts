@@ -18,6 +18,7 @@ import {
 } from './ingestGesture';
 import {
   hasOriginOfSlot,
+  idOfSlot,
   originOfSlot,
   positionBuffer,
   spawnAtOfSlot,
@@ -304,14 +305,25 @@ export function computeFitAllPose(input: {
   fovDeg: number;
   /** Restrict the bounding sphere to these slots (frameSet); default all < count. */
   slots?: ArrayLike<number>;
+  /** Liveness filter: slots it rejects are excluded from the bounding sphere.
+   * Freed slots keep stale coordinates in the recycled (non-zeroed) position
+   * buffer, so an unfiltered fit jumps to phantom points. Default: all live. */
+  isLive?: (slot: number) => boolean;
 }): { target: Vec3; position: Vec3; radius: number } {
-  const slots = input.slots;
-  const n = slots ? slots.length : input.count;
+  const given = input.slots;
+  const slots: number[] = [];
+  const total = given ? given.length : input.count;
+  for (let i = 0; i < total; i++) {
+    const slot = given ? given[i] : i;
+    if (input.isLive && !input.isLive(slot)) continue;
+    slots.push(slot);
+  }
+  const n = slots.length;
   let cx = 0;
   let cy = 0;
   let cz = 0;
   for (let i = 0; i < n; i++) {
-    const slot = slots ? slots[i] : i;
+    const slot = slots[i];
     cx += input.array[slot * 3] ?? 0;
     cy += input.array[slot * 3 + 1] ?? 0;
     cz += input.array[slot * 3 + 2] ?? 0;
@@ -324,7 +336,7 @@ export function computeFitAllPose(input: {
   cz /= n;
   let maxDistSq = 0;
   for (let i = 0; i < n; i++) {
-    const slot = slots ? slots[i] : i;
+    const slot = slots[i];
     const dx = (input.array[slot * 3] ?? 0) - cx;
     const dy = (input.array[slot * 3 + 1] ?? 0) - cy;
     const dz = (input.array[slot * 3 + 2] ?? 0) - cz;
@@ -342,6 +354,26 @@ export function computeFitAllPose(input: {
     position: [cx + vx * dist, cy + vy * dist, cz + vz * dist],
     radius,
   };
+}
+
+/** True when a layout slot currently holds a live node (slot assignment is
+ * owned by layoutBridge; freed slots have their id cleared to ''). */
+export function slotIsLive(slot: number): boolean {
+  return Boolean(idOfSlot[slot]);
+}
+
+/** Fit-all over the live position buffer, skipping freed/stale slots. */
+export function computeLiveFitAllPose(input: {
+  viewDir: Vec3;
+  fovDeg: number;
+}): { target: Vec3; position: Vec3; radius: number } {
+  return computeFitAllPose({
+    array: positionBuffer.array,
+    count: positionBuffer.count,
+    viewDir: input.viewDir,
+    fovDeg: input.fovDeg,
+    isLive: slotIsLive,
+  });
 }
 
 // ---------------------------------------------------------------------------

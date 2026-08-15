@@ -430,6 +430,19 @@ export default function Nodes() {
         s.clusterCollapsed !== prev.clusterCollapsed
       ) {
         colorsDirty.current = true;
+      }
+      // Matrices move only on STRUCTURAL changes: collapse zeroes node scales
+      // and the show-me pulse scales its set (it also reads selectedId /
+      // searchResults / highlightOwner). Hover/selection/filter/snapshot are
+      // pure color states — re-dirtying matrices for them forced the full
+      // O(N) matrix pass plus three instanceMatrix uploads per hover.
+      const showMePulse = (st: typeof s): boolean =>
+        st.highlightOwner === 'showMe' && st.searchResults !== null && !st.selectedId;
+      if (
+        s.clusterCollapsed !== prev.clusterCollapsed ||
+        showMePulse(s) !== showMePulse(prev) ||
+        (showMePulse(s) && s.searchResults !== prev.searchResults)
+      ) {
         matricesDirty.current = true;
       }
       // 2D/3D toggle reshapes sizes AND recolors (flat cyan vs cluster hues)

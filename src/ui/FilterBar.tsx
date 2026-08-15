@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { hexFor } from '../scene/palette';
 import type { EdgeKind, FileType } from '../model/types';
@@ -37,6 +37,57 @@ const FILE_TYPE_ORDER: FileType[] = [
 ];
 
 /**
+ * Range sliders emit ~60 change events/second while dragging, and every store
+ * write triggers full O(N+E) recolor passes in the scene. This hook keeps the
+ * dragged value in local state for instant visual feedback and coalesces store
+ * writes through requestAnimationFrame: at most one write per frame, with the
+ * trailing value always committed (the pending rAF — or unmount cleanup —
+ * flushes the latest value). When the store changes externally (collab, Clear)
+ * and no local edit is in flight, the local value re-syncs to the store.
+ */
+function useRafCommittedNumber(
+  storeValue: number,
+  commit: (value: number) => void,
+): [number, (value: number) => void] {
+  const [local, setLocal] = useState(storeValue);
+  const pendingRef = useRef<{ value: number } | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const commitRef = useRef(commit);
+  commitRef.current = commit;
+
+  // External store changes win only when no local edit is awaiting commit.
+  useEffect(() => {
+    if (pendingRef.current === null) setLocal(storeValue);
+  }, [storeValue]);
+
+  // Guarantee the trailing write even if the bar unmounts mid-drag.
+  useEffect(
+    () => () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      const pending = pendingRef.current;
+      pendingRef.current = null;
+      if (pending) commitRef.current(pending.value);
+    },
+    [],
+  );
+
+  const update = (value: number) => {
+    setLocal(value);
+    pendingRef.current = { value };
+    if (rafRef.current !== null) return; // a flush is already scheduled
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const pending = pendingRef.current;
+      pendingRef.current = null;
+      if (pending) commitRef.current(pending.value);
+    });
+  };
+
+  return [local, update];
+}
+
+/**
  * Slim collapsible chip bar (top-left) for file-type / cluster / min-degree /
  * min-edge-weight filtering. Owns its own collapsed state — uiStore has no
  * filterOpen field by design, so this never needs to touch shared stores
@@ -51,6 +102,15 @@ export default function FilterBar() {
 
   const [collapsed, setCollapsed] = useState(true);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  const [minDegree, setMinDegree] = useRafCommittedNumber(
+    filter.minDegree,
+    (minDegree) => setFilter({ minDegree }),
+  );
+  const [minEdgeWeight, setMinEdgeWeight] = useRafCommittedNumber(
+    filter.minEdgeWeight,
+    (minEdgeWeight) => setFilter({ minEdgeWeight }),
+  );
 
   const fileTypeCounts = useMemo(() => {
     const counts: Partial<Record<FileType, number>> = {};
@@ -197,12 +257,12 @@ export default function FilterBar() {
                 min={0}
                 max={10}
                 step={1}
-                value={filter.minDegree}
+                value={minDegree}
                 aria-label="Minimum document connections"
-                title={`Showing nodes with ${filter.minDegree}+ connections`}
-                onChange={(e) => setFilter({ minDegree: Number(e.target.value) })}
+                title={`Showing nodes with ${minDegree}+ connections`}
+                onChange={(e) => setMinDegree(Number(e.target.value))}
               />
-              <span className="filter-bar__degree-value">{filter.minDegree}</span>
+              <span className="filter-bar__degree-value">{minDegree}</span>
             </div>
           </div>
 
@@ -219,12 +279,12 @@ export default function FilterBar() {
                 min={0}
                 max={1}
                 step={0.05}
-                value={filter.minEdgeWeight}
+                value={minEdgeWeight}
                 aria-label="Minimum link strength"
-                title={`Hiding links weaker than ${Math.round(filter.minEdgeWeight * 100)}%`}
-                onChange={(e) => setFilter({ minEdgeWeight: Number(e.target.value) })}
+                title={`Hiding links weaker than ${Math.round(minEdgeWeight * 100)}%`}
+                onChange={(e) => setMinEdgeWeight(Number(e.target.value))}
               />
-              <span className="filter-bar__degree-value">{Math.round(filter.minEdgeWeight * 100)}%</span>
+              <span className="filter-bar__degree-value">{Math.round(minEdgeWeight * 100)}%</span>
             </div>
           </div>
 

@@ -13,6 +13,21 @@ function optionId(index: number): string {
 }
 
 /**
+ * Rows rendered on each side of the active option. Corpora can reach 4096
+ * nodes; rendering them all made every selectedId change a long React commit
+ * that dropped frames mid camera-glide and tripped the auto-quality downgrade.
+ */
+const WINDOW_RADIUS = 60;
+
+/**
+ * Height of one option row, mirroring .graph-navigator__option in styles.css
+ * (min-height 44px + 1px bottom border). Spacers above and below the rendered
+ * window are sized with it so total scroll geometry stays put and
+ * useActiveOptionScroll's scrollIntoView({ block: 'nearest' }) keeps working.
+ */
+const ROW_HEIGHT = 45;
+
+/**
  * Keyboard and screen-reader companion to the WebGL scene.
  *
  * It stays out of the visual workspace until reached with Tab, then becomes a
@@ -42,13 +57,37 @@ export default function GraphNavigator() {
       : orderedNodes[0]?.id ?? null);
   }, [activeId, orderedNodes, selectedId]);
 
-  const activeIndex = Math.max(0, orderedNodes.findIndex((node) => node.id === activeId));
+  const activeIndex = useMemo(
+    () => Math.max(0, orderedNodes.findIndex((node) => node.id === activeId)),
+    [orderedNodes, activeId],
+  );
   useActiveOptionScroll(orderedNodes.length > 0 ? optionId(activeIndex) : undefined);
-  const documentCount = orderedNodes.filter((node) => node.kind === 'document').length;
-  const topicCount = orderedNodes.length - documentCount;
-  const clusterCount = new Set(
-    orderedNodes.filter((node) => node.kind === 'document' && node.cluster >= 0).map((node) => node.cluster),
-  ).size;
+  const { documentCount, topicCount, clusterCount } = useMemo(() => {
+    let documents = 0;
+    const clusters = new Set<number>();
+    for (const node of orderedNodes) {
+      if (node.kind !== 'document') continue;
+      documents += 1;
+      if (node.cluster >= 0) clusters.add(node.cluster);
+    }
+    return {
+      documentCount: documents,
+      topicCount: orderedNodes.length - documents,
+      clusterCount: clusters.size,
+    };
+  }, [orderedNodes]);
+
+  // Windowed rendering: only rows near the active option exist in the DOM.
+  // Ids still encode the absolute index, so aria-activedescendant and the
+  // scroll-into-view hook resolve the same elements as the full list did.
+  const windowStart = Math.max(0, activeIndex - WINDOW_RADIUS);
+  const windowEnd = Math.min(orderedNodes.length, activeIndex + WINDOW_RADIUS + 1);
+  const visibleNodes = useMemo(
+    () => orderedNodes.slice(windowStart, windowEnd),
+    [orderedNodes, windowStart, windowEnd],
+  );
+  const hiddenAbove = windowStart;
+  const hiddenBelow = orderedNodes.length - windowEnd;
 
   const moveTo = (index: number) => {
     const node = orderedNodes[Math.max(0, Math.min(index, orderedNodes.length - 1))];
@@ -113,7 +152,12 @@ export default function GraphNavigator() {
         }}
         onKeyDownCapture={handleKeyDown}
       >
-        {orderedNodes.map((node, index) => (
+        {hiddenAbove > 0 && (
+          <div aria-hidden="true" style={{ height: hiddenAbove * ROW_HEIGHT }} />
+        )}
+        {visibleNodes.map((node, offset) => {
+          const index = windowStart + offset;
+          return (
           <div
             id={optionId(index)}
             key={node.id}
@@ -133,7 +177,11 @@ export default function GraphNavigator() {
                 : `${fileTypeChip(node).toUpperCase()} · ${node.degree} connection${node.degree === 1 ? '' : 's'}`}
             </span>
           </div>
-        ))}
+          );
+        })}
+        {hiddenBelow > 0 && (
+          <div aria-hidden="true" style={{ height: hiddenBelow * ROW_HEIGHT }} />
+        )}
       </div>
     </aside>
   );

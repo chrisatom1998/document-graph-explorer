@@ -27,8 +27,10 @@ import { commitPendingFocusIf } from '../ui/focusNode';
 import { decideFrameNode, isAlreadyNear, shouldCommitOnTweenCancel } from './cameraFocusPolicy';
 import {
   computeFitAllPose,
+  computeLiveFitAllPose,
   isIngestFraming,
   noteIngestCameraSteer,
+  slotIsLive,
 } from './ingestBirth';
 
 const IDLE_MS = 10_000;
@@ -83,6 +85,8 @@ export default function CameraRig() {
   /** Node id of the in-flight frameNode command, for pending-focus commit. */
   const framingId = useRef<string | null>(null);
   const lastCollabPoseAt = useRef(0);
+  /** positionBuffer.version last used for the ingest-framing fit recompute. */
+  const lastFitVersion = useRef(-1);
   const lastInteraction = useRef(
     typeof performance !== 'undefined' ? performance.now() : 0,
   );
@@ -129,7 +133,9 @@ export default function CameraRig() {
       const id = cmd.ids?.[0];
       framingId.current = id ?? null;
       const slot = id !== undefined ? slotOfId.get(id) : undefined;
-      const hasSlot = slot !== undefined && slot < count;
+      // Positions refresh at tick rate: a freshly assigned slot can outrun the
+      // buffer the worker last posted, so bound the read against the array too.
+      const hasSlot = slot !== undefined && slot < count && slot * 3 + 2 < arr.length;
       if (!hasSlot) {
         // No layout slot — still open the panel so search/list picks work.
         commitPendingFocusIf(id);
@@ -173,9 +179,7 @@ export default function CameraRig() {
     // frameSet / fitAll: bounding sphere over the id set (or every live slot)
     if (cmd.kind === 'fitAll') {
       const fov = (camera as THREE.PerspectiveCamera).fov ?? 55;
-      const fit = computeFitAllPose({
-        array: arr,
-        count,
+      const fit = computeLiveFitAllPose({
         viewDir: [viewDir.x, viewDir.y, viewDir.z],
         fovDeg: fov,
       });
@@ -190,7 +194,7 @@ export default function CameraRig() {
     const slots: number[] = [];
     for (const id of cmd.ids ?? []) {
       const slot = slotOfId.get(id);
-      if (slot !== undefined && slot < count) slots.push(slot);
+      if (slot !== undefined && slot < count && slot * 3 + 2 < arr.length) slots.push(slot);
     }
     if (slots.length === 0) return;
     const fov = (camera as THREE.PerspectiveCamera).fov ?? 55;
@@ -200,6 +204,7 @@ export default function CameraRig() {
       viewDir: [viewDir.x, viewDir.y, viewDir.z],
       fovDeg: fov,
       slots,
+      isLive: slotIsLive,
     });
     desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
     desiredPos.set(fit.position[0], fit.position[1], fit.position[2]);
@@ -227,14 +232,20 @@ export default function CameraRig() {
 
     // First ingest of an empty corpus: keep the growing set framed (eased).
     // Incremental add never sets this flag — do not steal the camera.
-    if (isIngestFraming() && positionBuffer.count > 0) {
+    // Recompute only when the layout actually posted new positions
+    // (positionBuffer.version): positions refresh at tick rate, so a
+    // per-frame recompute just re-derived the identical fit between ticks.
+    if (
+      isIngestFraming() &&
+      positionBuffer.count > 0 &&
+      positionBuffer.version !== lastFitVersion.current
+    ) {
+      lastFitVersion.current = positionBuffer.version;
       viewDir.copy(state.camera.position).sub(controls.target);
       if (viewDir.lengthSq() < 1e-6) viewDir.set(0, 0, 1);
       viewDir.normalize();
       const fov = (state.camera as THREE.PerspectiveCamera).fov ?? 55;
-      const fit = computeFitAllPose({
-        array: positionBuffer.array,
-        count: positionBuffer.count,
+      const fit = computeLiveFitAllPose({
         viewDir: [viewDir.x, viewDir.y, viewDir.z],
         fovDeg: fov,
       });

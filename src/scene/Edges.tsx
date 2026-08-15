@@ -186,12 +186,18 @@ export default function Edges() {
   // Ribbons cost ~4x the vertices of GL_LINES, so they ride the top of the
   // quality ladder only; the 2D star chart keeps hairlines by design.
   const fat = useUiStore((s) => s.dims === 3 && s.qualityTier < 2);
+  // Effective cap computed OUTSIDE the memo: tier changes that land on the
+  // same cap (tier 0 vs 1, or any tier while edges.length <= 1800) must keep
+  // the array identity — a new identity reallocates both ~430KB attribute
+  // buffers, rebuilds/disposes the fat-line geometry, and blanks edges for a
+  // frame. dims/qualityTier feed the memo only through the cap.
+  const edgeCap =
+    edges.length <= 1800 ? Infinity : dims === 2 ? 900 : qualityTier >= 2 ? 1200 : 1500;
   const renderEdges = useMemo(() => {
-    if (edges.length <= 1800) return edges;
-    const cap = dims === 2 ? 900 : qualityTier >= 2 ? 1200 : 1500;
+    if (edgeCap === Infinity) return edges;
     const ranked = [...edges].sort((a, b) => b.weight - a.weight);
-    return ranked.slice(0, Math.max(cap, 1));
-  }, [dims, edges, qualityTier]);
+    return ranked.slice(0, Math.max(edgeCap, 1));
+  }, [edges, edgeCap]);
   const raycaster = useThree((s) => s.raycaster);
 
   // LineMaterial needs the viewport size to convert linewidth px -> clip
@@ -396,16 +402,20 @@ export default function Edges() {
   };
 
   const recomputeColors = (): void => {
-    const { nodes } = useGraphStore.getState();
+    const { nodes, edges: allEdges } = useGraphStore.getState();
     const ui = useUiStore.getState();
     const { hoveredId, selectedId, searchResults, highlightOwner, filter } = ui;
     const pathHops =
       highlightOwner === 'path' && searchResults && searchResults.length >= 2
         ? pathHopSet(searchResults)
         : null;
+    // Full edge list, NOT renderEdges: emphasis is about node neighborhoods
+    // (the result is keyed by node id), and passing the same array as
+    // Nodes/EdgePulses/ClusterBridges shares one adjacency build per hover
+    // instead of rebuilding it for the capped-array identity.
     const emphasis = computeEmphasis(
       nodes,
-      renderEdges,
+      allEdges,
       hoveredId,
       selectedId,
       searchResults,

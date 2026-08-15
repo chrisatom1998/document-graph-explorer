@@ -73,8 +73,8 @@ function countDocuments(nodes: { kind: string }[]): number {
 export default function AiCore() {
   const sprite = getSharedSoftSprite();
   const visible = useUiStore((s) => s.dims === 3);
-  const documentCount = useGraphStore((s) => countDocuments(s.nodes));
-  const corpusScale = computeAiCoreCorpusScale(documentCount);
+  const lightRef = useRef<THREE.PointLight>(null);
+  const assemblyRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Sprite>(null);
   const glowMatRef = useRef<THREE.SpriteMaterial>(null);
   const coreRef = useRef<THREE.Mesh>(null);
@@ -94,7 +94,25 @@ export default function AiCore() {
   const energy = useRef(0);
   const phase = useRef(0);
 
+  // Corpus scale is read transiently in useFrame, like the streaming flag
+  // above: a hook selector here would rerun an O(N) document count on EVERY
+  // graphStore write (per-file status updates during ingest included). The
+  // count only depends on `nodes`, so recompute it solely when the nodes
+  // array identity changes and cache the derived scale in a ref.
+  const countedNodesRef = useRef<{ kind: string }[] | null>(null);
+  const corpusScaleRef = useRef(computeAiCoreCorpusScale(0));
+
   useFrame((_, delta) => {
+    const { nodes } = useGraphStore.getState();
+    if (nodes !== countedNodesRef.current) {
+      countedNodesRef.current = nodes;
+      corpusScaleRef.current = computeAiCoreCorpusScale(countDocuments(nodes));
+    }
+    const corpusScale = corpusScaleRef.current;
+    // Distance is world-space — keep the light outside the scaled assembly.
+    if (lightRef.current) lightRef.current.distance = BASE_LIGHT_DISTANCE * corpusScale;
+    assemblyRef.current?.scale.setScalar(corpusScale);
+
     const glow = glowRef.current;
     const glowMat = glowMatRef.current;
     const core = coreRef.current;
@@ -133,15 +151,16 @@ export default function AiCore() {
 
   return (
     <group visible={visible}>
-      {/* Distance is world-space — keep the light outside the scaled assembly. */}
+      {/* Distance and scale track corpus size imperatively in useFrame. */}
       <pointLight
+        ref={lightRef}
         color={CORE_COLOR}
         intensity={5}
-        distance={BASE_LIGHT_DISTANCE * corpusScale}
+        distance={BASE_LIGHT_DISTANCE}
         decay={2}
       />
 
-      <group scale={corpusScale}>
+      <group ref={assemblyRef}>
         <sprite ref={glowRef} scale={[14, 14, 1]} raycast={NO_RAYCAST}>
           <spriteMaterial
             ref={glowMatRef}

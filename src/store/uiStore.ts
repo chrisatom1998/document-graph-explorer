@@ -200,7 +200,14 @@ export const useUiStore = create<UiState>((set) => ({
   setSearchOpen: (searchOpen) => set({ searchOpen }),
   setSearchResults: (searchResults, owner) =>
     set({ searchResults, highlightOwner: searchResults ? (owner ?? null) : null }),
-  setFilter: (f) => set((s) => ({ filter: { ...s.filter, ...f } })),
+  setFilter: (f) =>
+    set((s) => {
+      // Identity-stable no-op: skip the new filter object (and every
+      // downstream recolor pass keyed on it) when nothing actually changes.
+      const keys = Object.keys(f) as (keyof GraphFilter)[];
+      if (keys.every((k) => s.filter[k] === f[k])) return s;
+      return { filter: { ...s.filter, ...f } };
+    }),
   setSnapshotOverlay: (snapshotOverlay) => set({ snapshotOverlay }),
   setDims: (dims) => set({ dims }),
   setTopicNodes: (topicNodesEnabled) => set({ topicNodesEnabled }),
