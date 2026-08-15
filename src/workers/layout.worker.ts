@@ -468,25 +468,10 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
       epoch = typeof msg.epoch === 'number' ? msg.epoch : epoch + 1;
       dims = msg.dims;
       sim.numDimensions(dims);
-      // A 2D map is a disk, not the front projection of the 3D shell. Disable
-      // the spherical radial constraint so the regular force layout can spread
-      // nodes around the disk anchors.
-      radialForce.strength(dims === 2 ? 0 : SHELL_STRENGTH);
-      rebuildAnchors();
       if (dims === 2) {
-        // numDimensions(2) merely stops integrating z — flatten explicitly,
-        // then seed each cluster near its 2D map anchor. This makes the toggle
-        // visibly reproject immediately rather than waiting for a cooled 3D
-        // simulation to drift into its new force equilibrium.
+        // numDimensions(2) merely stops integrating z — flatten explicitly.
         for (const n of nodes) {
-          const anchor = anchors.get(n.cluster);
-          if (anchor) {
-            n.x = anchor[0] + (Math.random() - 0.5) * 12;
-            n.y = anchor[1] + (Math.random() - 0.5) * 12;
-          }
           n.z = 0;
-          n.vx = 0;
-          n.vy = 0;
           n.vz = 0;
           if (n.fz != null) n.fz = 0;
         }
@@ -496,7 +481,7 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
           if (n.fz == null) n.z += (Math.random() - 0.5) * 2;
         }
       }
-      postPositions(sim.alpha(), true);
+      rebuildAnchors();
       reheat(0.5);
       break;
     }

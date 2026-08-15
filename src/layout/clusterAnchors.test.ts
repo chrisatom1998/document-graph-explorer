@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { clusterAnchor } from './clusterAnchors';
 
 describe('clusterAnchor', () => {
-  it('places 2D anchors across the z=0 disk', () => {
+  it('places 2D anchors on the z=0 circle', () => {
     for (let id = 0; id < 16; id++) {
       const [x, y, z] = clusterAnchor(id, 100, 2);
       expect(z).toBe(0);
-      expect(Math.hypot(x, y)).toBeLessThanOrEqual(72);
+      expect(Math.hypot(x, y)).toBeCloseTo(100, 8);
     }
   });
 
