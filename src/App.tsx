@@ -9,7 +9,7 @@ import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { useCorpusStore } from './store/corpusStore';
 import { onLayoutSettled } from './layout/layoutBridge';
-import { isIngestFraming } from './scene/ingestBirth';
+import { isIngestFraming } from './scene/ingestGesture';
 import { enqueueRun } from './pipeline/runQueue';
 import { positionBuffer, slotOfId } from './scene/positionBuffer';
 import { cameraPose } from './scene/cameraPose';

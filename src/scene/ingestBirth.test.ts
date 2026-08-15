@@ -21,7 +21,6 @@ import {
   rememberDropOrigin,
   rememberWorldOrigin,
   resolveIngestOrigin,
-  setRunIngestOrigin,
   snapshotIngestOrigin,
   travelProgress,
   writeSlotTravelPosition,
@@ -48,7 +47,6 @@ const pose = {
 describe('ingest origin', () => {
   afterEach(() => {
     clearPendingOrigin();
-    setRunIngestOrigin(null);
   });
 
   it('projects canvas-center NDC onto the graph plane at the orbit target', () => {

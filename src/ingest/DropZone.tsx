@@ -21,7 +21,7 @@ import { posixJoin } from '../util/posixPath';
 import { isIngestCandidate, routeFileWithSniff } from './fileRouter';
 import { hasUnignoreUnder, mergeGitIgnoreRules, pathIsGitIgnored, type GitIgnoreRule } from './gitignore';
 import type { NamedFile } from './localFiles';
-import { rememberAddOrigin, rememberDropOrigin } from '../scene/ingestBirth';
+import { rememberAddOrigin, rememberDropOrigin } from '../scene/ingestGesture';
 
 // ---------------------------------------------------------------------------
 // directory walking (webkitGetAsEntry API is callback-based; promisify it)

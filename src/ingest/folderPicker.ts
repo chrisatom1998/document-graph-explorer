@@ -22,7 +22,7 @@
  */
 
 import { useUiStore } from '../store/uiStore';
-import { rememberAddOrigin } from '../scene/ingestBirth';
+import { rememberAddOrigin } from '../scene/ingestGesture';
 
 function directoryPickerSupported(): boolean {
   return typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';

@@ -8,7 +8,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import ConstellationSvg from './ConstellationSvg';
 import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
-import { rememberCenterOrigin } from '../scene/ingestBirth';
+import { rememberCenterOrigin } from '../scene/ingestGesture';
 
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
 // Split out so the welcome screen paints without waiting on three.js; the flat

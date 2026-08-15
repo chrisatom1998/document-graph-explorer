@@ -11,18 +11,27 @@
 
 import { cameraPose } from './cameraPose';
 import {
+  clearPendingOrigin,
+  pendingIngestOrigin,
+  type PendingOrigin,
+  type Vec3,
+} from './ingestGesture';
+import {
   hasOriginOfSlot,
   originOfSlot,
   positionBuffer,
   spawnAtOfSlot,
 } from './positionBuffer';
 
+// Gesture recording + camera-framing flags live in the dependency-free
+// ingestGesture module (entry-chunk budget); re-exported so scene/pipeline
+// code keeps importing them from here.
+export * from './ingestGesture';
+
 export const MATERIALIZE_MS = 700;
 /** 2D ladder: disc pop + short slide, not a 3D flight. */
 export const MATERIALIZE_MS_FLAT = 420;
 export const EDGE_REVEAL_MS = 380;
-
-export type Vec3 = [number, number, number];
 
 export interface CameraPoseInput {
   px: number;
@@ -33,44 +42,6 @@ export interface CameraPoseInput {
   tz: number;
   fov: number;
   aspect: number;
-}
-
-type PendingOrigin =
-  | { kind: 'client'; clientX: number; clientY: number }
-  | { kind: 'add' }
-  | { kind: 'center' }
-  | { kind: 'world'; point: Vec3 };
-
-let pending: PendingOrigin | null = null;
-
-/** Snapshot captured at ingestFiles() so a later drop cannot rewrite this run. */
-let runOrigin: Vec3 | null = null;
-
-let ingestFraming = false;
-let ingestUserSteered = false;
-
-// ---------------------------------------------------------------------------
-// Origin recording (call at the user gesture; resolve when ingest starts)
-// ---------------------------------------------------------------------------
-
-export function rememberDropOrigin(clientX: number, clientY: number): void {
-  pending = { kind: 'client', clientX, clientY };
-}
-
-export function rememberAddOrigin(): void {
-  pending = { kind: 'add' };
-}
-
-export function rememberCenterOrigin(): void {
-  pending = { kind: 'center' };
-}
-
-export function rememberWorldOrigin(point: Vec3): void {
-  pending = { kind: 'world', point: [point[0], point[1], point[2]] };
-}
-
-export function clearPendingOrigin(): void {
-  pending = null;
 }
 
 /**
@@ -173,7 +144,7 @@ export function resolveIngestOrigin(opts?: {
 }): Vec3 {
   const pose = opts?.pose ?? cameraPose;
   const rect = opts?.rect ?? canvasRect();
-  const src = opts?.pending !== undefined ? opts.pending : pending;
+  const src = opts?.pending !== undefined ? opts.pending : pendingIngestOrigin();
   let point: Vec3;
   if (!src || src.kind === 'center') {
     point = projectNdcToGraphPlane(0, 0, pose);
@@ -190,19 +161,15 @@ export function resolveIngestOrigin(opts?: {
   return point;
 }
 
-/** Capture the current pending origin for this ingest run. */
+/** Capture and consume the pending origin for this ingest run. */
 export function snapshotIngestOrigin(opts?: {
   flat?: boolean;
   pose?: CameraPoseInput;
   rect?: { left: number; top: number; width: number; height: number };
 }): Vec3 {
-  runOrigin = resolveIngestOrigin(opts);
-  pending = null;
-  return runOrigin;
-}
-
-export function setRunIngestOrigin(point: Vec3 | null): void {
-  runOrigin = point;
+  const origin = resolveIngestOrigin(opts);
+  clearPendingOrigin();
+  return origin;
 }
 
 // ---------------------------------------------------------------------------
@@ -327,46 +294,8 @@ export function slotHasMaterialized(slot: number, now: number): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Camera: first empty-corpus ingest follows; incremental add never steals
+// Camera fit (the follow/snap/leave decision lives in ingestGesture)
 // ---------------------------------------------------------------------------
-
-export type IngestCameraMode = 'follow' | 'snap' | 'leave';
-
-export function decideIngestCamera(input: {
-  corpusWasEmpty: boolean;
-  userSteered: boolean;
-  reducedMotion: boolean;
-}): IngestCameraMode {
-  if (!input.corpusWasEmpty || input.userSteered) return 'leave';
-  return input.reducedMotion ? 'snap' : 'follow';
-}
-
-export function beginIngestBirth(input: { corpusWasEmpty: boolean; reducedMotion: boolean }): IngestCameraMode {
-  ingestUserSteered = false;
-  const mode = decideIngestCamera({
-    corpusWasEmpty: input.corpusWasEmpty,
-    userSteered: false,
-    reducedMotion: input.reducedMotion,
-  });
-  ingestFraming = mode === 'follow' || mode === 'snap';
-  return mode;
-}
-
-export function noteIngestCameraSteer(): void {
-  ingestUserSteered = true;
-  ingestFraming = false;
-}
-
-export function endIngestBirth(): { shouldFinalFit: boolean } {
-  const shouldFinalFit = ingestFraming && !ingestUserSteered;
-  ingestFraming = false;
-  runOrigin = null;
-  return { shouldFinalFit };
-}
-
-export function isIngestFraming(): boolean {
-  return ingestFraming;
-}
 
 export function computeFitAllPose(input: {
   array: ArrayLike<number>;
