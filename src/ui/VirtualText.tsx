@@ -59,7 +59,7 @@ function markRange(text: string, range: { start: number; end: number } | null): 
   return (
     <>
       {text.slice(0, range.start)}
-      <mark className={PASSAGE_MARK_CLASS}>{text.slice(range.start, range.end)}</mark>
+      <mark className={PASSAGE_MARK_CLASS} role="mark">{text.slice(range.start, range.end)}</mark>
       {text.slice(range.end)}
     </>
   );

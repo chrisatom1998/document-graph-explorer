@@ -60,7 +60,36 @@ describe('SidePanel passage fly-to and similar docs', () => {
     render(<SidePanel />);
     expect(screen.getByRole('status')).toHaveTextContent(/matching passage/i);
     expect(screen.getByRole('status')).toHaveTextContent(/disaster recovery/i);
-    expect(document.querySelector('mark.passage-mark')?.textContent).toMatch(/disaster recovery/i);
+    const mark = screen.getByRole('mark');
+    expect(mark).toHaveClass('passage-mark');
+    expect(mark.textContent).toMatch(/disaster recovery/i);
+  });
+
+  it('does not mark the body for annotation-only hits', () => {
+    textStore.set('doc1', 'The disaster recovery procedure is tested quarterly.');
+    useUiStore.setState({
+      readerHighlight: {
+        docId: 'doc1',
+        text: 'Tags: legal-hold',
+      },
+    });
+    render(<SidePanel />);
+    expect(screen.getByRole('status')).toHaveTextContent(/matching passage/i);
+    expect(screen.getByRole('status')).toHaveTextContent(/legal-hold/i);
+    expect(screen.queryByRole('mark')).toBeNull();
+    expect(document.querySelector('mark.passage-mark')).toBeNull();
+    expect(screen.getByText(/disaster recovery procedure is tested quarterly/i)).toBeInTheDocument();
+  });
+
+  it('shows type and cluster once in document chrome', () => {
+    useGraphStore.setState({ clusterNames: { 0: 'Incident response' } });
+    useUiStore.setState({ readerHighlight: null });
+    render(<SidePanel />);
+    expect(screen.getByText('txt')).toBeInTheDocument();
+    expect(screen.getAllByText('Incident response')).toHaveLength(1);
+    expect(document.querySelector('.side-panel__kicker')).toBeTruthy();
+    expect(document.querySelector('.side-panel__badges')).toBeNull();
+    expect(screen.getByText(/0 connections/i)).toBeInTheDocument();
   });
 
   it('offers More like this without adding toolbar chrome', () => {

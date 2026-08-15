@@ -227,26 +227,45 @@ export default function SidePanel() {
   const codeLang = codeLanguageForNode(node);
   const typeChip = fileTypeChip(node);
   const readerLabel = codeLang?.label ?? 'Document';
+  // Annotation-only hits omit passageIndex and carry note/tag/cluster text.
+  // Still use that snippet as the needle (imported graphs have no chunks) —
+  // wrapPassageInElement / VirtualText no-op when it is not in the body, so
+  // we never fall back to highlighting chunk 0.
   const passageNeedle =
     readerHighlight?.docId === node.id ? readerHighlight.text : undefined;
   const passageKey = `${node.id}:${mdSource?.text.length ?? htmlSource?.text.length ?? fullText?.length ?? 0}`;
+  const hasStatus = node.status !== 'ok' || duplicatesOf.length > 0;
 
   return (
     <div className="side-panel-layer">
-      <div className="side-panel glass-panel" role="dialog" aria-label={codeLang ? `${node.title} (${codeLang.label})` : node.title}>
+      <div
+        className="side-panel glass-panel"
+        role="dialog"
+        aria-label={codeLang ? `${node.title} (${codeLang.label})` : node.title}
+        style={{ '--reader-cluster': clusterColor } as CSSProperties}
+      >
         <div className="side-panel__header">
-          <h2 className="side-panel__title">
-            <span className="side-panel__title-text">{node.title}</span>
-            {codeLang && (
-              <span className="side-panel__title-lang" title={codeLang.label}>
-                {codeLang.short}
+          <div className="side-panel__chrome">
+            <p className="side-panel__kicker">
+              <span className="side-panel__type">{typeChip}</span>
+              <span className="side-panel__cluster">
+                <span className="chip-dot" style={{ background: clusterColor }} aria-hidden="true" />
+                {clusterLabel}
               </span>
-            )}
-            <span className="chip side-panel__header-cluster">
-              <span className="chip-dot" style={{ background: clusterColor }} aria-hidden="true" />
-              {clusterLabel}
-            </span>
-          </h2>
+            </p>
+            <h2 className="side-panel__title">
+              <span className="side-panel__title-text">{node.title}</span>
+            </h2>
+            <p className="side-panel__meta">
+              <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
+              {node.lastModified !== undefined && (
+                <span title={new Date(node.lastModified).toLocaleString()}>
+                  updated {timeAgo(node.lastModified)}
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="side-panel__actions">
           {node.kind === 'document' && (
             <button
               type="button"
@@ -292,6 +311,13 @@ export default function SidePanel() {
               Remove
             </button>
           )}
+          <CloseButton
+            ref={closeButtonRef}
+            title="Back to graph"
+            aria-label="Back to graph"
+            onClick={() => setSelected(null)}
+          />
+          </div>
           {node.kind === 'document' && confirmRemove && (
             <div className="side-panel__remove-confirm">
               <span className="side-panel__remove-confirm-text">
@@ -319,59 +345,142 @@ export default function SidePanel() {
               </button>
             </div>
           )}
-          <CloseButton
-            ref={closeButtonRef}
-            title="Back to graph"
-            aria-label="Back to graph"
-            onClick={() => setSelected(null)}
-          />
         </div>
         <div className="side-panel__scroll">
-          <div className="side-panel__badges">
-            <span className="chip">{typeChip}</span>
-            <span className="chip">
-              <span
-                className="chip-dot"
-                style={{ background: clusterColor }}
-                aria-hidden="true"
-              />
-              {clusterLabel}
-            </span>
-            {node.status !== 'ok' && (
-              <span className="chip side-panel__badge-warning">
-                ⚠ {node.warning ?? node.status}
-              </span>
-            )}
-            {duplicatesOf.map((d) => (
-              <button
-                key={d.id}
-                type="button"
-                className="chip chip-selectable side-panel__badge-warning side-panel__dup-chip"
-                title={`${(d.sim * 100).toFixed(1)}% similar — these might be the same doc`}
-                onClick={() => focusNode(d.id)}
-              >
-                ≈ duplicate of {nodes[nodeIndex[d.id]]?.title ?? d.id}
-              </button>
-            ))}
-          </div>
+          {hasStatus && (
+            <div className="side-panel__status">
+              {node.status !== 'ok' && (
+                <p className="side-panel__status-item is-warning">
+                  ⚠ {node.warning ?? node.status}
+                </p>
+              )}
+              {duplicatesOf.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  className="side-panel__status-item is-warning is-action"
+                  title={`${(d.sim * 100).toFixed(1)}% similar — these might be the same doc`}
+                  onClick={() => focusNode(d.id)}
+                >
+                  ≈ duplicate of {nodes[nodeIndex[d.id]]?.title ?? d.id}
+                </button>
+              ))}
+            </div>
+          )}
 
-          <div className="side-panel__stats">
-            <span>{node.wordCount.toLocaleString()} words</span>
-            <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
-            {node.lastModified !== undefined && (
-              <span title={new Date(node.lastModified).toLocaleString()}>
-                updated {timeAgo(node.lastModified)}
-              </span>
-            )}
-          </div>
-
-          <div className="side-panel__section">
+          <div className="side-panel__section side-panel__dek">
             <p className="side-panel__section-label">Summary</p>
             <p
               className={`side-panel__summary${node.summary ? '' : ' is-fallback'}`}
             >
               {node.summary || 'No summary available yet.'}
             </p>
+          </div>
+
+          <div className="side-panel__reading">
+            <p className="side-panel__section-label">{readerLabel}</p>
+            {readerHighlight?.docId === node.id && (
+              <p className="side-panel__passage-banner" role="status">
+                <span className="side-panel__passage-banner-label">
+                  Matching passage
+                  {readerHighlight.passageIndex !== undefined
+                    ? ` · ${readerHighlight.passageIndex + 1}`
+                    : ''}
+                </span>
+                <span className="side-panel__passage-banner-text">
+                  {readerHighlight.text.replace(/\s+/g, ' ').trim().slice(0, 220)}
+                </span>
+              </p>
+            )}
+            <div className={`side-panel__reader-frame${codeLang ? ' is-code' : ''}`}>
+            {codeLang && (
+              <span className="side-panel__reader-lang" title={codeLang.label}>
+                {codeLang.short}
+              </span>
+            )}
+            {pdfPreview && pdfPreview.id === node.id ? (
+              <Suspense fallback={<div className="side-panel__reader is-unavailable">Loading preview…</div>}>
+                <PdfPreview
+                  key={node.id}
+                  blob={pdfPreview.blob}
+                  className="side-panel__reader side-panel__reader--pdf"
+                />
+              </Suspense>
+            ) : mdSource && mdSource.id === node.id ? (
+              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
+                <DocumentMarkdown
+                  key={node.id}
+                  text={mdSource.text}
+                  linkIndex={linkIndex}
+                  onNavigate={(id) => focusNode(id)}
+                  className="side-panel__reader side-panel__reader--markdown"
+                  highlight={passageNeedle}
+                />
+              </PassageTarget>
+            ) : htmlSource && htmlSource.id === node.id ? (
+              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
+                <HtmlPreview
+                  key={node.id}
+                  html={htmlSource.text}
+                  className="side-panel__reader side-panel__reader--html"
+                  highlight={passageNeedle}
+                />
+              </PassageTarget>
+            ) : node.fileType === 'csv' && fullText ? (
+              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
+                <CsvPreview
+                  key={node.id}
+                  text={fullText}
+                  className="side-panel__reader side-panel__reader--csv"
+                />
+              </PassageTarget>
+            ) : node.fileType === 'json' && fullText && fullText.length <= JSON_MAX_RENDER_CHARS ? (
+              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
+                <JsonPreview
+                  key={node.id}
+                  text={fullText}
+                  className="side-panel__reader side-panel__reader--json"
+                  highlight={passageNeedle}
+                />
+              </PassageTarget>
+            ) : node.fileType === 'json' && fullText ? (
+              <JsonPreview
+                key={node.id}
+                text={fullText}
+                className="side-panel__reader side-panel__reader--json"
+                highlight={passageNeedle}
+              />
+            ) : node.fileType === 'yaml' && fullText && fullText.length <= YAML_MAX_RENDER_CHARS ? (
+              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
+                <YamlPreview
+                  key={node.id}
+                  text={fullText}
+                  className="side-panel__reader side-panel__reader--yaml"
+                  highlight={passageNeedle}
+                />
+              </PassageTarget>
+            ) : node.fileType === 'yaml' && fullText ? (
+              <YamlPreview
+                key={node.id}
+                text={fullText}
+                className="side-panel__reader side-panel__reader--yaml"
+                highlight={passageNeedle}
+              />
+            ) : fullText ? (
+              <VirtualText
+                key={node.id}
+                text={fullText}
+                highlight={passageNeedle}
+                className={`side-panel__reader${
+                  isMonoFileType(node.fileType) ? ' is-mono' : ''
+                }`}
+              />
+            ) : (
+              <div className="side-panel__reader is-unavailable">
+                text unavailable
+              </div>
+            )}
+            </div>
           </div>
 
           {node.topics.length > 0 && (
@@ -473,12 +582,6 @@ export default function SidePanel() {
                         {EDGE_KIND_LABEL[edge.kind]}
                       </span>
                     </div>
-                    <div className="connection-row__weight-track">
-                      <div
-                        className="connection-row__weight-fill"
-                        style={{ width: `${Math.round(edge.weight * 100)}%` }}
-                      />
-                    </div>
                     {shownEvidence.length > 0 && (
                       <ul className="connection-row__evidence">
                         {shownEvidence.map((ev, i) => (
@@ -525,113 +628,6 @@ export default function SidePanel() {
                   : `Show all ${connections.length} connections`}
               </button>
             )}
-          </div>
-
-          <hr className="hairline" />
-
-          <div className="side-panel__section">
-            <p className="side-panel__section-label">{readerLabel}</p>
-            {readerHighlight?.docId === node.id && (
-              <p className="side-panel__passage-banner" role="status">
-                Matching passage
-                {readerHighlight.passageIndex !== undefined
-                  ? ` · ${readerHighlight.passageIndex + 1}`
-                  : ''}
-                {': '}
-                <span className="side-panel__passage-banner-text">
-                  {readerHighlight.text.replace(/\s+/g, ' ').trim().slice(0, 220)}
-                </span>
-              </p>
-            )}
-            <div className={`side-panel__reader-frame${codeLang ? ' is-code' : ''}`}>
-            {codeLang && (
-              <span className="side-panel__reader-lang" title={codeLang.label}>
-                {codeLang.short}
-              </span>
-            )}
-            {pdfPreview && pdfPreview.id === node.id ? (
-              <Suspense fallback={<div className="side-panel__reader is-unavailable">Loading preview…</div>}>
-                <PdfPreview
-                  key={node.id}
-                  blob={pdfPreview.blob}
-                  className="side-panel__reader side-panel__reader--pdf"
-                />
-              </Suspense>
-            ) : mdSource && mdSource.id === node.id ? (
-              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
-                <DocumentMarkdown
-                  key={node.id}
-                  text={mdSource.text}
-                  linkIndex={linkIndex}
-                  onNavigate={(id) => focusNode(id)}
-                  className="side-panel__reader side-panel__reader--markdown"
-                  highlight={passageNeedle}
-                />
-              </PassageTarget>
-            ) : htmlSource && htmlSource.id === node.id ? (
-              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
-                <HtmlPreview
-                  key={node.id}
-                  html={htmlSource.text}
-                  className="side-panel__reader side-panel__reader--html"
-                  highlight={passageNeedle}
-                />
-              </PassageTarget>
-            ) : node.fileType === 'csv' && fullText ? (
-              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
-                <CsvPreview
-                  key={node.id}
-                  text={fullText}
-                  className="side-panel__reader side-panel__reader--csv"
-                />
-              </PassageTarget>
-            ) : node.fileType === 'json' && fullText && fullText.length <= JSON_MAX_RENDER_CHARS ? (
-              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
-                <JsonPreview
-                  key={node.id}
-                  text={fullText}
-                  className="side-panel__reader side-panel__reader--json"
-                  highlight={passageNeedle}
-                />
-              </PassageTarget>
-            ) : node.fileType === 'json' && fullText ? (
-              <JsonPreview
-                key={node.id}
-                text={fullText}
-                className="side-panel__reader side-panel__reader--json"
-                highlight={passageNeedle}
-              />
-            ) : node.fileType === 'yaml' && fullText && fullText.length <= YAML_MAX_RENDER_CHARS ? (
-              <PassageTarget needle={passageNeedle} contentKey={passageKey}>
-                <YamlPreview
-                  key={node.id}
-                  text={fullText}
-                  className="side-panel__reader side-panel__reader--yaml"
-                  highlight={passageNeedle}
-                />
-              </PassageTarget>
-            ) : node.fileType === 'yaml' && fullText ? (
-              <YamlPreview
-                key={node.id}
-                text={fullText}
-                className="side-panel__reader side-panel__reader--yaml"
-                highlight={passageNeedle}
-              />
-            ) : fullText ? (
-              <VirtualText
-                key={node.id}
-                text={fullText}
-                highlight={passageNeedle}
-                className={`side-panel__reader${
-                  isMonoFileType(node.fileType) ? ' is-mono' : ''
-                }`}
-              />
-            ) : (
-              <div className="side-panel__reader is-unavailable">
-                text unavailable
-              </div>
-            )}
-            </div>
           </div>
         </div>
       </div>

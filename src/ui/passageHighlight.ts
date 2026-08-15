@@ -157,6 +157,7 @@ function wrapTextSlice(node: Text, from: number, to: number): HTMLElement {
   if (to - from < target.data.length) target.splitText(to - from);
   const mark = document.createElement('mark');
   mark.className = PASSAGE_MARK_CLASS;
+  mark.setAttribute('role', 'mark');
   target.parentNode!.insertBefore(mark, target);
   mark.appendChild(target);
   return mark;
