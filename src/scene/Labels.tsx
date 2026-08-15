@@ -142,7 +142,8 @@ export default function Labels() {
       if (
         s.qualityTier !== prev.qualityTier ||
         s.topicNodesEnabled !== prev.topicNodesEnabled ||
-        s.clusterCollapsed !== prev.clusterCollapsed
+        s.clusterCollapsed !== prev.clusterCollapsed ||
+        s.labelDensity !== prev.labelDensity
       ) {
         labelsDirty.current = true;
       }
@@ -183,7 +184,7 @@ export default function Labels() {
       refreshTitles();
       titlesDirty.current = false;
     }
-    const { hoveredId, selectedId, qualityTier, topicNodesEnabled, clusterCollapsed } =
+    const { hoveredId, selectedId, qualityTier, topicNodesEnabled, clusterCollapsed, labelDensity } =
       useUiStore.getState();
 
     // In cluster-collapse mode individual labels are hidden (super-node labels render in ClusterCollapse)
@@ -200,7 +201,9 @@ export default function Labels() {
       return;
     }
 
-    const budget = qualityTier >= 3 ? Math.min(DEGRADED_BUDGET, LABEL_BUDGET) : LABEL_BUDGET;
+    const densityBudget = Math.max(0, Math.round(LABEL_BUDGET * labelDensity));
+    const qualityBudget = qualityTier >= 3 ? Math.min(DEGRADED_BUDGET, LABEL_BUDGET) : LABEL_BUDGET;
+    const budget = Math.min(qualityBudget, densityBudget);
     const count = Math.min(positionBuffer.count, MAX_NODES);
     const titles = titleOfSlot.current;
     const now = performance.now();

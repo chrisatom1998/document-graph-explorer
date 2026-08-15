@@ -47,7 +47,7 @@ import AutoQuality from './AutoQuality';
 import ClusterCollapse from './ClusterCollapse';
 import SelectionHalo from './SelectionHalo';
 import PeerPresence from './PeerPresence';
-import PathRoute from './PathRoute';
+import PathRoute from './PathRoute.tsx';
 
 const COARSE_POINTER =
   typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches);

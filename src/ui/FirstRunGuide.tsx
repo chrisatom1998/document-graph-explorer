@@ -16,8 +16,8 @@ import CloseButton from './CloseButton';
 import { IconGrip } from './icons';
 import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 
-// v4: shorter core-loop tour after the toolbar was collapsed into menus.
-const KEY = 'knowledge-nebula-first-graph-guide-v4';
+// v5: adds the collapsed Links toggle after the filter step.
+const KEY = 'knowledge-nebula-first-graph-guide-v5';
 export { FIRST_RUN_GUIDE_REOPEN_EVENT };
 
 const TOUR_STEPS = [
@@ -35,6 +35,11 @@ const TOUR_STEPS = [
     selector: '.filter-bar-layer',
     title: 'Reduce visual noise',
     body: 'Open Filters for file type and cluster. More filters hides weaker links, connection kinds, and recency until you ask.',
+  },
+  {
+    selector: '.scene-legend__toggle',
+    title: 'Choose which links to show',
+    body: 'The Links button opens a compact legend. Turn reference, similar, keyword, or entity connections off when the graph feels crowded — click it again to hide the list.',
   },
   {
     selector: '.chat-bubble-btn, .chat-panel',

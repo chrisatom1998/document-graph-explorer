@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import Tooltip from './ui/Tooltip';
 import ChatLauncher from './ui/ChatLauncher';
-import InsightsDigest from './ui/InsightsDigest';
 import ToastHost from './ui/ToastHost';
 import { shouldIgnoreGlobalKey } from './ui/globalKeyboard';
 import { useGraphStore } from './store/graphStore';
@@ -35,6 +34,8 @@ const SnapshotDrawer = lazy(() => import('./ui/SnapshotDrawer'));
 const SearchOverlay = lazy(() => import('./ui/SearchOverlay'));
 const GraphNavigator = lazy(() => import('./ui/GraphNavigator'));
 const FilterBar = lazy(() => import('./ui/FilterBar'));
+const SceneLegend = lazy(() => import('./ui/SceneLegend'));
+const CompareTray = lazy(() => import('./ui/CompareTray'));
 const Minimap = lazy(() => import('./ui/Minimap'));
 const SettingsPanel = lazy(() => import('./ui/SettingsPanel'));
 const ChatPanel = lazy(() => import('./ui/ChatPanel'));
@@ -70,6 +71,7 @@ declare global {
 export default function App() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const phase = useGraphStore((s) => s.phase);
+  const comparing = useUiStore((s) => s.compareIds.length > 0);
   const selectedId = useUiStore((s) => s.selectedId);
   const searchOpen = useUiStore((s) => s.searchOpen);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
@@ -368,11 +370,18 @@ export default function App() {
       {phase === 'ready' && (
         <Suspense fallback={null}><FilterBar /></Suspense>
       )}
+      {phase === 'ready' && hasNodes && (
+        <div className={`scene-chrome-left${comparing ? ' is-raised' : ''}`}>
+          <Suspense fallback={null}><SceneLegend /></Suspense>
+        </div>
+      )}
+      {phase === 'ready' && hasNodes && (
+        <Suspense fallback={null}><CompareTray /></Suspense>
+      )}
       <Suspense fallback={null}><ProgressStrip /></Suspense>
       {insightsOpen && (
         <Suspense fallback={null}><InsightsPanel /></Suspense>
       )}
-      <InsightsDigest />
       {pathMode && (
         <Suspense fallback={null}><PathPanel /></Suspense>
       )}

@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Chip } from '@heroui/react/chip';
 import { ProgressBar } from '@heroui/react/progress-bar';
 import { useGraphStore } from '../store/graphStore';
@@ -9,8 +9,10 @@ import {
   subscribeIngestCancellation,
 } from '../pipeline/ingestCancellation';
 import type { FileStage, PipelinePhase } from '../model/types';
+import { estimateRemainingMs, formatEta } from './graphReadability';
 
 const AUTO_HIDE_MS = 2500;
+const ERROR_HOLD_MS = 12_000;
 const IGNORED_LINGER_MS = 6000;
 const MAX_FILE_CHIPS = 7;
 
@@ -51,6 +53,9 @@ export default function ProgressStrip() {
 
   const [ignoredOpen, setIgnoredOpen] = useState(false);
   const [lingering, setLingering] = useState(false);
+  const [holdErrors, setHoldErrors] = useState(false);
+  const [clock, setClock] = useState(0);
+  const startedAtRef = useRef<number | null>(null);
 
   // True while a cancellable ingest run is live (registered by ingestFiles);
   // false during other active phases (watched-folder rescans, enrichment,
@@ -62,17 +67,37 @@ export default function ProgressStrip() {
     if (!cancellable) setCancelRequested(false);
   }, [cancellable]);
 
-  // Keep the strip mounted for AUTO_HIDE_MS after the phase reaches 'ready'
-  // so it can animate out instead of popping away.
+  // Keep the strip mounted after 'ready' so it can animate out. Failed files
+  // hold the command center longer so retry stays reachable.
   useEffect(() => {
     if (phase !== 'ready') {
       setLingering(false);
+      setHoldErrors(false);
       return;
     }
+    const hasErrors = Object.values(useGraphStore.getState().fileStatuses).some(
+      (status) => status.stage === 'error',
+    );
     setLingering(true);
-    const t = setTimeout(() => setLingering(false), AUTO_HIDE_MS);
+    setHoldErrors(hasErrors);
+    const t = setTimeout(() => {
+      setLingering(false);
+      setHoldErrors(false);
+    }, hasErrors ? ERROR_HOLD_MS : AUTO_HIDE_MS);
     return () => clearTimeout(t);
   }, [phase]);
+
+  const active = phase !== 'idle' && phase !== 'ready';
+
+  useEffect(() => {
+    if (!active) {
+      startedAtRef.current = null;
+      return;
+    }
+    startedAtRef.current ??= performance.now();
+    const timer = window.setInterval(() => setClock(performance.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [active]);
 
   // A drop that is rejected in full (e.g. every file too large) never starts
   // the pipeline, so without this the rejection would be completely silent.
@@ -89,12 +114,21 @@ export default function ProgressStrip() {
     return () => clearTimeout(t);
   }, [ignoredFiles.length]);
 
-  const active = phase !== 'idle' && phase !== 'ready';
-  const visible = active || lingering || ignoredFlash;
+  const visible = active || lingering || holdErrors || ignoredFlash;
+  const statuses = Object.values(fileStatuses);
+  const stageCounts = useMemo(() => {
+    const counts = { queued: 0, parsing: 0, embedding: 0, error: 0 };
+    for (const status of statuses) {
+      if (status.stage in counts) counts[status.stage as keyof typeof counts] += 1;
+    }
+    return counts;
+  }, [statuses]);
+  const failedFiles = useMemo(
+    () => statuses.filter((status) => status.stage === 'error'),
+    [statuses],
+  );
 
   if (!visible) return null;
-
-  const statuses = Object.values(fileStatuses);
   // During enrichment the bar tracks AI passes, not file ingestion —
   // a restored session has no fileStatuses at all, and after a live ingest
   // the file count is already at 100%, so it would sit frozen either way.
@@ -130,6 +164,16 @@ export default function ProgressStrip() {
   const taskProgressAriaLabel =
     modelProgress?.kind === 'ocr' ? 'Recognizing scanned PDF text' : 'Loading embedding model';
 
+  const elapsedMs = startedAtRef.current ? Math.max(0, clock - startedAtRef.current) : 0;
+  const remainingMs = enriching
+    ? estimateRemainingMs(done, total, elapsedMs)
+    : estimateRemainingMs(done, total, elapsedMs);
+  const etaLabel = remainingMs !== null ? formatEta(remainingMs) : '';
+
+  const retryFailed = () => {
+    void import('../ingest/DropZone').then(({ openFilePicker }) => openFilePicker());
+  };
+
   return (
     <div className="progress-strip-layer">
       <div
@@ -162,6 +206,7 @@ export default function ProgressStrip() {
             </ProgressBar>
             <span className="progress-strip__count">
               {done}/{total || 0}
+              {etaLabel ? ` · ${etaLabel}` : ''}
             </span>
           </div>
           {active && cancellable && (
@@ -179,6 +224,15 @@ export default function ProgressStrip() {
             </button>
           )}
         </div>
+
+        {!enriching && (stageCounts.parsing > 0 || stageCounts.embedding > 0 || stageCounts.queued > 0 || failedFiles.length > 0) && (
+          <div className="progress-strip__stages" aria-label="Ingest stages">
+            {stageCounts.queued > 0 && <span>{stageCounts.queued} queued</span>}
+            {stageCounts.parsing > 0 && <span>{stageCounts.parsing} parsing</span>}
+            {stageCounts.embedding > 0 && <span>{stageCounts.embedding} embedding</span>}
+            {failedFiles.length > 0 && <span className="progress-strip__stage-error">{failedFiles.length} failed</span>}
+          </div>
+        )}
 
         {recentFiles.length > 0 && (
           <div className="progress-strip__files">
@@ -212,6 +266,30 @@ export default function ProgressStrip() {
                 <ProgressBar.Fill className="model-progress__bar-fill" />
               </ProgressBar.Track>
             </ProgressBar>
+          </div>
+        )}
+
+        {failedFiles.length > 0 && (
+          <div className="progress-strip__failures">
+            <div className="progress-strip__failures-head">
+              <span>{failedFiles.length} file{failedFiles.length === 1 ? '' : 's'} failed</span>
+              <button
+                type="button"
+                className="progress-strip__retry"
+                title="Re-select the failed files to try ingesting them again"
+                onClick={retryFailed}
+              >
+                Retry failed
+              </button>
+            </div>
+            <ul className="progress-strip__failure-list">
+              {failedFiles.slice(0, 4).map((file) => (
+                <li key={file.fileId} title={file.error ?? 'Error'}>
+                  {truncateName(file.name, 28)}
+                  {file.error ? ` — ${file.error}` : ''}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 

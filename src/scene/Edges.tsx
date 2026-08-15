@@ -43,7 +43,7 @@ import {
   slotHasMaterialized,
   writeSlotTravelPosition,
 } from './ingestBirth';
-import { isPathHop, pathHopSet } from './pathRoute';
+import { isPathHop, pathHopSet } from './pathHops';
 import {
   EDGE_SEGMENTS,
   EDGE_SEGMENTS_DEGRADED,

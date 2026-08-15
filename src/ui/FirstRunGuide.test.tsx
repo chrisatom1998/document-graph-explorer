@@ -104,7 +104,7 @@ describe('FirstRunGuide', () => {
 
     await act(async () => screen.getByRole('button', { name: 'Next' }).click());
     expect(screen.getByText('Find and shape the view')).toBeVisible();
-    expect(screen.getByText('Step 2 of 4')).toBeVisible();
+    expect(screen.getByText('Step 2 of 5')).toBeVisible();
 
     await act(async () => screen.getByRole('button', { name: 'Back' }).click());
     expect(screen.getByText('Explore the map')).toBeVisible();
@@ -126,6 +126,7 @@ describe('FirstRunGuide', () => {
       'Explore the map',
       'Find and shape the view',
       'Reduce visual noise',
+      'Choose which links to show',
       'Ask the corpus',
     ]);
     expect(screen.getByRole('button', { name: 'Got it' })).toBeVisible();

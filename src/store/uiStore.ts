@@ -134,6 +134,12 @@ interface UiState {
   pathMode: boolean;
   /** 0–2 doc ids picked while pathMode is on; PathPanel computes the route at 2. */
   pathEndpoints: string[];
+  /** 0..1 — fraction of the label budget to keep on screen. */
+  labelDensity: number;
+  /** 0..1 — cluster hull / atmosphere strength. */
+  clusterAtmosphere: number;
+  /** Document ids pinned into the comparison tray (max 4). */
+  compareIds: string[];
 
   setHovered: (id: string | null) => void;
   setSelected: (id: string | null) => void;
@@ -162,6 +168,11 @@ interface UiState {
   setPathMode: (v: boolean) => void;
   /** Dedupes; a third pick starts a new path from that node. */
   addPathEndpoint: (id: string) => void;
+  setLabelDensity: (value: number) => void;
+  setClusterAtmosphere: (value: number) => void;
+  toggleCompare: (id: string) => boolean;
+  removeCompare: (id: string) => void;
+  clearCompare: () => void;
 }
 
 let nextToastId = 1;
@@ -191,6 +202,9 @@ export const useUiStore = create<UiState>((set) => ({
   lastError: null,
   pathMode: false,
   pathEndpoints: [],
+  labelDensity: 1,
+  clusterAtmosphere: 1,
+  compareIds: [],
 
   setHovered: (hoveredId) => set({ hoveredId }),
   setSelected: (selectedId) =>
@@ -242,4 +256,31 @@ export const useUiStore = create<UiState>((set) => ({
       if (s.pathEndpoints.length >= 2) return { pathEndpoints: [id] };
       return { pathEndpoints: [...s.pathEndpoints, id] };
     }),
+  setLabelDensity: (value) =>
+    set((s) => {
+      const labelDensity = Math.max(0, Math.min(1, value));
+      return s.labelDensity === labelDensity ? s : { labelDensity };
+    }),
+  setClusterAtmosphere: (value) =>
+    set((s) => {
+      const clusterAtmosphere = Math.max(0, Math.min(1, value));
+      return s.clusterAtmosphere === clusterAtmosphere ? s : { clusterAtmosphere };
+    }),
+  toggleCompare: (id) => {
+    const current = useUiStore.getState().compareIds;
+    if (current.includes(id)) {
+      set({ compareIds: current.filter((item) => item !== id) });
+      return true;
+    }
+    if (current.length >= 4) return false;
+    set({ compareIds: [...current, id] });
+    return true;
+  },
+  removeCompare: (id) =>
+    set((s) =>
+      s.compareIds.includes(id)
+        ? { compareIds: s.compareIds.filter((item) => item !== id) }
+        : s,
+    ),
+  clearCompare: () => set((s) => (s.compareIds.length === 0 ? s : { compareIds: [] })),
 }));
