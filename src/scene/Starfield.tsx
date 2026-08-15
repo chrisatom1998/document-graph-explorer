@@ -4,18 +4,18 @@
  * and brightness follow a dim-heavy power law (thousands of faint specks, a
  * handful of bright ones) the way a long exposure actually looks — plus a few
  * "hero" stars with diffraction-spike sprites, and the near "nebula dust"
- * cloud filling the graph volume. Entirely static — all geometry is built
- * once and there is zero per-frame work (the size uniform updates only on
- * canvas resize).
+ * cloud filling the graph volume. All geometry is built once; the only
+ * per-frame work is damping the dust opacity toward its focus/density target
+ * (the size uniform updates only on canvas resize).
  *
  * PointsMaterial has a single `size`, so per-star sizes come from a small
  * ShaderMaterial with an aSize attribute; it reuses three's fog chunks so the
  * far shell keeps the same fogExp2 depth falloff the old material had.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import {
@@ -57,6 +57,14 @@ const DUST_TINTS = [
   new THREE.Color('#ffc36b'),
 ];
 const WHITE = new THREE.Color('#ffffff');
+
+function densitySoftening(nodeCount: number): number {
+  return Math.min(
+    1,
+    Math.max(0, (nodeCount - VISUAL_DENSITY_SOFTEN_START) /
+      (VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START)),
+  );
+}
 
 interface StarBuffers {
   positions: Float32Array;
@@ -207,16 +215,30 @@ export default function Starfield() {
   // and mute the colorful nebula dust so it doesn't compete with the
   // constellation of nodes.
   const flat = useUiStore((s) => s.dims === 2);
-  const hasFocus = useUiStore((s) => s.hoveredId !== null || s.selectedId !== null);
   const nodeCount = useGraphStore((s) => s.nodes.length);
 
   const { stars, heroes, dust, fieldMaterial, heroMaterial, softSprite } = getStarfieldAssets();
-  const densitySoftening = Math.min(
-    1,
-    Math.max(0, (nodeCount - VISUAL_DENSITY_SOFTEN_START) /
-      (VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START)),
-  );
-  const dustOpacity = flat ? 0.12 : 0.28 - densitySoftening * 0.1 - (hasFocus ? 0.06 : 0);
+  const soften = densitySoftening(nodeCount);
+
+  // Focus (hover/selection) dims the dust — read transiently and damped in
+  // useFrame so a pointermove neither re-renders this component nor steps
+  // the opacity by a visible jump.
+  const dustMaterialRef = useRef<THREE.PointsMaterial>(null);
+  useFrame((_, delta) => {
+    const material = dustMaterialRef.current;
+    if (!material) return;
+    const ui = useUiStore.getState();
+    const hasFocus = ui.hoveredId !== null || ui.selectedId !== null;
+    const isFlat = ui.dims === 2;
+    const s = densitySoftening(useGraphStore.getState().nodes.length);
+    const target = isFlat ? 0.12 : 0.28 - s * 0.1 - (hasFocus ? 0.06 : 0);
+    material.opacity = THREE.MathUtils.damp(
+      material.opacity,
+      Math.max(0.1, target),
+      8,
+      delta,
+    );
+  });
 
   // Keep uScale matched to the drawing buffer (device px) so star discs stay
   // the same physical size across resizes and DPR changes.
@@ -229,9 +251,9 @@ export default function Starfield() {
   }, [height, dpr, fieldMaterial, heroMaterial]);
 
   useEffect(() => {
-    fieldMaterial.uniforms.uDim.value = flat ? 0.55 : 0.9 - densitySoftening * 0.18;
-    heroMaterial.uniforms.uDim.value = flat ? 0.2 : 0.9 - densitySoftening * 0.14;
-  }, [densitySoftening, flat, fieldMaterial, heroMaterial]);
+    fieldMaterial.uniforms.uDim.value = flat ? 0.55 : 0.9 - soften * 0.18;
+    heroMaterial.uniforms.uDim.value = flat ? 0.2 : 0.9 - soften * 0.14;
+  }, [soften, flat, fieldMaterial, heroMaterial]);
 
   return (
     <group>
@@ -242,11 +264,12 @@ export default function Starfield() {
           <bufferAttribute attach="attributes-color" args={[dust.colors, 3]} />
         </bufferGeometry>
         <pointsMaterial
+          ref={dustMaterialRef}
           map={softSprite}
           size={1.7}
           sizeAttenuation
           transparent
-          opacity={Math.max(0.1, dustOpacity)}
+          opacity={flat ? 0.12 : 0.28}
           vertexColors
           blending={THREE.AdditiveBlending}
           depthWrite={false}

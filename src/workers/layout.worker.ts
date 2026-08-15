@@ -8,9 +8,13 @@
  * buffers back via 'returnBuffer' so steady-state ticking allocates nothing.
  *
  * Implementation notes:
- * - 'pin' bumps alpha to 0.12 and restarts the sim. The protocol doesn't
- *   mandate it, but without a restart a drag on a settled (stopped) graph
- *   would not render until some other reheat arrived.
+ * - 'pin' uses d3's intended drag idiom: the first pin of a drag raises
+ *   sim.alphaTarget (and restarts a stopped sim) so the drag renders;
+ *   subsequent pins only move fx/fy/fz. The drag is considered over when
+ *   pins stop arriving for DRAG_IDLE_END_MS (or an explicit 'unpin' lands),
+ *   at which point alphaTarget returns to 0 and the sim cools normally.
+ *   Re-flooring alpha on every pin message (~30/s) kept the WHOLE graph
+ *   drifting for the entire drag.
  * - After numDimensions(2), d3-force-3d simply stops integrating z, so we
  *   explicitly zero z/vz to flatten the buffer. Switching back to 3 seeds a
  *   tiny z jitter; per-axis jiggle in the forces would recover eventually,
@@ -57,7 +61,16 @@ interface LayoutLink {
 }
 
 const SETTLE_ALPHA = 0.005; // below this we declare the layout settled
-const POST_INTERVAL_MS = 33; // ~30 position posts per second
+const POST_INTERVAL_MS = 16; // ~one position post per 60Hz frame (33ms aliased against 16.7ms frames)
+/** With the pool empty and this many posts unreturned, the main thread is
+ * behind — skip the post instead of allocating fresh buffers it can't keep
+ * up with (dropping a tick is free; the next one carries newer positions). */
+const MAX_IN_FLIGHT_POSTS = 2;
+/** alphaTarget held while a node drag is live (d3 drag idiom). */
+const DRAG_ALPHA_TARGET = 0.05;
+/** No pin message for this long = the drag ended (release keeps the node
+ * pinned, so no protocol message marks the end of the gesture). */
+const DRAG_IDLE_END_MS = 300;
 const CLUSTER_PULL = 0.05;
 const SPAWN_JITTER = 4;
 /** Nodes settle ON this sphere shell (spec §7: "orbiting" arrangement).
@@ -87,10 +100,27 @@ let lastPost = 0;
 /** Mirrors the main-thread setDims epoch so settled messages can be matched
  * to the dims change that caused that reheat. */
 let epoch = 0;
+/** Node id of the live drag (null when no drag is in progress). */
+let dragId: string | null = null;
+let dragEndTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** The drag gesture is over (pins stopped, or explicit unpin): let the sim
+ * cool naturally instead of holding alpha at the drag floor. */
+function endDrag(): void {
+  if (dragEndTimer !== null) {
+    clearTimeout(dragEndTimer);
+    dragEndTimer = null;
+  }
+  if (dragId === null) return;
+  dragId = null;
+  sim.alphaTarget(0);
+}
 
 // --- transferable buffer pool (grow 1.5x, drop undersized returns) ---------
 const pool: ArrayBuffer[] = [];
 let capacityFloats = 0;
+/** Tick posts not yet returned via 'returnBuffer' (main-thread backpressure). */
+let inFlight = 0;
 
 function acquireBuffer(neededFloats: number): ArrayBuffer {
   while (pool.length > 0) {
@@ -130,18 +160,25 @@ function updateShellRadius(): void {
 
 const anchors = new Map<number, [number, number, number]>();
 
+/** Anchor placement is a pure function of the cluster ID via the golden-ratio
+ * Weyl sequence on the sphere — never of which clusters currently exist or
+ * how many. Deriving the anchor from a cluster's index in the sorted
+ * present-cluster list meant any cluster appearing/disappearing (Louvain
+ * re-clusters repeatedly during ingest) moved EVERY anchor. Hashing into a
+ * fixed 32-seat domain avoided that shuffle but collided once Louvain (or
+ * the empty-edge singleton path) produced more than 32 communities. */
+const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
 function rebuildAnchors(): void {
   anchors.clear();
   const seen = new Set<number>();
   for (const n of nodes) if (n.cluster >= 0) seen.add(n.cluster);
-  const ids = Array.from(seen).sort((a, b) => a - b);
-  const count = Math.max(ids.length, 2);
-  const golden = Math.PI * (3 - Math.sqrt(5));
-  for (let j = 0; j < ids.length; j++) {
-    const y = 1 - (2 * (j + 0.5)) / count;
+  for (const id of seen) {
+    const y = 1 - 2 * (((id + 0.5) * GOLDEN_RATIO) % 1);
     const r = Math.sqrt(Math.max(0, 1 - y * y));
-    const theta = golden * j;
-    anchors.set(ids[j], [
+    const theta = GOLDEN_ANGLE * id;
+    anchors.set(id, [
       Math.cos(theta) * r * shellRadius,
       y * shellRadius,
       Math.sin(theta) * r * shellRadius,
@@ -221,9 +258,14 @@ function reheat(alpha: number): void {
   if (!paused) sim.restart();
 }
 
-function postPositions(alpha: number): void {
+function postPositions(alpha: number, force = false): void {
   const count = maxSlot + 1;
   if (count <= 0) return;
+  // Backpressure: an empty pool with posts still unreturned means the main
+  // thread is not keeping up — allocating a fresh buffer per tick only piles
+  // garbage (~48KB each) onto its queue. Skip the post; forced posts (final
+  // settle flush) always go through so positions land current.
+  if (!force && pool.length === 0 && inFlight >= MAX_IN_FLIGHT_POSTS) return;
   const needed = count * 3;
   const buffer = acquireBuffer(needed);
   const arr = new Float32Array(buffer);
@@ -234,12 +276,13 @@ function postPositions(alpha: number): void {
     arr[o + 1] = n.y;
     arr[o + 2] = n.z;
   }
+  inFlight++;
   self.postMessage({ type: 'tick', buffer, count, alpha } satisfies LayoutResponse, [buffer]);
 }
 
 function settle(alpha: number): void {
   // Final tick post first so main-thread positions are current, then settle.
-  postPositions(alpha);
+  postPositions(alpha, true);
   settledSent = true;
   self.postMessage({ type: 'settled', epoch } satisfies LayoutResponse);
   sim.stop();
@@ -249,7 +292,9 @@ sim.on('tick', () => {
   if (nodes.length === 0) return;
   const alpha = sim.alpha();
   if (alpha < SETTLE_ALPHA) {
-    if (!settledSent) settle(alpha);
+    // Never settle mid-drag: alphaTarget is raised, so alpha is climbing —
+    // stopping here would freeze the drag render.
+    if (!settledSent && dragId === null) settle(alpha);
     return;
   }
   const now = performance.now();
@@ -281,7 +326,7 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
   switch (msg.type) {
     case 'add': {
       let gentle = true; // stays true only when every added node came with `initial`
-      let added = false;
+      let added = 0;
       for (const spec of msg.nodes) {
         if (nodeById.has(spec.id)) continue;
         let x: number;
@@ -296,6 +341,14 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
           z = spec.spawn[2] + (Math.random() - 0.5) * SPAWN_JITTER;
           gentle = false;
         } else {
+          [x, y, z] = randomShellPoint();
+          gentle = false;
+        }
+        // A persisted NaN/Infinity (corrupt cache read) propagates through
+        // forceManyBody to EVERY node within one tick and blanks the graph —
+        // and then self-perpetuates via the position cache. Fall back to the
+        // random spawn the node would otherwise get.
+        if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
           [x, y, z] = randomShellPoint();
           gentle = false;
         }
@@ -314,14 +367,18 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
         nodes.push(node);
         nodeById.set(spec.id, node);
         if (spec.slot > maxSlot) maxSlot = spec.slot;
-        added = true;
+        added += 1;
       }
-      if (!added) break;
+      if (added === 0) break;
       sim.nodes(nodes); // re-initializes every force
       applyLinks(); // forceLink resets on nodes(); re-set (and revive) links
       updateShellRadius(); // shell grows with the corpus
       rebuildAnchors(); // restore path can introduce clusters via 'add'
-      reheat(gentle ? 0.05 : 0.9);
+      // Scale the reheat with the FRACTION of new nodes: adding 1 node to a
+      // settled 500-node graph barely warms the sim, while a fresh corpus
+      // still gets the full hot start. A flat 0.9 per message meant a large
+      // ingest violently re-threw every already-placed node on every batch.
+      reheat(gentle ? 0.05 : Math.min(0.9, 0.15 + (0.75 * added) / nodes.length));
       break;
     }
 
@@ -377,12 +434,25 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
         n.fx = msg.x;
         n.fy = msg.y;
         n.fz = dims === 2 ? 0 : msg.z;
-        reheat(0.12); // keep the sim live so the drag renders (see header note)
+        // d3's drag idiom: raise alphaTarget once at drag start (restarting a
+        // stopped sim so the drag renders); later pins only move the fixed
+        // point. See the header note — reheating per pin message re-floored
+        // alpha ~30x/s and kept the whole graph drifting.
+        if (dragId !== msg.id) {
+          dragId = msg.id;
+          sim.alphaTarget(DRAG_ALPHA_TARGET);
+          sim.alpha(Math.max(sim.alpha(), DRAG_ALPHA_TARGET));
+          settledSent = false;
+          if (!paused) sim.restart();
+        }
+        if (dragEndTimer !== null) clearTimeout(dragEndTimer);
+        dragEndTimer = setTimeout(endDrag, DRAG_IDLE_END_MS);
       }
       break;
     }
 
     case 'unpin': {
+      endDrag();
       const n = nodeById.get(msg.id);
       if (n) {
         n.fx = null;
@@ -428,6 +498,7 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
 
     case 'returnBuffer': {
       pool.push(msg.buffer);
+      if (inFlight > 0) inFlight -= 1;
       break;
     }
   }

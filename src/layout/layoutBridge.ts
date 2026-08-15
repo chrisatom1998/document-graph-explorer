@@ -241,7 +241,8 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
       } else {
         // Reduced-motion LIVE add: skip only the scripted travel. Send the
         // rest point as `spawn`, not `initial`, so the worker still takes the
-        // hot reheat(0.9) path instead of the gentle restore reheat(0.05).
+        // hot (batch-scaled) reheat path instead of the gentle restore
+        // reheat(0.05).
         payload.push({
           id: n.id,
           slot,

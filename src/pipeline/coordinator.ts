@@ -467,36 +467,49 @@ async function runIngestBody(
   );
   throwIfAborted(signal);
   const misses: PendingFile[] = [];
+  const hits: { p: PendingFile; cached: NonNullable<(typeof lookups)[number]['cached']> }[] = [];
   for (const { p, cached } of lookups) {
     fileIdOfDoc.set(p.id, p.file.fileId);
     nameOfDoc.set(p.id, p.file.name);
-    if (!cached) {
-      misses.push(p);
-      continue;
-    }
-    const dropped = layoutAddNodes([{ id: p.id, cluster: cached.node.cluster, spawn: spawnOrigin }]);
-    if (dropped.length > 0) {
-      store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
-      store().setFileStatus({
-        fileId: p.file.fileId,
-        name: p.file.name,
-        stage: 'error',
-        error: `Node limit reached (${MAX_NODES} max)`,
+    if (!cached) misses.push(p);
+    else hits.push({ p, cached });
+  }
+  if (hits.length > 0) {
+    // ONE layout add for the whole cache-hit set: each add message restarts
+    // the worker sim, so per-file adds re-threw every placed node per file.
+    const hitDropped = new Set(
+      layoutAddNodes(
+        hits.map(({ p, cached }) => ({ id: p.id, cluster: cached.node.cluster, spawn: spawnOrigin })),
+      ),
+    );
+    const hitNodes: DocNode[] = [];
+    const hitStatuses: FileStatus[] = [];
+    for (const { p, cached } of hits) {
+      if (hitDropped.has(p.id)) {
+        store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
+        hitStatuses.push({
+          fileId: p.file.fileId,
+          name: p.file.name,
+          stage: 'error',
+          error: `Node limit reached (${MAX_NODES} max)`,
+        });
+        continue;
+      }
+      hitNodes.push(cached.node);
+      textStore.set(p.id, cached.text);
+      chunkStore.set(p.id, {
+        texts: cached.chunkTexts,
+        vectors: cached.chunkVectors,
+        dims: EMBED_DIMS,
       });
-      continue;
+      if (cached.docVector) docVectorStore.set(p.id, cached.docVector);
+      mdLinkTargetsStore.set(p.id, cached.mdLinkTargets);
+      docLinksStore.set(p.id, cached.docLinks);
+      if (!p.file.reconstructable) void putOriginalIfMissing(p.id, p.file.name, p.original);
+      hitStatuses.push({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
     }
-    store().addNodes([cached.node]);
-    textStore.set(p.id, cached.text);
-    chunkStore.set(p.id, {
-      texts: cached.chunkTexts,
-      vectors: cached.chunkVectors,
-      dims: EMBED_DIMS,
-    });
-    if (cached.docVector) docVectorStore.set(p.id, cached.docVector);
-    mdLinkTargetsStore.set(p.id, cached.mdLinkTargets);
-    docLinksStore.set(p.id, cached.docLinks);
-    if (!p.file.reconstructable) void putOriginalIfMissing(p.id, p.file.name, p.original);
-    store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
+    if (hitNodes.length > 0) store().addNodes(hitNodes);
+    store().setFileStatuses(hitStatuses);
   }
 
   // (d) parse misses — pdf on the main thread, everything else in the pool
@@ -573,20 +586,11 @@ async function runIngestBody(
       return { p, doc: done.doc, pdfLinks };
     });
 
-    // Commit one parsed result into the runtime stores + layout. Returns the
-    // node to add and the placed status, or null when the node-cap was hit.
-    const commitParsed = ({ p, doc, pdfLinks }: ParsedResult): { node: DocNode } | null => {
-      const dropped = layoutAddNodes([{ id: p.id, cluster: -1, spawn: spawnOrigin }]);
-      if (dropped.length > 0) {
-        store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
-        store().setFileStatus({
-          fileId: p.file.fileId,
-          name: p.file.name,
-          stage: 'error',
-          error: `Node limit reached (${MAX_NODES} max)`,
-        });
-        return null;
-      }
+    // Commit one parsed result into the runtime stores. The layout add
+    // happens once per flushBatch (below) — a per-file add message restarted
+    // the worker sim per file, so a 300-file ingest re-threw every placed
+    // node 300 times.
+    const commitParsed = ({ p, doc, pdfLinks }: ParsedResult): { node: DocNode } => {
       lexMeta.set(p.id, {
         tf: doc.tf,
         phraseTf: doc.phraseTf,
@@ -626,17 +630,30 @@ async function runIngestBody(
       return { node };
     };
 
-    // Flush a group of parsed results as a single batch of store updates.
+    // Flush a group of parsed results as a single batch of store updates and
+    // ONE layout add (per-node spawn origins preserved in the specs).
     const flushBatch = (results: ParsedResult[]): void => {
+      const droppedIds = new Set(
+        layoutAddNodes(results.map((r) => ({ id: r.p.id, cluster: -1, spawn: spawnOrigin }))),
+      );
       const nodes: DocNode[] = [];
       const dirtyIds: string[] = [];
-      const placed: FileStatus[] = [];
+      const statuses: FileStatus[] = [];
       for (const result of results) {
+        if (droppedIds.has(result.p.id)) {
+          store().addIgnored(result.p.file.name, `node limit reached (${MAX_NODES} max)`);
+          statuses.push({
+            fileId: result.p.file.fileId,
+            name: result.p.file.name,
+            stage: 'error',
+            error: `Node limit reached (${MAX_NODES} max)`,
+          });
+          continue;
+        }
         const committed = commitParsed(result);
-        if (!committed) continue;
         nodes.push(committed.node);
         dirtyIds.push(result.p.id);
-        placed.push({
+        statuses.push({
           fileId: result.p.file.fileId,
           name: result.p.file.name,
           stage: 'placed',
@@ -645,8 +662,8 @@ async function runIngestBody(
       if (nodes.length > 0) {
         store().addNodes(nodes);
         markDocsDirty(dirtyIds);
-        store().setFileStatuses(placed);
       }
+      if (statuses.length > 0) store().setFileStatuses(statuses);
     };
 
     // Flush as workers finish rather than retaining every ParseDone until the

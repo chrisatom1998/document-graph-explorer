@@ -11,7 +11,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DocNode, Edge } from '../model/types';
 import type { GraphFilter } from '../store/uiStore';
-import { adjacencyFor, computeEmphasis } from './emphasis';
+import { adjacencyFor, computeEmphasis, nodesMatchingFilter } from './emphasis';
 
 function mkNode(overrides: Partial<DocNode> & { id: string }): DocNode {
   return {
@@ -59,6 +59,57 @@ describe('adjacencyFor', () => {
   it('memoizes on edges array identity', () => {
     const edges = [mkEdge('a', 'b')];
     expect(adjacencyFor(edges)).toBe(adjacencyFor(edges));
+  });
+
+  it('keeps interleaved edge arrays cached independently (no single-slot eviction)', () => {
+    // Consumers alternate arrays within one frame (Nodes passes the full store
+    // edges, other callers may pass different identities) — neither call may
+    // rebuild the other's adjacency.
+    const e1 = [mkEdge('a', 'b')];
+    const e2 = [mkEdge('b', 'c')];
+    const a1 = adjacencyFor(e1);
+    const a2 = adjacencyFor(e2);
+    expect(adjacencyFor(e1)).toBe(a1);
+    expect(adjacencyFor(e2)).toBe(a2);
+  });
+});
+
+describe('nodesMatchingFilter', () => {
+  it('memoizes on (nodes, edges, filter) identity', () => {
+    const nodes = [mkNode({ id: 'a', fileType: 'md' }), mkNode({ id: 'b', fileType: 'pdf' })];
+    const edges: Edge[] = [];
+    const filter: GraphFilter = { ...NO_FILTER, fileTypes: ['md'] };
+    const first = nodesMatchingFilter(nodes, edges, filter);
+    expect(first).toEqual(new Set(['a']));
+    expect(nodesMatchingFilter(nodes, edges, filter)).toBe(first);
+  });
+
+  it('recomputes when the filter identity changes', () => {
+    const nodes = [mkNode({ id: 'a', fileType: 'md' }), mkNode({ id: 'b', fileType: 'pdf' })];
+    const edges: Edge[] = [];
+    expect(nodesMatchingFilter(nodes, edges, { ...NO_FILTER, fileTypes: ['md'] })).toEqual(
+      new Set(['a']),
+    );
+    expect(nodesMatchingFilter(nodes, edges, { ...NO_FILTER, fileTypes: ['pdf'] })).toEqual(
+      new Set(['b']),
+    );
+  });
+
+  it('recomputes when `now` drifts past the tolerance (recency facet)', () => {
+    const now = 1_000_000_000_000;
+    const nodes = [
+      mkNode({ id: 'fresh', lastModified: now - 2 * 86_400_000 }),
+      mkNode({ id: 'aging', lastModified: now - 6.99 * 86_400_000 }),
+    ];
+    const edges: Edge[] = [];
+    const filter: GraphFilter = { ...NO_FILTER, modifiedWithinDays: 7 };
+    expect(nodesMatchingFilter(nodes, edges, filter, now)).toEqual(
+      new Set(['fresh', 'aging']),
+    );
+    // Two days later 'aging' has fallen out — the memo must not serve it.
+    expect(nodesMatchingFilter(nodes, edges, filter, now + 2 * 86_400_000)).toEqual(
+      new Set(['fresh']),
+    );
   });
 });
 

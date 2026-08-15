@@ -28,9 +28,17 @@ import type { QualityTier } from '../store/uiStore';
 
 const DPR_CAP_BY_TIER = [2, 2, 1.5, 1.25, 1] as const;
 
-const RECOVER_MS = 14; // headroom threshold for stepping back up
+// Recovery needs REAL headroom, not "barely under budget": with degrade at
+// 22ms and recover at 14ms, a machine hovering near ~18ms cycled tiers every
+// few seconds — and every tier change swaps dpr/edge geometry/bloom, which is
+// far more visible than staying one tier lower.
+const RECOVER_MS = 11; // headroom threshold for stepping back up
 const RECOVER_SUSTAIN_MS = 5_000;
-const GRACE_MS = 1_500; // ignore samples after visibility/tier changes
+const GRACE_MS = 4_000; // ignore samples after visibility/tier changes
+/** Tier may step UP (recover) at most once per this window; degradation
+ * stays responsive so a bad recovery is corrected quickly, but the ladder
+ * can never oscillate faster than one recover per minute. */
+const RECOVER_COOLDOWN_MS = 60_000;
 const EMA_WEIGHT = 0.1;
 
 export default function AutoQuality() {
@@ -38,6 +46,7 @@ export default function AutoQuality() {
   const overSince = useRef<number | null>(null);
   const underSince = useRef<number | null>(null);
   const holdUntil = useRef(0);
+  const lastRecoverAt = useRef(-Infinity);
   const lastTier = useRef<QualityTier>(useUiStore.getState().qualityTier);
   const announced4 = useRef(false);
 
@@ -125,13 +134,18 @@ export default function AutoQuality() {
         overSince.current = null;
         holdUntil.current = now + GRACE_MS;
       }
-    } else if (ema.current < RECOVER_MS && ui.qualityTier > 0) {
+    } else if (
+      ema.current < RECOVER_MS &&
+      ui.qualityTier > 0 &&
+      now - lastRecoverAt.current >= RECOVER_COOLDOWN_MS
+    ) {
       overSince.current = null;
       if (underSince.current === null) {
         underSince.current = now;
       } else if (now - underSince.current >= RECOVER_SUSTAIN_MS) {
         ui.setQualityTier((ui.qualityTier - 1) as QualityTier);
         underSince.current = null;
+        lastRecoverAt.current = now;
         holdUntil.current = now + GRACE_MS;
       }
     } else {

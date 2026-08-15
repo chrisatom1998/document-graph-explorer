@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type UIEvent } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useActiveOptionScroll } from './useActiveOptionScroll';
@@ -11,6 +11,21 @@ const INSTRUCTIONS_ID = 'graph-navigator-instructions';
 function optionId(index: number): string {
   return `graph-navigator-option-${index}`;
 }
+
+/**
+ * Rows rendered on each side of the active option. Corpora can reach 4096
+ * nodes; rendering them all made every selectedId change a long React commit
+ * that dropped frames mid camera-glide and tripped the auto-quality downgrade.
+ */
+const WINDOW_RADIUS = 60;
+
+/**
+ * Height of one option row, mirroring .graph-navigator__option in styles.css
+ * (min-height 44px + 1px bottom border). Spacers above and below the rendered
+ * window are sized with it so total scroll geometry stays put and
+ * useActiveOptionScroll's scrollIntoView({ block: 'nearest' }) keeps working.
+ */
+const ROW_HEIGHT = 45;
 
 /**
  * Keyboard and screen-reader companion to the WebGL scene.
@@ -42,17 +57,60 @@ export default function GraphNavigator() {
       : orderedNodes[0]?.id ?? null);
   }, [activeId, orderedNodes, selectedId]);
 
-  const activeIndex = Math.max(0, orderedNodes.findIndex((node) => node.id === activeId));
+  const activeIndex = useMemo(
+    () => Math.max(0, orderedNodes.findIndex((node) => node.id === activeId)),
+    [orderedNodes, activeId],
+  );
   useActiveOptionScroll(orderedNodes.length > 0 ? optionId(activeIndex) : undefined);
-  const documentCount = orderedNodes.filter((node) => node.kind === 'document').length;
-  const topicCount = orderedNodes.length - documentCount;
-  const clusterCount = new Set(
-    orderedNodes.filter((node) => node.kind === 'document' && node.cluster >= 0).map((node) => node.cluster),
-  ).size;
+  const { documentCount, topicCount, clusterCount } = useMemo(() => {
+    let documents = 0;
+    const clusters = new Set<number>();
+    for (const node of orderedNodes) {
+      if (node.kind !== 'document') continue;
+      documents += 1;
+      if (node.cluster >= 0) clusters.add(node.cluster);
+    }
+    return {
+      documentCount: documents,
+      topicCount: orderedNodes.length - documents,
+      clusterCount: clusters.size,
+    };
+  }, [orderedNodes]);
+
+  // Windowed rendering: keep the mounted slice centered on scroll position so
+  // mouse-wheel/scrollbar navigation can always reach rows not near activeIndex.
+  const [scrollWindowStart, setScrollWindowStart] = useState(0);
+  const maxWindowStart = Math.max(0, orderedNodes.length - (WINDOW_RADIUS * 2 + 1));
+  useEffect(() => {
+    setScrollWindowStart((start) => Math.max(0, Math.min(start, maxWindowStart)));
+  }, [maxWindowStart]);
+  const focusedWindowStart = Math.max(
+    0,
+    Math.min(activeIndex - WINDOW_RADIUS, maxWindowStart),
+  );
+  const windowStart = Math.min(
+    maxWindowStart,
+    Math.max(0, Math.max(focusedWindowStart, scrollWindowStart)),
+  );
+  const windowEnd = Math.min(orderedNodes.length, windowStart + WINDOW_RADIUS * 2 + 1);
+  const visibleNodes = useMemo(
+    () => orderedNodes.slice(windowStart, windowEnd),
+    [orderedNodes, windowStart, windowEnd],
+  );
+  const hiddenAbove = windowStart;
+  const hiddenBelow = orderedNodes.length - windowEnd;
 
   const moveTo = (index: number) => {
     const node = orderedNodes[Math.max(0, Math.min(index, orderedNodes.length - 1))];
     if (node) setActiveId(node.id);
+  };
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const nextStart = Math.max(
+      0,
+      Math.min(Math.floor(event.currentTarget.scrollTop / ROW_HEIGHT), maxWindowStart),
+    );
+    setScrollWindowStart((prev) => (prev === nextStart ? prev : nextStart));
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -112,8 +170,14 @@ export default function GraphNavigator() {
           if (selectedId && orderedNodes.some((node) => node.id === selectedId)) setActiveId(selectedId);
         }}
         onKeyDownCapture={handleKeyDown}
+        onScroll={handleScroll}
       >
-        {orderedNodes.map((node, index) => (
+        {hiddenAbove > 0 && (
+          <div aria-hidden="true" role="presentation" style={{ height: hiddenAbove * ROW_HEIGHT }} />
+        )}
+        {visibleNodes.map((node, offset) => {
+          const index = windowStart + offset;
+          return (
           <div
             id={optionId(index)}
             key={node.id}
@@ -133,7 +197,11 @@ export default function GraphNavigator() {
                 : `${fileTypeChip(node).toUpperCase()} · ${node.degree} connection${node.degree === 1 ? '' : 's'}`}
             </span>
           </div>
-        ))}
+          );
+        })}
+        {hiddenBelow > 0 && (
+          <div aria-hidden="true" role="presentation" style={{ height: hiddenBelow * ROW_HEIGHT }} />
+        )}
       </div>
     </aside>
   );
