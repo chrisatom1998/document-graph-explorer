@@ -91,15 +91,15 @@ export default function CameraRig() {
     typeof performance !== 'undefined' ? performance.now() : 0,
   );
 
-  // 2D mode: lock the polar angle to the equator while active (spec §7.3).
-  // Also snap the current pose onto that equator — locking min/max alone
-  // leaves a tilted 3D orbit in place, so a flattened graph reads edge-on.
+  // 2D mode: keep the camera nearly face-on while preserving normal orbit
+  // controls. An exact min/max polar lock makes OrbitControls feel frozen on
+  // some pointer devices, so leave a small operating range around the plane.
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls) return;
     if (dims === 2) {
-      controls.minPolarAngle = Math.PI / 2;
-      controls.maxPolarAngle = Math.PI / 2;
+      controls.minPolarAngle = Math.PI / 2 - 0.04;
+      controls.maxPolarAngle = Math.PI / 2 + 0.04;
       const cam = controls.object;
       const target = controls.target;
       const dx = cam.position.x - target.x;
@@ -376,10 +376,9 @@ export default function CameraRig() {
       minDistance={8}
       maxDistance={1400}
       autoRotateSpeed={0.25}
-      // Mouse/touch never pans — the drag gesture always orbits around the
-      // nebula's current target (whole-sphere rotation). Panning is still
-      // available via the arrow keys (see panInput.ts).
-      enablePan={false}
+      // A flat graph needs map-style panning; 3D keeps the original
+      // orbit-only gesture to avoid fighting node drags.
+      enablePan={dims === 2}
       onStart={onStart}
       onEnd={onEnd}
     />
