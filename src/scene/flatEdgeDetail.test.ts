@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Edge, EdgeKind } from '../model/types';
-import { balancedFlatEdgeIds } from './flatEdgeDetail';
+import { balancedFlatEdgeIds, balancedFlatEdgeIdsForDims } from './flatEdgeDetail';
 
 function edge(index: number, weight: number, kind: EdgeKind = 'keyword'): Edge {
   return {
@@ -32,5 +32,11 @@ describe('balancedFlatEdgeIds', () => {
     edges.push(edge(999, 0.5, 'reference'));
     const kept = balancedFlatEdgeIds(edges, 1);
     expect(kept.has('e-999')).toBe(true);
+  });
+
+  it('skips balanced ranking outside 2D', () => {
+    const edges = [edge(1, 0.2), edge(2, 0.8)];
+    expect(balancedFlatEdgeIdsForDims(3, edges, 20)).toBeNull();
+    expect([...(balancedFlatEdgeIdsForDims(2, edges, 20) ?? [])]).toEqual(['e-1', 'e-2']);
   });
 });

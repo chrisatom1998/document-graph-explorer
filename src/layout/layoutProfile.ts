@@ -6,6 +6,11 @@ const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const FLAT_ANCHOR_RADIUS_SCALE = 0.72;
 
+export interface FlatDepthSnapshot {
+  z: number;
+  fz: number | null;
+}
+
 export function clusterPullForDims(dims: 2 | 3): number {
   return dims === 2 ? CLUSTER_PULL_2D : CLUSTER_PULL_3D;
 }
@@ -15,6 +20,15 @@ export function shellStrengthForDims(dims: 2 | 3): number {
   // 2D it produces a hollow wheel. Planar cluster anchors + link/charge forces
   // supply the map's structure instead.
   return dims === 2 ? 0 : SHELL_STRENGTH_3D;
+}
+
+/** Restore depth while honoring pin/unpin changes made on the flat map. */
+export function restoredFlatPinDepth(
+  snapshot: FlatDepthSnapshot,
+  currentFz: number | null,
+): number | null {
+  if (currentFz == null) return null;
+  return snapshot.fz ?? snapshot.z;
 }
 
 /** Identity-stable community anchor: keyed on cluster ID, not list index. */

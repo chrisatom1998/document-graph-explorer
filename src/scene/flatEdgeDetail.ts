@@ -21,3 +21,12 @@ export function balancedFlatEdgeIds(
   });
   return new Set(ranked.slice(0, cap).map((edge) => edge.id));
 }
+
+/** Avoid ranking work entirely while the 3D renderer owns edge detail. */
+export function balancedFlatEdgeIdsForDims(
+  dims: 2 | 3,
+  edges: readonly Edge[],
+  nodeCount: number,
+): ReadonlySet<string> | null {
+  return dims === 2 ? balancedFlatEdgeIds(edges, nodeCount) : null;
+}

@@ -31,6 +31,8 @@ import { randomSpherePoint } from '../pipeline/spawnPosition';
 import {
   clusterAnchor,
   clusterPullForDims,
+  type FlatDepthSnapshot,
+  restoredFlatPinDepth,
   SHELL_STRENGTH_3D,
   shellStrengthForDims,
 } from '../layout/layoutProfile';
@@ -92,7 +94,7 @@ let lastPost = 0;
  * to the dims change that caused that reheat. */
 let epoch = 0;
 /** Original depth/pin depth retained while the same nodes are in flat mode. */
-const depthBeforeFlat = new Map<string, { z: number; fz: number | null }>();
+const depthBeforeFlat = new Map<string, FlatDepthSnapshot>();
 
 // --- transferable buffer pool (grow 1.5x, drop undersized returns) ---------
 const pool: ArrayBuffer[] = [];
@@ -420,7 +422,7 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
             // always, but honor the current pin: a 2D unpin must not revive
             // the pre-flat fz, and a 2D-only pin must not be wiped by a
             // stale null snapshot.
-            if (n.fz != null) n.fz = saved.fz ?? saved.z;
+            n.fz = restoredFlatPinDepth(saved, n.fz ?? null);
           } else if (n.fz == null) {
             n.z += (Math.random() - 0.5) * 2;
           }

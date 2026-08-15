@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   clusterAnchor,
   clusterPullForDims,
+  restoredFlatPinDepth,
   shellStrengthForDims,
 } from './layoutProfile';
 
@@ -30,10 +31,15 @@ describe('layout profiles', () => {
     }
   });
 
-  it('places each cluster by identity, not by how many communities exist', () => {
-    expect(clusterAnchor(7, 100, 2)).toEqual(clusterAnchor(7, 100, 2));
+  it('places each cluster by identity', () => {
     // Distinct IDs, including those that would collide under id % 32.
     expect(clusterAnchor(0, 80, 3)).not.toEqual(clusterAnchor(32, 80, 3));
     expect(clusterAnchor(1, 80, 2)).not.toEqual(clusterAnchor(33, 80, 2));
+  });
+
+  it('preserves pin changes made while flat when restoring depth', () => {
+    expect(restoredFlatPinDepth({ z: 42, fz: null }, 0)).toBe(42);
+    expect(restoredFlatPinDepth({ z: 42, fz: 42 }, null)).toBeNull();
+    expect(restoredFlatPinDepth({ z: 42, fz: 42 }, 0)).toBe(42);
   });
 });

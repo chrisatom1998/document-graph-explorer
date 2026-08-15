@@ -37,7 +37,7 @@ import { positionBuffer, slotOfId } from './positionBuffer';
 import { clusterColor, EDGE_TINTS, FLAT_EDGE, FLAT_EDGE_FOCUS } from './palette';
 import { computeEmphasis } from './emphasis';
 import { isPathHop, pathHopSet } from './pathRoute';
-import { balancedFlatEdgeIds } from './flatEdgeDetail';
+import { balancedFlatEdgeIdsForDims } from './flatEdgeDetail';
 import {
   EDGE_SEGMENTS,
   EDGE_SEGMENTS_DEGRADED,
@@ -175,8 +175,8 @@ export default function Edges() {
     return ranked.slice(0, Math.max(cap, 1));
   }, [dims, edges, qualityTier]);
   const balancedIds = useMemo(
-    () => balancedFlatEdgeIds(renderEdges, nodeCount),
-    [nodeCount, renderEdges],
+    () => balancedFlatEdgeIdsForDims(dims, renderEdges, nodeCount),
+    [dims, nodeCount, renderEdges],
   );
   const raycaster = useThree((s) => s.raycaster);
 
@@ -357,6 +357,7 @@ export default function Edges() {
       if (
         flat &&
         ui.flatEdgeDetail === 'balanced' &&
+        balancedIds !== null &&
         !balancedIds.has(e.id) &&
         !focusIncident &&
         !emphasizedEdge &&
