@@ -1,7 +1,8 @@
 /**
  * Camera choreography (spec §7.3): damped OrbitControls, eased glide-to-frame
  * commands from uiStore.cameraCommand, idle auto-orbit so the nebula feels
- * alive, and the 2D-mode polar clamp.
+ * alive, and the 2D-mode gesture map (orbit in 3D, drag-to-pan on the flat
+ * chart — see cameraControlsConfig.ts).
  *
  * Command tweens use maath easing.damp3 on BOTH camera.position and
  * controls.target; any user 'start' gesture on the controls cancels the
@@ -25,6 +26,7 @@ import { panInput } from './panInput';
 import { prefersReducedMotion } from '../util/motion';
 import { commitPendingFocusIf } from '../ui/focusNode';
 import { decideFrameNode, isAlreadyNear, shouldCommitOnTweenCancel } from './cameraFocusPolicy';
+import { orbitControlsConfig } from './cameraControlsConfig';
 
 const IDLE_MS = 10_000;
 const SMOOTH_TIME = (CAMERA_GLIDE_MS / 1000) * 0.45; // ~800ms glide feel
@@ -81,17 +83,27 @@ export default function CameraRig() {
     typeof performance !== 'undefined' ? performance.now() : 0,
   );
 
-  // 2D mode: lock the polar angle to the equator while active (spec §7.3).
+  // Entering 2D: glide to a head-on view of the flat chart. The polar clamp
+  // (see cameraControlsConfig) only pins the elevation — an azimuth carried
+  // over from 3D would still leave the x–y chart skewed or edge-on, so the
+  // rig squares up to it once, on the same eased path as a frame command.
+  // Any user gesture cancels this via the existing onStart handler.
   useEffect(() => {
     const controls = controlsRef.current;
-    if (!controls) return;
-    if (dims === 2) {
-      controls.minPolarAngle = Math.PI / 2;
-      controls.maxPolarAngle = Math.PI / 2;
-    } else {
-      controls.minPolarAngle = 0;
-      controls.maxPolarAngle = Math.PI;
+    if (!controls || dims !== 2) return;
+    const camera = controls.object;
+    const dist = Math.max(camera.position.distanceTo(controls.target), 1);
+    desiredTarget.copy(controls.target);
+    desiredPos.copy(controls.target);
+    desiredPos.z += dist;
+    framingId.current = null;
+    lastInteraction.current = performance.now();
+    if (prefersReducedMotion()) {
+      camera.position.copy(desiredPos);
+      tweenActive.current = false;
+      return;
     }
+    tweenActive.current = true;
   }, [dims]);
 
   const beginCommand = (
@@ -327,10 +339,9 @@ export default function CameraRig() {
       minDistance={8}
       maxDistance={1400}
       autoRotateSpeed={0.25}
-      // Mouse/touch never pans — the drag gesture always orbits around the
-      // nebula's current target (whole-sphere rotation). Panning is still
-      // available via the arrow keys (see panInput.ts).
-      enablePan={false}
+      // Gesture mapping differs per display mode: 3D orbits on drag, 2D pans
+      // like a map. Arrow-key panning (panInput.ts) works in both.
+      {...orbitControlsConfig(dims)}
       onStart={onStart}
       onEnd={onEnd}
     />
