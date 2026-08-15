@@ -1578,22 +1578,65 @@ input {
   display: flex;
   align-items: flex-start;
   flex-wrap: wrap; /* lets the Remove-confirm row drop to its own line */
-  gap: 12px;
-  padding: 20px 24px 14px;
+  gap: 12px 16px;
+  padding: 18px 24px 16px;
   border-bottom: 1px solid var(--border-glass);
-  background: rgba(7, 12, 25, 0.92);
+  background: rgba(7, 12, 25, 0.94);
+  box-shadow: inset 3px 0 0 var(--cluster, var(--accent));
+}
+
+.side-panel__chrome {
+  flex: 1 1 12rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.side-panel__identity {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-family: var(--font-ui);
+}
+
+.side-panel__type {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.side-panel__cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.side-panel__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: none;
 }
 
 .side-panel__title {
-  flex: 1 1 auto;
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 8px;
   margin: 0;
-  font-size: 20px;
+  font-family: var(--font-ui);
+  font-size: 22px;
   font-weight: 650;
-  line-height: 1.3;
+  line-height: 1.25;
   overflow-wrap: anywhere;
   color: var(--text-primary);
 }
@@ -1604,11 +1647,6 @@ input {
   overflow-wrap: anywhere;
 }
 
-.side-panel__header-cluster {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0;
-}
 .side-panel__title-lang {
   flex: none;
   font-family: var(--font-mono);
@@ -1623,13 +1661,47 @@ input {
   line-height: 1.5;
 }
 
-.side-panel__badges {
+.side-panel__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 14px;
+  gap: 12px;
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
 }
 
+.side-panel__status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.side-panel__status-item {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--warning);
+  text-align: left;
+}
+
+.side-panel__status-item--action {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.side-panel__status-item--action:hover {
+  text-decoration: underline;
+}
+
+/* Legacy class kept so existing warning chips (insights, etc.) stay tinted. */
 .side-panel__badge-warning {
   color: var(--warning);
   border-color: rgba(255, 207, 107, 0.35);
@@ -1662,23 +1734,31 @@ input {
 
 .side-panel__passage-banner {
   margin: 0 0 10px;
-  padding: 8px 10px;
+  padding: 7px 12px 7px 14px;
+  font-family: var(--font-ui);
   font-size: 12px;
   line-height: 1.45;
   color: var(--text-secondary);
-  background: rgba(255, 214, 90, 0.1);
-  border: 1px solid rgba(255, 214, 90, 0.28);
-  border-radius: 8px;
+  background: var(--accent-soft);
+  border: none;
+  border-left: 2px solid var(--passage-accent, var(--accent));
+  border-radius: 0;
 }
 .side-panel__passage-banner-text {
   color: var(--text-primary);
 }
 
+/* Find-in-page mark: accent-soft wash + cluster/accent hairline.
+   No pulse or slide — reduced-motion users get the same instant treatment. */
 mark.passage-mark {
-  background: rgba(255, 214, 90, 0.38);
+  background: var(--accent-soft);
+  background-color: var(--accent-soft);
   color: inherit;
-  border-radius: 2px;
-  padding: 0 1px;
+  border-radius: 0;
+  padding: 0.05em 0.28em 0.08em 0.4em;
+  box-shadow: inset 2px 0 0 var(--passage-accent, var(--accent));
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 .side-panel__summary {
@@ -1780,14 +1860,15 @@ mark.passage-mark {
 .connection-row {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 12px 12px 14px;
-  border-radius: var(--radius-md);
-  background: rgba(10, 15, 31, 0.42);
-  border: 1px solid var(--border-glass);
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.03);
+  gap: 5px;
+  padding: 10px 12px 10px 14px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(140, 150, 255, 0.08);
+  box-shadow: none;
   position: relative;
-  transition: background-color 120ms var(--ease-out), border-color 120ms var(--ease-out);
+  transition: background-color 120ms var(--ease-out);
 }
 .connection-row::before {
   content: '';
@@ -1795,29 +1876,27 @@ mark.passage-mark {
   left: 0;
   top: 10px;
   bottom: 10px;
-  width: 3px;
-  border-radius: 0 2px 2px 0;
+  width: 2px;
+  border-radius: 0;
   background: var(--connection-kind, var(--accent));
 }
 .connection-row:hover {
-  background: rgba(140, 150, 255, 0.08);
-  border-color: var(--border-glass-strong);
+  background: rgba(140, 150, 255, 0.05);
 }
 
 .connection-row__main {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
 }
 
-/* The relationship type (reference / similar / keyword / entity / topic) so a
-   connection answers not just "to what" but "how". The colored dot already
-   carries the hue; this is the name. */
+/* Kind is secondary — the neighbor title and the evidence quote lead. */
 .connection-row__kind {
   flex: none;
   font-size: 10px;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   color: var(--text-faint);
 }
 
@@ -1828,6 +1907,7 @@ mark.passage-mark {
   padding: 0;
   margin: 0;
   text-align: left;
+  font-family: var(--font-ui);
   font-size: 13.5px;
   color: var(--text-primary);
   cursor: pointer;
@@ -1843,26 +1923,31 @@ mark.passage-mark {
 
 .connection-row__weight-track {
   width: 100%;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(140, 150, 255, 0.1);
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(140, 150, 255, 0.08);
   overflow: hidden;
 }
 .connection-row__weight-fill {
   height: 100%;
-  border-radius: 2px;
-  background: linear-gradient(90deg, var(--edge-blue), var(--accent));
+  border-radius: 1px;
+  background: var(--connection-kind, var(--accent));
+  opacity: 0.55;
 }
 
 .connection-row__evidence {
   margin: 0;
-  padding-left: 15px;
-  font-size: 11.5px;
-  line-height: 1.6;
-  color: var(--text-faint);
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-reading);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-primary);
 }
 .connection-row__evidence li {
   margin: 0;
+  color: var(--text-secondary);
+  font-style: italic;
 }
 
 /* Inline disclosure buttons: per-row evidence and the whole-list "show all". */
@@ -1888,22 +1973,30 @@ mark.passage-mark {
   margin-top: 10px;
 }
 
+.side-panel__section--reading {
+  border-top-color: rgba(255, 255, 255, 0.04);
+  box-shadow: none;
+}
+
 .side-panel__reader {
   max-height: 40vh;
+  max-width: 62ch;
   overflow-y: auto;
   margin-top: 8px;
-  padding: 16px 18px;
-  border-radius: var(--radius-md);
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(140, 150, 255, 0.08);
+  padding: 20px 22px 22px;
+  border-radius: 0;
+  background: rgba(18, 22, 40, 0.92);
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.04);
   white-space: pre-wrap;
-  font-size: 15.5px;
+  font-size: 16px;
   line-height: 1.7;
-  color: var(--text-primary);
+  color: #e8ecf8;
   font-family: var(--font-reading);
 }
 .side-panel__reader-frame {
   position: relative;
+  max-width: 62ch;
 }
 .side-panel__reader-lang {
   position: absolute;
@@ -1925,9 +2018,18 @@ mark.passage-mark {
 .side-panel__reader-frame.is-code .side-panel__reader {
   padding-top: 32px;
 }
+.side-panel__reader-frame.is-code,
+.side-panel__reader-frame.is-mono,
+.side-panel__reader--pdf,
+.side-panel__reader--csv,
+.side-panel__reader--json,
+.side-panel__reader--yaml {
+  max-width: none;
+}
 .side-panel__reader.is-mono {
   font-family: var(--font-mono);
   font-size: 12.5px;
+  max-width: none;
 }
 .side-panel__reader.is-unavailable {
   color: var(--text-faint);

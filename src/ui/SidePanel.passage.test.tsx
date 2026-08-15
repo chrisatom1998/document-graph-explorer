@@ -60,7 +60,33 @@ describe('SidePanel passage fly-to and similar docs', () => {
     render(<SidePanel />);
     expect(screen.getByRole('status')).toHaveTextContent(/matching passage/i);
     expect(screen.getByRole('status')).toHaveTextContent(/disaster recovery/i);
-    expect(document.querySelector('mark.passage-mark')?.textContent).toMatch(/disaster recovery/i);
+    const mark = document.querySelector('mark.passage-mark');
+    expect(mark?.textContent).toMatch(/disaster recovery/i);
+    expect(mark).toHaveAttribute('role', 'mark');
+    expect(mark).toHaveClass('passage-mark');
+  });
+
+  it('does not mark the body for annotation-only hits that omit passageIndex', () => {
+    useUiStore.setState({
+      readerHighlight: {
+        docId: 'doc1',
+        text: 'Tags: legal-hold · disaster recovery procedure is tested quarterly',
+      },
+    });
+    render(<SidePanel />);
+    expect(screen.getByRole('status')).toHaveTextContent(/matching passage/i);
+    expect(screen.getByRole('status')).toHaveTextContent(/legal-hold/i);
+    expect(document.querySelector('mark.passage-mark')).toBeNull();
+    expect(document.querySelector('[role="mark"]')).toBeNull();
+  });
+
+  it('keeps one cluster mark in the document chrome, not a second chip row', () => {
+    useGraphStore.setState({ clusterNames: { 0: 'Disaster recovery' } });
+    render(<SidePanel />);
+    expect(screen.getAllByText('Disaster recovery')).toHaveLength(1);
+    expect(document.querySelectorAll('.side-panel__cluster')).toHaveLength(1);
+    expect(document.querySelector('.side-panel__badges')).toBeNull();
+    expect(document.querySelector('.side-panel__type')).toHaveTextContent('txt');
   });
 
   it('offers More like this without adding toolbar chrome', () => {

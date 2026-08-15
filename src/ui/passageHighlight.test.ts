@@ -50,6 +50,7 @@ describe('wrapPassageInElement', () => {
     const mark = wrapPassageInElement(root, 'disaster recovery');
     expect(mark).toBeInstanceOf(HTMLElement);
     expect(mark?.className).toBe(PASSAGE_MARK_CLASS);
+    expect(mark?.getAttribute('role')).toBe('mark');
     expect(root.querySelector('mark')?.textContent).toBe('disaster recovery');
     unwrapPassageMarks(root);
     expect(root.querySelector('mark')).toBeNull();

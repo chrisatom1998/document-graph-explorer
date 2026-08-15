@@ -227,71 +227,128 @@ export default function SidePanel() {
   const codeLang = codeLanguageForNode(node);
   const typeChip = fileTypeChip(node);
   const readerLabel = codeLang?.label ?? 'Document';
+  const highlightForDoc = readerHighlight?.docId === node.id ? readerHighlight : null;
+  // Annotation-only hits (notes / tags / cluster names) omit passageIndex so
+  // we do not wrap a fake body mark on chunk 0. Real search/chat citations
+  // always carry the scored chunk index.
   const passageNeedle =
-    readerHighlight?.docId === node.id ? readerHighlight.text : undefined;
+    highlightForDoc && highlightForDoc.passageIndex !== undefined
+      ? highlightForDoc.text
+      : undefined;
   const passageKey = `${node.id}:${mdSource?.text.length ?? htmlSource?.text.length ?? fullText?.length ?? 0}`;
+  const hasStatus = node.status !== 'ok' || duplicatesOf.length > 0;
+  const panelStyle = {
+    '--cluster': clusterColor,
+    '--passage-accent': clusterColor,
+  } as CSSProperties;
 
   return (
     <div className="side-panel-layer">
-      <div className="side-panel glass-panel" role="dialog" aria-label={codeLang ? `${node.title} (${codeLang.label})` : node.title}>
+      <div
+        className="side-panel glass-panel"
+        role="dialog"
+        aria-label={codeLang ? `${node.title} (${codeLang.label})` : node.title}
+        style={panelStyle}
+      >
         <div className="side-panel__header">
-          <h2 className="side-panel__title">
-            <span className="side-panel__title-text">{node.title}</span>
-            {codeLang && (
-              <span className="side-panel__title-lang" title={codeLang.label}>
-                {codeLang.short}
+          <div className="side-panel__chrome">
+            <div className="side-panel__identity">
+              <span className="side-panel__type">{typeChip}</span>
+              <span className="side-panel__cluster">
+                <span className="chip-dot" style={{ background: clusterColor }} aria-hidden="true" />
+                {clusterLabel}
               </span>
+            </div>
+            <h2 className="side-panel__title">
+              <span className="side-panel__title-text">{node.title}</span>
+              {codeLang && (
+                <span className="side-panel__title-lang" title={codeLang.label}>
+                  {codeLang.short}
+                </span>
+              )}
+            </h2>
+            <p className="side-panel__meta">
+              <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
+              {node.lastModified !== undefined && (
+                <span title={new Date(node.lastModified).toLocaleString()}>
+                  updated {timeAgo(node.lastModified)}
+                </span>
+              )}
+            </p>
+            {hasStatus && (
+              <div className="side-panel__status">
+                {node.status !== 'ok' && (
+                  <p className="side-panel__status-item">
+                    ⚠ {node.warning ?? node.status}
+                  </p>
+                )}
+                {duplicatesOf.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    className="side-panel__status-item side-panel__status-item--action"
+                    title={`${(d.sim * 100).toFixed(1)}% similar — these might be the same doc`}
+                    onClick={() => focusNode(d.id)}
+                  >
+                    ≈ duplicate of {nodes[nodeIndex[d.id]]?.title ?? d.id}
+                  </button>
+                ))}
+              </div>
             )}
-            <span className="chip side-panel__header-cluster">
-              <span className="chip-dot" style={{ background: clusterColor }} aria-hidden="true" />
-              {clusterLabel}
-            </span>
-          </h2>
-          {node.kind === 'document' && (
-            <button
-              type="button"
-              className="side-panel__open-btn"
-              title="Open the original file — opens with your default app for this type"
-              onClick={() => void openDocument(node.id)}
-            >
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-                <path d="M9 2h5v5" />
-                <path d="M14 2 L7 9" />
-                <path d="M12 9v4.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5H7" />
-              </svg>
-              Open
-            </button>
-          )}
-          {node.kind === 'document' && (
-            <button
-              type="button"
-              className="side-panel__open-btn"
-              title="Highlight documents similar to this one in the graph"
-              onClick={() => {
-                const count = showSimilarTo(node.id);
-                if (count === 0) {
-                  pushToast('No similar documents in this corpus', 'info');
-                }
-              }}
-            >
-              More like this
-            </button>
-          )}
-          {node.kind === 'document' && !confirmRemove && (
-            <button
-              type="button"
-              className="side-panel__open-btn side-panel__remove-btn"
-              title="Remove this document from the graph and delete its cached data — the file on disk is untouched"
-              onClick={() => setConfirmRemove(true)}
-            >
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
-                <path d="M3 4.5h10" />
-                <path d="M6 4.5V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v2" />
-                <path d="M4.5 4.5l.6 8.6a1 1 0 0 0 1 .9h3.8a1 1 0 0 0 1-.9l.6-8.6" />
-              </svg>
-              Remove
-            </button>
-          )}
+          </div>
+          <div className="side-panel__actions">
+            {node.kind === 'document' && (
+              <button
+                type="button"
+                className="side-panel__open-btn"
+                title="Open the original file — opens with your default app for this type"
+                onClick={() => void openDocument(node.id)}
+              >
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                  <path d="M9 2h5v5" />
+                  <path d="M14 2 L7 9" />
+                  <path d="M12 9v4.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5H7" />
+                </svg>
+                Open
+              </button>
+            )}
+            {node.kind === 'document' && (
+              <button
+                type="button"
+                className="side-panel__open-btn"
+                title="Highlight documents similar to this one in the graph"
+                onClick={() => {
+                  const count = showSimilarTo(node.id);
+                  if (count === 0) {
+                    pushToast('No similar documents in this corpus', 'info');
+                  }
+                }}
+              >
+                More like this
+              </button>
+            )}
+            {node.kind === 'document' && !confirmRemove && (
+              <button
+                type="button"
+                className="side-panel__open-btn side-panel__remove-btn"
+                title="Remove this document from the graph and delete its cached data — the file on disk is untouched"
+                onClick={() => setConfirmRemove(true)}
+              >
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+                  <path d="M3 4.5h10" />
+                  <path d="M6 4.5V2.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v2" />
+                  <path d="M4.5 4.5l.6 8.6a1 1 0 0 0 1 .9h3.8a1 1 0 0 0 1-.9l.6-8.6" />
+                </svg>
+                Remove
+              </button>
+            )}
+            <CloseButton
+              ref={closeButtonRef}
+              title="Back to graph"
+              aria-label="Back to graph"
+              onClick={() => setSelected(null)}
+            />
+          </div>
           {node.kind === 'document' && confirmRemove && (
             <div className="side-panel__remove-confirm">
               <span className="side-panel__remove-confirm-text">
@@ -319,51 +376,8 @@ export default function SidePanel() {
               </button>
             </div>
           )}
-          <CloseButton
-            ref={closeButtonRef}
-            title="Back to graph"
-            aria-label="Back to graph"
-            onClick={() => setSelected(null)}
-          />
         </div>
         <div className="side-panel__scroll">
-          <div className="side-panel__badges">
-            <span className="chip">{typeChip}</span>
-            <span className="chip">
-              <span
-                className="chip-dot"
-                style={{ background: clusterColor }}
-                aria-hidden="true"
-              />
-              {clusterLabel}
-            </span>
-            {node.status !== 'ok' && (
-              <span className="chip side-panel__badge-warning">
-                ⚠ {node.warning ?? node.status}
-              </span>
-            )}
-            {duplicatesOf.map((d) => (
-              <button
-                key={d.id}
-                type="button"
-                className="chip chip-selectable side-panel__badge-warning side-panel__dup-chip"
-                title={`${(d.sim * 100).toFixed(1)}% similar — these might be the same doc`}
-                onClick={() => focusNode(d.id)}
-              >
-                ≈ duplicate of {nodes[nodeIndex[d.id]]?.title ?? d.id}
-              </button>
-            ))}
-          </div>
-
-          <div className="side-panel__stats">
-            <span>{node.wordCount.toLocaleString()} words</span>
-            <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
-            {node.lastModified !== undefined && (
-              <span title={new Date(node.lastModified).toLocaleString()}>
-                updated {timeAgo(node.lastModified)}
-              </span>
-            )}
-          </div>
 
           <div className="side-panel__section">
             <p className="side-panel__section-label">Summary</p>
@@ -529,21 +543,21 @@ export default function SidePanel() {
 
           <hr className="hairline" />
 
-          <div className="side-panel__section">
+          <div className="side-panel__section side-panel__section--reading">
             <p className="side-panel__section-label">{readerLabel}</p>
-            {readerHighlight?.docId === node.id && (
+            {highlightForDoc && (
               <p className="side-panel__passage-banner" role="status">
                 Matching passage
-                {readerHighlight.passageIndex !== undefined
-                  ? ` · ${readerHighlight.passageIndex + 1}`
+                {highlightForDoc.passageIndex !== undefined
+                  ? ` · ${highlightForDoc.passageIndex + 1}`
                   : ''}
                 {': '}
                 <span className="side-panel__passage-banner-text">
-                  {readerHighlight.text.replace(/\s+/g, ' ').trim().slice(0, 220)}
+                  {highlightForDoc.text.replace(/\s+/g, ' ').trim().slice(0, 220)}
                 </span>
               </p>
             )}
-            <div className={`side-panel__reader-frame${codeLang ? ' is-code' : ''}`}>
+            <div className={`side-panel__reader-frame${codeLang ? ' is-code' : ''}${isMonoFileType(node.fileType) ? ' is-mono' : ''}`}>
             {codeLang && (
               <span className="side-panel__reader-lang" title={codeLang.label}>
                 {codeLang.short}
