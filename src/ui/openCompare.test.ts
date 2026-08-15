@@ -42,7 +42,6 @@ describe('openCompare', () => {
       compareLeftId: null,
       compareRightId: null,
       comparePick: null,
-      compareNeedles: null,
       searchResults: ['x'],
       highlightOwner: 'path',
       cameraCommand: null,
@@ -108,11 +107,9 @@ describe('openCompare', () => {
 
   it('swaps panes and clears compare including its highlight', () => {
     openCompare('a', 'b');
-    useUiStore.getState().setCompareNeedles({ left: 'alpha', right: 'beta' });
     swapCompare();
     expect(useUiStore.getState().compareLeftId).toBe('b');
     expect(useUiStore.getState().compareRightId).toBe('a');
-    expect(useUiStore.getState().compareNeedles).toEqual({ left: 'beta', right: 'alpha' });
 
     closeCompare();
     const ui = useUiStore.getState();

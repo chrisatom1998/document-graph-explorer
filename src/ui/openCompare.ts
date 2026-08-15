@@ -24,22 +24,36 @@ function framePair(leftId: string | null, rightId: string | null): void {
 /** Seed the left pane and wait for a second document click. */
 export function startCompare(seedId: string): void {
   if (!isDocument(seedId)) return;
-  const ui = useUiStore.getState();
-  ui.startCompare(seedId);
+  useUiStore.setState((s) => ({
+    pathMode: false,
+    pathEndpoints: [],
+    compareLeftId: seedId,
+    compareRightId: null,
+    comparePick: 'right' as const,
+    ...(s.highlightOwner === 'path' ? { searchResults: null, highlightOwner: null } : {}),
+  }));
   framePair(seedId, null);
 }
 
 /** Open both readers immediately (duplicate chips, Insights, connections). */
 export function openCompare(leftId: string, rightId: string): void {
   if (leftId === rightId || !isDocument(leftId) || !isDocument(rightId)) return;
-  const ui = useUiStore.getState();
-  ui.openCompare(leftId, rightId);
+  useUiStore.setState({
+    pathMode: false,
+    pathEndpoints: [],
+    selectedId: null,
+    pendingFocus: null,
+    readerHighlight: null,
+    compareLeftId: leftId,
+    compareRightId: rightId,
+    comparePick: null,
+  });
   framePair(leftId, rightId);
 }
 
 /** Re-enter graph-pick for one already-open pane. */
 export function startComparePick(side: ComparePickSide): void {
-  useUiStore.getState().startComparePick(side);
+  useUiStore.setState({ comparePick: side });
 }
 
 /**
@@ -52,7 +66,11 @@ export function applyComparePick(id: string): boolean {
   if (!isDocument(id)) return false;
   const other = ui.comparePick === 'left' ? ui.compareRightId : ui.compareLeftId;
   if (other === id) return false;
-  ui.applyComparePick(id);
+  useUiStore.setState(
+    ui.comparePick === 'left'
+      ? { compareLeftId: id, comparePick: null }
+      : { compareRightId: id, comparePick: null },
+  );
   const next = useUiStore.getState();
   framePair(next.compareLeftId, next.compareRightId);
   return true;
@@ -63,8 +81,11 @@ export function closeCompare(): void {
 }
 
 export function swapCompare(): void {
-  const ui = useUiStore.getState();
-  ui.swapCompare();
+  useUiStore.setState((s) => ({
+    compareLeftId: s.compareRightId,
+    compareRightId: s.compareLeftId,
+    comparePick: s.comparePick === 'left' ? 'right' : s.comparePick === 'right' ? 'left' : null,
+  }));
   const next = useUiStore.getState();
   if (next.compareLeftId && next.compareRightId) {
     framePair(next.compareLeftId, next.compareRightId);

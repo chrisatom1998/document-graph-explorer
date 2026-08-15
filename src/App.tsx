@@ -5,7 +5,7 @@ import InsightsDigest from './ui/InsightsDigest';
 import ToastHost from './ui/ToastHost';
 import { shouldIgnoreGlobalKey } from './ui/globalKeyboard';
 import { useGraphStore } from './store/graphStore';
-import { isCompareComplete, isCompareOpen, useUiStore } from './store/uiStore';
+import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { useCorpusStore } from './store/corpusStore';
 import { layoutSetDims, onLayoutSettled } from './layout/layoutBridge';
@@ -83,8 +83,6 @@ export default function App() {
   const snapshotsOpen = useUiStore((s) => s.snapshotsOpen);
   const helpOpen = useUiStore((s) => s.helpOpen);
   const pathMode = useUiStore((s) => s.pathMode);
-  const compareOpen = useUiStore(isCompareOpen);
-  const compareComplete = useUiStore(isCompareComplete);
   const chatOpen = useChatStore((s) => s.isOpen);
 
   // Session restore + persistence hooks, once. Fresh starts stay empty until
@@ -317,9 +315,7 @@ export default function App() {
         return;
       }
       if (e.key === 'Escape') {
-        if (isCompareOpen(ui)) {
-          ui.clearCompare();
-        } else if (ui.searchOpen) {
+        if (ui.searchOpen) {
           ui.setSearchOpen(false);
           ui.setSearchResults(null);
         } else if (ui.highlightOwner === 'showMe') {
@@ -383,7 +379,10 @@ export default function App() {
         <Suspense fallback={null}><EmptyState /></Suspense>
       )}
       {phase === 'ready' && (
-        <Suspense fallback={null}><Toolbar /></Suspense>
+        <Suspense fallback={null}>
+          <Toolbar />
+          <ComparePanel />
+        </Suspense>
       )}
       {/* The full toolbar waits for 'ready', but the 2D/3D switch must stay
           reachable while the corpus is still forming — switching modes is
@@ -405,10 +404,7 @@ export default function App() {
       {pathMode && (
         <Suspense fallback={null}><PathPanel /></Suspense>
       )}
-      {compareOpen && (
-        <Suspense fallback={null}><ComparePanel /></Suspense>
-      )}
-      {selectedId && !compareComplete && (
+      {selectedId && (
         <Suspense fallback={null}><SidePanel /></Suspense>
       )}
       {phase === 'ready' && (

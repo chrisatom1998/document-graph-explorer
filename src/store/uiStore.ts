@@ -33,12 +33,6 @@ export type HighlightOwner = 'search' | 'insights' | 'path' | 'showMe' | 'snapsh
 /** Which compare pane is waiting for a graph click. */
 export type ComparePickSide = 'left' | 'right';
 
-/** Shared-term needles highlighted in both compare readers. */
-export interface CompareNeedles {
-  left?: string;
-  right?: string;
-}
-
 /** Insights drawer section to scroll/highlight when the panel opens from a jump link. */
 export type InsightsFocus = 'orphans' | 'duplicates' | 'clusters' | 'stale' | null;
 
@@ -151,8 +145,6 @@ interface UiState {
   compareRightId: string | null;
   /** Graph clicks replace this pane instead of selecting. */
   comparePick: ComparePickSide | null;
-  /** Passage needles for the two compare readers (shared-term clicks). */
-  compareNeedles: CompareNeedles | null;
 
   setHovered: (id: string | null) => void;
   setSelected: (id: string | null) => void;
@@ -182,42 +174,8 @@ interface UiState {
   setPathMode: (v: boolean) => void;
   /** Dedupes; a third pick starts a new path from that node. */
   addPathEndpoint: (id: string) => void;
-  /** Seed the left pane and wait for a graph click for the right. Keeps the side panel open. */
-  startCompare: (seedId: string) => void;
-  /** Open both panes and close the single-document reader. */
-  openCompare: (leftId: string, rightId: string) => void;
-  /** Re-enter graph-pick for one pane while the overlay stays open. */
-  startComparePick: (side: ComparePickSide) => void;
-  /** Fill the waiting pane. No-ops when comparePick is unset. */
-  applyComparePick: (id: string) => void;
-  swapCompare: () => void;
-  setCompareNeedles: (needles: CompareNeedles | null) => void;
+  /** Drop compare panes, pick mode, and a compare-owned scene highlight. */
   clearCompare: () => void;
-}
-
-export function isCompareOpen(s: {
-  compareLeftId: string | null;
-  compareRightId: string | null;
-  comparePick: ComparePickSide | null;
-}): boolean {
-  return s.compareLeftId !== null || s.compareRightId !== null || s.comparePick !== null;
-}
-
-export function isCompareComplete(s: {
-  compareLeftId: string | null;
-  compareRightId: string | null;
-}): boolean {
-  return s.compareLeftId !== null && s.compareRightId !== null;
-}
-
-function compareClosedPatch(s: UiState): Partial<UiState> {
-  return {
-    compareLeftId: null,
-    compareRightId: null,
-    comparePick: null,
-    compareNeedles: null,
-    ...(s.highlightOwner === 'compare' ? { searchResults: null, highlightOwner: null } : {}),
-  };
 }
 
 let nextToastId = 1;
@@ -280,7 +238,6 @@ export const useUiStore = create<UiState>((set) => ({
   compareLeftId: null,
   compareRightId: null,
   comparePick: null,
-  compareNeedles: null,
 
   setHovered: (hoveredId) => set({ hoveredId }),
   setSelected: (selectedId) =>
@@ -323,7 +280,14 @@ export const useUiStore = create<UiState>((set) => ({
     set((s) => ({
       pathMode,
       pathEndpoints: [],
-      ...(pathMode ? compareClosedPatch(s) : {}),
+      ...(pathMode
+        ? {
+            compareLeftId: null,
+            compareRightId: null,
+            comparePick: null,
+            ...(s.highlightOwner === 'compare' ? { searchResults: null, highlightOwner: null } : {}),
+          }
+        : {}),
     })),
   addPathEndpoint: (id) =>
     set((s) => {
@@ -331,49 +295,13 @@ export const useUiStore = create<UiState>((set) => ({
       if (s.pathEndpoints.length >= 2) return { pathEndpoints: [id] };
       return { pathEndpoints: [...s.pathEndpoints, id] };
     }),
-  startCompare: (seedId) =>
+  clearCompare: () =>
     set((s) => ({
-      pathMode: false,
-      pathEndpoints: [],
-      compareLeftId: seedId,
+      compareLeftId: null,
       compareRightId: null,
-      comparePick: 'right',
-      compareNeedles: null,
-      ...(s.highlightOwner === 'path' ? { searchResults: null, highlightOwner: null } : {}),
-    })),
-  openCompare: (leftId, rightId) =>
-    set({
-      pathMode: false,
-      pathEndpoints: [],
-      selectedId: null,
-      pendingFocus: null,
-      readerHighlight: null,
-      compareLeftId: leftId,
-      compareRightId: rightId,
       comparePick: null,
-      compareNeedles: null,
-    }),
-  startComparePick: (side) => set({ comparePick: side }),
-  applyComparePick: (id) =>
-    set((s) => {
-      if (!s.comparePick) return s;
-      if (s.comparePick === 'left') {
-        return { compareLeftId: id, comparePick: null, compareNeedles: null };
-      }
-      return { compareRightId: id, comparePick: null, compareNeedles: null };
-    }),
-  swapCompare: () =>
-    set((s) => ({
-      compareLeftId: s.compareRightId,
-      compareRightId: s.compareLeftId,
-      compareNeedles: s.compareNeedles
-        ? { left: s.compareNeedles.right, right: s.compareNeedles.left }
-        : null,
-      comparePick:
-        s.comparePick === 'left' ? 'right' : s.comparePick === 'right' ? 'left' : null,
+      ...(s.highlightOwner === 'compare' ? { searchResults: null, highlightOwner: null } : {}),
     })),
-  setCompareNeedles: (compareNeedles) => set({ compareNeedles }),
-  clearCompare: () => set((s) => compareClosedPatch(s)),
 }));
 
 // Persisting from the subscriber rather than from setDims means every route

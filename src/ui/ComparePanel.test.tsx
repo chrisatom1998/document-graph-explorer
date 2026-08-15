@@ -56,7 +56,6 @@ describe('ComparePanel', () => {
       compareLeftId: 'alpha',
       compareRightId: 'beta',
       comparePick: null,
-      compareNeedles: null,
       selectedId: null,
     });
   });
@@ -95,10 +94,16 @@ describe('ComparePanel', () => {
   it('highlights a shared term in both readers', () => {
     render(<ComparePanel />);
     fireEvent.click(screen.getByRole('button', { name: 'quota' }));
-    expect(useUiStore.getState().compareNeedles).toEqual({ left: 'quota', right: 'quota' });
     expect(screen.getAllByRole('status').some((el) => /matching passage/i.test(el.textContent ?? ''))).toBe(
       true,
     );
+  });
+
+  it('closes on Escape before other panels', () => {
+    render(<ComparePanel />);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(useUiStore.getState().compareLeftId).toBeNull();
+    expect(useUiStore.getState().compareRightId).toBeNull();
   });
 
   it('shows a pick banner before the second document is chosen', () => {

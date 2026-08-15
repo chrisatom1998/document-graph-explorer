@@ -4,13 +4,13 @@
  * are set. Relationship chips are local (embeddings, topics, edges) — no LLM.
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { comparePair } from '../graph/comparePair';
 import { EDGE_KIND_LABEL } from '../scene/palette';
 import { codeLanguageForNode, fileTypeLabel } from '../pipeline/codeLanguage';
 import { docVectorStore } from '../store/runtimeStores';
 import { useGraphStore } from '../store/graphStore';
-import { isCompareComplete, useUiStore } from '../store/uiStore';
+import { useUiStore } from '../store/uiStore';
 import {
   closeCompare,
   startComparePick,
@@ -32,8 +32,7 @@ export default function ComparePanel() {
   const leftId = useUiStore((s) => s.compareLeftId);
   const rightId = useUiStore((s) => s.compareRightId);
   const comparePick = useUiStore((s) => s.comparePick);
-  const compareNeedles = useUiStore((s) => s.compareNeedles);
-  const setCompareNeedles = useUiStore((s) => s.setCompareNeedles);
+  const [needles, setNeedles] = useState<{ left?: string; right?: string } | null>(null);
 
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
@@ -41,7 +40,19 @@ export default function ComparePanel() {
 
   const left = leftId ? nodes[nodeIndex[leftId]] : undefined;
   const right = rightId ? nodes[nodeIndex[rightId]] : undefined;
-  const complete = isCompareComplete({ compareLeftId: leftId, compareRightId: rightId });
+  const complete = leftId !== null && rightId !== null;
+
+  useEffect(() => {
+    if (!leftId && !rightId && !comparePick) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeCompare();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [leftId, rightId, comparePick]);
 
   const summary = useMemo(() => {
     if (!left || !right || left.kind !== 'document' || right.kind !== 'document') return null;
@@ -83,7 +94,7 @@ export default function ComparePanel() {
   const leftLang = codeLanguageForNode(left);
   const rightLang = codeLanguageForNode(right);
   const highlightTerm = (term: string) => {
-    setCompareNeedles({ left: term, right: term });
+    setNeedles({ left: term, right: term });
   };
 
   return (
@@ -107,7 +118,10 @@ export default function ComparePanel() {
               className="compare-panel__swap"
               title="Swap left and right"
               aria-label="Swap left and right"
-              onClick={() => swapCompare()}
+              onClick={() => {
+                setNeedles((prev) => (prev ? { left: prev.right, right: prev.left } : null));
+                swapCompare();
+              }}
             >
               ⇄
             </button>
@@ -225,7 +239,7 @@ export default function ComparePanel() {
               node={left}
               nodes={nodes}
               readerHighlight={
-                compareNeedles?.left ? { docId: left.id, text: compareNeedles.left } : null
+                needles?.left ? { docId: left.id, text: needles.left } : null
               }
               readerLabel={leftLang?.label ?? fileTypeLabel(left)}
               codeLang={leftLang}
@@ -236,7 +250,7 @@ export default function ComparePanel() {
               node={right}
               nodes={nodes}
               readerHighlight={
-                compareNeedles?.right ? { docId: right.id, text: compareNeedles.right } : null
+                needles?.right ? { docId: right.id, text: needles.right } : null
               }
               readerLabel={rightLang?.label ?? fileTypeLabel(right)}
               codeLang={rightLang}
