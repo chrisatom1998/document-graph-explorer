@@ -13,7 +13,7 @@ describe('layout profiles', () => {
   });
 
   it('distributes 2D anchors through a disc on z=0', () => {
-    const anchors = Array.from({ length: 12 }, (_, index) => clusterAnchor(index, 12, 100, 2));
+    const anchors = Array.from({ length: 12 }, (_, id) => clusterAnchor(id, 100, 2));
     const radii = anchors.map(([x, y, z]) => {
       expect(z).toBe(0);
       return Math.hypot(x, y);
@@ -24,9 +24,16 @@ describe('layout profiles', () => {
   });
 
   it('keeps 3D anchors on the requested sphere', () => {
-    for (let index = 0; index < 8; index += 1) {
-      const [x, y, z] = clusterAnchor(index, 8, 90, 3);
+    for (let id = 0; id < 8; id += 1) {
+      const [x, y, z] = clusterAnchor(id, 90, 3);
       expect(Math.hypot(x, y, z)).toBeCloseTo(90, 8);
     }
+  });
+
+  it('places each cluster by identity, not by how many communities exist', () => {
+    expect(clusterAnchor(7, 100, 2)).toEqual(clusterAnchor(7, 100, 2));
+    // Distinct IDs, including those that would collide under id % 32.
+    expect(clusterAnchor(0, 80, 3)).not.toEqual(clusterAnchor(32, 80, 3));
+    expect(clusterAnchor(1, 80, 2)).not.toEqual(clusterAnchor(33, 80, 2));
   });
 });

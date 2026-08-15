@@ -140,10 +140,10 @@ function rebuildAnchors(): void {
   anchors.clear();
   const seen = new Set<number>();
   for (const n of nodes) if (n.cluster >= 0) seen.add(n.cluster);
-  const ids = Array.from(seen).sort((a, b) => a - b);
-  const count = Math.max(ids.length, 2);
-  for (let j = 0; j < ids.length; j++) {
-    anchors.set(ids[j], clusterAnchor(j, count, shellRadius, dims));
+  // Placement is a pure function of cluster ID (Weyl sequence), never of
+  // which communities currently exist or their index in a sorted list.
+  for (const id of seen) {
+    anchors.set(id, clusterAnchor(id, shellRadius, dims));
   }
 }
 
@@ -416,7 +416,11 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
           const saved = depthBeforeFlat.get(n.id);
           if (saved) {
             n.z = saved.z;
-            n.fz = saved.fz;
+            // Pin/unpin while flat mutate only the live node. Restore depth
+            // always, but honor the current pin: a 2D unpin must not revive
+            // the pre-flat fz, and a 2D-only pin must not be wiped by a
+            // stale null snapshot.
+            if (n.fz != null) n.fz = saved.fz ?? saved.z;
           } else if (n.fz == null) {
             n.z += (Math.random() - 0.5) * 2;
           }

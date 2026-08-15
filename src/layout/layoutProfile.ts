@@ -2,6 +2,7 @@ export const CLUSTER_PULL_3D = 0.05;
 export const CLUSTER_PULL_2D = 0.12;
 export const SHELL_STRENGTH_3D = 0.9;
 
+const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2;
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const FLAT_ANCHOR_RADIUS_SCALE = 0.72;
 
@@ -16,27 +17,25 @@ export function shellStrengthForDims(dims: 2 | 3): number {
   return dims === 2 ? 0 : SHELL_STRENGTH_3D;
 }
 
-/** Stable community anchor for the active layout profile. */
+/** Identity-stable community anchor: keyed on cluster ID, not list index. */
 export function clusterAnchor(
-  index: number,
-  count: number,
+  id: number,
   radius: number,
   dims: 2 | 3,
 ): [number, number, number] {
-  const safeCount = Math.max(count, 2);
   if (dims === 2) {
-    // Phyllotaxis fills a disc without a special central cluster or a hollow
-    // perimeter. sqrt(t) keeps roughly equal area between neighboring anchors.
-    const t = (index + 0.5) / safeCount;
+    // Weyl phyllotaxis fills a disc without a special central cluster or a
+    // hollow perimeter. The fractional part is a function of the raw ID so
+    // adding or removing a community never moves the others.
+    const t = ((id + 0.5) * GOLDEN_RATIO) % 1;
     const r = Math.sqrt(t) * radius * FLAT_ANCHOR_RADIUS_SCALE;
-    const theta = GOLDEN_ANGLE * index;
+    const theta = GOLDEN_ANGLE * id;
     return [Math.cos(theta) * r, Math.sin(theta) * r, 0];
   }
 
-  // Preserve the existing Fibonacci-sphere profile exactly in 3D.
-  const y = 1 - (2 * (index + 0.5)) / safeCount;
+  const y = 1 - 2 * (((id + 0.5) * GOLDEN_RATIO) % 1);
   const r = Math.sqrt(Math.max(0, 1 - y * y));
-  const theta = GOLDEN_ANGLE * index;
+  const theta = GOLDEN_ANGLE * id;
   return [
     Math.cos(theta) * r * radius,
     y * radius,

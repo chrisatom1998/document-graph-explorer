@@ -101,7 +101,8 @@ export default function CameraRig() {
 
     // PR #68 regression guard: changing camera profiles must not strand a
     // search/chat/insights frameNode whose panel was waiting for arrival.
-    if (dims === 2 && shouldCommitOnTweenCancel(tweenActive.current)) {
+    // Commit on either direction — returning to 3D also interrupts the glide.
+    if (shouldCommitOnTweenCancel(tweenActive.current)) {
       commitPendingFocusIf(framingId.current ?? undefined);
     }
 
