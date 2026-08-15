@@ -34,6 +34,8 @@ import {
   flatLabelScale,
 } from './flatLabelPolicy';
 import { cameraPose } from './cameraPose';
+import { prefersReducedMotion } from '../util/motion';
+import { slotHasMaterialized, writeSlotTravelPosition } from './ingestBirth';
 
 const REFRESH_MS = 120;
 const TRUNCATE_AT = 34;
@@ -66,6 +68,7 @@ interface TroikaLabel extends THREE.Mesh {
 const projScreen = new THREE.Matrix4();
 const frustum = new THREE.Frustum();
 const tmpVec = new THREE.Vector3();
+const labelTravel = { x: 0, y: 0, z: 0 };
 const bestD2 = new Float64Array(LABEL_BUDGET);
 const bestSlot = new Int32Array(LABEL_BUDGET);
 
@@ -192,7 +195,6 @@ export default function Labels() {
     }
 
     const count = Math.min(positionBuffer.count, MAX_NODES);
-    const arr = positionBuffer.array;
     const titles = titleOfSlot.current;
     const cameraDistance = Math.hypot(
       camera.position.x - cameraPose.tx,
@@ -205,6 +207,8 @@ export default function Labels() {
         ? Math.min(DEGRADED_BUDGET, LABEL_BUDGET)
         : LABEL_BUDGET;
     currentFlatScale.current = flatLabelScale(cameraDistance);
+    const now = performance.now();
+    const reducedMotion = prefersReducedMotion();
 
     hoverSlot.current = hoveredId ? (slotOfId.get(hoveredId) ?? -1) : -1;
     selectedSlot.current = selectedId ? (slotOfId.get(selectedId) ?? -1) : -1;
@@ -217,7 +221,9 @@ export default function Labels() {
       if (i === hoverSlot.current || i === selectedSlot.current) continue; // reserved
       if (kindOfSlot[i] === 1 && !topicNodesEnabled) continue; // hidden topic node
       if (!titles[i]) continue;
-      tmpVec.set(arr[i * 3], arr[i * 3 + 1], arr[i * 3 + 2]);
+      if (!slotHasMaterialized(i, now)) continue; // pre-spawn: no label on an invisible node
+      writeSlotTravelPosition(labelTravel, i, now, { reducedMotion, flat });
+      tmpVec.set(labelTravel.x, labelTravel.y, labelTravel.z);
       if (!frustum.containsPoint(tmpVec)) continue;
       const d2 = tmpVec.distanceToSquared(camera.position);
       const priority = flat
@@ -278,21 +284,23 @@ export default function Labels() {
 
   /** Cheap per-frame pass: track node motion + billboard toward the camera. */
   const place = (label: TroikaLabel, slot: number, camera: THREE.Camera): void => {
-    const arr = positionBuffer.array;
-    const o = slot * 3;
+    writeSlotTravelPosition(labelTravel, slot, performance.now(), {
+      reducedMotion: prefersReducedMotion(),
+      flat,
+    });
     if (flat) {
       // star chart: label sits to the RIGHT of the dot, vertically centered
       label.position.set(
-        arr[o] + (scaleOfSlot[slot] || 1.1) + FLAT_GAP,
-        arr[o + 1],
-        arr[o + 2] + FLAT_LIFT,
+        labelTravel.x + (scaleOfSlot[slot] || 1.1) + FLAT_GAP,
+        labelTravel.y,
+        labelTravel.z + FLAT_LIFT,
       );
       label.scale.setScalar(currentFlatScale.current);
     } else {
       label.position.set(
-        arr[o],
-        arr[o + 1] + (scaleOfSlot[slot] || 1.1) + 1.6,
-        arr[o + 2],
+        labelTravel.x,
+        labelTravel.y + (scaleOfSlot[slot] || 1.1) + 1.6,
+        labelTravel.z,
       );
       label.scale.setScalar(1);
     }

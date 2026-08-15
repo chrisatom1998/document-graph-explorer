@@ -1417,6 +1417,27 @@ input {
   animation: kn-slide-in-down 320ms var(--ease-out) both;
 }
 
+/* Ingest-time lone 2D/3D switch: same dock spot and finish as the toolbar,
+   so the control appears to persist when the full toolbar mounts at ready. */
+.ingest-dims-toggle {
+  position: fixed;
+  top: 18px;
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: fit-content;
+  z-index: var(--z-floating);
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  pointer-events: auto;
+  border-color: rgba(169, 186, 255, 0.2);
+  background: rgba(8, 13, 28, 0.76);
+  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.4), inset 0 1px rgba(255, 255, 255, 0.06);
+  animation: kn-slide-in-down 320ms var(--ease-out) both;
+}
+.ingest-dims-toggle .btn-icon { border-radius: 8px; }
+
 .toolbar__grip {
   display: inline-flex;
   align-items: center;

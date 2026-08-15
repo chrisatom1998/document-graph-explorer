@@ -9,6 +9,11 @@ import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { useCorpusStore } from './store/corpusStore';
 import { layoutSetDims, onLayoutSettled } from './layout/layoutBridge';
+import {
+  clearIngestBirthSteer,
+  isIngestFraming,
+  wasIngestBirthSteered,
+} from './scene/ingestGesture';
 import { enqueueRun } from './pipeline/runQueue';
 import { positionBuffer, slotOfId } from './scene/positionBuffer';
 import { cameraPose } from './scene/cameraPose';
@@ -27,6 +32,7 @@ const DropZone = lazy(() => import('./ingest/DropZone'));
 const EmptyState = lazy(() => import('./ui/EmptyState'));
 const ProgressStrip = lazy(() => import('./ui/ProgressStrip'));
 const Toolbar = lazy(() => import('./ui/Toolbar'));
+const IngestDimsToggle = lazy(() => import('./ui/DimsToggleButton'));
 const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
 const PathPanel = lazy(() => import('./ui/PathPanel'));
 const SidePanel = lazy(() => import('./ui/SidePanel'));
@@ -148,12 +154,30 @@ export default function App() {
   useEffect(() => {
     if (!hasNodes) {
       needsFrame.current = true; // next corpus gets framed again
+      clearIngestBirthSteer(); // fresh corpus: an old steer must not block its first fit
       return;
     }
     return onLayoutSettled(() => {
       if (!needsFrame.current) return;
+      const ready = useGraphStore.getState().phase === 'ready';
+      // Live first-ingest framing is owned by CameraRig (slow ease-out).
+      // Incremental add never sets that flag; session restore still fit-alls
+      // here. A ready-state settle completes the initial framing either way —
+      // leaving needsFrame set would make the NEXT incremental add's settle
+      // fitAll and steal the user's camera.
+      if (isIngestFraming()) {
+        if (ready) needsFrame.current = false;
+        return;
+      }
+      // A mid-ingest orbit/pan cancels the follow AND this handler's fitAll:
+      // the no-steal guarantee means once the user takes the camera during a
+      // corpus's formation, nothing auto-fits that corpus behind them.
+      if (wasIngestBirthSteered()) {
+        needsFrame.current = false;
+        return;
+      }
       useUiStore.getState().sendCamera('fitAll');
-      if (useGraphStore.getState().phase === 'ready') needsFrame.current = false;
+      if (ready) needsFrame.current = false;
     });
   }, [hasNodes]);
 
@@ -355,6 +379,12 @@ export default function App() {
       )}
       {phase === 'ready' && (
         <Suspense fallback={null}><Toolbar /></Suspense>
+      )}
+      {/* The full toolbar waits for 'ready', but the 2D/3D switch must stay
+          reachable while the corpus is still forming — switching modes is
+          also the escape hatch when the 3D ingest animation struggles. */}
+      {hasNodes && phase !== 'ready' && (
+        <Suspense fallback={null}><IngestDimsToggle /></Suspense>
       )}
       {phase === 'ready' && (
         <Suspense fallback={null}><GraphNavigator /></Suspense>
