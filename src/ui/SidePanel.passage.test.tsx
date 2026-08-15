@@ -123,4 +123,14 @@ describe('SidePanel passage fly-to and similar docs', () => {
     });
     expectSections(false);
   });
+
+  it('keeps disclosures adjacent to the reader in document mode', () => {
+    render(<SidePanel />);
+    const aboutSection = screen.getByRole('button', { name: /^about$/i }).closest('.side-panel__section');
+    const connectionsSection = screen
+      .getByRole('button', { name: /^connections$/i })
+      .closest('.side-panel__section');
+    expect(aboutSection).toHaveClass('side-panel__section--compact');
+    expect(connectionsSection).toHaveClass('side-panel__section--compact');
+  });
 });

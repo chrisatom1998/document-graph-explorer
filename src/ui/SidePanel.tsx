@@ -18,15 +18,18 @@ function Disclose({
   label,
   open,
   onToggle,
+  compact,
   children,
 }: {
   label: string;
   open: boolean;
   onToggle: () => void;
+  compact?: boolean;
   children: ReactNode;
 }) {
+  const sectionClass = compact ? 'side-panel__section side-panel__section--compact' : 'side-panel__section';
   return (
-    <div className="side-panel__section">
+    <div className={sectionClass}>
       <button
         type="button"
         className="side-panel__disclose"
@@ -250,6 +253,7 @@ export default function SidePanel() {
               label="About"
               open={aboutOpen}
               onToggle={() => setAboutOpen((v) => !v)}
+              compact
             >
               <SidePanelAbout
                 node={node}
@@ -277,6 +281,7 @@ export default function SidePanel() {
               label="Connections"
               open={connectionsOpen}
               onToggle={() => setConnectionsOpen((v) => !v)}
+              compact
             >
               <SidePanelConnections
                 connections={connections}

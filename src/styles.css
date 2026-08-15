@@ -1684,6 +1684,10 @@ input {
 .side-panel__section--reader {
   margin-top: 16px;
 }
+.side-panel__section--compact {
+  margin-top: 12px;
+  padding-top: 10px;
+}
 .side-panel__block {
   margin-top: 16px;
 }
