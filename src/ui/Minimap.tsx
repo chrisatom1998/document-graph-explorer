@@ -44,6 +44,7 @@ import {
   projV,
   viewportHalfExtents,
 } from './minimapMath';
+import { balancedFlatEdgeIds } from '../scene/flatEdgeDetail';
 
 const W = 220;
 const H = 156;
@@ -88,12 +89,28 @@ export default function Minimap() {
     ctx.scale(dpr, dpr);
     sctx.scale(dpr, dpr);
 
+    // Balanced-mode ranking only changes when the edge-list identity or node
+    // count changes. Keep it out of the 10Hz paint path — dense corpora would
+    // otherwise clone and sort the complete edge list on every scene tick.
+    let rankedEdges: unknown = null;
+    let rankedNodeCount = -1;
+    let cachedBalancedIds: ReadonlySet<string> | null = null;
+
     const drawScene = (): void => {
       const { nodes, edges } = useGraphStore.getState();
       const ui = useUiStore.getState();
       const arr = positionBuffer.array;
       const count = positionBuffer.count;
       const dims = ui.dims;
+      let balancedIds: ReadonlySet<string> | null = null;
+      if (dims === 2 && ui.flatEdgeDetail === 'balanced') {
+        if (rankedEdges !== edges || rankedNodeCount !== nodes.length) {
+          rankedEdges = edges;
+          rankedNodeCount = nodes.length;
+          cachedBalancedIds = balancedFlatEdgeIds(edges, nodes.length);
+        }
+        balancedIds = cachedBalancedIds;
+      }
 
       // --- fit the live positions into the canvas (smoothed) ---------------
       let minU = Infinity;
@@ -153,6 +170,7 @@ export default function Minimap() {
         sctx.lineWidth = 1;
         sctx.beginPath();
         for (const e of edges) {
+          if (balancedIds && !balancedIds.has(e.id)) continue;
           if (e.weight < ui.filter.minEdgeWeight) continue;
           if (e.kind === 'topic' && !ui.topicNodesEnabled) continue;
           const s = slotOfId.get(e.source);

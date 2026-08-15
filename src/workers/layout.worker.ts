@@ -12,9 +12,9 @@
  *   mandate it, but without a restart a drag on a settled (stopped) graph
  *   would not render until some other reheat arrived.
  * - After numDimensions(2), d3-force-3d simply stops integrating z, so we
- *   explicitly zero z/vz to flatten the buffer. Switching back to 3 seeds a
- *   tiny z jitter; per-axis jiggle in the forces would recover eventually,
- *   but seeding makes the re-inflation immediate.
+ *   explicitly zero z/vz to flatten the buffer. The previous depth is retained
+ *   while flat so switching back to 3D restores the familiar structure; nodes
+ *   first added in 2D receive a tiny depth seed and inflate normally.
  */
 
 import {
@@ -28,6 +28,12 @@ import {
 import type { Force, SimLink } from 'd3-force-3d';
 import type { LayoutRequest, LayoutResponse } from '../model/types';
 import { randomSpherePoint } from '../pipeline/spawnPosition';
+import {
+  clusterAnchor,
+  clusterPullForDims,
+  SHELL_STRENGTH_3D,
+  shellStrengthForDims,
+} from '../layout/layoutProfile';
 
 declare const self: DedicatedWorkerGlobalScope;
 
@@ -58,7 +64,6 @@ interface LayoutLink {
 
 const SETTLE_ALPHA = 0.005; // below this we declare the layout settled
 const POST_INTERVAL_MS = 33; // ~30 position posts per second
-const CLUSTER_PULL = 0.05;
 const SPAWN_JITTER = 4;
 /** Nodes settle ON this sphere shell (spec §7: "orbiting" arrangement).
  * Grows with node count so surface density — and thus label legibility —
@@ -69,7 +74,6 @@ const SHELL_MIN_RADIUS = 72;
 const NODE_COLLIDE_RADIUS = 5;
 // Must dominate the link force: a dense corpus (avg degree ~10) otherwise
 // drags the whole shell inward into a ball.
-const SHELL_STRENGTH = 0.9;
 
 // ---------------------------------------------------------------------------
 // State
@@ -87,6 +91,8 @@ let lastPost = 0;
 /** Mirrors the main-thread setDims epoch so settled messages can be matched
  * to the dims change that caused that reheat. */
 let epoch = 0;
+/** Original depth/pin depth retained while the same nodes are in flat mode. */
+const depthBeforeFlat = new Map<string, { z: number; fz: number | null }>();
 
 // --- transferable buffer pool (grow 1.5x, drop undersized returns) ---------
 const pool: ArrayBuffer[] = [];
@@ -136,23 +142,15 @@ function rebuildAnchors(): void {
   for (const n of nodes) if (n.cluster >= 0) seen.add(n.cluster);
   const ids = Array.from(seen).sort((a, b) => a - b);
   const count = Math.max(ids.length, 2);
-  const golden = Math.PI * (3 - Math.sqrt(5));
   for (let j = 0; j < ids.length; j++) {
-    const y = 1 - (2 * (j + 0.5)) / count;
-    const r = Math.sqrt(Math.max(0, 1 - y * y));
-    const theta = golden * j;
-    anchors.set(ids[j], [
-      Math.cos(theta) * r * shellRadius,
-      y * shellRadius,
-      Math.sin(theta) * r * shellRadius,
-    ]);
+    anchors.set(ids[j], clusterAnchor(j, count, shellRadius, dims));
   }
 }
 
 function makeClusterForce(): Force<LayoutNode> {
   let simNodes: LayoutNode[] = [];
   const apply = (alpha: number): void => {
-    const k = CLUSTER_PULL * alpha;
+    const k = clusterPullForDims(dims) * alpha;
     for (let i = 0; i < simNodes.length; i++) {
       const n = simNodes[i];
       const anchor = anchors.get(n.cluster); // cluster -1 / unknown -> none (strength 0)
@@ -186,7 +184,7 @@ const linkForce = forceLink<LayoutNode>([])
   .distance((l) => 18 + 38 * (1 - linkWeight(l)));
 
 const radialForce = forceRadial<LayoutNode>(SHELL_MIN_RADIUS, 0, 0, 0).strength(
-  SHELL_STRENGTH,
+  SHELL_STRENGTH_3D,
 );
 
 const sim = forceSimulation<LayoutNode>(nodes, 3)
@@ -330,6 +328,7 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
       let removed = false;
       for (let i = nodes.length - 1; i >= 0; i--) {
         if (gone.has(nodes[i].id)) {
+          depthBeforeFlat.delete(nodes[i].id);
           nodeById.delete(nodes[i].id);
           nodes.splice(i, 1);
           removed = true;
@@ -395,21 +394,36 @@ self.onmessage = (ev: MessageEvent<LayoutRequest>) => {
 
     case 'setDims': {
       epoch = typeof msg.epoch === 'number' ? msg.epoch : epoch + 1;
+      const previousDims = dims;
       dims = msg.dims;
       sim.numDimensions(dims);
+      radialForce.strength(shellStrengthForDims(dims));
       if (dims === 2) {
         // numDimensions(2) merely stops integrating z — flatten explicitly.
         for (const n of nodes) {
+          if (previousDims === 3) {
+            depthBeforeFlat.set(n.id, { z: n.z, fz: n.fz ?? null });
+          }
           n.z = 0;
           n.vz = 0;
           if (n.fz != null) n.fz = 0;
         }
       } else {
-        // seed a little z so the graph re-inflates immediately
+        // Restore the depth that existed before flattening. Nodes added while
+        // flat have no snapshot, so they receive a small seed and join the
+        // normal 3D shell expansion.
         for (const n of nodes) {
-          if (n.fz == null) n.z += (Math.random() - 0.5) * 2;
+          const saved = depthBeforeFlat.get(n.id);
+          if (saved) {
+            n.z = saved.z;
+            n.fz = saved.fz;
+          } else if (n.fz == null) {
+            n.z += (Math.random() - 0.5) * 2;
+          }
         }
+        depthBeforeFlat.clear();
       }
+      rebuildAnchors();
       reheat(0.5);
       break;
     }

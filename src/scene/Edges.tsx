@@ -37,6 +37,7 @@ import { positionBuffer, slotOfId } from './positionBuffer';
 import { clusterColor, EDGE_TINTS, FLAT_EDGE, FLAT_EDGE_FOCUS } from './palette';
 import { computeEmphasis } from './emphasis';
 import { isPathHop, pathHopSet } from './pathRoute';
+import { balancedFlatEdgeIds } from './flatEdgeDetail';
 import {
   EDGE_SEGMENTS,
   EDGE_SEGMENTS_DEGRADED,
@@ -155,6 +156,7 @@ fatMaterial.onBeforeCompile = (shader) => {
 
 export default function Edges() {
   const edges = useGraphStore((s) => s.edges);
+  const nodeCount = useGraphStore((s) => s.nodes.length);
   const dims = useUiStore((s) => s.dims);
   const qualityTier = useUiStore((s) => s.qualityTier);
   // Bezier resolution follows the auto-quality ladder (spec §7.4): degraded
@@ -172,6 +174,10 @@ export default function Edges() {
     const ranked = [...edges].sort((a, b) => b.weight - a.weight);
     return ranked.slice(0, Math.max(cap, 1));
   }, [dims, edges, qualityTier]);
+  const balancedIds = useMemo(
+    () => balancedFlatEdgeIds(renderEdges, nodeCount),
+    [nodeCount, renderEdges],
+  );
   const raycaster = useThree((s) => s.raycaster);
 
   // LineMaterial needs the viewport size to convert linewidth px -> clip
@@ -258,6 +264,7 @@ export default function Edges() {
         s.searchResults !== prev.searchResults ||
         s.highlightOwner !== prev.highlightOwner ||
         s.filter !== prev.filter ||
+        s.flatEdgeDetail !== prev.flatEdgeDetail ||
         s.clusterCollapsed !== prev.clusterCollapsed ||
         s.topicNodesEnabled !== prev.topicNodesEnabled
       ) {
@@ -344,14 +351,27 @@ export default function Edges() {
       let brightness =
         (flat ? FLAT_BRIGHT_BASE + FLAT_BRIGHT_WEIGHT * e.weight : 0.16 + 0.55 * e.weight) *
         fade;
+      const focusIncident = Boolean(focusId && (e.source === focusId || e.target === focusId));
+      const emphasizedEdge = Boolean(emphasis?.has(e.source) && emphasis?.has(e.target));
+      const pathEdge = Boolean(pathHops && isPathHop(e.source, e.target, pathHops));
+      if (
+        flat &&
+        ui.flatEdgeDetail === 'balanced' &&
+        !balancedIds.has(e.id) &&
+        !focusIncident &&
+        !emphasizedEdge &&
+        !pathEdge
+      ) {
+        brightness *= 0.1;
+      }
       if (emphasis && !(emphasis.has(e.source) && emphasis.has(e.target))) {
         brightness *= 0.05;
       }
-      if (pathHops && isPathHop(e.source, e.target, pathHops)) {
+      if (pathEdge) {
         brightness *= FOCUS_BOOST / fade;
         srcColor.set('#77e5ff');
         dstColor.set('#b4a8ff');
-      } else if (focusId && (e.source === focusId || e.target === focusId)) {
+      } else if (focusIncident) {
         // undo the density fade: the edges you're inspecting must stay vivid
         // precisely when the rest of the graph is at its faintest
         brightness *= FOCUS_BOOST / fade;

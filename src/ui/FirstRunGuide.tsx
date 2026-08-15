@@ -29,7 +29,7 @@ const TOUR_STEPS = [
   {
     selector: '.toolbar',
     title: 'Find and shape the view',
-    body: 'Search, fit the camera, and add files here. View, Analyze, and Data keep the extra tools — 2D, snapshots, insights, export — one click down, not on the bar.',
+    body: 'Search, fit the camera, switch between the 2D map and 3D space, and add files here. View, Analyze, and Data keep snapshots, insights, export, and other tools one click down.',
   },
   {
     selector: '.filter-bar-layer',
@@ -109,6 +109,7 @@ function defaultGuidePos(el: HTMLElement): { x: number; y: number } {
 export default function FirstRunGuide() {
   const ready = useGraphStore((state) => state.phase === 'ready' && state.nodes.length > 0);
   const selectedId = useUiStore((state) => state.selectedId);
+  const dims = useUiStore((state) => state.dims);
   const offlineMode = useSettingsStore((state) => state.offlineMode);
   const [dismissed, setDismissed] = useState(true);
   const [step, setStep] = useState(0);
@@ -231,7 +232,11 @@ export default function FirstRunGuide() {
 
   const current = TOUR_STEPS[step];
   const offline = AIRGAP || offlineMode;
-  const body = offline && 'offlineBody' in current ? current.offlineBody : current.body;
+  const modeAwareBody =
+    step === 0 && dims === 2
+      ? 'Drag empty space to pan, scroll to zoom, and click a node to read it. Notes, tags, and pins live on the document panel when you need them.'
+      : current.body;
+  const body = offline && 'offlineBody' in current ? current.offlineBody : modeAwareBody;
   const spotlightStyle: CSSProperties | undefined = spotlight
     ? {
         top: Math.max(6, spotlight.top - 6),

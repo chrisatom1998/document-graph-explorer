@@ -22,9 +22,10 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { FRAME_BUDGET_MS, FRAME_BUDGET_SUSTAIN_MS } from '../config';
-import { layoutPause, layoutResume, layoutSetDims } from '../layout/layoutBridge';
+import { layoutPause, layoutResume } from '../layout/layoutBridge';
 import { useUiStore } from '../store/uiStore';
 import type { QualityTier } from '../store/uiStore';
+import { switchGraphDimensions } from './dimensionTransition';
 
 const DPR_CAP_BY_TIER = [2, 2, 1.5, 1.25, 1] as const;
 
@@ -32,6 +33,7 @@ const RECOVER_MS = 14; // headroom threshold for stepping back up
 const RECOVER_SUSTAIN_MS = 5_000;
 const GRACE_MS = 1_500; // ignore samples after visibility/tier changes
 const EMA_WEIGHT = 0.1;
+const SWITCH_TO_2D_ACTION_LABEL = 'Switch to 2D';
 
 export default function AutoQuality() {
   const ema = useRef(16.7);
@@ -43,6 +45,7 @@ export default function AutoQuality() {
 
   const setDpr = useThree((s) => s.setDpr);
   const tier = useUiStore((s) => s.qualityTier);
+  const dims = useUiStore((s) => s.dims);
   useEffect(() => {
     const coarse = Boolean(window.matchMedia?.('(pointer: coarse)').matches);
     const base = coarse ? 1 : Math.min(window.devicePixelRatio || 1, 2);
@@ -62,6 +65,17 @@ export default function AutoQuality() {
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
+
+  // A performance suggestion raised in 3D becomes misleading the instant the
+  // user switches modes through the toolbar. Clear only that redundant action
+  // toast; unrelated warnings and information remain untouched.
+  useEffect(() => {
+    if (dims !== 2) return;
+    const ui = useUiStore.getState();
+    for (const toast of ui.toasts) {
+      if (toast.action?.label === SWITCH_TO_2D_ACTION_LABEL) ui.dismissToast(toast.id);
+    }
+  }, [dims]);
 
   useFrame((_, delta) => {
     const ui = useUiStore.getState();
@@ -113,11 +127,9 @@ export default function AutoQuality() {
           if (next === 4 && !announced4.current && ui.dims === 3) {
             announced4.current = true;
             ui.pushToast('Struggling to keep up — try 2D mode?', 'info', {
-              label: 'Switch to 2D',
+              label: SWITCH_TO_2D_ACTION_LABEL,
               run: () => {
-                const s = useUiStore.getState();
-                s.setDims(2);
-                layoutSetDims(2);
+                switchGraphDimensions(2, { fitAfterSettle: true });
               },
             });
           }

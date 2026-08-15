@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { EdgeKind, FileType } from '../model/types';
 
 export type QualityTier = 0 | 1 | 2 | 3 | 4; // 0 = ultra … 4 = suggest 2D
+export type FlatEdgeDetail = 'balanced' | 'all';
 
 export interface CameraPose {
   px: number;
@@ -117,6 +118,7 @@ interface UiState {
   filter: GraphFilter;
   snapshotOverlay: SnapshotOverlay | null;
   dims: 2 | 3;
+  flatEdgeDetail: FlatEdgeDetail;
   topicNodesEnabled: boolean;
   clusterCollapsed: boolean; // super-node collapse mode (spec §9)
   qualityTier: QualityTier;
@@ -144,6 +146,7 @@ interface UiState {
   setFilter: (f: Partial<GraphFilter>) => void;
   setSnapshotOverlay: (overlay: SnapshotOverlay | null) => void;
   setDims: (d: 2 | 3) => void;
+  setFlatEdgeDetail: (detail: FlatEdgeDetail) => void;
   setTopicNodes: (v: boolean) => void;
   setClusterCollapsed: (v: boolean) => void;
   setQualityTier: (t: QualityTier) => void;
@@ -206,6 +209,7 @@ export const useUiStore = create<UiState>((set) => ({
   filter: { ...DEFAULT_FILTER },
   snapshotOverlay: null,
   dims: loadDims(),
+  flatEdgeDetail: 'balanced',
   topicNodesEnabled: false,
   clusterCollapsed: false,
   qualityTier: 0,
@@ -232,6 +236,7 @@ export const useUiStore = create<UiState>((set) => ({
   setFilter: (f) => set((s) => ({ filter: { ...s.filter, ...f } })),
   setSnapshotOverlay: (snapshotOverlay) => set({ snapshotOverlay }),
   setDims: (dims) => set({ dims }),
+  setFlatEdgeDetail: (flatEdgeDetail) => set({ flatEdgeDetail }),
   setTopicNodes: (topicNodesEnabled) => set({ topicNodesEnabled }),
   setClusterCollapsed: (clusterCollapsed) => set({ clusterCollapsed }),
   setQualityTier: (qualityTier) => set({ qualityTier }),

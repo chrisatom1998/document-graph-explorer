@@ -10,7 +10,7 @@ import {
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useCollabStore } from '../collab/store';
-import { layoutSetDims } from '../layout/layoutBridge';
+import { switchGraphDimensions } from '../scene/dimensionTransition';
 import { openFilePicker } from '../ingest/DropZone';
 // Imported eagerly so the activation-gated picker opens synchronously with
 // the click; folderPicker demand-loads the heavy scanner itself.
@@ -79,13 +79,13 @@ type MenuKey = 'view' | 'analyze' | 'data' | 'add' | 'collab';
 export default function Toolbar() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const dims = useUiStore((s) => s.dims);
+  const flatEdgeDetail = useUiStore((s) => s.flatEdgeDetail);
   const topicNodesEnabled = useUiStore((s) => s.topicNodesEnabled);
   const setSearchOpen = useUiStore((s) => s.setSearchOpen);
   const searchOpen = useUiStore((s) => s.searchOpen);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
   const snapshotsOpen = useUiStore((s) => s.snapshotsOpen);
   const helpOpen = useUiStore((s) => s.helpOpen);
-  const setDims = useUiStore((s) => s.setDims);
   const collabSession = useCollabStore((s) => s.session);
   const collabInvite = useCollabStore((s) => s.invite);
   const collabPeers = useCollabStore((s) => s.peers);
@@ -98,6 +98,7 @@ export default function Toolbar() {
   const joinInvite = useCollabStore((s) => s.joinInvite);
   const leaveSession = useCollabStore((s) => s.leaveSession);
   const setTopicNodes = useUiStore((s) => s.setTopicNodes);
+  const setFlatEdgeDetail = useUiStore((s) => s.setFlatEdgeDetail);
   const insightsOpen = useUiStore((s) => s.insightsOpen);
   const setInsightsOpen = useUiStore((s) => s.setInsightsOpen);
   const pathMode = useUiStore((s) => s.pathMode);
@@ -223,8 +224,7 @@ export default function Toolbar() {
 
   const handleToggleDims = () => {
     const next = dims === 3 ? 2 : 3;
-    setDims(next);
-    layoutSetDims(next);
+    switchGraphDimensions(next, { fitAfterSettle: true });
   };
 
   const handleCollabHost = async () => {
@@ -317,6 +317,7 @@ export default function Toolbar() {
         onClick={handleToggleDims}
       >
         <IconCube twoD={dims === 2} />
+        <span className="toolbar__dims-label" aria-hidden="true">{dims}D</span>
       </button>
 
       <div className="toolbar__menu-wrap" ref={viewMenuWrapRef}>
@@ -338,6 +339,19 @@ export default function Toolbar() {
         </button>
         {openMenu === 'view' && (
           <div className="toolbar__menu glass-panel">
+            {dims === 2 && (
+              <button
+                type="button"
+                className={`toolbar__menu-item${flatEdgeDetail === 'balanced' ? ' is-active' : ''}`}
+                title="Balanced keeps the clearest overview links visible; All restores every link at equal detail"
+                aria-label={`Link detail: ${flatEdgeDetail}`}
+                onClick={() => setFlatEdgeDetail(flatEdgeDetail === 'balanced' ? 'all' : 'balanced')}
+              >
+                <span className="toolbar__menu-glyph" aria-hidden="true">≋</span>
+                <span>Link detail</span>
+                <span className="toolbar__menu-meta">{flatEdgeDetail === 'balanced' ? 'Balanced' : 'All'}</span>
+              </button>
+            )}
             <button
               type="button"
               className={`toolbar__menu-item${topicNodesEnabled ? ' is-active' : ''}`}

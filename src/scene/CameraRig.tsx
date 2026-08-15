@@ -2,7 +2,7 @@
  * Camera choreography (spec §7.3): damped OrbitControls, eased glide-to-frame
  * commands from uiStore.cameraCommand, idle auto-orbit so the nebula feels
  * alive, and the 2D-mode gesture map (orbit in 3D, drag-to-pan on the flat
- * chart — see cameraControlsConfig.ts).
+ * chart — see cameraControlsConfig.ts) with a front-on camera profile.
  *
  * Command tweens use maath easing.damp3 on BOTH camera.position and
  * controls.target; any user 'start' gesture on the controls cancels the
@@ -11,7 +11,7 @@
 
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { easing } from 'maath';
@@ -19,13 +19,14 @@ import { CAMERA_GLIDE_MS } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { noteLocalCameraActivity, useCollabStore } from '../collab/store';
-import type { CameraCommand } from '../store/uiStore';
+import type { CameraCommand, CameraPose as StoredCameraPose } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { cameraPose } from './cameraPose';
 import { panInput } from './panInput';
 import { prefersReducedMotion } from '../util/motion';
 import { commitPendingFocusIf } from '../ui/focusNode';
 import { decideFrameNode, isAlreadyNear, shouldCommitOnTweenCancel } from './cameraFocusPolicy';
+import { flattenCameraPose } from './flatCamera';
 import { orbitControlsConfig } from './cameraControlsConfig';
 
 const IDLE_MS = 10_000;
@@ -73,6 +74,7 @@ export function computeFrameNodePose(opts: {
 export default function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const dims = useUiStore((s) => s.dims);
+  const camera = useThree((state) => state.camera);
 
   const lastNonce = useRef(0);
   const tweenActive = useRef(false);
@@ -82,34 +84,55 @@ export default function CameraRig() {
   const lastInteraction = useRef(
     typeof performance !== 'undefined' ? performance.now() : 0,
   );
+  const previousDims = useRef<2 | 3>(dims);
+  const last3DPose = useRef<StoredCameraPose | null>(null);
 
-  // Entering 2D: glide to a head-on view of the flat chart. The polar clamp
-  // (see cameraControlsConfig) only pins the elevation — an azimuth carried
-  // over from 3D would still leave the x–y chart skewed or edge-on, so the
-  // rig squares up to it once, on the same eased path as a frame command.
-  // Any user gesture cancels this via the existing onStart handler.
+  // Changing modes is a camera transition as well as a layout transition.
+  // Entering 2D always faces the z=0 map plane head-on; returning to 3D
+  // restores the view the user had before flattening. Saved/collab camera
+  // commands still win on the next frame through the normal command channel.
   useEffect(() => {
     const controls = controlsRef.current;
-    if (!controls || dims !== 2) return;
-    // Same cancel-commit as onStart / arrow-key pan: an in-flight frameNode
-    // from search/chat/insights must open the panel before we drop framingId.
-    if (shouldCommitOnTweenCancel(tweenActive.current)) {
+    if (!controls) return;
+
+    const previous = previousDims.current;
+    previousDims.current = dims;
+    if (previous === dims) return;
+
+    // PR #68 regression guard: changing camera profiles must not strand a
+    // search/chat/insights frameNode whose panel was waiting for arrival.
+    if (dims === 2 && shouldCommitOnTweenCancel(tweenActive.current)) {
       commitPendingFocusIf(framingId.current ?? undefined);
     }
-    const camera = controls.object;
-    const dist = Math.max(camera.position.distanceTo(controls.target), 1);
-    desiredTarget.copy(controls.target);
-    desiredPos.copy(controls.target);
-    desiredPos.z += dist;
+
+    const currentPose: StoredCameraPose = {
+      px: camera.position.x,
+      py: camera.position.y,
+      pz: camera.position.z,
+      tx: controls.target.x,
+      ty: controls.target.y,
+      tz: controls.target.z,
+    };
+    if (previous === 3) last3DPose.current = currentPose;
+
+    const nextPose =
+      dims === 2
+        ? flattenCameraPose(currentPose)
+        : (last3DPose.current ?? currentPose);
+    desiredPos.set(nextPose.px, nextPose.py, nextPose.pz);
+    desiredTarget.set(nextPose.tx, nextPose.ty, nextPose.tz);
     framingId.current = null;
     lastInteraction.current = performance.now();
+
     if (prefersReducedMotion()) {
       camera.position.copy(desiredPos);
+      controls.target.copy(desiredTarget);
+      controls.update();
       tweenActive.current = false;
-      return;
+    } else {
+      tweenActive.current = true;
     }
-    tweenActive.current = true;
-  }, [dims]);
+  }, [camera, dims]);
 
   const beginCommand = (
     cmd: CameraCommand,
@@ -123,9 +146,10 @@ export default function CameraRig() {
     // target — no framing math, no dependence on current node positions.
     if (cmd.kind === 'pose') {
       if (!cmd.pose) return;
+      const pose = useUiStore.getState().dims === 2 ? flattenCameraPose(cmd.pose) : cmd.pose;
       framingId.current = null;
-      desiredPos.set(cmd.pose.px, cmd.pose.py, cmd.pose.pz);
-      desiredTarget.set(cmd.pose.tx, cmd.pose.ty, cmd.pose.tz);
+      desiredPos.set(pose.px, pose.py, pose.pz);
+      desiredTarget.set(pose.tx, pose.ty, pose.tz);
       tweenActive.current = true;
       lastInteraction.current = performance.now();
       return;
@@ -135,6 +159,10 @@ export default function CameraRig() {
     viewDir.copy(camera.position).sub(controls.target);
     if (viewDir.lengthSq() < 1e-6) viewDir.set(0, 0, 1);
     viewDir.normalize();
+    // All 2D framing stays perpendicular to the map. This protects search,
+    // minimap, path, insights, and Home-key camera commands from inheriting a
+    // rotated 3D direction during or immediately after the mode transition.
+    if (useUiStore.getState().dims === 2) viewDir.set(0, 0, 1);
 
     if (cmd.kind === 'frameNode') {
       const id = cmd.ids?.[0];
@@ -300,6 +328,18 @@ export default function CameraRig() {
 
     controls.update(); // damping + autoRotate need this every frame
 
+    // OrbitControls can retain a tiny angular damping residue from the last
+    // 3D drag even after rotation is disabled. Once the transition tween has
+    // finished, remove that residue explicitly: map pan moves position and
+    // target together, while dolly changes only their z distance, so this
+    // invariant remains compatible with every allowed 2D gesture.
+    if (ui.dims === 2 && !tweenActive.current) {
+      state.camera.position.x = controls.target.x;
+      state.camera.position.y = controls.target.y;
+      state.camera.lookAt(controls.target);
+      state.camera.updateMatrixWorld();
+    }
+
     // Publish the pose for the Minimap overlay (plain object write, no React).
     cameraPose.px = state.camera.position.x;
     cameraPose.py = state.camera.position.y;
@@ -345,7 +385,7 @@ export default function CameraRig() {
       maxDistance={1400}
       autoRotateSpeed={0.25}
       // Gesture mapping differs per display mode: 3D orbits on drag, 2D pans
-      // like a map. Arrow-key panning (panInput.ts) works in both.
+      // like a map and cannot rotate. Arrow-key panning works in both.
       {...orbitControlsConfig(dims)}
       onStart={onStart}
       onEnd={onEnd}
