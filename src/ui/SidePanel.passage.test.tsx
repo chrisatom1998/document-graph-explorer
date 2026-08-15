@@ -72,26 +72,56 @@ describe('SidePanel passage fly-to and similar docs', () => {
     expect(screen.getByRole('button', { name: /more like this/i })).toBeInTheDocument();
   });
 
-  it('collapses About and Connections when a passage fly-to hits the open document', () => {
-    render(<SidePanel />);
-    fireEvent.click(screen.getByRole('button', { name: /^about$/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^connections$/i }));
-    expect(screen.getByRole('button', { name: /^about$/i })).toHaveAttribute('aria-expanded', 'true');
+  function expectSections(expanded: boolean): void {
+    const value = expanded ? 'true' : 'false';
+    expect(screen.getByRole('button', { name: /^about$/i })).toHaveAttribute('aria-expanded', value);
     expect(screen.getByRole('button', { name: /^connections$/i })).toHaveAttribute(
       'aria-expanded',
-      'true',
+      value,
     );
+  }
+
+  function expandSections(): void {
+    fireEvent.click(screen.getByRole('button', { name: /^about$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^connections$/i }));
+    expectSections(true);
+  }
+
+  it('collapses About and Connections when a passage fly-to hits the open document', () => {
+    render(<SidePanel />);
+    expandSections();
 
     act(() => {
       focusNode('doc1', { text: 'tested quarterly' });
       commitPendingFocus();
     });
 
-    expect(screen.getByRole('button', { name: /^about$/i })).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByRole('button', { name: /^connections$/i })).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
+    expectSections(false);
+  });
+
+  it('collapses sections on a same-document search fly-to after a graph click', () => {
+    useUiStore.setState({ selectedId: 'doc1', readerHighlight: null });
+    render(<SidePanel />);
+    expandSections();
+
+    act(() => {
+      focusNode('doc1', { index: 0, text: 'disaster recovery procedure is tested quarterly' });
+      commitPendingFocus();
+    });
+
+    expect(useUiStore.getState().selectedId).toBe('doc1');
+    expect(useUiStore.getState().readerHighlight).toMatchObject({
+      docId: 'doc1',
+      text: 'disaster recovery procedure is tested quarterly',
+    });
+    expectSections(false);
+
+    expandSections();
+    act(() => {
+      focusNode('doc1', { text: 'tested quarterly' });
+      commitPendingFocus();
+    });
+    expectSections(false);
   });
 
   it('keeps Ask AI state when About is collapsed and reopened', () => {
