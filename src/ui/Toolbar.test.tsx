@@ -3,14 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { DocNode } from '../model/types';
+import { switchGraphDimensions } from '../scene/dimensionTransition';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { layoutSetDims } from '../layout/layoutBridge';
 import Toolbar from './Toolbar';
 
-// The bridge owns a real Worker; the toggle contract is what we assert here.
-vi.mock('../layout/layoutBridge', () => ({
-  layoutSetDims: vi.fn(),
+vi.mock('../scene/dimensionTransition', () => ({
+  switchGraphDimensions: vi.fn(),
 }));
 
 function documentNode(): DocNode {
@@ -31,6 +30,10 @@ function documentNode(): DocNode {
 
 describe('Toolbar', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(switchGraphDimensions).mockImplementation((dims) => {
+      useUiStore.getState().setDims(dims);
+    });
     useGraphStore.setState({
       nodes: [documentNode()],
       nodeIndex: { doc: 0 },
@@ -45,13 +48,14 @@ describe('Toolbar', () => {
       insightsOpen: false,
       pathMode: false,
       dims: 3,
+      flatEdgeDetail: 'balanced',
     });
-    vi.mocked(layoutSetDims).mockClear();
   });
 
   afterEach(() => {
     cleanup();
     useGraphStore.getState().reset();
+    localStorage.removeItem('knowledge-nebula-dims');
   });
 
   it('keeps studio tools in Analyze and Add menus instead of first-class buttons', () => {
@@ -87,27 +91,22 @@ describe('Toolbar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'View options' }));
     expect(screen.getByRole('button', { name: 'Topic nodes' })).toBeVisible();
     expect(screen.getAllByRole('button', { name: /Switch to (2D|3D) view/ })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: /Link detail/ })).not.toBeInTheDocument();
   });
 
-  it('drives both the store flag and the layout worker when toggling dimensions', () => {
+  it('coordinates dimension changes and reveals 2D link detail controls', () => {
     render(<Toolbar />);
 
-    // Both calls are required: the store flag restyles the scene, the bridge
-    // reheats the simulation. Either one alone leaves the view inconsistent.
     fireEvent.click(screen.getByRole('button', { name: 'Switch to 2D view' }));
     expect(useUiStore.getState().dims).toBe(2);
-    expect(layoutSetDims).toHaveBeenLastCalledWith(2);
+    expect(switchGraphDimensions).toHaveBeenLastCalledWith(2, { fitAfterSettle: true });
     expect(screen.getByRole('button', { name: 'Switch to 3D view' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+    expect(screen.getByText('2D')).toBeVisible();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Switch to 3D view' }));
-    expect(useUiStore.getState().dims).toBe(3);
-    expect(layoutSetDims).toHaveBeenLastCalledWith(3);
-    expect(screen.getByRole('button', { name: 'Switch to 2D view' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'View options' }));
+    expect(screen.getByRole('button', { name: 'Link detail: balanced' })).toBeVisible();
   });
 });

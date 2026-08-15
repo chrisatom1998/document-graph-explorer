@@ -3,10 +3,9 @@
  * one points draw of blackbody-colored stars on a far shell — per-star size
  * and brightness follow a dim-heavy power law (thousands of faint specks, a
  * handful of bright ones) the way a long exposure actually looks — plus a few
- * "hero" stars with diffraction-spike sprites, and the near "nebula dust"
- * cloud filling the graph volume. Entirely static — all geometry is built
- * once and there is zero per-frame work (the size uniform updates only on
- * canvas resize).
+ * "hero" stars with diffraction-spike sprites. Entirely static — all geometry
+ * is built once and there is zero per-frame work (the size uniform updates
+ * only on canvas resize).
  *
  * PointsMaterial has a single `size`, so per-star sizes come from a small
  * ShaderMaterial with an aSize attribute; it reuses three's fog chunks so the
@@ -17,7 +16,6 @@ import { useEffect } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
-import { useUiStore } from '../store/uiStore';
 import {
   blackbodyColor,
   sampleStarBrightness,
@@ -38,25 +36,6 @@ const SHELL_MAX = 1150;
 const HERO_COUNT = 14;
 const HERO_SHELL_MIN = 600;
 const HERO_SHELL_MAX = 850;
-
-// Near dust that lives in/around the node volume (the layout shell sits at
-// ~60–120u). Warmer, more colorful tints than the far stars so the graph
-// interior glows faintly like nebula gas. NebulaClouds supplies the
-// large-scale structure; this is the fine grain.
-// Keep the dust shell INSIDE the fit-all camera distance (~130u for the demo)
-// so no dust particle ever sits between the camera and the near plane, where
-// size-attenuation would balloon it into a giant foreground blob.
-const DUST_COUNT = 1300;
-const DUST_MIN = 18;
-const DUST_MAX = 100;
-const DUST_TINTS = [
-  new THREE.Color('#ff7bd0'),
-  new THREE.Color('#8f7bff'),
-  new THREE.Color('#7fb4ff'),
-  new THREE.Color('#7ee8c4'),
-  new THREE.Color('#ffc36b'),
-];
-const WHITE = new THREE.Color('#ffffff');
 
 interface StarBuffers {
   positions: Float32Array;
@@ -181,10 +160,8 @@ function makeStarMaterial(map: THREE.Texture): THREE.ShaderMaterial {
 let starfieldAssets: {
   stars: ReturnType<typeof buildStars>;
   heroes: ReturnType<typeof buildHeroes>;
-  dust: ReturnType<typeof buildDust>;
   fieldMaterial: ReturnType<typeof makeStarMaterial>;
   heroMaterial: ReturnType<typeof makeStarMaterial>;
-  softSprite: ReturnType<typeof makeSoftSprite>;
 } | null = null;
 
 function getStarfieldAssets(): NonNullable<typeof starfieldAssets> {
@@ -193,31 +170,22 @@ function getStarfieldAssets(): NonNullable<typeof starfieldAssets> {
     starfieldAssets = {
       stars: buildStars(STAR_COUNT),
       heroes: buildHeroes(),
-      dust: buildDust(DUST_COUNT),
       fieldMaterial: makeStarMaterial(softSprite),
       heroMaterial: makeStarMaterial(makeStarSprite()),
-      softSprite,
     };
   }
   return starfieldAssets;
 }
 
 export default function Starfield() {
-  // Flat (2D ambient) mode wants a calm, faint backdrop — dim the star field
-  // and mute the colorful nebula dust so it doesn't compete with the
-  // constellation of nodes.
-  const flat = useUiStore((s) => s.dims === 2);
-  const hasFocus = useUiStore((s) => s.hoveredId !== null || s.selectedId !== null);
   const nodeCount = useGraphStore((s) => s.nodes.length);
 
-  const { stars, heroes, dust, fieldMaterial, heroMaterial, softSprite } = getStarfieldAssets();
+  const { stars, heroes, fieldMaterial, heroMaterial } = getStarfieldAssets();
   const densitySoftening = Math.min(
     1,
     Math.max(0, (nodeCount - VISUAL_DENSITY_SOFTEN_START) /
       (VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START)),
   );
-  const dustOpacity = flat ? 0.12 : 0.28 - densitySoftening * 0.1 - (hasFocus ? 0.06 : 0);
-
   // Keep uScale matched to the drawing buffer (device px) so star discs stay
   // the same physical size across resizes and DPR changes.
   const height = useThree((s) => s.size.height);
@@ -229,31 +197,12 @@ export default function Starfield() {
   }, [height, dpr, fieldMaterial, heroMaterial]);
 
   useEffect(() => {
-    fieldMaterial.uniforms.uDim.value = flat ? 0.55 : 0.9 - densitySoftening * 0.18;
-    heroMaterial.uniforms.uDim.value = flat ? 0.2 : 0.9 - densitySoftening * 0.14;
-  }, [densitySoftening, flat, fieldMaterial, heroMaterial]);
+    fieldMaterial.uniforms.uDim.value = 0.9 - densitySoftening * 0.18;
+    heroMaterial.uniforms.uDim.value = 0.9 - densitySoftening * 0.14;
+  }, [densitySoftening, fieldMaterial, heroMaterial]);
 
   return (
     <group>
-      {/* near nebula dust in the graph volume */}
-      <points frustumCulled={false}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[dust.positions, 3]} />
-          <bufferAttribute attach="attributes-color" args={[dust.colors, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          map={softSprite}
-          size={1.7}
-          sizeAttenuation
-          transparent
-          opacity={Math.max(0.1, dustOpacity)}
-          vertexColors
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          toneMapped={false}
-        />
-      </points>
-
       {/* main field: blackbody colors, power-law sizes, one draw call */}
       <points frustumCulled={false}>
         <bufferGeometry>
@@ -275,21 +224,4 @@ export default function Starfield() {
       </points>
     </group>
   );
-}
-
-function buildDust(count: number): { positions: Float32Array; colors: Float32Array } {
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-  const tmp = new THREE.Color();
-  for (let i = 0; i < count; i++) {
-    // fill the ball (r^(1/3)) so dust is denser toward the core, not a shell
-    const r = DUST_MIN + (DUST_MAX - DUST_MIN) * Math.cbrt(Math.random());
-    shellPoint(positions, i, r);
-    tmp.copy(DUST_TINTS[Math.floor(Math.random() * DUST_TINTS.length)]);
-    tmp.lerp(WHITE, Math.random() * 0.35); // nudge some toward white
-    colors[i * 3] = tmp.r;
-    colors[i * 3 + 1] = tmp.g;
-    colors[i * 3 + 2] = tmp.b;
-  }
-  return { positions, colors };
 }

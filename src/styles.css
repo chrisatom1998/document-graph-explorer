@@ -1535,6 +1535,25 @@ input {
   display: block;
 }
 
+.toolbar__menu-glyph {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: currentColor;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.toolbar__menu-meta {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* ==========================================================================
    Side panel (reader)
    ========================================================================== */

@@ -33,8 +33,6 @@ import {
 } from './flatMapBackdrop';
 import CameraRig from './CameraRig';
 import Starfield from './Starfield';
-import NebulaClouds from './NebulaClouds';
-import ClusterAtmosphere from './ClusterAtmosphere';
 import AiCore from './AiCore';
 import FocusLight from './FocusLight';
 import Nodes from './Nodes';
@@ -48,6 +46,7 @@ import ClusterCollapse from './ClusterCollapse';
 import SelectionHalo from './SelectionHalo';
 import PeerPresence from './PeerPresence';
 import PathRoute from './PathRouteOverlay';
+import FlatClusterLabels from './FlatClusterLabels';
 
 const COARSE_POINTER =
   typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches);
@@ -121,7 +120,11 @@ export default function NebulaCanvas() {
       className="nebula-canvas"
       role="application"
       tabIndex={-1}
-      aria-label="Interactive document graph. Drag to orbit, use toolbar buttons for search, filtering, path finding and view controls."
+      aria-label={
+        flat
+          ? 'Interactive 2D document map. Drag empty space to pan, scroll to zoom, and use toolbar buttons for search, filtering, path finding and view controls.'
+          : 'Interactive 3D document graph. Drag to orbit, use toolbar buttons for search, filtering, path finding and view controls.'
+      }
       style={{ position: 'fixed', inset: 0 }}
       dpr={INITIAL_DPR}
       camera={{ fov: 55, near: 0.1, far: 4000, position: [0, 0, 160] }}
@@ -142,6 +145,7 @@ export default function NebulaCanvas() {
           otherwise fog out the nebula's far side */}
       <fogExp2 attach="fog" args={[bg, 0.001]} />
       {flat ? <FlatMapBackdrop /> : null}
+      {flat ? <FlatClusterLabels /> : null}
       {/* base fill so shadowed sides keep their hue */}
       <ambientLight intensity={0.38} />
       <hemisphereLight color="#b7c9ff" groundColor="#130a2c" intensity={0.34} />
@@ -185,8 +189,6 @@ export default function NebulaCanvas() {
       <SceneCapture />
       <CameraRig />
       {!flat && <Starfield />}
-      {!flat && <NebulaClouds />}
-      {!flat && <ClusterAtmosphere />}
       {!flat && <AiCore />}
       <FocusLight />
       <Nodes />

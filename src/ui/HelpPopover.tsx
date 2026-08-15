@@ -11,6 +11,8 @@ const EDGE_KINDS = Object.keys(EDGE_KIND_LABEL) as EdgeKind[];
 export default function HelpPopover() {
   const open = useUiStore((state) => state.helpOpen);
   const setOpen = useUiStore((state) => state.setHelpOpen);
+  const dims = useUiStore((state) => state.dims);
+  const flatEdgeDetail = useUiStore((state) => state.flatEdgeDetail);
   const dialogRef = useRef<HTMLElement>(null);
   useFocusTrap(dialogRef, open);
 
@@ -53,9 +55,9 @@ export default function HelpPopover() {
             <h3 id="help-nodes-title">Nodes</h3>
             <div className="help-popover__legend-grid">
               <span className="help-node-shape help-node-shape--document" aria-hidden="true" />
-              <span><strong>Sphere</strong> — document; size reflects its connections.</span>
+              <span><strong>{dims === 2 ? 'Dot' : 'Sphere'}</strong> — document; size reflects its connections.</span>
               <span className="help-node-shape help-node-shape--topic" aria-hidden="true" />
-              <span><strong>Diamond</strong> — topic hub; color groups a cluster.</span>
+              <span><strong>{dims === 2 ? 'Diamond marker' : 'Diamond'}</strong> — topic hub; color groups a cluster.</span>
             </div>
           </section>
 
@@ -78,6 +80,12 @@ export default function HelpPopover() {
               Search also matches notes, tags, and cluster names. Chat citations and search
               hits open the matching passage in the reader.
             </p>
+            {dims === 2 && (
+              <p className="help-popover__hint">
+                Link detail is {flatEdgeDetail}. Balanced quiets secondary connections in the
+                overview while keeping them available for hover, selection, search, and paths.
+              </p>
+            )}
           </section>
 
           <section className="help-popover__section" aria-labelledby="help-shortcuts-title">

@@ -8,7 +8,7 @@ import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './FirstRunGuide';
 import HelpPopover from './HelpPopover';
 
 describe('HelpPopover', () => {
-  beforeEach(() => useUiStore.setState({ helpOpen: true }));
+  beforeEach(() => useUiStore.setState({ helpOpen: true, dims: 3, flatEdgeDetail: 'balanced' }));
   afterEach(() => {
     cleanup();
     useUiStore.setState({ helpOpen: false });
@@ -28,5 +28,14 @@ describe('HelpPopover', () => {
     expect(listener).toHaveBeenCalledOnce();
     expect(useUiStore.getState().helpOpen).toBe(false);
     window.removeEventListener(FIRST_RUN_GUIDE_REOPEN_EVENT, listener);
+  });
+
+  it('describes the active 2D marks and progressive link detail', () => {
+    useUiStore.setState({ dims: 2 });
+    render(<HelpPopover />);
+
+    expect(screen.getByText('Dot')).toBeInTheDocument();
+    expect(screen.getByText(/Link detail is balanced/i)).toBeInTheDocument();
+    expect(screen.queryByText('Sphere')).not.toBeInTheDocument();
   });
 });

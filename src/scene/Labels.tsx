@@ -27,6 +27,13 @@ import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { kindOfSlot } from './Nodes';
 import { FLAT_BG, FLAT_LABEL, FLAT_LABEL_MUTED, FLAT_SELECTION, VOID } from './palette';
 import { selectedDocumentTitle } from '../pipeline/codeLanguage';
+import {
+  flatLabelBudget,
+  flatLabelOpacity,
+  flatLabelPriority,
+  flatLabelScale,
+} from './flatLabelPolicy';
+import { cameraPose } from './cameraPose';
 
 const REFRESH_MS = 120;
 const TRUNCATE_AT = 34;
@@ -77,7 +84,7 @@ function opacityFor(distance: number): number {
 function labelProps(reserved: boolean, flat: boolean) {
   return {
     font: flat ? FLAT_FONT : LABEL_FONT,
-    fontSize: flat ? 2.18 : 2.3,
+    fontSize: flat ? 2.7 : 2.3,
     color: flat ? (reserved ? FLAT_LABEL : FLAT_LABEL_MUTED) : LABEL_COLOR,
     outlineWidth: flat ? 0.18 : 0.06,
     outlineColor: flat ? FLAT_BG : VOID,
@@ -104,9 +111,11 @@ export default function Labels() {
   const selectedSlot = useRef(-1);
   const titleOfSlot = useRef<string[]>([]);
   const displayTitleOfSlot = useRef<string[]>([]);
+  const degreeOfSlot = useRef<number[]>([]);
   const titlesDirty = useRef(true);
   const labelsDirty = useRef(true);
   const lastCount = useRef(-1);
+  const currentFlatScale = useRef(1.05);
   const accumulator = useRef(REFRESH_MS); // refresh on first frame
 
   useEffect(() => {
@@ -139,11 +148,13 @@ export default function Labels() {
     // titles, or the pool renders phantom labels at their old positions.
     titleOfSlot.current = [];
     displayTitleOfSlot.current = [];
+    degreeOfSlot.current = [];
     for (const n of nodes) {
       const slot = slotOfId.get(n.id);
       if (slot !== undefined && slot < MAX_NODES) {
         titleOfSlot.current[slot] = n.title;
         displayTitleOfSlot.current[slot] = selectedDocumentTitle(n);
+        degreeOfSlot.current[slot] = n.degree;
       }
     }
   };
@@ -180,10 +191,20 @@ export default function Labels() {
       return;
     }
 
-    const budget = qualityTier >= 3 ? Math.min(DEGRADED_BUDGET, LABEL_BUDGET) : LABEL_BUDGET;
     const count = Math.min(positionBuffer.count, MAX_NODES);
     const arr = positionBuffer.array;
     const titles = titleOfSlot.current;
+    const cameraDistance = Math.hypot(
+      camera.position.x - cameraPose.tx,
+      camera.position.y - cameraPose.ty,
+      camera.position.z - cameraPose.tz,
+    );
+    const budget = flat
+      ? flatLabelBudget(cameraDistance, count, qualityTier, LABEL_BUDGET)
+      : qualityTier >= 3
+        ? Math.min(DEGRADED_BUDGET, LABEL_BUDGET)
+        : LABEL_BUDGET;
+    currentFlatScale.current = flatLabelScale(cameraDistance);
 
     hoverSlot.current = hoveredId ? (slotOfId.get(hoveredId) ?? -1) : -1;
     selectedSlot.current = selectedId ? (slotOfId.get(selectedId) ?? -1) : -1;
@@ -199,14 +220,17 @@ export default function Labels() {
       tmpVec.set(arr[i * 3], arr[i * 3 + 1], arr[i * 3 + 2]);
       if (!frustum.containsPoint(tmpVec)) continue;
       const d2 = tmpVec.distanceToSquared(camera.position);
-      if (filled === budget && d2 >= bestD2[filled - 1]) continue;
+      const priority = flat
+        ? flatLabelPriority(d2, degreeOfSlot.current[i] ?? 0)
+        : d2;
+      if (filled === budget && priority >= bestD2[filled - 1]) continue;
       let j = Math.min(filled, budget - 1);
-      while (j > 0 && bestD2[j - 1] > d2) {
+      while (j > 0 && bestD2[j - 1] > priority) {
         bestD2[j] = bestD2[j - 1];
         bestSlot[j] = bestSlot[j - 1];
         j--;
       }
-      bestD2[j] = d2;
+      bestD2[j] = priority;
       bestSlot[j] = i;
       if (filled < budget) filled++;
     }
@@ -221,7 +245,10 @@ export default function Labels() {
       }
       const slot = bestSlot[j];
       assignedSlot.current[j] = slot;
-      applyText(label, truncate(titles[slot]), opacityFor(Math.sqrt(bestD2[j])));
+      const opacity = flat
+        ? flatLabelOpacity(cameraDistance)
+        : opacityFor(Math.sqrt(bestD2[j]));
+      applyText(label, truncate(titles[slot]), opacity);
     }
 
     // Reserved labels: always on, full opacity, FULL title (spec §7.1).
@@ -260,7 +287,7 @@ export default function Labels() {
         arr[o + 1],
         arr[o + 2] + FLAT_LIFT,
       );
-      label.scale.setScalar(1.05);
+      label.scale.setScalar(currentFlatScale.current);
     } else {
       label.position.set(
         arr[o],
