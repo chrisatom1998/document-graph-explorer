@@ -274,9 +274,17 @@ export default function CameraRig() {
     // First ingest of an empty corpus: keep the growing set framed (eased).
     // Incremental add never sets this flag — do not steal the camera.
     if (isIngestFraming() && positionBuffer.count > 0) {
-      viewDir.copy(state.camera.position).sub(controls.target);
-      if (viewDir.lengthSq() < 1e-6) viewDir.set(0, 0, 1);
-      viewDir.normalize();
+      // Same invariant as beginCommand: all 2D framing stays perpendicular to
+      // the map. Recomputing the fit from the camera's live 3D direction here
+      // would overwrite the flatten tween every frame, so a 2D/3D toggle
+      // mid-ingest could never reach the map plane.
+      if (ui.dims === 2) {
+        viewDir.set(0, 0, 1);
+      } else {
+        viewDir.copy(state.camera.position).sub(controls.target);
+        if (viewDir.lengthSq() < 1e-6) viewDir.set(0, 0, 1);
+        viewDir.normalize();
+      }
       const fov = (state.camera as THREE.PerspectiveCamera).fov ?? 55;
       const fit = computeFitAllPose({
         array: positionBuffer.array,

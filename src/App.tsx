@@ -28,6 +28,7 @@ const DropZone = lazy(() => import('./ingest/DropZone'));
 const EmptyState = lazy(() => import('./ui/EmptyState'));
 const ProgressStrip = lazy(() => import('./ui/ProgressStrip'));
 const Toolbar = lazy(() => import('./ui/Toolbar'));
+const IngestDimsToggle = lazy(() => import('./ui/DimsToggleButton'));
 const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
 const PathPanel = lazy(() => import('./ui/PathPanel'));
 const SidePanel = lazy(() => import('./ui/SidePanel'));
@@ -366,6 +367,12 @@ export default function App() {
       )}
       {phase === 'ready' && (
         <Suspense fallback={null}><Toolbar /></Suspense>
+      )}
+      {/* The full toolbar waits for 'ready', but the 2D/3D switch must stay
+          reachable while the corpus is still forming — switching modes is
+          also the escape hatch when the 3D ingest animation struggles. */}
+      {hasNodes && phase !== 'ready' && (
+        <Suspense fallback={null}><IngestDimsToggle /></Suspense>
       )}
       {phase === 'ready' && (
         <Suspense fallback={null}><GraphNavigator /></Suspense>

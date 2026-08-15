@@ -10,7 +10,7 @@ import {
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useCollabStore } from '../collab/store';
-import { switchGraphDimensions } from '../scene/dimensionTransition';
+import { DimsToggleButton } from './DimsToggleButton';
 import { openFilePicker } from '../ingest/DropZone';
 // Imported eagerly so the activation-gated picker opens synchronously with
 // the click; folderPicker demand-loads the heavy scanner itself.
@@ -20,7 +20,6 @@ import {
   IconAnalyze,
   IconBulb,
   IconCollab,
-  IconCube,
   IconData,
   IconFit,
   IconFolderPlus,
@@ -222,11 +221,6 @@ export default function Toolbar() {
     dragOffset.current = null;
   };
 
-  const handleToggleDims = () => {
-    const next = dims === 3 ? 2 : 3;
-    switchGraphDimensions(next, { fitAfterSettle: true });
-  };
-
   const handleCollabHost = async () => {
     try {
       const invite = await startSession();
@@ -305,20 +299,7 @@ export default function Toolbar() {
         <IconFit />
       </button>
 
-      {/* Dimension switch is first-class, not a menu item: it is the primary
-          fallback when the 3D scene struggles (AutoQuality's toast points
-          here), so it stays one click away. */}
-      <button
-        type="button"
-        className={`btn-icon${dims === 2 ? ' is-active' : ''}`}
-        title={dims === 3 ? 'Switch to 2D' : 'Switch to 3D'}
-        aria-label={dims === 3 ? 'Switch to 2D view' : 'Switch to 3D view'}
-        aria-pressed={dims === 2}
-        onClick={handleToggleDims}
-      >
-        <IconCube twoD={dims === 2} />
-        <span className="toolbar__dims-label" aria-hidden="true">{dims}D</span>
-      </button>
+      <DimsToggleButton />
 
       <div className="toolbar__menu-wrap" ref={viewMenuWrapRef}>
         <button
