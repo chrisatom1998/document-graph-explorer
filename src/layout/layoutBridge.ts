@@ -249,18 +249,23 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
           spawn: randomSpherePoint(INGEST_REST_SHELL_RADIUS),
         });
       }
-    } else {
+    } else if (n.spawn) {
       spawnAtOfSlot[slot] = Math.min(nextSpawnAt, staggerCap);
       nextSpawnAt = Math.min(nextSpawnAt + INGEST_STAGGER_MS, staggerCap);
-      if (n.spawn) {
-        hasOriginOfSlot[slot] = 1;
-        originOfSlot[o] = n.spawn[0];
-        originOfSlot[o + 1] = n.spawn[1];
-        originOfSlot[o + 2] = n.spawn[2];
-      } else {
-        hasOriginOfSlot[slot] = 0;
-      }
-      payload.push({ id: n.id, slot, cluster: n.cluster, spawn: n.spawn, initial: n.initial });
+      hasOriginOfSlot[slot] = 1;
+      originOfSlot[o] = n.spawn[0];
+      originOfSlot[o + 1] = n.spawn[1];
+      originOfSlot[o + 2] = n.spawn[2];
+      payload.push({ id: n.id, slot, cluster: n.cluster, spawn: n.spawn });
+    } else {
+      // Neither a saved position nor a gesture origin (restore/import
+      // fallback for a node missing its position): materialize NOW at the
+      // worker-picked shell point — a staggered future spawnAt would only
+      // hide the node (unpickable, unlabeled, edges gated) for no reason.
+      spawnAtOfSlot[slot] = now;
+      hasOriginOfSlot[slot] = 0;
+      originOfSlot[o] = originOfSlot[o + 1] = originOfSlot[o + 2] = 0;
+      payload.push({ id: n.id, slot, cluster: n.cluster });
     }
   }
   if (payload.length) post({ type: 'add', nodes: payload });

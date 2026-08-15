@@ -145,7 +145,11 @@ function canvasRect(): { left: number; top: number; width: number; height: numbe
   if (typeof document === 'undefined') {
     return { left: 0, top: 0, width: 1, height: 1 };
   }
-  const canvas = document.querySelector('canvas');
+  // The scene canvas specifically — a bare 'canvas' query can land on the
+  // EmptyState hero constellation (or a PDF preview) and project drop/Add
+  // origins through the wrong rect. R3F puts the className on the wrapper div.
+  const canvas =
+    document.querySelector('.nebula-canvas canvas') ?? document.querySelector('canvas');
   if (canvas) return canvas.getBoundingClientRect();
   return { left: 0, top: 0, width: window.innerWidth || 1, height: window.innerHeight || 1 };
 }

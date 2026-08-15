@@ -215,7 +215,12 @@ export default function CameraRig() {
     const cmd = ui.cameraCommand;
     if (cmd && cmd.nonce !== lastNonce.current) {
       lastNonce.current = cmd.nonce;
-      if (cmd.kind === 'frameNode' || cmd.kind === 'pose') noteIngestCameraSteer();
+      // Every explicit camera command takes ownership from live ingest
+      // framing — a frameSet/fitAll issued during the follow would otherwise
+      // be overwritten by the framing block on the same frame. (The final
+      // fit sent by endIngestBirth arrives after framing has ended, so this
+      // never cancels the ingest's own framing.)
+      noteIngestCameraSteer();
       if (cmd.kind !== 'pose') noteLocalCameraActivity();
       beginCommand(cmd, state.camera, controls);
     }

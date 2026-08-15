@@ -148,11 +148,18 @@ export default function App() {
     }
     return onLayoutSettled(() => {
       if (!needsFrame.current) return;
+      const ready = useGraphStore.getState().phase === 'ready';
       // Live first-ingest framing is owned by CameraRig (slow ease-out).
-      // Incremental add never sets that flag; session restore still fit-alls here.
-      if (isIngestFraming()) return;
+      // Incremental add never sets that flag; session restore still fit-alls
+      // here. A ready-state settle completes the initial framing either way —
+      // leaving needsFrame set would make the NEXT incremental add's settle
+      // fitAll and steal the user's camera.
+      if (isIngestFraming()) {
+        if (ready) needsFrame.current = false;
+        return;
+      }
       useUiStore.getState().sendCamera('fitAll');
-      if (useGraphStore.getState().phase === 'ready') needsFrame.current = false;
+      if (ready) needsFrame.current = false;
     });
   }, [hasNodes]);
 
