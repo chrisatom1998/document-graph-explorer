@@ -18,3 +18,12 @@ desktop-app-screenshot.png
 dist-win-build.log
 prs.json
 release-id.txt
+
+# Local browser automation and agent configuration
+.playwright-mcp
+.codex
+.cursor
+.codex-devserver*.log
+playwright-report
+test-results
+*.trace.zip
