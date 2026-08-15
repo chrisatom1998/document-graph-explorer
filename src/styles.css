@@ -168,6 +168,7 @@
   /* Must match palette.ts VOID / spec §7.1 so the canvas/chrome seam disappears. */
   --bg-void: #050510;
   --side-panel-width: min(640px, 42vw);
+  --compare-panel-width: min(1000px, 70vw);
   --bg-glass: rgba(11, 16, 34, 0.72);
   --bg-glass-strong: rgba(10, 15, 31, 0.9);
   --bg-glass-soft: rgba(10, 15, 31, 0.52);
@@ -1913,6 +1914,25 @@ mark.passage-mark {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-faint);
+}
+
+.connection-row__compare {
+  flex: none;
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 1px solid var(--border-glass);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.connection-row__compare:hover {
+  background: var(--accent-soft);
+  border-color: rgba(143, 123, 255, 0.4);
+  color: var(--accent-strong);
 }
 
 .connection-row__title {
@@ -5001,9 +5021,163 @@ mark.passage-mark {
   right: calc(var(--side-panel-width) + 18px);
 }
 
+.minimap--compare-shifted {
+  right: calc(var(--compare-panel-width) + 18px);
+}
+
 .minimap canvas {
   display: block;
   border-radius: calc(var(--radius-lg) - 5px);
   background: rgba(5, 5, 16, 0.55);
   cursor: pointer;
+}
+
+/* ==========================================================================
+   Compare panel (side-by-side readers — replaces the single side panel)
+   ========================================================================== */
+
+.compare-panel-layer {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-panel);
+  pointer-events: none;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.compare-panel {
+  pointer-events: auto;
+  width: var(--compare-panel-width);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  border-left: 1px solid var(--border-glass);
+  border-top: none;
+  border-bottom: none;
+  border-right: none;
+  box-shadow: -18px 0 50px rgba(0, 0, 0, 0.45);
+  animation: kn-slide-in-right 280ms var(--ease-out) both;
+  overflow: hidden;
+}
+
+.compare-panel__header {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border-glass);
+  background: rgba(7, 12, 25, 0.92);
+}
+
+.compare-panel__titles {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: 10px;
+}
+
+.compare-panel__side-head {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.compare-panel__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.compare-panel__text-btn,
+.compare-panel__swap {
+  border: 1px solid var(--border-glass);
+  background: rgba(140, 150, 255, 0.06);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.compare-panel__text-btn {
+  padding: 3px 10px;
+  font-size: 11px;
+}
+
+.compare-panel__swap {
+  margin-top: 2px;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.compare-panel__text-btn:hover,
+.compare-panel__swap:hover {
+  background: var(--accent-soft);
+  border-color: rgba(143, 123, 255, 0.4);
+  color: var(--accent-strong);
+}
+
+.compare-panel__pick-hint {
+  flex: none;
+  margin: 0;
+  padding: 8px 20px;
+  font-size: 12.5px;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.compare-panel__strip {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.compare-panel__strip-empty {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.compare-panel__evidence {
+  flex: none;
+  margin: 0;
+  padding: 0 20px 10px 36px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.compare-panel__panes {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.compare-panel__pane {
+  min-width: 0;
+  overflow-y: auto;
+  padding: 8px 16px 32px;
+  border-left: 1px solid var(--border-glass);
+}
+
+.compare-panel__pane:first-child {
+  border-left: none;
 }

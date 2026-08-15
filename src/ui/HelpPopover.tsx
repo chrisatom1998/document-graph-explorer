@@ -78,7 +78,8 @@ export default function HelpPopover() {
             <p className="help-popover__hint">
               Hover, selection, search, and filters dim unrelated nodes without deleting them.
               Search also matches notes, tags, and cluster names. Chat citations and search
-              hits open the matching passage in the reader.
+              hits open the matching passage in the reader. Compare (from the document panel,
+              a duplicate chip, or Insights) opens two readers side by side.
             </p>
             {dims === 2 && (
               <p className="help-popover__hint">

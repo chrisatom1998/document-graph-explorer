@@ -27,13 +27,21 @@ describe('GraphNavigator', () => {
       edges: [{ id: 'alpha->zeta:semantic', source: 'alpha', target: 'zeta', kind: 'semantic', weight: 0.9, evidence: ['test'] }],
       phase: 'ready',
     });
-    useUiStore.setState({ selectedId: null, cameraCommand: null });
+    useUiStore.setState({
+      selectedId: null,
+      cameraCommand: null,
+      compareLeftId: null,
+      compareRightId: null,
+      comparePick: null,
+      pendingFocus: null,
+    });
   });
 
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
     useGraphStore.getState().reset();
+    useUiStore.getState().clearCompare();
   });
 
   it('summarizes the graph and opens the active node from the keyboard', () => {
@@ -52,6 +60,21 @@ describe('GraphNavigator', () => {
     expect(useUiStore.getState().cameraCommand).toMatchObject({ kind: 'frameNode', ids: ['zeta'] });
     commitPendingFocus();
     expect(useUiStore.getState().selectedId).toBe('zeta');
+  });
+
+  it('applies a compare pick instead of opening the side panel', () => {
+    useUiStore.setState({
+      compareLeftId: 'alpha',
+      compareRightId: null,
+      comparePick: 'right',
+    });
+    render(<GraphNavigator />);
+    const list = screen.getByRole('listbox', { name: 'Graph nodes' });
+    fireEvent.keyDown(list, { key: 'ArrowDown' });
+    fireEvent.keyDown(list, { key: 'Enter' });
+    expect(useUiStore.getState().compareRightId).toBe('zeta');
+    expect(useUiStore.getState().pendingFocus).toBeNull();
+    expect(useUiStore.getState().selectedId).toBeNull();
   });
 
   it('scrolls the newly active option into view as the highlight moves', () => {

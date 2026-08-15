@@ -4,6 +4,7 @@ import { useUiStore } from '../store/uiStore';
 import { useActiveOptionScroll } from './useActiveOptionScroll';
 import { fileTypeChip, selectedDocumentTitle } from '../pipeline/codeLanguage';
 import { focusNode } from './focusNode';
+import { applyComparePick } from './openCompare';
 
 const SUMMARY_ID = 'graph-navigator-summary';
 const INSTRUCTIONS_ID = 'graph-navigator-instructions';
@@ -78,6 +79,10 @@ export default function GraphNavigator() {
       event.stopPropagation();
       const node = orderedNodes[activeIndex];
       if (!node) return;
+      if (useUiStore.getState().comparePick) {
+        if (node.kind === 'document') applyComparePick(node.id);
+        return;
+      }
       focusNode(node.id);
     } else if (event.key === 'Escape') {
       event.preventDefault();
@@ -123,6 +128,10 @@ export default function GraphNavigator() {
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => {
               setActiveId(node.id);
+              if (useUiStore.getState().comparePick) {
+                if (node.kind === 'document') applyComparePick(node.id);
+                return;
+              }
               focusNode(node.id);
             }}
           >

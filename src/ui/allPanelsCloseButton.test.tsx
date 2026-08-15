@@ -17,8 +17,9 @@ import SearchOverlay from './SearchOverlay';
 import SettingsPanel from './SettingsPanel';
 import SidePanel from './SidePanel';
 import SnapshotDrawer from './SnapshotDrawer';
+import ComparePanel from './ComparePanel';
 
-describe('Accessibility Verification: CloseButton across all 9 UI Panels', () => {
+describe('Accessibility Verification: CloseButton across all 10 UI Panels', () => {
   beforeEach(() => {
     localStorage.clear();
     Element.prototype.scrollIntoView = vi.fn();
@@ -131,5 +132,13 @@ describe('Accessibility Verification: CloseButton across all 9 UI Panels', () =>
     const btn = screen.getByRole('button', { name: 'Close snapshots' });
     expect(btn).toBeInTheDocument();
     expect(btn).toHaveAttribute('aria-label', 'Close snapshots');
+  });
+
+  it('10. ComparePanel has accessible close button', () => {
+    useUiStore.setState({ compareLeftId: 'doc-1', compareRightId: 'doc-2' });
+    render(<ComparePanel />);
+    const btn = screen.getByRole('button', { name: 'Close compare' });
+    expect(btn).toBeInTheDocument();
+    expect(btn).toHaveAttribute('aria-label', 'Close compare');
   });
 });

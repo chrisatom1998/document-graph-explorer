@@ -23,6 +23,7 @@ describe('HelpPopover', () => {
     for (const label of Object.values(EDGE_KIND_LABEL)) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
+    expect(screen.getByText(/opens two readers side by side/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Start guided tour' }));
     expect(listener).toHaveBeenCalledOnce();

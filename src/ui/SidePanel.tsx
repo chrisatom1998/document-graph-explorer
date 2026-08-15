@@ -7,7 +7,7 @@ import { hexFor } from '../scene/palette';
 import { timeAgo } from '../util/relativeTime';
 import { useSettingsStore } from '../store/settingsStore';
 import { codeLanguageForNode, fileTypeChip, fileTypeLabel } from '../pipeline/codeLanguage';
-import { focusNode } from './focusNode';
+import { openCompare } from './openCompare';
 import { type ConnectionRow } from './sidePanelModel';
 import SidePanelAbout from './SidePanelAbout';
 import SidePanelConnections from './SidePanelConnections';
@@ -211,8 +211,8 @@ export default function SidePanel() {
                   key={d.id}
                   type="button"
                   className="chip chip-selectable side-panel__badge-warning side-panel__dup-chip"
-                  title={`${(d.sim * 100).toFixed(1)}% similar — these might be the same doc`}
-                  onClick={() => focusNode(d.id)}
+                  title={`${(d.sim * 100).toFixed(1)}% similar — compare these side by side`}
+                  onClick={() => openCompare(node.id, d.id)}
                 >
                   ≈ duplicate of {nodes[nodeIndex[d.id]]?.title ?? d.id}
                 </button>
@@ -269,6 +269,7 @@ export default function SidePanel() {
             <div className="side-panel__section">
               <p className="side-panel__section-label">Documents</p>
               <SidePanelConnections
+                sourceId={node.id}
                 connections={connections}
                 showAllConnections={showAllConnections}
                 expandedEvidence={expandedEvidence}
@@ -284,6 +285,7 @@ export default function SidePanel() {
               compact
             >
               <SidePanelConnections
+                sourceId={node.id}
                 connections={connections}
                 showAllConnections={showAllConnections}
                 expandedEvidence={expandedEvidence}
