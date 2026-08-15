@@ -28,6 +28,8 @@ import { layoutPin, layoutUnpin } from '../layout/layoutBridge';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { computeEmphasis } from './emphasis';
+import { cameraPose } from './cameraPose';
+import { viewDistanceFade } from './viewDistance';
 import {
   ghostOfSlot,
   idOfSlot,
@@ -63,7 +65,6 @@ export { ghostOfSlot, kindOfSlot } from './positionBuffer';
 const MATERIALIZE_MS = 700;
 const HALO_SCALE = 2.2;
 const HALO_INTENSITY = 0.7;
-const FLAT_CORE_SCALE = 0.58;
 // Additive halos stack like the edges do: in crowded graphs the overlapping
 // shells (and the bloom they feed) wash out the core spheres, so halo
 // intensity eases down with node count. Floor keeps sparse regions of a big
@@ -218,8 +219,8 @@ const DRAG_THRESHOLD_PX = 4;
 
 export default function Nodes() {
   const topicNodesEnabled = useUiStore((s) => s.topicNodesEnabled);
-  // 2D constellation mode: flat unlit dots instead of glossy marbles (the
-  // material swap below), smaller near-uniform sizing, halos off.
+  // 2D constellation mode: flat unlit dual discs instead of glossy marbles
+  // (the material swap below) and smaller near-uniform sizing.
   const flat = useUiStore((s) => s.dims === 2);
   const rootGet = useThree((s) => s.get);
 
@@ -234,6 +235,7 @@ export default function Nodes() {
   const showMePulsing = useRef(false);
   const lastVersion = useRef(-1);
   const lastCount = useRef(-1);
+  const lastCam = useRef({ x: 0, y: 0, z: 160 });
   const dragRef = useRef<DragState | null>(null);
   const engageDragRef = useRef<(() => void) | null>(null);
   const finishDragRef = useRef<(() => void) | null>(null);
@@ -330,6 +332,23 @@ export default function Nodes() {
           tmpColor.setRGB(1, 0.78, 0.28);
           tmpOuterColor.setRGB(0.65, 0.38, 0.1);
         }
+      }
+      const keepBright =
+        n.id === hoveredId ||
+        n.id === selectedId ||
+        showMeIds?.has(n.id) ||
+        Boolean(emphasis?.has(n.id));
+      if (!isFlat && !keepBright) {
+        const o = slot * 3;
+        const arr = positionBuffer.array;
+        const dist = Math.hypot(
+          arr[o] - cameraPose.px,
+          arr[o + 1] - cameraPose.py,
+          arr[o + 2] - cameraPose.pz,
+        );
+        const fade = viewDistanceFade(dist);
+        tmpColor.multiplyScalar(fade);
+        tmpOuterColor.multiplyScalar(Math.min(1, fade + 0.08));
       }
       tmpColor.r = Math.min(tmpColor.r, 1);
       tmpColor.g = Math.min(tmpColor.g, 1);
@@ -578,6 +597,13 @@ export default function Nodes() {
       metaDirty.current = false;
       matricesDirty.current = true; // scales may have changed
     }
+    const camDx = cameraPose.px - lastCam.current.x;
+    const camDy = cameraPose.py - lastCam.current.y;
+    const camDz = cameraPose.pz - lastCam.current.z;
+    if (camDx * camDx + camDy * camDy + camDz * camDz > 144) {
+      lastCam.current = { x: cameraPose.px, y: cameraPose.py, z: cameraPose.pz };
+      colorsDirty.current = true;
+    }
     if (colorsDirty.current && recomputeColors()) {
       colorsDirty.current = false;
     }
@@ -600,6 +626,7 @@ export default function Nodes() {
     const now = performance.now();
     let stillAnimating = false;
     const ui = useUiStore.getState();
+    const isFlat = ui.dims === 2;
     const collapsed = ui.clusterCollapsed;
     // Once the user has picked a node out of the Show-me set (selectedId
     // set), settle down — the pulse is a "look here" cue for an undecided
@@ -627,16 +654,14 @@ export default function Nodes() {
       }
 
       let scale = scaleOfSlot[i] || 1.1;
-      let haloScale = ui.dims === 2 ? scale * FLAT_CORE_SCALE : scale * HALO_SCALE;
+      // 2D reuses this mesh as the inner disc (0.58 geometry), so skip HALO_SCALE.
+      let haloScale = isFlat ? scale : scale * HALO_SCALE;
       const showMePulse = showMeIds?.has(idOfSlot[i] ?? '') && !reducedMotion;
       if (showMePulse) {
         const wave = (Math.sin((now / SHOW_ME_PULSE_PERIOD_MS) * Math.PI * 2) + 1) * 0.5;
         const pulse = 1.16 + wave * 0.34;
         scale *= pulse;
-        haloScale =
-          ui.dims === 2
-            ? scale * FLAT_CORE_SCALE * pulse
-            : scale * HALO_SCALE * (1.25 + wave * 1.1);
+        haloScale = isFlat ? scale : scale * HALO_SCALE * (1.25 + wave * 1.1);
         stillAnimating = true;
       }
 
@@ -657,10 +682,7 @@ export default function Nodes() {
           if (t < 1) {
             const f = easeOutBack(Math.max(t, 0));
             scale *= f;
-            haloScale =
-              ui.dims === 2
-                ? scale * FLAT_CORE_SCALE * f
-                : scale * HALO_SCALE * (1 + 1.5 * (1 - t));
+            haloScale = isFlat ? scale : scale * HALO_SCALE * (1 + 1.5 * (1 - t));
             stillAnimating = true;
           } else {
             spawnAtOfSlot[i] = -1; // animation done
@@ -713,7 +735,7 @@ export default function Nodes() {
             feeds bloom.
             2D: outer map disc — the inner highlight is the halo mesh below. */}
         {flat ? (
-          <meshBasicMaterial toneMapped={false} />
+          <meshBasicMaterial toneMapped={false} depthWrite={false} />
         ) : (
           <meshPhysicalMaterial
             roughness={0.32}
@@ -732,9 +754,14 @@ export default function Nodes() {
         args={[undefined, undefined, MAX_NODES]}
         frustumCulled={false}
         raycast={NO_RAYCAST}
+        renderOrder={flat ? 1 : 0}
       >
         <sphereGeometry args={flat ? [0.58, 18, 14] : [1, 24, 18]} />
-        {flat ? <meshBasicMaterial toneMapped={false} /> : <primitive object={haloMaterial} attach="material" />}
+        {flat ? (
+          <meshBasicMaterial toneMapped={false} depthTest={false} depthWrite={false} />
+        ) : (
+          <primitive object={haloMaterial} attach="material" />
+        )}
       </instancedMesh>
 
       {/* topic nodes as octahedra (spec §5.4), behind the toggle */}
@@ -746,7 +773,19 @@ export default function Nodes() {
           raycast={NO_RAYCAST}
         >
           <octahedronGeometry args={[1, 0]} />
-          <meshBasicMaterial toneMapped={false} />
+          {flat ? (
+            <meshBasicMaterial toneMapped={false} />
+          ) : (
+            <meshPhysicalMaterial
+              roughness={0.14}
+              metalness={0.28}
+              clearcoat={1}
+              clearcoatRoughness={0.18}
+              emissive="#2ad4b8"
+              emissiveIntensity={0.32}
+              envMapIntensity={0.85}
+            />
+          )}
         </instancedMesh>
       )}
     </group>

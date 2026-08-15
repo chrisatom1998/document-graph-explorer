@@ -24,7 +24,7 @@ import * as THREE from 'three';
 import { useUiStore } from '../store/uiStore';
 import { dismissGraphFocus } from './cameraFocusPolicy';
 import { registerSceneCapture } from './sceneCapture';
-import { FLAT_BG } from './palette';
+import { FLAT_BG, VOID } from './palette';
 import {
   BACKDROP_RENDER_ORDER,
   BACKDROP_SIZE,
@@ -47,6 +47,7 @@ import AutoQuality from './AutoQuality';
 import ClusterCollapse from './ClusterCollapse';
 import SelectionHalo from './SelectionHalo';
 import PeerPresence from './PeerPresence';
+import PathRoute from './PathRouteOverlay';
 
 const COARSE_POINTER =
   typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches);
@@ -111,7 +112,7 @@ export default function NebulaCanvas() {
   // 2D constellation mode: flat ink background, no starfield/clouds/core —
   // the graph reads as a star chart, not a nebula (see palette FLAT_* tokens).
   const flat = useUiStore((s) => s.dims === 2);
-  const bg = flat ? FLAT_BG : '#050510';
+  const bg = flat ? FLAT_BG : VOID;
 
   if (!supportsWebGL()) return <WebGLFallback />;
 
@@ -193,6 +194,7 @@ export default function NebulaCanvas() {
       {/* 3D only: the 2D star chart keeps its delicate hairline aesthetic */}
       {!flat && <ClusterBridges />}
       <EdgePulses />
+      <PathRoute />
       <Labels />
       <SelectionHalo />
       <PeerPresence />

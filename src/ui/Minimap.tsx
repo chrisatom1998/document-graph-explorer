@@ -33,6 +33,7 @@ import {
   FLAT_PANEL,
   FLAT_SELECTION,
   hexFor,
+  VOID,
 } from '../scene/palette';
 import {
   arrowVertices,
@@ -135,7 +136,8 @@ export default function Minimap() {
       const toX = (u: number): number => W / 2 + (u - f.cx) * f.scale;
       const toY = (v: number): number => H / 2 + (v - f.cy) * f.scale;
 
-      sctx.fillStyle = ui.dims === 2 ? FLAT_PANEL : '#050510';
+      // Map background must paint before edges; a later fill would erase them.
+      sctx.fillStyle = ui.dims === 2 ? FLAT_PANEL : VOID;
       sctx.fillRect(0, 0, W, H);
 
       // --- edges: faintest possible filaments, straight is fine at this size

@@ -36,6 +36,7 @@ import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
 import { clusterColor, EDGE_TINTS, FLAT_EDGE, FLAT_EDGE_FOCUS } from './palette';
 import { computeEmphasis } from './emphasis';
+import { isPathHop, pathHopSet } from './pathRoute';
 import {
   EDGE_SEGMENTS,
   EDGE_SEGMENTS_DEGRADED,
@@ -255,6 +256,7 @@ export default function Edges() {
         s.hoveredId !== prev.hoveredId ||
         s.selectedId !== prev.selectedId ||
         s.searchResults !== prev.searchResults ||
+        s.highlightOwner !== prev.highlightOwner ||
         s.filter !== prev.filter ||
         s.clusterCollapsed !== prev.clusterCollapsed ||
         s.topicNodesEnabled !== prev.topicNodesEnabled
@@ -291,7 +293,11 @@ export default function Edges() {
   const recomputeColors = (): void => {
     const { nodes } = useGraphStore.getState();
     const ui = useUiStore.getState();
-    const { hoveredId, selectedId, searchResults, filter } = ui;
+    const { hoveredId, selectedId, searchResults, highlightOwner, filter } = ui;
+    const pathHops =
+      highlightOwner === 'path' && searchResults && searchResults.length >= 2
+        ? pathHopSet(searchResults)
+        : null;
     const emphasis = computeEmphasis(
       nodes,
       renderEdges,
@@ -341,7 +347,11 @@ export default function Edges() {
       if (emphasis && !(emphasis.has(e.source) && emphasis.has(e.target))) {
         brightness *= 0.05;
       }
-      if (focusId && (e.source === focusId || e.target === focusId)) {
+      if (pathHops && isPathHop(e.source, e.target, pathHops)) {
+        brightness *= FOCUS_BOOST / fade;
+        srcColor.set('#77e5ff');
+        dstColor.set('#b4a8ff');
+      } else if (focusId && (e.source === focusId || e.target === focusId)) {
         // undo the density fade: the edges you're inspecting must stay vivid
         // precisely when the rest of the graph is at its faintest
         brightness *= FOCUS_BOOST / fade;
