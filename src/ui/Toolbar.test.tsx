@@ -26,6 +26,7 @@ function documentNode(): DocNode {
 
 describe('Toolbar', () => {
   const realJoinInvite = useCollabStore.getState().joinInvite;
+  const realLeaveSession = useCollabStore.getState().leaveSession;
 
   beforeEach(() => {
     useGraphStore.setState({
@@ -47,7 +48,7 @@ describe('Toolbar', () => {
   afterEach(() => {
     cleanup();
     useGraphStore.getState().reset();
-    useCollabStore.setState({ joinInvite: realJoinInvite });
+    useCollabStore.setState({ joinInvite: realJoinInvite, leaveSession: realLeaveSession });
     useCollabStore.getState().leaveSession();
   });
 
@@ -117,5 +118,54 @@ describe('Toolbar', () => {
 
     expect(joinInvite).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog', { name: 'Join a collaboration session' })).not.toBeInTheDocument();
+  });
+
+  it('resets the join dialog after another overlay force-closes it mid-connect', async () => {
+    let resolveJoin: (value: string | null) => void = () => {};
+    const joinInvite = vi.fn().mockImplementation(
+      () =>
+        new Promise<string | null>((resolve) => {
+          resolveJoin = resolve;
+        }),
+    );
+    const leaveSession = vi.fn();
+    useCollabStore.setState({
+      joinInvite,
+      leaveSession,
+      session: null,
+      invite: null,
+      peers: {},
+      followMode: false,
+      shareNotes: false,
+    });
+
+    render(<Toolbar />);
+    fireEvent.click(screen.getByRole('button', { name: 'Collaboration' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Join invite' }));
+    fireEvent.change(screen.getByLabelText('Collaboration invite'), {
+      target: { value: '#collab=v1.room1.key1' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Join' }));
+
+    expect(screen.getByRole('button', { name: 'Joining…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+
+    useUiStore.setState({ searchOpen: true });
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Join a collaboration session' })).not.toBeInTheDocument();
+    });
+
+    useUiStore.setState({ searchOpen: false });
+    fireEvent.click(screen.getByRole('button', { name: 'Collaboration' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Join invite' }));
+
+    expect(screen.getByRole('dialog', { name: 'Join a collaboration session' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Join' })).toBeDisabled();
+
+    resolveJoin('#collab=v1.room1.key1');
+    await waitFor(() => expect(leaveSession).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('dialog', { name: 'Join a collaboration session' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
   });
 });

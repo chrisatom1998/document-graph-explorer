@@ -119,6 +119,7 @@ export default function Toolbar() {
   const [joinInviteValue, setJoinInviteValue] = useState('');
   const [joining, setJoining] = useState(false);
   const joinDialogRef = useRef<HTMLDivElement | null>(null);
+  const joinGenerationRef = useRef(0);
   useFocusTrap(joinDialogRef, joinDialogOpen);
 
   const viewMenuWrapRef = useRef<HTMLDivElement | null>(null);
@@ -202,7 +203,12 @@ export default function Toolbar() {
   useEffect(() => {
     if (searchOpen || settingsOpen || snapshotsOpen || helpOpen) {
       setOpenMenu(null);
+      // Invalidate any in-flight join so force-close cannot leave `joining`
+      // stuck (Cancel/Join disabled) or apply a session after dismiss.
+      joinGenerationRef.current += 1;
       setJoinDialogOpen(false);
+      setJoinInviteValue('');
+      setJoining(false);
     }
   }, [searchOpen, settingsOpen, snapshotsOpen, helpOpen]);
 
@@ -264,9 +270,14 @@ export default function Toolbar() {
   const submitCollabJoin = async () => {
     const raw = joinInviteValue.trim();
     if (!raw || joining) return;
+    const generation = joinGenerationRef.current;
     setJoining(true);
     try {
       const invite = await joinInvite(raw);
+      if (generation !== joinGenerationRef.current) {
+        if (invite) leaveSession();
+        return;
+      }
       if (invite) {
         setJoinDialogOpen(false);
         setJoinInviteValue('');
@@ -275,9 +286,12 @@ export default function Toolbar() {
       }
       useUiStore.getState().pushToast('This collaboration invite is invalid.', 'error');
     } catch (error) {
+      if (generation !== joinGenerationRef.current) return;
       useUiStore.getState().pushToast(error instanceof Error ? error.message : 'Collaboration is unavailable in this build.', 'error');
     } finally {
-      setJoining(false);
+      if (generation === joinGenerationRef.current) {
+        setJoining(false);
+      }
     }
   };
 
