@@ -36,6 +36,7 @@ import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId, spawnAtOfSlot } from './positionBuffer';
 import { clusterColor, EDGE_TINTS, FLAT_EDGE, FLAT_EDGE_FOCUS } from './palette';
 import { computeEmphasis } from './emphasis';
+<<<<<<< HEAD
 import { prefersReducedMotion } from '../util/motion';
 import {
   edgeKey,
@@ -43,6 +44,9 @@ import {
   slotHasMaterialized,
   writeSlotTravelPosition,
 } from './ingestBirth';
+=======
+import { isPathHop, pathHopSet } from './pathRoute';
+>>>>>>> origin/main
 import {
   EDGE_SEGMENTS,
   EDGE_SEGMENTS_DEGRADED,
@@ -288,6 +292,7 @@ export default function Edges() {
         s.hoveredId !== prev.hoveredId ||
         s.selectedId !== prev.selectedId ||
         s.searchResults !== prev.searchResults ||
+        s.highlightOwner !== prev.highlightOwner ||
         s.filter !== prev.filter ||
         s.clusterCollapsed !== prev.clusterCollapsed ||
         s.topicNodesEnabled !== prev.topicNodesEnabled
@@ -391,7 +396,11 @@ export default function Edges() {
   const recomputeColors = (): void => {
     const { nodes } = useGraphStore.getState();
     const ui = useUiStore.getState();
-    const { hoveredId, selectedId, searchResults, filter } = ui;
+    const { hoveredId, selectedId, searchResults, highlightOwner, filter } = ui;
+    const pathHops =
+      highlightOwner === 'path' && searchResults && searchResults.length >= 2
+        ? pathHopSet(searchResults)
+        : null;
     const emphasis = computeEmphasis(
       nodes,
       renderEdges,
@@ -430,6 +439,7 @@ export default function Edges() {
         col.fill(0, base, base + vertsPerEdge * 3);
         continue;
       }
+<<<<<<< HEAD
       const srcSlot = slotOfId.get(e.source);
       const dstSlot = slotOfId.get(e.target);
       const slotsExist =
@@ -455,6 +465,64 @@ export default function Edges() {
         if (slotsExist) waitingEdges.current.push(i);
         col.fill(0, base, base + vertsPerEdge * 3);
         continue;
+=======
+      // base: kind tint scaled by weight (opacity/brightness = weight, §7.1)
+      // and by density; kept delicate so links read as fine filaments. Each
+      // end leans toward its node's cluster hue so filaments visibly belong
+      // to the communities they join (gradient across the arc).
+      if (flat) {
+        // star chart: one uniform slate hairline tint, no cluster bleed
+        srcColor.copy(FLAT_EDGE);
+        dstColor.copy(FLAT_EDGE);
+      } else {
+        srcColor.copy(EDGE_TINTS[e.kind]);
+        dstColor.copy(EDGE_TINTS[e.kind]);
+        if (e.kind !== 'reference') {
+          srcColor.lerp(clusterColor(clusterOf.get(e.source) ?? -1), CLUSTER_BLEND);
+          dstColor.lerp(clusterColor(clusterOf.get(e.target) ?? -1), CLUSTER_BLEND);
+        }
+      }
+      let brightness =
+        (flat ? FLAT_BRIGHT_BASE + FLAT_BRIGHT_WEIGHT * e.weight : 0.16 + 0.55 * e.weight) *
+        fade;
+      if (emphasis && !(emphasis.has(e.source) && emphasis.has(e.target))) {
+        brightness *= 0.05;
+      }
+      if (pathHops && isPathHop(e.source, e.target, pathHops)) {
+        brightness *= FOCUS_BOOST / fade;
+        srcColor.set('#77e5ff');
+        dstColor.set('#b4a8ff');
+      } else if (focusId && (e.source === focusId || e.target === focusId)) {
+        // undo the density fade: the edges you're inspecting must stay vivid
+        // precisely when the rest of the graph is at its faintest
+        brightness *= FOCUS_BOOST / fade;
+        if (flat) {
+          srcColor.set(FLAT_EDGE_FOCUS);
+          dstColor.set(FLAT_EDGE_FOCUS);
+        }
+      }
+      srcColor.multiplyScalar(brightness);
+      dstColor.multiplyScalar(brightness);
+      srcColor.r = Math.min(srcColor.r, 1);
+      srcColor.g = Math.min(srcColor.g, 1);
+      srcColor.b = Math.min(srcColor.b, 1);
+      dstColor.r = Math.min(dstColor.r, 1);
+      dstColor.g = Math.min(dstColor.g, 1);
+      dstColor.b = Math.min(dstColor.b, 1);
+      // Vertex k of the polyline sits at curve parameter t=k/segments; blend
+      // src -> dst cluster-leaning tints along the arc and taper brightness
+      // toward the middle. Segment pair layout: vertex 2j is point j, vertex
+      // 2j+1 is point j+1.
+      for (let v = 0; v < vertsPerEdge; v++) {
+        const k = (v >> 1) + (v & 1); // point index this vertex represents
+        const t = k / segments;
+        // 1 at ends, MID_TAPER at t=.5 — straight 2D hairlines stay uniform
+        const taper = flat ? 1 : 1 - (1 - MID_TAPER) * 4 * t * (1 - t);
+        const o = base + v * 3;
+        col[o] = (srcColor.r + (dstColor.r - srcColor.r) * t) * taper;
+        col[o + 1] = (srcColor.g + (dstColor.g - srcColor.g) * t) * taper;
+        col[o + 2] = (srcColor.b + (dstColor.b - srcColor.b) * t) * taper;
+>>>>>>> origin/main
       }
       if (reveal.factor < 1) revealingEdges.current.push(i);
       fillEdgeColor(i, e, reveal.factor, ctx);

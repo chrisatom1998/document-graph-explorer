@@ -15,13 +15,7 @@ import {
   saveCurrentView,
 } from './savedViews';
 
-function IconBookmark() {
-  return (
-    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4.5 2.5h9v13l-4.5-3.4-4.5 3.4v-13Z" />
-    </svg>
-  );
-}
+import { IconBookmark } from './icons';
 
 export default function SavedViewsSection({ onApplied }: { onApplied: () => void }) {
   // Loaded fresh on every mount — the menu unmounts when closed, so a corpus

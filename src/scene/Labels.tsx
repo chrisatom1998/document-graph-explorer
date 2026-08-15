@@ -25,7 +25,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { kindOfSlot } from './Nodes';
-import { FLAT_BG, FLAT_LABEL, FLAT_LABEL_MUTED, FLAT_SELECTION } from './palette';
+import { FLAT_BG, FLAT_LABEL, FLAT_LABEL_MUTED, FLAT_SELECTION, VOID } from './palette';
 import { selectedDocumentTitle } from '../pipeline/codeLanguage';
 import { prefersReducedMotion } from '../util/motion';
 import { slotHasMaterialized, writeSlotTravelPosition } from './ingestBirth';
@@ -83,7 +83,7 @@ function labelProps(reserved: boolean, flat: boolean) {
     fontSize: flat ? 2.35 : 2.3,
     color: flat ? (reserved ? FLAT_LABEL : FLAT_LABEL_MUTED) : LABEL_COLOR,
     outlineWidth: flat ? 0.14 : 0.06,
-    outlineColor: flat ? FLAT_BG : '#050510',
+    outlineColor: flat ? FLAT_BG : VOID,
     outlineOpacity: flat ? 1 : 0.85,
     anchorX: (flat ? 'left' : 'center') as 'left' | 'center',
     anchorY: (flat ? 'middle' : 'bottom') as 'middle' | 'bottom',
