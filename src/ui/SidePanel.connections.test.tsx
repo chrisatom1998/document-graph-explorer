@@ -69,9 +69,9 @@ describe('SidePanel connections list', () => {
 
   it('keeps the connections list collapsed until the section is opened', () => {
     render(<SidePanel />);
-    expect(screen.queryByText('Neighbour 0')).not.toBeInTheDocument();
+    expect(screen.getByText('Neighbour 0')).not.toBeVisible();
     openConnections();
-    expect(screen.getByText('Neighbour 0')).toBeInTheDocument();
+    expect(screen.getByText('Neighbour 0')).toBeVisible();
   });
 
   it('shows only the strongest connections until expanded', () => {

@@ -38,7 +38,8 @@ function Disclose({
         {label}
         <span className="side-panel__disclose-hint">{open ? 'Hide' : 'Show'}</span>
       </button>
-      {open ? children : null}
+      {/* Keep children mounted so Ask AI (and other local state) survives collapse. */}
+      <div hidden={!open}>{children}</div>
     </div>
   );
 }
@@ -88,17 +89,17 @@ export default function SidePanel() {
 
   // About / Connections start collapsed so the reader is on screen. Topic
   // hubs have no reader — their member list is the primary content, so
-  // Connections opens instead. Passage fly-tos keep both closed.
+  // Connections opens instead. Passage fly-tos keep both closed, including
+  // same-document search/chat commits that only update readerHighlight.
   const [aboutOpen, setAboutOpen] = useState(false);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
   useEffect(() => {
     const graph = useGraphStore.getState();
     const selected = selectedId !== null ? graph.nodes[graph.nodeIndex[selectedId]] : undefined;
-    const highlight = useUiStore.getState().readerHighlight;
-    const highlightMatches = selected !== undefined && highlight?.docId === selected.id;
+    const highlightMatches = selected !== undefined && readerHighlight?.docId === selected.id;
     setAboutOpen(false);
     setConnectionsOpen(selected?.kind === 'topic' && !highlightMatches);
-  }, [selectedId]);
+  }, [selectedId, readerHighlight]);
 
   // Connections are uncapped by nature (a hub document can have dozens, each
   // with several evidence lines). Show the strongest few by default; the list

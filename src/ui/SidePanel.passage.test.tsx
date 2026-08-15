@@ -1,15 +1,17 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocNode } from '../model/types';
 import { textStore } from '../store/runtimeStores';
 import { useGraphStore } from '../store/graphStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 
 vi.mock('../pipeline/coordinator', () => ({ removeDocuments: vi.fn() }));
 
 import SidePanel from './SidePanel';
+import { commitPendingFocus, focusNode } from './focusNode';
 
 function doc(id: string, title: string): DocNode {
   return {
@@ -54,6 +56,7 @@ describe('SidePanel passage fly-to and similar docs', () => {
     cleanup();
     textStore.clear();
     useUiStore.setState({ selectedId: null, readerHighlight: null });
+    useSettingsStore.setState({ enrichEnabled: false, enrichProvider: 'openrouter' });
   });
 
   it('shows the matching passage banner and highlights it in the reader', () => {
@@ -61,11 +64,49 @@ describe('SidePanel passage fly-to and similar docs', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/matching passage/i);
     expect(screen.getByRole('status')).toHaveTextContent(/disaster recovery/i);
     expect(document.querySelector('mark.passage-mark')?.textContent).toMatch(/disaster recovery/i);
-    expect(screen.queryByText('No summary available yet.')).not.toBeInTheDocument();
+    expect(screen.getByText('No summary available yet.')).not.toBeVisible();
   });
 
   it('offers More like this without adding toolbar chrome', () => {
     render(<SidePanel />);
     expect(screen.getByRole('button', { name: /more like this/i })).toBeInTheDocument();
+  });
+
+  it('collapses About and Connections when a passage fly-to hits the open document', () => {
+    render(<SidePanel />);
+    fireEvent.click(screen.getByRole('button', { name: /^about$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^connections$/i }));
+    expect(screen.getByRole('button', { name: /^about$/i })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: /^connections$/i })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+
+    act(() => {
+      focusNode('doc1', { text: 'tested quarterly' });
+      commitPendingFocus();
+    });
+
+    expect(screen.getByRole('button', { name: /^about$/i })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: /^connections$/i })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
+  it('keeps Ask AI state when About is collapsed and reopened', () => {
+    useSettingsStore.setState({ enrichEnabled: true, enrichProvider: 'ollama' });
+    render(<SidePanel />);
+    fireEvent.click(screen.getByRole('button', { name: /^about$/i }));
+    const input = screen.getByRole('textbox', { name: /ask a question about this document/i });
+    fireEvent.change(input, { target: { value: 'What is the recovery cadence?' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /^about$/i }));
+    expect(screen.getByRole('button', { name: /^about$/i })).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(screen.getByRole('button', { name: /^about$/i }));
+    expect(screen.getByRole('textbox', { name: /ask a question about this document/i })).toHaveValue(
+      'What is the recovery cadence?',
+    );
   });
 });

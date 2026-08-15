@@ -46,7 +46,7 @@ describe('SidePanel imported-corpus notes hint', () => {
 
   it('explains missing notes after expanding About', () => {
     render(<SidePanel />);
-    expect(screen.queryByText(/not available on imported or shared graphs/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/not available on imported or shared graphs/i)).not.toBeVisible();
 
     fireEvent.click(screen.getByRole('button', { name: /^about$/i }));
     expect(screen.getByText(/not available on imported or shared graphs/i)).toBeVisible();
