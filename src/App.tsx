@@ -9,7 +9,11 @@ import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { useCorpusStore } from './store/corpusStore';
 import { layoutSetDims, onLayoutSettled } from './layout/layoutBridge';
-import { isIngestFraming } from './scene/ingestGesture';
+import {
+  clearIngestBirthSteer,
+  isIngestFraming,
+  wasIngestBirthSteered,
+} from './scene/ingestGesture';
 import { enqueueRun } from './pipeline/runQueue';
 import { positionBuffer, slotOfId } from './scene/positionBuffer';
 import { cameraPose } from './scene/cameraPose';
@@ -150,6 +154,7 @@ export default function App() {
   useEffect(() => {
     if (!hasNodes) {
       needsFrame.current = true; // next corpus gets framed again
+      clearIngestBirthSteer(); // fresh corpus: an old steer must not block its first fit
       return;
     }
     return onLayoutSettled(() => {
@@ -162,6 +167,13 @@ export default function App() {
       // fitAll and steal the user's camera.
       if (isIngestFraming()) {
         if (ready) needsFrame.current = false;
+        return;
+      }
+      // A mid-ingest orbit/pan cancels the follow AND this handler's fitAll:
+      // the no-steal guarantee means once the user takes the camera during a
+      // corpus's formation, nothing auto-fits that corpus behind them.
+      if (wasIngestBirthSteered()) {
+        needsFrame.current = false;
         return;
       }
       useUiStore.getState().sendCamera('fitAll');

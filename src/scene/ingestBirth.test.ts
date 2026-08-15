@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MAX_NODES } from '../config';
 import {
   beginIngestBirth,
+  clearIngestBirthSteer,
   clearPendingOrigin,
   clientToNdc,
   computeFitAllPose,
@@ -23,6 +24,7 @@ import {
   resolveIngestOrigin,
   snapshotIngestOrigin,
   travelProgress,
+  wasIngestBirthSteered,
   writeSlotTravelPosition,
 } from './ingestBirth';
 import {
@@ -228,6 +230,27 @@ describe('ingest camera — do not steal on incremental add', () => {
     expect(
       decideIngestCamera({ corpusWasEmpty: true, userSteered: true, reducedMotion: false }),
     ).toBe('leave');
+  });
+
+  it('remembers a mid-birth steer past endIngestBirth for the settle handler', () => {
+    beginIngestBirth({ corpusWasEmpty: true, reducedMotion: false });
+    noteIngestCameraSteer();
+    expect(wasIngestBirthSteered()).toBe(true);
+    expect(endIngestBirth().shouldFinalFit).toBe(false);
+    // Still set after the run so the ready-state settle can honor the steer
+    expect(wasIngestBirthSteered()).toBe(true);
+    clearIngestBirthSteer();
+    expect(wasIngestBirthSteered()).toBe(false);
+  });
+
+  it('scopes steer memory to birth runs — ordinary navigation never sets it', () => {
+    clearIngestBirthSteer();
+    noteIngestCameraSteer(); // post-ready orbit/pan, no birth active
+    expect(wasIngestBirthSteered()).toBe(false);
+    // and a new birth run starts with a clean slate
+    beginIngestBirth({ corpusWasEmpty: true, reducedMotion: false });
+    expect(wasIngestBirthSteered()).toBe(false);
+    expect(endIngestBirth().shouldFinalFit).toBe(true);
   });
 
   it('computes an eased fit-all pose around the growing set', () => {

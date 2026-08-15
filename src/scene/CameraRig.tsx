@@ -47,6 +47,9 @@ const COLLAB_POSE_INTERVAL_MS = 100;
 const desiredPos = new THREE.Vector3();
 const desiredTarget = new THREE.Vector3();
 const viewDir = new THREE.Vector3();
+// computeFitAllPose takes a plain tuple; reused so the per-frame ingest
+// framing block allocates nothing (module header invariant).
+const fitViewDir: [number, number, number] = [0, 0, 0];
 const panRight = new THREE.Vector3();
 const panUp = new THREE.Vector3();
 const panDelta = new THREE.Vector3();
@@ -286,10 +289,13 @@ export default function CameraRig() {
         viewDir.normalize();
       }
       const fov = (state.camera as THREE.PerspectiveCamera).fov ?? 55;
+      fitViewDir[0] = viewDir.x;
+      fitViewDir[1] = viewDir.y;
+      fitViewDir[2] = viewDir.z;
       const fit = computeFitAllPose({
         array: positionBuffer.array,
         count: positionBuffer.count,
-        viewDir: [viewDir.x, viewDir.y, viewDir.z],
+        viewDir: fitViewDir,
         fovDeg: fov,
       });
       desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);

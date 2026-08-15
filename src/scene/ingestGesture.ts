@@ -18,7 +18,13 @@ export type PendingOrigin =
 let pending: PendingOrigin | null = null;
 
 let ingestFraming = false;
-let ingestUserSteered = false;
+/** A birth run is in progress (beginIngestBirth .. endIngestBirth). */
+let birthActive = false;
+/** The user manually steered the camera during the current/most recent birth
+ * run. Persists past endIngestBirth so the ready-settle handler in App can
+ * still honor the steer; scoped to birth runs so ordinary post-ready camera
+ * interaction (which also calls noteIngestCameraSteer) never sets it. */
+let birthSteered = false;
 
 // ---------------------------------------------------------------------------
 // Origin recording (call at the user gesture; ingestBirth resolves it when
@@ -66,7 +72,8 @@ export function decideIngestCamera(input: {
 }
 
 export function beginIngestBirth(input: { corpusWasEmpty: boolean; reducedMotion: boolean }): IngestCameraMode {
-  ingestUserSteered = false;
+  birthActive = true;
+  birthSteered = false;
   const mode = decideIngestCamera({
     corpusWasEmpty: input.corpusWasEmpty,
     userSteered: false,
@@ -77,16 +84,31 @@ export function beginIngestBirth(input: { corpusWasEmpty: boolean; reducedMotion
 }
 
 export function noteIngestCameraSteer(): void {
-  ingestUserSteered = true;
+  if (birthActive) birthSteered = true;
   ingestFraming = false;
 }
 
 export function endIngestBirth(): { shouldFinalFit: boolean } {
-  const shouldFinalFit = ingestFraming && !ingestUserSteered;
+  const shouldFinalFit = ingestFraming && !birthSteered;
   ingestFraming = false;
+  birthActive = false;
   return { shouldFinalFit };
 }
 
 export function isIngestFraming(): boolean {
   return ingestFraming;
+}
+
+/** True when the user took the camera during the current/most recent birth
+ * run. App's settle handler checks this so the no-steal guarantee also covers
+ * the fitAll it would otherwise send after a mid-ingest steer. */
+export function wasIngestBirthSteered(): boolean {
+  return birthSteered;
+}
+
+/** Forget a previous run's steer. Called when App re-arms first-corpus
+ * framing (corpus emptied), so a steer during one corpus's ingest can't
+ * suppress the initial fit of the next corpus's restore. */
+export function clearIngestBirthSteer(): void {
+  birthSteered = false;
 }
