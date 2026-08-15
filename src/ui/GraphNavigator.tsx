@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type UIEvent } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useActiveOptionScroll } from './useActiveOptionScroll';
@@ -77,11 +77,22 @@ export default function GraphNavigator() {
     };
   }, [orderedNodes]);
 
-  // Windowed rendering: only rows near the active option exist in the DOM.
-  // Ids still encode the absolute index, so aria-activedescendant and the
-  // scroll-into-view hook resolve the same elements as the full list did.
-  const windowStart = Math.max(0, activeIndex - WINDOW_RADIUS);
-  const windowEnd = Math.min(orderedNodes.length, activeIndex + WINDOW_RADIUS + 1);
+  // Windowed rendering: keep the mounted slice centered on scroll position so
+  // mouse-wheel/scrollbar navigation can always reach rows not near activeIndex.
+  const [scrollWindowStart, setScrollWindowStart] = useState(0);
+  const maxWindowStart = Math.max(0, orderedNodes.length - (WINDOW_RADIUS * 2 + 1));
+  useEffect(() => {
+    setScrollWindowStart((start) => Math.max(0, Math.min(start, maxWindowStart)));
+  }, [maxWindowStart]);
+  const focusedWindowStart = Math.max(
+    0,
+    Math.min(activeIndex - WINDOW_RADIUS, maxWindowStart),
+  );
+  const windowStart = Math.min(
+    maxWindowStart,
+    Math.max(0, Math.max(focusedWindowStart, scrollWindowStart)),
+  );
+  const windowEnd = Math.min(orderedNodes.length, windowStart + WINDOW_RADIUS * 2 + 1);
   const visibleNodes = useMemo(
     () => orderedNodes.slice(windowStart, windowEnd),
     [orderedNodes, windowStart, windowEnd],
@@ -92,6 +103,14 @@ export default function GraphNavigator() {
   const moveTo = (index: number) => {
     const node = orderedNodes[Math.max(0, Math.min(index, orderedNodes.length - 1))];
     if (node) setActiveId(node.id);
+  };
+
+  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
+    const nextStart = Math.max(
+      0,
+      Math.min(Math.floor(event.currentTarget.scrollTop / ROW_HEIGHT), maxWindowStart),
+    );
+    setScrollWindowStart((prev) => (prev === nextStart ? prev : nextStart));
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -151,9 +170,10 @@ export default function GraphNavigator() {
           if (selectedId && orderedNodes.some((node) => node.id === selectedId)) setActiveId(selectedId);
         }}
         onKeyDownCapture={handleKeyDown}
+        onScroll={handleScroll}
       >
         {hiddenAbove > 0 && (
-          <div aria-hidden="true" style={{ height: hiddenAbove * ROW_HEIGHT }} />
+          <div aria-hidden="true" role="presentation" style={{ height: hiddenAbove * ROW_HEIGHT }} />
         )}
         {visibleNodes.map((node, offset) => {
           const index = windowStart + offset;
@@ -180,7 +200,7 @@ export default function GraphNavigator() {
           );
         })}
         {hiddenBelow > 0 && (
-          <div aria-hidden="true" style={{ height: hiddenBelow * ROW_HEIGHT }} />
+          <div aria-hidden="true" role="presentation" style={{ height: hiddenBelow * ROW_HEIGHT }} />
         )}
       </div>
     </aside>
