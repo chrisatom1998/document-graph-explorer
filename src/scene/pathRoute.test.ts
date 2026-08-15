@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPathHop, pathHopPairs, pathHopSet, undirectedHopKey } from './pathRoute';
+import { isPathHop, pathHopPairs, pathHopSet, undirectedHopKey } from './pathRouteHelpers';
 
 describe('pathRoute helpers', () => {
   it('orders hop keys independently of direction', () => {

@@ -18,7 +18,7 @@ import { useUiStore } from '../store/uiStore';
 import { prefersReducedMotion } from '../util/motion';
 import { EDGE_SEGMENTS, EDGE_SEGMENTS_DEGRADED, edgeControlPoint, evalEdgePoint } from './edgeCurve';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
-import { isPathHop, pathHopSet } from './pathRoute';
+import { isPathHop, pathHopSet } from './pathRouteHelpers';
 
 const PATH_SRC = new THREE.Color('#77e5ff');
 const PATH_DST = new THREE.Color('#b4a8ff');
