@@ -7,14 +7,23 @@
  * positions from positionBuffer.
  */
 
-import { MAX_NODES } from '../config';
+import {
+  INGEST_REST_SHELL_RADIUS,
+  INGEST_STAGGER_MAX_MS,
+  INGEST_STAGGER_MS,
+  MAX_NODES,
+} from '../config';
 import type { LayoutNodeInput, LayoutRequest, LayoutResponse } from '../model/types';
 import { useUiStore } from '../store/uiStore';
+import { prefersReducedMotion } from '../util/motion';
+import { randomSpherePoint } from '../pipeline/spawnPosition';
 import {
   getNodePosition,
   ghostOfSlot,
+  hasOriginOfSlot,
   idOfSlot,
   kindOfSlot,
+  originOfSlot,
   positionBuffer,
   resetPositionBuffer,
   scaleOfSlot,
@@ -35,6 +44,8 @@ let postedEpoch = 0;
 let settledEpoch = 0;
 /** One capacity toast per corpus — every over-cap add repeats the console line. */
 let warnedCapacity = false;
+/** Next materialize timestamp — staggers a folder so it does not land as one clump. */
+let nextSpawnAt = 0;
 
 // ---------------------------------------------------------------------------
 // Crash recovery
@@ -199,6 +210,11 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
   const payload: LayoutNodeInput[] = [];
   const dropped: string[] = [];
   const now = typeof performance !== 'undefined' ? performance.now() : 0;
+  if (now > nextSpawnAt) nextSpawnAt = now;
+  // Big synchronous batches (import, cached re-drop, topic hubs) must land
+  // within a bounded window, not trickle in for N*55ms.
+  const staggerCap = now + INGEST_STAGGER_MAX_MS;
+  const reducedMotion = prefersReducedMotion();
   for (const n of nodes) {
     if (slotOfId.has(n.id)) continue;
     let slot: number;
@@ -212,9 +228,45 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
     }
     slotOfId.set(n.id, slot);
     idOfSlot[slot] = n.id;
-    spawnAtOfSlot[slot] = n.initial ? -1 : now; // -1 = no materialize animation
     lastClusterOf[n.id] = n.cluster; // seed cache — survives a later worker respawn
-    payload.push({ id: n.id, slot, cluster: n.cluster, spawn: n.spawn, initial: n.initial });
+    const o = slot * 3;
+    if (n.initial || reducedMotion) {
+      // Restore / reduced-motion: appear at rest. Ignore fly-in spawn so the
+      // sim does not slide nodes from the drop point (spec §8, prefers-reduced-motion).
+      spawnAtOfSlot[slot] = -1;
+      hasOriginOfSlot[slot] = 0;
+      originOfSlot[o] = originOfSlot[o + 1] = originOfSlot[o + 2] = 0;
+      if (n.initial) {
+        payload.push({ id: n.id, slot, cluster: n.cluster, initial: n.initial });
+      } else {
+        // Reduced-motion LIVE add: skip only the scripted travel. Send the
+        // rest point as `spawn`, not `initial`, so the worker still takes the
+        // hot reheat(0.9) path instead of the gentle restore reheat(0.05).
+        payload.push({
+          id: n.id,
+          slot,
+          cluster: n.cluster,
+          spawn: randomSpherePoint(INGEST_REST_SHELL_RADIUS),
+        });
+      }
+    } else if (n.spawn) {
+      spawnAtOfSlot[slot] = Math.min(nextSpawnAt, staggerCap);
+      nextSpawnAt = Math.min(nextSpawnAt + INGEST_STAGGER_MS, staggerCap);
+      hasOriginOfSlot[slot] = 1;
+      originOfSlot[o] = n.spawn[0];
+      originOfSlot[o + 1] = n.spawn[1];
+      originOfSlot[o + 2] = n.spawn[2];
+      payload.push({ id: n.id, slot, cluster: n.cluster, spawn: n.spawn });
+    } else {
+      // Neither a saved position nor a gesture origin (restore/import
+      // fallback for a node missing its position): materialize NOW at the
+      // worker-picked shell point — a staggered future spawnAt would only
+      // hide the node (unpickable, unlabeled, edges gated) for no reason.
+      spawnAtOfSlot[slot] = now;
+      hasOriginOfSlot[slot] = 0;
+      originOfSlot[o] = originOfSlot[o + 1] = originOfSlot[o + 2] = 0;
+      payload.push({ id: n.id, slot, cluster: n.cluster });
+    }
   }
   if (payload.length) post({ type: 'add', nodes: payload });
   if (dropped.length > 0) {
@@ -247,6 +299,8 @@ export function layoutRemoveNodes(ids: string[]): void {
     idOfSlot[slot] = '';
     scaleOfSlot[slot] = 0;
     spawnAtOfSlot[slot] = -1;
+    hasOriginOfSlot[slot] = 0;
+    originOfSlot[slot * 3] = originOfSlot[slot * 3 + 1] = originOfSlot[slot * 3 + 2] = 0;
     kindOfSlot[slot] = 0;
     ghostOfSlot[slot] = 0;
     freeSlots.push(slot);
@@ -301,6 +355,7 @@ export function layoutReset(): void {
   worker?.terminate();
   worker = null;
   nextSlot = 0;
+  nextSpawnAt = 0;
   freeSlots.length = 0;
   warnedCapacity = false;
   lastLinks = [];

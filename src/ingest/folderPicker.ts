@@ -22,6 +22,7 @@
  */
 
 import { useUiStore } from '../store/uiStore';
+import { rememberAddOrigin } from '../scene/ingestGesture';
 
 function directoryPickerSupported(): boolean {
   return typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function';
@@ -68,6 +69,7 @@ function openFallbackFolderInput(): void {
  * pipeline's own progress strip and toasts.
  */
 export function openFolderPicker(): void {
+  rememberAddOrigin();
   if (directoryPickerSupported()) {
     // Open the picker synchronously; the ingest chunk loads while it's up.
     const picked = window.showDirectoryPicker!({
