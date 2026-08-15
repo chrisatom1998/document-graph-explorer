@@ -238,15 +238,11 @@ export async function hydrateFromRecord(
   }
 
   // --- hydrate layout at the exact settled positions ---
-  // Positions persisted by older builds may carry NaN/Infinity (the worker
-  // also guards, but keep poison out of the pipeline at the boundary).
-  const finiteInitial = (p?: [number, number, number]): [number, number, number] | undefined =>
-    p && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[2]) ? p : undefined;
   layoutAddNodes(
     exportData.nodes.map((n) => ({
       id: n.id,
       cluster: n.cluster,
-      initial: finiteInitial(positions[n.id]), // undefined -> layout picks a spawn (fallback)
+      initial: positions[n.id], // undefined -> layout picks a spawn (fallback)
     })),
   );
   layoutSetLinks(

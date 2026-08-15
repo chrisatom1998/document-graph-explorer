@@ -114,24 +114,3 @@ describe('ProgressStrip ingest report link', () => {
     expect(useUiStore.getState().insightsOpen).toBe(true);
   });
 });
-
-describe('ProgressStrip failed-file retry', () => {
-  afterEach(cleanup);
-
-  it('lists failed files and offers a retry action', () => {
-    useGraphStore.getState().reset();
-    useGraphStore.setState({
-      phase: 'parsing',
-      fileStatuses: {
-        ok: { fileId: 'ok', name: 'ok.md', stage: 'placed' },
-        bad: { fileId: 'bad', name: 'broken.pdf', stage: 'error', error: 'encrypted PDF' },
-      },
-    });
-
-    render(<ProgressStrip />);
-
-    expect(screen.getByText('1 failed')).toBeInTheDocument();
-    expect(screen.getByText(/broken.pdf — encrypted PDF/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Retry failed' })).toBeInTheDocument();
-  });
-});

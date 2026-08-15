@@ -51,15 +51,10 @@ export function computeClusterFields(
     acc.points.push(point);
   }
 
-  // Rank by member count ONLY to choose which clusters fit the draw budget;
-  // the chosen set is then emitted in cluster-id order. Output ordered by
-  // count bound instance index to sort rank, so similar-size clusters swapping
-  // ranks between updates made atmosphere blobs teleport / trade colors.
   return [...accumulators.entries()]
     .filter(([, acc]) => acc.count >= 2)
     .sort(([clusterA, a], [clusterB, b]) => b.count - a.count || clusterA - clusterB)
     .slice(0, maxFields)
-    .sort(([clusterA], [clusterB]) => clusterA - clusterB)
     .map(([cluster, acc]) => {
       const x = acc.x / acc.count;
       const y = acc.y / acc.count;

@@ -18,7 +18,7 @@ import { useUiStore } from '../store/uiStore';
 import { prefersReducedMotion } from '../util/motion';
 import { EDGE_SEGMENTS, EDGE_SEGMENTS_DEGRADED, edgeControlPoint, evalEdgePoint } from './edgeCurve';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
-import { isPathHop, pathHopSet } from './pathHops';
+import { isPathHop, pathHopSet } from './pathRoute';
 
 const PATH_SRC = new THREE.Color('#77e5ff');
 const PATH_DST = new THREE.Color('#b4a8ff');
@@ -210,15 +210,6 @@ export default function PathRoute() {
       const sb = pairs[i].to;
       const ao = sa * 3;
       const bo = sb * 3;
-      // Guard: the position array can be swapped/detached mid-frame (see
-      // ingestBirth's writeSlotTravelPosition) — collapse the hop to nothing
-      // rather than read out of range.
-      if (ao + 2 >= arr.length || bo + 2 >= arr.length) {
-        pos.fill(0, write, write + segs * 6);
-        col.fill(0, write, write + segs * 6);
-        write += segs * 6;
-        continue;
-      }
       if (flat) {
         ctrl[0] = (arr[ao] + arr[bo]) * 0.5;
         ctrl[1] = (arr[ao + 1] + arr[bo + 1]) * 0.5;
@@ -253,38 +244,11 @@ export default function PathRoute() {
     }
 
     if (useFat && pairs.length > 0) {
-      // Bind the CPU arrays into GPU buffers ONCE per rebuild (setPositions/
-      // setColors allocate fresh InstancedInterleavedBuffers every call —
-      // per-frame that orphans GPU buffers). Steady state writes into the
-      // same arrays above, so flipping needsUpdate is enough — the pattern
-      // Edges.tsx uses.
-      let geom = fatGeomRef.current;
-      const bound =
-        geom &&
-        (geom.attributes.instanceStart as THREE.InterleavedBufferAttribute | undefined)
-          ?.data.array === pos;
-      if (!geom || !bound) {
-        geom?.dispose(); // release the previous rebuild's GPU buffers
-        geom = new LineSegmentsGeometry();
-        geom.setPositions(pos);
-        geom.setColors(col);
-        (geom.attributes.instanceStart as THREE.InterleavedBufferAttribute).data.setUsage(
-          THREE.DynamicDrawUsage,
-        );
-        (
-          geom.attributes.instanceColorStart as THREE.InterleavedBufferAttribute
-        ).data.setUsage(THREE.DynamicDrawUsage);
-        fatGeomRef.current = geom;
-        if (fatLineRef.current) fatLineRef.current.geometry = geom;
-      } else {
-        (geom.attributes.instanceStart as THREE.InterleavedBufferAttribute).data.needsUpdate =
-          true;
-        (
-          geom.attributes.instanceColorStart as THREE.InterleavedBufferAttribute
-        ).data.needsUpdate = true;
-      }
+      if (!fatGeomRef.current) fatGeomRef.current = new LineSegmentsGeometry();
+      fatGeomRef.current.setPositions(pos);
+      fatGeomRef.current.setColors(col);
       if (!fatLineRef.current) {
-        fatLineRef.current = new LineSegments2(geom, fatMaterial);
+        fatLineRef.current = new LineSegments2(fatGeomRef.current, fatMaterial);
         fatLineRef.current.frustumCulled = false;
         fatLineRef.current.raycast = NO_RAYCAST;
       }
@@ -294,21 +258,8 @@ export default function PathRoute() {
       if (hairRef.current) hairRef.current.visible = false;
     } else if (hairRef.current) {
       const geom = hairRef.current.geometry;
-      const posAttr = geom.getAttribute('position') as THREE.BufferAttribute | undefined;
-      if (!posAttr || posAttr.array !== pos) {
-        // New arrays from a rebuild: swap the attributes once, releasing the
-        // superseded pair's GPU buffers (same reasoning as Edges.tsx).
-        geom.dispose();
-        const p = new THREE.BufferAttribute(pos, 3);
-        p.setUsage(THREE.DynamicDrawUsage);
-        const c = new THREE.BufferAttribute(col, 3);
-        c.setUsage(THREE.DynamicDrawUsage);
-        geom.setAttribute('position', p);
-        geom.setAttribute('color', c);
-      } else {
-        posAttr.needsUpdate = true;
-        (geom.getAttribute('color') as THREE.BufferAttribute).needsUpdate = true;
-      }
+      geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geom.setAttribute('color', new THREE.BufferAttribute(col, 3));
       hairRef.current.visible = pairs.length > 0;
       if (fatLineRef.current) fatLineRef.current.visible = false;
     }
@@ -319,7 +270,7 @@ export default function PathRoute() {
         return;
       }
       const slot = slotOfId.get(id);
-      if (slot === undefined || slot >= positionBuffer.count || slot * 3 + 2 >= arr.length) {
+      if (slot === undefined || slot >= positionBuffer.count) {
         mesh.visible = false;
         return;
       }
@@ -345,16 +296,6 @@ export default function PathRoute() {
           const sb = pairs[i].to;
           const ao = sa * 3;
           const bo = sb * 3;
-          if (ao + 2 >= arr.length || bo + 2 >= arr.length) {
-            // out-of-range slot (buffer swapped mid-frame): zero-scale packets
-            for (let p = 0; p < 2; p++) {
-              dummy.position.set(0, 0, 0);
-              dummy.scale.setScalar(0);
-              dummy.updateMatrix();
-              pulse.setMatrixAt(i * 2 + p, dummy.matrix);
-            }
-            continue;
-          }
           if (flat) {
             ctrl[0] = (arr[ao] + arr[bo]) * 0.5;
             ctrl[1] = (arr[ao + 1] + arr[bo + 1]) * 0.5;

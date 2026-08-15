@@ -24,8 +24,6 @@ export default function Tooltip() {
 
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
-  const clusterNames = useGraphStore((s) => s.clusterNames);
-  const localClusterNames = useGraphStore((s) => s.localClusterNames);
 
   const elRef = useRef<HTMLDivElement | null>(null);
 
@@ -58,10 +56,6 @@ export default function Tooltip() {
   if (!visible || !node) return null;
 
   const topTopics = node.topics.slice(0, 3);
-  const clusterName =
-    clusterNames[node.cluster] ??
-    localClusterNames[node.cluster] ??
-    (node.cluster < 0 ? 'Unclustered' : `Cluster ${node.cluster}`);
   // Surface the otherwise-invisible scene gestures (drag-to-pin, path picking).
   const hint = pathMode
     ? node.kind === 'topic'
@@ -79,9 +73,7 @@ export default function Tooltip() {
         <span className="chip">{fileTypeChip(node)}</span>
         <span className="hover-tooltip__cluster">
           <span className="chip-dot" style={{ background: clusterDot(node.cluster) }} aria-hidden="true" />
-          {clusterName}
         </span>
-        <span>{node.degree} link{node.degree === 1 ? '' : 's'}</span>
         <span>{node.wordCount.toLocaleString()} words</span>
       </p>
       {topTopics.length > 0 && (

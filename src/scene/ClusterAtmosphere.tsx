@@ -83,7 +83,6 @@ export default function ClusterAtmosphere() {
   const nodes = useGraphStore((state) => state.nodes);
   const visible = useUiStore((state) => state.dims === 3 && state.qualityTier < 3);
   const qualityTier = useUiStore((state) => state.qualityTier);
-  const clusterAtmosphere = useUiStore((state) => state.clusterAtmosphere);
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const colorRef = useRef<THREE.InstancedBufferAttribute>(null);
   const lastVersion = useRef(-1);
@@ -111,7 +110,7 @@ export default function ClusterAtmosphere() {
     );
 
     fieldMaterial.uniforms.uIntensity.value =
-      (qualityTier >= 2 ? 0.058 : 0.082) * (1 - densitySoftening * 0.45) * clusterAtmosphere;
+      (qualityTier >= 2 ? 0.058 : 0.082) * (1 - densitySoftening * 0.45);
     fieldMaterial.uniforms.uTime.value = prefersReducedMotion() ? 0 : clock.elapsedTime;
 
     if (

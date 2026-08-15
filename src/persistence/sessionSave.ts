@@ -22,18 +22,7 @@ export function collectPositions(nodes: DocNode[]): Record<string, [number, numb
   const positions: Record<string, [number, number, number]> = {};
   for (const node of nodes) {
     const position = getNodePosition(node.id);
-    // Never persist a non-finite coordinate: restored as `initial` it would
-    // propagate through the force sim to every node within one tick, blank
-    // the graph, and re-save itself into the cache forever. Skipping the
-    // triple lets restore fall back to a fresh spawn for that node instead.
-    if (
-      position &&
-      Number.isFinite(position[0]) &&
-      Number.isFinite(position[1]) &&
-      Number.isFinite(position[2])
-    ) {
-      positions[node.id] = position;
-    }
+    if (position) positions[node.id] = position;
   }
   return positions;
 }

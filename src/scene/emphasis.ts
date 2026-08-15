@@ -10,20 +10,16 @@ import type { DocNode, Edge } from '../model/types';
 import { buildAdjacency } from '../store/graphStore';
 import type { GraphFilter } from '../store/uiStore';
 
-// WeakMap keyed on the edges array (immutable in the store): several live
-// consumers may pass different array identities per frame, and a single-entry
-// cache made them evict each other (one hover rebuilt adjacency 2-3x).
-// Entries are released with the arrays themselves.
-const adjacencyCache = new WeakMap<Edge[], Map<string, Set<string>>>();
+let adjacencySource: Edge[] | null = null;
+let adjacencyCache = new Map<string, Set<string>>();
 
 /** buildAdjacency memoized on edges identity (edges array is immutable in the store). */
 export function adjacencyFor(edges: Edge[]): Map<string, Set<string>> {
-  let adjacency = adjacencyCache.get(edges);
-  if (!adjacency) {
-    adjacency = buildAdjacency(edges);
-    adjacencyCache.set(edges, adjacency);
+  if (adjacencySource !== edges) {
+    adjacencySource = edges;
+    adjacencyCache = buildAdjacency(edges);
   }
-  return adjacency;
+  return adjacencyCache;
 }
 
 export function isFilterActive(filter: GraphFilter): boolean {
@@ -70,23 +66,7 @@ function recencyOk(node: DocNode, filter: GraphFilter, now: number): boolean {
   return now - node.lastModified <= days * 86_400_000;
 }
 
-// nodesMatchingFilter memoized the same way adjacencyFor is: WeakMap keyed on
-// the nodes array, validated against the edges/filter identities. Several
-// consumers run per frame (Nodes/Edges/ClusterBridges via computeEmphasis,
-// SearchOverlay, collab anchors) with the same store triple, so they share one
-// computation. `now` only matters at day granularity (modifiedWithinDays), so
-// a small tolerance keeps default-`Date.now()` callers on the cached result.
-interface FilterMemo {
-  edges: Edge[];
-  filter: GraphFilter;
-  now: number;
-  result: Set<string>;
-}
-const filterCache = new WeakMap<DocNode[], FilterMemo>();
-const FILTER_NOW_TOLERANCE_MS = 1000;
-
-/** Nodes that pass the active filter facets (AND). Empty filter → every node.
- * The returned Set is shared via the memo above — treat it as read-only. */
+/** Nodes that pass the active filter facets (AND). Empty filter → every node. */
 export function nodesMatchingFilter(
   nodes: DocNode[],
   edges: Edge[],
@@ -94,15 +74,6 @@ export function nodesMatchingFilter(
   now: number = Date.now(),
 ): Set<string> | null {
   if (!isFilterActive(filter)) return null;
-  const memo = filterCache.get(nodes);
-  if (
-    memo &&
-    memo.edges === edges &&
-    memo.filter === filter &&
-    Math.abs(now - memo.now) <= FILTER_NOW_TOLERANCE_MS
-  ) {
-    return memo.result;
-  }
   const byWeight = weightOk(edges, filter);
   const byKind = kindOk(edges, filter);
   const topicDegree = new Map<string, number>();
@@ -128,7 +99,6 @@ export function nodesMatchingFilter(
     if (!recencyOk(n, filter, now)) continue;
     set.add(n.id);
   }
-  filterCache.set(nodes, { edges, filter, now, result: set });
   return set;
 }
 

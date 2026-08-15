@@ -54,8 +54,6 @@ export default function SidePanel() {
   const setSelected = useUiStore((s) => s.setSelected);
   const readerHighlight = useUiStore((s) => s.readerHighlight);
   const pushToast = useUiStore((s) => s.pushToast);
-  const compareIds = useUiStore((s) => s.compareIds);
-  const toggleCompare = useUiStore((s) => s.toggleCompare);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
 
   const nodes = useGraphStore((s) => s.nodes);
@@ -277,25 +275,6 @@ export default function SidePanel() {
               }}
             >
               More like this
-            </button>
-          )}
-          {node.kind === 'document' && (
-            <button
-              type="button"
-              className={`side-panel__open-btn${compareIds.includes(node.id) ? ' is-active' : ''}`}
-              aria-pressed={compareIds.includes(node.id)}
-              title={
-                compareIds.includes(node.id)
-                  ? 'Remove this document from the comparison tray'
-                  : 'Pin this document in the comparison tray'
-              }
-              onClick={() => {
-                if (!toggleCompare(node.id)) {
-                  pushToast('Comparison tray is full — unpin one first.', 'info');
-                }
-              }}
-            >
-              {compareIds.includes(node.id) ? 'Comparing' : 'Compare'}
             </button>
           )}
           {node.kind === 'document' && !confirmRemove && (

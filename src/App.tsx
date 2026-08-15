@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import Tooltip from './ui/Tooltip';
 import ChatLauncher from './ui/ChatLauncher';
+import InsightsDigest from './ui/InsightsDigest';
 import ToastHost from './ui/ToastHost';
 import { shouldIgnoreGlobalKey } from './ui/globalKeyboard';
 import { useGraphStore } from './store/graphStore';
@@ -8,7 +9,6 @@ import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { useCorpusStore } from './store/corpusStore';
 import { onLayoutSettled } from './layout/layoutBridge';
-import { isIngestFraming } from './scene/ingestGesture';
 import { enqueueRun } from './pipeline/runQueue';
 import { positionBuffer, slotOfId } from './scene/positionBuffer';
 import { cameraPose } from './scene/cameraPose';
@@ -34,8 +34,6 @@ const SnapshotDrawer = lazy(() => import('./ui/SnapshotDrawer'));
 const SearchOverlay = lazy(() => import('./ui/SearchOverlay'));
 const GraphNavigator = lazy(() => import('./ui/GraphNavigator'));
 const FilterBar = lazy(() => import('./ui/FilterBar'));
-const SceneLegend = lazy(() => import('./ui/SceneLegend'));
-const CompareTray = lazy(() => import('./ui/CompareTray'));
 const Minimap = lazy(() => import('./ui/Minimap'));
 const SettingsPanel = lazy(() => import('./ui/SettingsPanel'));
 const ChatPanel = lazy(() => import('./ui/ChatPanel'));
@@ -71,7 +69,6 @@ declare global {
 export default function App() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const phase = useGraphStore((s) => s.phase);
-  const comparing = useUiStore((s) => s.compareIds.length > 0);
   const selectedId = useUiStore((s) => s.selectedId);
   const searchOpen = useUiStore((s) => s.searchOpen);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
@@ -150,18 +147,8 @@ export default function App() {
     }
     return onLayoutSettled(() => {
       if (!needsFrame.current) return;
-      const ready = useGraphStore.getState().phase === 'ready';
-      // Live first-ingest framing is owned by CameraRig (slow ease-out).
-      // Incremental add never sets that flag; session restore still fit-alls
-      // here. A ready-state settle completes the initial framing either way —
-      // leaving needsFrame set would make the NEXT incremental add's settle
-      // fitAll and steal the user's camera.
-      if (isIngestFraming()) {
-        if (ready) needsFrame.current = false;
-        return;
-      }
       useUiStore.getState().sendCamera('fitAll');
-      if (ready) needsFrame.current = false;
+      if (useGraphStore.getState().phase === 'ready') needsFrame.current = false;
     });
   }, [hasNodes]);
 
@@ -370,18 +357,11 @@ export default function App() {
       {phase === 'ready' && (
         <Suspense fallback={null}><FilterBar /></Suspense>
       )}
-      {phase === 'ready' && hasNodes && (
-        <div className={`scene-chrome-left${comparing ? ' is-raised' : ''}`}>
-          <Suspense fallback={null}><SceneLegend /></Suspense>
-        </div>
-      )}
-      {phase === 'ready' && hasNodes && (
-        <Suspense fallback={null}><CompareTray /></Suspense>
-      )}
       <Suspense fallback={null}><ProgressStrip /></Suspense>
       {insightsOpen && (
         <Suspense fallback={null}><InsightsPanel /></Suspense>
       )}
+      <InsightsDigest />
       {pathMode && (
         <Suspense fallback={null}><PathPanel /></Suspense>
       )}

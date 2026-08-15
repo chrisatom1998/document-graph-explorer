@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { DocNode } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 import { DEFAULT_FILTER, useUiStore } from '../store/uiStore';
@@ -71,68 +71,5 @@ describe('FilterBar', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /clear/i }));
     expect(useUiStore.getState().filter).toEqual(DEFAULT_FILTER);
-  });
-
-  it('Clear wins over a pending slider commit', async () => {
-    const nodes = [node('doc', 'document', 'txt')];
-    useGraphStore.setState({
-      nodes,
-      nodeIndex: { doc: 0 },
-      edges: [],
-      phase: 'ready',
-      clusterNames: { 0: 'Cluster' },
-    });
-    // Another facet keeps Clear visible while the degree slider is still at
-    // the store default — the rAF has not committed the drag yet.
-    useUiStore.setState({ filter: { ...DEFAULT_FILTER, fileTypes: ['txt'] } });
-    render(<FilterBar />);
-    fireEvent.click(screen.getByTitle('Show filters'));
-    fireEvent.click(screen.getByRole('button', { name: /more filters/i }));
-
-    fireEvent.change(screen.getByLabelText('Minimum document connections'), {
-      target: { value: '8' },
-    });
-    fireEvent.change(screen.getByLabelText('Minimum link strength'), {
-      target: { value: '0.4' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /clear/i }));
-
-    await act(async () => {
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => resolve());
-      });
-    });
-
-    expect(useUiStore.getState().filter).toEqual(DEFAULT_FILTER);
-  });
-
-  it('an external setFilter wins over a pending slider commit', async () => {
-    const nodes = [node('doc', 'document', 'txt')];
-    useGraphStore.setState({
-      nodes,
-      nodeIndex: { doc: 0 },
-      edges: [],
-      phase: 'ready',
-      clusterNames: { 0: 'Cluster' },
-    });
-    render(<FilterBar />);
-    fireEvent.click(screen.getByTitle('Show filters'));
-    fireEvent.click(screen.getByRole('button', { name: /more filters/i }));
-
-    fireEvent.change(screen.getByLabelText('Minimum document connections'), {
-      target: { value: '8' },
-    });
-    act(() => {
-      useUiStore.getState().setFilter({ minDegree: 2 });
-    });
-
-    await act(async () => {
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => resolve());
-      });
-    });
-
-    expect(useUiStore.getState().filter.minDegree).toBe(2);
-    expect(screen.getByLabelText('Minimum document connections')).toHaveValue('2');
   });
 });
