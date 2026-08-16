@@ -55,7 +55,13 @@ describe('SidePanel passage fly-to and similar docs', () => {
   afterEach(() => {
     cleanup();
     textStore.clear();
-    useUiStore.setState({ selectedId: null, readerHighlight: null });
+    useUiStore.setState({
+      selectedId: null,
+      readerHighlight: null,
+      compareLeftId: null,
+      compareRightId: null,
+      comparePick: null,
+    });
     useSettingsStore.setState({ enrichEnabled: false, enrichProvider: 'openrouter' });
   });
 
@@ -67,9 +73,14 @@ describe('SidePanel passage fly-to and similar docs', () => {
     expect(screen.getByText('No summary available yet.')).not.toBeVisible();
   });
 
-  it('offers More like this without adding toolbar chrome', () => {
+  it('offers More like this and Compare without adding toolbar chrome', () => {
     render(<SidePanel />);
     expect(screen.getByRole('button', { name: /more like this/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^compare$/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^compare$/i }));
+    expect(useUiStore.getState().compareLeftId).toBe('doc1');
+    expect(useUiStore.getState().comparePick).toBe('right');
+    expect(useUiStore.getState().selectedId).toBe('doc1');
   });
 
   function expectSections(expanded: boolean): void {

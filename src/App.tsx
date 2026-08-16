@@ -36,6 +36,7 @@ const IngestDimsToggle = lazy(() => import('./ui/DimsToggleButton'));
 const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
 const PathPanel = lazy(() => import('./ui/PathPanel'));
 const SidePanel = lazy(() => import('./ui/SidePanel'));
+const ComparePanel = lazy(() => import('./ui/ComparePanel'));
 const SnapshotDrawer = lazy(() => import('./ui/SnapshotDrawer'));
 const SearchOverlay = lazy(() => import('./ui/SearchOverlay'));
 const GraphNavigator = lazy(() => import('./ui/GraphNavigator'));
@@ -378,7 +379,10 @@ export default function App() {
         <Suspense fallback={null}><EmptyState /></Suspense>
       )}
       {phase === 'ready' && (
-        <Suspense fallback={null}><Toolbar /></Suspense>
+        <Suspense fallback={null}>
+          <Toolbar />
+          <ComparePanel />
+        </Suspense>
       )}
       {/* The full toolbar waits for 'ready', but the 2D/3D switch must stay
           reachable while the corpus is still forming — switching modes is

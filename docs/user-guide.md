@@ -24,6 +24,7 @@ This guide covers why the tool exists, what it can do, and how to use every feat
 - **Answer questions from your documents**: a built-in chat panel retrieves the most relevant passages and answers extractively — fully offline — or streams richer answers via an opt-in AI provider (OpenRouter or a local Ollama server), always with clickable source citations.
 - **Search semantically**: find documents by meaning, not just keyword match (`Ctrl+K` / `⌘K`).
 - **Surface insights**: orphaned documents, near-duplicates, bridge documents, and stale files; plus shortest-path finding between any two documents ("How are these connected?").
+- **Compare two documents side by side**: from the reader, a duplicate chip, a connection, or Insights — with a local similarity and shared-topic summary, no network required.
 - **Persist your work**: sessions restore automatically in under a few seconds; named snapshots capture graph states you can reload at any time.
 - **Run anywhere, including sealed environments**: a normal local build, an offline-mode toggle, and a verified **air-gapped build** whose Content-Security-Policy removes the external network at the browser level.
 
@@ -161,7 +162,7 @@ Navigate with `↓`/`↑`, open with `Enter` (selects the node and flies the cam
 **Analyze ▾ → Corpus insights**. Automatic health checks over the whole corpus, each with a **Highlight** toggle that dims everything else in the scene:
 
 - **Orphaned documents** — connected to nothing; likely stale or out-of-scope.
-- **Possible duplicates** — pairs at ≥93% semantic similarity, with the match percentage shown.
+- **Possible duplicates** — pairs at ≥93% semantic similarity, with the match percentage shown. **Compare** opens both documents side by side.
 - **Bridge documents** — the docs the most shortest-paths run through: either your most important documents or your most confused ones.
 - **Stale documents** — not modified in over 6 months, oldest first.
 
@@ -171,11 +172,13 @@ Every row is clickable to fly to that document.
 
 Click any node. The right-hand panel opens on the document itself:
 
-- **Header actions**: **Open** (opens the original file — see below) and close stay on the title row. **More like this** and **Remove** (two-step confirm; removes the doc and its cached data from the graph and rebuilds links — the file on disk is untouched) sit on a second action row.
-- **Identity**: file type, cluster (with color), warnings (e.g. partially indexed), clickable **≈ duplicate of …** chips when a near-duplicate exists, plus word count, connection count, and last-modified time.
+- **Header actions**: **Open** (opens the original file — see below) and close stay on the title row. **More like this**, **Compare** (pick a second document in the graph, or jump straight in from a duplicate chip / connection / Insights pair), and **Remove** (two-step confirm; removes the doc and its cached data from the graph and rebuilds links — the file on disk is untouched) sit on a second action row.
+- **Identity**: file type, cluster (with color), warnings (e.g. partially indexed), clickable **≈ duplicate of …** chips when a near-duplicate exists (opens a side-by-side compare), plus word count, connection count, and last-modified time.
 - **A real document reader** (the first expanded section): PDFs render their actual pages (lazily as you scroll); Markdown renders with headings, tables, code, and working cross-document links — a `[[wikilink]]` or relative link to another ingested doc jumps to it *inside the graph*; HTML renders sanitized; CSV becomes a real table; JSON/YAML are syntax-highlighted; everything else gets a clean text reader. Opening from search or chat jumps here with a matching-passage banner.
 - **About** (collapsed until you open it): **Summary** (AI-enriched if enrichment ran, otherwise the document's opening lines), **Topics** (topics shared with other docs are clickable hubs), **Entities**, **Notes & Tags**, and **Ask AI** (when enrichment is enabled — see below). Notes are saved per corpus, keyed by the document's path — an edited file keeps its notes — and pinned documents appear as a jump list in Corpus insights. Imported or shared graphs explain that notes cannot be saved there.
-- **Connections** (collapsed until you open it): every edge sorted by strength, with the relationship kind, a weight bar, evidence for the link, and a click-to-jump neighbor title.
+- **Connections** (collapsed until you open it): every edge sorted by strength, with the relationship kind, a weight bar, evidence for the link, a click-to-jump neighbor title, and **Compare** to read that neighbor beside this document.
+
+**Compare two documents:** the overlay shows both readers, a local relationship strip (embedding similarity, shared topics / entities / keywords, and any direct edge with its evidence), and **Change** / swap controls. Click a shared term to highlight it in both readers. Esc closes compare before other panels. No network call — the summary is computed from the graph you already have.
 
 **Topic hubs** skip the empty reader. The panel lists the documents that share the topic, without Open / Remove / notes / Ask AI.
 

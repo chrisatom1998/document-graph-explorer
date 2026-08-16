@@ -4,6 +4,7 @@ import type { CodeLanguage } from '../pipeline/codeLanguage';
 import { removeDocuments } from '../pipeline/coordinator';
 import { useUiStore } from '../store/uiStore';
 import { openDocument } from './openDocument';
+import { startCompare } from './openCompare';
 import { showSimilarTo } from './showSimilar';
 import CloseButton from './CloseButton';
 
@@ -77,6 +78,14 @@ export default function SidePanelHeader({
             }}
           >
             More like this
+          </button>
+          <button
+            type="button"
+            className="side-panel__open-btn"
+            title="Compare this document with another — click a second node in the graph"
+            onClick={() => startCompare(node.id)}
+          >
+            Compare
           </button>
           {!confirmRemove && (
             <button

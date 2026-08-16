@@ -27,6 +27,7 @@ import { MAX_NODES } from '../config';
 import { layoutPin, layoutUnpin } from '../layout/layoutBridge';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { applyComparePick } from '../ui/openCompare';
 import { computeEmphasis } from './emphasis';
 import { cameraPose } from './cameraPose';
 import { viewDistanceFade } from './viewDistance';
@@ -545,7 +546,7 @@ export default function Nodes() {
     const id = idOf(e);
     if (!id) return;
     // Path mode: clicks pick endpoints, so dragging a node has no meaning here.
-    if (useUiStore.getState().pathMode) return;
+    if (useUiStore.getState().pathMode || useUiStore.getState().comparePick) return;
     e.stopPropagation();
     drag.start(id, e.nativeEvent.clientX, e.nativeEvent.clientY);
   };
@@ -560,6 +561,12 @@ export default function Nodes() {
     // normal pointerup to window.
     drag.onUp();
     const ui = useUiStore.getState();
+    if (ui.comparePick) {
+      // Topic hubs have no reader — compare is document-to-document only.
+      if (e.instanceId !== undefined && kindOfSlot[e.instanceId] === 1) return;
+      applyComparePick(id);
+      return;
+    }
     if (ui.pathMode) {
       // Topic hubs can't be endpoints: pathfinding skips 'topic' edges, so a
       // topic pick would always dead-end in "no connection found".

@@ -54,6 +54,9 @@ describe('InsightsPanel actions', () => {
       insightsFocus: null,
       searchResults: null,
       highlightOwner: null,
+      compareLeftId: null,
+      compareRightId: null,
+      comparePick: null,
     });
     useCorpusStore.setState({ activeCorpusId: 'c1', mode: 'local' });
     useAnnotationStore.getState().hydrate('c1', {});
@@ -64,6 +67,7 @@ describe('InsightsPanel actions', () => {
     _resetAnnotationsForTests();
     useGraphStore.getState().reset();
     useCorpusStore.setState({ activeCorpusId: null, mode: 'local' });
+    useUiStore.getState().clearCompare();
   });
 
   it('lets a duplicate pair be framed and tagged', () => {
@@ -80,6 +84,11 @@ describe('InsightsPanel actions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show both' }));
     expect(useUiStore.getState().searchResults).toEqual(['a', 'b']);
     expect(useUiStore.getState().highlightOwner).toBe('insights');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Compare' }));
+    expect(useUiStore.getState().compareLeftId).toBe('a');
+    expect(useUiStore.getState().compareRightId).toBe('b');
+    expect(useUiStore.getState().highlightOwner).toBe('compare');
 
     fireEvent.click(screen.getByRole('button', { name: 'Tag both duplicate' }));
     expect(useAnnotationStore.getState().annotations['a.md']?.tags).toEqual(['duplicate']);

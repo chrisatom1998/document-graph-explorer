@@ -78,6 +78,7 @@ describe('SidePanel topic hub', () => {
     expect(screen.queryByText(/text unavailable/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^open$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /more like this/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^compare$/i })).not.toBeInTheDocument();
     expect(screen.queryByTitle(/remove this document from the graph/i)).not.toBeInTheDocument();
     expect(screen.queryByText('Notes & Tags')).not.toBeInTheDocument();
     expect(screen.queryByText('Ask AI')).not.toBeInTheDocument();

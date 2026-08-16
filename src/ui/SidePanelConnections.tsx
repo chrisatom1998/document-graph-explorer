@@ -2,8 +2,10 @@ import { type CSSProperties } from 'react';
 import { EDGE_KIND_HEX, EDGE_KIND_LABEL } from '../scene/palette';
 import { CONNECTIONS_COLLAPSED, EVIDENCE_COLLAPSED, type ConnectionRow } from './sidePanelModel';
 import { focusNode } from './focusNode';
+import { openCompare } from './openCompare';
 
 interface SidePanelConnectionsProps {
+  sourceId?: string;
   connections: ConnectionRow[];
   showAllConnections: boolean;
   expandedEvidence: ReadonlySet<string>;
@@ -12,6 +14,7 @@ interface SidePanelConnectionsProps {
 }
 
 export default function SidePanelConnections({
+  sourceId,
   connections,
   showAllConnections,
   expandedEvidence,
@@ -58,6 +61,16 @@ export default function SidePanelConnections({
                 >
                   {EDGE_KIND_LABEL[edge.kind]}
                 </span>
+                {sourceId !== undefined && neighbor?.kind === 'document' && (
+                  <button
+                    type="button"
+                    className="connection-row__compare"
+                    title={`Compare with ${neighbor.title}`}
+                    onClick={() => openCompare(sourceId, neighborId)}
+                  >
+                    Compare
+                  </button>
+                )}
               </div>
               <div className="connection-row__weight-track">
                 <div
