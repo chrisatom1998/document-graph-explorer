@@ -206,6 +206,13 @@ export default function SidePanelReader({
               isMonoFileType(node.fileType) ? ' is-mono' : ''
             }`}
           />
+        ) : node.summary ? (
+          <div className="side-panel__reader">
+            <p className="side-panel__summary">{node.summary}</p>
+            <p className="side-panel__summary is-fallback">
+              Full document text is not included in shared or imported graphs.
+            </p>
+          </div>
         ) : (
           <div className="side-panel__reader is-unavailable">
             text unavailable
