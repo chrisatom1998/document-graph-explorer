@@ -199,7 +199,7 @@ The floating **chat bubble** (lower-left, "AI" badge) opens **"Chat with your do
 Two modes, selected automatically:
 
 - **Local (default / offline / air-gapped):** the app retrieves the best-matching passages from your corpus and quotes them verbatim, grouped by source — no network, no LLM, marked with the hint *"Offline mode — answers are exact passages from your documents."*
-- **AI provider (opt-in):** with a chat provider selected in Settings — OpenRouter (with your API key) or a local Ollama server — the same retrieval feeds the model, which streams a synthesized answer token-by-token, with multi-turn memory over the recent conversation. Chat has its own **Chat model** picker, separate from enrichment: because chat is one request per question rather than one per 15 documents, the list leads with flagship models (Claude Sonnet 5, GPT-5.4, Gemini 3.1 Pro) and keeps the fast tier as the cheap option.
+- **AI provider (opt-in):** with a chat provider selected in Settings — OpenRouter (with your API key) or a local Ollama server — the same retrieval feeds the model, which streams a synthesized answer token-by-token, with multi-turn memory over the recent conversation. Chat has its own **Chat model** picker, separate from enrichment: because chat is one request per question rather than one per 15 documents, the list leads with flagship models (Claude Sonnet 5, GPT-5.4, Gemini 3.1 Pro) and keeps the fast tier (Gemini 3.7 Flash, Claude Haiku, GPT-5 mini) as the cheap option.
 
 Either way, every answer carries **source chips**: hover for the match strength and snippet, click to fly to that document in the graph, or use the ↗ icon to open it.
 

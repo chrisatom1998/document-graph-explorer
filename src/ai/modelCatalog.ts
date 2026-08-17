@@ -39,6 +39,11 @@ export const RECOMMENDED_ENRICH_MODELS: RecommendedModel[] = [
     note: 'Fastest · 1M context · built for high-volume extraction',
   },
   {
+    id: 'google/gemini-3.7-flash',
+    label: 'Gemini 3.7 Flash',
+    note: 'Latest Flash · 1M context · cheap enough for corpus runs',
+  },
+  {
     id: 'anthropic/claude-haiku-4.5',
     label: 'Claude Haiku 4.5',
     note: 'Best instruction-following at speed · 200k context',
@@ -91,6 +96,11 @@ export const RECOMMENDED_CHAT_MODELS: RecommendedModel[] = [
     id: 'google/gemini-3.1-pro-preview',
     label: 'Gemini 3.1 Pro',
     note: 'Strong reasoning · 1M context',
+  },
+  {
+    id: 'google/gemini-3.7-flash',
+    label: 'Gemini 3.7 Flash',
+    note: 'Latest Flash · 1M context',
   },
   {
     id: 'anthropic/claude-haiku-4.5',

@@ -66,4 +66,12 @@ describe('openRouterModelOptions', () => {
     expect(chat[0]).toBe('anthropic/claude-sonnet-5');
     expect(curated[0]).toBe('google/gemini-3.1-flash-lite');
   });
+
+  it('offers Gemini 3.7 Flash for both chat and enrichment', () => {
+    const flash = 'google/gemini-3.7-flash';
+    expect(RECOMMENDED_CHAT_MODELS.map((m) => m.id)).toContain(flash);
+    expect(RECOMMENDED_ENRICH_MODELS.map((m) => m.id)).toContain(flash);
+    expect(openRouterModelOptions('chat', null, '').some((o) => o.id === flash)).toBe(true);
+    expect(openRouterModelOptions('enrichment', null, '').some((o) => o.id === flash)).toBe(true);
+  });
 });
