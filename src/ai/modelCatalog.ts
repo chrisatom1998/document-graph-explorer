@@ -44,6 +44,11 @@ export const RECOMMENDED_ENRICH_MODELS: RecommendedModel[] = [
     note: 'Latest Flash · 1M context · cheap enough for corpus runs',
   },
   {
+    id: 'openai/gpt-5.6-luna',
+    label: 'GPT-5.6 Luna',
+    note: 'Newest cheap OpenAI · 1M context',
+  },
+  {
     id: 'anthropic/claude-haiku-4.5',
     label: 'Claude Haiku 4.5',
     note: 'Best instruction-following at speed · 200k context',
@@ -57,6 +62,16 @@ export const RECOMMENDED_ENRICH_MODELS: RecommendedModel[] = [
     id: 'google/gemini-3.5-flash-lite',
     label: 'Gemini 3.5 Flash Lite',
     note: 'Newer Flash Lite · 1M context',
+  },
+  {
+    id: 'deepseek/deepseek-v4-flash',
+    label: 'DeepSeek V4 Flash',
+    note: 'Very cheap · 1M context',
+  },
+  {
+    id: 'minimax/minimax-m3',
+    label: 'MiniMax M3',
+    note: 'Fast and inexpensive · 1M context',
   },
   {
     id: 'mistralai/mistral-small-3.2-24b-instruct',
@@ -88,6 +103,11 @@ export const RECOMMENDED_CHAT_MODELS: RecommendedModel[] = [
     note: 'Best overall for grounded answers · 1M context',
   },
   {
+    id: 'openai/gpt-5.6-sol',
+    label: 'GPT-5.6 Sol',
+    note: 'Newest OpenAI flagship · 1M context',
+  },
+  {
     id: 'openai/gpt-5.4',
     label: 'GPT-5.4',
     note: 'Strong reasoning · 1M context',
@@ -96,6 +116,16 @@ export const RECOMMENDED_CHAT_MODELS: RecommendedModel[] = [
     id: 'google/gemini-3.1-pro-preview',
     label: 'Gemini 3.1 Pro',
     note: 'Strong reasoning · 1M context',
+  },
+  {
+    id: 'x-ai/grok-4.6',
+    label: 'Grok 4.6',
+    note: 'Strong reasoning · 500k context',
+  },
+  {
+    id: 'deepseek/deepseek-v4-pro',
+    label: 'DeepSeek V4 Pro',
+    note: 'Strong and inexpensive · 1M context',
   },
   {
     id: 'google/gemini-3.7-flash',
@@ -111,6 +141,11 @@ export const RECOMMENDED_CHAT_MODELS: RecommendedModel[] = [
     id: 'google/gemini-3.6-flash',
     label: 'Gemini 3.6 Flash',
     note: 'Fast · 1M context',
+  },
+  {
+    id: 'openai/gpt-5.6-luna',
+    label: 'GPT-5.6 Luna',
+    note: 'Fast and inexpensive · 1M context',
   },
   {
     id: 'openai/gpt-5-mini',

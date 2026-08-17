@@ -74,4 +74,24 @@ describe('openRouterModelOptions', () => {
     expect(openRouterModelOptions('chat', null, '').some((o) => o.id === flash)).toBe(true);
     expect(openRouterModelOptions('enrichment', null, '').some((o) => o.id === flash)).toBe(true);
   });
+
+  it('adds newer cheap and flagship options that fill provider gaps', () => {
+    const enrich = RECOMMENDED_ENRICH_MODELS.map((m) => m.id);
+    const chat = RECOMMENDED_CHAT_MODELS.map((m) => m.id);
+    expect(enrich).toEqual(expect.arrayContaining([
+      'openai/gpt-5.6-luna',
+      'deepseek/deepseek-v4-flash',
+      'minimax/minimax-m3',
+    ]));
+    expect(chat).toEqual(expect.arrayContaining([
+      'openai/gpt-5.6-sol',
+      'x-ai/grok-4.6',
+      'deepseek/deepseek-v4-pro',
+      'openai/gpt-5.6-luna',
+    ]));
+    // Enrichment stays fast-tier: no flagship / pro models.
+    expect(enrich).not.toContain('openai/gpt-5.6-sol');
+    expect(enrich).not.toContain('x-ai/grok-4.6');
+    expect(enrich).not.toContain('deepseek/deepseek-v4-pro');
+  });
 });
