@@ -23,6 +23,7 @@ const docNode: DocNode = {
   cluster: 0,
   degree: 0,
   status: 'ok',
+  summary: 'Titles and summaries travel with the share link.',
 };
 
 describe('SidePanel imported-corpus notes hint', () => {
@@ -50,5 +51,15 @@ describe('SidePanel imported-corpus notes hint', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /^about$/i }));
     expect(screen.getByText(/not available on imported or shared graphs/i)).toBeVisible();
+  });
+
+  it('shows the shared summary in the reader when document text is absent', () => {
+    render(<SidePanel />);
+    const reader = document.querySelector('.side-panel__reader');
+    expect(reader).toHaveTextContent('Titles and summaries travel with the share link.');
+    expect(reader).toHaveTextContent(
+      'Full document text is not included in shared or imported graphs.',
+    );
+    expect(screen.queryByText('text unavailable')).not.toBeInTheDocument();
   });
 });
