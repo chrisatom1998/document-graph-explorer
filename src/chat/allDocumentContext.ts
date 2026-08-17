@@ -73,7 +73,7 @@ export function assembleAllDocumentChunks(
   const assembled: CorpusChunk[] = docs
     .map((node) => {
       const hit = best.get(node.id);
-      if (hit) return { ...hit };
+      if (hit?.text.trim()) return { ...hit };
       const fallback = fallbackDocumentEvidence(node, texts, chunks);
       return {
         docId: node.id,

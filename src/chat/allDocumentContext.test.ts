@@ -73,4 +73,25 @@ describe('assembleAllDocumentChunks', () => {
     expect(result.chunks.map((c) => c.docId)).toEqual(['a', 'b']);
     expect(result.chunks.every((c) => c.text.length <= 200)).toBe(true);
   });
+
+  it('falls back when a retrieved hit has no passage text', () => {
+    const documents = [
+      doc('a', 'Alpha', { summary: 'Alpha summary from ingest.' }),
+      doc('b', 'Beta', { topics: ['apis'], keywords: ['quota'] }),
+    ];
+    const result = assembleAllDocumentChunks(
+      [
+        { docId: 'a', docTitle: 'Alpha', chunkIndex: 0, text: '', score: 0.8 },
+        { docId: 'b', docTitle: 'Beta', text: '   ', score: 0.4 },
+      ],
+      documents,
+      new Map(),
+      new Map(),
+    );
+
+    expect(result.chunks.map((c) => [c.docId, c.text])).toEqual([
+      ['a', 'Alpha summary from ingest.'],
+      ['b', 'Topics: apis\nKeywords: quota'],
+    ]);
+  });
 });
