@@ -112,11 +112,38 @@ export default function App() {
       }
     };
     void openShareOrRestore();
-    const onHashChange = () => {
+    const reopenShare = () => {
       void openShareOrRestore(true);
     };
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') reopenShare();
+    };
+    window.addEventListener('hashchange', reopenShare);
+    document.addEventListener('visibilitychange', onVisible);
+    const launchQueue = (
+      window as Window & {
+        launchQueue?: { setConsumer: (cb: (params: { targetURL?: string }) => void) => void };
+      }
+    ).launchQueue;
+    launchQueue?.setConsumer((params) => {
+      if (!params.targetURL) return;
+      try {
+        const next = new URL(params.targetURL, window.location.origin);
+        if (next.origin !== window.location.origin) return;
+        const nextPath = `${next.pathname}${next.search}${next.hash}`;
+        const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        if (nextPath !== currentPath) {
+          window.history.replaceState(window.history.state, '', nextPath);
+        }
+      } catch {
+        return;
+      }
+      reopenShare();
+    });
+    return () => {
+      window.removeEventListener('hashchange', reopenShare);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
 
   // Loading and saving the transcript both hinge on which workspace is active
