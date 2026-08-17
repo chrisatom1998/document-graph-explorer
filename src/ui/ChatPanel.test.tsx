@@ -12,7 +12,7 @@ vi.mock('../pipeline/coordinator', () => ({ embedQuery: vi.fn() }));
 import ChatPanel from './ChatPanel';
 import { useChatStore } from '../store/chatStore';
 import { useGraphStore } from '../store/graphStore';
-import { useSettingsStore } from '../store/settingsStore';
+import { useChatScopeStore } from '../store/chatScopeStore';
 
 // jsdom has no layout engine and doesn't implement scrollIntoView; ChatPanel
 // calls it in an auto-scroll effect that fires on every message-list update.
@@ -31,14 +31,14 @@ describe('ChatPanel (airgap)', () => {
   });
 
   it('lets the user switch chat to all documents', () => {
-    useSettingsStore.getState().setChatScope('relevant');
+    useChatScopeStore.getState().setChatScope('relevant');
     render(<ChatPanel />);
     fireEvent.click(screen.getByRole('button', { name: 'All documents' }));
-    expect(useSettingsStore.getState().chatScope).toBe('all');
+    expect(useChatScopeStore.getState().chatScope).toBe('all');
     expect(screen.getByRole('button', { name: 'All documents' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    useSettingsStore.getState().setChatScope('relevant');
+    useChatScopeStore.getState().setChatScope('relevant');
   });
 });

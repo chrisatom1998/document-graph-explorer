@@ -32,12 +32,12 @@ import {
   DEFAULT_OLLAMA_MODEL,
   useSettingsStore,
   type ChatProvider,
-  type ChatScope,
   type EmbeddingQueryStyle,
   type EnrichProvider,
   type OcrLanguageId,
   type OcrMaxPages,
 } from '../store/settingsStore';
+import { useChatScopeStore, type ChatScope } from '../store/chatScopeStore';
 import { useUiStore } from '../store/uiStore';
 import { buildDiagnosticsText, getAppVersion } from './diagnostics';
 
@@ -62,7 +62,7 @@ export default function SettingsPanel() {
   const edgeCount = useGraphStore((s) => s.edges.length);
 
   const chatProvider = useSettingsStore((s) => s.chatProvider);
-  const chatScope = useSettingsStore((s) => s.chatScope);
+  const chatScope = useChatScopeStore((s) => s.chatScope);
   const enrichProvider = useSettingsStore((s) => s.enrichProvider);
   const openRouterKey = useSettingsStore((s) => s.openRouterKey);
   const rememberOpenRouterKey = useSettingsStore((s) => s.rememberOpenRouterKey);
@@ -78,7 +78,7 @@ export default function SettingsPanel() {
   const ocrLanguage = useSettingsStore((s) => s.ocrLanguage);
   const ocrMaxPages = useSettingsStore((s) => s.ocrMaxPages);
   const setChatProvider = useSettingsStore((s) => s.setChatProvider);
-  const setChatScope = useSettingsStore((s) => s.setChatScope);
+  const setChatScope = useChatScopeStore((s) => s.setChatScope);
   const setEnrichProvider = useSettingsStore((s) => s.setEnrichProvider);
   const setOpenRouterKey = useSettingsStore((s) => s.setOpenRouterKey);
   const setRememberOpenRouterKey = useSettingsStore((s) => s.setRememberOpenRouterKey);

@@ -19,7 +19,6 @@ import {
   loadPersistedSettings,
   STORAGE_KEY,
   type ChatProvider,
-  type ChatScope,
   type EmbeddingQueryStyle,
   type EnrichProvider,
   type OcrLanguageId,
@@ -32,7 +31,6 @@ export {
   DEFAULT_OPENROUTER_CHAT_MODEL,
   DEFAULT_OPENROUTER_ENRICH_MODEL,
   type ChatProvider,
-  type ChatScope,
   type EmbeddingQueryStyle,
   type EnrichProvider,
   type OcrLanguageId,
@@ -41,7 +39,6 @@ export {
 
 export interface SettingsState extends PersistedSettings {
   setChatProvider: (provider: ChatProvider) => void;
-  setChatScope: (scope: ChatScope) => void;
   setEnrichProvider: (provider: EnrichProvider) => void;
   setOpenRouterKey: (key: string) => void;
   setRememberOpenRouterKey: (remember: boolean) => void;
@@ -61,7 +58,6 @@ export interface SettingsState extends PersistedSettings {
 export const useSettingsStore = create<SettingsState>((set) => ({
   ...loadPersistedSettings(),
   setChatProvider: (chatProvider) => set({ chatProvider }),
-  setChatScope: (chatScope) => set({ chatScope }),
   setEnrichProvider: (enrichProvider) => set({ enrichProvider }),
   // Trimmed at the store boundary so every consumer (enrichment, doc AI,
   // chat) gets a header-safe key even when pasted with stray whitespace.
@@ -91,7 +87,6 @@ useSettingsStore.subscribe((s) => {
   try {
     const persisted: PersistedSettings = {
       chatProvider: s.chatProvider,
-      chatScope: s.chatScope,
       enrichProvider: s.enrichProvider,
       openRouterKey: s.rememberOpenRouterKey ? s.openRouterKey : '',
       rememberOpenRouterKey: s.rememberOpenRouterKey,

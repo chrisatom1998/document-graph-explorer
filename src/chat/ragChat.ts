@@ -17,8 +17,8 @@ import {
   DEFAULT_OLLAMA_MODEL,
   DEFAULT_OPENROUTER_CHAT_MODEL,
   useSettingsStore,
-  type ChatScope,
 } from '../store/settingsStore';
+import { useChatScopeStore, type ChatScope } from '../store/chatScopeStore';
 import { useChatStore, type ChatSource } from '../store/chatStore';
 import { chunkStore, textStore } from '../store/runtimeStores';
 import { retrieveCorpus } from '../search/retrieval';
@@ -89,7 +89,7 @@ export function keywordEvidence(text: string, terms: string[], maxChars: number)
 }
 
 export function retrievalOptionsForChat(
-  scope: ChatScope = useSettingsStore.getState().chatScope,
+  scope: ChatScope = useChatScopeStore.getState().chatScope,
   documentCount?: number,
 ) {
   const shared = {
@@ -214,8 +214,9 @@ export async function sendChatMessage(question: string): Promise<void> {
   const q = question.trim();
   if (!q) return;
 
-  const { chatProvider, chatScope, openRouterKey, openRouterChatModel, ollamaChatModel } =
+  const { chatProvider, openRouterKey, openRouterChatModel, ollamaChatModel } =
     useSettingsStore.getState();
+  const chatScope = useChatScopeStore.getState().chatScope;
   const chat = useChatStore.getState();
 
   // Snapshot the conversation BEFORE this turn, for multi-turn memory. This

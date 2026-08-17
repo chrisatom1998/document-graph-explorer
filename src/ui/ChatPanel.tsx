@@ -11,6 +11,7 @@ import { AIRGAP } from '../airgap';
 import { computeOrphans } from '../graph/insights';
 import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
 import { useGraphStore } from '../store/graphStore';
+import { useChatScopeStore } from '../store/chatScopeStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
 import { focusNode } from './focusNode';
@@ -141,8 +142,8 @@ export default function ChatPanel() {
   const docCount = nodes.filter((n) => n.kind === 'document').length;
   const pathEndpoints = useUiStore((s) => s.pathEndpoints);
   const chatProvider = useSettingsStore((s) => s.chatProvider);
-  const chatScope = useSettingsStore((s) => s.chatScope);
-  const setChatScope = useSettingsStore((s) => s.setChatScope);
+  const chatScope = useChatScopeStore((s) => s.chatScope);
+  const setChatScope = useChatScopeStore((s) => s.setChatScope);
   const openRouterKey = useSettingsStore((s) => s.openRouterKey);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
   const localMode =
