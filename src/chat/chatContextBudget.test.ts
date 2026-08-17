@@ -5,18 +5,33 @@ import {
   CHARS_PER_TOKEN,
   MILLION_TOKEN_WINDOW,
   RAG_ALL_DOCS_MAX_CHARS,
-  RAG_ALL_DOCS_RESERVED_TOKENS,
+  allDocsMaxChars,
   charsPerDocumentForBudget,
   estimateAllDocsWindow,
   estimateTokensFromChars,
+  generationTimeoutMs,
+  reservedTokensForWindow,
 } from './chatContextBudget';
 
-describe('all-documents 1M-token window', () => {
-  it('reserves 100k tokens and packs the rest as document text', () => {
-    expect(RAG_ALL_DOCS_MAX_CHARS).toBe(
-      (MILLION_TOKEN_WINDOW - RAG_ALL_DOCS_RESERVED_TOKENS) * CHARS_PER_TOKEN,
-    );
-    expect(RAG_ALL_DOCS_MAX_CHARS).toBe(3_600_000);
+describe('all-documents context budget', () => {
+  it('uses a conservative 2 chars/token and scales the reserve with the window', () => {
+    expect(CHARS_PER_TOKEN).toBe(2);
+    expect(reservedTokensForWindow(1_000_000)).toBe(100_000);
+    expect(reservedTokensForWindow(200_000)).toBe(20_000);
+    expect(reservedTokensForWindow(32_000)).toBe(16_000);
+    expect(RAG_ALL_DOCS_MAX_CHARS).toBe(allDocsMaxChars(MILLION_TOKEN_WINDOW));
+    expect(RAG_ALL_DOCS_MAX_CHARS).toBe(1_800_000);
+  });
+
+  it('caps Haiku-sized 200k windows well below the 1M packing ceiling', () => {
+    expect(allDocsMaxChars(200_000)).toBe(360_000);
+    const haiku = estimateAllDocsWindow({
+      documentCount: 534,
+      charsPerDocument: CHUNK_CONTEXT_CHARS,
+      windowTokens: 200_000,
+    });
+    expect(haiku.fitsEntireCorpus).toBe(false);
+    expect(haiku.documentsThatFit).toBe(240);
   });
 
   it('fits the demo corpus and the max graph in one 1M-token turn', () => {
@@ -26,7 +41,7 @@ describe('all-documents 1M-token window', () => {
     });
     expect(demo.fitsEntireCorpus).toBe(true);
     expect(demo.contextTokens).toBe(estimateTokensFromChars(50 * CHUNK_CONTEXT_CHARS));
-    expect(demo.windowFractionUsed).toBeLessThan(0.03);
+    expect(demo.windowFractionUsed).toBeLessThan(0.05);
     expect(demo.theoreticalTurnsIfAccumulated).toBeGreaterThan(10);
 
     const packedMax = charsPerDocumentForBudget(
@@ -49,8 +64,14 @@ describe('all-documents 1M-token window', () => {
       documentCount: 10_000,
       charsPerDocument: CHUNK_CONTEXT_CHARS,
     });
-    // 900k tokens * 4 chars / 1500 chars ≈ 2400 documents.
-    expect(estimate.documentsThatFit).toBe(2400);
+    // 900k tokens * 2 chars / 1500 chars = 1200 documents.
+    expect(estimate.documentsThatFit).toBe(1200);
     expect(estimate.fitsEntireCorpus).toBe(false);
+  });
+
+  it('extends the generation timeout with prompt size and caps it', () => {
+    expect(generationTimeoutMs(0, 120_000)).toBe(120_000);
+    expect(generationTimeoutMs(8_000, 120_000)).toBe(122_000);
+    expect(generationTimeoutMs(10_000_000, 120_000)).toBe(600_000);
   });
 });

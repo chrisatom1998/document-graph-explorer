@@ -40,10 +40,20 @@ describe('formatExtractiveAnswer', () => {
     expect(r.sources).toHaveLength(4);
   });
 
-  it('can include every assembled document when maxPassages is raised', () => {
+  it('can include more documents when maxPassages is raised', () => {
     const many = Array.from({ length: 7 }, (_, i) => p(`doc${i}`, `T${i}`, `text ${i}`, 1 - i * 0.1));
     const r = formatExtractiveAnswer('q', many, { maxPassages: many.length });
     expect(r.sources).toHaveLength(7);
+  });
+
+  it('does not call corpus-wide quotes the most relevant passages', () => {
+    const r = formatExtractiveAnswer(
+      'themes',
+      [p('a', 'A', 'one', 0.2), p('b', 'B', 'two', 0.1)],
+      { maxPassages: 12, lead: 'corpus' },
+    );
+    expect(r.text).toMatch(/are 2 passages from your documents for "themes"/);
+    expect(r.text).not.toMatch(/most relevant/);
   });
 
   it('truncates a long passage to EXTRACT_PASSAGE_CHARS with an ellipsis', () => {

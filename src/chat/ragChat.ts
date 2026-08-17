@@ -23,13 +23,15 @@ import { useChatStore, type ChatSource } from '../store/chatStore';
 import { chunkStore, textStore } from '../store/runtimeStores';
 import { retrieveCorpus } from '../search/retrieval';
 import { assembleAllDocumentChunks, type CorpusChunk } from './allDocumentContext';
-import { RAG_ALL_DOCS_MAX_CHARS } from './chatContextBudget';
+import { allDocsMaxChars, generationTimeoutMs } from './chatContextBudget';
+import { chatContextWindowTokens } from './chatContextWindow';
 import { formatExtractiveAnswer } from './extractiveAnswer';
 import { streamOpenRouterChat } from './openRouterClient';
 import { streamOllamaChat } from './ollamaClient';
 import { clearActiveChatAbort, setActiveChatAbort } from './chatCancellation';
 import {
   CHUNK_CONTEXT_CHARS,
+  EXTRACT_ALL_DOCS_MAX_PASSAGES,
   RAG_MAX_CHUNKS_PER_DOC,
   RAG_MIN_SCORE,
   RAG_TOP_K,
@@ -141,12 +143,14 @@ async function retrieveChunks(query: string, scope: ChatScope): Promise<{
       truncated: false,
     };
   }
+  const { chatProvider, openRouterChatModel, ollamaChatModel } = useSettingsStore.getState();
+  const model = chatProvider === 'ollama' ? ollamaChatModel : openRouterChatModel;
   return assembleAllDocumentChunks(
     retrieved,
     documents,
     textStore,
     chunkStore,
-    RAG_ALL_DOCS_MAX_CHARS,
+    allDocsMaxChars(chatContextWindowTokens(chatProvider, model)),
   );
 }
 
@@ -253,20 +257,19 @@ export async function sendChatMessage(question: string): Promise<void> {
   setActiveChatAbort(controller);
   let accumulated = '';
   let sources: ChatSource[] | undefined;
-  // Manual timeout instead of AbortSignal.any([controller, AbortSignal.timeout]):
-  // same behavior, works on browsers that predate .any(), and the reason lets
-  // the catch block tell a timeout apart from a user-pressed Stop.
-  const timeoutTimer = setTimeout(
-    () => controller.abort(new DOMException('AI request timed out', 'TimeoutError')),
-    REQUEST_TIMEOUT_MS,
-  );
+  // Retrieval has its own 15s cap. Start the generation timer only after
+  // that pass so a large all-documents prompt is not charged the search time.
+  let timeoutTimer: ReturnType<typeof setTimeout> | undefined;
+  let generationTimeoutUsedMs = REQUEST_TIMEOUT_MS;
 
   try {
     const { chunks, included, total, truncated } = await retrieveChunks(q, chatScope);
 
     if (useLocal) {
       const { text, sources: localSources } = formatExtractiveAnswer(q, chunks, {
-        maxPassages: chatScope === 'all' ? chunks.length : undefined,
+        ...(chatScope === 'all'
+          ? { maxPassages: EXTRACT_ALL_DOCS_MAX_PASSAGES, lead: 'corpus' as const }
+          : {}),
       });
       useChatStore.getState().updateMessage(assistantId, {
         text,
@@ -294,6 +297,14 @@ export async function sendChatMessage(question: string): Promise<void> {
 
     // Build prompt + multi-turn history and stream from the selected provider.
     const prompt = buildPrompt(q, chunks);
+    generationTimeoutUsedMs = generationTimeoutMs(prompt.length, REQUEST_TIMEOUT_MS);
+    // Manual timeout instead of AbortSignal.any([controller, AbortSignal.timeout]):
+    // same behavior, works on browsers that predate .any(), and the reason lets
+    // the catch block tell a timeout apart from a user-pressed Stop.
+    timeoutTimer = setTimeout(
+      () => controller.abort(new DOMException('AI request timed out', 'TimeoutError')),
+      generationTimeoutUsedMs,
+    );
     if (chatProvider === 'ollama') {
       const answer = await streamOllamaChat({
         model: ollamaChatModel || DEFAULT_OLLAMA_MODEL,
@@ -337,7 +348,7 @@ export async function sendChatMessage(question: string): Promise<void> {
         text: trimmed
           ? `${trimmed}\n\n${timedOut ? '_⏱ timed out — partial answer_' : '_⏹ stopped_'}`
           : timedOut
-            ? `Error: The selected AI provider didn't respond within ${REQUEST_TIMEOUT_MS / 1000}s. Check your network or try again.`
+            ? `Error: The selected AI provider didn't respond within ${generationTimeoutUsedMs / 1000}s. Check your network or try again.`
             : 'Stopped.',
         // Only a timeout with nothing to show is a failure. A user-stopped
         // answer, or a partial one we kept, is still usable context.
@@ -349,7 +360,7 @@ export async function sendChatMessage(question: string): Promise<void> {
       useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}`, isError: true });
     }
   } finally {
-    clearTimeout(timeoutTimer);
+    if (timeoutTimer !== undefined) clearTimeout(timeoutTimer);
     useChatStore.getState().setIsStreaming(false);
     clearActiveChatAbort(controller);
   }

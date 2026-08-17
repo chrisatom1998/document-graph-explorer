@@ -1,32 +1,45 @@
 /**
  * Character / token packing for chat context, including the all-documents
- * scope that can fill a 1M-token model window.
- *
- * Token counts are a conservative English estimate (4 chars/token). Real
- * BPE tokenizers vary; this is only for packing and capacity reports.
+ * scope. Token counts use a conservative 2 chars/token so CJK and code-heavy
+ * corpora are less likely to overflow the selected model's window.
  */
 
-/** Conservative English chars-per-token used for prompt packing. */
-export const CHARS_PER_TOKEN = 4;
+/** Conservative chars-per-token for prompt packing (English is often ~4). */
+export const CHARS_PER_TOKEN = 2;
 
 /** Models advertised with a 1M-token context (Gemini, Claude, etc.). */
 export const MILLION_TOKEN_WINDOW = 1_000_000;
 
-/**
- * Leave room for the system prompt, 8-turn history, and the model's reply.
- * 100k tokens is 10% of a 1M window.
- */
-export const RAG_ALL_DOCS_RESERVED_TOKENS = 100_000;
+/** Floor / ceiling for reserved prompt + history + reply tokens. */
+export const RAG_ALL_DOCS_RESERVED_TOKENS_MIN = 16_000;
+export const RAG_ALL_DOCS_RESERVED_TOKENS_MAX = 100_000;
 
-/** Ceiling on all-documents prompt text. Typical corpora use far less. */
-export const RAG_ALL_DOCS_MAX_CHARS =
-  (MILLION_TOKEN_WINDOW - RAG_ALL_DOCS_RESERVED_TOKENS) * CHARS_PER_TOKEN;
+/** @deprecated Prefer reservedTokensForWindow(); kept as the 1M-window reserve. */
+export const RAG_ALL_DOCS_RESERVED_TOKENS = RAG_ALL_DOCS_RESERVED_TOKENS_MAX;
+
+/** Absolute ceiling on all-documents prompt text (1M window, conservative). */
+export const RAG_ALL_DOCS_MAX_CHARS = allDocsMaxChars(MILLION_TOKEN_WINDOW);
 
 /** Floor so a huge corpus still keeps a usable excerpt per included doc. */
 export const RAG_ALL_DOCS_MIN_CHARS_PER_DOC = 200;
 
 export function estimateTokensFromChars(charCount: number): number {
   return Math.ceil(Math.max(0, charCount) / CHARS_PER_TOKEN);
+}
+
+export function reservedTokensForWindow(windowTokens: number): number {
+  const window = Math.max(0, windowTokens);
+  return Math.min(
+    RAG_ALL_DOCS_RESERVED_TOKENS_MAX,
+    Math.max(RAG_ALL_DOCS_RESERVED_TOKENS_MIN, Math.floor(window * 0.1)),
+  );
+}
+
+/** Document-text character budget for one all-documents turn. */
+export function allDocsMaxChars(windowTokens: number): number {
+  const reserved = reservedTokensForWindow(windowTokens);
+  const availableTokens = Math.max(0, windowTokens - reserved);
+  return availableTokens * CHARS_PER_TOKEN;
 }
 
 export interface AllDocsWindowEstimate {
@@ -58,7 +71,7 @@ export function estimateAllDocsWindow(options: {
   const documentCount = Math.max(0, Math.floor(options.documentCount));
   const charsPerDocument = Math.max(1, Math.floor(options.charsPerDocument));
   const windowTokens = options.windowTokens ?? MILLION_TOKEN_WINDOW;
-  const reservedTokens = options.reservedTokens ?? RAG_ALL_DOCS_RESERVED_TOKENS;
+  const reservedTokens = options.reservedTokens ?? reservedTokensForWindow(windowTokens);
   const contextChars = documentCount * charsPerDocument;
   const contextTokens = estimateTokensFromChars(contextChars);
   const availableForDocs = Math.max(0, windowTokens - reservedTokens);
@@ -94,4 +107,12 @@ export function charsPerDocumentForBudget(
     maxCharsPerDoc,
     Math.max(minCharsPerDoc, Math.floor(maxTotalChars / documentCount)),
   );
+}
+
+export const REQUEST_TIMEOUT_MAX_MS = 600_000;
+
+/** Generation timeout after retrieval: 2 minutes plus 1s per ~2k tokens, capped. */
+export function generationTimeoutMs(contextChars: number, baseMs: number): number {
+  const extraMs = Math.floor(estimateTokensFromChars(contextChars) / 2_000) * 1_000;
+  return Math.min(REQUEST_TIMEOUT_MAX_MS, baseMs + extraMs);
 }

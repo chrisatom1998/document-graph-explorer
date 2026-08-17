@@ -66,6 +66,7 @@ export function assembleAllDocumentChunks(
   const docs = documents.filter((node) => node.kind === 'document');
   const best = new Map<string, CorpusChunk>();
   for (const hit of retrieved) {
+    if (!hit.text.trim()) continue;
     const cur = best.get(hit.docId);
     if (!cur || hit.score > cur.score) best.set(hit.docId, hit);
   }
