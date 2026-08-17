@@ -455,7 +455,7 @@ export default function Toolbar() {
         >
           <IconData />
         </button>
-        {openMenu === 'data' && (
+        {(openMenu === 'data' || dataDialogOpen) && (
           <Suspense fallback={null}>
             <ExportImportMenu
               onClose={() => setOpenMenu(null)}
