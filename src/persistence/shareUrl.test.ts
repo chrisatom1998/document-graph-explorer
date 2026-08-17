@@ -4,6 +4,7 @@ import {
   MAX_SHARE_COMPRESSED_BYTES,
   MAX_SHARE_DECODED_BYTES,
   MAX_SHARE_FRAGMENT_CHARS,
+  CANONICAL_SHARE_ORIGIN,
   SHARE_FRAGMENT_PREFIX,
   SHARE_RAW_TAG,
   ShareUrlError,
@@ -13,7 +14,9 @@ import {
   decodeShareFragment,
   encodeShareFragment,
   extractShareFragment,
+  extractShareFragmentFromLocation,
   hasShareFragment,
+  resolveShareBaseHref,
 } from './shareUrl';
 
 function node(id: string, extra: Partial<DocNode> = {}): DocNode {
@@ -158,6 +161,17 @@ describe('portable share-link graph', () => {
     expect(url).not.toContain('private-id');
   });
 
+  it('rewrites localhost and file URLs to the public web app', async () => {
+    expect(resolveShareBaseHref('http://localhost:5173/?corpus=private-id')).toBe(
+      `${CANONICAL_SHARE_ORIGIN}/`,
+    );
+    expect(resolveShareBaseHref('file:///Users/me/app/index.html')).toBe(
+      `${CANONICAL_SHARE_ORIGIN}/`,
+    );
+    const url = await createShareUrl(graph(), 'http://127.0.0.1:4173/');
+    expect(url.startsWith(`${CANONICAL_SHARE_ORIGIN}/#graph=v1.`)).toBe(true);
+  });
+
   it('uses an explicitly tagged raw fallback when compression streams are unavailable', async () => {
     vi.stubGlobal('CompressionStream', undefined);
     vi.stubGlobal('DecompressionStream', undefined);
@@ -172,6 +186,33 @@ describe('portable share-link graph', () => {
     expect(hasShareFragment('#graph=v2.abc')).toBe(true);
     expect(extractShareFragment('#settings')).toBeNull();
     expect(hasShareFragment('https://example.test/')).toBe(false);
+  });
+
+  it('recovers fragments messengers percent-encode or move into the path/query', () => {
+    expect(extractShareFragment('https://example.test/#graph%3Dv1.abc')).toBe('#graph=v1.abc');
+    expect(extractShareFragment('https://example.test/%23graph=v1.abc')).toBe('#graph=v1.abc');
+    expect(extractShareFragment('https://example.test/%23graph%3Dv1.abc')).toBe('#graph=v1.abc');
+    expect(extractShareFragment('https://example.test/?graph=v1.abc')).toBe('#graph=v1.abc');
+    expect(
+      extractShareFragmentFromLocation({
+        href: 'https://example.test/%23graph%3Dv1.abc',
+        hash: '',
+      }),
+    ).toBe('#graph=v1.abc');
+    expect(
+      extractShareFragmentFromLocation({
+        href: 'https://example.test/#graph%3Dv1.abc',
+        hash: '#graph%3Dv1.abc',
+      }),
+    ).toBe('#graph=v1.abc');
+  });
+
+  it('still decodes a share after the equals sign was percent-encoded', async () => {
+    const fragment = await encodeShareFragment(graph());
+    const encodedEquals = fragment.replace('#graph=', '#graph%3D');
+    await expect(decodeShareFragment(`https://example.test/${encodedEquals}`)).resolves.toEqual(
+      createShareGraph(graph()),
+    );
   });
 
   it('returns null when no share directive exists and rejects malformed directives', async () => {

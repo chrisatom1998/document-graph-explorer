@@ -4,6 +4,8 @@ import { sanitizeGraphExport } from './validateImport';
 /** Portable, backend-free graph links. URL fragments are never sent to the host. */
 export const SHARE_FRAGMENT_PREFIX = '#graph=v1.';
 export const SHARE_RAW_TAG = 'raw.';
+/** Used when the current page cannot be opened by a recipient (localhost, file, app). */
+export const CANONICAL_SHARE_ORIGIN = 'https://document-graph-explorer.vercel.app';
 
 /** 48 KiB becomes roughly 64 KiB after base64url encoding. */
 export const MAX_SHARE_COMPRESSED_BYTES = 48 * 1024;
@@ -262,16 +264,94 @@ export async function encodeShareFragment(input: unknown): Promise<string> {
   return fragment;
 }
 
-/** Return the explicit #graph fragment from either a hash or a full URL. */
+function decodeShareCandidate(raw: string): string {
+  let current = raw;
+  for (let i = 0; i < 3; i++) {
+    if (current.startsWith('#graph=')) return current;
+    try {
+      const decoded = decodeURIComponent(current);
+      if (decoded === current) break;
+      current = decoded;
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
+function fragmentFromRaw(raw: string): string | null {
+  const normalized = raw.startsWith('#') || raw.startsWith('%') ? raw : `#${raw}`;
+  const decoded = decodeShareCandidate(normalized);
+  return decoded.startsWith('#graph=') ? decoded : null;
+}
+
+/**
+ * Return the explicit #graph fragment from a hash, a full URL, or the
+ * encodings messengers often apply (`%23graph=`, `#graph%3Dv1.`).
+ */
 export function extractShareFragment(value: string): string | null {
+  if (!value) return null;
+
   const hashIndex = value.indexOf('#');
-  if (hashIndex < 0) return null;
-  const hash = value.slice(hashIndex);
-  return hash.startsWith('#graph=') ? hash : null;
+  if (hashIndex >= 0) {
+    const fromHash = fragmentFromRaw(value.slice(hashIndex));
+    if (fromHash) return fromHash;
+  }
+
+  const encodedHash = value.search(/%23graph(?:=|%3D)/iu);
+  if (encodedHash >= 0) {
+    const fromEncoded = fragmentFromRaw(value.slice(encodedHash));
+    if (fromEncoded) return fromEncoded;
+  }
+
+  try {
+    const url = new URL(value);
+    const fromQuery = url.searchParams.get('graph');
+    if (fromQuery) return fragmentFromRaw(fromQuery.startsWith('graph=') ? fromQuery : `graph=${fromQuery}`);
+  } catch {
+    /* not an absolute URL — keep scanning the raw string */
+  }
+
+  if (/^(?:#)?graph=/iu.test(value)) return fragmentFromRaw(value);
+  return null;
+}
+
+/** Prefer location.hash (often already decoded) and fall back to href. */
+export function extractShareFragmentFromLocation(loc: { href: string; hash: string }): string | null {
+  return extractShareFragment(loc.hash) ?? extractShareFragment(loc.href);
 }
 
 export function hasShareFragment(value: string): boolean {
   return extractShareFragment(value) !== null;
+}
+
+function isNonPublicHostname(hostname: string): boolean {
+  const host = hostname.replace(/^\[|\]$/gu, '').toLowerCase();
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '::1' ||
+    host.endsWith('.localhost') ||
+    host.endsWith('.local')
+  );
+}
+
+/**
+ * Recipients cannot open localhost / file / Electron URLs. Those builds still
+ * produce a portable fragment, so point the link at the public web app.
+ */
+export function resolveShareBaseHref(href?: string): string {
+  const fallback = `${CANONICAL_SHARE_ORIGIN}/`;
+  const raw = href ?? (typeof window !== 'undefined' ? window.location.href : undefined);
+  if (!raw) return fallback;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return fallback;
+    if (isNonPublicHostname(url.hostname)) return fallback;
+    return raw;
+  } catch {
+    return fallback;
+  }
 }
 
 /**
@@ -332,12 +412,7 @@ export async function decodeShareFragment(value: string): Promise<GraphExport | 
 
 /** Build a copyable URL, deliberately dropping all query state/corpus ids. */
 export async function createShareUrl(input: unknown, baseHref?: string): Promise<string> {
-  const href =
-    baseHref ??
-    (typeof window !== 'undefined' ? window.location.href : undefined);
-  if (!href) {
-    throw new ShareUrlError('unsupported', 'A public app URL is required to create a link.');
-  }
+  const href = resolveShareBaseHref(baseHref);
 
   let url: URL;
   try {
