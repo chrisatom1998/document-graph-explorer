@@ -5,10 +5,8 @@
  * synchronous — the retrieval that feeds it (ragChat.retrieveChunks) is what
  * touches embeddings; this only formats.
  */
-import { EXTRACT_MAX_PASSAGES, EXTRACT_PASSAGE_CHARS } from '../config';
+import { EXTRACT_MAX_PASSAGES, EXTRACT_PASSAGE_CHARS, SOURCE_SNIPPET_CHARS } from '../config';
 import type { ChatSource } from '../store/chatStore';
-
-const SOURCE_SNIPPET_CHARS = 200; // citation-chip preview length (matches ragChat)
 
 export interface Passage {
   docId: string;
@@ -30,6 +28,7 @@ function clip(text: string, max: number): string {
 export function formatExtractiveAnswer(
   question: string,
   chunks: readonly Passage[],
+  options?: { maxPassages?: number; lead?: 'relevant' | 'corpus' },
 ): { text: string; sources: ChatSource[] } {
   // Best passage per document, highest score first.
   const bestByDoc = new Map<string, Passage>();
@@ -37,9 +36,10 @@ export function formatExtractiveAnswer(
     const cur = bestByDoc.get(c.docId);
     if (!cur || c.score > cur.score) bestByDoc.set(c.docId, c);
   }
+  const maxPassages = options?.maxPassages ?? EXTRACT_MAX_PASSAGES;
   const top = [...bestByDoc.values()]
     .sort((a, b) => b.score - a.score)
-    .slice(0, EXTRACT_MAX_PASSAGES);
+    .slice(0, maxPassages);
 
   if (top.length === 0) {
     return {
@@ -49,7 +49,11 @@ export function formatExtractiveAnswer(
   }
 
   const q = question.trim();
-  const lead = `Here ${top.length === 1 ? 'is the most relevant passage' : `are the ${top.length} most relevant passages`} from your documents${q ? ` for "${q}"` : ''}:`;
+  const forQuery = q ? ` for "${q}"` : '';
+  const lead =
+    options?.lead === 'corpus'
+      ? `Here ${top.length === 1 ? 'is a passage' : `are ${top.length} passages`} from your documents${forQuery}:`
+      : `Here ${top.length === 1 ? 'is the most relevant passage' : `are the ${top.length} most relevant passages`} from your documents${forQuery}:`;
   const blocks = top.map((c) => `**${c.docTitle}**\n\n> ${clip(c.text, EXTRACT_PASSAGE_CHARS).replace(/\n+/g, '\n> ')}`);
   const text = [lead, ...blocks].join('\n\n');
 

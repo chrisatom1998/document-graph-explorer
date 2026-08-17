@@ -4443,17 +4443,52 @@ mark.passage-mark {
 
 .chat-panel__header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 14px 16px;
   border-bottom: 1px solid rgba(140, 150, 255, 0.12);
   background: rgba(14, 16, 32, 0.45);
 }
 
+.chat-panel__header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
 .chat-panel__title-row {
   display: flex;
   align-items: baseline;
   gap: 8px;
+}
+
+.chat-panel__scope {
+  display: inline-flex;
+  border: 1px solid rgba(140, 150, 255, 0.18);
+  border-radius: 8px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.chat-panel__scope-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  line-height: 1.2;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.chat-panel__scope-btn.is-active {
+  background: rgba(140, 150, 255, 0.18);
+  color: var(--text-primary);
+}
+
+.chat-panel__scope-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
 .chat-panel__title {
