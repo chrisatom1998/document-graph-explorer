@@ -123,9 +123,13 @@ export default function ExportImportMenu({
   const [importing, setImporting] = useState(false);
   const [shareConfirmOpen, setShareConfirmOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const confirmOpen = pendingFile !== null || shareConfirmOpen;
   useFocusTrap(dialogRef, confirmOpen);
+  const canShareNatively =
+    typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   useEffect(() => {
     onDialogOpenChange?.(confirmOpen);
@@ -133,6 +137,31 @@ export default function ExportImportMenu({
       if (confirmOpen) onDialogOpenChange?.(false);
     };
   }, [confirmOpen, onDialogOpenChange]);
+
+  useEffect(() => {
+    if (!shareConfirmOpen) {
+      setShareUrl(null);
+      setShareError(null);
+      return;
+    }
+    let cancelled = false;
+    setSharing(true);
+    setShareUrl(null);
+    setShareError(null);
+    void createShareUrl(toGraphExport(false))
+      .then((url) => {
+        if (!cancelled) setShareUrl(url);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setShareError(messageFromError(error));
+      })
+      .finally(() => {
+        if (!cancelled) setSharing(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [shareConfirmOpen]);
 
   const canImport = phase === 'idle' || phase === 'ready';
   const canExportGraph = phase === 'ready';
@@ -162,11 +191,16 @@ export default function ExportImportMenu({
     if (!importing) setPendingFile(null);
   };
 
+  const openShareConfirm = () => {
+    onDialogOpenChange?.(true);
+    setShareConfirmOpen(true);
+  };
+
   const copyShareLink = async () => {
+    if (!shareUrl) return;
     setSharing(true);
     try {
-      const url = await createShareUrl(toGraphExport(false));
-      await copyText(url);
+      await copyText(shareUrl);
       useUiStore.getState().pushToast('Shareable graph link copied.', 'info');
       setShareConfirmOpen(false);
       onClose?.();
@@ -174,6 +208,22 @@ export default function ExportImportMenu({
       useUiStore.getState().pushToast(messageFromError(error), 'error');
     } finally {
       setSharing(false);
+    }
+  };
+
+  const shareNatively = async () => {
+    if (!shareUrl || !canShareNatively) return;
+    try {
+      await navigator.share({
+        title: 'Shared document graph',
+        url: shareUrl,
+      });
+      useUiStore.getState().pushToast('Shareable graph link ready.', 'info');
+      setShareConfirmOpen(false);
+      onClose?.();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      useUiStore.getState().pushToast(messageFromError(error), 'error');
     }
   };
 
@@ -185,7 +235,7 @@ export default function ExportImportMenu({
           className="toolbar__menu-item"
           title="Copy a backend-free link to this graph"
           disabled={!canExportGraph}
-          onClick={() => setShareConfirmOpen(true)}
+          onClick={openShareConfirm}
         >
           <IconLink />
           <span>Copy shareable URL</span>
@@ -328,6 +378,36 @@ export default function ExportImportMenu({
                 full document text, local paths, embeddings, file handles, and settings. Anyone
                 with the link can view the included graph metadata.
               </p>
+              {shareError ? (
+                <p style={confirmTextStyle} role="alert">
+                  {shareError}
+                </p>
+              ) : (
+                <label style={{ ...confirmTextStyle, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  Shareable link
+                  <textarea
+                    readOnly
+                    value={shareUrl ?? ''}
+                    placeholder={sharing ? 'Creating link…' : ''}
+                    aria-label="Shareable graph URL"
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      resize: 'vertical',
+                      minHeight: 64,
+                      padding: '8px 10px',
+                      borderRadius: 8,
+                      border: '1px solid color-mix(in srgb, currentColor 22%, transparent)',
+                      background: 'color-mix(in srgb, currentColor 6%, transparent)',
+                      color: 'inherit',
+                      font: 'inherit',
+                      fontSize: 12,
+                      lineHeight: 1.4,
+                    }}
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                </label>
+              )}
               <div style={confirmRowStyle}>
                 <button
                   type="button"
@@ -337,13 +417,23 @@ export default function ExportImportMenu({
                 >
                   Cancel
                 </button>
+                {canShareNatively && (
+                  <button
+                    type="button"
+                    className="snapshot-btn"
+                    disabled={sharing || !shareUrl}
+                    onClick={() => void shareNatively()}
+                  >
+                    Share…
+                  </button>
+                )}
                 <button
                   type="button"
                   className="snapshot-btn snapshot-btn--load"
-                  disabled={sharing}
+                  disabled={sharing || !shareUrl}
                   onClick={() => void copyShareLink()}
                 >
-                  {sharing ? 'Creating link…' : 'Copy link'}
+                  {sharing && !shareUrl ? 'Creating link…' : 'Copy link'}
                 </button>
               </div>
             </div>
