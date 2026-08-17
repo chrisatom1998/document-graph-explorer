@@ -30,6 +30,7 @@ function clip(text: string, max: number): string {
 export function formatExtractiveAnswer(
   question: string,
   chunks: readonly Passage[],
+  options?: { maxPassages?: number },
 ): { text: string; sources: ChatSource[] } {
   // Best passage per document, highest score first.
   const bestByDoc = new Map<string, Passage>();
@@ -37,9 +38,10 @@ export function formatExtractiveAnswer(
     const cur = bestByDoc.get(c.docId);
     if (!cur || c.score > cur.score) bestByDoc.set(c.docId, c);
   }
+  const maxPassages = options?.maxPassages ?? EXTRACT_MAX_PASSAGES;
   const top = [...bestByDoc.values()]
     .sort((a, b) => b.score - a.score)
-    .slice(0, EXTRACT_MAX_PASSAGES);
+    .slice(0, maxPassages);
 
   if (top.length === 0) {
     return {

@@ -40,6 +40,12 @@ describe('formatExtractiveAnswer', () => {
     expect(r.sources).toHaveLength(4);
   });
 
+  it('can include every assembled document when maxPassages is raised', () => {
+    const many = Array.from({ length: 7 }, (_, i) => p(`doc${i}`, `T${i}`, `text ${i}`, 1 - i * 0.1));
+    const r = formatExtractiveAnswer('q', many, { maxPassages: many.length });
+    expect(r.sources).toHaveLength(7);
+  });
+
   it('truncates a long passage to EXTRACT_PASSAGE_CHARS with an ellipsis', () => {
     const long = 'word '.repeat(400); // 2000 chars
     const r = formatExtractiveAnswer('q', [p('doc1', 'Long', long, 0.9)]);

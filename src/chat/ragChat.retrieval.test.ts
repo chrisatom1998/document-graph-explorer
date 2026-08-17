@@ -56,4 +56,18 @@ describe('RAG retrieval helpers', () => {
   it('keeps local notes and tags out of chat retrieval', () => {
     expect(retrievalOptionsForChat()).toMatchObject({ includeSearchMetadata: false });
   });
+
+  it('widens retrieval when the user chooses all documents', () => {
+    expect(retrievalOptionsForChat('relevant')).toMatchObject({
+      limit: 8,
+      perDocument: 2,
+      minSemanticScore: 0.3,
+    });
+    expect(retrievalOptionsForChat('all', 47)).toMatchObject({
+      limit: 47,
+      perDocument: 1,
+      minSemanticScore: 0,
+      includeSearchMetadata: false,
+    });
+  });
 });

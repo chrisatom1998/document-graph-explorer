@@ -17,22 +17,27 @@ import {
   DEFAULT_OLLAMA_MODEL,
   DEFAULT_OPENROUTER_CHAT_MODEL,
   useSettingsStore,
+  type ChatScope,
 } from '../store/settingsStore';
 import { useChatStore, type ChatSource } from '../store/chatStore';
+import { chunkStore, textStore } from '../store/runtimeStores';
 import { retrieveCorpus } from '../search/retrieval';
+import { assembleAllDocumentChunks, type CorpusChunk } from './allDocumentContext';
+import { RAG_ALL_DOCS_MAX_CHARS } from './chatContextBudget';
 import { formatExtractiveAnswer } from './extractiveAnswer';
 import { streamOpenRouterChat } from './openRouterClient';
 import { streamOllamaChat } from './ollamaClient';
 import { clearActiveChatAbort, setActiveChatAbort } from './chatCancellation';
+import {
+  CHUNK_CONTEXT_CHARS,
+  RAG_MAX_CHUNKS_PER_DOC,
+  RAG_MIN_SCORE,
+  RAG_TOP_K,
+  REQUEST_TIMEOUT_MS,
+  SOURCE_SNIPPET_CHARS,
+} from './ragChatConstants';
 
 export { cancelChat } from './chatCancellation';
-
-const RAG_TOP_K = 8; // max chunks to include as context
-const RAG_MIN_SCORE = 0.3; // cosine floor for relevance
-const RAG_MAX_CHUNKS_PER_DOC = 2; // avoid one long document crowding out the corpus
-const CHUNK_CONTEXT_CHARS = 1500; // max chars per chunk in prompt
-const REQUEST_TIMEOUT_MS = 120_000; // streaming responses can run long
-const SOURCE_SNIPPET_CHARS = 200; // citation preview length
 
 // ---------------------------------------------------------------------------
 // Cancellation: one in-flight chat request at a time
@@ -50,13 +55,7 @@ function isAbortLike(err: unknown): boolean {
 // Retrieval: find the most relevant chunks for a query
 // ---------------------------------------------------------------------------
 
-interface RetrievedChunk {
-  docId: string;
-  docTitle: string;
-  chunkIndex?: number;
-  text: string;
-  score: number;
-}
+type RetrievedChunk = CorpusChunk;
 
 /** Keep the highest-scoring passages without letting a single doc dominate. */
 export function diversifyChunks<T extends { docId: string; score: number }>(
@@ -89,28 +88,66 @@ export function keywordEvidence(text: string, terms: string[], maxChars: number)
   return text.slice(start, end).trim();
 }
 
-export function retrievalOptionsForChat() {
-  return {
-    limit: RAG_TOP_K,
-    perDocument: RAG_MAX_CHUNKS_PER_DOC,
+export function retrievalOptionsForChat(
+  scope: ChatScope = useSettingsStore.getState().chatScope,
+  documentCount?: number,
+) {
+  const shared = {
     timeoutMs: 15_000,
-    minSemanticScore: RAG_MIN_SCORE,
     maxPassageChars: CHUNK_CONTEXT_CHARS,
     // Notes, tags, and cluster labels are local search metadata. Keep them out
     // of chat prompts, especially when the selected provider is cloud-hosted.
     includeSearchMetadata: false,
   };
+  if (scope === 'all') {
+    const docs =
+      documentCount ??
+      useGraphStore.getState().nodes.filter((node) => node.kind === 'document').length;
+    return {
+      ...shared,
+      limit: Math.max(1, docs),
+      perDocument: 1,
+      minSemanticScore: 0,
+    };
+  }
+  return {
+    ...shared,
+    limit: RAG_TOP_K,
+    perDocument: RAG_MAX_CHUNKS_PER_DOC,
+    minSemanticScore: RAG_MIN_SCORE,
+  };
 }
 
-async function retrieveChunks(query: string): Promise<RetrievedChunk[]> {
-  const hits = await retrieveCorpus(query, retrievalOptionsForChat());
-  return hits.map((hit) => ({
+async function retrieveChunks(query: string, scope: ChatScope): Promise<{
+  chunks: RetrievedChunk[];
+  included: number;
+  total: number;
+  truncated: boolean;
+}> {
+  const documents = useGraphStore.getState().nodes.filter((node) => node.kind === 'document');
+  const hits = await retrieveCorpus(query, retrievalOptionsForChat(scope, documents.length));
+  const retrieved: RetrievedChunk[] = hits.map((hit) => ({
     docId: hit.docId,
     docTitle: hit.docTitle,
     chunkIndex: hit.passageIndex,
     text: hit.text,
     score: hit.fusedScore,
   }));
+  if (scope !== 'all') {
+    return {
+      chunks: retrieved,
+      included: retrieved.length,
+      total: documents.length,
+      truncated: false,
+    };
+  }
+  return assembleAllDocumentChunks(
+    retrieved,
+    documents,
+    textStore,
+    chunkStore,
+    RAG_ALL_DOCS_MAX_CHARS,
+  );
 }
 
 /** Per unique doc, keep the single best-scoring chunk as its citation. */
@@ -177,7 +214,7 @@ export async function sendChatMessage(question: string): Promise<void> {
   const q = question.trim();
   if (!q) return;
 
-  const { chatProvider, openRouterKey, openRouterChatModel, ollamaChatModel } =
+  const { chatProvider, chatScope, openRouterKey, openRouterChatModel, ollamaChatModel } =
     useSettingsStore.getState();
   const chat = useChatStore.getState();
 
@@ -224,11 +261,12 @@ export async function sendChatMessage(question: string): Promise<void> {
   );
 
   try {
-    // Retrieve relevant chunks
-    const chunks = await retrieveChunks(q);
+    const { chunks, included, total, truncated } = await retrieveChunks(q, chatScope);
 
     if (useLocal) {
-      const { text, sources: localSources } = formatExtractiveAnswer(q, chunks);
+      const { text, sources: localSources } = formatExtractiveAnswer(q, chunks, {
+        maxPassages: chatScope === 'all' ? chunks.length : undefined,
+      });
       useChatStore.getState().updateMessage(assistantId, {
         text,
         ...(localSources.length ? { sources: localSources } : {}),
@@ -243,10 +281,13 @@ export async function sendChatMessage(question: string): Promise<void> {
       return;
     }
 
-    // Update status
-    useChatStore.getState().updateMessage(assistantId, {
-      text: `Found ${chunks.length} relevant passage${chunks.length > 1 ? 's' : ''}. Generating answer…`,
-    });
+    const status =
+      chatScope === 'all'
+        ? truncated
+          ? `Using ${included} of ${total} documents (context budget). Generating answer…`
+          : `Using all ${included} document${included !== 1 ? 's' : ''}. Generating answer…`
+        : `Found ${chunks.length} relevant passage${chunks.length > 1 ? 's' : ''}. Generating answer…`;
+    useChatStore.getState().updateMessage(assistantId, { text: status });
 
     sources = bestChunkSources(chunks);
 

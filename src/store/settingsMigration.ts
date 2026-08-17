@@ -24,6 +24,8 @@ export type OcrMaxPages = 10 | 20 | 40 | 80;
 export type ChatProvider = 'local' | 'openrouter' | 'ollama';
 /** Provider used for enrichment and per-document AI (no 'local' — both need a model). */
 export type EnrichProvider = 'openrouter' | 'ollama';
+/** Which documents chat includes in each turn. */
+export type ChatScope = 'relevant' | 'all';
 
 const OCR_LANGUAGE_IDS: ReadonlySet<string> = new Set([
   'eng',
@@ -49,6 +51,8 @@ function isOcrMaxPages(value: unknown): value is OcrMaxPages {
 
 export interface PersistedSettings {
   chatProvider: ChatProvider;
+  /** Top matching passages vs one excerpt from every loaded document. */
+  chatScope: ChatScope;
   enrichProvider: EnrichProvider;
   openRouterKey: string;
   rememberOpenRouterKey: boolean;
@@ -79,6 +83,7 @@ export const DEFAULT_OLLAMA_MODEL = 'llama3.2';
 
 export const DEFAULTS: PersistedSettings = {
   chatProvider: 'local',
+  chatScope: 'relevant',
   enrichProvider: 'openrouter',
   openRouterKey: '',
   rememberOpenRouterKey: false,
@@ -132,12 +137,17 @@ export function loadPersistedSettings(): PersistedSettings {
       parsed.chatProvider === 'local'
         ? parsed.chatProvider
         : DEFAULTS.chatProvider;
+    const chatScope: ChatScope =
+      parsed.chatScope === 'all' || parsed.chatScope === 'relevant'
+        ? parsed.chatScope
+        : DEFAULTS.chatScope;
     const enrichProvider: EnrichProvider =
       parsed.enrichProvider === 'openrouter' || parsed.enrichProvider === 'ollama'
         ? parsed.enrichProvider
         : DEFAULTS.enrichProvider;
     const loaded: PersistedSettings = {
       chatProvider,
+      chatScope,
       enrichProvider,
       openRouterKey:
         rememberOpenRouterKey && typeof parsed.openRouterKey === 'string'

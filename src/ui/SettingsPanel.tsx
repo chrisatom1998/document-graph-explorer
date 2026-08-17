@@ -32,6 +32,7 @@ import {
   DEFAULT_OLLAMA_MODEL,
   useSettingsStore,
   type ChatProvider,
+  type ChatScope,
   type EmbeddingQueryStyle,
   type EnrichProvider,
   type OcrLanguageId,
@@ -61,6 +62,7 @@ export default function SettingsPanel() {
   const edgeCount = useGraphStore((s) => s.edges.length);
 
   const chatProvider = useSettingsStore((s) => s.chatProvider);
+  const chatScope = useSettingsStore((s) => s.chatScope);
   const enrichProvider = useSettingsStore((s) => s.enrichProvider);
   const openRouterKey = useSettingsStore((s) => s.openRouterKey);
   const rememberOpenRouterKey = useSettingsStore((s) => s.rememberOpenRouterKey);
@@ -76,6 +78,7 @@ export default function SettingsPanel() {
   const ocrLanguage = useSettingsStore((s) => s.ocrLanguage);
   const ocrMaxPages = useSettingsStore((s) => s.ocrMaxPages);
   const setChatProvider = useSettingsStore((s) => s.setChatProvider);
+  const setChatScope = useSettingsStore((s) => s.setChatScope);
   const setEnrichProvider = useSettingsStore((s) => s.setEnrichProvider);
   const setOpenRouterKey = useSettingsStore((s) => s.setOpenRouterKey);
   const setRememberOpenRouterKey = useSettingsStore((s) => s.setRememberOpenRouterKey);
@@ -354,6 +357,17 @@ export default function SettingsPanel() {
               <option value="ollama">Ollama (local)</option>
             </select>
           </label>
+          <label
+            className="settings-check"
+            title="Most relevant keeps the top matching passages. All documents sends one excerpt from every loaded file — better for comparisons, larger prompts."
+          >
+            <input
+              type="checkbox"
+              checked={chatScope === 'all'}
+              onChange={(e) => setChatScope((e.target.checked ? 'all' : 'relevant') as ChatScope)}
+            />
+            Chat with all documents (not just the top matching passages)
+          </label>
           <label className="settings-field">
             Enrichment &amp; document AI provider
             <select
@@ -503,8 +517,9 @@ export default function SettingsPanel() {
             stored text is sent to the enrichment provider selected above — OpenRouter
             (cloud, may incur model charges) or your local Ollama server. Enormous files are
             capped at {DOCUMENT_AI_MAX_CONTEXT_CHARS.toLocaleString('en-US')} characters so they fit the model. &quot;Ask AI&quot; sends the
-            selected document to that provider. Chat sends only retrieved document passages and
-            recent chat history to the chat provider; your notes and tags are excluded.
+            selected document to that provider. Chat sends retrieved document passages — or one
+            excerpt from every document when &quot;all documents&quot; is on — plus recent chat
+            history to the chat provider; your notes and tags are excluded.
           </p>
         </section>
         )}

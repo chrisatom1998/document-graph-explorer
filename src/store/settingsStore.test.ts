@@ -217,6 +217,15 @@ describe('storage and recognition settings', () => {
     useSettingsStore.getState().setCacheEmbeddings(true);
   });
 
+  it('defaults chat scope to relevant passages and round-trips all-documents', async () => {
+    const { useSettingsStore } = await import('./settingsStore');
+    expect(useSettingsStore.getState().chatScope).toBe('relevant');
+    useSettingsStore.getState().setChatScope('all');
+    expect(useSettingsStore.getState().chatScope).toBe('all');
+    useSettingsStore.getState().setChatScope('relevant');
+    expect(useSettingsStore.getState().chatScope).toBe('relevant');
+  });
+
   it('defaults to English query style and bundled OCR', async () => {
     const { useSettingsStore } = await import('./settingsStore');
     expect(useSettingsStore.getState().embeddingQueryStyle).toBe('english');

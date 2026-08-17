@@ -141,6 +141,8 @@ export default function ChatPanel() {
   const docCount = nodes.filter((n) => n.kind === 'document').length;
   const pathEndpoints = useUiStore((s) => s.pathEndpoints);
   const chatProvider = useSettingsStore((s) => s.chatProvider);
+  const chatScope = useSettingsStore((s) => s.chatScope);
+  const setChatScope = useSettingsStore((s) => s.setChatScope);
   const openRouterKey = useSettingsStore((s) => s.openRouterKey);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
   const localMode =
@@ -249,19 +251,43 @@ export default function ChatPanel() {
     <div className="chat-panel glass-panel" role="dialog" aria-label="Chat with your documents">
       {/* Header */}
       <div className="chat-panel__header">
-        <div className="chat-panel__title-row">
-          <h3 className="chat-panel__title">Chat with your docs</h3>
-          <span className="chat-panel__doc-count">{docCount} doc{docCount !== 1 ? 's' : ''}</span>
-          {messages.length > 0 && (
+        <div className="chat-panel__header-main">
+          <div className="chat-panel__title-row">
+            <h3 className="chat-panel__title">Chat with your docs</h3>
+            <span className="chat-panel__doc-count">{docCount} doc{docCount !== 1 ? 's' : ''}</span>
+            {messages.length > 0 && (
+              <button
+                type="button"
+                className="chat-panel__export"
+                title="Download this conversation as a Markdown file"
+                onClick={exportTranscript}
+              >
+                Export
+              </button>
+            )}
+          </div>
+          <div className="chat-panel__scope" role="group" aria-label="Which documents to include in chat">
             <button
               type="button"
-              className="chat-panel__export"
-              title="Download this conversation as a Markdown file"
-              onClick={exportTranscript}
+              className={`chat-panel__scope-btn${chatScope === 'relevant' ? ' is-active' : ''}`}
+              aria-pressed={chatScope === 'relevant'}
+              disabled={isStreaming}
+              title="Use the top matching passages (up to 8)"
+              onClick={() => setChatScope('relevant')}
             >
-              Export
+              Most relevant
             </button>
-          )}
+            <button
+              type="button"
+              className={`chat-panel__scope-btn${chatScope === 'all' ? ' is-active' : ''}`}
+              aria-pressed={chatScope === 'all'}
+              disabled={isStreaming}
+              title="Include one excerpt from every uploaded document in this turn"
+              onClick={() => setChatScope('all')}
+            >
+              All documents
+            </button>
+          </div>
         </div>
         <CloseButton
           className="chat-panel__close"
@@ -277,8 +303,9 @@ export default function ChatPanel() {
           <div className="chat-panel__empty">
             <p className="chat-panel__empty-title">Ask anything about your documents</p>
             <p className="chat-panel__empty-hint">
-              Your {docCount} uploaded document{docCount !== 1 ? 's are' : ' is'} the
-              knowledge source. Try asking about key topics, comparisons, or specific details.
+              {chatScope === 'all'
+                ? `Each answer includes all ${docCount} uploaded document${docCount !== 1 ? 's' : ''} (trimmed if the collection is huge). Best for comparisons and corpus-wide questions.`
+                : `Your ${docCount} uploaded document${docCount !== 1 ? 's are' : ' is'} the knowledge source. Chat uses the most relevant passages. Try asking about key topics, comparisons, or specific details.`}
             </p>
           </div>
         )}
