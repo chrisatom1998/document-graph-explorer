@@ -88,6 +88,16 @@ describe('applyShareUrlFromLocation', () => {
     expect(importGraphExportData).not.toHaveBeenCalled();
   });
 
+  it('opens query-only share URLs after a messenger drops the hash', async () => {
+    const result = await applyShareUrlFromLocation({
+      href: 'https://example.test/?graph=v1.abc',
+      hash: '',
+    });
+    expect(result).toBe('opened');
+    expect(decodeShareFragment).toHaveBeenCalledWith('#graph=v1.abc');
+    expect(importGraphExportData).toHaveBeenCalledWith(sharedGraph, 'shared');
+  });
+
   it('opens encoded share URLs that never reach location.hash', async () => {
     const result = await applyShareUrlFromLocation({
       href: 'https://example.test/%23graph%3Dv1.abc',

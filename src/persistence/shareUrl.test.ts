@@ -5,10 +5,12 @@ import {
   MAX_SHARE_DECODED_BYTES,
   MAX_SHARE_FRAGMENT_CHARS,
   CANONICAL_SHARE_ORIGIN,
+  MAX_MESSENGER_SHARE_URL_CHARS,
   SHARE_FRAGMENT_PREFIX,
   SHARE_RAW_TAG,
   ShareUrlError,
   SHARE_SUMMARY_CHARS,
+  attachMessengerSafeShareQuery,
   createShareGraph,
   createShareUrl,
   decodeShareFragment,
@@ -17,6 +19,7 @@ import {
   extractShareFragmentFromLocation,
   hasShareFragment,
   resolveShareBaseHref,
+  stripShareFromLocation,
 } from './shareUrl';
 
 function node(id: string, extra: Partial<DocNode> = {}): DocNode {
@@ -151,14 +154,14 @@ describe('portable share-link graph', () => {
     expect(decoded?.nodes[0].title).toBe('Résumé — 東京');
   });
 
-  it('builds a clean URL without query state or corpus ids', async () => {
+  it('builds a clean URL without leftover query state or corpus ids', async () => {
     const url = await createShareUrl(
       graph(),
       'https://example.test/app/?corpus=private-id&eval=retrieval#old',
     );
-    expect(url).toMatch(/^https:\/\/example\.test\/app\/#graph=v1\./u);
-    expect(url).not.toContain('?');
+    expect(url).toMatch(/^https:\/\/example\.test\/app\/\?graph=v1\.[^&#]+#graph=v1\./u);
     expect(url).not.toContain('private-id');
+    expect(url).not.toContain('eval=retrieval');
   });
 
   it('rewrites localhost and file URLs to the public web app', async () => {
@@ -169,7 +172,31 @@ describe('portable share-link graph', () => {
       `${CANONICAL_SHARE_ORIGIN}/`,
     );
     const url = await createShareUrl(graph(), 'http://127.0.0.1:4173/');
-    expect(url.startsWith(`${CANONICAL_SHARE_ORIGIN}/#graph=v1.`)).toBe(true);
+    expect(url.startsWith(`${CANONICAL_SHARE_ORIGIN}/`)).toBe(true);
+    expect(url).toContain('?graph=v1.');
+    expect(url).toContain('#graph=v1.');
+  });
+
+  it('keeps a query copy only while the dual URL fits the messenger budget', () => {
+    const compact = new URL('https://example.test/#graph=v1.abc');
+    expect(attachMessengerSafeShareQuery(compact, '#graph=v1.abc').toString()).toBe(
+      'https://example.test/?graph=v1.abc#graph=v1.abc',
+    );
+    const oversized = `#graph=v1.${'A'.repeat(MAX_MESSENGER_SHARE_URL_CHARS)}`;
+    const hashOnly = new URL(`https://example.test/${oversized}`);
+    expect(attachMessengerSafeShareQuery(hashOnly, oversized).hash.startsWith('#graph=v1.')).toBe(
+      true,
+    );
+    expect(attachMessengerSafeShareQuery(hashOnly, oversized).search).toBe('');
+  });
+
+  it('strips both the hash and the query copy when leaving a shared view', () => {
+    const replaceState = vi.fn();
+    stripShareFromLocation(
+      { pathname: '/app/', search: '?graph=v1.abc&keep=1', hash: '#graph=v1.abc' },
+      { replaceState },
+    );
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/app/?keep=1');
   });
 
   it('uses an explicitly tagged raw fallback when compression streams are unavailable', async () => {
@@ -205,6 +232,14 @@ describe('portable share-link graph', () => {
         hash: '#graph%3Dv1.abc',
       }),
     ).toBe('#graph=v1.abc');
+  });
+
+  it('decodes a query-only share after a messenger drops the hash', async () => {
+    const fragment = await encodeShareFragment(graph());
+    const token = fragment.slice('#graph='.length);
+    await expect(decodeShareFragment(`https://example.test/?graph=${token}`)).resolves.toEqual(
+      createShareGraph(graph()),
+    );
   });
 
   it('still decodes a share after the equals sign was percent-encoded', async () => {
