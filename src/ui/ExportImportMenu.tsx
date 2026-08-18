@@ -376,7 +376,9 @@ export default function ExportImportMenu({
                 The link contains titles, summaries (up to 2000 characters), topics,
                 entities, keywords, warnings, cluster labels, and connection evidence (up to 200 characters). It excludes
                 full document text, local paths, embeddings, file handles, and settings. Anyone
-                with the link can view the included graph metadata.
+                with the link can view the included graph metadata. Compact links also
+                include a <code>?graph=</code> copy so chat apps that strip{' '}
+                <code>#</code> still open.
               </p>
               {shareError ? (
                 <p style={confirmTextStyle} role="alert">

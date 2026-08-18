@@ -42,9 +42,12 @@ confirmation before copying a link. The URL fragment contains titles, summaries
 connection evidence (up to 200 characters), so anyone who
 receives the link can read that graph metadata. It excludes full document text,
 original file bytes, local paths, modification times, embeddings, file handles,
-and settings, and replaces content-derived node and edge IDs. URL fragments are
-not sent to the hosting server as part of HTTP requests, but recipients' browsers
-can decode the fragment locally.
+and settings, and replaces content-derived node and edge IDs. Compact links also
+copy that payload into a `?graph=` query parameter (when the full URL stays
+under 4000 characters) because many chat apps drop everything after `#`.
+Opening the link rewrites the address bar to a fragment-only URL. That first
+request can appear in the host's access logs; later navigations do not resend
+the payload. Recipients' browsers decode the graph locally.
 
 ## How the air-gapped guarantee is enforced (not just promised)
 
