@@ -19,6 +19,7 @@
 import { useChatStore } from '../store/chatStore';
 import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
+import { useUiStore } from '../store/uiStore';
 import { loadChatHistory, saveChatHistory } from './chatHistory';
 
 const SAVE_DEBOUNCE_MS = 350;
@@ -29,17 +30,12 @@ let pending: { scope: string; timer: ReturnType<typeof setTimeout> } | null = nu
 let lastLoadedScope: string | null = null;
 let saveFailureToastShown = false;
 
-/** Toast lazily to avoid a static ui-store dependency from persistence code. */
 function toastSaveFailureOnce(): void {
   if (saveFailureToastShown) return;
   saveFailureToastShown = true;
-  void import('../store/uiStore')
-    .then(({ useUiStore }) =>
-      useUiStore
-        .getState()
-        .pushToast("Couldn't save the chat transcript — it may not survive a reload.", 'warning'),
-    )
-    .catch(() => undefined);
+  useUiStore
+    .getState()
+    .pushToast("Couldn't save the chat transcript — it may not survive a reload.", 'warning');
 }
 
 /** The workspace a transcript belongs to, or null when nothing should persist. */

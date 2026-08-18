@@ -26,6 +26,7 @@ import {
   getCorpusRecord,
   updateCorpusAnnotations,
 } from '../persistence/corpusRepository';
+import { useUiStore } from './uiStore';
 
 const SAVE_DEBOUNCE_MS = 350;
 const RETRY_AFTER_FAILURE_MS = 15_000;
@@ -104,12 +105,9 @@ let retryTimer: ReturnType<typeof setTimeout> | null = null;
 let failureToastShown = false;
 let lifecycleArmed = false;
 
-/** Toast lazily to avoid a static ui-store dependency from persistence code. */
 function toastAnnotationFailure(message: string, gate?: () => boolean): void {
   if (gate && !gate()) return;
-  void import('../store/uiStore')
-    .then(({ useUiStore }) => useUiStore.getState().pushToast(message, 'warning'))
-    .catch(() => undefined);
+  useUiStore.getState().pushToast(message, 'warning');
 }
 
 function toastSaveFailure(): void {

@@ -118,7 +118,7 @@ export default function Effects() {
           radius={0.9}
         />
       )}
-      {dofOn ? <FocusedDoF /> : (null as unknown as React.ReactElement)}
+      {dofOn ? <FocusedDoF /> : null}
       <Vignette darkness={flat ? FLAT_VIGNETTE : 0.62 - densitySoftening * 0.08} offset={flat ? 0.28 : 0.18} />
     </EffectComposer>
   );
