@@ -1,7 +1,7 @@
 import type { DocNode, Edge, GraphExport } from '../model/types';
 import { sanitizeGraphExport } from './validateImport';
 
-/** Portable, backend-free graph links. URL fragments are never sent to the host. */
+/** Portable, backend-free graph links. Compact shares may also use `?graph=`. */
 export const SHARE_FRAGMENT_PREFIX = '#graph=v1.';
 export const SHARE_RAW_TAG = 'raw.';
 /** Used when the current page cannot be opened by a recipient (localhost, file, app). */
@@ -11,6 +11,11 @@ export const CANONICAL_SHARE_ORIGIN = 'https://document-graph-explorer.vercel.ap
 export const MAX_SHARE_COMPRESSED_BYTES = 48 * 1024;
 /** Prefix/tag slack above the approximately 64 KiB encoded payload. */
 export const MAX_SHARE_FRAGMENT_CHARS = 64 * 1024 + 64;
+/**
+ * Dual hash+query URLs longer than this are hash-only. Chat apps that strip
+ * `#...` still get a working `?graph=` copy for typical compact graphs.
+ */
+export const MAX_MESSENGER_SHARE_URL_CHARS = 4000;
 /** Hard post-decompression ceiling, enforced while the stream is read. */
 export const MAX_SHARE_DECODED_BYTES = 2 * 1024 * 1024;
 /** Share-link summaries match the import sanitizer and confirm copy (2000). */
@@ -410,6 +415,37 @@ export async function decodeShareFragment(value: string): Promise<GraphExport | 
   }
 }
 
+/**
+ * Copy the `#graph=` token into `?graph=` when the full URL still fits a
+ * chat-app budget. Recipients whose messenger dropped the fragment can open
+ * the query copy; the app then rewrites the address to a hash-only URL.
+ */
+export function attachMessengerSafeShareQuery(url: URL, fragment: string): URL {
+  const token = fragment.startsWith('#graph=') ? fragment.slice('#graph='.length) : '';
+  if (!token) return url;
+  const withQuery = new URL(url.toString());
+  withQuery.searchParams.set('graph', token);
+  return withQuery.toString().length <= MAX_MESSENGER_SHARE_URL_CHARS ? withQuery : url;
+}
+
+/** Drop `#graph=` / `?graph=` when the user leaves a portable shared view. */
+export function stripShareFromLocation(
+  loc: Pick<Location, 'pathname' | 'search' | 'hash'> = window.location,
+  historyLike: Pick<History, 'replaceState'> = window.history,
+): void {
+  const params = new URLSearchParams(loc.search.startsWith('?') ? loc.search.slice(1) : loc.search);
+  const hadQuery = params.has('graph');
+  const hash = loc.hash;
+  const hadHash = hash.startsWith('#graph=') || hash.startsWith('#graph%3D');
+  if (!hadQuery && !hadHash) return;
+  params.delete('graph');
+  const search = params.toString();
+  const next = `${loc.pathname || '/'}${search ? `?${search}` : ''}`;
+  const state =
+    typeof window !== 'undefined' && historyLike === window.history ? window.history.state : null;
+  historyLike.replaceState(state, '', next);
+}
+
 /** Build a copyable URL, deliberately dropping all query state/corpus ids. */
 export async function createShareUrl(input: unknown, baseHref?: string): Promise<string> {
   const href = resolveShareBaseHref(baseHref);
@@ -429,5 +465,5 @@ export async function createShareUrl(input: unknown, baseHref?: string): Promise
   url.password = '';
   url.search = '';
   url.hash = fragment.slice(1);
-  return url.toString();
+  return attachMessengerSafeShareQuery(url, fragment).toString();
 }
