@@ -25,3 +25,10 @@ document-graph-explorer/
 artifacts/
 .vercel
 .env*
+
+# Local browser automation and agent development output
+.playwright-mcp/
+.codex-devserver*.log
+playwright-report/
+test-results/
+*.trace.zip
