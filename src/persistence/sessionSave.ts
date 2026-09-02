@@ -9,7 +9,6 @@ import {
   mdLinkTargetsStore,
   textStore,
 } from '../store/runtimeStores';
-import { markDocsPersisted } from '../store/textHydration';
 import {
   reportPersistenceUnavailable,
   saveDocsToCache,
@@ -83,7 +82,9 @@ export async function saveSession(): Promise<void> {
   // everything, so a quota error retries rather than silently losing the doc.
   if (docsSaved) {
     // A committed write is a confirmed DocumentRecord — these docs' full
-    // texts are now safe for the evictor to drop (see store/textHydration).
+    // texts are now safe for the evictor to drop. Loaded dynamically to keep
+    // textHydration out of the eager entry chunk (sessionSave boots eagerly).
+    const { markDocsPersisted } = await import('../store/textHydration');
     markDocsPersisted(docs.map((d) => d.node.id));
     for (const id of pending) dirtyDocIds.delete(id);
   }

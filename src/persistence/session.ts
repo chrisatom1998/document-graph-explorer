@@ -27,7 +27,10 @@ import {
   mdLinkTargetsStore,
   textStore,
 } from '../store/runtimeStores';
-import { evictDocTexts, markDocsPersisted } from '../store/textHydration';
+// store/textHydration is loaded dynamically below: session.ts sits in the
+// eager entry chunk (boot-time restore) and the hydration/LRU module belongs
+// to the lazy pipeline graph — a static import here would put it (and its
+// budgeted bytes) in the entry bundle.
 import { useUiStore } from '../store/uiStore';
 import {
   deleteDocsFromCache,
@@ -49,7 +52,9 @@ import {
 } from './corpusRepository';
 import { toGraphExport } from './graphExport';
 import { collectPositions, saveGraphRecord, saveSession } from './sessionSave';
-import { sanitizeGraphExport } from './validateImport';
+// validateImport is loaded dynamically at the one restore-time call below —
+// like textHydration, it belongs to the lazy import/share graph, and a static
+// import from this boot-path module would move it into the eager entry chunk.
 import { deleteOriginals } from './originals';
 import { fetchDemoManifest } from '../demo/manifest';
 import { flushPendingChatSave } from './chatHistorySync';
@@ -178,6 +183,7 @@ export async function hydrateFromRecord(
     // sanitizeGraphExport throws on a structurally unusable record (wrong
     // version, malformed node/edge arrays, or no valid nodes at all) —
     // exactly the cases the old manual check here used to catch by hand.
+    const { sanitizeGraphExport } = await import('./validateImport');
     exportData = sanitizeGraphExport(rawExportData);
   } catch {
     return false; // malformed IndexedDB record — treat like "couldn't restore"
@@ -225,6 +231,7 @@ export async function hydrateFromRecord(
     }
     if (docVectorValid) docVectorStore.set(id, emb!.docVector);
   }
+  const { evictDocTexts, markDocsPersisted } = await import('../store/textHydration');
   markDocsPersisted(persistedIds);
 
   // --- hydrate graph store ---
@@ -368,6 +375,7 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
     });
   const docsSaved = await saveDocsToCache(docs);
   if (docsSaved) {
+    const { markDocsPersisted } = await import('../store/textHydration');
     markDocsPersisted(docs.map((d) => d.node.id));
     for (const id of pending) dirtyDocIds.delete(id);
   }
