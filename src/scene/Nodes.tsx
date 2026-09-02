@@ -173,7 +173,11 @@ function instancedSphereRaycast(
   raycaster: THREE.Raycaster,
   intersects: THREE.Intersection[],
 ): void {
-  const count = Math.min(positionBuffer.count, slotMeta.capacity);
+  // Also clamp to the mesh's own instance count: slotMeta.capacity is bumped
+  // when the allocator grows, one render before the mesh remounts at the new
+  // capacity, and an intersection carrying an instanceId past this.count
+  // refers to an instance that is not being drawn yet.
+  const count = Math.min(positionBuffer.count, slotMeta.capacity, this.count);
   const topicsOn = useUiStore.getState().topicNodesEnabled;
   const reducedMotion = prefersReducedMotion();
   const isFlat = useUiStore.getState().dims === 2;

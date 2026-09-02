@@ -80,6 +80,7 @@ import {
   textStore,
 } from '../store/runtimeStores';
 import {
+  docTextForCompute,
   evictDocTexts,
   forgetPersistedDocs,
   getDocTexts,
@@ -817,7 +818,7 @@ interface EmbedTarget {
  * embeddable (e.g. a boilerplate-only doc).
  */
 function prepareEmbedTarget(n: DocNode, boilerplate: Set<string>): EmbedTarget | null {
-  const text = textStore.get(n.id) ?? '';
+  const text = docTextForCompute(n.id);
   const { chunks, truncated } = chunkText(stripBoilerplate(text, boilerplate));
   if (chunks.length === 0) return null;
   if (truncated && n.status !== 'unreadable' && !n.warning) {
@@ -938,7 +939,7 @@ async function runLexicalPass(
   throwIfAborted(signal);
   const lexicalDocs: LexicalDocInput[] = docNodes.map((n) => {
     const meta = lexMeta.get(n.id);
-    const text = textStore.get(n.id) ?? '';
+    const text = docTextForCompute(n.id);
     return {
       id: n.id,
       title: n.title,
@@ -1536,7 +1537,7 @@ async function runEmbeddingRebuild(): Promise<void> {
     const toEmbed: { id: string; chunks: string[] }[] = [];
     for (const doc of docs) {
       const { chunks, truncated } = chunkText(
-        stripBoilerplate(textStore.get(doc.id) ?? '', boilerplate),
+        stripBoilerplate(docTextForCompute(doc.id), boilerplate),
       );
       if (chunks.length === 0) {
         rebuilt.set(doc.id, { chunks: [], docVector: null, chunkVectors: null });

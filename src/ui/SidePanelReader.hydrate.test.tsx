@@ -18,6 +18,7 @@ vi.mock('../persistence/db', () => {
 });
 
 import { clearRuntimeStores, textStore } from '../store/runtimeStores';
+import { useGraphStore } from '../store/graphStore';
 import { markDocsPersisted } from '../store/textHydration';
 import SidePanelReader from './SidePanelReader';
 
@@ -38,6 +39,9 @@ function doc(id: string): DocNode {
 }
 
 function renderReader(node: DocNode) {
+  // The reader only ever renders a doc the graph holds, and hydration caches
+  // a fetched body back only for docs still in the corpus.
+  useGraphStore.setState({ nodes: [node], nodeIndex: { [node.id]: 0 } });
   return render(
     <SidePanelReader
       node={node}

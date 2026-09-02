@@ -65,5 +65,13 @@ export function clearRuntimeStores(): void {
   mdLinkTargetsStore.clear();
   docLinksStore.clear();
   dirtyDocIds.clear();
-  for (const listener of clearListeners) listener();
+  // Best-effort per listener: teardown bookkeeping in one subscriber must not
+  // leave the others (e.g. the hydration generation bump) unrun.
+  for (const listener of clearListeners) {
+    try {
+      listener();
+    } catch (err) {
+      console.error('[knowledge-nebula] runtime-store clear listener failed', err);
+    }
+  }
 }

@@ -34,10 +34,15 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
 
   // The navigator summary is simultaneously the ingest-complete signal and
   // proof of real graph data: 36 committed + 64 generated PDFs = 100 docs.
-  // Pinning the exact count makes silent ingest drops fail loudly.
+  // Pinning the exact count makes silent ingest drops fail loudly. The
+  // navigator itself only mounts at phase 'ready' (App.tsx), so reaching this
+  // means parse + lexical + embedding + clustering all finished — asserting a
+  // ready-only toolbar control too keeps that guarantee from resting on one
+  // component's mount condition.
   await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents', {
     timeout: 270_000,
   });
+  await expect(page.getByRole('button', { name: 'Search documents' })).toBeVisible();
   await expect(page.locator('.nebula-canvas canvas')).toBeVisible();
 
   // The getting-started tour reopens after a demo load; dismiss it so

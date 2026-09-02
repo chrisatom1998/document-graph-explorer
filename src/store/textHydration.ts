@@ -17,7 +17,7 @@
 
 import { isPersistenceHealthy, reportPersistenceUnavailable } from '../persistence/cache';
 import { getDb } from '../persistence/db';
-import { dirtyDocIds, onRuntimeStoresCleared, textStore } from './runtimeStores';
+import { chunkStore, dirtyDocIds, onRuntimeStoresCleared, textStore } from './runtimeStores';
 import { useGraphStore } from './graphStore';
 import { useUiStore } from './uiStore';
 
@@ -94,6 +94,30 @@ export function hasDocTextSync(id: string): boolean {
 }
 
 /**
+ * Text a corpus-wide compute pass should use for a doc, WITHOUT awaiting.
+ *
+ * Never returns '' for a document that actually has a body: when the full
+ * text is not resident (evicted, and a bulk hydration could not bring it back
+ * because persistence failed), it falls back to the doc's chunk texts, which
+ * are never evicted. Those cover the leading MAX_EMBED_TEXT_BYTES — exactly
+ * the slice every caller truncates to anyway — so the fallback is near
+ * equivalent, where '' would silently recompute edges, keywords, and
+ * embeddings as if the document were blank (and a rebuild would wipe good
+ * vectors). Genuinely textless docs (imported graphs) still yield ''.
+ */
+export function docTextForCompute(id: string): string {
+  const resident = textStore.get(id);
+  if (resident !== undefined) return resident;
+  const chunks = chunkStore.get(id)?.texts;
+  return chunks && chunks.length > 0 ? chunks.join('\n\n') : '';
+}
+
+/** A hydration that resolved after its doc left the corpus must not resurrect it. */
+function stillInCorpus(id: string): boolean {
+  return useGraphStore.getState().nodeIndex[id] !== undefined;
+}
+
+/**
  * Full text for one doc: resident value, or rehydrated from its
  * DocumentRecord (and cached back into textStore). Undefined only on a
  * confirmed miss — no resident text and no persisted record.
@@ -109,7 +133,7 @@ export async function getDocText(id: string): Promise<string | undefined> {
     const db = await getDb();
     const record = await db.get('documents', id);
     if (record === undefined) return undefined;
-    if (gen === generation) {
+    if (gen === generation && stillInCorpus(id)) {
       textStore.set(id, record.text);
       persistedDocIds.add(id);
       touch(id);
@@ -151,7 +175,7 @@ export async function getDocTexts(ids: readonly string[]): Promise<Map<string, s
       const record = records[i];
       if (record === undefined) continue;
       out.set(missing[i], record.text);
-      if (gen === generation) {
+      if (gen === generation && stillInCorpus(missing[i])) {
         textStore.set(missing[i], record.text);
         persistedDocIds.add(missing[i]);
         touch(missing[i]);
