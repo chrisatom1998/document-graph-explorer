@@ -20,11 +20,11 @@ import { Suspense, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Text } from '@react-three/drei';
-import { LABEL_BUDGET, MAX_NODES } from '../config';
+import { LABEL_BUDGET } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
-import { kindOfSlot } from './Nodes';
+import { slotMeta } from './Nodes';
 import { FLAT_BG, FLAT_LABEL, FLAT_LABEL_MUTED, FLAT_SELECTION, VOID } from './palette';
 import { selectedDocumentTitle } from '../pipeline/codeLanguage';
 import {
@@ -154,7 +154,7 @@ export default function Labels() {
     degreeOfSlot.current = [];
     for (const n of nodes) {
       const slot = slotOfId.get(n.id);
-      if (slot !== undefined && slot < MAX_NODES) {
+      if (slot !== undefined) {
         titleOfSlot.current[slot] = n.title;
         displayTitleOfSlot.current[slot] = selectedDocumentTitle(n);
         degreeOfSlot.current[slot] = n.degree;
@@ -194,7 +194,7 @@ export default function Labels() {
       return;
     }
 
-    const count = Math.min(positionBuffer.count, MAX_NODES);
+    const count = positionBuffer.count;
     const titles = titleOfSlot.current;
     const cameraDistance = Math.hypot(
       camera.position.x - cameraPose.tx,
@@ -219,7 +219,7 @@ export default function Labels() {
     let filled = 0;
     for (let i = 0; i < count; i++) {
       if (i === hoverSlot.current || i === selectedSlot.current) continue; // reserved
-      if (kindOfSlot[i] === 1 && !topicNodesEnabled) continue; // hidden topic node
+      if (slotMeta.kind[i] === 1 && !topicNodesEnabled) continue; // hidden topic node
       if (!titles[i]) continue;
       if (!slotHasMaterialized(i, now)) continue; // pre-spawn: no label on an invisible node
       writeSlotTravelPosition(labelTravel, i, now, { reducedMotion, flat });
@@ -308,7 +308,7 @@ export default function Labels() {
   };
 
   useFrame((state, delta) => {
-    const count = Math.min(positionBuffer.count, MAX_NODES);
+    const count = positionBuffer.count;
     if (count !== lastCount.current) {
       lastCount.current = count;
       titlesDirty.current = true;

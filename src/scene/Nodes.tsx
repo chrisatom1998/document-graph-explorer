@@ -8,8 +8,8 @@
  *   (non-emphasized dims to 12%), ghosting for partial/unreadable docs, and
  *   hover/selection brightening.
  * - Picking uses an analytic ray-sphere raycast over positionBuffer instead
- *   of THREE's per-instance triangle raycast (4096 instances x 400 tris
- *   would jank every pointermove).
+ *   of THREE's per-instance triangle raycast (thousands of instances x
+ *   hundreds of tris would jank every pointermove).
  * - Dragging projects the pointer onto the camera-facing plane through the
  *   node and pins it via layoutPin; drag fixes, double-click releases.
  *
@@ -18,12 +18,11 @@
  * live in ./emphasis so those components don't need to import this one.
  */
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { MAX_NODES } from '../config';
 import { layoutPin, layoutUnpin } from '../layout/layoutBridge';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -32,13 +31,14 @@ import { computeEmphasis } from './emphasis';
 import { cameraPose } from './cameraPose';
 import { viewDistanceFade } from './viewDistance';
 import {
-  ghostOfSlot,
   idOfSlot,
-  kindOfSlot,
   positionBuffer,
   scaleOfSlot,
+  slotCapacity,
+  slotMeta,
   slotOfId,
   spawnAtOfSlot,
+  subscribeSlotCapacity,
 } from './positionBuffer';
 import {
   clusterColor,
@@ -61,10 +61,10 @@ import {
 // Shared slot metadata (imported by Edges/EdgePulses/Labels)
 // ---------------------------------------------------------------------------
 
-// kindOfSlot/ghostOfSlot now live in positionBuffer (so layoutBridge can clear
+// slotMeta (kind/ghost) now lives in positionBuffer (so layoutBridge can clear
 // freed slots without an import cycle); re-exported here for the components
-// that import them from './Nodes'.
-export { ghostOfSlot, kindOfSlot } from './positionBuffer';
+// that import it from './Nodes'.
+export { slotMeta } from './positionBuffer';
 
 // ---------------------------------------------------------------------------
 // Module-level temps (zero per-frame allocations)
@@ -129,6 +129,10 @@ const haloMaterial = new THREE.ShaderMaterial({
 });
 const GHOST_COLOR_FACTOR = 0.35;
 const GHOST_SCALE_FACTOR = 0.8;
+// Above this many live nodes, spheres mount with coarser segment counts —
+// vertex shading (frustumCulled=false, so every instance shades every frame)
+// is the large-corpus cliff, not instance-attribute memory.
+const COARSE_GEOMETRY_NODES = 5000;
 const PIN_THROTTLE_MS = 33;
 const SHOW_ME_PULSE_PERIOD_MS = 1050;
 
@@ -169,7 +173,7 @@ function instancedSphereRaycast(
   raycaster: THREE.Raycaster,
   intersects: THREE.Intersection[],
 ): void {
-  const count = Math.min(positionBuffer.count, MAX_NODES);
+  const count = Math.min(positionBuffer.count, slotMeta.capacity);
   const topicsOn = useUiStore.getState().topicNodesEnabled;
   const reducedMotion = prefersReducedMotion();
   const isFlat = useUiStore.getState().dims === 2;
@@ -177,7 +181,7 @@ function instancedSphereRaycast(
   const ray = raycaster.ray;
   for (let i = 0; i < count; i++) {
     if (!idOfSlot[i]) continue; // freed slot (removed node) -> unpickable
-    if (kindOfSlot[i] === 1 && !topicsOn) continue; // invisible -> unpickable
+    if (slotMeta.kind[i] === 1 && !topicsOn) continue; // invisible -> unpickable
     if (!slotHasMaterialized(i, now)) continue; // pre-spawn (scale 0) -> unpickable
     const radius = (scaleOfSlot[i] || 1.1) * 1.15; // slight grace margin
     writeSlotTravelPosition(travelPick, i, now, { reducedMotion, flat: isFlat });
@@ -226,6 +230,10 @@ export default function Nodes() {
   // 2D constellation mode: flat unlit dual discs instead of glossy marbles
   // (the material swap below) and smaller near-uniform sizing.
   const flat = useUiStore((s) => s.dims === 2);
+  // Slot capacity grows on demand (layoutAddNodes); InstancedMesh capacity is
+  // fixed at construction, so a growth step remounts the meshes via key/args.
+  const capacity = useSyncExternalStore(subscribeSlotCapacity, slotCapacity);
+  const coarseGeometry = useGraphStore((s) => s.nodes.length > COARSE_GEOMETRY_NODES);
   const rootGet = useThree((s) => s.get);
 
   const coreRef = useRef<THREE.InstancedMesh>(null);
@@ -250,10 +258,10 @@ export default function Nodes() {
     const isFlat = useUiStore.getState().dims === 2;
     for (const n of nodes) {
       const slot = slotOfId.get(n.id);
-      if (slot === undefined || slot >= MAX_NODES) continue;
-      kindOfSlot[slot] = n.kind === 'topic' ? 1 : 0;
+      if (slot === undefined || slot >= slotMeta.capacity) continue;
+      slotMeta.kind[slot] = n.kind === 'topic' ? 1 : 0;
       const ghost = n.status !== 'ok';
-      ghostOfSlot[slot] = ghost ? 1 : 0;
+      slotMeta.ghost[slot] = ghost ? 1 : 0;
       // size = f(degree), log-scaled so hubs are visibly hubs (spec §5.4).
       // 2D star chart compresses the band — small, near-uniform dots.
       let s = isFlat
@@ -287,7 +295,7 @@ export default function Nodes() {
     );
     for (const n of nodes) {
       const slot = slotOfId.get(n.id);
-      if (slot === undefined || slot >= MAX_NODES) continue;
+      if (slot === undefined || slot >= slotMeta.capacity) continue;
       if (isFlat) {
         // star chart: bright technical-map core plus a darker outer disc for
         // hierarchy; cluster hue only nudges the color so the map stays clean.
@@ -303,7 +311,7 @@ export default function Nodes() {
         tmpColor.multiplyScalar(1.28);
         tmpOuterColor.multiplyScalar(1.16);
       }
-      if (ghostOfSlot[slot]) {
+      if (slotMeta.ghost[slot]) {
         tmpColor.multiplyScalar(GHOST_COLOR_FACTOR);
         tmpOuterColor.multiplyScalar(GHOST_COLOR_FACTOR);
       }
@@ -375,7 +383,11 @@ export default function Nodes() {
 
   // Pre-create instance color attributes at full capacity. setColorAt would
   // otherwise size the buffer from the CURRENT count and break when it grows.
-  useEffect(() => {
+  // Layout effect (not useEffect): a capacity growth remounts all three
+  // meshes with zeroed matrices and no colors, so the attributes and dirty
+  // flags must exist before the next R3F frame or that frame draws the graph
+  // uncolored/blank.
+  useLayoutEffect(() => {
     const meshes = [coreRef.current, haloRef.current, topicRef.current].filter(
       (m): m is THREE.InstancedMesh => m !== null,
     );
@@ -383,18 +395,21 @@ export default function Nodes() {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       if (!mesh.instanceColor) {
         const attr = new THREE.InstancedBufferAttribute(
-          new Float32Array(MAX_NODES * 3).fill(1),
+          new Float32Array(capacity * 3).fill(1),
           3,
         );
         attr.setUsage(THREE.DynamicDrawUsage);
         mesh.instanceColor = attr;
       }
     }
+    metaDirty.current = true; // freshly remounted meshes repaint from scratch
     colorsDirty.current = true;
     matricesDirty.current = true; // topic mesh may have just (un)mounted
 
-    // Only the topic mesh remounts with this dependency. Disposing core/halo
-    // here would tear down live GPU color buffers that stay mounted.
+    // Only the topic mesh remounts with the topic-toggle dependency. Disposing
+    // core/halo here would tear down live GPU color buffers that stay mounted
+    // across the toggle; on a capacity remount R3F disposes the old meshes
+    // (and their instance attributes) itself.
     const topic = topicRef.current;
     return () => {
       if (topic?.instanceColor) {
@@ -402,7 +417,7 @@ export default function Nodes() {
         topic.instanceColor = null;
       }
     };
-  }, [topicNodesEnabled]);
+  }, [topicNodesEnabled, capacity]);
 
   // Core/halo stay mounted across the topic toggle; release them only on unmount.
   useEffect(
@@ -563,14 +578,14 @@ export default function Nodes() {
     const ui = useUiStore.getState();
     if (ui.comparePick) {
       // Topic hubs have no reader — compare is document-to-document only.
-      if (e.instanceId !== undefined && kindOfSlot[e.instanceId] === 1) return;
+      if (e.instanceId !== undefined && slotMeta.kind[e.instanceId] === 1) return;
       applyComparePick(id);
       return;
     }
     if (ui.pathMode) {
       // Topic hubs can't be endpoints: pathfinding skips 'topic' edges, so a
       // topic pick would always dead-end in "no connection found".
-      if (e.instanceId !== undefined && kindOfSlot[e.instanceId] === 1) return;
+      if (e.instanceId !== undefined && slotMeta.kind[e.instanceId] === 1) return;
       ui.addPathEndpoint(id); // path mode: clicks pick endpoints, not selection
       return;
     }
@@ -593,7 +608,10 @@ export default function Nodes() {
     if (!core || !halo) return;
     const topic = topicRef.current;
 
-    const count = Math.min(positionBuffer.count, MAX_NODES);
+    // Clamp to the capacity of the meshes mounted THIS render — during the
+    // brief window between a growth step and the key-driven remount, the
+    // buffer count can already exceed the old meshes' instance capacity.
+    const count = Math.min(positionBuffer.count, capacity);
     if (count !== lastCount.current) {
       lastCount.current = count;
       metaDirty.current = true;
@@ -706,7 +724,7 @@ export default function Nodes() {
         }
       }
 
-      const isTopic = kindOfSlot[i] === 1;
+      const isTopic = slotMeta.kind[i] === 1;
 
       dummy.scale.setScalar(isTopic ? 0 : scale);
       dummy.updateMatrix();
@@ -731,10 +749,12 @@ export default function Nodes() {
 
   return (
     <group>
-      {/* core spheres: the only pickable mesh (analytic raycast covers all slots) */}
+      {/* core spheres: the only pickable mesh (analytic raycast covers all slots).
+          key remounts each mesh when slot capacity grows (rare: 1.5x steps). */}
       <instancedMesh
+        key={`core-${capacity}`}
         ref={coreRef}
-        args={[undefined, undefined, MAX_NODES]}
+        args={[undefined, undefined, capacity]}
         frustumCulled={false}
         raycast={instancedSphereRaycast}
         onPointerMove={handlePointerMove}
@@ -743,7 +763,7 @@ export default function Nodes() {
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
       >
-        <sphereGeometry args={[1, 32, 24]} />
+        <sphereGeometry args={coarseGeometry ? [1, 16, 12] : [1, 32, 24]} />
         {/* 3D: glassy marble — per-instance cluster hue as diffuse under a
             clearcoat, reflecting the procedural Lightformer environment
             (NebulaCanvas) so cores read as polished glass orbs rather than
@@ -766,13 +786,14 @@ export default function Nodes() {
       {/* fresnel corona halo (limb-brightened, additive) that feeds bloom.
           In 2D this becomes the smaller bright map core above the darker disc. */}
       <instancedMesh
+        key={`halo-${capacity}`}
         ref={haloRef}
-        args={[undefined, undefined, MAX_NODES]}
+        args={[undefined, undefined, capacity]}
         frustumCulled={false}
         raycast={NO_RAYCAST}
         renderOrder={flat ? 1 : 0}
       >
-        <sphereGeometry args={flat ? [0.58, 18, 14] : [1, 24, 18]} />
+        <sphereGeometry args={flat ? [0.58, 18, 14] : coarseGeometry ? [1, 16, 12] : [1, 24, 18]} />
         {flat ? (
           <meshBasicMaterial toneMapped={false} depthTest={false} depthWrite={false} />
         ) : (
@@ -783,8 +804,9 @@ export default function Nodes() {
       {/* topic nodes as octahedra (spec §5.4), behind the toggle */}
       {topicNodesEnabled && (
         <instancedMesh
+          key={`topic-${capacity}`}
           ref={topicRef}
-          args={[undefined, undefined, MAX_NODES]}
+          args={[undefined, undefined, capacity]}
           frustumCulled={false}
           raycast={NO_RAYCAST}
         >

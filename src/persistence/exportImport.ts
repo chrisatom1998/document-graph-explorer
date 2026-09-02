@@ -151,8 +151,8 @@ async function doImportGraphExportData(
   data: GraphExport,
   mode: 'shared' | 'imported',
 ): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
-  const nodes = data.nodes;
-  const edges = data.edges;
+  let nodes = data.nodes;
+  let edges = data.edges;
 
   // Clean slate first (pipeline owns worker/store/layout teardown).
   const { resetCorpus } = await import('../pipeline/coordinatorLazy');
@@ -179,9 +179,19 @@ async function doImportGraphExportData(
     }
   }
 
-  layoutAddNodes(
+  const dropped = layoutAddNodes(
     nodes.map((n) => ({ id: n.id, cluster: n.cluster, spawn: randomShellPoint() })),
   );
+  if (dropped.length > 0) {
+    // sanitizeGraphExport caps imports at MAX_NODES and resetCorpus emptied
+    // the layout, so this only fires if validator and allocator ever drift.
+    // Scrub the overflow rather than leave phantom store nodes (present in
+    // counts, absent from the scene) or hand the worker dangling links.
+    const gone = new Set(dropped);
+    g.removeNodes(dropped);
+    nodes = nodes.filter((n) => !gone.has(n.id));
+    edges = edges.filter((e) => !gone.has(e.source) && !gone.has(e.target));
+  }
   layoutSetLinks(
     edges.map((e) => ({
       source: e.source,

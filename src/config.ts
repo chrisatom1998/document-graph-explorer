@@ -81,7 +81,13 @@ export const BRIDGE_MAX_PIVOTS = 512; // sample sources above this corpus size (
 export const HUB_TOP_N = 8; // hub documents (highest doc-edge degree) surfaced in the panel
 
 // --- Layout / render budgets (spec §7) ---
-export const MAX_NODES = 4096; // instanced mesh capacity
+// Hard ceiling on graph nodes. Slot metadata and the instanced meshes start
+// at INITIAL_NODE_CAPACITY and grow by NODE_CAPACITY_GROWTH on demand
+// (layoutAddNodes is the single allocation choke point); documents are only
+// dropped ("capped") once this ceiling is reached.
+export const MAX_NODES = 32768;
+export const INITIAL_NODE_CAPACITY = 4096; // slot arrays / mesh capacity at boot
+export const NODE_CAPACITY_GROWTH = 1.5; // headroom multiplier per grow step
 export const LABEL_BUDGET = 40; // nearest-N labels rendered
 export const FRAME_BUDGET_MS = 22; // auto-quality trip threshold
 export const FRAME_BUDGET_SUSTAIN_MS = 2000; // ...sustained this long before degrading

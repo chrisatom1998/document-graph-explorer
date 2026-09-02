@@ -12,21 +12,20 @@ import {
   INGEST_STAGGER_MAX_MS,
   INGEST_STAGGER_MS,
   MAX_NODES,
+  NODE_CAPACITY_GROWTH,
 } from '../config';
 import type { LayoutNodeInput, LayoutRequest, LayoutResponse } from '../model/types';
 import { useUiStore } from '../store/uiStore';
 import { prefersReducedMotion } from '../util/motion';
 import { randomSpherePoint } from '../pipeline/spawnPosition';
 import {
+  ensureSlotCapacity,
   getNodePosition,
-  ghostOfSlot,
-  hasOriginOfSlot,
   idOfSlot,
-  kindOfSlot,
-  originOfSlot,
   positionBuffer,
   resetPositionBuffer,
   scaleOfSlot,
+  slotMeta,
   slotOfId,
   spawnAtOfSlot,
 } from '../scene/positionBuffer';
@@ -201,9 +200,10 @@ export interface AddNodeSpec {
 }
 
 /**
- * Places nodes into layout slots up to MAX_NODES. Returns the ids that
- * couldn't be placed (capacity reached) — callers must not leave those
- * nodes in the graph store, or they become invisible, unselectable
+ * Places nodes into layout slots, growing slot capacity on demand (with
+ * NODE_CAPACITY_GROWTH headroom) up to the MAX_NODES hard ceiling. Returns
+ * the ids that couldn't be placed (ceiling reached) — callers must not leave
+ * those nodes in the graph store, or they become invisible, unselectable
  * phantoms (present in counts, absent from the scene).
  */
 export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
@@ -221,6 +221,11 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
     if (freeSlots.length > 0) {
       slot = freeSlots.pop()!; // recycle before growing
     } else if (nextSlot < MAX_NODES) {
+      if (nextSlot >= slotMeta.capacity) {
+        // Single allocation choke point: grow with headroom so a large batch
+        // reallocates a handful of times, never per node.
+        ensureSlotCapacity(Math.min(Math.ceil((nextSlot + 1) * NODE_CAPACITY_GROWTH), MAX_NODES));
+      }
       slot = nextSlot++;
     } else {
       dropped.push(n.id);
@@ -234,8 +239,8 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
       // Restore / reduced-motion: appear at rest. Ignore fly-in spawn so the
       // sim does not slide nodes from the drop point (spec §8, prefers-reduced-motion).
       spawnAtOfSlot[slot] = -1;
-      hasOriginOfSlot[slot] = 0;
-      originOfSlot[o] = originOfSlot[o + 1] = originOfSlot[o + 2] = 0;
+      slotMeta.hasOrigin[slot] = 0;
+      slotMeta.origin[o] = slotMeta.origin[o + 1] = slotMeta.origin[o + 2] = 0;
       if (n.initial) {
         payload.push({ id: n.id, slot, cluster: n.cluster, initial: n.initial });
       } else {
@@ -252,10 +257,10 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
     } else if (n.spawn) {
       spawnAtOfSlot[slot] = Math.min(nextSpawnAt, staggerCap);
       nextSpawnAt = Math.min(nextSpawnAt + INGEST_STAGGER_MS, staggerCap);
-      hasOriginOfSlot[slot] = 1;
-      originOfSlot[o] = n.spawn[0];
-      originOfSlot[o + 1] = n.spawn[1];
-      originOfSlot[o + 2] = n.spawn[2];
+      slotMeta.hasOrigin[slot] = 1;
+      slotMeta.origin[o] = n.spawn[0];
+      slotMeta.origin[o + 1] = n.spawn[1];
+      slotMeta.origin[o + 2] = n.spawn[2];
       payload.push({ id: n.id, slot, cluster: n.cluster, spawn: n.spawn });
     } else {
       // Neither a saved position nor a gesture origin (restore/import
@@ -263,20 +268,20 @@ export function layoutAddNodes(nodes: AddNodeSpec[]): string[] {
       // worker-picked shell point — a staggered future spawnAt would only
       // hide the node (unpickable, unlabeled, edges gated) for no reason.
       spawnAtOfSlot[slot] = now;
-      hasOriginOfSlot[slot] = 0;
-      originOfSlot[o] = originOfSlot[o + 1] = originOfSlot[o + 2] = 0;
+      slotMeta.hasOrigin[slot] = 0;
+      slotMeta.origin[o] = slotMeta.origin[o + 1] = slotMeta.origin[o + 2] = 0;
       payload.push({ id: n.id, slot, cluster: n.cluster });
     }
   }
   if (payload.length) post({ type: 'add', nodes: payload });
   if (dropped.length > 0) {
-    console.warn(`Node capacity (${MAX_NODES}) reached; ignoring ${dropped.length} node(s)`);
+    console.warn(`Node limit (${MAX_NODES}) reached; ignoring ${dropped.length} node(s)`);
     if (!warnedCapacity) {
       warnedCapacity = true;
       useUiStore
         .getState()
         .pushToast(
-          `Graph is at its ${MAX_NODES.toLocaleString()}-node capacity — some items were left out (see the ignored list).`,
+          `Graph is at its ${MAX_NODES.toLocaleString()}-node limit — some items were left out (see the ignored list).`,
           'warning',
         );
     }
@@ -299,10 +304,10 @@ export function layoutRemoveNodes(ids: string[]): void {
     idOfSlot[slot] = '';
     scaleOfSlot[slot] = 0;
     spawnAtOfSlot[slot] = -1;
-    hasOriginOfSlot[slot] = 0;
-    originOfSlot[slot * 3] = originOfSlot[slot * 3 + 1] = originOfSlot[slot * 3 + 2] = 0;
-    kindOfSlot[slot] = 0;
-    ghostOfSlot[slot] = 0;
+    slotMeta.hasOrigin[slot] = 0;
+    slotMeta.origin[slot * 3] = slotMeta.origin[slot * 3 + 1] = slotMeta.origin[slot * 3 + 2] = 0;
+    slotMeta.kind[slot] = 0;
+    slotMeta.ghost[slot] = 0;
     freeSlots.push(slot);
     delete lastClusterOf[id];
     removed.push(id);
