@@ -10,11 +10,13 @@ const dbState = vi.hoisted(() => ({
   docs: new Map<string, { hash: string; text: string }>(),
   gets: 0,
   gate: null as Promise<void> | null,
+  error: null as Error | null,
 }));
 vi.mock('../persistence/db', () => {
   const get = async (id: string) => {
     dbState.gets += 1;
     if (dbState.gate) await dbState.gate;
+    if (dbState.error) throw dbState.error;
     return dbState.docs.get(id);
   };
   return {
@@ -32,6 +34,7 @@ import {
 } from './runtimeStores';
 import {
   evictDocTexts,
+  forgetPersistedDocs,
   getDocText,
   getDocTexts,
   hasDocTextSync,
@@ -55,6 +58,7 @@ beforeEach(() => {
   dbState.docs.clear();
   dbState.gets = 0;
   dbState.gate = null;
+  dbState.error = null;
   health.healthy = true;
   health.reported.length = 0;
   useUiStore.setState({ selectedId: null, compareLeftId: null, compareRightId: null });
@@ -78,6 +82,16 @@ describe('getDocText', () => {
     await expect(getDocText('missing')).resolves.toBeUndefined();
     expect(textStore.has('missing')).toBe(false);
   });
+
+  it('throws when IndexedDB fails instead of looking like a miss', async () => {
+    markDocsPersisted(['a']);
+    dbState.error = new Error('quota exceeded');
+
+    await expect(getDocText('a')).rejects.toThrow('quota exceeded');
+    expect(health.reported).toHaveLength(1);
+    expect(textStore.has('a')).toBe(false);
+    expect(hasDocTextSync('a')).toBe(true); // still recoverable once persistence recovers
+  });
 });
 
 describe('getDocTexts', () => {
@@ -92,6 +106,16 @@ describe('getDocTexts', () => {
     expect(out.has('absent')).toBe(false);
     expect(textStore.get('cold')).toBe('cold text');
     expect(hasDocTextSync('cold')).toBe(true);
+  });
+
+  it('throws when IndexedDB fails instead of returning a partial map', async () => {
+    textStore.set('warm', 'warm text');
+    markDocsPersisted(['cold']);
+    dbState.error = new Error('blocked');
+
+    await expect(getDocTexts(['warm', 'cold'])).rejects.toThrow('blocked');
+    expect(health.reported).toHaveLength(1);
+    expect(textStore.has('cold')).toBe(false);
   });
 });
 
@@ -175,6 +199,24 @@ describe('generation reset', () => {
     markDocsPersisted(['a']);
     expect(hasDocTextSync('a')).toBe(true);
     clearRuntimeStores();
+    expect(hasDocTextSync('a')).toBe(false);
+  });
+
+  it('a stale hydration cannot revive a removed document', async () => {
+    dbState.docs.set('a', record('a', 'removed body'));
+    markDocsPersisted(['a']);
+    let release!: () => void;
+    dbState.gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const pending = getDocText('a');
+    forgetPersistedDocs(['a']);
+    textStore.delete('a');
+    release();
+
+    await expect(pending).resolves.toBe('removed body'); // caller still served
+    expect(textStore.has('a')).toBe(false);
     expect(hasDocTextSync('a')).toBe(false);
   });
 });

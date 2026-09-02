@@ -65,7 +65,12 @@ export async function openDocument(docId: string): Promise<OpenDocumentResult> {
   // the user-activation window (SidePanel has always opened this way).
   const g = useGraphStore.getState();
   const node = g.nodes[g.nodeIndex[docId]];
-  const text = await getDocText(docId); // rehydrates an evicted body
+  let text: string | undefined;
+  try {
+    text = await getDocText(docId); // rehydrates an evicted body
+  } catch {
+    text = undefined;
+  }
   if (!node || node.kind !== 'document' || !text) {
     useUiStore
       .getState()

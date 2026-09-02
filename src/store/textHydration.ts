@@ -44,6 +44,13 @@ let generation = 0;
 /** Doc ids whose DocumentRecord is confirmed to exist in IndexedDB. */
 const persistedDocIds = new Set<string>();
 
+/**
+ * Ids dropped from the corpus while a hydration may still be in flight.
+ * Generation only bumps on a full teardown, so forgetPersistedDocs records
+ * these as tombstones: a late IndexedDB read must not write them back.
+ */
+const forgottenDocIds = new Set<string>();
+
 /** LRU bookkeeping: docId -> monotonic use tick (higher = more recent). */
 let useTick = 0;
 const lastUse = new Map<string, number>();
@@ -53,6 +60,7 @@ let watermarkTimer: ReturnType<typeof setTimeout> | null = null;
 function resetTextHydration(): void {
   generation += 1;
   persistedDocIds.clear();
+  forgottenDocIds.clear();
   lastUse.clear();
   if (watermarkTimer !== null) {
     clearTimeout(watermarkTimer);
@@ -73,7 +81,10 @@ function touch(id: string): void {
  * are ever eligible for eviction.
  */
 export function markDocsPersisted(ids: Iterable<string>): void {
-  for (const id of ids) persistedDocIds.add(id);
+  for (const id of ids) {
+    persistedDocIds.add(id);
+    forgottenDocIds.delete(id);
+  }
 }
 
 /** Drop bookkeeping for docs leaving the corpus (their records may be purged). */
@@ -81,7 +92,13 @@ export function forgetPersistedDocs(ids: Iterable<string>): void {
   for (const id of ids) {
     persistedDocIds.delete(id);
     lastUse.delete(id);
+    forgottenDocIds.add(id);
   }
+}
+
+/** True when this hydration is still allowed to write into the live stores. */
+function canCommitHydration(id: string, gen: number): boolean {
+  return gen === generation && !forgottenDocIds.has(id);
 }
 
 /**
@@ -96,7 +113,8 @@ export function hasDocTextSync(id: string): boolean {
 /**
  * Full text for one doc: resident value, or rehydrated from its
  * DocumentRecord (and cached back into textStore). Undefined only on a
- * confirmed miss — no resident text and no persisted record.
+ * confirmed miss — no resident text and no persisted record. Persistence
+ * failures throw after reportPersistenceUnavailable.
  */
 export async function getDocText(id: string): Promise<string | undefined> {
   const resident = textStore.get(id);
@@ -109,7 +127,7 @@ export async function getDocText(id: string): Promise<string | undefined> {
     const db = await getDb();
     const record = await db.get('documents', id);
     if (record === undefined) return undefined;
-    if (gen === generation) {
+    if (canCommitHydration(id, gen)) {
       textStore.set(id, record.text);
       persistedDocIds.add(id);
       touch(id);
@@ -118,16 +136,18 @@ export async function getDocText(id: string): Promise<string | undefined> {
     return record.text;
   } catch (err) {
     // Persistence just degraded under us — surface it once and stop evicting
-    // for the rest of the visit (memory may now be the only copy).
+    // for the rest of the visit (memory may now be the only copy). Fail
+    // closed so corpus passes cannot treat an evicted body as empty text.
     reportPersistenceUnavailable(err);
-    return undefined;
+    throw err;
   }
 }
 
 /**
  * Bulk variant for corpus-wide passes: one readonly transaction for every
  * missing id, resident ids answered synchronously. Ids with no record are
- * simply absent from the result.
+ * simply absent from the result. Persistence failures throw after
+ * reportPersistenceUnavailable — callers must not proceed with a partial map.
  */
 export async function getDocTexts(ids: readonly string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
@@ -151,7 +171,7 @@ export async function getDocTexts(ids: readonly string[]): Promise<Map<string, s
       const record = records[i];
       if (record === undefined) continue;
       out.set(missing[i], record.text);
-      if (gen === generation) {
+      if (canCommitHydration(missing[i], gen)) {
         textStore.set(missing[i], record.text);
         persistedDocIds.add(missing[i]);
         touch(missing[i]);
@@ -160,6 +180,7 @@ export async function getDocTexts(ids: readonly string[]): Promise<Map<string, s
     if (gen === generation) scheduleWatermarkEviction();
   } catch (err) {
     reportPersistenceUnavailable(err);
+    throw err;
   }
   return out;
 }
