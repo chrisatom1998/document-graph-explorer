@@ -11,7 +11,10 @@ export default defineConfig({
   // The demo-corpus ingest (100 PDFs, parse + OCR-capable + local embeddings)
   // takes 20-60s on a dev machine and can be several times slower on shared
   // CI under SwiftShader, so per-test budgets are deliberately generous.
-  timeout: 300_000,
+  // SwiftShader renders the 3D scene at seconds-per-frame, and node selection
+  // commits inside the render loop — frame-dependent expects need minutes,
+  // and a small viewport keeps software frames as cheap as possible.
+  timeout: 420_000,
   expect: { timeout: 30_000 },
   fullyParallel: false,
   workers: 1,
@@ -19,6 +22,7 @@ export default defineConfig({
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
+    viewport: { width: 800, height: 500 },
     // Camera focus commits synchronously under reduced motion, so node
     // selection opens the side panel without waiting on the camera glide.
     reducedMotion: 'reduce',

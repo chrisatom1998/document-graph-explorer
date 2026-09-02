@@ -54,8 +54,11 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
 
+  // Selection commits inside the WebGL frame loop; SwiftShader frames can
+  // take seconds each, so these two waits get their own generous budget.
+  const frameBudget = { timeout: 150_000 };
   const sidePanel = page.locator('.side-panel[role="dialog"]');
-  await expect(sidePanel).toBeVisible();
+  await expect(sidePanel).toBeVisible(frameBudget);
   await page.getByRole('button', { name: 'Back to graph' }).click();
   await expect(sidePanel).toHaveCount(0);
 
@@ -66,7 +69,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await expect(searchDialog).toBeVisible();
   await expect(searchDialog.getByRole('option').first()).toBeVisible();
   await page.keyboard.press('Enter');
-  await expect(sidePanel).toBeVisible();
+  await expect(sidePanel).toBeVisible(frameBudget);
   await page.getByRole('button', { name: 'Back to graph' }).click();
 
   // Hygiene: no console errors, no uncaught page errors, no error toasts.
