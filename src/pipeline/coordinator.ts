@@ -79,6 +79,13 @@ import {
   mdLinkTargetsStore,
   textStore,
 } from '../store/runtimeStores';
+import {
+  evictDocTexts,
+  forgetPersistedDocs,
+  getDocTexts,
+  hasDocTextSync,
+  markDocsPersisted,
+} from '../store/textHydration';
 import { useChatStore } from '../store/chatStore';
 import { cancelChat } from '../chat/chatCancellation';
 import { useSettingsStore } from '../store/settingsStore';
@@ -487,6 +494,7 @@ async function runIngestBody(
     }
     store().addNodes([cached.node]);
     textStore.set(p.id, cached.text);
+    markDocsPersisted([p.id]); // this record was just read FROM the DB
     chunkStore.set(p.id, {
       texts: cached.chunkTexts,
       vectors: cached.chunkVectors,
@@ -710,9 +718,10 @@ async function runIngestBody(
   // are corpus-wide, so every drop rebuilds them)
   const { lexEdges, boilerplate } = await runLexicalPass(pool, signal);
 
-  // (f) embeddings for docs that still need a vector
+  // (f) embeddings for docs that still need a vector. hasDocTextSync counts
+  // evicted-but-persisted text as readable (runLexicalPass just rehydrated it).
   const embedTargets = documentNodes().filter(
-    (n) => n.status !== 'unreadable' && !docVectorStore.has(n.id) && textStore.has(n.id),
+    (n) => n.status !== 'unreadable' && !docVectorStore.has(n.id) && hasDocTextSync(n.id),
   );
   if (embedTargets.length > 0) {
     store().setPhase('embedding');
@@ -742,7 +751,10 @@ async function runIngestBody(
         docLinks: docLinksStore.get(node.id) ?? [],
       }));
     // fire-and-forget; quota failures degrade via the cache's one-time warning
-    void saveDocsToCache(flushDocs);
+    void saveDocsToCache(flushDocs).then((saved) => {
+      // Only a confirmed commit makes these texts safe to evict later.
+      if (saved) markDocsPersisted(flushDocs.map((d) => d.node.id));
+    });
   }
 
   // (g) semantic edges + Louvain clustering over the full edge set
@@ -757,6 +769,9 @@ async function runIngestBody(
   // Persist the completed uploaded corpus immediately, so quitting right after
   // ingest still restores these files on the next launch.
   await saveSession();
+  // Release the corpus-wide passes' transient full-text working set (dirty
+  // and unconfirmed docs are always kept — see store/textHydration).
+  evictDocTexts();
   return insightsAreCurrent && documentNodes().length > initialDocumentCount;
 }
 
@@ -900,7 +915,13 @@ async function runLexicalPass(
   throwIfAborted(signal);
   store().setPhase('linking');
   await backfillLexMeta(pool);
-  const lexicalDocs: LexicalDocInput[] = documentNodes().map((n) => {
+  const docNodes = documentNodes();
+  // Corpus-wide pass over every doc's full text — rehydrate evicted texts
+  // transiently (usually a no-op); the ingest/removal-end evictor releases
+  // this working set again.
+  await getDocTexts(docNodes.map((n) => n.id));
+  throwIfAborted(signal);
+  const lexicalDocs: LexicalDocInput[] = docNodes.map((n) => {
     const meta = lexMeta.get(n.id);
     const text = textStore.get(n.id) ?? '';
     return {
@@ -1219,6 +1240,7 @@ async function runRemove(ids: string[]): Promise<void> {
     fileIdOfDoc.delete(id);
     nameOfDoc.delete(id);
   }
+  forgetPersistedDocs(removing); // their cached records may be purged below
 
   const remaining = documentNodes();
   if (remaining.length === 0) {
@@ -1273,6 +1295,8 @@ async function runRemove(ids: string[]): Promise<void> {
   if (oldCorpusHash && oldCorpusHash !== newCorpusHash) {
     await deleteGraphFromCache(oldCorpusHash);
   }
+  // The corpus-wide re-link above rehydrated survivors' full texts.
+  evictDocTexts();
 }
 
 /**
@@ -1282,8 +1306,9 @@ async function runRemove(ids: string[]): Promise<void> {
  * mdLinkTargetsStore (populated at hydration time), so they're untouched here.
  */
 async function backfillLexMeta(pool: WorkerPool): Promise<void> {
-  const missing = documentNodes().filter((n) => !lexMeta.has(n.id) && textStore.has(n.id));
+  const missing = documentNodes().filter((n) => !lexMeta.has(n.id) && hasDocTextSync(n.id));
   if (missing.length === 0) return;
+  await getDocTexts(missing.map((n) => n.id)); // analyze needs the full body
   await Promise.allSettled(
     missing.map(async (n) => {
       const fileName = basename(n.path ?? n.title);
@@ -1462,8 +1487,11 @@ export function reconcileWatchedFiles(
  */
 async function runEmbeddingRebuild(): Promise<void> {
   wireModelProgress();
-  const docs = documentNodes().filter((n) => n.status !== 'unreadable' && textStore.has(n.id));
+  const docs = documentNodes().filter((n) => n.status !== 'unreadable' && hasDocTextSync(n.id));
   if (docs.length === 0) return;
+  // Corpus-wide pass: rehydrate evicted full texts up front (the chunking
+  // loop below reads textStore synchronously), released again in `finally`.
+  await getDocTexts(docs.map((n) => n.id));
 
   const pool = getPool();
   const graph = useGraphStore.getState;
@@ -1545,6 +1573,9 @@ async function runEmbeddingRebuild(): Promise<void> {
     // A failed worker/model request must not leave the application locked in
     // an in-progress phase. The previous index remains intact until commit.
     if (graph().phase !== 'ready') graph().setPhase('ready');
+    // Release the rebuild's transient full-text working set (still-dirty
+    // docs — e.g. after a failed save — are never evicted).
+    evictDocTexts();
   }
 }
 

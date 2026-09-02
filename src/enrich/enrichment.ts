@@ -24,6 +24,7 @@ import type { DocNode } from '../model/types';
 import { isOffline, OFFLINE_MESSAGE } from '../offline';
 import { useGraphStore } from '../store/graphStore';
 import { markDocsDirty, textStore } from '../store/runtimeStores';
+import { evictDocTexts, getDocText, getDocTexts } from '../store/textHydration';
 import {
   DEFAULT_OLLAMA_MODEL,
   DEFAULT_OPENROUTER_ENRICH_MODEL,
@@ -322,7 +323,8 @@ export async function askDocAi(
   const blocked = docAiBlockedReason();
   if (blocked) return { ok: false, text: blocked };
 
-  const fullText = textStore.get(docId);
+  // Rehydrates the body from IndexedDB when the resident copy was evicted.
+  const fullText = await getDocText(docId);
   if (!fullText || fullText.trim() === '') {
     return { ok: false, text: 'No readable text is stored for this document.' };
   }
@@ -423,6 +425,9 @@ async function runEnrichmentExclusive(): Promise<{ ok: boolean; message: string 
   const snapshotIds = docs.map((doc) => doc.id);
 
   graph.setPhase('enriching');
+  // Summaries must be written from the document body: rehydrate any evicted
+  // full texts for this run (packing and prompts read textStore directly).
+  await getDocTexts(snapshotIds);
   const snapshotIsCurrent = (): boolean =>
     useGraphStore.getState().phase === 'enriching' && currentDocumentIdsMatch(snapshotIds);
 
@@ -525,6 +530,9 @@ async function runEnrichmentExclusive(): Promise<{ ok: boolean; message: string 
     // Clear All resets the graph synchronously and must remain idle even if an
     // older provider response lands afterward.
     if (snapshotIsCurrent()) useGraphStore.getState().setPhase('ready');
+    // Release this run's transient full-text working set (docs enriched
+    // above are dirty until the autosave commits, so they're kept).
+    evictDocTexts();
   }
 }
 

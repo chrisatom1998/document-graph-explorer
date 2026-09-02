@@ -4,7 +4,7 @@ import type { CodeLanguage } from '../pipeline/codeLanguage';
 import { decodeText } from '../pipeline/parsers/txt';
 import { getOriginal } from '../persistence/originals';
 import { buildLinkIndex } from '../graph/linkResolver';
-import { textStore } from '../store/runtimeStores';
+import { useDocText } from './useDocText';
 import type { ReaderHighlight } from '../store/uiStore';
 import { MAX_RENDER_CHARS } from './readerUtils';
 import CsvPreview from './CsvPreview';
@@ -42,7 +42,10 @@ export default function SidePanelReader({
   codeLang,
   onNavigate = focusNode,
 }: SidePanelReaderProps) {
-  const fullText = textStore.get(node.id);
+  // Warm cache answers synchronously; an evicted body hydrates async. The
+  // passageKey below includes the text length, so PassageTarget re-runs its
+  // highlight scroll once hydration lands.
+  const { text: fullText, loading: textLoading } = useDocText(node.id);
   const passageNeedle =
     readerHighlight?.docId === node.id ? readerHighlight.text : undefined;
 
@@ -206,6 +209,12 @@ export default function SidePanelReader({
               isMonoFileType(node.fileType) ? ' is-mono' : ''
             }`}
           />
+        ) : textLoading ? (
+          // Hydration in flight — never flash "text unavailable" before a
+          // confirmed miss.
+          <div className="side-panel__reader is-unavailable">
+            Loading text…
+          </div>
         ) : (
           <div className="side-panel__reader is-unavailable">
             text unavailable

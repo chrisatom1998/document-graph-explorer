@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { docVectorStore, textStore } from '../store/runtimeStores';
+import { docVectorStore } from '../store/runtimeStores';
+import { useDocText } from './useDocText';
 import { hexFor } from '../scene/palette';
 import { timeAgo } from '../util/relativeTime';
 import { useSettingsStore } from '../store/settingsStore';
@@ -161,9 +162,11 @@ export default function SidePanel() {
     return out;
   }, [node, nodes]);
 
+  // Gates the Ask-AI section below; hydrates an evicted body on demand.
+  const { text: fullText } = useDocText(node?.kind === 'document' ? node.id : undefined);
+
   if (!node) return null;
 
-  const fullText = textStore.get(node.id);
   const clusterLabel =
     clusterNames[node.cluster] ?? localClusterNames[node.cluster] ?? `Cluster ${node.cluster}`;
   const clusterColor = hexFor(node.cluster);

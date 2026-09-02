@@ -21,11 +21,13 @@ import { useGraphStore } from '../store/graphStore';
 import { useCorpusStore } from '../store/corpusStore';
 import {
   chunkStore,
+  dirtyDocIds,
   docLinksStore,
   docVectorStore,
   mdLinkTargetsStore,
   textStore,
 } from '../store/runtimeStores';
+import { evictDocTexts, markDocsPersisted } from '../store/textHydration';
 import { useUiStore } from '../store/uiStore';
 import {
   deleteDocsFromCache,
@@ -195,6 +197,7 @@ export async function hydrateFromRecord(
   ]);
   let needsEmbeddingRebuild = false;
   const nodesById = new Map(exportData.nodes.map((node) => [node.id, node]));
+  const persistedIds: string[] = [];
 
   for (let i = 0; i < docIds.length; i++) {
     const id = docIds[i];
@@ -218,9 +221,11 @@ export async function hydrateFromRecord(
       });
       mdLinkTargetsStore.set(id, doc.mdLinkTargets ?? []);
       docLinksStore.set(id, doc.docLinks ?? []);
+      persistedIds.push(id); // this record was just read FROM the DB
     }
     if (docVectorValid) docVectorStore.set(id, emb!.docVector);
   }
+  markDocsPersisted(persistedIds);
 
   // --- hydrate graph store ---
   const g = useGraphStore.getState();
@@ -252,6 +257,11 @@ export async function hydrateFromRecord(
     Object.fromEntries(exportData.nodes.map((n): [string, number] => [n.id, n.cluster])),
   );
   layoutReheat(0.03); // barely moves — restores the settled shape
+
+  // Restore eagerly populated every doc's full text (simplest, and search
+  // needs nothing extra); trim the resident set back to budget right away so
+  // a large corpus doesn't start the visit hundreds of MB over.
+  evictDocTexts();
 
   if (needsEmbeddingRebuild) {
     useUiStore.getState().pushToast('Search index updated — rebuilding local embeddings.', 'info');
@@ -336,9 +346,14 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
     .filter((n) => n.kind === 'document')
     .map((n) => n.id);
 
-  // Ensure documents + embeddings are persisted before snapshotting
-  const docs = s.nodes
-    .filter((n) => n.kind === 'document')
+  // Ensure documents + embeddings are persisted before snapshotting. Dirty
+  // docs only: clean records already exist under the same content-hash keys,
+  // and rewriting them from memory would clobber persisted text with '' for
+  // any doc whose full text has been evicted (see store/textHydration).
+  const pending = [...dirtyDocIds];
+  const docs = pending
+    .map((id) => s.nodes[s.nodeIndex[id]])
+    .filter((node) => node?.kind === 'document')
     .map((node) => {
       const chunks = chunkStore.get(node.id);
       return {
@@ -351,7 +366,11 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
         docLinks: docLinksStore.get(node.id) ?? [],
       };
     });
-  await saveDocsToCache(docs);
+  const docsSaved = await saveDocsToCache(docs);
+  if (docsSaved) {
+    markDocsPersisted(docs.map((d) => d.node.id));
+    for (const id of pending) dirtyDocIds.delete(id);
+  }
 
   return saveSnapshot(
     name,

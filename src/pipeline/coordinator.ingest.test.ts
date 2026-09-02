@@ -38,6 +38,7 @@ const layout = vi.hoisted(() => ({
 
 const persistence = vi.hoisted(() => ({
   lookupDocCache: vi.fn().mockResolvedValue(undefined),
+  isPersistenceHealthy: vi.fn(() => true),
   saveDocsToCache: vi.fn().mockResolvedValue(undefined),
   deleteDocsFromCache: vi.fn().mockResolvedValue(undefined),
   deleteGraphFromCache: vi.fn().mockResolvedValue(undefined),
@@ -74,6 +75,7 @@ vi.mock('../persistence/cache', () => ({
   deleteDocsFromCache: persistence.deleteDocsFromCache,
   deleteGraphFromCache: persistence.deleteGraphFromCache,
   reportPersistenceUnavailable: persistence.reportPersistenceUnavailable,
+  isPersistenceHealthy: persistence.isPersistenceHealthy,
 }));
 vi.mock('../persistence/sessionSave', () => ({ saveSession: persistence.saveSession }));
 vi.mock('../persistence/originals', () => ({
