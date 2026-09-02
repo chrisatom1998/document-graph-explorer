@@ -20,6 +20,8 @@ docker/downloads/*
 .cursor/
 .codex-devserver*.log
 .playwright-mcp/
+playwright-report/
+test-results/
 tools/usd_pipeline/.venv/
 __pycache__/
 copilot-worktrees/
