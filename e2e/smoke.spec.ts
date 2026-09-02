@@ -63,8 +63,11 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await expect(sidePanel).toHaveCount(0);
 
   // Selection path 2: search overlay in browse mode (empty query lists all
-  // documents with no dependency on the embedding model being warm).
-  await page.getByRole('button', { name: 'Search documents' }).click();
+  // documents with no dependency on the embedding model being warm). Opened
+  // via the keyboard shortcut: at this small viewport the graph-navigator
+  // panel overlaps the toolbar's search button, and the hotkey is the more
+  // realistic entry point anyway.
+  await page.keyboard.press('Control+k');
   const searchDialog = page.getByRole('dialog', { name: 'Search documents' });
   await expect(searchDialog).toBeVisible();
   await expect(searchDialog.getByRole('option').first()).toBeVisible();
