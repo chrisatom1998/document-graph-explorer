@@ -421,6 +421,23 @@ async function runIngestBody(
   spawnOrigin: Vec3,
   initialDocumentCount: number,
 ): Promise<boolean> {
+  try {
+    return await runIngestBodyInner(files, signal, spawnOrigin, initialDocumentCount);
+  } finally {
+    // Release the corpus-wide passes' transient full-text working set on
+    // EVERY exit — a cancelled or failed run has already paid runLexicalPass's
+    // full-corpus rehydration and would otherwise keep it resident (dirty and
+    // unconfirmed docs are always kept — see store/textHydration).
+    evictDocTexts();
+  }
+}
+
+async function runIngestBodyInner(
+  files: IngestFile[],
+  signal: AbortSignal | undefined,
+  spawnOrigin: Vec3,
+  initialDocumentCount: number,
+): Promise<boolean> {
   const store = useGraphStore.getState;
 
   // (a) route by extension; unsupported → ignored tray
@@ -767,11 +784,9 @@ async function runIngestBody(
   store().setPhase('ready');
 
   // Persist the completed uploaded corpus immediately, so quitting right after
-  // ingest still restores these files on the next launch.
+  // ingest still restores these files on the next launch. (The wrapper's
+  // finally evicts the passes' text working set after this save confirms.)
   await saveSession();
-  // Release the corpus-wide passes' transient full-text working set (dirty
-  // and unconfirmed docs are always kept — see store/textHydration).
-  evictDocTexts();
   return insightsAreCurrent && documentNodes().length > initialDocumentCount;
 }
 
@@ -1191,6 +1206,16 @@ async function computeCorpusHash(): Promise<string> {
 // ---------------------------------------------------------------------------
 
 async function runRemove(ids: string[]): Promise<void> {
+  try {
+    await runRemoveInner(ids);
+  } finally {
+    // Same contract as runIngestBody: the re-link pass rehydrates survivors'
+    // full texts, and a cancelled/failed removal must still release them.
+    evictDocTexts();
+  }
+}
+
+async function runRemoveInner(ids: string[]): Promise<void> {
   const store = useGraphStore.getState;
   const present = new Set(documentNodes().map((n) => n.id));
   const removing = [...new Set(ids)].filter((id) => present.has(id));
@@ -1295,8 +1320,6 @@ async function runRemove(ids: string[]): Promise<void> {
   if (oldCorpusHash && oldCorpusHash !== newCorpusHash) {
     await deleteGraphFromCache(oldCorpusHash);
   }
-  // The corpus-wide re-link above rehydrated survivors' full texts.
-  evictDocTexts();
 }
 
 /**

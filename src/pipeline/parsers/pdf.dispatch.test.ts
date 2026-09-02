@@ -82,8 +82,10 @@ describe('parsePdf dispatch', () => {
     ];
     expect(name).toBe('a.pdf');
     expect(options).toMatchObject({ ocrMaxPages: 20, ocrLanguage: 'eng' });
-    // the worker gets a copy so the original survives for a fallback retry
-    expect(sentBytes).not.toBe(bytes);
+    // the caller's buffer itself goes to the worker (it is transferred and
+    // detached there, freeing the main-thread copy as parsing starts); the
+    // fallback retry runs from a private copy taken before the hand-off
+    expect(sentBytes).toBe(bytes);
     expect([...new Uint8Array(sentBytes)]).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 

@@ -115,8 +115,13 @@ export default function PdfPreview({ blob, className }: PdfPreviewProps) {
         return next;
       });
     } catch (err) {
-      console.error('[PdfPreview] renderPage failed', pageNo, err);
       renderedRef.current.delete(pageNo); // allow a retry on next intersection
+      // Closing the reader mid-render cancels the in-flight page render —
+      // pdf.js rejects with RenderingCancelledException. Expected teardown,
+      // not a failure: no error log (it would trip console hygiene checks)
+      // and no failed-page marker.
+      if ((err as { name?: string } | null)?.name === 'RenderingCancelledException') return;
+      console.error('[PdfPreview] renderPage failed', pageNo, err);
       setFailedPages((prev) => (prev.has(pageNo) ? prev : new Set(prev).add(pageNo)));
     }
   };

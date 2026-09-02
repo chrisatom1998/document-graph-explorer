@@ -53,10 +53,14 @@ export class PdfWorkerFailure extends Error {
 }
 
 // Outer safety net around the worker's own budgets (60s parse deadline plus
-// the 5min OCR total, both enforced inside the engine): the engine always
-// settles within those, so a request outliving this margin means the worker
-// itself is wedged — discard and respawn it, mirroring the coordinator's
-// discardAggregator handling.
+// the 5min OCR total, both enforced inside the engine). The margin cannot be
+// a fixed per-request wall clock: up to four admitted documents share the one
+// worker and ocr.ts serializes their OCR jobs inside it, so a healthy
+// scanned-PDF batch legitimately keeps a queued request waiting several OCR
+// runs long. The watchdog therefore measures worker SILENCE — any message
+// (another document's OCR progress included) proves the worker is alive and
+// re-arms it — and only a worker mute for the full margin is wedged:
+// discard and respawn, mirroring the coordinator's discardAggregator.
 const PDF_WORKER_WATCHDOG_MS = 390_000;
 
 export interface PdfWorkerParseOptions {
@@ -89,6 +93,7 @@ export class PdfWorkerClient {
   private worker: PdfWorkerLike | null = null;
   private nextRequestId = 1;
   private pending = new Map<number, PendingParse>();
+  private lastActivityAt = 0;
   private readonly workerFactory: () => PdfWorkerLike;
 
   constructor(options: { workerFactory?: () => PdfWorkerLike } = {}) {
@@ -115,6 +120,7 @@ export class PdfWorkerClient {
     if (this.worker) return this.worker;
     const worker = this.workerFactory();
     worker.onmessage = (ev: MessageEvent<PdfWorkerResponse>) => {
+      this.lastActivityAt = Date.now();
       const msg = ev.data;
       const entry = this.pending.get(msg.requestId);
       if (!entry) return;
@@ -158,13 +164,28 @@ export class PdfWorkerClient {
     const worker = this.ensureWorker();
     const requestId = this.nextRequestId;
     this.nextRequestId += 1;
+    this.lastActivityAt = Date.now();
     return new Promise<PdfParseResult>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        if (!this.pending.has(requestId)) return;
-        this.discard(
-          new PdfWorkerFailure(`pdf worker request timed out after ${PDF_WORKER_WATCHDOG_MS}ms`),
-        );
-      }, PDF_WORKER_WATCHDOG_MS);
+      let watchdogTimer: ReturnType<typeof setTimeout>;
+      const armWatchdog = (delay: number): void => {
+        watchdogTimer = setTimeout(() => {
+          if (!this.pending.has(requestId)) return;
+          const idle = Date.now() - this.lastActivityAt;
+          if (idle < PDF_WORKER_WATCHDOG_MS) {
+            // The worker spoke recently (possibly for a different document
+            // queued ahead of this one) — it is busy, not wedged. Re-arm for
+            // the remaining silence margin.
+            armWatchdog(PDF_WORKER_WATCHDOG_MS - idle);
+            return;
+          }
+          this.discard(
+            new PdfWorkerFailure(`pdf worker request timed out after ${PDF_WORKER_WATCHDOG_MS}ms`),
+          );
+        }, delay);
+        const entry = this.pending.get(requestId);
+        if (entry) entry.timer = watchdogTimer;
+      };
+      armWatchdog(PDF_WORKER_WATCHDOG_MS);
       const onAbort = signal
         ? () => {
             if (!this.pending.has(requestId)) return;
@@ -183,7 +204,7 @@ export class PdfWorkerClient {
       this.pending.set(requestId, {
         resolve: settled(resolve),
         reject: settled(reject),
-        timer,
+        timer: watchdogTimer!,
         onOcrProgress: options.onOcrProgress,
       });
       const payload: PdfWorkerParseRequest = {
@@ -198,7 +219,7 @@ export class PdfWorkerClient {
         worker.postMessage(payload, [bytes]);
       } catch (err) {
         this.pending.delete(requestId);
-        clearTimeout(timer);
+        clearTimeout(watchdogTimer!);
         const message = err instanceof Error ? err.message : String(err);
         settled(reject)(new PdfWorkerFailure(`pdf worker request could not be sent (${message})`));
       }

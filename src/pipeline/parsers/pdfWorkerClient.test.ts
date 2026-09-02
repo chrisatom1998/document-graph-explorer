@@ -176,4 +176,42 @@ describe('PdfWorkerClient protocol', () => {
     await timesOut;
     expect(workers[0].terminated).toBe(true);
   });
+
+  it('a busy worker is not wedged: another document\'s OCR progress re-arms the watchdog', async () => {
+    // Up to four admitted documents share the one worker and their OCR runs
+    // serialize inside it, so a queued request legitimately waits several OCR
+    // budgets while the worker streams progress for the document ahead of it.
+    vi.useFakeTimers();
+    const first = client.parse(new ArrayBuffer(4), 'a.pdf', {
+      ocrMaxPages: 20,
+      ocrLanguage: 'eng',
+    });
+    const queued = client.parse(new ArrayBuffer(4), 'b.pdf', {
+      ocrMaxPages: 20,
+      ocrLanguage: 'eng',
+    });
+    const worker = workers[0];
+
+    // For 3x the watchdog margin, document A keeps streaming OCR progress.
+    for (let tick = 0; tick < 39; tick++) {
+      await vi.advanceTimersByTimeAsync(30_000);
+      worker.respond({ type: 'pdf:ocr-progress', requestId: 1, completed: tick, total: 40 });
+    }
+    expect(worker.terminated).toBe(false);
+
+    worker.respond({ type: 'pdf:done', requestId: 1, result: makeResult() });
+    worker.respond({ type: 'pdf:done', requestId: 2, result: makeResult() });
+    await expect(first).resolves.toMatchObject({ status: 'ok' });
+    await expect(queued).resolves.toMatchObject({ status: 'ok' });
+
+    // Once the worker goes fully silent, the watchdog still has teeth.
+    const late = client.parse(new ArrayBuffer(4), 'c.pdf', {
+      ocrMaxPages: 20,
+      ocrLanguage: 'eng',
+    });
+    const timesOut = expect(late).rejects.toThrow(/timed out/);
+    await vi.advanceTimersByTimeAsync(390_001);
+    await timesOut;
+    expect(worker.terminated).toBe(true);
+  });
 });

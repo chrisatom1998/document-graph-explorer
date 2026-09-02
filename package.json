@@ -17,7 +17,7 @@
     "install:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install-desktop-shortcut.ps1",
     "agent": "node agent/subagent.mjs",
     "agent:test": "vitest run -t \"standalone subagent\"",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p e2e --noEmit",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

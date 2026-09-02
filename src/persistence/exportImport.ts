@@ -10,7 +10,7 @@
  * search and local chat fall back to exported summaries/topics/keywords.
  */
 
-import { EMBED_DIMS, MAX_INGEST_FILE_BYTES } from '../config';
+import { EMBED_DIMS } from '../config';
 import {
   layoutAddNodes,
   layoutReheat,
@@ -112,9 +112,19 @@ function randomShellPoint(): [number, number, number] {
  * both mutate the graph store, runtime stores, and layout, and an import
  * landing mid-ingest would corrupt all three.
  */
+/**
+ * Graph-export imports get their own size ceiling: config's
+ * MAX_INGEST_FILE_BYTES (64 MB) is sized for a single ingested document, but a legitimate export
+ * of a near-ceiling corpus with embeddings included is bigger on its own
+ * (32,768 nodes × 384 f32 dims ≈ 67 MB of base64 vectors before any node or
+ * edge data). 256 MB comfortably covers the largest export this app can
+ * produce while still bounding what an untrusted file can make us buffer.
+ */
+const MAX_IMPORT_GRAPH_FILE_BYTES = 256 * 1024 * 1024;
+
 export async function importGraphJSONFile(file: File): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
-  if (file.size > MAX_INGEST_FILE_BYTES) {
-    const maxMb = Math.round(MAX_INGEST_FILE_BYTES / (1024 * 1024));
+  if (file.size > MAX_IMPORT_GRAPH_FILE_BYTES) {
+    const maxMb = Math.round(MAX_IMPORT_GRAPH_FILE_BYTES / (1024 * 1024));
     throw new Error(
       `Import failed: file is too large (${Math.round(file.size / (1024 * 1024))} MB) — the maximum is ${maxMb} MB.`,
     );

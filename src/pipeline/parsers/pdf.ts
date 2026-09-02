@@ -5,10 +5,11 @@
  * the same engine (./pdfEngine.ts) on the main thread: vitest's Node
  * environment, browsers without OffscreenCanvas, or a session where a worker
  * infrastructure failure pinned main-thread mode. The route is decided
- * BEFORE the bytes are transferred, and the worker gets a copy, so an
- * infrastructure failure (crash, watchdog timeout, protocol error — never a
- * legitimate parse result) can retry the untouched original here exactly
- * once.
+ * BEFORE the bytes are transferred; the caller's buffer is then handed to
+ * the worker (and detached, matching the main-thread path where pdf.js
+ * transfers it) while a private copy taken up front lets an infrastructure
+ * failure (crash, watchdog timeout, protocol error — never a legitimate
+ * parse result) retry on the main thread exactly once.
  *
  * Like the engine, parsePdf never throws except on abort — encrypted or
  * zero-text PDFs come back as status 'unreadable' with a warning so they
@@ -133,11 +134,14 @@ async function routeParsePdf(
       signal,
     });
   }
-  // The worker transfers (and pdf.js then detaches) whatever buffer it gets,
-  // so it is handed a copy and `bytes` stays intact for the retry below.
-  const copy = bytes.slice(0);
+  // The caller's buffer is transferred to the worker and detached — the same
+  // contract the main-thread path has always had (pdf.js transfers the buffer
+  // to its own worker), so a large drop's raw bytes don't stay resident on
+  // the main thread for the whole parse phase. The retry copy below lives
+  // only until this parse settles.
+  const retryBytes = bytes.slice(0);
   try {
-    return await getPdfWorkerClient().parse(copy, name, {
+    return await getPdfWorkerClient().parse(bytes, name, {
       ocrMaxPages,
       ocrLanguage,
       onOcrProgress: options.onOcrProgress,
@@ -150,7 +154,7 @@ async function routeParsePdf(
     console.warn(
       `[knowledge-nebula] pdf worker failed (${err.message}); parsing on the main thread for the rest of the session`,
     );
-    return parsePdfEngine(bytes, name, {
+    return parsePdfEngine(retryBytes, name, {
       ocrMaxPages,
       ocrLanguage,
       onOcrProgress: options.onOcrProgress,

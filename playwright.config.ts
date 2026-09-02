@@ -6,6 +6,12 @@ import { defineConfig, devices } from '@playwright/test';
 // Run `npm run build` before `npx playwright test`.
 const PORT = 4173;
 
+// This config is typechecked with the app's browser-scoped tsconfig (no node
+// ambient types), so CI detection reads process off globalThis instead.
+const IS_CI = Boolean(
+  (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.CI,
+);
+
 export default defineConfig({
   testDir: 'e2e',
   // The demo-corpus ingest (100 PDFs, parse + OCR-capable + local embeddings)
@@ -18,14 +24,15 @@ export default defineConfig({
   expect: { timeout: 30_000 },
   fullyParallel: false,
   workers: 1,
-  retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  retries: IS_CI ? 1 : 0,
+  reporter: IS_CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
-    viewport: { width: 800, height: 500 },
     // Camera focus commits synchronously under reduced motion, so node
     // selection opens the side panel without waiting on the camera glide.
-    reducedMotion: 'reduce',
+    // (A browser-context option, not a first-class test option — putting it
+    // at the `use` top level typechecks red and silently does nothing.)
+    contextOptions: { reducedMotion: 'reduce' },
     trace: 'retain-on-failure',
     launchOptions: {
       // Headless CI has no GPU; SwiftShader provides the WebGL context the
@@ -33,11 +40,18 @@ export default defineConfig({
       args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'],
     },
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      // The device descriptor carries its own 1280x720 viewport, so the small
+      // SwiftShader-friendly viewport must be set AFTER the spread to win.
+      use: { ...devices['Desktop Chrome'], viewport: { width: 800, height: 500 } },
+    },
+  ],
   webServer: {
     command: `npm run preview -- --port ${PORT} --strictPort`,
     url: `http://127.0.0.1:${PORT}`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !IS_CI,
     timeout: 120_000,
   },
 });

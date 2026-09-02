@@ -36,8 +36,6 @@ export default tseslint.config(
       '.cursor',
       '.vercel',
       '.agents',
-      'e2e',
-      'playwright.config.ts',
       'playwright-report',
       'test-results',
     ],
