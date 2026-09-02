@@ -26,9 +26,14 @@ export function useDocText(docId: string | null | undefined): DocTextState {
   useEffect(() => {
     if (!docId || !needsHydration) return;
     let cancelled = false;
-    void getDocText(docId).then((text) => {
-      if (!cancelled) setHydrated({ id: docId, text });
-    });
+    void getDocText(docId).then(
+      (text) => {
+        if (!cancelled) setHydrated({ id: docId, text });
+      },
+      () => {
+        if (!cancelled) setHydrated({ id: docId, text: undefined });
+      },
+    );
     return () => {
       cancelled = true;
     };

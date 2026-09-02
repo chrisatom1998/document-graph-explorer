@@ -80,7 +80,6 @@ import {
   textStore,
 } from '../store/runtimeStores';
 import {
-  docTextForCompute,
   evictDocTexts,
   forgetPersistedDocs,
   getDocTexts,
@@ -818,7 +817,7 @@ interface EmbedTarget {
  * embeddable (e.g. a boilerplate-only doc).
  */
 function prepareEmbedTarget(n: DocNode, boilerplate: Set<string>): EmbedTarget | null {
-  const text = docTextForCompute(n.id);
+  const text = textStore.get(n.id) ?? '';
   const { chunks, truncated } = chunkText(stripBoilerplate(text, boilerplate));
   if (chunks.length === 0) return null;
   if (truncated && n.status !== 'unreadable' && !n.warning) {
@@ -922,6 +921,22 @@ async function runEmbeddingPass(
   }
 }
 
+/**
+ * Rehydrate every id and fail the pass if a readable document is still
+ * missing from textStore. getDocTexts throws on IndexedDB errors; this
+ * catches the leftover case where hasDocTextSync is true but the record
+ * was gone, so callers cannot treat a real document as ''.
+ */
+async function hydrateCorpusTexts(ids: readonly string[]): Promise<void> {
+  await getDocTexts(ids);
+  const missing = ids.filter((id) => hasDocTextSync(id) && !textStore.has(id));
+  if (missing.length > 0) {
+    throw new Error(
+      `Failed to rehydrate full text for ${missing.length} document${missing.length === 1 ? '' : 's'}.`,
+    );
+  }
+}
+
 /** Ingest step (e): lexical edges, keywords, boilerplate — whole corpus. */
 async function runLexicalPass(
   pool: WorkerPool,
@@ -935,11 +950,11 @@ async function runLexicalPass(
   // Corpus-wide pass over every doc's full text — rehydrate evicted texts
   // transiently (usually a no-op); the ingest/removal-end evictor releases
   // this working set again.
-  await getDocTexts(docNodes.map((n) => n.id));
+  await hydrateCorpusTexts(docNodes.map((n) => n.id));
   throwIfAborted(signal);
   const lexicalDocs: LexicalDocInput[] = docNodes.map((n) => {
     const meta = lexMeta.get(n.id);
-    const text = docTextForCompute(n.id);
+    const text = textStore.get(n.id) ?? '';
     return {
       id: n.id,
       title: n.title,
@@ -1332,7 +1347,7 @@ async function runRemoveInner(ids: string[]): Promise<void> {
 async function backfillLexMeta(pool: WorkerPool): Promise<void> {
   const missing = documentNodes().filter((n) => !lexMeta.has(n.id) && hasDocTextSync(n.id));
   if (missing.length === 0) return;
-  await getDocTexts(missing.map((n) => n.id)); // analyze needs the full body
+  await hydrateCorpusTexts(missing.map((n) => n.id)); // analyze needs the full body
   await Promise.allSettled(
     missing.map(async (n) => {
       const fileName = basename(n.path ?? n.title);
@@ -1515,7 +1530,7 @@ async function runEmbeddingRebuild(): Promise<void> {
   if (docs.length === 0) return;
   // Corpus-wide pass: rehydrate evicted full texts up front (the chunking
   // loop below reads textStore synchronously), released again in `finally`.
-  await getDocTexts(docs.map((n) => n.id));
+  await hydrateCorpusTexts(docs.map((n) => n.id));
 
   const pool = getPool();
   const graph = useGraphStore.getState;
@@ -1537,7 +1552,7 @@ async function runEmbeddingRebuild(): Promise<void> {
     const toEmbed: { id: string; chunks: string[] }[] = [];
     for (const doc of docs) {
       const { chunks, truncated } = chunkText(
-        stripBoilerplate(docTextForCompute(doc.id), boilerplate),
+        stripBoilerplate(textStore.get(doc.id) ?? '', boilerplate),
       );
       if (chunks.length === 0) {
         rebuilt.set(doc.id, { chunks: [], docVector: null, chunkVectors: null });

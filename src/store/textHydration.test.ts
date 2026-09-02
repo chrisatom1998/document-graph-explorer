@@ -10,11 +10,13 @@ const dbState = vi.hoisted(() => ({
   docs: new Map<string, { hash: string; text: string }>(),
   gets: 0,
   gate: null as Promise<void> | null,
+  error: null as Error | null,
 }));
 vi.mock('../persistence/db', () => {
   const get = async (id: string) => {
     dbState.gets += 1;
     if (dbState.gate) await dbState.gate;
+    if (dbState.error) throw dbState.error;
     return dbState.docs.get(id);
   };
   return {
@@ -26,35 +28,22 @@ vi.mock('../persistence/db', () => {
 });
 
 import {
-  chunkStore,
   clearRuntimeStores,
   markDocsDirty,
   textStore,
 } from './runtimeStores';
 import {
-  docTextForCompute,
   evictDocTexts,
+  forgetPersistedDocs,
   getDocText,
   getDocTexts,
   hasDocTextSync,
   markDocsPersisted,
 } from './textHydration';
-import { useGraphStore } from './graphStore';
 import { useUiStore } from './uiStore';
 
 function record(id: string, text: string): { hash: string; text: string } {
   return { hash: id, text };
-}
-
-/**
- * Put ids in the corpus. Hydration only writes a fetched body back for docs
- * the graph still holds, so a doc removed mid-fetch cannot be resurrected.
- */
-function joinCorpus(...ids: string[]): void {
-  useGraphStore.setState({
-    nodes: ids.map((id) => ({ id, kind: 'document' })) as never,
-    nodeIndex: Object.fromEntries(ids.map((id, index) => [id, index])),
-  });
 }
 
 /** Seed a resident, persisted, clean doc and set its LRU position via a read. */
@@ -69,6 +58,7 @@ beforeEach(() => {
   dbState.docs.clear();
   dbState.gets = 0;
   dbState.gate = null;
+  dbState.error = null;
   health.healthy = true;
   health.reported.length = 0;
   useUiStore.setState({ selectedId: null, compareLeftId: null, compareRightId: null });
@@ -82,7 +72,6 @@ describe('getDocText', () => {
   });
 
   it('hydrates an evicted text from its DocumentRecord and caches it back', async () => {
-    joinCorpus('a');
     dbState.docs.set('a', record('a', 'persisted body'));
     await expect(getDocText('a')).resolves.toBe('persisted body');
     expect(textStore.get('a')).toBe('persisted body');
@@ -93,11 +82,20 @@ describe('getDocText', () => {
     await expect(getDocText('missing')).resolves.toBeUndefined();
     expect(textStore.has('missing')).toBe(false);
   });
+
+  it('throws when IndexedDB fails instead of looking like a miss', async () => {
+    markDocsPersisted(['a']);
+    dbState.error = new Error('quota exceeded');
+
+    await expect(getDocText('a')).rejects.toThrow('quota exceeded');
+    expect(health.reported).toHaveLength(1);
+    expect(textStore.has('a')).toBe(false);
+    expect(hasDocTextSync('a')).toBe(true); // still recoverable once persistence recovers
+  });
 });
 
 describe('getDocTexts', () => {
   it('mixes resident and hydrated texts, skipping ids without a record', async () => {
-    joinCorpus('warm', 'cold', 'absent');
     textStore.set('warm', 'warm text');
     dbState.docs.set('cold', record('cold', 'cold text'));
 
@@ -108,6 +106,16 @@ describe('getDocTexts', () => {
     expect(out.has('absent')).toBe(false);
     expect(textStore.get('cold')).toBe('cold text');
     expect(hasDocTextSync('cold')).toBe(true);
+  });
+
+  it('throws when IndexedDB fails instead of returning a partial map', async () => {
+    textStore.set('warm', 'warm text');
+    markDocsPersisted(['cold']);
+    dbState.error = new Error('blocked');
+
+    await expect(getDocTexts(['warm', 'cold'])).rejects.toThrow('blocked');
+    expect(health.reported).toHaveLength(1);
+    expect(textStore.has('cold')).toBe(false);
   });
 });
 
@@ -172,7 +180,6 @@ describe('evictDocTexts', () => {
 
 describe('generation reset', () => {
   it('a stale hydration cannot repopulate a torn-down corpus', async () => {
-    joinCorpus('a');
     dbState.docs.set('a', record('a', 'stale body'));
     let release!: () => void;
     dbState.gate = new Promise<void>((resolve) => {
@@ -195,39 +202,21 @@ describe('generation reset', () => {
     expect(hasDocTextSync('a')).toBe(false);
   });
 
-  it('a hydration that lands after its doc was removed does not resurrect it', async () => {
-    joinCorpus('a', 'b');
+  it('a stale hydration cannot revive a removed document', async () => {
     dbState.docs.set('a', record('a', 'removed body'));
+    markDocsPersisted(['a']);
     let release!: () => void;
     dbState.gate = new Promise<void>((resolve) => {
       release = resolve;
     });
 
     const pending = getDocText('a');
-    joinCorpus('b'); // 'a' removed from the corpus while the read is in flight
+    forgetPersistedDocs(['a']);
+    textStore.delete('a');
     release();
 
     await expect(pending).resolves.toBe('removed body'); // caller still served
-    expect(textStore.has('a')).toBe(false); // ...but the corpus stays clean
+    expect(textStore.has('a')).toBe(false);
     expect(hasDocTextSync('a')).toBe(false);
-  });
-});
-
-describe('docTextForCompute', () => {
-  it('prefers the resident full text', () => {
-    textStore.set('a', 'full body');
-    chunkStore.set('a', { texts: ['chunk one'], vectors: null, dims: 384 });
-    expect(docTextForCompute('a')).toBe('full body');
-  });
-
-  it('falls back to chunk texts when the body is evicted and unrecoverable', () => {
-    // A blank here would recompute edges/keywords — and wipe embeddings on a
-    // rebuild — as though the document had no content at all.
-    chunkStore.set('a', { texts: ['chunk one', 'chunk two'], vectors: null, dims: 384 });
-    expect(docTextForCompute('a')).toBe('chunk one\n\nchunk two');
-  });
-
-  it('returns empty only for a genuinely textless doc', () => {
-    expect(docTextForCompute('nothing')).toBe('');
   });
 });

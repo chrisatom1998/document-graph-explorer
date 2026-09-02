@@ -324,7 +324,12 @@ export async function askDocAi(
   if (blocked) return { ok: false, text: blocked };
 
   // Rehydrates the body from IndexedDB when the resident copy was evicted.
-  const fullText = await getDocText(docId);
+  let fullText: string | undefined;
+  try {
+    fullText = await getDocText(docId);
+  } catch {
+    return { ok: false, text: 'No readable text is stored for this document.' };
+  }
   if (!fullText || fullText.trim() === '') {
     return { ok: false, text: 'No readable text is stored for this document.' };
   }
