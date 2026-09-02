@@ -30,6 +30,15 @@ export function hasUint8ArrayBase64HexSupport(): boolean {
 }
 
 /**
+ * Whether the runtime implements the full set NATIVELY — captured at first
+ * import, before any installUint8ArrayBase64HexPolyfill() call can mask the
+ * answer (pdf.worker.ts installs the polyfill into its own scope before the
+ * pdf engine module evaluates and asks). pdfEngine.ts uses this to decide
+ * whether pdf.js's nested worker script needs the spliced polyfill source.
+ */
+export const UINT8ARRAY_BASE64_HEX_NATIVE = hasUint8ArrayBase64HexSupport();
+
+/**
  * Prebuilt IIFE source, functionally identical to
  * `installUint8ArrayBase64HexPolyfill` below — computed once, here, as a
  * literal string constant instead of calling `.toString()` on the function

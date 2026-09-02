@@ -1,7 +1,7 @@
 /**
  * THE ORCHESTRATOR (main thread). Drives the full ingest flow:
  *
- *   route → hash/dedupe → cache lookup → parse (worker pool / pdf.js)
+ *   route → hash/dedupe → cache lookup → parse (worker pool / pdf worker)
  *   → lexical aggregation (corpus-wide) → embeddings → semantic edges
  *   + Louvain clustering → ready.
  *
@@ -499,7 +499,8 @@ async function runIngestBody(
     store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
   }
 
-  // (d) parse misses — pdf on the main thread, everything else in the pool
+  // (d) parse misses — pdf via parsePdf (dedicated worker or its main-thread
+  // fallback), everything else in the pool
   const pool = getPool();
   if (misses.length > 0) {
     store().setPhase('parsing');

@@ -6,10 +6,15 @@
  * concurrently parsed PDF to create one can exhaust a browser tab. One worker
  * is reused for all pages in a document, then terminated so the heap is
  * released before the next queued PDF starts.
+ *
+ * Runs wherever pdfEngine runs: inside the dedicated pdf worker (pages
+ * rasterize into an OffscreenCanvas) or on the main thread fallback (DOM
+ * canvas). No settings reads in here — the resolved language is pushed in via
+ * ocrLanguage.ts because zustand state is unreachable from a worker scope.
  */
 
 import type { PDFDocumentProxy } from 'pdfjs-dist';
-import { currentOcrLanguage } from '../ocrOptions';
+import { activeOcrLanguage } from './ocrLanguage';
 
 const OCR_WORKER_PATH = '/ocr/worker.min.js';
 const OCR_CORE_PATH = '/ocr/core';
@@ -90,6 +95,19 @@ function reportProgress(
   }
 }
 
+type OcrCanvas = HTMLCanvasElement | OffscreenCanvas;
+
+/** DOM canvas on the main thread, OffscreenCanvas inside the pdf worker. */
+function createOcrCanvas(width: number, height: number): OcrCanvas {
+  if (typeof document !== 'undefined') {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    return canvas;
+  }
+  return new OffscreenCanvas(width, height);
+}
+
 function scaleForPage(page: Awaited<ReturnType<PDFDocumentProxy['getPage']>>): number {
   const base = page.getViewport({ scale: 1 });
   const basePixels = base.width * base.height;
@@ -165,13 +183,16 @@ function beforeDeadline<T>(
 async function runOcr(
   doc: PDFDocumentProxy,
   maxPages: number,
+  language: string,
   onProgress?: OcrPageProgress,
   signal?: AbortSignal,
 ): Promise<string> {
   if (signal?.aborted) throw abortReason(signal);
   const total = Math.min(doc.numPages, Math.max(0, Math.floor(maxPages)));
   if (total === 0) return '';
-  if (typeof document === 'undefined') throw new Error('OCR requires browser canvas support');
+  if (typeof document === 'undefined' && typeof OffscreenCanvas === 'undefined') {
+    throw new Error('OCR requires browser canvas support');
+  }
   const deadline = Date.now() + OCR_TOTAL_TIMEOUT_MS;
   reportProgress(onProgress, 0, total);
 
@@ -185,7 +206,7 @@ async function runOcr(
     undefined,
     signal,
   );
-  const workerPromise = createWorker(currentOcrLanguage(), undefined, {
+  const workerPromise = createWorker(language, undefined, {
     workerPath: OCR_WORKER_PATH,
     corePath: OCR_CORE_PATH,
     langPath: OCR_LANGUAGE_PATH,
@@ -223,7 +244,7 @@ async function runOcr(
   try {
     for (let pageNumber = 1; pageNumber <= total; pageNumber += 1) {
       if (signal?.aborted) throw abortReason(signal);
-      let canvas: HTMLCanvasElement | null = null;
+      let canvas: OcrCanvas | null = null;
       let page: Awaited<ReturnType<PDFDocumentProxy['getPage']>> | null = null;
       try {
         page = await beforeDeadline(
@@ -238,10 +259,13 @@ async function runOcr(
         // pathological page sizes cannot create a hundreds-of-megabytes bitmap.
         const scale = scaleForPage(page);
         const viewport = page.getViewport({ scale });
-        canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.ceil(viewport.width));
-        canvas.height = Math.max(1, Math.ceil(viewport.height));
-        const renderTask = page.render({ canvas, viewport });
+        canvas = createOcrCanvas(
+          Math.max(1, Math.ceil(viewport.width)),
+          Math.max(1, Math.ceil(viewport.height)),
+        );
+        // pdf.js 6.x renders into an OffscreenCanvas just fine; its
+        // RenderParameters type hasn't caught up (HTMLCanvasElement | null).
+        const renderTask = page.render({ canvas: canvas as HTMLCanvasElement, viewport });
         await beforeDeadline(
           renderTask.promise,
           deadline,
@@ -250,6 +274,10 @@ async function runOcr(
           () => renderTask.cancel(),
           signal,
         );
+        // tesseract.js v7 natively converts both canvas kinds (HTMLCanvasElement
+        // via toBlob, OffscreenCanvas via convertToBlob — worker/browser/
+        // loadImage.js); ImageData is NOT in its ImageLike set, so keep handing
+        // over the canvas itself.
         const result = await beforeDeadline(
           worker.recognize(canvas),
           deadline,
@@ -313,5 +341,8 @@ export function ocrPdfPages(
   onProgress?: OcrPageProgress,
   signal?: AbortSignal,
 ): Promise<string> {
-  return enqueueOcr(() => runOcr(doc, maxPages, onProgress, signal), signal);
+  // Captured now, not when the queued job eventually runs — by then another
+  // document's dispatch may have pushed a different value.
+  const language = activeOcrLanguage();
+  return enqueueOcr(() => runOcr(doc, maxPages, language, onProgress, signal), signal);
 }

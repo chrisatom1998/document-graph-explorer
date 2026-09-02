@@ -7,12 +7,15 @@
  * lags behind, so every page render throws
  * "getOrInsertComputed is not a function" and the canvas is left blank
  * (visually indistinguishable from "nothing happened" since the page div's
- * CSS background is white). Text extraction (parsePdf) never hits this path,
- * so PDF ingestion itself isn't affected — only the rendered preview is.
+ * CSS background is white). Text extraction never hits this path — only
+ * canvas rendering does.
  *
- * Runs on the MAIN THREAD only: canvas rendering can't happen in a worker
- * (no Canvas API there), so — unlike pdfUint8ArrayPolyfill.ts — there's no
- * need to splice this into pdf.js's separate worker script.
+ * The renderer runs in two scopes: ui/PdfPreview.tsx on the main thread, and
+ * the OCR fallback rasterizing pages into an OffscreenCanvas inside the
+ * dedicated pdf worker — so this installs in both (pdfEngine.ts at module
+ * scope, pdf.worker.ts before the engine loads). Unlike
+ * pdfUint8ArrayPolyfill.ts it never needs splicing into pdf.js's own nested
+ * worker script: rendering happens on the API side, not in pdf.js's worker.
  */
 
 /** True when the runtime already implements both upsert methods natively. */
