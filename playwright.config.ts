@@ -49,7 +49,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run preview -- --port ${PORT} --strictPort`,
+    // Bind the preview server to the same address Playwright polls. Vite's
+    // default host is `localhost`, which resolves to ::1 first on machines
+    // with IPv6 (GitHub runners do; this matters even though it happens to
+    // resolve to 127.0.0.1 elsewhere) — the server would then listen on IPv6
+    // only while Playwright waits on IPv4 and times out with no error output.
+    command: `npm run preview -- --host 127.0.0.1 --port ${PORT} --strictPort`,
     url: `http://127.0.0.1:${PORT}`,
     reuseExistingServer: !IS_CI,
     timeout: 120_000,
