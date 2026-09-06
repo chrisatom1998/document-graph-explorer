@@ -278,7 +278,7 @@ export default function Toolbar() {
 
       <button
         type="button"
-        className="btn-icon"
+        className="btn-icon toolbar__labeled"
         title="Search (⌘K)"
         aria-label="Search documents"
         onClick={() => {
@@ -287,6 +287,7 @@ export default function Toolbar() {
         }}
       >
         <IconSearch />
+        <span className="toolbar__label" aria-hidden="true">Search</span>
       </button>
 
       <button
@@ -304,7 +305,7 @@ export default function Toolbar() {
       <div className="toolbar__menu-wrap" ref={viewMenuWrapRef}>
         <button
           type="button"
-          className={`btn-icon${
+          className={`btn-icon toolbar__labeled${
             openMenu === 'view' || topicNodesEnabled || clusterCollapsed ? ' is-active' : ''
           }`}
           title="View options"
@@ -317,6 +318,7 @@ export default function Toolbar() {
           }}
         >
           <IconView />
+          <span className="toolbar__label" aria-hidden="true">View</span>
         </button>
         {openMenu === 'view' && (
           <div className="toolbar__menu glass-panel">
@@ -381,7 +383,7 @@ export default function Toolbar() {
       <div className="toolbar__menu-wrap" ref={analyzeMenuWrapRef}>
         <button
           type="button"
-          className={`btn-icon${
+          className={`btn-icon toolbar__labeled${
             openMenu === 'analyze' || pathMode || insightsOpen || snapshotsOpen ? ' is-active' : ''
           }`}
           title="Analyze the corpus"
@@ -394,6 +396,7 @@ export default function Toolbar() {
           }}
         >
           <IconAnalyze />
+          <span className="toolbar__label" aria-hidden="true">Analyze</span>
         </button>
         {openMenu === 'analyze' && (
           <div className="toolbar__menu glass-panel">
@@ -443,7 +446,7 @@ export default function Toolbar() {
       <div className="toolbar__menu-wrap" ref={dataMenuWrapRef}>
         <button
           type="button"
-          className={`btn-icon${openMenu === 'data' ? ' is-active' : ''}`}
+          className={`btn-icon toolbar__labeled${openMenu === 'data' ? ' is-active' : ''}`}
           title="Data options"
           aria-label="Data options"
           aria-haspopup="true"
@@ -454,6 +457,7 @@ export default function Toolbar() {
           }}
         >
           <IconData />
+          <span className="toolbar__label" aria-hidden="true">Data</span>
         </button>
         {openMenu === 'data' && (
           <Suspense fallback={null}>

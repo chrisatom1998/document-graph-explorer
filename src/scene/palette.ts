@@ -117,13 +117,13 @@ export const FLAT_GRID_FADE = '#102234';
 export const FLAT_PANEL = '#112435';
 export const FLAT_NODE = new THREE.Color('#f5fbff');
 export const FLAT_NODE_CLUSTER_BLEND = 0.46;
-export const FLAT_NODE_OUTER = new THREE.Color('#23435d');
+export const FLAT_NODE_OUTER = new THREE.Color('#426b87');
 export const FLAT_NODE_RING = '#f4fbff';
 export const FLAT_EDGE = new THREE.Color('#78a8c8');
 export const FLAT_EDGE_FAINT = '#355773';
 export const FLAT_EDGE_FOCUS = '#eef9ff';
 export const FLAT_LABEL = '#f3f9ff';
-export const FLAT_LABEL_MUTED = '#aec5d8';
+export const FLAT_LABEL_MUTED = '#c7d8e8';
 export const FLAT_SELECTION = '#8ae0ff';
 
 /** Human-readable edge-kind labels for the UI (badges, connection tags). */

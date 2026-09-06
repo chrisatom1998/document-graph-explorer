@@ -16,8 +16,8 @@ import { useUiStore } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
 import { prefersReducedMotion } from '../util/motion';
 
-const RING_SCALE = 3.2; // ring diameter relative to node radius (mid-pulse)
-const PULSE_AMPLITUDE = 0.12;
+const RING_SCALE = 4.4; // ring diameter relative to node radius (mid-pulse)
+const PULSE_AMPLITUDE = 0.035;
 const PULSE_HZ = 0.6;
 
 const ringMaterial = new THREE.ShaderMaterial({
@@ -25,7 +25,7 @@ const ringMaterial = new THREE.ShaderMaterial({
   depthWrite: false,
   blending: THREE.AdditiveBlending,
   uniforms: {
-    uColor: { value: new THREE.Color('#a996ff') },
+    uColor: { value: new THREE.Color('#a8ddff') },
     uIntensity: { value: 1.0 },
   },
   vertexShader: /* glsl */ `
@@ -41,10 +41,9 @@ const ringMaterial = new THREE.ShaderMaterial({
     varying vec2 vUv;
     void main() {
       float d = length(vUv - 0.5) * 2.0; // 0 at center, 1 at plane edge
-      // thin bright ring with a soft inner haze so it hugs the marble
-      float ring = smoothstep(0.16, 0.0, abs(d - 0.72));
-      float haze = smoothstep(0.72, 0.2, d) * 0.12;
-      vec3 glow = uColor * uIntensity * (1.6 * ring + haze);
+      // A crisp outline remains separate from the core and its subtle corona.
+      float ring = 1.0 - smoothstep(0.025, 0.065, abs(d - 0.72));
+      vec3 glow = uColor * uIntensity * ring;
       gl_FragColor = vec4(glow, 1.0);
     }
   `,

@@ -12,12 +12,15 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { computeClusterFields, type ClusterPoint } from './clusterFields';
 import { positionBuffer, slotOfId } from './positionBuffer';
+import { labelWorldScale } from './labelLayout';
 
 const FLAT_CLUSTER_LABEL_Z = -3;
 const FLAT_CLUSTER_LABEL_RENDER_ORDER = -3;
 const MAX_LABELS = 24;
 const UPDATE_INTERVAL_SECONDS = 0.12;
 const LABEL_FONT = '/fonts/Inter-Regular.woff';
+const FONT_SIZE = 3.35;
+const viewPosition = new THREE.Vector3();
 
 interface TroikaLabel extends THREE.Mesh {
   text: string;
@@ -44,11 +47,20 @@ export default function FlatClusterLabels() {
     lastVersion.current = -1;
   }, [clusterNames, localClusterNames, nodes, qualityTier, visible]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera, size }) => {
     if (!visible) {
       for (const label of labelRefs.current) if (label) label.visible = false;
       return;
     }
+    // Camera motion does not change the layout version; resize labels even
+    // while the graph is settled so community names never dwarf document text.
+    const scaleLabel = (label: TroikaLabel): void => {
+      viewPosition.copy(label.position).applyMatrix4(camera.matrixWorldInverse);
+      label.scale.setScalar(labelWorldScale(
+        FONT_SIZE, 11, -viewPosition.z, camera.projectionMatrix.elements[5], size.height,
+      ));
+    };
+    for (const label of labelRefs.current) if (label?.visible) scaleLabel(label);
     if (
       positionBuffer.version === lastVersion.current ||
       clock.elapsedTime - lastUpdate.current < UPDATE_INTERVAL_SECONDS
@@ -89,7 +101,7 @@ export default function FlatClusterLabels() {
         label.sync();
       }
       label.position.set(field.x, field.y, FLAT_CLUSTER_LABEL_Z);
-      label.scale.setScalar(Math.min(1.18, Math.max(0.92, field.radius / 34)));
+      scaleLabel(label);
       label.visible = true;
     }
   });
@@ -105,9 +117,10 @@ export default function FlatClusterLabels() {
             labelRefs.current[index] = label;
           }}
           font={LABEL_FONT}
-          fontSize={3.35}
-          color="#b9cbd8"
-          fillOpacity={0.5}
+          fontSize={FONT_SIZE}
+          color="#8ea6ba"
+          fillOpacity={0.65}
+          letterSpacing={0.04}
           anchorX="center"
           anchorY="middle"
           outlineWidth={0.1}

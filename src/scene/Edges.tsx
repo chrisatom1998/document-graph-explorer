@@ -52,22 +52,22 @@ import {
   evalEdgePoint,
 } from './edgeCurve';
 
-const FOCUS_BOOST = 2.5;
+const FOCUS_BOOST = 4.2;
 // Mid-curve brightness relative to the endpoints: the arc thins out where it
 // is farthest from either node, reading as a faint gradient filament.
-const MID_TAPER = 0.68;
+const MID_TAPER = 0.9;
 // 2D star chart: hairlines are fainter than the nebula filaments and carry a
 // single uniform tint (weight still maps to brightness; kind moves to the
 // popover/legend and the pulse colors).
-const FLAT_BRIGHT_BASE = 0.2;
-const FLAT_BRIGHT_WEIGHT = 0.3;
+const FLAT_BRIGHT_BASE = 0.26;
+const FLAT_BRIGHT_WEIGHT = 0.42;
 
 // Additive edges sum brightness where they overlap, so a fixed per-edge
 // opacity turns dense graphs into a glowing hairball that hides the nodes.
 // Fade per-edge brightness as the count grows (sqrt keeps the aggregate
 // roughly level); the floor keeps single filaments from vanishing entirely.
-const FADE_START_EDGES = 400;
-const FADE_FLOOR = 0.35;
+const FADE_START_EDGES = 240;
+const FADE_FLOOR = 0.28;
 
 function densityFade(edgeCount: number): number {
   if (edgeCount <= FADE_START_EDGES) return 1;
@@ -77,7 +77,7 @@ function densityFade(edgeCount: number): number {
 // How much of each endpoint's cluster hue bleeds into the edge gradient.
 // Kind tint stays dominant (it is information — legend/popover encode it);
 // reference edges are exempt so their warm amber keeps popping (spec §7.1).
-const CLUSTER_BLEND = 0.35;
+const CLUSTER_BLEND = 0.18;
 
 const srcColor = new THREE.Color();
 const dstColor = new THREE.Color();
@@ -128,7 +128,7 @@ function injectFadeFragment(shader: THREE.WebGLProgramParametersWithUniforms): v
 const lineMaterial = new THREE.LineBasicMaterial({
   vertexColors: true,
   transparent: true,
-  opacity: 0.25,
+  opacity: 0.48,
   blending: THREE.AdditiveBlending,
   depthWrite: false,
   toneMapped: false,
@@ -144,12 +144,12 @@ lineMaterial.onBeforeCompile = (shader) => {
 };
 
 // Fat-line pass: width in CSS px (constant across the dpr ladder — degraded
-// resolutions must not thin the filaments). Opacity sits well below the
-// hairline's 0.25: a ~1.6px ribbon covers roughly 3x the pixels of a
+// resolutions must not thin the filaments). Opacity sits below the
+// hairline's 0.48: a ~1.4px ribbon covers more pixels than a
 // 1-device-px hairline, and with additive blending coverage reads as
 // brightness. fog matches the hairline (ShaderMaterial defaults it off).
-const FAT_WIDTH_PX = 1.6;
-const FAT_OPACITY = 0.14;
+const FAT_WIDTH_PX = 1.4;
+const FAT_OPACITY = 0.25;
 
 const fatMaterial = new LineMaterial({
   vertexColors: true,
@@ -361,7 +361,7 @@ export default function Edges() {
       }
     }
     let brightness =
-      (flat ? FLAT_BRIGHT_BASE + FLAT_BRIGHT_WEIGHT * e.weight : 0.16 + 0.55 * e.weight) *
+      (flat ? FLAT_BRIGHT_BASE + FLAT_BRIGHT_WEIGHT * e.weight : 0.23 + 0.62 * e.weight) *
       fade *
       revealFactor;
     const focusIncident = Boolean(focusId && (e.source === focusId || e.target === focusId));
@@ -409,7 +409,9 @@ export default function Edges() {
       const k = (v >> 1) + (v & 1); // point index this vertex represents
       const t = k / segments;
       // 1 at ends, MID_TAPER at t=.5 — straight 2D hairlines stay uniform
-      const taper = flat ? 1 : 1 - (1 - MID_TAPER) * 4 * t * (1 - t);
+      const taper = flat || focusIncident || pathEdge
+        ? 1
+        : 1 - (1 - MID_TAPER) * 4 * t * (1 - t);
       const o = base + v * 3;
       col[o] = (srcColor.r + (dstColor.r - srcColor.r) * t) * taper;
       col[o + 1] = (srcColor.g + (dstColor.g - srcColor.g) * t) * taper;

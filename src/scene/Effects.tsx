@@ -29,13 +29,13 @@ import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../conf
 
 // Threshold/smoothing are half of the label-vs-bloom contract (Labels.tsx) —
 // intensity and radius are safe to tune; the threshold is not.
-const BLOOM_INTENSITY = 1.02;
+const BLOOM_INTENSITY = 0.42;
 const BLOOM_THRESHOLD = 0.34;
 const BLOOM_SMOOTHING = 0.18;
 // 2D star chart: bloom drops to a faint dot glow (the halo shells are off),
 // DoF makes no sense on a flat plane, vignette lightens to a soft frame.
-const FLAT_BLOOM_INTENSITY = 0.4;
-const FLAT_VIGNETTE = 0.26;
+const FLAT_BLOOM_INTENSITY = 0.12;
+const FLAT_VIGNETTE = 0.18;
 
 /** DepthOfField that keeps its focus target on the selected node. */
 function FocusedDoF() {
@@ -54,7 +54,7 @@ function FocusedDoF() {
   // it imperatively above (checked against installed typings: target is
   // `Vector3 | null` on DepthOfFieldEffect).
   return (
-    <DepthOfField ref={ref} target={[0, 0, 0]} worldFocusRange={70} bokehScale={2.2} />
+    <DepthOfField ref={ref} target={[0, 0, 0]} worldFocusRange={160} bokehScale={0.6} />
   );
 }
 
@@ -88,10 +88,10 @@ export default function Effects() {
     const span = VISUAL_DENSITY_SOFTEN_FULL - VISUAL_DENSITY_SOFTEN_START;
     return Math.min(1, (nodeCount - VISUAL_DENSITY_SOFTEN_START) / span);
   }, [nodeCount]);
-  const focusBoost = hoveredId || selectedId ? 0.12 : 0;
+  const focusBoost = hoveredId || selectedId ? 0.04 : 0;
   const intensity = flat
     ? FLAT_BLOOM_INTENSITY
-    : BLOOM_INTENSITY - densitySoftening * 0.26 + focusBoost + settleBloomBoost();
+    : BLOOM_INTENSITY - densitySoftening * 0.14 + focusBoost + settleBloomBoost() * 0.5;
   void settleTick;
 
   // Geometry antialiasing lives HERE, not on the canvas: the composer renders
@@ -115,11 +115,11 @@ export default function Effects() {
           intensity={intensity}
           luminanceThreshold={BLOOM_THRESHOLD}
           luminanceSmoothing={BLOOM_SMOOTHING}
-          radius={0.9}
+          radius={0.55}
         />
       )}
       {dofOn ? <FocusedDoF /> : (null as unknown as React.ReactElement)}
-      <Vignette darkness={flat ? FLAT_VIGNETTE : 0.62 - densitySoftening * 0.08} offset={flat ? 0.28 : 0.18} />
+      <Vignette darkness={flat ? FLAT_VIGNETTE : 0.32 - densitySoftening * 0.06} offset={flat ? 0.28 : 0.18} />
     </EffectComposer>
   );
 }
