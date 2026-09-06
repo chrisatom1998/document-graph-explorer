@@ -32,9 +32,9 @@ describe('2D flat map backdrop occlusion contract', () => {
   });
 
   it('sits far behind the z=0 layout plane, beyond any node radius', () => {
-    // Nodes live at z=0 in 2D with radius capped at 1.75 (see Nodes.tsx
-    // scaleOfSlot), so their nearest-to-backdrop surface is z = -1.75.
-    const maxNodeRadius = 1.75;
+    // Nodes live at z=0 in 2D with radius capped at 3.5 (see Nodes.tsx
+    // scaleOfSlot), so their nearest-to-backdrop surface is z = -3.5.
+    const maxNodeRadius = 3.5;
     expect(BACKDROP_Z).toBeLessThan(-maxNodeRadius);
     expect(Math.abs(BACKDROP_Z) - maxNodeRadius).toBeGreaterThan(10); // real margin
   });
@@ -58,7 +58,7 @@ describe('2D flat map backdrop occlusion contract', () => {
     backdrop.renderOrder = BACKDROP_RENDER_ORDER;
 
     const node = new THREE.Mesh(
-      new THREE.SphereGeometry(1.75),
+      new THREE.SphereGeometry(3.5),
       new THREE.MeshBasicMaterial(),
     );
     node.position.z = 0;

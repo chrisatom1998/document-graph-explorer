@@ -24,7 +24,7 @@ import {
 import { makeSoftSprite, makeStarSprite } from './proceduralTextures';
 import { VISUAL_DENSITY_SOFTEN_FULL, VISUAL_DENSITY_SOFTEN_START } from '../config';
 
-const STAR_COUNT = 4200;
+const STAR_COUNT = 2400;
 // Must stay OUTSIDE the layout's node shell (layout.worker.ts grows it as
 // 11·√n, so ~700u at the 4096-node cap) — the nebula must never poke through
 // its own backdrop.
@@ -33,7 +33,7 @@ const SHELL_MAX = 1150;
 
 // Bright foreground stars with diffraction spikes. Kept to a handful — in a
 // photograph only the brightest few stars flare.
-const HERO_COUNT = 14;
+const HERO_COUNT = 6;
 const HERO_SHELL_MIN = 600;
 const HERO_SHELL_MAX = 850;
 
@@ -94,7 +94,7 @@ function buildHeroes(): StarBuffers {
     colors[i * 3] = r * lum;
     colors[i * 3 + 1] = g * lum;
     colors[i * 3 + 2] = b * lum;
-    sizes[i] = 26 + 30 * Math.random();
+    sizes[i] = 16 + 18 * Math.random();
   }
   return { positions, colors, sizes };
 }
@@ -197,8 +197,8 @@ export default function Starfield() {
   }, [height, dpr, fieldMaterial, heroMaterial]);
 
   useEffect(() => {
-    fieldMaterial.uniforms.uDim.value = 0.9 - densitySoftening * 0.18;
-    heroMaterial.uniforms.uDim.value = 0.9 - densitySoftening * 0.14;
+    fieldMaterial.uniforms.uDim.value = 0.34 - densitySoftening * 0.1;
+    heroMaterial.uniforms.uDim.value = 0.3 - densitySoftening * 0.08;
   }, [densitySoftening, fieldMaterial, heroMaterial]);
 
   return (

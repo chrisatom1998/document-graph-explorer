@@ -70,8 +70,8 @@ export { slotMeta } from './positionBuffer';
 // Module-level temps (zero per-frame allocations)
 // ---------------------------------------------------------------------------
 
-const HALO_SCALE = 2.2;
-const HALO_INTENSITY = 0.7;
+const HALO_SCALE = 1.48;
+const HALO_INTENSITY = 0.24;
 // Additive halos stack like the edges do: in crowded graphs the overlapping
 // shells (and the bloom they feed) wash out the core spheres, so halo
 // intensity eases down with node count. Floor keeps sparse regions of a big
@@ -121,8 +121,8 @@ const haloMaterial = new THREE.ShaderMaterial({
     varying vec3 vColor;
     varying float vRim;
     void main() {
-      // faint face-on fill + hot limb ring that feeds the bloom pass
-      vec3 glow = vColor * uIntensity * (0.18 + 2.4 * vRim);
+      // A narrow corona separates the node silhouette without obscuring links.
+      vec3 glow = vColor * uIntensity * (0.06 + 1.5 * vRim);
       gl_FragColor = vec4(glow, 1.0);
     }
   `,
@@ -140,6 +140,7 @@ const dummy = new THREE.Object3D();
 const tmpColor = new THREE.Color();
 const tmpOuterColor = new THREE.Color();
 const tmpRingColor = new THREE.Color(FLAT_NODE_RING);
+const coreHighlight = new THREE.Color('#edf5ff');
 const rayToCenter = new THREE.Vector3();
 const dragOrigin = new THREE.Vector3();
 const dragNormal = new THREE.Vector3();
@@ -267,12 +268,12 @@ export default function Nodes() {
       const ghost = n.status !== 'ok';
       slotMeta.ghost[slot] = ghost ? 1 : 0;
       // size = f(degree), log-scaled so hubs are visibly hubs (spec §5.4).
-      // 2D star chart compresses the band — small, near-uniform dots.
+      // Flat markers use a compact degree band, with enough area to read at overview zoom.
       let s = isFlat
-        ? 0.72 * (1 + 0.28 * Math.log2(1 + n.degree))
+        ? 1.44 * (1 + 0.28 * Math.log2(1 + n.degree))
         : 0.7 * (1 + 0.5 * Math.log2(1 + n.degree));
       if (ghost) s *= GHOST_SCALE_FACTOR; // ghosted, never a silent gap (spec §9)
-      scaleOfSlot[slot] = Math.min(s, isFlat ? 1.75 : 2.6);
+      scaleOfSlot[slot] = Math.min(s, isFlat ? 3.5 : 2.6);
     }
   };
 
@@ -308,8 +309,8 @@ export default function Nodes() {
           .copy(FLAT_NODE_OUTER)
           .lerp(clusterColor(n.cluster), FLAT_NODE_CLUSTER_BLEND * 0.65);
       } else {
-        tmpColor.copy(clusterColor(n.cluster));
-        tmpOuterColor.copy(tmpColor);
+        tmpColor.copy(clusterColor(n.cluster)).lerp(coreHighlight, 0.12);
+        tmpOuterColor.copy(clusterColor(n.cluster));
       }
       if (n.kind === 'topic') {
         tmpColor.multiplyScalar(1.28);
@@ -327,11 +328,11 @@ export default function Nodes() {
       // that sets both. (Interleaving separate `else if` chains for the two
       // colors silently made the outer-disc branches unreachable.)
       if (n.id === hoveredId) {
-        tmpColor.multiplyScalar(isFlat ? 2.15 - soften * 0.12 : 2.65 - soften * 0.18);
-        tmpOuterColor.multiplyScalar(isFlat ? 2.1 - soften * 0.08 : 1.8 - soften * 0.12);
+        tmpColor.multiplyScalar(isFlat ? 1.65 - soften * 0.12 : 1.75 - soften * 0.18);
+        tmpOuterColor.multiplyScalar(isFlat ? 1.7 - soften * 0.08 : 1.4 - soften * 0.12);
       } else if (n.id === selectedId) {
-        tmpColor.multiplyScalar(isFlat ? 2.0 - soften * 0.1 : 2.45 - soften * 0.16);
-        tmpOuterColor.multiplyScalar(isFlat ? 1.92 - soften * 0.08 : 1.7 - soften * 0.1);
+        tmpColor.multiplyScalar(isFlat ? 1.55 - soften * 0.1 : 1.65 - soften * 0.16);
+        tmpOuterColor.multiplyScalar(isFlat ? 1.6 - soften * 0.08 : 1.3 - soften * 0.1);
       } else if (emphasis && emphasis.has(n.id)) {
         tmpColor.multiplyScalar(isFlat ? 1.4 : 1.22);
         tmpOuterColor.multiplyScalar(isFlat ? 1.34 : 1.16);
@@ -778,11 +779,11 @@ export default function Nodes() {
           <meshBasicMaterial toneMapped={false} depthWrite={false} />
         ) : (
           <meshPhysicalMaterial
-            roughness={0.32}
+            roughness={0.4}
             metalness={0}
-            clearcoat={0.9}
-            clearcoatRoughness={0.25}
-            envMapIntensity={0.7}
+            clearcoat={0.55}
+            clearcoatRoughness={0.32}
+            envMapIntensity={0.55}
           />
         )}
       </instancedMesh>

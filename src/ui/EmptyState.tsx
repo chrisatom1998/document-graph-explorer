@@ -11,9 +11,6 @@ import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 import { rememberCenterOrigin } from '../scene/ingestGesture';
 
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
-// Split out so the welcome screen paints without waiting on three.js; the flat
-// mark stands in until the hero resolves.
-const HeroConstellation = lazy(() => import('./HeroConstellation'));
 
 /** The editorial, local-first welcome workspace shown before a corpus is loaded. */
 export default function EmptyState() {
@@ -62,7 +59,7 @@ export default function EmptyState() {
             <span>01 / 03</span>
           </div>
           <div className="empty-state__hero">
-            <Suspense fallback={<ConstellationSvg />}><HeroConstellation /></Suspense>
+            <ConstellationSvg />
           </div>
           <div className="empty-state__visual-copy">
             <p className="empty-state__visual-kicker">See the structure in your work</p>
