@@ -16,12 +16,7 @@ import {
   type PendingOrigin,
   type Vec3,
 } from './ingestGesture';
-import {
-  hasOriginOfSlot,
-  originOfSlot,
-  positionBuffer,
-  spawnAtOfSlot,
-} from './positionBuffer';
+import { positionBuffer, slotMeta, spawnAtOfSlot } from './positionBuffer';
 
 // Gesture recording + camera-framing flags live in the dependency-free
 // ingestGesture module (entry-chunk budget); re-exported so scene/pipeline
@@ -253,7 +248,7 @@ export function writeSlotTravelPosition(
   const hy = arr[o + 1];
   const hz = opts.flat ? 0 : arr[o + 2];
   const spawn = spawnAtOfSlot[slot] ?? -1;
-  if (opts.reducedMotion || spawn < 0 || !hasOriginOfSlot[slot]) {
+  if (opts.reducedMotion || spawn < 0 || !slotMeta.hasOrigin[slot]) {
     out.x = hx;
     out.y = hy;
     out.z = hz;
@@ -266,9 +261,9 @@ export function writeSlotTravelPosition(
     out.z = hz;
     return false;
   }
-  const ox = originOfSlot[o];
-  const oy = originOfSlot[o + 1];
-  const oz = opts.flat ? 0 : originOfSlot[o + 2];
+  const ox = slotMeta.origin[o];
+  const oy = slotMeta.origin[o + 1];
+  const oz = opts.flat ? 0 : slotMeta.origin[o + 2];
   if (raw <= 0) {
     out.x = ox;
     out.y = oy;

@@ -49,9 +49,11 @@ describe('sanitizeGraphExport — structural rejection', () => {
     expect(() => sanitizeGraphExport(validExport({ nodes: 'nope' }))).toThrow(/malformed/);
   });
 
-  it('rejects exports above the node capacity', () => {
+  it('rejects exports above the MAX_NODES hard ceiling', () => {
     const nodes = Array.from({ length: MAX_NODES + 1 }, (_, i) => validNode(String(i)));
-    expect(() => sanitizeGraphExport(validExport({ nodes }))).toThrow(/maximum/);
+    expect(() => sanitizeGraphExport(validExport({ nodes }))).toThrow(
+      `the maximum is ${MAX_NODES}`,
+    );
   });
 
   it('rejects exports with no valid nodes', () => {

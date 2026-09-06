@@ -95,6 +95,7 @@ export default defineConfig(({ mode }) => ({
       'src/workers/aggregator.worker.ts',
       'src/workers/layout.worker.ts',
       'src/workers/insights.worker.ts',
+      'src/workers/pdf.worker.ts',
     ],
     // graphology is imported ONLY inside aggregator.worker.ts, and jszip /
     // fast-xml-parser ONLY inside pipeline.worker.ts (via parsers/office.ts).

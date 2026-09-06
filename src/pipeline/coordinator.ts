@@ -1,7 +1,7 @@
 /**
  * THE ORCHESTRATOR (main thread). Drives the full ingest flow:
  *
- *   route → hash/dedupe → cache lookup → parse (worker pool / pdf.js)
+ *   route → hash/dedupe → cache lookup → parse (worker pool / pdf worker)
  *   → lexical aggregation (corpus-wide) → embeddings → semantic edges
  *   + Louvain clustering → ready.
  *
@@ -79,6 +79,13 @@ import {
   mdLinkTargetsStore,
   textStore,
 } from '../store/runtimeStores';
+import {
+  evictDocTexts,
+  forgetPersistedDocs,
+  getDocTexts,
+  hasDocTextSync,
+  markDocsPersisted,
+} from '../store/textHydration';
 import { useChatStore } from '../store/chatStore';
 import { cancelChat } from '../chat/chatCancellation';
 import { useSettingsStore } from '../store/settingsStore';
@@ -414,6 +421,23 @@ async function runIngestBody(
   spawnOrigin: Vec3,
   initialDocumentCount: number,
 ): Promise<boolean> {
+  try {
+    return await runIngestBodyInner(files, signal, spawnOrigin, initialDocumentCount);
+  } finally {
+    // Release the corpus-wide passes' transient full-text working set on
+    // EVERY exit — a cancelled or failed run has already paid runLexicalPass's
+    // full-corpus rehydration and would otherwise keep it resident (dirty and
+    // unconfirmed docs are always kept — see store/textHydration).
+    evictDocTexts();
+  }
+}
+
+async function runIngestBodyInner(
+  files: IngestFile[],
+  signal: AbortSignal | undefined,
+  spawnOrigin: Vec3,
+  initialDocumentCount: number,
+): Promise<boolean> {
   const store = useGraphStore.getState;
 
   // (a) route by extension; unsupported → ignored tray
@@ -487,6 +511,7 @@ async function runIngestBody(
     }
     store().addNodes([cached.node]);
     textStore.set(p.id, cached.text);
+    markDocsPersisted([p.id]); // this record was just read FROM the DB
     chunkStore.set(p.id, {
       texts: cached.chunkTexts,
       vectors: cached.chunkVectors,
@@ -499,7 +524,8 @@ async function runIngestBody(
     store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
   }
 
-  // (d) parse misses — pdf on the main thread, everything else in the pool
+  // (d) parse misses — pdf via parsePdf (dedicated worker or its main-thread
+  // fallback), everything else in the pool
   const pool = getPool();
   if (misses.length > 0) {
     store().setPhase('parsing');
@@ -709,9 +735,10 @@ async function runIngestBody(
   // are corpus-wide, so every drop rebuilds them)
   const { lexEdges, boilerplate } = await runLexicalPass(pool, signal);
 
-  // (f) embeddings for docs that still need a vector
+  // (f) embeddings for docs that still need a vector. hasDocTextSync counts
+  // evicted-but-persisted text as readable (runLexicalPass just rehydrated it).
   const embedTargets = documentNodes().filter(
-    (n) => n.status !== 'unreadable' && !docVectorStore.has(n.id) && textStore.has(n.id),
+    (n) => n.status !== 'unreadable' && !docVectorStore.has(n.id) && hasDocTextSync(n.id),
   );
   if (embedTargets.length > 0) {
     store().setPhase('embedding');
@@ -741,7 +768,10 @@ async function runIngestBody(
         docLinks: docLinksStore.get(node.id) ?? [],
       }));
     // fire-and-forget; quota failures degrade via the cache's one-time warning
-    void saveDocsToCache(flushDocs);
+    void saveDocsToCache(flushDocs).then((saved) => {
+      // Only a confirmed commit makes these texts safe to evict later.
+      if (saved) markDocsPersisted(flushDocs.map((d) => d.node.id));
+    });
   }
 
   // (g) semantic edges + Louvain clustering over the full edge set
@@ -754,7 +784,8 @@ async function runIngestBody(
   store().setPhase('ready');
 
   // Persist the completed uploaded corpus immediately, so quitting right after
-  // ingest still restores these files on the next launch.
+  // ingest still restores these files on the next launch. (The wrapper's
+  // finally evicts the passes' text working set after this save confirms.)
   await saveSession();
   return insightsAreCurrent && documentNodes().length > initialDocumentCount;
 }
@@ -890,6 +921,22 @@ async function runEmbeddingPass(
   }
 }
 
+/**
+ * Rehydrate every id and fail the pass if a readable document is still
+ * missing from textStore. getDocTexts throws on IndexedDB errors; this
+ * catches the leftover case where hasDocTextSync is true but the record
+ * was gone, so callers cannot treat a real document as ''.
+ */
+async function hydrateCorpusTexts(ids: readonly string[]): Promise<void> {
+  await getDocTexts(ids);
+  const missing = ids.filter((id) => hasDocTextSync(id) && !textStore.has(id));
+  if (missing.length > 0) {
+    throw new Error(
+      `Failed to rehydrate full text for ${missing.length} document${missing.length === 1 ? '' : 's'}.`,
+    );
+  }
+}
+
 /** Ingest step (e): lexical edges, keywords, boilerplate — whole corpus. */
 async function runLexicalPass(
   pool: WorkerPool,
@@ -899,7 +946,13 @@ async function runLexicalPass(
   throwIfAborted(signal);
   store().setPhase('linking');
   await backfillLexMeta(pool);
-  const lexicalDocs: LexicalDocInput[] = documentNodes().map((n) => {
+  const docNodes = documentNodes();
+  // Corpus-wide pass over every doc's full text — rehydrate evicted texts
+  // transiently (usually a no-op); the ingest/removal-end evictor releases
+  // this working set again.
+  await hydrateCorpusTexts(docNodes.map((n) => n.id));
+  throwIfAborted(signal);
+  const lexicalDocs: LexicalDocInput[] = docNodes.map((n) => {
     const meta = lexMeta.get(n.id);
     const text = textStore.get(n.id) ?? '';
     return {
@@ -1169,6 +1222,16 @@ async function computeCorpusHash(): Promise<string> {
 // ---------------------------------------------------------------------------
 
 async function runRemove(ids: string[]): Promise<void> {
+  try {
+    await runRemoveInner(ids);
+  } finally {
+    // Same contract as runIngestBody: the re-link pass rehydrates survivors'
+    // full texts, and a cancelled/failed removal must still release them.
+    evictDocTexts();
+  }
+}
+
+async function runRemoveInner(ids: string[]): Promise<void> {
   const store = useGraphStore.getState;
   const present = new Set(documentNodes().map((n) => n.id));
   const removing = [...new Set(ids)].filter((id) => present.has(id));
@@ -1218,6 +1281,7 @@ async function runRemove(ids: string[]): Promise<void> {
     fileIdOfDoc.delete(id);
     nameOfDoc.delete(id);
   }
+  forgetPersistedDocs(removing); // their cached records may be purged below
 
   const remaining = documentNodes();
   if (remaining.length === 0) {
@@ -1281,8 +1345,9 @@ async function runRemove(ids: string[]): Promise<void> {
  * mdLinkTargetsStore (populated at hydration time), so they're untouched here.
  */
 async function backfillLexMeta(pool: WorkerPool): Promise<void> {
-  const missing = documentNodes().filter((n) => !lexMeta.has(n.id) && textStore.has(n.id));
+  const missing = documentNodes().filter((n) => !lexMeta.has(n.id) && hasDocTextSync(n.id));
   if (missing.length === 0) return;
+  await hydrateCorpusTexts(missing.map((n) => n.id)); // analyze needs the full body
   await Promise.allSettled(
     missing.map(async (n) => {
       const fileName = basename(n.path ?? n.title);
@@ -1461,8 +1526,11 @@ export function reconcileWatchedFiles(
  */
 async function runEmbeddingRebuild(): Promise<void> {
   wireModelProgress();
-  const docs = documentNodes().filter((n) => n.status !== 'unreadable' && textStore.has(n.id));
+  const docs = documentNodes().filter((n) => n.status !== 'unreadable' && hasDocTextSync(n.id));
   if (docs.length === 0) return;
+  // Corpus-wide pass: rehydrate evicted full texts up front (the chunking
+  // loop below reads textStore synchronously), released again in `finally`.
+  await hydrateCorpusTexts(docs.map((n) => n.id));
 
   const pool = getPool();
   const graph = useGraphStore.getState;
@@ -1544,6 +1612,9 @@ async function runEmbeddingRebuild(): Promise<void> {
     // A failed worker/model request must not leave the application locked in
     // an in-progress phase. The previous index remains intact until commit.
     if (graph().phase !== 'ready') graph().setPhase('ready');
+    // Release the rebuild's transient full-text working set (still-dirty
+    // docs — e.g. after a failed save — are never evicted).
+    evictDocTexts();
   }
 }
 

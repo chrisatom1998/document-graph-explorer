@@ -21,6 +21,7 @@ import {
 import { useChatScopeStore, type ChatScope } from '../store/chatScopeStore';
 import { useChatStore, type ChatSource } from '../store/chatStore';
 import { chunkStore, textStore } from '../store/runtimeStores';
+import { getDocTexts, hasDocTextSync } from '../store/textHydration';
 import { retrieveCorpus } from '../search/retrieval';
 import { assembleAllDocumentChunks, type CorpusChunk } from './allDocumentContext';
 import { allDocsMaxChars, generationTimeoutMs } from './chatContextBudget';
@@ -143,6 +144,18 @@ async function retrieveChunks(query: string, scope: ChatScope): Promise<{
       truncated: false,
     };
   }
+  // All-documents evidence falls back to the stored body only for docs with
+  // no indexed chunk texts — rehydrate any evicted ones (usually zero) so
+  // fallbackDocumentEvidence sees them.
+  const evictedFallbackIds = documents
+    .filter(
+      (node) =>
+        !chunkStore.get(node.id)?.texts.some(Boolean) &&
+        !textStore.has(node.id) &&
+        hasDocTextSync(node.id),
+    )
+    .map((node) => node.id);
+  if (evictedFallbackIds.length > 0) await getDocTexts(evictedFallbackIds);
   const { chatProvider, openRouterChatModel, ollamaChatModel } = useSettingsStore.getState();
   const model = chatProvider === 'ollama' ? ollamaChatModel : openRouterChatModel;
   return assembleAllDocumentChunks(

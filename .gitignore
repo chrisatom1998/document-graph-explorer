@@ -18,6 +18,10 @@ docker/downloads/*
 !docker/downloads/.gitkeep
 .codex/
 .cursor/
+.codex-devserver*.log
+.playwright-mcp/
+playwright-report/
+test-results/
 tools/usd_pipeline/.venv/
 __pycache__/
 copilot-worktrees/

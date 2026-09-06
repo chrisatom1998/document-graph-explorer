@@ -1,16 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EMBED_DIMS, EMBEDDING_FINGERPRINT } from '../config';
 import { useGraphStore } from '../store/graphStore';
-import { chunkStore, docLinksStore, docVectorStore, mdLinkTargetsStore, textStore } from '../store/runtimeStores';
+import {
+  chunkStore,
+  clearRuntimeStores,
+  dirtyDocIds,
+  docLinksStore,
+  docVectorStore,
+  markDocsDirty,
+  mdLinkTargetsStore,
+  textStore,
+} from '../store/runtimeStores';
 
 const cache = vi.hoisted(() => ({
   deleteDocsFromCache: vi.fn().mockResolvedValue(undefined),
   deleteGraphFromCache: vi.fn().mockResolvedValue(undefined),
   getSetting: vi.fn(),
+  isPersistenceHealthy: vi.fn(() => true),
   lookupGraphCache: vi.fn(),
   reportPersistenceUnavailable: vi.fn(),
   saveDocsToCache: vi.fn().mockResolvedValue(true),
   saveGraphToCache: vi.fn().mockResolvedValue(undefined),
+  saveSnapshot: vi.fn().mockResolvedValue(1),
   setSetting: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -78,7 +89,7 @@ vi.mock('../pipeline/runQueue', () => ({
 }));
 
 import type { GraphExport } from '../model/types';
-import { hydrateFromRecord, restoreSession } from './session';
+import { hydrateFromRecord, restoreSession, saveCurrentSnapshot } from './session';
 import { fetchDemoManifest } from '../demo/manifest';
 
 function makeNode(id: string, title = id): any {
@@ -101,11 +112,7 @@ function makeNode(id: string, title = id): any {
 describe('session persistence', () => {
   beforeEach(() => {
     useGraphStore.getState().reset();
-    textStore.clear();
-    chunkStore.clear();
-    docVectorStore.clear();
-    mdLinkTargetsStore.clear();
-    docLinksStore.clear();
+    clearRuntimeStores(); // all runtime maps + dirty set + hydration bookkeeping
     dbState.docs.clear();
     dbState.embeddings.clear();
     vi.clearAllMocks();
@@ -189,5 +196,24 @@ describe('session persistence', () => {
     expect(repo.unreferencedDocumentIds).toHaveBeenCalledWith([node.id]);
     expect(cache.deleteDocsFromCache).toHaveBeenCalledWith([node.id]);
     expect(cache.deleteGraphFromCache).toHaveBeenCalledWith('persisted-hash');
+  });
+
+  it('saveCurrentSnapshot rewrites only dirty documents, never evicted clean ones', async () => {
+    const dirty = makeNode('doc-dirty');
+    const clean = makeNode('doc-clean');
+    useGraphStore.getState().addNodes([dirty, clean]);
+    useGraphStore.getState().setPhase('ready');
+    useGraphStore.getState().setCorpusHash('corpus-hash');
+    // doc-clean's full text has been evicted: rewriting its record from
+    // memory would clobber the persisted text with ''.
+    textStore.set('doc-dirty', 'fresh dirty body');
+    markDocsDirty(['doc-dirty']);
+
+    const id = await saveCurrentSnapshot('milestone');
+
+    expect(id).toBe(1);
+    const saved = cache.saveDocsToCache.mock.calls.at(-1)?.[0] ?? [];
+    expect(saved.map((d: { node: { id: string } }) => d.node.id)).toEqual(['doc-dirty']);
+    expect([...dirtyDocIds]).toEqual([]); // committed ids leave the dirty set
   });
 });

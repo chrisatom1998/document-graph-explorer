@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_NODES } from '../config';
 import { CHUNK_CONTEXT_CHARS } from './ragChatConstants';
 import {
   CHARS_PER_TOKEN,
@@ -12,6 +11,10 @@ import {
   generationTimeoutMs,
   reservedTokensForWindow,
 } from './chatContextBudget';
+
+// Deliberately NOT config's MAX_NODES (a render ceiling, now 32k): this is the
+// document count at which one packed 1M-token turn still fits a whole corpus.
+const PACKED_CORPUS_DOCS = 4096;
 
 describe('all-documents context budget', () => {
   it('uses a conservative 2 chars/token and scales the reserve with the window', () => {
@@ -34,7 +37,7 @@ describe('all-documents context budget', () => {
     expect(haiku.documentsThatFit).toBe(240);
   });
 
-  it('fits the demo corpus and the max graph in one 1M-token turn', () => {
+  it('fits the demo corpus and a packed 4k-doc graph in one 1M-token turn', () => {
     const demo = estimateAllDocsWindow({
       documentCount: 50,
       charsPerDocument: CHUNK_CONTEXT_CHARS,
@@ -45,12 +48,12 @@ describe('all-documents context budget', () => {
     expect(demo.theoreticalTurnsIfAccumulated).toBeGreaterThan(10);
 
     const packedMax = charsPerDocumentForBudget(
-      MAX_NODES,
+      PACKED_CORPUS_DOCS,
       RAG_ALL_DOCS_MAX_CHARS,
       CHUNK_CONTEXT_CHARS,
     );
     const maxCorpus = estimateAllDocsWindow({
-      documentCount: MAX_NODES,
+      documentCount: PACKED_CORPUS_DOCS,
       charsPerDocument: packedMax,
     });
     expect(maxCorpus.fitsEntireCorpus).toBe(true);

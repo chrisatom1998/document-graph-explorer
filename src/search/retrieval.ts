@@ -7,6 +7,7 @@ import {
   textStore as defaultTextStore,
   type ChunkData,
 } from '../store/runtimeStores';
+import { getDocTexts, hasDocTextSync } from '../store/textHydration';
 import { useGraphStore } from '../store/graphStore';
 import { annotationKey, useAnnotationStore } from '../store/annotationStore';
 import { diversifyRanked, reciprocalRankFusion } from './hybridRank';
@@ -271,6 +272,22 @@ export async function retrieveCorpus(
   const includeSearchMetadata = options.includeSearchMetadata !== false;
   const candidates = new Map<string, Candidate>();
 
+  // Full text is evictable (store/textHydration): the loops below fall back
+  // to it only for docs with no indexed chunk texts, so rehydrate those few
+  // (usually zero) before the synchronous passes. Injected dependencies are
+  // self-contained test fixtures — only the live stores hydrate.
+  if (dependencies === undefined) {
+    const evictedFallbackIds = documentNodes
+      .filter(
+        (node) =>
+          !deps.chunks.get(node.id)?.texts.some(Boolean) &&
+          !deps.texts.has(node.id) &&
+          hasDocTextSync(node.id),
+      )
+      .map((node) => node.id);
+    if (evictedFallbackIds.length > 0) await getDocTexts(evictedFallbackIds);
+  }
+
   // Lexical pass always runs, including when embeddings are unavailable.
   for (const node of documentNodes) {
     const passages = passagesForDocument(node, deps.chunks, deps.texts);
@@ -346,7 +363,8 @@ export async function retrieveCorpus(
       if (coveredByChunks.has(docId) || vector.length !== queryVector.length) continue;
       const semanticScore = dotProduct(vector, queryVector);
       if (semanticScore < minSemanticScore) continue;
-      const text = deps.texts.get(docId) ?? '';
+      // Snippet only — an evicted/absent full text must not drop the hit.
+      const text = deps.texts.get(docId) ?? deps.chunks.get(docId)?.texts[0] ?? '';
       upsertCandidate(candidates, {
         docId,
         docTitle: titleById.get(docId) ?? docId.slice(0, 8),

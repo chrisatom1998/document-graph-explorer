@@ -1,7 +1,8 @@
 /**
- * Pipeline worker: parse (txt/md/html — NEVER pdf, which runs on the main
- * thread), analyze pre-extracted text, and bge-small-en-v1.5 embeddings via
- * transformers.js. One of POOL_SIZE instances managed by WorkerPool.
+ * Pipeline worker: parse (txt/md/html — NEVER pdf, which has its own
+ * dedicated worker in pdf.worker.ts), analyze pre-extracted text, and
+ * bge-small-en-v1.5 embeddings via transformers.js. One of POOL_SIZE
+ * instances managed by WorkerPool.
  */
 
 // NOTE: @huggingface/transformers is imported DYNAMICALLY (see getExtractor).
@@ -103,7 +104,7 @@ async function runParser(req: Extract<PoolRequest, { type: 'parse' }>): Promise<
     case 'code':
       return parseCode(req.bytes, req.name);
     case 'pdf':
-      throw new Error('PDF parsing runs on the main thread (pdf.js owns its own worker)');
+      throw new Error('PDF parsing runs in the dedicated pdf worker (or its main-thread fallback)');
     default:
       throw new Error(`Unknown fileType: ${String(req.fileType)}`);
   }

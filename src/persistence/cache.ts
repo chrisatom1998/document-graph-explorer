@@ -53,6 +53,15 @@ export function reportPersistenceUnavailable(err: unknown): void {
   cacheUnavailable(err);
 }
 
+/**
+ * False once any IndexedDB operation has failed this visit (private mode,
+ * quota, blocked upgrade). Full-text eviction (store/textHydration.ts) keys
+ * off this: while degraded, memory may be the only copy of a document.
+ */
+export function isPersistenceHealthy(): boolean {
+  return !warnedOnce;
+}
+
 function nonEmpty(a: Float32Array | null | undefined): Float32Array | null {
   return a && a.length > 0 ? a : null;
 }
@@ -154,13 +163,28 @@ async function saveDocsChunk(
   });
   const docStore = tx.objectStore('documents');
   const embStore = tx.objectStore('embeddings');
+  // Backstop against text eviction (store/textHydration.ts): an evicted doc
+  // reads back as '' from textStore, and a write built from that must never
+  // clobber the non-empty text already persisted under the same content-hash
+  // key. Empty-over-empty and first writes of genuinely empty docs still pass.
+  const preservedText = new Map<string, string>();
+  await Promise.all(
+    docs
+      .filter((d) => d.text === '')
+      .map(async (d) => {
+        const existing = await docStore.get(d.node.id);
+        if (existing !== undefined && existing.text !== '') {
+          preservedText.set(d.node.id, existing.text);
+        }
+      }),
+  );
   const ops: Promise<unknown>[] = [];
   for (const d of docs) {
     const hash = d.node.id;
     const docRec: DocumentRecord = {
       hash,
       node: d.node,
-      text: d.text,
+      text: preservedText.get(hash) ?? d.text,
       chunkTexts: d.chunkTexts,
       mdLinkTargets: d.mdLinkTargets,
       docLinks: d.docLinks,

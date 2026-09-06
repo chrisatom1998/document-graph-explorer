@@ -47,6 +47,17 @@ export function markDocsDirty(ids: Iterable<string>): void {
   for (const id of ids) dirtyDocIds.add(id);
 }
 
+/**
+ * Modules layering bookkeeping on top of these maps (see textHydration.ts's
+ * LRU/persisted-id tracking) register here so every full teardown — reset,
+ * corpus switch, snapshot restore — clears them too, without this module
+ * importing them back (which would be a cycle).
+ */
+const clearListeners = new Set<() => void>();
+export function onRuntimeStoresCleared(listener: () => void): void {
+  clearListeners.add(listener);
+}
+
 export function clearRuntimeStores(): void {
   textStore.clear();
   chunkStore.clear();
@@ -54,4 +65,13 @@ export function clearRuntimeStores(): void {
   mdLinkTargetsStore.clear();
   docLinksStore.clear();
   dirtyDocIds.clear();
+  // Best-effort per listener: teardown bookkeeping in one subscriber must not
+  // leave the others (e.g. the hydration generation bump) unrun.
+  for (const listener of clearListeners) {
+    try {
+      listener();
+    } catch (err) {
+      console.error('[knowledge-nebula] runtime-store clear listener failed', err);
+    }
+  }
 }
