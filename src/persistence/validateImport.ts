@@ -116,6 +116,7 @@ function sanitizeNode(raw: unknown): DocNode | null {
   if (folderKey !== null) node.folderKey = folderKey;
   if (summary !== null) node.summary = summary;
   if (warning !== null) node.warning = warning;
+  if (n.topicsSource === 'tfidf' || n.topicsSource === 'gemini') node.topicsSource = n.topicsSource;
   if (
     typeof n.lastModified === 'number' &&
     Number.isFinite(n.lastModified) &&

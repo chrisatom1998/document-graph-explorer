@@ -211,6 +211,41 @@ describe('files deferred by the batch size cap', () => {
 });
 
 describe('partial folder read failures', () => {
+  it.each(['deferred', 'failed'])('retains a directory report until its %s descendant is retried', async (kind) => {
+    const path = 'vault/blocked/foo.txt';
+    const previous = { size: 10, lastModified: 1, docId: `doc:${path}` };
+    repository.getCorpusRecord.mockResolvedValue({
+      ...watchRecordWithPendingChange(),
+      watch: { ...watchRecordWithPendingChange().watch, files: { [path]: previous } },
+    });
+    useGraphStore.setState({
+      ingestReport: { finishedAt: 1, entries: [
+        { name: 'vault/blocked', reason: 'could not read: Permission denied', kind: 'ignored' },
+      ] },
+    });
+    scanner.scanFolder.mockResolvedValue([scannedFile(path)]);
+    localFiles.prepareIngestFiles.mockResolvedValue({
+      files: [],
+      deferredPaths: new Set(kind === 'deferred' ? [path] : []),
+      failedPaths: new Set(kind === 'failed' ? [path] : []),
+    });
+    await bindFolderWatcherToActiveCorpus();
+    await suspendFolderWatcher();
+    expect(useGraphStore.getState().ingestReport?.entries[0].name).toBe('vault/blocked');
+    expect(repository.updateCorpusWatch).not.toHaveBeenCalled();
+
+    localFiles.prepareIngestFiles.mockResolvedValue({
+      files: [{ path, name: 'foo.txt', bytes: new ArrayBuffer(4) }],
+      deferredPaths: new Set<string>(), failedPaths: new Set<string>(),
+    });
+    coordinator.reconcileWatchedFiles.mockResolvedValue([`doc:${path}`]);
+    await bindFolderWatcherToActiveCorpus();
+    await suspendFolderWatcher();
+    expect(localFiles.prepareIngestFiles.mock.calls.at(-1)?.[0]).toEqual([scannedFile(path)]);
+    expect(coordinator.reconcileWatchedFiles).toHaveBeenCalledOnce();
+    expect(useGraphStore.getState().ingestReport).toBeNull();
+  });
+
   it('clears and persists a recovered empty-directory report without an ingest run', async () => {
     useGraphStore.setState({
       ingestReport: { finishedAt: 1, entries: [

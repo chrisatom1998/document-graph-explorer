@@ -199,9 +199,10 @@ async function syncBoundFolder(): Promise<number> {
   }
   const replacedCount = replacements.filter(({ newId }) => accepted.has(newId)).length;
   const changeCount = accepted.size + removeIds.size + replacedCount;
+  const pendingReadPaths = [...deferredPaths, ...(failedPaths ?? [])];
   const recovered = new Set(previousReadFailures.filter((path) =>
-    !deferredPaths.has(path) && !failedPaths?.has(path) &&
-    !failures.some((failure) => failure.path === path ||
+    !pendingReadPaths.some((pending) => pending === path || pending.startsWith(`${path}/`)) &&
+    !failures.some((failure) => failure.path === path || failure.path.startsWith(`${path}/`) ||
       (failure.directory && path.startsWith(`${failure.path}/`)))));
   await clearReadFailures(recovered);
   await reportReadFailures(failures);
