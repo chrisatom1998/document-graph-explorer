@@ -42,7 +42,7 @@ export function buildIngestReport(
   const succeeded = new Set(
     statuses
       .filter((s) => s.stage === 'placed' || s.stage === 'cached')
-      .map((s) => s.name),
+      .map((s) => s.path ?? s.name),
   );
 
   const push = (entry: IngestReportEntry): void => {
@@ -57,7 +57,7 @@ export function buildIngestReport(
     if (status.stage === 'error') {
       const reason = status.error ?? 'Unknown error';
       push({
-        name: status.name,
+        name: status.path ?? status.name,
         reason,
         kind: NODE_LIMIT_RE.test(reason) ? 'capped' : 'failed',
       });
@@ -66,7 +66,7 @@ export function buildIngestReport(
       (status.stage === 'queued' || status.stage === 'parsing' || status.stage === 'embedding')
     ) {
       push({
-        name: status.name,
+        name: status.path ?? status.name,
         reason: 'ingest cancelled before this file finished',
         kind: 'skipped',
       });

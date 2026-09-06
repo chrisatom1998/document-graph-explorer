@@ -107,12 +107,55 @@ describe('annotationStore', () => {
     expect(useAnnotationStore.getState().scope).toBe('corpus-B');
   });
 
-  it('a debounced write is dropped (not misdirected) after an out-of-band re-hydration', async () => {
+  it('a debounced write retains its original scope after an out-of-band re-hydration', async () => {
     await ensureAnnotationsLoaded('corpus-A');
     useAnnotationStore.getState().update('doc', { note: 'A note' });
     useAnnotationStore.getState().hydrate('corpus-B', {});
     await vi.advanceTimersByTimeAsync(400);
-    expect(updateCorpusAnnotationsMock).not.toHaveBeenCalled();
+    expect(updateCorpusAnnotationsMock).toHaveBeenCalledWith('corpus-A', {
+      doc: expect.objectContaining({ note: 'A note' }),
+    });
+  });
+
+  it('retains both workspaces edits across failed flushes and restores pending notes on return', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    await ensureAnnotationsLoaded('corpus-A');
+    useAnnotationStore.getState().update('doc', { note: 'A note' });
+    updateCorpusAnnotationsMock.mockRejectedValue(new Error('quota'));
+
+    await ensureAnnotationsLoaded('corpus-B');
+    useAnnotationStore.getState().update('doc', { note: 'B note' });
+    await ensureAnnotationsLoaded('corpus-A');
+    expect(useAnnotationStore.getState().annotations.doc?.note).toBe('A note');
+
+    updateCorpusAnnotationsMock.mockClear().mockResolvedValue(undefined);
+    await vi.advanceTimersByTimeAsync(16_000);
+    expect(updateCorpusAnnotationsMock).toHaveBeenCalledTimes(2);
+    expect(updateCorpusAnnotationsMock).toHaveBeenCalledWith('corpus-A', {
+      doc: expect.objectContaining({ note: 'A note' }),
+    });
+    expect(updateCorpusAnnotationsMock).toHaveBeenCalledWith('corpus-B', {
+      doc: expect.objectContaining({ note: 'B note' }),
+    });
+    warn.mockRestore();
+  });
+
+  it('keeps a re-edit pending when the previous annotation write finishes', async () => {
+    await ensureAnnotationsLoaded('corpus-A');
+    useAnnotationStore.getState().update('doc', { note: 'first' });
+    let complete!: () => void;
+    updateCorpusAnnotationsMock.mockImplementationOnce(
+      () => new Promise<void>((resolve) => { complete = resolve; }),
+    );
+    const saving = flushAnnotationSave();
+    useAnnotationStore.getState().update('doc', { note: 'second' });
+    complete();
+    await saving;
+    await flushAnnotationSave();
+    expect(updateCorpusAnnotationsMock).toHaveBeenLastCalledWith('corpus-A', {
+      doc: expect.objectContaining({ note: 'second' }),
+    });
+    expect(updateCorpusAnnotationsMock).toHaveBeenCalledTimes(2);
   });
 
   it('flushAnnotationSave writes immediately and the timer does not double-write', async () => {
@@ -160,13 +203,48 @@ describe('annotationStore', () => {
   it('a failed hydration releases the claim so a later call retries', async () => {
     getCorpusRecordMock.mockRejectedValueOnce(new Error('idb down'));
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    await ensureAnnotationsLoaded('corpus-1');
+    expect(await ensureAnnotationsLoaded('corpus-1')).toBe(false);
     expect(useAnnotationStore.getState().scope).toBeNull();
 
     getCorpusRecordMock.mockResolvedValue({ annotations: {} });
-    await ensureAnnotationsLoaded('corpus-1');
+    expect(await ensureAnnotationsLoaded('corpus-1')).toBe(true);
     expect(useAnnotationStore.getState().scope).toBe('corpus-1');
     warn.mockRestore();
+  });
+
+  it('concurrent hydration callers await the same read and completed store update', async () => {
+    let complete!: (record: { annotations: Record<string, never> }) => void;
+    getCorpusRecordMock.mockImplementationOnce(
+      () => new Promise((resolve) => { complete = resolve; }),
+    );
+    const first = ensureAnnotationsLoaded('corpus-A');
+    const second = ensureAnnotationsLoaded('corpus-A');
+    expect(second).toBe(first);
+    let settled = false;
+    void second.then(() => { settled = true; });
+    await vi.waitFor(() => expect(getCorpusRecordMock).toHaveBeenCalledOnce());
+    expect(settled).toBe(false);
+    expect(useAnnotationStore.getState().scope).toBeNull();
+
+    complete({ annotations: {} });
+    expect(await first).toBe(true);
+    expect(await second).toBe(true);
+    expect(useAnnotationStore.getState().scope).toBe('corpus-A');
+  });
+
+  it('returning to the visible workspace cancels a pending hydration of another workspace', async () => {
+    await ensureAnnotationsLoaded('corpus-A');
+    let complete!: (record: { annotations: Record<string, never> }) => void;
+    getCorpusRecordMock.mockImplementationOnce(
+      () => new Promise((resolve) => { complete = resolve; }),
+    );
+    const loadingB = ensureAnnotationsLoaded('corpus-B');
+    await vi.waitFor(() => expect(getCorpusRecordMock).toHaveBeenCalledTimes(2));
+    expect(await ensureAnnotationsLoaded('corpus-A')).toBe(true);
+    complete({ annotations: {} });
+
+    expect(await loadingB).toBe(false);
+    expect(useAnnotationStore.getState().scope).toBe('corpus-A');
   });
 
   it('edits without a hydrated scope are ignored rather than persisted nowhere', () => {

@@ -166,6 +166,9 @@ async function doImportGraphExportData(
 
   // Clean slate first (pipeline owns worker/store/layout teardown).
   const { resetCorpus } = await import('../pipeline/coordinatorLazy');
+  // Replacing one ephemeral graph with another does not change corpus id/mode.
+  const { useCollabStore } = await import('../collab/store');
+  useCollabStore.getState().leaveSession();
   resetCorpus();
   useCorpusStore
     .getState()

@@ -33,6 +33,19 @@ describe("extractPhraseTf", () => {
     expect(tf["circuit breaker"]).toBeUndefined();
   });
 
+  it("never joins words across sentence, field, or line boundaries", () => {
+    const tf = extractPhraseTf("query. Chris checks. query. Chris checks. Detail: Chris noted\nDetail: Chris noted");
+    expect(tf["query chris"]).toBeUndefined();
+    expect(tf["detail chris"]).toBeUndefined();
+    expect(tf["noted detail"]).toBeUndefined();
+  });
+
+  it("treats discarded numbers as phrase boundaries", () => {
+    const tf = extractPhraseTf("Detail 123 Chris noted. Detail 456 Chris noted. rate limiting and rate limiting");
+    expect(tf["detail chris"]).toBeUndefined();
+    expect(tf["rate limiting"]).toBe(2);
+  });
+
   it("keeps at most PHRASE_TOP_PER_DOC phrases", () => {
     const pairs = Array.from(
       { length: PHRASE_TOP_PER_DOC + 1 },

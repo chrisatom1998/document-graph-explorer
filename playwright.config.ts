@@ -4,13 +4,15 @@ import { defineConfig, devices } from '@playwright/test';
 // server emits benign-but-loud wasm MIME console errors and can reload
 // mid-ingest on dependency re-optimization, so it is not a valid test target.
 // Run `npm run build` before `npx playwright test`.
-const PORT = 4173;
-
 // This config is typechecked with the app's browser-scoped tsconfig (no node
 // ambient types), so CI detection reads process off globalThis instead.
-const IS_CI = Boolean(
-  (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.CI,
-);
+const ENV = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+const IS_CI = Boolean(ENV?.CI);
+const CHANNEL = ENV?.PLAYWRIGHT_CHANNEL;
+const PORT = Number(ENV?.PLAYWRIGHT_PORT ?? 4173);
+if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
+  throw new Error('PLAYWRIGHT_PORT must be an integer between 1 and 65535.');
+}
 
 export default defineConfig({
   testDir: 'e2e',
@@ -28,6 +30,7 @@ export default defineConfig({
   reporter: IS_CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
+    channel: CHANNEL,
     // Camera focus commits synchronously under reduced motion, so node
     // selection opens the side panel without waiting on the camera glide.
     // (A browser-context option, not a first-class test option — putting it
@@ -37,7 +40,7 @@ export default defineConfig({
     launchOptions: {
       // Headless CI has no GPU; SwiftShader provides the WebGL context the
       // 3D scene needs (side-panel opening runs inside the R3F frame loop).
-      args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'],
+      args: CHANNEL ? [] : ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'],
     },
   },
   projects: [
@@ -56,7 +59,9 @@ export default defineConfig({
     // only while Playwright waits on IPv4 and times out with no error output.
     command: `npm run preview -- --host 127.0.0.1 --port ${PORT} --strictPort`,
     url: `http://127.0.0.1:${PORT}`,
-    reuseExistingServer: !IS_CI,
+    // Never silently exercise an unrelated local app that owns this port.
+    // Set PLAYWRIGHT_PORT when the default port is already occupied.
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });

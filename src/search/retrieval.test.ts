@@ -53,6 +53,66 @@ describe('shared hybrid retrieval', () => {
     expect(lexicalRelevance('API rate limit', 'This document only mentions the API.').score).toBe(0);
   });
 
+  it('matches non-Latin titles and phrases and stopword-only titles', () => {
+    expect(retrievalTerms('東京 Москва')).toEqual(['東京', 'москва']);
+    expect(lexicalRelevance('東京', '東京にある会社').score).toBeGreaterThan(0);
+    expect(lexicalRelevance('Москва', '', 'Москва').titleMatch).toBe(true);
+    expect(lexicalRelevance('It', '', 'It').titleMatch).toBe(true);
+    expect(lexicalRelevance(' ', 'body', 'title').score).toBe(0);
+  });
+
+  it('retrieves title-only imports without claiming a source passage', async () => {
+    const result = await retrieveCorpus('Architecture', { semantic: false }, dependencies(
+      [node('architecture', 'Architecture Overview')],
+      new Map(),
+      vi.fn(),
+    ));
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ docId: 'architecture', matchKind: 'title', text: 'Architecture Overview' });
+    expect(result[0].passageIndex).toBeUndefined();
+  });
+
+  it('applies eligibility before the lexical result limit', async () => {
+    const nodes = Array.from({ length: 13 }, (_, i) => node(String(i).padStart(2, '0'), 'Architecture'));
+    const result = await retrieveCorpus('Architecture', {
+      limit: 12,
+      semantic: false,
+      eligibleDocIds: new Set(['12']),
+    }, dependencies(nodes, new Map(), vi.fn(), new Map(nodes.map((n) => [n.id, 'Architecture']))));
+    expect(result.map((hit) => hit.docId)).toEqual(['12']);
+  });
+
+  it('restricts semantic chunks and document vectors to eligible document nodes', async () => {
+    const nodes = ['blocked-chunk', 'blocked-vector', 'allowed-chunk', 'allowed-vector'].map((id) => node(id, id));
+    const result = await retrieveCorpus('unseen query', {
+      limit: 2,
+      eligibleDocIds: new Set(['allowed-chunk', 'allowed-vector', 'orphan']),
+    }, dependencies(
+      nodes,
+      new Map([
+        ['blocked-chunk', { texts: ['excluded'], vectors: new Float32Array([1, 0]), dims: 2 }],
+        ['allowed-chunk', { texts: ['included'], vectors: new Float32Array([0.8, 0.6]), dims: 2 }],
+        ['orphan', { texts: ['orphan'], vectors: new Float32Array([1, 0]), dims: 2 }],
+      ]),
+      async () => new Float32Array([1, 0]),
+      new Map(),
+      new Map([
+        ['blocked-vector', new Float32Array([1, 0])],
+        ['allowed-vector', new Float32Array([0.6, 0.8])],
+      ]),
+    ));
+    expect(result.map((hit) => hit.docId)).toEqual(['allowed-chunk', 'allowed-vector']);
+  });
+
+  it('does not start embeddings when no documents are eligible', async () => {
+    const embedQuery = vi.fn();
+    const result = await retrieveCorpus('architecture', { eligibleDocIds: new Set() }, dependencies(
+      [node('architecture', 'Architecture')], new Map(), embedQuery,
+    ));
+    expect(result).toEqual([]);
+    expect(embedQuery).not.toHaveBeenCalled();
+  });
+
   it('rewards agreement between lexical and semantic evidence', async () => {
     const chunks = new Map<string, ChunkData>([
       ['semantic-only', { texts: ['unrelated wording'], vectors: new Float32Array([1, 0]), dims: 2 }],

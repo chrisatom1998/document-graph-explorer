@@ -183,6 +183,7 @@ export default function ChatPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const wasStreamingRef = useRef(false);
+  const [generationStatus, setGenerationStatus] = useState('');
 
   // Follow new messages, but only while the reader is already at the bottom.
   // Streaming updates the transcript on every chunk, so scrolling
@@ -208,11 +209,14 @@ export default function ChatPanel() {
   }, [isOpen]);
 
   useEffect(() => {
-    if (wasStreamingRef.current && !isStreaming && isOpen) {
-      requestAnimationFrame(() => inputRef.current?.focus());
+    if (isStreaming) {
+      setGenerationStatus('Generating answer…');
+    } else if (wasStreamingRef.current) {
+      // Completion must not move focus away from a source or another dialog.
+      setGenerationStatus('Response finished. Read the conversation above.');
     }
     wasStreamingRef.current = isStreaming;
-  }, [isOpen, isStreaming]);
+  }, [isStreaming]);
 
   const handleSend = () => {
     const q = input.trim();
@@ -299,6 +303,9 @@ export default function ChatPanel() {
       </div>
 
       {/* Messages */}
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {isStreaming || messages.length > 0 ? generationStatus : ''}
+      </div>
       <div className="chat-panel__messages" ref={messagesRef} onScroll={handleMessagesScroll}>
         {messages.length === 0 && (
           <div className="chat-panel__empty">

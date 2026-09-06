@@ -278,8 +278,8 @@ export default function Toolbar() {
 
       <button
         type="button"
-        className="btn-icon toolbar__labeled"
-        title="Search (⌘K)"
+        className="btn-icon toolbar__labeled toolbar__search"
+        title="Search (Ctrl+K / ⌘K)"
         aria-label="Search documents"
         onClick={() => {
           setSearchResults(null);

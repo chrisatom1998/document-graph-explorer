@@ -86,6 +86,26 @@ describe('saveSession document writes', () => {
     expect([...dirtyDocIds].sort()).toEqual(['a', 'b']);
   });
 
+  it('persists a re-edit on the next save when it arrives during an in-flight write', async () => {
+    markDocsDirty(['a']);
+    let complete!: (saved: boolean) => void;
+    cache.saveDocsToCache.mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => { complete = resolve; }),
+    );
+    const saving = saveSession();
+    textStore.set('a', 'updated while saving');
+    markDocsDirty(['a']);
+    complete(true);
+    await saving;
+    expect(dirtyDocIds.has('a')).toBe(true);
+
+    await saveSession();
+    expect(cache.saveDocsToCache.mock.calls.at(-1)?.[0]).toEqual([
+      expect.objectContaining({ text: 'updated while saving' }),
+    ]);
+    expect(dirtyDocIds.has('a')).toBe(false);
+  });
+
   it('writes no documents when nothing changed, but still saves the graph', async () => {
     await saveSession();
 

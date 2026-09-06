@@ -4,9 +4,12 @@ import { layoutEpoch, layoutSetDims, layoutSettledEpoch, onLayoutSettled } from 
 import { cameraPose } from '../scene/cameraPose';
 import { nodesMatchingFilter } from '../scene/emphasis';
 import { getNodePosition, idOfSlot, positionBuffer, scaleOfSlot, slotOfId } from '../scene/positionBuffer';
-import { annotationKey, useAnnotationStore } from '../store/annotationStore';
+import { annotationKey, ensureAnnotationsLoaded, useAnnotationStore } from '../store/annotationStore';
+import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
+import { isOffline, OFFLINE_MESSAGE } from '../offline';
 import type { DocAnnotationRecord } from '../persistence/db';
 import type { DocNode, EdgeKind, FileType } from '../model/types';
 import type { CollabSession } from './session';
@@ -57,6 +60,12 @@ interface CollaborationState {
 }
 
 let stopAnnotationSync: (() => void) | null = null;
+let sessionAttempt = 0;
+let pendingSession: CollabSession | null = null;
+
+function isCurrentAttempt(attempt: number): boolean {
+  return attempt === sessionAttempt && !isOffline();
+}
 
 function randomCollabToken(byteLength: number): string {
   const bytes = new Uint8Array(byteLength);
@@ -685,22 +694,29 @@ function annotationTimestamp(value: DocAnnotationRecord | undefined): number {
 }
 
 async function bindAnnotationSync(session: CollabSession, token: number): Promise<() => void> {
-  const [{ ensureAnnotationsLoaded, useAnnotationStore }, { useCorpusStore }, { useGraphStore }] = await Promise.all([
-    import('../store/annotationStore'),
-    import('../store/corpusStore'),
-    import('../store/graphStore'),
-  ]);
   const corpus = useCorpusStore.getState();
-  if (corpus.mode !== 'local' || !corpus.activeCorpusId) return () => undefined;
-  await ensureAnnotationsLoaded(corpus.activeCorpusId);
-  if (useAnnotationStore.getState().scope !== corpus.activeCorpusId) return () => undefined;
-  if (token !== annotationBindingToken) return () => undefined;
+  const corpusId = corpus.activeCorpusId;
+  if (corpus.mode !== 'local' || !corpusId) {
+    throw new Error('Notes sharing needs a local workspace. Open a saved workspace and try again.');
+  }
+  const isCurrentBinding = (): boolean => {
+    const current = useCorpusStore.getState();
+    return token === annotationBindingToken && !isOffline() &&
+      current.mode === 'local' && current.activeCorpusId === corpusId && !current.switching;
+  };
+  if (!isCurrentBinding()) return () => undefined;
+  const loaded = await ensureAnnotationsLoaded(corpusId);
+  if (!isCurrentBinding()) return () => undefined;
+  if (!loaded || useAnnotationStore.getState().scope !== corpusId) {
+    throw new Error("Couldn't load notes for sharing. Try enabling notes sharing again.");
+  }
+  const canSync = (): boolean => isCurrentBinding() && useAnnotationStore.getState().scope === corpusId;
 
   const map = session.annotations;
   let applyingRemote = false;
   const mappedKeys = new Map<string, string>(); // shared key -> local annotation key
 
-  const annotationKeyForLocal = (key: string): string => {
+  const annotationKeyForLocal = (key: string): string | null => {
     const hit = useGraphStore.getState().nodes.find(
       (node) => node.id === key || node.path === key || `${node.title} ${node.id}` === key,
     );
@@ -708,19 +724,23 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
       mappedKeys.set(hit.id, key);
       return hit.id;
     }
-    return key;
+    // Durable annotations can outlive their documents; their keys may be disk paths.
+    return null;
   };
 
-  const localKeyForShared = (sharedKey: string): string => {
+  const localKeyForShared = (sharedKey: string): string | null => {
+    const hit = useGraphStore.getState().nodes.find((node) => node.id === sharedKey);
+    if (!hit) return null;
     const localKey = mappedKeys.get(sharedKey);
     if (localKey) return localKey;
-    const hit = useGraphStore.getState().nodes.find((node) => node.id === sharedKey);
-    return hit ? annotationKey(hit) : sharedKey;
+    return annotationKey(hit);
   };
 
   const applyMapChange = (key: string): void => {
+    if (!canSync()) return;
     const remote = map.get(key);
     const localKey = localKeyForShared(key);
+    if (localKey === null) return;
     const local = useAnnotationStore.getState().annotations[localKey];
     if (remote && local && annotationTimestamp(local) > annotationTimestamp(remote)) {
       map.set(key, local);
@@ -743,6 +763,7 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
   session.doc.transact(() => {
     for (const [key, local] of Object.entries(localAtBind)) {
       const sharedKey = annotationKeyForLocal(key);
+      if (sharedKey === null) continue;
       const remote = map.get(sharedKey);
       if (!remote || annotationTimestamp(local) >= annotationTimestamp(remote)) {
         map.set(sharedKey, local);
@@ -752,12 +773,12 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
     }
     for (const key of map.keys()) {
       const localKey = localKeyForShared(key);
-      if (!(localKey in localAtBind)) applyMapChange(key);
+      if (localKey !== null && !(localKey in localAtBind)) applyMapChange(key);
     }
   });
 
   const unsubscribe = useAnnotationStore.subscribe((state, previous) => {
-    if (applyingRemote || state.annotations === previous.annotations) return;
+    if (!canSync() || previous.scope !== corpusId || applyingRemote || state.annotations === previous.annotations) return;
     const keys = new Set([
       ...Object.keys(previous.annotations),
       ...Object.keys(state.annotations),
@@ -767,7 +788,7 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
         const before = previous.annotations[key];
         const after = state.annotations[key];
         const sharedKey = annotationKeyForLocal(key);
-        if (before === after) continue;
+        if (sharedKey === null || before === after) continue;
         if (after) map.set(sharedKey, after);
         else map.delete(sharedKey);
       }
@@ -794,30 +815,38 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
   lastRemoteView: null,
 
   startSession: async (roomId, sessionKey) => {
-    if (get().session) {
+    if (useCorpusStore.getState().switching) return null;
+    if (get().session || pendingSession) {
       get().leaveSession();
     }
+    const attempt = ++sessionAttempt;
     const nextRoom = roomId ?? `graph-${randomCollabToken(8)}`;
     const nextKey = sessionKey ?? randomCollabToken(16);
     set({ status: 'connecting' });
     try {
+      if (isOffline()) throw new Error(OFFLINE_MESSAGE);
       const { buildCollabInvite, createCollabSession } = await import('./session');
+      if (!isCurrentAttempt(attempt)) return null;
       const session = createCollabSession({ roomId: nextRoom, sessionKey: nextKey });
+      pendingSession = session;
       const invite = buildCollabInvite(session.roomId, session.sessionKey);
       if (get().shareNotes) {
         const token = ++annotationBindingToken;
         const stop = await bindAnnotationSync(session, token);
-        if (get().shareNotes && token === annotationBindingToken) {
+        if (isCurrentAttempt(attempt) && get().shareNotes && token === annotationBindingToken) {
           stopAnnotationSync = stop;
         } else {
           stop();
         }
       }
+      if (!isCurrentAttempt(attempt)) return null;
       session.provider?.awareness.on('change', () => {
+        if (get().session !== session || isOffline()) return;
         set({ peers: collectPeers(session) });
       });
       // Presenter: skip re-applying our own writes back to ourselves.
       session.view.observe(() => {
+        if (get().session !== session || isOffline()) return;
         if (!get().followMode) return;
         void applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
       });
@@ -827,6 +856,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
         selectedId: useUiStore.getState().selectedId,
         camera: null,
       });
+      pendingSession = null;
       set({
         session,
         roomId: session.roomId,
@@ -840,31 +870,38 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       get().syncSharedView();
       return invite;
     } catch (error) {
-      set({ status: 'idle' });
+      if (attempt === sessionAttempt) get().leaveSession();
       throw error;
     }
   },
 
   joinSession: async (roomId, sessionKey) => {
+    if (useCorpusStore.getState().switching) return null;
     const current = get();
-    if (current.session) {
+    if (current.session || pendingSession) {
       get().leaveSession();
     }
+    const attempt = ++sessionAttempt;
     set({ status: 'connecting' });
     try {
+      if (isOffline()) throw new Error(OFFLINE_MESSAGE);
       const { buildCollabInvite, createCollabSession } = await import('./session');
+      if (!isCurrentAttempt(attempt)) return null;
       const session = createCollabSession({ roomId, sessionKey });
+      pendingSession = session;
       const invite = buildCollabInvite(session.roomId, session.sessionKey);
       if (get().shareNotes) {
         const token = ++annotationBindingToken;
         const stop = await bindAnnotationSync(session, token);
-        if (get().shareNotes && token === annotationBindingToken) {
+        if (isCurrentAttempt(attempt) && get().shareNotes && token === annotationBindingToken) {
           stopAnnotationSync = stop;
         } else {
           stop();
         }
       }
+      if (!isCurrentAttempt(attempt)) return null;
       session.provider?.awareness.on('change', () => {
+        if (get().session !== session || isOffline()) return;
         set({ peers: collectPeers(session) });
       });
       // Joiner: apply the first snapshot even before follow is on (join pose
@@ -872,6 +909,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       // presenter view — requireFollow is snapshotted at schedule time and
       // does not restore independent control on unfollow.
       session.view.observe(() => {
+        if (get().session !== session || isOffline()) return;
         if (!get().followMode && get().lastRemoteView) return;
         void applySharedView(session.view.toJSON() as Partial<Record<string, unknown>>);
       });
@@ -881,6 +919,7 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
         selectedId: useUiStore.getState().selectedId,
         camera: null,
       });
+      pendingSession = null;
       set({
         session,
         roomId: session.roomId,
@@ -896,35 +935,41 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
       }
       return invite;
     } catch (error) {
-      set({ status: 'idle' });
+      if (attempt === sessionAttempt) get().leaveSession();
       throw error;
     }
   },
 
   joinInvite: async (invite) => {
+    const attempt = sessionAttempt;
     const { parseCollabInvite } = await import('./session');
+    if (!isCurrentAttempt(attempt)) return null;
     const config = parseCollabInvite(invite);
     if (!config) return null;
     return get().joinSession(config.roomId, config.sessionKey);
   },
 
   leaveSession: () => {
+    sessionAttempt++;
+    annotationBindingToken++;
     stopAnnotationSync?.();
     stopAnnotationSync = null;
     clearDeferredRemoteCameras();
     const { session } = get();
-    if (!session) {
-      set({ roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {}, followMode: false, shareNotes: false, lastRemoteView: null });
-      return;
+    const connecting = pendingSession;
+    pendingSession = null;
+    if (connecting && connecting !== session) {
+      connecting.provider?.destroy();
+      connecting.doc.destroy();
     }
-    session.provider?.destroy();
-    session.doc.destroy();
+    session?.provider?.destroy();
+    session?.doc.destroy();
     set({ session: null, roomId: null, sessionKey: null, invite: null, status: 'idle', peers: {}, followMode: false, shareNotes: false, lastRemoteView: null });
   },
 
   setLocalPresence: (patch) => {
     const { session } = get();
-    if (!session?.provider) return;
+    if (!session?.provider || isOffline()) return;
     const current = session.provider.awareness.getLocalState() ?? {};
     const next = { ...current, ...patch };
     session.provider.awareness.setLocalState({
@@ -937,8 +982,11 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
   },
 
   setShareNotes: (enabled) => {
+    if (enabled && (isOffline() || useCorpusStore.getState().switching)) return;
     if (get().shareNotes === enabled) return;
-    const { session } = get();
+    // A connecting session may already be waiting for notes; apply the latest toggle to it too.
+    const session = get().session ?? pendingSession;
+    const isCurrentSession = (): boolean => get().session === session || pendingSession === session;
     const token = ++annotationBindingToken;
     stopAnnotationSync?.();
     stopAnnotationSync = null;
@@ -948,7 +996,8 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
           const candidate = useGraphStore.getState().nodes.find(
             (node) => node.id === key || node.path === key || `${node.title} ${node.id}` === key,
           );
-          const sharedKey = candidate ? candidate.id : key;
+          if (!candidate) continue;
+          const sharedKey = candidate.id;
           if (session.annotations.has(sharedKey)) session.annotations.delete(sharedKey);
         }
       });
@@ -956,12 +1005,19 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     set({ shareNotes: enabled });
     if (!session || !enabled) return;
     void bindAnnotationSync(session, token).then((stop) => {
-      if (get().shareNotes && get().session === session && token === annotationBindingToken) {
+      if (get().shareNotes && isCurrentSession() && token === annotationBindingToken) {
         stopAnnotationSync = stop;
       } else {
         stop();
       }
     }).catch((error) => {
+      if (!isCurrentSession() || token !== annotationBindingToken) return;
+      annotationBindingToken++;
+      set({ shareNotes: false });
+      useUiStore.getState().pushToast(
+        error instanceof Error ? error.message : "Couldn't start notes sharing. Try again.",
+        'warning',
+      );
       console.warn('[knowledge-nebula] annotation sync bind failed', error);
     });
   },
@@ -980,9 +1036,10 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
 
   syncSharedView: () => {
     const { session, followMode } = get();
-    if (!session || followMode) return;
+    if (!session || followMode || isOffline()) return;
     void (async () => {
       const view = await readSharedView();
+      if (get().session !== session || get().followMode || isOffline()) return;
       const map = session.view;
       session.doc.transact(() => {
         map.set('dims', view.dims ?? useUiStore.getState().dims);
@@ -1001,11 +1058,12 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
 
   syncCameraPose: () => {
     const { session, followMode } = get();
-    if (!session || followMode) return;
+    if (!session || followMode || isOffline()) return;
     void (async () => {
       const ui = useUiStore.getState();
       const pose = readLocalCameraPose();
       const anchor = (await readLocalCameraAnchor(ui.selectedId, ui.filter)) ?? null;
+      if (get().session !== session || get().followMode || isOffline()) return;
       session.doc.transact(() => {
         session.view.set('camera', pose);
         session.view.set('cameraAnchor', anchor);
@@ -1022,3 +1080,16 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     set({ peers: collectPeers(session) });
   },
 }));
+
+// Closing an existing transport is required: constructor guards only prevent new connections.
+useSettingsStore.subscribe((state, previous) => {
+  if (state.offlineMode && !previous.offlineMode) useCollabStore.getState().leaveSession();
+});
+
+// Sharing is authorized for the workspace in which it started, including pending joins.
+useCorpusStore.subscribe((state, previous) => {
+  if ((state.switching && !previous.switching) || state.activeCorpusId !== previous.activeCorpusId ||
+    state.mode !== previous.mode) {
+    useCollabStore.getState().leaveSession();
+  }
+});

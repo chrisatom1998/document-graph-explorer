@@ -36,6 +36,21 @@ function directoryHandle(
 }
 
 describe('scanFolder', () => {
+  it('continues after file and subdirectory read errors and reports their exact paths', async () => {
+    const good = fileHandle('good.txt');
+    const bad = fileHandle('bad.txt');
+    bad.getFile.mockRejectedValue(new DOMException('Removed', 'NotFoundError'));
+    const blocked = directoryHandle('blocked', []);
+    blocked.entries.mockImplementation(() => { throw new DOMException('Denied', 'NotAllowedError'); });
+    const root = directoryHandle('vault', [
+      ['bad.txt', bad.handle], ['blocked', blocked.handle], ['good.txt', good.handle],
+    ]);
+    const onError = vi.fn();
+    await expect(scanFolder(root.handle, onError)).resolves.toEqual([{ file: good.file, path: 'vault/good.txt' }]);
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ path: 'vault/bad.txt' }));
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ path: 'vault/blocked', directory: true }));
+  });
+
   it('recurses into folders, returns supported files with sorted root-relative paths', async () => {
     const rootDoc = fileHandle('zeta.txt');
     const nestedDoc = fileHandle('alpha.md');

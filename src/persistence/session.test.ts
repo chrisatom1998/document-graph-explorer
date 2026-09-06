@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EMBED_DIMS, EMBEDDING_FINGERPRINT } from '../config';
 import { useGraphStore } from '../store/graphStore';
+import { useCorpusStore } from '../store/corpusStore';
 import {
   chunkStore,
   clearRuntimeStores,
@@ -112,6 +113,7 @@ function makeNode(id: string, title = id): any {
 describe('session persistence', () => {
   beforeEach(() => {
     useGraphStore.getState().reset();
+    useCorpusStore.getState().reset();
     clearRuntimeStores(); // all runtime maps + dirty set + hydration bookkeeping
     dbState.docs.clear();
     dbState.embeddings.clear();
@@ -162,7 +164,7 @@ describe('session persistence', () => {
     expect(layout.layoutSetLinks).toHaveBeenCalledWith([]);
   });
 
-  it('purges demo-only sessions and clears the active corpus before returning to a fresh state', async () => {
+  it('restores a saved demo workspace instead of deleting it on startup', async () => {
     const node = makeNode('demo-1', 'demo-file.md');
     const exportData: GraphExport = {
       version: 1,
@@ -183,19 +185,18 @@ describe('session persistence', () => {
       exportData,
       positions: {},
     });
-    repo.unreferencedDocumentIds.mockResolvedValue([node.id]);
     vi.mocked(fetchDemoManifest).mockResolvedValue({
       ok: true,
       json: async () => ({ files: ['demo-file.md'] }),
     } as Response);
-
     const result = await restoreSession();
 
-    expect(result).toBe(false);
-    expect(repo.markActiveCorpusEmpty).toHaveBeenCalledTimes(1);
-    expect(repo.unreferencedDocumentIds).toHaveBeenCalledWith([node.id]);
-    expect(cache.deleteDocsFromCache).toHaveBeenCalledWith([node.id]);
-    expect(cache.deleteGraphFromCache).toHaveBeenCalledWith('persisted-hash');
+    expect(result).toBe(true);
+    expect(useGraphStore.getState().nodes).toEqual([node]);
+    expect(useGraphStore.getState().corpusHash).toBe('persisted-hash');
+    expect(repo.markActiveCorpusEmpty).not.toHaveBeenCalled();
+    expect(cache.deleteDocsFromCache).not.toHaveBeenCalled();
+    expect(cache.deleteGraphFromCache).not.toHaveBeenCalled();
   });
 
   it('saveCurrentSnapshot rewrites only dirty documents, never evicted clean ones', async () => {
@@ -215,5 +216,57 @@ describe('session persistence', () => {
     const saved = cache.saveDocsToCache.mock.calls.at(-1)?.[0] ?? [];
     expect(saved.map((d: { node: { id: string } }) => d.node.id)).toEqual(['doc-dirty']);
     expect([...dirtyDocIds]).toEqual([]); // committed ids leave the dirty set
+  });
+
+  it('does not create a snapshot when required document persistence fails', async () => {
+    const node = makeNode('unsaved-doc');
+    useGraphStore.getState().addNodes([node]);
+    useGraphStore.getState().setPhase('ready');
+    markDocsDirty([node.id]);
+    textStore.set(node.id, 'only copy in memory');
+    cache.saveDocsToCache.mockResolvedValueOnce(false);
+
+    expect(await saveCurrentSnapshot('incomplete')).toBeUndefined();
+    expect(cache.saveSnapshot).not.toHaveBeenCalled();
+    expect(dirtyDocIds.has(node.id)).toBe(true);
+  });
+
+  it('does not clear a document edited again while snapshot persistence is in flight', async () => {
+    const node = makeNode('edited-doc');
+    useGraphStore.getState().addNodes([node]);
+    useGraphStore.getState().setPhase('ready');
+    markDocsDirty([node.id]);
+    let complete!: (saved: boolean) => void;
+    cache.saveDocsToCache.mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => { complete = resolve; }),
+    );
+    const saving = saveCurrentSnapshot('before edit');
+    textStore.set(node.id, 'new content');
+    markDocsDirty([node.id]);
+    complete(true);
+
+    expect(await saving).toBe(1);
+    expect(dirtyDocIds.has(node.id)).toBe(true);
+  });
+
+  it('keeps a snapshot owned by its original corpus when the workspace switches during saving', async () => {
+    const node = makeNode('corpus-A-doc');
+    useGraphStore.getState().addNodes([node]);
+    useGraphStore.getState().setPhase('ready');
+    useCorpusStore.setState({ activeCorpusId: 'corpus-A' });
+    markDocsDirty([node.id]);
+    let complete!: (saved: boolean) => void;
+    cache.saveDocsToCache.mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => { complete = resolve; }),
+    );
+    const saving = saveCurrentSnapshot('A snapshot');
+    useCorpusStore.setState({ activeCorpusId: 'corpus-B' });
+    complete(true);
+
+    expect(await saving).toBe(1);
+    expect(cache.saveSnapshot).toHaveBeenCalledWith(
+      'A snapshot', 'unnamed', expect.objectContaining({ nodes: [node] }),
+      expect.any(Object), [node.id], 'corpus-A',
+    );
   });
 });

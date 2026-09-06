@@ -6,6 +6,8 @@ import type { DocNode } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import FirstRunGuide, { FIRST_RUN_GUIDE_REOPEN_EVENT } from './FirstRunGuide';
+import FilterBar from './FilterBar';
+import GraphNavigator from './GraphNavigator';
 
 const node: DocNode = {
   id: 'doc',
@@ -64,7 +66,7 @@ describe('FirstRunGuide', () => {
       edges: [],
       phase: 'ready',
     });
-    useUiStore.setState({ selectedId: null });
+    useUiStore.setState({ selectedId: null, searchOpen: false });
   });
 
   afterEach(() => {
@@ -79,6 +81,46 @@ describe('FirstRunGuide', () => {
     act(() => useUiStore.getState().setSelected('doc'));
 
     expect(screen.queryByLabelText('Getting started')).not.toBeInTheDocument();
+  });
+
+  it('leaves Escape to search and resumes the guide after search closes', async () => {
+    render(<FirstRunGuide />);
+    expect(await screen.findByLabelText('Getting started')).toBeVisible();
+    act(() => useUiStore.getState().setSearchOpen(true));
+    expect(screen.queryByLabelText('Getting started')).not.toBeInTheDocument();
+    const onEscape = vi.fn();
+    window.addEventListener('keydown', onEscape);
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    window.removeEventListener('keydown', onEscape);
+    expect(onEscape).toHaveBeenCalledOnce();
+    act(() => useUiStore.getState().setSearchOpen(false));
+    expect(screen.getByLabelText('Getting started')).toBeVisible();
+  });
+
+  it.each([
+    { name: 'document browser', Control: GraphNavigator, toggleName: 'Browse documents' },
+    { name: 'filters', Control: FilterBar, toggleName: 'Show graph filters' },
+  ])('leaves Escape to expanded $name before dismissing the guide', async ({ name, Control, toggleName }) => {
+    render(<><Control /><FirstRunGuide /></>);
+    const guide = await screen.findByLabelText('Getting started');
+    const toggle = screen.getByRole('button', { name: toggleName });
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const target = name === 'document browser'
+      ? screen.getByRole('listbox', { name: 'Graph nodes' })
+      : screen.getByRole('button', { name: /txt.*1/i });
+    target.focus();
+
+    fireEvent.keyDown(target, { key: 'Escape' });
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
+    expect(guide).toBeVisible();
+    expect(localStorage.getItem('knowledge-nebula-first-graph-guide-v4')).toBeNull();
+
+    fireEvent.keyDown(toggle, { key: 'Escape' });
+    expect(screen.queryByLabelText('Getting started')).not.toBeInTheDocument();
+    expect(localStorage.getItem('knowledge-nebula-first-graph-guide-v4')).toBe('dismissed');
   });
 
   it('can be reopened after dismissal', async () => {

@@ -439,7 +439,12 @@ export function referenceEdges(
       return found;
     }
     for (const candidate of importPathCandidates(from.path, target)) {
-      take(byPath.get(candidate));
+      const hits = byPath.get(candidate);
+      if (!hits) continue;
+      // Resolution candidates are ordered: source and generated files with
+      // the same stem are alternatives, not simultaneous dependencies.
+      if (hits.length === 1) take(hits);
+      break;
     }
     // Path-aware resolution is authoritative whenever the importing doc has a
     // known path: a specifier from a real source file resolves against that
@@ -656,7 +661,6 @@ export function importPathCandidates(fromPath: string | undefined, specifier: st
   if (relative && fromPath) {
     roots.push(spec.startsWith('/') ? resolveVaultRootRelative(fromPath, spec) : posixResolveFrom(fromPath, spec));
   } else if (!relative) {
-    roots.push(posixNormalize(spec).replace(/^\//, ''));
     // A slashless bare specifier still resolves against the linking file's
     // directory when it names an explicit file (`guide.md`, `util.h`) —
     // markdown hrefs and C includes are sibling-relative without `./`. Bare
@@ -665,6 +669,7 @@ export function importPathCandidates(fromPath: string | undefined, specifier: st
     if (fromPath && (spec.includes('/') || posixBasename(spec).includes('.'))) {
       roots.push(posixResolveFrom(fromPath, spec));
     }
+    roots.push(posixNormalize(spec).replace(/^\//, ''));
   }
   const out: string[] = [];
   const seen = new Set<string>();

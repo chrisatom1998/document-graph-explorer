@@ -43,6 +43,13 @@ const VALID_OPF = `<?xml version="1.0"?>
 </package>`;
 
 describe('parseEpub', () => {
+  it.each(['00123', 'true', 'false'])('preserves literal metadata title %s', async (title) => {
+    const bytes = await createEpubZip(VALID_CONTAINER, VALID_OPF.replace('Test Book', title), {
+      'chap1.xhtml': '<p>Readable chapter</p>',
+    });
+    expect((await parseEpub(bytes, 'book.epub')).title).toBe(title);
+  });
+
   it('parses basic epub with chapters', async () => {
     const zipData = await createEpubZip(VALID_CONTAINER, VALID_OPF, {
       'chap1.xhtml': '<html><body><h1>Chapter 1</h1><p>Text 1</p></body></html>',

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { nodesMatchingFilter } from '../scene/emphasis';
@@ -29,6 +29,7 @@ export default function SearchOverlay() {
   const edges = useGraphStore((s) => s.edges);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
   const filter = useUiStore((s) => s.filter);
+  const allowed = useMemo(() => nodesMatchingFilter(nodes, edges, filter), [nodes, edges, filter]);
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ResultRow[]>([]);
@@ -91,8 +92,8 @@ export default function SearchOverlay() {
       };
       void (async () => {
         try {
-          applyResults(await searchCorpusLexical(query));
-          applyResults(await searchCorpus(query));
+          applyResults(await searchCorpusLexical(query, allowed ?? undefined));
+          applyResults(await searchCorpus(query, allowed ?? undefined));
           if (seq === requestSeq.current) setSearching(false);
         } catch (err) {
           console.warn('search failed', err);
@@ -120,10 +121,9 @@ export default function SearchOverlay() {
       requestSeq.current += 1;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, searchOpen]);
+  }, [query, searchOpen, allowed]);
 
   const browsing = query.trim().length === 0;
-  const allowed = nodesMatchingFilter(nodes, edges, filter);
   const displayedResults: ResultRow[] = (browsing
     ? nodes
         .filter((node) => node.kind === 'document')
@@ -300,16 +300,16 @@ export default function SearchOverlay() {
           })}
         </div>
 
-        {!browsing && searching && results.length === 0 && (
+        {!browsing && searching && !hasDisplayedResults && (
           <div className="search-overlay__empty" role="status">
             Searching…
           </div>
         )}
-        {results.length === 0 && searched && !searching && (
+        {!browsing && !hasDisplayedResults && searched && !searching && (
           <div className="search-overlay__empty" role="status">
             {failed
               ? 'Search didn’t complete — try again in a moment.'
-              : 'No matches — the model may still be loading'}
+              : allowed ? 'No matches within the active filters' : 'No matches — the model may still be loading'}
           </div>
         )}
         {!browsing && displayedResults.length > 1 && (

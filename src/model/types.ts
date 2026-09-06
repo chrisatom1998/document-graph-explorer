@@ -122,6 +122,8 @@ export type FileStage =
 export interface FileStatus {
   fileId: string;
   name: string;
+  /** Source-relative identity for folder files; absent for legacy/direct selections. */
+  path?: string;
   stage: FileStage;
   error?: string;
 }

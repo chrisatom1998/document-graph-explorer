@@ -75,8 +75,8 @@ export async function streamOllamaChat(options: StreamOptions): Promise<string> 
     options.onText,
   );
 
+  if (streamError) throw new Error(`Ollama stream failed: ${streamError.slice(0, 200)}`);
   if (!accumulated.trim()) {
-    if (streamError) throw new Error(`Ollama stream failed: ${streamError.slice(0, 200)}`);
     throw new Error(
       finishReason && finishReason !== 'stop'
         ? `Ollama stopped the response (${finishReason}).`

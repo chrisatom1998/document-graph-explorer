@@ -1,16 +1,20 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { INITIAL_NODE_CAPACITY, MAX_NODES, NODE_CAPACITY_GROWTH } from '../config';
 import { slotMeta, slotOfId } from '../scene/positionBuffer';
-import { layoutAddNodes, layoutRemoveNodes, layoutReset } from './layoutBridge';
+import { layoutAddNodes, layoutRemoveNodes, layoutReset, layoutSetDims, layoutPause, layoutResume, layoutEpoch } from './layoutBridge';
+import type { LayoutRequest } from '../model/types';
 
 /** layoutAddNodes posts to the layout worker, which vitest's node environment
  * can't spawn — stub the global with an inert double. (The real worker
  * protocol is exercised headless by scripts/bench-layout.mjs.) */
 class WorkerStub {
+  static instances: WorkerStub[] = [];
+  messages: LayoutRequest[] = [];
+  constructor() { WorkerStub.instances.push(this); }
   onmessage: ((ev: unknown) => void) | null = null;
   onerror: ((ev: unknown) => void) | null = null;
   onmessageerror: (() => void) | null = null;
-  postMessage(): void {}
+  postMessage(message: LayoutRequest): void { this.messages.push(message); }
   terminate(): void {}
 }
 
@@ -24,8 +28,34 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  layoutSetDims(3);
+  layoutResume();
   layoutReset();
   vi.restoreAllMocks();
+});
+
+describe('layout replacement preferences', () => {
+  it('replays flat dimensions and pause before adding survivors after reset', () => {
+    layoutSetDims(2);
+    layoutPause();
+    const epoch = layoutEpoch();
+    layoutReset();
+    layoutAddNodes([{ id: 'survivor', cluster: 0, initial: [10, 20, 0] }]);
+    expect(WorkerStub.instances.at(-1)?.messages).toEqual([
+      { type: 'setDims', dims: 2, epoch },
+      { type: 'pause' },
+      { type: 'add', nodes: [{ id: 'survivor', cluster: 0, slot: 0, initial: [10, 20, 0] }] },
+    ]);
+  });
+
+  it('preserves the settled epoch when resetting a 3D layout', () => {
+    layoutSetDims(2);
+    layoutSetDims(3);
+    const epoch = layoutEpoch();
+    layoutReset();
+    layoutAddNodes([{ id: 'new', cluster: 0 }]);
+    expect(WorkerStub.instances.at(-1)?.messages[0]).toEqual({ type: 'setDims', dims: 3, epoch });
+  });
 });
 
 function specs(count: number, start = 0): { id: string; cluster: number }[] {

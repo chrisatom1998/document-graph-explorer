@@ -169,11 +169,12 @@ const NO_RAYCAST = (): void => {
  * too (their sphere is zero-scaled but the pick radius comes from
  * scaleOfSlot), so hover/click works for octahedra as well.
  */
-function instancedSphereRaycast(
+export function instancedSphereRaycast(
   this: THREE.InstancedMesh,
   raycaster: THREE.Raycaster,
   intersects: THREE.Intersection[],
 ): void {
+  if (useUiStore.getState().clusterCollapsed) return;
   // Also clamp to the mesh's own instance count: slotMeta.capacity is bumped
   // when the allocator grows, one render before the mesh remounts at the new
   // capacity, and an intersection carrying an instanceId past this.count

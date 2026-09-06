@@ -16,15 +16,28 @@ function optionId(index: number): string {
 /**
  * Keyboard and screen-reader companion to the WebGL scene.
  *
- * It stays out of the visual workspace until reached with Tab, then becomes a
- * compact node picker. The data comes from graphStore rather than render
+ * A compact overview expands into a node picker for mouse and keyboard users.
+ * The data comes from graphStore rather than render
  * buffers so it remains complete when the scene is collapsed or simplified.
  */
 export default function GraphNavigator() {
   const nodes = useGraphStore((state) => state.nodes);
   const edgeCount = useGraphStore((state) => state.edges.length);
   const selectedId = useUiStore((state) => state.selectedId);
+  const comparePick = useUiStore((state) => state.comparePick);
   const listRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !rootRef.current?.contains(event.target)) setExpanded(false);
+    };
+    window.addEventListener('pointerdown', closeOutside);
+    return () => window.removeEventListener('pointerdown', closeOutside);
+  }, [expanded]);
 
   const orderedNodes = useMemo(
     () => [...nodes].sort((a, b) => {
@@ -84,65 +97,89 @@ export default function GraphNavigator() {
         return;
       }
       focusNode(node.id);
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      listRef.current?.blur();
     }
   };
 
   if (orderedNodes.length === 0) return null;
 
   return (
-    <aside className="graph-navigator glass-panel" aria-label="Accessible graph navigator">
-      <p className="graph-navigator__title">Graph navigator</p>
-      <p className="graph-navigator__summary" id={SUMMARY_ID}>
+    <aside
+      ref={rootRef}
+      className={`graph-navigator glass-panel${expanded ? ' is-expanded' : ''}${comparePick ? ' is-picking' : ''}`}
+      aria-label="Accessible graph navigator"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && expanded) {
+          event.preventDefault();
+          event.stopPropagation();
+          setExpanded(false);
+          toggleRef.current?.focus();
+        }
+      }}
+    >
+      <button
+        ref={toggleRef}
+        type="button"
+        className="graph-navigator__toggle"
+        aria-label="Browse documents"
+        aria-expanded={expanded}
+        aria-controls="graph-navigator-content"
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <span><strong>{documentCount}</strong> {documentCount === 1 ? 'document' : 'documents'}</span>
+        <span className="graph-navigator__chevron" aria-hidden="true">{expanded ? '−' : '+'}</span>
+      </button>
+      <p className="graph-navigator__overview">{clusterCount} {clusterCount === 1 ? 'cluster' : 'clusters'} · {edgeCount} {edgeCount === 1 ? 'connection' : 'connections'}</p>
+      <p className="sr-only graph-navigator__summary" id={SUMMARY_ID}>
         {documentCount} {documentCount === 1 ? 'document' : 'documents'}, {topicCount}{' '}
         {topicCount === 1 ? 'topic hub' : 'topic hubs'}, {edgeCount}{' '}
         {edgeCount === 1 ? 'connection' : 'connections'}, {clusterCount}{' '}
         {clusterCount === 1 ? 'cluster' : 'clusters'}.
       </p>
-      <p className="graph-navigator__instructions" id={INSTRUCTIONS_ID}>
-        Use Up and Down to browse. Press Enter to open the active node. Press Escape to leave.
-      </p>
-      <div
-        ref={listRef}
-        className="graph-navigator__list"
-        role="listbox"
-        tabIndex={0}
-        aria-label="Graph nodes"
-        aria-describedby={`${SUMMARY_ID} ${INSTRUCTIONS_ID}`}
-        aria-activedescendant={optionId(activeIndex)}
-        onFocus={() => {
-          if (selectedId && orderedNodes.some((node) => node.id === selectedId)) setActiveId(selectedId);
-        }}
-        onKeyDownCapture={handleKeyDown}
-      >
-        {orderedNodes.map((node, index) => (
-          <div
-            id={optionId(index)}
-            key={node.id}
-            className={`graph-navigator__option${index === activeIndex ? ' is-active' : ''}`}
-            role="option"
-            aria-selected={node.id === selectedId}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => {
-              setActiveId(node.id);
-              if (useUiStore.getState().comparePick) {
-                if (node.kind === 'document') applyComparePick(node.id);
-                return;
-              }
-              focusNode(node.id);
-            }}
-          >
-            <span>{node.id === selectedId ? selectedDocumentTitle(node) : node.title}</span>
-            <span className="graph-navigator__meta">
-              {node.kind === 'topic'
-                ? 'Topic hub'
-                : `${fileTypeChip(node).toUpperCase()} · ${node.degree} connection${node.degree === 1 ? '' : 's'}`}
-            </span>
-          </div>
-        ))}
+      <div id="graph-navigator-content" hidden={!expanded}>
+        <p className="graph-navigator__instructions" id={INSTRUCTIONS_ID}>
+          Choose a document to explore its connections.
+          <span> ↑ ↓ to browse · Enter to open · Esc to close</span>
+        </p>
+        <div
+          ref={listRef}
+          className="graph-navigator__list"
+          role="listbox"
+          tabIndex={0}
+          aria-label="Graph nodes"
+          aria-describedby={`${SUMMARY_ID} ${INSTRUCTIONS_ID}`}
+          aria-activedescendant={optionId(activeIndex)}
+          onFocus={() => {
+            if (selectedId && orderedNodes.some((node) => node.id === selectedId)) setActiveId(selectedId);
+          }}
+          onKeyDownCapture={handleKeyDown}
+        >
+          {orderedNodes.map((node, index) => (
+            <div
+              id={optionId(index)}
+              key={node.id}
+              className={`graph-navigator__option${index === activeIndex ? ' is-active' : ''}`}
+              role="option"
+              aria-selected={node.id === selectedId}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                listRef.current?.focus();
+                setActiveId(node.id);
+                if (useUiStore.getState().comparePick) {
+                  if (node.kind === 'document') applyComparePick(node.id);
+                  return;
+                }
+                focusNode(node.id);
+              }}
+            >
+              <span className="graph-navigator__name">{node.id === selectedId ? selectedDocumentTitle(node) : node.title}</span>
+              <span className="graph-navigator__meta">
+                {node.kind === 'topic'
+                  ? 'Topic hub'
+                  : `${fileTypeChip(node).toUpperCase()} · ${node.degree} connection${node.degree === 1 ? '' : 's'}`}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </aside>
   );
