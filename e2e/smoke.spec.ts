@@ -11,6 +11,49 @@ function collectErrors(page: Page): string[] {
   return errors;
 }
 
+function boundaryGraphJson(nodeCount: number): string {
+  const nodes = Array.from({ length: nodeCount }, (_, index) => {
+    const ordinal = String(index + 1).padStart(4, '0');
+    return {
+      id: `boundary-${ordinal}`,
+      kind: 'document',
+      title: `Boundary node ${ordinal}`,
+      fileType: 'txt',
+      topics: [],
+      entities: [],
+      keywords: [],
+      wordCount: 1,
+      cluster: 0,
+      degree: 0,
+      status: 'ok',
+    };
+  });
+  return JSON.stringify({
+    version: 1,
+    createdAt: '2026-09-06T00:00:00.000Z',
+    generator: 'knowledge-nebula',
+    includeEmbeddings: false,
+    nodes,
+    edges: [],
+  });
+}
+
+async function importGraphJson(page: Page, json: string): Promise<void> {
+  await page.getByRole('button', { name: 'Import a graph' }).click();
+  const input = page.locator('input[type="file"][accept*=".json"]');
+  await expect(input).toHaveCount(1);
+  await input.evaluate((element, contents) => {
+    const fileInput = element as HTMLInputElement;
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([contents], 'boundary-graph.json', { type: 'application/json' }));
+    Object.defineProperty(fileInput, 'files', {
+      configurable: true,
+      value: transfer.files,
+    });
+    fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+  }, json);
+}
+
 test('first run renders the empty state with a working WebGL scene', async ({ page }) => {
   const errors = collectErrors(page);
 
@@ -81,6 +124,39 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await page.getByRole('button', { name: 'Back to graph' }).click();
 
   // Hygiene: no console errors, no uncaught page errors, no error toasts.
+  await expect(page.locator('.toast--error')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('renderer grows past 4,096 nodes and can frame the first node beyond the old cap', async ({ page }) => {
+  const errors = collectErrors(page);
+
+  await page.goto('/');
+  await expect(page.locator('.webgl-fallback')).toHaveCount(0);
+  await importGraphJson(page, boundaryGraphJson(4_097));
+
+  // 4,097 is deliberate: it forces the slot allocator to grow past the old
+  // InstancedMesh capacity and makes Nodes remount its core/halo meshes.
+  await expect(page.locator('.graph-navigator__summary')).toContainText('4097 documents', {
+    timeout: 120_000,
+  });
+  await expect(page.locator('.nebula-canvas canvas')).toBeVisible();
+
+  // The accessible navigator is store-backed, but focusNode only commits the
+  // reader after the camera controller can frame the requested layout slot.
+  // Targeting the final node therefore verifies that a post-growth slot made
+  // it through layout -> position buffer -> scene/camera, rather than merely
+  // existing in graphStore.
+  const listbox = page.getByRole('listbox', { name: 'Graph nodes' });
+  await listbox.focus();
+  await page.keyboard.press('End');
+  await expect(listbox).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-4096');
+  await page.keyboard.press('Enter');
+
+  const sidePanel = page.locator('.side-panel[role="dialog"]');
+  await expect(sidePanel).toBeVisible({ timeout: 180_000 });
+  await expect(sidePanel).toContainText('Boundary node 4097');
+
   await expect(page.locator('.toast--error')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
