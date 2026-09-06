@@ -50,15 +50,16 @@ export function extractPhraseTf(text: string): Record<string, number> {
     segment = [];
   };
 
-  for (const raw of text.toLowerCase().split(WORD_SPLIT)) {
-    if (!raw || STOPWORDS.has(raw)) {
-      flush();
-      continue;
+  for (const sentence of text.toLowerCase().split(/[.!?:;\r\n]+/)) {
+    for (const raw of sentence.split(WORD_SPLIT)) {
+      if (!raw || STOPWORDS.has(raw) || !isContentToken(raw)) {
+        flush();
+        continue;
+      }
+      segment.push(raw);
     }
-    if (!isContentToken(raw)) continue;
-    segment.push(raw);
+    flush();
   }
-  flush();
 
   const kept: [string, number][] = [];
   for (const [phrase, count] of counts) {

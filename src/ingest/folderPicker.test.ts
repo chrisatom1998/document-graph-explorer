@@ -45,7 +45,7 @@ describe('openFolderPicker with the File System Access API', () => {
       id: 'knowledge-nebula-add-folder',
       mode: 'read',
     });
-    expect(scanner.scanFolder).toHaveBeenCalledWith(handle);
+    expect(scanner.scanFolder).toHaveBeenCalledWith(handle, expect.any(Function));
     expect(document.querySelector('input[webkitdirectory]')).toBeNull();
   });
 
@@ -91,7 +91,7 @@ describe('openFolderPicker webkitdirectory fallback', () => {
     input!.dispatchEvent(new Event('change'));
 
     await vi.waitFor(() => expect(localFiles.ingestNamedFiles).toHaveBeenCalledWith(named));
-    expect(scanner.scanPickedFolderFiles).toHaveBeenCalledWith([picked]);
+    expect(scanner.scanPickedFolderFiles).toHaveBeenCalledWith([picked], expect.any(Function));
   });
 
   it('does nothing when the fallback picker is dismissed with no selection', async () => {

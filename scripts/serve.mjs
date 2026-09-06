@@ -67,9 +67,19 @@ function openBrowser(url) {
   }
 }
 
-function listen(server, basePort, attempt) {
+export function listen(server, basePort, attempt) {
   const port = basePort + attempt;
+  const onListening = () => {
+    const url = `http://127.0.0.1:${server.address().port}/`;
+    const label = AIRGAP_MODE ? ' (air-gapped build)' : '';
+    // Plain ASCII keeps the Windows launcher console readable.
+    console.log(`Document Graph Explorer${label} - serving ${url}`);
+    console.log('(localhost-only; press Ctrl+C to stop)');
+    openBrowser(url);
+  };
   server.once('error', (err) => {
+    // A failed listen leaves its callback queued for the next successful bind.
+    server.removeListener('listening', onListening);
     if (err.code === 'EADDRINUSE' && attempt < MAX_PORT_ATTEMPTS) {
       listen(server, basePort, attempt + 1);
       return;
@@ -83,15 +93,7 @@ function listen(server, basePort, attempt) {
     }
     process.exit(1);
   });
-  server.listen(port, '127.0.0.1', () => {
-    const url = `http://127.0.0.1:${port}/`;
-    const label = AIRGAP_MODE ? ' (air-gapped build)' : '';
-    // Plain hyphen (not an em dash) so the launcher console reads cleanly
-    // under Windows' default OEM codepage instead of mojibaking.
-    console.log(`Document Graph Explorer${label} - serving ${url}`);
-    console.log('(localhost-only; press Ctrl+C to stop)');
-    openBrowser(url);
-  });
+  server.listen(port, '127.0.0.1', onListening);
 }
 
 function main() {

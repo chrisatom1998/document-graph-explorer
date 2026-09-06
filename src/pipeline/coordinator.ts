@@ -109,6 +109,7 @@ import {
 } from '../scene/ingestBirth';
 import { addToSemanticIndex, edgesFromIndex, type SemanticIndex } from './similarity';
 import { synthesizeTopicNodes } from './topicNodes';
+import { selectFallbackTopics } from './topics';
 import { createGeneratedDemoDocuments } from '../demo/generatedDocuments';
 import { fetchDemoManifest } from '../demo/manifest';
 
@@ -304,6 +305,9 @@ const lexMeta = new Map<string, LexMeta>();
 /** docId -> ephemeral ingest fileId/name of the CURRENT run (status chips). */
 const fileIdOfDoc = new Map<string, string>();
 const nameOfDoc = new Map<string, string>();
+// Parsed documents and vectors can survive a cancelled/failed corpus pass.
+// Keep duplicate re-drops retryable until all derived connections are current.
+let derivedPassesIncomplete = false;
 
 let modelProgressWired = false;
 function wireModelProgress(): void {
@@ -423,6 +427,15 @@ async function runIngestBody(
 ): Promise<boolean> {
   try {
     return await runIngestBodyInner(files, signal, spawnOrigin, initialDocumentCount);
+  } catch (error) {
+    if (!signal?.aborted) {
+      settleMutationProgress();
+      useUiStore.getState().pushToast(
+        'Ingest failed — re-add the affected files to retry.',
+        'warning',
+      );
+    }
+    throw error;
   } finally {
     // Release the corpus-wide passes' transient full-text working set on
     // EVERY exit — a cancelled or failed run has already paid runLexicalPass's
@@ -445,21 +458,22 @@ async function runIngestBodyInner(
   for (const file of files) {
     const artifact = repoArtifactReason(file.name);
     if (artifact) {
-      store().addIgnored(file.name, artifact);
+      store().addIgnored(file.path ?? file.name, artifact);
       continue;
     }
     const fileType = routeFileWithSniff(file.name, file.bytes);
     if (!fileType) {
-      store().addIgnored(file.name, 'unsupported type');
+      store().addIgnored(file.path ?? file.name, 'unsupported type');
       continue;
     }
-    store().setFileStatus({ fileId: file.fileId, name: file.name, stage: 'queued' });
+    store().setFileStatus({ fileId: file.fileId, name: file.name, path: file.path, stage: 'queued' });
     routed.push({ file, fileType });
   }
 
   // (b) content ids; duplicates (within the drop or vs the store) → cached
   const seenIds = new Set<string>();
   const pending: PendingFile[] = [];
+  let retryIncomplete = false;
   for (const { file, fileType } of routed) {
     // hashing a large drop takes real time — bail between files, not after
     throwIfAborted(signal);
@@ -474,13 +488,28 @@ async function runIngestBodyInner(
     if (seenIds.has(id) || store().nodeIndex[id] !== undefined) {
       // known doc — backfill the original if it predates original retention
       if (!file.reconstructable) void putOriginalIfMissing(id, file.name, original);
-      store().setFileStatus({ fileId: file.fileId, name: file.name, stage: 'cached' });
+      const existing = store().nodes[store().nodeIndex[id]];
+      if (existing && derivedPassesIncomplete) retryIncomplete = true;
+      if (
+        existing &&
+        existing.status !== 'unreadable' &&
+        !docVectorStore.has(id) &&
+        hasDocTextSync(id)
+      ) {
+        // Parsing commits before embedding. Re-adding after a failed or
+        // cancelled embed must resume indexing rather than stop at dedupe.
+        retryIncomplete = true;
+        fileIdOfDoc.set(id, file.fileId);
+        nameOfDoc.set(id, file.name);
+      }
+      store().setFileStatus({ fileId: file.fileId, name: file.name, path: file.path, stage: 'cached' });
       continue;
     }
     seenIds.add(id);
     pending.push({ file, fileType, id, relPath, original });
   }
-  if (pending.length === 0) return false; // nothing new — leave the corpus untouched
+  if (pending.length === 0 && !retryIncomplete) return false;
+  derivedPassesIncomplete = true;
 
   // (c) IndexedDB cache lookup (persistence subsystem)
   const lookups = await Promise.all(
@@ -500,10 +529,11 @@ async function runIngestBodyInner(
     }
     const dropped = layoutAddNodes([{ id: p.id, cluster: cached.node.cluster, spawn: spawnOrigin }]);
     if (dropped.length > 0) {
-      store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
+      store().addIgnored(p.file.path ?? p.file.name, `node limit reached (${MAX_NODES} max)`);
       store().setFileStatus({
         fileId: p.file.fileId,
         name: p.file.name,
+        path: p.file.path,
         stage: 'error',
         error: `Node limit reached (${MAX_NODES} max)`,
       });
@@ -521,7 +551,7 @@ async function runIngestBodyInner(
     mdLinkTargetsStore.set(p.id, cached.mdLinkTargets);
     docLinksStore.set(p.id, cached.docLinks);
     if (!p.file.reconstructable) void putOriginalIfMissing(p.id, p.file.name, p.original);
-    store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
+    store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, path: p.file.path, stage: 'cached' });
   }
 
   // (d) parse misses — pdf via parsePdf (dedicated worker or its main-thread
@@ -540,7 +570,7 @@ async function runIngestBodyInner(
       pdfLinks: LinkRef[];
     }
     store().setFileStatuses(
-      misses.map((p) => ({ fileId: p.file.fileId, name: p.file.name, stage: 'parsing' as const })),
+      misses.map((p) => ({ fileId: p.file.fileId, name: p.file.name, path: p.file.path, stage: 'parsing' as const })),
     );
     const parseTasks = misses.map(async (p): Promise<ParsedResult> => {
       throwIfAborted(signal);
@@ -604,10 +634,11 @@ async function runIngestBodyInner(
     const commitParsed = ({ p, doc, pdfLinks }: ParsedResult): { node: DocNode } | null => {
       const dropped = layoutAddNodes([{ id: p.id, cluster: -1, spawn: spawnOrigin }]);
       if (dropped.length > 0) {
-        store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
+        store().addIgnored(p.file.path ?? p.file.name, `node limit reached (${MAX_NODES} max)`);
         store().setFileStatus({
           fileId: p.file.fileId,
           name: p.file.name,
+          path: p.file.path,
           stage: 'error',
           error: `Node limit reached (${MAX_NODES} max)`,
         });
@@ -665,6 +696,7 @@ async function runIngestBodyInner(
         placed.push({
           fileId: result.p.file.fileId,
           name: result.p.file.name,
+          path: result.p.file.path,
           stage: 'placed',
         });
       }
@@ -720,6 +752,7 @@ async function runIngestBodyInner(
       store().setFileStatus({
         fileId: p.file.fileId,
         name: p.file.name,
+        path: p.file.path,
         stage: 'error',
         error: message,
       });
@@ -733,7 +766,7 @@ async function runIngestBodyInner(
 
   // (e) lexical aggregation over the WHOLE corpus (idf + title mentions
   // are corpus-wide, so every drop rebuilds them)
-  const { lexEdges, boilerplate } = await runLexicalPass(pool, signal);
+  const { lexEdges, boilerplate, complete: lexicalComplete } = await runLexicalPass(pool, signal);
 
   // (f) embeddings for docs that still need a vector. hasDocTextSync counts
   // evicted-but-persisted text as readable (runLexicalPass just rehydrated it).
@@ -787,7 +820,8 @@ async function runIngestBodyInner(
   // ingest still restores these files on the next launch. (The wrapper's
   // finally evicts the passes' text working set after this save confirms.)
   await saveSession();
-  return insightsAreCurrent && documentNodes().length > initialDocumentCount;
+  derivedPassesIncomplete = !lexicalComplete || !insightsAreCurrent;
+  return lexicalComplete && insightsAreCurrent && documentNodes().length > initialDocumentCount;
 }
 
 // ---------------------------------------------------------------------------
@@ -862,7 +896,12 @@ async function runEmbeddingPass(
     targets.flatMap((target): FileStatus[] => {
       const fileId = fileIdOfDoc.get(target.id);
       return fileId
-        ? [{ fileId, name: nameOfDoc.get(target.id) ?? target.title, stage: 'embedding' }]
+        ? [{
+            fileId,
+            name: nameOfDoc.get(target.id) ?? target.title,
+            path: store().nodes[store().nodeIndex[target.id]]?.path,
+            stage: 'embedding',
+          }]
         : [];
     }),
   );
@@ -893,6 +932,7 @@ async function runEmbeddingPass(
           placedStatuses.push({
             fileId,
             name: nameOfDoc.get(result.docId) ?? result.docId,
+            path: store().nodes[store().nodeIndex[result.docId]]?.path,
             stage: 'placed',
           });
         }
@@ -911,6 +951,7 @@ async function runEmbeddingPass(
           errorStatuses.push({
             fileId,
             name: nameOfDoc.get(t.id) ?? t.title,
+            path: store().nodes[store().nodeIndex[t.id]]?.path,
             stage: 'error',
             error: message,
           });
@@ -941,11 +982,11 @@ async function hydrateCorpusTexts(ids: readonly string[]): Promise<void> {
 async function runLexicalPass(
   pool: WorkerPool,
   signal?: AbortSignal,
-): Promise<{ lexEdges: Edge[]; boilerplate: Set<string> }> {
+): Promise<{ lexEdges: Edge[]; boilerplate: Set<string>; complete: boolean }> {
   const store = useGraphStore.getState;
   throwIfAborted(signal);
   store().setPhase('linking');
-  await backfillLexMeta(pool);
+  await backfillLexMeta(pool, signal);
   const docNodes = documentNodes();
   // Corpus-wide pass over every doc's full text — rehydrate evicted texts
   // transiently (usually a no-op); the ingest/removal-end evictor releases
@@ -972,6 +1013,7 @@ async function runLexicalPass(
 
   let lexEdges: Edge[];
   let boilerplate = new Set<string>();
+  let complete = false;
   try {
     const lexical = await aggRequest<LexicalDone>(
       {
@@ -1006,7 +1048,7 @@ async function runLexicalPass(
       patches.set(
         docId,
         overwrite
-          ? { keywords, topics: keywords.slice(0, 5), topicsSource: 'tfidf' }
+          ? { keywords, topics: selectFallbackTopics(keywords, existing.title), topicsSource: 'tfidf' }
           : { keywords },
       );
     }
@@ -1014,6 +1056,7 @@ async function runLexicalPass(
     store().setEdges(lexEdges);
     layoutSetLinks(toLinkInput(lexEdges));
     layoutReheat(0.8);
+    complete = true;
   } catch (err) {
     // cancellation must propagate, not degrade into a "linking failed" toast
     if (signal?.aborted) throw err;
@@ -1023,7 +1066,7 @@ async function runLexicalPass(
       .getState()
       .pushToast('Keyword linking failed — connections may be incomplete.', 'warning');
   }
-  return { lexEdges, boilerplate };
+  return { lexEdges, boilerplate, complete };
 }
 
 // ---------------------------------------------------------------------------
@@ -1224,6 +1267,9 @@ async function computeCorpusHash(): Promise<string> {
 async function runRemove(ids: string[]): Promise<void> {
   try {
     await runRemoveInner(ids);
+  } catch (error) {
+    settleMutationProgress();
+    throw error;
   } finally {
     // Same contract as runIngestBody: the re-link pass rehydrates survivors'
     // full texts, and a cancelled/failed removal must still release them.
@@ -1236,6 +1282,7 @@ async function runRemoveInner(ids: string[]): Promise<void> {
   const present = new Set(documentNodes().map((n) => n.id));
   const removing = [...new Set(ids)].filter((id) => present.has(id));
   if (removing.length === 0) return;
+  derivedPassesIncomplete = true;
   const gone = new Set(removing);
   const oldCorpusHash = store().corpusHash;
   // Removed ids invalidate the cached incremental similarity index outright
@@ -1312,8 +1359,8 @@ async function runRemoveInner(ids: string[]): Promise<void> {
   );
 
   // Corpus-wide re-link over the survivors.
-  const { lexEdges } = await runLexicalPass(getPool());
-  await runSemanticPass(lexEdges);
+  const { lexEdges, complete: lexicalComplete } = await runLexicalPass(getPool());
+  const insightsAreCurrent = await runSemanticPass(lexEdges);
   synthesizeTopicNodes();
 
   store().setPhase('ready');
@@ -1326,6 +1373,7 @@ async function runRemoveInner(ids: string[]): Promise<void> {
   // sessionSave is deliberately coordinator-free, so persistence stays
   // acyclic while this mutation pipeline remains a lazy application chunk.
   await saveSession();
+  derivedPassesIncomplete = !lexicalComplete || !insightsAreCurrent;
   const purge = await unreferencedDocumentIds(removing).catch((error: unknown) => {
     reportPersistenceUnavailable(error);
     return [];
@@ -1344,26 +1392,31 @@ async function runRemoveInner(ids: string[]): Promise<void> {
  * the main thread via 'analyze'. Their mdLinkTargets are already in
  * mdLinkTargetsStore (populated at hydration time), so they're untouched here.
  */
-async function backfillLexMeta(pool: WorkerPool): Promise<void> {
+async function backfillLexMeta(pool: WorkerPool, signal?: AbortSignal): Promise<void> {
   const missing = documentNodes().filter((n) => !lexMeta.has(n.id) && hasDocTextSync(n.id));
   if (missing.length === 0) return;
   await hydrateCorpusTexts(missing.map((n) => n.id)); // analyze needs the full body
-  await Promise.allSettled(
+  throwIfAborted(signal);
+  const results = await Promise.allSettled(
     missing.map(async (n) => {
       const fileName = basename(n.path ?? n.title);
-      const done = await pool.request<ParseDone>({
-        requestId: 0,
-        type: 'analyze',
-        fileId: n.id,
-        name: fileName,
-        path: n.path,
-        fileType: n.fileType,
-        docId: n.id,
-        title: n.title,
-        text: textStore.get(n.id) ?? '',
-        status: n.status,
-        warning: n.warning,
-      });
+      const done = await pool.request<ParseDone>(
+        {
+          requestId: 0,
+          type: 'analyze',
+          fileId: n.id,
+          name: fileName,
+          path: n.path,
+          fileType: n.fileType,
+          docId: n.id,
+          title: n.title,
+          text: textStore.get(n.id) ?? '',
+          status: n.status,
+          warning: n.warning,
+        },
+        undefined,
+        { signal },
+      );
       lexMeta.set(n.id, {
         tf: done.doc.tf,
         phraseTf: done.doc.phraseTf,
@@ -1373,11 +1426,28 @@ async function backfillLexMeta(pool: WorkerPool): Promise<void> {
       });
     }),
   );
+  throwIfAborted(signal);
+  // Drain all jobs before failing so late completions cannot mutate metadata
+  // during the next queued run. Preserve successes for the next retry.
+  const failedIndex = results.findIndex((result) => result.status === 'rejected');
+  if (failedIndex >= 0) {
+    const failed = results[failedIndex] as PromiseRejectedResult;
+    const reason = failed.reason instanceof Error ? failed.reason.message : String(failed.reason);
+    const doc = missing[failedIndex];
+    throw new Error(`Lexical analysis failed for ${doc.path ?? doc.title}: ${reason}. Re-add the file to retry.`);
+  }
 }
 
 // ---------------------------------------------------------------------------
 // public API
 // ---------------------------------------------------------------------------
+
+/** A failed mutation must release controls before the next queued run starts. */
+function settleMutationProgress(): void {
+  const store = useGraphStore.getState();
+  store.setModelProgress(null);
+  store.setPhase(documentNodes().length > 0 ? 'ready' : 'idle');
+}
 
 /**
  * Settle the UI after a cancelled ingest run: whatever chips/progress the run
@@ -1535,7 +1605,8 @@ async function runEmbeddingRebuild(): Promise<void> {
   const pool = getPool();
   const graph = useGraphStore.getState;
   try {
-    const { lexEdges, boilerplate } = await runLexicalPass(pool);
+    derivedPassesIncomplete = true;
+    const { lexEdges, boilerplate, complete: lexicalComplete } = await runLexicalPass(pool);
     graph().setPhase('embedding');
 
     // Build replacement vectors off to the side. A single failed request
@@ -1602,11 +1673,12 @@ async function runEmbeddingRebuild(): Promise<void> {
     // take the incremental path and serve edges computed in the OLD vector
     // space. Drop the cache so the next pass rebuilds against the new one.
     resetSemanticIndex();
-    await runSemanticPass(lexEdges);
+    const insightsAreCurrent = await runSemanticPass(lexEdges);
     synthesizeTopicNodes();
     graph().setCorpusHash(await computeCorpusHash());
     graph().setPhase('ready');
     await saveSession();
+    derivedPassesIncomplete = !lexicalComplete || !insightsAreCurrent;
   } finally {
     graph().setModelProgress(null);
     // A failed worker/model request must not leave the application locked in
@@ -1675,6 +1747,7 @@ export function resetCorpus(): void {
   lexMeta.clear();
   fileIdOfDoc.clear();
   nameOfDoc.clear();
+  derivedPassesIncomplete = false;
   resetSemanticIndex();
   const ui = useUiStore.getState();
   ui.setSelected(null);

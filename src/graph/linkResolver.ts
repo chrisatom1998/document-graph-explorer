@@ -23,6 +23,7 @@
 import type { DocNode } from '../model/types';
 import { posixBasename, posixNormalize } from '../util/posixPath';
 import { isExternalUrl, normalizeLinkTarget } from '../pipeline/urlUtils';
+import { importPathCandidates } from '../pipeline/links';
 
 function stripExt(s: string): string {
   return s.replace(/\.[a-z0-9]{1,8}$/i, '');
@@ -44,6 +45,8 @@ function normalizePathTarget(target: string): string {
 }
 
 export interface LinkIndex {
+  /** exact normalized corpus path -> docId; omitted when ambiguous */
+  byPath: Map<string, string>;
   /** normalized basename (with extension) -> docId; omitted when ambiguous */
   byFileName: Map<string, string>;
   /** normalized title (no extension) -> docId; omitted when ambiguous */
@@ -75,6 +78,8 @@ export function buildLinkIndex(nodes: DocNode[]): LinkIndex {
   const titleAmbiguous = new Set<string>();
   const pathSuffixOwner = new Map<string, string>();
   const pathSuffixAmbiguous = new Set<string>();
+  const pathOwner = new Map<string, string>();
+  const pathAmbiguous = new Set<string>();
 
   for (const n of nodes) {
     if (n.kind !== 'document') continue;
@@ -83,6 +88,7 @@ export function buildLinkIndex(nodes: DocNode[]): LinkIndex {
     const title = n.title.trim().toLowerCase();
     claim(titleOwner, titleAmbiguous, title, n.id);
     const path = posixNormalize(n.path ?? '').toLowerCase();
+    claim(pathOwner, pathAmbiguous, path, n.id);
     if (path.includes('/')) {
       const segments = path.split('/');
       // All multi-segment suffixes, from the full path down to `dir/file` —
@@ -97,6 +103,7 @@ export function buildLinkIndex(nodes: DocNode[]): LinkIndex {
   }
 
   return {
+    byPath: withoutAmbiguous(pathOwner, pathAmbiguous),
     byFileName: withoutAmbiguous(fileNameOwner, fileNameAmbiguous),
     byTitle: withoutAmbiguous(titleOwner, titleAmbiguous),
     byPathSuffix: withoutAmbiguous(pathSuffixOwner, pathSuffixAmbiguous),
@@ -108,11 +115,26 @@ export function buildLinkIndex(nodes: DocNode[]): LinkIndex {
  * outside the corpus (external URL), is ambiguous, or doesn't match any
  * ingested doc. PURE.
  */
-export function resolveLinkTarget(target: string, index: LinkIndex): string | null {
+export function resolveLinkTarget(
+  target: string,
+  index: LinkIndex,
+  sourcePath?: string,
+  kind: 'markdown' | 'wikilink' = 'markdown',
+): string | null {
   const raw = target.trim();
   if (!raw || isExternalUrl(raw)) return null;
   const pathTarget = normalizePathTarget(raw);
   if (!pathTarget) return null;
+  // Markdown hrefs are relative to the current document. Wikilinks keep
+  // vault-wide name lookup, except explicit relative/root-relative paths.
+  if (sourcePath && (kind === 'markdown' || raw.startsWith('.') || raw.startsWith('/'))) {
+    const href = raw.startsWith('.') || raw.startsWith('/') ? raw : `./${raw}`;
+    for (const candidate of importPathCandidates(sourcePath, href)) {
+      const hit = index.byPath.get(candidate);
+      if (hit) return hit;
+    }
+    return null;
+  }
   if (pathTarget.includes('/')) {
     const byPath = index.byPathSuffix.get(pathTarget);
     if (byPath) return byPath;
@@ -122,6 +144,7 @@ export function resolveLinkTarget(target: string, index: LinkIndex): string | nu
       const byMd = index.byPathSuffix.get(`${pathTarget}.md`);
       if (byMd) return byMd;
     }
+    return null;
   }
   const norm = normalizeLinkTarget(raw);
   if (!norm) return null;

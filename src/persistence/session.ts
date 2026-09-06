@@ -21,10 +21,11 @@ import { useGraphStore } from '../store/graphStore';
 import { useCorpusStore } from '../store/corpusStore';
 import {
   chunkStore,
-  dirtyDocIds,
+  captureDirtyDocs,
   docLinksStore,
   docVectorStore,
   mdLinkTargetsStore,
+  markDocsClean,
   textStore,
 } from '../store/runtimeStores';
 // store/textHydration is loaded dynamically below: session.ts sits in the
@@ -33,8 +34,6 @@ import {
 // budgeted bytes) in the entry bundle.
 import { useUiStore } from '../store/uiStore';
 import {
-  deleteDocsFromCache,
-  deleteGraphFromCache,
   loadSnapshot,
   reportPersistenceUnavailable,
   saveDocsToCache,
@@ -47,16 +46,12 @@ import {
   activateCorpus,
   getCorpusRecord,
   initializeCorpusRepository,
-  markActiveCorpusEmpty,
-  unreferencedDocumentIds,
 } from './corpusRepository';
 import { toGraphExport } from './graphExport';
 import { collectPositions, saveGraphRecord, saveSession } from './sessionSave';
 // validateImport is loaded dynamically at the one restore-time call below —
 // like textHydration, it belongs to the lazy import/share graph, and a static
 // import from this boot-path module would move it into the eager entry chunk.
-import { deleteOriginals } from './originals';
-import { fetchDemoManifest } from '../demo/manifest';
 import { flushPendingChatSave } from './chatHistorySync';
 
 export { saveSession } from './sessionSave';
@@ -76,42 +71,6 @@ function handleLayoutSettled(): void {
       console.warn('[knowledge-nebula] position save failed', err),
     );
   }, POSITION_SAVE_DEBOUNCE_MS);
-}
-
-async function isDemoOnlySession(exportData: GraphExport): Promise<boolean> {
-  const docs = exportData.nodes.filter((n) => n.kind === 'document');
-  if (docs.length === 0) return false;
-
-  try {
-    const res = await fetchDemoManifest();
-    if (!res.ok) return false;
-    const manifest = (await res.json()) as { files?: unknown; generated?: { count?: unknown } };
-    if (!Array.isArray(manifest.files)) return false;
-
-    const demoFiles = new Set(
-      manifest.files.filter((name): name is string => typeof name === 'string'),
-    );
-    const generatedCount = manifest.generated?.count;
-    const validGeneratedCount =
-      typeof generatedCount === 'number' && Number.isInteger(generatedCount) && generatedCount > 0
-        ? generatedCount
-        : 0;
-    const { isGeneratedDemoFilename } = await import('../demo/generatedDocuments');
-    return docs.every((doc) => {
-      const path = doc.path ?? doc.title;
-      const name = path.replace(/\\/g, '/').split('/').pop() ?? path;
-      return (
-        doc.lastModified === undefined &&
-        (demoFiles.has(name) || isGeneratedDemoFilename(name, validGeneratedCount))
-      );
-    });
-  } catch {
-    // network hiccup / offline / malformed manifest JSON — treat the
-    // session as "not demo-only" rather than letting restoreSession's
-    // caller see an uncaught rejection over what's meant to be a cheap,
-    // best-effort check.
-    return false;
-  }
 }
 
 /**
@@ -306,19 +265,6 @@ export async function restoreSession(): Promise<boolean> {
         .pushToast("Your last session couldn't be found — starting fresh.", 'warning');
       return false;
     }
-    if (await isDemoOnlySession(cached.exportData)) {
-      const docIds = cached.exportData.nodes
-        .filter((n) => n.kind === 'document')
-        .map((n) => n.id);
-      await markActiveCorpusEmpty();
-      const purge = await unreferencedDocumentIds(docIds);
-      await Promise.all([
-        deleteDocsFromCache(purge),
-        deleteOriginals(purge),
-        deleteGraphFromCache(lastCorpusHash),
-      ]);
-      return false;
-    }
     const restored = await hydrateFromRecord(cached.exportData, cached.positions, lastCorpusHash);
     if (!restored) {
       useUiStore
@@ -347,6 +293,7 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
   if (s.phase !== 'ready' || s.nodes.length === 0) return undefined;
 
   const corpusHash = s.corpusHash ?? 'unnamed';
+  const corpusId = useCorpusStore.getState().activeCorpusId ?? undefined;
   const exportData = toGraphExport(false);
   const positions = collectPositions(s.nodes);
   const docHashes = s.nodes
@@ -357,8 +304,8 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
   // docs only: clean records already exist under the same content-hash keys,
   // and rewriting them from memory would clobber persisted text with '' for
   // any doc whose full text has been evicted (see store/textHydration).
-  const pending = [...dirtyDocIds];
-  const docs = pending
+  const pending = captureDirtyDocs();
+  const docs = [...pending.keys()]
     .map((id) => s.nodes[s.nodeIndex[id]])
     .filter((node) => node?.kind === 'document')
     .map((node) => {
@@ -374,11 +321,10 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
       };
     });
   const docsSaved = await saveDocsToCache(docs);
-  if (docsSaved) {
-    const { markDocsPersisted } = await import('../store/textHydration');
-    markDocsPersisted(docs.map((d) => d.node.id));
-    for (const id of pending) dirtyDocIds.delete(id);
-  }
+  if (!docsSaved) return undefined;
+  const { markDocsPersisted } = await import('../store/textHydration');
+  const savedIds = new Set(docs.map((d) => d.node.id));
+  markDocsPersisted(markDocsClean(pending).filter((id) => savedIds.has(id)));
 
   return saveSnapshot(
     name,
@@ -386,7 +332,7 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
     exportData,
     positions,
     docHashes,
-    useCorpusStore.getState().activeCorpusId ?? undefined,
+    corpusId,
   );
 }
 

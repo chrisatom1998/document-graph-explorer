@@ -46,7 +46,8 @@ describe('GraphNavigator', () => {
 
   it('summarizes the graph and opens the active node from the keyboard', () => {
     render(<GraphNavigator />);
-    expect(screen.getByText(/2 documents, 0 topic hubs, 1 connection, 2 clusters/i)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Browse documents' })).toHaveTextContent('2 documents');
+    fireEvent.click(screen.getByRole('button', { name: 'Browse documents' }));
 
     const list = screen.getByRole('listbox', { name: 'Graph nodes' });
     expect(list).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-0');
@@ -69,6 +70,7 @@ describe('GraphNavigator', () => {
       comparePick: 'right',
     });
     render(<GraphNavigator />);
+    fireEvent.click(screen.getByRole('button', { name: 'Browse documents' }));
     const list = screen.getByRole('listbox', { name: 'Graph nodes' });
     fireEvent.keyDown(list, { key: 'ArrowDown' });
     fireEvent.keyDown(list, { key: 'Enter' });
@@ -83,6 +85,7 @@ describe('GraphNavigator', () => {
     const scrollIntoView = vi.fn();
     Element.prototype.scrollIntoView = scrollIntoView;
     render(<GraphNavigator />);
+    fireEvent.click(screen.getByRole('button', { name: 'Browse documents' }));
     scrollIntoView.mockClear();
 
     fireEvent.keyDown(screen.getByRole('listbox', { name: 'Graph nodes' }), { key: 'ArrowDown' });
@@ -94,9 +97,36 @@ describe('GraphNavigator', () => {
     const windowHandler = vi.fn();
     window.addEventListener('keydown', windowHandler);
     render(<GraphNavigator />);
+    fireEvent.click(screen.getByRole('button', { name: 'Browse documents' }));
 
     fireEvent.keyDown(screen.getByRole('listbox', { name: 'Graph nodes' }), { key: 'ArrowDown' });
     expect(windowHandler).not.toHaveBeenCalled();
     window.removeEventListener('keydown', windowHandler);
+  });
+
+  it('collapses the document list and returns focus to its toggle on Escape', () => {
+    render(<GraphNavigator />);
+    const toggle = screen.getByRole('button', { name: 'Browse documents' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    fireEvent.click(toggle);
+    const list = screen.getByRole('listbox', { name: 'Graph nodes' });
+    list.focus();
+    fireEvent.keyDown(list, { key: 'Escape' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    fireEvent.click(toggle);
+    fireEvent.keyDown(toggle, { key: 'Escape' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('closes on an outside pointer press without changing document selection', () => {
+    render(<GraphNavigator />);
+    const toggle = screen.getByRole('button', { name: 'Browse documents' });
+    fireEvent.click(toggle);
+    fireEvent.pointerDown(document.body);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(useUiStore.getState().selectedId).toBeNull();
   });
 });

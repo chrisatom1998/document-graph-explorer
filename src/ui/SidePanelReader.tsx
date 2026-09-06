@@ -93,7 +93,12 @@ export default function SidePanelReader({
   // image (see ui/PdfPreview.tsx) instead of just its extracted text — also
   // needs the retained original bytes, kept as a Blob rather than decoded.
   const [pdfPreview, setPdfPreview] = useState<{ id: string; blob: Blob } | null>(null);
+  const [pdfTextView, setPdfTextView] = useState(false);
   const pdfDocId = node.kind === 'document' && node.fileType === 'pdf' ? node.id : null;
+  useEffect(() => {
+    // Retrieved passages need the text renderer so their highlight is readable.
+    setPdfTextView(Boolean(passageNeedle));
+  }, [pdfDocId, passageNeedle]);
   useEffect(() => {
     setPdfPreview(null);
     if (!pdfDocId) return;
@@ -114,6 +119,26 @@ export default function SidePanelReader({
   return (
     <div className="side-panel__section side-panel__section--reader">
       <p className="side-panel__section-label">{readerLabel}</p>
+      {pdfPreview?.id === node.id && (
+        <div role="group" aria-label="PDF reading view">
+          <button
+            type="button"
+            className={`btn-pill${pdfTextView ? ' secondary' : ''}`}
+            aria-pressed={!pdfTextView}
+            onClick={() => setPdfTextView(false)}
+          >
+            PDF preview
+          </button>
+          <button
+            type="button"
+            className={`btn-pill${pdfTextView ? '' : ' secondary'}`}
+            aria-pressed={pdfTextView}
+            onClick={() => setPdfTextView(true)}
+          >
+            Extracted text
+          </button>
+        </div>
+      )}
       {readerHighlight?.docId === node.id && (
         <p className="side-panel__passage-banner" role="status">
           Matching passage
@@ -132,7 +157,7 @@ export default function SidePanelReader({
             {codeLang.short}
           </span>
         )}
-        {pdfPreview && pdfPreview.id === node.id ? (
+        {pdfPreview && pdfPreview.id === node.id && !pdfTextView ? (
           <Suspense fallback={<div className="side-panel__reader is-unavailable">Loading preview…</div>}>
             <PdfPreview
               key={node.id}
@@ -146,6 +171,7 @@ export default function SidePanelReader({
               key={node.id}
               text={mdSource.text}
               linkIndex={linkIndex}
+              sourcePath={node.path}
               onNavigate={onNavigate}
               className="side-panel__reader side-panel__reader--markdown"
               highlight={passageNeedle}

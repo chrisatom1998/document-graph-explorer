@@ -3,6 +3,7 @@ import type { IngestFile } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { isIngestCandidate, routeFileWithSniff } from './fileRouter';
+import { reportReadFailures, type ReadFailure } from './readFailures';
 
 export interface NamedFile {
   file: File;
@@ -21,6 +22,8 @@ export interface PreparedIngest {
    * folder watcher) must retry these rather than record them as processed.
    */
   deferredPaths: Set<string>;
+  /** Transient read errors must retain the last indexed revision and retry. */
+  failedPaths: Set<string>;
 }
 
 export interface PrepareOptions {
@@ -31,6 +34,7 @@ export interface PrepareOptions {
    * poll until the backlog drains.
    */
   deferredWillRetry?: boolean;
+  onReadError?: (failure: ReadFailure) => void;
 }
 
 export async function prepareIngestFiles(
@@ -39,13 +43,15 @@ export async function prepareIngestFiles(
 ): Promise<PreparedIngest> {
   const output: IngestFile[] = [];
   const deferredPaths = new Set<string>();
+  const failedPaths = new Set<string>();
+  const failures: ReadFailure[] = [];
   let totalBytes = 0;
   let totalCapHit = false;
 
   for (const { file, path } of named) {
     const shouldRead = isIngestCandidate(file.name);
     if (shouldRead && file.size > MAX_INGEST_FILE_BYTES) {
-      useGraphStore.getState().addIgnored(file.name, `too large (over ${MAX_INGEST_MB} MB)`);
+      useGraphStore.getState().addIgnored(path ?? file.name, `too large (over ${MAX_INGEST_MB} MB)`);
       continue;
     }
     if (shouldRead && totalBytes + file.size > MAX_INGEST_TOTAL_BYTES) {
@@ -55,7 +61,7 @@ export async function prepareIngestFiles(
       if (!options.deferredWillRetry) {
         useGraphStore
           .getState()
-          .addIgnored(file.name, `selection exceeds ${MAX_INGEST_TOTAL_MB} MB total`);
+          .addIgnored(path ?? file.name, `selection exceeds ${MAX_INGEST_TOTAL_MB} MB total`);
         if (!totalCapHit) {
           totalCapHit = true;
           useUiStore
@@ -69,7 +75,16 @@ export async function prepareIngestFiles(
       continue;
     }
 
-    const bytes = shouldRead ? await file.arrayBuffer() : new ArrayBuffer(0);
+    let bytes: ArrayBuffer;
+    try {
+      bytes = shouldRead ? await file.arrayBuffer() : new ArrayBuffer(0);
+    } catch (error) {
+      const failure = { path: path ?? file.name, error };
+      failedPaths.add(failure.path);
+      if (options.onReadError) options.onReadError(failure);
+      else failures.push(failure);
+      continue;
+    }
     const fileType = routeFileWithSniff(file.name, bytes);
     totalBytes += fileType !== null ? bytes.byteLength : 0;
     output.push({
@@ -81,7 +96,8 @@ export async function prepareIngestFiles(
       lastModified: file.lastModified > 0 ? file.lastModified : undefined,
     });
   }
-  return { files: output, deferredPaths };
+  await reportReadFailures(failures);
+  return { files: output, deferredPaths, failedPaths };
 }
 
 export async function ingestNamedFiles(named: NamedFile[]): Promise<void> {

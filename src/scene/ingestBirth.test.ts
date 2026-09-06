@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import { INITIAL_NODE_CAPACITY, MAX_NODES } from '../config';
 import {
   beginIngestBirth,
@@ -261,6 +262,7 @@ describe('ingest camera — do not steal on incremental add', () => {
       count: 2,
       viewDir: [0, 0, 1],
       fovDeg: 55,
+      aspect: 1,
     });
     expect(poseFit.target[0]).toBeCloseTo(0, 5);
     expect(poseFit.radius).toBeCloseTo(10, 5);
@@ -274,10 +276,64 @@ describe('ingest camera — do not steal on incremental add', () => {
       count: 3,
       viewDir: [0, 0, 1],
       fovDeg: 55,
+      aspect: 1,
       slots: [0, 1], // the far outlier at slot 2 must not widen the frame
     });
     expect(poseFit.target[0]).toBeCloseTo(0, 5);
     expect(poseFit.radius).toBeCloseTo(10, 5);
+  });
+
+  it.each([390 / 844, 1, 16 / 9])('keeps node bounds in the viewport at aspect %s', (aspect) => {
+    const positions = [
+      new THREE.Vector3(-100, 0, 0),
+      new THREE.Vector3(100, 0, 0),
+      new THREE.Vector3(0, 100, 0),
+      new THREE.Vector3(0, -100, 0),
+      new THREE.Vector3(0, 0, 100),
+    ];
+    const fit = computeFitAllPose({
+      array: positions.flatMap((position) => position.toArray()),
+      count: positions.length,
+      viewDir: [0.2, 0.1, 1],
+      fovDeg: 55,
+      aspect,
+    });
+    const camera = new THREE.PerspectiveCamera(55, aspect, 0.1, 4000);
+    camera.position.fromArray(fit.position);
+    camera.lookAt(new THREE.Vector3().fromArray(fit.target));
+    camera.updateMatrixWorld();
+    for (const center of positions) {
+      for (const offset of [
+        [3.5, 0, 0], [-3.5, 0, 0], [0, 3.5, 0],
+        [0, -3.5, 0], [0, 0, 3.5], [0, 0, -3.5],
+      ]) {
+        const projected = center.clone().add(new THREE.Vector3().fromArray(offset)).project(camera);
+        expect(Math.abs(projected.x)).toBeLessThan(1);
+        expect(Math.abs(projected.y)).toBeLessThan(1);
+        expect(Math.abs(projected.z)).toBeLessThan(1);
+      }
+    }
+  });
+
+  it('fits an explicit portrait selection without framing unrelated outliers', () => {
+    const aspect = 390 / 844;
+    const fit = computeFitAllPose({
+      array: [-100, 0, 0, 100, 0, 0, 10000, 0, 0],
+      count: 3,
+      slots: [0, 1],
+      viewDir: [0, 0, 1],
+      fovDeg: 55,
+      aspect,
+    });
+    const camera = new THREE.PerspectiveCamera(55, aspect, 0.1, 4000);
+    camera.position.fromArray(fit.position);
+    camera.lookAt(new THREE.Vector3().fromArray(fit.target));
+    camera.updateMatrixWorld();
+    expect(fit.target).toEqual([0, 0, 0]);
+    for (const x of [-103.5, 103.5]) {
+      expect(Math.abs(new THREE.Vector3(x, 0, 0).project(camera).x)).toBeLessThan(1);
+    }
+    expect(new THREE.Vector3(10000, 0, 0).project(camera).x).toBeGreaterThan(1);
   });
 });
 

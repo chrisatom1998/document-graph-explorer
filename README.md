@@ -59,6 +59,8 @@ These numbers are one calibrated data point from an Apple M5 Max with 36 GB RAMâ
 
 ## Quick start
 
+Demo workspaces are saved locally, including notes and tags, and reopen after a reload.
+
 ### Try it in the browser
 
 Open the **[live app](https://document-graph-explorer.vercel.app)** and choose **Load demo corpus** to explore immediately, or add your own files. Core processing happens in that browser; adding files does not upload them to Vercel.
@@ -250,6 +252,18 @@ npm test
 ```
 
 The suite covers pipeline modules, parsers, graph algorithms, semantic indexing, search and retrieval, import validation and sanitization, persistence, collaboration behavior, scene helpers, UI components, packaging helpers, offline/air-gap safeguards, exports, and the standalone subagent. CI also runs linting, TypeScript, normal and air-gapped builds, bundle-budget enforcement, Windows executable validation, Docker image construction, and a container smoke test.
+
+Browser smoke tests run against the production build: run `npm run build`, then `npx playwright test`. Playwright starts Vite preview automatically. When bundled Chromium is unavailable but Google Chrome is installed, select it with `PLAYWRIGHT_CHANNEL=chrome npx playwright test` on macOS/Linux. In PowerShell, use:
+
+```powershell
+$env:PLAYWRIGHT_CHANNEL = 'chrome'
+npx playwright test
+Remove-Item Env:PLAYWRIGHT_CHANNEL
+```
+
+The runner refuses to reuse an occupied port so it cannot silently test another local application. Set `PLAYWRIGHT_PORT` (for example, `4273`) when the default `4173` is in use.
+
+The Chrome override uses the installed browser and native GPU; the default CI Chromium configuration uses software rendering. Browser tests can take several minutes while the local embedding model processes the demo corpus.
 
 ## Deployment notes
 

@@ -64,6 +64,20 @@ describe('sanitizeGraphExport — structural rejection', () => {
 });
 
 describe('sanitizeGraphExport — node sanitization', () => {
+  it('preserves validated topic provenance across a serialized round trip', () => {
+    const input = validExport({ nodes: [
+      validNode('inferred', { topicsSource: 'tfidf' }),
+      validNode('enriched', { topicsSource: 'gemini' }),
+      validNode('legacy'),
+      validNode('invalid', { topicsSource: 'untrusted' }),
+      validNode('malformed', { topicsSource: { value: 'tfidf' } }),
+    ], edges: [] });
+    const restored = sanitizeGraphExport(JSON.parse(JSON.stringify(input)));
+    expect(restored.nodes.map((node) => node.topicsSource)).toEqual([
+      'tfidf', 'gemini', undefined, undefined, undefined,
+    ]);
+  });
+
   it('accepts a well-formed export unchanged in the fields that matter', () => {
     const out = sanitizeGraphExport(validExport());
     expect(out.nodes).toHaveLength(2);

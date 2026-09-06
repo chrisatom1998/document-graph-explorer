@@ -15,7 +15,7 @@
 import { Suspense, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Text } from '@react-three/drei';
+import Text from './SceneText';
 import { LABEL_BUDGET } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -33,6 +33,7 @@ import { cameraPose } from './cameraPose';
 import { prefersReducedMotion } from '../util/motion';
 import { slotHasMaterialized, writeSlotTravelPosition } from './ingestBirth';
 import { computeEmphasis } from './emphasis';
+import { sceneLabelText, setSceneLabelOpacity, syncSceneLabel } from './systemLabel';
 
 const REFRESH_MS = 120;
 const TRUNCATE_AT = 34;
@@ -56,11 +57,7 @@ const NEAR_FULL = 75; // full opacity inside this camera distance...
 const FAR_FAINT = 320; // ...fading to a readable muted tone out here
 
 /** troika text mesh surface we mutate imperatively */
-interface TroikaLabel extends THREE.Mesh {
-  text: string;
-  fillOpacity: number;
-  sync: (onSync?: () => void) => void;
-}
+type TroikaLabel = import('./systemLabel').SceneLabel;
 
 // module-level temps — zero per-frame allocations
 const projScreen = new THREE.Matrix4();
@@ -170,11 +167,8 @@ export default function Labels() {
   };
 
   const applyText = (label: TroikaLabel, text: string, opacity: number): void => {
-    if (label.text !== text) {
-      label.text = text;
-      label.sync();
-    }
-    label.fillOpacity = opacity;
+    syncSceneLabel(label, text);
+    setSceneLabelOpacity(label, opacity);
     label.visible = true;
   };
 
@@ -290,11 +284,11 @@ export default function Labels() {
     // Protect the full focused titles before choosing ordinary nearby labels.
     if (hover?.visible) {
       place(hover, hoverSlot.current, camera, true);
-      occupied.push(screenBounds(hover, hover.text, true));
+      occupied.push(screenBounds(hover, sceneLabelText(hover), true));
     }
     if (selected?.visible) {
       place(selected, selectedSlot.current, camera, true);
-      occupied.push(screenBounds(selected, selected.text, true));
+      occupied.push(screenBounds(selected, sceneLabelText(selected), true));
     }
     let shown = 0;
     for (let j = 0; j < filled && shown < budget; j++) {

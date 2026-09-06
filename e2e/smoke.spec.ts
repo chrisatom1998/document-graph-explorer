@@ -68,7 +68,7 @@ test('first run renders the empty state with a working WebGL scene', async ({ pa
   expect(errors).toEqual([]);
 });
 
-test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ page }) => {
+test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ page }, testInfo) => {
   const errors = collectErrors(page);
 
   await page.goto('/');
@@ -94,10 +94,12 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   if (await tour.isVisible().catch(() => false)) {
     await tour.click();
   }
+  await page.screenshot({ path: testInfo.outputPath('demo-graph.png') });
 
   // Selection path 1: the accessible graph navigator (pure DOM listbox) —
   // deterministic node selection without touching canvas pixels.
   const listbox = page.getByRole('listbox', { name: 'Graph nodes' });
+  await page.getByRole('button', { name: 'Browse documents' }).click();
   await listbox.focus();
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
@@ -112,9 +114,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
 
   // Selection path 2: search overlay in browse mode (empty query lists all
   // documents with no dependency on the embedding model being warm). Opened
-  // via the keyboard shortcut: at this small viewport the graph-navigator
-  // panel overlaps the toolbar's search button, and the hotkey is the more
-  // realistic entry point anyway.
+  // via the keyboard shortcut to also cover the global search entry point.
   await page.keyboard.press('Control+k');
   const searchDialog = page.getByRole('dialog', { name: 'Search documents' });
   await expect(searchDialog).toBeVisible();
@@ -123,10 +123,151 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await expect(sidePanel).toBeVisible(frameBudget);
   await page.getByRole('button', { name: 'Back to graph' }).click();
 
+  // Search passages in PDFs must be readable/selectable as actual text. The
+  // same annotated demo must survive reload, including without a user file.
+  const openPostgres = async () => {
+    await page.getByRole('button', { name: 'Search documents' }).click();
+    await page.getByRole('combobox').fill('Postgres Performance Tuning Guide');
+    await page.getByRole('option', { name: /^Postgres Performance Tuning Guide/ }).click();
+    await expect(sidePanel).toBeVisible(frameBudget);
+    await expect(sidePanel.getByRole('button', { name: 'Extracted text', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(sidePanel.locator('.side-panel__reader')).toContainText('pg_stat_statements');
+    await sidePanel.getByRole('button', { name: 'About', exact: true }).click();
+  };
+  await openPostgres();
+  await page.screenshot({ path: testInfo.outputPath('pdf-extracted-text.png') });
+  await page.getByRole('textbox', { name: 'Document note' }).fill('Persistence regression note');
+  await page.getByRole('textbox', { name: 'Add a tag' }).fill('regression');
+  await page.getByRole('textbox', { name: 'Add a tag' }).press('Enter');
+  await page.getByRole('button', { name: 'Back to graph' }).click();
+  await page.reload();
+  await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents');
+  await openPostgres();
+  await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('Persistence regression note');
+  await expect(page.getByRole('button', { name: 'Remove tag regression' })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to graph' }).click();
+
+  await page.getByRole('button', { name: 'Add documents', exact: true }).click();
+  const chooserPromise = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Add files', exact: true }).click();
+  await (await chooserPromise).setFiles('e2e/fixtures/persistence.txt');
+  await expect(page.locator('.graph-navigator__summary')).toContainText('101 documents');
+  await page.reload();
+  await expect(page.locator('.graph-navigator__summary')).toContainText('101 documents');
+
   // Hygiene: no console errors, no uncaught page errors, no error toasts.
   await expect(page.locator('.toast--error')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('normal-motion navigation and title-only Unicode search work after import', async ({ page }, testInfo) => {
+  const errors = collectErrors(page);
+  const externalRequests: string[] = [];
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if ((url.protocol === 'http:' || url.protocol === 'https:') && url.hostname !== '127.0.0.1') {
+      externalRequests.push(url.href);
+    }
+  });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  const graph = JSON.parse(boundaryGraphJson(3));
+  graph.nodes[1].title = '東京 計画 📚';
+  graph.nodes[2].title = 'مرحبا بالعالم';
+  await importGraphJson(page, JSON.stringify(graph));
+  await page.getByRole('button', { name: 'Dismiss getting started' }).click();
+  await page.getByRole('button', { name: 'Browse documents' }).click();
+  const list = page.getByRole('listbox', { name: 'Graph nodes' });
+  await list.focus();
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Enter');
+  const panel = page.locator('.side-panel[role="dialog"]');
+  await expect(panel).toContainText('Boundary node 0001', { timeout: 150_000 });
+  await page.getByRole('button', { name: 'Back to graph' }).click();
+  await page.getByRole('button', { name: 'Search documents' }).click();
+  await page.getByRole('combobox').fill('東京');
+  await page.getByRole('option', { name: /東京 計画/ }).click();
+  await expect(panel).toContainText('東京 計画', { timeout: 150_000 });
+  await page.getByRole('button', { name: 'Back to graph' }).click();
+  await page.getByRole('button', { name: 'Fit the whole graph in view' }).click();
+  await page.screenshot({ path: testInfo.outputPath('unicode-graph.png') });
+  expect(errors).toEqual([]);
+  expect(externalRequests).toEqual([]);
+});
+
+test('search ranks within file filters before applying its result limit', async ({ page }) => {
+  await page.goto('/');
+  const graph = JSON.parse(boundaryGraphJson(14));
+  graph.nodes.forEach((node: { title: string; fileType: string }, index: number) => {
+    node.title = `Architecture ${String(index).padStart(2, '0')}`;
+    node.fileType = index === 13 ? 'md' : 'txt';
+  });
+  await importGraphJson(page, JSON.stringify(graph));
+  await page.getByRole('button', { name: 'Dismiss getting started' }).click();
+  await page.getByRole('button', { name: 'Show graph filters' }).click();
+  await page.getByRole('button', { name: 'md · 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Search documents' }).click();
+  await page.getByRole('combobox').fill('Architecture');
+  await expect(page.getByRole('option', { name: /Architecture 13/ })).toBeVisible();
+  await expect(page.getByRole('option')).toHaveCount(1);
+});
+
+for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+  test(`workspace controls remain usable at ${viewport.width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    await expect(page.getByRole('button', { name: 'Add files', exact: true })).toBeInViewport();
+    await page.screenshot({ path: testInfo.outputPath('welcome.png') });
+    await importGraphJson(page, boundaryGraphJson(3));
+    const browse = page.getByRole('button', { name: 'Browse documents' });
+    await expect(browse).toBeVisible();
+    const toolbar = await page.locator('.toolbar').boundingBox();
+    const navigator = await page.locator('.graph-navigator').boundingBox();
+    expect(toolbar).not.toBeNull();
+    expect(navigator).not.toBeNull();
+    expect(navigator!.y).toBeGreaterThanOrEqual(toolbar!.y + toolbar!.height);
+    await browse.click();
+    const list = page.getByRole('listbox', { name: 'Graph nodes' });
+    await expect(list).toBeVisible();
+    // The open browser must not intercept the primary search action.
+    await page.getByRole('button', { name: 'Search documents' }).click();
+    await expect(page.getByRole('dialog', { name: 'Search documents' })).toBeVisible();
+    const searchInput = page.getByRole('combobox');
+    await expect(searchInput).toBeFocused();
+    await searchInput.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Search documents' })).toBeHidden();
+    const tour = page.getByRole('button', { name: 'Dismiss getting started' });
+    await expect(tour).toBeVisible();
+    await browse.click();
+    await list.focus();
+    await page.keyboard.press('Escape');
+    await expect(browse).toBeFocused();
+    await expect(list).toBeHidden();
+    await expect(tour).toBeVisible();
+    await page.getByRole('button', { name: 'Show graph filters' }).click();
+    if (viewport.width < 640) {
+      const filters = await page.locator('#graph-filter-panel').boundingBox();
+      expect(filters!.y).toBeGreaterThanOrEqual(navigator!.y + navigator!.height);
+    }
+    await page.getByRole('button', { name: 'More filters' }).click();
+    const minimum = page.getByRole('slider', { name: 'Minimum document connections' });
+    await minimum.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.locator('#graph-filter-status')).toHaveText('0 documents match');
+    await expect(page.getByText(/No documents match/)).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath('filters.png') });
+    await minimum.press('Escape');
+    await expect(page.getByRole('button', { name: 'Show graph filters' })).toHaveAttribute('aria-expanded', 'false');
+    await expect(tour).toBeVisible();
+    if (viewport.width < 640) {
+      const summary = await page.locator('.filter-bar__active-summary').boundingBox();
+      expect(summary!.y).toBeGreaterThanOrEqual(navigator!.y + navigator!.height);
+    }
+    await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+    await expect(page.locator('#graph-filter-status')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Show graph filters' })).toHaveText('Filters');
+  });
+}
 
 test('renderer grows past 4,096 nodes and can frame the first node beyond the old cap', async ({ page }) => {
   const errors = collectErrors(page);
@@ -148,6 +289,7 @@ test('renderer grows past 4,096 nodes and can frame the first node beyond the ol
   // it through layout -> position buffer -> scene/camera, rather than merely
   // existing in graphStore.
   const listbox = page.getByRole('listbox', { name: 'Graph nodes' });
+  await page.getByRole('button', { name: 'Browse documents' }).click();
   await listbox.focus();
   await page.keyboard.press('End');
   await expect(listbox).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-4096');

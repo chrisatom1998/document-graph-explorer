@@ -42,9 +42,31 @@ export const docLinksStore = new Map<string, import('../model/types').LinkRef[]>
  * clears the ids it committed.
  */
 export const dirtyDocIds = new Set<string>();
+const dirtyDocGenerations = new Map<string, number>();
+let docEditGeneration = 0;
 
 export function markDocsDirty(ids: Iterable<string>): void {
-  for (const id of ids) dirtyDocIds.add(id);
+  for (const id of ids) {
+    dirtyDocIds.add(id);
+    dirtyDocGenerations.set(id, ++docEditGeneration);
+  }
+}
+
+export function captureDirtyDocs(): Map<string, number> {
+  return new Map([...dirtyDocIds].map((id) => [id, dirtyDocGenerations.get(id) ?? 0]));
+}
+
+/** A completed write must not acknowledge a newer edit or a replaced workspace. */
+export function markDocsClean(saved: ReadonlyMap<string, number>): string[] {
+  const clean: string[] = [];
+  for (const [id, generation] of saved) {
+    if (dirtyDocIds.has(id) && (dirtyDocGenerations.get(id) ?? 0) === generation) {
+      dirtyDocIds.delete(id);
+      dirtyDocGenerations.delete(id);
+      clean.push(id);
+    }
+  }
+  return clean;
 }
 
 /**
@@ -65,6 +87,7 @@ export function clearRuntimeStores(): void {
   mdLinkTargetsStore.clear();
   docLinksStore.clear();
   dirtyDocIds.clear();
+  dirtyDocGenerations.clear();
   // Best-effort per listener: teardown bookkeeping in one subscriber must not
   // leave the others (e.g. the hydration generation bump) unrun.
   for (const listener of clearListeners) {

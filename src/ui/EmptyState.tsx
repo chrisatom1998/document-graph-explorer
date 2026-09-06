@@ -84,9 +84,8 @@ export default function EmptyState() {
               Turn scattered files into a living map.
             </h1>
             <p className="empty-state__tagline">
-              Build an interactive 3D graph of ideas and relationships. Processing and storage stay
-              in this browser, with files cached only on this device. Documents leave your device
-              only when you explicitly enable a cloud AI provider or share exported graph data.
+              Discover how your documents connect. Add your files to explore shared topics,
+              follow references, and find ideas in an interactive map.
             </p>
           </header>
 
@@ -129,8 +128,11 @@ export default function EmptyState() {
               </Button>
             </div>
             <p className="empty-state__hint">
-              Drag files or folders anywhere, or choose a folder to include supported files from
-              every subfolder.
+              Drop files or folders anywhere. Supports PDFs, Office documents, text, and source code.
+            </p>
+            <p className="empty-state__privacy">
+              Processing and storage stay in this browser. Documents leave your device only when
+              you enable a cloud AI provider or share exported graph data.
             </p>
           </div>
 

@@ -3,10 +3,11 @@ import { getNodePosition } from '../scene/positionBuffer';
 import { useGraphStore } from '../store/graphStore';
 import {
   chunkStore,
-  dirtyDocIds,
+  captureDirtyDocs,
   docLinksStore,
   docVectorStore,
   mdLinkTargetsStore,
+  markDocsClean,
   textStore,
 } from '../store/runtimeStores';
 import {
@@ -53,8 +54,8 @@ export async function saveSession(): Promise<void> {
   // Only documents whose heavy payload actually changed. The graph and corpus
   // records below stay full writes — they are small, and they are what session
   // restore reads nodes and edges from.
-  const pending = [...dirtyDocIds];
-  const docs = pending
+  const pending = captureDirtyDocs();
+  const docs = [...pending.keys()]
     .map((id) => state.nodes[state.nodeIndex[id]])
     .filter((node) => node?.kind === 'document')
     .map((node) => {
@@ -85,8 +86,8 @@ export async function saveSession(): Promise<void> {
     // texts are now safe for the evictor to drop. Loaded dynamically to keep
     // textHydration out of the eager entry chunk (sessionSave boots eagerly).
     const { markDocsPersisted } = await import('../store/textHydration');
-    markDocsPersisted(docs.map((d) => d.node.id));
-    for (const id of pending) dirtyDocIds.delete(id);
+    const savedIds = new Set(docs.map((d) => d.node.id));
+    markDocsPersisted(markDocsClean(pending).filter((id) => savedIds.has(id)));
   }
   await setSetting('lastCorpusHash', corpusHash);
 }

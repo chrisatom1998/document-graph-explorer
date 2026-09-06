@@ -8,6 +8,7 @@
 
 import { useUiStore } from '../store/uiStore';
 import type { NamedFile } from './localFiles';
+import { reportReadFailures, type ReadFailure } from './readFailures';
 
 async function ingestScannedFolder(named: NamedFile[], folderName: string): Promise<void> {
   if (named.length === 0) {
@@ -36,7 +37,10 @@ export async function ingestPickedDirectory(
   }
   try {
     const { scanFolder } = await import('./folderScanner');
-    await ingestScannedFolder(await scanFolder(handle), handle.name);
+    const failures: ReadFailure[] = [];
+    const named = await scanFolder(handle, (failure) => failures.push(failure));
+    await reportReadFailures(failures);
+    if (named.length > 0 || failures.length === 0) await ingestScannedFolder(named, handle.name);
   } catch (error) {
     console.error('folder scan failed', error);
     useUiStore
@@ -47,11 +51,14 @@ export async function ingestPickedDirectory(
 
 /** Fallback path: run a flat <input webkitdirectory> selection through the scan filters. */
 export async function ingestPickedFolderFiles(files: File[]): Promise<void> {
+  if (files.length === 0) return;
   try {
     const { scanPickedFolderFiles } = await import('./folderScanner');
-    const named = await scanPickedFolderFiles(files);
+    const failures: ReadFailure[] = [];
+    const named = await scanPickedFolderFiles(files, (failure) => failures.push(failure));
+    await reportReadFailures(failures);
     const rootName = files[0].webkitRelativePath.split('/')[0] || files[0].name;
-    await ingestScannedFolder(named, rootName);
+    if (named.length > 0 || failures.length === 0) await ingestScannedFolder(named, rootName);
   } catch (error) {
     console.error('folder scan failed', error);
     useUiStore

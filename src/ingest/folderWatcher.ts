@@ -14,6 +14,7 @@ import {
 } from './desktopFolderWatch';
 import { scanFolder } from './folderScanner';
 import { prepareIngestFiles } from './localFiles';
+import { clearReadFailures, reportReadFailures, watchedReadFailurePaths, type ReadFailure } from './readFailures';
 
 let interval: ReturnType<typeof setInterval> | null = null;
 let boundCorpusId: string | null = null;
@@ -98,7 +99,9 @@ async function syncBoundFolder(): Promise<number> {
   }
 
   setWatchState({ status: 'checking', folderName: watch.rootName, error: null });
-  const scanned = await scanFolder(watch.handle);
+  const previousReadFailures = [...watchedReadFailurePaths(watch.rootName)];
+  const failures: ReadFailure[] = [];
+  const scanned = await scanFolder(watch.handle, (failure) => failures.push(failure));
   // Desktop shell only (no-op in browsers): arm a native fs watch on this
   // folder so the NEXT change triggers an immediate sync instead of waiting
   // for the poll. Uses this scan's files to learn the folder's absolute path;
@@ -109,11 +112,13 @@ async function syncBoundFolder(): Promise<number> {
   const byPath = new Map(scanned.map((entry) => [entry.path!, entry]));
   const changed = scanned.filter((entry) => {
     const previous = watch.files[entry.path!];
-    return !previous || previous.size !== entry.file.size || previous.lastModified !== entry.file.lastModified;
+    return !previous || previous.size !== entry.file.size || previous.lastModified !== entry.file.lastModified ||
+      previousReadFailures.some((path) => entry.path === path || entry.path!.startsWith(`${path}/`));
   });
   const changedPaths = new Set(changed.map((entry) => entry.path!));
-  const { files: prepared, deferredPaths } = await prepareIngestFiles(changed, {
+  const { files: prepared, deferredPaths, failedPaths } = await prepareIngestFiles(changed, {
     deferredWillRetry: true, // the next poll picks up whatever didn't fit
+    onReadError: (failure) => failures.push(failure),
   });
   const preparedByPath = new Map(prepared.map((file) => [file.path!, file]));
   const nextFiles: Record<string, WatchedFileRecord> = {};
@@ -128,7 +133,7 @@ async function syncBoundFolder(): Promise<number> {
       // the file. Keep the prior manifest entry (or none, for a file never
       // seen) so the next scan still sees it as changed and retries it —
       // recording the new size/mtime here would strand it forever.
-      if (deferredPaths.has(path)) {
+      if (deferredPaths.has(path) || failedPaths?.has(path)) {
         if (previous) nextFiles[path] = previous;
         continue;
       }
@@ -154,6 +159,10 @@ async function syncBoundFolder(): Promise<number> {
   }
 
   for (const [path, previous] of Object.entries(watch.files)) {
+    if (failures.some((failure) => path === failure.path || (failure.directory && path.startsWith(`${failure.path}/`)))) {
+      nextFiles[path] = previous;
+      continue;
+    }
     if (!byPath.has(path) && previous.docId) removeIds.add(previous.docId);
   }
 
@@ -190,6 +199,13 @@ async function syncBoundFolder(): Promise<number> {
   }
   const replacedCount = replacements.filter(({ newId }) => accepted.has(newId)).length;
   const changeCount = accepted.size + removeIds.size + replacedCount;
+  const pendingReadPaths = [...deferredPaths, ...(failedPaths ?? [])];
+  const recovered = new Set(previousReadFailures.filter((path) =>
+    !pendingReadPaths.some((pending) => pending === path || pending.startsWith(`${path}/`)) &&
+    !failures.some((failure) => failure.path === path || failure.path.startsWith(`${path}/`) ||
+      (failure.directory && path.startsWith(`${failure.path}/`)))));
+  await clearReadFailures(recovered);
+  await reportReadFailures(failures);
   setWatchState({
     status: 'watching',
     folderName: watch.rootName,

@@ -29,6 +29,35 @@ export function canonicalizeTopic(raw: string): string {
     .trim();
 }
 
+/**
+ * TF-IDF also ranks bylines and ticket prefixes highly. Keep its full keyword
+ * list for retrieval, but require title evidence or a repeated phrase before
+ * presenting a term as a topic. Prefer complete phrases over their fragments.
+ */
+export function selectFallbackTopics(keywords: string[], title: string, limit = 5): string[] {
+  const titleKey = canonicalizeTopic(title.replace(/\b[\p{L}]+[-_]\d+\b/gu, ' '))
+    .replace(/[^\p{L}\p{N}+#. ]/gu, ' ')
+    .replace(/\s+/g, ' ');
+  const titleWords = new Set(titleKey.split(' '));
+  const seen = new Set<string>();
+  const candidates = keywords.flatMap((label, index) => {
+    const key = canonicalizeTopic(label);
+    if (!key || seen.has(key)) return [];
+    seen.add(key);
+    const phrase = key.includes(' ');
+    const inTitle = phrase ? ` ${titleKey} `.includes(` ${key} `) : titleWords.has(key);
+    if (!phrase && !inTitle) return [];
+    return [{ label, key, inTitle, index }];
+  });
+  // A phrase and its component words convey the same concept in the topic
+  // list; removing the fragments makes room for another useful subject.
+  const distinct = candidates.filter(({ key }) => !candidates.some((other) =>
+    other.key !== key && ` ${other.key} `.includes(` ${key} `),
+  ));
+  distinct.sort((a, b) => Number(b.inTitle) - Number(a.inTitle) || a.index - b.index);
+  return distinct.slice(0, Math.max(0, limit)).map(({ label }) => label);
+}
+
 /** Trimmed, whitespace-collapsed original label (keeps its casing for display). */
 function displayForm(raw: string): string {
   return raw.trim().replace(/\s+/g, ' ');
@@ -45,6 +74,8 @@ export interface TopicGroup {
 
 interface Accum {
   docs: Set<string>;
+  inferred: boolean;
+  titleSupported: boolean;
   /** original label -> occurrence count, for choosing the display form */
   labels: Map<string, number>;
 }
@@ -58,7 +89,7 @@ interface Accum {
  *                                of the corpus (ubiquity cap)
  */
 export function groupTopics(
-  docs: { id: string; topics: string[] }[],
+  docs: { id: string; topics: string[]; title?: string; topicsSource?: string }[],
   params: { minDocs: number; maxDocFraction: number },
 ): TopicGroup[] {
   const total = docs.length;
@@ -72,10 +103,13 @@ export function groupTopics(
       if (!key) continue;
       let acc = map.get(key);
       if (!acc) {
-        acc = { docs: new Set(), labels: new Map() };
+        acc = { docs: new Set(), labels: new Map(), inferred: true, titleSupported: false };
         map.set(key, acc);
       }
       acc.docs.add(doc.id);
+      acc.inferred &&= doc.topicsSource === 'tfidf';
+      const title = canonicalizeTopic(doc.title ?? '').replace(/[^\p{L}\p{N}+#. ]/gu, ' ').replace(/\s+/g, ' ');
+      acc.titleSupported ||= ` ${title} `.includes(` ${key} `);
       const label = displayForm(raw);
       acc.labels.set(label, (acc.labels.get(label) ?? 0) + 1);
       countedKeys.add(key);
@@ -92,6 +126,8 @@ export function groupTopics(
     const src = map.get(key);
     if (!target || !src || target === src) continue;
     for (const d of src.docs) target.docs.add(d);
+    target.inferred &&= src.inferred;
+    target.titleSupported ||= src.titleSupported;
     for (const [l, c] of src.labels) {
       target.labels.set(l, (target.labels.get(l) ?? 0) + c);
     }
@@ -107,6 +143,10 @@ export function groupTopics(
   for (const [key, acc] of map) {
     const size = acc.docs.size;
     if (size < params.minDocs || size > maxDocs) continue;
+    // Repeated body phrases can be incidental. Inferred labels without title
+    // evidence need a third source; explicit/AI labels and tiny corpora keep
+    // the existing two-document behavior.
+    if (acc.inferred && !acc.titleSupported && size < Math.min(total, Math.max(3, params.minDocs))) continue;
     // display label: most frequent, tie-break shortest then lexicographic
     let best = key;
     let bestCount = -1;

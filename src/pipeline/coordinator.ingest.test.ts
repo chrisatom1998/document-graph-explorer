@@ -14,11 +14,12 @@ import type {
   PoolResponse,
 } from '../model/types';
 import { documentContentId } from './documentId';
-import { cancelIngest } from './ingestCancellation';
+import { cancelIngest, hasCancellableIngest } from './ingestCancellation';
 import { enqueueRun } from './runQueue';
 import { chunkStore, clearRuntimeStores, docVectorStore, textStore } from '../store/runtimeStores';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import * as textHydration from '../store/textHydration';
 import {
   ingestFiles,
   reconcileWatchedFiles,
@@ -103,6 +104,12 @@ vi.mock('../workers/pool', () => ({
   }),
 }));
 
+const aggState = {
+  requests: [] as AggRequest[],
+  hangType: null as AggRequest['type'] | null,
+  failType: null as AggRequest['type'] | null,
+};
+
 class FakeAggWorker {
   onmessage: ((ev: MessageEvent<AggResponse>) => void) | null = null;
   onerror: ((ev: ErrorEvent) => void) | null = null;
@@ -111,9 +118,14 @@ class FakeAggWorker {
 
   postMessage(message: unknown): void {
     const req = message as AggRequest;
+    aggState.requests.push(req);
+    if (req.type === aggState.hangType) return;
     queueMicrotask(() => {
       if (this.terminated || !this.onmessage) return;
-      this.onmessage({ data: fakeAggResponse(req) } as MessageEvent<AggResponse>);
+      const data: AggResponse = req.type === aggState.failType
+        ? { requestId: req.requestId, type: 'error', message: `${req.type} failed` }
+        : fakeAggResponse(req);
+      this.onmessage({ data } as MessageEvent<AggResponse>);
     });
   }
 
@@ -304,6 +316,10 @@ function fileStatus(fileId: string) {
 vi.stubGlobal('Worker', FakeAggWorker);
 
 beforeEach(() => {
+  vi.restoreAllMocks();
+  aggState.requests = [];
+  aggState.hangType = null;
+  aggState.failType = null;
   poolState.failParseNames.clear();
   poolState.failEmbed = false;
   poolState.hangParse = false;
@@ -424,9 +440,278 @@ describe('coordinator ingest', () => {
     expect(['idle', 'ready']).toContain(useGraphStore.getState().phase);
     expect(useUiStore.getState().toasts.some((t) => /cancelled/i.test(t.message))).toBe(true);
   });
+
+  it('retries failed embeddings when identical files are re-added without parsing again', async () => {
+    const file = textFile('retry.txt', 'Kafka embedding retry fixture.');
+    poolState.failEmbed = true;
+    await ingestFiles([file]);
+    const [id] = documentIds();
+    expect(docVectorStore.has(id)).toBe(false);
+
+    poolState.failEmbed = false;
+    const request = vi.fn(defaultPoolRequest);
+    poolState.requestImpl = request;
+    await ingestFiles([{ ...file, fileId: 'retry-file-picker-id' }]);
+
+    expect(documentIds()).toEqual([id]);
+    expect(docVectorStore.has(id)).toBe(true);
+    expect(request.mock.calls.some(([msg]) => msg.type === 'embedBatch')).toBe(true);
+    expect(request.mock.calls.some(([msg]) => msg.type === 'parse')).toBe(false);
+    expect(fileStatus('retry-file-picker-id')?.stage).toBe('placed');
+    expect(useGraphStore.getState().ingestReport).toBeNull();
+  });
+
+  it('keeps same-basename sources distinct in failed embedding reports and retries', async () => {
+    const good = {
+      ...textFile('same.txt', 'Kafka good source.'),
+      fileId: 'good-source', path: 'vault/good/same.txt',
+    };
+    const retry = {
+      ...textFile('same.txt', 'Kafka retry source.'),
+      fileId: 'failed-source', path: 'vault/retry/same.txt',
+    };
+    await ingestFiles([good]);
+    poolState.failEmbed = true;
+    await ingestFiles([retry]);
+
+    expect(fileStatus('good-source')?.path).toBe(good.path);
+    expect(fileStatus('failed-source')?.path).toBe(retry.path);
+    expect(useGraphStore.getState().ingestReport?.entries).toEqual([
+      expect.objectContaining({ name: retry.path, kind: 'failed' }),
+    ]);
+
+    poolState.failEmbed = false;
+    await ingestFiles([{ ...retry, fileId: 'retry-source' }]);
+    expect(fileStatus('retry-source')?.path).toBe(retry.path);
+    expect(fileStatus('retry-source')?.stage).toBe('placed');
+    expect(useGraphStore.getState().ingestReport).toBeNull();
+  });
+
+  it('resumes embeddings after a cancelled run when the same parsed file is re-added', async () => {
+    const file = textFile('cancel-retry.txt', 'Kafka cancelled embedding fixture.');
+    let embedStarted = false;
+    poolState.requestImpl = async (msg, options) => {
+      if (msg.type !== 'embedBatch') return defaultPoolRequest(msg, options);
+      embedStarted = true;
+      return new Promise<PoolResponse>((_resolve, reject) => {
+        const signal = options!.signal!;
+        signal.addEventListener('abort', () => reject(abortReason(signal)), { once: true });
+      });
+    };
+    const run = ingestFiles([file]);
+    await vi.waitFor(() => expect(embedStarted).toBe(true));
+    cancelIngest();
+    await run;
+    const [id] = documentIds();
+    expect(id).toBeDefined();
+    expect(docVectorStore.has(id)).toBe(false);
+
+    poolState.requestImpl = undefined;
+    await ingestFiles([file]);
+    expect(documentIds()).toEqual([id]);
+    expect(docVectorStore.has(id)).toBe(true);
+    expect(useGraphStore.getState().phase).toBe('ready');
+  });
+
+  it('keeps fully indexed duplicate drops as no-ops', async () => {
+    const file = textFile('complete.txt', 'Fully indexed kafka documentation.');
+    await ingestFiles([file]);
+    const request = vi.fn(defaultPoolRequest);
+    poolState.requestImpl = request;
+    persistence.saveSession.mockClear();
+
+    await ingestFiles([file]);
+
+    expect(request).not.toHaveBeenCalled();
+    expect(persistence.saveSession).not.toHaveBeenCalled();
+    expect(documentIds()).toHaveLength(1);
+  });
+
+  it.each(['semantic', 'cluster'] as const)(
+    'retries cancelled %s work without repeating completed embeddings',
+    async (passType) => {
+      if (passType === 'cluster') {
+        await ingestFiles([textFile('existing.txt', 'Kafka existing document.')]);
+      }
+      const files = [
+        textFile('late-cancel-one.txt', 'Kafka late cancellation one.'),
+        textFile('late-cancel-two.txt', 'Kafka late cancellation two.'),
+      ];
+      aggState.hangType = passType;
+      const run = ingestFiles(files);
+      await vi.waitFor(() => expect(aggState.requests.some((req) => req.type === passType)).toBe(true));
+      cancelIngest();
+      await run;
+      expect(docVectorStore.size).toBe(documentIds().length);
+
+      aggState.hangType = null;
+      aggState.requests = [];
+      const request = vi.fn(defaultPoolRequest);
+      poolState.requestImpl = request;
+      await ingestFiles(files);
+
+      expect(request).not.toHaveBeenCalled();
+      expect(aggState.requests.map((req) => req.type)).toEqual(['lexical', 'semantic']);
+      expect(useGraphStore.getState().edges.some((edge) => edge.kind === 'semantic')).toBe(true);
+      expect(useGraphStore.getState().nodes.filter((node) => node.kind === 'document')
+        .every((node) => node.cluster >= 0)).toBe(true);
+      expect(useGraphStore.getState().phase).toBe('ready');
+    },
+  );
+
+  it.each(['lexical', 'semantic', 'cluster'] as const)(
+    'retries failed %s work and stops retrying once derived passes complete',
+    async (passType) => {
+      if (passType === 'cluster') {
+        await ingestFiles([textFile('existing.txt', 'Kafka existing document.')]);
+      }
+      const files = [
+        textFile('derived-retry-one.txt', 'Kafka failed derived pass one.'),
+        textFile('derived-retry-two.txt', 'Kafka failed derived pass two.'),
+      ];
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      aggState.failType = passType;
+      await ingestFiles(files);
+      expect(aggState.requests.some((req) => req.type === passType)).toBe(true);
+      expect(docVectorStore.size).toBe(documentIds().length);
+
+      aggState.failType = null;
+      aggState.requests = [];
+      const request = vi.fn(defaultPoolRequest);
+      poolState.requestImpl = request;
+      await ingestFiles(files);
+
+      expect(request).not.toHaveBeenCalled();
+      expect(aggState.requests[0]?.type).toBe('lexical');
+      expect(aggState.requests).toHaveLength(2);
+      expect(useGraphStore.getState().edges.some((edge) => edge.kind === 'semantic')).toBe(true);
+      expect(useGraphStore.getState().nodes.filter((node) => node.kind === 'document')
+        .every((node) => node.cluster >= 0)).toBe(true);
+
+      aggState.requests = [];
+      await ingestFiles(files);
+      expect(aggState.requests).toHaveLength(0);
+      expect(request).not.toHaveBeenCalled();
+    },
+  );
+
+  it('cancels the lexical backfill of restored documents and releases the run queue', async () => {
+    await ingestFiles([
+      textFile('restored-one.txt', 'Kafka restored document one.'),
+      textFile('restored-two.txt', 'Kafka restored document two.'),
+    ]);
+    const restoredNodes = [...useGraphStore.getState().nodes];
+    const restoredTexts = new Map(textStore);
+    resetCorpus();
+    useGraphStore.getState().addNodes(restoredNodes);
+    for (const [id, text] of restoredTexts) textStore.set(id, text);
+
+    const signals: AbortSignal[] = [];
+    poolState.requestImpl = async (msg, options) => {
+      if (msg.type !== 'analyze') return defaultPoolRequest(msg, options);
+      const signal = options?.signal;
+      if (!signal) throw new Error('Backfill must receive the ingest abort signal');
+      signals.push(signal);
+      return new Promise<PoolResponse>((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(abortReason(signal)), { once: true });
+      });
+    };
+    const run = ingestFiles([textFile('added.txt', 'Kafka new document.')]);
+    await vi.waitFor(() => expect(signals).toHaveLength(2));
+    cancelIngest();
+    await run;
+
+    expect(signals.every((signal) => signal.aborted)).toBe(true);
+    expect(hasCancellableIngest()).toBe(false);
+    expect(useGraphStore.getState().phase).toBe('ready');
+    await expect(enqueueRun(async () => 'queue available')).resolves.toBe('queue available');
+  });
+
+  it('settles a hydration failure before the next ingest can run', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const hydrate = vi.spyOn(textHydration, 'getDocTexts');
+    hydrate.mockRejectedValueOnce(new Error('IndexedDB read failed'));
+    const failed = ingestFiles([textFile('hydrate-failure.txt', 'Kafka hydration failure.')]);
+    await expect(failed).rejects.toThrow('IndexedDB read failed');
+
+    expect(useGraphStore.getState().phase).toBe('ready');
+    expect(useGraphStore.getState().modelProgress).toBeNull();
+    expect(hasCancellableIngest()).toBe(false);
+    expect(useUiStore.getState().toasts.some((toast) => /re-add.*retry/.test(toast.message))).toBe(true);
+
+    await ingestFiles([textFile('next.txt', 'Kafka subsequent ingest.')]);
+    expect(useGraphStore.getState().phase).toBe('ready');
+    expect(documentIds()).toHaveLength(2);
+  });
 });
 
 describe('coordinator remove and watch reconcile', () => {
+  it('retries failed restored-document analysis on an identical re-add with vectors already complete', async () => {
+    const retry = textFile('restored-retry.txt', 'Kafka restored retry fixture.');
+    await ingestFiles([
+      retry,
+      textFile('restored-good.txt', 'Kafka restored good fixture.'),
+      textFile('restored-remove.txt', 'Kafka restored removal fixture.'),
+    ]);
+    const restoredNodes = [...useGraphStore.getState().nodes];
+    const restoredTexts = new Map(textStore);
+    const restoredVectors = new Map(docVectorStore);
+    const removeId = restoredNodes.find((node) => node.title === 'restored-remove')!.id;
+    resetCorpus();
+    useGraphStore.getState().addNodes(restoredNodes);
+    for (const [id, text] of restoredTexts) textStore.set(id, text);
+    for (const [id, vector] of restoredVectors) docVectorStore.set(id, vector);
+
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    poolState.failParseNames.add(retry.name);
+    aggState.requests = [];
+    await expect(removeDocuments([removeId])).rejects.toThrow(
+      'Lexical analysis failed for restored-retry.txt',
+    );
+    expect(aggState.requests).toHaveLength(0);
+    expect(docVectorStore.size).toBe(documentIds().length);
+    expect(useGraphStore.getState().phase).toBe('ready');
+
+    poolState.failParseNames.clear();
+    const request = vi.fn(defaultPoolRequest);
+    poolState.requestImpl = request;
+    await ingestFiles([retry]);
+
+    expect(request.mock.calls.map(([msg]) => msg.type)).toEqual(['analyze']);
+    expect(request.mock.calls[0][0]).toMatchObject({ name: retry.name });
+    expect(aggState.requests.map((req) => req.type)).toEqual(['lexical', 'semantic']);
+    const lexical = aggState.requests[0];
+    if (lexical.type !== 'lexical') throw new Error('Expected lexical aggregation');
+    expect(lexical.docs.every((doc) => Object.keys(doc.tf).length > 0)).toBe(true);
+    expect(useGraphStore.getState().edges.some((edge) => edge.kind === 'semantic')).toBe(true);
+
+    request.mockClear();
+    aggState.requests = [];
+    await ingestFiles([retry]);
+    expect(request).not.toHaveBeenCalled();
+    expect(aggState.requests).toHaveLength(0);
+  });
+
+  it('settles a failed removal hydration and clears stale model progress', async () => {
+    await ingestFiles([
+      textFile('keep-after-failure.txt', 'Kafka survivor.'),
+      textFile('remove-before-failure.txt', 'Kafka removal.'),
+    ]);
+    const [keepId, removeId] = documentIds();
+    useGraphStore.getState().setModelProgress({
+      kind: 'embedding-model', loaded: 1, total: 2, note: 'old progress',
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(textHydration, 'getDocTexts').mockRejectedValueOnce(new Error('IndexedDB read failed'));
+
+    await expect(removeDocuments([removeId])).rejects.toThrow('IndexedDB read failed');
+
+    expect(documentIds()).toEqual([keepId]);
+    expect(useGraphStore.getState().phase).toBe('ready');
+    expect(useGraphStore.getState().modelProgress).toBeNull();
+    await expect(enqueueRun(async () => 'queue available')).resolves.toBe('queue available');
+  });
+
   it('removeDocuments clears graph, runtime stores, layout, and cache', async () => {
     await ingestFiles([
       textFile('keep.txt', 'Document that should survive removal.'),

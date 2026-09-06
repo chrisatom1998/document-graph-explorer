@@ -377,7 +377,14 @@ export async function askDocAi(
 
   // Use streaming for real-time delivery
   const res = await llmStream(enrichmentTarget(), 'document', prompt, onChunk, signal);
-  if (!res.ok) return { ok: false, text: res.error };
+  if (!res.ok) {
+    return {
+      ok: false,
+      text: res.partialText
+        ? `${res.partialText}\n\nResponse interrupted: ${res.error}`
+        : res.error,
+    };
+  }
   return { ok: true, text: res.text };
 }
 
@@ -430,9 +437,6 @@ async function runEnrichmentExclusive(): Promise<{ ok: boolean; message: string 
   const snapshotIds = docs.map((doc) => doc.id);
 
   graph.setPhase('enriching');
-  // Summaries must be written from the document body: rehydrate any evicted
-  // full texts for this run (packing and prompts read textStore directly).
-  await getDocTexts(snapshotIds);
   const snapshotIsCurrent = (): boolean =>
     useGraphStore.getState().phase === 'enriching' && currentDocumentIdsMatch(snapshotIds);
 
@@ -443,15 +447,19 @@ async function runEnrichmentExclusive(): Promise<{ ok: boolean; message: string 
 
   const concurrency =
     enrichProvider === 'ollama' ? ENRICH_CONCURRENCY_LOCAL : ENRICH_CONCURRENCY_CLOUD;
-  const batches = packEnrichmentBatches(docs);
-  // progress = pass-1 batches + canonicalize + cluster naming
-  const totalSteps = batches.length + 2;
-  let doneSteps = 0;
-  const step = (note: string): void => {
-    if (!snapshotIsCurrent()) return;
-    useGraphStore.getState().setEnrichProgress({ done: doneSteps, total: totalSteps, note });
-  };
   try {
+    // Hydration can fail when IndexedDB becomes unavailable. Keep setup under
+    // the same cleanup as generation so the corpus never stays busy on error.
+    await getDocTexts(snapshotIds);
+    if (!snapshotIsCurrent()) return staleResult;
+    const batches = packEnrichmentBatches(docs);
+    // progress = pass-1 batches + canonicalize + cluster naming
+    const totalSteps = batches.length + 2;
+    let doneSteps = 0;
+    const step = (note: string): void => {
+      if (!snapshotIsCurrent()) return;
+      useGraphStore.getState().setEnrichProgress({ done: doneSteps, total: totalSteps, note });
+    };
     // --- Pass 1: batches run several at a time; failures are skipped ---
     const enriched = new Map<string, DocEnrichment>();
     let failedBatches = 0;

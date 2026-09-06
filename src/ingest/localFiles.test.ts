@@ -1,7 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { prepareIngestFiles } from './localFiles';
+import { useUiStore } from '../store/uiStore';
 
 describe('prepareIngestFiles', () => {
+  it('keeps readable files and reports failed byte reads for retry', async () => {
+    const bad = new File(['unavailable'], 'bad.txt');
+    vi.spyOn(bad, 'arrayBuffer').mockRejectedValue(new DOMException('Access denied', 'NotReadableError'));
+    const toast = vi.spyOn(useUiStore.getState(), 'pushToast');
+    const good = new File(['Readable'], 'good.txt');
+    const result = await prepareIngestFiles([{ file: bad, path: 'vault/bad.txt' }, { file: good }]);
+    expect(result.files.map((file) => file.name)).toEqual(['good.txt']);
+    expect(result.failedPaths).toEqual(new Set(['vault/bad.txt']));
+    expect(result.deferredPaths.size).toBe(0);
+    expect(toast).toHaveBeenCalledWith(expect.stringContaining('vault/bad.txt'), 'warning');
+    toast.mockRestore();
+  });
+
   it('sniffs extensionless text files as txt and keeps their bytes', async () => {
     const file = new File(['hello from license'], 'LICENSE', { type: 'text/plain' });
     const { files } = await prepareIngestFiles([{ file }]);

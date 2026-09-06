@@ -29,7 +29,8 @@ import { switchGraphDimensions } from './dimensionTransition';
 
 const DPR_CAP_BY_TIER = [2, 2, 1.5, 1.25, 1] as const;
 
-const RECOVER_MS = 14; // headroom threshold for stepping back up
+const MIN_RECOVER_MS = 14;
+const CADENCE_WINDOW_MS = 1_000;
 const RECOVER_SUSTAIN_MS = 5_000;
 const GRACE_MS = 1_500; // ignore samples after visibility/tier changes
 const EMA_WEIGHT = 0.1;
@@ -42,6 +43,7 @@ export default function AutoQuality() {
   const holdUntil = useRef(0);
   const lastTier = useRef<QualityTier>(useUiStore.getState().qualityTier);
   const announced4 = useRef(false);
+  const cadence = useRef({ since: 0, fastest: Infinity, frameMs: 1000 / 60 });
 
   const setDpr = useThree((s) => s.setDpr);
   const tier = useUiStore((s) => s.qualityTier);
@@ -60,6 +62,8 @@ export default function AutoQuality() {
       } else {
         layoutResume();
         holdUntil.current = performance.now() + GRACE_MS;
+        cadence.current.since = 0;
+        cadence.current.fastest = Infinity;
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
@@ -105,6 +109,26 @@ export default function AutoQuality() {
     // clamp pathological deltas (tab stalls) so one spike can't poison the EMA
     ema.current = ema.current * (1 - EMA_WEIGHT) + Math.min(delta * 1000, 250) * EMA_WEIGHT;
 
+    // Frame deltas include vsync wait: 60 Hz cannot ever reach the old 14ms
+    // recovery threshold. Re-measure cadence in short windows so switching
+    // displays can recover too, while capping recovery below the degrade budget.
+    const sampleMs = delta * 1000;
+    if (cadence.current.since === 0) cadence.current.since = now;
+    if (sampleMs >= 1000 / 240 && sampleMs < FRAME_BUDGET_MS) {
+      cadence.current.fastest = Math.min(cadence.current.fastest, sampleMs);
+    }
+    if (now - cadence.current.since >= CADENCE_WINDOW_MS) {
+      if (Number.isFinite(cadence.current.fastest)) {
+        cadence.current.frameMs = cadence.current.fastest;
+      }
+      cadence.current.since = now;
+      cadence.current.fastest = Infinity;
+    }
+    const recoverMs = Math.min(
+      FRAME_BUDGET_MS * 0.85,
+      Math.max(MIN_RECOVER_MS, cadence.current.frameMs * 1.1),
+    );
+
     if (now < holdUntil.current) {
       overSince.current = null;
       underSince.current = null;
@@ -137,7 +161,7 @@ export default function AutoQuality() {
         overSince.current = null;
         holdUntil.current = now + GRACE_MS;
       }
-    } else if (ema.current < RECOVER_MS && ui.qualityTier > 0) {
+    } else if (ema.current < recoverMs && ui.qualityTier > 0) {
       overSince.current = null;
       if (underSince.current === null) {
         underSince.current = now;

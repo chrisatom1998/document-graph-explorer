@@ -29,6 +29,8 @@ export interface RetrievalHit {
 }
 
 export interface RetrievalOptions {
+  /** Restrict candidates before ranking and applying the result limit. */
+  eligibleDocIds?: ReadonlySet<string>;
   limit?: number;
   perDocument?: number;
   timeoutMs?: number;
@@ -82,7 +84,7 @@ const STOP_WORDS = new Set([
 
 export function retrievalTerms(value: string): string[] {
   return [...new Set(
-    (value.toLowerCase().match(/[a-z0-9][a-z0-9+#._-]*/g) ?? [])
+    (value.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{M}\p{N}+#._-]*/gu) ?? [])
       .filter((term) => term.length > 1 && !STOP_WORDS.has(term)),
   )];
 }
@@ -96,18 +98,20 @@ export function lexicalRelevance(
   text: string,
   title: string = '',
 ): { score: number; titleMatch: boolean } {
-  const terms = retrievalTerms(query);
-  if (terms.length === 0) return { score: 0, titleMatch: false };
-
   const queryText = normalized(query);
+  if (!queryText) return { score: 0, titleMatch: false };
   const body = normalized(text);
   const normalizedTitle = normalized(title);
   const titleMatch = normalizedTitle.length > 0 && normalizedTitle.includes(queryText);
+  const exactPhrase = queryText.length > 1 && body.includes(queryText);
+  const terms = retrievalTerms(query);
+  if (terms.length === 0) {
+    return { score: (titleMatch ? 0.7 : 0) + (exactPhrase ? 1.2 : 0), titleMatch };
+  }
   const bodyHits = terms.filter((term) => body.includes(term)).length;
   const titleHits = terms.filter((term) => normalizedTitle.includes(term)).length;
   const coverage = bodyHits / terms.length;
   const titleCoverage = titleHits / terms.length;
-  const exactPhrase = queryText.length > 2 && body.includes(queryText);
 
   // Require meaningful coverage for multi-term questions. This prevents one
   // generic word from turning an unrelated passage into a no-answer false hit.
@@ -261,7 +265,9 @@ export async function retrieveCorpus(
   if (!q) return [];
 
   const deps: RetrievalDependencies = dependencies ?? liveDependencies();
-  const documentNodes = deps.nodes.filter((node) => node.kind === 'document');
+  const documentNodes = deps.nodes.filter((node) =>
+    node.kind === 'document' && (!options.eligibleDocIds || options.eligibleDocIds.has(node.id)),
+  );
   if (documentNodes.length === 0) return [];
 
   const limit = Math.max(1, options.limit ?? DEFAULT_LIMIT);
@@ -313,6 +319,22 @@ export async function retrieveCorpus(
         titleMatch: lexical.titleMatch,
       });
     }
+    // A title remains searchable even when an import or unreadable file has
+    // no source passages. It is metadata, so do not invent a chunk index.
+    if (passages.length === 0) {
+      const titleLex = lexicalRelevance(q, '', node.title);
+      if (titleLex.score > 0) {
+        matchedBody = true;
+        upsertCandidate(candidates, {
+          docId: node.id,
+          docTitle: node.title,
+          passageIndex: EXTRA_PASSAGE_INDEX,
+          text: node.title,
+          lexicalScore: titleLex.score + extraLex.score,
+          titleMatch: titleLex.titleMatch,
+        });
+      }
+    }
     // Notes, tags, and cluster names are first-class lexical evidence when
     // the body itself does not mention the query (e.g. "legal-hold").
     if (!matchedBody && extraLex.score > 0) {
@@ -340,6 +362,7 @@ export async function retrieveCorpus(
     const coveredByChunks = new Set<string>();
 
     for (const [docId, chunkData] of deps.chunks) {
+      if (!titleById.has(docId)) continue;
       const vectors = chunkData.vectors;
       if (!vectors?.length) continue;
       const dims = chunkData.dims > 0 ? chunkData.dims : EMBED_DIMS;
@@ -360,6 +383,7 @@ export async function retrieveCorpus(
     }
 
     for (const [docId, vector] of deps.docVectors) {
+      if (!titleById.has(docId)) continue;
       if (coveredByChunks.has(docId) || vector.length !== queryVector.length) continue;
       const semanticScore = dotProduct(vector, queryVector);
       if (semanticScore < minSemanticScore) continue;

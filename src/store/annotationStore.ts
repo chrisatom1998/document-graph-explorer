@@ -94,10 +94,15 @@ interface AnnotationState {
 }
 
 let loadingScope: string | null = null;
-// Keys edited since their last successful write, with an edit generation so a
-// re-edit racing an in-flight write is never marked clean by that write.
-let dirty = new Map<string, number>();
-let dirtyScope: string | null = null;
+let loadingPromise: Promise<boolean> | null = null;
+let loadGeneration = 0;
+// Retain values by workspace: a failed flush must survive replacing the UI's
+// active annotations. Generations keep an older write from clearing a re-edit.
+interface PendingAnnotation {
+  generation: number;
+  value: DocAnnotationRecord | null;
+}
+let dirtyByScope = new Map<string, Map<string, PendingAnnotation>>();
 let editGeneration = 0;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -120,36 +125,38 @@ function toastSaveFailure(): void {
   });
 }
 
-/** The patch for one dirty key, read fresh from the store at write time. */
-function patchFor(key: string): DocAnnotationRecord | null {
-  const record = useAnnotationStore.getState().annotations[key];
-  if (!record || isHusk(record)) return null;
-  return record;
+function markDirty(scope: string, key: string, record: DocAnnotationRecord | undefined): void {
+  let dirty = dirtyByScope.get(scope);
+  if (!dirty) {
+    dirty = new Map();
+    dirtyByScope.set(scope, dirty);
+  }
+  dirty.set(key, {
+    generation: ++editGeneration,
+    value: !record || isHusk(record) ? null : record,
+  });
 }
 
 async function writeDirty(): Promise<void> {
-  const scope = dirtyScope;
-  if (!scope || dirty.size === 0) return;
-  if (useAnnotationStore.getState().scope !== scope) {
-    // Store was re-hydrated away without a flush (shouldn't happen — ensure
-    // flushes first) — the values backing these keys are gone; drop them
-    // rather than write another corpus's data.
-    dirty = new Map();
-    dirtyScope = null;
-    return;
-  }
-  const snapshot = [...dirty.entries()];
-  const patch: Record<string, DocAnnotationRecord | null> = {};
-  for (const [key] of snapshot) patch[key] = patchFor(key);
-  try {
-    await updateCorpusAnnotations(scope, patch);
-    for (const [key, generation] of snapshot) {
-      if (dirty.get(key) === generation) dirty.delete(key);
+  let failed = false;
+  for (const [scope, dirty] of [...dirtyByScope]) {
+    const snapshot = [...dirty.entries()];
+    const patch: Record<string, DocAnnotationRecord | null> = {};
+    for (const [key, pending] of snapshot) patch[key] = pending.value;
+    try {
+      await updateCorpusAnnotations(scope, patch);
+      for (const [key, pending] of snapshot) {
+        if (dirty.get(key)?.generation === pending.generation) dirty.delete(key);
+      }
+      if (dirty.size === 0 && dirtyByScope.get(scope) === dirty) dirtyByScope.delete(scope);
+    } catch (error) {
+      console.warn('[knowledge-nebula] annotation save failed', error);
+      toastSaveFailure();
+      failed = true;
     }
-    if (dirty.size === 0) failureToastShown = false;
-  } catch (error) {
-    console.warn('[knowledge-nebula] annotation save failed', error);
-    toastSaveFailure();
+  }
+  if (dirtyByScope.size === 0) failureToastShown = false;
+  if (failed) {
     if (retryTimer) clearTimeout(retryTimer);
     retryTimer = setTimeout(() => {
       retryTimer = null;
@@ -192,7 +199,15 @@ export async function flushAnnotationSave(): Promise<void> {
 export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   scope: null,
   annotations: {},
-  hydrate: (scope, annotations) => set({ scope, annotations: sanitize(annotations) }),
+  hydrate: (scope, annotations) => {
+    const next = sanitize(annotations);
+    // A retry may still be pending when the user returns to this workspace.
+    for (const [key, pending] of dirtyByScope.get(scope) ?? []) {
+      if (pending.value === null) delete next[key];
+      else next[key] = pending.value;
+    }
+    set({ scope, annotations: next });
+  },
   update: (key, patch) => {
     const { scope, annotations } = get();
     if (!scope) return; // nowhere to persist — the UI gates on scope
@@ -202,8 +217,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     if (isEmpty(next)) delete nextAll[key];
     else nextAll[key] = next;
     set({ annotations: nextAll });
-    dirtyScope = scope;
-    dirty.set(key, ++editGeneration);
+    markDirty(scope, key, nextAll[key]);
     schedulePersist();
   },
   applyRemote: (key, annotation) => {
@@ -214,39 +228,49 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     if (!next || isEmpty(next)) delete nextAll[key];
     else nextAll[key] = next;
     set({ annotations: nextAll });
-    dirtyScope = scope;
-    dirty.set(key, ++editGeneration);
+    markDirty(scope, key, nextAll[key]);
     schedulePersist();
   },
 }));
 
 /**
  * Ensure the store holds the active corpus's annotations. Cheap no-op when
- * already hydrated for that scope. Claims the scope before awaiting so
- * concurrent callers don't double-load; releases the claim on failure so a
- * later call retries.
+ * already hydrated for that scope. Concurrent callers await the same result;
+ * false means a failed or superseded load and permits a later retry.
  */
-export async function ensureAnnotationsLoaded(corpusId: string): Promise<void> {
+export function ensureAnnotationsLoaded(corpusId: string): Promise<boolean> {
+  if (loadingScope === corpusId && loadingPromise) return loadingPromise;
+  const generation = ++loadGeneration;
   const state = useAnnotationStore.getState();
-  if (state.scope === corpusId || loadingScope === corpusId) return;
-  loadingScope = corpusId;
-  try {
-    // Dirty edits for the OUTGOING scope must land before this store is
-    // re-hydrated — writeDirty drops them once the backing values are gone.
-    await flushAnnotationSave();
-    const record = await getCorpusRecord(corpusId);
-    // A switch may have happened while reading; only apply if still wanted.
-    if (loadingScope !== corpusId) return;
-    useAnnotationStore.getState().hydrate(corpusId, record?.annotations ?? {});
-  } catch (error) {
-    console.warn('[knowledge-nebula] annotation restore failed', error);
-    // The Notes & Tags section stays hidden while the store isn't hydrated
-    // for this corpus (hydrating empty here could overwrite real notes on the
-    // next edit) — so without a toast this failure is completely invisible.
-    toastAnnotationFailure("Couldn't load your notes and tags for this workspace.");
-  } finally {
-    if (loadingScope === corpusId) loadingScope = null;
+  if (state.scope === corpusId) {
+    // Returning to the still-visible workspace cancels a pending switch away.
+    loadingScope = null;
+    loadingPromise = null;
+    return Promise.resolve(true);
   }
+  loadingScope = corpusId;
+  loadingPromise = (async () => {
+    try {
+      // Failed outgoing saves retain their own payload for a later retry.
+      await flushAnnotationSave();
+      const record = await getCorpusRecord(corpusId);
+      if (generation !== loadGeneration) return false;
+      useAnnotationStore.getState().hydrate(corpusId, record?.annotations ?? {});
+      return true;
+    } catch (error) {
+      console.warn('[knowledge-nebula] annotation restore failed', error);
+      if (generation === loadGeneration) {
+        toastAnnotationFailure("Couldn't load your notes and tags for this workspace.");
+      }
+      return false;
+    } finally {
+      if (generation === loadGeneration) {
+        loadingScope = null;
+        loadingPromise = null;
+      }
+    }
+  })();
+  return loadingPromise;
 }
 
 /** Test seam: reset module-level claim/debounce/dirty state between tests. */
@@ -255,9 +279,10 @@ export function _resetAnnotationsForTests(): void {
   if (retryTimer) clearTimeout(retryTimer);
   debounceTimer = null;
   retryTimer = null;
-  dirty = new Map();
-  dirtyScope = null;
+  dirtyByScope = new Map();
   loadingScope = null;
+  loadingPromise = null;
+  loadGeneration++;
   failureToastShown = false;
   useAnnotationStore.setState({ scope: null, annotations: {} });
 }

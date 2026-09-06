@@ -116,6 +116,9 @@ function spawn(): Worker {
     type: 'module',
   });
   wireWorker(w);
+  // Resets preserve display/runtime preferences just like crash recovery.
+  w.postMessage({ type: 'setDims', dims: lastDims, epoch: postedEpoch } satisfies LayoutRequest);
+  if (paused) w.postMessage({ type: 'pause' } satisfies LayoutRequest);
   return w;
 }
 
@@ -136,8 +139,6 @@ function reseed(w: Worker): void {
   if (lastLinks.length > 0) {
     w.postMessage({ type: 'links', links: lastLinks } satisfies LayoutRequest);
   }
-  if (lastDims !== 3) w.postMessage({ type: 'setDims', dims: lastDims, epoch: postedEpoch } satisfies LayoutRequest);
-  if (paused) w.postMessage({ type: 'pause' } satisfies LayoutRequest);
 }
 
 function handleWorkerFailure(reason: string): void {

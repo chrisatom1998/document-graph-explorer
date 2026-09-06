@@ -370,7 +370,14 @@ export async function sendChatMessage(question: string): Promise<void> {
       });
     } else {
       const errMsg = err instanceof Error ? err.message : String(err);
-      useChatStore.getState().updateMessage(assistantId, { text: `Error: ${errMsg}`, isError: true });
+      const partial = accumulated.trim();
+      useChatStore.getState().updateMessage(assistantId, {
+        text: partial
+          ? `${partial}\n\nResponse interrupted: ${errMsg}`
+          : `Error: ${errMsg}`,
+        isError: true,
+        ...(partial && sources ? { sources } : {}),
+      });
     }
   } finally {
     if (timeoutTimer !== undefined) clearTimeout(timeoutTimer);

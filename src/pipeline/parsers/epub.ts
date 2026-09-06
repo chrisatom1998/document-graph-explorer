@@ -10,6 +10,7 @@ const xmlParser = new XMLParser({
   textNodeName: '#text',
   attributeNamePrefix: '@_',
   trimValues: false,
+  parseTagValue: false,
 });
 
 type XmlNode = Record<string, unknown>;
