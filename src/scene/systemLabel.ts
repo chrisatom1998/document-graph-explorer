@@ -19,7 +19,9 @@ export interface SceneLabel extends THREE.Mesh {
 export const MAX_LABEL_TEXTURE_SIZE = 1024;
 const FONT_PIXELS = 32;
 const SYSTEM_FONT = 'system-ui, "Segoe UI", "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
-const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+const graphemes = typeof Intl.Segmenter === 'function'
+  ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+  : undefined;
 
 interface SystemLabel {
   text: string;
@@ -52,7 +54,10 @@ function wrapText(context: CanvasRenderingContext2D, text: string, maxWidth: num
   const lines: string[] = [];
   for (const paragraph of text.split(/\r\n|\r|\n/)) {
     let line = '';
-    for (const { segment } of graphemes.segment(paragraph)) {
+    const segments = graphemes
+      ? Array.from(graphemes.segment(paragraph), ({ segment }) => segment)
+      : Array.from(paragraph);
+    for (const segment of segments) {
       if (line && context.measureText(line + segment).width > maxWidth) {
         lines.push(line);
         line = '';

@@ -45,6 +45,22 @@ describe('offline system-font labels', () => {
     expect(plane().material.visible).toBe(true);
   });
 
+  it('loads and renders code points when Intl.Segmenter is unavailable', async () => {
+    vi.spyOn(Intl, 'Segmenter');
+    Object.defineProperty(Intl, 'Segmenter', { value: undefined, configurable: true });
+    vi.resetModules();
+    const fallbackModule = await import('./systemLabel');
+    try {
+      label.maxWidth = 1;
+      fallbackModule.syncSceneLabel(label, '東京📚');
+      expect(vi.mocked(context.fillText).mock.calls.map(([line]) => line)).toEqual(['東', '京', '📚']);
+      expect(label.text).toBe('');
+    } finally {
+      fallbackModule.disposeSceneLabel(label);
+      vi.resetModules();
+    }
+  });
+
   it('preserves style, depth, opacity and anchored world width', () => {
     syncSceneLabel(label, 'مرحبا بالعالم');
     const child = plane();
