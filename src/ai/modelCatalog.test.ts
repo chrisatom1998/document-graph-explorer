@@ -66,4 +66,32 @@ describe('openRouterModelOptions', () => {
     expect(chat[0]).toBe('anthropic/claude-sonnet-5');
     expect(curated[0]).toBe('google/gemini-3.1-flash-lite');
   });
+
+  it('offers Gemini 3.7 Flash for both chat and enrichment', () => {
+    const flash = 'google/gemini-3.7-flash';
+    expect(RECOMMENDED_CHAT_MODELS.map((m) => m.id)).toContain(flash);
+    expect(RECOMMENDED_ENRICH_MODELS.map((m) => m.id)).toContain(flash);
+    expect(openRouterModelOptions('chat', null, '').some((o) => o.id === flash)).toBe(true);
+    expect(openRouterModelOptions('enrichment', null, '').some((o) => o.id === flash)).toBe(true);
+  });
+
+  it('adds newer cheap and flagship options that fill provider gaps', () => {
+    const enrich = RECOMMENDED_ENRICH_MODELS.map((m) => m.id);
+    const chat = RECOMMENDED_CHAT_MODELS.map((m) => m.id);
+    expect(enrich).toEqual(expect.arrayContaining([
+      'openai/gpt-5.6-luna',
+      'deepseek/deepseek-v4-flash',
+      'minimax/minimax-m3',
+    ]));
+    expect(chat).toEqual(expect.arrayContaining([
+      'openai/gpt-5.6-sol',
+      'x-ai/grok-4.6',
+      'deepseek/deepseek-v4-pro',
+      'openai/gpt-5.6-luna',
+    ]));
+    // Enrichment stays fast-tier: no flagship / pro models.
+    expect(enrich).not.toContain('openai/gpt-5.6-sol');
+    expect(enrich).not.toContain('x-ai/grok-4.6');
+    expect(enrich).not.toContain('deepseek/deepseek-v4-pro');
+  });
 });
