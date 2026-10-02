@@ -278,28 +278,41 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     const nextAll = { ...annotations };
     if (isEmpty(next)) delete nextAll[key];
     else nextAll[key] = next;
-    set({ annotations: nextAll });
+    // Publish the edit clock before subscribers propagate a deletion.
     markDirty(scope, key, nextAll[key], next.updatedAt);
+    set({ annotations: nextAll });
     schedulePersist();
   },
   applyRemote: (key, annotation) => {
     const { scope, annotations } = get();
-    if (!scope) return;
+    // Legacy Y.Map removals carry no edit time. They cannot safely delete a
+    // local note: a delayed removal is indistinguishable from a new deletion.
+    if (!scope || !annotation) return;
     const nextAll = { ...annotations };
-    const next = annotation ? sanitize({ [key]: annotation })[key] : undefined;
+    const next = sanitize({ [key]: annotation })[key];
+    if (!next) return;
     const pending = dirtyByScope.get(scope)?.get(key);
     const baseline = pending?.remoteBase !== undefined ? pending.remoteBase : annotations[key] ?? null;
-    // Yjs deletes have no timestamp. Reuse the replaced note's clock so a
-    // delayed delete cannot beat a newer committed edit by wall time.
-    const updatedAt = next?.updatedAt ?? baseline?.updatedAt ?? 0;
+    // Empty, timestamped records represent shared deletion tombstones.
+    const updatedAt = next.updatedAt;
     if (updatedAt < (versionsByScope.get(scope)?.get(key) ?? 0)) return;
     if (!next || isEmpty(next)) delete nextAll[key];
     else nextAll[key] = next;
-    set({ annotations: nextAll });
     markDirty(scope, key, nextAll[key], updatedAt, baseline);
+    set({ annotations: nextAll });
     schedulePersist();
   },
 }));
+
+/** Snapshot for opt-in sharing, including timestamped deletion markers. */
+export function annotationSyncSnapshot(): Record<string, DocAnnotationRecord> {
+  const { scope, annotations } = useAnnotationStore.getState();
+  const snapshot = { ...annotations };
+  for (const [key, updatedAt] of versionsByScope.get(scope ?? '') ?? []) {
+    if (!(key in snapshot)) snapshot[key] = { ...emptyAnnotation(), updatedAt };
+  }
+  return snapshot;
+}
 
 /**
  * Ensure the store holds the active corpus's annotations. Cheap no-op when

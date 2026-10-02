@@ -89,7 +89,7 @@ describe('annotationStore', () => {
       updatedAt: 42,
     });
 
-    useAnnotationStore.getState().applyRemote('doc', null);
+    useAnnotationStore.getState().applyRemote('doc', { note: '', tags: [], pinned: false, updatedAt: 43 });
     await vi.advanceTimersByTimeAsync(400);
     const [, deletePatch] = updateCorpusAnnotationsMock.mock.calls.at(-1)!;
     expect(deletePatch.doc).toBeNull();

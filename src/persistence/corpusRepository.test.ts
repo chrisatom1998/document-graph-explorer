@@ -248,13 +248,12 @@ it('rejects an equal-time remote retry whose durable baseline has changed', asyn
   await updateCorpusAnnotations('retry', { doc: value('stale X') }, { doc: 100 }, { doc: value('original') });
   expect(dbState.corpora.get('retry').annotations.doc.note).toBe('later winner Y');
 });
-it('rejects a collaboration delete whose durable baseline has changed, even with a later clock', async () => {
+it('orders delayed, retried and newer collaboration deletions by their original version', async () => {
   const annotation = (note: string, updatedAt: number) => ({ note, tags: [], pinned: false, updatedAt });
-  dbState.corpora.set('remote-delete', { id: 'remote-delete', name: 'Remote', docHashes: [], annotations: { doc: annotation('newer committed', 200) } });
-  // Delayed/retried Yjs delete still holds the old baseline and a minted clock.
-  await updateCorpusAnnotations('remote-delete', { doc: null }, { doc: 5000 }, { doc: annotation('old', 100) });
+  dbState.corpora.set('remote-delete', { id: 'remote-delete', name: 'Remote', docHashes: [], annotations: { doc: annotation('newer committed', 102) } });
+  await updateCorpusAnnotations('remote-delete', { doc: null }, { doc: 100 }, { doc: annotation('old', 99) });
   expect(dbState.corpora.get('remote-delete').annotations.doc.note).toBe('newer committed');
-  await updateCorpusAnnotations('remote-delete', { doc: null }, { doc: 5000 }, { doc: annotation('newer committed', 200) });
+  await updateCorpusAnnotations('remote-delete', { doc: null }, { doc: 103 }, { doc: annotation('old', 99) });
   expect(dbState.corpora.get('remote-delete').annotations.doc).toBeUndefined();
-  expect(dbState.corpora.get('remote-delete').annotationVersions.doc).toBe(5000);
+  expect(dbState.corpora.get('remote-delete').annotationVersions.doc).toBe(103);
 });

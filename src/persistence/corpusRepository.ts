@@ -331,10 +331,8 @@ export async function updateCorpusAnnotations(
       // already has a CRDT winner and may conditionally replace its baseline;
       // a retry must not overwrite a different winner saved in the meantime.
       // Journals never retain this privilege, and older versions still lose.
-      // Yjs deletes have no trustworthy clock: a later minted time must not
-      // remove a different saved note. Only a matching remote baseline may.
-      const remoteDelete = value === null && hasRemoteBase;
-      if (Number.isSafeInteger(incoming) && ((incoming > durable && !remoteDelete) || (incoming >= durable && remoteMatches))) {
+      // Shared deletions carry their original edit clock, just like values.
+      if (Number.isSafeInteger(incoming) && (incoming > durable || (incoming === durable && remoteMatches))) {
         if (value === null) delete next[key];
         else next[key] = { ...value, updatedAt: incoming };
         clocks[key] = incoming; // deletion tombstones must survive reload

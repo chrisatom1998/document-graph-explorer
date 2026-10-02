@@ -4,7 +4,7 @@ import { layoutEpoch, layoutSetDims, layoutSettledEpoch, onLayoutSettled } from 
 import { cameraPose } from '../scene/cameraPose';
 import { nodesMatchingFilter } from '../scene/emphasis';
 import { getNodePosition, idOfSlot, positionBuffer, scaleOfSlot, slotOfId } from '../scene/positionBuffer';
-import { annotationKey, ensureAnnotationsLoaded, useAnnotationStore } from '../store/annotationStore';
+import { annotationKey, annotationSyncSnapshot, ensureAnnotationsLoaded, useAnnotationStore } from '../store/annotationStore';
 import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -741,7 +741,7 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
     const remote = map.get(key);
     const localKey = localKeyForShared(key);
     if (localKey === null) return;
-    const local = useAnnotationStore.getState().annotations[localKey];
+    const local = annotationSyncSnapshot()[localKey];
     if (remote && local && annotationTimestamp(local) > annotationTimestamp(remote)) {
       map.set(key, local);
       return;
@@ -759,7 +759,7 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
   };
   map.observe(onRemoteChange);
 
-  const localAtBind = useAnnotationStore.getState().annotations;
+  const localAtBind = annotationSyncSnapshot();
   session.doc.transact(() => {
     for (const [key, local] of Object.entries(localAtBind)) {
       const sharedKey = annotationKeyForLocal(key);
@@ -789,8 +789,10 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
         const after = state.annotations[key];
         const sharedKey = annotationKeyForLocal(key);
         if (sharedKey === null || before === after) continue;
-        if (after) map.set(sharedKey, after);
-        else map.delete(sharedKey);
+        // Preserve the original deletion clock through delays/reconnects.
+        // Unversioned map.delete events from older clients are not replayed.
+        const shared = annotationSyncSnapshot()[key];
+        if (shared) map.set(sharedKey, shared);
       }
     });
   });

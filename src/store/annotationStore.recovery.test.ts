@@ -158,12 +158,24 @@ it('preserves live collaboration equal-time winners without upgrading their edit
   useAnnotationStore.getState().applyRemote('document', { note: 'old remote', tags: [], pinned: false, updatedAt: 99 });
   expect(useAnnotationStore.getState().annotations.document.note).toBe('Yjs winner');
 });
-it('persists a remote delete at the replaced note clock so a later committed note wins', async () => {
-  repository.getCorpusRecord.mockResolvedValue({ annotations: { document: { note: 'local', tags: [], pinned: false, updatedAt: 100 } } });
+it('ignores delayed unversioned deletes and preserves the original clock of versioned deletes', async () => {
+  repository.getCorpusRecord.mockResolvedValue({ annotations: { document: { note: 'newer', tags: [], pinned: false, updatedAt: 102 } } });
   await ensureAnnotationsLoaded('A');
   vi.spyOn(Date, 'now').mockReturnValue(5000);
   useAnnotationStore.getState().applyRemote('document', null);
-  await flushAnnotationSave();
-  expect(repository.updateCorpusAnnotations).toHaveBeenLastCalledWith('A', { document: null }, { document: 100 }, { document: { note: 'local', tags: [], pinned: false, updatedAt: 100 } });
+  useAnnotationStore.getState().applyRemote('document', { note: '', tags: [], pinned: false, updatedAt: 100 });
+  expect(useAnnotationStore.getState().annotations.document.note).toBe('newer');
+  useAnnotationStore.getState().applyRemote('document', { note: '', tags: [], pinned: false, updatedAt: 103 });
+  expect(recoverAnnotations('A')[0]).toMatchObject({ value: null, updatedAt: 103 });
+  _resetAnnotationsForTests(); // interrupted deletion before database commit
+  await ensureAnnotationsLoaded('A');
   expect(useAnnotationStore.getState().annotations.document).toBeUndefined();
+  await flushAnnotationSave();
+  expect(repository.updateCorpusAnnotations).toHaveBeenLastCalledWith('A', { document: null }, { document: 103 }, {});
+});
+it('ignores malformed peer records without throwing or modifying a saved note', async () => {
+  await ensureAnnotationsLoaded('A');
+  useAnnotationStore.getState().update('document', { note: 'keep' });
+  expect(() => useAnnotationStore.getState().applyRemote('document', 'bad' as never)).not.toThrow();
+  expect(useAnnotationStore.getState().annotations.document.note).toBe('keep');
 });
