@@ -99,8 +99,9 @@ export default function ProgressStrip() {
   // a restored session has no fileStatuses at all, and after a live ingest
   // the file count is already at 100%, so it would sit frozen either way.
   const enriching = phase === 'enriching';
-  const total = enriching ? enrichProgress?.total ?? 0 : statuses.length;
-  const done = enriching
+  const music = modelProgress?.kind === 'music-analysis';
+  const total = music ? modelProgress.total : enriching ? enrichProgress?.total ?? 0 : statuses.length;
+  const done = music ? modelProgress.loaded : enriching
     ? enrichProgress?.done ?? 0
     : statuses.filter((s) => s.stage === 'placed' || s.stage === 'cached').length;
   const recentFiles = enriching ? [] : statuses.slice(-MAX_FILE_CHIPS);
@@ -109,7 +110,7 @@ export default function ProgressStrip() {
       ? 'Ready'
       : enriching && enrichProgress?.note
         ? `Enriching — ${enrichProgress.note}`
-        : PHASE_LABEL[phase] ?? 'Working…';
+        : music ? 'Analyzing music…' : PHASE_LABEL[phase] ?? 'Working…';
   // total can be 0 when the size probe fails (compressed responses have no
   // usable content-length) — show bytes-only progress rather than "of 0.0 MB".
   const modelMB = modelProgress
@@ -118,17 +119,19 @@ export default function ProgressStrip() {
       : `${bytesToMB(modelProgress.loaded)} MB`
     : '';
   const taskProgressLabel =
-    modelProgress?.kind === 'ocr'
+    modelProgress && modelProgress.kind !== 'embedding-model'
       ? modelProgress.note
       : modelProgress
         ? `Loading embedding model — ${modelMB}… (first time only)`
         : '';
   const taskProgressValueText =
-    modelProgress?.kind === 'ocr'
+    modelProgress?.kind === 'music-analysis'
+      ? `${modelProgress.loaded} of ${modelProgress.total} tracks`
+      : modelProgress?.kind === 'ocr'
       ? `${modelProgress.loaded} of ${modelProgress.total} pages`
       : modelMB;
   const taskProgressAriaLabel =
-    modelProgress?.kind === 'ocr' ? 'Recognizing scanned PDF text' : 'Loading embedding model';
+    modelProgress?.kind === 'music-analysis' ? 'Analyzing music' : modelProgress?.kind === 'ocr' ? 'Recognizing scanned PDF text' : 'Loading embedding model';
 
   return (
     <div className="progress-strip-layer">

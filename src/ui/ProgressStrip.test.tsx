@@ -32,6 +32,12 @@ describe('ProgressStrip accessibility', () => {
       .toHaveAttribute('aria-valuetext', '0.0 of 0.0 MB');
   });
 
+  it('shows music progress instead of an already completed file counter', () => {
+    useGraphStore.setState({ phase: 'parsing', modelProgress: { kind: 'music-analysis', loaded: 0, total: 2, note: 'Listening to one.wav' } });
+    render(<ProgressStrip />);
+    expect(screen.getByRole('progressbar', { name: 'Analyzing music…' })).toHaveAttribute('aria-valuetext', '0 of 2');
+  });
+
   it('announces OCR progress as pages instead of model bytes', () => {
     useGraphStore.setState({
       phase: 'parsing',

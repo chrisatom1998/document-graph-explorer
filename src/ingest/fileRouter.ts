@@ -11,6 +11,13 @@ import { repoArtifactReason } from './repoArtifacts';
 import { looksLikeText } from './textSniffer';
 
 const EXT_MAP: Record<string, FileType> = {
+  mp3: 'audio', mp2: 'audio', wav: 'audio', wave: 'audio', flac: 'audio',
+  aif: 'audio', aiff: 'audio', aifc: 'audio', ogg: 'audio', oga: 'audio',
+  opus: 'audio', m4a: 'audio', m4b: 'audio', aac: 'audio', wma: 'audio',
+  weba: 'audio', webm: 'audio', amr: 'audio', awb: 'audio', au: 'audio', snd: 'audio',
+  ac3: 'audio', eac3: 'audio', dts: 'audio', ape: 'audio', wv: 'audio',
+  caf: 'audio', alac: 'audio', mka: 'audio', tak: 'audio', tta: 'audio',
+  dsf: 'audio', dff: 'audio', spx: 'audio',  '3ga': 'audio',
   txt: 'txt',
   log: 'txt',
   md: 'md',
@@ -96,7 +103,8 @@ export function isIngestCandidate(name: string): boolean {
   return true;
 }
 
-export function routeFileWithSniff(name: string, bytes: ArrayBuffer): FileType | null {
+export function routeFileWithSniff(name: string, bytes: ArrayBuffer, mime = ''): FileType | null {
+  if (mime.startsWith('audio/')) return 'audio';
   const type = routeFile(name);
   if (type) return type;
 

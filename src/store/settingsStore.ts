@@ -38,6 +38,7 @@ export {
 };
 
 export interface SettingsState extends PersistedSettings {
+  setMusicAnalysisMode: (mode: 'fast' | 'full') => void;
   setChatProvider: (provider: ChatProvider) => void;
   setEnrichProvider: (provider: EnrichProvider) => void;
   setOpenRouterKey: (key: string) => void;
@@ -57,6 +58,7 @@ export interface SettingsState extends PersistedSettings {
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   ...loadPersistedSettings(),
+  setMusicAnalysisMode: (musicAnalysisMode) => set({ musicAnalysisMode }),
   setChatProvider: (chatProvider) => set({ chatProvider }),
   setEnrichProvider: (enrichProvider) => set({ enrichProvider }),
   // Trimmed at the store boundary so every consumer (enrichment, doc AI,
@@ -86,6 +88,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 useSettingsStore.subscribe((s) => {
   try {
     const persisted: PersistedSettings = {
+      musicAnalysisMode: s.musicAnalysisMode,
       chatProvider: s.chatProvider,
       enrichProvider: s.enrichProvider,
       openRouterKey: s.rememberOpenRouterKey ? s.openRouterKey : '',

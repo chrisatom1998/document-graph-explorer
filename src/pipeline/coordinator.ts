@@ -1,3 +1,6 @@
+import { buildTitleEdges } from '../graph/titleLinks';
+import { INSTRUMENT_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION } from '../audio/musicTypes';
+import { assertAudioContent } from '../audio/parseAudio';
 /**
  * THE ORCHESTRATOR (main thread). Drives the full ingest flow:
  *
@@ -13,6 +16,9 @@
  * (or a removal) while a run is in flight queues behind it (promise chain).
  */
 
+import { buildMusicEdges } from '../audio/musicLinks';
+import { INSTRUMENT_LABELS } from '../audio/instrumentLabels';
+import { getOriginal } from '../persistence/originals';
 import {
   DUP_SIM_THRESHOLD,
   EMBED_DIMS,
@@ -461,10 +467,17 @@ async function runIngestBodyInner(
       store().addIgnored(file.path ?? file.name, artifact);
       continue;
     }
-    const fileType = routeFileWithSniff(file.name, file.bytes);
+    const fileType = file.fileType === 'audio' ? 'audio' : routeFileWithSniff(file.name, file.bytes);
     if (!fileType) {
       store().addIgnored(file.path ?? file.name, 'unsupported type');
       continue;
+    }
+    if (fileType === 'audio') {
+      try { assertAudioContent(file.bytes); }
+      catch (error) {
+        store().addIgnored(file.path ?? file.name, (error as Error).message);
+        continue;
+      }
     }
     store().setFileStatus({ fileId: file.fileId, name: file.name, path: file.path, stage: 'queued' });
     routed.push({ file, fileType });
@@ -474,6 +487,7 @@ async function runIngestBodyInner(
   const seenIds = new Set<string>();
   const pending: PendingFile[] = [];
   let retryIncomplete = false;
+  const audioOriginals = new Map<string, { blob: Blob; name: string }>();
   for (const { file, fileType } of routed) {
     // hashing a large drop takes real time — bail between files, not after
     throwIfAborted(signal);
@@ -485,6 +499,11 @@ async function runIngestBodyInner(
     const original = file.reconstructable
       ? new Blob([])
       : new Blob([file.bytes], { type: mimeForFilename(file.name) });
+    if (fileType === 'audio') {
+      audioOriginals.set(id, { blob: original, name: file.name });
+      fileIdOfDoc.set(id, file.fileId);
+      nameOfDoc.set(id, file.name);
+    }
     if (seenIds.has(id) || store().nodeIndex[id] !== undefined) {
       // known doc — backfill the original if it predates original retention
       if (!file.reconstructable) void putOriginalIfMissing(id, file.name, original);
@@ -508,7 +527,7 @@ async function runIngestBodyInner(
     seenIds.add(id);
     pending.push({ file, fileType, id, relPath, original });
   }
-  if (pending.length === 0 && !retryIncomplete) return false;
+  if (pending.length === 0 && !retryIncomplete && audioOriginals.size === 0) return false;
   derivedPassesIncomplete = true;
 
   // (c) IndexedDB cache lookup (persistence subsystem)
@@ -764,6 +783,8 @@ async function runIngestBodyInner(
     return false;
   }
 
+  await analyzeAudioNodes(signal, [], audioOriginals);
+
   // (e) lexical aggregation over the WHOLE corpus (idf + title mentions
   // are corpus-wide, so every drop rebuilds them)
   const { lexEdges, boilerplate, complete: lexicalComplete } = await runLexicalPass(pool, signal);
@@ -771,7 +792,7 @@ async function runIngestBodyInner(
   // (f) embeddings for docs that still need a vector. hasDocTextSync counts
   // evicted-but-persisted text as readable (runLexicalPass just rehydrated it).
   const embedTargets = documentNodes().filter(
-    (n) => n.status !== 'unreadable' && !docVectorStore.has(n.id) && hasDocTextSync(n.id),
+    (n) => n.fileType !== 'audio' && n.status !== 'unreadable' && !docVectorStore.has(n.id) && hasDocTextSync(n.id),
   );
   if (embedTargets.length > 0) {
     store().setPhase('embedding');
@@ -809,6 +830,8 @@ async function runIngestBodyInner(
 
   // (g) semantic edges + Louvain clustering over the full edge set
   const insightsAreCurrent = await runSemanticPass(lexEdges, signal);
+
+  await clusterAudioGraph(signal);
 
   // (h) synthesize topic concept nodes (spec §5.4)
   synthesizeTopicNodes();
@@ -987,7 +1010,7 @@ async function runLexicalPass(
   throwIfAborted(signal);
   store().setPhase('linking');
   await backfillLexMeta(pool, signal);
-  const docNodes = documentNodes();
+  const docNodes = documentNodes().filter((n) => n.fileType !== 'audio');
   // Corpus-wide pass over every doc's full text — rehydrate evicted texts
   // transiently (usually a no-op); the ingest/removal-end evictor releases
   // this working set again.
@@ -1032,7 +1055,8 @@ async function runLexicalPass(
       undefined,
       { signal },
     );
-    lexEdges = lexical.edges;
+    const liveIds = new Set(documentNodes().map((n) => n.id));
+    lexEdges = [...lexical.edges, ...buildTitleEdges(documentNodes()), ...buildMusicEdges(documentNodes()), ...store().edges.filter((e) => e.authored && liveIds.has(e.source) && liveIds.has(e.target))];
     boilerplate = new Set(lexical.boilerplateLines);
 
     const nodesById = new Map(documentNodes().map((n) => [n.id, n]));
@@ -1109,7 +1133,7 @@ async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<
   const store = useGraphStore.getState;
   throwIfAborted(signal);
   store().setPhase('connecting');
-  const embedded = documentNodes().filter((n) => docVectorStore.has(n.id));
+  const embedded = documentNodes().filter((n) => n.fileType !== 'audio' && docVectorStore.has(n.id));
   if (embedded.length === 0) {
     store().setSemanticNeighbors([]);
     return true;
@@ -1182,7 +1206,7 @@ async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<
       // comparatively cheap next to a full similarity rescan) to the
       // worker without repaying the O(n²) similarity cost above.
       const mergedForCluster = new Map<string, Edge>();
-      for (const edge of [...lexEdges, ...edges]) {
+      for (const edge of [...lexEdges, ...edges, ...store().edges.filter((e) => e.authored)]) {
         if (!mergedForCluster.has(edge.id)) mergedForCluster.set(edge.id, edge);
       }
       const clusterResp = await aggRequest<ClusterDone>(
@@ -1214,7 +1238,7 @@ async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<
       ),
     );
     const merged = new Map<string, Edge>();
-    for (const edge of [...lexEdges, ...edges]) {
+    for (const edge of [...lexEdges, ...edges, ...store().edges.filter((e) => e.authored)]) {
       if (!merged.has(edge.id)) merged.set(edge.id, edge);
     }
     const allEdges = [...merged.values()];
@@ -1361,6 +1385,7 @@ async function runRemoveInner(ids: string[]): Promise<void> {
   // Corpus-wide re-link over the survivors.
   const { lexEdges, complete: lexicalComplete } = await runLexicalPass(getPool());
   const insightsAreCurrent = await runSemanticPass(lexEdges);
+  await clusterAudioGraph();
   synthesizeTopicNodes();
 
   store().setPhase('ready');
@@ -1596,7 +1621,7 @@ export function reconcileWatchedFiles(
  */
 async function runEmbeddingRebuild(): Promise<void> {
   wireModelProgress();
-  const docs = documentNodes().filter((n) => n.status !== 'unreadable' && hasDocTextSync(n.id));
+  const docs = documentNodes().filter((n) => n.fileType !== 'audio' && n.status !== 'unreadable' && hasDocTextSync(n.id));
   if (docs.length === 0) return;
   // Corpus-wide pass: rehydrate evicted full texts up front (the chunking
   // loop below reads textStore synchronously), released again in `finally`.
@@ -1674,6 +1699,7 @@ async function runEmbeddingRebuild(): Promise<void> {
     // space. Drop the cache so the next pass rebuilds against the new one.
     resetSemanticIndex();
     const insightsAreCurrent = await runSemanticPass(lexEdges);
+    await clusterAudioGraph();
     synthesizeTopicNodes();
     graph().setCorpusHash(await computeCorpusHash());
     graph().setPhase('ready');
@@ -1760,4 +1786,118 @@ export function resetCorpus(): void {
   // against the wiped stores with isStreaming stuck true for up to 120s.
   cancelChat();
   useChatStore.getState().clearMessages();
+}
+
+/** Run inside the existing mutation queue; every estimate belongs to this corpus snapshot. */
+async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], originals?: Map<string, { blob: Blob; name: string }>): Promise<void> {
+  const mode = useSettingsStore.getState().musicAnalysisMode;
+  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!n.audio || n.audio.stage === 'preview' || (mode === 'full' && n.audio.instrumentScan?.mode === 'fast') || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION || forceIds.includes(n.id)));
+  if (!nodes.length) return;
+  const { analyzeMusic } = await import('../audio/analyzeMusic');
+  const store = useGraphStore.getState;
+  store().setPhase('parsing');
+  try {
+    for (let i = 0; i < nodes.length; i++) {
+      throwIfAborted(signal);
+      const node = nodes[i];
+      const progress = (note: string) => store().setModelProgress({ kind: 'music-analysis', loaded: i, total: nodes.length, note: `${node.title}: ${note} (${i + 1}/${nodes.length})` });
+      progress('Loading saved audio');
+      const fileId = fileIdOfDoc.get(node.id) ?? node.id;
+      const name = nameOfDoc.get(node.id) ?? node.title;
+      store().setFileStatus({ fileId, name, stage: 'parsing' });
+      try {
+        const original = originals?.get(node.id) ?? await getOriginal(node.id);
+        if (!original) throw new Error('Add the original audio file again to analyze it.');
+        const audio = await analyzeMusic(original.blob, original.name, {
+          signal, mode, onProgress: progress,
+          onPreview: preview => {
+            // Keep completed results visible during a reanalysis. New uploads
+            // can show the quick estimate without claiming verification finished.
+            if (node.audio && node.audio.stage !== 'preview') return;
+            store().patchNodes(new Map([[node.id, { audio: { ...preview, confirmedInstruments: node.audio?.confirmedInstruments }, warning: undefined }]]));
+            markDocsDirty([node.id]);
+          },
+        });
+        audio.confirmedInstruments = node.audio?.confirmedInstruments;
+        store().patchNodes(new Map([[node.id, { audio, warning: undefined, topics: [], keywords: [], entities: [], wordCount: 0 }]]));
+        markDocsDirty([node.id]);
+        const incomplete = audio.instrumentScan?.complete !== true;
+        store().setFileStatus({ fileId, name, stage: incomplete ? 'error' : 'placed',
+          ...(incomplete ? { error: 'Instrument analysis stopped early. Select the track and reanalyze to finish.' } : {}) });
+        // Publish connections as each track finishes, even in a long batch.
+        const edges = [...store().edges.filter(e => !['tempo', 'key', 'instrument'].includes(e.kind)), ...buildMusicEdges(documentNodes())];
+        store().setEdges(edges);
+        layoutSetLinks(toLinkInput(edges));
+        layoutReheat(0.5);
+      } catch (error) {
+        if (signal?.aborted) throw error;
+        const message = error instanceof Error ? error.message : 'Music analysis failed.';
+        store().setFileStatus({ fileId, name, stage: 'error', error: message });
+        useUiStore.getState().pushToast(`${name}: ${message}`, 'warning');
+        store().patchNodes(new Map([[node.id, { warning: message }]]));
+        markDocsDirty([node.id]);
+      }
+    }
+  } finally { store().setModelProgress(null); }
+}
+
+async function clusterAudioGraph(signal?: AbortSignal): Promise<void> {
+  const store = useGraphStore.getState;
+  const docs = documentNodes();
+  if (!docs.some(n => n.fileType === 'audio')) return;
+  const result = await aggRequest<ClusterDone>({ requestId: 0, type: 'cluster', ids: docs.map(n => n.id), edges: toLinkInput(store().edges) }, undefined, { signal });
+  store().patchNodes(new Map(Object.entries(result.clusters).map(([id, cluster])=>[id,{cluster}])));
+  store().setLocalClusterNames(computeLocalClusterNames(store().nodes));
+  layoutSetLinks(toLinkInput(store().edges)); layoutSetClusters(result.clusters); layoutReheat(0.5);
+}
+
+/** Save explicit corrections separately from model evidence and immediately refresh links. */
+export function setAudioInstruments(ids: string[], labels?: string[]): Promise<{ saved: boolean; count: number }> {
+  const confirmed = labels === undefined ? undefined : [...new Set(labels.filter(label => INSTRUMENT_LABELS.includes(label)))];
+  return enqueueRun(async () => {
+    const { saveAudioGraph } = await import('../audio/saveAudioGraph');
+    const { useCorpusStore } = await import('../store/corpusStore');
+    const state = useGraphStore.getState();
+    if (state.phase !== 'ready') throw new Error('Wait for file processing to finish, then try again.');
+    const targets = documentNodes().filter(node => ids.includes(node.id) && node.fileType === 'audio' && node.audio);
+    if (targets.length === 0) throw new Error('No analyzed audio tracks are available to correct.');
+    state.patchNodes(new Map(targets.map(node => [node.id, { audio: { ...node.audio!, confirmedInstruments: confirmed } }])));
+    markDocsDirty(targets.map(node => node.id));
+    const edges = [...state.edges.filter(edge => !['tempo', 'key', 'instrument'].includes(edge.kind)), ...buildMusicEdges(documentNodes())];
+    useGraphStore.getState().setEdges(edges);
+    layoutSetLinks(toLinkInput(edges));
+    layoutReheat(0.5);
+    const saved = useCorpusStore.getState().mode === 'local';
+    try {
+      await saveAudioGraph();
+    } catch {
+      throw new Error('Your correction is visible but could not be saved. Retry before closing.');
+    }
+    return { saved, count: targets.length };
+  });
+}
+
+/** Analyze older/restored tracks on demand and rebuild their relationships. */
+export function analyzeAudioCorpus(forceIds: string[] = [], signal?: AbortSignal): Promise<void> {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (signal?.aborted) abort();
+  signal?.addEventListener('abort', abort, { once: true });
+  registerIngestAbort(controller);
+  const analysisSignal = controller.signal;
+  return enqueueRun(async () => {
+    try {
+      await analyzeAudioNodes(analysisSignal, forceIds);
+      const { lexEdges } = await runLexicalPass(getPool(), analysisSignal);
+      await runSemanticPass(lexEdges, analysisSignal);
+      await clusterAudioGraph(analysisSignal);
+      synthesizeTopicNodes();
+    } finally {
+      useGraphStore.getState().setPhase(documentNodes().length ? 'ready' : 'idle');
+      await saveSession();
+    }
+  }, { signal: analysisSignal }).finally(() => {
+    signal?.removeEventListener('abort', abort);
+    clearIngestAbort(controller);
+  });
 }

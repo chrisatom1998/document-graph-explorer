@@ -148,6 +148,16 @@ export async function hydrateFromRecord(
     return false; // malformed IndexedDB record — treat like "couldn't restore"
   }
 
+  // Existing sessions also adopt explicit name tags without altering saved audio evidence.
+  if (exportData.nodes.some(node => node.fileType === 'audio')) {
+    const { buildMusicEdges } = await import('../audio/musicLinks');
+    exportData.edges = [
+      ...exportData.edges.filter(edge => edge.authored || !['tempo', 'key', 'instrument'].includes(edge.kind)),
+      ...buildMusicEdges(exportData.nodes),
+    ];
+    exportData.edges = [...new Map(exportData.edges.map(edge => [edge.id, edge])).values()];
+  }
+
   // --- bulk-read texts + vectors: one readonly tx, concurrent gets ---
   const docIds = exportData.nodes
     .filter((n) => n.kind === 'document')
@@ -173,7 +183,7 @@ export async function hydrateFromRecord(
     const chunkVectorsValid =
       compatible && doc !== undefined && validChunkVectors(emb?.chunkVectors, doc.chunkTexts.length);
     const node = nodesById.get(id);
-    const canEmbed = doc !== undefined && node?.status !== 'unreadable' && doc.text.trim().length > 0;
+    const canEmbed = doc !== undefined && node?.fileType !== 'audio' && node?.status !== 'unreadable' && doc.text.trim().length > 0;
     if (canEmbed && (!docVectorValid || (doc.chunkTexts.length > 0 && !chunkVectorsValid))) {
       needsEmbeddingRebuild = true;
     }

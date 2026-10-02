@@ -84,6 +84,10 @@ export function hexFor(cluster: number): string {
  * (read-only — `.copy()` before mutating).
  */
 export const EDGE_KIND_HEX: Record<EdgeKind, string> = {
+  title: '#80d6ed',
+  tempo: '#ffd166',
+  key: '#c4a0ff',
+  instrument: '#4ed9b3',
   reference: '#ffb36b',
   semantic: '#7fb4ff',
   keyword: '#6f86e8',
@@ -92,6 +96,10 @@ export const EDGE_KIND_HEX: Record<EdgeKind, string> = {
 };
 
 export const EDGE_TINTS: Record<EdgeKind, THREE.Color> = {
+  title: new THREE.Color(EDGE_KIND_HEX.title),
+  tempo: new THREE.Color(EDGE_KIND_HEX.tempo),
+  key: new THREE.Color(EDGE_KIND_HEX.key),
+  instrument: new THREE.Color(EDGE_KIND_HEX.instrument),
   reference: new THREE.Color(EDGE_KIND_HEX.reference),
   semantic: new THREE.Color(EDGE_KIND_HEX.semantic),
   keyword: new THREE.Color(EDGE_KIND_HEX.keyword),
@@ -128,6 +136,10 @@ export const FLAT_SELECTION = '#8ae0ff';
 
 /** Human-readable edge-kind labels for the UI (badges, connection tags). */
 export const EDGE_KIND_LABEL: Record<EdgeKind, string> = {
+  title: 'shared title',
+  tempo: 'tempo',
+  key: 'related key',
+  instrument: 'instruments',
   reference: 'reference',
   semantic: 'similar',
   keyword: 'keyword',

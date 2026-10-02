@@ -1,0 +1,267 @@
+[
+  {
+    "group": "source",
+    "label": "synthesizer",
+    "prompt": "The sound of an electronic synthesizer playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "piano",
+    "prompt": "The sound of an acoustic piano playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "electric piano",
+    "prompt": "The sound of an electric piano playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "acoustic guitar",
+    "prompt": "The sound of an acoustic guitar playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "electric guitar",
+    "prompt": "The sound of an electric guitar playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "bass guitar",
+    "prompt": "The sound of a bass guitar playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "violin / fiddle",
+    "prompt": "The sound of a violin playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "cello",
+    "prompt": "The sound of a cello playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "trumpet",
+    "prompt": "The sound of a trumpet playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "saxophone",
+    "prompt": "The sound of a saxophone playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "flute",
+    "prompt": "The sound of a flute playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "organ",
+    "prompt": "The sound of an organ playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "bell",
+    "prompt": "The sound of a bell playing musical notes."
+  },
+  {
+    "group": "source",
+    "label": "drum kit",
+    "prompt": "The sound of an acoustic drum kit playing a rhythm."
+  },
+  {
+    "group": "source",
+    "label": "drum machine",
+    "prompt": "The sound of an electronic drum machine playing a rhythm."
+  },
+  {
+    "group": "source",
+    "label": "percussion",
+    "prompt": "The sound of percussion instruments playing a rhythm."
+  },
+  {
+    "group": "source",
+    "label": "voice",
+    "prompt": "The sound of a human voice speaking or singing."
+  },
+  {
+    "group": "source",
+    "label": "environmental sound",
+    "prompt": "The sound of an outdoor environment, without musical instruments."
+  },
+  {
+    "group": "source",
+    "label": "noise",
+    "prompt": "The sound of static noise, without musical notes."
+  },
+  {
+    "group": "source",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "articulation",
+    "label": "plucked",
+    "prompt": "The sound of short plucked musical notes with a sharp attack and decay."
+  },
+  {
+    "group": "articulation",
+    "label": "sustained",
+    "prompt": "The sound of long sustained musical notes with a steady tone."
+  },
+  {
+    "group": "articulation",
+    "label": "rhythmic stabs",
+    "prompt": "The sound of short punchy musical stabs repeating in a rhythm."
+  },
+  {
+    "group": "articulation",
+    "label": "pulsing",
+    "prompt": "The sound of a musical tone pulsing and wobbling in volume."
+  },
+  {
+    "group": "articulation",
+    "label": null,
+    "prompt": "A sound with no clear musical note articulation."
+  },
+  {
+    "group": "tone",
+    "label": "airy",
+    "prompt": "The sound of a soft airy and breathy musical tone."
+  },
+  {
+    "group": "tone",
+    "label": "metallic",
+    "prompt": "The sound of a bright metallic ringing musical tone."
+  },
+  {
+    "group": "tone",
+    "label": "distorted",
+    "prompt": "The sound of a distorted buzzing musical tone."
+  },
+  {
+    "group": "tone",
+    "label": "warm",
+    "prompt": "The sound of a warm mellow rounded musical tone."
+  },
+  {
+    "group": "tone",
+    "label": "bright",
+    "prompt": "The sound of a bright sharp musical tone."
+  },
+  {
+    "group": "tone",
+    "label": null,
+    "prompt": "A sound without a clearly identifiable tonal character."
+  },
+  {
+    "group": "space",
+    "label": "reverberant",
+    "prompt": "The sound of musical notes with a long reverberating echo."
+  },
+  {
+    "group": "space",
+    "label": "dry",
+    "prompt": "The sound of dry close musical notes without reverberation or echo."
+  },
+  {
+    "group": "space",
+    "label": null,
+    "prompt": "A sound with unclear reverberation."
+  },
+  {
+    "group": "role",
+    "label": "bass",
+    "prompt": "The sound of a low musical bass line."
+  },
+  {
+    "group": "role",
+    "label": "lead",
+    "prompt": "The sound of a prominent lead melody in music."
+  },
+  {
+    "group": "role",
+    "label": "pad",
+    "prompt": "The sound of a slowly sustained chord pad in music."
+  },
+  {
+    "group": "role",
+    "label": "arpeggio",
+    "prompt": "The sound of a repeating arpeggio of musical notes."
+  },
+  {
+    "group": "role",
+    "label": "rhythm",
+    "prompt": "The sound of a percussive rhythmic backing in music."
+  },
+  {
+    "group": "role",
+    "label": "atmosphere",
+    "prompt": "The sound of an atmospheric ambient drone or soundscape."
+  },
+  {
+    "group": "role",
+    "label": null,
+    "prompt": "A sound with no clear musical role."
+  },
+  {
+    "group": "vocal",
+    "label": "vocal chops",
+    "prompt": "The sound of chopped and repeated human vocal samples, cut into short rhythmic syllables in electronic music."
+  },
+  {
+    "group": "vocal",
+    "label": "singing",
+    "prompt": "The sound of a person singing a continuous melody with words."
+  },
+  {
+    "group": "vocal",
+    "label": "speech",
+    "prompt": "The sound of a person speaking words without singing."
+  },
+  {
+    "group": "vocal",
+    "label": "choir",
+    "prompt": "The sound of a choir of people singing together in harmony."
+  },
+  {
+    "group": "vocal",
+    "label": null,
+    "prompt": "The sound of an electronic synthesizer imitating a voice, without a human vocal recording."
+  },
+  {
+    "group": "vocal",
+    "label": "instrumental",
+    "prompt": "Instrumental music with no human voice or vocals."
+  },
+  {
+    "group": "sample",
+    "label": "vocal chops",
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "sample",
+    "label": "synthesizer",
+    "prompt": "The sound of an electronic synthesizer playing musical notes."
+  },
+  {
+    "group": "sample",
+    "label": "drum machine",
+    "prompt": "The sound of an electronic drum machine playing a rhythm."
+  },
+  {
+    "group": "sample",
+    "label": "guitar sample",
+    "prompt": "The sound of a chopped guitar sample."
+  },
+  {
+    "group": "sample",
+    "label": "piano sample",
+    "prompt": "The sound of a chopped piano sample."
+  },
+  {
+    "group": "sample",
+    "label": null,
+    "prompt": "The sound of a synthesizer imitating human vowels."
+  }
+]

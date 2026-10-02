@@ -69,6 +69,10 @@ function analyzeText(
 async function runParser(req: Extract<PoolRequest, { type: 'parse' }>): Promise<ParserResult> {
   const ext = req.name.split('.').pop()?.toLowerCase() ?? '';
   switch (req.fileType) {
+    case 'audio': {
+      const { parseAudio } = await import('../audio/parseAudio');
+      return parseAudio(req.bytes, req.name);
+    }
     case 'md':
       return parseMarkdown(req.bytes, req.name);
     case 'html':

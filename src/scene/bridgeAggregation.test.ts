@@ -49,6 +49,15 @@ describe('aggregateBridges', () => {
     expect(bridges).toEqual([]);
   });
 
+  it('does not draw a second cluster line for a manual track relationship', () => {
+    const tracks = nodes.map((node) => ({ ...node, fileType: 'audio' as const }));
+    const manual = { ...edge('a1', 'b1', 1, 'reference'), authored: true };
+    expect(aggregateBridges(tracks, [manual])).toEqual([]);
+    // Existing automatic connections still contribute their own group context.
+    expect(aggregateBridges(tracks, [manual, edge('a2', 'b2', 0.8, 'tempo')]))
+      .toEqual([{ a: 0, b: 1, strength: 0.8, count: 1, norm: 1 }]);
+  });
+
   it('sorts by strength and sqrt-normalizes against the strongest pair', () => {
     const bridges = aggregateBridges(nodes, [
       edge('a1', 'c1', 0.2),

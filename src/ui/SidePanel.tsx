@@ -229,11 +229,11 @@ export default function SidePanel() {
                 </span>
               ) : (
                 <>
-                  <span>{node.wordCount.toLocaleString()} words</span>
+                  {node.fileType !== 'audio' && <span>{node.wordCount.toLocaleString()} words</span>}
                   <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
                 </>
               )}
-              {node.lastModified !== undefined && (
+              {node.fileType !== 'audio' && node.lastModified !== undefined && (
                 <span title={new Date(node.lastModified).toLocaleString()}>
                   updated {timeAgo(node.lastModified)}
                 </span>

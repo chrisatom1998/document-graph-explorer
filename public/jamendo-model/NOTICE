@@ -1,0 +1,8 @@
+MTG-Jamendo instrument classifier and Discogs-EffNet feature extractor, version 1.
+Source: https://essentia.upf.edu/models.html#mtg-jamendo-instrument
+Copyright Music Technology Group, Universitat Pompeu Fabra.
+The model catalog states CC BY-NC-SA 4.0. The supplied LICENSE also includes a NoDerivatives heading.
+Both require noncommercial use and attribution; retain the official LICENSE and seek clarification before commercial distribution or modifying weights.
+https://creativecommons.org/licenses/by-nc-sa/4.0/
+Commercial licensing: https://www.upf.edu/web/mtg/contact
+Unmodified official ONNX weights. See included metadata for authors and citations.

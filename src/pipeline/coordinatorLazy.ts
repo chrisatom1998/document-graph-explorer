@@ -6,6 +6,8 @@
  */
 export {
   ingestFiles,
+  analyzeAudioCorpus,
+  setAudioInstruments,
   loadDemoCorpus,
   rebuildEmbeddings,
   reconcileWatchedFiles,

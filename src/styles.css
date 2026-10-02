@@ -5464,3 +5464,40 @@ mark.passage-mark {
     white-space: normal;
   }
 }
+.audio-preview audio { width: 100%; margin-bottom: 12px; }
+.audio-preview form, .audio-preview label { display: grid; gap: 8px; }
+.audio-preview form { margin: 16px 0; }
+.audio-preview select, .audio-preview input { width: 100%; padding: 8px; background: var(--surface, #16202d); color: inherit; border: 1px solid currentColor; border-radius: 6px; }
+.audio-preview button { padding: 6px 10px; border: 1px solid currentColor; border-radius: 6px; margin: 4px 0; }
+.audio-preview button:disabled { opacity: 0.5; }
+.audio-preview { font-family: 'Space Grotesk', sans-serif; font-size: 13px; line-height: 1.5; white-space: normal; max-height: none; overflow: visible; }
+.audio-preview p { margin: 8px 0; color: var(--text-muted); }
+.audio-preview button, .audio-preview input, .audio-preview select { font: inherit; }
+.audio-preview button { cursor: pointer; border-color: var(--border); background: var(--panel-bg); }
+.audio-preview button:disabled { cursor: default; }
+.audio-preview button:focus-visible, .audio-preview input:focus-visible, .audio-preview select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.audio-preview > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.audio-preview > div > span { overflow-wrap: anywhere; }
+
+.music-features { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--border); }
+.music-features h3 { font-size: 14px; font-weight: 600; }
+.music-features dl { display: grid; gap: 8px; margin: 12px 0; }
+.music-features dt { color: var(--text-muted); font-size: 11px; }
+.music-features dd { margin: 0; overflow-wrap: anywhere; }
+.music-features .music-feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+.music-feature-grid > div { min-width: 0; }
+.music-feature-grid dd { font-size: 16px; font-weight: 500; }
+.music-source-summary { display: grid; gap: 4px; margin: 14px 0; }
+.music-source-summary > span { color: var(--text-muted); font-size: 11px; }
+.audio-preview details { margin: 10px 0; }
+.audio-preview summary { cursor: pointer; padding: 5px 0; }
+.music-analysis-mode { margin-top: 16px; }
+.music-manual-link { border-top: 1px solid var(--border); padding-top: 8px; }
+.music-name-sources { min-width: 0; overflow-wrap: anywhere; }
+
+.music-instruments { padding-left: 1.2rem; }
+.music-instruments li { margin: .5rem 0; display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.music-instruments button { flex-shrink: 0; font-size: .75rem; }
+.music-features summary { cursor: pointer; }
+.music-features .instrument-correction-scope { display: flex; align-items: center; gap: .5rem; margin: .75rem 0; }
+.music-features .instrument-correction-scope input { width: auto; flex: 0 0 auto; margin: 0; }

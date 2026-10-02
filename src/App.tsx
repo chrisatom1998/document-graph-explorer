@@ -24,6 +24,7 @@ import { reportPersistenceUnavailable } from './persistence/cache';
 import { initChatHistorySync } from './persistence/chatHistorySync';
 import './styles.css';
 
+const TitleRelationships = lazy(() => import('./graph/TitleRelationships'));
 const CollabAppBridge = lazy(() => import('./collab/AppBridge'));
 const NebulaCanvas = lazy(() => import('./scene/NebulaCanvas'));
 const DropZone = lazy(() => import('./ingest/DropZone'));
@@ -371,6 +372,7 @@ export default function App() {
   return (
     <div className="app-root">
       <Suspense fallback={null}><CollabAppBridge /></Suspense>
+      <Suspense fallback={null}><TitleRelationships /></Suspense>
       <Suspense fallback={<div className="scene-loading" role="status" aria-label="Loading interactive graph" />}>
         <NebulaCanvas />
       </Suspense>

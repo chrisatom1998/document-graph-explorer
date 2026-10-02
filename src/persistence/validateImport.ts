@@ -11,6 +11,7 @@
  * PURE — no store or DOM access, unit-tested in validateImport.test.ts.
  */
 
+import { sanitizeMusicAnalysis } from '../audio/musicTypes';
 import { MAX_NODES } from '../config';
 import type {
   DocNode,
@@ -38,6 +39,7 @@ const MAX_SCANNED_ENTRIES = 100_000;
 // Must mirror the FileType union in model/types.ts, or exporting then
 // reimporting a graph downgrades known file types to 'other'.
 const FILE_TYPES: ReadonlySet<string> = new Set([
+  'audio',
   'md',
   'txt',
   'pdf',
@@ -53,6 +55,10 @@ const FILE_TYPES: ReadonlySet<string> = new Set([
 ]);
 const NODE_STATUSES: ReadonlySet<string> = new Set(['ok', 'partial', 'unreadable']);
 const EDGE_KINDS: ReadonlySet<string> = new Set([
+  'title',
+  'tempo',
+  'key',
+  'instrument',
   'reference',
   'semantic',
   'keyword',
@@ -94,6 +100,7 @@ function sanitizeNode(raw: unknown): DocNode | null {
 
   const node: DocNode = {
     id,
+    ...(n.fileType === 'audio' && sanitizeMusicAnalysis(n.audio) ? { audio: sanitizeMusicAnalysis(n.audio) } : {}),
     kind: n.kind === 'topic' ? 'topic' : 'document',
     title: title || id.slice(0, 12),
     fileType:
@@ -149,6 +156,7 @@ function sanitizeEdge(raw: unknown, nodeIds: ReadonlySet<string>): Edge | null {
     kind,
     weight,
     evidence: asStringList(e.evidence),
+    ...(e.authored === true ? { authored: true } : {}),
   };
 }
 

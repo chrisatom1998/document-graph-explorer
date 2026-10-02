@@ -1,0 +1,89 @@
+import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
+import { INSTRUMENT_LABELS } from './instrumentLabels';
+export const MUSIC_ANALYSIS_VERSION = 2;
+export const KEY_ANALYSIS_REVISION = 2;
+export const TEMPO_ANALYSIS_REVISION = 1;
+export const INSTRUMENT_ANALYSIS_REVISION = 9;
+export interface InstrumentEstimate {
+  label: string;
+  score: number;
+  status?: 'likely' | 'possible';
+  windows?: number;
+  segments?: { start: number; end: number; score: number }[];
+}
+export type MusicAnalysisMode = 'fast' | 'full';
+export interface MusicAnalysis {
+  stage?: 'preview';
+  version: 1 | 2;
+  tempoRevision?: number;
+  keyRevision?: number;
+  analyzedSeconds: number;
+  durationSeconds: number;
+  tempo?: { bpm: number; confidence: number; alternatives?: number[] };
+  key?: { tonic: number; mode: 'major' | 'minor'; strength: number };
+  detectedPitch?: { pitchClass: number; confidence: number };
+  instruments: InstrumentEstimate[];
+  /** Automatic best-match classification. Similarity and margin are not probabilities. */
+  instrumentPrediction?: { label: string; score: number; margin: number; model?: 'MTG-Jamendo' | 'Ensemble' };
+  /** User correction; when present, replaces model instruments for display and links. */
+  confirmedInstruments?: string[];
+  soundProfile?: SoundProfile;
+  instrumentScan?: { mode?: MusicAnalysisMode; revision?: number; complete: boolean; analyzedSeconds: number; windows: number };
+  notes: string[];
+}
+export const KEY_NAMES = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
+export function keyName(key: NonNullable<MusicAnalysis['key']>): string {
+  return `${KEY_NAMES[key.tonic]} ${key.mode}`;
+}
+/** Persisted analysis is untrusted input, like every other imported graph field. */
+export function sanitizeMusicAnalysis(raw: unknown): MusicAnalysis | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const m = raw as Record<string, unknown>;
+  const positive = (v: unknown, max: number): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= max;
+  if ((m.version !== 1 && m.version !== 2) || !positive(m.analyzedSeconds, 90) || !positive(m.durationSeconds, 86400)) return undefined;
+  const out: MusicAnalysis = { version: m.version, analyzedSeconds: m.analyzedSeconds, durationSeconds: m.durationSeconds, instruments: [], notes: [] };
+  if (m.stage === 'preview') out.stage = 'preview';
+  if (Array.isArray(m.confirmedInstruments)) out.confirmedInstruments = [...new Set(m.confirmedInstruments.filter((label): label is string => typeof label === 'string' && INSTRUMENT_LABELS.includes(label)))];
+  out.soundProfile = sanitizeSoundProfile(m.soundProfile);
+  if (!out.soundProfile) delete out.soundProfile;
+  const prediction = m.instrumentPrediction as Record<string, unknown> | undefined;
+  if (prediction && typeof prediction.label === 'string' && INSTRUMENT_LABELS.includes(prediction.label) && positive(prediction.score, 1) && positive(prediction.margin, 2)) {
+    out.instrumentPrediction = { label: prediction.label, score: prediction.score, margin: prediction.margin };
+    if (prediction.model === 'MTG-Jamendo' || prediction.model === 'Ensemble') out.instrumentPrediction.model = prediction.model;
+  }
+  if (positive(m.tempoRevision, 1000) && Number.isInteger(m.tempoRevision)) out.tempoRevision = m.tempoRevision;
+  if (positive(m.keyRevision, 1000) && Number.isInteger(m.keyRevision)) out.keyRevision = m.keyRevision;
+  const t = m.tempo as Record<string, unknown> | undefined;
+  if (t && positive(t.bpm, 250) && t.bpm >= 40 && positive(t.confidence, 1)) out.tempo = { bpm: t.bpm, confidence: t.confidence };
+  if (out.tempo && Array.isArray(t?.alternatives)) out.tempo.alternatives = [...new Set(t.alternatives.filter((v): v is number => positive(v, 250) && v >= 40 && v !== out.tempo!.bpm))].slice(0, 2);
+  const k = m.key as Record<string, unknown> | undefined;
+  if (k && k.source !== 'filename' && positive(k.tonic, 11) && Number.isInteger(k.tonic) && (k.mode === 'major' || k.mode === 'minor') && positive(k.strength, 1)) out.key = { tonic: k.tonic, mode: k.mode, strength: k.strength };
+  const pitch = m.detectedPitch as Record<string, unknown> | undefined;
+  if (pitch && positive(pitch.pitchClass, 11) && Number.isInteger(pitch.pitchClass) && positive(pitch.confidence, 1)) out.detectedPitch = { pitchClass: pitch.pitchClass, confidence: pitch.confidence };
+  if (Array.isArray(m.instruments)) out.instruments = m.instruments.slice(0, 100).flatMap((v: unknown) => {
+    if (!v || typeof v !== 'object') return [];
+    const i = v as Record<string, unknown>;
+    if (typeof i.label !== 'string' || !positive(i.score, 1)) return [];
+    const item: InstrumentEstimate = { label: i.label.slice(0, 80), score: i.score };
+    if (m.version === 2) {
+      if (i.status !== 'likely' && i.status !== 'possible') return [];
+      item.status = i.status;
+      if (positive(i.windows, 20000) && Number.isInteger(i.windows)) item.windows = i.windows;
+      if (Array.isArray(i.segments)) item.segments = i.segments.slice(0, 5).flatMap((segment: unknown) => {
+        if (!segment || typeof segment !== 'object') return [];
+        const s = segment as Record<string, unknown>;
+        return positive(s.start, out.durationSeconds) && positive(s.end, out.durationSeconds) && s.end > s.start && positive(s.score, 1)
+          ? [{ start: s.start, end: s.end, score: s.score }] : [];
+      });
+    }
+    return [item];
+  });
+  const scan = m.instrumentScan as Record<string, unknown> | undefined;
+  if (m.version === 2 && scan && typeof scan.complete === 'boolean' && positive(scan.analyzedSeconds, out.durationSeconds) && positive(scan.windows, 20000) && Number.isInteger(scan.windows)) {
+    out.instrumentScan = { complete: scan.complete, analyzedSeconds: scan.analyzedSeconds, windows: scan.windows };
+    if (scan.mode === 'fast' || scan.mode === 'full') out.instrumentScan.mode = scan.mode;
+    if (positive(scan.revision, 1000) && Number.isInteger(scan.revision)) out.instrumentScan.revision = scan.revision;
+  }
+  if (Array.isArray(m.notes)) out.notes = m.notes.filter((v): v is string => typeof v === 'string').slice(0, 5).map(v => v.slice(0, 250));
+  return out;
+}

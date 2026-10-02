@@ -11,6 +11,8 @@
  * Topic edges are excluded: they join documents to topic-hub octahedra, not
  * documents to documents, and the hubs are hidden unless topicNodesEnabled —
  * counting them would fatten bridges with links the user may not even render.
+ * Manual relationships are excluded too: their direct track-to-track line is
+ * already visible. Adding a cluster trunk makes one manual link look like two.
  */
 
 import type { DocNode, Edge } from '../model/types';
@@ -47,7 +49,7 @@ export function aggregateBridges(
 
   const pairs = new Map<string, ClusterBridge>();
   for (const e of edges) {
-    if (e.kind === 'topic') continue;
+    if (e.kind === 'topic' || e.authored) continue;
     const ca = clusterOf.get(e.source);
     const cb = clusterOf.get(e.target);
     if (ca === undefined || cb === undefined || ca === cb || ca < 0 || cb < 0) continue;

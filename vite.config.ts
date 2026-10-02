@@ -84,7 +84,7 @@ export default defineConfig(({ mode }) => ({
     // transformers.js does its own dynamic ORT backend imports; pre-bundling breaks it.
     // It is also dynamically imported inside pipeline.worker.ts so its module
     // graph never sits on a worker's boot path.
-    exclude: ['@huggingface/transformers'],
+    exclude: ['@huggingface/transformers', 'onnxruntime-web', 'onnxruntime-web/webgpu'],
     // Scan the worker sources at server start so their deps (remark, graphology,
     // d3-force-3d, …) are discovered and optimized UP FRONT. Discovering them
     // mid-session triggers "optimized dependencies changed. reloading", which
@@ -92,6 +92,7 @@ export default defineConfig(({ mode }) => ({
     entries: [
       'index.html',
       'src/workers/pipeline.worker.ts',
+      'src/audio/musicAnalysis.worker.ts',
       'src/workers/aggregator.worker.ts',
       'src/workers/layout.worker.ts',
       'src/workers/insights.worker.ts',
@@ -106,7 +107,7 @@ export default defineConfig(({ mode }) => ({
     // safe (this is the audited exception to avoiding a general include-list,
     // which under Vite 8 produced client-env chunks in workers — `document is
     // not defined`).
-    include: ['graphology', 'graphology-communities-louvain', 'jszip', 'fast-xml-parser'],
+    include: ['essentia.js/dist/essentia.js-core.es.js', 'essentia.js/dist/essentia-wasm.es.js', 'graphology', 'graphology-communities-louvain', 'jszip', 'fast-xml-parser'],
   },
   test: {
     environment: 'node',
