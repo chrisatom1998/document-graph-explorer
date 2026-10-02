@@ -218,7 +218,13 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Add files', exact: true })).toBeInViewport();
     await page.screenshot({ path: testInfo.outputPath('welcome.png') });
-    await importGraphJson(page, boundaryGraphJson(3));
+    // This filter scenario needs isolated nodes. Shared title phrases now
+    // intentionally create relationships, so give each fixture a distinct title.
+    const graph = JSON.parse(boundaryGraphJson(3));
+    graph.nodes.forEach((node: { title: string }, index: number) => {
+      node.title = ['Cedar', 'Birch', 'Maple'][index];
+    });
+    await importGraphJson(page, JSON.stringify(graph));
     const browse = page.getByRole('button', { name: 'Browse documents' });
     await expect(browse).toBeVisible();
     const toolbar = await page.locator('.toolbar').boundingBox();

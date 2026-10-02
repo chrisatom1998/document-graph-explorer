@@ -1,6 +1,6 @@
 # Instrument detection: targeted validation, 2026-10-02
 
-This is a chronological development record. The current implementation is described in **Three-model sound identification, revision 6** below; earlier sections document superseded behavior and earlier checks.
+This is a chronological development record. The latest implementation is described by the revision sections below, through **Avoiding false multi-instrument mixtures (revision 9)**. Earlier sections document superseded behavior and earlier checks.
 
 The improved pipeline retains the bundled quantized AudioSet AST model. It changes how audio reaches the model, how much of each recording is heard, how instrument labels are retained, and what evidence can create a graph relationship.
 
