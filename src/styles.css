@@ -3310,28 +3310,37 @@ mark.passage-mark {
 }
 
 /* ==========================================================================
-   Toast host — global error/warning feedback (top-right, stacked)
+   Toast host — global error/warning feedback (bottom-right, stacked)
    ========================================================================== */
 
 .toast-host {
   position: fixed;
-  top: 18px;
-  /* 74px instead of 18px: clears SidePanel's close button (top-right of a
-     full-height right-docked panel) so toasts never render underneath it. */
-  right: 74px;
+  /* Reserve the top for the toolbar/reader header and the bottom 90px
+     for chat and status controls, including on narrow screens. */
+  bottom: max(90px, env(safe-area-inset-bottom));
+  right: 18px;
   z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  pointer-events: none;
-  width: min(340px, calc(100vw - 92px));
+  width: min(340px, calc(100vw - 36px));
   max-width: min(340px, 92vw);
+  max-height: min(45dvh, calc(100dvh - 182px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+}
+
+/* The minimap is 156px tall plus padding, at an 18px bottom inset.
+   Clear it vertically even when the reader shifts it left. */
+.app-root:has(.minimap) .toast-host {
+  bottom: 196px;
+  max-height: min(45dvh, calc(100dvh - 288px));
 }
 
 .toast {
-  /* The visual card may overlap a docked panel. Only its actual controls
-     should capture input; clicking the message passes through to the UI. */
-  pointer-events: none;
+  /* Keep the scrollable notification stack and its controls interactive. */
+  pointer-events: auto;
   position: relative;
   inset: auto;
   width: 100%;
@@ -3356,6 +3365,8 @@ mark.passage-mark {
 
 .toast__text {
   flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 12.5px;
   line-height: 1.45;
   color: var(--text-primary);
@@ -3372,6 +3383,17 @@ mark.passage-mark {
 
 .toast .icon-btn-close {
   pointer-events: auto;
+  flex: none;
+}
+
+@media (max-width: 480px) {
+  .toast {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .toast__text { grid-column: 1; grid-row: 1; }
+  .toast .icon-btn-close { grid-column: 2; grid-row: 1; }
+  .toast__action { grid-column: 1 / -1; justify-self: start; }
 }
 
 /* ==========================================================================

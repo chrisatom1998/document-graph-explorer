@@ -1,6 +1,7 @@
 /**
  * Per-corpus document annotations (notes, tags, pins) with lazy hydration
- * and debounced, per-key save-through persistence.
+ * and debounced, per-key save-through persistence. A synchronous recovery
+ * journal preserves edits if reload interrupts the debounce or database write.
  *
  * Race posture (simpler than chatHistorySync's, on purpose): every edit is
  * tagged with the corpus id the store hydrated FROM, and the debounced save
@@ -26,6 +27,8 @@ import {
   getCorpusRecord,
   updateCorpusAnnotations,
 } from '../persistence/corpusRepository';
+
+import { clearJournalAnnotation, journalAnnotation, recoverAnnotations } from './annotationRecovery';
 
 const SAVE_DEBOUNCE_MS = 350;
 const RETRY_AFTER_FAILURE_MS = 15_000;
@@ -85,6 +88,7 @@ interface AnnotationState {
   /** Corpus id these annotations belong to; null until first hydration. */
   scope: string | null;
   annotations: Record<string, DocAnnotationRecord>;
+  saveStatus: 'saved' | 'saving' | 'error';
   /** Replace everything (hydration). */
   hydrate: (scope: string, annotations: Record<string, DocAnnotationRecord>) => void;
   /** Merge one doc's annotation and schedule a persist to the hydrated scope. */
@@ -101,6 +105,7 @@ let loadGeneration = 0;
 interface PendingAnnotation {
   generation: number;
   value: DocAnnotationRecord | null;
+  journal: string | null;
 }
 let dirtyByScope = new Map<string, Map<string, PendingAnnotation>>();
 let editGeneration = 0;
@@ -131,10 +136,13 @@ function markDirty(scope: string, key: string, record: DocAnnotationRecord | und
     dirty = new Map();
     dirtyByScope.set(scope, dirty);
   }
+  const value = !record || isHusk(record) ? null : record;
   dirty.set(key, {
     generation: ++editGeneration,
-    value: !record || isHusk(record) ? null : record,
+    value,
+    journal: journalAnnotation(scope, key, value),
   });
+  useAnnotationStore.setState({ saveStatus: 'saving' });
 }
 
 async function writeDirty(): Promise<void> {
@@ -146,6 +154,7 @@ async function writeDirty(): Promise<void> {
     try {
       await updateCorpusAnnotations(scope, patch);
       for (const [key, pending] of snapshot) {
+        if (pending.journal) clearJournalAnnotation(scope, key, pending.journal);
         if (dirty.get(key)?.generation === pending.generation) dirty.delete(key);
       }
       if (dirty.size === 0 && dirtyByScope.get(scope) === dirty) dirtyByScope.delete(scope);
@@ -156,6 +165,8 @@ async function writeDirty(): Promise<void> {
     }
   }
   if (dirtyByScope.size === 0) failureToastShown = false;
+  const activeDirty = dirtyByScope.get(useAnnotationStore.getState().scope ?? '');
+  useAnnotationStore.setState({ saveStatus: activeDirty?.size ? (failed ? 'error' : 'saving') : 'saved' });
   if (failed) {
     if (retryTimer) clearTimeout(retryTimer);
     retryTimer = setTimeout(() => {
@@ -199,6 +210,7 @@ export async function flushAnnotationSave(): Promise<void> {
 export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   scope: null,
   annotations: {},
+  saveStatus: 'saved',
   hydrate: (scope, annotations) => {
     const next = sanitize(annotations);
     // A retry may still be pending when the user returns to this workspace.
@@ -206,7 +218,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
       if (pending.value === null) delete next[key];
       else next[key] = pending.value;
     }
-    set({ scope, annotations: next });
+    set({ scope, annotations: next, saveStatus: dirtyByScope.get(scope)?.size ? 'saving' : 'saved' });
   },
   update: (key, patch) => {
     const { scope, annotations } = get();
@@ -255,7 +267,21 @@ export function ensureAnnotationsLoaded(corpusId: string): Promise<boolean> {
       await flushAnnotationSave();
       const record = await getCorpusRecord(corpusId);
       if (generation !== loadGeneration) return false;
+      // Recover only this corpus, after reading its durable snapshot. A newer
+      // committed annotation wins over an older interrupted write.
+      for (const recovered of recoverAnnotations(corpusId)) {
+        if ((record?.annotations?.[recovered.key]?.updatedAt ?? 0) > recovered.updatedAt) {
+          clearJournalAnnotation(corpusId, recovered.key, recovered.serialized);
+          continue;
+        }
+        let dirty = dirtyByScope.get(corpusId);
+        if (!dirty) { dirty = new Map(); dirtyByScope.set(corpusId, dirty); }
+        if (!dirty.has(recovered.key)) dirty.set(recovered.key, {
+          generation: ++editGeneration, value: recovered.value, journal: recovered.serialized,
+        });
+      }
       useAnnotationStore.getState().hydrate(corpusId, record?.annotations ?? {});
+      if (dirtyByScope.get(corpusId)?.size) schedulePersist();
       return true;
     } catch (error) {
       console.warn('[knowledge-nebula] annotation restore failed', error);
@@ -284,5 +310,5 @@ export function _resetAnnotationsForTests(): void {
   loadingPromise = null;
   loadGeneration++;
   failureToastShown = false;
-  useAnnotationStore.setState({ scope: null, annotations: {} });
+  useAnnotationStore.setState({ scope: null, annotations: {}, saveStatus: 'saved' });
 }

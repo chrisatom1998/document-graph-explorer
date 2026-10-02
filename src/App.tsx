@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import Tooltip from './ui/Tooltip';
 import ChatLauncher from './ui/ChatLauncher';
 import InsightsDigest from './ui/InsightsDigest';
@@ -8,12 +8,8 @@ import { useGraphStore } from './store/graphStore';
 import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { useCorpusStore } from './store/corpusStore';
-import { layoutSetDims, onLayoutSettled } from './layout/layoutBridge';
-import {
-  clearIngestBirthSteer,
-  isIngestFraming,
-  wasIngestBirthSteered,
-} from './scene/ingestGesture';
+import { layoutSetDims } from './layout/layoutBridge';
+import { useInitialGraphFrame } from './scene/useInitialGraphFrame';
 import { enqueueRun } from './pipeline/runQueue';
 import { positionBuffer, slotOfId } from './scene/positionBuffer';
 import { cameraPose } from './scene/cameraPose';
@@ -149,39 +145,7 @@ export default function App() {
     initChatHistorySync();
   }, []);
 
-  // Auto-frame: while a fresh corpus is forming, re-fit the camera on every
-  // layout settle so the nebula is always in view; stop after the settle that
-  // follows 'ready' so the user owns the camera from then on.
-  const needsFrame = useRef(true);
-  useEffect(() => {
-    if (!hasNodes) {
-      needsFrame.current = true; // next corpus gets framed again
-      clearIngestBirthSteer(); // fresh corpus: an old steer must not block its first fit
-      return;
-    }
-    return onLayoutSettled(() => {
-      if (!needsFrame.current) return;
-      const ready = useGraphStore.getState().phase === 'ready';
-      // Live first-ingest framing is owned by CameraRig (slow ease-out).
-      // Incremental add never sets that flag; session restore still fit-alls
-      // here. A ready-state settle completes the initial framing either way —
-      // leaving needsFrame set would make the NEXT incremental add's settle
-      // fitAll and steal the user's camera.
-      if (isIngestFraming()) {
-        if (ready) needsFrame.current = false;
-        return;
-      }
-      // A mid-ingest orbit/pan cancels the follow AND this handler's fitAll:
-      // the no-steal guarantee means once the user takes the camera during a
-      // corpus's formation, nothing auto-fits that corpus behind them.
-      if (wasIngestBirthSteered()) {
-        needsFrame.current = false;
-        return;
-      }
-      useUiStore.getState().sendCamera('fitAll');
-      if (ready) needsFrame.current = false;
-    });
-  }, [hasNodes]);
+  useInitialGraphFrame(hasNodes);
 
   // Dev-only introspection for automated verification (position spread etc.).
   useEffect(() => {

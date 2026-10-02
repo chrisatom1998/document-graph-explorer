@@ -145,6 +145,14 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await openPostgres();
   await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('Persistence regression note');
   await expect(page.getByRole('button', { name: 'Remove tag regression' })).toBeVisible();
+
+  // Reload directly from the editor, before the debounce or panel-close flush.
+  await page.getByRole('textbox', { name: 'Document note' }).fill('Immediate reload note');
+  await page.reload();
+  await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents');
+  await openPostgres();
+  await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('Immediate reload note');
+  await expect(page.getByRole('button', { name: 'Remove tag regression' })).toBeVisible();
   await page.getByRole('button', { name: 'Back to graph' }).click();
 
   await page.getByRole('button', { name: 'Add documents', exact: true }).click();

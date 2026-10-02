@@ -38,7 +38,7 @@ function doc(id: string, path: string): DocNode {
 describe('NotesTagsSection', () => {
   beforeEach(() => {
     getCorpusRecordMock.mockReset().mockResolvedValue({ annotations: {} });
-    updateCorpusAnnotationsMock.mockClear();
+    updateCorpusAnnotationsMock.mockReset().mockResolvedValue(undefined);
     useCorpusStore.setState({ activeCorpusId: 'c1', mode: 'local' });
     // Tag suggestions only come from documents still present in the graph.
     useGraphStore.setState({
@@ -76,6 +76,33 @@ describe('NotesTagsSection', () => {
     expect(useAnnotationStore.getState().annotations['docs/a.md']?.tags).toEqual([
       'architecture',
     ]);
+  });
+
+  it('reports saving until the database acknowledges the note', async () => {
+    let complete!: () => void;
+    updateCorpusAnnotationsMock.mockImplementationOnce(() => new Promise<void>(resolve => { complete = resolve; }));
+    render(<NotesTagsSection docKey="docs/a.md" />);
+    const note = await screen.findByLabelText('Document note');
+    fireEvent.change(note, { target: { value: 'durable note' } });
+    expect(screen.getByRole('status')).toHaveTextContent('Saving notes…');
+    const { flushAnnotationSave } = await import('../store/annotationStore');
+    const pending = flushAnnotationSave();
+    expect(screen.getByRole('status')).not.toHaveTextContent('Notes saved');
+    await act(async () => { complete(); await pending; });
+    expect(screen.getByRole('status')).toHaveTextContent('Notes saved on this device.');
+  });
+
+  it('shows an explicit save failure while keeping the editable note', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(<NotesTagsSection docKey="docs/a.md" />);
+    const note = await screen.findByLabelText('Document note');
+    fireEvent.change(note, { target: { value: 'pending note' } });
+    updateCorpusAnnotationsMock.mockRejectedValueOnce(new Error('quota'));
+    const { flushAnnotationSave } = await import('../store/annotationStore');
+    await act(async () => { await flushAnnotationSave(); });
+    expect(screen.getByRole('status')).toHaveTextContent('Could not finish saving notes');
+    expect(note).toHaveValue('pending note');
+    warn.mockRestore();
   });
 
   it('pin toggles and clicking a tag chip removes it', async () => {

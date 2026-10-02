@@ -31,6 +31,7 @@ export default function NotesTagsSection({ docKey }: NotesTagsSectionProps) {
   const scope = useAnnotationStore((s) => s.scope);
   const annotation = useAnnotationStore((s) => s.annotations[docKey]);
   const update = useAnnotationStore((s) => s.update);
+  const saveStatus = useAnnotationStore((s) => s.saveStatus);
   const allAnnotations = useAnnotationStore((s) => s.annotations);
   const nodes = useGraphStore((s) => s.nodes);
   const [tagDraft, setTagDraft] = useState('');
@@ -98,6 +99,11 @@ export default function NotesTagsSection({ docKey }: NotesTagsSectionProps) {
           {current.pinned ? '★ Pinned' : '☆ Pin'}
         </button>
       </div>
+      <p role="status" className="side-panel__summary">
+        {saveStatus === 'saved' ? 'Notes saved on this device.' : saveStatus === 'error'
+          ? 'Could not finish saving notes. Keep this tab open while we retry.'
+          : 'Saving notes…'}
+      </p>
       <textarea
         className="side-panel__note-input"
         value={current.note}
