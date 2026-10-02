@@ -287,13 +287,15 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     if (!scope) return;
     const nextAll = { ...annotations };
     const next = annotation ? sanitize({ [key]: annotation })[key] : undefined;
-    const updatedAt = next?.updatedAt ?? nextVersion(scope, key);
-    if (next && updatedAt < (versionsByScope.get(scope)?.get(key) ?? 0)) return;
+    const pending = dirtyByScope.get(scope)?.get(key);
+    const baseline = pending?.remoteBase !== undefined ? pending.remoteBase : annotations[key] ?? null;
+    // Yjs deletes have no timestamp. Reuse the replaced note's clock so a
+    // delayed delete cannot beat a newer committed edit by wall time.
+    const updatedAt = next?.updatedAt ?? baseline?.updatedAt ?? 0;
+    if (updatedAt < (versionsByScope.get(scope)?.get(key) ?? 0)) return;
     if (!next || isEmpty(next)) delete nextAll[key];
     else nextAll[key] = next;
     set({ annotations: nextAll });
-    const pending = dirtyByScope.get(scope)?.get(key);
-    const baseline = pending?.remoteBase !== undefined ? pending.remoteBase : annotations[key] ?? null;
     markDirty(scope, key, nextAll[key], updatedAt, baseline);
     schedulePersist();
   },

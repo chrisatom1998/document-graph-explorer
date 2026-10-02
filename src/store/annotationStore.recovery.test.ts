@@ -158,3 +158,12 @@ it('preserves live collaboration equal-time winners without upgrading their edit
   useAnnotationStore.getState().applyRemote('document', { note: 'old remote', tags: [], pinned: false, updatedAt: 99 });
   expect(useAnnotationStore.getState().annotations.document.note).toBe('Yjs winner');
 });
+it('persists a remote delete at the replaced note clock so a later committed note wins', async () => {
+  repository.getCorpusRecord.mockResolvedValue({ annotations: { document: { note: 'local', tags: [], pinned: false, updatedAt: 100 } } });
+  await ensureAnnotationsLoaded('A');
+  vi.spyOn(Date, 'now').mockReturnValue(5000);
+  useAnnotationStore.getState().applyRemote('document', null);
+  await flushAnnotationSave();
+  expect(repository.updateCorpusAnnotations).toHaveBeenLastCalledWith('A', { document: null }, { document: 100 }, { document: { note: 'local', tags: [], pinned: false, updatedAt: 100 } });
+  expect(useAnnotationStore.getState().annotations.document).toBeUndefined();
+});

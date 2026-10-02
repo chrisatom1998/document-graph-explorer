@@ -323,13 +323,18 @@ export async function updateCorpusAnnotations(
       const valid = (version: number | undefined) => Number.isSafeInteger(version) && version! >= 0 ? version! : 0;
       const durable = Math.max(valid(clocks[key]), valid(next[key]?.updatedAt));
       const incoming = versions[key] ?? value?.updatedAt ?? Date.now();
+      const hasRemoteBase = Object.hasOwn(remoteBases, key);
+      const remoteMatches = hasRemoteBase && JSON.stringify(next[key] ?? null) === JSON.stringify(remoteBases[key]);
       // Compare and write in ONE readwrite transaction: a hydration-time check
       // cannot protect against a different tab committing before this write.
       // Local/recovery ties retain the committed value. A LIVE Yjs change
       // already has a CRDT winner and may conditionally replace its baseline;
       // a retry must not overwrite a different winner saved in the meantime.
       // Journals never retain this privilege, and older versions still lose.
-      if (Number.isSafeInteger(incoming) && (incoming > durable || (incoming === durable && Object.hasOwn(remoteBases, key) && JSON.stringify(next[key] ?? null) === JSON.stringify(remoteBases[key])))) {
+      // Yjs deletes have no trustworthy clock: a later minted time must not
+      // remove a different saved note. Only a matching remote baseline may.
+      const remoteDelete = value === null && hasRemoteBase;
+      if (Number.isSafeInteger(incoming) && ((incoming > durable && !remoteDelete) || (incoming >= durable && remoteMatches))) {
         if (value === null) delete next[key];
         else next[key] = { ...value, updatedAt: incoming };
         clocks[key] = incoming; // deletion tombstones must survive reload
