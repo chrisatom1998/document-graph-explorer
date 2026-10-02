@@ -3,7 +3,13 @@ import type { Plugin } from 'vite';
 /** Essentia 0.1.3's old Embind glue generates wrappers with Function.
  * Equivalent closures let the bundled WASM run without allowing unsafe-eval.
  * Fail the build if upstream changes, rather than silently shipping unsafe glue.
+ *
+ * Match Function as a constructor / eval — not identifiers like createNamedFunction.
+ * Also catch emval_get_global's `return Function}()("return this")` idiom.
  */
+const DYNAMIC_CODEGEN =
+  /\b(?:new\s+)?Function\s*\(|\bnew_\(Function\s*,|\beval\s*\(|return\s+Function\b/;
+
 export function makeEssentiaCspSafe(source: string): string {
   const replacements = [
     ['function createNamedFunction(', 'function extendError(', `function createNamedFunction(name, body) {
@@ -73,12 +79,12 @@ export function makeEssentiaCspSafe(source: string): string {
   for (const [start, end, replacement] of replacements) {
     const from = source.indexOf(start);
     const to = source.indexOf(end, from);
-    if (from < 0 || to < 0 || !source.slice(from, to).includes('Function')) {
+    if (from < 0 || to < 0 || !DYNAMIC_CODEGEN.test(source.slice(from, to))) {
       throw new Error(`Essentia CSP compatibility needs review: ${start}`);
     }
     source = source.slice(0, from) + replacement + source.slice(to);
   }
-  if (/\bnew\s+Function\s*\(|\bnew_\(Function\s*,|\beval\s*\(/.test(source)) {
+  if (DYNAMIC_CODEGEN.test(source)) {
     throw new Error('Essentia still contains dynamic code generation.');
   }
   return source;

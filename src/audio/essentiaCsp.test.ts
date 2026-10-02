@@ -38,8 +38,9 @@ describe('Essentia under the production content security policy', () => {
   });
 
   it('removes dynamic compilation from the actual bundled dependency', () => {
-    expect(safe).not.toMatch(/\bnew\s+Function\s*\(|\bnew_\(Function\s*,|\beval\s*\(/);
+    expect(safe).not.toMatch(/\b(?:new\s+)?Function\s*\(|\bnew_\(Function\s*,|\beval\s*\(|return\s+Function\b/);
     expect(original).toContain('new Function(');
+    expect(original).toContain('return Function');
   });
 
   it('initializes the real WASM module and exercises native vector bindings without eval', async () => {
@@ -66,5 +67,16 @@ describe('Essentia under the production content security policy', () => {
 
   it('requires review when the upstream glue changes', () => {
     expect(() => makeEssentiaCspSafe(original.replace('function craftEmvalAllocator(', 'function changedAllocator('))).toThrow('needs review');
+  });
+
+  it('requires review when a Function-named wrapper no longer compiles code', () => {
+    const from = original.indexOf('function createNamedFunction(');
+    const to = original.indexOf('function extendError(', from);
+    const stripped = `${original.slice(0, from)}function createNamedFunction(name,body){return body}${original.slice(to)}`;
+    expect(() => makeEssentiaCspSafe(stripped)).toThrow('needs review');
+  });
+
+  it('rejects leftover Function calls without new', () => {
+    expect(() => makeEssentiaCspSafe(`${original}\nFunction("return this")`)).toThrow('dynamic code generation');
   });
 });
