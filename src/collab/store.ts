@@ -1,3 +1,4 @@
+import { annotationVersion, validPeerAnnotationVersion } from '../persistence/annotationVersion';
 import { create } from 'zustand';
 import type { YMapEvent } from 'yjs';
 import { layoutEpoch, layoutSetDims, layoutSettledEpoch, onLayoutSettled } from '../layout/layoutBridge';
@@ -690,8 +691,12 @@ export async function applySharedView(view: Partial<Record<string, unknown>>): P
 }
 
 function annotationTimestamp(value: DocAnnotationRecord | undefined): number {
-  return value && typeof value.updatedAt === 'number' ? value.updatedAt : 0;
+  return annotationVersion(value?.updatedAt);
 }
+
+// Keep the keys associated with this binding even after deletion or graph removal.
+// Other peers' unrelated keys must remain untouched when this client opts out.
+const sharedAnnotationKeys = new WeakMap<CollabSession, Set<string>>();
 
 async function bindAnnotationSync(session: CollabSession, token: number): Promise<() => void> {
   const corpus = useCorpusStore.getState();
@@ -713,6 +718,8 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
   const canSync = (): boolean => isCurrentBinding() && useAnnotationStore.getState().scope === corpusId;
 
   const map = session.annotations;
+  const sharedKeys = sharedAnnotationKeys.get(session) ?? new Set<string>();
+  sharedAnnotationKeys.set(session, sharedKeys);
   let applyingRemote = false;
   const mappedKeys = new Map<string, string>(); // shared key -> local annotation key
 
@@ -722,6 +729,7 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
     );
     if (hit) {
       mappedKeys.set(hit.id, key);
+      sharedKeys.add(hit.id);
       return hit.id;
     }
     // Durable annotations can outlive their documents; their keys may be disk paths.
@@ -731,6 +739,7 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
   const localKeyForShared = (sharedKey: string): string | null => {
     const hit = useGraphStore.getState().nodes.find((node) => node.id === sharedKey);
     if (!hit) return null;
+    sharedKeys.add(sharedKey);
     const localKey = mappedKeys.get(sharedKey);
     if (localKey) return localKey;
     return annotationKey(hit);
@@ -742,7 +751,7 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
     const localKey = localKeyForShared(key);
     if (localKey === null) return;
     const local = annotationSyncSnapshot()[localKey];
-    if (remote && local && annotationTimestamp(local) > annotationTimestamp(remote)) {
+    if (remote && local && annotationTimestamp(local) > (validPeerAnnotationVersion(remote.updatedAt) ? remote.updatedAt : 0)) {
       map.set(key, local);
       return;
     }
@@ -765,7 +774,7 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
       const sharedKey = annotationKeyForLocal(key);
       if (sharedKey === null) continue;
       const remote = map.get(sharedKey);
-      if (!remote || annotationTimestamp(local) >= annotationTimestamp(remote)) {
+      if (!remote || annotationTimestamp(local) >= (validPeerAnnotationVersion(remote.updatedAt) ? remote.updatedAt : 0)) {
         map.set(sharedKey, local);
       } else {
         applyMapChange(sharedKey);
@@ -994,14 +1003,10 @@ export const useCollabStore = create<CollaborationState>((set, get) => ({
     stopAnnotationSync = null;
     if (session && !enabled) {
       session.doc.transact(() => {
-        for (const key of Object.keys(useAnnotationStore.getState().annotations)) {
-          const candidate = useGraphStore.getState().nodes.find(
-            (node) => node.id === key || node.path === key || `${node.title} ${node.id}` === key,
-          );
-          if (!candidate) continue;
-          const sharedKey = candidate.id;
-          if (session.annotations.has(sharedKey)) session.annotations.delete(sharedKey);
+        for (const key of sharedAnnotationKeys.get(session) ?? []) {
+          session.annotations.delete(key);
         }
+        sharedAnnotationKeys.delete(session);
       });
     }
     set({ shareNotes: enabled });

@@ -154,7 +154,7 @@ it('preserves live collaboration equal-time winners without upgrading their edit
   await ensureAnnotationsLoaded('A');
   useAnnotationStore.getState().applyRemote('document', { note: 'Yjs winner', tags: [], pinned: false, updatedAt: 100 });
   await flushAnnotationSave();
-  expect(repository.updateCorpusAnnotations).toHaveBeenLastCalledWith('A', { document: expect.objectContaining({ note: 'Yjs winner', updatedAt: 100 }) }, { document: 100 }, { document: { note: 'local', tags: [], pinned: false, updatedAt: 100 } });
+  expect(repository.updateCorpusAnnotations).toHaveBeenLastCalledWith('A', { document: expect.objectContaining({ note: 'Yjs winner', updatedAt: 100 }) }, { document: 100 }, { document: { value: { note: 'local', tags: [], pinned: false, updatedAt: 100 }, updatedAt: 100 } });
   useAnnotationStore.getState().applyRemote('document', { note: 'old remote', tags: [], pinned: false, updatedAt: 99 });
   expect(useAnnotationStore.getState().annotations.document.note).toBe('Yjs winner');
 });
@@ -178,4 +178,88 @@ it('ignores malformed peer records without throwing or modifying a saved note', 
   useAnnotationStore.getState().update('document', { note: 'keep' });
   expect(() => useAnnotationStore.getState().applyRemote('document', 'bad' as never)).not.toThrow();
   expect(useAnnotationStore.getState().annotations.document.note).toBe('keep');
+});
+
+it('captures and advances the full deletion baseline for queued live changes only after a winning write', async () => {
+  repository.getCorpusRecord.mockResolvedValue({ annotations: {}, annotationVersions: { document: 100 } });
+  await ensureAnnotationsLoaded('A');
+  const deletion = { note: '', tags: [], pinned: false, updatedAt: 101 };
+  useAnnotationStore.getState().applyRemote('document', deletion);
+  let complete!: (value: unknown) => void;
+  repository.updateCorpusAnnotations.mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
+  const saving = flushAnnotationSave();
+  useAnnotationStore.getState().applyRemote('document', { ...deletion, note: 'next winner' });
+  complete({ document: { value: null, updatedAt: 101 } });
+  await saving;
+  await flushAnnotationSave();
+  expect(repository.updateCorpusAnnotations).toHaveBeenLastCalledWith('A', { document: expect.objectContaining({ note: 'next winner' }) }, { document: 101 }, { document: { value: null, updatedAt: 101 } });
+});
+
+it('does not advance a queued null baseline when a competing deletion wins', async () => {
+  await ensureAnnotationsLoaded('A');
+  const value = { note: 'first', tags: [], pinned: false, updatedAt: 100 };
+  useAnnotationStore.getState().applyRemote('document', value);
+  let complete!: (value: unknown) => void;
+  repository.updateCorpusAnnotations.mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
+  const saving = flushAnnotationSave();
+  useAnnotationStore.getState().applyRemote('document', { ...value, note: 'queued' });
+  complete({ document: { value: null, updatedAt: 100 } });
+  await saving;
+  await flushAnnotationSave();
+  expect(repository.updateCorpusAnnotations.mock.lastCall?.[3]).toEqual({ document: { value: null, updatedAt: 0 } });
+});
+
+it('rejects extreme peers and preserves healthy local edits and deletion', async () => {
+  vi.spyOn(Date, 'now').mockReturnValue(1000);
+  await ensureAnnotationsLoaded('A');
+  useAnnotationStore.getState().update('document', { note: 'keep' });
+  useAnnotationStore.getState().applyRemote('document', { note: 'poison', tags: [], pinned: false, updatedAt: Number.MAX_SAFE_INTEGER });
+  expect(useAnnotationStore.getState().annotations.document.note).toBe('keep');
+  useAnnotationStore.getState().update('document', { note: 'edit' });
+  expect(useAnnotationStore.getState().annotations.document.updatedAt).toBe(1001);
+  useAnnotationStore.getState().update('document', { note: '' });
+  await flushAnnotationSave();
+  expect(repository.updateCorpusAnnotations).toHaveBeenLastCalledWith('A', { document: null }, { document: 1002 }, {});
+});
+
+it('retains legacy poisoned content but removes its clock authority on hydration', async () => {
+  vi.spyOn(Date, 'now').mockReturnValue(1000);
+  repository.getCorpusRecord.mockResolvedValue({ annotations: { document: { note: 'keep me', tags: [], pinned: false, updatedAt: Number.MAX_SAFE_INTEGER } }, annotationVersions: { document: Number.MAX_SAFE_INTEGER } });
+  await ensureAnnotationsLoaded('A');
+  expect(useAnnotationStore.getState().annotations.document).toMatchObject({ note: 'keep me', updatedAt: 0 });
+  useAnnotationStore.getState().update('document', { note: 'edited' });
+  expect(useAnnotationStore.getState().annotations.document.updatedAt).toBe(1000);
+});
+
+it('recovers a healthy journal over a poisoned tombstone and ignores poisoned journals', async () => {
+  repository.getCorpusRecord.mockResolvedValue({ annotations: {}, annotationVersions: { document: Number.MAX_SAFE_INTEGER } });
+  journalAnnotation('A', 'document', { note: 'healthy recovery', tags: [], pinned: false, updatedAt: 100 });
+  journalAnnotation('A', 'document', { note: 'poison', tags: [], pinned: false, updatedAt: Number.MAX_SAFE_INTEGER });
+  journalAnnotation('A', 'document', null, Number.MAX_SAFE_INTEGER);
+  expect(recoverAnnotations('A')).toHaveLength(1);
+  await ensureAnnotationsLoaded('A');
+  expect(useAnnotationStore.getState().annotations.document.note).toBe('healthy recovery');
+});
+
+it('keeps edits and deletion recoverable after accepting the peer skew ceiling', async () => {
+  vi.spyOn(Date, 'now').mockReturnValue(1000);
+  const ceiling = 1000 + 24 * 60 * 60 * 1000;
+  const value = { note: 'peer', tags: [], pinned: false, updatedAt: ceiling };
+  repository.getCorpusRecord.mockResolvedValue({ annotations: { document: value } });
+  await ensureAnnotationsLoaded('A');
+  useAnnotationStore.getState().applyRemote('document', { ...value, note: 'too far', updatedAt: ceiling + 1 });
+  expect(useAnnotationStore.getState().annotations.document.note).toBe('peer');
+  useAnnotationStore.getState().applyRemote('document', value);
+  useAnnotationStore.getState().update('document', { note: 'local' });
+  useAnnotationStore.getState().update('document', { note: 'local again' });
+  expect(useAnnotationStore.getState().annotations.document.updatedAt).toBe(ceiling + 2);
+  _resetAnnotationsForTests();
+  await ensureAnnotationsLoaded('A');
+  expect(useAnnotationStore.getState().annotations.document.note).toBe('local again');
+  useAnnotationStore.getState().update('document', { note: '' });
+  _resetAnnotationsForTests();
+  await ensureAnnotationsLoaded('A');
+  expect(useAnnotationStore.getState().annotations.document).toBeUndefined();
+  await flushAnnotationSave();
+  expect(repository.updateCorpusAnnotations).toHaveBeenLastCalledWith('A', { document: null }, { document: ceiling + 3 }, {});
 });

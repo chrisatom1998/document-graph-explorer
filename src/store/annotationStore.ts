@@ -20,6 +20,8 @@
  * annotationKey) so an edited file keeps its notes.
  */
 
+import { annotationVersion, validAnnotationVersion, validPeerAnnotationVersion } from '../persistence/annotationVersion';
+import type { AnnotationWriteResult } from '../persistence/corpusRepository';
 import { create } from 'zustand';
 import type { DocNode } from '../model/types';
 import type { DocAnnotationRecord } from '../persistence/db';
@@ -78,7 +80,7 @@ function sanitize(
         ? value.tags.filter((t): t is string => typeof t === 'string')
         : [],
       pinned: value.pinned === true,
-      updatedAt: Number.isSafeInteger(value.updatedAt) && value.updatedAt >= 0 ? value.updatedAt : 0,
+      updatedAt: annotationVersion(value.updatedAt),
     };
   }
   return out;
@@ -107,20 +109,20 @@ interface PendingAnnotation {
   value: DocAnnotationRecord | null;
   journal: string | null;
   updatedAt: number;
-  remoteBase?: DocAnnotationRecord | null;
+  remoteBase?: AnnotationWriteResult;
 }
 let dirtyByScope = new Map<string, Map<string, PendingAnnotation>>();
 let editGeneration = 0;
 let versionsByScope = new Map<string, Map<string, number>>();
 let writing: Promise<void> | null = null;
 function observeVersion(scope: string, key: string, version: number): void {
-  if (!Number.isSafeInteger(version) || version < 0) return;
+  if (!validAnnotationVersion(version)) return;
   let versions = versionsByScope.get(scope);
   if (!versions) { versions = new Map(); versionsByScope.set(scope, versions); }
   versions.set(key, Math.max(versions.get(key) ?? 0, version));
 }
 function nextVersion(scope: string, key: string): number {
-  return Math.max(Date.now(), (versionsByScope.get(scope)?.get(key) ?? 0) + 1);
+  return Math.max(Date.now(), annotationVersion(versionsByScope.get(scope)?.get(key)) + 1);
 }
 function sameAnnotation(a: DocAnnotationRecord | null, b: DocAnnotationRecord | null): boolean {
   return a === b || Boolean(a && b && a.note === b.note && a.pinned === b.pinned && JSON.stringify(a.tags) === JSON.stringify(b.tags));
@@ -146,7 +148,7 @@ function toastSaveFailure(): void {
   });
 }
 
-function markDirty(scope: string, key: string, record: DocAnnotationRecord | undefined, updatedAt: number, remoteBase?: DocAnnotationRecord | null): void {
+function markDirty(scope: string, key: string, record: DocAnnotationRecord | undefined, updatedAt: number, remoteBase?: AnnotationWriteResult): void {
   let dirty = dirtyByScope.get(scope);
   if (!dirty) {
     dirty = new Map();
@@ -194,7 +196,7 @@ async function writeDirtyBatch(): Promise<void> {
         // another tab's different value was returned as the transaction winner.
         if (later && later.generation !== pending.generation && later.remoteBase !== undefined && result &&
             result.updatedAt === pending.updatedAt && sameAnnotation(result.value, pending.value) &&
-            JSON.stringify(later.remoteBase) === JSON.stringify(pending.remoteBase)) later.remoteBase = result.value;
+            JSON.stringify(later.remoteBase) === JSON.stringify(pending.remoteBase)) later.remoteBase = result;
         if (dirty.get(key)?.generation === pending.generation) {
           dirty.delete(key);
           if (result && useAnnotationStore.getState().scope === scope && !sameAnnotation(pending.value, result.value)) {
@@ -287,12 +289,12 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     const { scope, annotations } = get();
     // Legacy Y.Map removals carry no edit time. They cannot safely delete a
     // local note: a delayed removal is indistinguishable from a new deletion.
-    if (!scope || !annotation) return;
+    if (!scope || !annotation || !validPeerAnnotationVersion(annotation.updatedAt)) return;
     const nextAll = { ...annotations };
     const next = sanitize({ [key]: annotation })[key];
     if (!next) return;
     const pending = dirtyByScope.get(scope)?.get(key);
-    const baseline = pending?.remoteBase !== undefined ? pending.remoteBase : annotations[key] ?? null;
+    const baseline = pending?.remoteBase ?? { value: annotations[key] ?? null, updatedAt: versionsByScope.get(scope)?.get(key) ?? 0 };
     // Empty, timestamped records represent shared deletion tombstones.
     const updatedAt = next.updatedAt;
     if (updatedAt < (versionsByScope.get(scope)?.get(key) ?? 0)) return;
@@ -340,7 +342,7 @@ export function ensureAnnotationsLoaded(corpusId: string): Promise<boolean> {
       // committed annotation wins over an older interrupted write.
       for (const [key, version] of Object.entries(record?.annotationVersions ?? {})) observeVersion(corpusId, key, version);
       for (const recovered of recoverAnnotations(corpusId)) {
-        const durable = Math.max(record?.annotationVersions?.[recovered.key] ?? 0, record?.annotations?.[recovered.key]?.updatedAt ?? 0);
+        const durable = Math.max(annotationVersion(record?.annotationVersions?.[recovered.key]), annotationVersion(record?.annotations?.[recovered.key]?.updatedAt));
         observeVersion(corpusId, recovered.key, durable);
         if (durable >= recovered.updatedAt) {
           clearJournalAnnotation(corpusId, recovered.key, recovered.serialized);
