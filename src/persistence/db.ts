@@ -144,6 +144,8 @@ export interface CorpusRecord {
   watch?: WatchedFolderRecord;
   views?: SavedViewRecord[];
   annotations?: Record<string, DocAnnotationRecord>;
+  /** Logical edit versions, retained after deletion to reject stale recovery. */
+  annotationVersions?: Record<string, number>;
   /** Last settled ingest run's problem files (optional — no DB version bump). */
   ingestReport?: IngestReport;
 }

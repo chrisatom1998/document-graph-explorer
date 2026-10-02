@@ -400,4 +400,32 @@ describe('collab privacy: notes default-off and no disk paths', () => {
     expect(JSON.stringify(session.annotations.toJSON())).not.toContain(removedPath);
     expect(JSON.stringify(session.annotations.toJSON())).not.toContain('still private');
   });
+  it('shares original deletion versions and ignores legacy unversioned removals', async () => {
+    useCorpusStore.getState().setLocalState([{ id: 'c1', name: 'C', updatedAt: 1, documentCount: 1, watching: false }], 'c1');
+    useAnnotationStore.getState().hydrate('c1', { 'doc-1': { note: 'newer', tags: [], pinned: false, updatedAt: 102 } });
+    useCollabStore.getState().setShareNotes(true);
+    await useCollabStore.getState().startSession('room-delete', 'key-delete');
+    const session = useCollabStore.getState().session!;
+    session.annotations.delete('doc-1'); // an old client gives no edit clock
+    expect(useAnnotationStore.getState().annotations['doc-1'].note).toBe('newer');
+    session.annotations.set('doc-1', { note: '', tags: [], pinned: false, updatedAt: 100 });
+    expect(useAnnotationStore.getState().annotations['doc-1'].note).toBe('newer');
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(103);
+    try { useAnnotationStore.getState().update('doc-1', { note: '' }); }
+    finally { clock.mockRestore(); }
+    expect(session.annotations.get('doc-1')).toEqual({ note: '', tags: [], pinned: false, updatedAt: 103 });
+    expect(useAnnotationStore.getState().annotations['doc-1']).toBeUndefined();
+  });
+
+  it('publishes persisted deletion versions on reconnect instead of resurrecting stale shared notes', async () => {
+    useCorpusStore.getState().setLocalState([{ id: 'c1', name: 'C', updatedAt: 1, documentCount: 1, watching: false }], 'c1');
+    vi.mocked(getCorpusRecord).mockResolvedValueOnce({ ...corpusRecord('c1', {}), annotationVersions: { 'doc-1': 103 } });
+    await useCollabStore.getState().startSession('room-reconnect-delete', 'key-reconnect-delete');
+    const session = useCollabStore.getState().session!;
+    session.annotations.set('doc-1', { note: 'old room note', tags: [], pinned: false, updatedAt: 100 });
+    useCollabStore.getState().setShareNotes(true);
+    await vi.waitFor(() => expect(session.annotations.get('doc-1')).toEqual({ note: '', tags: [], pinned: false, updatedAt: 103 }));
+    expect(useAnnotationStore.getState().annotations['doc-1']).toBeUndefined();
+  });
+
 });

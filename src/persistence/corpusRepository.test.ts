@@ -214,3 +214,46 @@ describe('corpusRepository data mutations', () => {
     await expect(unreferencedDocumentIds(['doc-a', 'doc-b', 'doc-c', 'doc-d', 'doc-e'])).resolves.toEqual(['doc-e']);
   });
 });
+
+it('checks stale/equal updates and deletions inside the transaction and retains tombstones', async () => {
+  const value = (note: string, updatedAt: number) => ({ note, tags: [], pinned: false, updatedAt });
+  dbState.corpora.set('conflict', { id: 'conflict', name: 'Conflict', docHashes: [], annotations: { doc: value('newer', 102) } });
+  await updateCorpusAnnotations('conflict', { doc: value('stale', 100) }, { doc: 100 });
+  expect(dbState.corpora.get('conflict').annotations.doc.note).toBe('newer');
+  await updateCorpusAnnotations('conflict', { doc: value('equal conflict', 102) }, { doc: 102 });
+  expect(dbState.corpora.get('conflict').annotations.doc.note).toBe('newer');
+  await updateCorpusAnnotations('conflict', { doc: null }, { doc: 101 });
+  expect(dbState.corpora.get('conflict').annotations.doc.note).toBe('newer');
+  await updateCorpusAnnotations('conflict', { doc: null }, { doc: 103 });
+  expect(dbState.corpora.get('conflict').annotations.doc).toBeUndefined();
+  expect(dbState.corpora.get('conflict').annotationVersions.doc).toBe(103);
+  await updateCorpusAnnotations('conflict', { doc: value('resurrection', 102) }, { doc: 102 });
+  expect(dbState.corpora.get('conflict').annotations.doc).toBeUndefined();
+  await updateCorpusAnnotations('conflict', { doc: value('intentional new edit', 104) }, { doc: 104 });
+  expect(dbState.corpora.get('conflict').annotations.doc.note).toBe('intentional new edit');
+  expect(fakeDb.transaction).toHaveBeenCalledWith('corpora', 'readwrite');
+});
+it('allows only live collaboration to resolve equal-time conflicts; stale remote versions still lose', async () => {
+  const annotation = (note: string, updatedAt: number) => ({ note, tags: [], pinned: false, updatedAt });
+  dbState.corpora.set('remote', { id: 'remote', name: 'Remote', docHashes: [], annotations: { doc: annotation('local', 100) } });
+  await updateCorpusAnnotations('remote', { doc: annotation('CRDT winner', 100) }, { doc: 100 }, { doc: annotation('local', 100) });
+  expect(dbState.corpora.get('remote').annotations.doc.note).toBe('CRDT winner');
+  await updateCorpusAnnotations('remote', { doc: annotation('stale remote', 99) }, { doc: 99 }, { doc: annotation('local', 100) });
+  expect(dbState.corpora.get('remote').annotations.doc.note).toBe('CRDT winner');
+});
+it('rejects an equal-time remote retry whose durable baseline has changed', async () => {
+  const value = (note: string) => ({ note, tags: [], pinned: false, updatedAt: 100 });
+  dbState.corpora.set('retry', { id: 'retry', name: 'Retry', docHashes: [], annotations: { doc: value('later winner Y') } });
+  // An offline tab still has the baseline from before its failed X write.
+  await updateCorpusAnnotations('retry', { doc: value('stale X') }, { doc: 100 }, { doc: value('original') });
+  expect(dbState.corpora.get('retry').annotations.doc.note).toBe('later winner Y');
+});
+it('orders delayed, retried and newer collaboration deletions by their original version', async () => {
+  const annotation = (note: string, updatedAt: number) => ({ note, tags: [], pinned: false, updatedAt });
+  dbState.corpora.set('remote-delete', { id: 'remote-delete', name: 'Remote', docHashes: [], annotations: { doc: annotation('newer committed', 102) } });
+  await updateCorpusAnnotations('remote-delete', { doc: null }, { doc: 100 }, { doc: annotation('old', 99) });
+  expect(dbState.corpora.get('remote-delete').annotations.doc.note).toBe('newer committed');
+  await updateCorpusAnnotations('remote-delete', { doc: null }, { doc: 103 }, { doc: annotation('old', 99) });
+  expect(dbState.corpora.get('remote-delete').annotations.doc).toBeUndefined();
+  expect(dbState.corpora.get('remote-delete').annotationVersions.doc).toBe(103);
+});
