@@ -428,4 +428,49 @@ describe('collab privacy: notes default-off and no disk paths', () => {
     expect(useAnnotationStore.getState().annotations['doc-1']).toBeUndefined();
   });
 
+  it('retracts shared tombstones after graph removal, leaves unrelated peer keys, and stops future sharing', async () => {
+    useCorpusStore.getState().setLocalState([{ id: 'c1', name: 'C', updatedAt: 1, documentCount: 1, watching: false }], 'c1');
+    await ensureAnnotationsLoaded('c1');
+    useCollabStore.getState().setShareNotes(true);
+    await useCollabStore.getState().startSession('room-retract', 'key-retract');
+    const session = useCollabStore.getState().session!;
+    session.annotations.set('peer-only', { note: 'other document', tags: [], pinned: false, updatedAt: 10 });
+    useAnnotationStore.getState().update('doc-1', { note: '' });
+    expect(session.annotations.get('doc-1')?.note).toBe('');
+    useGraphStore.getState().reset();
+    useCollabStore.getState().setShareNotes(false);
+    expect([...session.annotations.keys()]).toEqual(['peer-only']);
+    useAnnotationStore.getState().update('doc-1', { note: 'private edit' });
+    expect(session.annotations.has('doc-1')).toBe(false);
+  });
+
+  it('replaces an extreme remote clock with healthy local content when sharing binds', async () => {
+    useCorpusStore.getState().setLocalState([{ id: 'c1', name: 'C', updatedAt: 1, documentCount: 1, watching: false }], 'c1');
+    await useCollabStore.getState().startSession('room-poison', 'key-poison');
+    const session = useCollabStore.getState().session!;
+    session.annotations.set('doc-1', { note: 'poison', tags: [], pinned: false, updatedAt: Number.MAX_SAFE_INTEGER });
+    useCollabStore.getState().setShareNotes(true);
+    await vi.waitFor(() => expect(session.annotations.get('doc-1')?.note).toBe('secret note'));
+    expect(useAnnotationStore.getState().annotations['doc-1'].note).toBe('secret note');
+  });
+
+  it('does not republish its own local edits beyond the peer clock boundary', async () => {
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(1000);
+    try {
+      const version = 1000 + 24 * 60 * 60 * 1000;
+      useCorpusStore.getState().setLocalState([{ id: 'c1', name: 'C', updatedAt: 1, documentCount: 1, watching: false }], 'c1');
+      useAnnotationStore.getState().hydrate('c1', { 'doc-1': { note: 'peer', tags: [], pinned: false, updatedAt: version } });
+      useCollabStore.getState().setShareNotes(true);
+      await useCollabStore.getState().startSession('room-headroom', 'key-headroom');
+      const session = useCollabStore.getState().session!;
+      const publish = vi.spyOn(session.annotations, 'set');
+      useAnnotationStore.getState().update('doc-1', { note: 'local edit' });
+      expect(session.annotations.get('doc-1')).toMatchObject({ note: 'local edit', updatedAt: version + 1 });
+      expect(publish).toHaveBeenCalledTimes(1);
+      useAnnotationStore.getState().update('doc-1', { note: '' });
+      expect(session.annotations.get('doc-1')).toMatchObject({ note: '', updatedAt: version + 2 });
+      expect(publish).toHaveBeenCalledTimes(2);
+    } finally { clock.mockRestore(); }
+  });
+
 });

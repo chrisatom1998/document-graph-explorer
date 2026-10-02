@@ -1,3 +1,4 @@
+import { validAnnotationVersion } from '../persistence/annotationVersion';
 import type { DocAnnotationRecord } from '../persistence/db';
 
 const PREFIX = 'knowledge-nebula:pending-annotation:';
@@ -34,9 +35,9 @@ export function recoverAnnotations(scope: string): RecoveredAnnotation[] {
         const serialized = localStorage.getItem(name);
         if (!serialized) continue;
         const entry = JSON.parse(serialized);
-        if (!entry || !Number.isSafeInteger(entry.updatedAt) || entry.updatedAt < 0) continue;
+        if (!entry || !validAnnotationVersion(entry.updatedAt)) continue;
         const value = entry.value;
-        if (value !== null && (!value || typeof value !== 'object' || typeof value.note !== 'string' || !Array.isArray(value.tags) || !value.tags.every((tag: unknown) => typeof tag === 'string') || typeof value.pinned !== 'boolean' || !Number.isSafeInteger(value.updatedAt) || value.updatedAt < 0)) continue;
+        if (value !== null && (!value || typeof value !== 'object' || typeof value.note !== 'string' || !Array.isArray(value.tags) || !value.tags.every((tag: unknown) => typeof tag === 'string') || typeof value.pinned !== 'boolean' || !validAnnotationVersion(value.updatedAt))) continue;
         // Old journals stamped the write, not the edit. Recover the edit clock
         // from non-null values. Legacy deletions have no trustworthy edit
         // version and must never delete an existing durable annotation.
