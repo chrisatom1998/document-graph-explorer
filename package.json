@@ -23,9 +23,15 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "bench:layout": "vite-node scripts/bench-layout.mjs",
-    "check:bundle": "node scripts/check-bundle.mjs dist && node scripts/check-bundle.mjs dist-airgap"
+    "check:bundle": "node scripts/check-bundle.mjs dist && node scripts/check-bundle.mjs dist-airgap",
+    "prebuild": "node scripts/stage-audio-runtime.mjs && node scripts/download-music-model.mjs",
+    "predev": "node scripts/stage-audio-runtime.mjs && node scripts/download-music-model.mjs",
+    "prebuild:airgap": "node scripts/stage-audio-runtime.mjs && node scripts/download-music-model.mjs",
+    "setup:music": "node scripts/download-music-model.mjs"
   },
   "dependencies": {
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
     "@heroui/react": "^3.2.2",
     "@heroui/styles": "^3.2.2",
     "@huggingface/transformers": "^4.2.0",
@@ -33,6 +39,7 @@
     "@react-three/fiber": "^9.6.1",
     "@react-three/postprocessing": "^3.0.4",
     "d3-force-3d": "^3.0.6",
+    "essentia.js": "^0.1.3",
     "fast-xml-parser": "^5.10.1",
     "graphology": "^0.26.0",
     "graphology-communities-louvain": "^2.0.2",
@@ -51,7 +58,8 @@
     "y-protocols": "^1.0.7",
     "y-webrtc": "^10.3.0",
     "yjs": "^13.6.32",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.14",
+    "onnxruntime-web": "1.26.0-dev.20260416-b7804b056c"
   },
   "devDependencies": {
     "@electron/fuses": "^2.1.3",

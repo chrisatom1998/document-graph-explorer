@@ -145,6 +145,14 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await openPostgres();
   await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('Persistence regression note');
   await expect(page.getByRole('button', { name: 'Remove tag regression' })).toBeVisible();
+
+  // Reload directly from the editor, before the debounce or panel-close flush.
+  await page.getByRole('textbox', { name: 'Document note' }).fill('Immediate reload note');
+  await page.reload();
+  await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents');
+  await openPostgres();
+  await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('Immediate reload note');
+  await expect(page.getByRole('button', { name: 'Remove tag regression' })).toBeVisible();
   await page.getByRole('button', { name: 'Back to graph' }).click();
 
   await page.getByRole('button', { name: 'Add documents', exact: true }).click();
@@ -218,7 +226,13 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Add files', exact: true })).toBeInViewport();
     await page.screenshot({ path: testInfo.outputPath('welcome.png') });
-    await importGraphJson(page, boundaryGraphJson(3));
+    // This filter scenario needs isolated nodes. Shared title phrases now
+    // intentionally create relationships, so give each fixture a distinct title.
+    const graph = JSON.parse(boundaryGraphJson(3));
+    graph.nodes.forEach((node: { title: string }, index: number) => {
+      node.title = ['Cedar', 'Birch', 'Maple'][index];
+    });
+    await importGraphJson(page, JSON.stringify(graph));
     const browse = page.getByRole('button', { name: 'Browse documents' });
     await expect(browse).toBeVisible();
     const toolbar = await page.locator('.toolbar').boundingBox();

@@ -28,6 +28,7 @@ export default tseslint.config(
       'node_modules',
       'public',
       'coverage',
+      'artifacts/music-evaluation/**', // Local benchmark captures and scratch harnesses.
       'release',
       'release-build',
       'copilot-worktrees',

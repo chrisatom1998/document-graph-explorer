@@ -120,6 +120,25 @@ describe('session persistence', () => {
     vi.clearAllMocks();
   });
 
+  it('restores music estimates without rebuilding text embeddings for audio', async () => {
+    const node = { ...makeNode('track'), fileType: 'audio' as const,
+      audio: { version: 1 as const, durationSeconds: 30, analyzedSeconds: 30,
+        tempo: { bpm: 120, confidence: 0.9 }, instruments: [], notes: [] } };
+    dbState.docs.set(node.id, { node, text: 'track', chunkTexts: [], mdLinkTargets: [], docLinks: [] });
+    await hydrateFromRecord({ version: 1, createdAt: '', generator: 'knowledge-nebula', includeEmbeddings: false, nodes: [node], edges: [] }, {}, 'music');
+    expect(useGraphStore.getState().nodes[0].audio).toEqual(node.audio);
+    expect(docVectorStore.size).toBe(0);
+    expect(useGraphStore.getState().phase).toBe('ready');
+  });
+
+  it('rebuilds name-based musical links on restore without overwriting the sound analysis', async () => {
+    const nodes = ['one', 'two'].map(id => ({ ...makeNode(id), path: `Synths/${id}_Dm_140.wav`, fileType: 'audio' as const,
+      audio: { version: 2 as const, durationSeconds: 5, analyzedSeconds: 5, tempo: { bpm: 70, confidence: .75 }, instruments: [], notes: [] } }));
+    await hydrateFromRecord({ version: 1, createdAt: '', generator: 'knowledge-nebula', includeEmbeddings: false, nodes, edges: [] }, {}, 'music');
+    expect(useGraphStore.getState().edges.map(edge => edge.kind).sort()).toEqual(['instrument', 'key', 'tempo']);
+    expect(useGraphStore.getState().nodes[0].audio?.tempo?.bpm).toBe(70);
+  });
+
   it('hydrates a saved graph back into the runtime stores and layout', async () => {
     const node = makeNode('doc-1', 'Doc One');
     const exportData: GraphExport = {

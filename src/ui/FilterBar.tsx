@@ -8,6 +8,10 @@ import SnapshotDiffBanner from './SnapshotDiffBanner';
 import { IconFunnel } from './icons';
 
 const EDGE_KIND_ORDER: { kind: EdgeKind; label: string }[] = [
+  { kind: 'title', label: 'shared title' },
+  { kind: 'tempo', label: 'tempo' },
+  { kind: 'key', label: 'key' },
+  { kind: 'instrument', label: 'instruments' },
   { kind: 'reference', label: 'links' },
   { kind: 'semantic', label: 'similar' },
   { kind: 'keyword', label: 'keywords' },
@@ -22,6 +26,7 @@ const RECENCY_OPTIONS: { days: number | null; label: string }[] = [
 ];
 
 const FILE_TYPE_ORDER: FileType[] = [
+  'audio',
   'md',
   'txt',
   'pdf',

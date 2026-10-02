@@ -48,6 +48,7 @@ function isOcrMaxPages(value: unknown): value is OcrMaxPages {
 }
 
 export interface PersistedSettings {
+  musicAnalysisMode: 'fast' | 'full';
   chatProvider: ChatProvider;
   enrichProvider: EnrichProvider;
   openRouterKey: string;
@@ -78,6 +79,7 @@ export const DEFAULT_OPENROUTER_ENRICH_MODEL = 'google/gemini-3.1-flash-lite';
 export const DEFAULT_OLLAMA_MODEL = 'llama3.2';
 
 export const DEFAULTS: PersistedSettings = {
+  musicAnalysisMode: 'full',
   chatProvider: 'local',
   enrichProvider: 'openrouter',
   openRouterKey: '',
@@ -137,6 +139,7 @@ export function loadPersistedSettings(): PersistedSettings {
         ? parsed.enrichProvider
         : DEFAULTS.enrichProvider;
     const loaded: PersistedSettings = {
+      musicAnalysisMode: parsed.musicAnalysisMode === 'fast' ? 'fast' : 'full',
       chatProvider,
       enrichProvider,
       openRouterKey:

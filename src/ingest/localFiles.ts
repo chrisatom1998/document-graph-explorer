@@ -49,7 +49,7 @@ export async function prepareIngestFiles(
   let totalCapHit = false;
 
   for (const { file, path } of named) {
-    const shouldRead = isIngestCandidate(file.name);
+    const shouldRead = isIngestCandidate(file.name) || file.type.startsWith('audio/');
     if (shouldRead && file.size > MAX_INGEST_FILE_BYTES) {
       useGraphStore.getState().addIgnored(path ?? file.name, `too large (over ${MAX_INGEST_MB} MB)`);
       continue;
@@ -85,7 +85,7 @@ export async function prepareIngestFiles(
       else failures.push(failure);
       continue;
     }
-    const fileType = routeFileWithSniff(file.name, bytes);
+    const fileType = routeFileWithSniff(file.name, bytes, file.type);
     totalBytes += fileType !== null ? bytes.byteLength : 0;
     output.push({
       fileId: crypto.randomUUID(),

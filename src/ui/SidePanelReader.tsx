@@ -8,6 +8,7 @@ import { useDocText } from './useDocText';
 import type { ReaderHighlight } from '../store/uiStore';
 import { MAX_RENDER_CHARS } from './readerUtils';
 import CsvPreview from './CsvPreview';
+import AudioPreview from './AudioPreview';
 import DocumentMarkdown from './DocumentMarkdown';
 import HtmlPreview from './HtmlPreview';
 import JsonPreview, { MAX_RENDER_CHARS as JSON_MAX_RENDER_CHARS } from './JsonPreview';
@@ -157,7 +158,9 @@ export default function SidePanelReader({
             {codeLang.short}
           </span>
         )}
-        {pdfPreview && pdfPreview.id === node.id && !pdfTextView ? (
+        {node.fileType === 'audio' ? (
+          <AudioPreview key={node.id} node={node} />
+        ) : pdfPreview && pdfPreview.id === node.id && !pdfTextView ? (
           <Suspense fallback={<div className="side-panel__reader is-unavailable">Loading preview…</div>}>
             <PdfPreview
               key={node.id}

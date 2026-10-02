@@ -24,6 +24,13 @@ describe('prepareIngestFiles', () => {
     expect(new TextDecoder().decode(files[0].bytes)).toContain('hello from license');
   });
 
+  it.each([['loop.wav', ''], ['loop.WAV', 'audio/x-wav'], ['loop.bin', 'audio/wav']])('preserves WAV bytes for %s', async (name, type) => {
+    const file = new File([new Uint8Array([82, 73, 70, 70, 0, 0, 0, 0, 87, 65, 86, 69])], name, { type });
+    const { files } = await prepareIngestFiles([{ file }]);
+    expect(files[0].fileType).toBe('audio');
+    expect(files[0].bytes.byteLength).toBe(12);
+  });
+
   it('does not read known binary extensions', async () => {
     const file = new File(['not really a png'], 'image.png', { type: 'image/png' });
     const { files } = await prepareIngestFiles([{ file }]);

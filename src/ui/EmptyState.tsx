@@ -152,7 +152,7 @@ export default function EmptyState() {
           </div>
           <div className="empty-state__step">
             <span className="empty-state__step-number">01</span>
-            <span><strong>Bring your files</strong>Docs, PDFs, Office, or a source repo.</span>
+            <span><strong>Bring your files</strong>Audio, docs, PDFs, Office, or a source repo.</span>
           </div>
           <div className="empty-state__step">
             <span className="empty-state__step-number">02</span>

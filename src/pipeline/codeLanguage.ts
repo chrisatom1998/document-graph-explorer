@@ -222,6 +222,7 @@ for (const def of LANGUAGES) {
 }
 
 const FILE_TYPE_LABELS: Record<FileType, string> = {
+  audio: 'Audio',
   md: 'Markdown',
   txt: 'Plain Text',
   pdf: 'PDF',

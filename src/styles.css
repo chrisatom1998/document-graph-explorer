@@ -3310,28 +3310,37 @@ mark.passage-mark {
 }
 
 /* ==========================================================================
-   Toast host — global error/warning feedback (top-right, stacked)
+   Toast host — global error/warning feedback (bottom-right, stacked)
    ========================================================================== */
 
 .toast-host {
   position: fixed;
-  top: 18px;
-  /* 74px instead of 18px: clears SidePanel's close button (top-right of a
-     full-height right-docked panel) so toasts never render underneath it. */
-  right: 74px;
+  /* Reserve the top for the toolbar/reader header and the bottom 90px
+     for chat and status controls, including on narrow screens. */
+  bottom: max(90px, env(safe-area-inset-bottom));
+  right: 18px;
   z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  pointer-events: none;
-  width: min(340px, calc(100vw - 92px));
+  width: min(340px, calc(100vw - 36px));
   max-width: min(340px, 92vw);
+  max-height: min(45dvh, calc(100dvh - 182px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+}
+
+/* The minimap is 156px tall plus padding, at an 18px bottom inset.
+   Clear it vertically even when the reader shifts it left. */
+.app-root:has(.minimap) .toast-host {
+  bottom: 196px;
+  max-height: min(45dvh, calc(100dvh - 288px));
 }
 
 .toast {
-  /* The visual card may overlap a docked panel. Only its actual controls
-     should capture input; clicking the message passes through to the UI. */
-  pointer-events: none;
+  /* Keep the scrollable notification stack and its controls interactive. */
+  pointer-events: auto;
   position: relative;
   inset: auto;
   width: 100%;
@@ -3356,6 +3365,8 @@ mark.passage-mark {
 
 .toast__text {
   flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 12.5px;
   line-height: 1.45;
   color: var(--text-primary);
@@ -3372,6 +3383,17 @@ mark.passage-mark {
 
 .toast .icon-btn-close {
   pointer-events: auto;
+  flex: none;
+}
+
+@media (max-width: 480px) {
+  .toast {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .toast__text { grid-column: 1; grid-row: 1; }
+  .toast .icon-btn-close { grid-column: 2; grid-row: 1; }
+  .toast__action { grid-column: 1 / -1; justify-self: start; }
 }
 
 /* ==========================================================================
@@ -5464,3 +5486,40 @@ mark.passage-mark {
     white-space: normal;
   }
 }
+.audio-preview audio { width: 100%; margin-bottom: 12px; }
+.audio-preview form, .audio-preview label { display: grid; gap: 8px; }
+.audio-preview form { margin: 16px 0; }
+.audio-preview select, .audio-preview input { width: 100%; padding: 8px; background: var(--surface, #16202d); color: inherit; border: 1px solid currentColor; border-radius: 6px; }
+.audio-preview button { padding: 6px 10px; border: 1px solid currentColor; border-radius: 6px; margin: 4px 0; }
+.audio-preview button:disabled { opacity: 0.5; }
+.audio-preview { font-family: 'Space Grotesk', sans-serif; font-size: 13px; line-height: 1.5; white-space: normal; max-height: none; overflow: visible; }
+.audio-preview p { margin: 8px 0; color: var(--text-muted); }
+.audio-preview button, .audio-preview input, .audio-preview select { font: inherit; }
+.audio-preview button { cursor: pointer; border-color: var(--border); background: var(--panel-bg); }
+.audio-preview button:disabled { cursor: default; }
+.audio-preview button:focus-visible, .audio-preview input:focus-visible, .audio-preview select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.audio-preview > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.audio-preview > div > span { overflow-wrap: anywhere; }
+
+.music-features { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--border); }
+.music-features h3 { font-size: 14px; font-weight: 600; }
+.music-features dl { display: grid; gap: 8px; margin: 12px 0; }
+.music-features dt { color: var(--text-muted); font-size: 11px; }
+.music-features dd { margin: 0; overflow-wrap: anywhere; }
+.music-features .music-feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+.music-feature-grid > div { min-width: 0; }
+.music-feature-grid dd { font-size: 16px; font-weight: 500; }
+.music-source-summary { display: grid; gap: 4px; margin: 14px 0; }
+.music-source-summary > span { color: var(--text-muted); font-size: 11px; }
+.audio-preview details { margin: 10px 0; }
+.audio-preview summary { cursor: pointer; padding: 5px 0; }
+.music-analysis-mode { margin-top: 16px; }
+.music-manual-link { border-top: 1px solid var(--border); padding-top: 8px; }
+.music-name-sources { min-width: 0; overflow-wrap: anywhere; }
+
+.music-instruments { padding-left: 1.2rem; }
+.music-instruments li { margin: .5rem 0; display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.music-instruments button { flex-shrink: 0; font-size: .75rem; }
+.music-features summary { cursor: pointer; }
+.music-features .instrument-correction-scope { display: flex; align-items: center; gap: .5rem; margin: .75rem 0; }
+.music-features .instrument-correction-scope input { width: auto; flex: 0 0 auto; margin: 0; }

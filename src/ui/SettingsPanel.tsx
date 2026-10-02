@@ -1,3 +1,4 @@
+import MusicAnalysisMode from './MusicAnalysisMode';
 /**
  * Settings modal: AI provider config (OpenRouter / Ollama), export options,
  * cache management. Visibility is owned by uiStore.settingsOpen; Esc handling
@@ -314,6 +315,7 @@ export default function SettingsPanel() {
           />
         </div>
 
+        <section className="settings-section"><h3 className="settings-section__heading">Music analysis</h3><MusicAnalysisMode /></section>
         {AIRGAP && (
           <section className="settings-section">
             <h3 className="settings-section__heading">AI</h3>

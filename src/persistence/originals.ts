@@ -12,7 +12,7 @@ import { getDb } from './db';
 import type { OriginalFileRecord } from './db';
 
 /** Above this we skip retention (IndexedDB quota safety); Open falls back. */
-export const MAX_ORIGINAL_BYTES = 50 * 1024 * 1024;
+export const MAX_ORIGINAL_BYTES = 64 * 1024 * 1024;
 
 /**
  * Store the original bytes for a doc unless already present (re-drops of a
