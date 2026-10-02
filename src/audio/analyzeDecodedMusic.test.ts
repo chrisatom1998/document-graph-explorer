@@ -68,6 +68,16 @@ describe('early estimates and selectable music scans', () => {
     expect(result.soundProfile?.models.find(m=>m.model==='Music CLAP')?.complete).toBe(false);
     expect(result.notes).toContain('Sound character recognition was unavailable. Reanalyze to retry.');
   });
+  it('still runs Jamendo and CLAP in Full mode after an AST scan failure', async () => {
+    const f=fixture(12,{},'instruments');const result=await f.run();
+    expect(result.notes.some(n=>n.startsWith('Instrument scan stopped early'))).toBe(true);
+    expect(result.soundProfile?.source?.label).toBe('synthesizer');
+    expect(result.soundProfile?.models.find(m=>m.model==='AudioSet AST')?.complete).toBe(false);
+    expect(result.soundProfile?.models.find(m=>m.model==='MTG-Jamendo')?.complete).toBe(true);
+    expect(result.soundProfile?.models.find(m=>m.model==='Music CLAP')?.complete).toBe(true);
+    expect(f.calls.filter(c=>c==='jamendo')).toHaveLength(3);
+    expect(f.calls.filter(c=>c==='profile')).toHaveLength(3);
+  });
 });
 it('falls back to full discovery if the container has no duration', async () => {
   const f=fixture(12,{mode:'fast'});f.decoder.durationSeconds=0;

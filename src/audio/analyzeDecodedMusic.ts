@@ -79,7 +79,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   }
   if (!decoder.durationSeconds) result.durationSeconds = Math.max(result.durationSeconds, coveredEnd);
   result.instruments = evidence.results();
-  const duration = mode === 'fast' ? decoder.durationSeconds : coveredEnd;
+  const duration = mode === 'fast' ? decoder.durationSeconds : coveredEnd || decoder.durationSeconds;
   if (duration > 0) {
     const modelComplete = { ast: complete, jamendo: true, clap: true };
     const musicScores: Record<string, number> = {};
