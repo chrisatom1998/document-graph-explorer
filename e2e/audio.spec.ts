@@ -8,6 +8,7 @@ test('local synthetic audio is analyzed, playable, and corrections survive reloa
     const url = new URL(request.url());
     if (url.protocol.startsWith('http') && !['127.0.0.1', 'localhost'].includes(url.hostname)) remote.push(request.url());
   });
+  const workerResponse = page.waitForResponse(response => /\/assets\/musicAnalysis\.worker-[^/]+\.js$/.test(response.url()));
   await page.addInitScript(() => localStorage.setItem('knowledge-nebula-settings', JSON.stringify({ musicAnalysisMode: 'fast' })));
   await page.goto('/');
   await page.getByRole('button', { name: 'Add files', exact: true }).click();
@@ -34,6 +35,11 @@ test('local synthetic audio is analyzed, playable, and corrections survive reloa
     await expect(page.locator('.audio-preview')).toBeVisible();
   };
   await openTrack();
+  // A meta CSP does not cover the worker. Require the production header so
+  // runtime code generation in audio dependencies cannot pass locally.
+  const workerCsp = (await workerResponse).headers()['content-security-policy'];
+  expect(workerCsp).toContain("'wasm-unsafe-eval'");
+  expect(workerCsp).not.toContain("'unsafe-eval'");
   await expect(page.getByRole('region', { name: 'Musical features' })).toBeVisible();
   await page.getByText('Track actions', { exact: true }).click();
   await expect(page.getByRole('button', { name: 'Reanalyze musical features' })).toBeEnabled();
