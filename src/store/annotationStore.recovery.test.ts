@@ -24,7 +24,7 @@ it('recovers a note and tag after reload interrupts the debounce, scoped to thei
   await flushAnnotationSave();
   expect(repository.updateCorpusAnnotations).toHaveBeenCalledWith('A', {
     document: expect.objectContaining({ note: 'Must survive', tags: ['regression'] }),
-  });
+  }, expect.any(Object), expect.any(Object));
   expect(recoverAnnotations('A')).toEqual([]);
 });
 
@@ -36,7 +36,7 @@ it('replays deletion without resurrecting the previous saved note', async () => 
   await ensureAnnotationsLoaded('A');
   expect(useAnnotationStore.getState().annotations.document).toBeUndefined();
   await flushAnnotationSave();
-  expect(repository.updateCorpusAnnotations).toHaveBeenCalledWith('A', { document: null });
+  expect(repository.updateCorpusAnnotations).toHaveBeenCalledWith('A', { document: null }, expect.any(Object), expect.any(Object));
 });
 
 it('keeps the newer recovery copy when an older in-flight write completes', async () => {
@@ -92,4 +92,69 @@ it('ignores malformed recovery data and does not replace a newer committed annot
   await ensureAnnotationsLoaded('A');
   expect(useAnnotationStore.getState().annotations.document.note).toBe('newer');
   expect(recoverAnnotations('A')).toEqual([]);
+});
+
+it('compares legacy recovery edit time, not its later journal-write time', async () => {
+  localStorage.setItem('knowledge-nebula:pending-annotation:["A","document"]', JSON.stringify({
+    value: { note: 'stale', tags: [], pinned: false, updatedAt: 100 }, updatedAt: 103, nonce: 'legacy',
+  }));
+  repository.getCorpusRecord.mockResolvedValue({ annotations: { document: { note: 'newer', tags: [], pinned: false, updatedAt: 102 } } });
+  await ensureAnnotationsLoaded('A');
+  expect(useAnnotationStore.getState().annotations.document.note).toBe('newer');
+  await flushAnnotationSave();
+  expect(repository.updateCorpusAnnotations).not.toHaveBeenCalled();
+});
+it('retains a committed value on equal timestamps, including deletion tombstones', async () => {
+  journalAnnotation('A', 'document', { note: 'stale', tags: [], pinned: false, updatedAt: 100 });
+  repository.getCorpusRecord.mockResolvedValue({ annotations: {}, annotationVersions: { document: 100 } });
+  await ensureAnnotationsLoaded('A');
+  expect(useAnnotationStore.getState().annotations.document).toBeUndefined();
+  expect(recoverAnnotations('A')).toEqual([]);
+  vi.spyOn(Date, 'now').mockReturnValue(100);
+  useAnnotationStore.getState().update('document', { note: 'deliberate new edit' });
+  expect(useAnnotationStore.getState().annotations.document.updatedAt).toBe(101);
+});
+it('keeps separate journals for competing tabs and recovers the newest edit', async () => {
+  journalAnnotation('A', 'document', { note: 'newer', tags: [], pinned: false, updatedAt: 102 });
+  journalAnnotation('A', 'document', { note: 'older arriving later', tags: [], pinned: false, updatedAt: 100 });
+  expect(recoverAnnotations('A')).toHaveLength(2);
+  await ensureAnnotationsLoaded('A');
+  expect(useAnnotationStore.getState().annotations.document.note).toBe('newer');
+});
+it('does not infer a legacy deletion clock from its later journal-write time', async () => {
+  localStorage.setItem('knowledge-nebula:pending-annotation:["A","document"]', JSON.stringify({ value: null, updatedAt: 103, nonce: 'old-delete' }));
+  repository.getCorpusRecord.mockResolvedValue({ annotations: { document: { note: 'keep', tags: [], pinned: false, updatedAt: 102 } } });
+  await ensureAnnotationsLoaded('A');
+  expect(useAnnotationStore.getState().annotations.document.note).toBe('keep');
+});
+it('reconciles a transaction conflict but never replaces a later local edit with an older acknowledgement', async () => {
+  await ensureAnnotationsLoaded('A');
+  vi.spyOn(Date, 'now').mockReturnValue(100);
+  useAnnotationStore.getState().update('document', { note: 'first' });
+  let complete!: (value: unknown) => void;
+  repository.updateCorpusAnnotations.mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
+  const saving = flushAnnotationSave();
+  useAnnotationStore.getState().update('document', { note: 'second' });
+  complete({ document: { value: { note: 'other tab', tags: [], pinned: false, updatedAt: 103 }, updatedAt: 103 } });
+  await saving;
+  expect(useAnnotationStore.getState().annotations.document.note).toBe('second');
+  useAnnotationStore.getState().update('document', { note: 'third' });
+  expect(useAnnotationStore.getState().annotations.document.updatedAt).toBe(104);
+});
+it('reconciles rejected stale values to the durable transaction result', async () => {
+  await ensureAnnotationsLoaded('A');
+  useAnnotationStore.getState().update('document', { note: 'stale' });
+  repository.updateCorpusAnnotations.mockResolvedValueOnce({ document: { value: { note: 'newer saved', tags: [], pinned: false, updatedAt: Date.now() + 1000 }, updatedAt: Date.now() + 1000 } });
+  await flushAnnotationSave();
+  expect(useAnnotationStore.getState().annotations.document.note).toBe('newer saved');
+  expect(useAnnotationStore.getState().saveStatus).toBe('saved');
+});
+it('preserves live collaboration equal-time winners without upgrading their edit clock', async () => {
+  repository.getCorpusRecord.mockResolvedValue({ annotations: { document: { note: 'local', tags: [], pinned: false, updatedAt: 100 } } });
+  await ensureAnnotationsLoaded('A');
+  useAnnotationStore.getState().applyRemote('document', { note: 'Yjs winner', tags: [], pinned: false, updatedAt: 100 });
+  await flushAnnotationSave();
+  expect(repository.updateCorpusAnnotations).toHaveBeenLastCalledWith('A', { document: expect.objectContaining({ note: 'Yjs winner', updatedAt: 100 }) }, { document: 100 }, { document: { note: 'local', tags: [], pinned: false, updatedAt: 100 } });
+  useAnnotationStore.getState().applyRemote('document', { note: 'old remote', tags: [], pinned: false, updatedAt: 99 });
+  expect(useAnnotationStore.getState().annotations.document.note).toBe('Yjs winner');
 });

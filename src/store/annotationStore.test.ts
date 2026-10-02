@@ -114,7 +114,7 @@ describe('annotationStore', () => {
     await vi.advanceTimersByTimeAsync(400);
     expect(updateCorpusAnnotationsMock).toHaveBeenCalledWith('corpus-A', {
       doc: expect.objectContaining({ note: 'A note' }),
-    });
+    }, expect.any(Object), expect.any(Object));
   });
 
   it('retains both workspaces edits across failed flushes and restores pending notes on return', async () => {
@@ -133,10 +133,10 @@ describe('annotationStore', () => {
     expect(updateCorpusAnnotationsMock).toHaveBeenCalledTimes(2);
     expect(updateCorpusAnnotationsMock).toHaveBeenCalledWith('corpus-A', {
       doc: expect.objectContaining({ note: 'A note' }),
-    });
+    }, expect.any(Object), expect.any(Object));
     expect(updateCorpusAnnotationsMock).toHaveBeenCalledWith('corpus-B', {
       doc: expect.objectContaining({ note: 'B note' }),
-    });
+    }, expect.any(Object), expect.any(Object));
     warn.mockRestore();
   });
 
@@ -154,7 +154,7 @@ describe('annotationStore', () => {
     await flushAnnotationSave();
     expect(updateCorpusAnnotationsMock).toHaveBeenLastCalledWith('corpus-A', {
       doc: expect.objectContaining({ note: 'second' }),
-    });
+    }, expect.any(Object), expect.any(Object));
     expect(updateCorpusAnnotationsMock).toHaveBeenCalledTimes(2);
   });
 
