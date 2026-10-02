@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { buildCsp } from './src/security/csp';
 import pkg from './package.json';
+import { essentiaCsp } from './scripts/essentia-csp';
 
 function injectCsp(airgap: boolean): Plugin {
   const csp = buildCsp({ airgap });
@@ -46,11 +47,13 @@ const SECURITY_HEADERS = {
 // NOTE: no COOP/COEP headers on purpose — we use transferable Float32Arrays
 // (not SharedArrayBuffer), so cross-origin isolation buys nothing here.
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), tailwindcss(), injectCsp(mode === 'airgap')],
+  plugins: [essentiaCsp(), react(), tailwindcss(), injectCsp(mode === 'airgap')],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   server: { headers: SECURITY_HEADERS },
-  preview: { headers: SECURITY_HEADERS },
-  worker: { format: 'es' },
+  // Workers receive Vercel's CSP as a response header, not the page's meta tag.
+  // Exercise the same restrictions in built-app browser tests.
+  preview: { headers: { ...SECURITY_HEADERS, 'Content-Security-Policy': `${buildCsp({ airgap: mode === 'airgap' })}; frame-ancestors 'none'` } },
+  worker: { format: 'es', plugins: () => [essentiaCsp()] },
   build: {
     target: 'esnext',
     // Keep the app entry from eagerly preloading the React vendor chunk; the
@@ -84,7 +87,7 @@ export default defineConfig(({ mode }) => ({
     // transformers.js does its own dynamic ORT backend imports; pre-bundling breaks it.
     // It is also dynamically imported inside pipeline.worker.ts so its module
     // graph never sits on a worker's boot path.
-    exclude: ['@huggingface/transformers', 'onnxruntime-web', 'onnxruntime-web/webgpu'],
+    exclude: ['@huggingface/transformers', 'onnxruntime-web', 'onnxruntime-web/webgpu', 'essentia.js/dist/essentia-wasm.es.js'],
     // Scan the worker sources at server start so their deps (remark, graphology,
     // d3-force-3d, …) are discovered and optimized UP FRONT. Discovering them
     // mid-session triggers "optimized dependencies changed. reloading", which
@@ -107,7 +110,7 @@ export default defineConfig(({ mode }) => ({
     // safe (this is the audited exception to avoiding a general include-list,
     // which under Vite 8 produced client-env chunks in workers — `document is
     // not defined`).
-    include: ['essentia.js/dist/essentia.js-core.es.js', 'essentia.js/dist/essentia-wasm.es.js', 'graphology', 'graphology-communities-louvain', 'jszip', 'fast-xml-parser'],
+    include: ['essentia.js/dist/essentia.js-core.es.js', 'graphology', 'graphology-communities-louvain', 'jszip', 'fast-xml-parser'],
   },
   test: {
     environment: 'node',
