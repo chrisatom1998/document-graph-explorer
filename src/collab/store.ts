@@ -752,7 +752,9 @@ async function bindAnnotationSync(session: CollabSession, token: number): Promis
     if (localKey === null) return;
     const local = annotationSyncSnapshot()[localKey];
     if (remote && local && annotationTimestamp(local) > (validPeerAnnotationVersion(remote.updatedAt) ? remote.updatedAt : 0)) {
-      map.set(key, local);
+      // A local logical increment may use the reserved clock headroom.
+      // Its own Yjs event must not repeatedly republish the identical value.
+      if (JSON.stringify(remote) !== JSON.stringify(local)) map.set(key, local);
       return;
     }
     applyingRemote = true;
