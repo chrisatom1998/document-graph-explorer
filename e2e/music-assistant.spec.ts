@@ -4,7 +4,7 @@ const fixture = JSON.stringify({ version: 1, generator: 'knowledge-nebula', crea
   nodes: ['Vocal chop', 'Bass loop', 'Piano phrase'].map((title, i) => ({ id: `sound-${i}`, title, kind: 'document', fileType: 'audio', topics: [], entities: [], keywords: [], wordCount: 0, degree: 0, cluster: i, status: 'ok',
     audio: { version: 2, analyzedSeconds: 4, durationSeconds: i === 2 ? 20 : 4, tempo: { bpm: i === 2 ? 92 : 140, confidence: .9 }, instruments: [], notes: [], confirmedDjTags: { source: [i === 0 ? 'voice' : i === 1 ? 'bass guitar' : 'piano'], production: i === 0 ? ['vocal chops'] : [], character: [] } } })), edges: [] });
 
-test('integrated music assistant preserves the redesigned graph and works on mobile', async ({ page }, testInfo) => {
+test('integrated music assistant preserves the classic graph and works on mobile', async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.setViewportSize({ width: 1168, height: 792 });
@@ -17,9 +17,7 @@ test('integrated music assistant preserves the redesigned graph and works on mob
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
   const guide = page.getByRole('button', { name: 'Dismiss getting started' });
   if (await guide.isVisible()) await guide.click();
-  await page.getByRole('button', { name: 'Music copilot Find your next sound' }).click();
-  await page.getByText('More tools', { exact: true }).click();
-  await page.getByRole('button', { name: 'Search, review & build crates ↗' }).click();
+  await page.getByRole('button', { name: /Sample assistant/ }).click();
   const dialog = page.getByRole('dialog', { name: 'Find your next sound.' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Upload overview' })).toBeHidden();
