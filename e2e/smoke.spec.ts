@@ -158,6 +158,10 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   // Reload directly from the editor, before the debounce or panel-close flush.
   await page.getByRole('textbox', { name: 'Document note' }).fill('Immediate reload note');
   await page.reload();
+  // Selected document is restored in the classic layout; inspect its recovered
+  // edit before returning to the graph to check the library count.
+  await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('Immediate reload note');
+  await page.getByRole('button', { name: 'Back to graph', exact: true }).click();
   await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents');
   await openPostgres();
   await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('Immediate reload note');
