@@ -82,3 +82,12 @@ describe('versioned recognition evidence', () => {
     expect(cache.get('b')).toEqual({x:2});
   });
 });
+
+it('preserves a vocal-derived voice score and rejects invalid provenance',()=>{
+ const run=createRecognition(3,'full');
+ recordEvidence(run,'clap',{start:0,end:3},[{dimension:'source',labelId:'voice',score:.5,derivedFrom:{group:'sample',labelId:'vocal chops'}}]);
+ expect(sanitizeRecognition(run,3)?.evidence).toEqual(run.evidence);
+ run.evidence[0].derivedFrom!.labelId='synthesizer';
+ expect(sanitizeRecognition(run,3)?.evidence).toEqual([]);
+ expect(sanitizeRecognition(run,3)?.observations).toEqual([]);
+});

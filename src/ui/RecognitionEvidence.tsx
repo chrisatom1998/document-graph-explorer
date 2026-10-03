@@ -23,7 +23,7 @@ export default function RecognitionEvidence({recognition, duration, onSeek, revi
         <details><summary>Evidence ({observations.length} windows)</summary>
           <ul>{observations.slice(0,20).map(o=><li key={o.id}>
             <button type="button" disabled={!onSeek} aria-label={`Listen for ${label} at ${time(o.start)}–${time(o.end)}`} onClick={()=>onSeek?.(o.start)}>Listen at {time(o.start)}–{time(o.end)}</button>
-            <span> {o.evidenceIds.map(id=>recognition.evidence.find(e=>e.id===id)).filter(e=>!!e).map(e=>`${models[e.modelId]} score ${e.score.toFixed(3)}`).join('; ')}</span>
+            <span> {o.evidenceIds.map(id=>recognition.evidence.find(e=>e.id===id)).filter(e=>!!e).map(e=>e.derivedFrom?`${models[e.modelId]} “${e.derivedFrom.labelId}” score ${e.score.toFixed(3)} (supports voice)`:`${models[e.modelId]} score ${e.score.toFixed(3)}`).join('; ')}</span>
           </li>)}</ul>
           {observations.length>20&&<p>Showing the first 20 evidence windows.</p>}
           <p>Raw model scores are not probabilities.</p>

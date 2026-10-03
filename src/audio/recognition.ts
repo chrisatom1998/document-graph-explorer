@@ -20,7 +20,10 @@ export interface Evidence extends Interval {
   id: string; modelId: ModelId; dimension: Dimension; labelId: string; score: number;
   validSeconds: number; inputSeconds: number; aggregation: 'window';
   padding: 'none' | 'repeatpad-to-10s' | 'feature-pad-to-1024-frames' | 'centered-mel-frames';
+  /** The qualifying CLAP prompt when voice is inferred from a vocal form. */
+  derivedFrom?: { group: 'sample' | 'vocal'; labelId: string };
 }
+export type EvidenceCandidate = Pick<Evidence, 'dimension' | 'labelId' | 'score' | 'derivedFrom'>;
 export interface Observation extends Interval {
   id: string; dimension: Dimension; labelId: string; familyId: string;
   evidenceIds: string[]; status: 'possible' | 'accepted'; confidence?: number;
@@ -58,7 +61,7 @@ export function familyOf(label: string): string {
 }
 export function createRecognition(duration: number, mode: 'fast' | 'full', audioFingerprint?: string): Recognition {
   const versions = [ast.revision, Object.values(jamendo.sha256).join(':'), clap.revision, 'essentia-0.1.3-tempo-1', 'essentia-0.1.3-key-2'];
-  return { schemaVersion:1, runId:crypto.randomUUID(), audioFingerprint, configurationHash:`timeline-v1:${mode}:labels-v2:uncalibrated`,
+  return { schemaVersion:1, runId:crypto.randomUUID(), audioFingerprint, configurationHash:`timeline-v1:${mode}:labels-v2:voice-evidence-v1:uncalibrated`,
     startedAt:new Date().toISOString(),status:'running',mode,calibration:'unvalidated',evidence:[],observations:[],
     jobs:MODEL_IDS.map((modelId,i)=>({modelId,weightsVersion:versions[i],preprocessingVersion:'decoder-mono-v1:'+(['ast','jamendo'].includes(modelId)?16000:modelId==='clap'?48000:44100)+':'+(modelId==='ast'?ast.sha256['preprocessor_config.json']:modelId==='clap'?clap.sha256['preprocessor_config.json']:'features-v1'),
       ...(modelId==='clap'?{promptVersion:clap.sha256['prompts.json']}:{}),status:'pending',planned:[],attempted:[],successful:[],analyzedSeconds:0,gaps:duration>0?[{start:0,end:duration}]:[]})) };
@@ -84,7 +87,7 @@ export function finishJob(job: ModelJob, duration: number, cancelled=false): voi
   if(job.unsupportedReason){job.status='unsupported';return;}
   job.status=cancelled && !complete?'cancelled':complete?'complete':job.successful.length?'partial':job.attempted.length?'failed':'pending';
 }
-export function recordEvidence(run: Recognition, modelId: ModelId, interval: Interval, candidates: {dimension:Dimension;labelId:string;score:number}[]): void {
+export function recordEvidence(run: Recognition, modelId: ModelId, interval: Interval, candidates: EvidenceCandidate[]): void {
   for(const candidate of candidates) {
     if(!dimensionLabels[candidate.dimension].includes(candidate.labelId) || !Number.isFinite(candidate.score) || candidate.score < -1 || candidate.score > 1) continue;
     const id=`${modelId}:${interval.start}:${interval.end}:${candidate.dimension}:${candidate.labelId}`;
@@ -147,8 +150,15 @@ export function sanitizeRecognition(raw:unknown,duration:number):Recognition|und
   const evidenceIds=new Set<string>();
   for(const v of r.evidence.slice(0,MAX_EVIDENCE)) {
     const e=object(v);if(!e||!validInterval(e,duration)||!boundedString(e.id)||!MODEL_IDS.includes(e.modelId as ModelId)||!DIMENSIONS.includes(e.dimension as Dimension)||!dimensionLabels[e.dimension as Dimension].includes(String(e.labelId))||!number(e.score,1,-1)||evidenceIds.has(e.id))continue;
+    let derivedFrom: Evidence['derivedFrom'];
+    if(e.derivedFrom!==undefined) {
+      const basis=object(e.derivedFrom);
+      if(e.modelId!=='clap'||e.dimension!=='source'||e.labelId!=='voice'||!basis||
+        !(basis.group==='sample'&&basis.labelId==='vocal chops'||basis.group==='vocal'&&VOCAL_LABELS.includes(String(basis.labelId))))continue;
+      derivedFrom={group:basis.group as 'sample'|'vocal',labelId:String(basis.labelId)};
+    }
     evidenceIds.add(e.id);
-    out.evidence.push({id:e.id,modelId:e.modelId as ModelId,dimension:e.dimension as Dimension,labelId:String(e.labelId),start:e.start,end:e.end,score:e.score,validSeconds:e.end-e.start,inputSeconds:number(e.inputSeconds,90)?Math.max(e.end-e.start,e.inputSeconds):e.end-e.start,aggregation:'window',padding:paddingFor(e.modelId as ModelId)});
+    out.evidence.push({id:e.id,modelId:e.modelId as ModelId,dimension:e.dimension as Dimension,labelId:String(e.labelId),start:e.start,end:e.end,score:e.score,validSeconds:e.end-e.start,inputSeconds:number(e.inputSeconds,90)?Math.max(e.end-e.start,e.inputSeconds):e.end-e.start,aggregation:'window',padding:paddingFor(e.modelId as ModelId),...(derivedFrom?{derivedFrom}:{})});
   }
   const evidence=new Map(out.evidence.map(e=>[e.id,e]));
   const observationIds=new Set<string>();

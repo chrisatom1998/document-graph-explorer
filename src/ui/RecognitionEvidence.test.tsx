@@ -31,3 +31,14 @@ it('keeps dropped labels reviewable so obsolete confirmations can be rejected',(
   fireEvent.click(screen.getByRole('button',{name:'Reject'}));
   expect(review).toHaveBeenCalledWith('oboe','source','rejected');
 });
+
+it('explains the qualifying vocal prompt instead of presenting its score as direct voice confidence',()=>{
+ const run=createRecognition(3,'full');
+ recordEvidence(run,'clap',{start:0,end:3},[{dimension:'source',labelId:'voice',score:.5,derivedFrom:{group:'sample',labelId:'vocal chops'}}]);
+ const seek=vi.fn();render(<RecognitionEvidence recognition={run} duration={3} onSeek={seek}/>);
+ expect(screen.getByText('voice')).toBeVisible();
+ expect(screen.getByText('CLAP “vocal chops” score 0.500 (supports voice)')).toBeInTheDocument();
+ expect(screen.getByText('Raw model scores are not probabilities.')).toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'Listen for voice at 0:00–0:03'}));
+ expect(seek).toHaveBeenCalledWith(0);
+});

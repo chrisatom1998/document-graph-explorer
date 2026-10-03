@@ -42,6 +42,27 @@ describe('evaluation manifest integrity', () => {
 });
 
 describe('reviewed-label evaluation', () => {
+  it('reports F1 and support without hiding a wholly missed class or treating unknown labels as negatives', () => {
+    const a = item('a');
+    a.reviews.push({ ...a.reviews[0], label: 'harp', state: 'present' });
+    a.reviews.push({ ...a.reviews[0], label: 'voice', state: 'absent' });
+    a.reviews.push({ ...a.reviews[0], label: 'guitar', state: 'unreviewed' });
+    const result = evaluateLabels(manifest([a]), [
+      { itemId: 'a', dimension: 'source', label: 'piano', decision: 'accepted' },
+      { itemId: 'a', dimension: 'source', label: 'voice', decision: 'accepted' },
+      { itemId: 'a', dimension: 'source', label: 'harp', decision: 'possible' },
+    ], 'test');
+    expect(result.total).toMatchObject({ f1: .5, positiveSupport: 2, negativeSupport: 1 });
+    expect(result.byClass.find(c => c.label === 'harp')).toMatchObject({ f1: 0, positiveSupport: 1, negativeSupport: 0 });
+    expect(result.byClass.find(c => c.label === 'guitar')).toBeUndefined();
+    expect(result.macroF1).toBeCloseTo(1 / 3);
+  });
+  it('does not claim perfect F1 when a class has only absent or unknown annotations', () => {
+    const a = item('a'); a.reviews[0].state = 'absent';
+    const result = evaluateLabels(manifest([a]), [], 'test');
+    expect(result.total).toMatchObject({ f1: null, positiveSupport: 0, negativeSupport: 1 });
+    expect(result.macroF1).toBeNull();
+  });
   it('counts only explicit annotations; reports accepted coverage and unknown predictions separately', () => {
     const a = item('a');
     a.reviews.push({ ...a.reviews[0], label: 'drums', state: 'absent' });

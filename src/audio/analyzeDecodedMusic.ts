@@ -6,7 +6,7 @@ import type { InstrumentPredictions } from './instrumentLabels';
 import { averageDescriptions, selectDescriptions, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
-import { createRecognition, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type Dimension } from './recognition';
+import { createRecognition, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
   signal?: AbortSignal;
@@ -123,7 +123,11 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
           .map(d => ({ ...d, score: d.score * 2 / (descriptionCount + 1) }));
         descriptionCount++;
         const selected = selectDescriptions(scores);
-        const candidates: { dimension: Dimension; labelId: string; score: number }[] = selected.sources.map(s => ({ dimension: 'source', labelId: s.label, score: s.score }));
+        const candidates: EvidenceCandidate[] = selected.sources.map(s => ({ dimension: 'source', labelId: s.label, score: s.score }));
+        if(selected.vocalSourceEvidence&&!selected.sources.some(s=>s.label==='voice')) {
+          const {group,labelId,score}=selected.vocalSourceEvidence;
+          candidates.push({dimension:'source',labelId:'voice',score,derivedFrom:{group,labelId}});
+        }
         for (const [dimension, labels] of [['character',selected.character],['role',selected.roles],['vocal',selected.vocalStyle ? [selected.vocalStyle] : []]] as const) {
           for (const labelId of labels) candidates.push({ dimension, labelId, score: Math.max(...scores.filter(s => s.label === labelId).map(s => s.score)) });
         }
