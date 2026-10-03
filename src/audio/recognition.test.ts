@@ -49,12 +49,14 @@ describe('versioned recognition evidence', () => {
   });
   it('preserves scoped human review separately from changing machine evidence', () => {
     const run=createRecognition(10,'full');
-    const review={dimension:'source',labelId:'oboe',decision:'confirmed',scope:'track',at:'2026-10-03T00:00:00Z',evidenceRunId:'older-run'};
+    const review={dimension:'source',labelId:'oboe',decision:'confirmed',scope:'track',at:'2026-10-03T00:00:00Z',evidenceRunId:'older-run'} as const;
     const audio=sanitizeMusicAnalysis({version:2,durationSeconds:10,analyzedSeconds:0,instruments:[],notes:[],recognition:run,soundReviews:[review]});
     expect(audio?.soundReviews).toEqual([review]);
     expect(reliableInstruments(audio!)).toEqual([{label:'oboe',score:1}]);
     const rejected=sanitizeMusicAnalysis({...audio,soundReviews:[{...review,decision:'rejected'}]});
     expect(reliableInstruments(rejected!)).toEqual([]);
+    expect(reliableInstruments({version:2,durationSeconds:10,analyzedSeconds:0,instruments:[],notes:[],recognition:run,confirmedInstruments:['piano','trumpet'],soundReviews:[{...review,labelId:'trumpet',decision:'rejected'}]})).toEqual([{label:'piano',score:1}]);
+    expect(reliableInstruments({version:2,durationSeconds:10,analyzedSeconds:0,instruments:[],notes:[],recognition:run,soundReviews:[{...review,decision:'uncertain'}]})).toEqual([]);
   });
   it('rejects hostile intervals, dangling evidence and unsupported acceptance', () => {
     const run=createRecognition(10,'full');

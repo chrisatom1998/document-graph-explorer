@@ -1,5 +1,6 @@
 import MusicAnalysisMode from './MusicAnalysisMode';
 import { musicNameHints, type NamedHint } from '../audio/nameHints';
+import { confirmedInstrumentList } from '../audio/instrumentEvidence';
 import { useState } from 'react';
 import type { DocNode } from '../model/types';
 import { KEY_NAMES, keyName, type InstrumentEstimate } from '../audio/musicTypes';
@@ -14,6 +15,7 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
   const [controller, setController] = useState<AbortController | null>(null);
   const [message, setMessage] = useState('');
   const analysis = node.audio;
+  const confirmed = analysis ? confirmedInstrumentList(analysis) : undefined;
   const hints = musicNameHints(node);
   // Use the filename's spelling when the model found the same musical key.
   // Keep genuinely different predictions visible instead of relabeling them.
@@ -61,18 +63,18 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
         <div><dt>Tempo</dt><dd>{hints.tempo ? `${hints.tempo.value.toFixed(1)} BPM` : analysis.tempo ? `${analysis.tempo.bpm.toFixed(1)} BPM` : analysis.stage === 'preview' ? 'Not checked yet' : 'Uncertain / no steady beat'}</dd></div>
         <div><dt>Key</dt><dd>{hints.key ? hints.key.displayName : analysis.key ? keyName(analysis.key) : analysis.stage === 'preview' ? 'Not checked yet' : 'Uncertain / no stable key'}</dd></div>
       </dl>
-      {analysis.recognition && <RecognitionEvidence recognition={analysis.recognition} duration={analysis.durationSeconds} onSeek={onSeek} reviews={analysis.soundReviews} confirmedInstruments={analysis.confirmedInstruments} onReview={phase==='ready'?(label,dimension,decision)=>{
+      {analysis.recognition && <RecognitionEvidence recognition={analysis.recognition} duration={analysis.durationSeconds} onSeek={onSeek} reviews={analysis.soundReviews} confirmedInstruments={confirmed ?? []} onReview={phase==='ready'?(label,dimension,decision)=>{
         void import('../pipeline/coordinatorLazy').then(({setAudioReview})=>setAudioReview(node.id,label,dimension,decision))
           .then(()=>setMessage('Review saved.')).catch(error=>setMessage(error instanceof Error?error.message:'Could not save review.'));
       }:undefined} />}
-      {analysis.soundProfile && (!analysis.recognition || analysis.confirmedInstruments !== undefined || hints.instruments) && <SoundIdentification summaryOnly preliminary={analysis.stage === 'preview'} profile={analysis.soundProfile} sourceOverride={analysis.confirmedInstruments !== undefined ? { label: analysis.confirmedInstruments.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
+      {analysis.soundProfile && (!analysis.recognition || confirmed !== undefined || hints.instruments) && <SoundIdentification summaryOnly preliminary={analysis.stage === 'preview'} profile={analysis.soundProfile} sourceOverride={confirmed !== undefined ? { label: confirmed.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
       {!analysis.soundProfile && <div className="music-source-summary">
         <span>Instrument</span>
-        <strong>{analysis.confirmedInstruments?.join(', ') || (analysis.confirmedInstruments !== undefined ? 'None confirmed' : hints.instruments?.value.join(', ') || prediction?.label || likely.map(i => i.label).join(', ') || 'Not identified yet')}</strong>
+        <strong>{confirmed?.join(', ') || (confirmed !== undefined ? 'None confirmed' : hints.instruments?.value.join(', ') || prediction?.label || likely.map(i => i.label).join(', ') || 'Not identified yet')}</strong>
       </div>}
       <details className="music-analysis-details">
         <summary>Explanations</summary>
-        {analysis.soundProfile && <SoundExplanation preliminary={analysis.stage === 'preview'} profile={analysis.soundProfile} sourceOverride={analysis.confirmedInstruments !== undefined ? { label: analysis.confirmedInstruments.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
+        {analysis.soundProfile && <SoundExplanation preliminary={analysis.stage === 'preview'} profile={analysis.soundProfile} sourceOverride={confirmed !== undefined ? { label: confirmed.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
       {(hints.tempo || hints.key || hints.pitch || hints.instruments) && <>
         {[...nameSources].map(([id, group]) => <p key={id}>From {group.source}: {group.values.join(' · ')}</p>)}
         <p>These labels are used to connect tracks. They come from the file or folder name, not from listening to the audio.</p>
@@ -84,14 +86,14 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
       </>}
       {!hints.key && !analysis.key && analysis.detectedPitch && <p>Detected pitch: {KEY_NAMES[analysis.detectedPitch.pitchClass]}. A repeated note alone cannot establish a major/minor key, so it does not create key links.</p>}
       {!hints.tempo && !!analysis.tempo?.alternatives?.length && <p>Short-clip tempo: {analysis.tempo.alternatives.map(bpm => `${bpm.toFixed(1)} BPM`).join(' or ')} may also fit at half or double time. The main estimate is used for tempo links.</p>}
-      {hints.instruments && analysis.confirmedInstruments === undefined && <>
+      {hints.instruments && confirmed === undefined && <>
         <h4>Instruments from name</h4>
         <p>{hints.instruments.value.join(', ')}</p>
         <p>Used for instrument connections. Sound-based estimates remain below for comparison.</p>
       </>}
-      {analysis.confirmedInstruments !== undefined ? <>
+      {confirmed !== undefined ? <>
         <h4>Confirmed instruments</h4>
-        <ul>{analysis.confirmedInstruments.map(label => <li key={label}>{label}</li>)}</ul>
+        <ul>{confirmed.map(label => <li key={label}>{label}</li>)}</ul>
         <p>Confirmed by you. These instruments are used for connections.</p>
       </> : analysis.recognition ? <p>Machine suggestions and their coverage are shown above. Your saved reviews remain separate from model estimates.</p> : analysis.version === 1 ? <p>Earlier instrument estimates used short excerpts. Reanalyze to scan the full track.</p> : <>
         {prediction && !analysis.soundProfile && <>

@@ -57,11 +57,18 @@ export class InstrumentEvidence {
   }
 }
 
-export function reliableInstruments(analysis: MusicAnalysis): InstrumentEstimate[] {
+export function confirmedInstrumentList(analysis: MusicAnalysis): string[] | undefined {
   const reviews=new Map(analysis.soundReviews?.filter(r=>r.dimension==='source').map(r=>[r.labelId,r.decision]));
   const confirmed=[...new Set([...(analysis.confirmedInstruments??[]),...[...reviews].filter(([,decision])=>decision==='confirmed').map(([label])=>label)])]
     .filter(label=>!isBroadInstrument(label)&&(!reviews.has(label)||reviews.get(label)==='confirmed'));
-  if (analysis.confirmedInstruments || reviews.size) return confirmed.map(label=>({label,score:1}));
+  // Unsure/Reject history is not a human instrument list; only confirmations replace name tags.
+  if (analysis.confirmedInstruments === undefined && !confirmed.length) return;
+  return confirmed;
+}
+
+export function reliableInstruments(analysis: MusicAnalysis): InstrumentEstimate[] {
+  const confirmed=confirmedInstrumentList(analysis);
+  if (confirmed) return confirmed.map(label=>({label,score:1}));
   if (analysis.recognition) return []; // No independently validated acceptance policy yet.
   if (analysis.version !== 2 || analysis.stage === 'preview') return [];
   return analysis.instruments.filter(i => i.status === 'likely' && i.score >= 0.6 && !isBroadInstrument(i.label));

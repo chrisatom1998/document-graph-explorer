@@ -48,6 +48,19 @@ it('clearly distinguishes confirmed instruments from model guesses', () => {
   expect(screen.queryByText('trumpet', { selector: 'span' })).toBeNull();
   expect(screen.getByText('Confirmed by you. These instruments are used for connections.')).toBeVisible();
 });
+it('updates the confirmed summary after a later rejection', () => {
+  renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, confirmedInstruments: ['synthesizer', 'trumpet'], soundReviews: [{ labelId: 'synthesizer', dimension: 'source', decision: 'rejected', scope: 'track', at: '2026-10-03T00:00:00Z', evidenceRunId: 'run' }] } }} />);
+  expect(screen.getByRole('heading', { name: 'Confirmed instruments' })).toBeVisible();
+  expect(screen.getByText('trumpet', { selector: 'li' })).toBeVisible();
+  expect(screen.queryByText('synthesizer', { selector: 'li' })).toBeNull();
+  expect(screen.getByText('trumpet', { selector: 'strong' })).toBeVisible();
+});
+it('keeps name-derived instruments after an unsure machine-label review', () => {
+  renderExpanded(<MusicFeatures node={{ ...node, path: 'Piano Loop.wav', audio: { ...node.audio!, soundReviews: [{ labelId: 'oboe', dimension: 'source', decision: 'uncertain', scope: 'track', at: '2026-10-03T00:00:00Z', evidenceRunId: 'run' }] } }} />);
+  expect(screen.getByText('Instruments from name')).toBeVisible();
+  expect(screen.getAllByText('piano').length).toBeGreaterThan(0);
+  expect(screen.queryByText('Confirmed instruments')).toBeNull();
+});
 const node: DocNode = { id: 'track', kind: 'document', title: 'Track', fileType: 'audio', topics: [], entities: [], keywords: [], wordCount: 0, cluster: 0, degree: 0, status: 'ok', audio: { version: 2, durationSeconds: 180, analyzedSeconds: 60, notes: [], instrumentScan: { complete: true, analyzedSeconds: 180, windows: 35 }, instruments: [{ label: 'trumpet', status: 'likely', score: .9, segments: [{ start: 70, end: 80, score: .9 }] }, { label: 'cello', status: 'possible', score: .5 }] } };
 it('shows whole-track coverage and lets listeners verify the strongest instrument passage', () => {
   useGraphStore.getState().setPhase('ready');

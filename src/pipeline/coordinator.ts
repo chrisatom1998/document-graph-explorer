@@ -1910,7 +1910,13 @@ export function setAudioReview(id: string, labelId: string, dimension: SoundRevi
     if(sanitizeSoundReviews([review]).length!==1)throw new Error('Unsupported review label.');
     const history=node.audio.soundReviews??[];
     if(history.length>=500)throw new Error('Review history limit reached. Export this graph before adding more reviews.');
-    state.patchNodes(new Map([[id,{audio:{...node.audio,soundReviews:[...history,review]}}]]));
+    const soundReviews=[...history,review];
+    const confirmedInstruments=node.audio.confirmedInstruments===undefined||review.dimension!=='source'?node.audio.confirmedInstruments
+      :node.audio.confirmedInstruments.filter(label=>{
+        const latest=soundReviews.filter(r=>r.dimension==='source'&&r.labelId===label).at(-1);
+        return !latest||latest.decision==='confirmed';
+      });
+    state.patchNodes(new Map([[id,{audio:{...node.audio,soundReviews,confirmedInstruments}}]]));
     markDocsDirty([id]);
     const edges=[...state.edges.filter(e=>!['tempo','key','instrument'].includes(e.kind)),...buildMusicEdges(documentNodes())];
     useGraphStore.getState().setEdges(edges);layoutSetLinks(toLinkInput(edges));layoutReheat(.5);

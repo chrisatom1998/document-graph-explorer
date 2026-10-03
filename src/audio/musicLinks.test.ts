@@ -96,6 +96,14 @@ it('keeps user-confirmed instruments above folder clues', () => {
   const b = { ...node('b'), path: 'Synths/other.wav' };
   expect(musicPairEdges(a, b)).toEqual([]);
 });
+it('keeps name-derived instrument links after an unsure machine-label review', () => {
+  const review = { dimension: 'source' as const, labelId: 'oboe', decision: 'uncertain' as const, scope: 'track' as const, at: '2026-10-03T00:00:00Z', evidenceRunId: 'run' };
+  const a = { ...node('a', { soundReviews: [review] }), path: 'Piano Loop.wav' };
+  const b = { ...node('b'), path: 'Piano Hit.wav' };
+  const edges = musicPairEdges(a, b);
+  expect(edges.map(e => e.kind)).toContain('instrument');
+  expect(edges.find(e => e.kind === 'instrument')?.evidence[0]).toContain('piano');
+});
 it('links strong voice detections without promoting uncertain vocal guesses', () => {
  const a=node('a',{instruments:[{label:'voice',score:.93,status:'likely'}]});
  const b=node('b',{instruments:[{label:'voice',score:.88,status:'likely'}]});

@@ -1,5 +1,5 @@
 import { musicNameHints } from './nameHints';
-import { reliableInstruments } from './instrumentEvidence';
+import { confirmedInstrumentList, reliableInstruments } from './instrumentEvidence';
 import type { DocNode, Edge } from '../model/types';
 import { keyName, type MusicAnalysis } from './musicTypes';
 export const MUSIC_EDGE_KINDS = ['tempo', 'key', 'instrument'] as const;
@@ -34,14 +34,14 @@ export function musicPairEdges(a: DocNode, b: DocNode): Edge[] {
     if (relation) add('key', relation === 'same estimated key' ? 1 : 0.8, `${ah.key?.displayName ?? keyName(ak)} and ${bh.key?.displayName ?? keyName(bk)}: ${relation}.${ah.key || bh.key ? ` ${sources('key')}` : ''}`);
   }
   const namedInstruments = (node: DocNode, hints: ReturnType<typeof musicNameHints>) =>
-    node.audio!.confirmedInstruments === undefined && !node.audio!.soundReviews?.some(r=>r.dimension==='source') && hints.instruments
+    confirmedInstrumentList(node.audio!) === undefined && hints.instruments
       ? hints.instruments.value.map(label => ({ label, score: 1 })) : reliableInstruments(node.audio!);
   const aInstruments = namedInstruments(a, ah);
   const bInstruments = namedInstruments(b, bh);
   const shared = aInstruments.filter(i => bInstruments.some(j => j.label === i.label));
   if (shared.length) {
-    const humanA = a.audio.confirmedInstruments !== undefined || a.audio.soundReviews?.some(r=>r.dimension==='source');
-    const humanB = b.audio.confirmedInstruments !== undefined || b.audio.soundReviews?.some(r=>r.dimension==='source');
+    const humanA = confirmedInstrumentList(a.audio) !== undefined;
+    const humanB = confirmedInstrumentList(b.audio) !== undefined;
     const hasNameSource = (ah.instruments && !humanA) || (bh.instruments && !humanB);
     const provenance = hasNameSource
       ? `Sources: ${humanA ? 'confirmed by you' : ah.instruments?.source ?? 'audio'} and ${humanB ? 'confirmed by you' : bh.instruments?.source ?? 'audio'}. Name tags are not verified audio detections.`

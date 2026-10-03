@@ -74,6 +74,24 @@ it('falls back to full discovery if the container has no duration', async () => 
   const f=fixture(12,{mode:'fast'});f.decoder.durationSeconds=0;
   expect((await f.run()).instrumentScan).toMatchObject({mode:'full',complete:true,analyzedSeconds:12});
 });
+it('accepts a slightly short EOF decode instead of failing the scan or tempo/key jobs', async () => {
+  const duration = 75;
+  const actual = 74.5;
+  const decoder: MusicDecoder = { durationSeconds: duration, close() {}, read: vi.fn(async (start, seconds, rate) =>
+    new Float32Array(Math.round(Math.max(0, Math.min(seconds, actual - start)) * rate)).fill(.1)) };
+  const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
+    if (message.kind === 'rhythm' || message.kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: actual, instruments: [], notes: [] } as T;
+    if (message.kind === 'instruments') return { scores: { piano: .95 }, musicScore: .9 } as T;
+    if (message.kind === 'jamendo') return { synthesizer: .7 } as T;
+    return [{ group: 'source', label: 'piano', score: .6 }] as T;
+  };
+  const result = await analyzeDecodedMusic(decoder, request, {});
+  expect(result.instrumentScan?.complete).toBe(true);
+  expect(result.recognition?.jobs.find(j => j.modelId === 'rhythm')?.status).toBe('complete');
+  expect(result.recognition?.jobs.find(j => j.modelId === 'tonal')?.status).toBe('complete');
+  expect(result.notes).not.toContain('Tempo analysis was unavailable. Reanalyze to retry.');
+  expect(result.notes).not.toContain('Key analysis was unavailable. Reanalyze to retry.');
+});
 
 describe('independent recognition jobs', () => {
   it('includes sub-50ms tails and reuses only matching audio cache entries', async () => {

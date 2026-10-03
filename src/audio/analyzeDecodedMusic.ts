@@ -92,9 +92,12 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         const rate = id === 'clap' ? 48000 : 16000;
         const samples = await decoder.read(interval.start, interval.end - interval.start, rate);
         check();
-        if (samples.length < Math.round((interval.end - interval.start) * rate) - 1) throw new Error('Audio window could not be fully decoded');
+        // Container duration is often a few milliseconds long; FFmpeg -t then stops at EOF.
+        if (!samples.length && interval.end < duration - 1 / rate) throw new Error('Audio window could not be fully decoded');
         const hasAudio = audible(samples);
-        output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples }, [samples.buffer]);
+        output = samples.length
+          ? await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples }, [samples.buffer])
+          : id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
         if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
         check(); cache.set(key, output);
       }
@@ -141,9 +144,11 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         for (const interval of j.planned) {
           check(); j.attempted.push(interval);
           const sample = await decoder.read(interval.start, interval.end - interval.start, 44100);
-          if (sample.length < Math.round((interval.end - interval.start) * 44100) - 1) throw new Error('Audio excerpt could not be fully decoded');
-          samples.push(sample);
+          // Analyze whatever PCM exists; one short tail must not drop tempo or key.
+          if (!sample.length && interval.end < duration - 1 / 44100) throw new Error('Audio excerpt could not be fully decoded');
+          if (sample.length) samples.push(sample);
         }
+        if (!samples.length) throw new Error('Audio excerpt could not be fully decoded');
         const partial = await request<MusicAnalysis>({ kind: id, excerpts: { durationSeconds: duration, samples } }, samples.map(s => s.buffer));
         check();
         if (id === 'rhythm') result.tempo = partial.tempo;

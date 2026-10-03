@@ -41,7 +41,7 @@ async function loadModels() {
 }
 export async function classifyJamendo(engine: Essentia, samples: Float32Array): Promise<Record<string, number>> {
   const patches = jamendoPatches(engine, samples);
-  if (!patches.length) throw new Error('This clip is too short for the Jamendo model (at least 2.048 seconds required).');
+  if (!patches.length) return {};
   const { ort, embed, head, classes } = await (models ??= loadModels().catch(error => { models = undefined; throw error; }));
   const sums = new Float64Array(classes.length);
   for (const patch of patches) {

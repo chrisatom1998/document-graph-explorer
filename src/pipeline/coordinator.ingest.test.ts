@@ -832,6 +832,8 @@ describe('WAV music ingestion', () => {
     expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio?.soundReviews?.map(r=>r.decision)).toEqual(['confirmed','rejected']);
     await setAudioInstruments([selected.id],['piano']);
     expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio?.soundReviews?.map(r=>r.decision)).toEqual(['confirmed','rejected','confirmed']);
+    await setAudioReview(selected.id,'piano','source','rejected');
+    expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio?.confirmedInstruments).toEqual([]);
   });
   it('reanalyzes only selected audio while other stale results stay untouched', async () => {
     await ingestFiles([wav('selected.wav'), wav('stale.wav')]);
