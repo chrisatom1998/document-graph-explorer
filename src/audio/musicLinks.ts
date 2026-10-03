@@ -35,7 +35,10 @@ export function musicPairEdges(a: DocNode, b: DocNode): Edge[] {
   }
   const namedInstruments = (node: DocNode, hints: ReturnType<typeof musicNameHints>) =>
     confirmedInstrumentList(node.audio!) === undefined && hints.instruments
-      ? hints.instruments.value.map(label => ({ label, score: 1 })) : reliableInstruments(node.audio!);
+      ? hints.instruments.value.filter(label => {
+        const latest = node.audio!.soundReviews?.filter(r => r.dimension === 'source' && r.labelId === label).at(-1);
+        return !latest || latest.decision === 'confirmed';
+      }).map(label => ({ label, score: 1 })) : reliableInstruments(node.audio!);
   const aInstruments = namedInstruments(a, ah);
   const bInstruments = namedInstruments(b, bh);
   const shared = aInstruments.filter(i => bInstruments.some(j => j.label === i.label));

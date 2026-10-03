@@ -86,6 +86,9 @@ it('accepts a slightly short EOF decode instead of failing the scan or tempo/key
     return [{ group: 'source', label: 'piano', score: .6 }] as T;
   };
   const result = await analyzeDecodedMusic(decoder, request, {});
+  expect(result.durationSeconds).toBe(actual);
+  expect(result.recognition?.evidence.every(e=>e.end<=actual && e.validSeconds===e.end-e.start)).toBe(true);
+  expect(result.recognition?.jobs.find(j=>j.modelId==='ast')?.analyzedSeconds).toBe(actual);
   expect(result.instrumentScan?.complete).toBe(true);
   expect(result.recognition?.jobs.find(j => j.modelId === 'rhythm')?.status).toBe('complete');
   expect(result.recognition?.jobs.find(j => j.modelId === 'tonal')?.status).toBe('complete');
@@ -139,4 +142,18 @@ describe('independent recognition jobs', () => {
     expect(partial?.recognition?.status).toBe('cancelled');
     expect(partial?.recognition?.evidence.length).toBeGreaterThan(0);
   });
+});
+it('does not credit interior truncated reads as successful evidence', async () => {
+  const f=fixture(30);const read=f.decoder.read;
+  f.decoder.read=async(start,seconds,rate)=>start===0?new Float32Array(1):read(start,seconds,rate);
+  const result=await f.run();
+  expect(result.recognition?.jobs.find(j=>j.modelId==='ast')?.successful).toEqual([]);
+  expect(result.recognition?.evidence).toEqual([]);
+});
+it('records unsupported short Jamendo inputs without inference or repeated scan eligibility', async()=>{
+ const f=fixture(1);const r=await f.run();
+ expect(f.calls).not.toContain('jamendo');
+ expect(r.recognition?.jobs.find(j=>j.modelId==='jamendo')).toMatchObject({status:'unsupported',successful:[],analyzedSeconds:0});
+ expect(r.instrumentScan?.complete).toBe(true);
+ expect(sanitizeMusicAnalysis(r)?.recognition?.jobs.find(j=>j.modelId==='jamendo')?.status).toBe('unsupported');
 });

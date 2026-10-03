@@ -22,8 +22,8 @@ it('retains multiple instrument candidates without forcing weak or invalid score
   expect(jamendoSuggestions({ synthesizer: .2, piano: NaN, flute: Infinity, harp: 2 })).toEqual([]);
   expect(jamendoSuggestions({ electricpiano: .7, rhodes: .8 })).toHaveLength(1);
 });
-it('returns empty scores for clips shorter than a Jamendo patch', async () => {
-  await expect(classifyJamendo({} as Essentia, new Float32Array(1000))).resolves.toEqual({});
+it('reports unsupported clips shorter than a Jamendo patch', async () => {
+  await expect(classifyJamendo({} as Essentia, new Float32Array(1000))).rejects.toThrow('Unsupported Jamendo input');
 });
 it('extracts centered frames and only complete patches, without repeating short clips', () => {
   const frames: Float32Array[] = [];

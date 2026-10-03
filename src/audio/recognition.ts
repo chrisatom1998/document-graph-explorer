@@ -10,11 +10,11 @@ export interface SoundReview {
   dimension: Dimension; labelId: string; decision: 'confirmed' | 'rejected' | 'uncertain';
   scope: 'track'; at: string; evidenceRunId: string;
 }
-export type JobStatus = 'pending' | 'running' | 'complete' | 'partial' | 'failed' | 'cancelled';
+export type JobStatus = 'pending' | 'running' | 'complete' | 'partial' | 'failed' | 'cancelled' | 'unsupported';
 export interface ModelJob {
   modelId: ModelId; weightsVersion: string; preprocessingVersion: string; promptVersion?: string;
   status: JobStatus; planned: Interval[]; attempted: Interval[]; successful: Interval[];
-  analyzedSeconds: number; gaps: Interval[]; error?: string;
+  analyzedSeconds: number; gaps: Interval[]; error?: string; unsupportedReason?: string;
 }
 export interface Evidence extends Interval {
   id: string; modelId: ModelId; dimension: Dimension; labelId: string; score: number;
@@ -81,6 +81,7 @@ export function finishJob(job: ModelJob, duration: number, cancelled=false): voi
   if(cursor<duration) job.gaps.push({start:cursor,end:duration});
   const success=new Set(job.successful.map(i=>`${i.start}:${i.end}`));
   const complete=job.planned.length>0&&job.planned.every(i=>success.has(`${i.start}:${i.end}`));
+  if(job.unsupportedReason){job.status='unsupported';return;}
   job.status=cancelled && !complete?'cancelled':complete?'complete':job.successful.length?'partial':job.attempted.length?'failed':'pending';
 }
 export function recordEvidence(run: Recognition, modelId: ModelId, interval: Interval, candidates: {dimension:Dimension;labelId:string;score:number}[]): void {
@@ -140,6 +141,7 @@ export function sanitizeRecognition(raw:unknown,duration:number):Recognition|und
     const job:ModelJob={modelId:j.modelId as ModelId,weightsVersion:j.weightsVersion,preprocessingVersion:j.preprocessingVersion,status:'partial',planned,attempted,successful,analyzedSeconds:0,gaps:[]};
     if(boundedString(j.promptVersion))job.promptVersion=j.promptVersion;
     if(boundedString(j.error))job.error=j.error;
+    if(job.modelId==='jamendo' && duration<2.048 && typeof j.unsupportedReason==='string' && !successful.length) job.unsupportedReason=j.unsupportedReason.slice(0,300);
     finishJob(job,duration,j.status==='cancelled');out.jobs.push(job);
   }
   const evidenceIds=new Set<string>();

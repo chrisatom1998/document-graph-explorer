@@ -34,6 +34,7 @@ export default function RecognitionEvidence({recognition, duration, onSeek, revi
     <p>Tempo and key use sampled excerpts for tracks over one minute, even in Full mode. They do not map tempo or key changes across the track.</p>
     <ul>{recognition.jobs.map(job=><li key={job.modelId}>
       {models[job.modelId]}: {job.status}; {job.successful.length}/{job.planned.length} windows; {time(job.analyzedSeconds)} of {time(duration)} analyzed.
+      {job.unsupportedReason&&<span> {job.unsupportedReason}</span>}
       {job.error&&<span> Unavailable: {job.error}</span>}
       {job.gaps.length>0&&<details><summary>Unanalyzed intervals ({job.gaps.length})</summary>{job.gaps.slice(0,20).map((gap,i)=><span key={i}>{time(gap.start)}–{time(gap.end)}{i<Math.min(20,job.gaps.length)-1?', ':''}</span>)}</details>}
     </li>)}</ul>

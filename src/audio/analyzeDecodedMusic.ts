@@ -36,6 +36,13 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     }
   }
   if (!Number.isFinite(duration) || duration <= 0 || duration > 86400) throw new Error('No supported audio duration found.');
+  // Reconcile small container-duration overstatements before planning evidence.
+  // Larger or interior decode gaps are errors, never successful full windows.
+  const tailStart = Math.max(0, duration - 10);
+  const tail = await decoder.read(tailStart, duration - tailStart, 16000);
+  check();
+  const decodedEnd = tailStart + tail.length / 16000;
+  if (tail.length && decodedEnd < duration && duration - decodedEnd <= 1) duration = decodedEnd;
   const recognition = createRecognition(duration, mode, options.audioFingerprint);
   const result: MusicAnalysis = { version: 2, durationSeconds: duration, analyzedSeconds: 0, instruments: [], notes: [], recognition,
     tempoRevision: TEMPO_ANALYSIS_REVISION, keyRevision: KEY_ANALYSIS_REVISION };
@@ -46,6 +53,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   for (const id of ['jamendo', 'clap'] as const) job(id).planned = mode === 'full' ? soundWindows : windows(descriptionStarts(duration, mode));
   const excerptStarts = duration > 60 ? [Math.max(0, duration * .1 - 10), duration * .5 - 10, Math.min(duration - 20, duration * .9 - 10)] : [0];
   for (const id of ['rhythm', 'tonal'] as const) job(id).planned = windows(excerptStarts, duration > 60 ? 20 : 60);
+  if (duration < 2.048) job('jamendo').unsupportedReason = 'At least 2.048 seconds of audio are required; no Jamendo inference ran.';
   const cache = options.cache ?? new ResultCache();
   // A per-run identity still permits preview reuse without cross-file collisions.
   const fingerprint = options.audioFingerprint ?? recognition.runId;
@@ -64,7 +72,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   };
   const refresh = (cancelled = false, ended = false) => {
     for (const j of recognition.jobs) finishJob(j, duration, cancelled);
-    const soundComplete = ['ast','jamendo','clap'].every(id => job(id as ModelId).status === 'complete');
+    const soundComplete = ['ast','jamendo','clap'].every(id => ['complete','unsupported'].includes(job(id as ModelId).status));
     result.instruments = astEvidence.results();
     result.soundProfile = combineSoundModels(result.instruments, musicScores, descriptions,
       { ast: job('ast').status === 'complete', jamendo: job('jamendo').status === 'complete', clap: job('clap').status === 'complete' });
@@ -81,7 +89,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   const publish = () => { refresh(); options.onPartial?.(structuredClone(result)); check(); };
   async function sound(id: 'ast' | 'jamendo' | 'clap', interval: Interval) {
     check();
-    if (stopped.has(id)) return;
+    if (stopped.has(id) || job(id).unsupportedReason) return;
     const j = job(id); const key = modelCacheKey(fingerprint, j, interval);
     if (completed.has(key)) return;
     j.status = 'running'; j.attempted.push(interval);
@@ -92,12 +100,9 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         const rate = id === 'clap' ? 48000 : 16000;
         const samples = await decoder.read(interval.start, interval.end - interval.start, rate);
         check();
-        // Container duration is often a few milliseconds long; FFmpeg -t then stops at EOF.
-        if (!samples.length && interval.end < duration - 1 / rate) throw new Error('Audio window could not be fully decoded');
+        if (!samples.length || samples.length < Math.round((interval.end - interval.start) * rate) - 1) throw new Error('Audio window could not be fully decoded');
         const hasAudio = audible(samples);
-        output = samples.length
-          ? await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples }, [samples.buffer])
-          : id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
+        output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples }, [samples.buffer]);
         if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
         check(); cache.set(key, output);
       }
@@ -144,9 +149,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         for (const interval of j.planned) {
           check(); j.attempted.push(interval);
           const sample = await decoder.read(interval.start, interval.end - interval.start, 44100);
-          // Analyze whatever PCM exists; one short tail must not drop tempo or key.
-          if (!sample.length && interval.end < duration - 1 / 44100) throw new Error('Audio excerpt could not be fully decoded');
-          if (sample.length) samples.push(sample);
+          if (!sample.length || sample.length < Math.round((interval.end - interval.start) * 44100) - 1) throw new Error('Audio excerpt could not be fully decoded');
+          samples.push(sample);
         }
         if (!samples.length) throw new Error('Audio excerpt could not be fully decoded');
         const partial = await request<MusicAnalysis>({ kind: id, excerpts: { durationSeconds: duration, samples } }, samples.map(s => s.buffer));

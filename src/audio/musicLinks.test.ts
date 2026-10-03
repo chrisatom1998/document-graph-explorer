@@ -111,3 +111,9 @@ it('links strong voice detections without promoting uncertain vocal guesses', ()
  expect(musicPairEdges(a,node('c',{instruments:[{label:'voice',score:.7,status:'possible'}]}))).toEqual([]);
  expect(sanitizeMusicAnalysis(a.audio)?.instruments[0].label).toBe('voice');
 });
+it('does not restore an explicitly rejected or uncertain source through filename hints',()=>{
+ for(const decision of ['rejected','uncertain'] as const) {
+  const a={...node('a',{soundReviews:[{dimension:'source',labelId:'piano',decision,scope:'track',at:'2026-10-03T00:00:00Z',evidenceRunId:'r'}]}),path:'piano.wav'};
+  expect(musicPairEdges(a,{...node('b'),path:'piano.wav'}).filter(e=>e.kind==='instrument')).toEqual([]);
+ }
+});
