@@ -66,11 +66,11 @@ test.describe('retina graph clarity', () => {
     await expect.poll(() => pixelRatio(page)).toBeCloseTo(3, 2);
     await finishFrames(page);
     await page.screenshot({ path: testInfo.outputPath('graph-2d-high.png') });
-    await page.getByRole('button', { name: 'All files 32', exact: true }).click();
+    await page.getByRole('button', { name: 'Browse documents', exact: true }).press('Space');
     await page.getByRole('option', { name: /Analog synth 01/ }).click();
     await expect(page.getByRole('dialog', { name: 'Analog synth 01', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Back to graph', exact: true }).click();
-    await page.getByRole('button', { name: 'Graph explorer', exact: true }).click();
+    await page.getByRole('button', { name: 'Fit the whole graph in view' }).click();
     const canvas = await page.locator('.nebula-canvas canvas').boundingBox();
     await page.mouse.move(canvas!.x + 20, canvas!.y + 20);
     await page.mouse.down();

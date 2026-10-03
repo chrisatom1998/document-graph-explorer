@@ -2,25 +2,30 @@ import {
   lazy,
   Suspense,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
+  type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useCollabStore } from '../collab/store';
 import { DimsToggleButton } from './DimsToggleButton';
+import MusicAnalysisStatusButton from './MusicAnalysisStatusButton';
 import { openFilePicker } from '../ingest/DropZone';
 // Imported eagerly so the activation-gated picker opens synchronously with
 // the click; folderPicker demand-loads the heavy scanner itself.
 import { openFolderPicker } from '../ingest/folderPicker';
 
 import {
+  IconAnalyze,
   IconBulb,
   IconCollab,
   IconData,
   IconFit,
   IconFolderPlus,
+  IconGear,
+  IconGrip,
   IconHelp,
   IconHistory,
   IconOctahedron,
@@ -31,16 +36,47 @@ import {
 } from './icons';
 
 const ExportImportMenu = lazy(() => import('./ExportImportMenu'));
+const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
 const SavedViewsSection = lazy(() => import('./SavedViewsSection'));
 
-type MenuKey = 'view' | 'data' | 'add';
+/* Dragged toolbar position, persisted across reloads. */
+const TOOLBAR_POS_KEY = 'knowledge-nebula-toolbar-pos';
 
-export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen = false }: {
-  graphToolsTarget?: HTMLElement | null;
-  onToggleLibrary?: () => void;
-  libraryOpen?: boolean;
-}) {
-  const ready = useGraphStore(s => s.phase === 'ready');
+function loadToolbarPos(): { x: number; y: number } | null {
+  try {
+    const raw = localStorage.getItem(TOOLBAR_POS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { x?: unknown; y?: unknown };
+    if (typeof parsed.x !== 'number' || typeof parsed.y !== 'number') return null;
+    return { x: parsed.x, y: parsed.y };
+  } catch {
+    return null;
+  }
+}
+
+function saveToolbarPos(pos: { x: number; y: number }): void {
+  try {
+    localStorage.setItem(TOOLBAR_POS_KEY, JSON.stringify(pos));
+  } catch {
+    /* private mode / quota exceeded — position simply won't persist */
+  }
+}
+
+/** Pin the toolbar at (x, y), clamped ≥8px inside the viewport. */
+function placeToolbar(el: HTMLElement, x: number, y: number): { x: number; y: number } {
+  const rect = el.getBoundingClientRect();
+  const cx = Math.min(Math.max(x, 8), window.innerWidth - rect.width - 8);
+  const cy = Math.min(Math.max(y, 8), window.innerHeight - rect.height - 8);
+  el.style.top = `${cy}px`;
+  el.style.left = `${cx}px`;
+  el.style.right = 'auto';
+  el.style.marginInline = '0';
+  return { x: cx, y: cy };
+}
+
+type MenuKey = 'view' | 'analyze' | 'data' | 'add' | 'collab';
+
+export default function Toolbar(_props: { graphToolsTarget?: HTMLElement | null; onToggleLibrary?: () => void; libraryOpen?: boolean } = {}) {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const dims = useUiStore((s) => s.dims);
   const flatEdgeDetail = useUiStore((s) => s.flatEdgeDetail);
@@ -68,6 +104,7 @@ export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen
   const pathMode = useUiStore((s) => s.pathMode);
   const setPathMode = useUiStore((s) => s.setPathMode);
   const setSearchResults = useUiStore((s) => s.setSearchResults);
+  const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const setSnapshotsOpen = useUiStore((s) => s.setSnapshotsOpen);
   const setHelpOpen = useUiStore((s) => s.setHelpOpen);
   const clusterCollapsed = useUiStore((s) => s.clusterCollapsed);
@@ -79,8 +116,43 @@ export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen
   const [dataDialogOpen, setDataDialogOpen] = useState(false);
 
   const viewMenuWrapRef = useRef<HTMLDivElement | null>(null);
+  const analyzeMenuWrapRef = useRef<HTMLDivElement | null>(null);
   const dataMenuWrapRef = useRef<HTMLDivElement | null>(null);
+  const collabMenuWrapRef = useRef<HTMLDivElement | null>(null);
   const addMenuWrapRef = useRef<HTMLDivElement | null>(null);
+
+  // Drag-to-move. The position is written straight to the element (not React
+  // state): it changes on every pointer move and nothing else reads it. Until
+  // the first drag the CSS default (top-center) applies; afterwards the
+  // toolbar stays wherever the user left it, persisted via localStorage.
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const dragOffset = useRef<{ dx: number; dy: number } | null>(null);
+  const lastPos = useRef<{ x: number; y: number } | null>(null);
+
+  // Restore the saved position once the toolbar mounts (it only renders when
+  // the graph has nodes). Re-clamps, so a spot saved on a larger window still
+  // lands on-screen.
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!el || !hasNodes) return;
+    const saved = loadToolbarPos();
+    if (saved) lastPos.current = placeToolbar(el, saved.x, saved.y);
+  }, [hasNodes]);
+
+  // A pinned toolbar must survive the window shrinking mid-session, not just
+  // at mount — re-clamp on resize (default centered layout needs no clamp).
+  useEffect(() => {
+    const onResize = () => {
+      const el = rootRef.current;
+      const pos = lastPos.current;
+      if (!el || !pos) return;
+      lastPos.current = placeToolbar(el, pos.x, pos.y);
+    };
+    window.addEventListener('resize', onResize);
+    const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(onResize):undefined;
+    if(rootRef.current)observer?.observe(rootRef.current);
+    return () => {window.removeEventListener('resize', onResize);observer?.disconnect();};
+  }, []);
 
   // Close whichever popover is open on outside click or Escape. Scoped to a
   // plain document listener that only ever touches local `openMenu` state —
@@ -95,7 +167,13 @@ export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen
       const wrap =
         openMenu === 'view'
           ? viewMenuWrapRef.current
-          : openMenu === 'add' ? addMenuWrapRef.current : dataMenuWrapRef.current;
+          : openMenu === 'analyze'
+            ? analyzeMenuWrapRef.current
+            : openMenu === 'add'
+              ? addMenuWrapRef.current
+              : openMenu === 'collab'
+                ? collabMenuWrapRef.current
+                : dataMenuWrapRef.current;
       if (wrap && !wrap.contains(e.target as Node)) {
         setOpenMenu(null);
       }
@@ -125,6 +203,25 @@ export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen
 
   const toggleMenu = (key: MenuKey) => {
     setOpenMenu((cur) => (cur === key ? null : key));
+  };
+
+  const handleGripPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const rect = rootRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    dragOffset.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handleGripPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragOffset.current;
+    const el = rootRef.current;
+    if (!drag || !el) return;
+    lastPos.current = placeToolbar(el, e.clientX - drag.dx, e.clientY - drag.dy);
+  };
+
+  const handleGripPointerUp = () => {
+    if (dragOffset.current && lastPos.current) saveToolbarPos(lastPos.current);
+    dragOffset.current = null;
   };
 
   const handleCollabHost = async () => {
@@ -165,7 +262,36 @@ export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen
     }
   };
 
-  const graphTools = <div className="workspace-graph-tools" aria-label="Graph tools">
+  return (
+    <div ref={rootRef} className="toolbar glass-panel">
+      <div
+        className="toolbar__grip"
+        title="Move toolbar"
+        onPointerDown={handleGripPointerDown}
+        onPointerMove={handleGripPointerMove}
+        onPointerUp={handleGripPointerUp}
+        onPointerCancel={handleGripPointerUp}
+      >
+        <IconGrip />
+      </div>
+
+      <Suspense fallback={null}><CorpusSwitcher /></Suspense>
+
+      <div className="toolbar__divider" />
+
+      <button
+        type="button"
+        className="btn-icon"
+        title="Search (⌘K)"
+        aria-label="Search documents"
+        onClick={() => {
+          setSearchResults(null);
+          setSearchOpen(true);
+        }}
+      >
+        <IconSearch />
+      </button>
+
       <button
         type="button"
         className="btn-icon"
@@ -177,12 +303,13 @@ export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen
       </button>
 
       <DimsToggleButton />
+      <MusicAnalysisStatusButton />
 
       <div className="toolbar__menu-wrap" ref={viewMenuWrapRef}>
         <button
           type="button"
-          className={`btn-icon workspace-action${
-            openMenu === 'view' || topicNodesEnabled || clusterCollapsed || collabSession || pathMode ? ' is-active' : ''
+          className={`btn-icon${
+            openMenu === 'view' || topicNodesEnabled || clusterCollapsed ? ' is-active' : ''
           }`}
           title="View options"
           aria-label="View options"
@@ -194,7 +321,6 @@ export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen
           }}
         >
           <IconView />
-          <span className="workspace-action-label" aria-hidden="true">View</span>
         </button>
         {openMenu === 'view' && (
           <div className="toolbar__menu glass-panel">
@@ -232,9 +358,49 @@ export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen
               <span>Collapse clusters</span>
             </button>
 
-            <details className="workspace-menu-section">
-              <summary>Advanced tools</summary>
-              <fieldset disabled={!ready}>
+            <Suspense fallback={null}>
+              <SavedViewsSection onApplied={() => setOpenMenu(null)} />
+            </Suspense>
+
+            <div
+              role="separator"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.14)', margin: '4px 0' }}
+            />
+            <button
+              type="button"
+              className="toolbar__menu-item"
+              title="Help and graph legend"
+              onClick={() => {
+                setOpenMenu(null);
+                setHelpOpen(true);
+              }}
+            >
+              <IconHelp />
+              <span>Help & legend</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="toolbar__menu-wrap" ref={analyzeMenuWrapRef}>
+        <button
+          type="button"
+          className={`btn-icon${
+            openMenu === 'analyze' || pathMode || insightsOpen || snapshotsOpen ? ' is-active' : ''
+          }`}
+          title="Analyze the corpus"
+          aria-label="Analyze"
+          aria-haspopup="true"
+          aria-expanded={openMenu === 'analyze'}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleMenu('analyze');
+          }}
+        >
+          <IconAnalyze />
+        </button>
+        {openMenu === 'analyze' && (
+          <div className="toolbar__menu glass-panel">
             <button
               type="button"
               className={`toolbar__menu-item${pathMode ? ' is-active' : ''}`}
@@ -274,11 +440,52 @@ export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen
               <IconHistory />
               <span>Snapshots</span>
             </button>
-              </fieldset>
-            </details>
-            <details className="workspace-menu-section" open={collabSession ? true : undefined}>
-              <summary>Collaboration{collabSession ? ' · Active' : ''}</summary>
-              <fieldset disabled={!ready}>
+          </div>
+        )}
+      </div>
+
+      <div className="toolbar__menu-wrap" ref={dataMenuWrapRef}>
+        <button
+          type="button"
+          className={`btn-icon${openMenu === 'data' ? ' is-active' : ''}`}
+          title="Data options"
+          aria-label="Data options"
+          aria-haspopup="true"
+          aria-expanded={openMenu === 'data'}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleMenu('data');
+          }}
+        >
+          <IconData />
+        </button>
+        {openMenu === 'data' && (
+          <Suspense fallback={null}>
+            <ExportImportMenu
+              onClose={() => setOpenMenu(null)}
+              onDialogOpenChange={setDataDialogOpen}
+            />
+          </Suspense>
+        )}
+      </div>
+
+      <div className="toolbar__menu-wrap" ref={collabMenuWrapRef}>
+        <button
+          type="button"
+          className={`btn-icon${openMenu === 'collab' || collabSession ? ' is-active' : ''}`}
+          title={collabSession ? `Collaboration active (${collabSession.roomId})` : 'Collaboration'}
+          aria-label="Collaboration"
+          aria-haspopup="true"
+          aria-expanded={openMenu === 'collab'}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleMenu('collab');
+          }}
+        >
+          <IconCollab />
+        </button>
+        {openMenu === 'collab' && (
+          <div className="toolbar__menu glass-panel">
             {!collabSession ? (
               <>
                 <button type="button" className="toolbar__menu-item" onClick={handleCollabHost}>
@@ -350,82 +557,21 @@ export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen
                     : `You + ${remotePeerCount} others`}
               </div>
             )}
-              </fieldset>
-            </details>
-            <details className="workspace-menu-section"><summary>Saved views</summary>
-            <Suspense fallback={null}>
-              <SavedViewsSection onApplied={() => setOpenMenu(null)} />
-            </Suspense>
-            </details>
-
-            <div
-              role="separator"
-              style={{ borderTop: '1px solid rgba(255,255,255,0.14)', margin: '4px 0' }}
-            />
-            <button
-              type="button"
-              className="toolbar__menu-item"
-              title="Help and graph legend"
-              onClick={() => {
-                setOpenMenu(null);
-                setHelpOpen(true);
-              }}
-            >
-              <IconHelp />
-              <span>Help & legend</span>
-            </button>
           </div>
         )}
       </div>
 
+      <div className="toolbar__divider" />
 
-  </div>;
-
-  return <header className="workspace-header">
-    <button type="button" className="workspace-library-toggle btn-icon" aria-label="Toggle library" aria-expanded={libraryOpen} aria-controls="workspace-library" onClick={onToggleLibrary}>☰</button>
-    <div className="workspace-brand"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="m5 14 8-10 14 5-2 18-18-1Z M5 14l20 13M13 4l-6 22M5 14l22-5M7 26l20-17" stroke="currentColor" strokeWidth="1" />{[[5,14],[13,4],[27,9],[25,27],[7,26]].map(([cx,cy]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="3" fill="currentColor" />)}</svg><span>Knowledge Nebula</span></div>
       <button
         type="button"
-        className="btn-icon workspace-action toolbar__search"
-        title="Search (Ctrl+K / ⌘K)"
-        aria-label="Search documents"
-          disabled={!ready}
-        onClick={() => {
-          setSearchResults(null);
-          setSearchOpen(true);
-        }}
+        className="btn-icon"
+        title="Settings"
+        aria-label="Settings"
+        onClick={() => setSettingsOpen(true)}
       >
-        <IconSearch />
-        <span>Search your library…</span><kbd>⌘ K</kbd>
+        <IconGear />
       </button>
-
-    <div className="workspace-header-actions">
-      <div className="toolbar__menu-wrap" ref={dataMenuWrapRef}>
-        <button
-          type="button"
-          className={`btn-icon workspace-action${openMenu === 'data' ? ' is-active' : ''}`}
-          title="Data options"
-          aria-label="Data options"
-          disabled={!ready}
-          aria-haspopup="true"
-          aria-expanded={openMenu === 'data'}
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleMenu('data');
-          }}
-        >
-          <IconData />
-          <span className="workspace-action-label" aria-hidden="true">Export</span>
-        </button>
-        {openMenu === 'data' && (
-          <Suspense fallback={null}>
-            <ExportImportMenu
-              onClose={() => setOpenMenu(null)}
-              onDialogOpenChange={setDataDialogOpen}
-            />
-          </Suspense>
-        )}
-      </div>
 
       <div className="toolbar__menu-wrap" ref={addMenuWrapRef}>
         <button
@@ -441,7 +587,7 @@ export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen
             toggleMenu('add');
           }}
         >
-          <IconPlus /><span className="workspace-action-label" aria-hidden="true">Add files</span>
+          <IconPlus />
         </button>
         {openMenu === 'add' && (
           <div className="toolbar__menu glass-panel">
@@ -473,6 +619,5 @@ export default function Toolbar({ graphToolsTarget, onToggleLibrary, libraryOpen
         )}
       </div>
     </div>
-    {graphToolsTarget ? createPortal(graphTools, graphToolsTarget) : graphTools}
-  </header>;
+  );
 }

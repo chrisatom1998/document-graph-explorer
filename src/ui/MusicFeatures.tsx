@@ -11,7 +11,7 @@ import { isBroadInstrument } from '../audio/instrumentLabels';
 import { useGraphStore } from '../store/graphStore';
 import SoundIdentification, { SoundExplanation, SoundModelComparisons } from './SoundIdentification';
 import InstrumentCorrection from './InstrumentCorrection';
-import RecognitionEvidence from './RecognitionEvidence';
+import RecognitionEvidence, { RecognitionDiagnostics, type RecognitionEvidenceProps } from './RecognitionEvidence';
 const time = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?: (seconds: number) => void }) {
   const job = useMusicJobs(s => s.jobs[node.id]);
@@ -66,29 +66,35 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
   const likely = analysis?.instruments.filter(i => i.status === 'likely' && sourceReviewAllows(analysis,i.label)) ?? [];
   const prediction = analysis?.instrumentPrediction && sourceReviewAllows(analysis,analysis.instrumentPrediction.label) ? analysis.instrumentPrediction : undefined;
   const possible = analysis?.instruments.filter(i => i.status === 'possible' && i.label !== prediction?.label) ?? [];
+  const recognitionProps: RecognitionEvidenceProps | undefined = analysis?.recognition ? {
+    recognition: analysis.recognition, fusion: analysis.fusion, duration: analysis.durationSeconds, onSeek,
+    reviews: analysis.soundReviews, confirmedInstruments: confirmed ?? [], onReview: phase==='ready'?(label,dimension,decision)=>{
+        void import('../pipeline/coordinatorLazy').then(({setAudioReview})=>setAudioReview(node.id,label,dimension,decision))
+          .then(()=>setMessage('Review saved.')).catch(error=>setMessage(error instanceof Error?error.message:'Could not save review.'));
+      }:undefined
+  } : undefined;
   return <section className="music-features" aria-label="Musical features">
     <h3>Track details</h3>
     {analysis?.stage === 'preview' && <p role="status">{job || phase === 'parsing' ? 'Quick estimate — verification is continuing in the background.' : 'Quick estimate only — verification is unfinished. Reanalyze to finish.'}</p>}
     {analysis?.instrumentScan && !analysis.instrumentScan.complete && analysis.stage !== 'preview' && <p role="status">Analysis incomplete. Reanalyze to finish.</p>}
     {analysis ? <>
       <dl className="music-feature-grid">
+        <div><dt>Duration</dt><dd>{time(analysis.durationSeconds)}</dd></div>
         <div><dt>{hints.tempo ? "Tempo · from name" : "Estimated tempo"}</dt><dd>{hints.tempo ? `${hints.tempo.value.toFixed(1)} BPM` : analysis.tempo ? `${analysis.tempo.bpm.toFixed(1)} BPM` : analysis.stage === 'preview' ? 'Not checked yet' : 'Uncertain / no steady beat'}</dd></div>
         <div><dt>{hints.key ? "Key · from name" : "Estimated key"}</dt><dd>{hints.key ? hints.key.displayName : analysis.key ? keyName(analysis.key) : analysis.stage === 'preview' ? 'Not checked yet' : 'Uncertain / no stable key'}</dd></div>
       </dl>
-      {analysis.recognition && <RecognitionEvidence recognition={analysis.recognition} duration={analysis.durationSeconds} onSeek={onSeek} reviews={analysis.soundReviews} confirmedInstruments={confirmed ?? []} onReview={phase==='ready'?(label,dimension,decision)=>{
-        void import('../pipeline/coordinatorLazy').then(({setAudioReview})=>setAudioReview(node.id,label,dimension,decision))
-          .then(()=>setMessage('Review saved.')).catch(error=>setMessage(error instanceof Error?error.message:'Could not save review.'));
-      }:undefined} />}
-      {analysis.soundProfile && (!analysis.recognition || confirmed !== undefined || hints.instruments) && <SoundIdentification confirmedDjTags={confirmedTags} summaryOnly preliminary={analysis.stage === 'preview'} profile={displayProfile!} sourceOverride={confirmed !== undefined ? { label: confirmed.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
+      {analysis.soundProfile && (!analysis.recognition || confirmed !== undefined || hints.instruments) && <><SoundIdentification confirmedDjTags={confirmedTags} summaryOnly preliminary={analysis.stage === 'preview'} profile={displayProfile!} sourceOverride={confirmed !== undefined ? { label: confirmed.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} /><span className="chip">{confirmedTags || confirmed !== undefined ? 'Confirmed by you' : hints.instruments ? 'From name' : displayProfile?.disagreement ? 'Possible · uncertain' : displayProfile?.source || displayProfile?.voice ? 'Possible' : 'No confident source'}</span></>}
       {!analysis.soundProfile && <div className="music-source-summary">
-        <span>Instrument</span>
+        <span>{confirmed !== undefined ? 'Instrument · confirmed by you' : hints.instruments ? 'Instrument · from name' : prediction ? prediction.margin < 0.025 ? 'Estimated instrument · uncertain' : 'Estimated instrument · possible' : likely.length ? 'Likely instruments' : 'Instrument'}</span>
         <strong>{confirmed?.join(', ') || (confirmed !== undefined ? 'None confirmed' : hints.instruments?.value.join(', ') || prediction?.label || likely.map(i => i.label).join(', ') || 'Not identified yet')}</strong>
       </div>}
-      {!!analysis.soundReviews?.length && <p>Individual source reviews in Sound evidence take precedence over earlier instrument confirmations.</p>}
+      {recognitionProps && <RecognitionEvidence {...recognitionProps} summaryOnly />}
       <InstrumentCorrection key={node.id} node={node} />
       <DjTagCorrection key={`tags-${node.id}`} node={node} />
       <details className="music-analysis-details">
-        <summary>Analysis details</summary>
+        <summary>Details</summary>
+        {recognitionProps && <RecognitionDiagnostics {...recognitionProps} />}
+        {!!analysis.soundReviews?.length && <p>Individual source reviews in Sound evidence take precedence over earlier instrument confirmations.</p>}
         <CopilotProperties audio={analysis} />
         {analysis.soundProfile && <SoundExplanation confirmedDjTags={confirmedTags} preliminary={analysis.stage === 'preview'} profile={displayProfile!} sourceOverride={confirmed !== undefined ? { label: confirmed.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
       {(hints.tempo || hints.key || hints.pitch || hints.instruments) && <>

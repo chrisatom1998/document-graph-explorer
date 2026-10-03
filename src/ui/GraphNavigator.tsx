@@ -6,6 +6,7 @@ import { fileTypeChip, selectedDocumentTitle } from '../pipeline/codeLanguage';
 import { focusNode } from './focusNode';
 import { applyComparePick } from './openCompare';
 import { nodesMatchingFilter } from '../scene/emphasis';
+import './GraphNavigator.css';
 
 const SUMMARY_ID = 'graph-navigator-summary';
 const INSTRUCTIONS_ID = 'graph-navigator-instructions';

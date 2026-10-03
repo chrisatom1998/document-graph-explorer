@@ -38,6 +38,8 @@ function injectCsp(airgap: boolean): Plugin {
  * the CSP above as a header) — copy them into your host's header config.
  */
 const SECURITY_HEADERS = {
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Embedder-Policy': 'require-corp',
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
@@ -47,8 +49,8 @@ const SECURITY_HEADERS = {
     'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()',
 };
 
-// NOTE: no COOP/COEP headers on purpose — we use transferable Float32Arrays
-// (not SharedArrayBuffer), so cross-origin isolation buys nothing here.
+// Isolation permits bounded ONNX WASM threading. All model/runtime resources
+// remain same-origin; hosts without isolation retain one-thread inference.
 export default defineConfig(({ mode }) => ({
   plugins: [essentiaCsp(), react(), tailwindcss(), injectCsp(mode === 'airgap'), ...(mode === 'airgap' ? [] : [djAssistantPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djCopilotPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djReviewerPlugin()])],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },

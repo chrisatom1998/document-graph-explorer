@@ -29,7 +29,7 @@ test('persistent performance toast leaves the toolbar usable at compact sizes', 
   await expect(action).toBeVisible({ timeout: 60_000 });
   for (const viewport of [{ width: 800, height: 500 }, { width: 390, height: 500 }]) {
     await page.setViewportSize(viewport);
-    const toolbar = page.locator('.workspace-header');
+    const toolbar = page.locator('.toolbar');
     const toast = page.locator('.toast-host');
     await expect(action).toBeInViewport();
     const toolbarBox = await toolbar.boundingBox();
@@ -37,9 +37,7 @@ test('persistent performance toast leaves the toolbar usable at compact sizes', 
     expect(toolbarBox).not.toBeNull();
     expect(toastBox).not.toBeNull();
     expect(toastBox!.y).toBeGreaterThan(toolbarBox!.y + toolbarBox!.height);
-    const transportBox = await page.locator('#workspace-transport').boundingBox();
-    expect(transportBox).not.toBeNull();
-    expect(toastBox!.y + toastBox!.height).toBeLessThanOrEqual(transportBox!.y);
+    expect(toastBox!.y + toastBox!.height).toBeLessThanOrEqual(viewport.height);
     await page.getByRole('button', { name: 'Add documents', exact: true }).click({ timeout: 5000 });
     await expect(page.getByRole('button', { name: 'Add files', exact: true })).toBeVisible();
     // Close through the same toggle before resizing. Frame throttling can

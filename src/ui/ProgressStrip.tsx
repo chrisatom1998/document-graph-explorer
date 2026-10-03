@@ -12,7 +12,7 @@ import type { FileStage, PipelinePhase } from '../model/types';
 
 const AUTO_HIDE_MS = 2500;
 const IGNORED_LINGER_MS = 6000;
-const MAX_FILE_CHIPS = 7;
+const MAX_FILE_CHIPS = 3;
 
 const PHASE_LABEL: Partial<Record<PipelinePhase, string>> = {
   parsing: 'Parsing…',
@@ -143,9 +143,13 @@ export default function ProgressStrip() {
         aria-label="Show processing details" aria-expanded={false}
         title="Restore processing details. Analysis is still running."
         onClick={() => setMinimized(false)}>
-        <span role="status" aria-live="polite">{phaseLabel} · {done}/{total || 0}</span>
+        <span className="progress-strip-restore__status" role="status" aria-live="polite" aria-atomic="true">
+          <span className="progress-strip-restore__phase">{phaseLabel}</span>
+          {' · '}
+          <span className="progress-strip-restore__count">{done}/{total || 0}</span>
+        </span>
         {ignoredFiles.length > 0 && <small>{ignoredFiles.length} ignored</small>}
-        <span className="progress-strip-restore__label">Expand ↗</span>
+        <span className="progress-strip-restore__label">Expand <span aria-hidden="true">↗</span></span>
       </button>
     </div>
   );
@@ -184,23 +188,25 @@ export default function ProgressStrip() {
               {done}/{total || 0}
             </span>
           </div>
-          <button type="button" className="progress-strip__minimize" aria-label="Minimize processing details"
-            aria-expanded={true} title="Minimize — processing continues in the background"
-            onClick={() => setMinimized(true)}>Minimize −</button>
-          {active && cancellable && (
-            <button
-              type="button"
-              className="progress-strip__cancel"
-              disabled={cancelRequested}
-              title="Stop this ingest — documents already placed stay in the graph"
-              onClick={() => {
-                setCancelRequested(true);
-                cancelIngest();
-              }}
-            >
-              {cancelRequested ? 'Cancelling…' : 'Cancel'}
-            </button>
-          )}
+          <div className="progress-strip__actions">
+            <button type="button" className="progress-strip__minimize" aria-label="Minimize processing details"
+              aria-expanded={true} title="Minimize — processing continues in the background"
+              onClick={() => setMinimized(true)}>Minimize <span aria-hidden="true">−</span></button>
+            {active && cancellable && (
+              <button
+                type="button"
+                className="progress-strip__cancel"
+                disabled={cancelRequested}
+                title="Stop this ingest — documents already placed stay in the graph"
+                onClick={() => {
+                  setCancelRequested(true);
+                  cancelIngest();
+                }}
+              >
+                {cancelRequested ? 'Cancelling…' : 'Cancel'}
+              </button>
+            )}
+          </div>
         </div>
 
         {recentFiles.length > 0 && (
@@ -217,24 +223,29 @@ export default function ProgressStrip() {
                 <span className="file-chip__name">{truncateName(f.name)}</span>
               </Chip>
             ))}
+            {statuses.length > recentFiles.length && (
+              <span className="progress-strip__more-files">+{statuses.length - recentFiles.length} more</span>
+            )}
           </div>
         )}
 
         {modelProgress && (
           <div className="model-progress">
             <span className="model-progress__label">{taskProgressLabel}</span>
-            <ProgressBar
-              className="model-progress__progress"
-              aria-label={taskProgressAriaLabel}
-              minValue={0}
-              maxValue={Math.max(1, modelProgress.total)}
-              value={modelProgress.loaded}
-              valueLabel={taskProgressValueText}
-            >
-              <ProgressBar.Track className="model-progress__bar-track">
-                <ProgressBar.Fill className="model-progress__bar-fill" />
-              </ProgressBar.Track>
-            </ProgressBar>
+            {!music && (
+              <ProgressBar
+                className="model-progress__progress"
+                aria-label={taskProgressAriaLabel}
+                minValue={0}
+                maxValue={Math.max(1, modelProgress.total)}
+                value={modelProgress.loaded}
+                valueLabel={taskProgressValueText}
+              >
+                <ProgressBar.Track className="model-progress__bar-track">
+                  <ProgressBar.Fill className="model-progress__bar-fill" />
+                </ProgressBar.Track>
+              </ProgressBar>
+            )}
           </div>
         )}
 

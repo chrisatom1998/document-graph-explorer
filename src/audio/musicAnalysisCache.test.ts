@@ -1,6 +1,10 @@
 import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import {musicCacheKey,musicCacheFingerprint,readMusicCache,writeMusicCache} from './musicAnalysisCache';
 import { createRecognition, finishJob, type Recognition } from './recognition';
+import { fusionPresentation } from './fusionPresentation';
+import { sanitizeMusicAnalysis } from './musicTypes';
+import { FUSION_LABELS, type FusionAnalysis } from './fusion';
+import type { FusionReleaseIdentity } from './fusionRelease';
 import type {MusicAnalysis} from './musicTypes';
 const db=vi.hoisted(()=>{
  const values=new Map<string,unknown>();
@@ -8,7 +12,9 @@ const db=vi.hoisted(()=>{
  return {values,store};
 });
 vi.mock('../persistence/db',()=>({getDb:async()=>({get:async(_store:string,k:string)=>db.store.get(k),transaction:()=>({store:db.store,done:Promise.resolve()})})}));
-beforeEach(()=>db.values.clear());afterEach(()=>vi.unstubAllGlobals());
+const releaseState=vi.hoisted(()=>({value:undefined as FusionReleaseIdentity|undefined}));
+vi.mock('./fusionRelease',()=>({installedFusionIdentity:()=>releaseState.value,fusionRuntimeSupported:()=>!!releaseState.value,fusionConfiguration:()=>JSON.stringify(releaseState.value??'disabled'),supportsFusionInput:(duration:number,mode:string,mime:string)=>duration===10&&mode==='full'&&['audio/ogg','application/ogg'].includes(mime),sanitizeFusionReleaseIdentity:(v:unknown)=>v,sameFusionRelease:(a:unknown,b:unknown)=>!!a&&!!b&&JSON.stringify(a)===JSON.stringify(b)}));
+beforeEach(()=>{db.values.clear();releaseState.value=undefined;});afterEach(()=>vi.unstubAllGlobals());
 function completedRecognition(duration=10):Recognition {
  const recognition=createRecognition(duration,'full');
  for(const job of recognition.jobs) {
@@ -93,4 +99,23 @@ it.each(['full','fast'] as const)('caches completed %s plans with intentional un
  const result={...audio,durationSeconds:120,analyzedSeconds:20,recognition};
  await writeMusicCache('music-analysis:v2:sampled',result);
  expect(await readMusicCache('music-analysis:v2:sampled')).toBeDefined();
+});
+
+it('reuses only the exact qualified ten-second fusion window',async()=>{
+ const release: FusionReleaseIdentity={modelSha256:'a'.repeat(64),policySha256:'b'.repeat(64),scorerSha256:'c'.repeat(64),modelFileSha256:'d'.repeat(64),receiptSha256:'e'.repeat(64),runtimeSha256:'f'.repeat(64),inputTier:'ogg-full-ten-second-window-v1'};
+ releaseState.value=release;
+ const fusion: FusionAnalysis={version:1,scope:'window',validation:'policy-qualified',release,identity:release,planned:1,counts:{complete:1,failed:0,unsupported:0,empty:0},omittedWindows:0,windows:[{start:0,end:10,status:'complete',decisions:FUSION_LABELS.map(label=>({label,state:'negative',source:'learned-head',headProbability:.1,decisionProbability:.1,eligible:true,positiveGroups:3,negativeGroups:4}))}]};
+ const qualified={...audio,fusion,classifierConfiguration:JSON.stringify(release)};
+ expect(fusionPresentation(fusion,10,'full',release)?.qualified).toBe(true);
+ expect(sanitizeMusicAnalysis(qualified,{trustedCache:true})?.fusion?.validation).toBe('policy-qualified');
+ await writeMusicCache('music-analysis:v2:qualified',qualified,'audio/ogg');
+ expect(db.values.has('music-analysis:v2:qualified')).toBe(true);
+ expect((await readMusicCache('music-analysis:v2:qualified','audio/ogg'))?.fusion?.validation).toBe('policy-qualified');
+ for(const [start,end] of [[0,9],[1,10]]){
+  const changed=structuredClone(qualified);changed.fusion.windows[0].start=start;changed.fusion.windows[0].end=end;
+  db.values.set('music-analysis:v2:stored-truncated',{audio:changed});
+  expect(await readMusicCache('music-analysis:v2:stored-truncated','audio/ogg')).toBeUndefined();
+  await writeMusicCache('music-analysis:v2:rejected',changed,'audio/ogg');
+  expect(db.values.has('music-analysis:v2:rejected')).toBe(false);
+ }
 });

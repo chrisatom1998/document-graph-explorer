@@ -1,4 +1,3 @@
-import { useThemeStore } from '../store/themeStore';
 import MusicAnalysisMode from './MusicAnalysisMode';
 /**
  * Settings modal: AI provider config (OpenRouter / Ollama), export options,
@@ -51,7 +50,6 @@ export function resetClearedDataState(): void {
 }
 
 export default function SettingsPanel() {
-  const theme = useThemeStore(s => s.theme);
   const open = useUiStore((s) => s.settingsOpen);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const autoQuality = useUiStore((s) => s.autoQuality);
@@ -321,11 +319,7 @@ export default function SettingsPanel() {
         </div>
 
         <section className="settings-section">
-          <h3 className="settings-section__heading">Appearance and performance</h3>
-          <label className="settings-label" htmlFor="workspace-theme">Appearance</label>
-          <select className="settings-select" id="workspace-theme" value={theme} onChange={e => useThemeStore.getState().setTheme(e.target.value as 'light' | 'dark')}>
-            <option value="light">Light</option><option value="dark">Dark</option>
-          </select>
+          <h3 className="settings-section__heading">Graph appearance and performance</h3>
           <label className="settings-label" htmlFor="graph-clarity">Graph clarity</label>
           <select id="graph-clarity" className="settings-select" value={graphClarity} onChange={event => setGraphClarity(event.target.value as GraphClarity)}>
             <option value="high">High — sharper text and smooth edges</option>

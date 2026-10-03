@@ -1,15 +1,19 @@
 import { lazy, Suspense, useState } from 'react';
-import ThemeToggle from './ThemeToggle';
 import { Button } from '@heroui/react/button';
 import { Chip } from '@heroui/react/chip';
 import { EmptyState as HeroEmptyState } from '@heroui/react/empty-state';
 import { openFilePicker } from '../ingest/DropZone';
 import { openFolderPicker } from '../ingest/folderPicker';
+import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import ConstellationSvg from './ConstellationSvg';
+import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 import { rememberCenterOrigin } from '../scene/ingestGesture';
 
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
+// Split out so the welcome screen paints without waiting on three.js; the flat
+// mark stands in until the hero resolves.
+const HeroConstellation = lazy(() => import('./HeroConstellation'));
 
 /** The editorial, local-first welcome workspace shown before a corpus is loaded. */
 export default function EmptyState() {
@@ -24,6 +28,13 @@ export default function EmptyState() {
     rememberCenterOrigin();
     import('../pipeline/coordinatorLazy')
       .then(({ loadDemoCorpus }) => loadDemoCorpus())
+      .then(() => {
+        // Only show the guide when the demo actually produced a graph; a
+        // mid-run cancellation resolves the promise but leaves nodes empty.
+        if (useGraphStore.getState().nodes.length > 0) {
+          window.dispatchEvent(new Event(FIRST_RUN_GUIDE_REOPEN_EVENT));
+        }
+      })
       .catch((err) => {
         console.warn('demo corpus load failed', err);
         useUiStore.getState().pushToast("Couldn't load the demo corpus.");
@@ -44,7 +55,6 @@ export default function EmptyState() {
 
   return (
     <div className="empty-state-layer">
-      <ThemeToggle welcome />
       <HeroEmptyState className="empty-state__card glass-panel">
         <aside className="empty-state__visual" aria-label="Local-first knowledge mapping">
           <div className="empty-state__visual-label" aria-hidden="true">
@@ -52,7 +62,7 @@ export default function EmptyState() {
             <span>01 / 03</span>
           </div>
           <div className="empty-state__hero">
-            <ConstellationSvg />
+            <Suspense fallback={<ConstellationSvg />}><HeroConstellation /></Suspense>
           </div>
           <div className="empty-state__visual-copy">
             <p className="empty-state__visual-kicker">See the structure in your work</p>
@@ -77,8 +87,9 @@ export default function EmptyState() {
               Turn scattered files into a living map.
             </h1>
             <p className="empty-state__tagline">
-              Discover how your documents connect. Add your files to explore shared topics,
-              follow references, and find ideas in an interactive map.
+              Build an interactive 3D graph of ideas and relationships. Processing and storage stay
+              in this browser, with files cached only on this device. Documents leave your device
+              only when you explicitly enable a cloud AI provider or share exported graph data.
             </p>
           </header>
 
@@ -121,11 +132,8 @@ export default function EmptyState() {
               </Button>
             </div>
             <p className="empty-state__hint">
-              Drop files or folders anywhere. Supports PDFs, Office documents, text, and source code.
-            </p>
-            <p className="empty-state__privacy">
-              Processing and storage stay in this browser. Documents leave your device only when
-              you enable a cloud AI provider or share exported graph data.
+              Drag files or folders anywhere, or choose a folder to include supported files from
+              every subfolder.
             </p>
           </div>
 

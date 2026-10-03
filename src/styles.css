@@ -46,10 +46,10 @@
   padding: 5px 8px;
 }
 .first-run-guide {
+  /* Sit just left of the 220px-wide minimap (right: 18px) plus an 18px gap. */
   position: fixed;
   z-index: var(--z-modal);
   left: auto;
-  /* Sit just left of the 220px-wide minimap (right: 18px) plus an 18px gap. */
   right: 256px;
   bottom: 18px;
   width: min(330px, calc(100vw - 40px));
@@ -155,42 +155,46 @@
 }
 
 :root {
-  color-scheme: dark;
 
   /* HeroUI's glass-dark theme drives component surfaces. These app tokens
      translate it to our graph shell so old and new controls feel unified. */
+
+  /* Must match palette.ts VOID / spec §7.1 so the canvas/chrome seam disappears. */
+  --compare-panel-width: min(1000px, 70vw);
+  --surface-raised: #172237;
+  --surface-inset: #0b1220;
+  --control-hover: rgba(173, 191, 221, 0.1);
+  --accent-fill: #7160d6;
+  --accent-fill-hover: #7764d8;
+
+  /* Motion vocabulary: --ease-out for hovers/slides (decisive, settles fast),
+     --ease-spring for appearing elements (slight overshoot, matches the 3D
+     materialize pop's easeOutBack). */
+  color-scheme: dark;
   --background: #050510;
   --foreground: #edf2ff;
   --focus: #77e5ff;
   --radius: 0.625rem;
-  --glass-blur: 16px;
-
-  /* Must match palette.ts VOID / spec §7.1 so the canvas/chrome seam disappears. */
+  --glass-blur: 22px;
   --bg-void: #050510;
   --side-panel-width: min(640px, 42vw);
-  --compare-panel-width: min(1000px, 70vw);
-  --bg-glass: rgba(15, 22, 37, 0.97);
-  --bg-glass-strong: #111a2b;
-  --bg-glass-soft: rgba(15, 22, 37, 0.92);
-  --surface-raised: #172237;
-  --surface-inset: #0b1220;
-  --control-hover: rgba(173, 191, 221, 0.1);
-  --border-glass: rgba(164, 185, 219, 0.18);
-  --border-glass-strong: rgba(175, 194, 229, 0.34);
-  --shadow-glass: 0 12px 36px rgba(0, 0, 0, 0.32), inset 0 1px rgba(255, 255, 255, 0.025);
+  --bg-glass: rgba(11, 16, 34, 0.72);
+  --bg-glass-strong: rgba(10, 15, 31, 0.9);
+  --bg-glass-soft: rgba(10, 15, 31, 0.52);
+  --border-glass: rgba(158, 176, 255, 0.16);
+  --border-glass-strong: rgba(132, 218, 255, 0.36);
+  --shadow-glass: 0 14px 50px rgba(0, 0, 0, 0.42), inset 0 1px rgba(255, 255, 255, 0.035);
 
-  --text-primary: #e8eef8;
-  --text-secondary: #b4c0d5;
-  --text-faint: #8e9eb8;
+  --text-primary: #dfe4f4;
+  --text-secondary: #8b93b8;
+  --text-faint: #5b6288;
   --text: var(--text-primary);
   --text-muted: var(--text-secondary);
   --panel-bg: var(--bg-glass-strong);
 
-  --accent: #a095ff;
-  --accent-soft: rgba(151, 135, 255, 0.15);
-  --accent-strong: #c5bdff;
-  --accent-fill: #7160d6;
-  --accent-fill-hover: #7764d8;
+  --accent: #8e7dff;
+  --accent-soft: rgba(142, 125, 255, 0.16);
+  --accent-strong: #b4a8ff;
   --edge-blue: #77e5ff;
 
   --kind-reference: #ffb36b;
@@ -205,10 +209,6 @@
   --radius-lg: 14px;
   --radius-md: 10px;
   --radius-sm: 7px;
-
-  /* Motion vocabulary: --ease-out for hovers/slides (decisive, settles fast),
-     --ease-spring for appearing elements (slight overshoot, matches the 3D
-     materialize pop's easeOutBack). */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
@@ -232,17 +232,17 @@
    matches the theme selector's specificity, so these values intentionally
    win over the stock theme without needing a second provider or theme layer. */
 html.glass-dark {
-  --glass-blur: 16px;
+  --glass-blur: 22px;
   --background: #050510;
   --foreground: #edf2ff;
   --focus: #77e5ff;
-  --accent: #a095ff;
+  --accent: #8e7dff;
   --accent-foreground: #ffffff;
-  --surface: #111a2b;
-  --surface-secondary: #172237;
-  --surface-tertiary: #1d2b42;
-  --overlay: #111a2b;
-  --default: rgba(164, 185, 219, 0.12);
+  --surface: rgba(11, 16, 34, 0.72);
+  --surface-secondary: rgba(18, 25, 49, 0.68);
+  --surface-tertiary: rgba(28, 36, 67, 0.72);
+  --overlay: rgba(12, 17, 35, 0.84);
+  --default: rgba(160, 179, 255, 0.12);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -328,15 +328,18 @@ textarea {
 
 /* A quiet corpus overview with an explicit, keyboard-accessible document list. */
 .graph-navigator {
-  position: fixed;
-  top: 84px;
-  left: 18px;
-  z-index: var(--z-panel);
-  width: min(280px, calc(100vw - 160px));
-  max-height: calc(100dvh - 180px);
-  padding: 12px 14px;
-  pointer-events: auto;
   overflow-y: auto;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: var(--z-modal);
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(520px, calc(100vh - 24px));
+  padding: 14px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(calc(-100% - 24px));
+  transition: opacity 140ms ease, transform 180ms var(--ease-out);
 }
 
 .graph-navigator.is-expanded {
@@ -397,12 +400,13 @@ textarea {
 }
 
 .graph-navigator__option {
-  display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  min-height: 56px;
-  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--border-glass);
   color: var(--text-primary);
   cursor: pointer;
@@ -422,7 +426,7 @@ textarea {
 .graph-navigator__meta {
   flex: none;
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .app-error-shell {
@@ -505,8 +509,8 @@ textarea {
 
 .glass-panel {
   background: var(--bg-glass);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.16);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.16);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-glass);
@@ -518,7 +522,10 @@ textarea {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 80px);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 38%),
+    radial-gradient(circle at top left, rgba(119, 229, 255, 0.08), transparent 34%);
+  opacity: 0.9;
 }
 
 /* The working state is deliberately quieter than the welcome screen: a slim
@@ -545,7 +552,7 @@ textarea {
 .help-popover,
 .snapshot-drawer,
 .chat-panel {
-  border-color: var(--border-glass);
+  border-color: rgba(158, 176, 255, 0.18);
   box-shadow: var(--shadow-glass);
 }
 .filter-bar { background: var(--bg-glass-strong); }
@@ -622,9 +629,10 @@ textarea {
     transform 140ms ease;
 }
 .btn-icon:hover {
-  background: var(--control-hover);
-  border-color: var(--border-glass);
+  background: linear-gradient(180deg, rgba(142, 125, 255, 0.16), rgba(119, 229, 255, 0.08));
+  border-color: rgba(142, 125, 255, 0.4);
   color: #f6f8ff;
+  transform: translateY(-1px) scale(1.01);
 }
 .btn-icon:active {
   transform: scale(0.94);
@@ -634,10 +642,10 @@ textarea {
   outline-offset: 2px;
 }
 .btn-icon.is-active {
-  background: var(--accent-soft);
-  border-color: rgba(160, 149, 255, 0.5);
+  background: linear-gradient(180deg, rgba(142, 125, 255, 0.22), rgba(119, 229, 255, 0.1));
+  border-color: rgba(143, 123, 255, 0.48);
   color: var(--accent-strong);
-  box-shadow: inset 0 -2px var(--accent);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.06), 0 0 0 1px rgba(142, 125, 255, 0.08);
 }
 .btn-icon svg {
   width: 18px;
@@ -650,7 +658,7 @@ textarea {
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
-  border-radius: var(--radius-md);
+  border-radius: 999px;
   border: 1px solid var(--border-glass-strong);
   background: rgba(143, 123, 255, 0.1);
   color: var(--text-primary);
@@ -665,9 +673,9 @@ textarea {
     transform 140ms ease;
 }
 .btn-pill:hover {
-  border-color: var(--accent);
   background: var(--accent-soft);
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.04);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(143, 123, 255, 0.25) inset, 0 0 22px rgba(143, 123, 255, 0.22);
 }
 .btn-pill:active {
   transform: scale(0.98);
@@ -681,8 +689,8 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
   font-size: 12px;
   line-height: 1.5;
   background: rgba(140, 150, 255, 0.08);
@@ -737,8 +745,8 @@ textarea {
   transition: background-color 120ms ease, color 120ms ease;
 }
 .icon-btn-close:hover {
-  background: var(--control-hover);
-  color: var(--text-primary);
+  background: rgba(255, 128, 128, 0.12);
+  color: var(--danger);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -858,7 +866,7 @@ textarea {
   border-color: rgba(141, 168, 255, 0.22);
   background:
     radial-gradient(circle at 18% 28%, rgba(105, 92, 210, 0.12), transparent 34%),
-    #080d1c;
+    rgba(8, 13, 28, 0.8);
   color: var(--text-primary);
 }
 
@@ -888,16 +896,17 @@ textarea {
 /* The vector stage holds its composition at every size and pixel density. */
 .empty-state__hero {
   position: relative;
-  width: 100%;
+  width: min(100%, 340px);
   margin: 12px auto 8px;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 360 / 272;
   min-width: 0;
 }
 
 .empty-state__constellation {
   display: block;
-  width: 100%;
   height: 100%;
+  width: min(100%, 330px);
+  overflow: visible;
 }
 
 .empty-state__stellar-glow { animation: stellar-breathe 7s ease-in-out infinite; }
@@ -915,7 +924,7 @@ textarea {
 .empty-state__visual-copy p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -941,7 +950,7 @@ textarea {
   align-items: center;
   gap: 8px;
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 550;
   letter-spacing: 0.025em;
 }
@@ -1006,13 +1015,13 @@ textarea {
   font-size: clamp(38px, 4.2vw, 56px);
   font-weight: 700;
   letter-spacing: -0.045em;
-  line-height: 1.08;
+  line-height: 1.02;
   color: #f1f4ff;
 }
 
 .empty-state__tagline {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
   color: var(--text-secondary);
   max-width: 550px;
   line-height: 1.58;
@@ -1026,7 +1035,7 @@ textarea {
 .empty-state__section-label {
   margin: 0 0 8px;
   color: var(--text-faint);
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1055,10 +1064,10 @@ textarea {
 }
 
 .empty-state__actions--secondary .button {
-  min-height: 38px;
+  min-height: 32px;
   padding-inline: 10px;
   color: var(--text-secondary);
-  font-size: 15px;
+  font-size: 11px;
 }
 
 .empty-state__primary-action {
@@ -1068,7 +1077,7 @@ textarea {
 .empty-state__hint {
   max-width: 520px;
   margin: 9px 0 0;
-  font-size: 12px;
+  font-size: 10px;
   color: var(--text-faint);
   line-height: 1.45;
 }
@@ -1101,7 +1110,7 @@ textarea {
 .empty-state__workspace-copy {
   margin: 0;
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .empty-state__workflow {
@@ -1122,14 +1131,14 @@ textarea {
   gap: 16px;
   padding: 15px 16px;
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 650;
 }
 
 .empty-state__workflow-heading span:last-child {
   color: var(--text-faint);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 8px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1144,8 +1153,8 @@ textarea {
   padding: 15px 16px;
   border-left: 1px solid var(--border-glass);
   color: var(--text-secondary);
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 10px;
+  line-height: 1.4;
   text-align: left;
 }
 
@@ -1157,7 +1166,7 @@ textarea {
   display: block;
   margin-bottom: 4px;
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 11px;
 }
 
 .empty-state__step-number {
@@ -1184,20 +1193,20 @@ textarea {
 }
 
 .corpus-switcher__trigger {
+  font-weight: 550;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
   max-width: 190px;
-  height: 36px;
+  height: 34px;
   padding: 0 10px;
-  border: 1px solid var(--border-glass);
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  background: var(--surface-inset);
+  background: transparent;
   color: var(--text-primary);
   font: inherit;
-  font-size: 12.5px;
-  font-weight: 550;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -1225,7 +1234,7 @@ textarea {
 .corpus-switcher__status.is-watching,
 .corpus-switcher__status.is-checking {
   background: var(--success, #75e6b5);
-  box-shadow: 0 0 0 3px rgba(117, 230, 181, 0.1);
+  box-shadow: 0 0 10px rgba(117, 230, 181, 0.55);
 }
 
 .corpus-switcher__status.is-reconnect,
@@ -1290,7 +1299,7 @@ textarea {
 .corpus-switcher__watch-label,
 .corpus-switcher__unsupported {
   color: var(--text-faint);
-  font-size: 11.5px;
+  font-size: 10.5px;
 }
 
 .corpus-switcher__watch-label {
@@ -1419,10 +1428,10 @@ textarea {
 
 .corpus-switcher__action {
   width: 100%;
-  padding: 9px 8px;
+  padding: 7px 8px;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 11.5px;
   text-align: left;
 }
 
@@ -1442,25 +1451,28 @@ textarea {
      other corners are taken (filter bar top-left, quality toast bottom-left,
      progress strip bottom-center). Auto margins keep the default position
      centered until the user moves the dock. */
+  /* Dock menus must cover sibling graph controls such as the filter toggle. */
+  /* Fixed popovers must stay attached to the viewport, including inside the
+     horizontally scrollable mobile dock. Neither blur nor transform may
+     create a containing block on this ancestor. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgba(169, 186, 255, 0.2);
+  background: rgba(8, 13, 28, 0.76);
+  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.4), inset 0 1px rgba(255, 255, 255, 0.06);
   position: fixed;
   top: 18px;
   left: 0;
   right: 0;
   margin-inline: auto;
   width: fit-content;
-  /* Dock menus must cover sibling graph controls such as the filter toggle. */
-  z-index: calc(var(--z-floating) + 1);
+  z-index: var(--z-floating);
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 7px;
+  gap: 2px;
+  padding: 6px;
   pointer-events: auto;
-  /* Fixed popovers must stay attached to the viewport, including inside the
-     horizontally scrollable mobile dock. Neither blur nor transform may
-     create a containing block on this ancestor. */
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  animation: kn-fade-in 220ms ease;
+  animation: kn-fade-in 320ms var(--ease-out) both;
 }
 
 .toolbar__label {
@@ -1517,14 +1529,14 @@ textarea {
   align-items: center;
   padding: 6px;
   pointer-events: auto;
-  border-color: var(--border-glass-strong);
-  background: var(--bg-glass);
-  box-shadow: var(--shadow-glass);
+  border-color: rgba(169, 186, 255, 0.2);
+  background: rgba(8, 13, 28, 0.76);
+  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.4), inset 0 1px rgba(255, 255, 255, 0.06);
   animation: kn-slide-in-down 320ms var(--ease-out) both;
 }
 .ingest-dims-toggle .btn-icon { border-radius: 8px; }
 
-.toolbar__grip {
+.toolbar__grip { /* pointer capture handles the drag, even on touch */
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1533,7 +1545,7 @@ textarea {
   margin-right: 2px;
   color: var(--text-faint);
   cursor: grab;
-  touch-action: none; /* pointer capture handles the drag, even on touch */
+  touch-action: none;
   flex: none;
 }
 .toolbar__grip:hover {
@@ -1560,7 +1572,7 @@ textarea {
   position: absolute;
   bottom: -3px;
   right: -3px;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   color: var(--accent-strong);
   background: var(--bg-glass-strong);
@@ -1582,14 +1594,14 @@ textarea {
 }
 
 .toolbar__menu {
+  max-height: calc(100vh - 110px);
+  overflow-y: auto;
+  background: var(--bg-glass-strong);
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  min-width: 216px;
-  max-height: calc(100vh - 110px);
-  overflow-y: auto;
-  padding: 7px;
-  background: var(--bg-glass-strong);
+  min-width: 190px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1598,18 +1610,18 @@ textarea {
 }
 
 .toolbar__menu-item {
+  min-height: 38px;
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: 38px;
-  padding: 9px 10px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-primary);
   font: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   text-align: left;
   white-space: nowrap;
   cursor: pointer;
@@ -1620,9 +1632,9 @@ textarea {
     color 140ms ease;
 }
 .toolbar__menu-item:hover {
-  background: var(--control-hover);
-  border-color: var(--border-glass);
-  color: var(--text-primary);
+  background: var(--accent-soft);
+  border-color: var(--border-glass-strong);
+  color: var(--accent-strong);
 }
 .toolbar__menu-item:disabled {
   opacity: 0.45;
@@ -1660,7 +1672,7 @@ textarea {
 .toolbar__menu-meta {
   margin-left: auto;
   color: var(--text-faint);
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -1679,6 +1691,9 @@ textarea {
 }
 
 .side-panel {
+  background: rgba(7, 12, 25, 0.84);
+  backdrop-filter: blur(24px) saturate(1.14);
+  -webkit-backdrop-filter: blur(24px) saturate(1.14);
   pointer-events: auto;
   width: var(--side-panel-width);
   height: 100%;
@@ -1708,10 +1723,10 @@ textarea {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 14px;
-  padding: 24px 24px 18px;
+  gap: 10px;
+  padding: 20px 24px 14px;
   border-bottom: 1px solid var(--border-glass);
-  background: var(--surface-raised);
+  background: rgba(7, 12, 25, 0.92);
 }
 .side-panel__header-top {
   display: flex;
@@ -1725,15 +1740,15 @@ textarea {
 }
 
 .side-panel__title {
+  letter-spacing: -0.035em;
   flex: 1 1 auto;
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 8px;
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 650;
-  letter-spacing: -0.035em;
   line-height: 1.3;
   overflow-wrap: anywhere;
   color: var(--text-primary);
@@ -1780,18 +1795,19 @@ textarea {
 }
 
 .side-panel__stats {
-  display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
-  margin-top: 14px;
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
   font-size: 12px;
   color: var(--text-faint);
 }
 
 .side-panel__section {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-glass);
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(119, 229, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(119, 229, 255, 0.04);
 }
 .side-panel__section--reader {
   margin-top: 16px;
@@ -1807,21 +1823,21 @@ textarea {
   margin-top: 12px;
 }
 .side-panel__disclose {
+  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
   background: none;
   border: none;
-  min-height: 28px;
-  padding: 2px 0;
+  padding: 0;
   margin: 0;
   font: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--text-faint);
   cursor: pointer;
 }
 .side-panel__disclose:hover {
@@ -1838,12 +1854,12 @@ textarea {
 }
 
 .side-panel__section-label {
-  margin: 0 0 10px;
-  font-size: 11.5px;
+  margin: 0 0 8px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--text-faint);
 }
 
 .side-panel__passage-banner {
@@ -1966,11 +1982,12 @@ mark.passage-mark {
 .connection-row {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 14px 14px 16px;
+  gap: 6px;
+  padding: 12px 12px 12px 14px;
   border-radius: var(--radius-md);
-  background: var(--surface-inset);
+  background: rgba(10, 15, 31, 0.42);
   border: 1px solid var(--border-glass);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.03);
   position: relative;
   transition: background-color 120ms var(--ease-out), border-color 120ms var(--ease-out);
 }
@@ -1985,15 +2002,15 @@ mark.passage-mark {
   background: var(--connection-kind, var(--accent));
 }
 .connection-row:hover {
-  background: var(--surface-raised);
+  background: rgba(140, 150, 255, 0.08);
   border-color: var(--border-glass-strong);
 }
 
 .connection-row__main {
-  display: grid;
   grid-template-columns: 8px minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
-  gap: 4px 8px;
+  gap: 8px;
 }
 
 /* The relationship type (reference / similar / keyword / entity / topic) so a
@@ -2001,10 +2018,11 @@ mark.passage-mark {
    carries the hue; this is the name. */
 .connection-row__kind {
   grid-column: 2;
-  font-size: 10.5px;
+  flex: none;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--connection-kind, var(--text-secondary));
+  color: var(--text-faint);
 }
 
 .connection-row__compare {
@@ -2028,18 +2046,22 @@ mark.passage-mark {
 
 .connection-row__title {
   min-width: 0;
+  font-weight: 550;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  flex: 1 1 auto;
   background: none;
   border: none;
   padding: 0;
   margin: 0;
   text-align: left;
-  font-size: 14px;
-  font-weight: 550;
-  line-height: 1.4;
+  font-size: 13.5px;
   color: var(--text-primary);
   cursor: pointer;
   pointer-events: auto;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .connection-row__title:hover {
   color: var(--accent-strong);
@@ -2048,7 +2070,7 @@ mark.passage-mark {
 
 .connection-row__weight-track {
   width: 100%;
-  height: 3px;
+  height: 4px;
   border-radius: 2px;
   background: rgba(140, 150, 255, 0.1);
   overflow: hidden;
@@ -2056,15 +2078,15 @@ mark.passage-mark {
 .connection-row__weight-fill {
   height: 100%;
   border-radius: 2px;
-  background: var(--connection-kind, var(--accent));
+  background: linear-gradient(90deg, var(--edge-blue), var(--accent));
 }
 
 .connection-row__evidence {
   margin: 0;
   padding-left: 15px;
-  font-size: 12px;
+  font-size: 11.5px;
   line-height: 1.6;
-  color: var(--text-secondary);
+  color: var(--text-faint);
 }
 .connection-row__evidence li {
   margin: 0;
@@ -2099,8 +2121,8 @@ mark.passage-mark {
   margin-top: 8px;
   padding: 16px 18px;
   border-radius: var(--radius-md);
-  background: var(--surface-inset);
-  border: 1px solid var(--border-glass);
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(140, 150, 255, 0.08);
   white-space: pre-wrap;
   font-size: 15.5px;
   line-height: 1.7;
@@ -2729,7 +2751,7 @@ mark.passage-mark {
 
 .insights-digest-layer {
   position: fixed;
-  top: 174px;
+  top: 76px;
   left: 18px;
   z-index: var(--z-floating);
   pointer-events: none;
@@ -2837,9 +2859,9 @@ mark.passage-mark {
 }
 
 .insights {
+  /* clears the filter bar pinned at top: 18px */ background: rgba(9, 14, 30, 0.75);
   pointer-events: auto;
   width: min(360px, 88vw);
-  /* clears the filter bar pinned at top: 18px */
   margin: 76px 0 24px 18px;
   display: flex;
   flex-direction: column;
@@ -3031,16 +3053,16 @@ mark.passage-mark {
    ========================================================================== */
 
 .hover-tooltip {
+  background: var(--bg-glass-strong);
+  border-color: var(--border-glass-strong);
   position: fixed;
   top: 0;
   left: 0;
   z-index: var(--z-floating);
   pointer-events: none;
   will-change: transform;
-  max-width: min(340px, calc(100vw - 24px));
-  padding: 14px 16px;
-  background: var(--bg-glass-strong);
-  border-color: var(--border-glass-strong);
+  max-width: 280px;
+  padding: 12px 14px;
   opacity: 0;
   transition: opacity 120ms ease;
 }
@@ -3049,12 +3071,15 @@ mark.passage-mark {
 }
 
 .hover-tooltip__title {
-  margin: 0 0 4px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
   line-height: 1.4;
   overflow-wrap: anywhere;
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hover-tooltip__meta {
@@ -3082,7 +3107,7 @@ mark.passage-mark {
 
 .hover-tooltip__hint {
   margin: 0;
-  font-size: 11.5px;
+  font-size: 10.5px;
   color: var(--text-faint);
   letter-spacing: 0.02em;
 }
@@ -3092,6 +3117,7 @@ mark.passage-mark {
    ========================================================================== */
 
 .progress-strip-layer {
+  /* Keep the strip clear of the chat FAB (left) and minimap (right). */
   position: fixed;
   left: 0;
   right: 0;
@@ -3100,21 +3126,21 @@ mark.passage-mark {
   display: flex;
   justify-content: center;
   pointer-events: none;
-  /* Keep the strip clear of the chat FAB (left) and minimap (right). */
   padding-left: 88px;
   padding-right: 256px;
 }
 
 .progress-strip {
   pointer-events: auto;
-  width: min(640px, 94vw);
-  padding: 16px 20px;
+  width: min(520px, 100%);
+  min-width: 0;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   animation: kn-slide-in-up 260ms var(--ease-out) both;
-  border-color: var(--border-glass-strong);
-  background: var(--bg-glass-strong);
+  border-color: rgba(137, 224, 255, 0.22);
+  background: rgba(9, 14, 30, 0.82);
 }
 .progress-strip.is-leaving {
   animation: kn-fade-out 480ms ease both;
@@ -3129,9 +3155,106 @@ mark.passage-mark {
 .progress-strip__status {
   flex: 1 1 auto;
   min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.progress-strip__status > .progress-strip__progress {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+  min-width: 0;
+}
+
+.progress-strip__actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex: none;
+  gap: 8px;
+}
+
+.progress-strip__minimize {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: none;
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 1px solid var(--border-glass-strong);
+  border-radius: 7px;
+  background: rgba(140, 150, 255, 0.06);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 11px;
+  line-height: 18px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.progress-strip-restore {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 42px;
+  max-width: 100%;
+  padding: 9px 14px;
+  border: 1px solid var(--border-glass-strong);
+  border-radius: 999px;
+  background: rgba(9, 14, 30, 0.92);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.progress-strip-restore__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.progress-strip-restore__phase {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress-strip-restore__count {
+  flex: none;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.progress-strip-restore small {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.progress-strip-restore__label {
+  flex: none;
+  padding-left: 12px;
+  border-left: 1px solid var(--border-glass-strong);
+  color: var(--accent);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.progress-strip__minimize:hover,
+.progress-strip-restore:hover {
+  border-color: var(--accent);
+}
+
+.progress-strip__minimize:focus-visible,
+.progress-strip-restore:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .progress-strip__cancel {
@@ -3154,11 +3277,13 @@ mark.passage-mark {
 }
 
 .progress-strip__phase {
-  flex: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text-primary);
-  min-width: 148px;
+  min-width: 0;
 }
 
 .progress-strip__progress,
@@ -3187,9 +3312,32 @@ mark.passage-mark {
   flex: none;
   font-size: 11.5px;
   color: var(--text-faint);
-  min-width: 54px;
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 1;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.progress-strip__more-files {
+  align-self: center;
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .progress-strip-layer { padding-inline: 16px; }
+}
+
+@media (max-width: 520px) {
+  .progress-strip__top { flex-wrap: wrap; gap: 10px; }
+  .progress-strip__status { flex-basis: 100%; }
+  .progress-strip__actions { margin-left: auto; }
+  .progress-strip-restore { gap: 8px; padding-inline: 12px; }
+  .progress-strip-restore__label { padding-left: 8px; }
+  .progress-strip-restore { flex-wrap: wrap; }
+  .progress-strip-restore small { order: 1; flex-basis: 100%; text-align: left; }
 }
 
 .progress-strip__files {
@@ -3243,7 +3391,8 @@ mark.passage-mark {
 
 .model-progress__label {
   font-size: 11px;
-  color: var(--text-faint);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
 }
 
 .model-progress__bar-track {
@@ -3314,21 +3463,22 @@ mark.passage-mark {
    ========================================================================== */
 
 .toast-host {
-  position: fixed;
   /* Reserve the top for the toolbar/reader header and the bottom 90px
      for chat and status controls, including on narrow screens. */
   bottom: max(90px, env(safe-area-inset-bottom));
-  right: 18px;
+  max-height: min(45dvh, calc(100dvh - 182px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  position: fixed;
+  top: auto;
+  right: 74px;
   z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: min(340px, calc(100vw - 36px));
+  pointer-events: none;
+  width: min(340px, calc(100vw - 92px));
   max-width: min(340px, 92vw);
-  max-height: min(45dvh, calc(100dvh - 182px));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  pointer-events: auto;
 }
 
 /* The minimap is 156px tall plus padding, at an 18px bottom inset.
@@ -3340,7 +3490,7 @@ mark.passage-mark {
 
 .toast {
   /* Keep the scrollable notification stack and its controls interactive. */
-  pointer-events: auto;
+  pointer-events: none;
   position: relative;
   inset: auto;
   width: 100%;
@@ -3364,9 +3514,9 @@ mark.passage-mark {
 }
 
 .toast__text {
-  flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
+  flex: 1 1 auto;
   font-size: 12.5px;
   line-height: 1.45;
   color: var(--text-primary);
@@ -3382,8 +3532,8 @@ mark.passage-mark {
 }
 
 .toast .icon-btn-close {
-  pointer-events: auto;
   flex: none;
+  pointer-events: auto;
 }
 
 @media (max-width: 480px) {
@@ -3499,7 +3649,7 @@ mark.passage-mark {
   height: 16px;
   margin-inline: auto;
   background: linear-gradient(135deg, #b3a7ff, #6d8eff);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 10px rgba(143, 123, 255, 0.45);
 }
 
 .help-node-shape--document { border-radius: 50%; }
@@ -3524,6 +3674,7 @@ mark.passage-mark {
   width: 24px;
   height: 2px;
   border-radius: 2px;
+  box-shadow: 0 0 7px currentColor;
 }
 
 .help-popover__hint {
@@ -3559,24 +3710,24 @@ mark.passage-mark {
 
 .settings-panel,
 .snapshot-drawer {
-  width: min(500px, 92vw);
-  max-height: min(800px, 88vh);
+  background: var(--bg-glass-strong);
+  width: min(460px, 92vw);
+  max-height: 82vh;
   overflow-y: auto;
   padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  background: var(--bg-glass-strong);
+  gap: 18px;
   animation: kn-pop-in 200ms var(--ease-spring) both;
 }
 
 .settings-panel__header {
+  border-bottom: 1px solid var(--border-glass);
   position: sticky;
   top: -20px;
   z-index: 1;
   margin-top: -20px;
   padding: 20px 0 12px;
-  border-bottom: 1px solid var(--border-glass);
   background: var(--bg-glass-strong);
   display: flex;
   align-items: center;
@@ -3585,15 +3736,15 @@ mark.passage-mark {
 
 .settings-panel__title {
   margin: 0;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.3px;
 }
 
 .settings-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .settings-section__heading {
@@ -3601,14 +3752,14 @@ mark.passage-mark {
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 1.2px;
   color: var(--text-secondary);
 }
 
 .settings-field {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 4px;
   font-size: 13px;
 }
 
@@ -3617,31 +3768,31 @@ mark.passage-mark {
 .settings-panel input[type='text'],
 .settings-panel input[type='password'],
 .settings-panel input[type='url'] {
+  min-height: 40px;
   width: 100%;
   box-sizing: border-box;
-  min-height: 40px;
-  padding: 9px 11px;
+  padding: 7px 9px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-glass);
-  background: var(--surface-inset);
+  background: rgba(255, 255, 255, 0.06);
   color: inherit;
   font: inherit;
   font-size: 13px;
 }
 
 .settings-check {
+  line-height: 1.5;
   display: flex;
   align-items: center;
-  gap: 10px;
-  line-height: 1.5;
+  gap: 8px;
   font-size: 13px;
   cursor: pointer;
 }
 
 .settings-btn {
-  align-self: flex-start;
   min-height: 36px;
-  padding: 8px 14px;
+  align-self: flex-start;
+  padding: 7px 14px;
   border-radius: 8px;
   border: 1px solid var(--border-glass-strong);
   background: var(--accent-soft);
@@ -3662,8 +3813,8 @@ mark.passage-mark {
 }
 
 .settings-help {
-  font-size: 12px;
   line-height: 1.55;
+  font-size: 11.5px;
   color: var(--text-faint);
   margin: 0;
 }
@@ -3702,28 +3853,28 @@ mark.passage-mark {
 }
 
 .search-overlay {
-  width: min(620px, 92vw);
-  max-height: min(640px, 72vh);
+  background: var(--bg-glass-strong);
+  width: min(560px, 92vw);
+  max-height: 60vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg-glass-strong);
   animation: kn-pop-in 200ms var(--ease-spring) both;
 }
 
 .search-overlay__input-row {
+  background: var(--surface-raised);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 18px 20px;
-  border-bottom: 1px solid var(--border-glass);
-  background: var(--surface-raised);
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(140, 150, 255, 0.12);
   flex: none;
 }
 
 .search-overlay__input {
-  flex: 1 1 auto;
   min-width: 0;
+  flex: 1 1 auto;
   background: none;
   border: none;
   outline: none;
@@ -3737,14 +3888,14 @@ mark.passage-mark {
 .search-overlay__results {
   overflow-y: auto;
   flex: 1 1 auto;
-  padding: 10px;
+  padding: 8px;
 }
 
 .search-result-row {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 13px 12px;
+  gap: 4px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   pointer-events: auto;
@@ -3752,11 +3903,12 @@ mark.passage-mark {
   transition:
     background-color 140ms var(--ease-out),
     border-color 140ms var(--ease-out),
+    transform 140ms var(--ease-out),
     box-shadow 140ms var(--ease-out);
 }
 .search-result-row:hover,
 .search-result-row.is-active {
-  background: var(--control-hover);
+  background: rgba(140, 150, 255, 0.08);
   border-color: var(--border-glass);
 }
 .search-result-row.is-active {
@@ -3772,10 +3924,10 @@ mark.passage-mark {
 }
 
 .search-result-row__title {
-  flex: 1 1 auto;
   min-width: 0;
-  font-size: 14px;
   font-weight: 550;
+  flex: 1 1 auto;
+  font-size: 13.5px;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3784,15 +3936,15 @@ mark.passage-mark {
 
 .search-result-row__similar {
   flex: none;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
   font-family: var(--font-ui);
   color: var(--text-secondary);
   background: none;
   border: 1px solid var(--border-glass);
-  border-radius: 6px;
-  padding: 4px 8px;
+  border-radius: 999px;
+  padding: 2px 8px;
   cursor: pointer;
 }
 .search-result-row__similar:hover {
@@ -3839,15 +3991,17 @@ mark.passage-mark {
 }
 
 .search-result-row__snippet {
-  margin: 0;
-  font-size: 12.5px;
   line-height: 1.5;
-  color: var(--text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  overflow: hidden;
   overflow-wrap: anywhere;
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .search-overlay__empty {
@@ -3885,14 +4039,15 @@ mark.passage-mark {
    ========================================================================== */
 
 .filter-bar-layer {
-  position: fixed;
-  top: 84px;
   right: 18px;
+  flex-direction: column;
+  position: fixed;
+  top: 18px;
+  left: 18px;
   z-index: var(--z-floating);
   pointer-events: none;
   display: flex;
-  align-items: flex-end;
-  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
   animation: kn-slide-in-down 320ms var(--ease-out) both;
 }
@@ -3931,16 +4086,17 @@ mark.passage-mark {
 }
 
 .filter-bar {
+  width: min(420px, calc(100vw - 36px));
+  max-height: calc(100dvh - 220px);
+  overflow-y: auto; background: rgba(8, 13, 28, 0.72);
   pointer-events: auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
-  width: min(420px, calc(100vw - 36px));
-  max-height: calc(100dvh - 220px);
-  overflow-y: auto;
-  box-shadow: var(--shadow-glass);
+  gap: 14px;
+  padding: 10px 16px;
+  max-width: min(640px, 78vw);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.34), inset 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .filter-bar__group {
@@ -3951,11 +4107,11 @@ mark.passage-mark {
 }
 
 .filter-bar__group-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--text-faint);
   margin-right: 2px;
   cursor: help;
   text-decoration: underline dotted rgba(255, 255, 255, 0.2);
@@ -3982,23 +4138,23 @@ mark.passage-mark {
 }
 
 .filter-bar__clear {
+  min-height: 32px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border-glass);
   border-radius: 999px;
   padding: 3px 12px;
-  min-height: 32px;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
   cursor: pointer;
   pointer-events: auto;
 }
 .filter-bar__more {
+  min-height: 32px;
   background: rgba(255, 255, 255, 0.015);
-  border: 1px solid var(--border-glass);
+  border: 1px dashed var(--border-glass);
   border-radius: 999px;
   padding: 3px 12px;
-  min-height: 32px;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
   cursor: pointer;
   pointer-events: auto;
@@ -4110,8 +4266,8 @@ mark.passage-mark {
   .empty-state__card {
     grid-template-columns: 1fr;
     grid-template-areas:
-      'content'
       'visual'
+      'content'
       'workflow';
     width: 100%;
     max-height: calc(100vh - 20px);
@@ -4141,7 +4297,7 @@ mark.passage-mark {
   }
   .empty-state__trust-list li {
     gap: 5px;
-    font-size: 11px;
+    font-size: 8px;
   }
   .empty-state__content,
   .empty-state__header { align-items: center; text-align: center; }
@@ -4171,6 +4327,11 @@ mark.passage-mark {
   .empty-state__step + .empty-state__step {
     border-top: 1px solid var(--border-glass);
     border-left: none;
+  }
+  .empty-state__hero,
+  .empty-state__constellation {
+    width: 190px;
+    margin-block: 0;
   }
 }
 
@@ -4398,17 +4559,19 @@ mark.passage-mark {
 }
 
 .snapshot-empty__text {
+  color: var(--text-primary);
   margin: 0;
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary);
+  opacity: 0.7;
 }
 
 .snapshot-empty__hint {
-  margin: 0;
-  font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.55;
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.5;
   max-width: 280px;
 }
 
@@ -4437,8 +4600,10 @@ mark.passage-mark {
     box-shadow 140ms var(--ease-out);
 }
 .snapshot-item:hover {
-  background: var(--control-hover);
-  border-color: var(--border-glass-strong);
+  background: rgba(140, 150, 255, 0.08);
+  border-color: rgba(140, 150, 255, 0.18);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.35);
 }
 
 .snapshot-diff-banner {
@@ -4497,8 +4662,9 @@ mark.passage-mark {
 }
 
 .snapshot-item__meta {
-  font-size: 11px;
   color: var(--text-faint);
+  font-size: 11px;
+  opacity: 0.55;
 }
 
 .snapshot-item__actions {
@@ -4559,7 +4725,7 @@ mark.passage-mark {
   left: 24px;
   width: 54px;
   height: 54px;
-  border-radius: 16px;
+  border-radius: 50%;
   z-index: var(--z-floating);
   display: flex;
   align-items: center;
@@ -4571,13 +4737,13 @@ mark.passage-mark {
   color: var(--text-primary);
   cursor: pointer;
   pointer-events: auto;
-  box-shadow: var(--shadow-glass);
+  box-shadow: 0 0 16px rgba(143, 123, 255, 0.16), var(--shadow-glass);
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 .chat-bubble-btn:hover {
-  transform: translateY(-2px);
+  transform: scale(1.08);
   border-color: var(--accent);
-  box-shadow: var(--shadow-glass);
+  box-shadow: 0 0 20px rgba(143, 123, 255, 0.3), var(--shadow-glass);
   color: var(--accent-strong);
 }
 .chat-bubble-btn:active {
@@ -4592,7 +4758,7 @@ mark.passage-mark {
   position: absolute;
   top: -2px;
   right: -2px;
-  background: var(--accent-fill);
+  background: var(--accent);
   color: #ffffff;
   font-family: var(--font-ui);
   font-size: 9px;
@@ -4607,8 +4773,8 @@ mark.passage-mark {
   position: fixed;
   bottom: 24px;
   left: 24px;
-  width: min(410px, 92vw);
-  height: min(580px, 80vh);
+  width: min(380px, 92vw);
+  height: min(520px, 80vh);
   z-index: var(--z-floating);
   display: flex;
   flex-direction: column;
@@ -4630,11 +4796,11 @@ mark.passage-mark {
 
 .chat-panel__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  padding: 18px;
-  border-bottom: 1px solid var(--border-glass);
-  background: var(--surface-raised);
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(140, 150, 255, 0.12);
+  background: rgba(14, 16, 32, 0.45);
 }
 
 .chat-panel__header-main {
@@ -4681,14 +4847,14 @@ mark.passage-mark {
 
 .chat-panel__title {
   margin: 0;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: 0.2px;
 }
 
 .chat-panel__doc-count {
-  font-size: 11.5px;
+  font-size: 10.5px;
   color: var(--text-secondary);
 }
 
@@ -4733,15 +4899,16 @@ mark.passage-mark {
 
 .chat-panel__empty-title {
   margin: 0 0 6px 0;
-  font-size: 16px;
-  font-weight: 550;
+  font-size: 13.5px;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
 .chat-panel__empty-hint {
   margin: 0;
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: 11.5px;
+  line-height: 1.45;
+  opacity: 0.7;
 }
 
 .chat-message {
@@ -4778,19 +4945,20 @@ mark.passage-mark {
   padding: 10px 13px;
   border-radius: 12px;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.45;
   word-break: break-word;
 }
 
 .chat-bubble--user {
-  background: var(--accent-fill);
+  background: var(--accent);
   color: #ffffff;
   border-bottom-right-radius: 2px;
+  box-shadow: 0 2px 8px rgba(143, 123, 255, 0.25);
 }
 
 .chat-bubble--assistant {
-  background: var(--surface-raised);
-  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
   border-bottom-left-radius: 2px;
 }
@@ -4984,8 +5152,9 @@ mark.passage-mark {
 }
 
 .chat-panel__mode-hint {
-  font-size: 11.5px;
   color: var(--text-secondary);
+  font-size: 11px;
+  opacity: 0.6;
   margin: 0 12px 6px;
   text-align: center;
 }
@@ -4995,17 +5164,17 @@ mark.passage-mark {
   align-items: flex-end;
   gap: 8px;
   padding: 12px;
-  border-top: 1px solid var(--border-glass);
-  background: var(--surface-inset);
+  border-top: 1px solid rgba(140, 150, 255, 0.12);
+  background: rgba(6, 8, 20, 0.5);
 }
 
 .chat-panel__input {
-  flex: 1;
   min-width: 0;
-  min-height: 40px;
+  flex: 1;
+  min-height: 36px;
   max-height: 100px;
-  background: var(--surface-raised);
-  border: 1px solid var(--border-glass);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   padding: 8px 12px;
   font-family: inherit;
@@ -5017,27 +5186,27 @@ mark.passage-mark {
   transition: border-color 120ms ease, background-color 120ms ease;
 }
 .chat-panel__input:focus {
-  background: var(--surface-raised);
-  border-color: var(--accent-strong);
   box-shadow: 0 0 0 2px var(--accent-soft);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--accent-strong);
 }
 
 .chat-panel__send {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   border: none;
-  background: var(--accent-fill);
+  background: var(--accent);
   color: #ffffff;
   cursor: pointer;
   transition: background 120ms ease, opacity 120ms ease, transform 80ms ease;
   flex-shrink: 0;
 }
 .chat-panel__send:hover:not(:disabled) {
-  background: var(--accent-fill-hover);
+  background: var(--accent-strong);
 }
 .chat-panel__send:active:not(:disabled) {
   transform: scale(0.95);
@@ -5227,6 +5396,7 @@ mark.passage-mark {
    ========================================================================== */
 
 .minimap {
+  /* keep pace with the side panel's 280ms slide when dodging it */ background: rgba(7, 12, 25, 0.72);
   position: fixed;
   right: 18px;
   bottom: 18px;
@@ -5234,7 +5404,6 @@ mark.passage-mark {
   padding: 5px;
   pointer-events: auto;
   animation: kn-pop-in 240ms var(--ease-spring) both;
-  /* keep pace with the side panel's 280ms slide when dodging it */
   transition: right 280ms var(--ease-out);
   box-shadow: 0 14px 38px rgba(0, 0, 0, 0.38), inset 0 1px rgba(255, 255, 255, 0.04);
 }
@@ -5485,6 +5654,87 @@ mark.passage-mark {
     flex-basis: calc(100% - 20px);
     white-space: normal;
   }
+  .toolbar {
+    top: 10px;
+    width: calc(100vw - 20px);
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .toolbar::-webkit-scrollbar {
+    display: none;
+  }
+  .toolbar .corpus-switcher {
+    flex: 0 0 auto;
+  }
+  .toolbar .corpus-switcher__menu {
+    position: fixed;
+    top: 68px;
+    left: 10px;
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 80px);
+  }
+  .btn-icon {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+  }
+  .icon-btn-close,
+  .chat-panel__close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .graph-navigator {
+    top: 8px;
+    left: 8px;
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+  }
+  .toolbar__grip {
+    display: none;
+  }
+  .toolbar__menu {
+    position: fixed;
+    top: 72px;
+    left: 10px;
+    right: 10px;
+    min-width: 0;
+  }
+  .filter-bar-layer {
+    top: 72px; /* below the horizontally scrollable toolbar on small screens */
+    left: 10px;
+  }
+  .insights-digest-layer {
+    top: 128px;
+    left: 10px;
+  }
+  .first-run-guide {
+    right: 10px;
+    bottom: 184px;
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 300px);
+    overflow: auto;
+  }
+  .minimap {
+    right: 10px;
+    bottom: 10px;
+  }
+  .help-popover__scroll {
+    padding-inline: 14px;
+  }
+  .help-popover__edge-list {
+    grid-template-columns: 1fr;
+  }
+  .help-popover__shortcuts div {
+    grid-template-columns: 104px 1fr;
+  }
+  .side-panel {
+    --side-panel-width: 100vw;
+    width: var(--side-panel-width);
+  }
 }
 .audio-preview audio { width: 100%; margin-bottom: 12px; }
 .audio-preview form, .audio-preview label { display: grid; gap: 8px; }
@@ -5495,8 +5745,8 @@ mark.passage-mark {
 .audio-preview { font-family: 'Space Grotesk', sans-serif; font-size: 13px; line-height: 1.5; white-space: normal; max-height: none; overflow: visible; }
 .audio-preview p { margin: 8px 0; color: var(--text-muted); }
 .audio-preview button, .audio-preview input, .audio-preview select { font: inherit; }
-.audio-preview button { cursor: pointer; border-color: var(--border); background: var(--panel-bg); }
-.audio-preview button:disabled { cursor: default; }
+.audio-preview button { padding: 6px 10px; border: 1px solid currentColor; border-radius: 6px; margin: 4px 0; cursor: pointer; border-color: var(--border); background: var(--panel-bg); }
+.audio-preview button:disabled { opacity: 0.5; cursor: default; }
 .audio-preview button:focus-visible, .audio-preview input:focus-visible, .audio-preview select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .audio-preview > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
 .audio-preview > div > span { overflow-wrap: anywhere; }
@@ -5523,3 +5773,133 @@ mark.passage-mark {
 .music-features summary { cursor: pointer; }
 .music-features .instrument-correction-scope { display: flex; align-items: center; gap: .5rem; margin: .75rem 0; }
 .music-features .instrument-correction-scope input { width: auto; flex: 0 0 auto; margin: 0; }
+button,
+input {
+  font-family: inherit;
+  color: inherit;
+}
+.graph-navigator:focus-within {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+}
+.graph-navigator__title,
+.graph-navigator__summary,
+.graph-navigator__instructions {
+  margin: 0;
+}
+.graph-navigator__title {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+.graph-navigator__summary,
+.graph-navigator__instructions {
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.empty-state__hero-canvas { width: 100%; height: 100%; }
+.empty-state__hero .empty-state__constellation { width: 100%; height: 100%; }
+.empty-state__orbit {
+  stroke: rgba(146, 132, 255, 0.28);
+  stroke-width: 1;
+}
+.empty-state__orbit--outer { stroke-dasharray: 3 7; }
+.empty-state__link {
+  stroke: rgba(119, 229, 255, 0.34);
+  stroke-width: 1.25;
+}
+.empty-state__node { fill: #b5a9ff; filter: drop-shadow(0 0 7px rgba(142, 125, 255, 0.65)); }
+.empty-state__node--core { fill: #e8e3ff; filter: drop-shadow(0 0 18px rgba(142, 125, 255, 0.9)); }
+.empty-state__node--cyan { fill: #8deaff; filter: drop-shadow(0 0 9px rgba(119, 229, 255, 0.85)); }
+.search-result-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.35);
+}
+.dj-tag-choices { display: flex; flex-wrap: wrap; gap: .45rem .7rem; margin: .5rem 0; }
+.dj-tag-choices label { display: inline-flex; align-items: center; gap: .3rem; font-size: .82rem; }
+.dj-tag-groups { display: grid; gap: .65rem; }
+.dj-tag-groups dt { color: var(--text-muted); font-size: .8rem; }
+.dj-tag-groups dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
+
+/* Standalone controls also work in the classic graph layout. */
+.toolbar .workspace-dims,
+.ingest-dims-toggle .workspace-dims {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 76px;
+  min-width: 76px;
+  padding: 3px;
+}
+.workspace-dims span {
+  display: block;
+  padding: 5px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--text-muted);
+}
+.workspace-dims .is-current {
+  background: rgba(143, 168, 255, 0.22);
+  color: var(--text-primary);
+}
+.audio-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin-bottom: 14px;
+}
+.audio-controls .audio-play {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: rgba(143, 168, 255, 0.18);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.audio-controls .audio-play svg { width: 18px; height: 18px; display: block; }
+.audio-controls .audio-play:disabled { opacity: 0.45; cursor: default; }
+.audio-waveform { position: relative; min-width: 0; flex: 1; height: 48px; }
+.audio-waveform svg { height: 48px; width: 100%; color: var(--accent); }
+.audio-controls .audio-waveform input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.audio-waveform:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.audio-time { flex-shrink: 0; white-space: nowrap; font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.audio-controls .audio-volume { width: 76px; }
+
+/* Sample search and corpus chat are separate actions; give both a clear target. */
+.app-root:has(.dj-launch) .chat-bubble-btn { left: 270px; }
+@media (max-width: 640px) {
+  .app-root:has(.dj-launch) .chat-bubble-btn { left: auto; right: 18px; }
+  /* A visible tour uses the lower half; notices occupy the gap below Browse. */
+  .app-root:has(.first-run-guide) .toast-host {
+    top: 132px;
+    bottom: auto;
+    max-height: min(45dvh, calc(100dvh - 232px));
+  }
+}
+
+/* Short phone windows cannot fit two help surfaces at once. Let notices be
+   dismissed first, then reveal the tour in its existing position. */
+@media (max-width: 640px) and (max-height: 640px) {
+  .app-root:has(.toast) .first-run-guide { visibility: hidden; }
+}

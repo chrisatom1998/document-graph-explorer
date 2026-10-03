@@ -54,3 +54,54 @@ UI reanalysis of the longer recording completed in 2.189 seconds using cached re
 The 16-second target applies to tested short excerpts. Longer recordings are allowed to exceed it while preserving coverage. These two examples are not a p50/p95 sample and do not replace the earlier ten-clip warm benchmark.
 
 The additional full-mode UI cancellation attempt did not qualify cancellation: the test waited for a background-only Stop analysis control. This is a test-selector limitation, not evidence of a product failure. Source cancellation tests and the separately recorded real-module lifecycle checks pass; a targeted visible UI cancellation check remains separate.
+
+## Combined speed and trained source release
+
+The measurements above describe the published b61 runtime. They are preserved as baseline evidence and do not measure the staged combined candidate below.
+
+Audio analysis uses the existing local models and serialized model jobs. On a cross-origin isolated host with SharedArrayBuffer, ONNX WASM is configured for up to four threads, capped to reported hardware concurrency when below four. Other hosts use one thread. This does not enable WebGPU or send audio to a service.
+
+Vite dev/preview, Vercel, nginx and the shared desktop/local static server send `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` on both pages and workers. Models and runtime resources remain same-origin. Custom hosts can omit isolation and retain one-thread inference. Cross-origin embedded resources must satisfy CORS/CORP, and opener relationships are isolated; validate optional integrations under the deployment's actual headers. Existing CSP remains in force.
+
+Known recordings of at most thirty seconds share one FFmpeg decode at 16, 44.1 and 48 kHz. Each requested window receives its own copy so transferring a buffer cannot detach retained PCM. Retained sample arrays are bounded to about 12.4 MiB per decoder (additional FFmpeg/output copies exist). One second of decode lookahead preserves delayed codec/resampler tails; results are never padded. Unexpected output beyond thirty seconds falls back to bounded section reads. Long or unknown-duration recordings continue using bounded section reads. Close/abort clears retained PCM.
+
+Whole-stream resampling followed by slicing can differ from separately seeking/resampling each window. Decoder configuration and thread identity therefore invalidate old result caches. Native caches also include the thread identity; PCM hashes remain part of their keys. Model worker result envelopes expose `runtime.backend`, `runtime.configuredInferenceThreads` and `runtime.identity`. These describe configuration, not proof that a cache hit executed inference.
+
+Before promoting a model or reporting performance for this variant, bind the actual source/build/runtime assets and verify the real app's PCM, raw scores, decisions, full window coverage, cancellation and cache paths. Report cold, warm unseen and cache-hit timings separately with duration, hardware, memory and sample count. Repeated same-audio runs with native cache hits do not measure uncached warm inference. This change alone does not establish an accuracy or latency guarantee.
+
+
+The combined production release now uses the independently frozen learned source policy after all 256 untouched held-out clips completed and passed the predeclared 75% micro-F1 target. It retains the classic dark graph interface requested for this local build.
+
+| Same 256 clips, sparse observed truth | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: |
+| Original frozen binary baseline | 88.89% | 47.71% | 62.09% |
+| Combined frozen source policy | 72.86% | 89.91% | 80.49% |
+
+The candidate has TP196, FP73, FN22 and TN239, with zero failed clips. Only 530 of 5120 class labels are observed (10.35% annotation coverage); 4590 are unknown and unscored. There are 783 positive predictions on unknown truth, which cannot be called correct or false. Definitive decision coverage is91.51% on observed truth and87.11% across all labels. A connected-component bootstrap over 49 groups (1000 resamples, seed20261003) yields an F1 interval of76.55–85.39%. Per-class performance and support vary; this is not an80% accuracy guarantee for every source or arbitrary audio.
+
+Fourteen classes use learned heads and six retain guarded binary fallback decisions: accordion, guitar, piano, saxophone, trombone and violin. The policy is qualified only for complete ten-second OGG full-analysis inputs under `wasm-threads-4-jamendo-1-v2`. Other durations, modes, formats and runtimes remain explicitly outside this release's input qualification. OpenMIC does not validate tempo, key or DJ effects.
+
+Qualification kept AST/CLAP at four WASM threads and Jamendo at one. Four-thread Jamendo aggregation changed 38 of 40 values in the first DEV example by at most 6.95e-8, with no decision change; it was not silently accepted as exact parity. The selected runtime's eight DEV app comparisons preserved 9904 PCM/raw numeric values exactly and 320 source heads within 1.81e-16 with exact states. A separately bound driver DEV run also passed before the locked test. Held-out browser/Node decisions match exactly, with maximum head difference 2.23e-16. No thresholds were tuned on held-out outcomes.
+
+The user requested a read-only live label/score view after the frozen run had started. That reporting amendment changed no policy, model, input selection, retries, stopping rule or inference. The final result is the sealed all 256 evaluation, not a running subset or calibration result.
+
+Final combined production build, app/E2E types and lint pass; 1981 unit tests pass with one skipped. The repeated 20-clip actual Mac UI and longer-recording checks are still being completed. Earlier timing tables remain evidence for their stated builds and boundaries; they are not measurements of the newly activated combined GUI.
+
+Local restart without retraining or downloads:
+
+```sh
+cd /Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-combined
+npm --ignore-scripts run build
+npm run preview -- --host 127.0.0.1 --port 4250 --strictPort
+```
+
+The application is served at `http://127.0.0.1:4250/`.
+
+
+## 2026-10-03 bounded reuse and decoder comparison
+
+The current source retains at most two short (up to30second) decoded three-rate PCM snapshots between folder preview and deeper checks, bounded at approximately27MB. Known rates return owned byte-identical slices; other rates use the existing decoder. Four idle native family sessions are retained on reported8GB-or-greater devices or suitable high-concurrency hosts with unknown memory; reported low memory and two-thread devices retain the single-session fallback. Neural work remains serialized and idle workers expire after five minutes.
+
+The local actual in-app-browser comparison of official FFmpeg0.12.10 single-thread and bounded four-thread decoders covered three original ten-second development recordings and a repeated60second performance fixture, twice each, at all three native sample rates. All24 compared PCM hashes matched. Four-thread decoding had no measured speed benefit: short decode totals were approximately24–38ms for both, while the long excerpt was approximately40–42ms single-thread versus43–44ms four-thread. Cold core load was80.78ms versus93.54ms. The faster existing single-thread decoder is retained. This fixture is not an unseen accuracy test or a real full-song benchmark.
+
+AST and CLAP use up to four configured ONNX WASM threads only with cross-origin isolation and shared memory; fallback is one. Jamendo retains its one-thread qualification contract. Runtime observations distinguish executed inference from feature-cache reuse. Configuration is not a claim that every operation uses four physical cores. Historical timings above belong to their recorded prior source version; they are not measurements of this final release.

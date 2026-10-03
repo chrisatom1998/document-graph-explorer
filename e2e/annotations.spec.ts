@@ -8,6 +8,12 @@ test('competing tabs retain committed notes and deletion versions when an older 
   await page.goto('/');
   await page.getByRole('button', { name: 'Load demo corpus' }).click();
   await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents', { timeout: 270_000 });
+  const restoredCount = async (tab: Page) => {
+    const back = tab.getByRole('button', { name: 'Back to graph', exact: true });
+    await expect(tab.locator('.graph-navigator__summary').or(back)).toBeVisible();
+    if (await back.isVisible()) await back.click();
+    await expect(tab.locator('.graph-navigator__summary')).toContainText('100 documents');
+  };
   const openNote = async (tab: Page) => {
     const tour = tab.getByRole('button', { name: 'Dismiss getting started' });
     if (await tour.isVisible()) await tour.click();
@@ -22,7 +28,7 @@ test('competing tabs retain committed notes and deletion versions when an older 
   const other = await context.newPage();
   await other.goto('/');
   // Verify the restored workspace through its visible library count.
-  await expect(other.getByRole('button', { name: 'All files 100', exact: true })).toBeVisible();
+  await restoredCount(other);
   await openNote(other);
   // Both edits have the SAME logical millisecond. The first committed value
   // wins; a later retry cannot claim freshness from journal or arrival time.
@@ -71,7 +77,7 @@ test('competing tabs retain committed notes and deletion versions when an older 
     });
   }, editTime);
   await page.reload();
-  await expect(page.getByRole('button', { name: 'All files 100', exact: true })).toBeVisible();
+  await restoredCount(page);
   await openNote(page);
   await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('');
 });

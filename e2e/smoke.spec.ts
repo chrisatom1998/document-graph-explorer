@@ -3,16 +3,13 @@ import { test, expect, type Page } from '@playwright/test';
 test.beforeEach(async ({ page }) => { page.setDefaultTimeout(30_000); });
 
 async function openLibrary(page: Page) {
-  const toggle = page.getByRole('button', { name: 'Toggle library', exact: true });
-  if ((page.viewportSize()?.width ?? 1280) < 700) {
-    await expect(toggle).toBeVisible();
-    if (!await page.locator('#workspace-library').evaluate(el => el.classList.contains('is-open'))) await toggle.click();
-  }
+  const guide = page.getByRole('button', { name: 'Dismiss getting started' });
+  if (await guide.isVisible()) await guide.click();
 }
 
 async function openFiles(page: Page) {
   await openLibrary(page);
-  await page.getByRole('button', { name: /^All files / }).click();
+  await page.getByRole('button', { name: 'Browse documents' }).press('Space');
 }
 
 // Console/page-error hygiene: the app funnels failures into toasts, so a
@@ -224,8 +221,7 @@ test('search ranks within file filters before applying its result limit', async 
   });
   await importGraphJson(page, JSON.stringify(graph));
   await openLibrary(page);
-  await page.getByRole('button', { name: 'Graph explorer', exact: true }).click();
-  await page.getByText('Filter graph', { exact: true }).click();
+  await page.getByRole('button', { name: 'Show graph filters', exact: true }).click();
   await page.getByRole('button', { name: 'md · 1', exact: true }).click();
   await page.getByRole('button', { name: 'Search documents' }).click();
   await page.getByRole('combobox').fill('Architecture');
@@ -249,9 +245,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await openFiles(page);
     const browse = page.getByRole('button', { name: 'Browse documents' });
     await expect(browse).toBeVisible();
-    const header = await page.locator('.workspace-header').boundingBox();
-    const navigator = await page.locator('.graph-navigator--embedded').boundingBox();
-    expect(navigator!.y).toBeGreaterThanOrEqual(header!.y + header!.height);
+    await expect(page.locator('.toolbar')).toBeVisible();
     const list = page.getByRole('listbox', { name: 'Graph nodes' });
     await expect(list).toBeVisible();
     await page.getByRole('button', { name: 'Search documents' }).click();
@@ -261,10 +255,8 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await expect(searchInput).toBeFocused();
     await searchInput.press('Escape');
     await expect(search).toBeHidden();
-    if (viewport.width < 700) await expect(page.locator('#workspace-library')).toHaveClass(/is-open/);
     await openLibrary(page);
-    await page.getByRole('button', { name: 'Graph explorer', exact: true }).click();
-    await page.getByText('Filter graph', { exact: true }).click();
+    await page.getByRole('button', { name: 'Show graph filters', exact: true }).click();
     await page.getByRole('button', { name: 'More filters' }).click();
     const minimum = page.getByRole('slider', { name: 'Minimum document connections' });
     await minimum.focus();
@@ -274,11 +266,8 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await page.screenshot({ path: testInfo.outputPath('filters.png') });
     await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
     await expect(page.locator('#graph-filter-status')).toHaveText('3 documents match');
-    if (viewport.width < 700) {
-      await page.getByRole('button', { name: 'Graph explorer', exact: true }).press('Escape');
-      await expect(page.locator('#workspace-library')).not.toHaveClass(/is-open/);
-      await expect(page.getByRole('button', { name: 'Toggle library', exact: true })).toBeFocused();
-    }
+    await minimum.press('Escape');
+    await expect(page.getByRole('button', { name: 'Show graph filters' })).toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
   });
 }

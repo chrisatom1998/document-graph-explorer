@@ -8,6 +8,18 @@ import { codeLanguageOf } from '../pipeline/codeLanguage';
 import { posixBasename } from './posixPath';
 
 const MIME_BY_EXT: Record<string, string> = {
+  wav: 'audio/wav',
+  wave: 'audio/wav',
+  mp3: 'audio/mpeg',
+  ogg: 'audio/ogg',
+  oga: 'audio/ogg',
+  opus: 'audio/ogg',
+  flac: 'audio/flac',
+  m4a: 'audio/mp4',
+  aac: 'audio/aac',
+  aif: 'audio/aiff',
+  aiff: 'audio/aiff',
+  webm: 'audio/webm',
   txt: 'text/plain',
   log: 'text/plain',
   md: 'text/markdown',

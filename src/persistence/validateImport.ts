@@ -86,7 +86,7 @@ function asCount(v: unknown): number {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0;
 }
 
-function sanitizeNode(raw: unknown): DocNode | null {
+function sanitizeNode(raw: unknown, options: { trustedCache?: boolean }): DocNode | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const n = raw as Record<string, unknown>;
   const id = asString(n.id, MAX_ID_CHARS);
@@ -100,7 +100,7 @@ function sanitizeNode(raw: unknown): DocNode | null {
 
   const node: DocNode = {
     id,
-    ...(n.fileType === 'audio' && sanitizeMusicAnalysis(n.audio) ? { audio: sanitizeMusicAnalysis(n.audio) } : {}),
+    ...(n.fileType === 'audio' && sanitizeMusicAnalysis(n.audio, options) ? { audio: sanitizeMusicAnalysis(n.audio, options) } : {}),
     kind: n.kind === 'topic' ? 'topic' : 'document',
     title: title || id.slice(0, 12),
     fileType:
@@ -165,7 +165,7 @@ function sanitizeEdge(raw: unknown, nodeIds: ReadonlySet<string>): Edge | null {
  * Throws a descriptive Error (message is shown to the user) when the file is
  * structurally unusable; individually malformed nodes/edges are dropped.
  */
-export function sanitizeGraphExport(data: unknown): GraphExport {
+export function sanitizeGraphExport(data: unknown, options: { trustedCache?: boolean } = {}): GraphExport {
   if (typeof data !== 'object' || data === null || Array.isArray(data)) {
     throw new Error('Import failed: file does not contain a JSON object.');
   }
@@ -187,7 +187,7 @@ export function sanitizeGraphExport(data: unknown): GraphExport {
   const nodes: DocNode[] = [];
   const nodeIds = new Set<string>();
   for (const raw of g.nodes) {
-    const node = sanitizeNode(raw);
+    const node = sanitizeNode(raw, options);
     if (!node || nodeIds.has(node.id)) continue;
     nodeIds.add(node.id);
     nodes.push(node);

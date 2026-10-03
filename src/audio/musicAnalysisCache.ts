@@ -1,3 +1,5 @@
+import { fusionConfiguration, installedFusionIdentity, supportsFusionInput, fusionRuntimeSupported } from './fusionRelease';
+import { fusionPresentation } from './fusionPresentation';
 import {getDb} from '../persistence/db';
 import {sanitizeMusicAnalysis,INSTRUMENT_ANALYSIS_REVISION,TEMPO_ANALYSIS_REVISION,KEY_ANALYSIS_REVISION,type MusicAnalysis,type MusicAnalysisMode} from './musicTypes';
 import { MODEL_IDS,recognitionConfiguration,type ModelJob } from './recognition';
@@ -15,7 +17,7 @@ export async function musicCacheKey(blob:Blob,mode:MusicAnalysisMode):Promise<st
   }));
   const bytes=await blob.arrayBuffer();
   const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
-  return PREFIX+JSON.stringify([hash,mode,INSTRUMENT_ANALYSIS_REVISION,TEMPO_ANALYSIS_REVISION,KEY_ANALYSIS_REVISION,recognitionConfiguration(mode),manifests]);
+  return PREFIX+JSON.stringify([hash,mode,INSTRUMENT_ANALYSIS_REVISION,TEMPO_ANALYSIS_REVISION,KEY_ANALYSIS_REVISION,recognitionConfiguration(mode),manifests,fusionConfiguration(),blob.type]);
  }catch{return undefined;}
 }
 const intervalKey=({start,end}:{start:number;end:number})=>`${start}:${end}`;
@@ -33,20 +35,25 @@ function shortClipJamendoUnsupported(job:ModelJob,duration:number):boolean {
  return job.modelId==='jamendo'&&duration<2.048&&job.status==='unsupported'&&!!job.unsupportedReason
   && !job.attempted.length&&!job.successful.length;
 }
-function completeCurrent(audio:MusicAnalysis|undefined):boolean {
+function completeCurrent(audio:MusicAnalysis|undefined,mime?:string):boolean {
  const recognition=audio?.recognition;
  if(!audio?.instrumentScan?.complete||audio.stage==='preview'||recognition?.status!=='complete'||recognition.configurationHash!==recognitionConfiguration(recognition.mode))return false;
+ const release=installedFusionIdentity();
+ const needsFusion=!!release && fusionRuntimeSupported() && supportsFusionInput(audio.durationSeconds,recognition.mode,mime);
+ if(release && audio.classifierConfiguration!==fusionConfiguration())return false;
+ if(needsFusion && !fusionPresentation(audio.fusion,audio.durationSeconds,recognition.mode,release)?.qualified)return false;
+ if(!needsFusion && audio.fusion)return false;
  if(recognition.jobs.length!==MODEL_IDS.length||new Set(recognition.jobs.map(job=>job.modelId)).size!==MODEL_IDS.length)return false;
  return recognition.jobs.every(job=>closedJob(job)||shortClipJamendoUnsupported(job,audio.durationSeconds));
 }
-export async function readMusicCache(key:string):Promise<MusicAnalysis|undefined>{
+export async function readMusicCache(key:string,mime?:string):Promise<MusicAnalysis|undefined>{
  try {const entry=await (await getDb()).get('settings',key) as {audio?:unknown}|undefined;
-  const audio=sanitizeMusicAnalysis(entry?.audio);
-  return completeCurrent(audio)?audio:undefined;
+  const audio=sanitizeMusicAnalysis(entry?.audio, { trustedCache: true });
+  return completeCurrent(audio,mime)?audio:undefined;
  }catch{return undefined;}
 }
-export async function writeMusicCache(key:string,audio:MusicAnalysis):Promise<void>{
- if(!completeCurrent(audio))return;
+export async function writeMusicCache(key:string,audio:MusicAnalysis,mime?:string):Promise<void>{
+ if(!completeCurrent(audio,mime))return;
  const {confirmedDjTags:_tags,confirmedInstruments:_instruments,copilotProperties:_copilot,soundReviews:_reviews,...automatic}=audio;
  void _tags;void _instruments;void _copilot;void _reviews;
  try {
@@ -62,4 +69,4 @@ export async function writeMusicCache(key:string,audio:MusicAnalysis):Promise<vo
   await tx.done;
  }catch{/* Cache failures never prevent analysis. */}
 }
-export function musicCacheFingerprint(key:string):string {return JSON.stringify(JSON.parse(key.slice(PREFIX.length)).slice(2));}
+export function musicCacheFingerprint(key:string):string {return JSON.stringify(JSON.parse(key.slice(PREFIX.length)).slice(2,7));}

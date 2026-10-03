@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { MusicAnalysis } from './musicTypes';
+import { loadBuiltInFusion } from './fusionRelease';
 import { analyzeMusic } from './analyzeMusic';
 
 const state = vi.hoisted(() => ({
-  decoders: 0, maxDecoders: 0, models: 0, maxModels: 0,
+  duration: 3, decoders: 0, maxDecoders: 0, models: 0, maxModels: 0,
   events: [] as string[], opened: [] as string[], cache: undefined as MusicAnalysis | undefined,
   failFirst: false, failOpen: false, created: 0, terminated: 0, fingerprint: 'same-model' as string | undefined, abortNext: undefined as AbortController | undefined,
 }));
+vi.mock('./fusionRelease', async importOriginal => ({ ...(await importOriginal<typeof import('./fusionRelease')>()), loadBuiltInFusion: vi.fn(async () => undefined) }));
 vi.mock('./musicAnalysisCache', () => ({
   musicCacheKey: vi.fn(async () => 'key'),
   musicCacheFingerprint: () => state.fingerprint,
@@ -19,8 +21,8 @@ vi.mock('./decodeMusic', () => ({
     if (state.failOpen) throw new Error('Decoder cannot initialize');
     state.decoders++;
     state.maxDecoders = Math.max(state.maxDecoders, state.decoders);
-    return { durationSeconds: 3,
-      read: async (_start: number, seconds: number, rate: number) => new Float32Array(Math.min(3, seconds) * rate).fill(.1),
+    return { durationSeconds: state.duration,
+      read: async (_start: number, seconds: number, rate: number) => new Float32Array(Math.min(state.duration, seconds) * rate).fill(.1),
       close: () => { state.decoders--; },
     };
   }),
@@ -54,7 +56,8 @@ class FakeWorker {
   }
 }
 beforeEach(() => {
-  Object.assign(state, { decoders: 0, maxDecoders: 0, models: 0, maxModels: 0, events: [], opened: [], cache: undefined, failFirst: false, failOpen: false });
+  vi.mocked(loadBuiltInFusion).mockReset().mockResolvedValue(undefined);
+  Object.assign(state, { duration:3, decoders: 0, maxDecoders: 0, models: 0, maxModels: 0, events: [], opened: [], cache: undefined, failFirst: false, failOpen: false });
   vi.stubGlobal('Worker', FakeWorker);
   vi.stubGlobal('navigator', { deviceMemory: 16 });
 });
@@ -166,7 +169,7 @@ it('restarts a failed family while preserving unrelated warm sessions', async ()
 });
 
 
-it.each([2, 8, undefined])('preserves single-session memory bounds when available device memory is %s', async deviceMemory => {
+it.each([2, 4, undefined])('preserves single-session memory bounds when available device memory is %s', async deviceMemory => {
   vi.stubGlobal('navigator', { deviceMemory });
   vi.resetModules();
   const isolated = await import('./analyzeMusic');
@@ -208,4 +211,40 @@ it.each(['blob-read', 'decoder-open'])('releases every warm family after a %s fa
     await vi.advanceTimersByTimeAsync(5 * 60_000);
     expect(state.terminated - terminated).toBe(4);
   } finally { state.failOpen = false; vi.useRealTimers(); }
+});
+
+it('bypasses whole-analysis cache reads and writes for an optional fusion scorer', async () => {
+  const { readMusicCache, writeMusicCache } = await import('./musicAnalysisCache');
+  vi.mocked(readMusicCache).mockClear(); vi.mocked(writeMusicCache).mockClear();
+  state.cache = { version: 2, durationSeconds: 3, analyzedSeconds: 2, instruments: [], notes: [] };
+  const score = vi.fn(async () => []);
+  const result = await analyzeMusic(new Blob(['fusion-isolated']), 'fusion.wav', {
+    fusion: { identity: { modelSha256: 'a'.repeat(64), policySha256: 'b'.repeat(64), scorerSha256: 'c'.repeat(64) }, score },
+  });
+  expect(readMusicCache).not.toHaveBeenCalled(); expect(writeMusicCache).not.toHaveBeenCalled();
+  expect(state.opened.length).toBe(2); expect(score).toHaveBeenCalledOnce();
+  expect(result.fusion?.counts.failed).toBe(1); // Invalid synthetic scorer does not fake a successful decision.
+});
+
+it('does not load the trained head outside the qualified input tier', async () => {
+ await analyzeMusic(new Blob(['unsupported'],{type:'audio/wav'}), 'unsupported.wav', {mode:'full'});
+ expect(loadBuiltInFusion).not.toHaveBeenCalled();
+ state.duration=10;
+ await analyzeMusic(new Blob(['fast'],{type:'audio/ogg'}), 'fast.ogg', {mode:'fast'});
+ expect(loadBuiltInFusion).not.toHaveBeenCalled();
+});
+it('retains native analysis when a qualified artifact fails to load', async () => {
+ state.duration=10; vi.mocked(loadBuiltInFusion).mockRejectedValue(new Error('Corrupt artifact'));
+ const result=await analyzeMusic(new Blob(['corrupt-artifact-test'],{type:'audio/ogg'}), 'test.ogg', {mode:'full'});
+ expect(loadBuiltInFusion).toHaveBeenCalledOnce();
+ expect(result.recognition?.jobs).toHaveLength(5); expect(result.instrumentScan?.complete).toBe(true);
+ expect(result.classifierConfiguration).toBeUndefined(); expect(result.notes).toContain('The trained source classifier is unavailable; native analysis is retained.');
+});
+
+
+it.each([{deviceMemory:8,hardwareConcurrency:8},{hardwareConcurrency:18}])('retains warm bounded families on the verified faster host profile %j',async navigatorProfile=>{
+ vi.stubGlobal('navigator',navigatorProfile);vi.resetModules();const isolated=await import('./analyzeMusic');const created=state.created;
+ await isolated.analyzeMusic(new Blob(['warm-local-one']),'one.wav',{mode:'full',force:true});
+ expect(state.created-created).toBe(4);
+ await isolated.analyzeMusic(new Blob(['warm-local-two']),'two.wav',{mode:'full',force:true});expect(state.created-created).toBe(4);expect(state.maxModels).toBe(1);
 });

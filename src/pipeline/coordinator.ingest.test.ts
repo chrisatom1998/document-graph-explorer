@@ -36,6 +36,7 @@ import {
 } from './coordinator';
 import { rememberWorldOrigin } from '../scene/ingestBirth';
 import { createRecognition } from '../audio/recognition';
+import { supportsFusionInput, fusionConfiguration } from '../audio/fusionRelease';
 
 const music = vi.hoisted(() => ({ analyzeMusic: vi.fn() }));
 vi.mock('../audio/analyzeMusic', () => music);
@@ -342,6 +343,7 @@ beforeEach(() => {
   useSettingsStore.getState().setMusicAnalysisMode('full');
   music.analyzeMusic.mockReset().mockResolvedValue({
     version: 2, tempoRevision: 1, keyRevision: 2, analyzedSeconds: 10, durationSeconds: 10,
+    classifierConfiguration: fusionConfiguration(),
     tempo: { bpm: 140, confidence: 0.9 },
     key: { tonic: 2, mode: 'minor', strength: 0.9 },
     instruments: [{ label: 'synthesizer', status: 'likely', score: 0.9 }],
@@ -796,6 +798,30 @@ describe('coordinator remove and watch reconcile', () => {
 
 
 describe('WAV music ingestion', () => {
+  it('passes the OGG upload MIME through persistence and the real analysis entry point', async () => {
+    useSettingsStore.getState().setMusicAnalysisMode('full');
+    await ingestFiles([{ ...textFile('uploaded.OGG', 'OggS test bytes'), fileType: 'audio' as const }]);
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+    const [blob, name, options] = music.analyzeMusic.mock.calls[0];
+    expect(name).toBe('uploaded.OGG');
+    expect(blob.type).toBe('audio/ogg');
+    expect(supportsFusionInput(10, options.mode, blob.type)).toBe(true);
+    expect(supportsFusionInput(9, options.mode, blob.type)).toBe(false);
+    expect(persistence.putOriginalIfMissing).toHaveBeenCalledWith(expect.any(String), name, blob);
+  });
+
+  it('repairs legacy saved OGG MIME during explicit reanalysis without changing bytes', async () => {
+    await ingestFiles([{ ...textFile('legacy.ogg', 'OggS original bytes'), fileType: 'audio' as const }]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    const saved = new Blob(['OggS original bytes'], { type: 'application/octet-stream' });
+    persistence.getOriginal.mockResolvedValue({ blob: saved, name: 'legacy.ogg' });
+    music.analyzeMusic.mockClear();
+    await analyzeAudioCorpus([node.id]);
+    const blob = music.analyzeMusic.mock.calls[0][0] as Blob;
+    expect(blob.type).toBe('audio/ogg');
+    expect(await blob.text()).toBe(await saved.text());
+    expect(saved.type).toBe('application/octet-stream');
+  });
   const wav = (name: string) => ({ ...textFile(name, 'RIFF test audio bytes'), fileType: 'audio' as const });
   it('preserves cancelled partial evidence and confirmations when a later run restarts', async () => {
     await ingestFiles([wav('selected.wav')]);

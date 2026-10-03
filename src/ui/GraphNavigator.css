@@ -1,0 +1,40 @@
+/* Keep the document picker discoverable without covering the main dock. */
+.app-root .graph-navigator:not(.graph-navigator--embedded) {
+  top: 78px;
+  left: 18px;
+  width: 210px;
+  padding: 10px 12px;
+  pointer-events: auto;
+  opacity: 1;
+  transform: none;
+  z-index: var(--z-panel);
+}
+
+.app-root .graph-navigator.is-expanded:not(.graph-navigator--embedded) {
+  width: min(360px, calc(100vw - 36px));
+  max-height: calc(100dvh - 180px);
+  z-index: var(--z-floating);
+}
+
+.graph-navigator:not(.is-expanded) .graph-navigator__overview { display: none; }
+.graph-navigator__toggle strong { font-size: 16px; }
+
+/* Filters temporarily occupy the same corner; closing them restores Browse. */
+.app-root:has(#graph-filter-panel) .graph-navigator:not(.is-picking) { display: none; }
+
+@media (max-width: 640px) {
+  .app-root .graph-navigator:not(.graph-navigator--embedded) {
+    top: 74px;
+    left: 112px;
+    width: calc(100vw - 122px);
+    max-width: 240px;
+    padding: 6px 10px;
+  }
+
+  .app-root .graph-navigator.is-expanded:not(.graph-navigator--embedded) {
+    left: 10px;
+    width: calc(100vw - 20px);
+    max-width: none;
+    max-height: calc(100dvh - 174px);
+  }
+}

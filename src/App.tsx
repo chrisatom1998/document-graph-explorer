@@ -17,7 +17,6 @@ import { initializeCorpusRepository } from './persistence/corpusRepository';
 import { reportPersistenceUnavailable } from './persistence/cache';
 import { initChatHistorySync } from './persistence/chatHistorySync';
 import './styles.css';
-import './workspace.css';
 
 const TitleRelationships = lazy(() => import('./graph/TitleRelationships'));
 const CollabAppBridge = lazy(() => import('./collab/AppBridge'));
@@ -27,7 +26,14 @@ const DropZone = lazy(() => import('./ingest/DropZone'));
 // to delay the interactive shell or graph bundle on a restored workspace.
 const EmptyState = lazy(() => import('./ui/EmptyState'));
 const ProgressStrip = lazy(() => import('./ui/ProgressStrip'));
-const WorkspaceChrome = lazy(() => import('./ui/WorkspaceChrome'));
+const Toolbar = lazy(() => import('./ui/Toolbar'));
+const IngestDimsToggle = lazy(() => import('./ui/DimsToggleButton'));
+const GraphNavigator = lazy(() => import('./ui/GraphNavigator'));
+const FilterBar = lazy(() => import('./ui/FilterBar'));
+const Minimap = lazy(() => import('./ui/Minimap'));
+const ChatLauncher = lazy(() => import('./ui/ChatLauncher'));
+const InsightsDigest = lazy(() => import('./ui/InsightsDigest'));
+const FirstRunGuide = lazy(() => import('./ui/FirstRunGuide'));
 const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
 const PathPanel = lazy(() => import('./ui/PathPanel'));
 const SidePanel = lazy(() => import('./ui/SidePanel'));
@@ -332,15 +338,15 @@ export default function App() {
   }, []);
 
   return (
-    <div className={`app-root${hasNodes ? " workspace" : ""}`}>
+    <div className="app-root">
       <Suspense fallback={null}><CollabAppBridge /></Suspense>
-      <Suspense fallback={null}><TitleRelationships /><DjAssistant showLauncher={false} /><MusicBackgroundStatus /><UploadInsightsAgent /></Suspense>
-      <div className="workspace-canvas">
+      <Suspense fallback={null}><TitleRelationships /><DjAssistant /><MusicBackgroundStatus /><UploadInsightsAgent /></Suspense>
       <Suspense fallback={<div className="scene-loading" role="status" aria-label="Loading interactive graph" />}>
         <NebulaCanvas />
       </Suspense>
-      </div>
-      {hasNodes && <Suspense fallback={null}><WorkspaceChrome /></Suspense>}
+      {phase === 'ready' && <Suspense fallback={null}><Toolbar /><GraphNavigator /><FilterBar /><Minimap /><ChatLauncher /></Suspense>}
+      {hasNodes && phase !== 'ready' && <Suspense fallback={null}><IngestDimsToggle /></Suspense>}
+      <Suspense fallback={null}><InsightsDigest /><FirstRunGuide /></Suspense>
       <Suspense fallback={null}><DropZone /></Suspense>
       {!hasNodes && phase === 'idle' && (
         <Suspense fallback={null}><EmptyState /></Suspense>

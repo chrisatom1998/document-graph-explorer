@@ -1,0 +1,39 @@
+{
+  "ast": {
+    "repository": "Xenova/ast-finetuned-audioset-10-10-0.4593",
+    "revision": "249a1fbf0286b40e7f1ed687a8ae396997bf7dc6",
+    "sha256": {
+      "config.json": "49d0dce922da23685787c73a874d9b1ffa97297f8cc4dc0a4e8bef219725e44d",
+      "preprocessor_config.json": "8d04ba5a9c6fca5d39d0de2b1fd05ecf79deb589fbba279728bbebac39934231",
+      "onnx/model_quantized.onnx": "807d244b58a30eaa89f0a721fb841619c696857aabe4eac93769bd0b61497f61"
+    }
+  },
+  "clap": {
+    "repository": "Xenova/larger_clap_music_and_speech",
+    "revision": "e9fd5ac1dbf3280936a7fc3ec8a020453ff184db",
+    "license": "Apache-2.0",
+    "sha256": {
+      "config.json": "82a388031546d4dd20069ed73a39990baf033fa5f3b057386bc05ed09ece3322",
+      "preprocessor_config.json": "9739f58296aa6f9ac18008fd0150fb2649bc554985fbde86d0a4041c882ac753",
+      "onnx/audio_model_quantized.onnx": "021dd4fb962b4ed20cc3a6730b09e0ccf9f9c49931047032118a3b64828513a6",
+      "prompts.json": "60749591cdefb7d9cccb5c9b9524d71ab21f6e6f0f6a6f6ad6f94a400dca408c",
+      "learned.json": "9816fef806a1e7287596aa3d0c7665d9a3080b249ba351247751398656703841"
+    },
+    "profileVersion": 1,
+    "catalogVersion": 2
+  },
+  "jamendo": {
+    "sources": {
+      "discogs-effnet-bsdynamic-1.onnx": "https://essentia.upf.edu/models/feature-extractors/discogs-effnet/discogs-effnet-bsdynamic-1.onnx",
+      "mtg_jamendo_instrument-discogs-effnet-1.onnx": "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.onnx",
+      "discogs-effnet-bsdynamic-1.json": "https://essentia.upf.edu/models/feature-extractors/discogs-effnet/discogs-effnet-bsdynamic-1.json",
+      "mtg_jamendo_instrument-discogs-effnet-1.json": "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.json"
+    },
+    "sha256": {
+      "discogs-effnet-bsdynamic-1.onnx": "a280825b334797cf677939db8cd5762c0392aedd0ca6415dbc1cd083f045e43c",
+      "mtg_jamendo_instrument-discogs-effnet-1.onnx": "9ae2d9e763d66bd8eed654d1ac3aa171e6539cb8a0e11f3dcd53df1428980802",
+      "discogs-effnet-bsdynamic-1.json": "a2e85b2e7372d5f8e0f35bdd6aeae1139f101087d183d0b2fb60b0ea0f01a0ff",
+      "mtg_jamendo_instrument-discogs-effnet-1.json": "7d02204c6451b5615e2968ec6364bbae3b915c886e608f05f00d3a38dc5177c4"
+    }
+  }
+}

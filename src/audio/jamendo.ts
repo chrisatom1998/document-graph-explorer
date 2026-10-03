@@ -28,6 +28,7 @@ let models: ReturnType<typeof loadModels> | undefined;
 async function loadModels() {
   // Same ORT entry as Transformers.js; no second runtime or remote requests.
   const ort = await import('onnxruntime-web/webgpu');
+  // Float32 Jamendo reductions must retain the frozen single-thread path.
   ort.env.wasm.numThreads = 1;
   const root = `${import.meta.env.BASE_URL}jamendo-model/`;
   const metadata = await fetch(`${root}mtg_jamendo_instrument-discogs-effnet-1.json`);

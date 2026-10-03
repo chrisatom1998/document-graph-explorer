@@ -1,0 +1,32 @@
+{
+  "kind": "audio-fusion-release-acceptance-v1",
+  "identity": {
+    "modelSha256": "d43b2e9285cef986fc9fbd2c12400f839dce120d207b42e7bdd7c9ce0880be7b",
+    "policySha256": "dbf0fdf070e66b5461fda86664d93e91652ddf63743dd3d8456b3925bc5fd755",
+    "scorerSha256": "f24b7f45afe0c743e3b2a347d96c79c627822b932cc22c3900af3228f71d2880",
+    "modelFileSha256": "364903586c9974f3759c5818b9d562f3883bd5115f37c1b207cab10113d26e55",
+    "runtimeSha256": "415a7b1ab8105b102a2e7d5f4deac9f9d544f2fd7b4c08773dd0eee78c41d80f",
+    "inputTier": "ogg-full-ten-second-window-v1"
+  },
+  "heldOut": {
+    "count": 256,
+    "dataSelectionSha256": "4aee29d9debd611b45a02325877ac2a212178c7f8d7bb404503a399c71d8237d",
+    "allClasses": 20,
+    "status": "pass",
+    "microF1": 0.8049281314168378,
+    "reportSha256": "051d4d4aaf9b25d4cb1c3f7228e3d035e3197a25f671a35890507cce42abb5a8",
+    "precision": 0.7286245353159851,
+    "recall": 0.8990825688073395,
+    "annotationCoverage": 0.103515625,
+    "completedClips": 256,
+    "failedClips": 0
+  },
+  "application": {
+    "status": "pass",
+    "reportSha256": "6d574985e2a1413996e89f0b23d20199d136d04dce7d546e86cdd3a6cd4dbb0a",
+    "amendmentSha256": "94bdd4b259c119fa8e4b6b8d5fb89e816cce10d52880b10617cf564eaa79d5fe",
+    "inputTier": "ogg-full-ten-second-window-v1"
+  },
+  "frozenPolicySha256": "d949560017a1988fc3413c1a6268db1affa225b5de620701673102de993cbb71",
+  "scope": "Sparse observed public OpenMIC labels; exact full-ten-second Ogg inputs on isolated WASM runtime, AST/CLAP4 and Jamendo1. Other tiers remain native and unvalidated; no DJ effect or tempo/key accuracy claim."
+}

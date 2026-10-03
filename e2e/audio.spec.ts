@@ -66,7 +66,7 @@ test('local synthetic audio is analyzed, playable, and corrections survive reloa
   await page.locator('.audio-transport').getByRole('button', { name: 'Pause sample' }).click();
   await expect.poll(() => page.locator('audio').evaluate(audio => (audio as HTMLAudioElement).paused)).toBe(true);
   await expect(page.locator('.audio-controls--preview').getByRole('button', { name: 'Play sample' })).toBeEnabled();
-  await expect(page.locator('.audio-controls--dock .audio-waveform line')).toHaveCount(101);
+  await expect(page.locator('.audio-controls--preview .audio-waveform line')).toHaveCount(101);
   await page.getByText('Correct the instrument', { exact: true }).click();
   await page.getByLabel('Known instrument', { exact: false }).selectOption('synthesizer');
   await page.getByRole('button', { name: 'Save confirmed instrument' }).click();

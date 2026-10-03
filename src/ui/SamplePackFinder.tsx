@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { findSamplePacks, publicSourceUrl, SAMPLE_PACKS } from '../audio/samplePacks';
 import { AIRGAP } from '../airgap';
 import { useReviewerImport } from './useReviewerImport';
 
+const SourceMatchingPanel = lazy(() => import('./SourceMatchingPanel'));
+
 export default function SamplePackFinder() {
+  const [sourceMatchingLoaded, setSourceMatchingLoaded] = useState(false);
   const [query, setQuery] = useState('');
   const [generative, setGenerative] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -55,6 +58,10 @@ export default function SamplePackFinder() {
   return <section className="dj-pack-finder" aria-label="Find free sample packs">
     <h2>Find free sample packs</h2>
     <p>Build a training collection from publisher-listed CC0 sources. Free to download does not by itself establish training rights.</p>
+    <details className="dj-card" onToggle={event => { if (event.currentTarget.open) setSourceMatchingLoaded(true); else event.currentTarget.querySelectorAll('audio').forEach(audio => audio.pause()); }}>
+      <summary>Match a reference sound locally</summary>
+      {sourceMatchingLoaded && <Suspense fallback={<p role="status">Opening local source comparison…</p>}><SourceMatchingPanel /></Suspense>}
+    </details>
     <form onSubmit={e => { e.preventDefault(); if (localApi) void searchWeb(); }} className="dj-pack-search">
       <label>Sound or instrument<input value={query} maxLength={1000} onChange={e => setQuery(e.target.value)} placeholder="Drums, synth, percussion, vocals…" /></label>
       <label>Training purpose<select value={generative ? 'generative' : 'classification'} onChange={e => setGenerative(e.target.value === 'generative')}><option value="classification">Sound classification / recognition</option><option value="generative">Generative audio model</option></select></label>

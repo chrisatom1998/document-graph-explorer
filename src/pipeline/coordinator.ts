@@ -2,6 +2,9 @@ import { quickMusic } from '../audio/quickMusic';
 import { beginMusicJob, isCurrentMusicJob, finishMusicJob, updateMusicJob, cancelAllMusicJobs, cancelMusicJob, useMusicJobs } from '../store/musicJobs';
 import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from '../audio/djTags';
 import { buildTitleEdges } from '../graph/titleLinks';
+import { fusionPresentation } from '../audio/fusionPresentation';
+import { fusionConfiguration, installedFusionIdentity } from '../audio/fusionRelease';
+import { recognitionConfiguration } from '../audio/recognition';
 import { INSTRUMENT_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION } from '../audio/musicTypes';
 import { assertAudioContent } from '../audio/parseAudio';
 /**
@@ -1813,7 +1816,7 @@ export function resetCorpus(): void {
 /** Run inside the existing mutation queue; every estimate belongs to this corpus snapshot. */
 async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], originals?: Map<string, { blob: Blob; name: string }>): Promise<void> {
   const mode = useSettingsStore.getState().musicAnalysisMode;
-  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (!n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION || forceIds.includes(n.id)));
+  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (!n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION || (n.audio.recognition && n.audio.recognition.configurationHash !== recognitionConfiguration(n.audio.recognition.mode)) || (installedFusionIdentity() && (n.audio.classifierConfiguration !== fusionConfiguration() || (n.audio.fusion && !fusionPresentation(n.audio.fusion,n.audio.durationSeconds,n.audio.recognition?.mode ?? mode)?.qualified))) || forceIds.includes(n.id)));
   if (!nodes.length) return;
   const { analyzeMusic } = await import('../audio/analyzeMusic');
   const store = useGraphStore.getState;
@@ -1837,7 +1840,12 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
         const load = async (onPreview: (preview: import('../audio/musicTypes').MusicAnalysis)=>void, jobSignal = signal, onProgress = progress, analysisMode = mode) => {
           const original = originals?.get(node.id) ?? await getOriginal(node.id);
           if (!original) throw new Error('Add the original audio file again to analyze it.');
-          return analyzeMusic(original.blob, original.name, {signal:jobSignal,mode:analysisMode,onProgress,onPreview,cacheKey:node.id,force:forceIds.includes(node.id),partialUpdates:'cancelled',onPartial: partial => {
+          // Older saved originals predate audio MIME routing. Repair the analysis
+          // input without rewriting the user's persisted original bytes.
+          const mime = mimeForFilename(original.name);
+          const blob = (!original.blob.type || original.blob.type === 'application/octet-stream') && mime.startsWith('audio/')
+            ? original.blob.slice(0, original.blob.size, mime) : original.blob;
+          return analyzeMusic(blob, original.name, {signal:jobSignal,mode:analysisMode,onProgress,onPreview,cacheKey:node.id,force:forceIds.includes(node.id),partialUpdates:'cancelled',onPartial: partial => {
             if (partial.recognition?.status !== 'cancelled') return;
             const publishCancelledPartial = () => {
               if (!ownsAudioAnalysis(node.id, analysisOwner, analysisEpoch)) return false;

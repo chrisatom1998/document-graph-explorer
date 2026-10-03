@@ -1,0 +1,20 @@
+{
+  "entry": "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/training-review/runtime-prototype/baselineProducer.ts",
+  "sources": {
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-decode-fix/src/audio/jamendoFeatures.ts": "cec2fac85c73604ba77693d314da49d457ea4382def268dbd67d7b54de3b021e",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-decode-fix/src/audio/instrumentLabels.ts": "1fbb15427ff0a5aa9baef3ccea7bed8c4cfcd6ac179fe55412c489b5fcbc32dc",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-decode-fix/public/music-model/manifest.json": "f537d8f74df7e2a1fc061a33ac01a5e195a18da99a9835b61c84cb789f86b708",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-decode-fix/public/sound-model/manifest.json": "30510ae98f1b2c12e39a08fe2abba96943af0b22ac9cf7c7e41840c6905629d7",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-decode-fix/public/jamendo-model/manifest.json": "a693ae9f39b2ea5607b7eb8636970f689aeb492574db666447226287f8149ef1",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-decode-fix/src/audio/djCatalog.json": "debed3b1d4b79ebc73fc93522c4349b71d926f5fcb9a5fc06f67d6e20eb03750",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-decode-fix/src/audio/djTags.ts": "d3851e43e0377aa50f70e838d6c2fa204060f5f14278402401a8b0de2ffb490f",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-decode-fix/src/audio/soundProfile.ts": "d566eb8715fc252a267c8783ca4b855761e50161a6321720a965e3482babc394",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-decode-fix/src/audio/recognition.ts": "df27340c2e515e835ea1061509820eae3401990f3ec7d0f55b36c9d5ebe154c3",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-6/combined-dge/node_modules/onnxruntime-web/dist/ort.webgpu.bundle.min.mjs": "2ec70f685749470635e64dd142c2510dc13b37bb593d9cd6ab4f8923e5204479",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-decode-fix/src/audio/jamendo.ts": "162159f739141183fa1515edeb21e0b210ae1b818b0733458ae0543e1003893b",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-decode-fix/src/audio/profileDescriptions.ts": "462cb0fde3b206d9d429a2839fde8223c781a831412b588520696e85049797f6",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audio-decode-fix/public/jamendo-model/mtg_jamendo_instrument-discogs-effnet-1.json": "7d02204c6451b5615e2968ec6364bbae3b915c886e608f05f00d3a38dc5177c4",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/training-review/runtime-prototype/fusionAdapter.ts": "a7a6f2f99715f2b805a9fef89ed639b21232e716abffb86b9d2d7344e1a835bc",
+    "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/training-review/runtime-prototype/baselineProducer.ts": "f58866dcdcf297c844d5410c3408944936cb83d4a856906c3b8c2e142f84c7ae"
+  }
+}
