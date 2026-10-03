@@ -1,14 +1,14 @@
 import { CHARACTER_LABELS, RESEMBLANCE_LABELS, ROLE_LABELS, VOCAL_LABELS } from './soundProfile';
-export type DescriptionGroup = 'source' | 'articulation' | 'tone' | 'space' | 'role' | 'vocal' | 'sample';
-export interface DescriptionScore { group: DescriptionGroup; label: string | null; score: number; }
-export interface DescriptionPrompt { group: DescriptionGroup; label: string | null; vector: number[]; }
+export type DescriptionGroup = 'source' | 'articulation' | 'tone' | 'space' | 'role' | 'vocal' | 'sample' | 'dj-type' | 'breath' | 'dj-tone' | 'dj-rhythm' | `dj-${string}`;
+export interface DescriptionScore { group: DescriptionGroup; label: string | null; score: number; alternative?: string; learnedGroup?: 'source' | 'production' | 'character'; decision?: 'include' | 'exclude'; }
+export interface DescriptionPrompt { group: DescriptionGroup; label: string | null; vector: number[]; prompt?: string; }
 export function descriptionScores(embedding: ArrayLike<number>, prompts: DescriptionPrompt[]): DescriptionScore[] {
   const audio = Array.from(embedding); const norm = Math.hypot(...audio);
   if (!norm || !Number.isFinite(norm)) return [];
   return prompts.flatMap(p => {
     if (p.vector.length !== audio.length) return [];
     const score = p.vector.reduce((sum, x, i) => sum + x * audio[i], 0) / (Math.hypot(...p.vector) * norm);
-    return Number.isFinite(score) ? [{ group: p.group, label: p.label, score: Math.max(-1, Math.min(1, score)) }] : [];
+    return Number.isFinite(score) ? [{ group: p.group, label: p.label, score: Math.max(-1, Math.min(1, score)), ...(p.label === null && p.prompt ? {alternative:p.prompt} : {}) }] : [];
   });
 }
 export function averageDescriptions(passages: DescriptionScore[][]): DescriptionScore[] {
@@ -17,7 +17,7 @@ export function averageDescriptions(passages: DescriptionScore[][]): Description
   for (const passage of passages) {
     const seen = new Set<string>();
     for (const p of passage) {
-      const key = `${p.group}:${p.label}`;
+      const key = `${p.group}:${p.label}:${p.alternative ?? ""}:${p.learnedGroup ?? ""}:${p.decision ?? ""}`;
       if (seen.has(key) || !Number.isFinite(p.score)) continue;
       seen.add(key);
       const previous = all.get(key);
@@ -49,4 +49,35 @@ export function selectDescriptions(scores: DescriptionScore[]) {
   const vocalSourceEvidence = chopSource ? { group: 'sample' as const, labelId: 'vocal chops', score: sample[0].score }
     : vocalSource ? { group: 'vocal' as const, labelId: vocal[0].label!, score: vocal[0].score } : undefined;
   return { sources, vocalSource: vocalSource || chopSource, vocalSourceEvidence, vocalStyle: chopSource ? 'vocal chops' : choose('vocal', VOCAL_LABELS)[0], sourceClear: !!source[0]?.label && source[0].score - (source[1]?.score ?? 0) >= .025, character: (['articulation','tone','space'] as const).flatMap(g => choose(g, CHARACTER_LABELS)), roles: choose('role', ROLE_LABELS) };
+}
+
+/** Bounded memory even when Full mode scans hours of audio. */
+export class DescriptionAccumulator {
+  private sums = new Map<string,DescriptionScore>();
+  private count = 0;
+  private reviewed = new Map<string, DescriptionScore>();
+  add(scores: DescriptionScore[]) {
+    this.count++;
+    const seen = new Set<string>();
+    for (const score of scores) {
+      if(score.group === 'dj-learned' && score.learnedGroup && score.label && score.decision && Number.isFinite(score.score)) {
+        const key=`${score.learnedGroup}:${score.label}:${score.decision}`;
+        if(score.score > (this.reviewed.get(key)?.score ?? -1))this.reviewed.set(key,{...score});
+        continue;
+      }
+      const key=`${score.group}:${score.label}:${score.alternative ?? ""}:${score.learnedGroup ?? ""}:${score.decision ?? ""}`;
+      if (seen.has(key) || !Number.isFinite(score.score)) continue;
+      seen.add(key);
+      this.sums.set(key,{...score,score:(this.sums.get(key)?.score??0)+score.score});
+    }
+  }
+  average(): DescriptionScore[] {
+    if(!this.count)return [];
+    // An instrument can occur in only one section. Conflicting reviewed sections abstain.
+    const reviewed=[...this.reviewed.values()].filter(s=>{
+      const opposite=this.reviewed.get(`${s.learnedGroup}:${s.label}:${s.decision==='include'?'exclude':'include'}`);
+      return !opposite || s.score-opposite.score >= .04;
+    });
+    return [...this.sums.values()].map(s=>({...s,score:s.score/this.count})).concat(reviewed);
+  }
 }

@@ -13,7 +13,7 @@ describe('offline system-font labels', () => {
 
   beforeEach(() => {
     context = {
-      measureText: (text: string) => ({ width: Array.from(text).length * 16 }),
+      measureText: (text: string) => ({ width: Array.from(text).length * parseFloat(context.font) / 2 }),
       scale: vi.fn(), fillText: vi.fn(), strokeText: vi.fn(),
     } as unknown as CanvasRenderingContext2D;
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context);
@@ -43,6 +43,9 @@ describe('offline system-font labels', () => {
     expect(context.fillText).toHaveBeenCalledWith(text, expect.any(Number), expect.any(Number));
     expect(label.material.visible).toBe(false);
     expect(plane().material.visible).toBe(true);
+    expect(parseFloat(context.font)).toBe(64);
+    expect(plane().material.map!.generateMipmaps).toBe(true);
+    expect(plane().material.map!.minFilter).toBe(THREE.LinearMipmapLinearFilter);
   });
 
   it('loads and renders code points when Intl.Segmenter is unavailable', async () => {

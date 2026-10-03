@@ -15,7 +15,7 @@ export default function InstrumentCorrection({ node }: { node: DocNode }) {
       const ids = all ? useGraphStore.getState().nodes.filter(n => n.fileType === 'audio' && n.audio).map(n => n.id) : [node.id];
       const { setAudioInstruments } = await import('../pipeline/coordinatorLazy');
       const result = await setAudioInstruments(ids, reset ? undefined : [label]);
-      const action = reset ? 'Automatic estimates restored' : 'Instrument updated';
+      const action = reset ? 'Instrument override removed' : 'Instrument updated';
       setMessage(`${action} for ${result.count} track${result.count === 1 ? '' : 's'}. ${result.saved ? 'Saved on this device.' : 'Export this graph to keep your changes.'}`);
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not save the instrument.'); }
     finally { setBusy(false); }
@@ -28,8 +28,8 @@ export default function InstrumentCorrection({ node }: { node: DocNode }) {
     </select></label>
     <label className="instrument-correction-scope"><input type="checkbox" checked={all} onChange={event => setAll(event.target.checked)} />Apply to all analyzed audio tracks in this collection</label>
     <button type="button" disabled={busy || phase !== 'ready'} onClick={() => void save()}>Save confirmed instrument</button>
-    {(node.audio?.confirmedInstruments !== undefined || all) && <button type="button" disabled={busy || phase !== 'ready'} onClick={() => void save(true)}>Use automatic estimates</button>}
-    <p>Your correction replaces automatic estimates. Reanalysis keeps it until you restore automatic estimates.</p>
+    {(node.audio?.confirmedInstruments !== undefined || all) && <button type="button" disabled={busy || phase !== 'ready'} onClick={() => void save(true)}>{node.audio?.soundReviews?.length || node.audio?.confirmedDjTags ? 'Remove instrument override' : 'Use automatic estimates'}</button>}
+    <p>Your correction replaces automatic estimates. Reanalysis keeps it until you remove this override. Separate sound-tag corrections and individual evidence reviews still apply.</p>
     {message && <p role="status">{message}</p>}
   </details>;
 }

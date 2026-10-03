@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import AudioControls, { useWaveform, type AudioControlState } from './AudioControls';
 import type { DocNode } from '../model/types';
 import { getOriginal } from '../persistence/originals';
 import { saveAudioGraph } from '../audio/saveAudioGraph';
@@ -24,9 +26,17 @@ export default function AudioPreview({ node }: { node: DocNode }) {
   const active = useRef(true);
   const liveUrl = useRef('');
   const player = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const peaks = useWaveform(original?.blob ?? null);
+  const transport = document.getElementById('workspace-transport');
   const idle = phase === 'ready' && !saving;
   useEffect(() => {
     active.current = true;
+    setUrl(''); setOriginal(null); setMessage('Loading audio…');
+    setPlaying(false); setCurrentTime(0); setDuration(0);
     let cancelled = false;
     void getOriginal(node.id).then((record) => {
       if (cancelled) return;
@@ -68,8 +78,25 @@ export default function AudioPreview({ node }: { node: DocNode }) {
     layoutReheat(0.4);
     await persist();
   };
+  const controls: AudioControlState = {
+    playing, currentTime, duration, volume, available: !!url, peaks,
+    onToggle: () => {
+      const audio = player.current;
+      if (!audio) return;
+      if (!audio.paused) audio.pause();
+      else void audio.play().catch(() => setMessage('Choose Prepare playback if this format cannot play on your device.'));
+    },
+    onSeek: seconds => { if (player.current) player.current.currentTime = seconds; setCurrentTime(seconds); },
+    onVolume: value => { setVolume(value); if (player.current) player.current.volume = value; },
+  };
   return <div className="side-panel__reader audio-preview">
-    {url && <audio ref={player} key={url} controls preload="metadata" src={url} aria-label={`Play ${node.title}`} onError={() => setMessage('This format needs conversion. Choose Prepare playback.')} />}
+    {url && <audio ref={player} key={url} preload="metadata" src={url} aria-label={`Play ${node.title}`}
+      onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)}
+      onTimeUpdate={event => setCurrentTime(event.currentTarget.currentTime)}
+      onLoadedMetadata={event => { setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0); event.currentTarget.volume = volume; }}
+      onError={() => { setPlaying(false); setMessage('This format needs conversion. Choose Prepare playback.'); }} />}
+    <AudioControls state={controls} />
+    {transport && createPortal(<div className="audio-transport"><div className="audio-transport__identity"><strong>{node.title}</strong><small>{node.path || 'Selected sample'}</small></div><AudioControls state={controls} dock /></div>, transport)}
     {message && <p role="status">{message}</p>}
     {saveFailed && <button type="button" disabled={!idle} onClick={() => void persist()}>Retry saving relationships</button>}
     {original && <details><summary>Playback options</summary><button type="button" disabled={converting} onClick={() => void convert()}>{converting ? 'Preparing…' : 'Prepare playback'}</button></details>}

@@ -1,3 +1,6 @@
+import { quickMusic } from '../audio/quickMusic';
+import { beginMusicJob, isCurrentMusicJob, finishMusicJob, updateMusicJob, cancelAllMusicJobs, cancelMusicJob, useMusicJobs } from '../store/musicJobs';
+import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from '../audio/djTags';
 import { buildTitleEdges } from '../graph/titleLinks';
 import { INSTRUMENT_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION } from '../audio/musicTypes';
 import { assertAudioContent } from '../audio/parseAudio';
@@ -315,6 +318,19 @@ const nameOfDoc = new Map<string, string>();
 // Parsed documents and vectors can survive a cancelled/failed corpus pass.
 // Keep duplicate re-drops retryable until all derived connections are current.
 let derivedPassesIncomplete = false;
+
+/**
+ * A node id is derived from file content, so a reset followed by adding the
+ * same file creates the same id in a different corpus. Track the logical
+ * analysis owner separately from that id: cancellation callbacks can keep
+ * their completed-evidence ledger only while they still own this corpus/node.
+ */
+let corpusEpoch = 0;
+const audioAnalysisOwners = new Map<string, symbol>();
+
+function ownsAudioAnalysis(id: string, owner: symbol, epoch: number): boolean {
+  return corpusEpoch === epoch && audioAnalysisOwners.get(id) === owner;
+}
 
 let modelProgressWired = false;
 function wireModelProgress(): void {
@@ -1768,6 +1784,11 @@ export async function embedQuery(text: string): Promise<Float32Array> {
 
 /** Full teardown: layout, graph store, runtime stores, UI selections, chat. */
 export function resetCorpus(): void {
+  // Invalidate callbacks before aborting them. A cancelled analyzer may still
+  // publish its final partial synchronously as it observes the abort.
+  corpusEpoch += 1;
+  audioAnalysisOwners.clear();
+  cancelAllMusicJobs();
   layoutReset();
   useGraphStore.getState().reset();
   clearRuntimeStores();
@@ -1792,67 +1813,150 @@ export function resetCorpus(): void {
 /** Run inside the existing mutation queue; every estimate belongs to this corpus snapshot. */
 async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], originals?: Map<string, { blob: Blob; name: string }>): Promise<void> {
   const mode = useSettingsStore.getState().musicAnalysisMode;
-  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (forceIds.length ? forceIds.includes(n.id) : (!n.audio || n.audio.stage === 'preview' || (mode === 'full' && n.audio.instrumentScan?.mode === 'fast') || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION)));
+  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (!n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION || forceIds.includes(n.id)));
   if (!nodes.length) return;
   const { analyzeMusic } = await import('../audio/analyzeMusic');
   const store = useGraphStore.getState;
+  let finished = 0;
+  let queuedScopeActive = true;
   store().setPhase('parsing');
   try {
-    for (let i = 0; i < nodes.length; i++) {
-      throwIfAborted(signal);
-      const node = nodes[i];
-      const progress = (note: string) => store().setModelProgress({ kind: 'music-analysis', loaded: i, total: nodes.length, note: `${node.title}: ${note} (${i + 1}/${nodes.length})` });
+    const analyzeNode = async (node: typeof nodes[number], i: number) => {
+      const analysisEpoch = corpusEpoch;
+      const analysisOwner = Symbol(node.id);
+      audioAnalysisOwners.set(node.id, analysisOwner);
+      let backgroundOwnsOwner = false;
+      const cancellationPublications: Promise<void>[] = [];
+      const progress = (note: string) => store().setModelProgress({ kind: 'music-analysis', loaded: finished, total: nodes.length, note: `${node.title}: ${note} (${i + 1}/${nodes.length})` });
       progress('Loading saved audio');
       const fileId = fileIdOfDoc.get(node.id) ?? node.id;
       const name = nameOfDoc.get(node.id) ?? node.title;
       store().setFileStatus({ fileId, name, stage: 'parsing' });
       try {
-        const original = originals?.get(node.id) ?? await getOriginal(node.id);
-        if (!original) throw new Error('Add the original audio file again to analyze it.');
-        const audio = await analyzeMusic(original.blob, original.name, {
-          signal, mode, onProgress: progress,
-          onPartial: partial => {
-            // Cancellation settles before the mutation queue starts another run.
-            // Persist completed evidence and preserve the user's review separately.
-            if (partial.recognition?.status !== 'cancelled') return;
-            const current = store().nodes.find(n => n.id === node.id);
-            if (!current) return;
-            store().patchNodes(new Map([[node.id, { audio: { ...partial, confirmedInstruments: current.audio?.confirmedInstruments, soundReviews: current.audio?.soundReviews } }]]));
-            markDocsDirty([node.id]);
-            const edges = [...store().edges.filter(e => !['tempo','key','instrument'].includes(e.kind)), ...buildMusicEdges(documentNodes())];
-            store().setEdges(edges); layoutSetLinks(toLinkInput(edges));
-          },
-          onPreview: preview => {
-            // Keep completed results visible during a reanalysis. New uploads
-            // can show the quick estimate without claiming verification finished.
-            if (node.audio && node.audio.stage !== 'preview') return;
-            store().patchNodes(new Map([[node.id, { audio: { ...preview, confirmedInstruments: node.audio?.confirmedInstruments, soundReviews: node.audio?.soundReviews }, warning: undefined }]]));
-            markDocsDirty([node.id]);
-          },
-        });
         throwIfAborted(signal);
+        const load = async (onPreview: (preview: import('../audio/musicTypes').MusicAnalysis)=>void, jobSignal = signal, onProgress = progress, analysisMode = mode) => {
+          const original = originals?.get(node.id) ?? await getOriginal(node.id);
+          if (!original) throw new Error('Add the original audio file again to analyze it.');
+          return analyzeMusic(original.blob, original.name, {signal:jobSignal,mode:analysisMode,onProgress,onPreview,cacheKey:node.id,force:forceIds.includes(node.id),partialUpdates:'cancelled',onPartial: partial => {
+            if (partial.recognition?.status !== 'cancelled') return;
+            const publishCancelledPartial = () => {
+              if (!ownsAudioAnalysis(node.id, analysisOwner, analysisEpoch)) return false;
+              const current = store().nodes.find(n => n.id === node.id);
+              if (!current) return false;
+              store().patchNodes(new Map([[node.id, { audio: { ...partial, confirmedInstruments: current.audio?.confirmedInstruments, soundReviews: current.audio?.soundReviews, confirmedDjTags: current.audio?.confirmedDjTags, copilotProperties: current.audio?.copilotProperties } }]]));
+              markDocsDirty([node.id]);
+              const edges = [...store().edges.filter(e => e.authored || !['tempo','key','instrument'].includes(e.kind)), ...buildMusicEdges(documentNodes())];
+              store().setEdges(edges); layoutSetLinks(toLinkInput(edges));
+              return true;
+            };
+            // A current queued ingest owns graph mutation synchronously. A
+            // background callback after Quick has settled must serialize behind
+            // any reset/replacement already in the mutation queue.
+            if (queuedScopeActive) publishCancelledPartial();
+            else cancellationPublications.push(enqueueRun(async () => { if(publishCancelledPartial())await saveSession(); })
+              .catch(error => console.error('Cancelled audio evidence update failed', error)));
+          }});
+        };
+        let audio: import('../audio/musicTypes').MusicAnalysis;
+        if(mode === 'fast') {
+          const controller=beginMusicJob(node.id);
+          const abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});
+          if(signal?.aborted)controller.abort();
+          // Removal or corpus reset invalidates a pending result before it can be published.
+          const unsubscribe=useGraphStore.subscribe(state=>{if(!state.nodes.some(n=>n.id===node.id))controller.abort();});
+          const quick=quickMusic(preview=>load(result=>{
+            preview(result);
+            const applyPreview=()=>{
+              const current=store().nodes.find(n=>n.id===node.id);
+              if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller)||(current.audio&&current.audio.stage!=='preview'))return;
+              store().patchNodes(new Map([[node.id,{audio:{...result,confirmedInstruments:current.audio?.confirmedInstruments,soundReviews:current.audio?.soundReviews,confirmedDjTags:current.audio?.confirmedDjTags,copilotProperties:current.audio?.copilotProperties},warning:undefined}]]));
+              markDocsDirty([node.id]);
+            };
+            // Show real estimates immediately, including previews that arrive after Quick ingest returns.
+            if(queuedScopeActive)applyPreview();
+            else void enqueueRun(async()=>{applyPreview();}).catch(error=>console.error('Audio preview update failed',error));
+          },controller.signal,note=>updateMusicJob(node.id,controller,note)),controller.signal);
+          const finishBackground = async () => {
+            // Quick can reject before the decoder/worker finishes unwinding.
+            // Keep its owner until the last cancellation ledger has published.
+            // This cleanup is detached from ingest: awaiting its queued writes
+            // inside the ingest queue would deadlock.
+            await Promise.all(cancellationPublications);
+            if(ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch))audioAnalysisOwners.delete(node.id);
+            unsubscribe();signal?.removeEventListener('abort',abort);finishMusicJob(node.id,controller);
+          };
+          try { audio=await quick.initial; throwIfAborted(signal); controller.signal.throwIfAborted(); if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch))throw new DOMException('Audio analysis was replaced.','AbortError'); }
+          catch(error){
+            backgroundOwnsOwner = true;
+            void quick.complete.then(finishBackground,finishBackground);
+            throw error;
+          }
+          backgroundOwnsOwner = true;
+          const publish = (result: import('../audio/musicTypes').MusicAnalysis)=>enqueueRun(async()=>{
+              const current=store().nodes.find(n=>n.id===node.id);
+              if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller))return;
+              store().patchNodes(new Map([[node.id,{audio:{...result,confirmedInstruments:current.audio?.confirmedInstruments,soundReviews:current.audio?.soundReviews,confirmedDjTags:current.audio?.confirmedDjTags,copilotProperties:current.audio?.copilotProperties},warning:undefined}]]));
+              markDocsDirty([node.id]);
+              const edges=[...store().edges.filter(e=>e.authored || !['tempo','key','instrument'].includes(e.kind)),...buildMusicEdges(documentNodes())];
+              store().setEdges(edges);layoutSetLinks(toLinkInput(edges));layoutReheat(.5);
+              await saveSession();
+            });
+          // Even an immediate cached Quick result must hand off to a whole-track scan.
+          void quick.complete.then(async result=>{
+            await publish(result);
+            if(!isCurrentMusicJob(node.id,controller))return;
+            if(result.instrumentScan?.mode==='full' && result.instrumentScan.complete)return;
+            updateMusicJob(node.id,controller,'Quick analysis complete. Waiting for Full analysis');
+            const full=await load(()=>{},controller.signal,note=>updateMusicJob(node.id,controller,`Full analysis: ${note}`),'full');
+            await publish(full);
+          }).catch(error=>enqueueRun(async()=>{
+              if(!isCurrentMusicJob(node.id,controller)||!store().nodes.some(n=>n.id===node.id))return;
+              store().patchNodes(new Map([[node.id,{warning:error instanceof Error?error.message:'Background audio analysis failed. Reanalyze to retry.'}]]));markDocsDirty([node.id]);await saveSession();
+            })).catch(error=>console.error('Background audio update failed',error)).finally(finishBackground);
+        } else {
+          cancelMusicJob(node.id);
+          audio=await load(preview=>{
+            if(!queuedScopeActive||signal?.aborted||!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||(node.audio&&node.audio.stage!=='preview'))return;
+            store().patchNodes(new Map([[node.id,{audio:{...preview,confirmedInstruments:node.audio?.confirmedInstruments,soundReviews:node.audio?.soundReviews,confirmedDjTags:node.audio?.confirmedDjTags,copilotProperties:node.audio?.copilotProperties},warning:undefined}]]));markDocsDirty([node.id]);
+          });
+        }
+        throwIfAborted(signal);
+        if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch))return;
+        if(audio.stage === 'preview' && node.audio && node.audio.stage !== 'preview')audio={...node.audio};
         audio.confirmedInstruments = node.audio?.confirmedInstruments;
-        audio.soundReviews = node.audio?.soundReviews;
+        audio.soundReviews = store().nodes.find(n => n.id === node.id)?.audio?.soundReviews;
+        audio.confirmedDjTags = node.audio?.confirmedDjTags;
+        audio.copilotProperties = node.audio?.copilotProperties;
         store().patchNodes(new Map([[node.id, { audio, warning: undefined, topics: [], keywords: [], entities: [], wordCount: 0 }]]));
         markDocsDirty([node.id]);
-        const incomplete = audio.instrumentScan?.complete !== true;
+        const incomplete = audio.stage !== 'preview' && audio.instrumentScan?.complete !== true;
         store().setFileStatus({ fileId, name, stage: incomplete ? 'error' : 'placed',
           ...(incomplete ? { error: 'Instrument analysis stopped early. Select the track and reanalyze to finish.' } : {}) });
         // Publish connections as each track finishes, even in a long batch.
-        const edges = [...store().edges.filter(e => !['tempo', 'key', 'instrument'].includes(e.kind)), ...buildMusicEdges(documentNodes())];
+        const edges = [...store().edges.filter(e => e.authored || !['tempo', 'key', 'instrument'].includes(e.kind)), ...buildMusicEdges(documentNodes())];
         store().setEdges(edges);
         layoutSetLinks(toLinkInput(edges));
         layoutReheat(0.5);
       } catch (error) {
         if (signal?.aborted) throw error;
+        if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch))return;
         const message = error instanceof Error ? error.message : 'Music analysis failed.';
         store().setFileStatus({ fileId, name, stage: 'error', error: message });
         useUiStore.getState().pushToast(`${name}: ${message}`, 'warning');
         store().patchNodes(new Map([[node.id, { warning: message }]]));
         markDocsDirty([node.id]);
+      } finally {
+        if (!backgroundOwnsOwner && ownsAudioAnalysis(node.id, analysisOwner, analysisEpoch)) {
+          audioAnalysisOwners.delete(node.id);
+        }
+        finished++;
       }
-    }
-  } finally { store().setModelProgress(null); }
+    };
+    // Queue the whole folder so the audio scheduler can prioritize every short preview.
+    const settled = await Promise.allSettled(nodes.map(analyzeNode));
+    const failed = settled.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+    if(failed)throw failed.reason;
+  } finally { queuedScopeActive = false; store().setModelProgress(null); }
 }
 
 async function clusterAudioGraph(signal?: AbortSignal): Promise<void> {
@@ -1878,14 +1982,14 @@ export function setAudioInstruments(ids: string[], labels?: string[]): Promise<{
     const patches=targets.map(node=>{
       const audio=node.audio!;
       const sourceLabels=[...new Set(audio.soundReviews?.filter(r=>r.dimension==='source').map(r=>r.labelId))];
-      const reconciliations:SoundReview[]=sourceLabels.map(labelId=>({labelId,dimension:'source',scope:'track',at:new Date().toISOString(),
-        evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmed===undefined?'uncertain':confirmed.includes(labelId)?'confirmed':'rejected'}));
+      const reconciliations:SoundReview[]=confirmed===undefined?[]:sourceLabels.map(labelId=>({labelId,dimension:'source',scope:'track',at:new Date().toISOString(),
+        evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmed.includes(labelId)?'confirmed':'rejected'}));
       if((audio.soundReviews?.length??0)+reconciliations.length>500)throw new Error('Review history limit reached. Export this graph before adding more reviews.');
-      return [node.id,{audio:{...audio,confirmedInstruments:confirmed,...(audio.soundReviews?{soundReviews:[...audio.soundReviews,...reconciliations]}:{})}}] as const;
+      return [node.id,{audio:{...audio,confirmedInstruments:confirmed,...(confirmed!==undefined&&audio.confirmedDjTags?{confirmedDjTags:{...audio.confirmedDjTags,source:confirmed}}:{}),...(audio.soundReviews?{soundReviews:[...audio.soundReviews,...reconciliations]}:{})}}] as const;
     });
     state.patchNodes(new Map(patches));
     markDocsDirty(targets.map(node => node.id));
-    const edges = [...state.edges.filter(edge => !['tempo', 'key', 'instrument'].includes(edge.kind)), ...buildMusicEdges(documentNodes())];
+    const edges = [...state.edges.filter(edge => edge.authored || !['tempo', 'key', 'instrument'].includes(edge.kind)), ...buildMusicEdges(documentNodes())];
     useGraphStore.getState().setEdges(edges);
     layoutSetLinks(toLinkInput(edges));
     layoutReheat(0.5);
@@ -1947,5 +2051,32 @@ export function analyzeAudioCorpus(forceIds: string[] = [], signal?: AbortSignal
   }, { signal: analysisSignal }).finally(() => {
     signal?.removeEventListener('abort', abort);
     clearIngestAbort(controller);
+  });
+}
+
+/** Reviewed DJ labels are independent of automatic estimates and survive reanalysis. */
+export function setAudioDjTags(id: string, labels?: ConfirmedDjTags): Promise<boolean> {
+  return enqueueRun(async () => {
+    const { saveAudioGraph } = await import('../audio/saveAudioGraph');
+    const { useCorpusStore } = await import('../store/corpusStore');
+    if (useGraphStore.getState().phase !== 'ready') throw new Error('Wait for file processing to finish.');
+    const node=documentNodes().find(n=>n.id===id && n.fileType==='audio' && n.audio);
+    if (!node) throw new Error('No analyzed audio track is available to correct.');
+    const audio=node.audio!;
+    const confirmedDjTags=labels===undefined?undefined:sanitizeConfirmedDjTags(labels);
+    if(labels!==undefined&&!confirmedDjTags)throw new Error('Invalid DJ corrections.');
+    const sourceLabels=[...new Set(audio.soundReviews?.filter(r=>r.dimension==='source').map(r=>r.labelId))];
+    const reconciliations:SoundReview[]=confirmedDjTags===undefined?[]:sourceLabels.map(labelId=>({labelId,dimension:'source',scope:'track',at:new Date().toISOString(),
+      evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmedDjTags.source.includes(labelId)?'confirmed':'rejected'}));
+    if((audio.soundReviews?.length??0)+reconciliations.length>500)throw new Error('Review history limit reached. Export this graph before adding more reviews.');
+    useGraphStore.getState().patchNodes(new Map([[id,{audio:{...audio,confirmedDjTags,
+      ...(confirmedDjTags?{confirmedInstruments:[...confirmedDjTags.source]}:{}),
+      ...(audio.soundReviews?{soundReviews:[...audio.soundReviews,...reconciliations]}:{})}}]]));
+    markDocsDirty([id]);
+    const state = useGraphStore.getState();
+    const edges = [...state.edges.filter(e => e.authored || !['tempo', 'key', 'instrument'].includes(e.kind)), ...buildMusicEdges(documentNodes())];
+    state.setEdges(edges); layoutSetLinks(toLinkInput(edges)); layoutReheat(.5);
+    await saveAudioGraph();
+    return useCorpusStore.getState().mode === 'local';
   });
 }

@@ -12,7 +12,7 @@ const SceneText = forwardRef<SceneLabel, TextProps>(function SceneText(props, re
     // refs also clear during rerenders. Neither event means this pool slot died.
     return () => { if (label) disposeSceneLabel(label); };
   }, []);
-  return <Text {...props} ref={mesh} />;
+  return <Text sdfGlyphSize={128} {...props} ref={mesh} />;
 });
 
 export default SceneText;

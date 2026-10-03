@@ -17,7 +17,7 @@ export default function RecognitionEvidence({recognition, duration, onSeek, revi
         <strong>{label}</strong> <span>{observations.length?'— possible':'— no current machine evidence'}</span>
         {dimension==='source'&&confirmedInstruments.includes(label)&&!reviews.some(r=>r.dimension===dimension&&r.labelId===label)&&<p>Previously confirmed by you for this track.</p>}
         {reviews.filter(r=>r.dimension===dimension&&r.labelId===label).slice(-1).map(review=><p key={review.at}>Your review for this track: {review.decision}.{review.evidenceRunId!==recognition.runId?' Evidence has changed since this review.':''}</p>)}
-        <div aria-label={`Review ${label} for this track`}>
+        <div role="group" aria-label={`Review ${label} for this track`}>
           {(['confirmed','rejected','uncertain'] as const).map(decision=><button type="button" key={decision} disabled={!onReview} onClick={()=>onReview?.(label,dimension,decision)}>{decision==='confirmed'?'Confirm':decision==='rejected'?'Reject':'Unsure'}</button>)}
         </div>
         <details><summary>Evidence ({observations.length} windows)</summary>

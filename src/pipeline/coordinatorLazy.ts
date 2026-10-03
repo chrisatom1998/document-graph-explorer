@@ -9,6 +9,7 @@ export {
   analyzeAudioCorpus,
   setAudioInstruments,
   setAudioReview,
+  setAudioDjTags,
   loadDemoCorpus,
   rebuildEmbeddings,
   reconcileWatchedFiles,

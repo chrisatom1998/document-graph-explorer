@@ -40,8 +40,8 @@ function parseMsg(): PoolRequest {
   };
 }
 
-function embedMsg(): PoolRequest {
-  return { requestId: 0, type: 'embed', docId: 'd', chunks: ['x'] };
+function embedMsg(docId = 'd'): PoolRequest {
+  return { requestId: 0, type: 'embed', docId, chunks: ['x'] };
 }
 
 class FakeWorker implements PipelineWorkerLike {
@@ -300,5 +300,21 @@ describe('WorkerPool dispatch past blocked jobs', () => {
     // warm model on worker 0.
     expect(workers[0].messages.every((m) => m.type === 'embed')).toBe(true);
     expect(workers[1].messages.map((m) => m.type)).toEqual(['parse']);
+  });
+
+  it('prioritizes embedQuery ahead of normal queued embed jobs', () => {
+    void pool.request(embedMsg()).catch(() => undefined); // in flight on worker 0
+    void pool.request(embedMsg('normal-1')).catch(() => undefined); // queued normal
+    void pool.request(embedMsg('normal-2')).catch(() => undefined); // queued normal
+    void pool
+      .request({ requestId: 0, type: 'embedQuery', text: 'high-priority search' })
+      .catch(() => undefined); // queued high
+
+    workers[0].respondEmbedToLast();
+
+    expect(workers[0].messages[1]).toMatchObject({
+      type: 'embedQuery',
+      text: 'high-priority search',
+    });
   });
 });

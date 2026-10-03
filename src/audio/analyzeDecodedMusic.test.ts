@@ -208,3 +208,18 @@ it('keeps derived voice provenance separate for overlapping classifier windows',
  expect(new Set(voices.map(e=>e.id)).size).toBe(2);
  expect(sanitizeMusicAnalysis(result)?.recognition?.evidence.filter(e=>e.labelId==='voice')).toEqual(voices);
 });
+
+it('routes atmosphere evidence to the effect dimension',async()=>{
+ const result=await vocalEvidenceFixture([{group:'role',label:'atmosphere',score:.8},{group:'role',label:'lead',score:.1}]);
+ expect(result.recognition!.evidence.find(e=>e.labelId==='atmosphere')).toMatchObject({dimension:'effect',score:.8});
+ expect(sanitizeMusicAnalysis(result)?.recognition?.evidence.find(e=>e.labelId==='atmosphere')?.dimension).toBe('effect');
+});
+it('avoids unused growing snapshots when the consumer only needs cancellation evidence',async()=>{
+ const partial=vi.fn();const clone=vi.spyOn(globalThis,'structuredClone');
+ try {
+  const f=fixture(120,{mode:'full',partialUpdates:'cancelled',onPartial:partial});
+  const result=await f.run();
+  expect(partial).not.toHaveBeenCalled();expect(clone.mock.calls.some(([value])=>value && typeof value==='object' && 'recognition' in value)).toBe(false);
+  expect(result.recognition?.jobs.every(j=>j.status==='complete')).toBe(true);
+ } finally {clone.mockRestore();}
+});

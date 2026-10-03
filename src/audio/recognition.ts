@@ -1,6 +1,7 @@
 import ast from '../../public/music-model/manifest.json';
 import clap from '../../public/sound-model/manifest.json';
 import jamendo from '../../public/jamendo-model/manifest.json';
+import { DJ_LABELS } from './djTags';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { CHARACTER_LABELS, ROLE_LABELS, VOCAL_LABELS } from './soundProfile';
 export type Interval = { start: number; end: number };
@@ -40,7 +41,7 @@ export const MAX_EVIDENCE = 12000;
 export const MAX_INTERVALS = 20000;
 const paddingFor = (model:ModelId):Evidence['padding'] => model==='clap'?'repeatpad-to-10s':model==='ast'?'feature-pad-to-1024-frames':model==='jamendo'?'centered-mel-frames':'none';
 const extras = ['oboe','viola','bongo','conga','tuba','bassoon','horn','melodica','drum machine','environmental sound','noise'];
-export const sourceLabels = [...new Set([...INSTRUMENT_LABELS,...extras])];
+export const sourceLabels = [...new Set([...INSTRUMENT_LABELS,...extras,...DJ_LABELS.source])];
 export const dimensionLabels: Record<Dimension, string[]> = {
   source: sourceLabels, vocal: VOCAL_LABELS, role: [...ROLE_LABELS,'chord','texture'],
   character: CHARACTER_LABELS, effect: ['atmosphere'],
@@ -59,9 +60,10 @@ export function familyOf(label: string): string {
   if (/bongo|conga|percussion|tabla|bell|maraca|gong|chime|rattle|tambourine|marimba|vibraphone|glockenspiel|steelpan|wood block|singing bowl/.test(label)) return 'percussion';
   return 'unknown';
 }
+export const recognitionConfiguration = (mode: 'fast' | 'full') => `timeline-v1:${mode}:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:uncalibrated`;
 export function createRecognition(duration: number, mode: 'fast' | 'full', audioFingerprint?: string): Recognition {
   const versions = [ast.revision, Object.values(jamendo.sha256).join(':'), clap.revision, 'essentia-0.1.3-tempo-1', 'essentia-0.1.3-key-2'];
-  return { schemaVersion:1, runId:crypto.randomUUID(), audioFingerprint, configurationHash:`timeline-v1:${mode}:labels-v2:voice-evidence-v1:uncalibrated`,
+  return { schemaVersion:1, runId:crypto.randomUUID(), audioFingerprint, configurationHash:recognitionConfiguration(mode),
     startedAt:new Date().toISOString(),status:'running',mode,calibration:'unvalidated',evidence:[],observations:[],
     jobs:MODEL_IDS.map((modelId,i)=>({modelId,weightsVersion:versions[i],preprocessingVersion:'decoder-mono-v1:'+(['ast','jamendo'].includes(modelId)?16000:modelId==='clap'?48000:44100)+':'+(modelId==='ast'?ast.sha256['preprocessor_config.json']:modelId==='clap'?clap.sha256['preprocessor_config.json']:'features-v1'),
       ...(modelId==='clap'?{promptVersion:clap.sha256['prompts.json']}:{}),status:'pending',planned:[],attempted:[],successful:[],analyzedSeconds:0,gaps:duration>0?[{start:0,end:duration}]:[]})) };

@@ -1,5 +1,8 @@
 /** Exact classes from the bundled AudioSet model; performance techniques and generic Music are excluded. */
 const LABELS: Record<string, string> = {
+  "Breathing": "breath",
+  "Gasp": "breath",
+  "Sigh": "breath",
   "Speech": "voice",
   "Singing": "voice",
   "Choir": "voice",

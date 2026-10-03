@@ -263,5 +263,2300 @@
     "group": "sample",
     "label": null,
     "prompt": "The sound of a synthesizer imitating human vowels."
+  },
+  {
+    "group": "dj-type",
+    "label": "vocal phrase",
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-type",
+    "label": "synth pluck",
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-type",
+    "label": "atmospheric pad",
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-type",
+    "label": "synth stab",
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-type",
+    "label": "synth lead",
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-type",
+    "label": "synth bass",
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-type",
+    "label": "vocal-like synth",
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-type",
+    "label": "riser",
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-type",
+    "label": "downlifter",
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-type",
+    "label": "impact",
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-type",
+    "label": "whoosh",
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-type",
+    "label": "drum loop",
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-type",
+    "label": "percussion hit",
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-type",
+    "label": "texture",
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-type",
+    "label": null,
+    "prompt": "An acoustic instrument playing music, without a synthesizer or vocal production effect."
+  },
+  {
+    "group": "dj-type",
+    "label": "vocal chops",
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-type",
+    "label": "vocal breath",
+    "prompt": "A vocal breath sample."
+  },
+  {
+    "group": "breath",
+    "label": "vocal breath",
+    "prompt": "A vocal breath sample."
+  },
+  {
+    "group": "breath",
+    "label": "noise",
+    "prompt": "A burst of synthetic white noise."
+  },
+  {
+    "group": "breath",
+    "label": "hi-hat",
+    "prompt": "The sound of a hi hat cymbal."
+  },
+  {
+    "group": "breath",
+    "label": "flute",
+    "prompt": "The sound of an airy flute."
+  },
+  {
+    "group": "breath",
+    "label": "breathy synth",
+    "prompt": "An airy breathy synthesizer sound."
+  },
+  {
+    "group": "breath",
+    "label": "whisper",
+    "prompt": "The sound of whispered words."
+  },
+  {
+    "group": "breath",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-tone",
+    "label": "dark",
+    "prompt": "A dark muffled musical tone."
+  },
+  {
+    "group": "dj-tone",
+    "label": "bright",
+    "prompt": "A bright sharp musical tone."
+  },
+  {
+    "group": "dj-tone",
+    "label": null,
+    "prompt": "A sound with no clear dark or bright tone."
+  },
+  {
+    "group": "dj-rhythm",
+    "label": "rhythmic",
+    "prompt": "A rhythmic repeating musical pattern."
+  },
+  {
+    "group": "dj-rhythm",
+    "label": null,
+    "prompt": "A single sound without a rhythmic pattern."
+  },
+  {
+    "group": "dj-sources",
+    "label": "voice",
+    "prompt": "A human voice speaking or singing."
+  },
+  {
+    "group": "dj-sources",
+    "label": "breath",
+    "prompt": "A person audibly inhaling or exhaling."
+  },
+  {
+    "group": "dj-sources",
+    "label": "synthesizer",
+    "prompt": "Electronic synthesized musical tones."
+  },
+  {
+    "group": "dj-sources",
+    "label": "guitar",
+    "prompt": "A guitar playing plucked or strummed musical notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "piano",
+    "prompt": "An acoustic piano playing struck musical notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "drums",
+    "prompt": "A drum kit or drum machine playing percussion."
+  },
+  {
+    "group": "dj-sources",
+    "label": "sound effect",
+    "prompt": "A designed transition, impact or special sound effect."
+  },
+  {
+    "group": "dj-sources",
+    "label": "electric piano",
+    "prompt": "An electric piano playing soft bell-like keyboard notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "acoustic guitar",
+    "prompt": "An acoustic guitar with resonant plucked strings."
+  },
+  {
+    "group": "dj-sources",
+    "label": "electric guitar",
+    "prompt": "An amplified electric guitar playing musical notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "bass guitar",
+    "prompt": "A bass guitar playing low plucked string notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "strings",
+    "prompt": "An ensemble of bowed string instruments."
+  },
+  {
+    "group": "dj-sources",
+    "label": "violin / fiddle",
+    "prompt": "A violin playing high bowed musical notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "cello",
+    "prompt": "A cello playing low resonant bowed notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "trumpet",
+    "prompt": "A trumpet playing bright brassy musical notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "saxophone",
+    "prompt": "A saxophone playing reedy musical notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "flute",
+    "prompt": "A flute playing airy pitched musical notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "clarinet",
+    "prompt": "A clarinet playing hollow woody reed tones."
+  },
+  {
+    "group": "dj-sources",
+    "label": "organ",
+    "prompt": "An organ playing sustained keyboard chords."
+  },
+  {
+    "group": "dj-sources",
+    "label": "bell",
+    "prompt": "A bell ringing with metallic resonant tones."
+  },
+  {
+    "group": "dj-sources",
+    "label": "mallet instrument",
+    "prompt": "A marimba, vibraphone or xylophone playing struck pitched notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "percussion",
+    "prompt": "Unpitched percussion instruments playing a rhythm."
+  },
+  {
+    "group": "dj-sources",
+    "label": "hand percussion",
+    "prompt": "Hand drums, shakers or tambourines playing a rhythm."
+  },
+  {
+    "group": "dj-sources",
+    "label": "foley",
+    "prompt": "Close recorded everyday object movements, contacts and handling sounds."
+  },
+  {
+    "group": "dj-sources",
+    "label": "environmental sound",
+    "prompt": "Outdoor or indoor environmental ambience."
+  },
+  {
+    "group": "dj-sources",
+    "label": "turntable",
+    "prompt": "A DJ turntable scratching a vinyl record."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "spoken phrase",
+    "prompt": "A human voice speaking words without singing."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "whisper",
+    "prompt": "A person quietly whispering words."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "vocal shout",
+    "prompt": "A loud short human vocal shout."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "vocal chant",
+    "prompt": "Human voices rhythmically chanting repeated syllables."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "vocal ad-lib",
+    "prompt": "Short expressive vocal interjections between musical phrases."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "vocal hum",
+    "prompt": "A human voice humming pitched notes with a closed mouth."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "vocal vowel",
+    "prompt": "A sustained human voice singing an ah, oh or oo vowel."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "choir",
+    "prompt": "Multiple human voices singing harmonized sustained tones."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "vocal harmony",
+    "prompt": "Layered sung voices harmonizing a musical phrase."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "vocal scream",
+    "prompt": "A human voice screaming or shrieking."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "vocal laugh",
+    "prompt": "A human voice laughing."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "vocal gasp",
+    "prompt": "A person suddenly gasping audibly."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "beatbox",
+    "prompt": "A human mouth imitating rhythmic drum and percussion sounds."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "vocoder vocal",
+    "prompt": "A robotic electronic vocal with articulated syllables and chordal tones."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "pitched vocal",
+    "prompt": "A sampled human vocal shifted noticeably in pitch."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "reversed vocal",
+    "prompt": "A backward sounding human vocal with swelling reversed syllables."
+  },
+  {
+    "group": "dj-vocal",
+    "label": "vocal pad",
+    "prompt": "Sustained airy human vocal layers forming a background musical texture."
+  },
+  {
+    "group": "dj-synth",
+    "label": "synth arpeggio",
+    "prompt": "Synthesized notes repeating in an ascending or descending arpeggiated sequence."
+  },
+  {
+    "group": "dj-synth",
+    "label": "synth chord",
+    "prompt": "A synthesizer playing several musical notes together as chords."
+  },
+  {
+    "group": "dj-synth",
+    "label": "supersaw",
+    "prompt": "A wide bright layered detuned sawtooth synthesizer playing musical notes."
+  },
+  {
+    "group": "dj-synth",
+    "label": "acid synth",
+    "prompt": "A resonant squelching electronic synthesizer pattern with sliding notes."
+  },
+  {
+    "group": "dj-synth",
+    "label": "bell synth",
+    "prompt": "A synthesizer playing clear metallic bell-like notes."
+  },
+  {
+    "group": "dj-synth",
+    "label": "organ synth",
+    "prompt": "A synthesizer playing sustained organ-like tones."
+  },
+  {
+    "group": "dj-synth",
+    "label": "brass synth",
+    "prompt": "A synthesizer playing bright brass-like stabs or melodies."
+  },
+  {
+    "group": "dj-synth",
+    "label": "string synth",
+    "prompt": "A synthesizer playing layered bowed-string-like tones."
+  },
+  {
+    "group": "dj-synth",
+    "label": "chiptune synth",
+    "prompt": "A retro video game synthesizer playing square wave or pulse tones."
+  },
+  {
+    "group": "dj-synth",
+    "label": "fm synth",
+    "prompt": "An electronic synth with bright clangorous metallic tones and complex overtones."
+  },
+  {
+    "group": "dj-synth",
+    "label": "synth drone",
+    "prompt": "A sustained electronic tone with little melodic movement."
+  },
+  {
+    "group": "dj-synth",
+    "label": "synth sequence",
+    "prompt": "A repeating electronic note sequence forming a musical pattern."
+  },
+  {
+    "group": "dj-bass",
+    "label": "sub bass",
+    "prompt": "A very low smooth synthesized bass tone with little high frequency content."
+  },
+  {
+    "group": "dj-bass",
+    "label": "reese bass",
+    "prompt": "A low detuned buzzing bass sound with beating and moving overtones."
+  },
+  {
+    "group": "dj-bass",
+    "label": "wobble bass",
+    "prompt": "A low synthesized bass with a rhythmic opening and closing filter."
+  },
+  {
+    "group": "dj-bass",
+    "label": "bass growl",
+    "prompt": "A low aggressive distorted bass with growling vowel-like motion."
+  },
+  {
+    "group": "dj-bass",
+    "label": "acid bass",
+    "prompt": "A low resonant squelching electronic bass pattern with sliding notes."
+  },
+  {
+    "group": "dj-bass",
+    "label": "808 bass",
+    "prompt": "A deep booming pitched bass with a decaying or sliding tone."
+  },
+  {
+    "group": "dj-bass",
+    "label": "bass pluck",
+    "prompt": "A short low synthesized bass note with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-bass",
+    "label": "foghorn bass",
+    "prompt": "A low loud horn-like electronic bass blast."
+  },
+  {
+    "group": "dj-bass",
+    "label": "rubbery bass",
+    "prompt": "A low electronic bass with a springy bouncing pitch or filter sound."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "kick",
+    "prompt": "A low thumping bass drum hit."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "snare",
+    "prompt": "A sharp noisy snare drum hit."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "clap",
+    "prompt": "A short sharp handclap or electronic clap percussion hit."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "closed hi-hat",
+    "prompt": "A short tight closed hi-hat cymbal hit."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "open hi-hat",
+    "prompt": "A ringing open hi-hat cymbal hit."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "ride cymbal",
+    "prompt": "A bright metallic ride cymbal ping with ringing sustain."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "crash cymbal",
+    "prompt": "A loud crashing cymbal with a long noisy decay."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "rimshot",
+    "prompt": "A sharp woody snare rimshot or rim click."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "tom",
+    "prompt": "A round resonant pitched tom drum hit."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "shaker",
+    "prompt": "A short rattling shaker percussion sound."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "tambourine",
+    "prompt": "A jingling tambourine percussion sound."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "conga",
+    "prompt": "A resonant hand-struck conga drum sound."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "bongo",
+    "prompt": "A high hollow hand-struck bongo drum sound."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "cowbell",
+    "prompt": "A short metallic clanking cowbell hit."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "clave",
+    "prompt": "A short dry woody clave stick hit."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "woodblock",
+    "prompt": "A hollow woody woodblock percussion hit."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": "finger snap",
+    "prompt": "A sharp short human finger snap."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": "percussion loop",
+    "prompt": "A repeating groove of hand percussion and rattling instruments."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": "hi-hat loop",
+    "prompt": "A repeating rhythm of hi-hat cymbals."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": "shaker loop",
+    "prompt": "A repeating rattling shaker percussion rhythm."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": "breakbeat",
+    "prompt": "A syncopated sampled drum break with kick snare and cymbals."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": "drum fill",
+    "prompt": "A short drum flourish or rolling pattern leading into a transition."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": "snare roll",
+    "prompt": "Rapid repeating snare drum hits building intensity."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": "top loop",
+    "prompt": "A repeating high percussion groove with cymbals hats and shakers."
+  },
+  {
+    "group": "dj-transition",
+    "label": "reverse cymbal",
+    "prompt": "A backward cymbal swelling into a sharp ending."
+  },
+  {
+    "group": "dj-transition",
+    "label": "reverse impact",
+    "prompt": "A backward impact swelling toward a sudden hit."
+  },
+  {
+    "group": "dj-transition",
+    "label": "noise sweep",
+    "prompt": "A filtered broadband noise sound sweeping through frequencies."
+  },
+  {
+    "group": "dj-transition",
+    "label": "sub drop",
+    "prompt": "A low booming bass effect falling in pitch."
+  },
+  {
+    "group": "dj-transition",
+    "label": "laser",
+    "prompt": "A short electronic laser zap with a rapid pitch sweep."
+  },
+  {
+    "group": "dj-transition",
+    "label": "siren",
+    "prompt": "An oscillating rising and falling alarm-like tone."
+  },
+  {
+    "group": "dj-transition",
+    "label": "air horn",
+    "prompt": "A loud brassy compressed-air horn blast."
+  },
+  {
+    "group": "dj-transition",
+    "label": "vinyl scratch",
+    "prompt": "A DJ rhythmically scratching a vinyl record."
+  },
+  {
+    "group": "dj-transition",
+    "label": "record stop",
+    "prompt": "Music slowing rapidly in pitch and speed to a stop."
+  },
+  {
+    "group": "dj-transition",
+    "label": "stutter effect",
+    "prompt": "A sound rapidly retriggered into short repeated fragments."
+  },
+  {
+    "group": "dj-transition",
+    "label": "glitch effect",
+    "prompt": "Short irregular digital clicks cuts and bursts."
+  },
+  {
+    "group": "dj-transition",
+    "label": "reverse effect",
+    "prompt": "A backward sounding effect with a swelling attack and abrupt end."
+  },
+  {
+    "group": "dj-texture",
+    "label": "ambient drone",
+    "prompt": "A continuous low or resonant atmospheric drone."
+  },
+  {
+    "group": "dj-texture",
+    "label": "vinyl crackle",
+    "prompt": "Small irregular crackles and pops from a vinyl recording."
+  },
+  {
+    "group": "dj-texture",
+    "label": "static noise",
+    "prompt": "Broadband radio-like static noise."
+  },
+  {
+    "group": "dj-texture",
+    "label": "crowd ambience",
+    "prompt": "A crowd murmuring and reacting in the background."
+  },
+  {
+    "group": "dj-texture",
+    "label": "rain ambience",
+    "prompt": "Continuous rain pattering or splashing."
+  },
+  {
+    "group": "dj-texture",
+    "label": "wind ambience",
+    "prompt": "Wind blowing and rustling."
+  },
+  {
+    "group": "dj-texture",
+    "label": "water ambience",
+    "prompt": "Flowing splashing or rippling water."
+  },
+  {
+    "group": "dj-texture",
+    "label": "bird ambience",
+    "prompt": "Birds chirping and singing in the background."
+  },
+  {
+    "group": "dj-texture",
+    "label": "machine ambience",
+    "prompt": "Continuous mechanical whirring rattling or humming."
+  },
+  {
+    "group": "dj-texture",
+    "label": "foley hit",
+    "prompt": "A short recorded everyday object contact or movement sound."
+  },
+  {
+    "group": "dj-timbre",
+    "label": "airy",
+    "prompt": "A soft airy and breathy sound."
+  },
+  {
+    "group": "dj-timbre",
+    "label": "distorted",
+    "prompt": "A harsh distorted buzzing sound."
+  },
+  {
+    "group": "dj-timbre",
+    "label": "metallic",
+    "prompt": "A bright metallic ringing sound."
+  },
+  {
+    "group": "dj-timbre",
+    "label": "warm",
+    "prompt": "A warm mellow rounded musical tone."
+  },
+  {
+    "group": "dj-timbre",
+    "label": "gritty",
+    "prompt": "A rough grainy noisy musical texture."
+  },
+  {
+    "group": "dj-timbre",
+    "label": "smooth",
+    "prompt": "A smooth even tone without rough or harsh overtones."
+  },
+  {
+    "group": "dj-timbre",
+    "label": "hollow",
+    "prompt": "A hollow resonant tone with a woody or tubular sound."
+  },
+  {
+    "group": "dj-timbre",
+    "label": "nasal",
+    "prompt": "A narrow nasal pinched musical tone."
+  },
+  {
+    "group": "dj-timbre",
+    "label": "woody",
+    "prompt": "A dry woody resonant sound."
+  },
+  {
+    "group": "dj-timbre",
+    "label": "glassy",
+    "prompt": "A clear glassy ringing musical tone."
+  },
+  {
+    "group": "dj-articulation",
+    "label": "sustained",
+    "prompt": "Long sustained sounds with a steady tone."
+  },
+  {
+    "group": "dj-articulation",
+    "label": "plucked",
+    "prompt": "Short plucked musical notes with a sharp attack and decay."
+  },
+  {
+    "group": "dj-articulation",
+    "label": "percussive",
+    "prompt": "Short struck sounds with sharp transients."
+  },
+  {
+    "group": "dj-articulation",
+    "label": "swelling",
+    "prompt": "A sound slowly swelling from quiet to loud."
+  },
+  {
+    "group": "dj-articulation",
+    "label": "staccato",
+    "prompt": "Short clipped separated musical notes."
+  },
+  {
+    "group": "dj-rhythm",
+    "label": "pulsing",
+    "prompt": "A musical tone repeatedly pulsing in volume."
+  },
+  {
+    "group": "dj-rhythm",
+    "label": "syncopated",
+    "prompt": "A musical rhythm with accents between the main beats."
+  },
+  {
+    "group": "dj-rhythm",
+    "label": "rolling",
+    "prompt": "A continuous rapid rolling rhythm."
+  },
+  {
+    "group": "dj-space",
+    "label": "reverberant",
+    "prompt": "A sound with a long reverberating tail."
+  },
+  {
+    "group": "dj-space",
+    "label": "dry",
+    "prompt": "A close sound without audible reverberation or echo."
+  },
+  {
+    "group": "dj-space",
+    "label": "echoing",
+    "prompt": "A sound with distinct repeating delay echoes."
+  },
+  {
+    "group": "dj-motion",
+    "label": "rising",
+    "prompt": "A sound rising in pitch over time."
+  },
+  {
+    "group": "dj-motion",
+    "label": "falling",
+    "prompt": "A sound falling in pitch over time."
+  },
+  {
+    "group": "dj-motion",
+    "label": "gliding",
+    "prompt": "A musical note smoothly gliding between pitches."
+  },
+  {
+    "group": "dj-motion",
+    "label": "wobbling",
+    "prompt": "A tone with repeated changes in pitch or filter color."
+  },
+  {
+    "group": "dj-processing",
+    "label": "bitcrushed",
+    "prompt": "A grainy digitally crushed sound with low resolution artifacts."
+  },
+  {
+    "group": "dj-processing",
+    "label": "filtered",
+    "prompt": "A sound with an audible frequency filter sweep."
+  },
+  {
+    "group": "dj-processing",
+    "label": "chorused",
+    "prompt": "A widened detuned sound with gentle beating tones."
+  },
+  {
+    "group": "dj-processing",
+    "label": "flanged",
+    "prompt": "A sound with moving comb-filter whooshing overtones."
+  },
+  {
+    "group": "dj-processing",
+    "label": "saturated",
+    "prompt": "A thick mildly overdriven musical tone."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable sources sound."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable vocal sound."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable synth sound."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable bass sound."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable drum-hit sound."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable drum-pattern sound."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable transition sound."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable texture sound."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable timbre sound."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable articulation sound."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable space sound."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable motion sound."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable processing sound."
+  },
+  {
+    "group": "dj-sources",
+    "label": "harp",
+    "prompt": "A harp playing resonant plucked string notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "trombone",
+    "prompt": "A trombone playing low sliding brass notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "horn",
+    "prompt": "A horn playing rounded brassy sustained notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "tuba",
+    "prompt": "A tuba playing very low resonant brass notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "oboe",
+    "prompt": "An oboe playing narrow nasal double reed tones."
+  },
+  {
+    "group": "dj-sources",
+    "label": "bassoon",
+    "prompt": "A bassoon playing low woody double reed tones."
+  },
+  {
+    "group": "dj-sources",
+    "label": "harmonica",
+    "prompt": "A harmonica playing breath driven bending reed tones."
+  },
+  {
+    "group": "dj-sources",
+    "label": "accordion",
+    "prompt": "An accordion playing bellows driven reed chords."
+  },
+  {
+    "group": "dj-sources",
+    "label": "banjo",
+    "prompt": "A banjo playing bright twangy plucked strings."
+  },
+  {
+    "group": "dj-sources",
+    "label": "ukulele",
+    "prompt": "A small ukulele playing light strummed or plucked chords."
+  },
+  {
+    "group": "dj-sources",
+    "label": "sitar",
+    "prompt": "A sitar playing buzzing resonant plucked notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "mandolin",
+    "prompt": "A mandolin playing bright short plucked notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "steel guitar",
+    "prompt": "A steel guitar playing smooth sliding string tones."
+  },
+  {
+    "group": "dj-sources",
+    "label": "double bass",
+    "prompt": "A double bass playing low resonant plucked or bowed notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "viola",
+    "prompt": "A viola playing midrange bowed string notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "xylophone",
+    "prompt": "A xylophone playing short woody struck pitched notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "marimba",
+    "prompt": "A marimba playing rounded resonant wooden pitched notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "vibraphone",
+    "prompt": "A vibraphone playing sustained metallic pitched notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "steel drum",
+    "prompt": "A steelpan playing bright resonant metallic pitched notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "glockenspiel",
+    "prompt": "A glockenspiel playing high bright metallic pitched notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "kalimba",
+    "prompt": "A kalimba playing soft metallic plucked tine notes."
+  },
+  {
+    "group": "dj-sources",
+    "label": "tabla",
+    "prompt": "A tabla playing resonant hand drum strokes with changing pitch."
+  },
+  {
+    "group": "dj-sources",
+    "label": "djembe",
+    "prompt": "A djembe playing hand drum bass and slap tones."
+  },
+  {
+    "group": "dj-sources",
+    "label": "cajon",
+    "prompt": "A cajon playing woody box drum thumps and snare-like slaps."
+  },
+  {
+    "group": "dj-sources",
+    "label": "gong",
+    "prompt": "A gong ringing with a deep expanding metallic wash."
+  },
+  {
+    "group": "dj-sources",
+    "label": "triangle",
+    "prompt": "A triangle ringing with high bright metallic tones."
+  },
+  {
+    "group": "dj-sources",
+    "label": "jaw harp",
+    "prompt": "A jaw harp making twanging resonant rhythmic tones."
+  },
+  {
+    "group": "dj-sources",
+    "label": "whistle",
+    "prompt": "A pitched whistle tone produced by a person or whistle instrument."
+  },
+  {
+    "group": "dj-sources",
+    "label": "animal sound",
+    "prompt": "An animal making calls cries or growls."
+  },
+  {
+    "group": "dj-sources",
+    "label": "waterphone",
+    "prompt": "An eerie resonant metallic waterphone sound."
+  },
+  {
+    "group": "dj-sources",
+    "label": "singing bowl",
+    "prompt": "A singing bowl ringing with long resonant metallic tones."
+  },
+  {
+    "group": "dj-sources",
+    "label": "tuned percussion",
+    "prompt": "Percussion instruments playing identifiable musical pitches."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-sources",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-vocal",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-synth",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-bass",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-drum-hit",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-drum-pattern",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-transition",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-texture",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-timbre",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-articulation",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-space",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-motion",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-processing",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-editing",
+    "label": "chops",
+    "prompt": "A rhythmic loop made from chopped and rearranged audio samples."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable editing sound."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-editing",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": "vocal shush",
+    "prompt": "A person making a shh or shushing sound with their mouth to ask for quiet."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "An acoustic instrument playing music, without a synthesizer or vocal production effect."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "A vocal breath sample."
+  },
+  {
+    "group": "dj-custom-production",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
   }
 ]

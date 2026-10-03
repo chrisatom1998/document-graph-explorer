@@ -22,6 +22,7 @@ export type OcrLanguageId =
 export type OcrMaxPages = 10 | 20 | 40 | 80;
 
 export type ChatProvider = 'local' | 'openrouter' | 'ollama';
+export type GraphClarity = 'high' | 'ultra' | 'performance';
 /** Provider used for enrichment and per-document AI (no 'local' — both need a model). */
 export type EnrichProvider = 'openrouter' | 'ollama';
 
@@ -48,6 +49,7 @@ function isOcrMaxPages(value: unknown): value is OcrMaxPages {
 }
 
 export interface PersistedSettings {
+  graphClarity: GraphClarity;
   musicAnalysisMode: 'fast' | 'full';
   chatProvider: ChatProvider;
   enrichProvider: EnrichProvider;
@@ -79,6 +81,7 @@ export const DEFAULT_OPENROUTER_ENRICH_MODEL = 'google/gemini-3.1-flash-lite';
 export const DEFAULT_OLLAMA_MODEL = 'llama3.2';
 
 export const DEFAULTS: PersistedSettings = {
+  graphClarity: 'high',
   musicAnalysisMode: 'full',
   chatProvider: 'local',
   enrichProvider: 'openrouter',
@@ -139,6 +142,8 @@ export function loadPersistedSettings(): PersistedSettings {
         ? parsed.enrichProvider
         : DEFAULTS.enrichProvider;
     const loaded: PersistedSettings = {
+      graphClarity: parsed.graphClarity === 'ultra' || parsed.graphClarity === 'performance'
+        ? parsed.graphClarity : 'high',
       musicAnalysisMode: parsed.musicAnalysisMode === 'fast' ? 'fast' : 'full',
       chatProvider,
       enrichProvider,

@@ -1,5 +1,20 @@
 import { test, expect, type Page } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => { page.setDefaultTimeout(30_000); });
+
+async function openLibrary(page: Page) {
+  const toggle = page.getByRole('button', { name: 'Toggle library', exact: true });
+  if ((page.viewportSize()?.width ?? 1280) < 700) {
+    await expect(toggle).toBeVisible();
+    if (!await page.locator('#workspace-library').evaluate(el => el.classList.contains('is-open'))) await toggle.click();
+  }
+}
+
+async function openFiles(page: Page) {
+  await openLibrary(page);
+  await page.getByRole('button', { name: /^All files / }).click();
+}
+
 // Console/page-error hygiene: the app funnels failures into toasts, so a
 // clean console AND no error toast together prove the run was healthy.
 function collectErrors(page: Page): string[] {
@@ -75,17 +90,12 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await expect(page.locator('.webgl-fallback')).toHaveCount(0);
   await page.getByRole('button', { name: 'Load demo corpus' }).click();
 
-  // The navigator summary is simultaneously the ingest-complete signal and
-  // proof of real graph data: 36 committed + 64 generated PDFs = 100 docs.
-  // Pinning the exact count makes silent ingest drops fail loudly. The
-  // navigator itself only mounts at phase 'ready' (App.tsx), so reaching this
-  // means parse + lexical + embedding + clustering all finished — asserting a
-  // ready-only toolbar control too keeps that guarantee from resting on one
-  // component's mount condition.
+  // Pin the full demo count, then require the ready-only search action to
+  // be enabled before testing navigation and persistence.
   await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents', {
     timeout: 270_000,
   });
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
   await expect(page.locator('.nebula-canvas canvas')).toBeVisible();
 
   // The getting-started tour reopens after a demo load; dismiss it so
@@ -99,7 +109,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   // Selection path 1: the accessible graph navigator (pure DOM listbox) —
   // deterministic node selection without touching canvas pixels.
   const listbox = page.getByRole('listbox', { name: 'Graph nodes' });
-  await page.getByRole('button', { name: 'Browse documents' }).click();
+  await openFiles(page);
   await listbox.focus();
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
@@ -128,7 +138,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   const openPostgres = async () => {
     await page.getByRole('button', { name: 'Search documents' }).click();
     await page.getByRole('combobox').fill('Postgres Performance Tuning Guide');
-    await page.getByRole('option', { name: /^Postgres Performance Tuning Guide/ }).click();
+    await page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /^Postgres Performance Tuning Guide/ }).click();
     await expect(sidePanel).toBeVisible(frameBudget);
     await expect(sidePanel.getByRole('button', { name: 'Extracted text', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(sidePanel.locator('.side-panel__reader')).toContainText('pg_stat_statements');
@@ -160,6 +170,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await page.getByRole('button', { name: 'Add files', exact: true }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/persistence.txt');
   await expect(page.locator('.graph-navigator__summary')).toContainText('101 documents');
+  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
   await page.reload();
   await expect(page.locator('.graph-navigator__summary')).toContainText('101 documents');
 
@@ -183,8 +194,7 @@ test('normal-motion navigation and title-only Unicode search work after import',
   graph.nodes[1].title = '東京 計画 📚';
   graph.nodes[2].title = 'مرحبا بالعالم';
   await importGraphJson(page, JSON.stringify(graph));
-  await page.getByRole('button', { name: 'Dismiss getting started' }).click();
-  await page.getByRole('button', { name: 'Browse documents' }).click();
+  await openFiles(page);
   const list = page.getByRole('listbox', { name: 'Graph nodes' });
   await list.focus();
   await page.keyboard.press('Home');
@@ -194,7 +204,7 @@ test('normal-motion navigation and title-only Unicode search work after import',
   await page.getByRole('button', { name: 'Back to graph' }).click();
   await page.getByRole('button', { name: 'Search documents' }).click();
   await page.getByRole('combobox').fill('東京');
-  await page.getByRole('option', { name: /東京 計画/ }).click();
+  await page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /東京 計画/ }).click();
   await expect(panel).toContainText('東京 計画', { timeout: 150_000 });
   await page.getByRole('button', { name: 'Back to graph' }).click();
   await page.getByRole('button', { name: 'Fit the whole graph in view' }).click();
@@ -211,13 +221,14 @@ test('search ranks within file filters before applying its result limit', async 
     node.fileType = index === 13 ? 'md' : 'txt';
   });
   await importGraphJson(page, JSON.stringify(graph));
-  await page.getByRole('button', { name: 'Dismiss getting started' }).click();
-  await page.getByRole('button', { name: 'Show graph filters' }).click();
+  await openLibrary(page);
+  await page.getByRole('button', { name: 'Graph explorer', exact: true }).click();
+  await page.getByText('Filter graph', { exact: true }).click();
   await page.getByRole('button', { name: 'md · 1', exact: true }).click();
   await page.getByRole('button', { name: 'Search documents' }).click();
   await page.getByRole('combobox').fill('Architecture');
-  await expect(page.getByRole('option', { name: /Architecture 13/ })).toBeVisible();
-  await expect(page.getByRole('option')).toHaveCount(1);
+  await expect(page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /Architecture 13/ })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Search documents' }).getByRole('option')).toHaveCount(1);
 });
 
 for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
@@ -233,53 +244,40 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
       node.title = ['Cedar', 'Birch', 'Maple'][index];
     });
     await importGraphJson(page, JSON.stringify(graph));
+    await openFiles(page);
     const browse = page.getByRole('button', { name: 'Browse documents' });
     await expect(browse).toBeVisible();
-    const toolbar = await page.locator('.toolbar').boundingBox();
-    const navigator = await page.locator('.graph-navigator').boundingBox();
-    expect(toolbar).not.toBeNull();
-    expect(navigator).not.toBeNull();
-    expect(navigator!.y).toBeGreaterThanOrEqual(toolbar!.y + toolbar!.height);
-    await browse.click();
+    const header = await page.locator('.workspace-header').boundingBox();
+    const navigator = await page.locator('.graph-navigator--embedded').boundingBox();
+    expect(navigator!.y).toBeGreaterThanOrEqual(header!.y + header!.height);
     const list = page.getByRole('listbox', { name: 'Graph nodes' });
     await expect(list).toBeVisible();
-    // The open browser must not intercept the primary search action.
     await page.getByRole('button', { name: 'Search documents' }).click();
-    await expect(page.getByRole('dialog', { name: 'Search documents' })).toBeVisible();
-    const searchInput = page.getByRole('combobox');
+    const search = page.getByRole('dialog', { name: 'Search documents' });
+    await expect(search).toBeVisible();
+    const searchInput = search.getByRole('combobox');
     await expect(searchInput).toBeFocused();
     await searchInput.press('Escape');
-    await expect(page.getByRole('dialog', { name: 'Search documents' })).toBeHidden();
-    const tour = page.getByRole('button', { name: 'Dismiss getting started' });
-    await expect(tour).toBeVisible();
-    await browse.click();
-    await list.focus();
-    await page.keyboard.press('Escape');
-    await expect(browse).toBeFocused();
-    await expect(list).toBeHidden();
-    await expect(tour).toBeVisible();
-    await page.getByRole('button', { name: 'Show graph filters' }).click();
-    if (viewport.width < 640) {
-      const filters = await page.locator('#graph-filter-panel').boundingBox();
-      expect(filters!.y).toBeGreaterThanOrEqual(navigator!.y + navigator!.height);
-    }
+    await expect(search).toBeHidden();
+    if (viewport.width < 700) await expect(page.locator('#workspace-library')).toHaveClass(/is-open/);
+    await openLibrary(page);
+    await page.getByRole('button', { name: 'Graph explorer', exact: true }).click();
+    await page.getByText('Filter graph', { exact: true }).click();
     await page.getByRole('button', { name: 'More filters' }).click();
     const minimum = page.getByRole('slider', { name: 'Minimum document connections' });
     await minimum.focus();
     await page.keyboard.press('ArrowRight');
     await expect(page.locator('#graph-filter-status')).toHaveText('0 documents match');
-    await expect(page.getByText(/No documents match/)).toBeVisible();
+    await expect(page.locator('.filter-bar__empty')).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('filters.png') });
-    await minimum.press('Escape');
-    await expect(page.getByRole('button', { name: 'Show graph filters' })).toHaveAttribute('aria-expanded', 'false');
-    await expect(tour).toBeVisible();
-    if (viewport.width < 640) {
-      const summary = await page.locator('.filter-bar__active-summary').boundingBox();
-      expect(summary!.y).toBeGreaterThanOrEqual(navigator!.y + navigator!.height);
-    }
     await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
-    await expect(page.locator('#graph-filter-status')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Show graph filters' })).toHaveText('Filters');
+    await expect(page.locator('#graph-filter-status')).toHaveText('3 documents match');
+    if (viewport.width < 700) {
+      await page.getByRole('button', { name: 'Graph explorer', exact: true }).press('Escape');
+      await expect(page.locator('#workspace-library')).not.toHaveClass(/is-open/);
+      await expect(page.getByRole('button', { name: 'Toggle library', exact: true })).toBeFocused();
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
   });
 }
 
@@ -303,7 +301,7 @@ test('renderer grows past 4,096 nodes and can frame the first node beyond the ol
   // it through layout -> position buffer -> scene/camera, rather than merely
   // existing in graphStore.
   const listbox = page.getByRole('listbox', { name: 'Graph nodes' });
-  await page.getByRole('button', { name: 'Browse documents' }).click();
+  await openFiles(page);
   await listbox.focus();
   await page.keyboard.press('End');
   await expect(listbox).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-4096');
@@ -314,5 +312,38 @@ test('renderer grows past 4,096 nodes and can frame the first node beyond the ol
   await expect(sidePanel).toContainText('Boundary node 4097');
 
   await expect(page.locator('.toast--error')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+
+test('switching graph views does not leak WebGL contexts', async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    const canvases = new WeakSet<HTMLCanvasElement>();
+    const observed = window as typeof window & { graphWebglContexts: number };
+    observed.graphWebglContexts = 0;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: Parameters<typeof original>) {
+      if (String(args[0]).startsWith('webgl') && !canvases.has(this)) {
+        canvases.add(this);
+        observed.graphWebglContexts++;
+      }
+      return original.apply(this, args);
+    } as typeof original;
+  });
+  await page.goto('/');
+  await importGraphJson(page, boundaryGraphJson(6));
+  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
+  // Let both views initialize their one-time graphics resources before
+  // checking that repeated switches do not allocate any more contexts.
+  await page.getByRole('button', { name: 'Switch to 2D view', exact: true }).click();
+  await page.getByRole('button', { name: 'Switch to 3D view', exact: true }).click();
+  const initialContexts = await page.evaluate(() => (window as typeof window & { graphWebglContexts: number }).graphWebglContexts);
+  for (let i = 0; i < 24; i++) {
+    await page.getByRole('button', { name: i % 2 ? 'Switch to 3D view' : 'Switch to 2D view', exact: true }).click();
+    await expect(page.getByRole('application', { name: i % 2 ? /Interactive 3D/ : /Interactive 2D/ })).toBeVisible();
+  }
+  expect(await page.evaluate(() => (window as typeof window & { graphWebglContexts: number }).graphWebglContexts)).toBe(initialContexts);
+  await expect(page.getByRole('heading', { name: 'Document Graph Explorer stopped rendering.' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });

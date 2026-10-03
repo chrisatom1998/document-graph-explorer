@@ -7,7 +7,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useGraphStore } from '../store/graphStore';
 function renderExpanded(ui: Parameters<typeof render>[0]) {
   const view = render(ui);
-  const details = screen.queryByText('Explanations');
+  const details = screen.queryByText('Analysis details');
   if (details) fireEvent.click(details);
   fireEvent.click(screen.getByText('Track actions'));
   return view;
@@ -31,7 +31,7 @@ it('displays the filename D-sharp minor instead of a conflicting audio estimate 
   expect(screen.getByText('D♯ minor', { selector: 'dd' })).toBeVisible();
   expect(screen.queryByText('E minor', { selector: 'dd' })).toBeNull();
   expect(screen.queryByText('E♭ minor', { selector: 'dd' })).toBeNull();
-  fireEvent.click(screen.getByText('Explanations'));
+  fireEvent.click(screen.getByText('Analysis details'));
   expect(screen.getByText(/Audio comparison:.*key E minor/)).toBeVisible();
 });
 it('shows the automatic synth label with uncertainty without requiring a confirmation', () => {
@@ -87,7 +87,7 @@ it('explains the alternative tempo for a short clip', () => {
 });
 it('shows the detected pitch without inventing a major or minor mode', () => {
   renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, detectedPitch: { pitchClass: 2, confidence: 0.94 } } }} />);
-  expect(screen.getByText('Key')).toBeVisible();
+  expect(screen.getByText('Estimated key')).toBeVisible();
   expect(screen.getByText(/Detected pitch: D/)).toBeVisible();
   expect(screen.getByText(/A repeated note alone cannot establish/)).toBeVisible();
 });
@@ -135,9 +135,20 @@ it('keeps explanations collapsed while showing the main musical values', () => {
   render(<MusicFeatures node={{ ...node, path: 'Synths/Action_Dm_140.wav' }} />);
   expect(screen.getByText('140.0 BPM')).toBeVisible();
   expect(screen.getByText('D minor')).toBeVisible();
-  expect(screen.getByText('Explanations').closest('details')).not.toHaveAttribute('open');
+  expect(screen.getByText('Analysis details').closest('details')).not.toHaveAttribute('open');
   expect(screen.getByText('Audio comparison:', { exact: false })).not.toBeVisible();
   fireEvent.click(screen.getByText('Track actions'));
   expect(screen.getByRole('combobox', { name: 'Music analysis mode' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Reanalyze musical features' })).toHaveTextContent('Reanalyze');
+});
+
+it.each(['source','character','vocal'] as const)('keeps missing instruments correctable after a %s review',dimension=>{
+ renderExpanded(<MusicFeatures node={{...node,audio:{...node.audio!,soundReviews:[{labelId:dimension==='source'?'oboe':dimension==='vocal'?'singing':'bright',dimension,decision:'confirmed',scope:'track',at:'2026-10-03T00:00:00Z',evidenceRunId:'run'}]}}}/>);
+ expect(screen.getByText('Correct the instrument')).toBeVisible();
+});
+
+it('does not show a rejected DJ source as confirmed in the summary or explanation',()=>{
+ renderExpanded(<MusicFeatures node={{...node,path:'piano.wav',audio:{...node.audio!,confirmedDjTags:{source:['piano'],production:[],character:[]},soundProfile:{version:1,source:{label:'piano',basis:'Music CLAP',corroborated:false},character:[],roles:[],models:[],disagreement:false},soundReviews:[{labelId:'piano',dimension:'source',decision:'rejected',scope:'track',at:'2026-10-03T00:00:00Z',evidenceRunId:'run'}]}}}/>);
+ expect(screen.getByRole('region',{name:'Combined sound identification'})).not.toHaveTextContent('piano');
+ expect(screen.queryByText('piano',{selector:'dd'})).toBeNull();
 });

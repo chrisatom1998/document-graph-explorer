@@ -1,5 +1,8 @@
+import { djAssistantPlugin } from './src/server/djAssistant';
+import { djCopilotPlugin } from './src/server/djCopilot';
+import { djReviewerPlugin } from './src/server/djReviewer';
 /// <reference types="vitest/config" />
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { buildCsp } from './src/security/csp';
@@ -47,9 +50,9 @@ const SECURITY_HEADERS = {
 // NOTE: no COOP/COEP headers on purpose — we use transferable Float32Arrays
 // (not SharedArrayBuffer), so cross-origin isolation buys nothing here.
 export default defineConfig(({ mode }) => ({
-  plugins: [essentiaCsp(), react(), tailwindcss(), injectCsp(mode === 'airgap')],
+  plugins: [essentiaCsp(), react(), tailwindcss(), injectCsp(mode === 'airgap'), ...(mode === 'airgap' ? [] : [djAssistantPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djCopilotPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djReviewerPlugin()])],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
-  server: { headers: SECURITY_HEADERS },
+  server: { headers: { ...SECURITY_HEADERS, 'Permissions-Policy': mode === 'airgap' ? SECURITY_HEADERS['Permissions-Policy'] : SECURITY_HEADERS['Permissions-Policy'].replace('microphone=()', 'microphone=(self)') } },
   // Workers receive Vercel's CSP as a response header, not the page's meta tag.
   // Exercise the same restrictions in built-app browser tests.
   preview: { headers: { ...SECURITY_HEADERS, 'Content-Security-Policy': `${buildCsp({ airgap: mode === 'airgap' })}; frame-ancestors 'none'` } },

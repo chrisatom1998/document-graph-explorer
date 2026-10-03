@@ -91,3 +91,12 @@ it('preserves a vocal-derived voice score and rejects invalid provenance',()=>{
  expect(sanitizeRecognition(run,3)?.evidence).toEqual([]);
  expect(sanitizeRecognition(run,3)?.observations).toEqual([]);
 });
+
+it('preserves explicit catalog sources through persistence and evidence review',()=>{
+ const run=createRecognition(10,'full');
+ recordEvidence(run,'clap',{start:0,end:10},[{dimension:'source',labelId:'foley',score:.8}]);
+ const audio=sanitizeMusicAnalysis({version:2,durationSeconds:10,analyzedSeconds:10,instruments:[],notes:[],recognition:run,confirmedInstruments:['foley'],confirmedDjTags:{source:['foley'],production:[],character:[]}})!;
+ expect(audio.confirmedInstruments).toEqual(['foley']);
+ expect(audio.recognition?.observations.some(o=>o.labelId==='foley')).toBe(true);
+ expect(reliableInstruments(audio)).toEqual([{label:'foley',score:1}]);
+});

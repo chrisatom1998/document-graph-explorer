@@ -32,6 +32,7 @@ export default function SidePanelHeader({
 
   return (
     <div className="side-panel__header">
+      <p className="workspace-eyebrow">{isTopic ? "Selected topic" : node.fileType === "audio" ? "Selected sample" : "Selected file"}</p>
       <div className="side-panel__header-top">
         <h2 className="side-panel__title">
           <span className="side-panel__title-text">{node.title}</span>
@@ -64,6 +65,7 @@ export default function SidePanelHeader({
           onClick={() => setSelected(null)}
         />
       </div>
+      {node.path && <p className="workspace-file-path" title={node.path}>{node.path}</p>}
       {isDocument && (
         <div className="side-panel__header-actions">
           <button

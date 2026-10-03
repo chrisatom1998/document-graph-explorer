@@ -58,18 +58,21 @@ describe('Toolbar', () => {
     localStorage.removeItem('knowledge-nebula-dims');
   });
 
-  it('keeps studio tools in Analyze and Add menus instead of first-class buttons', () => {
+  it('keeps advanced tools folded inside View and exposes one graph menu', () => {
     render(<Toolbar />);
 
     expect(screen.getByRole('button', { name: 'Search documents' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Analyze' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Analyze' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Collaboration' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add documents' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Show me a topic' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Corpus insights' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Saved snapshots' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Add folder' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Analyze' }));
+    fireEvent.click(screen.getByRole('button', { name: 'View options' }));
+    expect(screen.getByRole('button', { name: 'Corpus insights' })).not.toBeVisible();
+    fireEvent.click(screen.getByText('Advanced tools'));
     expect(screen.getByRole('button', { name: 'How are these connected?' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Corpus insights' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Snapshots' })).toBeVisible();

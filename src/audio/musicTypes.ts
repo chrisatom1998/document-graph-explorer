@@ -1,10 +1,12 @@
-import { sanitizeRecognition, sanitizeSoundReviews, type Recognition, type SoundReview } from './recognition';
+import { sourceLabels, sanitizeRecognition, sanitizeSoundReviews, type Recognition, type SoundReview } from './recognition';
+import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
+import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
 export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 2;
 export const TEMPO_ANALYSIS_REVISION = 1;
-export const INSTRUMENT_ANALYSIS_REVISION = 10;
+export const INSTRUMENT_ANALYSIS_REVISION = 64;
 export interface InstrumentEstimate {
   label: string;
   score: number;
@@ -30,6 +32,9 @@ export interface MusicAnalysis {
   instrumentPrediction?: { label: string; score: number; margin: number; model?: 'MTG-Jamendo' | 'Ensemble' };
   /** User correction; when present, replaces model instruments for display and links. */
   confirmedInstruments?: string[];
+  confirmedDjTags?: ConfirmedDjTags;
+  /** Accepted AI suggestions, not human-confirmed labels or audio measurements. */
+  copilotProperties?: CopilotProperties;
   soundProfile?: SoundProfile;
   instrumentScan?: { mode?: MusicAnalysisMode; revision?: number; complete: boolean; analyzedSeconds: number; windows: number };
   notes: string[];
@@ -49,7 +54,11 @@ export function sanitizeMusicAnalysis(raw: unknown): MusicAnalysis | undefined {
   if (!out.recognition) delete out.recognition;
   if (Array.isArray(m.soundReviews)) out.soundReviews = sanitizeSoundReviews(m.soundReviews);
   if (m.stage === 'preview') out.stage = 'preview';
-  if (Array.isArray(m.confirmedInstruments)) out.confirmedInstruments = [...new Set(m.confirmedInstruments.filter((label): label is string => typeof label === 'string' && INSTRUMENT_LABELS.includes(label)))];
+  if (Array.isArray(m.confirmedInstruments)) out.confirmedInstruments = [...new Set(m.confirmedInstruments.filter((label): label is string => typeof label === 'string' && sourceLabels.includes(label)))];
+  const confirmedDjTags = sanitizeConfirmedDjTags(m.confirmedDjTags);
+  if (confirmedDjTags) out.confirmedDjTags = confirmedDjTags;
+  const copilotProperties = sanitizeCopilotProperties(m.copilotProperties);
+  if (copilotProperties) out.copilotProperties = copilotProperties;
   out.soundProfile = sanitizeSoundProfile(m.soundProfile);
   if (!out.soundProfile) delete out.soundProfile;
   const prediction = m.instrumentPrediction as Record<string, unknown> | undefined;

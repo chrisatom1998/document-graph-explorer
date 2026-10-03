@@ -36,11 +36,17 @@ export function musicNameHints(node: Pick<DocNode, 'path' | 'title'>): MusicName
     }
     const notes = [...text.matchAll(/(?:^|\s)([A-G])([#b]?)[0-8](?=\s|$)/gi)].map(m => pitchClass(m[1], m[2]));
     const taggedNotes = [...text.matchAll(/(?:^|\s)(?:pitch|note)\s+([A-G])([#b]?)(?=\s|$)/gi)].map(m => pitchClass(m[1], m[2]));
-    const pitch = unique([...notes, ...taggedNotes, ...(key ? [key.tonic] : [])]);
+    // Sample packs often tag vocals as "AY_D_140", without a major/minor mode.
+    // Require musical context or an adjacent tempo to avoid ordinary title letters.
+    const bareNotes = [...text.matchAll(/(?:^|\s)([A-G])([#b]?)(?=\s|$)/g)]
+      .filter(m => /\b(?:vocal|vocals|synth|synthesizer|loops?|samples?|pitch|note|oneshot)\b/i.test(text)
+        || /^\s+\d{2,3}(?:\.\d+)?(?:\s*bpm)?(?:\s|$)/i.test(text.slice(m.index! + m[0].length)))
+      .map(m => pitchClass(m[1], m[2]));
+    const pitch = unique([...notes, ...taggedNotes, ...bareNotes, ...(key ? [key.tonic] : [])]);
     if (!hints.pitch && pitch !== undefined) hints.pitch = hint(pitch);
     const explicit = [...text.matchAll(/(?:^|\s)(?:(\d{2,3}(?:\.\d+)?)\s*bpm|bpm\s*(\d{2,3}(?:\.\d+)?))(?=\s|$)/gi)].map(m => Number(m[1] || m[2]));
     // Bare numbers need musical context, so track numbers and years aren't BPM tags.
-    const numbers = explicit.length ? explicit : key || /\b(?:loops?|tempo)\b/i.test(text)
+    const numbers = explicit.length ? explicit : key || pitch !== undefined || /\b(?:loops?|tempo)\b/i.test(text)
       ? [...text.matchAll(/(?:^|\s)(\d{2,3}(?:\.\d+)?)(?=\s|$)/g)].map(m => Number(m[1])) : [];
     const bpm = unique(numbers.filter(n => n >= 40 && n <= 250));
     if (!hints.tempo && bpm !== undefined) hints.tempo = hint(bpm);

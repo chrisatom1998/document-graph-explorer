@@ -50,6 +50,7 @@ export default function ProgressStrip() {
   const setInsightsOpen = useUiStore((s) => s.setInsightsOpen);
 
   const [ignoredOpen, setIgnoredOpen] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const [lingering, setLingering] = useState(false);
 
   // True while a cancellable ingest run is live (registered by ingestFiles);
@@ -91,6 +92,9 @@ export default function ProgressStrip() {
 
   const active = phase !== 'idle' && phase !== 'ready';
   const visible = active || lingering || ignoredFlash;
+  useEffect(() => {
+    if (!visible) setMinimized(false);
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -133,6 +137,19 @@ export default function ProgressStrip() {
   const taskProgressAriaLabel =
     modelProgress?.kind === 'music-analysis' ? 'Analyzing music' : modelProgress?.kind === 'ocr' ? 'Recognizing scanned PDF text' : 'Loading embedding model';
 
+  if (minimized) return (
+    <div className="progress-strip-layer progress-strip-layer--minimized">
+      <button type="button" className="progress-strip-restore glass-panel"
+        aria-label="Show processing details" aria-expanded={false}
+        title="Restore processing details. Analysis is still running."
+        onClick={() => setMinimized(false)}>
+        <span role="status" aria-live="polite">{phaseLabel} · {done}/{total || 0}</span>
+        {ignoredFiles.length > 0 && <small>{ignoredFiles.length} ignored</small>}
+        <span className="progress-strip-restore__label">Expand ↗</span>
+      </button>
+    </div>
+  );
+
   return (
     <div className="progress-strip-layer">
       <div
@@ -167,6 +184,9 @@ export default function ProgressStrip() {
               {done}/{total || 0}
             </span>
           </div>
+          <button type="button" className="progress-strip__minimize" aria-label="Minimize processing details"
+            aria-expanded={true} title="Minimize — processing continues in the background"
+            onClick={() => setMinimized(true)}>Minimize −</button>
           {active && cancellable && (
             <button
               type="button"

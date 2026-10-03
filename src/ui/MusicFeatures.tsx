@@ -1,6 +1,9 @@
+import { useMusicJobs } from '../store/musicJobs';
+import CopilotProperties from './CopilotProperties';
+import DjTagCorrection from './DjTagCorrection';
 import MusicAnalysisMode from './MusicAnalysisMode';
 import { musicNameHints, type NamedHint } from '../audio/nameHints';
-import { confirmedInstrumentList } from '../audio/instrumentEvidence';
+import { confirmedInstrumentList, sourceReviewAllows } from '../audio/instrumentEvidence';
 import { useState } from 'react';
 import type { DocNode } from '../model/types';
 import { KEY_NAMES, keyName, type InstrumentEstimate } from '../audio/musicTypes';
@@ -11,12 +14,21 @@ import InstrumentCorrection from './InstrumentCorrection';
 import RecognitionEvidence from './RecognitionEvidence';
 const time = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?: (seconds: number) => void }) {
+  const job = useMusicJobs(s => s.jobs[node.id]);
   const phase = useGraphStore(s => s.phase);
   const [controller, setController] = useState<AbortController | null>(null);
   const [message, setMessage] = useState('');
   const analysis = node.audio;
   const confirmed = analysis ? confirmedInstrumentList(analysis) : undefined;
-  const hints = musicNameHints(node);
+  const confirmedTags=analysis?.confirmedDjTags?{...analysis.confirmedDjTags,source:confirmed??[]}:undefined;
+  const displayProfile=analysis?.soundProfile?{...analysis.soundProfile,
+    source:analysis.soundProfile.source&&sourceReviewAllows(analysis,analysis.soundProfile.source.label)?analysis.soundProfile.source:undefined,
+    voice:sourceReviewAllows(analysis,'voice')?analysis.soundProfile.voice:undefined,
+    djTags:analysis.soundProfile.djTags?.filter(tag=>tag.group!=='source'||sourceReviewAllows(analysis,tag.label))}:undefined;
+
+  const rawHints = musicNameHints(node);
+  const allowedHints=rawHints.instruments?.value.filter(label=>!analysis||sourceReviewAllows(analysis,label));
+  const hints={...rawHints,instruments:allowedHints?.length?{...rawHints.instruments!,value:allowedHints}:undefined};
   // Use the filename's spelling when the model found the same musical key.
   // Keep genuinely different predictions visible instead of relabeling them.
   const sameNamedKey = !!analysis?.key && !!hints.key && analysis.key.tonic === hints.key.value.tonic && analysis.key.mode === hints.key.value.mode;
@@ -43,7 +55,7 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
     try {
       const { analyzeAudioCorpus } = await import('../pipeline/coordinatorLazy');
       await analyzeAudioCorpus([node.id], abort.signal);
-      setMessage('Analysis finished. Results and any warnings are shown here.');
+      setMessage(useMusicJobs.getState().jobs[node.id] ? 'Initial analysis ready. Full verification continues in the background.' : 'Analysis finished. Results and any warnings are shown here.');
     } catch (error) { setMessage(abort.signal.aborted ? 'Analysis cancelled.' : error instanceof Error ? error.message : 'Analysis failed.'); }
     finally { setController(null); }
   };
@@ -51,30 +63,34 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
     <span>{i.label}{isBroadInstrument(i.label) ? ' (family only)' : ''}</span>
     {i.segments?.[0] && <button type="button" disabled={!onSeek} onClick={() => onSeek?.(i.segments![0].start)} aria-label={`Listen for ${i.label} at ${time(i.segments[0].start)}`}>Listen at {time(i.segments[0].start)}</button>}
   </li>)}</ul>;
-  const likely = analysis?.instruments.filter(i => i.status === 'likely') ?? [];
-  const prediction = analysis?.instrumentPrediction;
+  const likely = analysis?.instruments.filter(i => i.status === 'likely' && sourceReviewAllows(analysis,i.label)) ?? [];
+  const prediction = analysis?.instrumentPrediction && sourceReviewAllows(analysis,analysis.instrumentPrediction.label) ? analysis.instrumentPrediction : undefined;
   const possible = analysis?.instruments.filter(i => i.status === 'possible' && i.label !== prediction?.label) ?? [];
   return <section className="music-features" aria-label="Musical features">
     <h3>Track details</h3>
-    {analysis?.stage === 'preview' && <p role="status">{phase === 'parsing' ? 'Quick estimate — verification is continuing in the background.' : 'Quick estimate only — verification is unfinished. Reanalyze to finish.'}</p>}
+    {analysis?.stage === 'preview' && <p role="status">{job || phase === 'parsing' ? 'Quick estimate — verification is continuing in the background.' : 'Quick estimate only — verification is unfinished. Reanalyze to finish.'}</p>}
     {analysis?.instrumentScan && !analysis.instrumentScan.complete && analysis.stage !== 'preview' && <p role="status">Analysis incomplete. Reanalyze to finish.</p>}
     {analysis ? <>
       <dl className="music-feature-grid">
-        <div><dt>Tempo</dt><dd>{hints.tempo ? `${hints.tempo.value.toFixed(1)} BPM` : analysis.tempo ? `${analysis.tempo.bpm.toFixed(1)} BPM` : analysis.stage === 'preview' ? 'Not checked yet' : 'Uncertain / no steady beat'}</dd></div>
-        <div><dt>Key</dt><dd>{hints.key ? hints.key.displayName : analysis.key ? keyName(analysis.key) : analysis.stage === 'preview' ? 'Not checked yet' : 'Uncertain / no stable key'}</dd></div>
+        <div><dt>{hints.tempo ? "Tempo · from name" : "Estimated tempo"}</dt><dd>{hints.tempo ? `${hints.tempo.value.toFixed(1)} BPM` : analysis.tempo ? `${analysis.tempo.bpm.toFixed(1)} BPM` : analysis.stage === 'preview' ? 'Not checked yet' : 'Uncertain / no steady beat'}</dd></div>
+        <div><dt>{hints.key ? "Key · from name" : "Estimated key"}</dt><dd>{hints.key ? hints.key.displayName : analysis.key ? keyName(analysis.key) : analysis.stage === 'preview' ? 'Not checked yet' : 'Uncertain / no stable key'}</dd></div>
       </dl>
       {analysis.recognition && <RecognitionEvidence recognition={analysis.recognition} duration={analysis.durationSeconds} onSeek={onSeek} reviews={analysis.soundReviews} confirmedInstruments={confirmed ?? []} onReview={phase==='ready'?(label,dimension,decision)=>{
         void import('../pipeline/coordinatorLazy').then(({setAudioReview})=>setAudioReview(node.id,label,dimension,decision))
           .then(()=>setMessage('Review saved.')).catch(error=>setMessage(error instanceof Error?error.message:'Could not save review.'));
       }:undefined} />}
-      {analysis.soundProfile && (!analysis.recognition || confirmed !== undefined || hints.instruments) && <SoundIdentification summaryOnly preliminary={analysis.stage === 'preview'} profile={analysis.soundProfile} sourceOverride={confirmed !== undefined ? { label: confirmed.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
+      {analysis.soundProfile && (!analysis.recognition || confirmed !== undefined || hints.instruments) && <SoundIdentification confirmedDjTags={confirmedTags} summaryOnly preliminary={analysis.stage === 'preview'} profile={displayProfile!} sourceOverride={confirmed !== undefined ? { label: confirmed.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
       {!analysis.soundProfile && <div className="music-source-summary">
         <span>Instrument</span>
         <strong>{confirmed?.join(', ') || (confirmed !== undefined ? 'None confirmed' : hints.instruments?.value.join(', ') || prediction?.label || likely.map(i => i.label).join(', ') || 'Not identified yet')}</strong>
       </div>}
+      {!!analysis.soundReviews?.length && <p>Individual source reviews in Sound evidence take precedence over earlier instrument confirmations.</p>}
+      <InstrumentCorrection key={node.id} node={node} />
+      <DjTagCorrection key={`tags-${node.id}`} node={node} />
       <details className="music-analysis-details">
-        <summary>Explanations</summary>
-        {analysis.soundProfile && <SoundExplanation preliminary={analysis.stage === 'preview'} profile={analysis.soundProfile} sourceOverride={confirmed !== undefined ? { label: confirmed.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
+        <summary>Analysis details</summary>
+        <CopilotProperties audio={analysis} />
+        {analysis.soundProfile && <SoundExplanation confirmedDjTags={confirmedTags} preliminary={analysis.stage === 'preview'} profile={displayProfile!} sourceOverride={confirmed !== undefined ? { label: confirmed.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
       {(hints.tempo || hints.key || hints.pitch || hints.instruments) && <>
         {[...nameSources].map(([id, group]) => <p key={id}>From {group.source}: {group.values.join(' · ')}</p>)}
         <p>These labels are used to connect tracks. They come from the file or folder name, not from listening to the audio.</p>
@@ -112,11 +128,10 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
       <p>Tempo and key use {Math.round(analysis.analyzedSeconds)} seconds of excerpts. Instrument estimates can miss sounds or confuse similar timbres; an unlisted instrument may still be present.</p>
       {analysis.notes.filter(note => !analysis.confirmedInstruments || !note.startsWith('No instruments identified')).map(note => <p key={note}>{note}</p>)}
       <p>Connections use shared title phrases, matching tempo, key, or instruments. Name labels and your corrections take priority over estimates.</p>
-      </details>
       {analysis.soundProfile && <SoundModelComparisons profile={analysis.soundProfile} />}
+      </details>
     </> : <p>Analyze this track to find its tempo, key, and instruments.</p>}
     <details className="music-track-actions"><summary>Track actions</summary>
-    {analysis && (analysis.soundReviews?.length ? <p>Manage your label decisions in Sound evidence above. Individual source reviews take precedence over earlier instrument confirmations.</p> : <InstrumentCorrection key={node.id} node={node} />)}
     <MusicAnalysisMode compact />
     <button type="button" aria-label={analysis ? 'Reanalyze musical features' : 'Analyze musical features'} disabled={phase !== 'ready' || !!controller} onClick={() => void run()}>{controller ? 'Analyzing…' : analysis ? 'Reanalyze' : 'Analyze track'}</button>
     {controller && <button type="button" onClick={() => controller.abort()}>Cancel analysis</button>}

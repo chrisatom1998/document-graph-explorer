@@ -40,8 +40,8 @@ const TRUNCATE_AT = 34;
 const DEGRADED_BUDGET = 15; // qualityTier >= 3
 const LABEL_COLOR = '#d3dfed';
 const FONT_SIZE = 2.3;
-const LABEL_PIXELS = 12;
-const FOCUSED_LABEL_PIXELS = 14;
+const LABEL_PIXELS = 13;
+const FOCUSED_LABEL_PIXELS = 15;
 // Bundled locally (public/fonts, OFL-1.1) — troika's default font is a CDN
 // fetch, which the privacy CSP blocks and offline use can't reach.
 const LABEL_FONT = '/fonts/Inter-Regular.woff';
@@ -89,7 +89,7 @@ function labelProps(reserved: boolean, flat: boolean, maxWidth: number) {
     overflowWrap: 'break-word' as const,
     lineHeight: 1.35,
     color: flat ? (reserved ? FLAT_LABEL : FLAT_LABEL_MUTED) : LABEL_COLOR,
-    outlineWidth: 0.12,
+    outlineWidth: 0.06,
     outlineColor: flat ? FLAT_BG : VOID,
     outlineOpacity: 1,
     anchorX: (flat ? 'left' : 'center') as 'left' | 'center',

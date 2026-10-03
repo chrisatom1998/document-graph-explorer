@@ -1,3 +1,5 @@
+import VoiceQuery from './VoiceQuery';
+import { openSampleAssistant } from '../store/sampleAssistantStore';
 /**
  * Chat-with-data panel: floating bubble in lower-left that expands into
  * a chat interface. Uses RAG over all uploaded documents.
@@ -11,6 +13,7 @@ import { AIRGAP } from '../airgap';
 import { computeOrphans } from '../graph/insights';
 import { useChatStore, type ChatMessage, type ChatSource } from '../store/chatStore';
 import { useGraphStore } from '../store/graphStore';
+import { useMusicJobs } from '../store/musicJobs';
 import { useChatScopeStore } from '../store/chatScopeStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { useUiStore } from '../store/uiStore';
@@ -41,8 +44,15 @@ function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSour
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
 
+  const audioSources = sources.filter(source => nodes[nodeIndex[source.docId]]?.fileType === 'audio');
   return (
     <div className="chat-sources">
+      {sources.length > 0 && <button type="button" className="copilot-show-matches" onClick={() => {
+        const ui = useUiStore.getState();
+        ui.setSelected(null);
+        ui.setSearchResults(sources.map(source => source.docId));
+        ui.sendCamera('fitAll');
+      }}>{audioSources.length ? 'Show samples in graph' : 'Show results in graph'}</button>}
       {sources.map((source) => {
         const node = nodes[nodeIndex[source.docId]];
         const title = node?.title ?? source.docId.slice(0, 12);
@@ -58,10 +68,10 @@ function SourceChips({ sources, onSourceClick }: { sources: ChatSource[]; onSour
             <button
               type="button"
               className="chat-source-chip"
-              title={`${pct}% match${passage} — ${source.snippet}`}
+              title={node?.fileType === 'audio' ? source.snippet : `${pct}% match${passage} — ${source.snippet}`}
               onClick={() => onSourceClick(source)}
             >
-              📄 {title.length > 30 ? title.slice(0, 28) + '…' : title}{source.chunkIndex === undefined ? '' : ` · ${source.chunkIndex + 1}`}
+              {node?.fileType === 'audio' ? '♫' : '📄'} {title.length > 30 ? title.slice(0, 28) + '…' : title}{source.chunkIndex === undefined ? '' : ` · ${source.chunkIndex + 1}`}
             </button>
             <button
               type="button"
@@ -137,8 +147,16 @@ export default function ChatPanel() {
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
   const edges = useGraphStore((s) => s.edges);
+  const phase = useGraphStore((s) => s.phase);
+  const hasMusicJobs = useMusicJobs((s) => Object.keys(s.jobs).length > 0);
+  const processing = (phase !== 'idle' && phase !== 'ready') || hasMusicJobs;
   const clusterNames = useGraphStore((s) => s.clusterNames);
   const localClusterNames = useGraphStore((s) => s.localClusterNames);
+  const selectedId = useUiStore(s => s.selectedId);
+  const [allFilesMode, setAllFilesMode] = useState(false);
+  const audioCount = nodes.filter(n => n.fileType === 'audio').length;
+  const musicMode = audioCount > 0 && !allFilesMode;
+  const selectedSample = nodes.find(n => n.id === selectedId && n.fileType === 'audio');
   const docCount = nodes.filter((n) => n.kind === 'document').length;
   const pathEndpoints = useUiStore((s) => s.pathEndpoints);
   const chatProvider = useSettingsStore((s) => s.chatProvider);
@@ -153,6 +171,12 @@ export default function ChatPanel() {
     (chatProvider === 'openrouter' && openRouterKey.trim() === '');
 
   const starters = useMemo(() => {
+    if (musicMode) return [
+      { label: 'Find matching samples', prompt: 'Find matches for this selected sample' },
+      { label: 'Explore my library', prompt: 'Give me an overview of my sample library' },
+      { label: 'Find by tempo', prompt: 'Find samples around 140 BPM' },
+      { label: 'Review uncertain sounds', prompt: 'Show uncertain samples' },
+    ];
     const counts = new Map<number, number>();
     for (const n of nodes) {
       if (n.kind !== 'document' || n.cluster < 0) continue;
@@ -178,7 +202,7 @@ export default function ChatPanel() {
       largestClusterName,
       pathTitles,
     });
-  }, [nodes, nodeIndex, edges, clusterNames, localClusterNames, pathEndpoints]);
+  }, [nodes, nodeIndex, edges, clusterNames, localClusterNames, pathEndpoints, musicMode]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -224,7 +248,7 @@ export default function ChatPanel() {
     setInput('');
     // sendChatMessage handles all its own errors (writes them into the chat
     // transcript) and never rejects to the caller — fire-and-forget.
-    void sendChatMessage(q);
+    void sendChatMessage(q, musicMode ? { selectedId } : undefined);
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -237,7 +261,9 @@ export default function ChatPanel() {
   // Stable reference — an inline handler would defeat MessageBubble's memo.
   // (zustand action references are stable, so this never actually re-creates.)
   const handleSourceClick = useCallback((source: ChatSource) => {
-    focusNode(source.docId, { index: source.chunkIndex, text: source.snippet });
+    const node = useGraphStore.getState().nodes.find(n => n.id === source.docId);
+    if (node?.fileType === 'audio') focusNode(source.docId);
+    else focusNode(source.docId, { index: source.chunkIndex, text: source.snippet });
   }, []);
 
   const exportTranscript = () => {
@@ -253,13 +279,13 @@ export default function ChatPanel() {
   if (!hasNodes || !isOpen) return null;
 
   return (
-    <div className="chat-panel glass-panel" role="dialog" aria-label="Chat with your documents">
+    <div className="chat-panel glass-panel" role="dialog" aria-label={musicMode ? "Music copilot" : "Chat with your documents"}>
       {/* Header */}
       <div className="chat-panel__header">
         <div className="chat-panel__header-main">
           <div className="chat-panel__title-row">
-            <h3 className="chat-panel__title">Chat with your docs</h3>
-            <span className="chat-panel__doc-count">{docCount} doc{docCount !== 1 ? 's' : ''}</span>
+            <h3 className="chat-panel__title">{musicMode ? "Music copilot" : "Chat with your docs"}</h3>
+            <span className="chat-panel__doc-count">{musicMode ? `${audioCount} samples` : `${docCount} docs`}</span>
             {messages.length > 0 && (
               <button
                 type="button"
@@ -271,7 +297,11 @@ export default function ChatPanel() {
               </button>
             )}
           </div>
-          <div className="chat-panel__scope" role="group" aria-label="Which documents to include in chat">
+          <details className="copilot-tools"><summary>More tools</summary>
+          {musicMode && <button className="copilot-mode-toggle" onClick={() => { setIsOpen(false); openSampleAssistant(); }}>Search, review & build crates ↗</button>}
+          {audioCount > 0 && audioCount < docCount && <button className="copilot-mode-toggle" disabled={isStreaming} onClick={() => setAllFilesMode(v => !v)}>{musicMode ? "Chat with all files instead" : "Switch to music copilot"}</button>}
+          </details>
+          {!musicMode && <div className="chat-panel__scope" role="group" aria-label="Which documents to include in chat">
             <button
               type="button"
               className={`chat-panel__scope-btn${chatScope === 'relevant' ? ' is-active' : ''}`}
@@ -292,7 +322,7 @@ export default function ChatPanel() {
             >
               All documents
             </button>
-          </div>
+          </div>}
         </div>
         <CloseButton
           className="chat-panel__close"
@@ -302,6 +332,8 @@ export default function ChatPanel() {
         />
       </div>
 
+      {musicMode && <div className="copilot-selection">{selectedSample ? <>Selected sample <strong>{selectedSample.title}</strong></> : 'Select a sample in the graph to find its matches.'}</div>}
+      {processing && <p className="copilot-selection" role="status">Analysis is still running. Answers use the results available now and may change as more files finish.</p>}
       {/* Messages */}
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {isStreaming || messages.length > 0 ? generationStatus : ''}
@@ -309,9 +341,9 @@ export default function ChatPanel() {
       <div className="chat-panel__messages" ref={messagesRef} onScroll={handleMessagesScroll}>
         {messages.length === 0 && (
           <div className="chat-panel__empty">
-            <p className="chat-panel__empty-title">Ask anything about your documents</p>
+            <p className="chat-panel__empty-title">{musicMode ? "Find your next sound." : "Ask anything about your documents"}</p>
             <p className="chat-panel__empty-hint">
-              {chatScope === 'all'
+              {musicMode ? 'Find samples by tempo, key, or instrument. Compare two tracks, discover matching sounds, or review uncertain labels.' : chatScope === 'all'
                 ? `Each answer includes all ${docCount} uploaded document${docCount !== 1 ? 's' : ''} (trimmed if the collection is huge). Best for comparisons and corpus-wide questions.`
                 : `Your ${docCount} uploaded document${docCount !== 1 ? 's are' : ' is'} the knowledge source. Chat uses the most relevant passages. Try asking about key topics, comparisons, or specific details.`}
             </p>
@@ -345,12 +377,13 @@ export default function ChatPanel() {
       </div>
 
       {localMode && (
-        <p className="chat-panel__mode-hint" title="Answers use indexed passages or exported document summaries from your own graph — no AI service, no network.">
-          Offline mode — answers use indexed passages and document summaries.
+        <p className="chat-panel__mode-hint" title={musicMode ? "Answers use the current musical features and confirmed labels in your graph — no AI service, no network." : "Answers use indexed passages or exported document summaries from your own graph — no AI service, no network."}>
+          {musicMode ? "Local music copilot — answers use your sample labels and analysis." : "Offline mode — answers use indexed passages and document summaries."}
         </p>
       )}
 
       {/* Input */}
+      <VoiceQuery onTranscript={setInput} disabled={isStreaming} />
       <div className="chat-panel__input-row">
         <textarea
           ref={inputRef}
@@ -358,9 +391,9 @@ export default function ChatPanel() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask a question…"
-          aria-label="Ask a question about your documents"
-          title="Ask a question about your documents. Enter to send, Shift+Enter for a new line."
+          placeholder={musicMode ? "Find 140 BPM synths, or match this sample…" : "Ask a question…"}
+          aria-label={musicMode ? "Ask the music copilot" : "Ask a question about your documents"}
+          title={`${musicMode ? 'Ask about your samples.' : 'Ask a question about your documents.'} Enter to send, Shift+Enter for a new line.`}
           rows={1}
         />
         <button

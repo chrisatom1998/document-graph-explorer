@@ -2,6 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { musicNameHints } from './nameHints';
 const hints = (path: string) => musicNameHints({ path, title: 'Display title' });
 describe('musical name tags', () => {
+  it('uses bare sample-pack notes and tempo without inventing a major/minor key', () => {
+    const result=hints('SHADOW_UK1_Vocal_AY_D_140.wav');
+    expect(result.pitch).toMatchObject({value:2,source:'file name'});
+    expect(result.tempo?.value).toBe(140);
+    expect(result.key).toBeUndefined();
+    expect(hints('Vocal_Ab_120.wav').pitch?.value).toBe(8);
+    expect(hints('Plan B.wav').pitch).toBeUndefined();
+    expect(hints('Vocal_C_D_140.wav').pitch).toBeUndefined();
+  });
   it.each([
     ['Bleacher_D#m_130.wav', 'D♯ minor', 3],
     ['Closer_D♯m_130.wav', 'D♯ minor', 3],

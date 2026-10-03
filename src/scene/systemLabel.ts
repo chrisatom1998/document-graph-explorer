@@ -16,8 +16,8 @@ export interface SceneLabel extends THREE.Mesh {
   outlineOpacity?: number;
 }
 
-export const MAX_LABEL_TEXTURE_SIZE = 1024;
-const FONT_PIXELS = 32;
+export const MAX_LABEL_TEXTURE_SIZE = 2048;
+const FONT_PIXELS = 64;
 const SYSTEM_FONT = 'system-ui, "Segoe UI", "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
 const graphemes = typeof Intl.Segmenter === 'function'
   ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
@@ -75,8 +75,8 @@ function createFallback(label: SceneLabel): SystemLabel {
   if (!context) throw new Error('Document labels require a Canvas 2D context for system fonts.');
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.generateMipmaps = false;
-  texture.minFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(1, 1),
     new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }),

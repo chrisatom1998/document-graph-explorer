@@ -1,4 +1,5 @@
-import { INSTRUMENT_ANALYSIS_REVISION } from '../audio/musicTypes';
+import { cancelMusicJob, cancelAllMusicJobs, useMusicJobs } from '../store/musicJobs';
+import { INSTRUMENT_ANALYSIS_REVISION, sanitizeMusicAnalysis } from '../audio/musicTypes';
 /**
  * Coordinator ingest/remove integration — mocked workers, layout, and
  * persistence. Exercises the real runIngest / runRemove spine without
@@ -26,6 +27,7 @@ import { useCorpusStore } from '../store/corpusStore';
 import {
   ingestFiles,
   setAudioInstruments,
+  setAudioDjTags,
   reconcileWatchedFiles,
   removeDocuments,
   resetCorpus,
@@ -330,6 +332,7 @@ function fileStatus(fileId: string) {
 vi.stubGlobal('Worker', FakeAggWorker);
 
 beforeEach(() => {
+  cancelAllMusicJobs();
   vi.restoreAllMocks();
   useCorpusStore.getState().reset();
   persistence.saveActiveCorpusPositions.mockReset().mockResolvedValue(undefined);
@@ -811,6 +814,137 @@ describe('WAV music ingestion', () => {
     await analyzeAudioCorpus([selected.id]);
     expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio?.confirmedInstruments).toEqual(['piano']);
   });
+  it('retains late cancellation evidence after Quick initial aborts before its deadline', async () => {
+    await ingestFiles([wav('early-quick-cancel.wav')]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    const saved = { ...node.audio!, confirmedInstruments: ['piano'] };
+    useGraphStore.getState().patchNodes(new Map([[node.id, { audio: saved }]]));
+    useSettingsStore.getState().setMusicAnalysisMode('fast');
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob(['RIFF']), name: 'early-quick-cancel.wav' });
+    let partial!: (audio: typeof saved) => void;
+    let rejectAnalysis!: (error: Error) => void;
+    music.analyzeMusic.mockImplementationOnce((_blob, _name, options) => {
+      options.onPreview?.({ ...saved, stage: 'preview' });
+      partial = options.onPartial;
+      return new Promise((_resolve, reject) => { rejectAnalysis = reject; });
+    });
+    const controller = new AbortController();
+    const run = analyzeAudioCorpus([node.id], controller.signal);
+    const rejected = expect(run).rejects.toMatchObject({ name: 'AbortError' });
+    await vi.waitFor(() => expect(partial).toBeTypeOf('function'));
+    controller.abort();
+    await rejected;
+
+    // The decoder/worker unwinds after Quick's initial promise has rejected.
+    // Its final ledger must wait behind an unrelated mutation without losing its owner.
+    let release!: () => void;
+    let entered = false;
+    const blocker = enqueueRun(async () => {
+      entered = true;
+      await new Promise<void>(resolve => { release = resolve; });
+    });
+    await vi.waitFor(() => expect(entered).toBe(true));
+    const recognition = createRecognition(saved.durationSeconds, 'fast');
+    recognition.status = 'cancelled';
+    let savedCancellation = false;
+    persistence.saveSession.mockImplementationOnce(async () => {
+      savedCancellation = useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.recognition?.runId === recognition.runId;
+    });
+    partial({ ...saved, recognition });
+    rejectAnalysis(new DOMException('Cancelled', 'AbortError'));
+    try {
+      await Promise.resolve();
+      expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.recognition?.status).not.toBe('cancelled');
+    } finally { release(); }
+    await blocker;
+    await enqueueRun(async () => undefined);
+    expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio).toMatchObject({
+      confirmedInstruments: ['piano'], recognition: { status: 'cancelled', runId: recognition.runId },
+    });
+    expect(savedCancellation).toBe(true);
+  });
+  it('does not let a cancelled Quick job write into a reset replacement with the same id', async () => {
+    useSettingsStore.getState().setMusicAnalysisMode('fast');
+    const original = music.analyzeMusic.getMockImplementation()!;
+    let oldPartial!: (result: Awaited<ReturnType<typeof original>>) => void;
+    let finishOldFull!: (result: Awaited<ReturnType<typeof original>>) => void;
+    let firstResult!: Awaited<ReturnType<typeof original>>;
+    music.analyzeMusic.mockImplementation(async (...args) => {
+      const result = await original(...args);
+      if (args[2].mode === 'fast') {
+        firstResult = { ...result, instrumentScan: { ...result.instrumentScan, mode: 'fast' } };
+        return firstResult;
+      }
+      oldPartial = args[2].onPartial;
+      return new Promise(resolve => { finishOldFull = resolve; });
+    });
+
+    await ingestFiles([wav('same.wav')]);
+    await vi.waitFor(() => expect(oldPartial).toBeTypeOf('function'));
+    const oldId = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!.id;
+
+    resetCorpus();
+    music.analyzeMusic.mockImplementation(async (...args) => {
+      const result = await original(...args);
+      return {
+        ...result,
+        durationSeconds: 22,
+        instrumentScan: { ...result.instrumentScan, mode: args[2].mode },
+      };
+    });
+    await ingestFiles([wav('same.wav')]);
+    const replacement = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    expect(replacement.id).toBe(oldId);
+
+    const cancelledRecognition = createRecognition(firstResult.durationSeconds, 'full');
+    cancelledRecognition.status = 'cancelled';
+    oldPartial({ ...firstResult, durationSeconds: 1, recognition: cancelledRecognition });
+    await enqueueRun(async () => undefined);
+
+    expect(useGraphStore.getState().nodes.find(n => n.id === oldId)?.audio?.durationSeconds).toBe(22);
+    expect(useGraphStore.getState().nodes.find(n => n.id === oldId)?.audio?.recognition?.status).not.toBe('cancelled');
+
+    finishOldFull(firstResult);
+    await enqueueRun(async () => undefined);
+  });
+  it('keeps cancelled evidence when Full resolves after its signal was aborted',async()=>{
+    await ingestFiles([wav('late-full.wav')]);
+    const selected=useGraphStore.getState().nodes.find(n=>n.fileType==='audio')!;
+    persistence.getOriginal.mockResolvedValue({blob:new Blob(['RIFF']),name:'late-full.wav'});
+    const controller=new AbortController();
+    const recognition=createRecognition(selected.audio!.durationSeconds,'full');recognition.status='cancelled';
+    music.analyzeMusic.mockImplementationOnce(async(_blob,_name,options)=>{
+      controller.abort();options.onPartial?.({...selected.audio!,recognition});
+      return {...selected.audio!,durationSeconds:999};
+    });
+    await expect(analyzeAudioCorpus([selected.id],controller.signal)).rejects.toMatchObject({name:'AbortError'});
+    expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio).toMatchObject({recognition:{status:'cancelled'}});
+    expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio?.durationSeconds).not.toBe(999);
+  });
+  it('queues cancelled background evidence behind a later parsing invocation',async()=>{
+    useSettingsStore.getState().setMusicAnalysisMode('fast');
+    const original=music.analyzeMusic.getMockImplementation()!;
+    let partial!: (result: Awaited<ReturnType<typeof original>>)=>void;
+    let finish!: (result: Awaited<ReturnType<typeof original>>)=>void;
+    let result!: Awaited<ReturnType<typeof original>>;
+    music.analyzeMusic.mockImplementation(async(...args)=>{
+      result=await original(...args);
+      if(args[2].mode==='fast')return {...result,instrumentScan:{...result.instrumentScan,mode:'fast'}};
+      partial=args[2].onPartial;
+      return new Promise(resolve=>{finish=resolve;});
+    });
+    await ingestFiles([wav('background-cancel.wav')]);
+    await vi.waitFor(()=>expect(partial).toBeTypeOf('function'));
+    const node=useGraphStore.getState().nodes.find(n=>n.fileType==='audio')!;
+    let release!: ()=>void;let entered=false;
+    const blocker=enqueueRun(async()=>{useGraphStore.getState().setPhase('parsing');entered=true;await new Promise<void>(resolve=>{release=resolve;});useGraphStore.getState().setPhase('ready');});
+    await vi.waitFor(()=>expect(entered).toBe(true));
+    const recognition=createRecognition(result.durationSeconds,'full');recognition.status='cancelled';
+    cancelMusicJob(node.id);partial({...result,recognition});finish(result);
+    try { expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.recognition?.status).not.toBe('cancelled'); } finally { release(); }
+    await blocker;await enqueueRun(async()=>undefined);
+    expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.recognition?.status).toBe('cancelled');
+  });
   it('saves review history and retains it across reanalysis without promoting rejected labels',async()=>{
     await ingestFiles([wav('review.wav')]);
     const selected=useGraphStore.getState().nodes.find(n=>n.fileType==='audio')!;
@@ -834,6 +968,36 @@ describe('WAV music ingestion', () => {
     expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio?.soundReviews?.map(r=>r.decision)).toEqual(['confirmed','rejected','confirmed']);
     await setAudioReview(selected.id,'piano','source','rejected');
     expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio?.confirmedInstruments).toEqual([]);
+  });
+  it('synchronizes explicit source snapshots without clearing production or character corrections', async () => {
+    await ingestFiles([wav('source-snapshot.wav')]);
+    const id = documentIds()[0];
+    await setAudioInstruments([id], ['piano']);
+    await setAudioDjTags(id, { source: [], production: [], character: [] });
+    expect(useGraphStore.getState().nodes.find(n => n.id === id)?.audio?.confirmedInstruments).toEqual([]);
+    await setAudioDjTags(id, { source: ['piano'], production: ['chops'], character: ['airy'] });
+    const tags = useGraphStore.getState().nodes.find(n => n.id === id)!.audio!.confirmedDjTags!;
+    await setAudioInstruments([id], []);
+    expect(useGraphStore.getState().nodes.find(n => n.id === id)?.audio?.confirmedDjTags).toEqual({ ...tags, source: [] });
+    await setAudioDjTags(id, { source: ['foley'], production: ['chops'], character: ['airy'] });
+    const restored = sanitizeMusicAnalysis(JSON.parse(JSON.stringify(useGraphStore.getState().nodes.find(n => n.id === id)?.audio)));
+    expect(restored?.confirmedInstruments).toEqual(['foley']);
+    expect(restored?.confirmedDjTags).toEqual({ source: ['foley'], production: ['chops'], character: ['airy'] });
+  });
+  it('lets explicit DJ source correction supersede rejection while preserving its review history', async () => {
+    await ingestFiles([wav('dj-review.wav')]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    useGraphStore.getState().patchNodes(new Map([[node.id, { audio: { ...node.audio!, recognition: createRecognition(node.audio!.durationSeconds, 'full') } }]]));
+    await setAudioReview(node.id, 'piano', 'source', 'rejected');
+    await setAudioDjTags(node.id, { source: ['piano'], production: [], character: [] });
+    const updated = useGraphStore.getState().nodes.find(n => n.id === node.id)!.audio!;
+    expect(updated.confirmedInstruments).toEqual(['piano']);
+    expect(updated.soundReviews?.map(review => review.decision)).toEqual(['rejected', 'confirmed']);
+    await setAudioInstruments([node.id]);
+    expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.soundReviews).toEqual(updated.soundReviews);
+    expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.confirmedDjTags?.source).toEqual(['piano']);
+    await setAudioDjTags(node.id);
+    expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.soundReviews).toEqual(updated.soundReviews);
   });
   it('reanalyzes only selected audio while other stale results stay untouched', async () => {
     await ingestFiles([wav('selected.wav'), wav('stale.wav')]);
@@ -910,7 +1074,7 @@ describe('WAV music ingestion', () => {
     });
     await ingestFiles([wav('preview.wav')]);
   });
-  it('reuses finished Fast results but upgrades them when Full is selected', async () => {
+  it('automatically follows an immediate Quick result with Full and reuses the finished scan', async () => {
     const original = music.analyzeMusic.getMockImplementation()!;
     music.analyzeMusic.mockImplementation(async (...args) => {
       const final = await original(...args);
@@ -918,14 +1082,78 @@ describe('WAV music ingestion', () => {
     });
     useSettingsStore.getState().setMusicAnalysisMode('fast');
     await ingestFiles([wav('modes.wav')]);
-    expect(music.analyzeMusic.mock.calls[0][2].mode).toBe('fast');
+    await vi.waitFor(()=>expect(useGraphStore.getState().nodes.find(n=>n.fileType==='audio')?.audio?.instrumentScan?.mode).toBe('full'));
+    expect(music.analyzeMusic.mock.calls.map(call=>call[2].mode)).toEqual(['fast','full']);
     music.analyzeMusic.mockClear();
     await ingestFiles([wav('modes.wav')]);
     expect(music.analyzeMusic).not.toHaveBeenCalled();
-    useSettingsStore.getState().setMusicAnalysisMode('full');
-    await ingestFiles([wav('modes.wav')]);
-    expect(music.analyzeMusic.mock.calls[0][2].mode).toBe('full');
-    expect(useGraphStore.getState().nodes.find(n => n.fileType === 'audio')?.audio?.instrumentScan?.mode).toBe('full');
+  });
+  it('queues all Full-mode songs and shows their previews before waiting for completed scans', async () => {
+    const original = music.analyzeMusic.getMockImplementation()!;
+    const finish: (() => void)[] = [];
+    music.analyzeMusic.mockImplementation(async (...args) => {
+      const final = await original(...args);
+      args[2].onPreview({ ...final, stage: 'preview', instrumentScan: { ...final.instrumentScan, complete: false } });
+      return new Promise(resolve => { finish.push(() => resolve(final)); });
+    });
+    const ingest = ingestFiles([wav('one.wav'), wav('two.wav'), wav('three.wav')]);
+    await vi.waitFor(() => expect(finish).toHaveLength(3));
+    expect(useGraphStore.getState().nodes.filter(n => n.fileType === 'audio').every(n => n.audio?.stage === 'preview')).toBe(true);
+    finish.forEach(resolve => resolve());
+    await ingest;
+    expect(useGraphStore.getState().nodes.filter(n => n.fileType === 'audio').every(n => n.audio?.instrumentScan?.complete)).toBe(true);
+  });
+  it('publishes a late Quick preview after the graph opens without losing confirmed labels', async () => {
+    vi.useFakeTimers();
+    useSettingsStore.getState().setMusicAnalysisMode('fast');
+    const original = music.analyzeMusic.getMockImplementation()!;
+    let emitPreview!: (result: Awaited<ReturnType<typeof original>>) => void;
+    let finish!: (result: Awaited<ReturnType<typeof original>>) => void;
+    let final!: Awaited<ReturnType<typeof original>>;
+    music.analyzeMusic.mockImplementation(async (...args) => {
+      final = await original(...args);
+      emitPreview = args[2].onPreview;
+      return new Promise(resolve => { finish = resolve; });
+    });
+    const ingest = ingestFiles([wav('late-preview.wav')]);
+    await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
+    await vi.advanceTimersByTimeAsync(14000);
+    await ingest;
+    vi.useRealTimers();
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    expect(node.audio?.durationSeconds).toBe(0);
+    await setAudioDjTags(node.id, { source: ['piano'], production: [], character: [] });
+    emitPreview({ ...final, stage: 'preview', instrumentScan: { ...final.instrumentScan, complete: false } });
+    await enqueueRun(async () => undefined);
+    const updated = useGraphStore.getState().nodes.find(n => n.id === node.id)!;
+    expect(updated.audio?.durationSeconds).toBe(10);
+    expect(updated.audio?.confirmedDjTags?.source).toEqual(['piano']);
+    cancelMusicJob(node.id);
+    finish(final);
+    await enqueueRun(async () => undefined);
+  });
+  it('keeps Quick results when the background Full scan is stopped', async () => {
+    useSettingsStore.getState().setMusicAnalysisMode('fast');
+    const original=music.analyzeMusic.getMockImplementation()!;
+    let finishFull!: ()=>void;
+    let fullSignal: AbortSignal | undefined;
+    music.analyzeMusic.mockImplementation(async (...args)=>{
+      const base=await original(...args);
+      const result={...base,instrumentScan:{...base.instrumentScan,mode:args[2].mode}};
+      if(args[2].mode==='fast')return result;
+      fullSignal=args[2].signal;
+      return new Promise(resolve=>{finishFull=()=>resolve(result);});
+    });
+    await ingestFiles([wav('stop-full.wav')]);
+    await vi.waitFor(()=>expect(finishFull).toBeTypeOf('function'));
+    const node=useGraphStore.getState().nodes.find(n=>n.fileType==='audio')!;
+    expect(node.audio?.instrumentScan?.mode).toBe('fast');
+    cancelMusicJob(node.id);
+    expect(fullSignal?.aborted).toBe(true);
+    finishFull();
+    await enqueueRun(async()=>undefined);
+    expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.instrumentScan?.mode).toBe('fast');
+    expect(useMusicJobs.getState().jobs[node.id]).toBeUndefined();
   });
   it('reports Mac metadata disguised as WAV without creating a track', async () => {
     const bytes = new ArrayBuffer(4096); const view = new DataView(bytes);
@@ -943,5 +1171,35 @@ describe('WAV music ingestion', () => {
     await ingestFiles([wav('broken.wav')]);
     expect(fileStatus('file-broken.wav')?.stage).toBe('placed');
     expect(useGraphStore.getState().ingestReport).toBeNull();
+  });
+  it('releases Quick ingest after its richer preview deadline and preserves later corrections when background work finishes', async () => {
+    vi.useFakeTimers();
+    useSettingsStore.getState().setMusicAnalysisMode('fast');
+    const original=music.analyzeMusic.getMockImplementation()!;
+    let finish!: (value: Awaited<ReturnType<typeof original>>)=>void;
+    let finishFull!: (value: Awaited<ReturnType<typeof original>>)=>void;
+    let final: Awaited<ReturnType<typeof original>>;
+    music.analyzeMusic.mockImplementation(async (...args)=>{
+      final=await original(...args);
+      if(args[2].mode==='full')return new Promise(resolve=>{finishFull=resolve;});
+      args[2].onPreview({...final,stage:'preview',instruments:[]});
+      return new Promise(resolve=>{finish=resolve;});
+    });
+    const ingest=ingestFiles([wav('background.wav')]);
+    await vi.waitFor(()=>expect(finish).toBeTypeOf('function'));
+    await vi.advanceTimersByTimeAsync(14000);
+    await ingest;
+    vi.useRealTimers();
+    expect(useGraphStore.getState().phase).toBe('ready');
+    const node=useGraphStore.getState().nodes.find(n=>n.fileType==='audio')!;
+    expect(node.audio?.stage).toBe('preview');
+    await setAudioDjTags(node.id,{source:['piano'],production:[],character:[]});
+    finish(final!);
+    await vi.waitFor(()=>expect(finishFull).toBeTypeOf('function'));
+    expect(useGraphStore.getState().phase).toBe('ready');
+    finishFull({...final!,instrumentScan:{...final!.instrumentScan,mode:'full'}});
+    await vi.waitFor(()=>expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.instrumentScan?.mode).toBe('full'));
+    await vi.waitFor(()=>expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.stage).toBeUndefined());
+    expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.confirmedDjTags?.source).toEqual(['piano']);
   });
 });

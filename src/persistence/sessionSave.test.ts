@@ -18,7 +18,8 @@ vi.mock('../scene/positionBuffer', () => ({
 }));
 vi.mock('./graphExport', () => ({ toGraphExport: vi.fn(() => ({ nodes: [], edges: [] })) }));
 
-import { saveSession } from './sessionSave';
+import { saveGraphRecord, saveSession } from './sessionSave';
+import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
 import { dirtyDocIds, markDocsDirty, textStore } from '../store/runtimeStores';
 
@@ -44,6 +45,7 @@ function savedIds(): string[] {
 }
 
 beforeEach(() => {
+  useCorpusStore.getState().reset();
   useGraphStore.getState().reset();
   useGraphStore.getState().addNodes([mkNode('a'), mkNode('b'), mkNode('c')]);
   useGraphStore.getState().setPhase('ready');
@@ -53,6 +55,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  useCorpusStore.getState().reset();
   dirtyDocIds.clear();
   textStore.clear();
   useGraphStore.getState().reset();
@@ -119,5 +122,17 @@ describe('saveSession document writes', () => {
     await saveSession();
 
     expect(savedIds()).toEqual(['a']);
+  });
+
+  it('skips saving when corpus mode is ephemeral (shared/imported)', async () => {
+    useCorpusStore.getState().setEphemeral('Shared Graph', 'shared');
+    markDocsDirty(['a', 'b']);
+
+    await saveSession();
+    await saveGraphRecord();
+
+    expect(cache.saveDocsToCache).not.toHaveBeenCalled();
+    expect(cache.saveGraphToCache).not.toHaveBeenCalled();
+    expect([...dirtyDocIds].sort()).toEqual(['a', 'b']);
   });
 });

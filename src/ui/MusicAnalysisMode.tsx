@@ -7,10 +7,12 @@ export default function MusicAnalysisMode({ compact = false }: { compact?: boole
   return <div className="music-analysis-mode">
     <label className="settings-field">Music analysis mode
       <select className="settings-input" value={mode} disabled={phase !== 'ready' && phase !== 'idle'} onChange={e => setMode(e.target.value === 'fast' ? 'fast' : 'full')}>
-        <option value="full">Full — whole track (recommended)</option>
-        <option value="fast">Fast — selected sections</option>
+        <option value="full">Full — whole track</option>
+        <option value="fast">Quick → Full in background (recommended)</option>
       </select>
     </label>
-    {compact ? (mode === 'fast' && <p>Samples sections; may miss brief sounds.</p>) : <p>Full checks the whole track. Fast samples sections and may miss brief sounds. Each mode shows an early estimate. Applies to new uploads and reanalysis.</p>}
+    {(!compact || mode === 'fast') && <p>{mode === 'fast'
+      ? 'See quick estimates first while full analysis finishes in the background.'
+      : 'Wait for the whole track to be analyzed before showing results.'}</p>}
   </div>;
 }

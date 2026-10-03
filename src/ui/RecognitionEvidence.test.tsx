@@ -42,3 +42,11 @@ it('explains the qualifying vocal prompt instead of presenting its score as dire
  fireEvent.click(screen.getByRole('button',{name:'Listen for voice at 0:00–0:03'}));
  expect(seek).toHaveBeenCalledWith(0);
 });
+
+it('names each group of repeated review controls',()=>{
+ const run=createRecognition(10,'full');
+ recordEvidence(run,'jamendo',{start:0,end:10},[{dimension:'source',labelId:'piano',score:.8},{dimension:'source',labelId:'guitar',score:.8}]);
+ render(<RecognitionEvidence recognition={run} duration={10}/>);
+ expect(screen.getByRole('group',{name:'Review piano for this track'})).toBeVisible();
+ expect(screen.getByRole('group',{name:'Review guitar for this track'})).toBeVisible();
+});

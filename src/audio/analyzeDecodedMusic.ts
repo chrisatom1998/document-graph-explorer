@@ -1,24 +1,65 @@
+import { DjTagEvidence, selectDjTags } from './djTags';
+import { mergeDjTags } from './djClassification';
 import type { MusicDecoder } from './decodeMusic';
 import { jamendoSuggestions, jamendoLabels } from './jamendo';
 import { InstrumentEvidence, instrumentWindowStarts } from './instrumentEvidence';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, type MusicAnalysis, type MusicAnalysisMode } from './musicTypes';
 import type { InstrumentPredictions } from './instrumentLabels';
-import { averageDescriptions, selectDescriptions, type DescriptionScore } from './profileDescriptions';
+import { DescriptionAccumulator, selectDescriptions, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { createRecognition, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
   signal?: AbortSignal;
+  cacheKey?: string;
+  force?: boolean;
+  initialPreview?: MusicPreview;
   mode?: MusicAnalysisMode;
   audioFingerprint?: string;
   cache?: ResultCache;
   onProgress?: (note: string) => void;
   onPreview?: (analysis: MusicAnalysis) => void;
   onPartial?: (analysis: MusicAnalysis) => void;
+  /** Cancellation-only consumers avoid copying the growing ledger after every window. */
+  partialUpdates?: 'all' | 'cancelled';
+}
+export interface MusicPreview {
+  start: number;
+  end: number;
+  scores: Record<string, number>;
+  analysis: MusicAnalysis;
 }
 export type MusicRequest = <T>(message: Record<string, unknown>, transfer: Transferable[]) => Promise<T>;
 const audible = (samples: Float32Array) => samples.length > 0 && samples.reduce((sum, v) => sum + v * v, 0) / samples.length > 1e-8;
+
+/** The folder's first pass only needs one short music-model estimate per recording. */
+export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicRequest, options: AnalysisOptions): Promise<MusicPreview | undefined> {
+  const mode = options.mode === 'fast' && decoder.durationSeconds > 0 ? 'fast' : 'full';
+  options.signal?.throwIfAborted();
+  if (!decoder.durationSeconds || decoder.durationSeconds < 2.048) return;
+  options.onProgress?.('Preparing a quick instrument estimate');
+  const start = mode === 'fast' ? descriptionStarts(decoder.durationSeconds, mode)[0] : 0;
+  try {
+    const duration = decoder.durationSeconds || 10;
+    const samples = await decoder.read(start, Math.min(10, duration - start), 16000);
+    const end = start + samples.length / 16000;
+    if (samples.length < Math.round(Math.min(10, duration - start) * 16000) - 1) return;
+    const scores = audible(samples) ? await request<Record<string, number>>({ kind: 'jamendo', samples }, [samples.buffer]) : {};
+    const analysis: MusicAnalysis = {
+      version: 2, stage: 'preview', durationSeconds: duration, analyzedSeconds: 0, notes: [],
+      instruments: jamendoSuggestions(scores).map(i => ({ label: i.label, score: i.score, status: 'possible' })),
+      soundProfile: combineSoundModels([], scores, [], { ast: false, jamendo: true, clap: false }),
+      instrumentScan: { revision: INSTRUMENT_ANALYSIS_REVISION, mode, complete: false, analyzedSeconds: 0, windows: 0 },
+    };
+    options.onPreview?.(analysis);
+    return { start, end, scores, analysis };
+  } catch (error) {
+    if (options.signal?.aborted) throw error;
+    // A failed preview must not prevent the deeper pass from retrying the model.
+    return undefined;
+  }
+}
 
 /** Sequential model jobs share a bounded timeline, but never each other's validity. */
 export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
@@ -60,8 +101,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   const astEvidence = new InstrumentEvidence();
   const musicScores: Record<string, number> = {};
   let musicCount = 0;
-  let descriptions: DescriptionScore[] = [];
-  let descriptionCount = 0;
+  const descriptions = new DescriptionAccumulator();
+  const djEvidence = new DjTagEvidence();
   const completed = new Set<string>();
   const stopped = new Set<ModelId>();
   const messages: Partial<Record<ModelId, string>> = {
@@ -74,8 +115,9 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     for (const j of recognition.jobs) finishJob(j, duration, cancelled);
     const soundComplete = ['ast','jamendo','clap'].every(id => ['complete','unsupported'].includes(job(id as ModelId).status));
     result.instruments = astEvidence.results();
-    result.soundProfile = combineSoundModels(result.instruments, musicScores, descriptions,
+    result.soundProfile = combineSoundModels(result.instruments, musicScores, descriptions.average(),
       { ast: job('ast').status === 'complete', jamendo: job('jamendo').status === 'complete', clap: job('clap').status === 'complete' });
+    mergeDjTags(result.soundProfile, djEvidence.results(), descriptions.average());
     for (const suggestion of jamendoSuggestions(musicScores)) {
       if (!result.instruments.some(i => i.label === suggestion.label)) result.instruments.push({ label: suggestion.label, score: suggestion.score, status: 'possible' });
     }
@@ -86,7 +128,14 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     if (ended || cancelled) recognition.endedAt = new Date().toISOString();
     if (cancelled) recognition.cancellationReason = 'Cancelled by user';
   };
-  const publish = () => { refresh(); options.onPartial?.(structuredClone(result)); check(); };
+  const publish = () => {
+    if ((options.onPartial && options.partialUpdates !== 'cancelled') || (mode === 'fast' && options.onPreview)) {
+      refresh();
+      if(options.partialUpdates !== 'cancelled') options.onPartial?.(structuredClone(result));
+      if(mode === 'fast') options.onPreview?.({ ...structuredClone(result), stage: 'preview' });
+    }
+    check();
+  };
   async function sound(id: 'ast' | 'jamendo' | 'clap', interval: Interval) {
     check();
     if (stopped.has(id) || job(id).unsupportedReason) return;
@@ -96,6 +145,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     options.onProgress?.(`${id}: ${j.successful.length}/${j.planned.length} windows; ${Math.floor(interval.start)}–${Math.ceil(interval.end)}s of ${Math.ceil(duration)}s`);
     try {
       let output = cache.get<InstrumentPredictions | Record<string, number> | DescriptionScore[]>(key);
+      const preview = options.initialPreview;
+      if (!output && id === 'jamendo' && preview?.start === interval.start && Math.abs(preview.end - interval.end) < 1 / 16000) output = preview.scores;
       if (!output) {
         const rate = id === 'clap' ? 48000 : 16000;
         const samples = await decoder.read(interval.start, interval.end - interval.start, rate);
@@ -118,10 +169,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         recordEvidence(recognition, id, interval, jamendoLabels(scores));
       } else {
         const scores = output as DescriptionScore[];
-        // Online mean: bounded by the fixed prompt vocabulary, never the number of windows.
-        descriptions = averageDescriptions([descriptions.map(d => ({ ...d, score: d.score * descriptionCount })), scores])
-          .map(d => ({ ...d, score: d.score * 2 / (descriptionCount + 1) }));
-        descriptionCount++;
+        descriptions.add(scores);
+        djEvidence.add(selectDjTags(scores), interval.start, interval.end);
         const selected = selectDescriptions(scores);
         const candidates: EvidenceCandidate[] = selected.sources.map(s => ({ dimension: 'source', labelId: s.label, score: s.score }));
         if(selected.vocalSourceEvidence&&!selected.sources.some(s=>s.label==='voice')) {
@@ -129,7 +178,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
           candidates.push({dimension:'source',labelId:'voice',score,derivedFrom:{group,labelId}});
         }
         for (const [dimension, labels] of [['character',selected.character],['role',selected.roles],['vocal',selected.vocalStyle ? [selected.vocalStyle] : []]] as const) {
-          for (const labelId of labels) candidates.push({ dimension, labelId, score: Math.max(...scores.filter(s => s.label === labelId).map(s => s.score)) });
+          for (const labelId of labels) candidates.push({ dimension: dimension === 'role' && labelId === 'atmosphere' ? 'effect' : dimension, labelId, score: Math.max(...scores.filter(s => s.label === labelId).map(s => s.score)) });
         }
         recordEvidence(recognition, id, interval, candidates);
       }

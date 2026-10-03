@@ -1,13 +1,12 @@
 import { lazy, Suspense, useState } from 'react';
+import ThemeToggle from './ThemeToggle';
 import { Button } from '@heroui/react/button';
 import { Chip } from '@heroui/react/chip';
 import { EmptyState as HeroEmptyState } from '@heroui/react/empty-state';
 import { openFilePicker } from '../ingest/DropZone';
 import { openFolderPicker } from '../ingest/folderPicker';
-import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import ConstellationSvg from './ConstellationSvg';
-import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 import { rememberCenterOrigin } from '../scene/ingestGesture';
 
 const CorpusSwitcher = lazy(() => import('./CorpusSwitcher'));
@@ -25,13 +24,6 @@ export default function EmptyState() {
     rememberCenterOrigin();
     import('../pipeline/coordinatorLazy')
       .then(({ loadDemoCorpus }) => loadDemoCorpus())
-      .then(() => {
-        // Only show the guide when the demo actually produced a graph; a
-        // mid-run cancellation resolves the promise but leaves nodes empty.
-        if (useGraphStore.getState().nodes.length > 0) {
-          window.dispatchEvent(new Event(FIRST_RUN_GUIDE_REOPEN_EVENT));
-        }
-      })
       .catch((err) => {
         console.warn('demo corpus load failed', err);
         useUiStore.getState().pushToast("Couldn't load the demo corpus.");
@@ -52,6 +44,7 @@ export default function EmptyState() {
 
   return (
     <div className="empty-state-layer">
+      <ThemeToggle welcome />
       <HeroEmptyState className="empty-state__card glass-panel">
         <aside className="empty-state__visual" aria-label="Local-first knowledge mapping">
           <div className="empty-state__visual-label" aria-hidden="true">
