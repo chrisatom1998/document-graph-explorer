@@ -53,6 +53,11 @@ test('classic graph controls and music copilot work on desktop and mobile', asyn
   await page.getByRole('button', { name: 'Fit the whole graph in view' }).click();
   await page.screenshot({ path: testInfo.outputPath('workspace-desktop.png') });
 
+  // Back to graph cleared selection; a contextual match request needs the
+  // sample selected again in the classic workspace.
+  await page.getByRole('button', { name: 'Browse documents', exact: true }).press('Space');
+  await page.getByRole('option', { name: /Melodic 01/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Melodic 01', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Chat with your documents' }).click();
   await expect(page.getByRole('dialog', { name: 'Music copilot', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Search, review & build crates ↗' })).toBeHidden();
