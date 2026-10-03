@@ -36,13 +36,15 @@ export async function openMusicDecoder(blob: Blob, name: string, signal?: AbortS
         signal?.throwIfAborted();
         const readTimer = setTimeout(close, 120_000);
         try {
-          // FFmpeg applies its resampling filter before reducing to the model's 16 kHz.
-          const status = await ff.exec(['-ss', String(start), '-i', input, '-t', String(seconds), '-map', '0:a:0', '-vn', '-ac', '1', '-ar', String(sampleRate), '-f', 'f32le', '-y', 'clip.f32'], 90_000);
+          // FFmpeg can stop before flushing codec/resampler tail samples at -t.
+          // Decode at most one extra second, then bound by sample count. This
+          // retains the real endpoint without padding genuinely short audio.
+          const status = await ff.exec(['-ss', String(start), '-i', input, '-t', String(seconds + 1), '-map', '0:a:0', '-vn', '-ac', '1', '-ar', String(sampleRate), '-f', 'f32le', '-y', 'clip.f32'], 90_000);
           if (status !== 0) throw new Error('This audio could not be decoded for music analysis.');
           const data = await ff.readFile('clip.f32');
           if (typeof data === 'string') throw new Error('No audio samples found.');
           const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-          const samples = new Float32Array(Math.floor(data.byteLength / 4));
+          const samples = new Float32Array(Math.min(Math.floor(data.byteLength / 4), Math.round(seconds * sampleRate)));
           for (let j = 0; j < samples.length; j++) samples[j] = view.getFloat32(j * 4, true);
           await ff.deleteFile('clip.f32');
           return samples;

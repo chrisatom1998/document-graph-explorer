@@ -4,16 +4,24 @@ import { analyzeDecodedMusic, previewDecodedMusic, type AnalysisOptions } from '
 import type { MusicAnalysis } from './musicTypes';
 import { ResultCache } from './recognition';
 const cache = new ResultCache(128);
-let workerFamily = '';
 import { MusicTaskQueue } from './musicTaskQueue';
-let worker: Worker | null = null;
+const workers = new Map<string, Worker>();
+// Retaining both neural sessions is substantial on memory-constrained devices.
+// Unknown-memory browsers preserve the previous single-session behavior.
+const deviceMemory = typeof navigator === 'undefined' ? undefined : (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+const MAX_WORKERS = deviceMemory !== undefined && deviceMemory >= 16 ? 4 : 1;
 let workerFingerprint: string | undefined;
-// Two decoders can prepare audio, but only one copy of the heavyweight models runs.
+// Two decoders can prepare audio. Up to four family sessions stay warm,
+// but inference remains serialized to bound CPU and transient tensor memory.
 const decoderQueue = new MusicTaskQueue(2);
 const modelQueue = new MusicTaskQueue(1);
 let nextId = 0;
 let idleTimer: ReturnType<typeof setTimeout> | undefined;
-function discard() { worker?.terminate(); worker = null; }
+function discard(current?: Worker) {
+  for (const [family, worker] of workers) {
+    if (!current || current === worker) { worker.terminate(); workers.delete(family); }
+  }
+}
 function parkWorker() {
   clearTimeout(idleTimer);
   idleTimer = setTimeout(discard, 5 * 60_000);
@@ -27,18 +35,21 @@ function request<T>(message: Record<string, unknown>, transfer: Transferable[], 
 function runRequest<T>(message: Record<string, unknown>, transfer: Transferable[], options: Options, fingerprint?: string): Promise<T> {
   options.signal?.throwIfAborted();
   clearTimeout(idleTimer);
-  if (fingerprint) {
-    if (workerFingerprint && workerFingerprint !== fingerprint) discard();
-    workerFingerprint = fingerprint;
-  }
+  // Missing manifests cannot establish that a retained session is current.
+  if (!fingerprint || workerFingerprint !== fingerprint) discard();
+  workerFingerprint = fingerprint;
   const family = message.kind === 'rhythm' || message.kind === 'tonal' ? 'essentia' : String(message.kind);
-  if (worker && workerFamily !== family) discard();
-  workerFamily = family;
-  worker ??= new Worker(new URL('./musicAnalysis.worker.ts', import.meta.url), { type: 'module' });
-  const current = worker; const id = ++nextId;
+  let current = workers.get(family);
+  if (!current) {
+    if (workers.size >= MAX_WORKERS) discard(workers.values().next().value);
+    current = new Worker(new URL('./musicAnalysis.worker.ts', import.meta.url), { type: 'module' });
+  }
+  // Refresh insertion order so an unexpected fifth family evicts the least recently used.
+  workers.delete(family); workers.set(family, current);
+  const id = ++nextId;
   return new Promise<T>((resolve, reject) => {
     const cleanup = () => { clearTimeout(timer); options.signal?.removeEventListener('abort', abort); current.onmessage = null; current.onerror = null; };
-    const fail = (error: Error) => { cleanup(); discard(); reject(error); };
+    const fail = (error: Error) => { cleanup(); discard(current); reject(error); };
     const abort = () => fail(new DOMException('Music analysis cancelled.', 'AbortError'));
     const timer = setTimeout(() => fail(new Error('An audio section took too long to analyze. Try again on this device.')), 180_000);
     options.signal?.addEventListener('abort', abort, { once: true });
@@ -88,5 +99,5 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
         return result;
       } finally { decoder.close(); parkWorker(); }
     }, options.signal);
-  });
+  }).finally(parkWorker);
 }
