@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { useGraphStore } from '../store/graphStore';
@@ -73,6 +73,32 @@ describe('ProgressStrip cancellation', () => {
   it('shows no Cancel button when nothing cancellable is registered', () => {
     render(<ProgressStrip />);
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+  });
+
+  it('minimizes without cancelling, keeps progress current, and restores the controls', () => {
+    const controller = new AbortController();
+    registerIngestAbort(controller);
+    try {
+      render(<ProgressStrip />);
+      fireEvent.click(screen.getByRole('button', { name: 'Minimize processing details' }));
+      expect(controller.signal.aborted).toBe(false);
+      expect(screen.queryByText('first.md')).not.toBeInTheDocument();
+      act(() => useGraphStore.setState({ modelProgress: { kind: 'music-analysis', loaded: 7, total: 32, note: 'Checking a song' } }));
+      expect(screen.getByRole('status')).toHaveTextContent('Analyzing music… · 7/32');
+      fireEvent.click(screen.getByRole('button', { name: 'Show processing details' }));
+      expect(screen.getByText('first.md')).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled();
+      expect(controller.signal.aborted).toBe(false);
+    } finally { clearIngestAbort(controller); }
+  });
+
+  it('shows details for a new run after the previous strip disappears', () => {
+    render(<ProgressStrip />);
+    fireEvent.click(screen.getByRole('button', { name: 'Minimize processing details' }));
+    act(() => useGraphStore.setState({ phase: 'idle' }));
+    expect(screen.queryByRole('button', { name: 'Show processing details' })).not.toBeInTheDocument();
+    act(() => useGraphStore.setState({ phase: 'parsing' }));
+    expect(screen.getByRole('button', { name: 'Minimize processing details' })).toBeVisible();
   });
 
   it('aborts the registered ingest on click and flips to a disabled "Cancelling…"', () => {

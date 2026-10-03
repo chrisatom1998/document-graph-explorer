@@ -1,5 +1,6 @@
 import type { DocNode } from '../model/types';
 import { getNodePosition } from '../scene/positionBuffer';
+import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
 import {
   chunkStore,
@@ -30,6 +31,7 @@ export function collectPositions(nodes: DocNode[]): Record<string, [number, numb
 
 /** Refresh only the graph record (positions plus current graph snapshot). */
 export async function saveGraphRecord(): Promise<void> {
+  if (useCorpusStore.getState().mode !== 'local') return;
   const state = useGraphStore.getState();
   if (state.phase !== 'ready' || !state.corpusHash || state.nodes.length === 0) return;
   const positions = collectPositions(state.nodes);
@@ -45,6 +47,7 @@ export async function saveGraphRecord(): Promise<void> {
 
 /** Persist a complete ready session without importing the coordinator. */
 export async function saveSession(): Promise<void> {
+  if (useCorpusStore.getState().mode !== 'local') return;
   const state = useGraphStore.getState();
   if (!state.corpusHash || state.nodes.length === 0 || state.phase !== 'ready') return;
   const corpusHash = state.corpusHash;

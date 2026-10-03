@@ -16,9 +16,9 @@
  */
 
 /** Polyline segments per curved edge (points per edge = SEGMENTS + 1). */
-export const EDGE_SEGMENTS = 8;
+export const EDGE_SEGMENTS = 24;
 /** Cheaper curves once auto-quality has degraded past tier 2. */
-export const EDGE_SEGMENTS_DEGRADED = 4;
+export const EDGE_SEGMENTS_DEGRADED = 12;
 
 /** Bow height as a fraction of chord length ... */
 const CURVE_RATIO = 0.18;

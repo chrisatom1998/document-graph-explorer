@@ -5,6 +5,7 @@ import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
 import type { MusicDecoder } from './decodeMusic';
 import { reliableInstruments } from './instrumentEvidence';
 import { ResultCache } from './recognition';
+import type { DescriptionScore } from './profileDescriptions';
 
 function fixture(duration: number, options: AnalysisOptions = {}, fail?: string) {
   const calls: string[] = [];
@@ -156,4 +157,69 @@ it('records unsupported short Jamendo inputs without inference or repeated scan 
  expect(r.recognition?.jobs.find(j=>j.modelId==='jamendo')).toMatchObject({status:'unsupported',successful:[],analyzedSeconds:0});
  expect(r.instrumentScan?.complete).toBe(true);
  expect(sanitizeMusicAnalysis(r)?.recognition?.jobs.find(j=>j.modelId==='jamendo')?.status).toBe('unsupported');
+});
+
+async function vocalEvidenceFixture(scores: DescriptionScore[], duration=3) {
+ const decoder: MusicDecoder = { durationSeconds:duration, close() {}, read:async(start,seconds,rate)=>new Float32Array(Math.round(Math.min(seconds,duration-start)*rate)).fill(.1) };
+ const request: MusicRequest = async<T,>(message:Record<string,unknown>) => {
+  if(message.kind==='profile')return scores as T;
+  if(message.kind==='instruments')return {scores:{piano:.95},musicScore:.9} as T;
+  if(message.kind==='jamendo')return {} as T;
+  return {version:2,durationSeconds:3,analyzedSeconds:3,instruments:[],notes:[]} as T;
+ };
+ return analyzeDecodedMusic(decoder,request,{mode:'full'});
+}
+it.each([
+ {group:'sample' as const,label:'vocal chops',competitor:'synthesizer'},
+ {group:'vocal' as const,label:'singing',competitor:'instrumental'},
+])('preserves strong $label voice evidence beside an instrument, with its raw basis',async({group,label,competitor})=>{
+ const result=await vocalEvidenceFixture([{group,label,score:.6},{group,label:competitor,score:.2}]);
+ const voice=result.recognition!.evidence.find(e=>e.dimension==='source'&&e.labelId==='voice');
+ expect(voice).toMatchObject({modelId:'clap',start:0,end:3,score:.6,derivedFrom:{group,labelId:label}});
+ expect(result.recognition!.observations.filter(o=>o.dimension==='source').map(o=>o.labelId)).toEqual(['piano','voice']);
+ expect(result.soundProfile?.source?.label).toBe('piano');
+ expect(result.soundProfile?.voice?.basis).toBe('Music CLAP');
+ expect(sanitizeMusicAnalysis(result)?.recognition?.evidence).toEqual(result.recognition!.evidence);
+ expect(reliableInstruments(result)).toEqual([]);
+});
+it.each([
+ [{group:'sample',label:'vocal chops',score:.34},{group:'sample',label:'synthesizer',score:.1}],
+ [{group:'sample',label:'vocal chops',score:.6},{group:'sample',label:'synthesizer',score:.58}],
+ [{group:'vocal',label:'singing',score:.34},{group:'vocal',label:'instrumental',score:.1}],
+ [{group:'vocal',label:'singing',score:.6},{group:'vocal',label:'instrumental',score:.55}],
+ []
+] as DescriptionScore[][])('does not invent source voice when the existing vocal rule fails (%j)',async(...scores)=>{
+ const result=await vocalEvidenceFixture(scores as DescriptionScore[]);
+ expect(result.recognition!.observations.some(o=>o.dimension==='source'&&o.labelId==='voice')).toBe(false);
+});
+it('uses the qualifying sample score instead of an unrelated higher vocal score, without duplicates',async()=>{
+ const scores:DescriptionScore[]=[{group:'sample',label:'vocal chops',score:.5},{group:'sample',label:'synthesizer',score:.2},{group:'vocal',label:'vocal chops',score:.9},{group:'vocal',label:'instrumental',score:.89}];
+ const result=await vocalEvidenceFixture(scores);
+ expect(result.recognition!.evidence.find(e=>e.labelId==='voice')).toMatchObject({score:.5,derivedFrom:{group:'sample',labelId:'vocal chops'}});
+ const direct=await vocalEvidenceFixture([...scores,{group:'source',label:'voice',score:.7}]);
+ const voices=direct.recognition!.evidence.filter(e=>e.labelId==='voice');
+ expect(voices).toHaveLength(1);expect(voices[0].score).toBe(.7);expect(voices[0].derivedFrom).toBeUndefined();
+});
+
+it('keeps derived voice provenance separate for overlapping classifier windows',async()=>{
+ const result=await vocalEvidenceFixture([{group:'sample',label:'vocal chops',score:.6},{group:'sample',label:'synthesizer',score:.2}],12);
+ const voices=result.recognition!.evidence.filter(e=>e.dimension==='source'&&e.labelId==='voice');
+ expect(voices.map(e=>[e.start,e.end])).toEqual([[0,10],[2,12]]);
+ expect(new Set(voices.map(e=>e.id)).size).toBe(2);
+ expect(sanitizeMusicAnalysis(result)?.recognition?.evidence.filter(e=>e.labelId==='voice')).toEqual(voices);
+});
+
+it('routes atmosphere evidence to the effect dimension',async()=>{
+ const result=await vocalEvidenceFixture([{group:'role',label:'atmosphere',score:.8},{group:'role',label:'lead',score:.1}]);
+ expect(result.recognition!.evidence.find(e=>e.labelId==='atmosphere')).toMatchObject({dimension:'effect',score:.8});
+ expect(sanitizeMusicAnalysis(result)?.recognition?.evidence.find(e=>e.labelId==='atmosphere')?.dimension).toBe('effect');
+});
+it('avoids unused growing snapshots when the consumer only needs cancellation evidence',async()=>{
+ const partial=vi.fn();const clone=vi.spyOn(globalThis,'structuredClone');
+ try {
+  const f=fixture(120,{mode:'full',partialUpdates:'cancelled',onPartial:partial});
+  const result=await f.run();
+  expect(partial).not.toHaveBeenCalled();expect(clone.mock.calls.some(([value])=>value && typeof value==='object' && 'recognition' in value)).toBe(false);
+  expect(result.recognition?.jobs.every(j=>j.status==='complete')).toBe(true);
+ } finally {clone.mockRestore();}
 });

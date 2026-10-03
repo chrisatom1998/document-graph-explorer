@@ -59,11 +59,19 @@ export class InstrumentEvidence {
 
 export function confirmedInstrumentList(analysis: MusicAnalysis): string[] | undefined {
   const reviews=new Map(analysis.soundReviews?.filter(r=>r.dimension==='source').map(r=>[r.labelId,r.decision]));
-  const confirmed=[...new Set([...(analysis.confirmedInstruments??[]),...[...reviews].filter(([,decision])=>decision==='confirmed').map(([label])=>label)])]
-    .filter(label=>!isBroadInstrument(label)&&(!reviews.has(label)||reviews.get(label)==='confirmed'));
+  // A DJ-tag correction is a full explicit source snapshot, including an empty
+  // one. It therefore suppresses stale names and model estimates just like the
+  // older instrument correction field does.
+  const confirmed=[...new Set([...(analysis.confirmedInstruments??analysis.confirmedDjTags?.source??[]),...[...reviews].filter(([,decision])=>decision==='confirmed').map(([label])=>label)])]
+    .filter(label=>!reviews.has(label)||reviews.get(label)==='confirmed');
   // Unsure/Reject history is not a human instrument list; only confirmations replace name tags.
-  if (analysis.confirmedInstruments === undefined && !confirmed.length) return;
+  if (analysis.confirmedDjTags === undefined && analysis.confirmedInstruments === undefined && !confirmed.length) return;
   return confirmed;
+}
+
+export function sourceReviewAllows(analysis: MusicAnalysis, label: string): boolean {
+  const latest = analysis.soundReviews?.filter(review => review.dimension === 'source' && review.labelId === label).at(-1);
+  return !latest || latest.decision === 'confirmed';
 }
 
 export function reliableInstruments(analysis: MusicAnalysis): InstrumentEstimate[] {
@@ -71,5 +79,5 @@ export function reliableInstruments(analysis: MusicAnalysis): InstrumentEstimate
   if (confirmed) return confirmed.map(label=>({label,score:1}));
   if (analysis.recognition) return []; // No independently validated acceptance policy yet.
   if (analysis.version !== 2 || analysis.stage === 'preview') return [];
-  return analysis.instruments.filter(i => i.status === 'likely' && i.score >= 0.6 && !isBroadInstrument(i.label));
+  return analysis.instruments.filter(i => i.status === 'likely' && i.score >= 0.6 && !isBroadInstrument(i.label) && sourceReviewAllows(analysis,i.label));
 }

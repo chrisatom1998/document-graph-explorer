@@ -258,8 +258,12 @@ export default function PathRoute() {
       if (hairRef.current) hairRef.current.visible = false;
     } else if (hairRef.current) {
       const geom = hairRef.current.geometry;
-      geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      geom.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const posAttr = geom.getAttribute('position') as THREE.BufferAttribute | undefined;
+      const colAttr = geom.getAttribute('color') as THREE.BufferAttribute | undefined;
+      if (posAttr && posAttr.array === pos) posAttr.needsUpdate = true;
+      else geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      if (colAttr && colAttr.array === col) colAttr.needsUpdate = true;
+      else geom.setAttribute('color', new THREE.BufferAttribute(col, 3));
       hairRef.current.visible = pairs.length > 0;
       if (fatLineRef.current) fatLineRef.current.visible = false;
     }

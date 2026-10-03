@@ -33,6 +33,7 @@ import {
   DEFAULT_OLLAMA_MODEL,
   useSettingsStore,
   type ChatProvider,
+  type GraphClarity,
   type EmbeddingQueryStyle,
   type EnrichProvider,
   type OcrLanguageId,
@@ -53,6 +54,8 @@ export default function SettingsPanel() {
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const autoQuality = useUiStore((s) => s.autoQuality);
   const setAutoQuality = useUiStore((s) => s.setAutoQuality);
+  const graphClarity = useSettingsStore((s) => s.graphClarity);
+  const setGraphClarity = useSettingsStore((s) => s.setGraphClarity);
   const lastError = useUiStore((s) => s.lastError);
   const phase = useGraphStore((s) => s.phase);
   const nodeCount = useGraphStore((s) => s.nodes.length);
@@ -315,6 +318,28 @@ export default function SettingsPanel() {
           />
         </div>
 
+        <section className="settings-section">
+          <h3 className="settings-section__heading">Graph appearance and performance</h3>
+          <label className="settings-label" htmlFor="graph-clarity">Graph clarity</label>
+          <select id="graph-clarity" className="settings-select" value={graphClarity} onChange={event => setGraphClarity(event.target.value as GraphClarity)}>
+            <option value="high">High — sharper text and smooth edges</option>
+            <option value="ultra">Ultra — maximum detail</option>
+            <option value="performance">Performance — lower GPU use</option>
+          </select>
+          <p className="settings-hint">Applies to both 2D and 3D. Ultra uses more graphics power; High balances sharpness and smooth movement.</p>
+          <label
+            className="settings-check"
+            title="Reduce glow, animation, and label density when the frame rate drops. High and Ultra prioritize sharpness. Turn off to keep full effects even if a large graph stutters."
+          >
+            <input
+              type="checkbox"
+              checked={autoQuality}
+              onChange={(e) => setAutoQuality(e.target.checked)}
+            />
+            Auto-adjust quality for smooth performance
+          </label>
+        </section>
+
         <section className="settings-section"><h3 className="settings-section__heading">Music analysis</h3><MusicAnalysisMode /></section>
         {AIRGAP && (
           <section className="settings-section">
@@ -326,8 +351,8 @@ export default function SettingsPanel() {
           </section>
         )}
         {!AIRGAP && (
-        <section className="settings-section">
-          <h3 className="settings-section__heading">AI (optional)</h3>
+        <details className="settings-section">
+          <summary className="settings-section__heading">AI connections (optional)</summary>
           <label
             className="settings-check"
             title="Blocks all external network in the app and answers chat from your documents locally. Behavioral setting — for the sealed, CSP-enforced guarantee, ship the air-gapped build."
@@ -523,7 +548,7 @@ export default function SettingsPanel() {
             excerpt from every document when &quot;all documents&quot; is on — plus recent chat
             history to the chat provider; your notes and tags are excluded.
           </p>
-        </section>
+        </details>
         )}
 
         <details className="settings-advanced">
@@ -599,23 +624,9 @@ export default function SettingsPanel() {
           </div>
         </details>
 
-        <section className="settings-section">
-          <h3 className="settings-section__heading">Performance</h3>
-          <label
-            className="settings-check"
-            title="Automatically lower visual quality (bloom, labels, depth of field) when the frame rate drops, and restore it when there's headroom. Turn off to keep maximum quality even if a large graph stutters."
-          >
-            <input
-              type="checkbox"
-              checked={autoQuality}
-              onChange={(e) => setAutoQuality(e.target.checked)}
-            />
-            Auto-adjust quality for smooth performance
-          </label>
-        </section>
 
-        <section className="settings-section">
-          <h3 className="settings-section__heading">Data</h3>
+        <details className="settings-section">
+          <summary className="settings-section__heading">Data</summary>
           <label
             className="settings-check"
             title="Store document vectors in IndexedDB so the next visit skips re-embedding. Turn off to free space; the next reload re-embeds from cached text."
@@ -722,10 +733,10 @@ export default function SettingsPanel() {
             are kept.
           </p>
           {clearNote && <p className="settings-note">{clearNote}</p>}
-        </section>
+        </details>
 
-        <section className="settings-section">
-          <h3 className="settings-section__heading">About</h3>
+        <details className="settings-section">
+          <summary className="settings-section__heading">About</summary>
           <div className="settings-details">
             <span className="settings-details__label">Version</span>
             <span className="settings-details__value">{appVersion}</span>
@@ -759,7 +770,7 @@ export default function SettingsPanel() {
             Copy diagnostics
           </button>
           {diagnosticsNote && <p className="settings-note">{diagnosticsNote}</p>}
-        </section>
+        </details>
       </div>
     </div>
   );

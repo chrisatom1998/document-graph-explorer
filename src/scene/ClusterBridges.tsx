@@ -40,7 +40,7 @@ import { edgeControlPoint, evalEdgePoint } from './edgeCurve';
 import { aggregateBridges } from './bridgeAggregation';
 
 // Segments per trunk: longer arcs than node edges, so a little smoother.
-const BRIDGE_SEGMENTS = 12;
+const BRIDGE_SEGMENTS = 32;
 // Wider than Edges' 1.6px filaments — a trunk, not a highway.
 const FAT_WIDTH_PX = 3.0;
 const FAT_OPACITY = 0.22;

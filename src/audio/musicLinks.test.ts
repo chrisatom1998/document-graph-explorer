@@ -117,3 +117,10 @@ it('does not restore an explicitly rejected or uncertain source through filename
   expect(musicPairEdges(a,{...node('b'),path:'piano.wav'}).filter(e=>e.kind==='instrument')).toEqual([]);
  }
 });
+it('uses explicit DJ corrections over filename hints and raw instrument guesses',()=>{
+ const a={...node('a',{confirmedDjTags:{source:[],production:[],character:[]},instruments:[{label:'piano',score:.99,status:'likely'}]}),path:'piano.wav'};
+ const b={...node('b'),path:'piano.wav'};
+ expect(musicPairEdges(a,b).filter(edge=>edge.kind==='instrument')).toEqual([]);
+ const confirmed={...node('confirmed',{confirmedDjTags:{source:['piano'],production:[],character:[]}}),path:'synth.wav'};
+ expect(musicPairEdges(confirmed,node('other',{confirmedDjTags:{source:['piano'],production:[],character:[]}})).find(edge=>edge.kind==='instrument')?.evidence[0]).toContain('Confirmed by you on both tracks');
+});

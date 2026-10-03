@@ -9,8 +9,24 @@ test('local synthetic audio is analyzed, playable, and corrections survive reloa
     if (url.protocol.startsWith('http') && !['127.0.0.1', 'localhost'].includes(url.hostname)) remote.push(request.url());
   });
   const workerResponse = page.waitForResponse(response => /\/assets\/musicAnalysis\.worker-[^/]+\.js$/.test(response.url()));
-  await page.addInitScript(() => localStorage.setItem('knowledge-nebula-settings', JSON.stringify({ musicAnalysisMode: 'fast' })));
+  await page.addInitScript(() => {
+    localStorage.setItem('knowledge-nebula-settings', JSON.stringify({ musicAnalysisMode: 'full' }));
+    // Observe real worker progress without substituting analysis or model data.
+    const observed = window as typeof window & { featureCacheHits: string[] };
+    observed.featureCacheHits = [];
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(url: string | URL, options?: WorkerOptions) {
+        super(url, options);
+        this.addEventListener('message', event => {
+          const progress = event.data?.progress;
+          if (typeof progress === 'string' && /saved (instrument|sound) features/.test(progress)) observed.featureCacheHits.push(progress);
+        });
+      }
+    };
+  });
   await page.goto('/');
+  const firstStarted = Date.now();
   await page.getByRole('button', { name: 'Add files', exact: true }).click();
   // Generate our own 3-second 440 Hz PCM WAV: no private or licensed samples.
   await page.locator('input[type="file"]').first().evaluate(element => {
@@ -28,7 +44,8 @@ test('local synthetic audio is analyzed, playable, and corrections survive reloa
     Object.defineProperty(element, 'files', { configurable: true, value: transfer.files });
     element.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeVisible({ timeout: 240_000 });
+  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled({ timeout: 240_000 });
+  const firstAnalysisMs = Date.now() - firstStarted;
   const openTrack = async () => {
     await page.getByRole('button', { name: 'Search documents' }).click();
     await page.getByRole('option', { name: /Synthetic tone/i }).click();
@@ -44,6 +61,12 @@ test('local synthetic audio is analyzed, playable, and corrections survive reloa
   await page.getByText('Track actions', { exact: true }).click();
   await expect(page.getByRole('button', { name: 'Reanalyze musical features' })).toBeEnabled();
   await expect(page.locator('audio')).toHaveAttribute('src', /^blob:/);
+  await page.locator('.audio-controls--preview').getByRole('button', { name: 'Play sample' }).click();
+  await expect.poll(() => page.locator('audio').evaluate(audio => (audio as HTMLAudioElement).currentTime)).toBeGreaterThan(0);
+  await page.locator('.audio-controls--preview').getByRole('button', { name: 'Pause sample' }).click();
+  await expect.poll(() => page.locator('audio').evaluate(audio => (audio as HTMLAudioElement).paused)).toBe(true);
+  await expect(page.locator('.audio-controls--preview').getByRole('button', { name: 'Play sample' })).toBeEnabled();
+  await expect(page.locator('.audio-controls--preview .audio-waveform line')).toHaveCount(101);
   await page.getByText('Correct the instrument', { exact: true }).click();
   await page.getByLabel('Known instrument', { exact: false }).selectOption('synthesizer');
   await page.getByRole('button', { name: 'Save confirmed instrument' }).click();
@@ -52,6 +75,13 @@ test('local synthetic audio is analyzed, playable, and corrections survive reloa
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeVisible();
   await openTrack();
   await expect(page.locator('.music-features')).toContainText('synthesizer');
+  await page.getByText('Track actions', { exact: true }).click();
+  const repeatedStarted = Date.now();
+  await page.getByRole('button', { name: 'Reanalyze musical features', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => (window as typeof window & { featureCacheHits: string[] }).featureCacheHits.length), { timeout: 120_000 }).toBeGreaterThanOrEqual(3);
+  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled({ timeout: 120_000 });
+  await expect(page.locator('.music-features')).toContainText('synthesizer');
+  console.log(JSON.stringify({ firstAnalysisMs, repeatedAnalysisMs: Date.now() - repeatedStarted, cacheHits: await page.evaluate(() => (window as typeof window & { featureCacheHits: string[] }).featureCacheHits) }));
   expect(errors).toEqual([]);
   expect(remote).toEqual([]);
 });

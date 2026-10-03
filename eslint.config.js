@@ -71,7 +71,7 @@ export default tseslint.config(
   },
   {
     // Node context: tests, build config, and the .mjs build/verify scripts.
-    files: ['**/*.test.ts', '*.config.{ts,js}', 'vite.config.ts', '**/*.mjs'],
+    files: ['src/server/**/*.ts', 'src/dev/**/*.ts', '**/*.test.ts', '*.config.{ts,js}', 'vite.config.ts', '**/*.mjs'],
     languageOptions: { sourceType: 'module', globals: { ...globals.node } },
   },
   {

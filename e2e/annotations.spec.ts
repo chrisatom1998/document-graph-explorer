@@ -1,9 +1,19 @@
 import { test, expect, type Page } from '@playwright/test';
 
 test('competing tabs retain committed notes and deletion versions when an older save retries', async ({ page, context }) => {
+  // This checks persistence across two active tabs; software-rendering two
+  // 3D scenes can starve hydration. Exercise the supported 2D preference;
+  // the smoke and clarity tests cover 3D rendering independently.
+  await context.addInitScript(() => localStorage.setItem('knowledge-nebula-dims', '2'));
   await page.goto('/');
   await page.getByRole('button', { name: 'Load demo corpus' }).click();
   await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents', { timeout: 270_000 });
+  const restoredCount = async (tab: Page) => {
+    const back = tab.getByRole('button', { name: 'Back to graph', exact: true });
+    await expect(tab.locator('.graph-navigator__summary').or(back)).toBeVisible({ timeout: 150_000 });
+    if (await back.isVisible()) await back.click();
+    await expect(tab.locator('.graph-navigator__summary')).toContainText('100 documents', { timeout: 150_000 });
+  };
   const openNote = async (tab: Page) => {
     const tour = tab.getByRole('button', { name: 'Dismiss getting started' });
     if (await tour.isVisible()) await tour.click();
@@ -15,9 +25,34 @@ test('competing tabs retain committed notes and deletion versions when an older 
     await expect(tab.getByRole('textbox', { name: 'Document note' })).toBeVisible();
   };
   await openNote(page);
+  // A live graph count does not establish that its asynchronous save committed.
+  // The competing-tab scenario needs a restorable baseline before either edit.
+  // Observe IndexedDB without forcing a save or changing application state.
+  await expect.poll(() => page.evaluate(() => new Promise<number>((resolve, reject) => {
+    const request = indexedDB.open('knowledge-nebula');
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction(['settings', 'corpora']);
+      let count = 0;
+      const active = tx.objectStore('settings').get('lastCorpusId');
+      active.onsuccess = () => {
+        if (!active.result) return;
+        const corpus = tx.objectStore('corpora').get(active.result);
+        corpus.onsuccess = () => {
+          const record = corpus.result;
+          if (record?.corpusHash) count = record.exportData?.nodes
+            ?.filter((node: { kind: string }) => node.kind === 'document').length ?? 0;
+        };
+      };
+      tx.oncomplete = () => { db.close(); resolve(count); };
+      tx.onerror = () => { db.close(); reject(tx.error); };
+    };
+  })), { timeout: 150_000, message: 'Initial corpus snapshot committed before opening the competing tab' }).toBe(100);
   const other = await context.newPage();
   await other.goto('/');
-  await expect(other.locator('.graph-navigator__summary')).toContainText('100 documents');
+  // Verify the restored workspace through its visible library count.
+  await restoredCount(other);
   await openNote(other);
   // Both edits have the SAME logical millisecond. The first committed value
   // wins; a later retry cannot claim freshness from journal or arrival time.
@@ -66,7 +101,7 @@ test('competing tabs retain committed notes and deletion versions when an older 
     });
   }, editTime);
   await page.reload();
-  await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents');
+  await restoredCount(page);
   await openNote(page);
   await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('');
 });

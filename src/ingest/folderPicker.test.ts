@@ -31,51 +31,26 @@ afterEach(() => {
   delete (window as { showDirectoryPicker?: unknown }).showDirectoryPicker;
 });
 
-describe('openFolderPicker with the File System Access API', () => {
-  it('scans the picked directory and hands the result to the shared ingest path', async () => {
-    const handle = { kind: 'directory', name: 'vault' } as unknown as FileSystemDirectoryHandle;
-    const named = [{ file: { name: 'a.md' } as File, path: 'vault/a.md' }];
-    window.showDirectoryPicker = vi.fn().mockResolvedValue(handle);
-    scanner.scanFolder.mockResolvedValue(named);
-
+describe('standard folder picker', () => {
+  it('uses a synchronous file chooser even when an embedded browser exposes the directory API', () => {
+    window.showDirectoryPicker = vi.fn().mockRejectedValue(new DOMException('Unavailable', 'SecurityError'));
+    const click = vi.spyOn(HTMLInputElement.prototype, 'click').mockImplementation(() => {});
     openFolderPicker();
-    await vi.waitFor(() => expect(localFiles.ingestNamedFiles).toHaveBeenCalledWith(named));
-
-    expect(window.showDirectoryPicker).toHaveBeenCalledWith({
-      id: 'knowledge-nebula-add-folder',
-      mode: 'read',
-    });
-    expect(scanner.scanFolder).toHaveBeenCalledWith(handle, expect.any(Function));
-    expect(document.querySelector('input[webkitdirectory]')).toBeNull();
+    expect(click).toHaveBeenCalledOnce();
+    expect(window.showDirectoryPicker).not.toHaveBeenCalled();
+    expect(document.querySelector('input[webkitdirectory]')).not.toBeNull();
+    click.mockRestore();
   });
 
-  it('treats cancelling the picker as a no-op', async () => {
-    window.showDirectoryPicker = vi
-      .fn()
-      .mockRejectedValue(new DOMException('user dismissed the picker', 'AbortError'));
-
+  it('recreates the input if it was removed from the document', () => {
     openFolderPicker();
-    await flush();
-
-    expect(scanner.scanFolder).not.toHaveBeenCalled();
-    expect(localFiles.ingestNamedFiles).not.toHaveBeenCalled();
-    expect(toasts.pushToast).not.toHaveBeenCalled();
-  });
-
-  it('toasts instead of ingesting when the folder has no supported files', async () => {
-    const handle = { kind: 'directory', name: 'empty' } as unknown as FileSystemDirectoryHandle;
-    window.showDirectoryPicker = vi.fn().mockResolvedValue(handle);
-    scanner.scanFolder.mockResolvedValue([]);
-
+    document.querySelector('input[webkitdirectory]')?.remove();
     openFolderPicker();
-    await vi.waitFor(() => expect(toasts.pushToast).toHaveBeenCalled());
-
-    expect(toasts.pushToast).toHaveBeenCalledWith(expect.stringContaining('empty'), 'info');
-    expect(localFiles.ingestNamedFiles).not.toHaveBeenCalled();
+    expect(document.querySelector('input[webkitdirectory]')).not.toBeNull();
   });
 });
 
-describe('openFolderPicker webkitdirectory fallback', () => {
+describe('openFolderPicker selection', () => {
   it('routes the flat selection through scanPickedFolderFiles into the shared ingest path', async () => {
     const picked = {
       name: 'a.md',
@@ -92,6 +67,16 @@ describe('openFolderPicker webkitdirectory fallback', () => {
 
     await vi.waitFor(() => expect(localFiles.ingestNamedFiles).toHaveBeenCalledWith(named));
     expect(scanner.scanPickedFolderFiles).toHaveBeenCalledWith([picked], expect.any(Function));
+  });
+
+  it('reports an empty supported-file selection', async () => {
+    scanner.scanPickedFolderFiles.mockResolvedValue([]);
+    openFolderPicker();
+    const input = document.querySelector<HTMLInputElement>('input[webkitdirectory]')!;
+    Object.defineProperty(input, 'files', { value: [{ name: 'ignored.bin', webkitRelativePath: 'vault/ignored.bin' }], configurable: true });
+    input.dispatchEvent(new Event('change'));
+    await vi.waitFor(() => expect(toasts.pushToast).toHaveBeenCalledWith(expect.stringContaining('No supported files'), 'info'));
+    expect(localFiles.ingestNamedFiles).not.toHaveBeenCalled();
   });
 
   it('does nothing when the fallback picker is dismissed with no selection', async () => {

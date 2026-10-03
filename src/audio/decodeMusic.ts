@@ -1,9 +1,13 @@
+import type { DecodedMusicSnapshot } from './musicDecodedCache';
 import { instrumentWindowStarts } from './instrumentEvidence';
+const SHORT_CLIP_SECONDS = 30;
+const MODEL_SAMPLE_RATES = [16000, 44100, 48000];
 export interface MusicExcerpts { samples: Float32Array[]; durationSeconds: number; }
 export interface MusicDecoder {
   durationSeconds: number;
   read: (start: number, seconds: number, sampleRate: number) => Promise<Float32Array>;
   close: () => void;
+  snapshot?: () => DecodedMusicSnapshot | undefined;
 }
 
 /** Keep the compressed original and only a small decoded section in memory. */
@@ -11,7 +15,14 @@ export async function openMusicDecoder(blob: Blob, name: string, signal?: AbortS
   const { FFmpeg } = await import('@ffmpeg/ffmpeg');
   signal?.throwIfAborted();
   const ff = new FFmpeg();
-  const close = () => { signal?.removeEventListener('abort', close); ff.terminate(); };
+  const decoded = new Map<number, Float32Array>();
+  let shortDecode: Promise<void> | undefined;
+  let closed = false;
+  const close = () => {
+    if (closed) return;
+    closed = true; decoded.clear();
+    signal?.removeEventListener('abort', close); ff.terminate();
+  };
   signal?.addEventListener('abort', close, { once: true });
   const timer = setTimeout(close, 120_000);
   const base = `${import.meta.env.BASE_URL}audio-runtime/`;
@@ -30,22 +41,71 @@ export async function openMusicDecoder(blob: Blob, name: string, signal?: AbortS
     } catch { /* Some containers need decoding to discover their duration. */ }
     if (Number.isFinite(duration) && duration > 86400) throw new Error('Split recordings longer than 24 hours before analysis.');
     if (Number.isFinite(duration) && duration > 0) durationSeconds = duration;
+    const readSamples = async (file: string, maxSamples = Infinity): Promise<Float32Array> => {
+      const data = await ff.readFile(file);
+      if (typeof data === 'string') throw new Error('No audio samples found.');
+      const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+      const samples = new Float32Array(Math.min(Math.floor(data.byteLength / 4), maxSamples));
+      for (let j = 0; j < samples.length; j++) samples[j] = view.getFloat32(j * 4, true);
+      await ff.deleteFile(file);
+      signal?.throwIfAborted();
+      if (closed) throw new Error('The audio decoder was closed.');
+      return samples;
+    };
+    const decodeShortClip = async () => {
+      const timer = setTimeout(close, 120_000);
+      try {
+        // One input decoder feeds all model rates. FFmpeg retains the same
+        // antialiasing/downmix filters; no JS resampler changes the model input.
+        // Preserve the codec-tail flush at the 30-second boundary. Only clips
+        // actually within the bound are retained; longer output falls back to
+        // the original bounded section reader rather than truncating coverage.
+        const outputs = MODEL_SAMPLE_RATES.flatMap(rate => [
+          '-map', `[rate${rate}]`, '-t', String(SHORT_CLIP_SECONDS + 1), '-ac', '1',
+          '-ar', String(rate), '-f', 'f32le', '-y', `decoded-${rate}.f32`,
+        ]);
+        const status = await ff.exec([
+          '-i', input, '-filter_complex', '[0:a:0]asplit=3[rate16000][rate44100][rate48000]', ...outputs,
+        ], 90_000);
+        if (status !== 0) throw new Error('This audio could not be decoded for music analysis.');
+        for (const rate of MODEL_SAMPLE_RATES) {
+          const samples = await readSamples(`decoded-${rate}.f32`);
+          signal?.throwIfAborted();
+          if (closed) throw new Error('The audio decoder was closed.');
+          decoded.set(rate, samples);
+        }
+        if (MODEL_SAMPLE_RATES.some(rate => decoded.get(rate)!.length > SHORT_CLIP_SECONDS * rate)) {
+          decoded.clear();
+        }
+      } catch (error) { decoded.clear(); throw error; }
+      finally { clearTimeout(timer); }
+    };
     return {
       durationSeconds, close,
+      snapshot: () => durationSeconds > 0 && durationSeconds <= SHORT_CLIP_SECONDS && decoded.size === 3
+        ? { durationSeconds, rates: new Map(decoded) } : undefined,
       async read(start, seconds, sampleRate) {
         signal?.throwIfAborted();
+        if (closed) throw new Error('The audio decoder was closed.');
+        if (durationSeconds > 0 && durationSeconds <= SHORT_CLIP_SECONDS && MODEL_SAMPLE_RATES.includes(sampleRate)) {
+          await (shortDecode ??= decodeShortClip());
+          signal?.throwIfAborted();
+          if (closed) throw new Error('The audio decoder was closed.');
+          const samples = decoded.get(sampleRate);
+          if (samples) {
+            // Each request owns its buffer: sending it to the model worker must
+            // not detach the retained PCM needed by the next check.
+            const from = Math.max(0, Math.round(start * sampleRate));
+            return samples.slice(from, Math.max(from, Math.round((start + seconds) * sampleRate)));
+          }
+        }
         const readTimer = setTimeout(close, 120_000);
         try {
-          // FFmpeg applies its resampling filter before reducing to the model's 16 kHz.
-          const status = await ff.exec(['-ss', String(start), '-i', input, '-t', String(seconds), '-map', '0:a:0', '-vn', '-ac', '1', '-ar', String(sampleRate), '-f', 'f32le', '-y', 'clip.f32'], 90_000);
+          // Flush delayed codec/resampler samples, then crop by sample count.
+          // Never pad a genuinely short endpoint.
+          const status = await ff.exec(['-ss', String(start), '-i', input, '-t', String(seconds + 1), '-map', '0:a:0', '-vn', '-ac', '1', '-ar', String(sampleRate), '-f', 'f32le', '-y', 'clip.f32'], 90_000);
           if (status !== 0) throw new Error('This audio could not be decoded for music analysis.');
-          const data = await ff.readFile('clip.f32');
-          if (typeof data === 'string') throw new Error('No audio samples found.');
-          const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-          const samples = new Float32Array(Math.floor(data.byteLength / 4));
-          for (let j = 0; j < samples.length; j++) samples[j] = view.getFloat32(j * 4, true);
-          await ff.deleteFile('clip.f32');
-          return samples;
+          return await readSamples('clip.f32', Math.round(seconds * sampleRate));
         } finally { clearTimeout(readTimer); }
       },
     };

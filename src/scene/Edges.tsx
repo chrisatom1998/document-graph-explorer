@@ -11,8 +11,9 @@
  *   width. GL_LINES hairlines are 1 device px everywhere (linewidth is
  *   ignored), which reads as thread-thin wireframe on retina next to the
  *   glossy nodes; the ribbons let edges participate in the bloom aesthetic.
- * - Hairlines (tier >= 2, and always in the 2D star chart, whose delicate
- *   hairline look is intentional): the original LineSegments path.
+ * - High/Ultra keep CSS-sized ribbons in both views, so supersampling never
+ *   shrinks a 2D connection to a fraction of a CSS pixel. Performance can
+ *   fall back to the original LineSegments path.
  *
  * - Geometry attributes are rebuilt when the edge list (or curve quality)
  *   changes; endpoint positions are streamed from positionBuffer each layout
@@ -33,6 +34,7 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { positionBuffer, slotOfId, spawnAtOfSlot } from './positionBuffer';
 import { clusterColor, EDGE_TINTS, FLAT_EDGE, FLAT_EDGE_FOCUS } from './palette';
 import { computeEmphasis } from './emphasis';
@@ -181,15 +183,13 @@ export default function Edges() {
   const nodeCount = useGraphStore((s) => s.nodes.length);
   const dims = useUiStore((s) => s.dims);
   const qualityTier = useUiStore((s) => s.qualityTier);
+  const clarity = useSettingsStore((s) => s.graphClarity);
   // Bezier resolution follows the auto-quality ladder (spec §7.4): degraded
   // tiers drop to coarser arcs. Selector collapses to a boolean so the
   // component only re-renders (and rebuilds buffers) when crossing the line.
-  const segments = useUiStore((s) =>
-    s.qualityTier >= 3 ? EDGE_SEGMENTS_DEGRADED : EDGE_SEGMENTS,
-  );
-  // Ribbons cost ~4x the vertices of GL_LINES, so they ride the top of the
-  // quality ladder only; the 2D star chart keeps hairlines by design.
-  const fat = useUiStore((s) => s.dims === 3 && s.qualityTier < 2);
+  // Flat connections are straight: one segment is both sharper and cheaper.
+  const segments = dims === 2 ? 1 : qualityTier >= 3 ? EDGE_SEGMENTS_DEGRADED : EDGE_SEGMENTS;
+  const fat = clarity !== 'performance' || (dims === 3 && qualityTier < 2);
   const renderEdges = useMemo(() => {
     if (edges.length <= 1800) return edges;
     const cap = dims === 2 ? 900 : qualityTier >= 2 ? 1200 : 1500;
@@ -207,7 +207,9 @@ export default function Edges() {
   const size = useThree((s) => s.size);
   useEffect(() => {
     fatMaterial.resolution.set(size.width, size.height);
-  }, [size]);
+    fatMaterial.linewidth = dims === 2 ? 1 : FAT_WIDTH_PX;
+    fatMaterial.opacity = dims === 2 ? 0.32 : FAT_OPACITY;
+  }, [size, dims]);
 
   const colorsDirty = useRef(true);
   const forcePositions = useRef(true);

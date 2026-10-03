@@ -11,6 +11,7 @@
  * passages so provider selection cannot change the evidence base.
  */
 
+import { musicCopilotAnswer, MUSIC_COPILOT_INSTRUCTIONS } from './musicCopilot';
 import { isOffline } from '../offline';
 import { useGraphStore } from '../store/graphStore';
 import {
@@ -227,7 +228,7 @@ export function buildPrompt(question: string, chunks: RetrievedChunk[]): string 
 }
 
 /** Send a chat message and get an AI response. */
-export async function sendChatMessage(question: string): Promise<void> {
+export async function sendChatMessage(question: string, music?: { selectedId: string | null }): Promise<void> {
   const q = question.trim();
   if (!q) return;
 
@@ -276,7 +277,16 @@ export async function sendChatMessage(question: string): Promise<void> {
   let generationTimeoutUsedMs = REQUEST_TIMEOUT_MS;
 
   try {
-    const { chunks, included, total, truncated } = await retrieveChunks(q, chatScope);
+    const graph = useGraphStore.getState();
+    const musicResult = music ? musicCopilotAnswer(q, graph.nodes, graph.edges, music.selectedId) : null;
+    const { chunks, included, total, truncated } = musicResult
+      ? { chunks: musicResult.chunks, included: musicResult.chunks.length, total: graph.nodes.filter(n => n.fileType === 'audio').length, truncated: false }
+      : await retrieveChunks(q, chatScope);
+
+    if (musicResult && (useLocal || !musicResult.chunks.length)) {
+      chat.updateMessage(assistantId, { text: musicResult.text, sources: musicResult.sources });
+      return;
+    }
 
     if (useLocal) {
       const { text, sources: localSources } = formatExtractiveAnswer(q, chunks, {
@@ -309,7 +319,7 @@ export async function sendChatMessage(question: string): Promise<void> {
     sources = bestChunkSources(chunks);
 
     // Build prompt + multi-turn history and stream from the selected provider.
-    const prompt = buildPrompt(q, chunks);
+    const prompt = (music ? `${MUSIC_COPILOT_INSTRUCTIONS}\n` : '') + buildPrompt(q, chunks);
     generationTimeoutUsedMs = generationTimeoutMs(prompt.length, REQUEST_TIMEOUT_MS);
     // Manual timeout instead of AbortSignal.any([controller, AbortSignal.timeout]):
     // same behavior, works on browsers that predate .any(), and the reason lets

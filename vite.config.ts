@@ -1,5 +1,8 @@
+import { djAssistantPlugin } from './src/server/djAssistant';
+import { djCopilotPlugin } from './src/server/djCopilot';
+import { djReviewerPlugin } from './src/server/djReviewer';
 /// <reference types="vitest/config" />
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { buildCsp } from './src/security/csp';
@@ -35,6 +38,8 @@ function injectCsp(airgap: boolean): Plugin {
  * the CSP above as a header) — copy them into your host's header config.
  */
 const SECURITY_HEADERS = {
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Embedder-Policy': 'require-corp',
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
@@ -44,12 +49,12 @@ const SECURITY_HEADERS = {
     'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()',
 };
 
-// NOTE: no COOP/COEP headers on purpose — we use transferable Float32Arrays
-// (not SharedArrayBuffer), so cross-origin isolation buys nothing here.
+// Isolation permits bounded ONNX WASM threading. All model/runtime resources
+// remain same-origin; hosts without isolation retain one-thread inference.
 export default defineConfig(({ mode }) => ({
-  plugins: [essentiaCsp(), react(), tailwindcss(), injectCsp(mode === 'airgap')],
+  plugins: [essentiaCsp(), react(), tailwindcss(), injectCsp(mode === 'airgap'), ...(mode === 'airgap' ? [] : [djAssistantPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djCopilotPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djReviewerPlugin()])],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
-  server: { headers: SECURITY_HEADERS },
+  server: { headers: { ...SECURITY_HEADERS, 'Permissions-Policy': mode === 'airgap' ? SECURITY_HEADERS['Permissions-Policy'] : SECURITY_HEADERS['Permissions-Policy'].replace('microphone=()', 'microphone=(self)') } },
   // Workers receive Vercel's CSP as a response header, not the page's meta tag.
   // Exercise the same restrictions in built-app browser tests.
   preview: { headers: { ...SECURITY_HEADERS, 'Content-Security-Policy': `${buildCsp({ airgap: mode === 'airgap' })}; frame-ancestors 'none'` } },

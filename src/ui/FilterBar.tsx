@@ -47,7 +47,7 @@ const FILE_TYPE_ORDER: FileType[] = [
  * filterOpen field by design, so this never needs to touch shared stores
  * beyond `filter` itself.
  */
-export default function FilterBar() {
+export default function FilterBar({ embedded = false }: { embedded?: boolean }) {
   const nodes = useGraphStore((s) => s.nodes);
   const edges = useGraphStore((s) => s.edges);
   const clusterNames = useGraphStore((s) => s.clusterNames);
@@ -55,18 +55,18 @@ export default function FilterBar() {
   const filter = useUiStore((s) => s.filter);
   const setFilter = useUiStore((s) => s.setFilter);
 
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(!embedded);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (collapsed) return;
+    if (collapsed || embedded) return;
     const closeOutside = (event: PointerEvent) => {
       if (event.target instanceof Node && !rootRef.current?.contains(event.target)) setCollapsed(true);
     };
     window.addEventListener('pointerdown', closeOutside);
     return () => window.removeEventListener('pointerdown', closeOutside);
-  }, [collapsed]);
+  }, [collapsed, embedded]);
   const matchingCount = useMemo(() => {
     const matching = nodesMatchingFilter(nodes, edges, filter);
     return nodes.filter((node) => node.kind === 'document' && (!matching || matching.has(node.id))).length;
@@ -131,15 +131,15 @@ export default function FilterBar() {
   return (
     <>
       <SnapshotDiffBanner />
-    <div className="filter-bar-layer" ref={rootRef} onKeyDown={(event) => {
-      if (event.key === 'Escape' && !collapsed) {
+    <div className={`filter-bar-layer${embedded ? " filter-bar-layer--embedded" : ""}`} ref={rootRef} onKeyDown={(event) => {
+      if (event.key === 'Escape' && !collapsed && !embedded) {
         event.preventDefault();
         event.stopPropagation();
         setCollapsed(true);
         toggleRef.current?.focus();
       }
     }}>
-      <div className="filter-bar__toggle-wrap">
+      <div className="filter-bar__toggle-wrap" hidden={embedded}>
         <button
           ref={toggleRef}
           type="button"
@@ -182,7 +182,7 @@ export default function FilterBar() {
           </div>
 
           {clusterCounts.length > 0 && (
-            <div className="filter-bar__group">
+            <div className="filter-bar__group filter-bar__group--clusters">
               <span className="filter-bar__group-label">Cluster</span>
               {clusterCounts.map(([c, count]) => (
                 <button

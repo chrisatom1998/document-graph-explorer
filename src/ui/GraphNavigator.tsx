@@ -5,6 +5,8 @@ import { useActiveOptionScroll } from './useActiveOptionScroll';
 import { fileTypeChip, selectedDocumentTitle } from '../pipeline/codeLanguage';
 import { focusNode } from './focusNode';
 import { applyComparePick } from './openCompare';
+import { nodesMatchingFilter } from '../scene/emphasis';
+import './GraphNavigator.css';
 
 const SUMMARY_ID = 'graph-navigator-summary';
 const INSTRUCTIONS_ID = 'graph-navigator-instructions';
@@ -20,32 +22,47 @@ function optionId(index: number): string {
  * The data comes from graphStore rather than render
  * buffers so it remains complete when the scene is collapsed or simplified.
  */
-export default function GraphNavigator() {
+export default function GraphNavigator({ embedded = false }: { embedded?: boolean }) {
   const nodes = useGraphStore((state) => state.nodes);
-  const edgeCount = useGraphStore((state) => state.edges.length);
+  const edges = useGraphStore((state) => state.edges);
+  const edgeCount = edges.length;
+  const filter = useUiStore((state) => state.filter);
   const selectedId = useUiStore((state) => state.selectedId);
   const comparePick = useUiStore((state) => state.comparePick);
   const listRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(embedded);
 
   useEffect(() => {
-    if (!expanded) return;
+    if (!expanded || embedded) return;
     const closeOutside = (event: PointerEvent) => {
       if (event.target instanceof Node && !rootRef.current?.contains(event.target)) setExpanded(false);
     };
     window.addEventListener('pointerdown', closeOutside);
     return () => window.removeEventListener('pointerdown', closeOutside);
-  }, [expanded]);
+  }, [expanded, embedded]);
 
-  const orderedNodes = useMemo(
-    () => [...nodes].sort((a, b) => {
+  const allowedNodeIds = useMemo(
+    () => nodesMatchingFilter(nodes, edges, filter),
+    [nodes, edges, filter],
+  );
+  const orderedNodes = useMemo(() => {
+    const candidates = allowedNodeIds ? nodes.filter((node) => allowedNodeIds.has(node.id)) : nodes;
+    return [...candidates].sort((a, b) => {
       if (a.kind !== b.kind) return a.kind === 'document' ? -1 : 1;
       return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
-    }),
-    [nodes],
-  );
+    });
+  }, [nodes, allowedNodeIds]);
+  // Cluster order follows first appearance in the alphabetical list. Using
+  // distinct clusters avoids revisiting one when its documents interleave.
+  const clusterStarts = useMemo(() => {
+    const starts = new Map<number, number>();
+    orderedNodes.forEach((node, index) => {
+      if (node.cluster >= 0 && !starts.has(node.cluster)) starts.set(node.cluster, index);
+    });
+    return [...starts.entries()];
+  }, [orderedNodes]);
 
   const [activeId, setActiveId] = useState<string | null>(selectedId ?? orderedNodes[0]?.id ?? null);
 
@@ -70,26 +87,27 @@ export default function GraphNavigator() {
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'PageDown', 'PageUp', 'Home', 'End', 'Enter'].includes(event.key)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     if (orderedNodes.length === 0) return;
     if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      event.stopPropagation();
       moveTo(activeIndex + 1);
     } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      event.stopPropagation();
       moveTo(activeIndex - 1);
+    } else if (event.key === 'PageDown' || event.key === 'PageUp') {
+      const clusterIndex = clusterStarts.findIndex(([cluster]) => cluster === orderedNodes[activeIndex]?.cluster);
+      const target = clusterIndex < 0
+        ? (event.key === 'PageDown' ? 0 : clusterStarts.length - 1)
+        : Math.max(0, Math.min(clusterStarts.length - 1, clusterIndex + (event.key === 'PageDown' ? 1 : -1)));
+      const start = clusterStarts[target];
+      if (start) moveTo(start[1]);
     } else if (event.key === 'Home') {
-      event.preventDefault();
-      event.stopPropagation();
       moveTo(0);
     } else if (event.key === 'End') {
-      event.preventDefault();
-      event.stopPropagation();
       moveTo(orderedNodes.length - 1);
     } else if (event.key === 'Enter') {
-      event.preventDefault();
-      event.stopPropagation();
       const node = orderedNodes[activeIndex];
       if (!node) return;
       if (useUiStore.getState().comparePick) {
@@ -100,12 +118,12 @@ export default function GraphNavigator() {
     }
   };
 
-  if (orderedNodes.length === 0) return null;
+  if (nodes.length === 0) return null;
 
   return (
     <aside
       ref={rootRef}
-      className={`graph-navigator glass-panel${expanded ? ' is-expanded' : ''}${comparePick ? ' is-picking' : ''}`}
+      className={`graph-navigator glass-panel${embedded ? ' graph-navigator--embedded' : ''}${expanded ? ' is-expanded' : ''}${comparePick ? ' is-picking' : ''}`}
       aria-label="Accessible graph navigator"
       onKeyDown={(event) => {
         if (event.key === 'Escape' && expanded) {
@@ -138,8 +156,9 @@ export default function GraphNavigator() {
       <div id="graph-navigator-content" hidden={!expanded}>
         <p className="graph-navigator__instructions" id={INSTRUCTIONS_ID}>
           Choose a document to explore its connections.
-          <span> ↑ ↓ to browse · Enter to open · Esc to close</span>
+          <span> ↑ ↓ to browse · PageUp / PageDown to hop clusters · Enter to open · Esc to close</span>
         </p>
+        {orderedNodes.length === 0 && <p role="status">No documents match the current filters.</p>}
         <div
           ref={listRef}
           className="graph-navigator__list"
@@ -147,7 +166,7 @@ export default function GraphNavigator() {
           tabIndex={0}
           aria-label="Graph nodes"
           aria-describedby={`${SUMMARY_ID} ${INSTRUCTIONS_ID}`}
-          aria-activedescendant={optionId(activeIndex)}
+          aria-activedescendant={orderedNodes.length > 0 ? optionId(activeIndex) : undefined}
           onFocus={() => {
             if (selectedId && orderedNodes.some((node) => node.id === selectedId)) setActiveId(selectedId);
           }}

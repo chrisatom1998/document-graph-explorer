@@ -1,29 +1,81 @@
+import { releaseForScorer, supportsFusionInput } from './fusionRelease';
+import { MAX_FUSION_WINDOWS, sanitizeFusionIdentity, sanitizeFusionDecisions, unavailableFusionDecisions, type FusionScorer, type FusionWindow } from './fusion';
+import { DjTagEvidence, selectDjTags } from './djTags';
+import { mergeDjTags } from './djClassification';
 import type { MusicDecoder } from './decodeMusic';
 import { jamendoSuggestions, jamendoLabels } from './jamendo';
 import { InstrumentEvidence, instrumentWindowStarts } from './instrumentEvidence';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, type MusicAnalysis, type MusicAnalysisMode } from './musicTypes';
 import type { InstrumentPredictions } from './instrumentLabels';
-import { averageDescriptions, selectDescriptions, type DescriptionScore } from './profileDescriptions';
+import { DescriptionAccumulator, selectDescriptions, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
-import { createRecognition, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type Dimension } from './recognition';
+import { createRecognition, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
+  /** Qualification-only opt-in; callers must bind and validate the scorer. */
+  fusion?: FusionScorer;
+  /** Original input MIME, used only by an installed qualified-tier scorer. */
+  sourceMime?: string;
   signal?: AbortSignal;
+  cacheKey?: string;
+  force?: boolean;
+  initialPreview?: MusicPreview;
   mode?: MusicAnalysisMode;
   audioFingerprint?: string;
   cache?: ResultCache;
   onProgress?: (note: string) => void;
+  /** Live worker observations, never evidence that cached scores executed inference. */
+  onRuntime?: (runtime: { kind: string; backend: string; configuredInferenceThreads: number; effectiveInferenceThreads?: number; inferenceExecuted: boolean }) => void;
   onPreview?: (analysis: MusicAnalysis) => void;
   onPartial?: (analysis: MusicAnalysis) => void;
+  /** Cancellation-only consumers avoid copying the growing ledger after every window. */
+  partialUpdates?: 'all' | 'cancelled';
+}
+export interface MusicPreview {
+  start: number;
+  end: number;
+  scores: Record<string, number>;
+  analysis: MusicAnalysis;
 }
 export type MusicRequest = <T>(message: Record<string, unknown>, transfer: Transferable[]) => Promise<T>;
 const audible = (samples: Float32Array) => samples.length > 0 && samples.reduce((sum, v) => sum + v * v, 0) / samples.length > 1e-8;
+
+/** The folder's first pass only needs one short music-model estimate per recording. */
+export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicRequest, options: AnalysisOptions): Promise<MusicPreview | undefined> {
+  const mode = options.mode === 'fast' && decoder.durationSeconds > 0 ? 'fast' : 'full';
+  options.signal?.throwIfAborted();
+  if (!decoder.durationSeconds || decoder.durationSeconds < 2.048) return;
+  options.onProgress?.('Preparing a quick instrument estimate');
+  const start = mode === 'fast' ? descriptionStarts(decoder.durationSeconds, mode)[0] : 0;
+  try {
+    const duration = decoder.durationSeconds || 10;
+    const samples = await decoder.read(start, Math.min(10, duration - start), 16000);
+    const end = start + samples.length / 16000;
+    if (samples.length < Math.round(Math.min(10, duration - start) * 16000) - 1) return;
+    const scores = audible(samples) ? await request<Record<string, number>>({ kind: 'jamendo', samples }, [samples.buffer]) : {};
+    const analysis: MusicAnalysis = {
+      version: 2, stage: 'preview', durationSeconds: duration, analyzedSeconds: 0, notes: [],
+      instruments: jamendoSuggestions(scores).map(i => ({ label: i.label, score: i.score, status: 'possible' })),
+      soundProfile: combineSoundModels([], scores, [], { ast: false, jamendo: true, clap: false }),
+      instrumentScan: { revision: INSTRUMENT_ANALYSIS_REVISION, mode, complete: false, analyzedSeconds: 0, windows: 0 },
+    };
+    options.onPreview?.(analysis);
+    return { start, end, scores, analysis };
+  } catch (error) {
+    if (options.signal?.aborted) throw error;
+    // A failed preview must not prevent the deeper pass from retrying the model.
+    return undefined;
+  }
+}
 
 /** Sequential model jobs share a bounded timeline, but never each other's validity. */
 export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
   const check = () => options.signal?.throwIfAborted();
   check();
+  const release = releaseForScorer(options.fusion);
+  const fusionIdentity = options.fusion && sanitizeFusionIdentity(options.fusion.identity);
+  if (options.fusion && !fusionIdentity) throw new Error('Invalid fusion scorer identity');
   const mode = options.mode === 'fast' && decoder.durationSeconds > 0 ? 'fast' : 'full';
   let duration = decoder.durationSeconds;
   if (!duration) {
@@ -54,14 +106,17 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   const excerptStarts = duration > 60 ? [Math.max(0, duration * .1 - 10), duration * .5 - 10, Math.min(duration - 20, duration * .9 - 10)] : [0];
   for (const id of ['rhythm', 'tonal'] as const) job(id).planned = windows(excerptStarts, duration > 60 ? 20 : 60);
   if (duration < 2.048) job('jamendo').unsupportedReason = 'At least 2.048 seconds of audio are required; no Jamendo inference ran.';
+  const fusionIntervals = options.fusion ? [...new Map(['ast','jamendo','clap'].flatMap(id => job(id as ModelId).planned).map(i => [`${i.start}:${i.end}`,i])).values()].sort((a,b) => a.start-b.start) : [];
+  if (fusionIdentity) result.fusion = { version: 1, scope: 'window', validation: release ? 'policy-qualified' : 'unvalidated', ...(release ? { release } : {}), identity: fusionIdentity,
+    planned: fusionIntervals.length, counts: { complete: 0, failed: 0, unsupported: 0, empty: 0 }, omittedWindows: 0, windows: [] };
   const cache = options.cache ?? new ResultCache();
   // A per-run identity still permits preview reuse without cross-file collisions.
   const fingerprint = options.audioFingerprint ?? recognition.runId;
   const astEvidence = new InstrumentEvidence();
   const musicScores: Record<string, number> = {};
   let musicCount = 0;
-  let descriptions: DescriptionScore[] = [];
-  let descriptionCount = 0;
+  const descriptions = new DescriptionAccumulator();
+  const djEvidence = new DjTagEvidence();
   const completed = new Set<string>();
   const stopped = new Set<ModelId>();
   const messages: Partial<Record<ModelId, string>> = {
@@ -74,8 +129,9 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     for (const j of recognition.jobs) finishJob(j, duration, cancelled);
     const soundComplete = ['ast','jamendo','clap'].every(id => ['complete','unsupported'].includes(job(id as ModelId).status));
     result.instruments = astEvidence.results();
-    result.soundProfile = combineSoundModels(result.instruments, musicScores, descriptions,
+    result.soundProfile = combineSoundModels(result.instruments, musicScores, descriptions.average(),
       { ast: job('ast').status === 'complete', jamendo: job('jamendo').status === 'complete', clap: job('clap').status === 'complete' });
+    mergeDjTags(result.soundProfile, djEvidence.results(), descriptions.average());
     for (const suggestion of jamendoSuggestions(musicScores)) {
       if (!result.instruments.some(i => i.label === suggestion.label)) result.instruments.push({ label: suggestion.label, score: suggestion.score, status: 'possible' });
     }
@@ -86,8 +142,15 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     if (ended || cancelled) recognition.endedAt = new Date().toISOString();
     if (cancelled) recognition.cancellationReason = 'Cancelled by user';
   };
-  const publish = () => { refresh(); options.onPartial?.(structuredClone(result)); check(); };
-  async function sound(id: 'ast' | 'jamendo' | 'clap', interval: Interval) {
+  const publish = () => {
+    if ((options.onPartial && options.partialUpdates !== 'cancelled') || (mode === 'fast' && options.onPreview)) {
+      refresh();
+      if(options.partialUpdates !== 'cancelled') options.onPartial?.(structuredClone(result));
+      if(mode === 'fast') options.onPreview?.({ ...structuredClone(result), stage: 'preview' });
+    }
+    check();
+  };
+  async function sound(id: 'ast' | 'jamendo' | 'clap', interval: Interval): Promise<{ output: InstrumentPredictions | Record<string, number> | DescriptionScore[]; cacheKey: string; cacheHit: boolean } | undefined> {
     check();
     if (stopped.has(id) || job(id).unsupportedReason) return;
     const j = job(id); const key = modelCacheKey(fingerprint, j, interval);
@@ -96,6 +159,9 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     options.onProgress?.(`${id}: ${j.successful.length}/${j.planned.length} windows; ${Math.floor(interval.start)}–${Math.ceil(interval.end)}s of ${Math.ceil(duration)}s`);
     try {
       let output = cache.get<InstrumentPredictions | Record<string, number> | DescriptionScore[]>(key);
+      const cacheHit = output !== undefined;
+      const preview = options.initialPreview;
+      if (!output && id === 'jamendo' && preview?.start === interval.start && Math.abs(preview.end - interval.end) < 1 / 16000) output = preview.scores;
       if (!output) {
         const rate = id === 'clap' ? 48000 : 16000;
         const samples = await decoder.read(interval.start, interval.end - interval.start, rate);
@@ -106,6 +172,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
         check(); cache.set(key, output);
       }
+      if (!output) throw new Error('Native model returned no output');
       if (id === 'ast') {
         const predictions = output as InstrumentPredictions;
         astEvidence.add(predictions.scores, interval.start, interval.end, predictions.musicScore);
@@ -118,27 +185,31 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         recordEvidence(recognition, id, interval, jamendoLabels(scores));
       } else {
         const scores = output as DescriptionScore[];
-        // Online mean: bounded by the fixed prompt vocabulary, never the number of windows.
-        descriptions = averageDescriptions([descriptions.map(d => ({ ...d, score: d.score * descriptionCount })), scores])
-          .map(d => ({ ...d, score: d.score * 2 / (descriptionCount + 1) }));
-        descriptionCount++;
+        descriptions.add(scores);
+        djEvidence.add(selectDjTags(scores), interval.start, interval.end);
         const selected = selectDescriptions(scores);
-        const candidates: { dimension: Dimension; labelId: string; score: number }[] = selected.sources.map(s => ({ dimension: 'source', labelId: s.label, score: s.score }));
+        const candidates: EvidenceCandidate[] = selected.sources.map(s => ({ dimension: 'source', labelId: s.label, score: s.score }));
+        if(selected.vocalSourceEvidence&&!selected.sources.some(s=>s.label==='voice')) {
+          const {group,labelId,score}=selected.vocalSourceEvidence;
+          candidates.push({dimension:'source',labelId:'voice',score,derivedFrom:{group,labelId}});
+        }
         for (const [dimension, labels] of [['character',selected.character],['role',selected.roles],['vocal',selected.vocalStyle ? [selected.vocalStyle] : []]] as const) {
-          for (const labelId of labels) candidates.push({ dimension, labelId, score: Math.max(...scores.filter(s => s.label === labelId).map(s => s.score)) });
+          for (const labelId of labels) candidates.push({ dimension: dimension === 'role' && labelId === 'atmosphere' ? 'effect' : dimension, labelId, score: Math.max(...scores.filter(s => s.label === labelId).map(s => s.score)) });
         }
         recordEvidence(recognition, id, interval, candidates);
       }
       j.successful.push(interval); completed.add(key);
+      return { output, cacheKey: key, cacheHit };
     } catch (error) {
       if (options.signal?.aborted) throw error;
       j.error = error instanceof Error ? error.message : 'Unavailable';
       stopped.add(id); // One failed attempt per component per run; explicit reanalysis retries it.
       result.notes.push(messages[id]!);
+      return undefined;
     }
   }
   try {
-    await sound('jamendo', job('jamendo').planned[0]);
+    if (!options.fusion) await sound('jamendo', job('jamendo').planned[0]);
     refresh();
     if (job('jamendo').successful.length) options.onPreview?.({ ...structuredClone(result), stage: 'preview' });
     check(); publish();
@@ -166,8 +237,54 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
       }
       publish();
     }
-    for (const id of ['ast','jamendo','clap'] as const) {
-      for (const interval of job(id).planned) { await sound(id, interval); publish(); if (stopped.has(id)) break; }
+    if (options.fusion && fusionIdentity) {
+      const ids = ['ast','jamendo','clap'] as const;
+      const keyOf = (i: Interval) => `${i.start}:${i.end}`;
+      const plans = new Map(ids.map(id => [id, new Set(job(id).planned.map(keyOf))]));
+      const fusion = result.fusion!;
+      for (const interval of fusionIntervals) {
+        check();
+        // Only one window's raw outputs are retained. Native cache remains bounded separately.
+        const outputs = new Map<string, NonNullable<Awaited<ReturnType<typeof sound>>>>();
+        for (const id of ids) if (plans.get(id)!.has(keyOf(interval))) {
+          const output = await sound(id, interval);
+          if (output) outputs.set(id, output);
+        }
+        let window: FusionWindow = { ...interval, status: 'unsupported', reason: 'Native model intervals are not aligned', decisions: unavailableFusionDecisions() };
+        if (ids.every(id => plans.get(id)!.has(keyOf(interval)))) {
+          if (release && !supportsFusionInput(duration, mode, options.sourceMime)) window.reason = 'Input is outside the qualified ten-second Ogg full-analysis tier';
+          else if (ids.some(id => job(id).unsupportedReason)) window.reason = 'A required native model does not support this interval';
+          else if (outputs.size !== 3) window = { ...window, status: 'failed', reason: 'A required native model failed or stopped' };
+          else {
+            const ast = outputs.get('ast')!.output as InstrumentPredictions;
+            const jamendo = outputs.get('jamendo')!.output as Record<string, number>;
+            const clap = outputs.get('clap')!.output as DescriptionScore[];
+            if (!Object.keys(ast.scores).length || !Object.keys(jamendo).length || !clap.length) {
+              window = { ...window, status: 'empty', reason: 'Silent or empty native output; no fusion decision' };
+            } else {
+              try {
+                const decisions = sanitizeFusionDecisions(await options.fusion.score(structuredClone({ interval, audioFingerprint: options.audioFingerprint,
+                  raw: { ast: { instruments: ast.scores }, jamendo, clap: { descriptions: clap } },
+                  native: ids.map(id => { const j = job(id); const o = outputs.get(id)!; return { modelId: id, weightsVersion: j.weightsVersion,
+                    preprocessingVersion: j.preprocessingVersion, promptVersion: j.promptVersion, cacheKey: o.cacheKey, cacheHit: o.cacheHit }; }) }), options.signal), true);
+                check();
+                if (!decisions) throw new Error('Malformed fusion decisions');
+                window = { ...interval, status: 'complete', decisions };
+              } catch (error) {
+                if (options.signal?.aborted) throw error;
+                window = { ...window, status: 'failed', reason: 'Fusion scorer failed or returned invalid decisions' };
+              }
+            }
+          }
+        }
+        fusion.counts[window.status]++;
+        if (fusion.windows.length < MAX_FUSION_WINDOWS) fusion.windows.push(window); else fusion.omittedWindows++;
+        publish();
+      }
+    } else {
+      for (const id of ['ast','jamendo','clap'] as const) {
+        for (const interval of job(id).planned) { await sound(id, interval); publish(); if (stopped.has(id)) break; }
+      }
     }
     refresh(false, true);
     return result;

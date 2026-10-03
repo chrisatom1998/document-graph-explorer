@@ -36,9 +36,12 @@ test('unavailable models stay explicit through correction, cancellation and rest
     await expect(page.locator('.audio-preview')).toBeVisible();
   };
   await openTrack();
-  await expect(page.getByRole('region', { name: 'Sound evidence' })).toContainText('AST: failed');
-  await expect(page.getByRole('region', { name: 'Sound evidence' })).toContainText('Jamendo: failed');
-  await expect(page.getByRole('region', { name: 'Sound evidence' })).toContainText('CLAP: failed');
+  await expect(page.getByRole('region', { name: 'Sound evidence' })).toContainText('Analysis: partial');
+  const details = page.getByText('Details', { exact: true });
+  if (await details.locator('..').getAttribute('open') === null) await details.click();
+  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('AST: failed');
+  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('Jamendo: failed');
+  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('CLAP: failed');
   // A meta CSP does not cover the worker. Require the production header so
   // runtime code generation in audio dependencies cannot pass locally.
   const workerCsp = (await workerResponse).headers()['content-security-policy'];
@@ -63,7 +66,8 @@ test('unavailable models stay explicit through correction, cancellation and rest
   await expect(page.locator('.music-features')).toContainText('synthesizer');
   await page.getByRole('button', { name: 'Reanalyze musical features' }).click();
   await expect(page.getByRole('button', { name: 'Reanalyze musical features' })).toBeEnabled({ timeout: 120_000 });
-  await expect(page.getByRole('region', { name: 'Sound evidence' })).toContainText('AST: failed');
+  await page.getByText('Details', { exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('AST: failed');
   await expect(page.locator('.music-features')).toContainText('synthesizer');
   await page.screenshot({ path: '/tmp/dge-models-unavailable.png', fullPage: true });
   expect(errors).toEqual([]);

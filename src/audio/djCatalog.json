@@ -1,0 +1,2202 @@
+{
+  "version": 2,
+  "scope": "Music-production sound sources, techniques, roles and audible attributes. Not an exhaustive list of every proprietary pack tag.",
+  "sources": [
+    {
+      "name": "Splice sample catalog",
+      "url": "https://splice.com/sounds/search/samples"
+    },
+    {
+      "name": "Splice Vocal FX",
+      "url": "https://splice.com/sounds/collections/fIoGPyTvuYcws1kNFLHcYr-I6no/samples"
+    },
+    {
+      "name": "Loopcloud",
+      "url": "https://www.loopcloud.com/cloud/features"
+    },
+    {
+      "name": "AudioSet ontology",
+      "url": "https://research.google.com/audioset/ontology/"
+    }
+  ],
+  "categories": [
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "voice",
+      "source": null,
+      "description": "A human voice speaking or singing.",
+      "aliases": [
+        "vox",
+        "vocals"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "breath",
+      "source": null,
+      "description": "A person audibly inhaling or exhaling.",
+      "aliases": [
+        "breathing"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "synthesizer",
+      "source": null,
+      "description": "Electronic synthesized musical tones.",
+      "aliases": [
+        "synth"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "guitar",
+      "source": null,
+      "description": "A guitar playing plucked or strummed musical notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "piano",
+      "source": null,
+      "description": "An acoustic piano playing struck musical notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "drums",
+      "source": null,
+      "description": "A drum kit or drum machine playing percussion.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "sound effect",
+      "source": null,
+      "description": "A designed transition, impact or special sound effect.",
+      "aliases": [
+        "fx",
+        "sfx"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "noise",
+      "source": null,
+      "description": "A burst of synthetic white noise.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "breath"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "electric piano",
+      "source": null,
+      "description": "An electric piano playing soft bell-like keyboard notes.",
+      "aliases": [
+        "rhodes"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "acoustic guitar",
+      "source": null,
+      "description": "An acoustic guitar with resonant plucked strings.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "electric guitar",
+      "source": null,
+      "description": "An amplified electric guitar playing musical notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "bass guitar",
+      "source": null,
+      "description": "A bass guitar playing low plucked string notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "strings",
+      "source": null,
+      "description": "An ensemble of bowed string instruments.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "violin / fiddle",
+      "source": null,
+      "description": "A violin playing high bowed musical notes.",
+      "aliases": [
+        "violin",
+        "fiddle"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "cello",
+      "source": null,
+      "description": "A cello playing low resonant bowed notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "trumpet",
+      "source": null,
+      "description": "A trumpet playing bright brassy musical notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "saxophone",
+      "source": null,
+      "description": "A saxophone playing reedy musical notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "flute",
+      "source": null,
+      "description": "A flute playing airy pitched musical notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "clarinet",
+      "source": null,
+      "description": "A clarinet playing hollow woody reed tones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "organ",
+      "source": null,
+      "description": "An organ playing sustained keyboard chords.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "bell",
+      "source": null,
+      "description": "A bell ringing with metallic resonant tones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "mallet instrument",
+      "source": null,
+      "description": "A marimba, vibraphone or xylophone playing struck pitched notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "percussion",
+      "source": null,
+      "description": "Unpitched percussion instruments playing a rhythm.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "hand percussion",
+      "source": null,
+      "description": "Hand drums, shakers or tambourines playing a rhythm.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "foley",
+      "source": null,
+      "description": "Close recorded everyday object movements, contacts and handling sounds.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "environmental sound",
+      "source": null,
+      "description": "Outdoor or indoor environmental ambience.",
+      "aliases": [
+        "field recording"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "turntable",
+      "source": null,
+      "description": "A DJ turntable scratching a vinyl record.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal chops",
+      "source": "voice",
+      "description": "A vocal chop loop.",
+      "aliases": [
+        "vox chop",
+        "vocal chop"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "editing",
+      "label": "chops",
+      "source": null,
+      "description": "A rhythmic loop made from chopped and rearranged audio samples.",
+      "aliases": [
+        "chop",
+        "sample chop",
+        "sample chops",
+        "chopped sample"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-editing"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal phrase",
+      "source": "voice",
+      "description": "A human voice singing a melodic vocal phrase.",
+      "aliases": [
+        "vocal hook",
+        "vocal melody"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "spoken phrase",
+      "source": "voice",
+      "description": "A human voice speaking words without singing.",
+      "aliases": [
+        "spoken word",
+        "dialogue"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "whisper",
+      "source": "voice",
+      "description": "A person quietly whispering words.",
+      "aliases": [
+        "whispered vocal"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal shout",
+      "source": "voice",
+      "description": "A loud short human vocal shout.",
+      "aliases": [
+        "shout",
+        "yell"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal chant",
+      "source": "voice",
+      "description": "Human voices rhythmically chanting repeated syllables.",
+      "aliases": [
+        "chant"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal ad-lib",
+      "source": "voice",
+      "description": "Short expressive vocal interjections between musical phrases.",
+      "aliases": [
+        "adlib",
+        "ad-lib"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal hum",
+      "source": "voice",
+      "description": "A human voice humming pitched notes with a closed mouth.",
+      "aliases": [
+        "humming"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal vowel",
+      "source": "voice",
+      "description": "A sustained human voice singing an ah, oh or oo vowel.",
+      "aliases": [
+        "vowel",
+        "ah",
+        "oh"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "choir",
+      "source": "voice",
+      "description": "Multiple human voices singing harmonized sustained tones.",
+      "aliases": [
+        "choral"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal harmony",
+      "source": "voice",
+      "description": "Layered sung voices harmonizing a musical phrase.",
+      "aliases": [
+        "harmony vocals"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal scream",
+      "source": "voice",
+      "description": "A human voice screaming or shrieking.",
+      "aliases": [
+        "scream"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal laugh",
+      "source": "voice",
+      "description": "A human voice laughing.",
+      "aliases": [
+        "laughter"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal gasp",
+      "source": "voice",
+      "description": "A person suddenly gasping audibly.",
+      "aliases": [
+        "gasp"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "beatbox",
+      "source": "voice",
+      "description": "A human mouth imitating rhythmic drum and percussion sounds.",
+      "aliases": [
+        "beatboxing"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocoder vocal",
+      "source": "voice",
+      "description": "A robotic electronic vocal with articulated syllables and chordal tones.",
+      "aliases": [
+        "vocoder"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "pitched vocal",
+      "source": "voice",
+      "description": "A sampled human vocal shifted noticeably in pitch.",
+      "aliases": [
+        "pitch shifted vocal"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "reversed vocal",
+      "source": "voice",
+      "description": "A backward sounding human vocal with swelling reversed syllables.",
+      "aliases": [
+        "reverse vocal"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal pad",
+      "source": "voice",
+      "description": "Sustained airy human vocal layers forming a background musical texture.",
+      "aliases": [
+        "choir pad"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-vocal"
+    },
+    {
+      "group": "production",
+      "family": "breath",
+      "label": "vocal breath",
+      "source": "breath",
+      "description": "A vocal breath sample.",
+      "aliases": [
+        "breath sample"
+      ],
+      "recognition": "experimental",
+      "axis": "breath"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "synth pluck",
+      "source": "synthesizer",
+      "description": "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      "aliases": [
+        "pluck"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "atmospheric pad",
+      "source": "synthesizer",
+      "description": "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      "aliases": [
+        "pad",
+        "atmosphere pad"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "synth stab",
+      "source": "synthesizer",
+      "description": "Short punchy synthesizer chord stabs.",
+      "aliases": [
+        "stab",
+        "chord stab"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "synth lead",
+      "source": "synthesizer",
+      "description": "A synthesizer playing a prominent lead melody.",
+      "aliases": [
+        "lead"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "synth bass",
+      "source": "synthesizer",
+      "description": "A deep electronic synth bass line.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "vocal-like synth",
+      "source": "synthesizer",
+      "description": "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      "aliases": [
+        "formant synth"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "synth arpeggio",
+      "source": "synthesizer",
+      "description": "Synthesized notes repeating in an ascending or descending arpeggiated sequence.",
+      "aliases": [
+        "arp",
+        "arpeggio"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-synth"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "synth chord",
+      "source": "synthesizer",
+      "description": "A synthesizer playing several musical notes together as chords.",
+      "aliases": [
+        "synth chords"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-synth"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "supersaw",
+      "source": "synthesizer",
+      "description": "A wide bright layered detuned sawtooth synthesizer playing musical notes.",
+      "aliases": [
+        "super saw",
+        "detuned saw"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-synth"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "acid synth",
+      "source": "synthesizer",
+      "description": "A resonant squelching electronic synthesizer pattern with sliding notes.",
+      "aliases": [
+        "303",
+        "acid line"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-synth"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "bell synth",
+      "source": "synthesizer",
+      "description": "A synthesizer playing clear metallic bell-like notes.",
+      "aliases": [
+        "synth bell"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-synth"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "organ synth",
+      "source": "synthesizer",
+      "description": "A synthesizer playing sustained organ-like tones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-synth"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "brass synth",
+      "source": "synthesizer",
+      "description": "A synthesizer playing bright brass-like stabs or melodies.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-synth"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "string synth",
+      "source": "synthesizer",
+      "description": "A synthesizer playing layered bowed-string-like tones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-synth"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "chiptune synth",
+      "source": "synthesizer",
+      "description": "A retro video game synthesizer playing square wave or pulse tones.",
+      "aliases": [
+        "8-bit",
+        "chiptune"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-synth"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "fm synth",
+      "source": "synthesizer",
+      "description": "An electronic synth with bright clangorous metallic tones and complex overtones.",
+      "aliases": [
+        "fm"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-synth"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "synth drone",
+      "source": "synthesizer",
+      "description": "A sustained electronic tone with little melodic movement.",
+      "aliases": [
+        "drone"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-synth"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "synth sequence",
+      "source": "synthesizer",
+      "description": "A repeating electronic note sequence forming a musical pattern.",
+      "aliases": [
+        "sequence",
+        "sequencer"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-synth"
+    },
+    {
+      "group": "production",
+      "family": "bass",
+      "label": "sub bass",
+      "source": "synthesizer",
+      "description": "A very low smooth synthesized bass tone with little high frequency content.",
+      "aliases": [
+        "sub"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-bass"
+    },
+    {
+      "group": "production",
+      "family": "bass",
+      "label": "reese bass",
+      "source": "synthesizer",
+      "description": "A low detuned buzzing bass sound with beating and moving overtones.",
+      "aliases": [
+        "reese"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-bass"
+    },
+    {
+      "group": "production",
+      "family": "bass",
+      "label": "wobble bass",
+      "source": "synthesizer",
+      "description": "A low synthesized bass with a rhythmic opening and closing filter.",
+      "aliases": [
+        "wobble"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-bass"
+    },
+    {
+      "group": "production",
+      "family": "bass",
+      "label": "bass growl",
+      "source": "synthesizer",
+      "description": "A low aggressive distorted bass with growling vowel-like motion.",
+      "aliases": [
+        "growl",
+        "growl bass"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-bass"
+    },
+    {
+      "group": "production",
+      "family": "bass",
+      "label": "acid bass",
+      "source": "synthesizer",
+      "description": "A low resonant squelching electronic bass pattern with sliding notes.",
+      "aliases": [
+        "303 bass"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-bass"
+    },
+    {
+      "group": "production",
+      "family": "bass",
+      "label": "808 bass",
+      "source": "synthesizer",
+      "description": "A deep booming pitched bass with a decaying or sliding tone.",
+      "aliases": [
+        "808",
+        "808 sub"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-bass"
+    },
+    {
+      "group": "production",
+      "family": "bass",
+      "label": "bass pluck",
+      "source": "synthesizer",
+      "description": "A short low synthesized bass note with a sharp attack and quick decay.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-bass"
+    },
+    {
+      "group": "production",
+      "family": "bass",
+      "label": "foghorn bass",
+      "source": "synthesizer",
+      "description": "A low loud horn-like electronic bass blast.",
+      "aliases": [
+        "foghorn"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-bass"
+    },
+    {
+      "group": "production",
+      "family": "bass",
+      "label": "rubbery bass",
+      "source": "synthesizer",
+      "description": "A low electronic bass with a springy bouncing pitch or filter sound.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-bass"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "kick",
+      "source": "drums",
+      "description": "A low thumping bass drum hit.",
+      "aliases": [
+        "kick drum",
+        "bass drum"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "snare",
+      "source": "drums",
+      "description": "A sharp noisy snare drum hit.",
+      "aliases": [
+        "snare drum"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "clap",
+      "source": "drums",
+      "description": "A short sharp handclap or electronic clap percussion hit.",
+      "aliases": [
+        "handclap"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "closed hi-hat",
+      "source": "drums",
+      "description": "A short tight closed hi-hat cymbal hit.",
+      "aliases": [
+        "closed hat",
+        "chh"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "open hi-hat",
+      "source": "drums",
+      "description": "A ringing open hi-hat cymbal hit.",
+      "aliases": [
+        "open hat",
+        "ohh"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "ride cymbal",
+      "source": "drums",
+      "description": "A bright metallic ride cymbal ping with ringing sustain.",
+      "aliases": [
+        "ride"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "crash cymbal",
+      "source": "drums",
+      "description": "A loud crashing cymbal with a long noisy decay.",
+      "aliases": [
+        "crash"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "rimshot",
+      "source": "drums",
+      "description": "A sharp woody snare rimshot or rim click.",
+      "aliases": [
+        "rim",
+        "rim click"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "tom",
+      "source": "drums",
+      "description": "A round resonant pitched tom drum hit.",
+      "aliases": [
+        "tom drum"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "shaker",
+      "source": "drums",
+      "description": "A short rattling shaker percussion sound.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "tambourine",
+      "source": "drums",
+      "description": "A jingling tambourine percussion sound.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "conga",
+      "source": "drums",
+      "description": "A resonant hand-struck conga drum sound.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "bongo",
+      "source": "drums",
+      "description": "A high hollow hand-struck bongo drum sound.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "cowbell",
+      "source": "drums",
+      "description": "A short metallic clanking cowbell hit.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "clave",
+      "source": "drums",
+      "description": "A short dry woody clave stick hit.",
+      "aliases": [
+        "claves"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "woodblock",
+      "source": "drums",
+      "description": "A hollow woody woodblock percussion hit.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "finger snap",
+      "source": "drums",
+      "description": "A sharp short human finger snap.",
+      "aliases": [
+        "snap"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-hit"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "percussion hit",
+      "source": "drums",
+      "description": "A single short percussion hit.",
+      "aliases": [
+        "perc hit"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "drum-pattern",
+      "label": "drum loop",
+      "source": "drums",
+      "description": "A rhythmic drum loop with kick, snare and hi hats.",
+      "aliases": [
+        "drum groove"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "drum-pattern",
+      "label": "percussion loop",
+      "source": "drums",
+      "description": "A repeating groove of hand percussion and rattling instruments.",
+      "aliases": [
+        "perc loop"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-pattern"
+    },
+    {
+      "group": "production",
+      "family": "drum-pattern",
+      "label": "hi-hat loop",
+      "source": "drums",
+      "description": "A repeating rhythm of hi-hat cymbals.",
+      "aliases": [
+        "hat loop"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-pattern"
+    },
+    {
+      "group": "production",
+      "family": "drum-pattern",
+      "label": "shaker loop",
+      "source": "drums",
+      "description": "A repeating rattling shaker percussion rhythm.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-drum-pattern"
+    },
+    {
+      "group": "production",
+      "family": "drum-pattern",
+      "label": "breakbeat",
+      "source": "drums",
+      "description": "A syncopated sampled drum break with kick snare and cymbals.",
+      "aliases": [
+        "drum break",
+        "break"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-pattern"
+    },
+    {
+      "group": "production",
+      "family": "drum-pattern",
+      "label": "drum fill",
+      "source": "drums",
+      "description": "A short drum flourish or rolling pattern leading into a transition.",
+      "aliases": [
+        "fill"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-pattern"
+    },
+    {
+      "group": "production",
+      "family": "drum-pattern",
+      "label": "snare roll",
+      "source": "drums",
+      "description": "Rapid repeating snare drum hits building intensity.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-drum-pattern"
+    },
+    {
+      "group": "production",
+      "family": "drum-pattern",
+      "label": "top loop",
+      "source": "drums",
+      "description": "A repeating high percussion groove with cymbals hats and shakers.",
+      "aliases": [
+        "tops",
+        "tops loop"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-drum-pattern"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "riser",
+      "source": "sound effect",
+      "description": "A rising electronic transition effect building in pitch and intensity.",
+      "aliases": [
+        "uplifter",
+        "upsweep"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "downlifter",
+      "source": "sound effect",
+      "description": "A falling electronic transition effect descending in pitch.",
+      "aliases": [
+        "downer",
+        "downsweep"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "impact",
+      "source": "sound effect",
+      "description": "A single dramatic cinematic impact hit.",
+      "aliases": [
+        "hit"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "whoosh",
+      "source": "sound effect",
+      "description": "A sweeping whoosh sound effect.",
+      "aliases": [
+        "swoosh"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "reverse cymbal",
+      "source": "sound effect",
+      "description": "A backward cymbal swelling into a sharp ending.",
+      "aliases": [
+        "reversed crash"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-transition"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "reverse impact",
+      "source": "sound effect",
+      "description": "A backward impact swelling toward a sudden hit.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-transition"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "noise sweep",
+      "source": "sound effect",
+      "description": "A filtered broadband noise sound sweeping through frequencies.",
+      "aliases": [
+        "sweep"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-transition"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "sub drop",
+      "source": "sound effect",
+      "description": "A low booming bass effect falling in pitch.",
+      "aliases": [
+        "bass drop"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-transition"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "laser",
+      "source": "sound effect",
+      "description": "A short electronic laser zap with a rapid pitch sweep.",
+      "aliases": [
+        "zap"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-transition"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "siren",
+      "source": "sound effect",
+      "description": "An oscillating rising and falling alarm-like tone.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-transition"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "air horn",
+      "source": "sound effect",
+      "description": "A loud brassy compressed-air horn blast.",
+      "aliases": [
+        "airhorn"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-transition"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "vinyl scratch",
+      "source": "sound effect",
+      "description": "A DJ rhythmically scratching a vinyl record.",
+      "aliases": [
+        "scratch",
+        "turntable scratch"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-transition"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "record stop",
+      "source": "sound effect",
+      "description": "Music slowing rapidly in pitch and speed to a stop.",
+      "aliases": [
+        "tape stop"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-transition"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "stutter effect",
+      "source": "sound effect",
+      "description": "A sound rapidly retriggered into short repeated fragments.",
+      "aliases": [
+        "stutter"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-transition"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "glitch effect",
+      "source": "sound effect",
+      "description": "Short irregular digital clicks cuts and bursts.",
+      "aliases": [
+        "glitch"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-transition"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "reverse effect",
+      "source": "sound effect",
+      "description": "A backward sounding effect with a swelling attack and abrupt end.",
+      "aliases": [
+        "reverse"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-transition"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "texture",
+      "source": "sound effect",
+      "description": "An atmospheric noise texture and ambient soundscape.",
+      "aliases": [
+        "soundscape"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-type"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "ambient drone",
+      "source": "sound effect",
+      "description": "A continuous low or resonant atmospheric drone.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-texture"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "vinyl crackle",
+      "source": "sound effect",
+      "description": "Small irregular crackles and pops from a vinyl recording.",
+      "aliases": [
+        "crackle"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-texture"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "static noise",
+      "source": "sound effect",
+      "description": "Broadband radio-like static noise.",
+      "aliases": [
+        "static",
+        "white noise"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-texture"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "crowd ambience",
+      "source": "sound effect",
+      "description": "A crowd murmuring and reacting in the background.",
+      "aliases": [
+        "crowd"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-texture"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "rain ambience",
+      "source": "sound effect",
+      "description": "Continuous rain pattering or splashing.",
+      "aliases": [
+        "rain"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-texture"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "wind ambience",
+      "source": "sound effect",
+      "description": "Wind blowing and rustling.",
+      "aliases": [
+        "wind"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-texture"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "water ambience",
+      "source": "sound effect",
+      "description": "Flowing splashing or rippling water.",
+      "aliases": [
+        "water"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-texture"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "bird ambience",
+      "source": "sound effect",
+      "description": "Birds chirping and singing in the background.",
+      "aliases": [
+        "birds"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-texture"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "machine ambience",
+      "source": "sound effect",
+      "description": "Continuous mechanical whirring rattling or humming.",
+      "aliases": [
+        "mechanical ambience"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-texture"
+    },
+    {
+      "group": "production",
+      "family": "texture",
+      "label": "foley hit",
+      "source": "sound effect",
+      "description": "A short recorded everyday object contact or movement sound.",
+      "aliases": [
+        "found sound"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-texture"
+    },
+    {
+      "group": "character",
+      "family": "timbre",
+      "label": "airy",
+      "source": null,
+      "description": "A soft airy and breathy sound.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-timbre"
+    },
+    {
+      "group": "character",
+      "family": "timbre",
+      "label": "distorted",
+      "source": null,
+      "description": "A harsh distorted buzzing sound.",
+      "aliases": [
+        "distortion"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-timbre"
+    },
+    {
+      "group": "character",
+      "family": "timbre",
+      "label": "metallic",
+      "source": null,
+      "description": "A bright metallic ringing sound.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-timbre"
+    },
+    {
+      "group": "character",
+      "family": "timbre",
+      "label": "warm",
+      "source": null,
+      "description": "A warm mellow rounded musical tone.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-timbre"
+    },
+    {
+      "group": "character",
+      "family": "timbre",
+      "label": "gritty",
+      "source": null,
+      "description": "A rough grainy noisy musical texture.",
+      "aliases": [
+        "gritty tone"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-timbre"
+    },
+    {
+      "group": "character",
+      "family": "timbre",
+      "label": "smooth",
+      "source": null,
+      "description": "A smooth even tone without rough or harsh overtones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-timbre"
+    },
+    {
+      "group": "character",
+      "family": "timbre",
+      "label": "hollow",
+      "source": null,
+      "description": "A hollow resonant tone with a woody or tubular sound.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-timbre"
+    },
+    {
+      "group": "character",
+      "family": "timbre",
+      "label": "nasal",
+      "source": null,
+      "description": "A narrow nasal pinched musical tone.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-timbre"
+    },
+    {
+      "group": "character",
+      "family": "timbre",
+      "label": "woody",
+      "source": null,
+      "description": "A dry woody resonant sound.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-timbre"
+    },
+    {
+      "group": "character",
+      "family": "timbre",
+      "label": "glassy",
+      "source": null,
+      "description": "A clear glassy ringing musical tone.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-timbre"
+    },
+    {
+      "group": "character",
+      "family": "brightness",
+      "label": "dark",
+      "source": null,
+      "description": "A dark muffled musical tone.",
+      "aliases": [
+        "muffled"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-tone"
+    },
+    {
+      "group": "character",
+      "family": "brightness",
+      "label": "bright",
+      "source": null,
+      "description": "A bright sharp musical tone.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-tone"
+    },
+    {
+      "group": "character",
+      "family": "articulation",
+      "label": "sustained",
+      "source": null,
+      "description": "Long sustained sounds with a steady tone.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-articulation"
+    },
+    {
+      "group": "character",
+      "family": "articulation",
+      "label": "plucked",
+      "source": null,
+      "description": "Short plucked musical notes with a sharp attack and decay.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-articulation"
+    },
+    {
+      "group": "character",
+      "family": "articulation",
+      "label": "percussive",
+      "source": null,
+      "description": "Short struck sounds with sharp transients.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-articulation"
+    },
+    {
+      "group": "character",
+      "family": "articulation",
+      "label": "swelling",
+      "source": null,
+      "description": "A sound slowly swelling from quiet to loud.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-articulation"
+    },
+    {
+      "group": "character",
+      "family": "articulation",
+      "label": "staccato",
+      "source": null,
+      "description": "Short clipped separated musical notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-articulation"
+    },
+    {
+      "group": "character",
+      "family": "rhythm",
+      "label": "rhythmic",
+      "source": null,
+      "description": "A rhythmic repeating musical pattern.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-rhythm"
+    },
+    {
+      "group": "character",
+      "family": "rhythm",
+      "label": "pulsing",
+      "source": null,
+      "description": "A musical tone repeatedly pulsing in volume.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-rhythm"
+    },
+    {
+      "group": "character",
+      "family": "rhythm",
+      "label": "syncopated",
+      "source": null,
+      "description": "A musical rhythm with accents between the main beats.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-rhythm"
+    },
+    {
+      "group": "character",
+      "family": "rhythm",
+      "label": "rolling",
+      "source": null,
+      "description": "A continuous rapid rolling rhythm.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-rhythm"
+    },
+    {
+      "group": "character",
+      "family": "space",
+      "label": "reverberant",
+      "source": null,
+      "description": "A sound with a long reverberating tail.",
+      "aliases": [
+        "wet",
+        "reverb"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-space"
+    },
+    {
+      "group": "character",
+      "family": "space",
+      "label": "dry",
+      "source": null,
+      "description": "A close sound without audible reverberation or echo.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-space"
+    },
+    {
+      "group": "character",
+      "family": "space",
+      "label": "echoing",
+      "source": null,
+      "description": "A sound with distinct repeating delay echoes.",
+      "aliases": [
+        "delay",
+        "echo"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-space"
+    },
+    {
+      "group": "character",
+      "family": "motion",
+      "label": "rising",
+      "source": null,
+      "description": "A sound rising in pitch over time.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-motion"
+    },
+    {
+      "group": "character",
+      "family": "motion",
+      "label": "falling",
+      "source": null,
+      "description": "A sound falling in pitch over time.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-motion"
+    },
+    {
+      "group": "character",
+      "family": "motion",
+      "label": "gliding",
+      "source": null,
+      "description": "A musical note smoothly gliding between pitches.",
+      "aliases": [
+        "portamento",
+        "slide"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-motion"
+    },
+    {
+      "group": "character",
+      "family": "motion",
+      "label": "wobbling",
+      "source": null,
+      "description": "A tone with repeated changes in pitch or filter color.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-motion"
+    },
+    {
+      "group": "character",
+      "family": "processing",
+      "label": "bitcrushed",
+      "source": null,
+      "description": "A grainy digitally crushed sound with low resolution artifacts.",
+      "aliases": [
+        "bit crush",
+        "lo-fi digital"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-processing"
+    },
+    {
+      "group": "character",
+      "family": "processing",
+      "label": "filtered",
+      "source": null,
+      "description": "A sound with an audible frequency filter sweep.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-processing"
+    },
+    {
+      "group": "character",
+      "family": "processing",
+      "label": "chorused",
+      "source": null,
+      "description": "A widened detuned sound with gentle beating tones.",
+      "aliases": [
+        "chorus"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-processing"
+    },
+    {
+      "group": "character",
+      "family": "processing",
+      "label": "flanged",
+      "source": null,
+      "description": "A sound with moving comb-filter whooshing overtones.",
+      "aliases": [
+        "flanger"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-processing"
+    },
+    {
+      "group": "character",
+      "family": "processing",
+      "label": "saturated",
+      "source": null,
+      "description": "A thick mildly overdriven musical tone.",
+      "aliases": [
+        "overdriven"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-processing"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "harp",
+      "source": null,
+      "description": "A harp playing resonant plucked string notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "trombone",
+      "source": null,
+      "description": "A trombone playing low sliding brass notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "horn",
+      "source": null,
+      "description": "A horn playing rounded brassy sustained notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "tuba",
+      "source": null,
+      "description": "A tuba playing very low resonant brass notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "oboe",
+      "source": null,
+      "description": "An oboe playing narrow nasal double reed tones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "bassoon",
+      "source": null,
+      "description": "A bassoon playing low woody double reed tones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "harmonica",
+      "source": null,
+      "description": "A harmonica playing breath driven bending reed tones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "accordion",
+      "source": null,
+      "description": "An accordion playing bellows driven reed chords.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "banjo",
+      "source": null,
+      "description": "A banjo playing bright twangy plucked strings.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "ukulele",
+      "source": null,
+      "description": "A small ukulele playing light strummed or plucked chords.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "sitar",
+      "source": null,
+      "description": "A sitar playing buzzing resonant plucked notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "mandolin",
+      "source": null,
+      "description": "A mandolin playing bright short plucked notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "steel guitar",
+      "source": null,
+      "description": "A steel guitar playing smooth sliding string tones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "double bass",
+      "source": null,
+      "description": "A double bass playing low resonant plucked or bowed notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "viola",
+      "source": null,
+      "description": "A viola playing midrange bowed string notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "xylophone",
+      "source": null,
+      "description": "A xylophone playing short woody struck pitched notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "marimba",
+      "source": null,
+      "description": "A marimba playing rounded resonant wooden pitched notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "vibraphone",
+      "source": null,
+      "description": "A vibraphone playing sustained metallic pitched notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "steel drum",
+      "source": null,
+      "description": "A steelpan playing bright resonant metallic pitched notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "glockenspiel",
+      "source": null,
+      "description": "A glockenspiel playing high bright metallic pitched notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "kalimba",
+      "source": null,
+      "description": "A kalimba playing soft metallic plucked tine notes.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "tabla",
+      "source": null,
+      "description": "A tabla playing resonant hand drum strokes with changing pitch.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "djembe",
+      "source": null,
+      "description": "A djembe playing hand drum bass and slap tones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "cajon",
+      "source": null,
+      "description": "A cajon playing woody box drum thumps and snare-like slaps.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "gong",
+      "source": null,
+      "description": "A gong ringing with a deep expanding metallic wash.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "triangle",
+      "source": null,
+      "description": "A triangle ringing with high bright metallic tones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "jaw harp",
+      "source": null,
+      "description": "A jaw harp making twanging resonant rhythmic tones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "whistle",
+      "source": null,
+      "description": "A pitched whistle tone produced by a person or whistle instrument.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "animal sound",
+      "source": null,
+      "description": "An animal making calls cries or growls.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "waterphone",
+      "source": null,
+      "description": "An eerie resonant metallic waterphone sound.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "singing bowl",
+      "source": null,
+      "description": "A singing bowl ringing with long resonant metallic tones.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "source",
+      "family": "sources",
+      "label": "tuned percussion",
+      "source": null,
+      "description": "Percussion instruments playing identifiable musical pitches.",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-sources"
+    },
+    {
+      "group": "production",
+      "family": "custom-production",
+      "label": "vocal shush",
+      "description": "A person making a shh or shushing sound with their mouth to ask for quiet.",
+      "source": "voice",
+      "aliases": [],
+      "recognition": "experimental",
+      "axis": "dj-custom-production"
+    }
+  ]
+}

@@ -1,6 +1,10 @@
+import { musicInferenceThreads, musicRuntimeDiagnostics, musicRuntimeIdentity } from './musicRuntime';
+import soundManifest from '../../public/sound-model/manifest.json';
+import { learnedDjScores, sanitizeLearnedDjModel, type LearnedDjModel } from './learnedDjModel';
+import { cachedAudioInference, isAudioEmbedding, isScoreMap } from './audioInferenceCache';
 import Essentia from 'essentia.js/dist/essentia.js-core.es.js';
 import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
-import { instrumentScores, musicScore } from './instrumentLabels';
+import { instrumentScores, musicScore, type InstrumentPredictions } from './instrumentLabels';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_ANALYSIS_REVISION, type MusicAnalysis } from './musicTypes';
 import { classifyJamendo } from './jamendo';
 import { detectRepeatedPitch } from './detectedPitch';
@@ -20,7 +24,7 @@ function getClassifier() {
     const { env, AutoProcessor, AutoModelForAudioClassification } = await import('@huggingface/transformers');
     env.allowRemoteModels = false; env.allowLocalModels = true;
     env.localModelPath = import.meta.env.BASE_URL;
-    if (env.backends.onnx.wasm) { env.backends.onnx.wasm.wasmPaths = undefined; env.backends.onnx.wasm.numThreads = 1; }
+    if (env.backends.onnx.wasm) { env.backends.onnx.wasm.wasmPaths = undefined; env.backends.onnx.wasm.numThreads = musicInferenceThreads(); }
     const model = await AutoModelForAudioClassification.from_pretrained('music-model', { dtype: 'q8', device: 'wasm', local_files_only: true });
     const processor = await AutoProcessor.from_pretrained('music-model', { local_files_only: true });
     return { model, processor };
@@ -29,13 +33,12 @@ function getClassifier() {
 let soundClassifier: Promise<{
   model: Awaited<ReturnType<typeof import('@huggingface/transformers')['ClapAudioModelWithProjection']['from_pretrained']>>;
   processor: Awaited<ReturnType<typeof AutoProcessor.from_pretrained>>;
-  prompts: DescriptionPrompt[];
 }> | null = null;
 function getSoundClassifier() {
   return soundClassifier ??= (async () => {
     const { env, AutoProcessor, ClapAudioModelWithProjection } = await import('@huggingface/transformers');
     env.allowRemoteModels = false; env.allowLocalModels = true; env.localModelPath = import.meta.env.BASE_URL;
-    if (env.backends.onnx.wasm) { env.backends.onnx.wasm.wasmPaths = undefined; env.backends.onnx.wasm.numThreads = 1; }
+    if (env.backends.onnx.wasm) { env.backends.onnx.wasm.wasmPaths = undefined; env.backends.onnx.wasm.numThreads = musicInferenceThreads(); }
     // Isolate this generation from the previously cached, smaller CLAP model.
     // Requests in this worker are serialized, so restore the default for AST.
     const previousCache = env.cacheKey;
@@ -45,10 +48,36 @@ function getSoundClassifier() {
       model = await ClapAudioModelWithProjection.from_pretrained('sound-model', { dtype: 'q8', device: 'wasm', local_files_only: true });
       processor = await AutoProcessor.from_pretrained('sound-model', { local_files_only: true });
     } finally { env.cacheKey = previousCache; }
+    return { model, processor };
+  })().catch(error => { soundClassifier = null; throw error; });
+}
+let soundDescriptions: Promise<{ prompts: DescriptionPrompt[]; learned?: LearnedDjModel }> | null = null;
+function getSoundDescriptions() {
+  return soundDescriptions ??= (async () => {
     const response = await fetch(`${import.meta.env.BASE_URL}sound-model/prompts.json?v=${INSTRUMENT_ANALYSIS_REVISION}`);
     if (!response.ok) throw new Error('Sound descriptions could not be loaded.');
-    return { model, processor, prompts: await response.json() as DescriptionPrompt[] };
-  })().catch(error => { soundClassifier = null; throw error; });
+    let learned: LearnedDjModel | undefined;
+    // A locally trained model is opt-in and must be pinned in the manifest.
+    // Public builds do not ship private or assistant-generated review data.
+    const learnedHash = (soundManifest.sha256 as Record<string,string>)['learned.json'];
+    if (learnedHash) {
+      try {
+        const learnedResponse = await fetch(`${import.meta.env.BASE_URL}sound-model/learned.json?v=${INSTRUMENT_ANALYSIS_REVISION}`, {cache:'no-store'});
+        if (learnedResponse.ok) {
+          const bytes = await learnedResponse.arrayBuffer();
+          const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+          if (hash === learnedHash) learned = sanitizeLearnedDjModel(JSON.parse(new TextDecoder().decode(bytes)));
+        }
+      } catch { /* Optional local model must not prevent pinned model inference. */ }
+    }
+    if (learned && learned.encoder !== 'Xenova/larger_clap_music_and_speech@e9fd5ac1dbf3280936a7fc3ec8a020453ff184db') learned = undefined;
+    return { prompts: await response.json() as DescriptionPrompt[], learned };
+  })().catch(error => { soundDescriptions = null; throw error; });
+}
+function isInstrumentPredictions(value: unknown): value is InstrumentPredictions {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<InstrumentPredictions>;
+  return isScoreMap(candidate.scores) && typeof candidate.musicScore === 'number' && Number.isFinite(candidate.musicScore) && candidate.musicScore >= 0 && candidate.musicScore <= 1;
 }
 const TONICS: Record<string, number> = { C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11 };
 function hasPitchDiversity(engine: Essentia, samples: Float32Array): boolean {
@@ -74,33 +103,53 @@ async function disposeTensors(values: Record<string, unknown>): Promise<void> {
 }
 self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array }>) => {
   const { id } = data;
+  const runtime = data.kind === 'rhythm' || data.kind === 'tonal'
+    ? { backend: 'essentia-wasm', configuredInferenceThreads: 1, identity: 'essentia-wasm-v1' }
+    : musicRuntimeDiagnostics(data.kind);
+  let inferenceExecuted = false;
+  const postResult = async (result: unknown) => {
+    const effectiveInferenceThreads = inferenceExecuted
+      ? data.kind === 'jamendo' ? 1 : (await import('@huggingface/transformers')).env.backends.onnx.wasm?.numThreads
+      : undefined;
+    self.postMessage({ id, runtime: { ...runtime, inferenceExecuted, ...(effectiveInferenceThreads ? { effectiveInferenceThreads } : {}) }, result });
+  };
   let engine: Essentia | undefined;
   try {
     if (data.kind === 'jamendo') {
-      await ready; engine = new Essentia(EssentiaWASM);
-      self.postMessage({ id, result: await classifyJamendo(engine, data.samples) });
+      const result = await cachedAudioInference('jamendo-model', `jamendo-16khz:${musicRuntimeIdentity('jamendo')}`, data.samples, isScoreMap, async () => {
+        await ready; engine = new Essentia(EssentiaWASM);
+        const result = await classifyJamendo(engine, data.samples); inferenceExecuted = true; return result;
+      }, () => self.postMessage({ id, progress: 'Reusing saved instrument features' }));
+      await postResult(result);
       return;
     }
     if (data.kind === 'sound' || data.kind === 'profile') {
-      const { model, processor, prompts } = await getSoundClassifier();
-      const inputs = await processor(data.samples);
-      try {
-        const output = await model(inputs);
-        try { self.postMessage({ id, result: data.kind === 'profile' ? descriptionScores(output.audio_embeds.data, prompts) : soundSuggestions(output.audio_embeds.data, prompts.filter(p => p.group === 'source')) }); }
-        finally { await disposeTensors(output); }
-      } finally { await disposeTensors(inputs); }
+      const { prompts, learned } = await getSoundDescriptions();
+      const embedding = await cachedAudioInference('sound-model', `clap-48khz:${musicRuntimeIdentity('clap')}`, data.samples, isAudioEmbedding, async () => {
+        const { model, processor } = await getSoundClassifier();
+        const inputs = await processor(data.samples);
+        try {
+          const output = await model(inputs); inferenceExecuted = true;
+          try { return Array.from(output.audio_embeds.data) as number[]; }
+          finally { await disposeTensors(output); }
+        } finally { await disposeTensors(inputs); }
+      }, () => self.postMessage({ id, progress: 'Applying current reviews to saved sound features' }));
+      await postResult(data.kind === 'profile' ? [...descriptionScores(embedding, prompts), ...(learned ? learnedDjScores(embedding, learned) : [])] : soundSuggestions(embedding, prompts.filter(p => p.group === 'source')));
       return;
     }
     if (data.kind === 'instruments') {
-      const { model, processor } = await getClassifier();
-      const inputs = await processor(data.samples);
-      try {
-        const output = await model(inputs);
+      const result = await cachedAudioInference('music-model', `ast-16khz:${musicRuntimeIdentity('ast')}`, data.samples, isInstrumentPredictions, async () => {
+        const { model, processor } = await getClassifier();
+        const inputs = await processor(data.samples);
         try {
-          const labels = (model.config as unknown as { id2label: Record<string, string> }).id2label;
-          self.postMessage({ id, result: { scores: instrumentScores(output.logits.data, labels), musicScore: musicScore(output.logits.data, labels) } });
-        } finally { await disposeTensors(output); }
-      } finally { await disposeTensors(inputs); }
+          const output = await model(inputs); inferenceExecuted = true;
+          try {
+            const labels = (model.config as unknown as { id2label: Record<string, string> }).id2label;
+            return { scores: instrumentScores(output.logits.data, labels), musicScore: musicScore(output.logits.data, labels) };
+          } finally { await disposeTensors(output); }
+        } finally { await disposeTensors(inputs); }
+      }, () => self.postMessage({ id, progress: 'Reusing saved instrument features' }));
+      await postResult(result);
       return;
     }
     const { excerpts } = data;
@@ -159,7 +208,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'rhythm' | 't
         ? `Repeated ${KEY_NAMES[result.detectedPitch.pitchClass]} pitch detected from the audio; there is insufficient evidence for a full major/minor key.`
         : 'No stable major/minor key detected confidently.');
     }
-    self.postMessage({ id, result });
+    await postResult(result);
   } catch (error) { self.postMessage({ id, error: error instanceof Error ? error.message : String(error) }); }
   finally { engine?.delete(); }
 };

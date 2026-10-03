@@ -1,0 +1,4790 @@
+{
+  "captureSelection": "concurrent-v4",
+  "sourceLedger": {
+    "BROWSER-TRAINING-AMENDMENT.md": "25bdce204cb0a292dcd1ba221cd9d43018f308e5d99a9d1f7a25850d9268fbca",
+    "CONCURRENT-CAPTURE-OPERATIONAL-AMENDMENT.md": "882030f927c192b215405e4a36ab045e653f7f30df8eae23b3b3627a4ade75eb",
+    "approved-selection.mjs": "c9d39161ef8c65ece3408f8e1b167d79255318e58b8f66e6055bfe65f9fa22a9",
+    "audibility-join-concurrent.cjs": "0105d58b54ab081ea7eb47e0eaac161eb13cb20bfdfa9eb864dd291ffc6ef3cb",
+    "browser-capture-preflight.mjs": "95d3cc82d3165c95f2108f21358faf62798c55024b54b09e269ff2b9088c8784",
+    "browser-head-scorer.mjs": "f303a7a690f24f0aeb295fa243734aa0ac4879c1893457278b749458988ea3e4",
+    "browser-policy-features-concurrent.ts": "37cb6e9307a518aa9f951520cb9b16b3583e14bcb387b279761e9259da501383",
+    "browser-policy-features-concurrent.mjs": "b702e3c7c0ef0cf61f265045a191741cbf6be758a1d07894c46254ba8bd73c8d",
+    "calibrate-browser-heads-concurrent.mjs": "68b21c7d53514ebb8ec350f2b0d531343d94620e6d7973a01dc3f0dde04f79bb",
+    "calibration-metrics.mjs": "50ff1ab199f8451c9347a9c725c2c7778b85e25510b3cbf3978727452097d127",
+    "capture-dispatch.mjs": "186ce6643927c45f9241c9c36f112a0a6aa4da6486dc84ea20f337cceb95e26c",
+    "concurrent-audibility-gate.mjs": "78da0f19912463ad8252f79c6be2e77f4d52919e6fea2206464c35efcc8fa94c",
+    "concurrent-capture-preflight.mjs": "122ec7df183c80b831e23d1a1b646f0d16930a6b1bb7474ad52a94e12e594aa7",
+    "concurrent-contract.mjs": "f4ee044c7452eec4a7d24d556e4df079629b2548bda65c546e64ad3b1f9c7fd5",
+    "concurrent-source-ledger.mjs": "564304fa82207f3a2f4ba72db397fe751f0ecc1f4ffb7971c4f84f84c9d5795c",
+    "descriptor-contract.mjs": "6ba23e2a26ca12143ffbf86082136f2598272d7333db9d8e2ad5fe0b0e5ce7ea",
+    "freeze-integrity.mjs": "188ffab54d8c4843479c6fe412c64acdee0ca5aa1776fdea09edd45b281670e4",
+    "migration-contract.mjs": "c4a01ffacb69423c232e6334fad233a7e1fd14ea02da2375704d297c4651d224",
+    "runtime-evidence.mjs": "c3093ec2d1de33fb172955e310fc3dfdf02cfabba075c3ee6f037aa5c8684d42",
+    "runtime-prototype/selectedPolicyBuilder-concurrent.mjs": "98adec8b5ac270d391e482db69ebad69cbcf4c3c1c57d58b38b0094d6ca8f61e",
+    "runtime-prototype/prepare-development-package-concurrent.mjs": "0b62824c8de0f88b28f79eae000288786f49d3ce682be88fbda9bda40f4f49bd",
+    "train-browser-openmic-heads-concurrent.py": "2eedc4cda83ee1d417de97ff1ce05043ec0ef2dca0a897f1141d0b75d1c2bce3",
+    "v4-predecessor-preflight.mjs": "47295ca9cacf44e2c7a3a41d3203b6aa648894c10fd3808bc3913bd4d49f18bf",
+    "verify-browser-head-export-concurrent.mjs": "7da508631c98090d0b5a494927c7bd3e8c2ae09228837884c514472cd3325ed3",
+    "verify-table-features-concurrent.mjs": "0b5726bce4fd28902e4e6978378e500aff26fdbdca9e0ad2852cee8933d9ace8"
+  },
+  "operationalAmendmentSha256": "882030f927c192b215405e4a36ab045e653f7f30df8eae23b3b3627a4ade75eb",
+  "developmentAudibility": {
+    "path": "/Users/chrisjohnson/Documents/Codex/2026-10-02/task-9/audibility-audit/outputs/dev/joins/concurrent/a86be026acc647b54a249d9b8d61d21bf6df51de11678fbae3685c9e46522561.json",
+    "sha256": "9db1263620d9ff1f1a9d5aab0b8a99f980c44b94e88bba355cf626a8abc77e15",
+    "split": "dev",
+    "records": 414,
+    "checkpointSha256": "a86be026acc647b54a249d9b8d61d21bf6df51de11678fbae3685c9e46522561"
+  },
+  "version": 1,
+  "status": "Research only; threshold/calibration/browser verification pending.",
+  "family": "scores_no_jamendo",
+  "C": 10.0,
+  "licenseScope": "Selected learned heads use AST/CLAP. Ineligible baseline fallback still depends on existing noncommercial Jamendo model.",
+  "amendmentSha256": "25bdce204cb0a292dcd1ba221cd9d43018f308e5d99a9d1f7a25850d9268fbca",
+  "labels": [
+    "accordion",
+    "banjo",
+    "bass",
+    "cello",
+    "clarinet",
+    "cymbals",
+    "drums",
+    "flute",
+    "guitar",
+    "mallet_percussion",
+    "mandolin",
+    "organ",
+    "piano",
+    "saxophone",
+    "synthesizer",
+    "trombone",
+    "trumpet",
+    "ukulele",
+    "violin",
+    "voice"
+  ],
+  "dataSelectionSha256": "4aee29d9debd611b45a02325877ac2a212178c7f8d7bb404503a399c71d8237d",
+  "pipelineHash": "46922cb3aa9f7600312c73fcb16a909a3e1ad40682b6a8a96f9c388b32dd5fa9",
+  "pipelineHashes": [
+    "7c8841541690fe08ece3e3602e335c4ac70181e5cc22a25f8c38bf6d206a5c63",
+    "2bf5f49b4e03293bfab2cc9bcda908b957bad6b5a8fd77425fb61ab8831f8c76",
+    "56f7e72798842d17fc9b4c56c15b364b2cb9d9a3093d1db1fd7224c15f2069c1",
+    "46922cb3aa9f7600312c73fcb16a909a3e1ad40682b6a8a96f9c388b32dd5fa9"
+  ],
+  "provenance": {
+    "kind": "qualified-concurrent-v4",
+    "predecessor": {
+      "approvedSelectionValidatorSha256": "c9d39161ef8c65ece3408f8e1b167d79255318e58b8f66e6055bfe65f9fa22a9",
+      "migrationEvidence": {
+        "migrationSha256": "c8c0d7c951716e9550b91c7b511078221bda6938ae458cadf0a5e67838e6244a",
+        "pausedCheckpointSha256": "8eae36d0c72be5bd632172491bb6f64d5684934dd491bb4a4990e5c640b01be6",
+        "sourceFreezeSha256": "6aaa2caa48264ca91023c03b39988d8aef35886cccd9daa2c30f936bca1d982d",
+        "exactInherited": 55,
+        "mustRecapture": [
+          "034312_115200"
+        ]
+      },
+      "qualificationManifestSha256": "00bd9100f644d13a7ff8df898ddf66e56d223b95449d13d4aa8498c89884d4d7",
+      "migrationValidatorSha256": "c4a01ffacb69423c232e6334fad233a7e1fd14ea02da2375704d297c4651d224",
+      "pipelineManifestSha256": "eeb77e9f52c92961c6d45f58e957a256eed05d498bfff875720adb927ef1203c",
+      "checkpointSha256": "7f439afeacc74191481c2956ac92498461a7a3866896f798b273587fe2a4afe6",
+      "servedBuildVerificationSha256": "f02ec4ccae6e9512eca8a1863f97ae81be83ebcad79d1e69f9cb290a710bf229",
+      "runtimeBindingSha256": "415a7b1ab8105b102a2e7d5f4deac9f9d544f2fd7b4c08773dd0eee78c41d80f",
+      "runtimeVerificationSha256": "b1a90282aa7f37fdb3c1b8805154a94a600bf0c10d9527316ef46ffff767b490",
+      "captureCompletedAt": "2026-10-03T03:38:06.851Z",
+      "runtimeVerifiedAt": "2026-10-03T03:48:16.115Z",
+      "qualificationBindingSha256": "f9aeb10fb7f86ca209161480fc8502167da093f6683186edca18ebd758c2ffda",
+      "validatorSha256": "47295ca9cacf44e2c7a3a41d3203b6aa648894c10fd3808bc3913bd4d49f18bf",
+      "descriptorContractSha256": "6ba23e2a26ca12143ffbf86082136f2598272d7333db9d8e2ad5fe0b0e5ce7ea",
+      "runtimeEvidenceValidatorSha256": "c3093ec2d1de33fb172955e310fc3dfdf02cfabba075c3ee6f037aa5c8684d42"
+    },
+    "transitionSha256": "d2359dbd7fa960ed3074682f829da954edb52da649c3292f2376619dc7626246",
+    "concurrencyQualificationSha256": "5d1286ebc832d933546409c076253efe4a3d95945aa522bb99e771b904b1e3e2",
+    "pipelineManifestSha256": "903f30d01919c36af9286606cb56fdcfa3312193605abddb7d2d18c1bd61f686",
+    "checkpointSha256": "a86be026acc647b54a249d9b8d61d21bf6df51de11678fbae3685c9e46522561",
+    "servedBuildVerificationSha256": "3525d11a7f9b442e9105abc3fda75326ed1ca0272604055eda6b6f0f43636964",
+    "runtimeBindingSha256": "415a7b1ab8105b102a2e7d5f4deac9f9d544f2fd7b4c08773dd0eee78c41d80f",
+    "runtimeVerificationSha256": "e511c6f9a65385f844e6bb04c4afa76e0550a63f28ed9de62c7532b546fe66c8",
+    "captureCompletedAt": "2026-10-03T04:00:59.397Z",
+    "runtimeVerifiedAt": "2026-10-03T04:04:18.665Z",
+    "validatorSha256": "122ec7df183c80b831e23d1a1b646f0d16930a6b1bb7474ad52a94e12e594aa7",
+    "predecessorValidatorSha256": "47295ca9cacf44e2c7a3a41d3203b6aa648894c10fd3808bc3913bd4d49f18bf",
+    "concurrentContractSha256": "f4ee044c7452eec4a7d24d556e4df079629b2548bda65c546e64ad3b1f9c7fd5",
+    "captureSelection": "concurrent-v4",
+    "captureDispatcherSha256": "186ce6643927c45f9241c9c36f112a0a6aa4da6486dc84ea20f337cceb95e26c"
+  },
+  "eligibility": {
+    "accordion": false,
+    "banjo": true,
+    "bass": true,
+    "cello": true,
+    "clarinet": true,
+    "cymbals": true,
+    "drums": true,
+    "flute": true,
+    "guitar": false,
+    "mallet_percussion": true,
+    "mandolin": true,
+    "organ": true,
+    "piano": false,
+    "saxophone": false,
+    "synthesizer": true,
+    "trombone": false,
+    "trumpet": true,
+    "ukulele": true,
+    "violin": false,
+    "voice": true
+  },
+  "canonicalAstOrder": [
+    "accordion",
+    "acoustic guitar",
+    "bagpipes",
+    "banjo",
+    "bass drum",
+    "bass guitar",
+    "bell",
+    "bowed string instrument",
+    "brass instrument",
+    "breath",
+    "cello",
+    "chime",
+    "clarinet",
+    "cymbal",
+    "didgeridoo",
+    "double bass",
+    "drum",
+    "drum kit",
+    "drum machine",
+    "electric guitar",
+    "electric piano",
+    "electronic organ",
+    "flute",
+    "french horn",
+    "glockenspiel",
+    "gong",
+    "guitar",
+    "hammond organ",
+    "harmonica",
+    "harp",
+    "harpsichord",
+    "hi-hat",
+    "jingle bell",
+    "keyboard (musical)",
+    "mallet percussion",
+    "mandolin",
+    "maraca",
+    "marimba / xylophone",
+    "organ",
+    "percussion",
+    "piano",
+    "plucked string instrument",
+    "rattle (instrument)",
+    "sampler",
+    "saxophone",
+    "shofar",
+    "singing bowl",
+    "sitar",
+    "snare drum",
+    "steel guitar / slide guitar",
+    "steelpan",
+    "string section",
+    "synthesizer",
+    "tabla",
+    "tambourine",
+    "theremin",
+    "timpani",
+    "trombone",
+    "trumpet",
+    "tubular bells",
+    "ukulele",
+    "vibraphone",
+    "violin / fiddle",
+    "voice",
+    "wind instrument / woodwind instrument",
+    "wood block",
+    "zither"
+  ],
+  "clapDescriptionOrder": [
+    [
+      "source",
+      "synthesizer",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "piano",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "electric piano",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "acoustic guitar",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "electric guitar",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "bass guitar",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "violin / fiddle",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "cello",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "trumpet",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "saxophone",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "flute",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "organ",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "bell",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "drum kit",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "drum machine",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "percussion",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "voice",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "environmental sound",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      "noise",
+      null,
+      null,
+      null
+    ],
+    [
+      "source",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "articulation",
+      "plucked",
+      null,
+      null,
+      null
+    ],
+    [
+      "articulation",
+      "sustained",
+      null,
+      null,
+      null
+    ],
+    [
+      "articulation",
+      "rhythmic stabs",
+      null,
+      null,
+      null
+    ],
+    [
+      "articulation",
+      "pulsing",
+      null,
+      null,
+      null
+    ],
+    [
+      "articulation",
+      null,
+      "A sound with no clear musical note articulation.",
+      null,
+      null
+    ],
+    [
+      "tone",
+      "airy",
+      null,
+      null,
+      null
+    ],
+    [
+      "tone",
+      "metallic",
+      null,
+      null,
+      null
+    ],
+    [
+      "tone",
+      "distorted",
+      null,
+      null,
+      null
+    ],
+    [
+      "tone",
+      "warm",
+      null,
+      null,
+      null
+    ],
+    [
+      "tone",
+      "bright",
+      null,
+      null,
+      null
+    ],
+    [
+      "tone",
+      null,
+      "A sound without a clearly identifiable tonal character.",
+      null,
+      null
+    ],
+    [
+      "space",
+      "reverberant",
+      null,
+      null,
+      null
+    ],
+    [
+      "space",
+      "dry",
+      null,
+      null,
+      null
+    ],
+    [
+      "space",
+      null,
+      "A sound with unclear reverberation.",
+      null,
+      null
+    ],
+    [
+      "role",
+      "bass",
+      null,
+      null,
+      null
+    ],
+    [
+      "role",
+      "lead",
+      null,
+      null,
+      null
+    ],
+    [
+      "role",
+      "pad",
+      null,
+      null,
+      null
+    ],
+    [
+      "role",
+      "arpeggio",
+      null,
+      null,
+      null
+    ],
+    [
+      "role",
+      "rhythm",
+      null,
+      null,
+      null
+    ],
+    [
+      "role",
+      "atmosphere",
+      null,
+      null,
+      null
+    ],
+    [
+      "role",
+      null,
+      "A sound with no clear musical role.",
+      null,
+      null
+    ],
+    [
+      "vocal",
+      "vocal chops",
+      null,
+      null,
+      null
+    ],
+    [
+      "vocal",
+      "singing",
+      null,
+      null,
+      null
+    ],
+    [
+      "vocal",
+      "speech",
+      null,
+      null,
+      null
+    ],
+    [
+      "vocal",
+      "choir",
+      null,
+      null,
+      null
+    ],
+    [
+      "vocal",
+      null,
+      "The sound of an electronic synthesizer imitating a voice, without a human vocal recording.",
+      null,
+      null
+    ],
+    [
+      "vocal",
+      "instrumental",
+      null,
+      null,
+      null
+    ],
+    [
+      "sample",
+      "vocal chops",
+      null,
+      null,
+      null
+    ],
+    [
+      "sample",
+      "synthesizer",
+      null,
+      null,
+      null
+    ],
+    [
+      "sample",
+      "drum machine",
+      null,
+      null,
+      null
+    ],
+    [
+      "sample",
+      "guitar sample",
+      null,
+      null,
+      null
+    ],
+    [
+      "sample",
+      "piano sample",
+      null,
+      null,
+      null
+    ],
+    [
+      "sample",
+      null,
+      "The sound of a synthesizer imitating human vowels.",
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "vocal phrase",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "synth pluck",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "atmospheric pad",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "synth stab",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "synth lead",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "synth bass",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "vocal-like synth",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "riser",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "downlifter",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "impact",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "whoosh",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "drum loop",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "percussion hit",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "texture",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      null,
+      "An acoustic instrument playing music, without a synthesizer or vocal production effect.",
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "vocal chops",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-type",
+      "vocal breath",
+      null,
+      null,
+      null
+    ],
+    [
+      "breath",
+      "vocal breath",
+      null,
+      null,
+      null
+    ],
+    [
+      "breath",
+      "noise",
+      null,
+      null,
+      null
+    ],
+    [
+      "breath",
+      "hi-hat",
+      null,
+      null,
+      null
+    ],
+    [
+      "breath",
+      "flute",
+      null,
+      null,
+      null
+    ],
+    [
+      "breath",
+      "breathy synth",
+      null,
+      null,
+      null
+    ],
+    [
+      "breath",
+      "whisper",
+      null,
+      null,
+      null
+    ],
+    [
+      "breath",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-tone",
+      "dark",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-tone",
+      "bright",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-tone",
+      null,
+      "A sound with no clear dark or bright tone.",
+      null,
+      null
+    ],
+    [
+      "dj-rhythm",
+      "rhythmic",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-rhythm",
+      null,
+      "A single sound without a rhythmic pattern.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "voice",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "breath",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "synthesizer",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "guitar",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "piano",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "drums",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "sound effect",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "electric piano",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "acoustic guitar",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "electric guitar",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "bass guitar",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "strings",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "violin / fiddle",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "cello",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "trumpet",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "saxophone",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "flute",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "clarinet",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "organ",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "bell",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "mallet instrument",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "percussion",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "hand percussion",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "foley",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "environmental sound",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "turntable",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "spoken phrase",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "whisper",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "vocal shout",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "vocal chant",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "vocal ad-lib",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "vocal hum",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "vocal vowel",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "choir",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "vocal harmony",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "vocal scream",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "vocal laugh",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "vocal gasp",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "beatbox",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "vocoder vocal",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "pitched vocal",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "reversed vocal",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      "vocal pad",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      "synth arpeggio",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      "synth chord",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      "supersaw",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      "acid synth",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      "bell synth",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      "organ synth",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      "brass synth",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      "string synth",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      "chiptune synth",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      "fm synth",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      "synth drone",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      "synth sequence",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      "sub bass",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      "reese bass",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      "wobble bass",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      "bass growl",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      "acid bass",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      "808 bass",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      "bass pluck",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      "foghorn bass",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      "rubbery bass",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "kick",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "snare",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "clap",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "closed hi-hat",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "open hi-hat",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "ride cymbal",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "crash cymbal",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "rimshot",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "tom",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "shaker",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "tambourine",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "conga",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "bongo",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "cowbell",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "clave",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "woodblock",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      "finger snap",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      "percussion loop",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      "hi-hat loop",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      "shaker loop",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      "breakbeat",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      "drum fill",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      "snare roll",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      "top loop",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      "reverse cymbal",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      "reverse impact",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      "noise sweep",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      "sub drop",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      "laser",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      "siren",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      "air horn",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      "vinyl scratch",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      "record stop",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      "stutter effect",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      "glitch effect",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      "reverse effect",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      "ambient drone",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      "vinyl crackle",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      "static noise",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      "crowd ambience",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      "rain ambience",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      "wind ambience",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      "water ambience",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      "bird ambience",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      "machine ambience",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      "foley hit",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      "airy",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      "distorted",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      "metallic",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      "warm",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      "gritty",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      "smooth",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      "hollow",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      "nasal",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      "woody",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      "glassy",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      "sustained",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      "plucked",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      "percussive",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      "swelling",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      "staccato",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-rhythm",
+      "pulsing",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-rhythm",
+      "syncopated",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-rhythm",
+      "rolling",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      "reverberant",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      "dry",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      "echoing",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      "rising",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      "falling",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      "gliding",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      "wobbling",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      "bitcrushed",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      "filtered",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      "chorused",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      "flanged",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      "saturated",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable sources sound.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable vocal sound.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable synth sound.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable bass sound.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable drum-hit sound.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable drum-pattern sound.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable transition sound.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable texture sound.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable timbre sound.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable articulation sound.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable space sound.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable motion sound.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable processing sound.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "harp",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "trombone",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "horn",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "tuba",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "oboe",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "bassoon",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "harmonica",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "accordion",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "banjo",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "ukulele",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "sitar",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "mandolin",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "steel guitar",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "double bass",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "viola",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "xylophone",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "marimba",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "vibraphone",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "steel drum",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "glockenspiel",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "kalimba",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "tabla",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "djembe",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "cajon",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "gong",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "triangle",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "jaw harp",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "whistle",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "animal sound",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "waterphone",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "singing bowl",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      "tuned percussion",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-sources",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-vocal",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-synth",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-bass",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-hit",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-drum-pattern",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-transition",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-texture",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-timbre",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-articulation",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-space",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-motion",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-processing",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      "chops",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A mixture of unrelated sounds without a clearly identifiable editing sound.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-editing",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      "vocal shush",
+      null,
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A human voice singing a melodic vocal phrase.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A sustained atmospheric synthesizer pad with spacious soft chords.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "Short punchy synthesizer chord stabs.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A synthesizer playing a prominent lead melody.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A deep electronic synth bass line.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A rising electronic transition effect building in pitch and intensity.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A falling electronic transition effect descending in pitch.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A single dramatic cinematic impact hit.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A sweeping whoosh sound effect.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A rhythmic drum loop with kick, snare and hi hats.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A single short percussion hit.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "An atmospheric noise texture and ambient soundscape.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "An acoustic instrument playing music, without a synthesizer or vocal production effect.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A vocal chop loop.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "A vocal breath sample.",
+      null,
+      null
+    ],
+    [
+      "dj-custom-production",
+      null,
+      "Silence with no identifiable sound.",
+      null,
+      null
+    ]
+  ],
+  "promptsSha256": "60749591cdefb7d9cccb5c9b9524d71ab21f6e6f0f6a6f6ad6f94a400dca408c",
+  "aliases": {
+    "accordion": [
+      "accordion"
+    ],
+    "banjo": [
+      "banjo"
+    ],
+    "bass": [
+      "bass guitar",
+      "double bass"
+    ],
+    "cello": [
+      "cello"
+    ],
+    "clarinet": [
+      "clarinet"
+    ],
+    "cymbals": [
+      "cymbal",
+      "hi-hat"
+    ],
+    "drums": [
+      "drum",
+      "drum kit",
+      "drum machine",
+      "snare drum",
+      "bass drum",
+      "timpani",
+      "tom-tom"
+    ],
+    "flute": [
+      "flute"
+    ],
+    "guitar": [
+      "guitar",
+      "electric guitar",
+      "acoustic guitar",
+      "steel guitar / slide guitar"
+    ],
+    "mallet_percussion": [
+      "mallet percussion",
+      "marimba / xylophone",
+      "vibraphone",
+      "glockenspiel"
+    ],
+    "mandolin": [
+      "mandolin"
+    ],
+    "organ": [
+      "organ",
+      "electronic organ",
+      "hammond organ"
+    ],
+    "piano": [
+      "piano",
+      "electric piano"
+    ],
+    "saxophone": [
+      "saxophone"
+    ],
+    "synthesizer": [
+      "synthesizer"
+    ],
+    "trombone": [
+      "trombone"
+    ],
+    "trumpet": [
+      "trumpet"
+    ],
+    "ukulele": [
+      "ukulele"
+    ],
+    "violin": [
+      "violin / fiddle"
+    ],
+    "voice": [
+      "voice"
+    ]
+  },
+  "jamendoAliases": {
+    "accordion": [
+      "accordion"
+    ],
+    "banjo": [],
+    "bass": [
+      "acousticbassguitar",
+      "doublebass"
+    ],
+    "cello": [
+      "cello"
+    ],
+    "clarinet": [
+      "clarinet"
+    ],
+    "cymbals": [],
+    "drums": [
+      "drummachine",
+      "drums"
+    ],
+    "flute": [
+      "flute"
+    ],
+    "guitar": [
+      "guitar",
+      "acousticguitar",
+      "classicalguitar",
+      "electricguitar"
+    ],
+    "mallet_percussion": [],
+    "mandolin": [],
+    "organ": [
+      "organ",
+      "pipeorgan"
+    ],
+    "piano": [
+      "piano",
+      "electricpiano",
+      "rhodes"
+    ],
+    "saxophone": [
+      "saxophone"
+    ],
+    "synthesizer": [
+      "synthesizer"
+    ],
+    "trombone": [
+      "trombone"
+    ],
+    "trumpet": [
+      "trumpet"
+    ],
+    "ukulele": [],
+    "violin": [
+      "violin"
+    ],
+    "voice": [
+      "voice"
+    ]
+  },
+  "expandedClapAliases": {
+    "accordion": [
+      "accordion"
+    ],
+    "banjo": [
+      "banjo"
+    ],
+    "bass": [
+      "bass guitar",
+      "double bass"
+    ],
+    "cello": [
+      "cello"
+    ],
+    "clarinet": [
+      "clarinet"
+    ],
+    "cymbals": [
+      "cymbal",
+      "hi-hat"
+    ],
+    "drums": [
+      "drum",
+      "drum kit",
+      "drum machine",
+      "snare drum",
+      "bass drum",
+      "timpani",
+      "tom-tom",
+      "drums"
+    ],
+    "flute": [
+      "flute"
+    ],
+    "guitar": [
+      "guitar",
+      "electric guitar",
+      "acoustic guitar",
+      "steel guitar / slide guitar",
+      "steel guitar"
+    ],
+    "mallet_percussion": [
+      "mallet percussion",
+      "marimba / xylophone",
+      "vibraphone",
+      "glockenspiel",
+      "mallet instrument",
+      "marimba",
+      "xylophone"
+    ],
+    "mandolin": [
+      "mandolin"
+    ],
+    "organ": [
+      "organ",
+      "electronic organ",
+      "hammond organ"
+    ],
+    "piano": [
+      "piano",
+      "electric piano"
+    ],
+    "saxophone": [
+      "saxophone"
+    ],
+    "synthesizer": [
+      "synthesizer"
+    ],
+    "trombone": [
+      "trombone"
+    ],
+    "trumpet": [
+      "trumpet"
+    ],
+    "ukulele": [
+      "ukulele"
+    ],
+    "violin": [
+      "violin / fiddle"
+    ],
+    "voice": [
+      "voice"
+    ]
+  },
+  "featureTransform": {
+    "availableFeatures": "AST/Jamendo mapped sigmoid scores and CLAP prompt similarities; no exported embeddings",
+    "astLogit": "clip sigmoid score to [0.000001,0.999999], then log(p/(1-p)); canonicalAstOrder",
+    "scoreFields": "featureNames fixes order; AST/Jamendo max mapped score uses same logit; CLAP similarity unchanged",
+    "fullScoreVector": "67 AST logits in canonicalAstOrder followed by all512 raw CLAP prompt similarities in clapDescriptionOrder; no embedding, normalization, or missing flags; all finite",
+    "missing": "missing value becomes zero after transformation; corresponding Missing flag is one, else zero",
+    "standardization": "Already baked into weights and bias; do not apply exported mean/scale again",
+    "probability": "sigmoid(clip(dot(weights, transformedFeatures)+bias, -35,35))",
+    "ineligible": "Use original browser baseline for ineligible heads; all 20 classes remain in evaluation"
+  },
+  "heads": {
+    "accordion": {
+      "weights": [
+        0.1870625859974178,
+        0.0,
+        5.606344199609747,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": -0.05009006756295198,
+      "mean": [
+        -6.128130034889494,
+        0.0,
+        0.2267758571366288,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "scale": [
+        3.1120619333296595,
+        1.0,
+        0.11823955381739112,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 8,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 2,
+      "negativeGroups": 25
+    },
+    "banjo": {
+      "weights": [
+        0.6836254300436646,
+        0.0,
+        -1.1864424277823251,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 3.886941468313489,
+      "mean": [
+        -5.199040977746525,
+        0.0,
+        0.2434597456880254,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "scale": [
+        4.024328808151009,
+        1.0,
+        0.16133849396274338,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 11,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 8,
+      "negativeGroups": 18
+    },
+    "bass": {
+      "weights": [
+        0.038994700860988045,
+        -5.240074947828952,
+        10.734099751188602,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": -1.1172904227904756,
+      "mean": [
+        -4.6508491714795435,
+        0.2555495804322517,
+        0.24713813899920853,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        2.37072004362037,
+        0.14465707908961797,
+        0.1458477965024195,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 14,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 10,
+      "negativeGroups": 16
+    },
+    "cello": {
+      "weights": [
+        0.39492282612315543,
+        20.240755213475644,
+        -15.8181822669111,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": -0.14442632855757598,
+      "mean": [
+        -4.80391113359777,
+        0.20008133776271766,
+        0.1293439913322779,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        2.804875841958074,
+        0.22293411335066668,
+        0.20996170575657755,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 14,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 7,
+      "negativeGroups": 20
+    },
+    "clarinet": {
+      "weights": [
+        0.5875299077796134,
+        0.0,
+        -0.10767036519572434,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 3.318805738639095,
+      "mean": [
+        -5.544774538390338,
+        0.0,
+        0.12006917093108445,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "scale": [
+        2.957726294941603,
+        1.0,
+        0.13655758582622224,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 9,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 5,
+      "negativeGroups": 20
+    },
+    "cymbals": {
+      "weights": [
+        0.647599620034428,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 3.5857784149275513,
+      "mean": [
+        -5.597058613089814,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        1.0
+      ],
+      "scale": [
+        3.6406031069161027,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 9,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 15,
+      "negativeGroups": 7
+    },
+    "drums": {
+      "weights": [
+        1.0997683109527288,
+        10.126609251154454,
+        1.7130461211497239,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 3.0841612918536825,
+      "mean": [
+        -4.076911376836973,
+        0.24751309522911694,
+        0.15901234865806946,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        3.9729176911290653,
+        0.12362342877994266,
+        0.1641357359442165,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 16,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 13,
+      "negativeGroups": 12
+    },
+    "flute": {
+      "weights": [
+        0.7665279881764022,
+        -5.2914544403307096,
+        6.502756160178658,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 5.014314342918133,
+      "mean": [
+        -5.93113646507263,
+        0.22061122727580196,
+        0.12088133851067363,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        2.5783540202696384,
+        0.125825534683117,
+        0.12066225097498949,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 13,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 10,
+      "negativeGroups": 20
+    },
+    "guitar": {
+      "weights": [
+        1.9202548225583966,
+        -5.835580796853026,
+        2.015105734414113,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 7.369333974665456,
+      "mean": [
+        -3.563186210942898,
+        0.2464627184954967,
+        0.23169488616368583,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        3.0849800990454153,
+        0.16231835596781388,
+        0.15772578290759773,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 15,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 19,
+      "negativeGroups": 10
+    },
+    "mallet_percussion": {
+      "weights": [
+        1.5277571508763728,
+        0.0,
+        -2.37878401138184,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 6.323348715408156,
+      "mean": [
+        -4.105983447283506,
+        0.0,
+        0.17280245014705167,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "scale": [
+        3.2119826587295077,
+        1.0,
+        0.11710902905555169,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 12,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 8,
+      "negativeGroups": 18
+    },
+    "mandolin": {
+      "weights": [
+        0.5528936856654272,
+        0.0,
+        1.903491011051417,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 2.3221204502254693,
+      "mean": [
+        -5.218849163489154,
+        0.0,
+        0.19806623435978565,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "scale": [
+        3.4038349010362077,
+        1.0,
+        0.20581115706405803,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 9,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 16,
+      "negativeGroups": 20
+    },
+    "organ": {
+      "weights": [
+        0.14158166657869672,
+        3.7078369610584594,
+        4.666091888971269,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": -2.5067003688706224,
+      "mean": [
+        -4.260926630841333,
+        0.3620960831535537,
+        0.33198365379273964,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        2.9963182416791914,
+        0.17991794644758136,
+        0.19215065555486158,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 12,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 10,
+      "negativeGroups": 26
+    },
+    "piano": {
+      "weights": [
+        1.3756505706573863,
+        -2.285965264234606,
+        -5.032977793662888,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 7.477435520742192,
+      "mean": [
+        -3.817855139690694,
+        0.30188271439169195,
+        0.2577225569396863,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        3.158738335304676,
+        0.1884220762090688,
+        0.17190908738850572,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 16,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 15,
+      "negativeGroups": 8
+    },
+    "saxophone": {
+      "weights": [
+        1.1835288259615393,
+        2.4268198854413687,
+        -10.011306592199844,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 7.801653683887066,
+      "mean": [
+        -5.581492345389866,
+        0.18906017698064068,
+        0.1448971483585825,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        2.8549220593922318,
+        0.13803048323387967,
+        0.14358123889922217,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 14,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 5,
+      "negativeGroups": 20
+    },
+    "synthesizer": {
+      "weights": [
+        1.1404716145084057,
+        10.817070032836531,
+        7.472591410431934,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 3.5614567715855205,
+      "mean": [
+        -5.6810285224268835,
+        0.1693314897726718,
+        0.20799495834817522,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        3.132622057599879,
+        0.14174883317420636,
+        0.13297911369091964,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 14,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 16,
+      "negativeGroups": 6
+    },
+    "trombone": {
+      "weights": [
+        0.597157358912109,
+        0.0,
+        11.891458510350551,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": -0.37465719710271456,
+      "mean": [
+        -5.046649156937997,
+        0.0,
+        0.2620880483550796,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "scale": [
+        3.0651743081674954,
+        1.0,
+        0.16832495886049928,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 10,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 5,
+      "negativeGroups": 25
+    },
+    "trumpet": {
+      "weights": [
+        0.8913674140822995,
+        -17.21872198818182,
+        23.341964529889697,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 3.5687857348544463,
+      "mean": [
+        -5.152465565780561,
+        0.27078011572202615,
+        0.22714183613049,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        2.847278882426903,
+        0.14916517682168862,
+        0.15924678924317742,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 16,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 6,
+      "negativeGroups": 21
+    },
+    "ukulele": {
+      "weights": [
+        0.6989312169329317,
+        0.0,
+        10.370925065387468,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 1.3191490460800477,
+      "mean": [
+        -5.416872718794782,
+        0.0,
+        0.2224909679212543,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "scale": [
+        3.543880487908569,
+        1.0,
+        0.20586446731128058,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 12,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 12,
+      "negativeGroups": 22
+    },
+    "violin": {
+      "weights": [
+        1.657372786511315,
+        10.076209335537335,
+        0.08650070009002321,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 5.795389605398726,
+      "mean": [
+        -4.1115882908742805,
+        0.2095820772413212,
+        0.1423706292424102,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        3.0300771352128035,
+        0.19590273128102917,
+        0.2167704007752021,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 15,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 8,
+      "negativeGroups": 17
+    },
+    "voice": {
+      "weights": [
+        1.5747758365497708,
+        9.727853724702063,
+        -6.818245495934544,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "bias": 5.13398687039045,
+      "mean": [
+        -3.583381884879828,
+        0.07961634431114444,
+        0.14124417380917428,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        2.1760669777819923,
+        0.08965795297433891,
+        0.09528583979019331,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "iterations": 12,
+      "featureNames": [
+        "ast",
+        "clapLegacy",
+        "clapExpanded",
+        "astMissing",
+        "clapLegacyMissing",
+        "clapExpandedMissing"
+      ],
+      "positiveGroups": 9,
+      "negativeGroups": 10
+    }
+  },
+  "modelSha256": "d43b2e9285cef986fc9fbd2c12400f839dce120d207b42e7bdd7c9ce0880be7b"
+}

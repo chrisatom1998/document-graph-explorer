@@ -14,6 +14,7 @@ import SidePanelAbout from './SidePanelAbout';
 import SidePanelConnections from './SidePanelConnections';
 import SidePanelHeader from './SidePanelHeader';
 import SidePanelReader from './SidePanelReader';
+import { focusNode } from './focusNode';
 
 function Disclose({
   label,
@@ -251,6 +252,13 @@ export default function SidePanel() {
             />
           )}
 
+          {node.fileType === 'audio' && <section className="audio-related" aria-label="Related samples">
+            <h3>Related samples</h3>
+            {Array.from(new Map(connections.filter(row => row.neighbor?.fileType === 'audio').map(row => [row.neighborId, row.neighbor!])).values()).slice(0, 3).map(related => <button key={related.id} type="button" onClick={() => focusNode(related.id)}>
+              <span className="audio-related-icon" aria-hidden="true">♫</span><span>{related.title}<small>View sample and connections</small></span><span aria-hidden="true">↗</span>
+            </button>)}
+            {!connections.some(row => row.neighbor?.fileType === 'audio') && <p>No related samples yet.</p>}
+          </section>}
           {isDocument && (
             <Disclose
               label="About"

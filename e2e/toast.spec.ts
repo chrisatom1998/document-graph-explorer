@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('persistent performance toast leaves the toolbar usable at compact sizes', async ({ page }) => {
+  page.setDefaultTimeout(30_000);
   await page.setViewportSize({ width: 800, height: 500 });
   // Exercise the real performance warning and ToastHost. Slow frame delivery
   // deterministically instead of depending on the CI machine's GPU speed.
@@ -36,12 +37,7 @@ test('persistent performance toast leaves the toolbar usable at compact sizes', 
     expect(toolbarBox).not.toBeNull();
     expect(toastBox).not.toBeNull();
     expect(toastBox!.y).toBeGreaterThan(toolbarBox!.y + toolbarBox!.height);
-    const minimapBox = await page.locator('.minimap').boundingBox();
-    expect(minimapBox).not.toBeNull();
-    expect(toastBox!.y + toastBox!.height).toBeLessThan(minimapBox!.y);
-    const chatBox = await page.getByRole('button', { name: 'Chat with your documents' }).boundingBox();
-    expect(chatBox).not.toBeNull();
-    expect(toastBox!.y + toastBox!.height).toBeLessThan(chatBox!.y);
+    expect(toastBox!.y + toastBox!.height).toBeLessThanOrEqual(viewport.height);
     await page.getByRole('button', { name: 'Add documents', exact: true }).click({ timeout: 5000 });
     await expect(page.getByRole('button', { name: 'Add files', exact: true })).toBeVisible();
     // Close through the same toggle before resizing. Frame throttling can

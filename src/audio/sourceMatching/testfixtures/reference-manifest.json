@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "libraryId": "iowa-mis-bounded-acoustic-references",
+  "records": [
+    {
+      "id": "iowa-flute-first8s",
+      "familyId": "iowa-flute",
+      "kind": "original-sample",
+      "asset": {
+        "uri": "iowa-flute-first8s.wav",
+        "sha256": "1f141a7092ed3d9e9095cbc8e6430fc13902ec893f184fe1a61ca4e81632eb57"
+      },
+      "rights": {
+        "basis": "University of Iowa MIS publisher permission: any projects, without restrictions; https://theremin.music.uiowa.edu/MIS.html",
+        "localAnalysisAllowed": true
+      },
+      "identity": null,
+      "render": null,
+      "provenance": {
+        "method": "publisher-documentation",
+        "evidenceUri": "https://theremin.music.uiowa.edu/MISflute.html",
+        "artifactSha256": "1f141a7092ed3d9e9095cbc8e6430fc13902ec893f184fe1a61ca4e81632eb57",
+        "reviewer": "Codex primary-source acquisition review",
+        "reviewedAt": "2026-10-03T02:00:00Z"
+      }
+    },
+    {
+      "id": "iowa-marimba-C7",
+      "familyId": "iowa-marimba-C7",
+      "kind": "original-sample",
+      "asset": {
+        "uri": "iowa-marimba-C7.wav",
+        "sha256": "2e6fcdce6b29b65547b332d9171acff18d05f20ee3b2c1aefaf3b798e6474355"
+      },
+      "rights": {
+        "basis": "University of Iowa MIS publisher permission: any projects, without restrictions; https://theremin.music.uiowa.edu/MIS.html",
+        "localAnalysisAllowed": true
+      },
+      "identity": null,
+      "render": null,
+      "provenance": {
+        "method": "publisher-documentation",
+        "evidenceUri": "https://theremin.music.uiowa.edu/Mismarimba.html",
+        "artifactSha256": "2e6fcdce6b29b65547b332d9171acff18d05f20ee3b2c1aefaf3b798e6474355",
+        "reviewer": "Codex primary-source acquisition review",
+        "reviewedAt": "2026-10-03T02:00:00Z"
+      }
+    }
+  ]
+}

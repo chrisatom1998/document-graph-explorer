@@ -143,7 +143,7 @@ export async function hydrateFromRecord(
     // version, malformed node/edge arrays, or no valid nodes at all) —
     // exactly the cases the old manual check here used to catch by hand.
     const { sanitizeGraphExport } = await import('./validateImport');
-    exportData = sanitizeGraphExport(rawExportData);
+    exportData = sanitizeGraphExport(rawExportData, { trustedCache: true });
   } catch {
     return false; // malformed IndexedDB record — treat like "couldn't restore"
   }

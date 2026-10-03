@@ -7,8 +7,8 @@
  * before the pixels are read. Canvas antialias is OFF on purpose: the
  * EffectComposer renders the scene into its own framebuffer, so context MSAA
  * would only smooth the final fullscreen blit — geometry AA lives on the
- * composer's multisampling (Effects.tsx). dpr starts capped at 2 (retina
- * won't melt the bloom pass); AutoQuality owns dpr at runtime.
+ * composer's multisampling (Effects.tsx). AutoQuality owns supersampling at
+ * runtime, bounded by the viewport's pixel budget and GPU texture limits.
  *
  * Lighting: the node cores are lit (glossy physical material) so they read
  * as 3D marbles with a specular hotspot. A single strong key light from the upper-left puts
@@ -17,7 +17,7 @@
  * materials stay unlit (basic/additive) and ignore these lights entirely.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
@@ -48,12 +48,9 @@ import PeerPresence from './PeerPresence';
 import PathRoute from './PathRouteOverlay';
 import FlatClusterLabels from './FlatClusterLabels';
 
-const COARSE_POINTER =
-  typeof window !== 'undefined' && Boolean(window.matchMedia?.('(pointer: coarse)').matches);
-// Initial value only — AutoQuality owns dpr at runtime (quality ladder).
-// Module-level so the prop identity is stable and Canvas re-renders never
-// clobber the ladder's setDpr.
-const INITIAL_DPR: number | [number, number] = COARSE_POINTER ? 1 : [1, 2];
+// AutoQuality publishes its bounded ratio back to this prop. R3F reapplies
+// the Canvas prop when resizing or switching views, even if it is unchanged.
+const INITIAL_DPR = typeof window === 'undefined' ? 1 : Math.min(window.devicePixelRatio || 1, 2);
 
 /** Registers the Export-PNG capture hook: render a frame now, hand back the canvas. */
 function SceneCapture() {
@@ -73,7 +70,11 @@ function supportsWebGL(): boolean {
   if (typeof document === 'undefined') return true;
   try {
     const canvas = document.createElement('canvas');
-    return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'));
+    const context = canvas.getContext('webgl2');
+    // This is only a capability probe. Release it immediately so it cannot
+    // exhaust the browser's context limit and evict the real graph renderer.
+    context?.getExtension('WEBGL_lose_context')?.loseContext();
+    return Boolean(context);
   } catch {
     return false;
   }
@@ -108,12 +109,14 @@ function WebGLFallback() {
 }
 
 export default function NebulaCanvas() {
+  const [webglSupported] = useState(supportsWebGL);
+  const [renderDpr, setRenderDpr] = useState(INITIAL_DPR);
   // 2D constellation mode: flat ink background, no starfield/clouds/core —
   // the graph reads as a star chart, not a nebula (see palette FLAT_* tokens).
   const flat = useUiStore((s) => s.dims === 2);
   const bg = flat ? FLAT_BG : VOID;
 
-  if (!supportsWebGL()) return <WebGLFallback />;
+  if (!webglSupported) return <WebGLFallback />;
 
   return (
     <Canvas
@@ -125,8 +128,8 @@ export default function NebulaCanvas() {
           ? 'Interactive 2D document map. Drag empty space to pan, scroll to zoom, and use toolbar buttons for search, filtering, path finding and view controls.'
           : 'Interactive 3D document graph. Drag to orbit, use toolbar buttons for search, filtering, path finding and view controls.'
       }
-      style={{ position: 'fixed', inset: 0 }}
-      dpr={INITIAL_DPR}
+      style={{ position: 'absolute', inset: 0 }}
+      dpr={renderDpr}
       camera={{ fov: 55, near: 0.1, far: 4000, position: [0, 0, 160] }}
       gl={{ antialias: false, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
@@ -202,7 +205,7 @@ export default function NebulaCanvas() {
       <PeerPresence />
       <ClusterCollapse />
       <Effects />
-      <AutoQuality />
+      <AutoQuality onPixelRatioChange={setRenderDpr} />
     </Canvas>
   );
 }

@@ -11,6 +11,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useCollabStore } from '../collab/store';
 import { DimsToggleButton } from './DimsToggleButton';
+import MusicAnalysisStatusButton from './MusicAnalysisStatusButton';
 import { openFilePicker } from '../ingest/DropZone';
 // Imported eagerly so the activation-gated picker opens synchronously with
 // the click; folderPicker demand-loads the heavy scanner itself.
@@ -75,7 +76,7 @@ function placeToolbar(el: HTMLElement, x: number, y: number): { x: number; y: nu
 
 type MenuKey = 'view' | 'analyze' | 'data' | 'add' | 'collab';
 
-export default function Toolbar() {
+export default function Toolbar(_props: { graphToolsTarget?: HTMLElement | null; onToggleLibrary?: () => void; libraryOpen?: boolean } = {}) {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const dims = useUiStore((s) => s.dims);
   const flatEdgeDetail = useUiStore((s) => s.flatEdgeDetail);
@@ -148,7 +149,9 @@ export default function Toolbar() {
       lastPos.current = placeToolbar(el, pos.x, pos.y);
     };
     window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(onResize):undefined;
+    if(rootRef.current)observer?.observe(rootRef.current);
+    return () => {window.removeEventListener('resize', onResize);observer?.disconnect();};
   }, []);
 
   // Close whichever popover is open on outside click or Escape. Scoped to a
@@ -278,8 +281,8 @@ export default function Toolbar() {
 
       <button
         type="button"
-        className="btn-icon toolbar__labeled toolbar__search"
-        title="Search (Ctrl+K / ⌘K)"
+        className="btn-icon"
+        title="Search (⌘K)"
         aria-label="Search documents"
         onClick={() => {
           setSearchResults(null);
@@ -287,7 +290,6 @@ export default function Toolbar() {
         }}
       >
         <IconSearch />
-        <span className="toolbar__label" aria-hidden="true">Search</span>
       </button>
 
       <button
@@ -301,11 +303,12 @@ export default function Toolbar() {
       </button>
 
       <DimsToggleButton />
+      <MusicAnalysisStatusButton />
 
       <div className="toolbar__menu-wrap" ref={viewMenuWrapRef}>
         <button
           type="button"
-          className={`btn-icon toolbar__labeled${
+          className={`btn-icon${
             openMenu === 'view' || topicNodesEnabled || clusterCollapsed ? ' is-active' : ''
           }`}
           title="View options"
@@ -318,7 +321,6 @@ export default function Toolbar() {
           }}
         >
           <IconView />
-          <span className="toolbar__label" aria-hidden="true">View</span>
         </button>
         {openMenu === 'view' && (
           <div className="toolbar__menu glass-panel">
@@ -383,7 +385,7 @@ export default function Toolbar() {
       <div className="toolbar__menu-wrap" ref={analyzeMenuWrapRef}>
         <button
           type="button"
-          className={`btn-icon toolbar__labeled${
+          className={`btn-icon${
             openMenu === 'analyze' || pathMode || insightsOpen || snapshotsOpen ? ' is-active' : ''
           }`}
           title="Analyze the corpus"
@@ -396,7 +398,6 @@ export default function Toolbar() {
           }}
         >
           <IconAnalyze />
-          <span className="toolbar__label" aria-hidden="true">Analyze</span>
         </button>
         {openMenu === 'analyze' && (
           <div className="toolbar__menu glass-panel">
@@ -446,7 +447,7 @@ export default function Toolbar() {
       <div className="toolbar__menu-wrap" ref={dataMenuWrapRef}>
         <button
           type="button"
-          className={`btn-icon toolbar__labeled${openMenu === 'data' ? ' is-active' : ''}`}
+          className={`btn-icon${openMenu === 'data' ? ' is-active' : ''}`}
           title="Data options"
           aria-label="Data options"
           aria-haspopup="true"
@@ -457,7 +458,6 @@ export default function Toolbar() {
           }}
         >
           <IconData />
-          <span className="toolbar__label" aria-hidden="true">Data</span>
         </button>
         {openMenu === 'data' && (
           <Suspense fallback={null}>

@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { DocNode } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
-import { useUiStore } from '../store/uiStore';
+import { useUiStore, DEFAULT_FILTER } from '../store/uiStore';
 import { commitPendingFocus } from './focusNode';
 import GraphNavigator from './GraphNavigator';
 
@@ -28,6 +28,7 @@ describe('GraphNavigator', () => {
       phase: 'ready',
     });
     useUiStore.setState({
+      filter: {...DEFAULT_FILTER},
       selectedId: null,
       cameraCommand: null,
       compareLeftId: null,
@@ -99,7 +100,14 @@ describe('GraphNavigator', () => {
     render(<GraphNavigator />);
     fireEvent.click(screen.getByRole('button', { name: 'Browse documents' }));
 
-    fireEvent.keyDown(screen.getByRole('listbox', { name: 'Graph nodes' }), { key: 'ArrowDown' });
+    const list = screen.getByRole('listbox', { name: 'Graph nodes' });
+    for (const key of ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'PageDown', 'PageUp', 'Home', 'End']) {
+      fireEvent.keyDown(list, { key });
+    }
+    expect(windowHandler).not.toHaveBeenCalled();
+    act(() => useUiStore.getState().setFilter({ fileTypes: ['pdf'] }));
+    fireEvent.keyDown(list, { key: 'ArrowLeft' });
+    fireEvent.keyDown(list, { key: 'ArrowRight' });
     expect(windowHandler).not.toHaveBeenCalled();
     window.removeEventListener('keydown', windowHandler);
   });
@@ -128,5 +136,47 @@ describe('GraphNavigator', () => {
     fireEvent.pointerDown(document.body);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(useUiStore.getState().selectedId).toBeNull();
+  });
+  it('limits keyboard candidates to filtered nodes and keeps an accessible empty state', () => {
+    useUiStore.getState().setFilter({ fileTypes: ['md'] });
+    render(<GraphNavigator embedded />);
+    expect(screen.getAllByRole('option')).toHaveLength(1);
+    expect(screen.getByRole('option')).toHaveTextContent('Alpha');
+    act(() => useUiStore.getState().setFilter({ fileTypes: ['pdf'] }));
+    expect(screen.getByRole('status')).toHaveTextContent('No documents match the current filters');
+    const list = screen.getByRole('listbox');
+    expect(list).not.toHaveAttribute('aria-activedescendant');
+    fireEvent.keyDown(list, { key: 'Enter' });
+    expect(useUiStore.getState().pendingFocus).toBeNull();
+    act(() => useUiStore.getState().setFilter({ fileTypes: ['txt'] }));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.getByRole('option')).toHaveTextContent('Zeta');
+    fireEvent.keyDown(list, { key: 'Enter' });
+    expect(useUiStore.getState().pendingFocus?.id).toBe('zeta');
+  });
+
+  it('hops distinct clusters despite interleaved alphabetical ordering', () => {
+    useGraphStore.setState({ nodes: [
+      { ...nodes[0], id: 'a', title: 'A', cluster: 0 },
+      { ...nodes[0], id: 'b', title: 'B', cluster: 1 },
+      { ...nodes[0], id: 'c', title: 'C', cluster: 0 },
+      { ...nodes[0], id: 'd', title: 'D', cluster: 2 },
+    ] });
+    render(<GraphNavigator embedded />);
+    const list = screen.getByRole('listbox');
+    fireEvent.keyDown(list, { key: 'PageUp' });
+    expect(list).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-0');
+    fireEvent.keyDown(list, { key: 'PageDown' });
+    expect(list).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-1');
+    fireEvent.keyDown(list, { key: 'PageDown' });
+    expect(list).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-3');
+    fireEvent.keyDown(list, { key: 'PageDown' });
+    expect(list).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-3');
+    fireEvent.keyDown(list, { key: 'PageUp' });
+    expect(list).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-1');
+    fireEvent.keyDown(list, { key: 'ArrowDown' });
+    expect(list).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-2');
+    fireEvent.keyDown(list, { key: 'PageDown' });
+    expect(list).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-1');
   });
 });

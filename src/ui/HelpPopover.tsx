@@ -2,7 +2,6 @@ import { useRef } from 'react';
 import type { EdgeKind } from '../model/types';
 import { EDGE_KIND_HEX, EDGE_KIND_LABEL } from '../scene/palette';
 import { useUiStore } from '../store/uiStore';
-import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 import { useFocusTrap } from './useFocusTrap';
 import CloseButton from './CloseButton';
 
@@ -17,11 +16,6 @@ export default function HelpPopover() {
   useFocusTrap(dialogRef, open);
 
   if (!open) return null;
-
-  const startTour = () => {
-    setOpen(false);
-    window.dispatchEvent(new Event(FIRST_RUN_GUIDE_REOPEN_EVENT));
-  };
 
   return (
     <div className="settings-backdrop" onMouseDown={() => setOpen(false)}>
@@ -47,9 +41,7 @@ export default function HelpPopover() {
         </header>
 
         <div className="help-popover__scroll">
-          <button type="button" className="btn-pill primary" onClick={startTour}>
-            Start guided tour
-          </button>
+          <p className="help-popover__hint">Select a node to see its details. Drag the map to explore, scroll to zoom, and use All files to browse your library.</p>
 
           <section className="help-popover__section" aria-labelledby="help-nodes-title">
             <h3 id="help-nodes-title">Nodes</h3>

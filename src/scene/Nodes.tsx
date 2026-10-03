@@ -28,6 +28,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { applyComparePick } from '../ui/openCompare';
 import { computeEmphasis } from './emphasis';
+import { createSearchResultSetCache } from './searchResultSet';
 import { cameraPose } from './cameraPose';
 import { viewDistanceFade } from './viewDistance';
 import {
@@ -251,6 +252,7 @@ export default function Nodes() {
   const matricesDirty = useRef(true); // matrix pass forced (scale/count/mount changes)
   const animating = useRef(false); // a materialize tween was live last pass
   const showMePulsing = useRef(false);
+  const searchResultIds = useMemo(createSearchResultSetCache, []);
   const lastVersion = useRef(-1);
   const lastCount = useRef(-1);
   const lastCam = useRef({ x: 0, y: 0, z: 160 });
@@ -290,7 +292,7 @@ export default function Nodes() {
       useUiStore.getState();
     const isFlat = dims === 2;
     const soften = densitySoftening(nodes.length);
-    const showMeIds = highlightOwner === 'showMe' && searchResults ? new Set(searchResults) : null;
+    const showMeIds = highlightOwner === 'showMe' ? searchResultIds(searchResults) : null;
     const emphasis = computeEmphasis(
       nodes,
       edges,
@@ -638,7 +640,9 @@ export default function Nodes() {
     const camDy = cameraPose.py - lastCam.current.y;
     const camDz = cameraPose.pz - lastCam.current.z;
     if (camDx * camDx + camDy * camDy + camDz * camDz > 144) {
-      lastCam.current = { x: cameraPose.px, y: cameraPose.py, z: cameraPose.pz };
+      lastCam.current.x = cameraPose.px;
+      lastCam.current.y = cameraPose.py;
+      lastCam.current.z = cameraPose.pz;
       colorsDirty.current = true;
     }
     if (colorsDirty.current && recomputeColors()) {
@@ -668,8 +672,8 @@ export default function Nodes() {
     // set), settle down — the pulse is a "look here" cue for an undecided
     // choice, not something that should keep animating once one is picked.
     const showMeIds =
-      ui.highlightOwner === 'showMe' && ui.searchResults && !ui.selectedId
-        ? new Set(ui.searchResults)
+      ui.highlightOwner === 'showMe' && !ui.selectedId
+        ? searchResultIds(ui.searchResults)
         : null;
     const reducedMotion = prefersReducedMotion();
     showMePulsing.current = !!showMeIds && !collapsed && !reducedMotion;
@@ -769,7 +773,7 @@ export default function Nodes() {
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
       >
-        <sphereGeometry args={coarseGeometry ? [1, 16, 12] : [1, 32, 24]} />
+        {flat ? <circleGeometry args={[1, 64]} /> : <sphereGeometry args={coarseGeometry ? [1, 16, 12] : [1, 48, 32]} />}
         {/* 3D: glassy marble — per-instance cluster hue as diffuse under a
             clearcoat, reflecting the procedural Lightformer environment
             (NebulaCanvas) so cores read as polished glass orbs rather than
@@ -799,7 +803,7 @@ export default function Nodes() {
         raycast={NO_RAYCAST}
         renderOrder={flat ? 1 : 0}
       >
-        <sphereGeometry args={flat ? [0.58, 18, 14] : coarseGeometry ? [1, 16, 12] : [1, 24, 18]} />
+        {flat ? <circleGeometry args={[0.58, 48]} /> : <sphereGeometry args={coarseGeometry ? [1, 16, 12] : [1, 32, 24]} />}
         {flat ? (
           <meshBasicMaterial toneMapped={false} depthTest={false} depthWrite={false} />
         ) : (

@@ -191,7 +191,8 @@ describe('FirstRunGuide', () => {
       window.dispatchEvent(new Event('resize'));
     });
 
-    expect(guide).toHaveStyle({ left: '172px', top: '210px' });
+    // Leave 100px below the guide for mobile assistant/chat controls.
+    expect(guide).toHaveStyle({ left: '172px', top: '128px' });
   });
 
   it('persists the final drag position on lost pointer capture', async () => {

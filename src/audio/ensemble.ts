@@ -1,3 +1,4 @@
+import { applyDjClassification } from './djClassification';
 import { isBroadInstrument } from './instrumentLabels';
 import { jamendoSuggestions } from './jamendo';
 import { selectDescriptions, type DescriptionScore } from './profileDescriptions';
@@ -64,5 +65,5 @@ export function combineSoundModels(ast: InstrumentEstimate[], jamendo: Record<st
     }
   }
   if (clap.sources[0] && clap.sources[0].label !== profile.source?.label) profile.resemblance = clap.sources[0].label;
-  return profile;
+  return applyDjClassification(profile, ast, descriptions);
 }

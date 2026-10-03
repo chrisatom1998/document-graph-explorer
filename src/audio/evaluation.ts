@@ -76,6 +76,8 @@ const counts = (): Counts => ({ tp: 0, fp: 0, fn: 0, opportunities: 0 });
 const ratio = (n: number, d: number) => d ? n / d : null;
 function metrics(c: Counts) {
   return { ...c, precision: ratio(c.tp, c.tp + c.fp), recall: ratio(c.tp, c.tp + c.fn),
+    f1: ratio(2 * c.tp, 2 * c.tp + c.fp + c.fn),
+    positiveSupport: c.tp + c.fn, negativeSupport: c.opportunities - c.tp - c.fn,
     acceptedCoverage: ratio(c.tp + c.fp, c.opportunities), abstentionRate: ratio(c.opportunities - c.tp - c.fp, c.opportunities) };
 }
 
@@ -154,7 +156,7 @@ export function evaluateLabels(raw: unknown, predictions: EvaluationPrediction[]
   return { split, items: items.length, uniqueOriginals: new Set(items.map(i => i.groups.original)).size,
     provenanceGroups:groupCounts.size, precisionInterval95, intervalMethod:'Deterministic 2000-replicate percentile bootstrap of connected provenance groups; exploratory, unreliable for small or biased corpora.',
     total: metrics(total), byClass: classMetrics,
-    macroPrecision:mean(classMetrics.map(c=>c.precision)),macroRecall:mean(classMetrics.map(c=>c.recall)),
+    macroPrecision:mean(classMetrics.map(c=>c.precision)),macroRecall:mean(classMetrics.map(c=>c.recall)),macroF1:mean(classMetrics.map(c=>c.f1)),
     byTier:[...byTier].map(([name,c])=>({name,...metrics(c)})),byDimension:[...byDimension].map(([name,c])=>({name,...metrics(c)})),
     unreviewedAccepted, reviewedItems, itemAnnotationCoverage: ratio(reviewedItems, items.length),
     reviewedFalseExtrasPerReviewedItem: ratio(total.fp, reviewedItems),
