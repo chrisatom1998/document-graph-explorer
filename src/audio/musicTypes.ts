@@ -1,9 +1,10 @@
+import { sanitizeRecognition, sanitizeSoundReviews, type Recognition, type SoundReview } from './recognition';
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 2;
 export const TEMPO_ANALYSIS_REVISION = 1;
-export const INSTRUMENT_ANALYSIS_REVISION = 9;
+export const INSTRUMENT_ANALYSIS_REVISION = 10;
 export interface InstrumentEstimate {
   label: string;
   score: number;
@@ -13,6 +14,8 @@ export interface InstrumentEstimate {
 }
 export type MusicAnalysisMode = 'fast' | 'full';
 export interface MusicAnalysis {
+  recognition?: Recognition;
+  soundReviews?: SoundReview[];
   stage?: 'preview';
   version: 1 | 2;
   tempoRevision?: number;
@@ -42,6 +45,9 @@ export function sanitizeMusicAnalysis(raw: unknown): MusicAnalysis | undefined {
   const positive = (v: unknown, max: number): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= max;
   if ((m.version !== 1 && m.version !== 2) || !positive(m.analyzedSeconds, 90) || !positive(m.durationSeconds, 86400)) return undefined;
   const out: MusicAnalysis = { version: m.version, analyzedSeconds: m.analyzedSeconds, durationSeconds: m.durationSeconds, instruments: [], notes: [] };
+  out.recognition = sanitizeRecognition(m.recognition, out.durationSeconds);
+  if (!out.recognition) delete out.recognition;
+  if (Array.isArray(m.soundReviews)) out.soundReviews = sanitizeSoundReviews(m.soundReviews);
   if (m.stage === 'preview') out.stage = 'preview';
   if (Array.isArray(m.confirmedInstruments)) out.confirmedInstruments = [...new Set(m.confirmedInstruments.filter((label): label is string => typeof label === 'string' && INSTRUMENT_LABELS.includes(label)))];
   out.soundProfile = sanitizeSoundProfile(m.soundProfile);

@@ -2,6 +2,16 @@ import type Essentia from 'essentia.js/dist/essentia.js-core.es.js';
 import { jamendoPatches } from './jamendoFeatures';
 import { INSTRUMENT_LABELS, isBroadInstrument } from './instrumentLabels';
 import type { SoundSuggestion } from './soundSuggestions';
+import { sourceLabels, type Dimension } from './recognition';
+export function jamendoLabels(scores: Record<string, number>): { dimension: Dimension; labelId: string; score: number }[] {
+  return Object.entries(scores).flatMap(([raw, score]) => {
+    if (!Number.isFinite(score) || score < (raw === 'voice' ? .5 : .3) || score > 1) return [];
+    const role = ({ bass: 'bass', beat: 'rhythm', pad: 'pad' } as Record<string,string>)[raw];
+    if (role) return [{ dimension: 'role' as Dimension, labelId: role, score }];
+    const labelId = aliases[raw] ?? ({ acousticbassguitar: 'bass guitar', brass: 'brass instrument', keyboard: 'keyboard (musical)' } as Record<string,string>)[raw] ?? raw;
+    return sourceLabels.includes(labelId) ? [{ dimension: 'source' as Dimension, labelId, score }] : [];
+  });
+}
 const aliases: Record<string, string> = { acousticguitar: 'acoustic guitar', classicalguitar: 'acoustic guitar', doublebass: 'double bass', drummachine: 'drum machine', drums: 'drum kit', electricguitar: 'electric guitar', electricpiano: 'electric piano', pipeorgan: 'organ', rhodes: 'electric piano', strings: 'string section', violin: 'violin / fiddle' };
 export function jamendoSuggestions(scores: Record<string, number>): SoundSuggestion[] {
   const candidates = new Map<string, number>();
@@ -31,7 +41,7 @@ async function loadModels() {
 }
 export async function classifyJamendo(engine: Essentia, samples: Float32Array): Promise<Record<string, number>> {
   const patches = jamendoPatches(engine, samples);
-  if (!patches.length) return {};
+  if (!patches.length) throw new Error('Unsupported Jamendo input: at least 2.048 seconds required.');
   const { ort, embed, head, classes } = await (models ??= loadModels().catch(error => { models = undefined; throw error; }));
   const sums = new Float64Array(classes.length);
   for (const patch of patches) {

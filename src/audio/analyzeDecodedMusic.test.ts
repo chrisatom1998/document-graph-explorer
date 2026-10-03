@@ -4,6 +4,7 @@ import { fastInstrumentStarts } from './analysisPlan';
 import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
 import type { MusicDecoder } from './decodeMusic';
 import { reliableInstruments } from './instrumentEvidence';
+import { ResultCache } from './recognition';
 
 function fixture(duration: number, options: AnalysisOptions = {}, fail?: string) {
   const calls: string[] = [];
@@ -15,7 +16,7 @@ function fixture(duration: number, options: AnalysisOptions = {}, fail?: string)
     options.signal?.throwIfAborted();
     calls.push(String(message.kind));
     if (message.kind === fail) throw new Error('Model unavailable');
-    if (message.kind === 'rhythm') return { version: 2, durationSeconds: duration, analyzedSeconds: Math.min(60, duration), instruments: [], notes: [] } as T;
+    if (message.kind === 'rhythm' || message.kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: Math.min(60, duration), instruments: [], notes: [] } as T;
     if (message.kind === 'instruments') return { scores: { piano: .95 }, musicScore: .9 } as T;
     if (message.kind === 'jamendo') return { synthesizer: .7 } as T;
     return [{group:'source',label:'piano',score:.6}] as T;
@@ -31,7 +32,7 @@ describe('early estimates and selectable music scans', () => {
     expect(reliableInstruments(preview!)).toEqual([]);
     expect(full.stage).toBeUndefined();expect(full.soundProfile?.source?.label).toBe('piano');
     expect(full.instrumentScan).toMatchObject({mode:'full',complete:true,analyzedSeconds:12,windows:2});
-    expect(f.calls.filter(c=>c==='jamendo')).toHaveLength(3); // not four: preview is reused
+    expect(f.calls.filter(c=>c==='jamendo')).toHaveLength(2); // shared full timeline; preview is reused
     expect(preview?.soundProfile?.source?.label).toBe('synthesizer'); // immutable preview snapshot
   });
   it('bounds Fast mode while keeping all three models and truthful coverage', async () => {
@@ -45,7 +46,7 @@ describe('early estimates and selectable music scans', () => {
   it('avoids repeated overlapping inference for short loops in Fast mode', async () => {
     const f=fixture(12,{mode:'fast'});const result=await f.run();
     expect(result.instrumentScan).toMatchObject({mode:'fast',complete:true,analyzedSeconds:10,windows:1});
-    expect(f.calls).toEqual(['jamendo','rhythm','instruments','profile']);
+    expect(f.calls).toEqual(['jamendo','rhythm','tonal','instruments','profile']);
     expect(fastInstrumentStarts(6)).toEqual([0]);
     expect(fastInstrumentStarts(19)).toEqual([4.5]);
     expect(fastInstrumentStarts(24)).toEqual([0,14]);
@@ -72,4 +73,87 @@ describe('early estimates and selectable music scans', () => {
 it('falls back to full discovery if the container has no duration', async () => {
   const f=fixture(12,{mode:'fast'});f.decoder.durationSeconds=0;
   expect((await f.run()).instrumentScan).toMatchObject({mode:'full',complete:true,analyzedSeconds:12});
+});
+it('accepts a slightly short EOF decode instead of failing the scan or tempo/key jobs', async () => {
+  const duration = 75;
+  const actual = 74.5;
+  const decoder: MusicDecoder = { durationSeconds: duration, close() {}, read: vi.fn(async (start, seconds, rate) =>
+    new Float32Array(Math.round(Math.max(0, Math.min(seconds, actual - start)) * rate)).fill(.1)) };
+  const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
+    if (message.kind === 'rhythm' || message.kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: actual, instruments: [], notes: [] } as T;
+    if (message.kind === 'instruments') return { scores: { piano: .95 }, musicScore: .9 } as T;
+    if (message.kind === 'jamendo') return { synthesizer: .7 } as T;
+    return [{ group: 'source', label: 'piano', score: .6 }] as T;
+  };
+  const result = await analyzeDecodedMusic(decoder, request, {});
+  expect(result.durationSeconds).toBe(actual);
+  expect(result.recognition?.evidence.every(e=>e.end<=actual && e.validSeconds===e.end-e.start)).toBe(true);
+  expect(result.recognition?.jobs.find(j=>j.modelId==='ast')?.analyzedSeconds).toBe(actual);
+  expect(result.instrumentScan?.complete).toBe(true);
+  expect(result.recognition?.jobs.find(j => j.modelId === 'rhythm')?.status).toBe('complete');
+  expect(result.recognition?.jobs.find(j => j.modelId === 'tonal')?.status).toBe('complete');
+  expect(result.notes).not.toContain('Tempo analysis was unavailable. Reanalyze to retry.');
+  expect(result.notes).not.toContain('Key analysis was unavailable. Reanalyze to retry.');
+});
+
+describe('independent recognition jobs', () => {
+  it('includes sub-50ms tails and reuses only matching audio cache entries', async () => {
+    const cache = new ResultCache();
+    const first = fixture(10.02, { cache, audioFingerprint: 'same' });
+    const result = await first.run();
+    expect(result.recognition?.jobs.find(j=>j.modelId==='ast')?.gaps).toEqual([]);
+    const second = fixture(10.02, { cache, audioFingerprint: 'same' });
+    await second.run(); expect(second.calls).toEqual(['rhythm','tonal']);
+    const different = fixture(10.02, { cache, audioFingerprint: 'different' });
+    await different.run(); expect(different.calls).toContain('instruments');
+  });
+  it('keeps rhythm and instruments when tonality fails', async () => {
+    const result=await fixture(12,{},'tonal').run();
+    expect(result.recognition?.jobs.find(j=>j.modelId==='tonal')?.status).toBe('failed');
+    expect(result.recognition?.jobs.find(j=>j.modelId==='rhythm')?.status).toBe('complete');
+    expect(result.recognition?.observations.length).toBeGreaterThan(0);
+  });
+  it('keeps independent evidence when the first AST request fails', async () => {
+    const result = await fixture(12, {}, 'instruments').run();
+    expect(result.soundProfile?.models.find(m => m.model === 'MTG-Jamendo')?.complete).toBe(true);
+    expect(result.soundProfile?.models.find(m => m.model === 'Music CLAP')?.complete).toBe(true);
+    expect(result.recognition?.jobs.find(j => j.modelId === 'ast')?.successful).toEqual([]);
+    expect(result.recognition?.observations.some(o => o.labelId === 'synthesizer')).toBe(true);
+  });
+  it('preserves sources and tonality when rhythm fails', async () => {
+    const result = await fixture(12, {}, 'rhythm').run();
+    expect(result.soundProfile?.source).toBeDefined();
+    expect(result.recognition?.jobs.find(j => j.modelId === 'rhythm')?.status).toBe('failed');
+    expect(result.recognition?.jobs.find(j => j.modelId === 'tonal')?.status).toBe('complete');
+  });
+  it('covers the full track independently with all three sound models', async () => {
+    const result = await fixture(75).run();
+    for (const modelId of ['ast', 'jamendo', 'clap']) {
+      const job = result.recognition?.jobs.find(j => j.modelId === modelId);
+      expect(job?.analyzedSeconds).toBe(75);
+      expect(job?.gaps).toEqual([]);
+    }
+    expect(result.recognition?.observations.every(o => o.status === 'possible' && o.confidence === undefined)).toBe(true);
+  });
+  it('preserves completed evidence on cancellation without resolving as complete', async () => {
+    const controller = new AbortController(); let partial: MusicAnalysis | undefined;
+    const f = fixture(12, { signal: controller.signal, onPartial: p => { partial = p; controller.abort(); } });
+    await expect(f.run()).rejects.toMatchObject({ name: 'AbortError' });
+    expect(partial?.recognition?.status).toBe('cancelled');
+    expect(partial?.recognition?.evidence.length).toBeGreaterThan(0);
+  });
+});
+it('does not credit interior truncated reads as successful evidence', async () => {
+  const f=fixture(30);const read=f.decoder.read;
+  f.decoder.read=async(start,seconds,rate)=>start===0?new Float32Array(1):read(start,seconds,rate);
+  const result=await f.run();
+  expect(result.recognition?.jobs.find(j=>j.modelId==='ast')?.successful).toEqual([]);
+  expect(result.recognition?.evidence).toEqual([]);
+});
+it('records unsupported short Jamendo inputs without inference or repeated scan eligibility', async()=>{
+ const f=fixture(1);const r=await f.run();
+ expect(f.calls).not.toContain('jamendo');
+ expect(r.recognition?.jobs.find(j=>j.modelId==='jamendo')).toMatchObject({status:'unsupported',successful:[],analyzedSeconds:0});
+ expect(r.instrumentScan?.complete).toBe(true);
+ expect(sanitizeMusicAnalysis(r)?.recognition?.jobs.find(j=>j.modelId==='jamendo')?.status).toBe('unsupported');
 });

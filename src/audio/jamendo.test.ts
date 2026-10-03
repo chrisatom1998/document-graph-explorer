@@ -1,7 +1,14 @@
 import { expect, it, vi } from 'vitest';
-import { jamendoSuggestions } from './jamendo';
+import { classifyJamendo, jamendoSuggestions, jamendoLabels } from './jamendo';
 import { jamendoPatches } from './jamendoFeatures';
 import { sanitizeMusicAnalysis } from './musicTypes';
+import type Essentia from 'essentia.js/dist/essentia.js-core.es.js';
+
+it('retains supported multilabel evidence including specific instruments and separate roles', () => {
+  expect(jamendoLabels({ oboe: .7, viola: .6, bongo: .5, piano: .4, pad: .8, bass: .9 }).map(c => [c.dimension, c.labelId])).toEqual([
+    ['source','oboe'],['source','viola'],['source','bongo'],['source','piano'],['role','pad'],['role','bass'],
+  ]);
+});
 
 it('keeps the instrument separate from role tags such as bass and computer', () => {
   const suggestions = jamendoSuggestions({ bass: .9, computer: .8, synthesizer: .6, electricpiano: .2 });
@@ -14,6 +21,9 @@ it('retains multiple instrument candidates without forcing weak or invalid score
   expect(jamendoSuggestions({ piano: .8, synthesizer: .5 }).map(i => i.label)).toEqual(['piano', 'synthesizer']);
   expect(jamendoSuggestions({ synthesizer: .2, piano: NaN, flute: Infinity, harp: 2 })).toEqual([]);
   expect(jamendoSuggestions({ electricpiano: .7, rhodes: .8 })).toHaveLength(1);
+});
+it('reports unsupported clips shorter than a Jamendo patch', async () => {
+  await expect(classifyJamendo({} as Essentia, new Float32Array(1000))).rejects.toThrow('Unsupported Jamendo input');
 });
 it('extracts centered frames and only complete patches, without repeating short clips', () => {
   const frames: Float32Array[] = [];

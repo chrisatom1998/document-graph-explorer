@@ -1,5 +1,5 @@
 import { musicNameHints } from './nameHints';
-import { reliableInstruments } from './instrumentEvidence';
+import { confirmedInstrumentList, reliableInstruments } from './instrumentEvidence';
 import type { DocNode, Edge } from '../model/types';
 import { keyName, type MusicAnalysis } from './musicTypes';
 export const MUSIC_EDGE_KINDS = ['tempo', 'key', 'instrument'] as const;
@@ -34,18 +34,23 @@ export function musicPairEdges(a: DocNode, b: DocNode): Edge[] {
     if (relation) add('key', relation === 'same estimated key' ? 1 : 0.8, `${ah.key?.displayName ?? keyName(ak)} and ${bh.key?.displayName ?? keyName(bk)}: ${relation}.${ah.key || bh.key ? ` ${sources('key')}` : ''}`);
   }
   const namedInstruments = (node: DocNode, hints: ReturnType<typeof musicNameHints>) =>
-    node.audio!.confirmedInstruments === undefined && hints.instruments
-      ? hints.instruments.value.map(label => ({ label, score: 1 })) : reliableInstruments(node.audio!);
+    confirmedInstrumentList(node.audio!) === undefined && hints.instruments
+      ? hints.instruments.value.filter(label => {
+        const latest = node.audio!.soundReviews?.filter(r => r.dimension === 'source' && r.labelId === label).at(-1);
+        return !latest || latest.decision === 'confirmed';
+      }).map(label => ({ label, score: 1 })) : reliableInstruments(node.audio!);
   const aInstruments = namedInstruments(a, ah);
   const bInstruments = namedInstruments(b, bh);
   const shared = aInstruments.filter(i => bInstruments.some(j => j.label === i.label));
   if (shared.length) {
-    const hasNameSource = (ah.instruments && a.audio.confirmedInstruments === undefined) || (bh.instruments && b.audio.confirmedInstruments === undefined);
+    const humanA = confirmedInstrumentList(a.audio) !== undefined;
+    const humanB = confirmedInstrumentList(b.audio) !== undefined;
+    const hasNameSource = (ah.instruments && !humanA) || (bh.instruments && !humanB);
     const provenance = hasNameSource
-      ? `Sources: ${a.audio.confirmedInstruments !== undefined ? 'confirmed by you' : ah.instruments?.source ?? 'audio'} and ${b.audio.confirmedInstruments !== undefined ? 'confirmed by you' : bh.instruments?.source ?? 'audio'}. Name tags are not verified audio detections.`
-      : a.audio.confirmedInstruments && b.audio.confirmedInstruments
+      ? `Sources: ${humanA ? 'confirmed by you' : ah.instruments?.source ?? 'audio'} and ${humanB ? 'confirmed by you' : bh.instruments?.source ?? 'audio'}. Name tags are not verified audio detections.`
+      : humanA && humanB
       ? 'Confirmed by you on both tracks.'
-      : a.audio.confirmedInstruments || b.audio.confirmedInstruments
+      : humanA || humanB
         ? 'Confirmed by you on one track; estimated from audio on the other.'
         : 'Supported by strong or repeated audio detections; not confirmed instrumentation.';
     add('instrument', Math.max(...shared.map(i => Math.min(i.score, bInstruments.find(j => j.label === i.label)!.score))), `Shared instruments: ${shared.map(i => i.label).join(', ')}. ${provenance}`);
