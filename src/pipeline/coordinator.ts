@@ -18,6 +18,7 @@ import { assertAudioContent } from '../audio/parseAudio';
 
 import { buildMusicEdges } from '../audio/musicLinks';
 import { INSTRUMENT_LABELS } from '../audio/instrumentLabels';
+import { sanitizeSoundReviews, type SoundReview } from '../audio/recognition';
 import { getOriginal } from '../persistence/originals';
 import {
   DUP_SIM_THRESHOLD,
@@ -1791,7 +1792,7 @@ export function resetCorpus(): void {
 /** Run inside the existing mutation queue; every estimate belongs to this corpus snapshot. */
 async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], originals?: Map<string, { blob: Blob; name: string }>): Promise<void> {
   const mode = useSettingsStore.getState().musicAnalysisMode;
-  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!n.audio || n.audio.stage === 'preview' || (mode === 'full' && n.audio.instrumentScan?.mode === 'fast') || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION || forceIds.includes(n.id)));
+  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (forceIds.length ? forceIds.includes(n.id) : (!n.audio || n.audio.stage === 'preview' || (mode === 'full' && n.audio.instrumentScan?.mode === 'fast') || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION)));
   if (!nodes.length) return;
   const { analyzeMusic } = await import('../audio/analyzeMusic');
   const store = useGraphStore.getState;
@@ -1810,15 +1811,28 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
         if (!original) throw new Error('Add the original audio file again to analyze it.');
         const audio = await analyzeMusic(original.blob, original.name, {
           signal, mode, onProgress: progress,
+          onPartial: partial => {
+            // Cancellation settles before the mutation queue starts another run.
+            // Persist completed evidence and preserve the user's review separately.
+            if (partial.recognition?.status !== 'cancelled') return;
+            const current = store().nodes.find(n => n.id === node.id);
+            if (!current) return;
+            store().patchNodes(new Map([[node.id, { audio: { ...partial, confirmedInstruments: current.audio?.confirmedInstruments, soundReviews: current.audio?.soundReviews } }]]));
+            markDocsDirty([node.id]);
+            const edges = [...store().edges.filter(e => !['tempo','key','instrument'].includes(e.kind)), ...buildMusicEdges(documentNodes())];
+            store().setEdges(edges); layoutSetLinks(toLinkInput(edges));
+          },
           onPreview: preview => {
             // Keep completed results visible during a reanalysis. New uploads
             // can show the quick estimate without claiming verification finished.
             if (node.audio && node.audio.stage !== 'preview') return;
-            store().patchNodes(new Map([[node.id, { audio: { ...preview, confirmedInstruments: node.audio?.confirmedInstruments }, warning: undefined }]]));
+            store().patchNodes(new Map([[node.id, { audio: { ...preview, confirmedInstruments: node.audio?.confirmedInstruments, soundReviews: node.audio?.soundReviews }, warning: undefined }]]));
             markDocsDirty([node.id]);
           },
         });
+        throwIfAborted(signal);
         audio.confirmedInstruments = node.audio?.confirmedInstruments;
+        audio.soundReviews = node.audio?.soundReviews;
         store().patchNodes(new Map([[node.id, { audio, warning: undefined, topics: [], keywords: [], entities: [], wordCount: 0 }]]));
         markDocsDirty([node.id]);
         const incomplete = audio.instrumentScan?.complete !== true;
@@ -1861,7 +1875,15 @@ export function setAudioInstruments(ids: string[], labels?: string[]): Promise<{
     if (state.phase !== 'ready') throw new Error('Wait for file processing to finish, then try again.');
     const targets = documentNodes().filter(node => ids.includes(node.id) && node.fileType === 'audio' && node.audio);
     if (targets.length === 0) throw new Error('No analyzed audio tracks are available to correct.');
-    state.patchNodes(new Map(targets.map(node => [node.id, { audio: { ...node.audio!, confirmedInstruments: confirmed } }])));
+    const patches=targets.map(node=>{
+      const audio=node.audio!;
+      const sourceLabels=[...new Set(audio.soundReviews?.filter(r=>r.dimension==='source').map(r=>r.labelId))];
+      const reconciliations:SoundReview[]=sourceLabels.map(labelId=>({labelId,dimension:'source',scope:'track',at:new Date().toISOString(),
+        evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmed===undefined?'uncertain':confirmed.includes(labelId)?'confirmed':'rejected'}));
+      if((audio.soundReviews?.length??0)+reconciliations.length>500)throw new Error('Review history limit reached. Export this graph before adding more reviews.');
+      return [node.id,{audio:{...audio,confirmedInstruments:confirmed,...(audio.soundReviews?{soundReviews:[...audio.soundReviews,...reconciliations]}:{})}}] as const;
+    });
+    state.patchNodes(new Map(patches));
     markDocsDirty(targets.map(node => node.id));
     const edges = [...state.edges.filter(edge => !['tempo', 'key', 'instrument'].includes(edge.kind)), ...buildMusicEdges(documentNodes())];
     useGraphStore.getState().setEdges(edges);
@@ -1874,6 +1896,26 @@ export function setAudioInstruments(ids: string[], labels?: string[]): Promise<{
       throw new Error('Your correction is visible but could not be saved. Retry before closing.');
     }
     return { saved, count: targets.length };
+  });
+}
+
+/** Record a scoped human decision without replacing machine evidence or review history. */
+export function setAudioReview(id: string, labelId: string, dimension: SoundReview['dimension'], decision: SoundReview['decision']): Promise<void> {
+  return enqueueRun(async () => {
+    const state=useGraphStore.getState();
+    if(state.phase!=='ready')throw new Error('Wait for analysis to finish before reviewing.');
+    const node=documentNodes().find(n=>n.id===id && n.fileType==='audio');
+    if(!node?.audio?.recognition)throw new Error('No recognition evidence is available.');
+    const review:SoundReview={labelId,dimension,decision,scope:'track',at:new Date().toISOString(),evidenceRunId:node.audio.recognition.runId};
+    if(sanitizeSoundReviews([review]).length!==1)throw new Error('Unsupported review label.');
+    const history=node.audio.soundReviews??[];
+    if(history.length>=500)throw new Error('Review history limit reached. Export this graph before adding more reviews.');
+    state.patchNodes(new Map([[id,{audio:{...node.audio,soundReviews:[...history,review]}}]]));
+    markDocsDirty([id]);
+    const edges=[...state.edges.filter(e=>!['tempo','key','instrument'].includes(e.kind)),...buildMusicEdges(documentNodes())];
+    useGraphStore.getState().setEdges(edges);layoutSetLinks(toLinkInput(edges));layoutReheat(.5);
+    const {saveAudioGraph}=await import('../audio/saveAudioGraph');
+    await saveAudioGraph();
   });
 }
 

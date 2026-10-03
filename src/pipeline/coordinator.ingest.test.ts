@@ -29,8 +29,11 @@ import {
   reconcileWatchedFiles,
   removeDocuments,
   resetCorpus,
+  analyzeAudioCorpus,
+  setAudioReview,
 } from './coordinator';
 import { rememberWorldOrigin } from '../scene/ingestBirth';
+import { createRecognition } from '../audio/recognition';
 
 const music = vi.hoisted(() => ({ analyzeMusic: vi.fn() }));
 vi.mock('../audio/analyzeMusic', () => music);
@@ -791,6 +794,55 @@ describe('coordinator remove and watch reconcile', () => {
 
 describe('WAV music ingestion', () => {
   const wav = (name: string) => ({ ...textFile(name, 'RIFF test audio bytes'), fileType: 'audio' as const });
+  it('preserves cancelled partial evidence and confirmations when a later run restarts', async () => {
+    await ingestFiles([wav('selected.wav')]);
+    const selected=useGraphStore.getState().nodes.find(n=>n.fileType==='audio')!;
+    const saved={...selected.audio!,confirmedInstruments:['piano']};
+    useGraphStore.getState().patchNodes(new Map([[selected.id,{audio:saved}]]));
+    persistence.getOriginal.mockResolvedValue({blob:new Blob(['RIFF']),name:'selected.wav'});
+    const controller=new AbortController();
+    const recognition=createRecognition(saved.durationSeconds,'full'); recognition.status='cancelled';
+    music.analyzeMusic.mockImplementationOnce(async (_blob, _name, options) => {
+      controller.abort(); options.onPartial?.({...saved,recognition});
+      throw new DOMException('cancelled','AbortError');
+    });
+    await expect(analyzeAudioCorpus([selected.id],controller.signal)).rejects.toMatchObject({name:'AbortError'});
+    expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio).toMatchObject({confirmedInstruments:['piano'],recognition:{status:'cancelled'}});
+    await analyzeAudioCorpus([selected.id]);
+    expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio?.confirmedInstruments).toEqual(['piano']);
+  });
+  it('saves review history and retains it across reanalysis without promoting rejected labels',async()=>{
+    await ingestFiles([wav('review.wav')]);
+    const selected=useGraphStore.getState().nodes.find(n=>n.fileType==='audio')!;
+    useGraphStore.getState().patchNodes(new Map([[selected.id,{audio:{...selected.audio!,recognition:createRecognition(selected.audio!.durationSeconds,'full')}}]]));
+    await setAudioReview(selected.id,'oboe','source','confirmed');
+    await setAudioReview(selected.id,'oboe','source','rejected');
+    const reviews=useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio?.soundReviews;
+    expect(reviews?.map(r=>r.decision)).toEqual(['confirmed','rejected']);
+    persistence.getOriginal.mockResolvedValue({blob:new Blob(['RIFF']),name:'review.wav'});
+    await analyzeAudioCorpus([selected.id]);
+    expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio?.soundReviews).toEqual(reviews);
+  });
+  it('reconciles bulk instrument corrections with per-label reviews without losing history',async()=>{
+    await ingestFiles([wav('review.wav')]);
+    const selected=useGraphStore.getState().nodes.find(n=>n.fileType==='audio')!;
+    useGraphStore.getState().patchNodes(new Map([[selected.id,{audio:{...selected.audio!,recognition:createRecognition(selected.audio!.durationSeconds,'full')}}]]));
+    await setAudioReview(selected.id,'piano','source','confirmed');
+    await setAudioInstruments([selected.id],[]);
+    expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio?.soundReviews?.map(r=>r.decision)).toEqual(['confirmed','rejected']);
+    await setAudioInstruments([selected.id],['piano']);
+    expect(useGraphStore.getState().nodes.find(n=>n.id===selected.id)?.audio?.soundReviews?.map(r=>r.decision)).toEqual(['confirmed','rejected','confirmed']);
+  });
+  it('reanalyzes only selected audio while other stale results stay untouched', async () => {
+    await ingestFiles([wav('selected.wav'), wav('stale.wav')]);
+    const nodes = useGraphStore.getState().nodes.filter(n => n.fileType === 'audio');
+    const [selected, stale] = nodes;
+    useGraphStore.getState().patchNodes(new Map([[stale.id, { audio: { ...stale.audio!, keyRevision: 0 } }]]));
+    const before = useGraphStore.getState().nodes.find(n => n.id === stale.id)!.audio;
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob(['RIFF']), name: 'selected.wav' });
+    await analyzeAudioCorpus([selected.id]);
+    expect(useGraphStore.getState().nodes.find(n => n.id === stale.id)!.audio).toEqual(before);
+  });
   it('reports correction save failures and supports retrying the visible change', async () => {
     await ingestFiles([wav('one.wav')]);
     persistence.saveActiveCorpusPositions.mockRejectedValueOnce(new Error('quota'));

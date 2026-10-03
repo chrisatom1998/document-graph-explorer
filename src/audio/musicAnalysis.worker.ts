@@ -72,7 +72,7 @@ async function disposeTensors(values: Record<string, unknown>): Promise<void> {
     if (tensor && typeof tensor === 'object' && 'dispose' in tensor && typeof tensor.dispose === 'function') await tensor.dispose();
   }
 }
-self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'rhythm'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array }>) => {
+self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array }>) => {
   const { id } = data;
   let engine: Essentia | undefined;
   try {
@@ -115,8 +115,9 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'rhythm'; exc
     for (const samples of audible) {
       const vector = engine.arrayToVector(samples);
       try {
-        const tempo = estimateTempo(engine, samples);
+        const tempo = data.kind === 'rhythm' ? estimateTempo(engine, samples) : undefined;
         if (tempo) tempos.push(tempo);
+        if (data.kind === 'rhythm') continue;
         let repeatedPitch: MusicAnalysis['detectedPitch'];
         if (samples.length < 8 * 44100) {
           try { repeatedPitch = detectRepeatedPitch(engine, samples); }
@@ -141,8 +142,8 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'rhythm'; exc
       const same = keys.filter(k=>k.tonic===key.tonic&&k.mode===key.mode);
       if (same.length >= Math.ceil(excerpts.samples.length/2)) { result.key = { ...key, strength: Math.min(...same.map(k=>k.strength)) }; break; }
     }
-    if (!result.tempo) result.notes.push('No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).');
-    if (!result.key) {
+    if (data.kind === 'rhythm' && !result.tempo) result.notes.push('No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).');
+    if (data.kind === 'tonal' && !result.key) {
       for (const samples of audible.filter(s => s.length >= 8 * 44100)) {
         try { const pitch = detectRepeatedPitch(engine, samples); if (pitch) pitches.push(pitch); }
         catch { /* A pitch hint must not interrupt the remaining audio analysis. */ }
