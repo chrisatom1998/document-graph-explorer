@@ -95,7 +95,9 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents', {
     timeout: 270_000,
   });
-  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
+  // Parsed nodes appear before embedding finishes. Apply the existing ingest
+  // budget to readiness too, rather than a 30-second UI-action budget.
+  await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled({ timeout: 270_000 });
   await expect(page.locator('.nebula-canvas canvas')).toBeVisible();
 
   // The getting-started tour reopens after a demo load; dismiss it so

@@ -1,6 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 
 test('competing tabs retain committed notes and deletion versions when an older save retries', async ({ page, context }) => {
+  // This checks persistence across two active tabs; software-rendering two
+  // 3D scenes can starve hydration. Exercise the supported 2D preference;
+  // the smoke and clarity tests cover 3D rendering independently.
+  await context.addInitScript(() => localStorage.setItem('knowledge-nebula-dims', '2'));
   await page.goto('/');
   await page.getByRole('button', { name: 'Load demo corpus' }).click();
   await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents', { timeout: 270_000 });
@@ -17,7 +21,8 @@ test('competing tabs retain committed notes and deletion versions when an older 
   await openNote(page);
   const other = await context.newPage();
   await other.goto('/');
-  await expect(other.locator('.graph-navigator__summary')).toContainText('100 documents');
+  // Verify the restored workspace through its visible library count.
+  await expect(other.getByRole('button', { name: 'All files 100', exact: true })).toBeVisible();
   await openNote(other);
   // Both edits have the SAME logical millisecond. The first committed value
   // wins; a later retry cannot claim freshness from journal or arrival time.
@@ -66,7 +71,7 @@ test('competing tabs retain committed notes and deletion versions when an older 
     });
   }, editTime);
   await page.reload();
-  await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents');
+  await expect(page.getByRole('button', { name: 'All files 100', exact: true })).toBeVisible();
   await openNote(page);
   await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('');
 });

@@ -33,16 +33,20 @@ async function pixelRatio(page: Page) {
   });
 }
 
+// Two animation frames commit a resize/view change before capturing pixels.
+// Thirty frames needlessly multiplies software-rendering cost at DPR 4.
 async function finishFrames(page: Page) {
   await page.evaluate(() => new Promise<void>(resolve => {
     let count = 0;
-    const frame = () => { if (++count === 30) resolve(); else requestAnimationFrame(frame); };
+    const frame = () => { if (++count === 2) resolve(); else requestAnimationFrame(frame); };
     requestAnimationFrame(frame);
   }));
 }
 
 test.describe('retina graph clarity', () => {
-  test.use({ deviceScaleFactor: 2, viewport: { width: 1440, height: 1000 } });
+  // Keep DPR 3/4 assertions at full effects, but bound the raster area for
+  // SwiftShader. Desktop layout is covered separately by workspace tests.
+  test.use({ deviceScaleFactor: 2, viewport: { width: 800, height: 600 } });
   test('both views render sharply, remain interactive, and retain the clarity preference', async ({ page }, testInfo) => {
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
