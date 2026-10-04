@@ -47,7 +47,7 @@ jobs:
       - name: Build air-gapped app
         run: npm run build:airgap
 
-      - name: Build portable Windows runtime (pkg)
+      - name: Build portable Windows runtime (Node SEA)
         run: npm run build:exe
 
       - name: Build Electron Windows portable

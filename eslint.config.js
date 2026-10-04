@@ -75,7 +75,7 @@ export default tseslint.config(
     languageOptions: { sourceType: 'module', globals: { ...globals.node } },
   },
   {
-    // Electron main process + CommonJS Node scripts (the pkg-packaged exe
+    // Electron main process + CommonJS Node scripts (the SEA-packaged exe
     // entry must stay CJS too): requires `require`/`__dirname`.
     files: ['**/*.cjs'],
     languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } },

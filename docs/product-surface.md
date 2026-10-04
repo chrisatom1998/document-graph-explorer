@@ -54,7 +54,7 @@ twice:
 Satellites that stay in the repo but are **not** the product:
 
 - OpenUSD export + Python pipeline + `usd-agent` — a digital-twin sidecar.
-- Four desktop distribution paths (macOS Electron, Windows pkg, Linux AppImage, `run.*` launchers) wrapping one SPA.
+- Four desktop distribution paths (macOS Electron, Windows single-executable (Node SEA), Linux AppImage, `run.*` launchers) wrapping one SPA.
 - Source-repo ingest, folder watch, multi-corpus — power ingest, not new apps.
 
 Do not delete those in this pass. Hide them from the default story so the

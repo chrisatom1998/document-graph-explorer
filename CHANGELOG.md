@@ -37,6 +37,8 @@ This project follows the Keep a Changelog format.
 - `scripts/sanitize-airgap.mjs` now also neutralizes `signaling.yjs.dev` in the air-gapped bundle and documents which attribution-link hostnames it deliberately leaves alone.
 - README and AGENTS.md state that the first `npm run dev` / `npm run build` needs network access for the ~190 MB audio-model download, and that `npm run setup:music` pre-fetches it for offline work.
 
+- The portable Windows runtime (`npm run build:exe`) is now a Node **Single Executable Application** built by `scripts/build-win-exe.mjs`: esbuild bundles the launcher, `node --experimental-sea-config` writes the blob, the official Windows `node.exe` of the same Node version is downloaded and SHA-256-verified against `SHASUMS256.txt`, and `postject` injects the blob. A `--self-test` boots a host-platform SEA against `dist/` and checks it serves the app and refuses path traversal; `scripts/verify-win-exe.mjs` gates the final exe (x64 PE, SEA fuse on, `NODE_SEA_BLOB` resource, icon). This drops `pkg` (archived upstream, unfixable GHSA-22r3-9w55-cj54, Node 18-only) and ships a current Node runtime instead of end-of-life Node 18. The exe is larger (~80 MB vs ~40 MB) because it is an unstripped official build.
+
 ### Security
 - Updated `pdfjs-dist` to 6.4.299 (fixes GHSA-hq66-cqwq-w95j, arbitrary JavaScript execution when opening a malicious PDF), `electron` to 43.7.7 (sandbox-inheritance and protocol-handler advisories), and `vitest` to 4.1.11 (`@vitest/mocker` path traversal).
 - `openai` is now a devDependency: it is used only by the dev-server-only DJ assistant plugins and no longer sits in the production dependency tree.
