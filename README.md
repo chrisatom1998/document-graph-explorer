@@ -72,7 +72,7 @@ npm install      # install dependencies
 npm run dev      # start the Vite dev server
 ```
 
-Node 24 is the supported runtime (`.nvmrc`); Node 22 also works. The first `npm run dev` or `npm run build`
+Node 24 is the supported runtime (`.nvmrc`); Node 22.13 or newer also works (Node 23 is not supported by the locked dependencies). The first `npm run dev` or `npm run build`
 needs outbound network access: a pre-script downloads about 190 MB of checksum-verified audio-recognition
 model weights from Hugging Face into `public/` (they are not stored in Git). Later runs reuse the verified
 local files, and `npm run setup:music` can pre-fetch them before working offline.

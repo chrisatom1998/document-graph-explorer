@@ -5,7 +5,7 @@
   "main": "desktop/main.cjs",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": "^22.13.0 || >=24.0.0"
   },
   "scripts": {
     "dev": "vite",
