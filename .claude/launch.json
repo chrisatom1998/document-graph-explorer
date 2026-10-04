@@ -38,7 +38,7 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": [
         "scripts/dj-test-set-server.py",
-        "/Users/chrisjohnson/Documents/Media/dj-test-set",
+        "artifacts/dj-test-set",
         "5210"
       ],
       "port": 5210
