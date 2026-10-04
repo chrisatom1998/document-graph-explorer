@@ -5,7 +5,7 @@
   "full": 0.65,
   "maybe": 0.5
  },
- "learnedSha256": "d400d33fbd45cb8546d2a5415265554beedf2bc3f0a1d93a44f6041f60defb06",
+ "learnedSha256": "f0f1c637a9da0daa07cdc89b10d807f188f76f86b6796ce1f26696a6e7080a3c",
  "heads": [
   {
    "kind": "family",
@@ -473,6 +473,15 @@
    ],
    "ships": true,
    "maybe": false
+  }
+ ],
+ "updates": [
+  {
+   "label": "sub bass",
+   "from": "round6 cleaned Freesound",
+   "precision": 0.7870370370370371,
+   "recall": 0.8018867924528302,
+   "replaces": "round4 75%/77%"
   }
  ]
 }
