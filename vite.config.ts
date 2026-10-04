@@ -1,9 +1,13 @@
+import { djAssistantPlugin } from './src/server/djAssistant';
+import { djCopilotPlugin } from './src/server/djCopilot';
+import { djReviewerPlugin } from './src/server/djReviewer';
 /// <reference types="vitest/config" />
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { buildCsp } from './src/security/csp';
 import pkg from './package.json';
+import { essentiaCsp } from './scripts/essentia-csp';
 
 function injectCsp(airgap: boolean): Plugin {
   const csp = buildCsp({ airgap });
@@ -34,6 +38,8 @@ function injectCsp(airgap: boolean): Plugin {
  * the CSP above as a header) — copy them into your host's header config.
  */
 const SECURITY_HEADERS = {
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Embedder-Policy': 'require-corp',
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
@@ -43,14 +49,16 @@ const SECURITY_HEADERS = {
     'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()',
 };
 
-// NOTE: no COOP/COEP headers on purpose — we use transferable Float32Arrays
-// (not SharedArrayBuffer), so cross-origin isolation buys nothing here.
+// Isolation permits bounded ONNX WASM threading. All model/runtime resources
+// remain same-origin; hosts without isolation retain one-thread inference.
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), tailwindcss(), injectCsp(mode === 'airgap')],
+  plugins: [essentiaCsp(), react(), tailwindcss(), injectCsp(mode === 'airgap'), ...(mode === 'airgap' ? [] : [djAssistantPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djCopilotPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djReviewerPlugin()])],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
-  server: { headers: SECURITY_HEADERS },
-  preview: { headers: SECURITY_HEADERS },
-  worker: { format: 'es' },
+  server: { headers: { ...SECURITY_HEADERS, 'Permissions-Policy': mode === 'airgap' ? SECURITY_HEADERS['Permissions-Policy'] : SECURITY_HEADERS['Permissions-Policy'].replace('microphone=()', 'microphone=(self)') } },
+  // Workers receive Vercel's CSP as a response header, not the page's meta tag.
+  // Exercise the same restrictions in built-app browser tests.
+  preview: { headers: { ...SECURITY_HEADERS, 'Content-Security-Policy': `${buildCsp({ airgap: mode === 'airgap' })}; frame-ancestors 'none'` } },
+  worker: { format: 'es', plugins: () => [essentiaCsp()] },
   build: {
     target: 'esnext',
     // Keep the app entry from eagerly preloading the React vendor chunk; the
@@ -84,7 +92,7 @@ export default defineConfig(({ mode }) => ({
     // transformers.js does its own dynamic ORT backend imports; pre-bundling breaks it.
     // It is also dynamically imported inside pipeline.worker.ts so its module
     // graph never sits on a worker's boot path.
-    exclude: ['@huggingface/transformers'],
+    exclude: ['@huggingface/transformers', 'onnxruntime-web', 'onnxruntime-web/webgpu', 'essentia.js/dist/essentia-wasm.es.js'],
     // Scan the worker sources at server start so their deps (remark, graphology,
     // d3-force-3d, …) are discovered and optimized UP FRONT. Discovering them
     // mid-session triggers "optimized dependencies changed. reloading", which
@@ -92,9 +100,11 @@ export default defineConfig(({ mode }) => ({
     entries: [
       'index.html',
       'src/workers/pipeline.worker.ts',
+      'src/audio/musicAnalysis.worker.ts',
       'src/workers/aggregator.worker.ts',
       'src/workers/layout.worker.ts',
       'src/workers/insights.worker.ts',
+      'src/workers/pdf.worker.ts',
     ],
     // graphology is imported ONLY inside aggregator.worker.ts, and jszip /
     // fast-xml-parser ONLY inside pipeline.worker.ts (via parsers/office.ts).
@@ -105,7 +115,7 @@ export default defineConfig(({ mode }) => ({
     // safe (this is the audited exception to avoiding a general include-list,
     // which under Vite 8 produced client-env chunks in workers — `document is
     // not defined`).
-    include: ['graphology', 'graphology-communities-louvain', 'jszip', 'fast-xml-parser'],
+    include: ['essentia.js/dist/essentia.js-core.es.js', 'graphology', 'graphology-communities-louvain', 'jszip', 'fast-xml-parser'],
   },
   test: {
     environment: 'node',

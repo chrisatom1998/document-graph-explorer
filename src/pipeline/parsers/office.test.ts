@@ -9,6 +9,33 @@ async function zipBuffer(files: Record<string, string>): Promise<ArrayBuffer> {
 }
 
 describe('parseOffice', () => {
+  it('preserves literal identifiers and boolean words in Word and spreadsheet text', async () => {
+    const literals = ['00123', 'true', 'false', '9007199254740993', '1e3'];
+    const bytes = await zipBuffer({
+      'word/document.xml': `<w:document><w:body>${literals.map((text) => `<w:p><w:r><w:t>${text}</w:t></w:r></w:p>`).join('')}</w:body></w:document>`,
+      'xl/workbook.xml': '<workbook><sheets><sheet name="Data" r:id="rId1"/></sheets></workbook>',
+      'xl/_rels/workbook.xml.rels': '<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>',
+      'xl/sharedStrings.xml': `<sst>${literals.map((text) => `<si><t>${text}</t></si>`).join('')}</sst>`,
+      'xl/worksheets/sheet1.xml': `<worksheet><sheetData><row>${literals.map((_, i) => `<c t="s"><v>${i}</v></c>`).join('')}</row></sheetData></worksheet>`,
+    });
+    expect((await parseOffice(bytes, 'literal.docx', 'docx')).text).toBe(literals.join('\n'));
+    expect((await parseOffice(bytes, 'literal.xlsx', 'xlsx')).text).toBe(`Sheet: Data\n${literals.join(' | ')}`);
+  });
+
+  it.each(['slides/', '/ppt/slides/'])('follows presentation order with %s targets and excludes unreferenced slide parts', async (prefix) => {
+    const slide = (text: string) => `<p:sld><p:cSld><a:p><a:r><a:t>${text}</a:t></a:r></a:p></p:cSld></p:sld>`;
+    const bytes = await zipBuffer({
+      'ppt/presentation.xml': '<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId2"/><p:sldId id="257" r:id="rId1"/></p:sldIdLst></p:presentation>',
+      'ppt/_rels/presentation.xml.rels': `<Relationships><Relationship Id="rId1" Target="${prefix}slide1.xml"/><Relationship Id="rId2" Target="${prefix}slide2.xml"/></Relationships>`,
+      'ppt/slides/slide1.xml': slide('Last slide'),
+      'ppt/slides/slide2.xml': slide('First slide'),
+      'ppt/slides/slide3.xml': slide('Unused slide'),
+    });
+    const parsed = await parseOffice(bytes, 'reordered.pptx', 'pptx');
+    expect(parsed.text).toBe('Slide 1: First slide\nSlide 2: Last slide');
+    expect(parsed.headings).toEqual(['First slide', 'Last slide']);
+  });
+
   it('extracts Word paragraphs, headings, and hyperlinks from docx packages', async () => {
     const bytes = await zipBuffer({
       'word/document.xml': [

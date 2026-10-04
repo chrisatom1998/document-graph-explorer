@@ -1,13 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGraphStore } from '../store/graphStore';
 import { hexFor } from '../scene/palette';
 import type { EdgeKind, FileType } from '../model/types';
 import { DEFAULT_FILTER, useUiStore } from '../store/uiStore';
-import { isFilterActive } from '../scene/emphasis';
+import { isFilterActive, nodesMatchingFilter } from '../scene/emphasis';
 import SnapshotDiffBanner from './SnapshotDiffBanner';
 import { IconFunnel } from './icons';
 
 const EDGE_KIND_ORDER: { kind: EdgeKind; label: string }[] = [
+  { kind: 'title', label: 'shared title' },
+  { kind: 'tempo', label: 'tempo' },
+  { kind: 'key', label: 'key' },
+  { kind: 'instrument', label: 'instruments' },
+  { kind: 'sound', label: 'sound properties' },
   { kind: 'reference', label: 'links' },
   { kind: 'semantic', label: 'similar' },
   { kind: 'keyword', label: 'keywords' },
@@ -22,6 +27,7 @@ const RECENCY_OPTIONS: { days: number | null; label: string }[] = [
 ];
 
 const FILE_TYPE_ORDER: FileType[] = [
+  'audio',
   'md',
   'txt',
   'pdf',
@@ -37,20 +43,35 @@ const FILE_TYPE_ORDER: FileType[] = [
 ];
 
 /**
- * Slim collapsible chip bar (top-left) for file-type / cluster / min-degree /
+ * Collapsible panel below the toolbar for file-type / cluster / min-degree /
  * min-edge-weight filtering. Owns its own collapsed state — uiStore has no
  * filterOpen field by design, so this never needs to touch shared stores
  * beyond `filter` itself.
  */
-export default function FilterBar() {
+export default function FilterBar({ embedded = false }: { embedded?: boolean }) {
   const nodes = useGraphStore((s) => s.nodes);
+  const edges = useGraphStore((s) => s.edges);
   const clusterNames = useGraphStore((s) => s.clusterNames);
   const localClusterNames = useGraphStore((s) => s.localClusterNames);
   const filter = useUiStore((s) => s.filter);
   const setFilter = useUiStore((s) => s.setFilter);
 
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(!embedded);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (collapsed || embedded) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !rootRef.current?.contains(event.target)) setCollapsed(true);
+    };
+    window.addEventListener('pointerdown', closeOutside);
+    return () => window.removeEventListener('pointerdown', closeOutside);
+  }, [collapsed, embedded]);
+  const matchingCount = useMemo(() => {
+    const matching = nodesMatchingFilter(nodes, edges, filter);
+    return nodes.filter((node) => node.kind === 'document' && (!matching || matching.has(node.id))).length;
+  }, [nodes, edges, filter]);
 
   const fileTypeCounts = useMemo(() => {
     const counts: Partial<Record<FileType, number>> = {};
@@ -111,22 +132,38 @@ export default function FilterBar() {
   return (
     <>
       <SnapshotDiffBanner />
-    <div className="filter-bar-layer">
-      <div className="filter-bar__toggle-wrap">
+    <div className={`filter-bar-layer${embedded ? " filter-bar-layer--embedded" : ""}`} ref={rootRef} onKeyDown={(event) => {
+      if (event.key === 'Escape' && !collapsed && !embedded) {
+        event.preventDefault();
+        event.stopPropagation();
+        setCollapsed(true);
+        toggleRef.current?.focus();
+      }
+    }}>
+      <div className="filter-bar__toggle-wrap" hidden={embedded}>
         <button
+          ref={toggleRef}
           type="button"
-          className={`btn-icon glass-panel${!collapsed ? ' is-active' : ''}`}
+          className={`btn-icon filter-bar__toggle glass-panel${!collapsed || hasActiveFilter ? ' is-active' : ''}`}
           title={collapsed ? 'Show filters' : 'Hide filters'}
           aria-label={collapsed ? 'Show graph filters' : 'Hide graph filters'}
           aria-expanded={!collapsed}
+          aria-controls="graph-filter-panel"
+          aria-describedby={hasActiveFilter ? 'graph-filter-status' : undefined}
           onClick={() => setCollapsed((v) => !v)}
         >
           <IconFunnel />
+          <span>Filters{hasActiveFilter ? ' · On' : ''}</span>
         </button>
       </div>
 
       {!collapsed && (
-        <div className="filter-bar glass-panel">
+        <div className="filter-bar glass-panel" id="graph-filter-panel">
+          <div className="filter-bar__heading">
+            <strong>Refine your graph</strong>
+            <span id="graph-filter-status" role="status">{matchingCount} {matchingCount === 1 ? 'document matches' : 'documents match'}</span>
+          </div>
+          {matchingCount === 0 && <p className="filter-bar__empty">No documents match. Clear filters or broaden your selection.</p>}
           <div className="filter-bar__group">
             <span className="filter-bar__group-label">Type</span>
             {FILE_TYPE_ORDER.filter((ft) => (fileTypeCounts[ft] ?? 0) > 0).map((ft) => (
@@ -146,7 +183,7 @@ export default function FilterBar() {
           </div>
 
           {clusterCounts.length > 0 && (
-            <div className="filter-bar__group">
+            <div className="filter-bar__group filter-bar__group--clusters">
               <span className="filter-bar__group-label">Cluster</span>
               {clusterCounts.map(([c, count]) => (
                 <button
@@ -288,9 +325,15 @@ export default function FilterBar() {
               title="Reset all filters (file types, clusters, connection kinds, recency, and strength minimums)"
               onClick={clearAll}
             >
-              Clear
+              Clear filters
             </button>
           )}
+        </div>
+      )}
+      {collapsed && hasActiveFilter && (
+        <div className="filter-bar__active-summary glass-panel">
+          <span id="graph-filter-status" role="status">{matchingCount} {matchingCount === 1 ? 'document matches' : 'documents match'}</span>
+          <button type="button" className="filter-bar__clear" onClick={clearAll}>Clear filters</button>
         </div>
       )}
     </div>

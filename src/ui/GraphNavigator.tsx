@@ -4,6 +4,9 @@ import { useUiStore } from '../store/uiStore';
 import { useActiveOptionScroll } from './useActiveOptionScroll';
 import { fileTypeChip, selectedDocumentTitle } from '../pipeline/codeLanguage';
 import { focusNode } from './focusNode';
+import { applyComparePick } from './openCompare';
+import { nodesMatchingFilter } from '../scene/emphasis';
+import './GraphNavigator.css';
 
 const SUMMARY_ID = 'graph-navigator-summary';
 const INSTRUCTIONS_ID = 'graph-navigator-instructions';
@@ -15,23 +18,51 @@ function optionId(index: number): string {
 /**
  * Keyboard and screen-reader companion to the WebGL scene.
  *
- * It stays out of the visual workspace until reached with Tab, then becomes a
- * compact node picker. The data comes from graphStore rather than render
+ * A compact overview expands into a node picker for mouse and keyboard users.
+ * The data comes from graphStore rather than render
  * buffers so it remains complete when the scene is collapsed or simplified.
  */
-export default function GraphNavigator() {
+export default function GraphNavigator({ embedded = false }: { embedded?: boolean }) {
   const nodes = useGraphStore((state) => state.nodes);
-  const edgeCount = useGraphStore((state) => state.edges.length);
+  const edges = useGraphStore((state) => state.edges);
+  const edgeCount = edges.length;
+  const filter = useUiStore((state) => state.filter);
   const selectedId = useUiStore((state) => state.selectedId);
+  const comparePick = useUiStore((state) => state.comparePick);
   const listRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const [expanded, setExpanded] = useState(embedded);
 
-  const orderedNodes = useMemo(
-    () => [...nodes].sort((a, b) => {
+  useEffect(() => {
+    if (!expanded || embedded) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !rootRef.current?.contains(event.target)) setExpanded(false);
+    };
+    window.addEventListener('pointerdown', closeOutside);
+    return () => window.removeEventListener('pointerdown', closeOutside);
+  }, [expanded, embedded]);
+
+  const allowedNodeIds = useMemo(
+    () => nodesMatchingFilter(nodes, edges, filter),
+    [nodes, edges, filter],
+  );
+  const orderedNodes = useMemo(() => {
+    const candidates = allowedNodeIds ? nodes.filter((node) => allowedNodeIds.has(node.id)) : nodes;
+    return [...candidates].sort((a, b) => {
       if (a.kind !== b.kind) return a.kind === 'document' ? -1 : 1;
       return a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
-    }),
-    [nodes],
-  );
+    });
+  }, [nodes, allowedNodeIds]);
+  // Cluster order follows first appearance in the alphabetical list. Using
+  // distinct clusters avoids revisiting one when its documents interleave.
+  const clusterStarts = useMemo(() => {
+    const starts = new Map<number, number>();
+    orderedNodes.forEach((node, index) => {
+      if (node.cluster >= 0 && !starts.has(node.cluster)) starts.set(node.cluster, index);
+    });
+    return [...starts.entries()];
+  }, [orderedNodes]);
 
   const [activeId, setActiveId] = useState<string | null>(selectedId ?? orderedNodes[0]?.id ?? null);
 
@@ -56,84 +87,118 @@ export default function GraphNavigator() {
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'PageDown', 'PageUp', 'Home', 'End', 'Enter'].includes(event.key)) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     if (orderedNodes.length === 0) return;
     if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      event.stopPropagation();
       moveTo(activeIndex + 1);
     } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      event.stopPropagation();
       moveTo(activeIndex - 1);
+    } else if (event.key === 'PageDown' || event.key === 'PageUp') {
+      const clusterIndex = clusterStarts.findIndex(([cluster]) => cluster === orderedNodes[activeIndex]?.cluster);
+      const target = clusterIndex < 0
+        ? (event.key === 'PageDown' ? 0 : clusterStarts.length - 1)
+        : Math.max(0, Math.min(clusterStarts.length - 1, clusterIndex + (event.key === 'PageDown' ? 1 : -1)));
+      const start = clusterStarts[target];
+      if (start) moveTo(start[1]);
     } else if (event.key === 'Home') {
-      event.preventDefault();
-      event.stopPropagation();
       moveTo(0);
     } else if (event.key === 'End') {
-      event.preventDefault();
-      event.stopPropagation();
       moveTo(orderedNodes.length - 1);
     } else if (event.key === 'Enter') {
-      event.preventDefault();
-      event.stopPropagation();
       const node = orderedNodes[activeIndex];
       if (!node) return;
+      if (useUiStore.getState().comparePick) {
+        if (node.kind === 'document') applyComparePick(node.id);
+        return;
+      }
       focusNode(node.id);
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      listRef.current?.blur();
     }
   };
 
-  if (orderedNodes.length === 0) return null;
+  if (nodes.length === 0) return null;
 
   return (
-    <aside className="graph-navigator glass-panel" aria-label="Accessible graph navigator">
-      <p className="graph-navigator__title">Graph navigator</p>
-      <p className="graph-navigator__summary" id={SUMMARY_ID}>
+    <aside
+      ref={rootRef}
+      className={`graph-navigator glass-panel${embedded ? ' graph-navigator--embedded' : ''}${expanded ? ' is-expanded' : ''}${comparePick ? ' is-picking' : ''}`}
+      aria-label="Accessible graph navigator"
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && expanded) {
+          event.preventDefault();
+          event.stopPropagation();
+          setExpanded(false);
+          toggleRef.current?.focus();
+        }
+      }}
+    >
+      <button
+        ref={toggleRef}
+        type="button"
+        className="graph-navigator__toggle"
+        aria-label="Browse documents"
+        aria-expanded={expanded}
+        aria-controls="graph-navigator-content"
+        onClick={() => setExpanded((value) => !value)}
+      >
+        <span><strong>{documentCount}</strong> {documentCount === 1 ? 'document' : 'documents'}</span>
+        <span className="graph-navigator__chevron" aria-hidden="true">{expanded ? '−' : '+'}</span>
+      </button>
+      <p className="graph-navigator__overview">{clusterCount} {clusterCount === 1 ? 'cluster' : 'clusters'} · {edgeCount} {edgeCount === 1 ? 'connection' : 'connections'}</p>
+      <p className="sr-only graph-navigator__summary" id={SUMMARY_ID}>
         {documentCount} {documentCount === 1 ? 'document' : 'documents'}, {topicCount}{' '}
         {topicCount === 1 ? 'topic hub' : 'topic hubs'}, {edgeCount}{' '}
         {edgeCount === 1 ? 'connection' : 'connections'}, {clusterCount}{' '}
         {clusterCount === 1 ? 'cluster' : 'clusters'}.
       </p>
-      <p className="graph-navigator__instructions" id={INSTRUCTIONS_ID}>
-        Use Up and Down to browse. Press Enter to open the active node. Press Escape to leave.
-      </p>
-      <div
-        ref={listRef}
-        className="graph-navigator__list"
-        role="listbox"
-        tabIndex={0}
-        aria-label="Graph nodes"
-        aria-describedby={`${SUMMARY_ID} ${INSTRUCTIONS_ID}`}
-        aria-activedescendant={optionId(activeIndex)}
-        onFocus={() => {
-          if (selectedId && orderedNodes.some((node) => node.id === selectedId)) setActiveId(selectedId);
-        }}
-        onKeyDownCapture={handleKeyDown}
-      >
-        {orderedNodes.map((node, index) => (
-          <div
-            id={optionId(index)}
-            key={node.id}
-            className={`graph-navigator__option${index === activeIndex ? ' is-active' : ''}`}
-            role="option"
-            aria-selected={node.id === selectedId}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => {
-              setActiveId(node.id);
-              focusNode(node.id);
-            }}
-          >
-            <span>{node.id === selectedId ? selectedDocumentTitle(node) : node.title}</span>
-            <span className="graph-navigator__meta">
-              {node.kind === 'topic'
-                ? 'Topic hub'
-                : `${fileTypeChip(node).toUpperCase()} · ${node.degree} connection${node.degree === 1 ? '' : 's'}`}
-            </span>
-          </div>
-        ))}
+      <div id="graph-navigator-content" hidden={!expanded}>
+        <p className="graph-navigator__instructions" id={INSTRUCTIONS_ID}>
+          Choose a document to explore its connections.
+          <span> ↑ ↓ to browse · PageUp / PageDown to hop clusters · Enter to open · Esc to close</span>
+        </p>
+        {orderedNodes.length === 0 && <p role="status">No documents match the current filters.</p>}
+        <div
+          ref={listRef}
+          className="graph-navigator__list"
+          role="listbox"
+          tabIndex={0}
+          aria-label="Graph nodes"
+          aria-describedby={`${SUMMARY_ID} ${INSTRUCTIONS_ID}`}
+          aria-activedescendant={orderedNodes.length > 0 ? optionId(activeIndex) : undefined}
+          onFocus={() => {
+            if (selectedId && orderedNodes.some((node) => node.id === selectedId)) setActiveId(selectedId);
+          }}
+          onKeyDownCapture={handleKeyDown}
+        >
+          {orderedNodes.map((node, index) => (
+            <div
+              id={optionId(index)}
+              key={node.id}
+              className={`graph-navigator__option${index === activeIndex ? ' is-active' : ''}`}
+              role="option"
+              aria-selected={node.id === selectedId}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                listRef.current?.focus();
+                setActiveId(node.id);
+                if (useUiStore.getState().comparePick) {
+                  if (node.kind === 'document') applyComparePick(node.id);
+                  return;
+                }
+                focusNode(node.id);
+              }}
+            >
+              <span className="graph-navigator__name">{node.id === selectedId ? selectedDocumentTitle(node) : node.title}</span>
+              <span className="graph-navigator__meta">
+                {node.kind === 'topic'
+                  ? 'Topic hub'
+                  : `${fileTypeChip(node).toUpperCase()} · ${node.degree} connection${node.degree === 1 ? '' : 's'}`}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </aside>
   );

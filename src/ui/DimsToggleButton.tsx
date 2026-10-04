@@ -9,7 +9,6 @@
  */
 import { useUiStore } from '../store/uiStore';
 import { switchGraphDimensions } from '../scene/dimensionTransition';
-import { IconCube } from './icons';
 
 export function DimsToggleButton() {
   const dims = useUiStore((s) => s.dims);
@@ -20,14 +19,14 @@ export function DimsToggleButton() {
   return (
     <button
       type="button"
-      className={`btn-icon${dims === 2 ? ' is-active' : ''}`}
+      className={`btn-icon workspace-dims${dims === 2 ? ' is-active' : ''}`}
       title={dims === 3 ? 'Switch to 2D' : 'Switch to 3D'}
       aria-label={dims === 3 ? 'Switch to 2D view' : 'Switch to 3D view'}
       aria-pressed={dims === 2}
       onClick={handleToggleDims}
     >
-      <IconCube twoD={dims === 2} />
-      <span className="toolbar__dims-label" aria-hidden="true">{dims}D</span>
+      <span className={dims === 2 ? 'is-current' : ''} aria-hidden="true">2D</span>
+      <span className={dims === 3 ? 'is-current' : ''} aria-hidden="true">3D</span>
     </button>
   );
 }

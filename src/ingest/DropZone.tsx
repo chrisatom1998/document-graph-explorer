@@ -13,14 +13,13 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { IGNORED_DIRS, MAX_INGEST_FILE_BYTES, MAX_INGEST_TOTAL_BYTES } from '../config';
-import type { IngestFile } from '../model/types';
-import { useGraphStore } from '../store/graphStore';
+import { IGNORED_DIRS } from '../config';
 import { useUiStore } from '../store/uiStore';
 import { posixJoin } from '../util/posixPath';
-import { isIngestCandidate, routeFileWithSniff } from './fileRouter';
+import { isIngestCandidate } from './fileRouter';
 import { hasUnignoreUnder, mergeGitIgnoreRules, pathIsGitIgnored, type GitIgnoreRule } from './gitignore';
 import type { NamedFile } from './localFiles';
+import { reportReadFailures, type ReadFailure } from './readFailures';
 import { rememberAddOrigin, rememberDropOrigin } from '../scene/ingestGesture';
 
 // ---------------------------------------------------------------------------
@@ -53,11 +52,7 @@ async function readDirectoryEntries(dir: FileSystemDirectoryEntry): Promise<File
 async function readGitignoreText(entries: FileSystemEntry[]): Promise<string | null> {
   const hit = entries.find((entry) => entry.isFile && entry.name === '.gitignore');
   if (!hit) return null;
-  try {
-    return await (await entryFile(hit as FileSystemFileEntry)).text();
-  } catch {
-    return null;
-  }
+  return await (await entryFile(hit as FileSystemFileEntry)).text();
 }
 
 async function walkDirectory(
@@ -67,6 +62,7 @@ async function walkDirectory(
   depth: number,
   ancestorRules: GitIgnoreRule[],
   out: NamedFile[],
+  failures: ReadFailure[],
 ): Promise<void> {
   // Ignored-dir skipping for descendants happens at the call site (gated on
   // hasUnignoreUnder); this only covers the directly-dropped root itself.
@@ -83,21 +79,29 @@ async function walkDirectory(
       // outright rather than enumerating a huge vendor tree.
       if (isIgnoredDir(child.name) && !hasUnignoreUnder(childRel, rules)) continue;
       if (pathIsGitIgnored(childRel, true, rules)) continue;
-      await walkDirectory(child as FileSystemDirectoryEntry, rootName, childRel, depth + 1, rules, out);
+      try {
+        await walkDirectory(child as FileSystemDirectoryEntry, rootName, childRel, depth + 1, rules, out, failures);
+      } catch (error) {
+        failures.push({ path: `${rootName}/${childRel}`, directory: true, error });
+      }
       continue;
     }
     if (!child.isFile) continue;
     if (!isIngestCandidate(child.name)) continue;
     if (pathIsGitIgnored(childRel, false, rules)) continue;
-    const file = await entryFile(child as FileSystemFileEntry);
     const relPath = child.fullPath.replace(/^\/+/, '');
-    out.push({ file, path: depth >= 0 ? relPath : undefined });
+    try {
+      const file = await entryFile(child as FileSystemFileEntry);
+      out.push({ file, path: depth >= 0 ? relPath : undefined });
+    } catch (error) {
+      failures.push({ path: relPath, error });
+    }
   }
 }
 
-async function walkEntry(entry: FileSystemEntry, depth: number, out: NamedFile[]): Promise<void> {
+async function walkEntry(entry: FileSystemEntry, depth: number, out: NamedFile[], failures: ReadFailure[]): Promise<void> {
   if (entry.isDirectory) {
-    await walkDirectory(entry as FileSystemDirectoryEntry, entry.name, '', depth, [], out);
+    await walkDirectory(entry as FileSystemDirectoryEntry, entry.name, '', depth, [], out, failures);
     return;
   }
   if (entry.name.startsWith('.')) return;
@@ -113,7 +117,7 @@ async function walkEntry(entry: FileSystemEntry, depth: number, out: NamedFile[]
  * invalidated once the drop handler yields. This function's item loop runs
  * before any await.
  */
-function filesFromDataTransfer(dt: DataTransfer): Promise<NamedFile[]> {
+export function filesFromDataTransfer(dt: DataTransfer): Promise<NamedFile[]> {
   const entries: FileSystemEntry[] = [];
   const directFiles: File[] = [];
   if (dt.items && dt.items.length > 0) {
@@ -133,10 +137,18 @@ function filesFromDataTransfer(dt: DataTransfer): Promise<NamedFile[]> {
 
   return (async () => {
     const out: NamedFile[] = [];
-    for (const entry of entries) await walkEntry(entry, 0, out);
+    const failures: ReadFailure[] = [];
+    for (const entry of entries) {
+      try {
+        await walkEntry(entry, 0, out, failures);
+      } catch (error) {
+        failures.push({ path: entry.fullPath.replace(/^\/+/, ''), directory: entry.isDirectory, error });
+      }
+    }
     for (const file of directFiles) {
       if (!file.name.startsWith('.')) out.push({ file });
     }
+    await reportReadFailures(failures);
     return out;
   })();
 }
@@ -145,71 +157,9 @@ function filesFromDataTransfer(dt: DataTransfer): Promise<NamedFile[]> {
 // IngestFile construction
 // ---------------------------------------------------------------------------
 
-const MAX_INGEST_MB = Math.round(MAX_INGEST_FILE_BYTES / (1024 * 1024));
-const MAX_INGEST_TOTAL_MB = Math.round(MAX_INGEST_TOTAL_BYTES / (1024 * 1024));
-
-async function toIngestFiles(named: NamedFile[]): Promise<IngestFile[]> {
-  const out: IngestFile[] = [];
-  let totalBytes = 0;
-  let totalCapHit = false;
-  for (const { file, path } of named) {
-    const shouldRead = isIngestCandidate(file.name);
-    if (shouldRead && file.size > MAX_INGEST_FILE_BYTES) {
-      useGraphStore.getState().addIgnored(file.name, `too large (over ${MAX_INGEST_MB} MB)`);
-      continue;
-    }
-    // Every file is read fully into memory before the pipeline runs, so the
-    // per-file cap alone can't stop a huge folder drop from OOMing the tab.
-    if (shouldRead && totalBytes + file.size > MAX_INGEST_TOTAL_BYTES) {
-      useGraphStore
-        .getState()
-        .addIgnored(file.name, `drop exceeds ${MAX_INGEST_TOTAL_MB} MB total — add it separately`);
-      if (!totalCapHit) {
-        totalCapHit = true;
-        useUiStore
-          .getState()
-          .pushToast(
-            `That drop is over the ${MAX_INGEST_TOTAL_MB} MB total limit — the remainder was skipped (see the ignored list).`,
-            'warning',
-          );
-      }
-      continue;
-    }
-    // Unsupported files are still forwarded (with empty bytes, so huge
-    // binaries are never read) — the coordinator routes them by name into
-    // the ignored tray. Sniffable unknowns (LICENSE, *.rules) are read so
-    // the text-fallback can run.
-    const bytes = shouldRead ? await file.arrayBuffer() : new ArrayBuffer(0);
-    const fileType = routeFileWithSniff(file.name, bytes);
-    totalBytes += fileType !== null ? bytes.byteLength : 0;
-    out.push({
-      fileId: crypto.randomUUID(),
-      name: file.name,
-      path,
-      fileType: fileType ?? 'other',
-      bytes: fileType !== null ? bytes : new ArrayBuffer(0),
-      lastModified: file.lastModified > 0 ? file.lastModified : undefined,
-    });
-  }
-  return out;
-}
-
 async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
-  try {
-    const files = await toIngestFiles(named);
-    if (files.length > 0) {
-      const { ingestFiles } = await import('../pipeline/coordinatorLazy');
-      await ingestFiles(files);
-    } else {
-      // Every file was rejected by size gating — no run will settle, so
-      // snapshot the rejections into the persistent report here.
-      const { publishIngestReport } = await import('../pipeline/ingestReport');
-      publishIngestReport();
-    }
-  } catch (err) {
-    console.error('ingestion failed', err);
-    useUiStore.getState().pushToast("Something went wrong adding those files — check the console for details.");
-  }
+  const { ingestNamedFiles: ingest } = await import('./localFiles');
+  await ingest(named);
 }
 
 // ---------------------------------------------------------------------------
@@ -276,7 +226,10 @@ export function DropZone() {
       if (!dt) return;
       rememberDropOrigin(e.clientX, e.clientY);
       // filesFromDataTransfer captures entries synchronously, then walks async
-      void filesFromDataTransfer(dt).then(ingestNamedFiles);
+      void filesFromDataTransfer(dt).then(ingestNamedFiles).catch((error: unknown) => {
+        console.error('folder drop failed', error);
+        useUiStore.getState().pushToast("Could not read that drop. Check file access and try again.", 'warning');
+      });
     };
 
     window.addEventListener('dragenter', onDragEnter);

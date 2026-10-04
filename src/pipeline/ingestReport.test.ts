@@ -20,6 +20,25 @@ function statuses(...list: FileStatus[]): Record<string, FileStatus> {
 }
 
 describe('buildIngestReport', () => {
+  it('clears a recovered source path without hiding a same-basename failure in another folder', () => {
+    const ignored = [
+      { name: 'vault/a/foo.txt', reason: 'could not read: denied' },
+      { name: 'vault/b/foo.txt', reason: 'could not read: denied' },
+    ];
+    const report = buildIngestReport(statuses(
+      { fileId: 'recovered', name: 'foo.txt', path: 'vault/a/foo.txt', stage: 'placed' },
+      { fileId: 'still-broken', name: 'foo.txt', path: 'vault/b/foo.txt', stage: 'error', error: 'parse failed' },
+    ), ignored, { finishedAt: AT });
+    expect(report?.entries).toEqual([
+      { name: 'vault/b/foo.txt', reason: 'parse failed', kind: 'failed' },
+      { name: 'vault/b/foo.txt', reason: 'could not read: denied', kind: 'ignored' },
+    ]);
+    expect(buildIngestReport(statuses(
+      { fileId: 'a', name: 'foo.txt', path: 'vault/a/foo.txt', stage: 'placed' },
+      { fileId: 'b', name: 'foo.txt', path: 'vault/b/foo.txt', stage: 'cached' },
+    ), ignored, { finishedAt: AT })).toBeNull();
+  });
+
   it('returns null when there is nothing to report', () => {
     expect(buildIngestReport({}, [], { finishedAt: AT })).toBeNull();
     expect(

@@ -3,7 +3,6 @@ import {
   flatLabelBudget,
   flatLabelOpacity,
   flatLabelPriority,
-  flatLabelScale,
 } from './flatLabelPolicy';
 
 describe('flat label policy', () => {
@@ -23,10 +22,9 @@ describe('flat label policy', () => {
     expect(flatLabelPriority(10_000, 18)).toBeLessThan(flatLabelPriority(10_000, 0));
   });
 
-  it('keeps overview labels larger but within readable bounds', () => {
-    expect(flatLabelScale(80)).toBe(1.05);
-    expect(flatLabelScale(800)).toBe(1.7);
-    expect(flatLabelOpacity(80)).toBe(0.92);
-    expect(flatLabelOpacity(800)).toBe(0.62);
+  it('keeps overview labels legible while subtly muting their hierarchy', () => {
+    expect(flatLabelOpacity(80)).toBe(0.94);
+    expect(flatLabelOpacity(800)).toBe(0.8);
+    expect(flatLabelOpacity(350)).toBeCloseTo(0.87);
   });
 });

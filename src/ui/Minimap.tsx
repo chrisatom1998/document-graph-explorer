@@ -66,6 +66,7 @@ export default function Minimap() {
   const visible = useGraphStore((s) => s.nodes.length >= MINIMAP_MIN_NODES);
   // Slide out of the way of the right-docked SidePanel while a node is open.
   const shifted = useUiStore((s) => s.selectedId !== null);
+  const compareComplete = useUiStore((s) => s.compareLeftId !== null && s.compareRightId !== null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fit = useRef<MapTransform | null>(null);
@@ -373,7 +374,7 @@ export default function Minimap() {
   if (!visible) return null;
 
   return (
-    <div className={`minimap glass-panel${shifted ? ' minimap--shifted' : ''}`}>
+    <div className={`minimap glass-panel${compareComplete ? ' minimap--compare-shifted' : shifted ? ' minimap--shifted' : ''}`}>
       <canvas
         ref={canvasRef}
         style={{ width: W, height: H }}

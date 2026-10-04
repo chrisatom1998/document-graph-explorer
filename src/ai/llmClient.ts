@@ -23,7 +23,9 @@ export interface LlmTarget {
   model: string;
 }
 
-export type LlmResult = { ok: true; text: string } | { ok: false; error: string };
+export type LlmResult =
+  | { ok: true; text: string }
+  | { ok: false; error: string; partialText?: string };
 
 export type LlmTask = 'enrichment' | 'document';
 
@@ -151,6 +153,12 @@ export async function llmStream(
     // for an answer the user has already navigated away from.
     if (signal?.aborted) return { ok: false, error: 'Cancelled' };
     let retryable: boolean;
+    let accumulated = '';
+    const failure = (error: string): LlmResult => ({
+      ok: false,
+      error,
+      ...(accumulated.trim() ? { partialText: accumulated.trim() } : {}),
+    });
     const controller = new AbortController();
     let idleTimer: ReturnType<typeof setTimeout> | undefined;
     const clearIdle = () => {
@@ -197,7 +205,6 @@ export async function llmStream(
       if (!reader) return { ok: false, error: 'No response body (streaming unavailable)' };
 
       const decoder = new TextDecoder();
-      let accumulated = '';
       let pending = '';
       let streamError: string | undefined;
 
@@ -226,12 +233,11 @@ export async function llmStream(
       }
       if (accumulated) onChunk?.(accumulated);
 
+      if (streamError) return failure(`${label} stream failed: ${streamError.slice(0, 200)}`);
       if (accumulated.trim() === '') {
         return {
           ok: false,
-          error: streamError
-            ? `${label} stream failed: ${streamError.slice(0, 200)}`
-            : `${label} returned an empty response`,
+          error: `${label} returned an empty response`,
         };
       }
       return { ok: true, text: accumulated.trim() };
@@ -239,8 +245,11 @@ export async function llmStream(
       // A caller-initiated cancellation is a final answer, not a transient
       // failure — retrying would re-issue the request the user just abandoned
       // and keep spending their API quota.
-      if (signal?.aborted) return { ok: false, error: 'Cancelled' };
+      if (signal?.aborted) return failure('Cancelled');
       const described = describeNetworkError(target.provider, err);
+      // Restarting generation after output arrives can repeat paid work and
+      // replace text already visible to the user with a different answer.
+      if (accumulated) return failure(described.message);
       retryable = described.retryable;
       lastError = described.message;
     } finally {

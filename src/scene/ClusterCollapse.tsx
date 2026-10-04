@@ -26,11 +26,12 @@
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { Text } from '@react-three/drei';
+import Text from './SceneText';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, slotOfId } from './positionBuffer';
 import { clusterColor } from './palette';
+import { syncSceneLabel } from './systemLabel';
 
 const MAX_CLUSTERS = 64;
 const SUPER_NODE_BASE = 4.0;
@@ -48,10 +49,7 @@ interface InterEdge {
 }
 
 /** troika text mesh surface we mutate imperatively (see Labels.tsx). */
-interface TroikaLabel extends THREE.Mesh {
-  text: string;
-  sync: (onSync?: () => void) => void;
-}
+type TroikaLabel = import('./systemLabel').SceneLabel;
 
 export default function ClusterCollapse() {
   const clusterCollapsed = useUiStore((s) => s.clusterCollapsed);
@@ -290,10 +288,7 @@ export default function ClusterCollapse() {
       const scale = SUPER_NODE_BASE * (1 + 0.6 * Math.log2(memberN));
       const name = clusterNames[c] ?? localClusterNames[c] ?? `Cluster ${c}`;
       const text = `${name} (${memberN})`;
-      if (label.text !== text) {
-        label.text = text;
-        label.sync();
-      }
+      syncSceneLabel(label, text);
       label.position.set(centroid.x, centroid.y + scale + 2.5, centroid.z);
       label.visible = true;
     }

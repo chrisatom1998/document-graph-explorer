@@ -1,19 +1,13 @@
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import Tooltip from './ui/Tooltip';
-import ChatLauncher from './ui/ChatLauncher';
-import InsightsDigest from './ui/InsightsDigest';
 import ToastHost from './ui/ToastHost';
 import { shouldIgnoreGlobalKey } from './ui/globalKeyboard';
 import { useGraphStore } from './store/graphStore';
 import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
 import { useCorpusStore } from './store/corpusStore';
-import { layoutSetDims, onLayoutSettled } from './layout/layoutBridge';
-import {
-  clearIngestBirthSteer,
-  isIngestFraming,
-  wasIngestBirthSteered,
-} from './scene/ingestGesture';
+import { layoutSetDims } from './layout/layoutBridge';
+import { useInitialGraphFrame } from './scene/useInitialGraphFrame';
 import { enqueueRun } from './pipeline/runQueue';
 import { positionBuffer, slotOfId } from './scene/positionBuffer';
 import { cameraPose } from './scene/cameraPose';
@@ -24,6 +18,7 @@ import { reportPersistenceUnavailable } from './persistence/cache';
 import { initChatHistorySync } from './persistence/chatHistorySync';
 import './styles.css';
 
+const TitleRelationships = lazy(() => import('./graph/TitleRelationships'));
 const CollabAppBridge = lazy(() => import('./collab/AppBridge'));
 const NebulaCanvas = lazy(() => import('./scene/NebulaCanvas'));
 const DropZone = lazy(() => import('./ingest/DropZone'));
@@ -33,18 +28,24 @@ const EmptyState = lazy(() => import('./ui/EmptyState'));
 const ProgressStrip = lazy(() => import('./ui/ProgressStrip'));
 const Toolbar = lazy(() => import('./ui/Toolbar'));
 const IngestDimsToggle = lazy(() => import('./ui/DimsToggleButton'));
-const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
-const PathPanel = lazy(() => import('./ui/PathPanel'));
-const SidePanel = lazy(() => import('./ui/SidePanel'));
-const SnapshotDrawer = lazy(() => import('./ui/SnapshotDrawer'));
-const SearchOverlay = lazy(() => import('./ui/SearchOverlay'));
 const GraphNavigator = lazy(() => import('./ui/GraphNavigator'));
 const FilterBar = lazy(() => import('./ui/FilterBar'));
 const Minimap = lazy(() => import('./ui/Minimap'));
+const ChatLauncher = lazy(() => import('./ui/ChatLauncher'));
+const InsightsDigest = lazy(() => import('./ui/InsightsDigest'));
+const FirstRunGuide = lazy(() => import('./ui/FirstRunGuide'));
+const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
+const PathPanel = lazy(() => import('./ui/PathPanel'));
+const SidePanel = lazy(() => import('./ui/SidePanel'));
+const ComparePanel = lazy(() => import('./ui/ComparePanel'));
+const SnapshotDrawer = lazy(() => import('./ui/SnapshotDrawer'));
+const SearchOverlay = lazy(() => import('./ui/SearchOverlay'));
 const SettingsPanel = lazy(() => import('./ui/SettingsPanel'));
+const UploadInsightsAgent = lazy(() => import('./ui/UploadInsights').then(module => ({ default: module.UploadInsightsAgent })));
+const DjAssistant = lazy(() => import('./ui/DjAssistant'));
+const MusicBackgroundStatus = lazy(() => import('./ui/MusicBackgroundStatus'));
 const ChatPanel = lazy(() => import('./ui/ChatPanel'));
 const HelpPopover = lazy(() => import('./ui/HelpPopover'));
-const FirstRunGuide = lazy(() => import('./ui/FirstRunGuide'));
 
 const RetrievalBenchmarkPanel = import.meta.env.DEV
   ? lazy(() => import('./dev/RetrievalBenchmarkPanel'))
@@ -147,39 +148,7 @@ export default function App() {
     initChatHistorySync();
   }, []);
 
-  // Auto-frame: while a fresh corpus is forming, re-fit the camera on every
-  // layout settle so the nebula is always in view; stop after the settle that
-  // follows 'ready' so the user owns the camera from then on.
-  const needsFrame = useRef(true);
-  useEffect(() => {
-    if (!hasNodes) {
-      needsFrame.current = true; // next corpus gets framed again
-      clearIngestBirthSteer(); // fresh corpus: an old steer must not block its first fit
-      return;
-    }
-    return onLayoutSettled(() => {
-      if (!needsFrame.current) return;
-      const ready = useGraphStore.getState().phase === 'ready';
-      // Live first-ingest framing is owned by CameraRig (slow ease-out).
-      // Incremental add never sets that flag; session restore still fit-alls
-      // here. A ready-state settle completes the initial framing either way —
-      // leaving needsFrame set would make the NEXT incremental add's settle
-      // fitAll and steal the user's camera.
-      if (isIngestFraming()) {
-        if (ready) needsFrame.current = false;
-        return;
-      }
-      // A mid-ingest orbit/pan cancels the follow AND this handler's fitAll:
-      // the no-steal guarantee means once the user takes the camera during a
-      // corpus's formation, nothing auto-fits that corpus behind them.
-      if (wasIngestBirthSteered()) {
-        needsFrame.current = false;
-        return;
-      }
-      useUiStore.getState().sendCamera('fitAll');
-      if (ready) needsFrame.current = false;
-    });
-  }, [hasNodes]);
+  useInitialGraphFrame(hasNodes);
 
   // Dev-only introspection for automated verification (position spread etc.).
   useEffect(() => {
@@ -216,6 +185,7 @@ export default function App() {
       const uy = rz * fx - rx * fz;
       const uz = rx * fy;
       const tanHalfFov = Math.tan((cameraPose.fov * Math.PI) / 360);
+      const canvasRect = document.querySelector('.nebula-canvas')?.getBoundingClientRect() ?? { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
       const projectedNodes = g.nodes.flatMap((node) => {
         if (node.kind !== 'document') return [];
         const slot = slotOfId.get(node.id);
@@ -230,8 +200,8 @@ export default function App() {
         return [{
           id: node.id,
           title: node.title,
-          x: ((ndcX + 1) / 2) * window.innerWidth,
-          y: ((1 - ndcY) / 2) * window.innerHeight,
+          x: canvasRect.left + ((ndcX + 1) / 2) * canvasRect.width,
+          y: canvasRect.top + ((1 - ndcY) / 2) * canvasRect.height,
           visible: Math.abs(ndcX) <= 1 && Math.abs(ndcY) <= 1,
         }];
       });
@@ -370,41 +340,31 @@ export default function App() {
   return (
     <div className="app-root">
       <Suspense fallback={null}><CollabAppBridge /></Suspense>
+      <Suspense fallback={null}><TitleRelationships /><DjAssistant /><MusicBackgroundStatus /><UploadInsightsAgent /></Suspense>
       <Suspense fallback={<div className="scene-loading" role="status" aria-label="Loading interactive graph" />}>
         <NebulaCanvas />
       </Suspense>
+      {phase === 'ready' && <Suspense fallback={null}><Toolbar /><GraphNavigator /><FilterBar /><Minimap /><ChatLauncher /></Suspense>}
+      {hasNodes && phase !== 'ready' && <Suspense fallback={null}><IngestDimsToggle /></Suspense>}
+      <Suspense fallback={null}><InsightsDigest /><FirstRunGuide /></Suspense>
       <Suspense fallback={null}><DropZone /></Suspense>
       {!hasNodes && phase === 'idle' && (
         <Suspense fallback={null}><EmptyState /></Suspense>
       )}
       {phase === 'ready' && (
-        <Suspense fallback={null}><Toolbar /></Suspense>
-      )}
-      {/* The full toolbar waits for 'ready', but the 2D/3D switch must stay
-          reachable while the corpus is still forming — switching modes is
-          also the escape hatch when the 3D ingest animation struggles. */}
-      {hasNodes && phase !== 'ready' && (
-        <Suspense fallback={null}><IngestDimsToggle /></Suspense>
-      )}
-      {phase === 'ready' && (
-        <Suspense fallback={null}><GraphNavigator /></Suspense>
-      )}
-      {phase === 'ready' && (
-        <Suspense fallback={null}><FilterBar /></Suspense>
+        <Suspense fallback={null}>
+          <ComparePanel />
+        </Suspense>
       )}
       <Suspense fallback={null}><ProgressStrip /></Suspense>
       {insightsOpen && (
         <Suspense fallback={null}><InsightsPanel /></Suspense>
       )}
-      <InsightsDigest />
       {pathMode && (
         <Suspense fallback={null}><PathPanel /></Suspense>
       )}
       {selectedId && (
         <Suspense fallback={null}><SidePanel /></Suspense>
-      )}
-      {phase === 'ready' && (
-        <Suspense fallback={null}><Minimap /></Suspense>
       )}
       <Tooltip />
       {phase === 'ready' && searchOpen && (
@@ -416,14 +376,12 @@ export default function App() {
       {snapshotsOpen && (
         <Suspense fallback={null}><SnapshotDrawer /></Suspense>
       )}
-      {phase === 'ready' && <ChatLauncher />}
-      {phase === 'ready' && chatOpen && (
+      {hasNodes && chatOpen && (
         <Suspense fallback={null}><ChatPanel /></Suspense>
       )}
       {helpOpen && (
         <Suspense fallback={null}><HelpPopover /></Suspense>
       )}
-      <Suspense fallback={null}><FirstRunGuide /></Suspense>
       <ToastHost />
       {RetrievalBenchmarkPanel && new URLSearchParams(window.location.search).get('eval') === 'retrieval' && (
         <Suspense fallback={null}><RetrievalBenchmarkPanel /></Suspense>

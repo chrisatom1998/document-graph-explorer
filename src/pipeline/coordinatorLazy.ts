@@ -6,6 +6,10 @@
  */
 export {
   ingestFiles,
+  analyzeAudioCorpus,
+  setAudioInstruments,
+  setAudioReview,
+  setAudioDjTags,
   loadDemoCorpus,
   rebuildEmbeddings,
   reconcileWatchedFiles,

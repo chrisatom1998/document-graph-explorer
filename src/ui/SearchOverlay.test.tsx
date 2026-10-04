@@ -93,8 +93,8 @@ describe('SearchOverlay', () => {
     );
 
     await waitFor(() => expect(screen.getByRole('option')).toHaveTextContent('Architecture Overview'));
-    expect(mockSearchCorpusLexical).toHaveBeenCalledWith('architecture');
-    expect(mockSearchCorpus).toHaveBeenCalledWith('architecture');
+    expect(mockSearchCorpusLexical).toHaveBeenCalledWith('architecture', undefined);
+    expect(mockSearchCorpus).toHaveBeenCalledWith('architecture', undefined);
     expect(useUiStore.getState().searchResults).toEqual(['architecture']);
   });
 
@@ -109,6 +109,37 @@ describe('SearchOverlay', () => {
 
     expect(screen.getByRole('option', { name: /Architecture Overview/i })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /Incident Runbook/i })).not.toBeInTheDocument();
+  });
+
+  it('passes active filters to both search passes and repeats search when filters change', async () => {
+    useGraphStore.setState({
+      nodes: [documentNode(), { ...secondDocumentNode(), fileType: 'pdf' }],
+      nodeIndex: { architecture: 0, runbook: 1 },
+    });
+    useUiStore.setState({ filter: { ...DEFAULT_FILTER, fileTypes: ['md'] } });
+    mockSearchCorpusLexical.mockResolvedValue([]);
+    mockSearchCorpus.mockResolvedValue([]);
+    render(<SearchOverlay />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'operations' } });
+    await waitFor(() => expect(mockSearchCorpus).toHaveBeenCalledWith('operations', new Set(['architecture'])));
+    expect(mockSearchCorpusLexical).toHaveBeenCalledWith('operations', new Set(['architecture']));
+    await act(async () => {
+      useUiStore.setState({ filter: { ...DEFAULT_FILTER, fileTypes: ['pdf'] } });
+    });
+    await waitFor(() => expect(mockSearchCorpus).toHaveBeenLastCalledWith('operations', new Set(['runbook'])));
+    expect(mockSearchCorpusLexical).toHaveBeenLastCalledWith('operations', new Set(['runbook']));
+    expect(screen.getByRole('status')).toHaveTextContent('No matches within the active filters');
+  });
+
+  it('explains when all returned results are excluded by the current filters', async () => {
+    useUiStore.setState({ filter: { ...DEFAULT_FILTER, fileTypes: ['pdf'] } });
+    const hits = [{ id: 'architecture', score: 1, matchKind: 'title' as const }];
+    mockSearchCorpusLexical.mockResolvedValue(hits);
+    mockSearchCorpus.mockResolvedValue(hits);
+    render(<SearchOverlay />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'architecture' } });
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('No matches within the active filters'));
+    expect(screen.queryByRole('option')).not.toBeInTheDocument();
   });
 
   it('does not restore highlights when an in-flight search lands after close', async () => {

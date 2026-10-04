@@ -1,12 +1,14 @@
 import type { DocNode } from '../model/types';
 import { getNodePosition } from '../scene/positionBuffer';
+import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
 import {
   chunkStore,
-  dirtyDocIds,
+  captureDirtyDocs,
   docLinksStore,
   docVectorStore,
   mdLinkTargetsStore,
+  markDocsClean,
   textStore,
 } from '../store/runtimeStores';
 import {
@@ -29,6 +31,7 @@ export function collectPositions(nodes: DocNode[]): Record<string, [number, numb
 
 /** Refresh only the graph record (positions plus current graph snapshot). */
 export async function saveGraphRecord(): Promise<void> {
+  if (useCorpusStore.getState().mode !== 'local') return;
   const state = useGraphStore.getState();
   if (state.phase !== 'ready' || !state.corpusHash || state.nodes.length === 0) return;
   const positions = collectPositions(state.nodes);
@@ -44,6 +47,7 @@ export async function saveGraphRecord(): Promise<void> {
 
 /** Persist a complete ready session without importing the coordinator. */
 export async function saveSession(): Promise<void> {
+  if (useCorpusStore.getState().mode !== 'local') return;
   const state = useGraphStore.getState();
   if (!state.corpusHash || state.nodes.length === 0 || state.phase !== 'ready') return;
   const corpusHash = state.corpusHash;
@@ -53,8 +57,8 @@ export async function saveSession(): Promise<void> {
   // Only documents whose heavy payload actually changed. The graph and corpus
   // records below stay full writes — they are small, and they are what session
   // restore reads nodes and edges from.
-  const pending = [...dirtyDocIds];
-  const docs = pending
+  const pending = captureDirtyDocs();
+  const docs = [...pending.keys()]
     .map((id) => state.nodes[state.nodeIndex[id]])
     .filter((node) => node?.kind === 'document')
     .map((node) => {
@@ -80,6 +84,13 @@ export async function saveSession(): Promise<void> {
   // Clear only what this call committed; anything marked dirty while the write
   // was in flight stays queued for the next save. A failed write keeps
   // everything, so a quota error retries rather than silently losing the doc.
-  if (docsSaved) for (const id of pending) dirtyDocIds.delete(id);
+  if (docsSaved) {
+    // A committed write is a confirmed DocumentRecord — these docs' full
+    // texts are now safe for the evictor to drop. Loaded dynamically to keep
+    // textHydration out of the eager entry chunk (sessionSave boots eagerly).
+    const { markDocsPersisted } = await import('../store/textHydration');
+    const savedIds = new Set(docs.map((d) => d.node.id));
+    markDocsPersisted(markDocsClean(pending).filter((id) => savedIds.has(id)));
+  }
   await setSetting('lastCorpusHash', corpusHash);
 }

@@ -3,6 +3,7 @@ import { posixJoin } from '../util/posixPath';
 import { isIngestCandidate } from './fileRouter';
 import { hasUnignoreUnder, mergeGitIgnoreRules, pathIsGitIgnored, type GitIgnoreRule } from './gitignore';
 import type { NamedFile } from './localFiles';
+import type { ReadFailure } from './readFailures';
 
 interface DirectoryHandleLike {
   name: string;
@@ -25,12 +26,8 @@ async function readGitignore(
 ): Promise<string | null> {
   const hit = children.find(([name, entry]) => name === '.gitignore' && entry.kind === 'file');
   if (!hit) return null;
-  try {
-    const file = await (hit[1] as FileSystemFileHandle).getFile();
-    return await file.text();
-  } catch {
-    return null;
-  }
+  const file = await (hit[1] as FileSystemFileHandle).getFile();
+  return await file.text();
 }
 
 async function walk(
@@ -39,10 +36,18 @@ async function walk(
   relativeDir: string,
   ancestorRules: GitIgnoreRule[],
   output: PendingFile[],
+  onReadError: (failure: ReadFailure) => void,
 ): Promise<void> {
   const children: [string, FileSystemHandle][] = [];
-  for await (const child of directory.entries()) children.push(child);
-  const rules = mergeGitIgnoreRules(ancestorRules, await readGitignore(children), relativeDir);
+  let rules: GitIgnoreRule[];
+  try {
+    for await (const child of directory.entries()) children.push(child);
+    rules = mergeGitIgnoreRules(ancestorRules, await readGitignore(children), relativeDir);
+  } catch (error) {
+    // If ignore rules cannot be read, do not accidentally ingest excluded files.
+    onReadError({ path: relativeDir ? `${rootName}/${relativeDir}` : rootName, directory: true, error });
+    return;
+  }
 
   for (const [name, entry] of children) {
     if (name === '.gitignore') continue;
@@ -54,7 +59,7 @@ async function walk(
       // outright rather than enumerating a huge vendor tree.
       if (ignoredDirectory(name) && !hasUnignoreUnder(childPath, rules)) continue;
       if (pathIsGitIgnored(childPath, true, rules)) continue;
-      await walk(entry as FileSystemDirectoryHandle, rootName, childPath, rules, output);
+      await walk(entry as FileSystemDirectoryHandle, rootName, childPath, rules, output, onReadError);
       continue;
     }
     if (entry.kind !== 'file') continue;
@@ -68,8 +73,8 @@ async function walk(
   }
 }
 
-async function readFiles(pending: PendingFile[]): Promise<NamedFile[]> {
-  const output = new Array<NamedFile>(pending.length);
+async function readFiles(pending: PendingFile[], onReadError: (failure: ReadFailure) => void): Promise<NamedFile[]> {
+  const output = new Array<NamedFile | undefined>(pending.length);
   let cursor = 0;
   const worker = async (): Promise<void> => {
     for (;;) {
@@ -77,7 +82,11 @@ async function readFiles(pending: PendingFile[]): Promise<NamedFile[]> {
       cursor += 1;
       if (index >= pending.length) return;
       const entry = pending[index];
-      output[index] = { file: await entry.handle.getFile(), path: entry.path };
+      try {
+        output[index] = { file: await entry.handle.getFile(), path: entry.path };
+      } catch (error) {
+        onReadError({ path: entry.path, error });
+      }
     }
   };
   await Promise.all(
@@ -86,14 +95,17 @@ async function readFiles(pending: PendingFile[]): Promise<NamedFile[]> {
       () => worker(),
     ),
   );
-  return output;
+  return output.filter((entry): entry is NamedFile => entry !== undefined);
 }
 
 /** Recursively enumerate supported files with stable root-relative paths. */
-export async function scanFolder(handle: FileSystemDirectoryHandle): Promise<NamedFile[]> {
+export async function scanFolder(
+  handle: FileSystemDirectoryHandle,
+  onReadError: (failure: ReadFailure) => void = (failure) => { throw failure.error; },
+): Promise<NamedFile[]> {
   const pending: PendingFile[] = [];
-  await walk(handle, handle.name, '', [], pending);
-  const output = await readFiles(pending);
+  await walk(handle, handle.name, '', [], pending, onReadError);
+  const output = await readFiles(pending, onReadError);
   return output.sort((a, b) => (a.path ?? '').localeCompare(b.path ?? ''));
 }
 
@@ -133,7 +145,10 @@ function syntheticHandle(directory: SyntheticDirectory): FileSystemDirectoryHand
  * same NamedFile[] (filtered, sorted, `rootName/`-prefixed paths) a
  * showDirectoryPicker walk of the same folder would produce.
  */
-export async function scanPickedFolderFiles(files: File[]): Promise<NamedFile[]> {
+export async function scanPickedFolderFiles(
+  files: File[],
+  onReadError?: (failure: ReadFailure) => void,
+): Promise<NamedFile[]> {
   let rootName: string | null = null;
   const root: SyntheticDirectory = { name: '', directories: new Map(), files: new Map() };
   for (const file of files) {
@@ -157,5 +172,5 @@ export async function scanPickedFolderFiles(files: File[]): Promise<NamedFile[]>
   }
   if (rootName === null) return [];
   root.name = rootName;
-  return scanFolder(syntheticHandle(root));
+  return scanFolder(syntheticHandle(root), onReadError);
 }

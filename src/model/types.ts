@@ -8,6 +8,7 @@ import type { ClusterStat } from '../graph/clusterStats';
 import type { BridgeDoc, HubDoc } from '../graph/insights';
 
 export type FileType =
+  | 'audio'
   | 'md'
   | 'txt'
   | 'pdf'
@@ -21,13 +22,14 @@ export type FileType =
   | 'code'
   | 'other';
 export type NodeStatus = 'ok' | 'partial' | 'unreadable';
-export type EdgeKind = 'reference' | 'semantic' | 'keyword' | 'entity' | 'topic';
+export type EdgeKind = 'reference' | 'semantic' | 'keyword' | 'entity' | 'topic' | 'tempo' | 'key' | 'instrument' | 'sound' | 'title';
 
 export interface DocNode {
   id: string; // SHA-256 of path + content
   kind: 'document' | 'topic';
   title: string;
   fileType: FileType;
+  audio?: import('../audio/musicTypes').MusicAnalysis;
   path?: string;
   folderKey?: string; // layout hint only — never an edge
   summary?: string; // AI-enriched or first ~200 chars
@@ -57,6 +59,8 @@ export interface Edge {
   weight: number; // 0..1
   /** Mandatory: every edge must answer "why are these connected?" (spec §6) */
   evidence: string[];
+  /** A relationship explicitly named by the user. */
+  authored?: boolean;
 }
 
 /**
@@ -122,6 +126,8 @@ export type FileStage =
 export interface FileStatus {
   fileId: string;
   name: string;
+  /** Source-relative identity for folder files; absent for legacy/direct selections. */
+  path?: string;
   stage: FileStage;
   error?: string;
 }
@@ -166,7 +172,7 @@ export type PipelineTaskProgress =
       note: string;
     }
   | {
-      kind: 'ocr';
+      kind: 'ocr' | 'music-analysis';
       loaded: number; // pages completed
       total: number; // pages selected for OCR
       note: string;

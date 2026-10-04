@@ -1,3 +1,4 @@
+import { annotationVersion, validAnnotationVersion } from './annotationVersion';
 import type { DocNode, GraphExport, IngestReport } from '../model/types';
 import { useCorpusStore, type CorpusSummary } from '../store/corpusStore';
 import { getSetting, lookupGraphCache, setSetting } from './cache';
@@ -304,20 +305,51 @@ export async function updateCorpusViews(
  * changed, so a concurrent writer (second tab) can't have its keys clobbered
  * by our stale snapshot of the rest of the map.
  */
+export interface AnnotationWriteResult {
+  value: DocAnnotationRecord | null;
+  updatedAt: number;
+}
+
 export async function updateCorpusAnnotations(
   id: string,
   patch: Record<string, DocAnnotationRecord | null>,
-): Promise<void> {
+  versions: Record<string, number> = {},
+  remoteBases: Record<string, AnnotationWriteResult> = {},
+): Promise<Record<string, AnnotationWriteResult>> {
+  const results: Record<string, AnnotationWriteResult> = {};
   const record = await mutateCorpus(id, (current) => {
     const next = { ...(current.annotations ?? {}) };
+    const clocks = { ...(current.annotationVersions ?? {}) };
     for (const [key, value] of Object.entries(patch)) {
-      if (value === null) delete next[key];
-      else next[key] = value;
+      const valid = annotationVersion;
+      const durable = Math.max(valid(clocks[key]), valid(next[key]?.updatedAt));
+      const incoming = versions[key] ?? value?.updatedAt ?? Date.now();
+      const hasRemoteBase = Object.hasOwn(remoteBases, key);
+      const remoteMatches = hasRemoteBase && durable === remoteBases[key].updatedAt &&
+        JSON.stringify(next[key] ?? null) === JSON.stringify(remoteBases[key].value);
+      // Compare and write in ONE readwrite transaction: a hydration-time check
+      // cannot protect against a different tab committing before this write.
+      // Local/recovery ties retain the committed value. A LIVE Yjs change
+      // already has a CRDT winner and may conditionally replace its baseline;
+      // a retry must not overwrite a different winner saved in the meantime.
+      // Journals never retain this privilege, and older versions still lose.
+      // Shared deletions carry their original edit clock, just like values.
+      if (validAnnotationVersion(incoming) && (incoming > durable || (incoming === durable && remoteMatches))) {
+        if (value === null) delete next[key];
+        else next[key] = { ...value, updatedAt: incoming };
+        clocks[key] = incoming; // deletion tombstones must survive reload
+      }
+      // Repair only this touched legacy clock; retain its content if the patch lost.
+      if (next[key]) next[key] = { ...next[key], updatedAt: valid(next[key].updatedAt) };
+      clocks[key] = valid(clocks[key]);
+      results[key] = { value: next[key] ?? null, updatedAt: Math.max(valid(clocks[key]), valid(next[key]?.updatedAt)) };
     }
     current.annotations = next;
+    current.annotationVersions = clocks;
     current.updatedAt = Date.now();
   });
   await publish(undefined, record);
+  return results;
 }
 
 /**

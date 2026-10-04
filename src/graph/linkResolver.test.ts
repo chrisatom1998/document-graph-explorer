@@ -20,6 +20,33 @@ function doc(id: string, extra: Partial<DocNode> = {}): DocNode {
 }
 
 describe('buildLinkIndex + resolveLinkTarget', () => {
+  it('resolves sibling and parent paths using the document being read', () => {
+    const index = buildLinkIndex([
+      doc('one', { path: 'Vault/one/guide.md' }),
+      doc('two', { path: 'Vault/two/guide.md' }),
+    ]);
+    expect(resolveLinkTarget('./guide.md', index, 'Vault/one/start.md')).toBe('one');
+    expect(resolveLinkTarget('guide.md', index, 'Vault/two/start.md')).toBe('two');
+    expect(resolveLinkTarget('../two/guide.md', index, 'Vault/one/start.md')).toBe('two');
+    expect(resolveLinkTarget('/two/guide.md', index, 'Vault/one/start.md')).toBe('two');
+  });
+
+  it('does not fall back to a basename when an explicit path is missing', () => {
+    const index = buildLinkIndex([doc('one', { path: 'Vault/one/guide.md' })]);
+    expect(resolveLinkTarget('missing/guide.md', index)).toBeNull();
+    expect(resolveLinkTarget('./guide.md', index, 'Vault/two/start.md')).toBeNull();
+    expect(resolveLinkTarget('guide.md', index, 'Vault/two/start.md')).toBeNull();
+    const rootIndex = buildLinkIndex([doc('root', { path: 'guide.md' })]);
+    expect(resolveLinkTarget('guide.md', rootIndex, 'Vault/two/start.md')).toBeNull();
+  });
+
+  it('keeps wikilink names and vault paths independent of the reader directory', () => {
+    const index = buildLinkIndex([doc('one', { path: 'Vault/one/guide.md', title: 'Guide' })]);
+    expect(resolveLinkTarget('Guide', index, 'Vault/two/start.md', 'wikilink')).toBe('one');
+    expect(resolveLinkTarget('one/guide', index, 'Vault/two/start.md', 'wikilink')).toBe('one');
+    expect(resolveLinkTarget('./guide.md', index, 'Vault/two/start.md', 'wikilink')).toBeNull();
+  });
+
   it('resolves a link by normalized basename (with extension)', () => {
     const index = buildLinkIndex([
       doc('a', { path: 'notes/setup.md' }),

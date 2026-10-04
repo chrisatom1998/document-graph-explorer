@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "reviewedAt": "2026-10-03",
+  "permissionType": "University of Iowa publisher unrestricted-project-use permission; not a Creative Commons license",
+  "permissionExcerpt": "may be downloaded and used for any projects, without restrictions",
+  "permissionSource": "https://theremin.music.uiowa.edu/MIS.html",
+  "references": [
+    {
+      "referenceId": "iowa-flute-first8s",
+      "wavSha256": "1f141a7092ed3d9e9095cbc8e6430fc13902ec893f184fe1a61ca4e81632eb57",
+      "sourcePage": "https://theremin.music.uiowa.edu/MISflute.html",
+      "permissionPage": "https://theremin.music.uiowa.edu/MIS.html",
+      "description": "Flute, without vibrato, mezzo forte; first eight seconds of the documented C5\u2013B5 chromatic recording. Performer Sonja Feig, April 2000.",
+      "creator": "Lawrence Fritts / University of Iowa Electronic Music Studios",
+      "original": {
+        "path": "audio/iowa-flute-nonvib-mf-C5B5.aiff",
+        "url": "https://theremin.music.uiowa.edu/sound%20files/MIS/Woodwinds/flute/Flute.nonvib.mf.C5B5.aiff",
+        "sha256": "43d8d6c620fe9c508c30b568b023e54fc226960adcb8455467e511a22866066c",
+        "bytes": 2919180
+      },
+      "derived": {
+        "path": "audio/iowa-flute-first8s.wav",
+        "sha256": "1f141a7092ed3d9e9095cbc8e6430fc13902ec893f184fe1a61ca4e81632eb57",
+        "bytes": 705678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "durationSeconds": 8.0,
+        "conversion": "ffmpeg to signed 16-bit PCM WAV, preserve channels/rate; flute first 8 s, marimba full recording"
+      }
+    },
+    {
+      "referenceId": "iowa-marimba-C7",
+      "wavSha256": "2e6fcdce6b29b65547b332d9171acff18d05f20ee3b2c1aefaf3b798e6474355",
+      "sourcePage": "https://theremin.music.uiowa.edu/Mismarimba.html",
+      "permissionPage": "https://theremin.music.uiowa.edu/MIS.html",
+      "description": "Marimba, yarn mallets, mezzo forte, C7; complete recording. Performer Andrew Thierauf, March 20, 2013. Page lists 44.1 kHz but downloaded file is 96 kHz; observed file rate retained.",
+      "creator": "Lawrence Fritts / University of Iowa Electronic Music Studios",
+      "original": {
+        "path": "audio/iowa-marimba-yarn-mf-C7.aif",
+        "url": "https://theremin.music.uiowa.edu/sound%20files/MIS/Percussion/Marimba/Marimba.yarn.mf.C7.aif",
+        "sha256": "4daace3bd38616e0b8d434b074ee8c487885c4ee2e2c787134b3df8fa631bdc8",
+        "bytes": 1327748
+      },
+      "derived": {
+        "path": "audio/iowa-marimba-C7.wav",
+        "sha256": "2e6fcdce6b29b65547b332d9171acff18d05f20ee3b2c1aefaf3b798e6474355",
+        "bytes": 884838,
+        "sampleRate": 96000,
+        "channels": 2,
+        "durationSeconds": 2.304,
+        "conversion": "ffmpeg to signed 16-bit PCM WAV, preserve channels/rate; flute first 8 s, marimba full recording"
+      }
+    }
+  ]
+}

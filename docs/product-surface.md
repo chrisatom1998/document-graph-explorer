@@ -13,7 +13,7 @@ Parse → embed → cluster  (workers, local model)
         ↓
 Explore the 3D graph     (2D if the GPU asks)
         ↓
-Click to read  ·  ⌘K to search  ·  chat to ask
+Click to read  ·  compare two docs  ·  ⌘K to search  ·  chat to ask
 ```
 
 If a feature does not make that loop faster, clearer, or more trustworthy, it
@@ -28,7 +28,7 @@ scene interchange were non-goals.
 
 | Layer | What belongs here | Default chrome |
 |---|---|---|
-| **Core** | Ingest, graph, read, search, persist, type/cluster filters, local chat | Always on, or one obvious overlay |
+| **Core** | Ingest, graph, read, compare, search, persist, type/cluster filters, local chat | Always on, or one obvious overlay |
 | **Studio** | Path finding, insights, snapshots, saved views, topic hubs, cluster collapse, OCR, enrichment | One **Analyze** / **View** / **Settings** click |
 | **Interop** | JSON, PNG, share URL, OpenUSD | **Data** menu only |
 | **Packaging** | Air-gap build, desktop wrappers, `usd-agent`, PWA, retrieval eval | Scripts and docs — never first-class UI |

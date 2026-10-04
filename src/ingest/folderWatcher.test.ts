@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const repository = vi.hoisted(() => ({
   getCorpusRecord: vi.fn(),
   updateCorpusWatch: vi.fn().mockResolvedValue(undefined),
+  updateCorpusIngestReport: vi.fn().mockResolvedValue(undefined),
 }));
 const scanner = vi.hoisted(() => ({ scanFolder: vi.fn() }));
 const localFiles = vi.hoisted(() => ({ prepareIngestFiles: vi.fn() }));
@@ -20,6 +21,8 @@ vi.mock('../pipeline/documentId', () => ({
 import { bindFolderWatcherToActiveCorpus, suspendFolderWatcher } from './folderWatcher';
 import { enqueueRun } from '../pipeline/runQueue';
 import { useCorpusStore } from '../store/corpusStore';
+import { useGraphStore } from '../store/graphStore';
+import type { ReadFailure } from './readFailures';
 
 const CORPUS_ID = 'corpus-1';
 
@@ -47,6 +50,7 @@ function scannedFile(path: string) {
 }
 
 beforeEach(() => {
+  useGraphStore.getState().reset();
   useCorpusStore.setState({ activeCorpusId: CORPUS_ID, mode: 'local' });
   repository.getCorpusRecord.mockResolvedValue(watchRecordWithPendingChange());
   scanner.scanFolder.mockResolvedValue([scannedFile('notes.md')]);
@@ -203,5 +207,192 @@ describe('files deferred by the batch size cap', () => {
       [],
       [],
     );
+  });
+});
+
+describe('partial folder read failures', () => {
+  it.each(['deferred', 'failed'])('retains a directory report until its %s descendant is retried', async (kind) => {
+    const path = 'vault/blocked/foo.txt';
+    const previous = { size: 10, lastModified: 1, docId: `doc:${path}` };
+    repository.getCorpusRecord.mockResolvedValue({
+      ...watchRecordWithPendingChange(),
+      watch: { ...watchRecordWithPendingChange().watch, files: { [path]: previous } },
+    });
+    useGraphStore.setState({
+      ingestReport: { finishedAt: 1, entries: [
+        { name: 'vault/blocked', reason: 'could not read: Permission denied', kind: 'ignored' },
+      ] },
+    });
+    scanner.scanFolder.mockResolvedValue([scannedFile(path)]);
+    localFiles.prepareIngestFiles.mockResolvedValue({
+      files: [],
+      deferredPaths: new Set(kind === 'deferred' ? [path] : []),
+      failedPaths: new Set(kind === 'failed' ? [path] : []),
+    });
+    await bindFolderWatcherToActiveCorpus();
+    await suspendFolderWatcher();
+    expect(useGraphStore.getState().ingestReport?.entries[0].name).toBe('vault/blocked');
+    expect(repository.updateCorpusWatch).not.toHaveBeenCalled();
+
+    localFiles.prepareIngestFiles.mockResolvedValue({
+      files: [{ path, name: 'foo.txt', bytes: new ArrayBuffer(4) }],
+      deferredPaths: new Set<string>(), failedPaths: new Set<string>(),
+    });
+    coordinator.reconcileWatchedFiles.mockResolvedValue([`doc:${path}`]);
+    await bindFolderWatcherToActiveCorpus();
+    await suspendFolderWatcher();
+    expect(localFiles.prepareIngestFiles.mock.calls.at(-1)?.[0]).toEqual([scannedFile(path)]);
+    expect(coordinator.reconcileWatchedFiles).toHaveBeenCalledOnce();
+    expect(useGraphStore.getState().ingestReport).toBeNull();
+  });
+
+  it('clears and persists a recovered empty-directory report without an ingest run', async () => {
+    useGraphStore.setState({
+      ingestReport: { finishedAt: 1, entries: [
+        { name: 'vault/empty', reason: 'could not read: Permission denied', kind: 'ignored' },
+      ] },
+    });
+    scanner.scanFolder.mockResolvedValue([]);
+    localFiles.prepareIngestFiles.mockResolvedValue({
+      files: [], deferredPaths: new Set<string>(), failedPaths: new Set<string>(),
+    });
+    await bindFolderWatcherToActiveCorpus();
+    await vi.waitFor(() => expect(repository.updateCorpusIngestReport).toHaveBeenCalledWith(CORPUS_ID, null));
+    expect(useGraphStore.getState().ingestReport).toBeNull();
+    expect(coordinator.reconcileWatchedFiles).not.toHaveBeenCalled();
+  });
+
+  it.each(['file', 'directory'])('clears a recovered %s read failure despite unchanged metadata', async (kind) => {
+    const path = 'vault/blocked/foo.txt';
+    const failedPath = kind === 'directory' ? 'vault/blocked' : path;
+    const previous = { size: 10, lastModified: 1, docId: `doc:${path}` };
+    repository.getCorpusRecord.mockResolvedValue({
+      ...watchRecordWithPendingChange(),
+      watch: { ...watchRecordWithPendingChange().watch, files: { [path]: previous } },
+    });
+    scanner.scanFolder.mockImplementation(async (_handle: unknown, onError: (failure: ReadFailure) => void) => {
+      onError({ path: failedPath, directory: kind === 'directory', error: new Error('Permission denied') });
+      return [];
+    });
+    localFiles.prepareIngestFiles.mockResolvedValue({
+      files: [], deferredPaths: new Set<string>(), failedPaths: new Set<string>(),
+    });
+    useGraphStore.getState().addIgnored('another/foo.txt', 'could not read: Other source still denied');
+    await bindFolderWatcherToActiveCorpus();
+    await vi.waitFor(() => expect(useGraphStore.getState().ingestReport?.entries.some((entry) => entry.name === failedPath)).toBe(true));
+    await suspendFolderWatcher();
+
+    // A restored report alone must suffice; transient tray/status state is
+    // not available after reloading the app.
+    useGraphStore.setState({ ignoredFiles: [], fileStatuses: {} });
+    scanner.scanFolder.mockResolvedValue([scannedFile(path)]);
+    localFiles.prepareIngestFiles.mockResolvedValue({
+      files: [{ path, name: 'foo.txt', bytes: new ArrayBuffer(4) }],
+      deferredPaths: new Set<string>(), failedPaths: new Set<string>(),
+    });
+    coordinator.reconcileWatchedFiles.mockResolvedValue([`doc:${path}`]);
+    await bindFolderWatcherToActiveCorpus();
+    await vi.waitFor(() => expect(repository.updateCorpusIngestReport).toHaveBeenCalledTimes(2));
+
+    expect(localFiles.prepareIngestFiles.mock.calls.at(-1)?.[0]).toEqual([scannedFile(path)]);
+    expect(repository.updateCorpusWatch).not.toHaveBeenCalled();
+    expect(useGraphStore.getState().ingestReport?.entries).toEqual([
+      { name: 'another/foo.txt', reason: 'could not read: Other source still denied', kind: 'ignored' },
+    ]);
+    expect(repository.updateCorpusIngestReport.mock.calls.at(-1)?.[1]).toEqual(useGraphStore.getState().ingestReport);
+  });
+
+  it('persists a failure-only scan even when the same path previously succeeded', async () => {
+    const previous = { size: 10, lastModified: 1, docId: 'old-doc' };
+    repository.getCorpusRecord.mockResolvedValue({
+      ...watchRecordWithPendingChange(),
+      watch: { ...watchRecordWithPendingChange().watch, files: { 'vault/old.txt': previous } },
+    });
+    useGraphStore.getState().setFileStatus({
+      fileId: 'previous-success', name: 'old.txt', path: 'vault/old.txt', stage: 'cached',
+    });
+    scanner.scanFolder.mockImplementation(async (_handle: unknown, onError: (failure: ReadFailure) => void) => {
+      onError({ path: 'vault/old.txt', error: new Error('Permission denied') });
+      return [];
+    });
+    localFiles.prepareIngestFiles.mockResolvedValue({
+      files: [], deferredPaths: new Set<string>(), failedPaths: new Set<string>(),
+    });
+
+    await bindFolderWatcherToActiveCorpus();
+    await vi.waitFor(() => expect(repository.updateCorpusIngestReport).toHaveBeenCalled());
+
+    expect(coordinator.reconcileWatchedFiles).not.toHaveBeenCalled();
+    expect(repository.updateCorpusWatch).not.toHaveBeenCalled();
+    expect(repository.updateCorpusIngestReport).toHaveBeenLastCalledWith(CORPUS_ID, {
+      finishedAt: expect.any(Number),
+      entries: [{ name: 'vault/old.txt', reason: 'could not read: Permission denied', kind: 'ignored' }],
+    });
+    expect(useGraphStore.getState().ingestReport?.entries[0].name).toBe('vault/old.txt');
+  });
+
+  it.each(['file', 'directory', 'bytes'])('retains previous revisions on %s failure while processing other changes', async (kind) => {
+    const retainedPath = kind === 'directory' ? 'vault/blocked/old.txt' : 'vault/old.txt';
+    const previous = { size: 10, lastModified: 1, docId: 'old-doc' };
+    repository.getCorpusRecord.mockResolvedValue({
+      ...watchRecordWithPendingChange(),
+      watch: {
+        ...watchRecordWithPendingChange().watch,
+        files: {
+          [retainedPath]: previous,
+          'vault/deleted.txt': { size: 10, lastModified: 1, docId: 'deleted-doc' },
+        },
+      },
+    });
+    scanner.scanFolder.mockImplementation(async (_handle: unknown, onError: (failure: ReadFailure) => void) => {
+      if (kind !== 'bytes') onError({
+        path: kind === 'directory' ? 'vault/blocked' : retainedPath,
+        directory: kind === 'directory',
+        error: new Error('Temporarily unavailable'),
+      });
+      return [scannedFile('vault/new.txt'), ...(kind === 'bytes' ? [{ path: retainedPath, file: { size: 20, lastModified: 2 } as File }] : [])];
+    });
+    localFiles.prepareIngestFiles.mockImplementation(async (_files: unknown, options: { onReadError: (failure: ReadFailure) => void }) => {
+      if (kind === 'bytes') options.onReadError({ path: retainedPath, error: new Error('Temporarily unavailable') });
+      return {
+        files: [{ path: 'vault/new.txt', name: 'new.txt', bytes: new ArrayBuffer(4) }],
+        deferredPaths: new Set<string>(),
+        failedPaths: new Set(kind === 'bytes' ? [retainedPath] : []),
+      };
+    });
+    coordinator.reconcileWatchedFiles.mockResolvedValue(['doc:vault/new.txt']);
+
+    await bindFolderWatcherToActiveCorpus();
+    await vi.waitFor(() => expect(repository.updateCorpusWatch).toHaveBeenCalled());
+
+    expect(repository.updateCorpusWatch.mock.calls.at(-1)?.[1].files).toEqual({
+      [retainedPath]: previous,
+      'vault/new.txt': { size: 10, lastModified: 1, docId: 'doc:vault/new.txt' },
+    });
+    expect(coordinator.reconcileWatchedFiles.mock.calls.at(-1)?.[1]).toEqual(['deleted-doc']);
+
+    // Once access returns, the retained old mtime makes this file eligible
+    // for ingestion again rather than stranding the failed revision.
+    await suspendFolderWatcher();
+    repository.getCorpusRecord.mockResolvedValue({
+      id: CORPUS_ID, watch: repository.updateCorpusWatch.mock.calls.at(-1)?.[1],
+    });
+    scanner.scanFolder.mockResolvedValue([
+      scannedFile('vault/new.txt'),
+      { path: retainedPath, file: { size: 20, lastModified: 2 } as File },
+    ]);
+    localFiles.prepareIngestFiles.mockResolvedValue({
+      files: [{ path: retainedPath, name: 'old.txt', bytes: new ArrayBuffer(4) }],
+      deferredPaths: new Set<string>(), failedPaths: new Set<string>(),
+    });
+    coordinator.reconcileWatchedFiles.mockResolvedValue([`doc:${retainedPath}`]);
+    await bindFolderWatcherToActiveCorpus();
+    await vi.waitFor(() => expect(repository.updateCorpusWatch).toHaveBeenCalledTimes(2));
+    expect(localFiles.prepareIngestFiles.mock.calls.at(-1)?.[0]).toEqual([
+      { path: retainedPath, file: { size: 20, lastModified: 2 } },
+    ]);
+    expect(repository.updateCorpusWatch.mock.calls.at(-1)?.[1].files[retainedPath]).toEqual({
+      size: 20, lastModified: 2, docId: `doc:${retainedPath}`,
+    });
   });
 });

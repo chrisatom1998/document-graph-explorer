@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, session, shell } = require('electron');
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
@@ -73,6 +73,26 @@ function resolveDistPath() {
   return path.join(__dirname, '..', 'dist');
 }
 
+async function refreshCacheForVersion() {
+  const version = app.getVersion();
+  const marker = path.join(app.getPath('userData'), 'http-cache-version');
+  let previousVersion;
+  try {
+    previousVersion = fs.readFileSync(marker, 'utf8');
+  } catch {
+    // An absent/unreadable marker also migrates caches from older releases.
+  }
+  if (previousVersion === version) return;
+  // Old immutable responses never reach the server to see corrected headers.
+  // Clear only HTTP resources; IndexedDB and saved settings remain intact.
+  await session.defaultSession.clearCache();
+  try {
+    fs.writeFileSync(marker, version);
+  } catch (error) {
+    console.warn(`Unable to record HTTP cache version; next launch will retry: ${error.message}`);
+  }
+}
+
 /** Only http(s) links may be handed off to the OS's default browser. */
 function isAllowedExternalUrl(url) {
   try {
@@ -94,16 +114,11 @@ function startStaticServer() {
 
     const handleRequest = createRequestHandler(distPath, {
       spaFallback: true,
-      getResponseHeaders: (target, ext) => ({
-        // Public filenames are not content-hashed. In particular, caching the
-        // demo manifest as immutable made upgraded apps keep loading the old
-        // corpus definition for a year.
-        'Cache-Control':
-          ext === '.html' ||
-          ext === '.webmanifest' ||
-          target.endsWith(path.join('demo', 'manifest.json'))
-            ? 'no-cache'
-            : 'public, max-age=31536000, immutable',
+      getResponseHeaders: (target) => ({
+        // Only Vite's content-addressed assets remain valid across upgrades.
+        'Cache-Control': target.startsWith(path.join(distPath, 'assets') + path.sep)
+          ? 'public, max-age=31536000, immutable'
+          : 'no-cache',
       }),
     });
 
@@ -122,6 +137,7 @@ function startStaticServer() {
 }
 
 async function createWindow() {
+  await refreshCacheForVersion();
   const startUrl = await startStaticServer();
   const appOrigin = new URL(startUrl).origin;
   const mainWindow = new BrowserWindow({

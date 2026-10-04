@@ -66,6 +66,7 @@ interface QueuedJob {
   resolve: (response: PoolResponse) => void;
   reject: (error: Error) => void;
   timeoutMs: number;
+  priority?: 'high' | 'normal';
 }
 
 interface InFlightRequest {
@@ -175,7 +176,7 @@ export class WorkerPool {
   request<T extends PoolResponse>(
     msg: PoolRequest,
     transfer?: Transferable[],
-    options?: { signal?: AbortSignal },
+    options?: { signal?: AbortSignal; priority?: 'high' | 'normal' },
   ): Promise<T> {
     if (this.disposed) return Promise.reject(new Error('WorkerPool is disposed'));
     const signal = options?.signal;
@@ -183,6 +184,7 @@ export class WorkerPool {
     const requestId = this.nextRequestId;
     this.nextRequestId += 1;
     const payload = { ...msg, requestId } as PoolRequest;
+    const priority = options?.priority ?? (msg.type === 'embedQuery' ? 'high' : 'normal');
     return new Promise<T>((resolve, reject) => {
       const onAbort = signal ? () => this.abortRequest(requestId, abortReason(signal)) : null;
       // Detach the abort listener however the request settles — one long
@@ -195,7 +197,7 @@ export class WorkerPool {
           fn(arg);
         };
       if (signal && onAbort) signal.addEventListener('abort', onAbort);
-      this.queue.push({
+      const job: QueuedJob = {
         payload,
         transfer,
         // runtime correlation by requestId guarantees the response matches
@@ -203,7 +205,21 @@ export class WorkerPool {
         resolve: settled(resolve) as unknown as (response: PoolResponse) => void,
         reject: settled(reject),
         timeoutMs: this.requestTimeoutMs(msg),
-      });
+        priority,
+      };
+      if (priority === 'high') {
+        let insertIndex = -1;
+        for (let i = this.queue.length - 1; i >= 0; i -= 1) {
+          if (this.queue[i].priority === 'high') {
+            insertIndex = i;
+            break;
+          }
+        }
+        if (insertIndex >= 0) this.queue.splice(insertIndex + 1, 0, job);
+        else this.queue.unshift(job);
+      } else {
+        this.queue.push(job);
+      }
       this.pump();
     });
   }

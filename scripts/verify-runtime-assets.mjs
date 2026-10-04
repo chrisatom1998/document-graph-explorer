@@ -65,3 +65,11 @@ for (const fontName of requiredFontAssets) {
 console.log(
   `Verified ${wasmAssets.length} WebAssembly runtime asset(s), bundled embedding model, same-origin OCR runtime, and pdf.js standard fonts in ${outputDir}.`,
 );
+
+for (const asset of ['ffmpeg-core.js', 'ffmpeg-core.wasm', 'worker.js', 'const.js', 'errors.js']) {
+  if (!existsSync(join(outputDir, 'audio-runtime', asset))) {
+    throw new Error(`Missing local audio runtime: ${asset}`);
+  }
+}
+
+await import('./verify-music-assets.mjs');

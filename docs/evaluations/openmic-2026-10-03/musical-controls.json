@@ -1,0 +1,171 @@
+{
+  "kind": "synthetic controls, not representative DJ songs",
+  "browser": "154.0.8037.93",
+  "modelManifests": {
+    "music-model": {
+      "repository": "Xenova/ast-finetuned-audioset-10-10-0.4593",
+      "revision": "249a1fbf0286b40e7f1ed687a8ae396997bf7dc6",
+      "sha256": {
+        "config.json": "49d0dce922da23685787c73a874d9b1ffa97297f8cc4dc0a4e8bef219725e44d",
+        "preprocessor_config.json": "8d04ba5a9c6fca5d39d0de2b1fd05ecf79deb589fbba279728bbebac39934231",
+        "onnx/model_quantized.onnx": "807d244b58a30eaa89f0a721fb841619c696857aabe4eac93769bd0b61497f61"
+      }
+    },
+    "jamendo-model": {
+      "sources": {
+        "discogs-effnet-bsdynamic-1.onnx": "https://essentia.upf.edu/models/feature-extractors/discogs-effnet/discogs-effnet-bsdynamic-1.onnx",
+        "mtg_jamendo_instrument-discogs-effnet-1.onnx": "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.onnx",
+        "discogs-effnet-bsdynamic-1.json": "https://essentia.upf.edu/models/feature-extractors/discogs-effnet/discogs-effnet-bsdynamic-1.json",
+        "mtg_jamendo_instrument-discogs-effnet-1.json": "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.json"
+      },
+      "sha256": {
+        "discogs-effnet-bsdynamic-1.onnx": "a280825b334797cf677939db8cd5762c0392aedd0ca6415dbc1cd083f045e43c",
+        "mtg_jamendo_instrument-discogs-effnet-1.onnx": "9ae2d9e763d66bd8eed654d1ac3aa171e6539cb8a0e11f3dcd53df1428980802",
+        "discogs-effnet-bsdynamic-1.json": "a2e85b2e7372d5f8e0f35bdd6aeae1139f101087d183d0b2fb60b0ea0f01a0ff",
+        "mtg_jamendo_instrument-discogs-effnet-1.json": "7d02204c6451b5615e2968ec6364bbae3b915c886e608f05f00d3a38dc5177c4"
+      }
+    },
+    "sound-model": {
+      "repository": "Xenova/larger_clap_music_and_speech",
+      "revision": "e9fd5ac1dbf3280936a7fc3ec8a020453ff184db",
+      "license": "Apache-2.0",
+      "sha256": {
+        "config.json": "82a388031546d4dd20069ed73a39990baf033fa5f3b057386bc05ed09ece3322",
+        "preprocessor_config.json": "9739f58296aa6f9ac18008fd0150fb2649bc554985fbde86d0a4041c882ac753",
+        "onnx/audio_model_quantized.onnx": "021dd4fb962b4ed20cc3a6730b09e0ccf9f9c49931047032118a3b64828513a6",
+        "prompts.json": "60749591cdefb7d9cccb5c9b9524d71ab21f6e6f0f6a6f6ad6f94a400dca408c"
+      },
+      "profileVersion": 1,
+      "catalogVersion": 2
+    }
+  },
+  "rawSha256": "63c06bef7857095d26bd897c8eaee1e2048630eade3e4298daa484ce646aa726",
+  "rows": [
+    {
+      "id": "tempo-70",
+      "sha256": "012fdef6f84cb965fdb8e9caed4635285e7582017793e5773a775ce8e2d8fe31",
+      "truth": {
+        "bpm": 70,
+        "durationSeconds": 24,
+        "key": null
+      },
+      "tempo": {
+        "bpm": 70.1,
+        "confidence": 1
+      },
+      "key": null,
+      "analysisRevision": null,
+      "ms": 48185,
+      "tempoStrict4Percent": true,
+      "tempoHalfDouble4Percent": true
+    },
+    {
+      "id": "tempo-100",
+      "sha256": "ad6abb68071d03253b2f2cfcca475759d62ddc62aa829ad1e8daec23b8ebd055",
+      "truth": {
+        "bpm": 100,
+        "durationSeconds": 24,
+        "key": null
+      },
+      "tempo": {
+        "bpm": 100,
+        "confidence": 1
+      },
+      "key": {
+        "tonic": 0,
+        "mode": "major",
+        "strength": 0.601161539554596
+      },
+      "analysisRevision": null,
+      "ms": 49840,
+      "tempoStrict4Percent": true,
+      "tempoHalfDouble4Percent": true
+    },
+    {
+      "id": "tempo-128",
+      "sha256": "75f153d2cc237ff5e25dbe36cedbcb3c233ee679216547541310ffc4c40c80f8",
+      "truth": {
+        "bpm": 128,
+        "durationSeconds": 24,
+        "key": null
+      },
+      "tempo": {
+        "bpm": 128,
+        "confidence": 1
+      },
+      "key": null,
+      "analysisRevision": null,
+      "ms": 48750,
+      "tempoStrict4Percent": true,
+      "tempoHalfDouble4Percent": true
+    },
+    {
+      "id": "tempo-160",
+      "sha256": "a3f22ab1342a7eab4bb5e71280b8a6eee9f8ee5d2560c465a95acb21a79f0365",
+      "truth": {
+        "bpm": 160,
+        "durationSeconds": 24,
+        "key": null
+      },
+      "tempo": {
+        "bpm": 161.5,
+        "confidence": 1
+      },
+      "key": null,
+      "analysisRevision": null,
+      "ms": 40657,
+      "tempoStrict4Percent": true,
+      "tempoHalfDouble4Percent": true
+    },
+    {
+      "id": "key-c-major",
+      "sha256": "cd0dff93fbc98b96df006c04f6bf16c8f5adaab7b067d852916dd20358656942",
+      "truth": {
+        "bpm": null,
+        "key": {
+          "tonic": 0,
+          "mode": "major"
+        },
+        "durationSeconds": 24
+      },
+      "tempo": {
+        "bpm": 80,
+        "confidence": 1
+      },
+      "key": {
+        "tonic": 0,
+        "mode": "major",
+        "strength": 0.9626331925392151
+      },
+      "analysisRevision": null,
+      "ms": 36316,
+      "keyExact": true
+    },
+    {
+      "id": "key-a-minor",
+      "sha256": "30220c574aa2767eb38a4e954f71eef9d405b333c0a38d4fe7eda7079b72bab4",
+      "truth": {
+        "bpm": null,
+        "key": {
+          "tonic": 9,
+          "mode": "minor"
+        },
+        "durationSeconds": 24
+      },
+      "tempo": {
+        "bpm": 80,
+        "confidence": 1
+      },
+      "key": {
+        "tonic": 9,
+        "mode": "minor",
+        "strength": 0.8617976307868958
+      },
+      "analysisRevision": null,
+      "ms": 34532,
+      "keyExact": true
+    }
+  ],
+  "errors": [],
+  "remoteBlocked": []
+}

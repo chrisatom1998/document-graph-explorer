@@ -227,6 +227,7 @@ export default function CameraRig() {
         count,
         viewDir: [viewDir.x, viewDir.y, viewDir.z],
         fovDeg: fov,
+        aspect: (camera as THREE.PerspectiveCamera).aspect,
       });
       if (fit.radius === 0 && count === 0) return;
       desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
@@ -248,6 +249,7 @@ export default function CameraRig() {
       count,
       viewDir: [viewDir.x, viewDir.y, viewDir.z],
       fovDeg: fov,
+      aspect: (camera as THREE.PerspectiveCamera).aspect,
       slots,
     });
     desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
@@ -297,6 +299,7 @@ export default function CameraRig() {
         count: positionBuffer.count,
         viewDir: fitViewDir,
         fovDeg: fov,
+        aspect: (state.camera as THREE.PerspectiveCamera).aspect,
       });
       desiredTarget.set(fit.target[0], fit.target[1], fit.target[2]);
       desiredPos.set(fit.position[0], fit.position[1], fit.position[2]);

@@ -113,6 +113,15 @@ describe('SidePanel connections list', () => {
     expect(screen.queryByText(`Connections (${NEIGHBOURS})`)).not.toBeInTheDocument();
   });
 
+  it('offers Compare on document neighbors', () => {
+    render(<SidePanel />);
+    openConnections();
+    fireEvent.click(screen.getByTitle('Compare with Neighbour 0'));
+    expect(useUiStore.getState().compareLeftId).toBe('doc1');
+    expect(useUiStore.getState().compareRightId).toBe('n0');
+    expect(useUiStore.getState().selectedId).toBeNull();
+  });
+
   it('resets expansion when the selection changes', () => {
     render(<SidePanel />);
     openConnections();

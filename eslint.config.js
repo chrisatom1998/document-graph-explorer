@@ -28,6 +28,7 @@ export default tseslint.config(
       'node_modules',
       'public',
       'coverage',
+      'artifacts/music-evaluation/**', // Local benchmark captures and scratch harnesses.
       'release',
       'release-build',
       'copilot-worktrees',
@@ -36,6 +37,9 @@ export default tseslint.config(
       '.cursor',
       '.vercel',
       '.agents',
+      'playwright-report',
+      'test-results',
+      'artifacts',
     ],
   },
   js.configs.recommended,
@@ -67,18 +71,8 @@ export default tseslint.config(
   },
   {
     // Node context: tests, build config, and the .mjs build/verify scripts.
-    files: ['**/*.test.ts', '*.config.{ts,js}', 'vite.config.ts', '**/*.mjs'],
+    files: ['src/server/**/*.ts', 'src/dev/**/*.ts', '**/*.test.ts', '*.config.{ts,js}', 'vite.config.ts', '**/*.mjs'],
     languageOptions: { sourceType: 'module', globals: { ...globals.node } },
-  },
-  {
-    // Playwright capture scripts: Node at the top level, but their
-    // page.evaluate / addInitScript callbacks execute inside the browser
-    // page, so they legitimately reference document/localStorage too.
-    files: ['artifacts/social-demo/*.mjs'],
-    languageOptions: {
-      sourceType: 'module',
-      globals: { ...globals.node, ...globals.browser },
-    },
   },
   {
     // Electron main process + CommonJS Node scripts (the pkg-packaged exe

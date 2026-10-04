@@ -36,7 +36,7 @@ export function synthesizeTopicNodes(): void {
 
   const documents = store().nodes.filter((n) => n.kind === 'document');
   const groups = groupTopics(
-    documents.map((n) => ({ id: n.id, topics: n.topics })),
+    documents.map((n) => ({ id: n.id, topics: n.topics, title: n.title, topicsSource: n.topicsSource })),
     { minDocs: TOPIC_MIN_DOCS, maxDocFraction: TOPIC_MAX_DOC_FRACTION },
   );
 

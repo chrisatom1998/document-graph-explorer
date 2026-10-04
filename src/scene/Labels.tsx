@@ -7,70 +7,67 @@
  * Pool entries are mounted once and mutated imperatively (.text + .sync());
  * mounting/unmounting Text per frame would thrash troika's glyph atlas.
  *
- * BLOOM TENSION (documented per spec §9 "labels must stay readable"):
- * labels must NOT feed the bloom pass. Bloom in Effects.tsx uses
- * luminanceThreshold 0.32 and the label color below sits near that line —
- * #c9cfee has enough blue to pick up a faint halo, which reads as "glow",
- * not "smear". If labels ever bloom too hard: darken LABEL_COLOR first,
- * raise the Effects luminanceThreshold second (raising it too far kills the
- * halo glow on cool-hued clusters, which have low relative luminance).
+ * Labels retain a readable CSS-pixel size at both overview and close zoom.
+ * A screen-space collision pass protects focused titles first, then keeps
+ * only separated ordinary labels. Node picking is independent of this pool.
  */
 
 import { Suspense, useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
-import { Text } from '@react-three/drei';
-import { LABEL_BUDGET, MAX_NODES } from '../config';
+import { useFrame, useThree } from '@react-three/fiber';
+import Text from './SceneText';
+import { LABEL_BUDGET } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
-import { kindOfSlot } from './Nodes';
+import { idOfSlot, positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
+import { slotMeta } from './Nodes';
 import { FLAT_BG, FLAT_LABEL, FLAT_LABEL_MUTED, FLAT_SELECTION, VOID } from './palette';
 import { selectedDocumentTitle } from '../pipeline/codeLanguage';
 import {
   flatLabelBudget,
   flatLabelOpacity,
   flatLabelPriority,
-  flatLabelScale,
 } from './flatLabelPolicy';
+import { labelBounds, labelsOverlap, labelWorldScale, type LabelBounds } from './labelLayout';
 import { cameraPose } from './cameraPose';
 import { prefersReducedMotion } from '../util/motion';
 import { slotHasMaterialized, writeSlotTravelPosition } from './ingestBirth';
+import { computeEmphasis } from './emphasis';
+import { sceneLabelText, setSceneLabelOpacity, syncSceneLabel } from './systemLabel';
 
 const REFRESH_MS = 120;
 const TRUNCATE_AT = 34;
 const DEGRADED_BUDGET = 15; // qualityTier >= 3
-const LABEL_COLOR = '#c9cfee'; // see bloom-tension note above
+const LABEL_COLOR = '#d3dfed';
+const FONT_SIZE = 2.3;
+const LABEL_PIXELS = 13;
+const FOCUSED_LABEL_PIXELS = 15;
 // Bundled locally (public/fonts, OFL-1.1) — troika's default font is a CDN
 // fetch, which the privacy CSP blocks and offline use can't reach.
 const LABEL_FONT = '/fonts/Inter-Regular.woff';
-// 2D star chart: monospace labels beside the dot (anchored left, centered
-// vertically) instead of above it — same pool/eviction machinery.
-const FLAT_FONT = '/fonts/JetBrainsMono-Regular.ttf';
+// Flat labels sit beside their dot; both views share the interface typeface.
 const FLAT_GAP = 2.15; // world units between dot edge and label
-// Everything in 2D sits on the z=0 plane, so node spheres (radius up to 1.3
+// Everything in 2D sits on the z=0 plane, so node spheres (radius up to 3.5
 // toward the camera) would z-clip the glyph quads — lift labels off the plane
 // and skip the depth test so text always reads over dots and edges.
 const FLAT_LIFT = 2.5;
 // Scaled with the layout's shell radius (layout.worker.ts) — a wider nebula
 // means larger typical camera distances, so the fade band moves out with it.
 const NEAR_FULL = 75; // full opacity inside this camera distance...
-const FAR_FAINT = 320; // ...fading to 0.15 out here
+const FAR_FAINT = 320; // ...fading to a readable muted tone out here
 
 /** troika text mesh surface we mutate imperatively */
-interface TroikaLabel extends THREE.Mesh {
-  text: string;
-  fillOpacity: number;
-  sync: (onSync?: () => void) => void;
-}
+type TroikaLabel = import('./systemLabel').SceneLabel;
 
 // module-level temps — zero per-frame allocations
 const projScreen = new THREE.Matrix4();
 const frustum = new THREE.Frustum();
 const tmpVec = new THREE.Vector3();
+const viewPosition = new THREE.Vector3();
 const labelTravel = { x: 0, y: 0, z: 0 };
-const bestD2 = new Float64Array(LABEL_BUDGET);
-const bestSlot = new Int32Array(LABEL_BUDGET);
+const CANDIDATE_BUDGET = LABEL_BUDGET * 4;
+const bestD2 = new Float64Array(CANDIDATE_BUDGET);
+const bestSlot = new Int32Array(CANDIDATE_BUDGET);
 
 function truncate(title: string): string {
   return title.length > TRUNCATE_AT ? `${title.slice(0, TRUNCATE_AT - 1)}…` : title;
@@ -78,33 +75,38 @@ function truncate(title: string): string {
 
 function opacityFor(distance: number): number {
   return THREE.MathUtils.clamp(
-    1 - ((distance - NEAR_FULL) / (FAR_FAINT - NEAR_FULL)) * 0.85,
-    0.15,
+    1 - ((distance - NEAR_FULL) / (FAR_FAINT - NEAR_FULL)) * 0.3,
+    0.7,
     1,
   );
 }
 
-function labelProps(reserved: boolean, flat: boolean) {
+function labelProps(reserved: boolean, flat: boolean, maxWidth: number) {
   return {
-    font: flat ? FLAT_FONT : LABEL_FONT,
-    fontSize: flat ? 2.7 : 2.3,
+    font: LABEL_FONT,
+    fontSize: FONT_SIZE,
+    maxWidth: (maxWidth / (reserved ? FOCUSED_LABEL_PIXELS : LABEL_PIXELS)) * FONT_SIZE,
+    overflowWrap: 'break-word' as const,
+    lineHeight: 1.35,
     color: flat ? (reserved ? FLAT_LABEL : FLAT_LABEL_MUTED) : LABEL_COLOR,
-    outlineWidth: flat ? 0.18 : 0.06,
+    outlineWidth: 0.06,
     outlineColor: flat ? FLAT_BG : VOID,
-    outlineOpacity: flat ? 1 : 0.85,
+    outlineOpacity: 1,
     anchorX: (flat ? 'left' : 'center') as 'left' | 'center',
     anchorY: (flat ? 'middle' : 'bottom') as 'middle' | 'bottom',
     visible: false,
     renderOrder: reserved ? 11 : 10,
     'material-toneMapped': false,
     'material-depthWrite': false,
-    'material-depthTest': !flat, // see FLAT_LIFT note
+    'material-depthTest': !flat && !reserved,
   };
 }
 
 export default function Labels() {
   // 2D star chart restyle (font/color/anchoring) — re-render swaps the props
   const flat = useUiStore((s) => s.dims === 2);
+  const size = useThree((s) => s.size);
+  const maxLabelWidth = Math.max(120, Math.min(360, size.width - 48));
   const poolRefs = useRef<(TroikaLabel | null)[]>(Array(LABEL_BUDGET).fill(null));
   const hoverRef = useRef<TroikaLabel | null>(null);
   const selectedRef = useRef<TroikaLabel | null>(null);
@@ -118,7 +120,7 @@ export default function Labels() {
   const titlesDirty = useRef(true);
   const labelsDirty = useRef(true);
   const lastCount = useRef(-1);
-  const currentFlatScale = useRef(1.05);
+  const occupiedBounds = useRef<LabelBounds[]>([]);
   const accumulator = useRef(REFRESH_MS); // refresh on first frame
 
   useEffect(() => {
@@ -132,6 +134,8 @@ export default function Labels() {
       if (
         s.hoveredId !== prev.hoveredId ||
         s.selectedId !== prev.selectedId ||
+        s.searchResults !== prev.searchResults ||
+        s.filter !== prev.filter ||
         s.qualityTier !== prev.qualityTier ||
         s.topicNodesEnabled !== prev.topicNodesEnabled ||
         s.clusterCollapsed !== prev.clusterCollapsed
@@ -154,7 +158,7 @@ export default function Labels() {
     degreeOfSlot.current = [];
     for (const n of nodes) {
       const slot = slotOfId.get(n.id);
-      if (slot !== undefined && slot < MAX_NODES) {
+      if (slot !== undefined) {
         titleOfSlot.current[slot] = n.title;
         displayTitleOfSlot.current[slot] = selectedDocumentTitle(n);
         degreeOfSlot.current[slot] = n.degree;
@@ -163,11 +167,8 @@ export default function Labels() {
   };
 
   const applyText = (label: TroikaLabel, text: string, opacity: number): void => {
-    if (label.text !== text) {
-      label.text = text;
-      label.sync();
-    }
-    label.fillOpacity = opacity;
+    syncSceneLabel(label, text);
+    setSceneLabelOpacity(label, opacity);
     label.visible = true;
   };
 
@@ -177,8 +178,10 @@ export default function Labels() {
       refreshTitles();
       titlesDirty.current = false;
     }
-    const { hoveredId, selectedId, qualityTier, topicNodesEnabled, clusterCollapsed } =
+    const { hoveredId, selectedId, searchResults, filter, qualityTier, topicNodesEnabled, clusterCollapsed } =
       useUiStore.getState();
+    const { nodes, edges } = useGraphStore.getState();
+    const emphasis = computeEmphasis(nodes, edges, hoveredId, selectedId, searchResults, filter);
 
     // In cluster-collapse mode individual labels are hidden (super-node labels render in ClusterCollapse)
     if (clusterCollapsed) {
@@ -194,7 +197,7 @@ export default function Labels() {
       return;
     }
 
-    const count = Math.min(positionBuffer.count, MAX_NODES);
+    const count = positionBuffer.count;
     const titles = titleOfSlot.current;
     const cameraDistance = Math.hypot(
       camera.position.x - cameraPose.tx,
@@ -206,7 +209,7 @@ export default function Labels() {
       : qualityTier >= 3
         ? Math.min(DEGRADED_BUDGET, LABEL_BUDGET)
         : LABEL_BUDGET;
-    currentFlatScale.current = flatLabelScale(cameraDistance);
+    const candidateBudget = Math.min(CANDIDATE_BUDGET, budget * 4);
     const now = performance.now();
     const reducedMotion = prefersReducedMotion();
 
@@ -219,7 +222,7 @@ export default function Labels() {
     let filled = 0;
     for (let i = 0; i < count; i++) {
       if (i === hoverSlot.current || i === selectedSlot.current) continue; // reserved
-      if (kindOfSlot[i] === 1 && !topicNodesEnabled) continue; // hidden topic node
+      if (slotMeta.kind[i] === 1 && !topicNodesEnabled) continue; // hidden topic node
       if (!titles[i]) continue;
       if (!slotHasMaterialized(i, now)) continue; // pre-spawn: no label on an invisible node
       writeSlotTravelPosition(labelTravel, i, now, { reducedMotion, flat });
@@ -229,8 +232,8 @@ export default function Labels() {
       const priority = flat
         ? flatLabelPriority(d2, degreeOfSlot.current[i] ?? 0)
         : d2;
-      if (filled === budget && priority >= bestD2[filled - 1]) continue;
-      let j = Math.min(filled, budget - 1);
+      if (filled === candidateBudget && priority >= bestD2[filled - 1]) continue;
+      let j = Math.min(filled, candidateBudget - 1);
       while (j > 0 && bestD2[j - 1] > priority) {
         bestD2[j] = bestD2[j - 1];
         bestSlot[j] = bestSlot[j - 1];
@@ -238,23 +241,7 @@ export default function Labels() {
       }
       bestD2[j] = priority;
       bestSlot[j] = i;
-      if (filled < budget) filled++;
-    }
-
-    for (let j = 0; j < LABEL_BUDGET; j++) {
-      const label = poolRefs.current[j];
-      if (!label) continue;
-      if (j >= filled) {
-        assignedSlot.current[j] = -1;
-        label.visible = false;
-        continue;
-      }
-      const slot = bestSlot[j];
-      assignedSlot.current[j] = slot;
-      const opacity = flat
-        ? flatLabelOpacity(cameraDistance)
-        : opacityFor(Math.sqrt(bestD2[j]));
-      applyText(label, truncate(titles[slot]), opacity);
+      if (filled < candidateBudget) filled++;
     }
 
     // Reserved labels: always on, full opacity, FULL title (spec §7.1).
@@ -280,10 +267,58 @@ export default function Labels() {
         selected.visible = false;
       }
     }
+
+    const occupied = occupiedBounds.current;
+    occupied.length = 0;
+    const screenBounds = (label: TroikaLabel, text: string, reserved: boolean): LabelBounds => {
+      tmpVec.copy(label.position).project(camera);
+      return labelBounds(
+        (tmpVec.x + 1) * size.width / 2,
+        (1 - tmpVec.y) * size.height / 2,
+        text,
+        reserved ? FOCUSED_LABEL_PIXELS : LABEL_PIXELS,
+        flat,
+        maxLabelWidth,
+      );
+    };
+    // Protect the full focused titles before choosing ordinary nearby labels.
+    if (hover?.visible) {
+      place(hover, hoverSlot.current, camera, true);
+      occupied.push(screenBounds(hover, sceneLabelText(hover), true));
+    }
+    if (selected?.visible) {
+      place(selected, selectedSlot.current, camera, true);
+      occupied.push(screenBounds(selected, sceneLabelText(selected), true));
+    }
+    let shown = 0;
+    for (let j = 0; j < filled && shown < budget; j++) {
+      const label = poolRefs.current[shown];
+      if (!label) break;
+      const slot = bestSlot[j];
+      const title = truncate(titles[slot]);
+      place(label, slot, camera);
+      const bounds = screenBounds(label, title, false);
+      if (
+        bounds.left < 8 || bounds.right > size.width - 8 ||
+        bounds.top < 8 || bounds.bottom > size.height - 8 ||
+        occupied.some((other) => labelsOverlap(bounds, other))
+      ) continue;
+      occupied.push(bounds);
+      assignedSlot.current[shown] = slot;
+      const opacity = flat ? flatLabelOpacity(cameraDistance) : opacityFor(Math.sqrt(bestD2[j]));
+      const dimmed = emphasis !== null && !emphasis.has(idOfSlot[slot] ?? '');
+      applyText(label, title, opacity * (dimmed ? 0.28 : 1));
+      shown++;
+    }
+    for (let j = shown; j < LABEL_BUDGET; j++) {
+      assignedSlot.current[j] = -1;
+      const label = poolRefs.current[j];
+      if (label) label.visible = false;
+    }
   };
 
   /** Cheap per-frame pass: track node motion + billboard toward the camera. */
-  const place = (label: TroikaLabel, slot: number, camera: THREE.Camera): void => {
+  const place = (label: TroikaLabel, slot: number, camera: THREE.Camera, reserved = false): void => {
     writeSlotTravelPosition(labelTravel, slot, performance.now(), {
       reducedMotion: prefersReducedMotion(),
       flat,
@@ -295,20 +330,26 @@ export default function Labels() {
         labelTravel.y,
         labelTravel.z + FLAT_LIFT,
       );
-      label.scale.setScalar(currentFlatScale.current);
     } else {
       label.position.set(
         labelTravel.x,
         labelTravel.y + (scaleOfSlot[slot] || 1.1) + 1.6,
         labelTravel.z,
       );
-      label.scale.setScalar(1);
     }
+    viewPosition.copy(label.position).applyMatrix4(camera.matrixWorldInverse);
+    label.scale.setScalar(labelWorldScale(
+      FONT_SIZE,
+      reserved ? FOCUSED_LABEL_PIXELS : LABEL_PIXELS,
+      -viewPosition.z,
+      camera.projectionMatrix.elements[5],
+      size.height,
+    ));
     label.quaternion.copy(camera.quaternion);
   };
 
   useFrame((state, delta) => {
-    const count = Math.min(positionBuffer.count, MAX_NODES);
+    const count = positionBuffer.count;
     if (count !== lastCount.current) {
       lastCount.current = count;
       titlesDirty.current = true;
@@ -327,11 +368,11 @@ export default function Labels() {
     }
     const hover = hoverRef.current;
     if (hover?.visible && hoverSlot.current >= 0) {
-      place(hover, hoverSlot.current, state.camera);
+      place(hover, hoverSlot.current, state.camera, true);
     }
     const selected = selectedRef.current;
     if (selected?.visible && selectedSlot.current >= 0) {
-      place(selected, selectedSlot.current, state.camera);
+      place(selected, selectedSlot.current, state.camera, true);
     }
   });
 
@@ -344,7 +385,7 @@ export default function Labels() {
             ref={(t: TroikaLabel | null) => {
               poolRefs.current[i] = t;
             }}
-            {...labelProps(false, flat)}
+            {...labelProps(false, flat, maxLabelWidth)}
           >
             {''}
           </Text>
@@ -353,7 +394,7 @@ export default function Labels() {
           ref={(t: TroikaLabel | null) => {
             hoverRef.current = t;
           }}
-          {...labelProps(true, flat)}
+          {...labelProps(true, flat, maxLabelWidth)}
           color={flat ? FLAT_SELECTION : LABEL_COLOR}
         >
           {''}
@@ -362,7 +403,7 @@ export default function Labels() {
           ref={(t: TroikaLabel | null) => {
             selectedRef.current = t;
           }}
-          {...labelProps(true, flat)}
+          {...labelProps(true, flat, maxLabelWidth)}
         >
           {''}
         </Text>

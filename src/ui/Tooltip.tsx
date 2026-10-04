@@ -21,6 +21,7 @@ export default function Tooltip() {
   const hoveredId = useUiStore((s) => s.hoveredId);
   const selectedId = useUiStore((s) => s.selectedId);
   const pathMode = useUiStore((s) => s.pathMode);
+  const comparePick = useUiStore((s) => s.comparePick);
 
   const nodes = useGraphStore((s) => s.nodes);
   const nodeIndex = useGraphStore((s) => s.nodeIndex);
@@ -57,11 +58,15 @@ export default function Tooltip() {
 
   const topTopics = node.topics.slice(0, 3);
   // Surface the otherwise-invisible scene gestures (drag-to-pin, path picking).
-  const hint = pathMode
+  const hint = comparePick
     ? node.kind === 'topic'
-      ? 'topic hub — pick documents for a path'
-      : 'click to add to path'
-    : 'click to read · drag to pin · double-click to release';
+      ? 'topic hub — pick a document to compare'
+      : 'click to compare'
+    : pathMode
+      ? node.kind === 'topic'
+        ? 'topic hub — pick documents for a path'
+        : 'click to add to path'
+      : 'click to read · drag to pin · double-click to release';
 
   return (
     <div

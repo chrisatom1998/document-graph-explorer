@@ -1,0 +1,4 @@
+Persistence regression document
+
+Database maintenance includes query plans, replication monitoring, and tested recovery procedures.
+This local file verifies that adding a document preserves the workspace and its annotations after reload.

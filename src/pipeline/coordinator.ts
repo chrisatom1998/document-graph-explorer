@@ -1,7 +1,16 @@
+import { quickMusic } from '../audio/quickMusic';
+import { beginMusicJob, isCurrentMusicJob, finishMusicJob, updateMusicJob, cancelAllMusicJobs, cancelMusicJob, useMusicJobs } from '../store/musicJobs';
+import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from '../audio/djTags';
+import { buildTitleEdges } from '../graph/titleLinks';
+import { fusionPresentation } from '../audio/fusionPresentation';
+import { fusionConfiguration, installedFusionIdentity } from '../audio/fusionRelease';
+import { recognitionConfiguration } from '../audio/recognition';
+import { INSTRUMENT_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION } from '../audio/musicTypes';
+import { assertAudioContent } from '../audio/parseAudio';
 /**
  * THE ORCHESTRATOR (main thread). Drives the full ingest flow:
  *
- *   route → hash/dedupe → cache lookup → parse (worker pool / pdf.js)
+ *   route → hash/dedupe → cache lookup → parse (worker pool / pdf worker)
  *   → lexical aggregation (corpus-wide) → embeddings → semantic edges
  *   + Louvain clustering → ready.
  *
@@ -13,6 +22,10 @@
  * (or a removal) while a run is in flight queues behind it (promise chain).
  */
 
+import { refreshMusicEdges } from '../audio/musicLinks';
+import { INSTRUMENT_LABELS } from '../audio/instrumentLabels';
+import { sanitizeSoundReviews, type SoundReview } from '../audio/recognition';
+import { getOriginal } from '../persistence/originals';
 import {
   DUP_SIM_THRESHOLD,
   EMBED_DIMS,
@@ -79,6 +92,13 @@ import {
   mdLinkTargetsStore,
   textStore,
 } from '../store/runtimeStores';
+import {
+  evictDocTexts,
+  forgetPersistedDocs,
+  getDocTexts,
+  hasDocTextSync,
+  markDocsPersisted,
+} from '../store/textHydration';
 import { useChatStore } from '../store/chatStore';
 import { cancelChat } from '../chat/chatCancellation';
 import { useSettingsStore } from '../store/settingsStore';
@@ -102,6 +122,7 @@ import {
 } from '../scene/ingestBirth';
 import { addToSemanticIndex, edgesFromIndex, type SemanticIndex } from './similarity';
 import { synthesizeTopicNodes } from './topicNodes';
+import { selectFallbackTopics } from './topics';
 import { createGeneratedDemoDocuments } from '../demo/generatedDocuments';
 import { fetchDemoManifest } from '../demo/manifest';
 
@@ -297,6 +318,22 @@ const lexMeta = new Map<string, LexMeta>();
 /** docId -> ephemeral ingest fileId/name of the CURRENT run (status chips). */
 const fileIdOfDoc = new Map<string, string>();
 const nameOfDoc = new Map<string, string>();
+// Parsed documents and vectors can survive a cancelled/failed corpus pass.
+// Keep duplicate re-drops retryable until all derived connections are current.
+let derivedPassesIncomplete = false;
+
+/**
+ * A node id is derived from file content, so a reset followed by adding the
+ * same file creates the same id in a different corpus. Track the logical
+ * analysis owner separately from that id: cancellation callbacks can keep
+ * their completed-evidence ledger only while they still own this corpus/node.
+ */
+let corpusEpoch = 0;
+const audioAnalysisOwners = new Map<string, symbol>();
+
+function ownsAudioAnalysis(id: string, owner: symbol, epoch: number): boolean {
+  return corpusEpoch === epoch && audioAnalysisOwners.get(id) === owner;
+}
 
 let modelProgressWired = false;
 function wireModelProgress(): void {
@@ -414,6 +451,32 @@ async function runIngestBody(
   spawnOrigin: Vec3,
   initialDocumentCount: number,
 ): Promise<boolean> {
+  try {
+    return await runIngestBodyInner(files, signal, spawnOrigin, initialDocumentCount);
+  } catch (error) {
+    if (!signal?.aborted) {
+      settleMutationProgress();
+      useUiStore.getState().pushToast(
+        'Ingest failed — re-add the affected files to retry.',
+        'warning',
+      );
+    }
+    throw error;
+  } finally {
+    // Release the corpus-wide passes' transient full-text working set on
+    // EVERY exit — a cancelled or failed run has already paid runLexicalPass's
+    // full-corpus rehydration and would otherwise keep it resident (dirty and
+    // unconfirmed docs are always kept — see store/textHydration).
+    evictDocTexts();
+  }
+}
+
+async function runIngestBodyInner(
+  files: IngestFile[],
+  signal: AbortSignal | undefined,
+  spawnOrigin: Vec3,
+  initialDocumentCount: number,
+): Promise<boolean> {
   const store = useGraphStore.getState;
 
   // (a) route by extension; unsupported → ignored tray
@@ -421,21 +484,30 @@ async function runIngestBody(
   for (const file of files) {
     const artifact = repoArtifactReason(file.name);
     if (artifact) {
-      store().addIgnored(file.name, artifact);
+      store().addIgnored(file.path ?? file.name, artifact);
       continue;
     }
-    const fileType = routeFileWithSniff(file.name, file.bytes);
+    const fileType = file.fileType === 'audio' ? 'audio' : routeFileWithSniff(file.name, file.bytes);
     if (!fileType) {
-      store().addIgnored(file.name, 'unsupported type');
+      store().addIgnored(file.path ?? file.name, 'unsupported type');
       continue;
     }
-    store().setFileStatus({ fileId: file.fileId, name: file.name, stage: 'queued' });
+    if (fileType === 'audio') {
+      try { assertAudioContent(file.bytes); }
+      catch (error) {
+        store().addIgnored(file.path ?? file.name, (error as Error).message);
+        continue;
+      }
+    }
+    store().setFileStatus({ fileId: file.fileId, name: file.name, path: file.path, stage: 'queued' });
     routed.push({ file, fileType });
   }
 
   // (b) content ids; duplicates (within the drop or vs the store) → cached
   const seenIds = new Set<string>();
   const pending: PendingFile[] = [];
+  let retryIncomplete = false;
+  const audioOriginals = new Map<string, { blob: Blob; name: string }>();
   for (const { file, fileType } of routed) {
     // hashing a large drop takes real time — bail between files, not after
     throwIfAborted(signal);
@@ -447,16 +519,36 @@ async function runIngestBody(
     const original = file.reconstructable
       ? new Blob([])
       : new Blob([file.bytes], { type: mimeForFilename(file.name) });
+    if (fileType === 'audio') {
+      audioOriginals.set(id, { blob: original, name: file.name });
+      fileIdOfDoc.set(id, file.fileId);
+      nameOfDoc.set(id, file.name);
+    }
     if (seenIds.has(id) || store().nodeIndex[id] !== undefined) {
       // known doc — backfill the original if it predates original retention
       if (!file.reconstructable) void putOriginalIfMissing(id, file.name, original);
-      store().setFileStatus({ fileId: file.fileId, name: file.name, stage: 'cached' });
+      const existing = store().nodes[store().nodeIndex[id]];
+      if (existing && derivedPassesIncomplete) retryIncomplete = true;
+      if (
+        existing &&
+        existing.status !== 'unreadable' &&
+        !docVectorStore.has(id) &&
+        hasDocTextSync(id)
+      ) {
+        // Parsing commits before embedding. Re-adding after a failed or
+        // cancelled embed must resume indexing rather than stop at dedupe.
+        retryIncomplete = true;
+        fileIdOfDoc.set(id, file.fileId);
+        nameOfDoc.set(id, file.name);
+      }
+      store().setFileStatus({ fileId: file.fileId, name: file.name, path: file.path, stage: 'cached' });
       continue;
     }
     seenIds.add(id);
     pending.push({ file, fileType, id, relPath, original });
   }
-  if (pending.length === 0) return false; // nothing new — leave the corpus untouched
+  if (pending.length === 0 && !retryIncomplete && audioOriginals.size === 0) return false;
+  derivedPassesIncomplete = true;
 
   // (c) IndexedDB cache lookup (persistence subsystem)
   const lookups = await Promise.all(
@@ -476,10 +568,11 @@ async function runIngestBody(
     }
     const dropped = layoutAddNodes([{ id: p.id, cluster: cached.node.cluster, spawn: spawnOrigin }]);
     if (dropped.length > 0) {
-      store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
+      store().addIgnored(p.file.path ?? p.file.name, `node limit reached (${MAX_NODES} max)`);
       store().setFileStatus({
         fileId: p.file.fileId,
         name: p.file.name,
+        path: p.file.path,
         stage: 'error',
         error: `Node limit reached (${MAX_NODES} max)`,
       });
@@ -487,6 +580,7 @@ async function runIngestBody(
     }
     store().addNodes([cached.node]);
     textStore.set(p.id, cached.text);
+    markDocsPersisted([p.id]); // this record was just read FROM the DB
     chunkStore.set(p.id, {
       texts: cached.chunkTexts,
       vectors: cached.chunkVectors,
@@ -496,10 +590,11 @@ async function runIngestBody(
     mdLinkTargetsStore.set(p.id, cached.mdLinkTargets);
     docLinksStore.set(p.id, cached.docLinks);
     if (!p.file.reconstructable) void putOriginalIfMissing(p.id, p.file.name, p.original);
-    store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, stage: 'cached' });
+    store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, path: p.file.path, stage: 'cached' });
   }
 
-  // (d) parse misses — pdf on the main thread, everything else in the pool
+  // (d) parse misses — pdf via parsePdf (dedicated worker or its main-thread
+  // fallback), everything else in the pool
   const pool = getPool();
   if (misses.length > 0) {
     store().setPhase('parsing');
@@ -514,7 +609,7 @@ async function runIngestBody(
       pdfLinks: LinkRef[];
     }
     store().setFileStatuses(
-      misses.map((p) => ({ fileId: p.file.fileId, name: p.file.name, stage: 'parsing' as const })),
+      misses.map((p) => ({ fileId: p.file.fileId, name: p.file.name, path: p.file.path, stage: 'parsing' as const })),
     );
     const parseTasks = misses.map(async (p): Promise<ParsedResult> => {
       throwIfAborted(signal);
@@ -578,10 +673,11 @@ async function runIngestBody(
     const commitParsed = ({ p, doc, pdfLinks }: ParsedResult): { node: DocNode } | null => {
       const dropped = layoutAddNodes([{ id: p.id, cluster: -1, spawn: spawnOrigin }]);
       if (dropped.length > 0) {
-        store().addIgnored(p.file.name, `node limit reached (${MAX_NODES} max)`);
+        store().addIgnored(p.file.path ?? p.file.name, `node limit reached (${MAX_NODES} max)`);
         store().setFileStatus({
           fileId: p.file.fileId,
           name: p.file.name,
+          path: p.file.path,
           stage: 'error',
           error: `Node limit reached (${MAX_NODES} max)`,
         });
@@ -639,6 +735,7 @@ async function runIngestBody(
         placed.push({
           fileId: result.p.file.fileId,
           name: result.p.file.name,
+          path: result.p.file.path,
           stage: 'placed',
         });
       }
@@ -694,6 +791,7 @@ async function runIngestBody(
       store().setFileStatus({
         fileId: p.file.fileId,
         name: p.file.name,
+        path: p.file.path,
         stage: 'error',
         error: message,
       });
@@ -705,13 +803,16 @@ async function runIngestBody(
     return false;
   }
 
+  await analyzeAudioNodes(signal, [], audioOriginals);
+
   // (e) lexical aggregation over the WHOLE corpus (idf + title mentions
   // are corpus-wide, so every drop rebuilds them)
-  const { lexEdges, boilerplate } = await runLexicalPass(pool, signal);
+  const { lexEdges, boilerplate, complete: lexicalComplete } = await runLexicalPass(pool, signal);
 
-  // (f) embeddings for docs that still need a vector
+  // (f) embeddings for docs that still need a vector. hasDocTextSync counts
+  // evicted-but-persisted text as readable (runLexicalPass just rehydrated it).
   const embedTargets = documentNodes().filter(
-    (n) => n.status !== 'unreadable' && !docVectorStore.has(n.id) && textStore.has(n.id),
+    (n) => n.fileType !== 'audio' && n.status !== 'unreadable' && !docVectorStore.has(n.id) && hasDocTextSync(n.id),
   );
   if (embedTargets.length > 0) {
     store().setPhase('embedding');
@@ -741,11 +842,16 @@ async function runIngestBody(
         docLinks: docLinksStore.get(node.id) ?? [],
       }));
     // fire-and-forget; quota failures degrade via the cache's one-time warning
-    void saveDocsToCache(flushDocs);
+    void saveDocsToCache(flushDocs).then((saved) => {
+      // Only a confirmed commit makes these texts safe to evict later.
+      if (saved) markDocsPersisted(flushDocs.map((d) => d.node.id));
+    });
   }
 
   // (g) semantic edges + Louvain clustering over the full edge set
   const insightsAreCurrent = await runSemanticPass(lexEdges, signal);
+
+  await clusterAudioGraph(signal);
 
   // (h) synthesize topic concept nodes (spec §5.4)
   synthesizeTopicNodes();
@@ -754,9 +860,11 @@ async function runIngestBody(
   store().setPhase('ready');
 
   // Persist the completed uploaded corpus immediately, so quitting right after
-  // ingest still restores these files on the next launch.
+  // ingest still restores these files on the next launch. (The wrapper's
+  // finally evicts the passes' text working set after this save confirms.)
   await saveSession();
-  return insightsAreCurrent && documentNodes().length > initialDocumentCount;
+  derivedPassesIncomplete = !lexicalComplete || !insightsAreCurrent;
+  return lexicalComplete && insightsAreCurrent && documentNodes().length > initialDocumentCount;
 }
 
 // ---------------------------------------------------------------------------
@@ -831,7 +939,12 @@ async function runEmbeddingPass(
     targets.flatMap((target): FileStatus[] => {
       const fileId = fileIdOfDoc.get(target.id);
       return fileId
-        ? [{ fileId, name: nameOfDoc.get(target.id) ?? target.title, stage: 'embedding' }]
+        ? [{
+            fileId,
+            name: nameOfDoc.get(target.id) ?? target.title,
+            path: store().nodes[store().nodeIndex[target.id]]?.path,
+            stage: 'embedding',
+          }]
         : [];
     }),
   );
@@ -862,6 +975,7 @@ async function runEmbeddingPass(
           placedStatuses.push({
             fileId,
             name: nameOfDoc.get(result.docId) ?? result.docId,
+            path: store().nodes[store().nodeIndex[result.docId]]?.path,
             stage: 'placed',
           });
         }
@@ -880,6 +994,7 @@ async function runEmbeddingPass(
           errorStatuses.push({
             fileId,
             name: nameOfDoc.get(t.id) ?? t.title,
+            path: store().nodes[store().nodeIndex[t.id]]?.path,
             stage: 'error',
             error: message,
           });
@@ -890,16 +1005,38 @@ async function runEmbeddingPass(
   }
 }
 
+/**
+ * Rehydrate every id and fail the pass if a readable document is still
+ * missing from textStore. getDocTexts throws on IndexedDB errors; this
+ * catches the leftover case where hasDocTextSync is true but the record
+ * was gone, so callers cannot treat a real document as ''.
+ */
+async function hydrateCorpusTexts(ids: readonly string[]): Promise<void> {
+  await getDocTexts(ids);
+  const missing = ids.filter((id) => hasDocTextSync(id) && !textStore.has(id));
+  if (missing.length > 0) {
+    throw new Error(
+      `Failed to rehydrate full text for ${missing.length} document${missing.length === 1 ? '' : 's'}.`,
+    );
+  }
+}
+
 /** Ingest step (e): lexical edges, keywords, boilerplate — whole corpus. */
 async function runLexicalPass(
   pool: WorkerPool,
   signal?: AbortSignal,
-): Promise<{ lexEdges: Edge[]; boilerplate: Set<string> }> {
+): Promise<{ lexEdges: Edge[]; boilerplate: Set<string>; complete: boolean }> {
   const store = useGraphStore.getState;
   throwIfAborted(signal);
   store().setPhase('linking');
-  await backfillLexMeta(pool);
-  const lexicalDocs: LexicalDocInput[] = documentNodes().map((n) => {
+  await backfillLexMeta(pool, signal);
+  const docNodes = documentNodes().filter((n) => n.fileType !== 'audio');
+  // Corpus-wide pass over every doc's full text — rehydrate evicted texts
+  // transiently (usually a no-op); the ingest/removal-end evictor releases
+  // this working set again.
+  await hydrateCorpusTexts(docNodes.map((n) => n.id));
+  throwIfAborted(signal);
+  const lexicalDocs: LexicalDocInput[] = docNodes.map((n) => {
     const meta = lexMeta.get(n.id);
     const text = textStore.get(n.id) ?? '';
     return {
@@ -919,6 +1056,7 @@ async function runLexicalPass(
 
   let lexEdges: Edge[];
   let boilerplate = new Set<string>();
+  let complete = false;
   try {
     const lexical = await aggRequest<LexicalDone>(
       {
@@ -937,7 +1075,8 @@ async function runLexicalPass(
       undefined,
       { signal },
     );
-    lexEdges = lexical.edges;
+    const liveIds = new Set(documentNodes().map((n) => n.id));
+    lexEdges = refreshMusicEdges(documentNodes(), [...lexical.edges, ...buildTitleEdges(documentNodes()), ...store().edges.filter((e) => e.authored && liveIds.has(e.source) && liveIds.has(e.target))]);
     boilerplate = new Set(lexical.boilerplateLines);
 
     const nodesById = new Map(documentNodes().map((n) => [n.id, n]));
@@ -953,7 +1092,7 @@ async function runLexicalPass(
       patches.set(
         docId,
         overwrite
-          ? { keywords, topics: keywords.slice(0, 5), topicsSource: 'tfidf' }
+          ? { keywords, topics: selectFallbackTopics(keywords, existing.title), topicsSource: 'tfidf' }
           : { keywords },
       );
     }
@@ -961,6 +1100,7 @@ async function runLexicalPass(
     store().setEdges(lexEdges);
     layoutSetLinks(toLinkInput(lexEdges));
     layoutReheat(0.8);
+    complete = true;
   } catch (err) {
     // cancellation must propagate, not degrade into a "linking failed" toast
     if (signal?.aborted) throw err;
@@ -970,7 +1110,7 @@ async function runLexicalPass(
       .getState()
       .pushToast('Keyword linking failed — connections may be incomplete.', 'warning');
   }
-  return { lexEdges, boilerplate };
+  return { lexEdges, boilerplate, complete };
 }
 
 // ---------------------------------------------------------------------------
@@ -1013,7 +1153,7 @@ async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<
   const store = useGraphStore.getState;
   throwIfAborted(signal);
   store().setPhase('connecting');
-  const embedded = documentNodes().filter((n) => docVectorStore.has(n.id));
+  const embedded = documentNodes().filter((n) => n.fileType !== 'audio' && docVectorStore.has(n.id));
   if (embedded.length === 0) {
     store().setSemanticNeighbors([]);
     return true;
@@ -1086,7 +1226,7 @@ async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<
       // comparatively cheap next to a full similarity rescan) to the
       // worker without repaying the O(n²) similarity cost above.
       const mergedForCluster = new Map<string, Edge>();
-      for (const edge of [...lexEdges, ...edges]) {
+      for (const edge of [...lexEdges, ...edges, ...store().edges.filter((e) => e.authored)]) {
         if (!mergedForCluster.has(edge.id)) mergedForCluster.set(edge.id, edge);
       }
       const clusterResp = await aggRequest<ClusterDone>(
@@ -1118,7 +1258,7 @@ async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<
       ),
     );
     const merged = new Map<string, Edge>();
-    for (const edge of [...lexEdges, ...edges]) {
+    for (const edge of [...lexEdges, ...edges, ...store().edges.filter((e) => e.authored)]) {
       if (!merged.has(edge.id)) merged.set(edge.id, edge);
     }
     const allEdges = [...merged.values()];
@@ -1169,10 +1309,24 @@ async function computeCorpusHash(): Promise<string> {
 // ---------------------------------------------------------------------------
 
 async function runRemove(ids: string[]): Promise<void> {
+  try {
+    await runRemoveInner(ids);
+  } catch (error) {
+    settleMutationProgress();
+    throw error;
+  } finally {
+    // Same contract as runIngestBody: the re-link pass rehydrates survivors'
+    // full texts, and a cancelled/failed removal must still release them.
+    evictDocTexts();
+  }
+}
+
+async function runRemoveInner(ids: string[]): Promise<void> {
   const store = useGraphStore.getState;
   const present = new Set(documentNodes().map((n) => n.id));
   const removing = [...new Set(ids)].filter((id) => present.has(id));
   if (removing.length === 0) return;
+  derivedPassesIncomplete = true;
   const gone = new Set(removing);
   const oldCorpusHash = store().corpusHash;
   // Removed ids invalidate the cached incremental similarity index outright
@@ -1196,6 +1350,12 @@ async function runRemove(ids: string[]): Promise<void> {
     // the dead ids into searchResults after the cleanup above.
     ui.setPathMode(false);
   }
+  if (
+    (ui.compareLeftId && gone.has(ui.compareLeftId)) ||
+    (ui.compareRightId && gone.has(ui.compareRightId))
+  ) {
+    ui.clearCompare();
+  }
 
   // In-memory removal: graph store, runtime stores, per-run bookkeeping.
   store().removeNodes(removing);
@@ -1212,6 +1372,7 @@ async function runRemove(ids: string[]): Promise<void> {
     fileIdOfDoc.delete(id);
     nameOfDoc.delete(id);
   }
+  forgetPersistedDocs(removing); // their cached records may be purged below
 
   const remaining = documentNodes();
   if (remaining.length === 0) {
@@ -1242,8 +1403,9 @@ async function runRemove(ids: string[]): Promise<void> {
   );
 
   // Corpus-wide re-link over the survivors.
-  const { lexEdges } = await runLexicalPass(getPool());
-  await runSemanticPass(lexEdges);
+  const { lexEdges, complete: lexicalComplete } = await runLexicalPass(getPool());
+  const insightsAreCurrent = await runSemanticPass(lexEdges);
+  await clusterAudioGraph();
   synthesizeTopicNodes();
 
   store().setPhase('ready');
@@ -1256,6 +1418,7 @@ async function runRemove(ids: string[]): Promise<void> {
   // sessionSave is deliberately coordinator-free, so persistence stays
   // acyclic while this mutation pipeline remains a lazy application chunk.
   await saveSession();
+  derivedPassesIncomplete = !lexicalComplete || !insightsAreCurrent;
   const purge = await unreferencedDocumentIds(removing).catch((error: unknown) => {
     reportPersistenceUnavailable(error);
     return [];
@@ -1274,25 +1437,31 @@ async function runRemove(ids: string[]): Promise<void> {
  * the main thread via 'analyze'. Their mdLinkTargets are already in
  * mdLinkTargetsStore (populated at hydration time), so they're untouched here.
  */
-async function backfillLexMeta(pool: WorkerPool): Promise<void> {
-  const missing = documentNodes().filter((n) => !lexMeta.has(n.id) && textStore.has(n.id));
+async function backfillLexMeta(pool: WorkerPool, signal?: AbortSignal): Promise<void> {
+  const missing = documentNodes().filter((n) => !lexMeta.has(n.id) && hasDocTextSync(n.id));
   if (missing.length === 0) return;
-  await Promise.allSettled(
+  await hydrateCorpusTexts(missing.map((n) => n.id)); // analyze needs the full body
+  throwIfAborted(signal);
+  const results = await Promise.allSettled(
     missing.map(async (n) => {
       const fileName = basename(n.path ?? n.title);
-      const done = await pool.request<ParseDone>({
-        requestId: 0,
-        type: 'analyze',
-        fileId: n.id,
-        name: fileName,
-        path: n.path,
-        fileType: n.fileType,
-        docId: n.id,
-        title: n.title,
-        text: textStore.get(n.id) ?? '',
-        status: n.status,
-        warning: n.warning,
-      });
+      const done = await pool.request<ParseDone>(
+        {
+          requestId: 0,
+          type: 'analyze',
+          fileId: n.id,
+          name: fileName,
+          path: n.path,
+          fileType: n.fileType,
+          docId: n.id,
+          title: n.title,
+          text: textStore.get(n.id) ?? '',
+          status: n.status,
+          warning: n.warning,
+        },
+        undefined,
+        { signal },
+      );
       lexMeta.set(n.id, {
         tf: done.doc.tf,
         phraseTf: done.doc.phraseTf,
@@ -1302,11 +1471,28 @@ async function backfillLexMeta(pool: WorkerPool): Promise<void> {
       });
     }),
   );
+  throwIfAborted(signal);
+  // Drain all jobs before failing so late completions cannot mutate metadata
+  // during the next queued run. Preserve successes for the next retry.
+  const failedIndex = results.findIndex((result) => result.status === 'rejected');
+  if (failedIndex >= 0) {
+    const failed = results[failedIndex] as PromiseRejectedResult;
+    const reason = failed.reason instanceof Error ? failed.reason.message : String(failed.reason);
+    const doc = missing[failedIndex];
+    throw new Error(`Lexical analysis failed for ${doc.path ?? doc.title}: ${reason}. Re-add the file to retry.`);
+  }
 }
 
 // ---------------------------------------------------------------------------
 // public API
 // ---------------------------------------------------------------------------
+
+/** A failed mutation must release controls before the next queued run starts. */
+function settleMutationProgress(): void {
+  const store = useGraphStore.getState();
+  store.setModelProgress(null);
+  store.setPhase(documentNodes().length > 0 ? 'ready' : 'idle');
+}
 
 /**
  * Settle the UI after a cancelled ingest run: whatever chips/progress the run
@@ -1455,13 +1641,17 @@ export function reconcileWatchedFiles(
  */
 async function runEmbeddingRebuild(): Promise<void> {
   wireModelProgress();
-  const docs = documentNodes().filter((n) => n.status !== 'unreadable' && textStore.has(n.id));
+  const docs = documentNodes().filter((n) => n.fileType !== 'audio' && n.status !== 'unreadable' && hasDocTextSync(n.id));
   if (docs.length === 0) return;
+  // Corpus-wide pass: rehydrate evicted full texts up front (the chunking
+  // loop below reads textStore synchronously), released again in `finally`.
+  await hydrateCorpusTexts(docs.map((n) => n.id));
 
   const pool = getPool();
   const graph = useGraphStore.getState;
   try {
-    const { lexEdges, boilerplate } = await runLexicalPass(pool);
+    derivedPassesIncomplete = true;
+    const { lexEdges, boilerplate, complete: lexicalComplete } = await runLexicalPass(pool);
     graph().setPhase('embedding');
 
     // Build replacement vectors off to the side. A single failed request
@@ -1528,16 +1718,21 @@ async function runEmbeddingRebuild(): Promise<void> {
     // take the incremental path and serve edges computed in the OLD vector
     // space. Drop the cache so the next pass rebuilds against the new one.
     resetSemanticIndex();
-    await runSemanticPass(lexEdges);
+    const insightsAreCurrent = await runSemanticPass(lexEdges);
+    await clusterAudioGraph();
     synthesizeTopicNodes();
     graph().setCorpusHash(await computeCorpusHash());
     graph().setPhase('ready');
     await saveSession();
+    derivedPassesIncomplete = !lexicalComplete || !insightsAreCurrent;
   } finally {
     graph().setModelProgress(null);
     // A failed worker/model request must not leave the application locked in
     // an in-progress phase. The previous index remains intact until commit.
     if (graph().phase !== 'ready') graph().setPhase('ready');
+    // Release the rebuild's transient full-text working set (still-dirty
+    // docs — e.g. after a failed save — are never evicted).
+    evictDocTexts();
   }
 }
 
@@ -1592,21 +1787,304 @@ export async function embedQuery(text: string): Promise<Float32Array> {
 
 /** Full teardown: layout, graph store, runtime stores, UI selections, chat. */
 export function resetCorpus(): void {
+  // Invalidate callbacks before aborting them. A cancelled analyzer may still
+  // publish its final partial synchronously as it observes the abort.
+  corpusEpoch += 1;
+  audioAnalysisOwners.clear();
+  cancelAllMusicJobs();
   layoutReset();
   useGraphStore.getState().reset();
   clearRuntimeStores();
   lexMeta.clear();
   fileIdOfDoc.clear();
   nameOfDoc.clear();
+  derivedPassesIncomplete = false;
   resetSemanticIndex();
   const ui = useUiStore.getState();
   ui.setSelected(null);
   ui.setHovered(null);
   ui.setSearchResults(null);
   ui.setPathMode(false); // also clears pathEndpoints — they reference the old corpus
+  ui.clearCompare();
   // Chat answers cite the outgoing corpus — stale context for the next one.
   // Cancel any in-flight stream FIRST: it would otherwise keep running
   // against the wiped stores with isStreaming stuck true for up to 120s.
   cancelChat();
   useChatStore.getState().clearMessages();
+}
+
+/** Run inside the existing mutation queue; every estimate belongs to this corpus snapshot. */
+async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], originals?: Map<string, { blob: Blob; name: string }>): Promise<void> {
+  const mode = useSettingsStore.getState().musicAnalysisMode;
+  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (!n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION || (n.audio.recognition && n.audio.recognition.configurationHash !== recognitionConfiguration(n.audio.recognition.mode)) || (installedFusionIdentity() && (n.audio.classifierConfiguration !== fusionConfiguration() || (n.audio.fusion && !fusionPresentation(n.audio.fusion,n.audio.durationSeconds,n.audio.recognition?.mode ?? mode)?.qualified))) || forceIds.includes(n.id)));
+  if (!nodes.length) return;
+  const { analyzeMusic } = await import('../audio/analyzeMusic');
+  const store = useGraphStore.getState;
+  let finished = 0;
+  let queuedScopeActive = true;
+  store().setPhase('parsing');
+  try {
+    const analyzeNode = async (node: typeof nodes[number], i: number) => {
+      const analysisEpoch = corpusEpoch;
+      const analysisOwner = Symbol(node.id);
+      audioAnalysisOwners.set(node.id, analysisOwner);
+      let backgroundOwnsOwner = false;
+      const cancellationPublications: Promise<void>[] = [];
+      const progress = (note: string) => store().setModelProgress({ kind: 'music-analysis', loaded: finished, total: nodes.length, note: `${node.title}: ${note} (${i + 1}/${nodes.length})` });
+      progress('Loading saved audio');
+      const fileId = fileIdOfDoc.get(node.id) ?? node.id;
+      const name = nameOfDoc.get(node.id) ?? node.title;
+      store().setFileStatus({ fileId, name, stage: 'parsing' });
+      try {
+        throwIfAborted(signal);
+        const load = async (onPreview: (preview: import('../audio/musicTypes').MusicAnalysis)=>void, jobSignal = signal, onProgress = progress, analysisMode = mode) => {
+          const original = originals?.get(node.id) ?? await getOriginal(node.id);
+          if (!original) throw new Error('Add the original audio file again to analyze it.');
+          // Older saved originals predate audio MIME routing. Repair the analysis
+          // input without rewriting the user's persisted original bytes.
+          const mime = mimeForFilename(original.name);
+          const blob = (!original.blob.type || original.blob.type === 'application/octet-stream') && mime.startsWith('audio/')
+            ? original.blob.slice(0, original.blob.size, mime) : original.blob;
+          return analyzeMusic(blob, original.name, {signal:jobSignal,mode:analysisMode,onProgress,onPreview,cacheKey:node.id,force:forceIds.includes(node.id),partialUpdates:'cancelled',onPartial: partial => {
+            if (partial.recognition?.status !== 'cancelled') return;
+            const publishCancelledPartial = () => {
+              if (!ownsAudioAnalysis(node.id, analysisOwner, analysisEpoch)) return false;
+              const current = store().nodes.find(n => n.id === node.id);
+              if (!current) return false;
+              store().patchNodes(new Map([[node.id, { audio: { ...partial, confirmedInstruments: current.audio?.confirmedInstruments, soundReviews: current.audio?.soundReviews, confirmedDjTags: current.audio?.confirmedDjTags, copilotProperties: current.audio?.copilotProperties } }]]));
+              markDocsDirty([node.id]);
+              const edges = refreshMusicEdges(documentNodes(), store().edges);
+              store().setEdges(edges); layoutSetLinks(toLinkInput(edges));
+              return true;
+            };
+            // A current queued ingest owns graph mutation synchronously. A
+            // background callback after Quick has settled must serialize behind
+            // any reset/replacement already in the mutation queue.
+            if (queuedScopeActive) publishCancelledPartial();
+            else cancellationPublications.push(enqueueRun(async () => { if(publishCancelledPartial())await saveSession(); })
+              .catch(error => console.error('Cancelled audio evidence update failed', error)));
+          }});
+        };
+        let audio: import('../audio/musicTypes').MusicAnalysis;
+        if(mode === 'fast') {
+          const controller=beginMusicJob(node.id);
+          const abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});
+          if(signal?.aborted)controller.abort();
+          // Removal or corpus reset invalidates a pending result before it can be published.
+          const unsubscribe=useGraphStore.subscribe(state=>{if(!state.nodes.some(n=>n.id===node.id))controller.abort();});
+          const quick=quickMusic(preview=>load(result=>{
+            preview(result);
+            const applyPreview=()=>{
+              const current=store().nodes.find(n=>n.id===node.id);
+              if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller)||(current.audio&&current.audio.stage!=='preview'))return;
+              store().patchNodes(new Map([[node.id,{audio:{...result,confirmedInstruments:current.audio?.confirmedInstruments,soundReviews:current.audio?.soundReviews,confirmedDjTags:current.audio?.confirmedDjTags,copilotProperties:current.audio?.copilotProperties},warning:undefined}]]));
+              markDocsDirty([node.id]);
+            };
+            // Show real estimates immediately, including previews that arrive after Quick ingest returns.
+            if(queuedScopeActive)applyPreview();
+            else void enqueueRun(async()=>{applyPreview();}).catch(error=>console.error('Audio preview update failed',error));
+          },controller.signal,note=>updateMusicJob(node.id,controller,note)),controller.signal);
+          const finishBackground = async () => {
+            // Quick can reject before the decoder/worker finishes unwinding.
+            // Keep its owner until the last cancellation ledger has published.
+            // This cleanup is detached from ingest: awaiting its queued writes
+            // inside the ingest queue would deadlock.
+            await Promise.all(cancellationPublications);
+            if(ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch))audioAnalysisOwners.delete(node.id);
+            unsubscribe();signal?.removeEventListener('abort',abort);finishMusicJob(node.id,controller);
+          };
+          try { audio=await quick.initial; throwIfAborted(signal); controller.signal.throwIfAborted(); if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch))throw new DOMException('Audio analysis was replaced.','AbortError'); }
+          catch(error){
+            backgroundOwnsOwner = true;
+            void quick.complete.then(finishBackground,finishBackground);
+            throw error;
+          }
+          backgroundOwnsOwner = true;
+          const publish = (result: import('../audio/musicTypes').MusicAnalysis)=>enqueueRun(async()=>{
+              const current=store().nodes.find(n=>n.id===node.id);
+              if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller))return;
+              store().patchNodes(new Map([[node.id,{audio:{...result,confirmedInstruments:current.audio?.confirmedInstruments,soundReviews:current.audio?.soundReviews,confirmedDjTags:current.audio?.confirmedDjTags,copilotProperties:current.audio?.copilotProperties},warning:undefined}]]));
+              markDocsDirty([node.id]);
+              const edges=refreshMusicEdges(documentNodes(), store().edges);
+              store().setEdges(edges);layoutSetLinks(toLinkInput(edges));layoutReheat(.5);
+              await saveSession();
+            });
+          // Even an immediate cached Quick result must hand off to a whole-track scan.
+          void quick.complete.then(async result=>{
+            await publish(result);
+            if(!isCurrentMusicJob(node.id,controller))return;
+            if(result.instrumentScan?.mode==='full' && result.instrumentScan.complete)return;
+            updateMusicJob(node.id,controller,'Quick analysis complete. Waiting for Full analysis');
+            const full=await load(()=>{},controller.signal,note=>updateMusicJob(node.id,controller,`Full analysis: ${note}`),'full');
+            await publish(full);
+          }).catch(error=>enqueueRun(async()=>{
+              if(!isCurrentMusicJob(node.id,controller)||!store().nodes.some(n=>n.id===node.id))return;
+              store().patchNodes(new Map([[node.id,{warning:error instanceof Error?error.message:'Background audio analysis failed. Reanalyze to retry.'}]]));markDocsDirty([node.id]);await saveSession();
+            })).catch(error=>console.error('Background audio update failed',error)).finally(finishBackground);
+        } else {
+          cancelMusicJob(node.id);
+          audio=await load(preview=>{
+            if(!queuedScopeActive||signal?.aborted||!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||(node.audio&&node.audio.stage!=='preview'))return;
+            store().patchNodes(new Map([[node.id,{audio:{...preview,confirmedInstruments:node.audio?.confirmedInstruments,soundReviews:node.audio?.soundReviews,confirmedDjTags:node.audio?.confirmedDjTags,copilotProperties:node.audio?.copilotProperties},warning:undefined}]]));markDocsDirty([node.id]);
+          });
+        }
+        throwIfAborted(signal);
+        if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch))return;
+        if(audio.stage === 'preview' && node.audio && node.audio.stage !== 'preview')audio={...node.audio};
+        audio.confirmedInstruments = node.audio?.confirmedInstruments;
+        audio.soundReviews = store().nodes.find(n => n.id === node.id)?.audio?.soundReviews;
+        audio.confirmedDjTags = node.audio?.confirmedDjTags;
+        audio.copilotProperties = node.audio?.copilotProperties;
+        store().patchNodes(new Map([[node.id, { audio, warning: undefined, topics: [], keywords: [], entities: [], wordCount: 0 }]]));
+        markDocsDirty([node.id]);
+        const incomplete = audio.stage !== 'preview' && audio.instrumentScan?.complete !== true;
+        store().setFileStatus({ fileId, name, stage: incomplete ? 'error' : 'placed',
+          ...(incomplete ? { error: 'Instrument analysis stopped early. Select the track and reanalyze to finish.' } : {}) });
+        // Publish connections as each track finishes, even in a long batch.
+        const edges = refreshMusicEdges(documentNodes(), store().edges);
+        store().setEdges(edges);
+        layoutSetLinks(toLinkInput(edges));
+        layoutReheat(0.5);
+      } catch (error) {
+        if (signal?.aborted) throw error;
+        if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch))return;
+        const message = error instanceof Error ? error.message : 'Music analysis failed.';
+        store().setFileStatus({ fileId, name, stage: 'error', error: message });
+        useUiStore.getState().pushToast(`${name}: ${message}`, 'warning');
+        store().patchNodes(new Map([[node.id, { warning: message }]]));
+        markDocsDirty([node.id]);
+      } finally {
+        if (!backgroundOwnsOwner && ownsAudioAnalysis(node.id, analysisOwner, analysisEpoch)) {
+          audioAnalysisOwners.delete(node.id);
+        }
+        finished++;
+      }
+    };
+    // Queue the whole folder so the audio scheduler can prioritize every short preview.
+    const settled = await Promise.allSettled(nodes.map(analyzeNode));
+    const failed = settled.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+    if(failed)throw failed.reason;
+  } finally { queuedScopeActive = false; store().setModelProgress(null); }
+}
+
+async function clusterAudioGraph(signal?: AbortSignal): Promise<void> {
+  const store = useGraphStore.getState;
+  const docs = documentNodes();
+  if (!docs.some(n => n.fileType === 'audio')) return;
+  const result = await aggRequest<ClusterDone>({ requestId: 0, type: 'cluster', ids: docs.map(n => n.id), edges: toLinkInput(store().edges) }, undefined, { signal });
+  store().patchNodes(new Map(Object.entries(result.clusters).map(([id, cluster])=>[id,{cluster}])));
+  store().setLocalClusterNames(computeLocalClusterNames(store().nodes));
+  layoutSetLinks(toLinkInput(store().edges)); layoutSetClusters(result.clusters); layoutReheat(0.5);
+}
+
+/** Save explicit corrections separately from model evidence and immediately refresh links. */
+export function setAudioInstruments(ids: string[], labels?: string[]): Promise<{ saved: boolean; count: number }> {
+  const confirmed = labels === undefined ? undefined : [...new Set(labels.filter(label => INSTRUMENT_LABELS.includes(label)))];
+  return enqueueRun(async () => {
+    const { saveAudioGraph } = await import('../audio/saveAudioGraph');
+    const { useCorpusStore } = await import('../store/corpusStore');
+    const state = useGraphStore.getState();
+    if (state.phase !== 'ready') throw new Error('Wait for file processing to finish, then try again.');
+    const targets = documentNodes().filter(node => ids.includes(node.id) && node.fileType === 'audio' && node.audio);
+    if (targets.length === 0) throw new Error('No analyzed audio tracks are available to correct.');
+    const patches=targets.map(node=>{
+      const audio=node.audio!;
+      const sourceLabels=[...new Set(audio.soundReviews?.filter(r=>r.dimension==='source').map(r=>r.labelId))];
+      const reconciliations:SoundReview[]=confirmed===undefined?[]:sourceLabels.map(labelId=>({labelId,dimension:'source',scope:'track',at:new Date().toISOString(),
+        evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmed.includes(labelId)?'confirmed':'rejected'}));
+      if((audio.soundReviews?.length??0)+reconciliations.length>500)throw new Error('Review history limit reached. Export this graph before adding more reviews.');
+      return [node.id,{audio:{...audio,confirmedInstruments:confirmed,...(confirmed!==undefined&&audio.confirmedDjTags?{confirmedDjTags:{...audio.confirmedDjTags,source:confirmed}}:{}),...(audio.soundReviews?{soundReviews:[...audio.soundReviews,...reconciliations]}:{})}}] as const;
+    });
+    state.patchNodes(new Map(patches));
+    markDocsDirty(targets.map(node => node.id));
+    const edges = refreshMusicEdges(documentNodes(), state.edges);
+    useGraphStore.getState().setEdges(edges);
+    layoutSetLinks(toLinkInput(edges));
+    layoutReheat(0.5);
+    const saved = useCorpusStore.getState().mode === 'local';
+    try {
+      await saveAudioGraph();
+    } catch {
+      throw new Error('Your correction is visible but could not be saved. Retry before closing.');
+    }
+    return { saved, count: targets.length };
+  });
+}
+
+/** Record a scoped human decision without replacing machine evidence or review history. */
+export function setAudioReview(id: string, labelId: string, dimension: SoundReview['dimension'], decision: SoundReview['decision']): Promise<void> {
+  return enqueueRun(async () => {
+    const state=useGraphStore.getState();
+    if(state.phase!=='ready')throw new Error('Wait for analysis to finish before reviewing.');
+    const node=documentNodes().find(n=>n.id===id && n.fileType==='audio');
+    if(!node?.audio?.recognition)throw new Error('No recognition evidence is available.');
+    const review:SoundReview={labelId,dimension,decision,scope:'track',at:new Date().toISOString(),evidenceRunId:node.audio.recognition.runId};
+    if(sanitizeSoundReviews([review]).length!==1)throw new Error('Unsupported review label.');
+    const history=node.audio.soundReviews??[];
+    if(history.length>=500)throw new Error('Review history limit reached. Export this graph before adding more reviews.');
+    const soundReviews=[...history,review];
+    const confirmedInstruments=node.audio.confirmedInstruments===undefined||review.dimension!=='source'?node.audio.confirmedInstruments
+      :node.audio.confirmedInstruments.filter(label=>{
+        const latest=soundReviews.filter(r=>r.dimension==='source'&&r.labelId===label).at(-1);
+        return !latest||latest.decision==='confirmed';
+      });
+    state.patchNodes(new Map([[id,{audio:{...node.audio,soundReviews,confirmedInstruments}}]]));
+    markDocsDirty([id]);
+    const edges=refreshMusicEdges(documentNodes(), state.edges);
+    useGraphStore.getState().setEdges(edges);layoutSetLinks(toLinkInput(edges));layoutReheat(.5);
+    const {saveAudioGraph}=await import('../audio/saveAudioGraph');
+    await saveAudioGraph();
+  });
+}
+
+/** Analyze older/restored tracks on demand and rebuild their relationships. */
+export function analyzeAudioCorpus(forceIds: string[] = [], signal?: AbortSignal): Promise<void> {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (signal?.aborted) abort();
+  signal?.addEventListener('abort', abort, { once: true });
+  registerIngestAbort(controller);
+  const analysisSignal = controller.signal;
+  return enqueueRun(async () => {
+    try {
+      await analyzeAudioNodes(analysisSignal, forceIds);
+      const { lexEdges } = await runLexicalPass(getPool(), analysisSignal);
+      await runSemanticPass(lexEdges, analysisSignal);
+      await clusterAudioGraph(analysisSignal);
+      synthesizeTopicNodes();
+    } finally {
+      useGraphStore.getState().setPhase(documentNodes().length ? 'ready' : 'idle');
+      await saveSession();
+    }
+  }, { signal: analysisSignal }).finally(() => {
+    signal?.removeEventListener('abort', abort);
+    clearIngestAbort(controller);
+  });
+}
+
+/** Reviewed DJ labels are independent of automatic estimates and survive reanalysis. */
+export function setAudioDjTags(id: string, labels?: ConfirmedDjTags): Promise<boolean> {
+  return enqueueRun(async () => {
+    const { saveAudioGraph } = await import('../audio/saveAudioGraph');
+    const { useCorpusStore } = await import('../store/corpusStore');
+    if (useGraphStore.getState().phase !== 'ready') throw new Error('Wait for file processing to finish.');
+    const node=documentNodes().find(n=>n.id===id && n.fileType==='audio' && n.audio);
+    if (!node) throw new Error('No analyzed audio track is available to correct.');
+    const audio=node.audio!;
+    const confirmedDjTags=labels===undefined?undefined:sanitizeConfirmedDjTags(labels);
+    if(labels!==undefined&&!confirmedDjTags)throw new Error('Invalid DJ corrections.');
+    const sourceLabels=[...new Set(audio.soundReviews?.filter(r=>r.dimension==='source').map(r=>r.labelId))];
+    const reconciliations:SoundReview[]=confirmedDjTags===undefined?[]:sourceLabels.map(labelId=>({labelId,dimension:'source',scope:'track',at:new Date().toISOString(),
+      evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmedDjTags.source.includes(labelId)?'confirmed':'rejected'}));
+    if((audio.soundReviews?.length??0)+reconciliations.length>500)throw new Error('Review history limit reached. Export this graph before adding more reviews.');
+    useGraphStore.getState().patchNodes(new Map([[id,{audio:{...audio,confirmedDjTags,
+      ...(confirmedDjTags?{confirmedInstruments:[...confirmedDjTags.source]}:{}),
+      ...(audio.soundReviews?{soundReviews:[...audio.soundReviews,...reconciliations]}:{})}}]]));
+    markDocsDirty([id]);
+    const state = useGraphStore.getState();
+    const edges = refreshMusicEdges(documentNodes(), state.edges);
+    state.setEdges(edges); layoutSetLinks(toLinkInput(edges)); layoutReheat(.5);
+    await saveAudioGraph();
+    return useCorpusStore.getState().mode === 'local';
+  });
 }

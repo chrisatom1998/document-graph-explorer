@@ -31,6 +31,7 @@ const xmlParser = new XMLParser({
   textNodeName: '#text',
   attributeNamePrefix: '@_',
   trimValues: false,
+  parseTagValue: false,
 });
 
 function parseXml(xml: string): XmlNode[] {
@@ -159,8 +160,8 @@ async function readCoreTitle(zip: JSZip): Promise<string> {
 }
 
 function resolveZipPath(baseDir: string, target: string): string {
-  if (/^[a-z]+:/i.test(target) || target.startsWith('/')) return target;
-  const stack = baseDir.split('/').filter(Boolean);
+  if (/^[a-z]+:/i.test(target)) return target;
+  const stack = target.startsWith('/') ? [] : baseDir.split('/').filter(Boolean);
   for (const part of target.split('/')) {
     if (!part || part === '.') continue;
     if (part === '..') stack.pop();
@@ -272,9 +273,17 @@ function pptxRunLinks(paragraph: XmlNode, rels: Map<string, string>): LinkRef[] 
 
 async function parsePptx(zip: JSZip, name: string): Promise<ParserResult> {
   const coreTitle = await readCoreTitle(zip);
-  const allSlidePaths = Object.keys(zip.files)
-    .filter((p) => /^ppt\/slides\/slide\d+\.xml$/i.test(p))
-    .sort(numericSort);
+  const presentation = await zipText(zip, 'ppt/presentation.xml');
+  const rels = await readRels(zip, 'ppt/_rels/presentation.xml.rels', 'ppt');
+  // Part filenames survive slide reordering; only the presentation list
+  // records the order the author sees in PowerPoint.
+  const allSlidePaths = presentation
+    ? elements(parseXml(presentation), new Set(['p:sldId']))
+        .map((slide) => rels.get(attrs(slide)['@_r:id']))
+        .filter((path): path is string => Boolean(path))
+    : Object.keys(zip.files)
+        .filter((p) => /^ppt\/slides\/slide\d+\.xml$/i.test(p))
+        .sort(numericSort);
   const slidePaths = allSlidePaths.slice(0, MAX_PPTX_SLIDES);
   const truncated = allSlidePaths.length > MAX_PPTX_SLIDES;
   if (slidePaths.length === 0) return emptyResult(name, 'No PowerPoint slides found');

@@ -25,7 +25,7 @@ export interface MarkdownRenderOptions {
   /** Chat bubbles: render headings as a bold paragraph, not a real <hN>. */
   flattenHeadings?: boolean;
   /** Resolve a link href / wikilink target to a doc id already in the graph. */
-  resolveInternalLink?: (target: string) => string | null;
+  resolveInternalLink?: (target: string, kind?: 'markdown' | 'wikilink') => string | null;
   /** Navigate to a resolved internal doc id (ignored when absent). */
   onNavigate?: (docId: string) => void;
   /** Recognize Obsidian-style [[wikilinks]] inside plain text. */
@@ -90,7 +90,7 @@ function renderTextWithWikilinks(value: string, key: string, opts: MarkdownRende
     if (idx > last) parts.push(value.slice(last, idx));
     const target = m[1].trim();
     const alias = m[2]?.trim();
-    const docId = opts.resolveInternalLink ? opts.resolveInternalLink(target) : null;
+    const docId = opts.resolveInternalLink ? opts.resolveInternalLink(target, 'wikilink') : null;
     parts.push(renderInternalLink(`${key}-wl-${i}`, alias || target, docId, opts));
     last = idx + m[0].length;
     i += 1;
@@ -176,7 +176,7 @@ export function renderMarkdownNode(node: RootContent, key: string, opts: Markdow
     case 'link': {
       const children = renderMarkdownChildren(node.children, key, opts);
       if (opts.resolveInternalLink) {
-        const docId = opts.resolveInternalLink(node.url);
+        const docId = opts.resolveInternalLink(node.url, 'markdown');
         if (docId) return renderInternalLink(key, children, docId, opts);
         if (SAFE_LINK_PROTOCOL.test(node.url)) {
           if (opts.inertExternalLinks) return renderInertLink(key, node.url, children);

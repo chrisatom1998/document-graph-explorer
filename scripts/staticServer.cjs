@@ -83,7 +83,14 @@ function defaultLog() {
  * - log(req, status): called once per handled request.
  */
 function createRequestHandler(root, options = {}) {
-  const { headers = {}, spaFallback = false, getResponseHeaders, log = defaultLog } = options;
+  const { spaFallback = false, getResponseHeaders, log = defaultLog } = options;
+  // Apply to pages and nested workers: ONNX shares WASM memory only on
+  // isolated hosts. Explicit host overrides can retain one-thread operation.
+  const headers = {
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+    ...options.headers,
+  };
   const rootAbs = path.resolve(root);
 
   return function handleRequest(req, res) {

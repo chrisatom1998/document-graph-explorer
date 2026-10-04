@@ -46,8 +46,9 @@ median of 3 runs:
 Read: convergence needs ~240 ticks regardless of size, so up to ~250 nodes
 the wall time is pure timer pacing. Per-tick force computation (n-body via
 octree, link, collide, shell, cluster) stays cheap enough that even at 2,000
-nodes — half the instanced-mesh capacity of 4,096 — the whole layout settles
-in under 6 s.
+nodes — half the initial instanced-mesh capacity of 4,096 — the whole layout
+settles in under 6 s. (Node capacity now grows on demand up to a 32,768 hard
+ceiling; pass larger sizes explicitly, e.g. `npm run bench:layout -- 4096 8192`.)
 
 ## Render frame rate
 

@@ -11,6 +11,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useCollabStore } from '../collab/store';
 import { DimsToggleButton } from './DimsToggleButton';
+import MusicAnalysisStatusButton from './MusicAnalysisStatusButton';
 import { openFilePicker } from '../ingest/DropZone';
 // Imported eagerly so the activation-gated picker opens synchronously with
 // the click; folderPicker demand-loads the heavy scanner itself.
@@ -75,7 +76,7 @@ function placeToolbar(el: HTMLElement, x: number, y: number): { x: number; y: nu
 
 type MenuKey = 'view' | 'analyze' | 'data' | 'add' | 'collab';
 
-export default function Toolbar() {
+export default function Toolbar(_props: { graphToolsTarget?: HTMLElement | null; onToggleLibrary?: () => void; libraryOpen?: boolean } = {}) {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const dims = useUiStore((s) => s.dims);
   const flatEdgeDetail = useUiStore((s) => s.flatEdgeDetail);
@@ -148,7 +149,9 @@ export default function Toolbar() {
       lastPos.current = placeToolbar(el, pos.x, pos.y);
     };
     window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(onResize):undefined;
+    if(rootRef.current)observer?.observe(rootRef.current);
+    return () => {window.removeEventListener('resize', onResize);observer?.disconnect();};
   }, []);
 
   // Close whichever popover is open on outside click or Escape. Scoped to a
@@ -300,6 +303,7 @@ export default function Toolbar() {
       </button>
 
       <DimsToggleButton />
+      <MusicAnalysisStatusButton />
 
       <div className="toolbar__menu-wrap" ref={viewMenuWrapRef}>
         <button

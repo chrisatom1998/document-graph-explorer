@@ -87,7 +87,9 @@ function saveGuidePos(pos: { x: number; y: number }): void {
 function placeGuide(el: HTMLElement, x: number, y: number): { x: number; y: number } {
   const { width, height } = el.getBoundingClientRect();
   const maxX = Math.max(GUIDE_MARGIN, window.innerWidth - width - GUIDE_MARGIN);
-  const maxY = Math.max(GUIDE_MARGIN, window.innerHeight - height - GUIDE_MARGIN);
+  // On phones the assistant and chat launchers occupy the bottom row.
+  const bottomInset = window.innerWidth <= 640 ? 100 : GUIDE_MARGIN;
+  const maxY = Math.max(GUIDE_MARGIN, window.innerHeight - height - bottomInset);
   const cx = Math.min(Math.max(x, GUIDE_MARGIN), maxX);
   const cy = Math.min(Math.max(y, GUIDE_MARGIN), maxY);
   el.style.left = `${cx}px`;
@@ -102,13 +104,14 @@ function defaultGuidePos(el: HTMLElement): { x: number; y: number } {
   const { width, height } = el.getBoundingClientRect();
   return {
     x: window.innerWidth - width - GUIDE_RIGHT_INSET,
-    y: window.innerHeight - height - GUIDE_MARGIN,
+    y: window.innerHeight - height - (window.innerWidth <= 640 ? 100 : GUIDE_MARGIN),
   };
 }
 
 export default function FirstRunGuide() {
   const ready = useGraphStore((state) => state.phase === 'ready' && state.nodes.length > 0);
   const selectedId = useUiStore((state) => state.selectedId);
+  const searchOpen = useUiStore((state) => state.searchOpen);
   const dims = useUiStore((state) => state.dims);
   const offlineMode = useSettingsStore((state) => state.offlineMode);
   const [dismissed, setDismissed] = useState(true);
@@ -141,7 +144,7 @@ export default function FirstRunGuide() {
   }, []);
 
   useEffect(() => {
-    if (!ready || dismissed || selectedId !== null) return;
+    if (!ready || dismissed || selectedId !== null || searchOpen) return;
     const update = () => {
       const target = document.querySelector<HTMLElement>(TOUR_STEPS[step].selector);
       if (!target) {
@@ -157,9 +160,9 @@ export default function FirstRunGuide() {
       window.cancelAnimationFrame(frame);
       window.removeEventListener('resize', update);
     };
-  }, [dismissed, ready, selectedId, step]);
+  }, [dismissed, ready, selectedId, searchOpen, step]);
 
-  const visible = ready && !dismissed && selectedId === null;
+  const visible = ready && !dismissed && selectedId === null && !searchOpen;
 
   // Place the panel imperatively once it is on screen: a saved drag position
   // when there is one, otherwise the measured bottom-right corner. Measuring
@@ -221,6 +224,12 @@ export default function FirstRunGuide() {
     if (!visible) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      // Open graph controls own Escape so their local handlers can restore focus.
+      if (e.target instanceof Element) {
+        const navigator = e.target.closest('.graph-navigator.is-expanded');
+        const filters = e.target.closest('.filter-bar-layer')?.querySelector('#graph-filter-panel');
+        if (navigator || filters) return;
+      }
       e.stopPropagation();
       close();
     };

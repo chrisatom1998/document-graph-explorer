@@ -1,16 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EMBED_DIMS, EMBEDDING_FINGERPRINT } from '../config';
 import { useGraphStore } from '../store/graphStore';
-import { chunkStore, docLinksStore, docVectorStore, mdLinkTargetsStore, textStore } from '../store/runtimeStores';
+import { useCorpusStore } from '../store/corpusStore';
+import {
+  chunkStore,
+  clearRuntimeStores,
+  dirtyDocIds,
+  docLinksStore,
+  docVectorStore,
+  markDocsDirty,
+  mdLinkTargetsStore,
+  textStore,
+} from '../store/runtimeStores';
 
 const cache = vi.hoisted(() => ({
   deleteDocsFromCache: vi.fn().mockResolvedValue(undefined),
   deleteGraphFromCache: vi.fn().mockResolvedValue(undefined),
   getSetting: vi.fn(),
+  isPersistenceHealthy: vi.fn(() => true),
   lookupGraphCache: vi.fn(),
   reportPersistenceUnavailable: vi.fn(),
   saveDocsToCache: vi.fn().mockResolvedValue(true),
   saveGraphToCache: vi.fn().mockResolvedValue(undefined),
+  saveSnapshot: vi.fn().mockResolvedValue(1),
   setSetting: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -78,7 +90,7 @@ vi.mock('../pipeline/runQueue', () => ({
 }));
 
 import type { GraphExport } from '../model/types';
-import { hydrateFromRecord, restoreSession } from './session';
+import { hydrateFromRecord, restoreSession, saveCurrentSnapshot } from './session';
 import { fetchDemoManifest } from '../demo/manifest';
 
 function makeNode(id: string, title = id): any {
@@ -101,16 +113,44 @@ function makeNode(id: string, title = id): any {
 describe('session persistence', () => {
   beforeEach(() => {
     useGraphStore.getState().reset();
-    textStore.clear();
-    chunkStore.clear();
-    docVectorStore.clear();
-    mdLinkTargetsStore.clear();
-    docLinksStore.clear();
+    useCorpusStore.getState().reset();
+    clearRuntimeStores(); // all runtime maps + dirty set + hydration bookkeeping
     dbState.docs.clear();
     dbState.embeddings.clear();
     vi.clearAllMocks();
   });
 
+  it('restores music estimates without rebuilding text embeddings for audio', async () => {
+    const node = { ...makeNode('track'), fileType: 'audio' as const,
+      audio: { version: 1 as const, durationSeconds: 30, analyzedSeconds: 30,
+        tempo: { bpm: 120, confidence: 0.9 }, instruments: [], notes: [] } };
+    dbState.docs.set(node.id, { node, text: 'track', chunkTexts: [], mdLinkTargets: [], docLinks: [] });
+    await hydrateFromRecord({ version: 1, createdAt: '', generator: 'knowledge-nebula', includeEmbeddings: false, nodes: [node], edges: [] }, {}, 'music');
+    expect(useGraphStore.getState().nodes[0].audio).toEqual(node.audio);
+    expect(docVectorStore.size).toBe(0);
+    expect(useGraphStore.getState().phase).toBe('ready');
+  });
+
+  it('rebuilds name-based musical links on restore without overwriting the sound analysis', async () => {
+    const nodes = ['one', 'two'].map(id => ({ ...makeNode(id), path: `Synths/${id}_Dm_140.wav`, fileType: 'audio' as const,
+      audio: { version: 2 as const, durationSeconds: 5, analyzedSeconds: 5, tempo: { bpm: 70, confidence: .75 }, instruments: [], notes: [] } }));
+    await hydrateFromRecord({ version: 1, createdAt: '', generator: 'knowledge-nebula', includeEmbeddings: false, nodes, edges: [] }, {}, 'music');
+    expect(useGraphStore.getState().edges.map(edge => edge.kind).sort()).toEqual(['instrument', 'key', 'tempo']);
+    expect(useGraphStore.getState().nodes[0].audio?.tempo?.bpm).toBe(70);
+  });
+
+  it('rebuilds reviewed sound links on reload and removes stale uncertain links', async () => {
+    const nodes=['one','two'].map(id=>({...makeNode(id),fileType:'audio' as const,audio:{version:2 as const,durationSeconds:8,analyzedSeconds:8,instruments:[],notes:[],confirmedDjTags:{source:[],production:[],character:['metallic']}}}));
+    const record={version:1 as const,createdAt:'',generator:'knowledge-nebula' as const,includeEmbeddings:false,nodes,edges:[]};
+    await hydrateFromRecord(record,{},'sound');
+    const edges=useGraphStore.getState().edges;
+    expect(edges.filter(e=>e.kind==='sound')).toHaveLength(1);
+    const reviewed=nodes.map((n,i)=>i?n:{...n,audio:{...n.audio,soundReviews:[{dimension:'character' as const,labelId:'metallic',decision:'uncertain' as const,scope:'track' as const,at:'2026-10-04T00:00:00Z',evidenceRunId:'r'}]}});
+    useGraphStore.getState().reset();
+    await hydrateFromRecord({...record,nodes:reviewed,edges},{},'sound');
+    expect(useGraphStore.getState().edges.filter(e=>e.kind==='sound')).toHaveLength(0);
+    expect(useGraphStore.getState().nodes[0].audio?.soundReviews?.[0].decision).toBe('uncertain');
+  });
   it('hydrates a saved graph back into the runtime stores and layout', async () => {
     const node = makeNode('doc-1', 'Doc One');
     const exportData: GraphExport = {
@@ -155,7 +195,7 @@ describe('session persistence', () => {
     expect(layout.layoutSetLinks).toHaveBeenCalledWith([]);
   });
 
-  it('purges demo-only sessions and clears the active corpus before returning to a fresh state', async () => {
+  it('restores a saved demo workspace instead of deleting it on startup', async () => {
     const node = makeNode('demo-1', 'demo-file.md');
     const exportData: GraphExport = {
       version: 1,
@@ -176,18 +216,88 @@ describe('session persistence', () => {
       exportData,
       positions: {},
     });
-    repo.unreferencedDocumentIds.mockResolvedValue([node.id]);
     vi.mocked(fetchDemoManifest).mockResolvedValue({
       ok: true,
       json: async () => ({ files: ['demo-file.md'] }),
     } as Response);
-
     const result = await restoreSession();
 
-    expect(result).toBe(false);
-    expect(repo.markActiveCorpusEmpty).toHaveBeenCalledTimes(1);
-    expect(repo.unreferencedDocumentIds).toHaveBeenCalledWith([node.id]);
-    expect(cache.deleteDocsFromCache).toHaveBeenCalledWith([node.id]);
-    expect(cache.deleteGraphFromCache).toHaveBeenCalledWith('persisted-hash');
+    expect(result).toBe(true);
+    expect(useGraphStore.getState().nodes).toEqual([node]);
+    expect(useGraphStore.getState().corpusHash).toBe('persisted-hash');
+    expect(repo.markActiveCorpusEmpty).not.toHaveBeenCalled();
+    expect(cache.deleteDocsFromCache).not.toHaveBeenCalled();
+    expect(cache.deleteGraphFromCache).not.toHaveBeenCalled();
+  });
+
+  it('saveCurrentSnapshot rewrites only dirty documents, never evicted clean ones', async () => {
+    const dirty = makeNode('doc-dirty');
+    const clean = makeNode('doc-clean');
+    useGraphStore.getState().addNodes([dirty, clean]);
+    useGraphStore.getState().setPhase('ready');
+    useGraphStore.getState().setCorpusHash('corpus-hash');
+    // doc-clean's full text has been evicted: rewriting its record from
+    // memory would clobber the persisted text with ''.
+    textStore.set('doc-dirty', 'fresh dirty body');
+    markDocsDirty(['doc-dirty']);
+
+    const id = await saveCurrentSnapshot('milestone');
+
+    expect(id).toBe(1);
+    const saved = cache.saveDocsToCache.mock.calls.at(-1)?.[0] ?? [];
+    expect(saved.map((d: { node: { id: string } }) => d.node.id)).toEqual(['doc-dirty']);
+    expect([...dirtyDocIds]).toEqual([]); // committed ids leave the dirty set
+  });
+
+  it('does not create a snapshot when required document persistence fails', async () => {
+    const node = makeNode('unsaved-doc');
+    useGraphStore.getState().addNodes([node]);
+    useGraphStore.getState().setPhase('ready');
+    markDocsDirty([node.id]);
+    textStore.set(node.id, 'only copy in memory');
+    cache.saveDocsToCache.mockResolvedValueOnce(false);
+
+    expect(await saveCurrentSnapshot('incomplete')).toBeUndefined();
+    expect(cache.saveSnapshot).not.toHaveBeenCalled();
+    expect(dirtyDocIds.has(node.id)).toBe(true);
+  });
+
+  it('does not clear a document edited again while snapshot persistence is in flight', async () => {
+    const node = makeNode('edited-doc');
+    useGraphStore.getState().addNodes([node]);
+    useGraphStore.getState().setPhase('ready');
+    markDocsDirty([node.id]);
+    let complete!: (saved: boolean) => void;
+    cache.saveDocsToCache.mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => { complete = resolve; }),
+    );
+    const saving = saveCurrentSnapshot('before edit');
+    textStore.set(node.id, 'new content');
+    markDocsDirty([node.id]);
+    complete(true);
+
+    expect(await saving).toBe(1);
+    expect(dirtyDocIds.has(node.id)).toBe(true);
+  });
+
+  it('keeps a snapshot owned by its original corpus when the workspace switches during saving', async () => {
+    const node = makeNode('corpus-A-doc');
+    useGraphStore.getState().addNodes([node]);
+    useGraphStore.getState().setPhase('ready');
+    useCorpusStore.setState({ activeCorpusId: 'corpus-A' });
+    markDocsDirty([node.id]);
+    let complete!: (saved: boolean) => void;
+    cache.saveDocsToCache.mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => { complete = resolve; }),
+    );
+    const saving = saveCurrentSnapshot('A snapshot');
+    useCorpusStore.setState({ activeCorpusId: 'corpus-B' });
+    complete(true);
+
+    expect(await saving).toBe(1);
+    expect(cache.saveSnapshot).toHaveBeenCalledWith(
+      'A snapshot', 'unnamed', expect.objectContaining({ nodes: [node] }),
+      expect.any(Object), [node.id], 'corpus-A',
+    );
   });
 });

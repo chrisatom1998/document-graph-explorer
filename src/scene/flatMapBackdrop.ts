@@ -21,7 +21,7 @@
 import * as THREE from 'three';
 import { FLAT_BG, FLAT_GRID_FADE } from './palette';
 
-/** 2D layout sits at z=0 and nodes reach ~1.75 world units of radius. */
+/** 2D layout sits at z=0 and nodes reach 3.5 world units of radius. */
 export const BACKDROP_Z = -40;
 /** Below every other scene object's default 0, so it draws first. */
 export const BACKDROP_RENDER_ORDER = -11;

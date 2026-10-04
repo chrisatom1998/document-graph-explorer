@@ -21,15 +21,19 @@ import { useGraphStore } from '../store/graphStore';
 import { useCorpusStore } from '../store/corpusStore';
 import {
   chunkStore,
+  captureDirtyDocs,
   docLinksStore,
   docVectorStore,
   mdLinkTargetsStore,
+  markDocsClean,
   textStore,
 } from '../store/runtimeStores';
+// store/textHydration is loaded dynamically below: session.ts sits in the
+// eager entry chunk (boot-time restore) and the hydration/LRU module belongs
+// to the lazy pipeline graph — a static import here would put it (and its
+// budgeted bytes) in the entry bundle.
 import { useUiStore } from '../store/uiStore';
 import {
-  deleteDocsFromCache,
-  deleteGraphFromCache,
   loadSnapshot,
   reportPersistenceUnavailable,
   saveDocsToCache,
@@ -42,14 +46,12 @@ import {
   activateCorpus,
   getCorpusRecord,
   initializeCorpusRepository,
-  markActiveCorpusEmpty,
-  unreferencedDocumentIds,
 } from './corpusRepository';
 import { toGraphExport } from './graphExport';
 import { collectPositions, saveGraphRecord, saveSession } from './sessionSave';
-import { sanitizeGraphExport } from './validateImport';
-import { deleteOriginals } from './originals';
-import { fetchDemoManifest } from '../demo/manifest';
+// validateImport is loaded dynamically at the one restore-time call below —
+// like textHydration, it belongs to the lazy import/share graph, and a static
+// import from this boot-path module would move it into the eager entry chunk.
 import { flushPendingChatSave } from './chatHistorySync';
 
 export { saveSession } from './sessionSave';
@@ -69,42 +71,6 @@ function handleLayoutSettled(): void {
       console.warn('[knowledge-nebula] position save failed', err),
     );
   }, POSITION_SAVE_DEBOUNCE_MS);
-}
-
-async function isDemoOnlySession(exportData: GraphExport): Promise<boolean> {
-  const docs = exportData.nodes.filter((n) => n.kind === 'document');
-  if (docs.length === 0) return false;
-
-  try {
-    const res = await fetchDemoManifest();
-    if (!res.ok) return false;
-    const manifest = (await res.json()) as { files?: unknown; generated?: { count?: unknown } };
-    if (!Array.isArray(manifest.files)) return false;
-
-    const demoFiles = new Set(
-      manifest.files.filter((name): name is string => typeof name === 'string'),
-    );
-    const generatedCount = manifest.generated?.count;
-    const validGeneratedCount =
-      typeof generatedCount === 'number' && Number.isInteger(generatedCount) && generatedCount > 0
-        ? generatedCount
-        : 0;
-    const { isGeneratedDemoFilename } = await import('../demo/generatedDocuments');
-    return docs.every((doc) => {
-      const path = doc.path ?? doc.title;
-      const name = path.replace(/\\/g, '/').split('/').pop() ?? path;
-      return (
-        doc.lastModified === undefined &&
-        (demoFiles.has(name) || isGeneratedDemoFilename(name, validGeneratedCount))
-      );
-    });
-  } catch {
-    // network hiccup / offline / malformed manifest JSON — treat the
-    // session as "not demo-only" rather than letting restoreSession's
-    // caller see an uncaught rejection over what's meant to be a cheap,
-    // best-effort check.
-    return false;
-  }
 }
 
 /**
@@ -176,9 +142,17 @@ export async function hydrateFromRecord(
     // sanitizeGraphExport throws on a structurally unusable record (wrong
     // version, malformed node/edge arrays, or no valid nodes at all) —
     // exactly the cases the old manual check here used to catch by hand.
-    exportData = sanitizeGraphExport(rawExportData);
+    const { sanitizeGraphExport } = await import('./validateImport');
+    exportData = sanitizeGraphExport(rawExportData, { trustedCache: true });
   } catch {
     return false; // malformed IndexedDB record — treat like "couldn't restore"
+  }
+
+  // Existing sessions also adopt explicit name tags without altering saved audio evidence.
+  if (exportData.nodes.some(node => node.fileType === 'audio')) {
+    const { refreshMusicEdges } = await import('../audio/musicLinks');
+    exportData.edges = refreshMusicEdges(exportData.nodes, exportData.edges);
+    exportData.edges = [...new Map(exportData.edges.map(edge => [edge.id, edge])).values()];
   }
 
   // --- bulk-read texts + vectors: one readonly tx, concurrent gets ---
@@ -195,6 +169,7 @@ export async function hydrateFromRecord(
   ]);
   let needsEmbeddingRebuild = false;
   const nodesById = new Map(exportData.nodes.map((node) => [node.id, node]));
+  const persistedIds: string[] = [];
 
   for (let i = 0; i < docIds.length; i++) {
     const id = docIds[i];
@@ -205,7 +180,7 @@ export async function hydrateFromRecord(
     const chunkVectorsValid =
       compatible && doc !== undefined && validChunkVectors(emb?.chunkVectors, doc.chunkTexts.length);
     const node = nodesById.get(id);
-    const canEmbed = doc !== undefined && node?.status !== 'unreadable' && doc.text.trim().length > 0;
+    const canEmbed = doc !== undefined && node?.fileType !== 'audio' && node?.status !== 'unreadable' && doc.text.trim().length > 0;
     if (canEmbed && (!docVectorValid || (doc.chunkTexts.length > 0 && !chunkVectorsValid))) {
       needsEmbeddingRebuild = true;
     }
@@ -218,9 +193,12 @@ export async function hydrateFromRecord(
       });
       mdLinkTargetsStore.set(id, doc.mdLinkTargets ?? []);
       docLinksStore.set(id, doc.docLinks ?? []);
+      persistedIds.push(id); // this record was just read FROM the DB
     }
     if (docVectorValid) docVectorStore.set(id, emb!.docVector);
   }
+  const { evictDocTexts, markDocsPersisted } = await import('../store/textHydration');
+  markDocsPersisted(persistedIds);
 
   // --- hydrate graph store ---
   const g = useGraphStore.getState();
@@ -252,6 +230,11 @@ export async function hydrateFromRecord(
     Object.fromEntries(exportData.nodes.map((n): [string, number] => [n.id, n.cluster])),
   );
   layoutReheat(0.03); // barely moves — restores the settled shape
+
+  // Restore eagerly populated every doc's full text (simplest, and search
+  // needs nothing extra); trim the resident set back to budget right away so
+  // a large corpus doesn't start the visit hundreds of MB over.
+  evictDocTexts();
 
   if (needsEmbeddingRebuild) {
     useUiStore.getState().pushToast('Search index updated — rebuilding local embeddings.', 'info');
@@ -289,19 +272,6 @@ export async function restoreSession(): Promise<boolean> {
         .pushToast("Your last session couldn't be found — starting fresh.", 'warning');
       return false;
     }
-    if (await isDemoOnlySession(cached.exportData)) {
-      const docIds = cached.exportData.nodes
-        .filter((n) => n.kind === 'document')
-        .map((n) => n.id);
-      await markActiveCorpusEmpty();
-      const purge = await unreferencedDocumentIds(docIds);
-      await Promise.all([
-        deleteDocsFromCache(purge),
-        deleteOriginals(purge),
-        deleteGraphFromCache(lastCorpusHash),
-      ]);
-      return false;
-    }
     const restored = await hydrateFromRecord(cached.exportData, cached.positions, lastCorpusHash);
     if (!restored) {
       useUiStore
@@ -330,15 +300,21 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
   if (s.phase !== 'ready' || s.nodes.length === 0) return undefined;
 
   const corpusHash = s.corpusHash ?? 'unnamed';
+  const corpusId = useCorpusStore.getState().activeCorpusId ?? undefined;
   const exportData = toGraphExport(false);
   const positions = collectPositions(s.nodes);
   const docHashes = s.nodes
     .filter((n) => n.kind === 'document')
     .map((n) => n.id);
 
-  // Ensure documents + embeddings are persisted before snapshotting
-  const docs = s.nodes
-    .filter((n) => n.kind === 'document')
+  // Ensure documents + embeddings are persisted before snapshotting. Dirty
+  // docs only: clean records already exist under the same content-hash keys,
+  // and rewriting them from memory would clobber persisted text with '' for
+  // any doc whose full text has been evicted (see store/textHydration).
+  const pending = captureDirtyDocs();
+  const docs = [...pending.keys()]
+    .map((id) => s.nodes[s.nodeIndex[id]])
+    .filter((node) => node?.kind === 'document')
     .map((node) => {
       const chunks = chunkStore.get(node.id);
       return {
@@ -351,7 +327,11 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
         docLinks: docLinksStore.get(node.id) ?? [],
       };
     });
-  await saveDocsToCache(docs);
+  const docsSaved = await saveDocsToCache(docs);
+  if (!docsSaved) return undefined;
+  const { markDocsPersisted } = await import('../store/textHydration');
+  const savedIds = new Set(docs.map((d) => d.node.id));
+  markDocsPersisted(markDocsClean(pending).filter((id) => savedIds.has(id)));
 
   return saveSnapshot(
     name,
@@ -359,7 +339,7 @@ export async function saveCurrentSnapshot(name: string): Promise<number | undefi
     exportData,
     positions,
     docHashes,
-    useCorpusStore.getState().activeCorpusId ?? undefined,
+    corpusId,
   );
 }
 

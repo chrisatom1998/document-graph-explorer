@@ -212,6 +212,21 @@ export default function ExportImportMenu({
         <button
           type="button"
           className="toolbar__menu-item"
+          title="Copy graph data locally when file downloads are unavailable"
+          disabled={!canExportGraph}
+          onClick={() => {
+            void copyText(JSON.stringify(toGraphExport(false)))
+              .then(() => useUiStore.getState().pushToast('Graph JSON copied. It includes local graph metadata and audio analysis.', 'info'))
+              .catch((error: unknown) => useUiStore.getState().pushToast(messageFromError(error), 'error'));
+            onClose?.();
+          }}
+        >
+          <IconJson />
+          <span>Copy graph JSON</span>
+        </button>
+        <button
+          type="button"
+          className="toolbar__menu-item"
           title="Export the graph as an OpenUSD stage (.usda) for usdview / NVIDIA Omniverse"
           disabled={!canExportGraph}
           onClick={() => {

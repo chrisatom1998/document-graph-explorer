@@ -11,6 +11,7 @@
  * PURE — no store or DOM access, unit-tested in validateImport.test.ts.
  */
 
+import { sanitizeMusicAnalysis } from '../audio/musicTypes';
 import { MAX_NODES } from '../config';
 import type {
   DocNode,
@@ -38,6 +39,7 @@ const MAX_SCANNED_ENTRIES = 100_000;
 // Must mirror the FileType union in model/types.ts, or exporting then
 // reimporting a graph downgrades known file types to 'other'.
 const FILE_TYPES: ReadonlySet<string> = new Set([
+  'audio',
   'md',
   'txt',
   'pdf',
@@ -53,6 +55,11 @@ const FILE_TYPES: ReadonlySet<string> = new Set([
 ]);
 const NODE_STATUSES: ReadonlySet<string> = new Set(['ok', 'partial', 'unreadable']);
 const EDGE_KINDS: ReadonlySet<string> = new Set([
+  'title',
+  'tempo',
+  'key',
+  'instrument',
+  'sound',
   'reference',
   'semantic',
   'keyword',
@@ -80,7 +87,7 @@ function asCount(v: unknown): number {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0;
 }
 
-function sanitizeNode(raw: unknown): DocNode | null {
+function sanitizeNode(raw: unknown, options: { trustedCache?: boolean }): DocNode | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const n = raw as Record<string, unknown>;
   const id = asString(n.id, MAX_ID_CHARS);
@@ -94,6 +101,7 @@ function sanitizeNode(raw: unknown): DocNode | null {
 
   const node: DocNode = {
     id,
+    ...(n.fileType === 'audio' && sanitizeMusicAnalysis(n.audio, options) ? { audio: sanitizeMusicAnalysis(n.audio, options) } : {}),
     kind: n.kind === 'topic' ? 'topic' : 'document',
     title: title || id.slice(0, 12),
     fileType:
@@ -116,6 +124,7 @@ function sanitizeNode(raw: unknown): DocNode | null {
   if (folderKey !== null) node.folderKey = folderKey;
   if (summary !== null) node.summary = summary;
   if (warning !== null) node.warning = warning;
+  if (n.topicsSource === 'tfidf' || n.topicsSource === 'gemini') node.topicsSource = n.topicsSource;
   if (
     typeof n.lastModified === 'number' &&
     Number.isFinite(n.lastModified) &&
@@ -148,6 +157,7 @@ function sanitizeEdge(raw: unknown, nodeIds: ReadonlySet<string>): Edge | null {
     kind,
     weight,
     evidence: asStringList(e.evidence),
+    ...(e.authored === true ? { authored: true } : {}),
   };
 }
 
@@ -156,7 +166,7 @@ function sanitizeEdge(raw: unknown, nodeIds: ReadonlySet<string>): Edge | null {
  * Throws a descriptive Error (message is shown to the user) when the file is
  * structurally unusable; individually malformed nodes/edges are dropped.
  */
-export function sanitizeGraphExport(data: unknown): GraphExport {
+export function sanitizeGraphExport(data: unknown, options: { trustedCache?: boolean } = {}): GraphExport {
   if (typeof data !== 'object' || data === null || Array.isArray(data)) {
     throw new Error('Import failed: file does not contain a JSON object.');
   }
@@ -178,7 +188,7 @@ export function sanitizeGraphExport(data: unknown): GraphExport {
   const nodes: DocNode[] = [];
   const nodeIds = new Set<string>();
   for (const raw of g.nodes) {
-    const node = sanitizeNode(raw);
+    const node = sanitizeNode(raw, options);
     if (!node || nodeIds.has(node.id)) continue;
     nodeIds.add(node.id);
     nodes.push(node);

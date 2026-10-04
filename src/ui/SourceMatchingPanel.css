@@ -1,0 +1,14 @@
+.source-matching-panel { display: grid; gap: .75rem; padding-top: .75rem; min-width: 0; }
+.source-matching-panel h3, .source-matching-panel h4, .source-matching-panel p { margin: 0; }
+.source-matching-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.source-matching-import form, .source-matching-query { display: grid; gap: .75rem; padding-top: .5rem; }
+.source-matching-panel label { display: grid; gap: .3rem; }
+.source-matching-panel input { max-width: 100%; min-width: 0; }
+.source-matching-clip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.source-matching-panel audio { width: 100%; max-width: 32rem; }
+.source-matching-panel li { overflow-wrap: anywhere; }
+.source-matching-library ul, .source-matching-result ol { display: grid; gap: .75rem; padding-left: 1.5rem; }
+.source-matching-library li { display: grid; gap: .3rem; }
+.source-matching-library button { justify-self: start; }
+.source-matching-result { display: grid; gap: .5rem; padding: .75rem; border: 1px solid var(--border, rgba(128, 128, 128, .35)); border-radius: .5rem; }
+@media (max-width: 520px) { .source-matching-clip { grid-template-columns: 1fr; } }

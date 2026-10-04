@@ -4,10 +4,11 @@ import type { CodeLanguage } from '../pipeline/codeLanguage';
 import { decodeText } from '../pipeline/parsers/txt';
 import { getOriginal } from '../persistence/originals';
 import { buildLinkIndex } from '../graph/linkResolver';
-import { textStore } from '../store/runtimeStores';
+import { useDocText } from './useDocText';
 import type { ReaderHighlight } from '../store/uiStore';
 import { MAX_RENDER_CHARS } from './readerUtils';
 import CsvPreview from './CsvPreview';
+import AudioPreview from './AudioPreview';
 import DocumentMarkdown from './DocumentMarkdown';
 import HtmlPreview from './HtmlPreview';
 import JsonPreview, { MAX_RENDER_CHARS as JSON_MAX_RENDER_CHARS } from './JsonPreview';
@@ -31,6 +32,7 @@ interface SidePanelReaderProps {
   readerHighlight: ReaderHighlight | null;
   readerLabel: string;
   codeLang: CodeLanguage | null;
+  onNavigate?: (id: string) => void;
 }
 
 export default function SidePanelReader({
@@ -39,8 +41,12 @@ export default function SidePanelReader({
   readerHighlight,
   readerLabel,
   codeLang,
+  onNavigate = focusNode,
 }: SidePanelReaderProps) {
-  const fullText = textStore.get(node.id);
+  // Warm cache answers synchronously; an evicted body hydrates async. The
+  // passageKey below includes the text length, so PassageTarget re-runs its
+  // highlight scroll once hydration lands.
+  const { text: fullText, loading: textLoading } = useDocText(node.id);
   const passageNeedle =
     readerHighlight?.docId === node.id ? readerHighlight.text : undefined;
 
@@ -88,7 +94,12 @@ export default function SidePanelReader({
   // image (see ui/PdfPreview.tsx) instead of just its extracted text — also
   // needs the retained original bytes, kept as a Blob rather than decoded.
   const [pdfPreview, setPdfPreview] = useState<{ id: string; blob: Blob } | null>(null);
+  const [pdfTextView, setPdfTextView] = useState(false);
   const pdfDocId = node.kind === 'document' && node.fileType === 'pdf' ? node.id : null;
+  useEffect(() => {
+    // Retrieved passages need the text renderer so their highlight is readable.
+    setPdfTextView(Boolean(passageNeedle));
+  }, [pdfDocId, passageNeedle]);
   useEffect(() => {
     setPdfPreview(null);
     if (!pdfDocId) return;
@@ -109,6 +120,26 @@ export default function SidePanelReader({
   return (
     <div className="side-panel__section side-panel__section--reader">
       <p className="side-panel__section-label">{readerLabel}</p>
+      {pdfPreview?.id === node.id && (
+        <div role="group" aria-label="PDF reading view">
+          <button
+            type="button"
+            className={`btn-pill${pdfTextView ? ' secondary' : ''}`}
+            aria-pressed={!pdfTextView}
+            onClick={() => setPdfTextView(false)}
+          >
+            PDF preview
+          </button>
+          <button
+            type="button"
+            className={`btn-pill${pdfTextView ? '' : ' secondary'}`}
+            aria-pressed={pdfTextView}
+            onClick={() => setPdfTextView(true)}
+          >
+            Extracted text
+          </button>
+        </div>
+      )}
       {readerHighlight?.docId === node.id && (
         <p className="side-panel__passage-banner" role="status">
           Matching passage
@@ -127,7 +158,9 @@ export default function SidePanelReader({
             {codeLang.short}
           </span>
         )}
-        {pdfPreview && pdfPreview.id === node.id ? (
+        {node.fileType === 'audio' ? (
+          <AudioPreview key={node.id} node={node} />
+        ) : pdfPreview && pdfPreview.id === node.id && !pdfTextView ? (
           <Suspense fallback={<div className="side-panel__reader is-unavailable">Loading preview…</div>}>
             <PdfPreview
               key={node.id}
@@ -141,7 +174,8 @@ export default function SidePanelReader({
               key={node.id}
               text={mdSource.text}
               linkIndex={linkIndex}
-              onNavigate={(id) => focusNode(id)}
+              sourcePath={node.path}
+              onNavigate={onNavigate}
               className="side-panel__reader side-panel__reader--markdown"
               highlight={passageNeedle}
             />
@@ -204,6 +238,12 @@ export default function SidePanelReader({
               isMonoFileType(node.fileType) ? ' is-mono' : ''
             }`}
           />
+        ) : textLoading ? (
+          // Hydration in flight — never flash "text unavailable" before a
+          // confirmed miss.
+          <div className="side-panel__reader is-unavailable">
+            Loading text…
+          </div>
         ) : (
           <div className="side-panel__reader is-unavailable">
             text unavailable

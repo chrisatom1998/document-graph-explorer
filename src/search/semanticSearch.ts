@@ -55,8 +55,9 @@ function toSearchHits(retrieved: Awaited<ReturnType<typeof retrieveCorpus>>): Se
   }));
 }
 
-async function runSearch(query: string, semantic: boolean): Promise<SearchHit[]> {
+async function runSearch(query: string, semantic: boolean, eligibleDocIds?: ReadonlySet<string>): Promise<SearchHit[]> {
   const retrieved = await retrieveCorpus(query, {
+    eligibleDocIds,
     limit: SEARCH_MAX_RESULTS,
     perDocument: 1,
     timeoutMs: 15_000,
@@ -67,10 +68,10 @@ async function runSearch(query: string, semantic: boolean): Promise<SearchHit[]>
   return toSearchHits(retrieved);
 }
 
-export function searchCorpusLexical(query: string): Promise<SearchHit[]> {
-  return runSearch(query, false);
+export function searchCorpusLexical(query: string, eligibleDocIds?: ReadonlySet<string>): Promise<SearchHit[]> {
+  return runSearch(query, false, eligibleDocIds);
 }
 
-export function searchCorpus(query: string): Promise<SearchHit[]> {
-  return runSearch(query, true);
+export function searchCorpus(query: string, eligibleDocIds?: ReadonlySet<string>): Promise<SearchHit[]> {
+  return runSearch(query, true, eligibleDocIds);
 }

@@ -58,6 +58,12 @@ export const CAPABILITIES: readonly Capability[] = [
     summary: 'Click a node to read the document; search and chat citations scroll to the matching passage.',
   },
   {
+    id: 'compare',
+    layer: 'core',
+    chrome: 'overlay',
+    summary: 'Read two documents side by side with a local similarity and shared-topic summary.',
+  },
+  {
     id: 'search',
     layer: 'core',
     chrome: 'overlay',

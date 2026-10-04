@@ -337,6 +337,25 @@ describe('referenceEdges mention ambiguity on folder drops', () => {
 });
 
 describe('referenceEdges path-aware import resolution', () => {
+  it('chooses one extensionless import candidate instead of source and build output', () => {
+    const docs: ReferenceDocInput[] = [
+      { id: 'a', title: 'Entry', fileName: 'entry.ts', path: 'repo/entry.ts', textLower: '', mdLinkTargets: ['./helper'] },
+      { id: 'b', title: 'Source', fileName: 'helper.ts', path: 'repo/helper.ts', textLower: '', mdLinkTargets: [] },
+      { id: 'c', title: 'Output', fileName: 'helper.js', path: 'repo/helper.js', textLower: '', mdLinkTargets: [] },
+      { id: 'd', title: 'Directory', fileName: 'index.ts', path: 'repo/helper/index.ts', textLower: '', mdLinkTargets: [] },
+    ];
+    expect(referenceEdges(docs, 5).map((e) => [e.source, e.target])).toEqual([['a', 'b']]);
+  });
+
+  it('prefers an explicit sibling filename over a matching root filename', () => {
+    const docs: ReferenceDocInput[] = [
+      { id: 'a', title: 'Entry', fileName: 'entry.md', path: 'repo/entry.md', textLower: '', mdLinkTargets: ['guide.md'] },
+      { id: 'b', title: 'Sibling', fileName: 'guide.md', path: 'repo/guide.md', textLower: '', mdLinkTargets: [] },
+      { id: 'c', title: 'Root', fileName: 'guide.md', path: 'guide.md', textLower: '', mdLinkTargets: [] },
+    ];
+    expect(referenceEdges(docs, 5).map((e) => [e.source, e.target])).toEqual([['a', 'b']]);
+  });
+
   it('resolves extensionless relative imports to the neighboring source file', () => {
     const docs: ReferenceDocInput[] = [
       {

@@ -14,10 +14,11 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useUiStore } from '../store/uiStore';
 import { positionBuffer, scaleOfSlot, slotOfId } from './positionBuffer';
+import { writeSlotTravelPosition } from './ingestBirth';
 import { prefersReducedMotion } from '../util/motion';
 
-const RING_SCALE = 3.2; // ring diameter relative to node radius (mid-pulse)
-const PULSE_AMPLITUDE = 0.12;
+const RING_SCALE = 4.4; // ring diameter relative to node radius (mid-pulse)
+const PULSE_AMPLITUDE = 0.035;
 const PULSE_HZ = 0.6;
 
 const ringMaterial = new THREE.ShaderMaterial({
@@ -25,7 +26,7 @@ const ringMaterial = new THREE.ShaderMaterial({
   depthWrite: false,
   blending: THREE.AdditiveBlending,
   uniforms: {
-    uColor: { value: new THREE.Color('#a996ff') },
+    uColor: { value: new THREE.Color('#a8ddff') },
     uIntensity: { value: 1.0 },
   },
   vertexShader: /* glsl */ `
@@ -41,10 +42,9 @@ const ringMaterial = new THREE.ShaderMaterial({
     varying vec2 vUv;
     void main() {
       float d = length(vUv - 0.5) * 2.0; // 0 at center, 1 at plane edge
-      // thin bright ring with a soft inner haze so it hugs the marble
-      float ring = smoothstep(0.16, 0.0, abs(d - 0.72));
-      float haze = smoothstep(0.72, 0.2, d) * 0.12;
-      vec3 glow = uColor * uIntensity * (1.6 * ring + haze);
+      // A crisp outline remains separate from the core and its subtle corona.
+      float ring = 1.0 - smoothstep(0.025, 0.065, abs(d - 0.72));
+      vec3 glow = uColor * uIntensity * ring;
       gl_FragColor = vec4(glow, 1.0);
     }
   `,
@@ -59,22 +59,22 @@ export default function SelectionHalo() {
     const mesh = meshRef.current;
     const ui = useUiStore.getState();
     const id = ui.selectedId;
-    if (!mesh || !id) return;
+    if (!mesh) return;
+    if (!id || ui.clusterCollapsed) { mesh.visible = false; return; }
     const slot = slotOfId.get(id);
     if (slot === undefined || slot >= positionBuffer.count) {
       mesh.visible = false;
       return;
     }
     mesh.visible = true;
-    const o = slot * 3;
-    const arr = positionBuffer.array;
-    mesh.position.set(arr[o], arr[o + 1], arr[o + 2]);
+    const reducedMotion = prefersReducedMotion();
+    writeSlotTravelPosition(mesh.position, slot, performance.now(), { reducedMotion, flat: ui.dims === 2 });
     mesh.quaternion.copy(camera.quaternion); // billboard
     const radius = scaleOfSlot[slot] || 1.1;
     // Show-me's pulse is a "look here, pick one" cue for an undecided
     // choice among several candidates — once the user has picked one (it's
     // now selected), hold the ring steady instead of continuing to breathe.
-    const holdStill = prefersReducedMotion() || ui.highlightOwner === 'showMe';
+    const holdStill = reducedMotion || ui.highlightOwner === 'showMe';
     const pulse = holdStill
       ? 0
       : Math.sin(clock.elapsedTime * PULSE_HZ * Math.PI * 2) * PULSE_AMPLITUDE;
@@ -85,7 +85,7 @@ export default function SelectionHalo() {
   if (!selectedId) return null;
 
   return (
-    <mesh ref={meshRef} geometry={geometry} frustumCulled={false} raycast={() => {}}>
+    <mesh name="selection-halo" ref={meshRef} geometry={geometry} frustumCulled={false} raycast={() => {}}>
       <primitive object={ringMaterial} attach="material" />
     </mesh>
   );

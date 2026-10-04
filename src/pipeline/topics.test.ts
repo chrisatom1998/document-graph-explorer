@@ -1,5 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalizeTopic, groupTopics } from './topics';
+import { canonicalizeTopic, groupTopics, selectFallbackTopics } from './topics';
+
+describe('selectFallbackTopics', () => {
+  it('prefers title-backed labels and phrases over bylines and record identifiers', () => {
+    expect(selectFallbackTopics(
+      ['chris', 'dat', 'data', 'replication lag', 'data platform', 'query plans'],
+      'Data Platform — DAT-1082 (record 0002)',
+    )).toEqual(['data platform', 'replication lag', 'query plans']);
+  });
+
+  it('retains technical title terms without a hard-coded acronym list', () => {
+    expect(selectFallbackTopics(['maya', 'kubernetes', 'api', 'c++', '.net'], 'Kubernetes API with C++ and .NET'))
+      .toEqual(['kubernetes', 'api', 'c++', '.net']);
+  });
+
+  it('keeps Unicode topics and does not invent a topic when evidence is weak', () => {
+    expect(selectFallbackTopics(['東京', '東京 計画'], '東京 計画')).toEqual(['東京 計画']);
+    expect(selectFallbackTopics(['chris', 'dat', 'medium'], 'Weekly update')).toEqual([]);
+  });
+
+  it('deduplicates variants and keeps distinct concepts within the requested limit', () => {
+    expect(selectFallbackTopics(['API', 'api', 'rate limiting', 'query plans', 'replication lag'], 'API review', 2))
+      .toEqual(['API', 'rate limiting']);
+  });
+});
 
 describe('canonicalizeTopic', () => {
   it('folds case and whitespace', () => {
@@ -27,6 +51,18 @@ describe('canonicalizeTopic', () => {
 
 describe('groupTopics', () => {
   const opts = { minDocs: 2, maxDocFraction: 0.9 };
+
+  it('requires stronger support for inferred body phrases while retaining title and explicit topics', () => {
+    const docs = [
+      { id: 'a', title: 'Rate limiting', topics: ['rate limiting', 'filed notes'], topicsSource: 'tfidf' },
+      { id: 'b', title: 'Operations', topics: ['rate limiting', 'filed notes'], topicsSource: 'tfidf' },
+      { id: 'c', title: 'Other', topics: [], topicsSource: 'tfidf' },
+    ];
+    expect(groupTopics(docs, opts).map((g) => g.key)).toEqual(['rate limiting']);
+    expect(groupTopics(docs.map((doc) => ({ ...doc, topicsSource: 'gemini' })), opts).map((g) => g.key))
+      .toEqual(['filed notes', 'rate limiting']);
+    expect(groupTopics(docs.slice(0, 2), opts).map((g) => g.key)).toEqual(['filed notes', 'rate limiting']);
+  });
 
   it('merges case/separator variants into one hub, union of docs', () => {
     const groups = groupTopics(

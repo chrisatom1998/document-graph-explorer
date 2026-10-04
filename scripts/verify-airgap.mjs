@@ -7,14 +7,20 @@ import { pathToFileURL } from 'node:url';
 
 const htmlUrl = new URL('../dist-airgap/index.html', import.meta.url);
 
-// Fail closed on ANY external destination. Two layers:
-// (1) connect-src is the exfiltration surface (fetch/XHR/WebSocket/beacon) — every
-//     token must be a local, non-network source. An allow-list catches bare
-//     hostnames (telemetry.example.com), wildcards (*), and ws/wss hosts that a
-//     scheme-only regex misses.
-// (2) a coarse scheme scan over the whole policy catches an external URL host
-//     sneaking into any OTHER directive (img-src, font-src, …).
-const SAFE_CONNECT = new Set(["'self'", "'none'", 'blob:', 'data:']);
+// Validate every directive, including default-src fallbacks. A URL regex alone
+// misses bare hostnames, wildcards and network schemes such as https:.
+const LOCAL_SOURCES = ["'self'", "'none'", 'blob:', 'data:'];
+const SAFE_SOURCES = new Map([
+  ...['default-src', 'connect-src', 'img-src', 'font-src', 'media-src', 'worker-src',
+    'child-src', 'frame-src', 'object-src', 'manifest-src', 'prefetch-src']
+    .map((directive) => [directive, new Set(LOCAL_SOURCES)]),
+  ...['script-src', 'script-src-elem', 'script-src-attr']
+    .map((directive) => [directive, new Set([...LOCAL_SOURCES, "'wasm-unsafe-eval'"])]),
+  ...['style-src', 'style-src-elem', 'style-src-attr']
+    .map((directive) => [directive, new Set([...LOCAL_SOURCES, "'unsafe-inline'"])]),
+  ...['base-uri', 'form-action', 'frame-ancestors']
+    .map((directive) => [directive, new Set(["'self'", "'none'"])]),
+]);
 
 export function decodeHtmlAttribute(value) {
   return value.replace(/&(#\d+|#x[\da-f]+|amp|apos|gt|lt|quot);/gi, (_match, entity) => {
@@ -31,14 +37,23 @@ export function extractCspFromHtml(html) {
 }
 
 export function getAirgapCspFailure(csp) {
-  const connectMatch = csp.match(/connect-src ([^;]*)/i);
-  const connectTokens = connectMatch ? connectMatch[1].trim().split(/\s+/).filter(Boolean) : [];
-  const badConnect = connectTokens.filter((t) => !SAFE_CONNECT.has(t));
-  if (badConnect.length > 0) {
-    return 'non-local connect-src source(s): ' + badConnect.join(' ') + '\n  ' + csp;
+  const seen = new Set();
+  for (const entry of csp.split(';')) {
+    const tokens = entry.trim().split(/\s+/);
+    if (!tokens[0]) continue;
+    const directive = tokens.shift().toLowerCase();
+    if (seen.has(directive)) return `duplicate airgap CSP directive: ${directive}`;
+    seen.add(directive);
+    const allowed = SAFE_SOURCES.get(directive);
+    if (!allowed) return `unsupported airgap CSP directive: ${directive}`;
+    if (tokens.length === 0) return `empty airgap CSP directive: ${directive}`;
+    const unsafe = tokens.filter((token) => !allowed.has(token));
+    if (unsafe.length > 0) {
+      return `non-local or unsupported ${directive} source(s): ${unsafe.join(' ')}\n  ${csp}`;
+    }
   }
-  if (/[a-z]+:\/\//i.test(csp)) {
-    return 'external URL host present in airgap CSP:\n  ' + csp;
+  for (const required of ['default-src', 'connect-src']) {
+    if (!seen.has(required)) return `missing required airgap CSP directive: ${required}`;
   }
   return null;
 }

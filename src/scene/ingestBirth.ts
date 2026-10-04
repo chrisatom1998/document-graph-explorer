@@ -16,12 +16,7 @@ import {
   type PendingOrigin,
   type Vec3,
 } from './ingestGesture';
-import {
-  hasOriginOfSlot,
-  originOfSlot,
-  positionBuffer,
-  spawnAtOfSlot,
-} from './positionBuffer';
+import { positionBuffer, slotMeta, spawnAtOfSlot } from './positionBuffer';
 
 // Gesture recording + camera-framing flags live in the dependency-free
 // ingestGesture module (entry-chunk budget); re-exported so scene/pipeline
@@ -253,7 +248,7 @@ export function writeSlotTravelPosition(
   const hy = arr[o + 1];
   const hz = opts.flat ? 0 : arr[o + 2];
   const spawn = spawnAtOfSlot[slot] ?? -1;
-  if (opts.reducedMotion || spawn < 0 || !hasOriginOfSlot[slot]) {
+  if (opts.reducedMotion || spawn < 0 || !slotMeta.hasOrigin[slot]) {
     out.x = hx;
     out.y = hy;
     out.z = hz;
@@ -266,9 +261,9 @@ export function writeSlotTravelPosition(
     out.z = hz;
     return false;
   }
-  const ox = originOfSlot[o];
-  const oy = originOfSlot[o + 1];
-  const oz = opts.flat ? 0 : originOfSlot[o + 2];
+  const ox = slotMeta.origin[o];
+  const oy = slotMeta.origin[o + 1];
+  const oz = opts.flat ? 0 : slotMeta.origin[o + 2];
   if (raw <= 0) {
     out.x = ox;
     out.y = oy;
@@ -302,6 +297,7 @@ export function computeFitAllPose(input: {
   count: number;
   viewDir: Vec3;
   fovDeg: number;
+  aspect: number;
   /** Restrict the bounding sphere to these slots (frameSet); default all < count. */
   slots?: ArrayLike<number>;
 }): { target: Vec3; position: Vec3; radius: number } {
@@ -332,7 +328,12 @@ export function computeFitAllPose(input: {
     if (d > maxDistSq) maxDistSq = d;
   }
   const radius = Math.sqrt(maxDistSq);
-  const dist = Math.max(40, (radius / Math.tan(((input.fovDeg || 55) * Math.PI) / 360)) * 1.18);
+  const aspect = Number.isFinite(input.aspect) && input.aspect > 0 ? input.aspect : 1;
+  const verticalHalfFov = ((input.fovDeg || 55) * Math.PI) / 360;
+  const limitingHalfFov = Math.atan(Math.tan(verticalHalfFov) * Math.min(1, aspect));
+  // Fit the entire bounding sphere, including the largest document disc (3.5u),
+  // against the narrower viewport dimension. A center-only fit clips edge nodes.
+  const dist = Math.max(40, ((radius + 3.5) / Math.sin(limitingHalfFov)) * 1.05);
   const vl = Math.hypot(input.viewDir[0], input.viewDir[1], input.viewDir[2]) || 1;
   const vx = input.viewDir[0] / vl;
   const vy = input.viewDir[1] / vl;

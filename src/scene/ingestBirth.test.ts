@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { MAX_NODES } from '../config';
+import * as THREE from 'three';
+import { INITIAL_NODE_CAPACITY, MAX_NODES } from '../config';
 import {
   beginIngestBirth,
   clearIngestBirthSteer,
@@ -28,11 +29,12 @@ import {
   writeSlotTravelPosition,
 } from './ingestBirth';
 import {
-  hasOriginOfSlot,
-  originOfSlot,
+  ensureSlotCapacity,
   positionBuffer,
   resetPositionBuffer,
+  slotMeta,
   spawnAtOfSlot,
+  subscribeSlotCapacity,
 } from './positionBuffer';
 
 const pose = {
@@ -148,10 +150,10 @@ describe('origin spawn → home slot', () => {
     resetPositionBuffer();
     positionBuffer.array = new Float32Array([30, 10, -6]);
     positionBuffer.count = 1;
-    originOfSlot[0] = 1;
-    originOfSlot[1] = 2;
-    originOfSlot[2] = 3;
-    hasOriginOfSlot[0] = 1;
+    slotMeta.origin[0] = 1;
+    slotMeta.origin[1] = 2;
+    slotMeta.origin[2] = 3;
+    slotMeta.hasOrigin[0] = 1;
     spawnAtOfSlot[0] = 1000;
     const out = { x: 0, y: 0, z: 0 };
     const animating = writeSlotTravelPosition(out, 0, 1000, { reducedMotion: false, flat: false });
@@ -260,6 +262,7 @@ describe('ingest camera — do not steal on incremental add', () => {
       count: 2,
       viewDir: [0, 0, 1],
       fovDeg: 55,
+      aspect: 1,
     });
     expect(poseFit.target[0]).toBeCloseTo(0, 5);
     expect(poseFit.radius).toBeCloseTo(10, 5);
@@ -273,10 +276,64 @@ describe('ingest camera — do not steal on incremental add', () => {
       count: 3,
       viewDir: [0, 0, 1],
       fovDeg: 55,
+      aspect: 1,
       slots: [0, 1], // the far outlier at slot 2 must not widen the frame
     });
     expect(poseFit.target[0]).toBeCloseTo(0, 5);
     expect(poseFit.radius).toBeCloseTo(10, 5);
+  });
+
+  it.each([390 / 844, 1, 16 / 9])('keeps node bounds in the viewport at aspect %s', (aspect) => {
+    const positions = [
+      new THREE.Vector3(-100, 0, 0),
+      new THREE.Vector3(100, 0, 0),
+      new THREE.Vector3(0, 100, 0),
+      new THREE.Vector3(0, -100, 0),
+      new THREE.Vector3(0, 0, 100),
+    ];
+    const fit = computeFitAllPose({
+      array: positions.flatMap((position) => position.toArray()),
+      count: positions.length,
+      viewDir: [0.2, 0.1, 1],
+      fovDeg: 55,
+      aspect,
+    });
+    const camera = new THREE.PerspectiveCamera(55, aspect, 0.1, 4000);
+    camera.position.fromArray(fit.position);
+    camera.lookAt(new THREE.Vector3().fromArray(fit.target));
+    camera.updateMatrixWorld();
+    for (const center of positions) {
+      for (const offset of [
+        [3.5, 0, 0], [-3.5, 0, 0], [0, 3.5, 0],
+        [0, -3.5, 0], [0, 0, 3.5], [0, 0, -3.5],
+      ]) {
+        const projected = center.clone().add(new THREE.Vector3().fromArray(offset)).project(camera);
+        expect(Math.abs(projected.x)).toBeLessThan(1);
+        expect(Math.abs(projected.y)).toBeLessThan(1);
+        expect(Math.abs(projected.z)).toBeLessThan(1);
+      }
+    }
+  });
+
+  it('fits an explicit portrait selection without framing unrelated outliers', () => {
+    const aspect = 390 / 844;
+    const fit = computeFitAllPose({
+      array: [-100, 0, 0, 100, 0, 0, 10000, 0, 0],
+      count: 3,
+      slots: [0, 1],
+      viewDir: [0, 0, 1],
+      fovDeg: 55,
+      aspect,
+    });
+    const camera = new THREE.PerspectiveCamera(55, aspect, 0.1, 4000);
+    camera.position.fromArray(fit.position);
+    camera.lookAt(new THREE.Vector3().fromArray(fit.target));
+    camera.updateMatrixWorld();
+    expect(fit.target).toEqual([0, 0, 0]);
+    for (const x of [-103.5, 103.5]) {
+      expect(Math.abs(new THREE.Vector3(x, 0, 0).project(camera).x)).toBeLessThan(1);
+    }
+    expect(new THREE.Vector3(10000, 0, 0).project(camera).x).toBeGreaterThan(1);
   });
 });
 
@@ -340,8 +397,49 @@ describe('edges appear only after both nodes exist', () => {
 });
 
 describe('slot metadata capacity', () => {
-  it('keeps origin buffers sized for MAX_NODES', () => {
-    expect(originOfSlot.length).toBe(MAX_NODES * 3);
-    expect(hasOriginOfSlot.length).toBe(MAX_NODES);
+  afterEach(() => {
+    resetPositionBuffer();
+  });
+
+  it('starts at INITIAL_NODE_CAPACITY and grows on demand, preserving contents', () => {
+    expect(slotMeta.capacity).toBe(INITIAL_NODE_CAPACITY);
+    expect(slotMeta.origin.length).toBe(INITIAL_NODE_CAPACITY * 3);
+    expect(slotMeta.hasOrigin.length).toBe(INITIAL_NODE_CAPACITY);
+    slotMeta.origin[0] = 7;
+    slotMeta.hasOrigin[0] = 1;
+    slotMeta.kind[1] = 1;
+    slotMeta.ghost[2] = 1;
+    ensureSlotCapacity(INITIAL_NODE_CAPACITY + 1);
+    expect(slotMeta.capacity).toBe(INITIAL_NODE_CAPACITY + 1);
+    expect(slotMeta.origin.length).toBe((INITIAL_NODE_CAPACITY + 1) * 3);
+    expect(slotMeta.origin[0]).toBe(7);
+    expect(slotMeta.hasOrigin[0]).toBe(1);
+    expect(slotMeta.kind[1]).toBe(1);
+    expect(slotMeta.ghost[2]).toBe(1);
+  });
+
+  it('clamps growth at MAX_NODES and shrinks back to the initial capacity on reset', () => {
+    ensureSlotCapacity(MAX_NODES * 2);
+    expect(slotMeta.capacity).toBe(MAX_NODES);
+    expect(slotMeta.origin.length).toBe(MAX_NODES * 3);
+    resetPositionBuffer();
+    expect(slotMeta.capacity).toBe(INITIAL_NODE_CAPACITY);
+    expect(slotMeta.origin.length).toBe(INITIAL_NODE_CAPACITY * 3);
+  });
+
+  it('notifies capacity subscribers on growth only', () => {
+    let calls = 0;
+    const off = subscribeSlotCapacity(() => {
+      calls++;
+    });
+    ensureSlotCapacity(INITIAL_NODE_CAPACITY + 1);
+    expect(calls).toBe(1);
+    ensureSlotCapacity(INITIAL_NODE_CAPACITY); // already covered — no-op
+    expect(calls).toBe(1);
+    resetPositionBuffer(); // shrink is a capacity change too
+    expect(calls).toBe(2);
+    off();
+    ensureSlotCapacity(INITIAL_NODE_CAPACITY + 1);
+    expect(calls).toBe(2);
   });
 });

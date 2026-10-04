@@ -29,12 +29,13 @@ export { MAX_RENDER_CHARS };
 interface DocumentMarkdownProps {
   text: string;
   linkIndex: LinkIndex;
+  sourcePath?: string;
   onNavigate: (docId: string) => void;
   className?: string;
   highlight?: string | null;
 }
 
-export default function DocumentMarkdown({ text, linkIndex, onNavigate, className, highlight }: DocumentMarkdownProps) {
+export default function DocumentMarkdown({ text, linkIndex, sourcePath, onNavigate, className, highlight }: DocumentMarkdownProps) {
   const tree = useMemo<Root | null>(() => {
     if (text.length > MAX_RENDER_CHARS) return null;
     try {
@@ -57,7 +58,7 @@ export default function DocumentMarkdown({ text, linkIndex, onNavigate, classNam
     <div className={wrapClass}>
       {renderMarkdownChildren(tree.children, 'doc', {
         enableWikilinks: true,
-        resolveInternalLink: (target) => resolveLinkTarget(target, linkIndex),
+        resolveInternalLink: (target, kind) => resolveLinkTarget(target, linkIndex, sourcePath, kind),
         onNavigate,
       })}
     </div>

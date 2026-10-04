@@ -12,17 +12,35 @@ enforced.
 full ingest flow:
 
 ```
-route → hash/dedupe → cache lookup → parse (worker pool / pdf.js)
+route → hash/dedupe → cache lookup → parse (worker pool / pdf worker)
   → lexical aggregation (corpus-wide) → embeddings → semantic edges
   + Louvain clustering → ready
 ```
 
-It talks to four dedicated worker types, each with a distinct lifecycle:
+It talks to five dedicated worker types, each with a distinct lifecycle:
 
 - **Pipeline workers** (`src/workers/pipeline.worker.ts`) parse `txt`/`md`/`html`
-  and run `bge-small-en-v1.5` embeddings via `@huggingface/transformers`. PDFs
-  are parsed on the main thread instead (pdf.js does not run reliably in a
-  worker for this app's use case). Multiple instances are pooled — see below.
+  and run `bge-small-en-v1.5` embeddings via `@huggingface/transformers`.
+  Multiple instances are pooled — see below. PDFs never route through the
+  pool: their 60s parse deadline + 5min OCR budget doesn't fit the pool's
+  30s parse timeout, and a pool worker's module scope would break the
+  one-Tesseract-heap-at-a-time guarantee.
+- **PDF worker** (`src/workers/pdf.worker.ts`) is a single dedicated instance
+  that runs pdf.js text extraction and the Tesseract OCR fallback for scanned
+  documents (pages rasterize into an `OffscreenCanvas` there; pdf.js and
+  tesseract.js each spawn their own nested worker inside it). `parsePdf`
+  (`src/pipeline/parsers/pdf.ts`) routes each document to it when the runtime
+  has `Worker` + `OffscreenCanvas` and otherwise runs the same engine
+  (`src/pipeline/parsers/pdfEngine.ts`) on the main thread — also the retry
+  path when the worker crashes or wedges: one worker infrastructure failure
+  retries that document on the main thread and pins main-thread mode for the
+  rest of the session. The main-thread client
+  (`src/pipeline/parsers/pdfWorkerClient.ts`) streams OCR progress back to
+  the coordinator, wraps every request in a generous outer watchdog, and
+  discards + respawns the worker on crash, timeout, or cancellation (in-flight
+  pdf.js/Tesseract jobs can't be interrupted any other way). OCR settings are
+  resolved on the main thread and travel with each request — worker code
+  can't read the zustand settings store.
 - **Aggregator worker** (`src/workers/aggregator.worker.ts`) is a single
   long-lived instance owned by the coordinator. It performs the corpus-wide
   passes that need every document at once: TF-IDF keywords, keyword/reference

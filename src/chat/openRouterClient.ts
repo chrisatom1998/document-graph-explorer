@@ -125,8 +125,8 @@ export async function streamOpenRouterChat(options: StreamOptions): Promise<stri
     options.onText,
   );
 
+  if (streamError) throw new Error(`OpenRouter stream failed: ${streamError.slice(0, 200)}`);
   if (!accumulated.trim()) {
-    if (streamError) throw new Error(`OpenRouter stream failed: ${streamError.slice(0, 200)}`);
     throw new Error(
       finishReason && finishReason !== 'stop'
         ? `OpenRouter stopped the response (${finishReason}).`

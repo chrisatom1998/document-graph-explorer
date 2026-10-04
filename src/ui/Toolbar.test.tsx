@@ -58,11 +58,12 @@ describe('Toolbar', () => {
     localStorage.removeItem('knowledge-nebula-dims');
   });
 
-  it('keeps studio tools in Analyze and Add menus instead of first-class buttons', () => {
+  it('keeps the classic analysis and collaboration menus directly reachable', () => {
     render(<Toolbar />);
 
     expect(screen.getByRole('button', { name: 'Search documents' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Analyze' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Analyze' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Collaboration' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Add documents' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Show me a topic' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Corpus insights' })).not.toBeInTheDocument();

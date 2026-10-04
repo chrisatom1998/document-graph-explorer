@@ -42,7 +42,16 @@ function openBrowser(url) {
 
 function listen(server, basePort, attempt) {
   const port = basePort + attempt;
+  const onListening = () => {
+    const url = `http://127.0.0.1:${server.address().port}/`;
+    const label = AIRGAP_MODE ? ' (air-gapped build)' : '';
+    console.log(`Document Graph Explorer${label} - serving ${url}`);
+    console.log('(localhost-only; close this window to stop)');
+    openBrowser(url);
+  };
   server.once('error', (err) => {
+    // A failed listen leaves its callback queued for the next successful bind.
+    server.removeListener('listening', onListening);
     if (err.code === 'EADDRINUSE' && attempt < MAX_PORT_ATTEMPTS) {
       listen(server, basePort, attempt + 1);
       return;
@@ -57,13 +66,7 @@ function listen(server, basePort, attempt) {
     process.exit(1);
   });
 
-  server.listen(port, '127.0.0.1', () => {
-    const url = `http://127.0.0.1:${port}/`;
-    const label = AIRGAP_MODE ? ' (air-gapped build)' : '';
-    console.log(`Document Graph Explorer${label} - serving ${url}`);
-    console.log('(localhost-only; close this window to stop)');
-    openBrowser(url);
-  });
+  server.listen(port, '127.0.0.1', onListening);
 }
 
 function main() {

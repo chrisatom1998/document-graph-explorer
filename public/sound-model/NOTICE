@@ -1,0 +1,6 @@
+Music-trained LAION CLAP (larger_clap_music_and_speech).
+Original: https://huggingface.co/laion/larger_clap_music_and_speech
+ONNX export: https://huggingface.co/Xenova/larger_clap_music_and_speech
+Apache-2.0; see LICENSE.
+Prompts describe source resemblance, sound character and production role.
+Text vectors generated with the matching quantized text encoder; only the audio encoder is shipped.

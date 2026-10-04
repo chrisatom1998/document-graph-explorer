@@ -10,7 +10,8 @@
 import type { LinkRef } from '../model/types';
 import { getOriginal } from '../persistence/originals';
 import { useGraphStore } from '../store/graphStore';
-import { docLinksStore, mdLinkTargetsStore, textStore } from '../store/runtimeStores';
+import { docLinksStore, mdLinkTargetsStore } from '../store/runtimeStores';
+import { getDocText } from '../store/textHydration';
 import { useUiStore } from '../store/uiStore';
 import { openDocumentViewer } from './openDocumentViewer';
 
@@ -64,7 +65,12 @@ export async function openDocument(docId: string): Promise<OpenDocumentResult> {
   // the user-activation window (SidePanel has always opened this way).
   const g = useGraphStore.getState();
   const node = g.nodes[g.nodeIndex[docId]];
-  const text = textStore.get(docId);
+  let text: string | undefined;
+  try {
+    text = await getDocText(docId); // rehydrates an evicted body
+  } catch {
+    text = undefined;
+  }
   if (!node || node.kind !== 'document' || !text) {
     useUiStore
       .getState()

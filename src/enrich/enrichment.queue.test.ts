@@ -16,7 +16,8 @@ import { useGraphStore } from '../store/graphStore';
 import { clearRuntimeStores, textStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
 import { enqueueRun } from '../pipeline/runQueue';
-import { runEnrichment } from './enrichment';
+import { askDocAi, runEnrichment } from './enrichment';
+import * as textHydration from '../store/textHydration';
 
 function doc(id: string): DocNode {
   return {
@@ -63,10 +64,48 @@ describe('queued enrichment mutation', () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     useGraphStore.getState().reset();
     clearRuntimeStores();
     useSettingsStore.getState().setEnrichEnabled(false);
     useSettingsStore.getState().setOpenRouterKey('');
+  });
+
+  it('cleans up after hydration fails and permits a subsequent run', async () => {
+    const node = doc('evicted');
+    useGraphStore.getState().addNodes([node]);
+    useGraphStore.getState().setPhase('ready');
+    vi.spyOn(textHydration, 'getDocTexts')
+      .mockRejectedValueOnce(new Error('IndexedDB read failed'));
+
+    await expect(runEnrichment()).resolves.toEqual({
+      ok: false,
+      message: 'Enrichment failed: IndexedDB read failed',
+    });
+    expect(useGraphStore.getState()).toMatchObject({ phase: 'ready', enrichProgress: null });
+    expect(llm.llmComplete).not.toHaveBeenCalled();
+
+    textStore.set(node.id, 'document body');
+    llm.llmComplete
+      .mockResolvedValueOnce({ ok: true, text: JSON.stringify([
+        { docId: node.id, summary: 'Summary', topics: ['privacy'] },
+      ]) })
+      .mockResolvedValueOnce({ ok: true, text: '[]' });
+    await expect(runEnrichment()).resolves.toMatchObject({ ok: true });
+  });
+
+  it('keeps document AI partial text alongside its interruption error', async () => {
+    textStore.set('document', 'stored document body');
+    llm.llmStream.mockResolvedValueOnce({
+      ok: false,
+      partialText: 'Partial summary',
+      error: 'OpenRouter stream failed: generation failed',
+    });
+
+    await expect(askDocAi('document', 'Document', 'summarize')).resolves.toEqual({
+      ok: false,
+      text: 'Partial summary\n\nResponse interrupted: OpenRouter stream failed: generation failed',
+    });
   });
 
   it('holds later graph mutations behind the shared FIFO queue', async () => {

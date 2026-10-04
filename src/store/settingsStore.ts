@@ -19,6 +19,7 @@ import {
   loadPersistedSettings,
   STORAGE_KEY,
   type ChatProvider,
+  type GraphClarity,
   type EmbeddingQueryStyle,
   type EnrichProvider,
   type OcrLanguageId,
@@ -31,6 +32,7 @@ export {
   DEFAULT_OPENROUTER_CHAT_MODEL,
   DEFAULT_OPENROUTER_ENRICH_MODEL,
   type ChatProvider,
+  type GraphClarity,
   type EmbeddingQueryStyle,
   type EnrichProvider,
   type OcrLanguageId,
@@ -38,6 +40,8 @@ export {
 };
 
 export interface SettingsState extends PersistedSettings {
+  setGraphClarity: (clarity: GraphClarity) => void;
+  setMusicAnalysisMode: (mode: 'fast' | 'full') => void;
   setChatProvider: (provider: ChatProvider) => void;
   setEnrichProvider: (provider: EnrichProvider) => void;
   setOpenRouterKey: (key: string) => void;
@@ -57,6 +61,8 @@ export interface SettingsState extends PersistedSettings {
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   ...loadPersistedSettings(),
+  setGraphClarity: (graphClarity) => set({ graphClarity }),
+  setMusicAnalysisMode: (musicAnalysisMode) => set({ musicAnalysisMode }),
   setChatProvider: (chatProvider) => set({ chatProvider }),
   setEnrichProvider: (enrichProvider) => set({ enrichProvider }),
   // Trimmed at the store boundary so every consumer (enrichment, doc AI,
@@ -86,6 +92,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
 useSettingsStore.subscribe((s) => {
   try {
     const persisted: PersistedSettings = {
+      graphClarity: s.graphClarity,
+      musicAnalysisMode: s.musicAnalysisMode,
       chatProvider: s.chatProvider,
       enrichProvider: s.enrichProvider,
       openRouterKey: s.rememberOpenRouterKey ? s.openRouterKey : '',

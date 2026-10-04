@@ -15,6 +15,18 @@ function renderMd(md: string, opts: MarkdownRenderOptions = {}) {
 }
 
 describe('markdownAst link filtering (SAFE_LINK_PROTOCOL)', () => {
+  it('distinguishes markdown hrefs from vault-wide wikilinks for resolution', () => {
+    const calls: [string, string | undefined][] = [];
+    renderMd('[Guide](guide.md) [[Guide]]', {
+      enableWikilinks: true,
+      resolveInternalLink: (target, kind) => {
+        calls.push([target, kind]);
+        return null;
+      },
+    });
+    expect(calls).toEqual([['guide.md', 'markdown'], ['Guide', 'wikilink']]);
+  });
+
   it('renders an http(s) link as a real anchor', () => {
     const { container } = renderMd('[docs](https://example.com/docs)');
     const a = container.querySelector('a');

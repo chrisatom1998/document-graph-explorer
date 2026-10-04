@@ -27,13 +27,8 @@ export function flatLabelPriority(distanceSquared: number, degree: number): numb
   return distanceSquared / (importance * importance);
 }
 
-/** Keep the smaller overview label set readable without making close labels huge. */
-export function flatLabelScale(cameraDistance: number): number {
-  return Math.min(1.7, Math.max(1.05, cameraDistance / 285));
-}
-
 export function flatLabelOpacity(cameraDistance: number): number {
-  if (cameraDistance <= 180) return 0.92;
-  if (cameraDistance >= 520) return 0.62;
-  return 0.92 - ((cameraDistance - 180) / 340) * 0.3;
+  if (cameraDistance <= 180) return 0.94;
+  if (cameraDistance >= 520) return 0.8;
+  return 0.94 - ((cameraDistance - 180) / 340) * 0.14;
 }

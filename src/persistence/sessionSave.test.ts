@@ -18,7 +18,8 @@ vi.mock('../scene/positionBuffer', () => ({
 }));
 vi.mock('./graphExport', () => ({ toGraphExport: vi.fn(() => ({ nodes: [], edges: [] })) }));
 
-import { saveSession } from './sessionSave';
+import { saveGraphRecord, saveSession } from './sessionSave';
+import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
 import { dirtyDocIds, markDocsDirty, textStore } from '../store/runtimeStores';
 
@@ -44,6 +45,7 @@ function savedIds(): string[] {
 }
 
 beforeEach(() => {
+  useCorpusStore.getState().reset();
   useGraphStore.getState().reset();
   useGraphStore.getState().addNodes([mkNode('a'), mkNode('b'), mkNode('c')]);
   useGraphStore.getState().setPhase('ready');
@@ -53,6 +55,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  useCorpusStore.getState().reset();
   dirtyDocIds.clear();
   textStore.clear();
   useGraphStore.getState().reset();
@@ -86,6 +89,26 @@ describe('saveSession document writes', () => {
     expect([...dirtyDocIds].sort()).toEqual(['a', 'b']);
   });
 
+  it('persists a re-edit on the next save when it arrives during an in-flight write', async () => {
+    markDocsDirty(['a']);
+    let complete!: (saved: boolean) => void;
+    cache.saveDocsToCache.mockImplementationOnce(
+      () => new Promise<boolean>((resolve) => { complete = resolve; }),
+    );
+    const saving = saveSession();
+    textStore.set('a', 'updated while saving');
+    markDocsDirty(['a']);
+    complete(true);
+    await saving;
+    expect(dirtyDocIds.has('a')).toBe(true);
+
+    await saveSession();
+    expect(cache.saveDocsToCache.mock.calls.at(-1)?.[0]).toEqual([
+      expect.objectContaining({ text: 'updated while saving' }),
+    ]);
+    expect(dirtyDocIds.has('a')).toBe(false);
+  });
+
   it('writes no documents when nothing changed, but still saves the graph', async () => {
     await saveSession();
 
@@ -99,5 +122,17 @@ describe('saveSession document writes', () => {
     await saveSession();
 
     expect(savedIds()).toEqual(['a']);
+  });
+
+  it('skips saving when corpus mode is ephemeral (shared/imported)', async () => {
+    useCorpusStore.getState().setEphemeral('Shared Graph', 'shared');
+    markDocsDirty(['a', 'b']);
+
+    await saveSession();
+    await saveGraphRecord();
+
+    expect(cache.saveDocsToCache).not.toHaveBeenCalled();
+    expect(cache.saveGraphToCache).not.toHaveBeenCalled();
+    expect([...dirtyDocIds].sort()).toEqual(['a', 'b']);
   });
 });

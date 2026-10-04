@@ -34,6 +34,7 @@ export function buildCsp({ airgap }: { airgap: boolean }): string {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
+    "media-src 'self' blob:",
     connectSrc,
     "worker-src 'self' blob:",
     "object-src 'none'",

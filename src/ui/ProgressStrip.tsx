@@ -12,7 +12,7 @@ import type { FileStage, PipelinePhase } from '../model/types';
 
 const AUTO_HIDE_MS = 2500;
 const IGNORED_LINGER_MS = 6000;
-const MAX_FILE_CHIPS = 7;
+const MAX_FILE_CHIPS = 3;
 
 const PHASE_LABEL: Partial<Record<PipelinePhase, string>> = {
   parsing: 'Parsing…',
@@ -50,6 +50,7 @@ export default function ProgressStrip() {
   const setInsightsOpen = useUiStore((s) => s.setInsightsOpen);
 
   const [ignoredOpen, setIgnoredOpen] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const [lingering, setLingering] = useState(false);
 
   // True while a cancellable ingest run is live (registered by ingestFiles);
@@ -91,6 +92,9 @@ export default function ProgressStrip() {
 
   const active = phase !== 'idle' && phase !== 'ready';
   const visible = active || lingering || ignoredFlash;
+  useEffect(() => {
+    if (!visible) setMinimized(false);
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -99,8 +103,9 @@ export default function ProgressStrip() {
   // a restored session has no fileStatuses at all, and after a live ingest
   // the file count is already at 100%, so it would sit frozen either way.
   const enriching = phase === 'enriching';
-  const total = enriching ? enrichProgress?.total ?? 0 : statuses.length;
-  const done = enriching
+  const music = modelProgress?.kind === 'music-analysis';
+  const total = music ? modelProgress.total : enriching ? enrichProgress?.total ?? 0 : statuses.length;
+  const done = music ? modelProgress.loaded : enriching
     ? enrichProgress?.done ?? 0
     : statuses.filter((s) => s.stage === 'placed' || s.stage === 'cached').length;
   const recentFiles = enriching ? [] : statuses.slice(-MAX_FILE_CHIPS);
@@ -109,7 +114,7 @@ export default function ProgressStrip() {
       ? 'Ready'
       : enriching && enrichProgress?.note
         ? `Enriching — ${enrichProgress.note}`
-        : PHASE_LABEL[phase] ?? 'Working…';
+        : music ? 'Analyzing music…' : PHASE_LABEL[phase] ?? 'Working…';
   // total can be 0 when the size probe fails (compressed responses have no
   // usable content-length) — show bytes-only progress rather than "of 0.0 MB".
   const modelMB = modelProgress
@@ -118,17 +123,36 @@ export default function ProgressStrip() {
       : `${bytesToMB(modelProgress.loaded)} MB`
     : '';
   const taskProgressLabel =
-    modelProgress?.kind === 'ocr'
+    modelProgress && modelProgress.kind !== 'embedding-model'
       ? modelProgress.note
       : modelProgress
         ? `Loading embedding model — ${modelMB}… (first time only)`
         : '';
   const taskProgressValueText =
-    modelProgress?.kind === 'ocr'
+    modelProgress?.kind === 'music-analysis'
+      ? `${modelProgress.loaded} of ${modelProgress.total} tracks`
+      : modelProgress?.kind === 'ocr'
       ? `${modelProgress.loaded} of ${modelProgress.total} pages`
       : modelMB;
   const taskProgressAriaLabel =
-    modelProgress?.kind === 'ocr' ? 'Recognizing scanned PDF text' : 'Loading embedding model';
+    modelProgress?.kind === 'music-analysis' ? 'Analyzing music' : modelProgress?.kind === 'ocr' ? 'Recognizing scanned PDF text' : 'Loading embedding model';
+
+  if (minimized) return (
+    <div className="progress-strip-layer progress-strip-layer--minimized">
+      <button type="button" className="progress-strip-restore glass-panel"
+        aria-label="Show processing details" aria-expanded={false}
+        title="Restore processing details. Analysis is still running."
+        onClick={() => setMinimized(false)}>
+        <span className="progress-strip-restore__status" role="status" aria-live="polite" aria-atomic="true">
+          <span className="progress-strip-restore__phase">{phaseLabel}</span>
+          {' · '}
+          <span className="progress-strip-restore__count">{done}/{total || 0}</span>
+        </span>
+        {ignoredFiles.length > 0 && <small>{ignoredFiles.length} ignored</small>}
+        <span className="progress-strip-restore__label">Expand <span aria-hidden="true">↗</span></span>
+      </button>
+    </div>
+  );
 
   return (
     <div className="progress-strip-layer">
@@ -164,20 +188,25 @@ export default function ProgressStrip() {
               {done}/{total || 0}
             </span>
           </div>
-          {active && cancellable && (
-            <button
-              type="button"
-              className="progress-strip__cancel"
-              disabled={cancelRequested}
-              title="Stop this ingest — documents already placed stay in the graph"
-              onClick={() => {
-                setCancelRequested(true);
-                cancelIngest();
-              }}
-            >
-              {cancelRequested ? 'Cancelling…' : 'Cancel'}
-            </button>
-          )}
+          <div className="progress-strip__actions">
+            <button type="button" className="progress-strip__minimize" aria-label="Minimize processing details"
+              aria-expanded={true} title="Minimize — processing continues in the background"
+              onClick={() => setMinimized(true)}>Minimize <span aria-hidden="true">−</span></button>
+            {active && cancellable && (
+              <button
+                type="button"
+                className="progress-strip__cancel"
+                disabled={cancelRequested}
+                title="Stop this ingest — documents already placed stay in the graph"
+                onClick={() => {
+                  setCancelRequested(true);
+                  cancelIngest();
+                }}
+              >
+                {cancelRequested ? 'Cancelling…' : 'Cancel'}
+              </button>
+            )}
+          </div>
         </div>
 
         {recentFiles.length > 0 && (
@@ -194,24 +223,29 @@ export default function ProgressStrip() {
                 <span className="file-chip__name">{truncateName(f.name)}</span>
               </Chip>
             ))}
+            {statuses.length > recentFiles.length && (
+              <span className="progress-strip__more-files">+{statuses.length - recentFiles.length} more</span>
+            )}
           </div>
         )}
 
         {modelProgress && (
           <div className="model-progress">
             <span className="model-progress__label">{taskProgressLabel}</span>
-            <ProgressBar
-              className="model-progress__progress"
-              aria-label={taskProgressAriaLabel}
-              minValue={0}
-              maxValue={Math.max(1, modelProgress.total)}
-              value={modelProgress.loaded}
-              valueLabel={taskProgressValueText}
-            >
-              <ProgressBar.Track className="model-progress__bar-track">
-                <ProgressBar.Fill className="model-progress__bar-fill" />
-              </ProgressBar.Track>
-            </ProgressBar>
+            {!music && (
+              <ProgressBar
+                className="model-progress__progress"
+                aria-label={taskProgressAriaLabel}
+                minValue={0}
+                maxValue={Math.max(1, modelProgress.total)}
+                value={modelProgress.loaded}
+                valueLabel={taskProgressValueText}
+              >
+                <ProgressBar.Track className="model-progress__bar-track">
+                  <ProgressBar.Fill className="model-progress__bar-fill" />
+                </ProgressBar.Track>
+              </ProgressBar>
+            )}
           </div>
         )}
 

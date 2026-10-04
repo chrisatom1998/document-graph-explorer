@@ -1,0 +1,6 @@
+.music-background-status { position: fixed; right: 16px; bottom: calc(var(--transport-height, 70px) + 16px); z-index: 42; display: flex; gap: 12px; align-items: center; max-width: min(420px, calc(100vw - 32px)); padding: 10px 14px; border: 1px solid var(--border-glass-strong); border-radius: 12px; background: var(--surface-raised); color: var(--text-primary); font-size: 13px; }
+.music-background-status button { flex-shrink: 0; padding: 6px 9px; border: 1px solid var(--border-glass-strong); border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
+.music-background-status p { margin: 5px 0 0; line-height: 1.45; }
+.music-background-status-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.music-analysis-status-button { flex-shrink: 0; gap: 3px; font-size: 13px; color: var(--text-primary); }
+@media (max-width: 700px) { .music-background-status { bottom: 76px; } }

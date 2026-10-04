@@ -1,0 +1,1672 @@
+{
+  "frozenAt": "2026-10-03T01:38:36.128464Z",
+  "items": [
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:20823",
+        "original": "openmic:124886_161280",
+        "pack": "fma-album:18870.0",
+        "sampleFamily": "fma-track:124886"
+      },
+      "id": "124886_161280",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "voice",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Gabriel_Pereira_Spurr/La_vida_secreta_del_Coronel_Kurtz/Proyecto_U-20",
+      "split": "train",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:2120",
+        "original": "openmic:008667_69120",
+        "pack": "fma-album:2233.0",
+        "sampleFamily": "fma-track:8667"
+      },
+      "id": "008667_69120",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "cymbals",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "drums",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "organ",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "piano",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "synthesizer",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution 3.0 United States (http://creativecommons.org/licenses/by/3.0/us/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Chamomile/A_Compromise_Early_4-Track_Recordings__Rare_Tracks/Indonesia",
+      "split": "train",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:13437",
+        "original": "openmic:141616_42240",
+        "pack": "fma-album:21286.0",
+        "sampleFamily": "fma-track:141616"
+      },
+      "id": "141616_42240",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "ukulele",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Barbarix/The_Mystics/01_Born",
+      "split": "train",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:20212",
+        "original": "openmic:120488_34560",
+        "pack": "fma-album:18353.0",
+        "sampleFamily": "fma-track:120488"
+      },
+      "id": "120488_34560",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "cello",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "saxophone",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "synthesizer",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Quiet_Music_for_Tiny_Robots/QMTR_2014/01_Buffering",
+      "split": "train",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:9067",
+        "original": "openmic:037908_341760",
+        "pack": "fma-album:7603.0",
+        "sampleFamily": "fma-track:37908"
+      },
+      "id": "037908_341760",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "cello",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "organ",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "saxophone",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "synthesizer",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Creative Commons Attribution (http://creativecommons.org/licenses/by/3.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Broke_For_Free/Slam_Funk/Broke_For_Free_-_Slam_Funk_-_03_The_Great",
+      "split": "train",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:5348",
+        "original": "openmic:020100_69120",
+        "pack": "fma-album:4553.0",
+        "sampleFamily": "fma-track:20100"
+      },
+      "id": "020100_69120",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trombone",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trumpet",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: CC0 1.0 Universal (http://creativecommons.org/publicdomain/zero/1.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Sam_Stern/Antique_Phonograph_Music_Program_03231999/Sam_Stern_-_Nobody",
+      "split": "train",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:23000",
+        "original": "openmic:148291_103680",
+        "pack": "fma-album:22109.0",
+        "sampleFamily": "fma-track:148291"
+      },
+      "id": "148291_103680",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "mandolin",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "ukulele",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Cuicuitte/Premier_Vol/Cuicuitte_-_premier_vol_-_01_vavin",
+      "split": "train",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:18771",
+        "original": "openmic:107549_587520",
+        "pack": "fma-album:16738.0",
+        "sampleFamily": "fma-track:107549"
+      },
+      "id": "107549_587520",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "cello",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "cymbals",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "guitar",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "violin",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Ghofra_Z/HAIR_1956/Kosta_T_feat_Ghofra_Z_-_H__A_I_R_-_05_HHHHH",
+      "split": "train",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:19949",
+        "original": "openmic:118052_3840",
+        "pack": "fma-album:18108.0",
+        "sampleFamily": "fma-track:118052"
+      },
+      "id": "118052_3840",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trumpet",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Pete_Prodoehl/Snowbound/06_-_Pete_Prodoehl_-_Small_Hands",
+      "split": "train",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:11892",
+        "original": "openmic:146770_168960",
+        "pack": "fma-album:21899.0",
+        "sampleFamily": "fma-track:146770"
+      },
+      "id": "146770_168960",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "synthesizer",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trumpet",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "violin",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "voice",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Chris_Zabriskie/Music_from_Neptune_Flux/ChrisZabriskie-MusicfromNeptuneFlux-01",
+      "split": "train",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:19847",
+        "original": "openmic:117055_130560",
+        "pack": "fma-album:17850.0",
+        "sampleFamily": "fma-track:117055"
+      },
+      "id": "117055_130560",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "mallet_percussion",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: CC0 1.0 Universal (http://creativecommons.org/publicdomain/zero/1.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/NoLogic/Masters_Remastered/7_Tempo_I",
+      "split": "train",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:19347",
+        "original": "openmic:113181_107520",
+        "pack": "fma-album:17443.0",
+        "sampleFamily": "fma-track:113181"
+      },
+      "id": "113181_107520",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "bass",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "piano",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Spin_Day/Spin_Day_and_the_Emotional_Godfather/Spin_Day_-_Spin_Day_And_The_Emotional_Godfather_-_03_When",
+      "split": "train",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:22564",
+        "original": "openmic:141451_19200",
+        "pack": "fma-album:21267.0",
+        "sampleFamily": "fma-track:141451"
+      },
+      "id": "141451_19200",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "cymbals",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/El_Zombie_Flash/Invasin_Gorila_vol2_Resiste/El_Zombie_Flash_-_El_Zombie_Flash_-_Invasin_Gorila_vol2_Resiste_-_01_resiste",
+      "split": "calibration",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:21287",
+        "original": "openmic:129265_84480",
+        "pack": "fma-album:19494.0",
+        "sampleFamily": "fma-track:129265"
+      },
+      "id": "129265_84480",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "guitar",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/The_IMG/Kaleidoscope_1819/Moontime",
+      "split": "calibration",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:13695",
+        "original": "openmic:065648_88320",
+        "pack": "fma-album:11820.0",
+        "sampleFamily": "fma-track:65648"
+      },
+      "id": "065648_88320",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "flute",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "guitar",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "mallet_percussion",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "saxophone",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Creative Commons Attribution (http://creativecommons.org/licenses/by/3.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/recuerde/Gazeing_at_my_shoes/06_recuerde_-_gazing-atmy-shoes_1827",
+      "split": "calibration",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:22014",
+        "original": "openmic:137409_46080",
+        "pack": "fma-album:20598.0",
+        "sampleFamily": "fma-track:137409"
+      },
+      "id": "137409_46080",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "organ",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "violin",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Interior_Melodies/Pilgrimage/09_Pilgrimage_-_Admiration",
+      "split": "calibration",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:965",
+        "original": "openmic:003864_1274880",
+        "pack": "fma-album:931.0",
+        "sampleFamily": "fma-track:3864"
+      },
+      "id": "003864_1274880",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "cello",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "cymbals",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Los_Fancy_Free/Live_at_WFMU_on_Liz_Bs_Show_on_7142008/full_set_3",
+      "split": "calibration",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:21958",
+        "original": "openmic:135364_0",
+        "pack": "fma-album:20311.0",
+        "sampleFamily": "fma-track:135364"
+      },
+      "id": "135364_0",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "flute",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Lamprey/The_Greener_Grass/Colour",
+      "split": "calibration",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:1134",
+        "original": "openmic:004080_111360",
+        "pack": "fma-album:2216.0",
+        "sampleFamily": "fma-track:4080"
+      },
+      "id": "004080_111360",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "accordion",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Pistolera/Pistolera_Live_at_Barbes_on_Rob_Weisbergs_Show_5172008/Cazador",
+      "split": "calibration",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:256",
+        "original": "openmic:001522_284160",
+        "pack": "fma-album:397.0",
+        "sampleFamily": "fma-track:1522"
+      },
+      "id": "001522_284160",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "organ",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "piano",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "synthesizer",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "ukulele",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/RokPaperDisco/unreleased_RokPaperDisco_mp3s/Getting_Older",
+      "split": "calibration",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:21262",
+        "original": "openmic:129007_0",
+        "pack": "fma-album:19458.0",
+        "sampleFamily": "fma-track:129007"
+      },
+      "id": "129007_0",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "accordion",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "piano",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/bbatv/PEACE_is_king_here/bbatv_-_PEACE_is_king_here_-_06_keep_your_heart_close_to_your_chest",
+      "split": "calibration",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:20819",
+        "original": "openmic:124841_69120",
+        "pack": "fma-album:18861.0",
+        "sampleFamily": "fma-track:124841"
+      },
+      "id": "124841_69120",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "mandolin",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "ukulele",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/The_Joy_Drops/Not_Drunk_EP/NotDrunk-stem-leadGtr-mando",
+      "split": "calibration",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:15310",
+        "original": "openmic:075783_153600",
+        "pack": "fma-album:13290.0",
+        "sampleFamily": "fma-track:75783"
+      },
+      "id": "075783_153600",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "saxophone",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution 3.0 International (http://creativecommons.org/licenses/by/3.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Square_People/Mysteries_and_Secrets_Unzipped_Soundtrack/Square_People_-_Mysteries_and_Secrets_Unzipped-_Soundtrack_-_02_Laughing_Along1",
+      "split": "calibration",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:21215",
+        "original": "openmic:143378_92160",
+        "pack": "fma-album:21521.0",
+        "sampleFamily": "fma-track:143378"
+      },
+      "id": "143378_92160",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trombone",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trumpet",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/The_Mugris/Superdog/The_Mugris_-_05_-_Dedicado_A_La_Nave",
+      "split": "calibration",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:22652",
+        "original": "openmic:142317_142080",
+        "pack": "fma-album:21363.0",
+        "sampleFamily": "fma-track:142317"
+      },
+      "id": "142317_142080",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trombone",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trumpet",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/J_Hacha_de_Zola/Escape_From_Fat_Kat_City/Let_It_Go_1305",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:15891",
+        "original": "openmic:124147_414720",
+        "pack": "fma-album:18582.0",
+        "sampleFamily": "fma-track:124147"
+      },
+      "id": "124147_414720",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "banjo",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "mandolin",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "ukulele",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Kosta_T/ALLBIOM/Kosta_T_-_ALLBIOM_-_12_Paranoidoll",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:15774",
+        "original": "openmic:080060_119040",
+        "pack": "fma-album:13728.0",
+        "sampleFamily": "fma-track:80060"
+      },
+      "id": "080060_119040",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "saxophone",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Creative Commons Attribution (http://creativecommons.org/licenses/by/3.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Scans_Nom/Vol_I_Self_Obsessed_Cover/Sans_Nom_-_Vol_I_-_Self_Obsessed_-_02_Think_Mcfly",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:21242",
+        "original": "openmic:128899_203520",
+        "pack": "fma-album:19437.0",
+        "sampleFamily": "fma-track:128899"
+      },
+      "id": "128899_203520",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "accordion",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "guitar",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trumpet",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Return_to_Normal/The_Briars_and_the_Brome/Return_to_Normal_-_11_-_Waterthrush",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:21877",
+        "original": "openmic:134260_49920",
+        "pack": "fma-album:20163.0",
+        "sampleFamily": "fma-track:134260"
+      },
+      "id": "134260_49920",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "drums",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Samuel_Corwin/Selected_Field_Recordings_from_India_and_Nepal_Volume_II_Religious_Music/Samuel_Corwin-12-Mahashivaratri_Mela_Festival_Gokarna",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:20046",
+        "original": "openmic:118495_130560",
+        "pack": "fma-album:18152.0",
+        "sampleFamily": "fma-track:118495"
+      },
+      "id": "118495_130560",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "bass",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Sylvain_Carton/I-XVIII/Sylvain_Carton_-_III_-_01_III_1313",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:14171",
+        "original": "openmic:068928_280320",
+        "pack": "fma-album:12300.0",
+        "sampleFamily": "fma-track:68928"
+      },
+      "id": "068928_280320",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "bass",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trumpet",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution 1.0 Finland (http://creativecommons.org/licenses/by/1.0/fi/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Salakapakka_Sound_System_vs_The_Day_Of_The_Antler/Salakapakka_Sound_System_vs_The_Day_Of_The_Antler/02-The_Axe_of_the_Thunder_is_Broken",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:9080",
+        "original": "openmic:037980_602880",
+        "pack": "fma-album:7611.0",
+        "sampleFamily": "fma-track:37980"
+      },
+      "id": "037980_602880",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trombone",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Creative Commons Attribution (http://creativecommons.org/licenses/by/3.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Illinois_Brass_Band/Music_to_Summon_the_Spirits/Wright_Tam_OShanters_Ride",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:6400",
+        "original": "openmic:024925_96000",
+        "pack": "fma-album:5466.0",
+        "sampleFamily": "fma-track:24925"
+      },
+      "id": "024925_96000",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "accordion",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "banjo",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution 3.0 United States (http://creativecommons.org/licenses/by/3.0/us/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Nicola_Ratti/Summer_Tour_Remix_v1/07_If_Youre_Ther",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:15233",
+        "original": "openmic:075013_7680",
+        "pack": "fma-album:13218.0",
+        "sampleFamily": "fma-track:75013"
+      },
+      "id": "075013_7680",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "clarinet",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "flute",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Creative Commons Attribution (http://creativecommons.org/licenses/by/3.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/C_Scott/Stage_Theory_Beats_vol_3/CScott_-_Stage_Theory_Beats_vol_3_-_02_Afrikaans1",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:16619",
+        "original": "openmic:086596_0",
+        "pack": "fma-album:14586.0",
+        "sampleFamily": "fma-track:86596"
+      },
+      "id": "086596_0",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trombone",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "trumpet",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Creative Commons Attribution (http://creativecommons.org/licenses/by/3.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/BoxCat_Games/Nameless_the_Hackers_RPG_Soundtrack/BoxCat_Games_-_Nameless-_the_Hackers_RPG_Soundtrack_-_07_Inspiration",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:16127",
+        "original": "openmic:083341_72960",
+        "pack": "fma-album:13964.0",
+        "sampleFamily": "fma-track:83341"
+      },
+      "id": "083341_72960",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "drums",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "piano",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: CC0 1.0 Universal (http://creativecommons.org/publicdomain/zero/1.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Rita_Braga/Revitalize_Music_Contest/Vem_Kan_Segla",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:19268",
+        "original": "openmic:124231_176640",
+        "pack": "fma-album:18212.0",
+        "sampleFamily": "fma-track:124231"
+      },
+      "id": "124231_176640",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "violin",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/ODOR_BABY/AVIATION_CRAB_ORCHESTRA_AN_EPIC_SAGA/AVIATION_CRAB_ORCHESTRA_PACHEBELS_CANON",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:20951",
+        "original": "openmic:126008_49920",
+        "pack": "fma-album:19040.0",
+        "sampleFamily": "fma-track:126008"
+      },
+      "id": "126008_49920",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "drums",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "voice",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/King__Crozier/Bena_Nights/King__Crozier_-_Bena_Nights_-_02_Full_Bloom",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:4375",
+        "original": "openmic:053150_7680",
+        "pack": "fma-album:9949.0",
+        "sampleFamily": "fma-track:53150"
+      },
+      "id": "053150_7680",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "flute",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "mandolin",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "synthesizer",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "violin",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution 1.0 Finland (http://creativecommons.org/licenses/by/1.0/fi/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Salakapakka_Sound_System/Drunk_for_three_weeks_FMA_exclusive_mini-album_1253/03-third_week",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:9662",
+        "original": "openmic:074868_72960",
+        "pack": "fma-album:13192.0",
+        "sampleFamily": "fma-track:74868"
+      },
+      "id": "074868_72960",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "organ",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "synthesizer",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "voice",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Creative Commons Attribution (http://creativecommons.org/licenses/by/3.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Azoora/FrostWire_Creative_Commons_Mixtape_3_Side_A/Azoora__Sleep_on_the_Way__A_Thousand_Ways_EP__FROSTCLICK_FROSTWIRE_MIXTAPE_VOL_3",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:8762",
+        "original": "openmic:036702_149760",
+        "pack": "fma-album:7472.0",
+        "sampleFamily": "fma-track:36702"
+      },
+      "id": "036702_149760",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "voice",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution 3.0 Netherlands (http://creativecommons.org/licenses/by/3.0/nl/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/AmortE/Mist_Of_Fetor_Is_My_Perfume/03_My_Invocation_64kb",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:17395",
+        "original": "openmic:094199_357120",
+        "pack": "fma-album:15474.0",
+        "sampleFamily": "fma-track:94199"
+      },
+      "id": "094199_357120",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "cello",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Creative Commons Attribution (http://creativecommons.org/licenses/by/3.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Evil_Bear_Boris/Das_Ist_Boris/03_Geheimnisse_Des_Dritten_Reichs",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:20452",
+        "original": "openmic:122261_526080",
+        "pack": "fma-album:18519.0",
+        "sampleFamily": "fma-track:122261"
+      },
+      "id": "122261_526080",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "piano",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/CXLVIII/CXLVIII_EP/CXLVIII__04__thirtyone",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:826",
+        "original": "openmic:003880_34560",
+        "pack": "fma-album:1242.0",
+        "sampleFamily": "fma-track:3880"
+      },
+      "id": "003880_34560",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "violin",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Mary_Halvorson_and_Jessica_Pavone/Live_at_WFMU_on_Bethanys_Show_on_9102006/Crawling",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:7010",
+        "original": "openmic:130927_165120",
+        "pack": "fma-album:18937.0",
+        "sampleFamily": "fma-track:130927"
+      },
+      "id": "130927_165120",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "violin",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution 3.0 United States (http://creativecommons.org/licenses/by/3.0/us/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/spinningmerkaba/spinningmerkaba_-_Singles_1759/The_Stars_Look_Different_Ziggy_Stardust_Mix",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:10397",
+        "original": "openmic:103729_122880",
+        "pack": "fma-album:16309.0",
+        "sampleFamily": "fma-track:103729"
+      },
+      "id": "103729_122880",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "saxophone",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Rolemusic/Pop_Singles_Compilation_2014/02_rolemusic_-_ants",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:22467",
+        "original": "openmic:140672_407040",
+        "pack": "fma-album:21166.0",
+        "sampleFamily": "fma-track:140672"
+      },
+      "id": "140672_407040",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "clarinet",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        },
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "voice",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "present"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Attribution (http://creativecommons.org/licenses/by/4.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Seclorance/Exile/Seclorance_-_Exile_-_09_Exile",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    },
+    {
+      "end": 10,
+      "groups": {
+        "artist": "fma-artist:1373",
+        "original": "openmic:018419_741120",
+        "pack": "fma-album:4208.0",
+        "sampleFamily": "fma-track:18419"
+      },
+      "id": "018419_741120",
+      "reviews": [
+        {
+          "at": "2026-10-03T01:38:36.128464Z",
+          "dimension": "instrument",
+          "label": "flute",
+          "reviewer": "OpenMIC-2018 aggregated annotations",
+          "state": "absent"
+        }
+      ],
+      "rights": {
+        "basis": "OpenMIC metadata: Creative Commons Attribution (http://creativecommons.org/licenses/by/3.0/)",
+        "evaluationAllowed": true
+      },
+      "source": "http://freemusicarchive.org/music/Volcano_the_Bear/Paris_2nd_December_2007/vtb-paris_pt_1_1591",
+      "split": "test",
+      "start": 0,
+      "tier": "song",
+      "transformations": []
+    }
+  ],
+  "version": 1
+}

@@ -49,9 +49,11 @@ describe('sanitizeGraphExport — structural rejection', () => {
     expect(() => sanitizeGraphExport(validExport({ nodes: 'nope' }))).toThrow(/malformed/);
   });
 
-  it('rejects exports above the node capacity', () => {
+  it('rejects exports above the MAX_NODES hard ceiling', () => {
     const nodes = Array.from({ length: MAX_NODES + 1 }, (_, i) => validNode(String(i)));
-    expect(() => sanitizeGraphExport(validExport({ nodes }))).toThrow(/maximum/);
+    expect(() => sanitizeGraphExport(validExport({ nodes }))).toThrow(
+      `the maximum is ${MAX_NODES}`,
+    );
   });
 
   it('rejects exports with no valid nodes', () => {
@@ -62,6 +64,20 @@ describe('sanitizeGraphExport — structural rejection', () => {
 });
 
 describe('sanitizeGraphExport — node sanitization', () => {
+  it('preserves validated topic provenance across a serialized round trip', () => {
+    const input = validExport({ nodes: [
+      validNode('inferred', { topicsSource: 'tfidf' }),
+      validNode('enriched', { topicsSource: 'gemini' }),
+      validNode('legacy'),
+      validNode('invalid', { topicsSource: 'untrusted' }),
+      validNode('malformed', { topicsSource: { value: 'tfidf' } }),
+    ], edges: [] });
+    const restored = sanitizeGraphExport(JSON.parse(JSON.stringify(input)));
+    expect(restored.nodes.map((node) => node.topicsSource)).toEqual([
+      'tfidf', 'gemini', undefined, undefined, undefined,
+    ]);
+  });
+
   it('accepts a well-formed export unchanged in the fields that matter', () => {
     const out = sanitizeGraphExport(validExport());
     expect(out.nodes).toHaveLength(2);

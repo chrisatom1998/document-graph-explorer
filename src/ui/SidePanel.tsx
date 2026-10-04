@@ -2,17 +2,19 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
-import { docVectorStore, textStore } from '../store/runtimeStores';
+import { docVectorStore } from '../store/runtimeStores';
+import { useDocText } from './useDocText';
 import { hexFor } from '../scene/palette';
 import { timeAgo } from '../util/relativeTime';
 import { useSettingsStore } from '../store/settingsStore';
 import { codeLanguageForNode, fileTypeChip, fileTypeLabel } from '../pipeline/codeLanguage';
-import { focusNode } from './focusNode';
+import { openCompare } from './openCompare';
 import { type ConnectionRow } from './sidePanelModel';
 import SidePanelAbout from './SidePanelAbout';
 import SidePanelConnections from './SidePanelConnections';
 import SidePanelHeader from './SidePanelHeader';
 import SidePanelReader from './SidePanelReader';
+import { focusNode } from './focusNode';
 
 function Disclose({
   label,
@@ -161,9 +163,11 @@ export default function SidePanel() {
     return out;
   }, [node, nodes]);
 
+  // Gates the Ask-AI section below; hydrates an evicted body on demand.
+  const { text: fullText } = useDocText(node?.kind === 'document' ? node.id : undefined);
+
   if (!node) return null;
 
-  const fullText = textStore.get(node.id);
   const clusterLabel =
     clusterNames[node.cluster] ?? localClusterNames[node.cluster] ?? `Cluster ${node.cluster}`;
   const clusterColor = hexFor(node.cluster);
@@ -211,8 +215,8 @@ export default function SidePanel() {
                   key={d.id}
                   type="button"
                   className="chip chip-selectable side-panel__badge-warning side-panel__dup-chip"
-                  title={`${(d.sim * 100).toFixed(1)}% similar — these might be the same doc`}
-                  onClick={() => focusNode(d.id)}
+                  title={`${(d.sim * 100).toFixed(1)}% similar — compare these side by side`}
+                  onClick={() => openCompare(node.id, d.id)}
                 >
                   ≈ duplicate of {nodes[nodeIndex[d.id]]?.title ?? d.id}
                 </button>
@@ -226,11 +230,11 @@ export default function SidePanel() {
                 </span>
               ) : (
                 <>
-                  <span>{node.wordCount.toLocaleString()} words</span>
+                  {node.fileType !== 'audio' && <span>{node.wordCount.toLocaleString()} words</span>}
                   <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
                 </>
               )}
-              {node.lastModified !== undefined && (
+              {node.fileType !== 'audio' && node.lastModified !== undefined && (
                 <span title={new Date(node.lastModified).toLocaleString()}>
                   updated {timeAgo(node.lastModified)}
                 </span>
@@ -248,6 +252,13 @@ export default function SidePanel() {
             />
           )}
 
+          {node.fileType === 'audio' && <section className="audio-related" aria-label="Related samples">
+            <h3>Related samples</h3>
+            {Array.from(new Map(connections.filter(row => row.neighbor?.fileType === 'audio').map(row => [row.neighborId, row.neighbor!])).values()).slice(0, 3).map(related => <button key={related.id} type="button" onClick={() => focusNode(related.id)}>
+              <span className="audio-related-icon" aria-hidden="true">♫</span><span>{related.title}<small>View sample and connections</small></span><span aria-hidden="true">↗</span>
+            </button>)}
+            {!connections.some(row => row.neighbor?.fileType === 'audio') && <p>No related samples yet.</p>}
+          </section>}
           {isDocument && (
             <Disclose
               label="About"
@@ -284,6 +295,7 @@ export default function SidePanel() {
               compact
             >
               <SidePanelConnections
+                sourceId={node.id}
                 connections={connections}
                 showAllConnections={showAllConnections}
                 expandedEvidence={expandedEvidence}

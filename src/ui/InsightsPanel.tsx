@@ -29,6 +29,7 @@ import { useUiStore } from '../store/uiStore';
 import { timeAgo } from '../util/relativeTime';
 import { addTagToDocuments, documentsAlreadyTagged, DUPLICATE_TAG } from './insightActions';
 import { focusNode } from './focusNode';
+import { openCompare } from './openCompare';
 import IngestReportSection from './IngestReportSection';
 import CloseButton from './CloseButton';
 
@@ -400,6 +401,14 @@ export default function InsightsPanel() {
                           onClick={() => showInGraph('duplicates', [d.a, d.b])}
                         >
                           Show both
+                        </button>
+                        <button
+                          type="button"
+                          className="insights__action"
+                          title="Read both documents side by side"
+                          onClick={() => openCompare(d.a, d.b)}
+                        >
+                          Compare
                         </button>
                         {canTag && (
                           <button
