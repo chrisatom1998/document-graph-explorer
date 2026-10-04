@@ -65,7 +65,8 @@ export function familyOf(label: string): string {
 }
 export const recognitionConfiguration = (mode: 'fast' | 'full') => `timeline-v1:${mode}:decoder-mono-v3-short-pcm:${musicRuntimeIdentity()}:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1:uncalibrated`;
 export function createRecognition(duration: number, mode: 'fast' | 'full', audioFingerprint?: string): Recognition {
-  const versions = [ast.revision, Object.values(jamendo.sha256).join(':'), clap.revision, 'essentia-0.1.3-tempo-1', 'essentia-0.1.3-key-2'];
+  // Checksum prefixes keep the growing Jamendo asset list inside the 512-character ledger bound.
+  const versions = [ast.revision, Object.values(jamendo.sha256).map(hash => hash.slice(0, 16)).join(':'), clap.revision, 'essentia-0.1.3-tempo-1', 'essentia-0.1.3-key-2'];
   return { schemaVersion:1, runId:crypto.randomUUID(), audioFingerprint, configurationHash:recognitionConfiguration(mode),
     startedAt:new Date().toISOString(),status:'running',mode,calibration:'unvalidated',evidence:[],observations:[],
     jobs:MODEL_IDS.map((modelId,i)=>({modelId,weightsVersion:versions[i],preprocessingVersion:'decoder-mono-v3-short-pcm:'+(['ast','jamendo','clap'].includes(modelId)?musicRuntimeIdentity(modelId)+':':'')+(['ast','jamendo'].includes(modelId)?16000:modelId==='clap'?48000:44100)+':'+(modelId==='ast'?ast.sha256['preprocessor_config.json']:modelId==='clap'?clap.sha256['preprocessor_config.json']:'features-v1'),

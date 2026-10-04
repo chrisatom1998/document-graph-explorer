@@ -24,6 +24,26 @@ export function jamendoSuggestions(scores: Record<string, number>): SoundSuggest
   const ranked = [...candidates].sort((a,b) => b[1]-a[1]);
   return ranked.filter(([label, score]) => score >= (label === 'voice' ? 0.5 : 0.3)).slice(0, 3).map(([label, score]) => ({ label, score, margin: Math.max(0, score - (ranked.find(([other]) => other !== label)?.[1] ?? 0)) }));
 }
+/** NSynth heads share the Jamendo EffNet embedding. Their scores travel in the same
+ * map under a prefix, so the Jamendo instrument family keeps its exact class set. */
+const NSYNTH_HEADS = ['instrument', 'bright_dark', 'reverb', 'acoustic_electronic'] as const;
+const NSYNTH_PREFIX = 'nsynth:';
+export const isNsynthScore = (key: string) => key.startsWith(NSYNTH_PREFIX);
+/** The MTG-Jamendo instrument scores alone, as the fusion schema expects them. */
+export function jamendoInstrumentScores(scores: Record<string, number>): Record<string, number> {
+  return Object.fromEntries(Object.entries(scores).filter(([key]) => !isNsynthScore(key)));
+}
+// Softmax pairs; a high bar keeps a coin-flip clip from claiming either side. Uncalibrated.
+const NSYNTH_CHARACTER: Record<string, string> = { 'bright_dark:bright': 'bright', 'bright_dark:dark': 'dark', 'reverb:wet': 'reverberant', 'reverb:dry': 'dry' };
+const NSYNTH_THRESHOLD = .8;
+/** Timbre and space evidence. NSynth instrument and acoustic/electronic scores were
+ * trained on single notes, so they are kept as scores but not reported as labels. */
+export function nsynthLabels(scores: Record<string, number>): { dimension: Dimension; labelId: string; score: number }[] {
+  return Object.entries(NSYNTH_CHARACTER).flatMap(([key, labelId]) => {
+    const score = scores[`${NSYNTH_PREFIX}${key}`];
+    return Number.isFinite(score) && score >= NSYNTH_THRESHOLD && score <= 1 ? [{ dimension: 'character' as Dimension, labelId, score }] : [];
+  });
+}
 let models: ReturnType<typeof loadModels> | undefined;
 async function loadModels() {
   // Same ORT entry as Transformers.js; no second runtime or remote requests.
@@ -35,24 +55,41 @@ async function loadModels() {
   if (!metadata.ok) throw new Error('Music instrument labels are unavailable.');
   const { classes } = await metadata.json() as { classes: string[] };
   const embed = await ort.InferenceSession.create(`${root}discogs-effnet-bsdynamic-1.onnx`, { executionProviders: ['wasm'] });
+  const opened: { release(): Promise<void> }[] = [embed];
   try {
     const head = await ort.InferenceSession.create(`${root}mtg_jamendo_instrument-discogs-effnet-1.onnx`, { executionProviders: ['wasm'] });
-    return { ort, embed, head, classes };
-  } catch (error) { await embed.release(); throw error; }
+    opened.push(head);
+    const nsynth = [];
+    for (const name of NSYNTH_HEADS) {
+      const meta = await fetch(`${root}nsynth_${name}-discogs-effnet-1.json`);
+      if (!meta.ok) throw new Error('NSynth timbre labels are unavailable.');
+      const session = await ort.InferenceSession.create(`${root}nsynth_${name}-discogs-effnet-1.onnx`, { executionProviders: ['wasm'] });
+      opened.push(session);
+      nsynth.push({ name, session, classes: (await meta.json() as { classes: string[] }).classes });
+    }
+    return { ort, embed, head, classes, nsynth };
+  } catch (error) { for (const session of opened) await session.release(); throw error; }
 }
 export async function classifyJamendo(engine: Essentia, samples: Float32Array): Promise<Record<string, number>> {
   const patches = jamendoPatches(engine, samples);
   if (!patches.length) throw new Error('Unsupported Jamendo input: at least 2.048 seconds required.');
-  const { ort, embed, head, classes } = await (models ??= loadModels().catch(error => { models = undefined; throw error; }));
+  const { ort, embed, head, classes, nsynth } = await (models ??= loadModels().catch(error => { models = undefined; throw error; }));
   const sums = new Float64Array(classes.length);
+  const nsynthSums = nsynth.map(h => new Float64Array(h.classes.length));
   for (const patch of patches) {
     const input = new ort.Tensor('float32', patch, [1, 128, 96]);
     const embedding = await embed.run({ melspectrogram: input });
     try {
-      const outputs = await head.run({ embeddings: embedding.embeddings });
-      try { for (let i = 0; i < sums.length; i++) sums[i] += Number(outputs.activations.data[i]) / patches.length; }
-      finally { for (const tensor of Object.values(outputs)) tensor.dispose(); }
+      // Every head reads the same EffNet embedding, so the extra heads add no audio pass.
+      for (const [session, target] of [[head, sums], ...nsynth.map((h, i) => [h.session, nsynthSums[i]] as const)] as const) {
+        const outputs = await session.run({ embeddings: embedding.embeddings });
+        try { for (let i = 0; i < target.length; i++) target[i] += Number(outputs.activations.data[i]) / patches.length; }
+        finally { for (const tensor of Object.values(outputs)) tensor.dispose(); }
+      }
     } finally { input.dispose(); for (const tensor of Object.values(embedding)) tensor.dispose(); }
   }
-  return Object.fromEntries(classes.map((label, i) => [label, sums[i]]));
+  return Object.fromEntries([
+    ...classes.map((label, i) => [label, sums[i]] as const),
+    ...nsynth.flatMap((h, j) => h.classes.map((label, i) => [`${NSYNTH_PREFIX}${h.name}:${label}`, nsynthSums[j][i]] as const)),
+  ]);
 }

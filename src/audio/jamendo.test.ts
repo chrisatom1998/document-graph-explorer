@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { classifyJamendo, jamendoSuggestions, jamendoLabels } from './jamendo';
+import { classifyJamendo, jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabels } from './jamendo';
 import { jamendoPatches } from './jamendoFeatures';
 import { sanitizeMusicAnalysis } from './musicTypes';
 import type Essentia from 'essentia.js/dist/essentia.js-core.es.js';
@@ -45,4 +45,24 @@ it('preserves model attribution through saved analysis', () => {
   const base = { version: 2, analyzedSeconds: 4, durationSeconds: 4, instruments: [], notes: [], instrumentPrediction: { label: 'synthesizer', score: .6, margin: .2, model: 'MTG-Jamendo' } };
   expect(sanitizeMusicAnalysis(base)?.instrumentPrediction?.model).toBe('MTG-Jamendo');
   expect(sanitizeMusicAnalysis({ ...base, instrumentPrediction: { ...base.instrumentPrediction, model: '<script>' } })?.instrumentPrediction?.model).toBeUndefined();
+});
+
+it('reports NSynth tone and space only when one side of the pair clearly wins', () => {
+  expect(nsynthLabels({ 'nsynth:bright_dark:bright': .9, 'nsynth:bright_dark:dark': .1, 'nsynth:reverb:wet': .55, 'nsynth:reverb:dry': .45 }))
+    .toEqual([{ dimension: 'character', labelId: 'bright', score: .9 }]);
+  expect(nsynthLabels({ 'nsynth:reverb:dry': .95, 'nsynth:bright_dark:dark': .85 }).map(c => c.labelId)).toEqual(['dark', 'dry']);
+  expect(nsynthLabels({ 'nsynth:reverb:wet': NaN, 'nsynth:bright_dark:bright': 2 })).toEqual([]);
+});
+it('keeps single-note NSynth instrument scores out of labels and NSynth keys out of the Jamendo family', () => {
+  const scores = { piano: .7, 'nsynth:instrument:synth_lead': .99, 'nsynth:acoustic_electronic:electronic': .99 };
+  expect(nsynthLabels(scores)).toEqual([]);
+  expect(jamendoLabels(scores).map(c => c.labelId)).toEqual(['piano']);
+  expect(jamendoSuggestions(scores).map(s => s.label)).toEqual(['piano']);
+  expect(jamendoInstrumentScores(scores)).toEqual({ piano: .7 });
+});
+it('keeps the Jamendo weights version within the persisted ledger bound as heads are added', async () => {
+  const { createRecognition } = await import('./recognition');
+  const job = createRecognition(10, 'full').jobs.find(j => j.modelId === 'jamendo')!;
+  expect(job.weightsVersion.split(':')).toHaveLength(12);
+  expect(job.weightsVersion.length).toBeLessThanOrEqual(512);
 });
