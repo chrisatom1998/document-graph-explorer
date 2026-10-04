@@ -5,7 +5,7 @@
   "full": 0.65,
   "maybe": 0.5
  },
- "learnedSha256": "f0f1c637a9da0daa07cdc89b10d807f188f76f86b6796ce1f26696a6e7080a3c",
+ "learnedSha256": "3bf330fa87fe59f7a9131cb8e63c6ea1a6b303ca6df2fb04af9a68df6aa6177e",
  "heads": [
   {
    "kind": "family",
@@ -482,6 +482,22 @@
    "precision": 0.7870370370370371,
    "recall": 0.8018867924528302,
    "replaces": "round4 75%/77%"
+  },
+  {
+   "label": "distorted",
+   "group": "character",
+   "maybe": true,
+   "from": "Freesound character folders, held out by uploader",
+   "precision": 1.0,
+   "recall": 0.6176470588235294
+  },
+  {
+   "label": "reverberant",
+   "group": "character",
+   "maybe": true,
+   "from": "Freesound character folders, held out by uploader",
+   "precision": 0.9333333333333333,
+   "recall": 0.56
   }
  ]
 }
