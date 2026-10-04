@@ -15,11 +15,12 @@ os.makedirs(OUT, exist_ok=True)
 TARGET = 0.70
 man = json.load(open(MANIFEST)); labels = man['labels']
 meta = {c['id']: c for c in man['clips']}
-ids, X = [], []
+ids, X, seen = [], [], set()
 for f in sorted(glob.glob(f'{EMB}/emb-*.jsonl')):
     for line in open(f):
         r = json.loads(line)
-        if r['id'] in meta: ids.append(r['id']); X.append(r['embedding'])
+        # A resumed or re-sharded run can fingerprint a clip twice; count it once.
+        if r['id'] in meta and r['id'] not in seen: seen.add(r['id']); ids.append(r['id']); X.append(r['embedding'])
 X = np.asarray(X, dtype=np.float64)
 X /= np.linalg.norm(X, axis=1, keepdims=True)          # the app normalises before scoring
 y = np.array([meta[i]['label'] for i in ids]); g = np.array([meta[i]['group'] for i in ids])
@@ -51,10 +52,10 @@ for label in labels:
     # Out-of-fold scores on training notes pick the threshold; the test notes stay untouched.
     oof = np.zeros(len(train_idx))
     for a, b in GroupKFold(n_splits=5).split(Xtr, ttr, gtr):
-        m = LogisticRegression(C=1.0, class_weight='balanced', max_iter=3000).fit(Xtr[a], ttr[a])
+        m = LogisticRegression(C=1.0, class_weight='balanced', max_iter=500, tol=1e-3).fit(Xtr[a], ttr[a])
         oof[b] = m.predict_proba(Xtr[b])[:, 1]
     th = choose_threshold(ttr, oof)
-    model = LogisticRegression(C=1.0, class_weight='balanced', max_iter=3000).fit(Xtr, ttr)
+    model = LogisticRegression(C=1.0, class_weight='balanced', max_iter=500, tol=1e-3).fit(Xtr, ttr)
     pt = model.predict_proba(X[test_idx])[:, 1]; tt = t_all[test_idx]
     entry = {'trainPositive': int(ttr.sum()), 'testPositive': int(tt.sum()), 'testNegative': int((~tt).sum()), 'threshold': th}
     if th is None:

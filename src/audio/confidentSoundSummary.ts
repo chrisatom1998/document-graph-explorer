@@ -10,7 +10,7 @@ export const SOUND_DISPLAY_POLICY = 'model-score-floor-0.50-v1';
 export const SOUND_DISPLAY_FLOOR = .5;
 export interface DisplaySound { dimension: Dimension; label: string; origin: 'confirmed by you' | 'model estimate'; scores?: {model:string;score:number}[] }
 const validScore=(score:unknown):score is number=>typeof score==='number'&&Number.isFinite(score)&&score>=SOUND_DISPLAY_FLOOR&&score<=1;
-const profileNames:Record<string,string>={'AudioSet AST':'AST score','MTG-Jamendo':'Jamendo score','Music CLAP':'CLAP similarity','Reviewed examples':'Reviewed-example similarity'};
+const profileNames:Record<string,string>={'AudioSet AST':'AST score','MTG-Jamendo':'Jamendo score','Music CLAP':'CLAP similarity','Reviewed examples':'Reviewed-example similarity','Trained head':'Trained head score'};
 const nativeNames={ast:'AST score',jamendo:'Jamendo score',clap:'CLAP similarity',rhythm:'Tempo score',tonal:'Key score'};
 export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):DisplaySound[] {
   const result=new Map<string,DisplaySound>();

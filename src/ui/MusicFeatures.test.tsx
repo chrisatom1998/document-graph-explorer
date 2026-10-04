@@ -8,7 +8,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useGraphStore } from '../store/graphStore';
 function renderExpanded(ui: Parameters<typeof render>[0]) {
   const view = render(ui);
-  const details = screen.queryByText('Details');
+  const details = screen.queryByText('Technical details');
   if (details) fireEvent.click(details);
   fireEvent.click(screen.getByText('Track actions'));
   return view;
@@ -32,7 +32,7 @@ it('displays the filename D-sharp minor instead of a conflicting audio estimate 
   expect(screen.getByText('D♯ minor', { selector: 'dd' })).toBeVisible();
   expect(screen.queryByText('E minor', { selector: 'dd' })).toBeNull();
   expect(screen.queryByText('E♭ minor', { selector: 'dd' })).toBeNull();
-  fireEvent.click(screen.getByText('Details'));
+  fireEvent.click(screen.getByText('Technical details'));
   expect(screen.getByText(/Audio comparison:.*key E minor/)).toBeVisible();
 });
 it('shows the automatic synth label with uncertainty without requiring a confirmation', () => {
@@ -54,7 +54,7 @@ it('updates the confirmed summary after a later rejection', () => {
   expect(screen.getByRole('heading', { name: 'Confirmed instruments' })).toBeVisible();
   expect(screen.getByText('trumpet', { selector: 'li' })).toBeVisible();
   expect(screen.queryByText('synthesizer', { selector: 'li' })).toBeNull();
-  expect(screen.getByText('trumpet', { selector: 'strong' })).toBeVisible();
+  expect(screen.getByText('trumpet', { selector: '.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)' })).toBeVisible();
 });
 it('keeps name-derived instruments after an unsure machine-label review', () => {
   renderExpanded(<MusicFeatures node={{ ...node, path: 'Piano Loop.wav', audio: { ...node.audio!, soundReviews: [{ labelId: 'oboe', dimension: 'source', decision: 'uncertain', scope: 'track', at: '2026-10-03T00:00:00Z', evidenceRunId: 'run' }] } }} />);
@@ -83,18 +83,18 @@ it('shows a weak synth suggestion immediately instead of claiming nothing was de
 });
 it('explains the alternative tempo for a short clip', () => {
   renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, tempo: { bpm: 70, confidence: 0.75, alternatives: [140] } } }} />);
-  expect(screen.getByText('70.0 BPM')).toBeVisible();
+  expect(screen.getByText('70 BPM')).toBeVisible();
   expect(screen.getByText(/140.0 BPM may also fit at half or double time/)).toBeVisible();
 });
 it('shows the detected pitch without inventing a major or minor mode', () => {
   renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, detectedPitch: { pitchClass: 2, confidence: 0.94 } } }} />);
-  expect(screen.getByText('Estimated key')).toBeVisible();
+  expect(screen.getByText('Key')).toBeVisible();
   expect(screen.getByText(/Detected pitch: D/)).toBeVisible();
   expect(screen.getByText(/A repeated note alone cannot establish/)).toBeVisible();
 });
 it('shows name-derived features and retains conflicting audio for comparison', () => {
   renderExpanded(<MusicFeatures node={{ ...node, path: 'Synths/Action_Dm_140.wav', audio: { ...node.audio!, tempo: { bpm: 70, confidence: .75 } } }} />);
-  expect(screen.getByText('140.0 BPM')).toBeVisible();
+  expect(screen.getByText('140 BPM')).toBeVisible();
   expect(screen.getByText('D minor')).toBeVisible();
   expect(screen.queryByText('Key tonic from name')).toBeNull();
   expect(screen.getByText('Instruments from name')).toBeVisible();
@@ -126,17 +126,17 @@ it('selects the persistent analysis mode and labels sampled coverage truthfully'
 it('distinguishes active verification from an interrupted saved preview', () => {
   useGraphStore.getState().setPhase('parsing');
   const {rerender}=renderExpanded(<MusicFeatures node={{...node,audio:{...node.audio!,stage:'preview'}}} />);
-  expect(screen.getByText(/Quick estimate — verification is continuing/)).toBeVisible();
+  expect(screen.getByText(/Quick estimate — still checking/)).toBeVisible();
   useGraphStore.getState().setPhase('ready');
   rerender(<MusicFeatures node={{...node,audio:{...node.audio!,stage:'preview'}}} />);
-  expect(screen.getByText(/Quick estimate only — verification is unfinished/)).toBeVisible();
+  expect(screen.getByText(/Quick estimate only\. Reanalyze to finish/)).toBeVisible();
 });
 
 it('keeps explanations collapsed while showing the main musical values', () => {
   render(<MusicFeatures node={{ ...node, path: 'Synths/Action_Dm_140.wav' }} />);
-  expect(screen.getByText('140.0 BPM')).toBeVisible();
+  expect(screen.getByText('140 BPM')).toBeVisible();
   expect(screen.getByText('D minor')).toBeVisible();
-  expect(screen.getByText('Details').closest('details')).not.toHaveAttribute('open');
+  expect(screen.getByText('Technical details').closest('details')).not.toHaveAttribute('open');
   expect(screen.getByText('Audio comparison:', { exact: false })).not.toBeVisible();
   fireEvent.click(screen.getByText('Track actions'));
   expect(screen.getByRole('combobox', { name: 'Music analysis mode' })).toBeVisible();
@@ -159,22 +159,22 @@ it('keeps duration, sound possibilities and corrections visible while diagnostic
   recordEvidence(recognition, 'jamendo', { start: 10, end: 20 }, [{ dimension: 'source', labelId: 'oboe', score: .8 }]);
   render(<MusicFeatures node={{ ...node, audio: { ...node.audio!, recognition } }} />);
   expect(screen.getByText('3:00', { selector: 'dd' })).toBeVisible();
-  expect(screen.getByText('oboe', { selector: 'strong' })).toBeVisible();
-  expect(screen.getByRole('region',{name:'Sound identification'})).toHaveTextContent('Jamendo score 0.800');
+  expect(screen.getByText('oboe', { selector: '.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)' })).toBeVisible();
+  expect(screen.getByRole('region',{name:'Sound identification'})).toHaveTextContent('Jamendo score 0.80');
   expect(screen.queryByText('Correct the instrument')).toBeNull();
   expect(screen.queryByText('Correct DJ tags')).toBeNull();
   expect(screen.getByText('Coverage by component')).not.toBeVisible();
   expect(screen.getByText(/Suggestions are uncalibrated/)).not.toBeVisible();
-  const disclosure = screen.getByText('Details');
+  const disclosure = screen.getByText('Technical details');
   disclosure.focus(); expect(document.activeElement).toBe(disclosure);
   fireEvent.click(disclosure); expect(screen.getByText('Coverage by component')).toBeVisible();
 });
 it('preserves saved corrections across disclosure and rerender without offering review actions',()=>{
- const audio={...node.audio!,confirmedInstruments:['flute']};const before=structuredClone(audio);const view=render(<MusicFeatures node={{...node,audio}}/>);fireEvent.click(screen.getByText('Details'));fireEvent.click(screen.getByText('Details'));view.rerender(<MusicFeatures node={{...node,audio}}/>);expect(within(screen.getByRole('region',{name:'Sound identification'})).getByText('flute')).toBeVisible();expect(screen.queryByRole('button',{name:/^(Confirm|Reject|Unsure)$/})).toBeNull();expect(audio).toEqual(before);
+ const audio={...node.audio!,confirmedInstruments:['flute']};const before=structuredClone(audio);const view=render(<MusicFeatures node={{...node,audio}}/>);fireEvent.click(screen.getByText('Technical details'));fireEvent.click(screen.getByText('Technical details'));view.rerender(<MusicFeatures node={{...node,audio}}/>);expect(within(screen.getByRole('region',{name:'Sound identification'})).getByText('flute')).toBeVisible();expect(screen.queryByRole('button',{name:/^(Confirm|Reject|Unsure)$/})).toBeNull();expect(audio).toEqual(before);
 });
 it.each([.49,.5,.8])('applies the revised display floor to legacy prediction score %s',score=>{
  render(<MusicFeatures node={{...node,audio:{...node.audio!,instruments:[],instrumentPrediction:{label:'synthesizer',score,margin:.01}}}}/>);
- expect(within(screen.getByRole('region',{name:'Sound identification'})).queryByText('synthesizer')!==null).toBe(score>=.5);expect(screen.getByText('Details').closest('details')).not.toHaveAttribute('open');
+ expect(within(screen.getByRole('region',{name:'Sound identification'})).queryByText('synthesizer')!==null).toBe(score>=.5);expect(screen.getByText('Technical details').closest('details')).not.toHaveAttribute('open');
 });
 
 it.each(['rejected','uncertain'] as const)('does not revive %s effect/character reviews in profile groups or correction defaults',decision=>{
@@ -191,6 +191,6 @@ it('updates profile confirmations and correction defaults on the latest review w
  const updated={...audio,soundReviews:[...audio.soundReviews,{...audio.soundReviews[0],decision:'confirmed' as const}]};
  view.rerender(<MusicFeatures node={{...node,audio:updated}}/>);
  expect(view.container.querySelector('.dj-tag-groups')?.textContent).toContain('distorted (confirmed by you)');
- expect(screen.getByRole('region',{name:'Sound identification'})).toHaveTextContent('distorted — confirmed by you');
+ expect(screen.getByRole('region',{name:'Sound identification'})).toHaveTextContent(/distorted — Character · confirmed by you/);
  expect(updated.soundProfile.djTags[0].score).toBe(.8);expect(updated.soundReviews).toHaveLength(2);
 });

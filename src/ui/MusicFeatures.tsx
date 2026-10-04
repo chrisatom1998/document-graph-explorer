@@ -1,7 +1,7 @@
 import { resolvedNonSourceLabels, reviewedSoundProfile } from '../audio/soundReviewPolicy';
 import { useMusicJobs } from '../store/musicJobs';
 import CopilotProperties from './CopilotProperties';
-import ConfidentSoundSummary from './ConfidentSoundSummary';
+import ConfidentSoundSummary, { ModelScores } from './ConfidentSoundSummary';
 import MusicAnalysisMode from './MusicAnalysisMode';
 import { musicNameHints, type NamedHint } from '../audio/nameHints';
 import { confirmedInstrumentList, sourceReviewAllows } from '../audio/instrumentEvidence';
@@ -10,7 +10,7 @@ import type { DocNode } from '../model/types';
 import { KEY_NAMES, keyName, type InstrumentEstimate } from '../audio/musicTypes';
 import { isBroadInstrument } from '../audio/instrumentLabels';
 import { useGraphStore } from '../store/graphStore';
-import { SoundExplanation, SoundModelComparisons } from './SoundIdentification';
+import { SoundExplanation } from './SoundIdentification';
 import { RecognitionDiagnostics, type RecognitionEvidenceProps } from './RecognitionEvidence';
 const time = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?: (seconds: number) => void }) {
@@ -75,18 +75,23 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
     reviews: analysis.soundReviews, confirmedInstruments: confirmed ?? []
   } : undefined;
   return <section className="music-features" aria-label="Musical features">
-    <h3>Track details</h3>
-    {analysis?.stage === 'preview' && <p role="status">{job || phase === 'parsing' ? 'Quick estimate — verification is continuing in the background.' : 'Quick estimate only — verification is unfinished. Reanalyze to finish.'}</p>}
-    {analysis?.instrumentScan && !analysis.instrumentScan.complete && analysis.stage !== 'preview' && <p role="status">Analysis incomplete. Reanalyze to finish.</p>}
+    <h3 className="sr-only">Track details</h3>
+    {analysis?.stage === 'preview' && <p role="status" className="music-status">{job || phase === 'parsing' ? 'Quick estimate — still checking in the background.' : 'Quick estimate only. Reanalyze to finish.'}</p>}
+    {analysis?.instrumentScan && !analysis.instrumentScan.complete && analysis.stage !== 'preview' && <p role="status" className="music-status">Analysis incomplete. Reanalyze to finish.</p>}
     {analysis ? <>
-      <dl className="music-feature-grid">
-        <div><dt>Duration</dt><dd>{time(analysis.durationSeconds)}</dd></div>
-        <div><dt>{hints.tempo ? "Tempo · from name" : "Estimated tempo"}</dt><dd>{hints.tempo ? `${hints.tempo.value.toFixed(1)} BPM` : analysis.tempo ? `${analysis.tempo.bpm.toFixed(1)} BPM` : analysis.stage === 'preview' ? 'Not checked yet' : 'Uncertain / no steady beat'}</dd></div>
-        <div><dt>{hints.key ? "Key · from name" : "Estimated key"}</dt><dd>{hints.key ? hints.key.displayName : analysis.key ? keyName(analysis.key) : analysis.stage === 'preview' ? 'Not checked yet' : 'Uncertain / no stable key'}</dd></div>
+      <dl className="music-stats">
+        <div><dt>Length</dt><dd>{time(analysis.durationSeconds)}</dd></div>
+        <div><dt>Tempo{hints.tempo && <small>from name</small>}</dt>{hints.tempo || analysis.tempo
+          ? <dd>{Number((hints.tempo ? hints.tempo.value : analysis.tempo!.bpm).toFixed(1))} BPM</dd>
+          : <dd className="is-unknown" title={analysis.stage === 'preview' ? 'Not checked yet' : 'No steady beat detected'}>{analysis.stage === 'preview' ? '…' : '—'}</dd>}</div>
+        <div><dt>Key{hints.key && <small>from name</small>}</dt>{hints.key || analysis.key
+          ? <dd>{hints.key ? hints.key.displayName : keyName(analysis.key!)}</dd>
+          : <dd className="is-unknown" title={analysis.stage === 'preview' ? 'Not checked yet' : 'No stable key detected'}>{analysis.stage === 'preview' ? '…' : '—'}</dd>}</div>
       </dl>
       <ConfidentSoundSummary audio={analysis} node={node} />
+      <ModelScores profile={displayProfile} audio={analysis} />
       <details className="music-analysis-details">
-        <summary>Details</summary>
+        <summary>Technical details</summary>
         {recognitionProps && <RecognitionDiagnostics {...recognitionProps} />}
         {!!analysis.soundReviews?.length && <p>Saved reviews remain effective and take precedence over earlier confirmations.</p>}
         <CopilotProperties audio={analysis} />
@@ -128,7 +133,6 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
       <p>Tempo and key use {Math.round(analysis.analyzedSeconds)} seconds of excerpts. Instrument estimates can miss sounds or confuse similar timbres; an unlisted instrument may still be present.</p>
       {analysis.notes.filter(note => !analysis.confirmedInstruments || !note.startsWith('No instruments identified')).map(note => <p key={note}>{note}</p>)}
       <p>Connections use tempo, compatible keys, instruments, and confirmed sound properties. Half/double-time matches and name hints are labeled with lower strength. Your reviews take priority; unknown evidence does not match. Up to 8 audio neighbors, with 4 per relationship type.</p>
-      {analysis.soundProfile && <SoundModelComparisons profile={displayProfile!} />}
       </details>
     </> : <p>Analyze this track to find its tempo, key, and instruments.</p>}
     <details className="music-track-actions"><summary>Track actions</summary>

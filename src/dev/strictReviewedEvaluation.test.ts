@@ -26,7 +26,11 @@ it('rejects cross-split recording families, identical bytes, and draft truth', (
 it('scores after the deployed output filter and rejects held-out head fitting', () => {
   const head: LearnedDjHead = { group: 'source', label: 'piano', weights: Array(512).fill(0), bias: Math.log(4), threshold: .7 };
   const model = strictReviewedModel(examples(), partitions(), [{ head, trainingIds: ['a'] }]);
-  expect(evaluateReviewedTagBranch(vector(2), model)).toEqual([]); // .80 head score is not displayed
+  // A head is shown at its own measured threshold (.80 >= .70), under its own name -
+  // not held to the .88 similarity gate that applies to reviewed-example matches.
+  expect(evaluateReviewedTagBranch(vector(2), model)).toEqual([expect.objectContaining({ label: 'piano', model: 'Trained head', score: expect.closeTo(.8, 5) })]);
+  model.heads![0].threshold = .9;
+  expect(evaluateReviewedTagBranch(vector(2), model)).toEqual([]); // below the head's threshold: silent
   model.heads![0].bias = Math.log(19);
   expect(evaluateReviewedTagBranch(vector(2), model)).toEqual([expect.objectContaining({ label: 'piano' })]);
   expect(() => strictReviewedModel(examples(), partitions(), [{ head, trainingIds: ['c'] }])).toThrow('train examples only');

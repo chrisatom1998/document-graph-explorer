@@ -41,7 +41,8 @@ export function strictReviewedModel(examples: LearnedDjExample[], partitions: Re
   if (!model) throw new Error('Invalid model snapshot');
   return structuredClone(model);
 }
-/** Exact deployed DJ tag selection, including the post-head .88 inclusion filter.
+/** Exact deployed DJ tag selection: reviewed-example matches pass the .88 inclusion filter,
+ * trained heads pass their own threshold.
  * This is the reviewed/CLAP branch, not a substitute for complete GUI evaluation.
  */
 export function evaluateReviewedTagBranch(embedding: ArrayLike<number>, model: ReturnType<typeof strictReviewedModel>, nativeScores: DescriptionScore[] = []) {

@@ -3,7 +3,7 @@ import { MAX_FUSION_WINDOWS, sanitizeFusionIdentity, sanitizeFusionDecisions, un
 import { DjTagEvidence, selectDjTags } from './djTags';
 import { mergeDjTags } from './djClassification';
 import type { MusicDecoder } from './decodeMusic';
-import { jamendoSuggestions, jamendoLabels } from './jamendo';
+import { jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabels } from './jamendo';
 import { InstrumentEvidence, instrumentWindowStarts } from './instrumentEvidence';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, type MusicAnalysis, type MusicAnalysisMode } from './musicTypes';
 import type { InstrumentPredictions } from './instrumentLabels';
@@ -182,7 +182,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         const scores = output as Record<string, number>;
         for (const label of new Set([...Object.keys(musicScores), ...Object.keys(scores)])) musicScores[label] = ((musicScores[label] ?? 0) * musicCount + (scores[label] ?? 0)) / (musicCount + 1);
         musicCount++;
-        recordEvidence(recognition, id, interval, jamendoLabels(scores));
+        recordEvidence(recognition, id, interval, [...jamendoLabels(scores), ...nsynthLabels(scores)]);
       } else {
         const scores = output as DescriptionScore[];
         descriptions.add(scores);
@@ -257,8 +257,10 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
           else if (outputs.size !== 3) window = { ...window, status: 'failed', reason: 'A required native model failed or stopped' };
           else {
             const ast = outputs.get('ast')!.output as InstrumentPredictions;
-            const jamendo = outputs.get('jamendo')!.output as Record<string, number>;
-            const clap = outputs.get('clap')!.output as DescriptionScore[];
+            const jamendo = jamendoInstrumentScores(outputs.get('jamendo')!.output as Record<string, number>);
+            // The scorer's contract is the fixed prompt catalog. Trained-head and reviewed-example
+            // scores ride along in the same output for tagging and are not part of that contract.
+            const clap = (outputs.get('clap')!.output as DescriptionScore[]).filter(d => d.group !== 'dj-learned');
             if (!Object.keys(ast.scores).length || !Object.keys(jamendo).length || !clap.length) {
               window = { ...window, status: 'empty', reason: 'Silent or empty native output; no fusion decision' };
             } else {

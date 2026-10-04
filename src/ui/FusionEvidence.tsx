@@ -7,7 +7,7 @@ export function FusionDiagnostics({fusion,duration,mode,onSeek}:FusionEvidencePr
   const view=fusionPresentation(fusion,duration,mode);
   if(!view)return null;
   return <section aria-label="Source classifier diagnostics">
-    <p>{view.qualified ? 'This policy was evaluated on ten-second Ogg excerpts. Suggestions are not human confirmations or guarantees for other recordings.' : fusion?.imported ? 'Imported source classifier diagnostics are unverified. They do not establish a new local validated run.' : 'Experimental source classifier diagnostics. These results are not enabled as trained source suggestions.'}</p>
+    <p>{view.qualified ? 'Evaluated on public OpenMIC clips and checked to give the same answers for WAV, MP3 and longer recordings. Suggestions are not human confirmations.' : fusion?.imported ? 'Imported source classifier diagnostics are unverified. They do not establish a new local validated run.' : 'Experimental source classifier diagnostics. These results are not enabled as trained source suggestions.'}</p>
     <details><summary>All 20 classifier states and support</summary>
       <p>Negative, uncertain and unavailable are different states. A negative does not prove a source is absent. Scores are not calibrated certainty.</p>
       {view.windows.map(w => <div key={w.start}>

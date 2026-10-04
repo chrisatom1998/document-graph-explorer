@@ -1,3 +1,56 @@
-.confidence-sounds { list-style: none; margin: .5rem 0; padding: 0; }
-.confidence-sounds li { min-width: 0; margin: .65rem 0; overflow-wrap: anywhere; }
-.confidence-sounds small { display: block; margin-top: .15rem; line-height: 1.5; }
+/* Sound tags: what the clip is, at a glance. */
+.sound-tags { margin: 18px 0 6px; }
+.sound-tags__title,
+.music-features .music-stats dt,
+.model-scores h5 {
+  margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint);
+}
+.sound-tags__list { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.sound-tag {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px;
+  border: 1px solid var(--border-glass); background: var(--surface-inset); color: var(--text-primary);
+  font-size: 13px; line-height: 1.2; cursor: default;
+}
+.sound-tag--source { border-color: transparent; background: var(--accent-soft); color: var(--accent-strong); font-weight: 500; }
+.sound-tag--confirmed { border-color: color-mix(in srgb, var(--success) 45%, transparent); color: var(--success); }
+.sound-tag--name { border-style: dashed; color: var(--text-secondary); }
+.sound-tag__mark { font-size: 11px; }
+.sound-tag__note { font-size: 10px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-faint); }
+.sound-tags__empty { margin: 0; color: var(--text-faint); }
+
+/* Clip stats: length, tempo, key. */
+.music-features .music-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0 0; }
+.music-features .music-stats > div { min-width: 0; padding: 10px 12px; border-radius: var(--radius-md); background: var(--surface-inset); border: 1px solid var(--border-glass); }
+.music-features .music-stats dt { margin-bottom: 4px; display: flex; gap: 6px; align-items: baseline; }
+.music-features .music-stats dt small { font-size: 10px; letter-spacing: .04em; color: var(--accent-strong); text-transform: none; font-weight: 500; }
+.music-features .music-stats dd { margin: 0; font-size: 17px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music-features .music-stats dd.is-unknown { color: var(--text-faint); }
+.music-status { margin: 10px 0 0; font-size: 12px; color: var(--warning); }
+
+/* Quiet disclosures: present, never shouting. */
+.music-features details > summary,
+.audio-preview details > summary {
+  cursor: pointer; padding: 6px 0; font-size: 12px; color: var(--text-secondary); list-style-position: inside;
+}
+.music-features details > summary:hover,
+.audio-preview details > summary:hover { color: var(--text-primary); }
+.music-features .music-analysis-details,
+.music-features .model-scores { border-top: 1px solid var(--border-glass); margin-top: 14px; padding-top: 6px; }
+.music-features .music-track-actions { margin-top: 0; }
+.music-analysis-details > :not(summary) { font-size: 12px; }
+
+/* Model scores: one compact column per model. */
+.model-scores__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px 18px; margin: 8px 0 4px; }
+.model-scores__model ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.model-scores__model li { display: grid; grid-template-columns: minmax(0, 1fr) 54px 34px; align-items: center; gap: 8px; font-size: 12px; }
+.model-scores__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+.model-scores__bar { height: 4px; border-radius: 2px; background: var(--surface-raised); overflow: hidden; }
+.model-scores__bar > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+.model-scores__value { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.model-scores__note { margin: 6px 0 0; font-size: 11px; color: var(--text-faint); }
+.model-scores h5 small { text-transform: none; letter-spacing: 0; }
+
+/* Dividers inside the audio panel: hairlines, not rules. */
+.audio-preview .music-features,
+.audio-preview .music-manual-link { border-top-color: var(--border-glass); }
+.audio-preview .music-features { margin-top: 10px; padding-top: 4px; }

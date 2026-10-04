@@ -12,7 +12,7 @@ it('keeps qualified score estimates visible without review controls and support 
   vi.mocked(installedFusionIdentity).mockReturnValue(release); const review=vi.fn(); const seek=vi.fn();
   render(<FusionEvidence fusion={fixture()} duration={10} mode="full" onReview={review} onSeek={seek}/>);
   expect(screen.getByRole('region',{name:'Sound identification'})).toBeVisible();
-  expect(screen.getByText(/This policy was evaluated/)).not.toBeVisible();
+  expect(screen.getByText(/Evaluated on public OpenMIC clips/)).not.toBeVisible();
   expect(screen.queryByRole('button',{name:/^(Confirm|Reject|Unsure)$/})).toBeNull();expect(review).not.toHaveBeenCalled();
   fireEvent.click(screen.getByText('Details')); fireEvent.click(screen.getByText('All 20 classifier states and support'));
   expect(screen.getByText('Head score')).toBeVisible();
@@ -28,12 +28,12 @@ it.each(['imported','unvalidated'] as const)('never promotes %s diagnostics into
   expect(explanation).not.toBeVisible(); fireEvent.click(screen.getByText('Details')); expect(explanation).toBeVisible();
 });
 it.each(['rejected','uncertain'] as const)('does not revive a %s trained label through the score display',decision=>{
- vi.mocked(installedFusionIdentity).mockReturnValue(release);render(<FusionEvidence fusion={fixture()} duration={10} mode="full" reviews={[{dimension:'source',labelId:'accordion',decision,scope:'track',at:'now',evidenceRunId:'old'}]}/>);expect(screen.queryByText('accordion',{selector:'strong'})).toBeNull();
+ vi.mocked(installedFusionIdentity).mockReturnValue(release);render(<FusionEvidence fusion={fixture()} duration={10} mode="full" reviews={[{dimension:'source',labelId:'accordion',decision,scope:'track',at:'now',evidenceRunId:'old'}]}/>);expect(screen.queryByText('accordion',{selector:'.sound-tag span'})).toBeNull();
 });
 it.each([.499999,.5])('uses valid qualified decision scores at inclusive boundary %s',score=>{
- vi.mocked(installedFusionIdentity).mockReturnValue(release);const fusion=fixture();fusion.windows[0].decisions[0].decisionProbability=score;fusion.windows[0].decisions[0].headProbability=score;render(<FusionEvidence fusion={fusion} duration={10} mode="full"/>);expect(screen.queryByText('accordion',{selector:'strong'})!==null).toBe(score>=.5);
+ vi.mocked(installedFusionIdentity).mockReturnValue(release);const fusion=fixture();fusion.windows[0].decisions[0].decisionProbability=score;fusion.windows[0].decisions[0].headProbability=score;render(<FusionEvidence fusion={fusion} duration={10} mode="full"/>);expect(screen.queryByText('accordion',{selector:'.sound-tag span'})!==null).toBe(score>=.5);
 });
 
 it('does not substitute an inapplicable head score for a binary fallback with no numeric decision confidence',()=>{
- vi.mocked(installedFusionIdentity).mockReturnValue(release);const fusion=fixture();Object.assign(fusion.windows[0].decisions[0],{source:'guarded-binary-baseline',headProbability:.99,decisionProbability:null,state:'positive'});render(<FusionEvidence fusion={fusion} duration={10} mode="full"/>);expect(screen.queryByText('accordion',{selector:'strong'})).toBeNull();
+ vi.mocked(installedFusionIdentity).mockReturnValue(release);const fusion=fixture();Object.assign(fusion.windows[0].decisions[0],{source:'guarded-binary-baseline',headProbability:.99,decisionProbability:null,state:'positive'});render(<FusionEvidence fusion={fusion} duration={10} mode="full"/>);expect(screen.queryByText('accordion',{selector:'.sound-tag span'})).toBeNull();
 });

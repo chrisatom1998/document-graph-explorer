@@ -102,7 +102,7 @@ export function learnedDjScores(embedding: ArrayLike<number>, model: LearnedDjMo
     if (results.some(r => r.learnedGroup === head.group && r.label === head.label)) continue;
     const logit = head.bias + head.weights.reduce((sum,w,i) => sum + w * vector[i] / norm, 0);
     const score = 1 / (1 + Math.exp(-Math.max(-35,Math.min(35,logit))));
-    if (score >= head.threshold) results.push({group:'dj-learned',label:head.label,score,learnedGroup:head.group,decision:'include'});
+    if (score >= head.threshold) results.push({group:'dj-learned',label:head.label,score,learnedGroup:head.group,decision:'include',basis:'head'});
   }
   return results;
 }

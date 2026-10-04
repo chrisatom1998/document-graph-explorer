@@ -42,5 +42,6 @@ public/audio-runtime/
 # Downloaded, checksum-verified audio model weights
 public/music-model/**/*.onnx
 public/sound-model/**/*.onnx
-public/sound-model/learned.json
 public/jamendo-model/*.onnx
+# NSynth heads are converted locally from Essentia .pb files (no upstream ONNX), so they are committed
+!public/jamendo-model/nsynth_*-discogs-effnet-1.onnx

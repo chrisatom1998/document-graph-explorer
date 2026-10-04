@@ -77,7 +77,7 @@ export default tseslint.config(
   {
     // Browser-automation scripts: the body of a page.evaluate() callback runs in the
     // page, so it legitimately reaches for DOM globals from a Node-context file.
-    files: ['scripts/qualify-fusion-input.mjs'],
+    files: ['scripts/qualify-fusion-input.mjs', 'scripts/score-dj-labels.mjs'],
     languageOptions: { sourceType: 'module', globals: { ...globals.node, ...globals.browser } },
   },
   {

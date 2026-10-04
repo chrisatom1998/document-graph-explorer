@@ -23,12 +23,12 @@ it('shows saved review scope and keeps a human decision distinct from a fresh su
   recordEvidence(run,'jamendo',{start:0,end:10},[{dimension:'source',labelId:'oboe',score:.8}]);
   const review=vi.fn();
   render(<RecognitionEvidence recognition={run} duration={10} onReview={review} reviews={[{dimension:'source',labelId:'oboe',decision:'rejected',scope:'track',at:'2026-10-03T00:00:00Z',evidenceRunId:'earlier'}]} />);
-  expect(screen.queryByText('oboe',{selector:'strong'})).toBeNull();expect(screen.queryByRole('button',{name:'Confirm'})).toBeNull();expect(review).not.toHaveBeenCalled();fireEvent.click(screen.getByText('Details'));fireEvent.click(screen.getByText('Saved review history (1)'));expect(screen.getByText(/oboe: rejected/)).toBeVisible();
+  expect(screen.queryByText('oboe',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull();expect(screen.queryByRole('button',{name:'Confirm'})).toBeNull();expect(review).not.toHaveBeenCalled();fireEvent.click(screen.getByText('Details'));fireEvent.click(screen.getByText('Saved review history (1)'));expect(screen.getByText(/oboe: rejected/)).toBeVisible();
 });
 it('retains saved confirmations without offering review controls',()=>{
   const run=createRecognition(10,'full');const review=vi.fn();
   render(<RecognitionEvidence recognition={run} duration={10} onReview={review} reviews={[{dimension:'source',labelId:'oboe',decision:'confirmed',scope:'track',at:'2026-10-03T00:00:00Z',evidenceRunId:'earlier'}]} />);
-  expect(screen.getByText('oboe',{selector:'strong'})).toBeVisible();expect(screen.getByText('— confirmed by you')).toBeVisible();expect(screen.queryByRole('button',{name:'Reject'})).toBeNull();expect(review).not.toHaveBeenCalled();
+  expect(screen.getByText('oboe',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeVisible();expect(document.querySelector('.sound-tag--confirmed')).toHaveTextContent(/confirmed by you/);expect(screen.queryByRole('button',{name:'Reject'})).toBeNull();expect(review).not.toHaveBeenCalled();
 });
 
 it('explains the qualifying vocal prompt instead of presenting its score as direct voice confidence',()=>{
@@ -48,7 +48,7 @@ it('removes every repeated review control group',()=>{
  const run=createRecognition(10,'full');
  recordEvidence(run,'jamendo',{start:0,end:10},[{dimension:'source',labelId:'piano',score:.8},{dimension:'source',labelId:'guitar',score:.8}]);
  render(<RecognitionEvidence recognition={run} duration={10}/>);
- expect(screen.queryByRole('group',{name:'Review piano for this track'})).toBeNull();expect(screen.queryByRole('group',{name:'Review guitar for this track'})).toBeNull();expect(screen.getByText('piano',{selector:'strong'})).toBeVisible();expect(screen.getByText('guitar',{selector:'strong'})).toBeVisible();
+ expect(screen.queryByRole('group',{name:'Review piano for this track'})).toBeNull();expect(screen.queryByRole('group',{name:'Review guitar for this track'})).toBeNull();expect(screen.getByText('piano',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeVisible();expect(screen.getByText('guitar',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeVisible();
 });
 
 it('keeps analysis failure and incomplete evidence visible outside diagnostic details',()=>{
@@ -62,7 +62,7 @@ it('keeps qualifying estimates visible without review actions',()=>{
   const recognition=createRecognition(10,'full'); const review=vi.fn();
   recordEvidence(recognition,'jamendo',{start:0,end:10},[{dimension:'source',labelId:'flute',score:.8}]);
   render(<RecognitionEvidence recognition={recognition} duration={10} onReview={review}/>);
-  expect(screen.getByText('flute',{selector:'strong'})).toBeVisible();expect(screen.queryByRole('group',{name:'Review flute for this track'})).toBeNull();expect(screen.queryByRole('button',{name:/^(Confirm|Reject|Unsure)$/})).toBeNull();expect(review).not.toHaveBeenCalled();
+  expect(screen.getByText('flute',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeVisible();expect(screen.queryByRole('group',{name:'Review flute for this track'})).toBeNull();expect(screen.queryByRole('button',{name:/^(Confirm|Reject|Unsure)$/})).toBeNull();expect(review).not.toHaveBeenCalled();
 });
 
 it('retains a concise availability warning when a completed run has a failed component',()=>{
@@ -87,8 +87,8 @@ it.each(['effect','character'] as const)('review: %s latest append wins even aft
  expect(screen.queryByText('— rejected by you')).not.toBeInTheDocument();expect(screen.queryByText('— model estimate',{exact:false})).not.toBeInTheDocument();
  expect(screen.queryByText('— possible')).not.toBeInTheDocument();
  rerender(<RecognitionEvidence recognition={run} duration={8} reviews={[{...base,decision:'rejected'},{...base,decision:'uncertain'}]} />);
- expect(screen.queryByText('riser',{selector:'strong'})).toBeNull();
+ expect(screen.queryByText('riser',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull();
  rerender(<RecognitionEvidence recognition={run} duration={8} reviews={[{...base,decision:'rejected'},{...base,decision:'confirmed'}]} />);
- expect(screen.getByText('— confirmed by you')).toBeVisible();
+ expect(document.querySelector('.sound-tag--confirmed')).toHaveTextContent(/confirmed by you/);
  expect(run.observations[0].status).toBe('possible');
 });

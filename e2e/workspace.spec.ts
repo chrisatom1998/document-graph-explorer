@@ -44,7 +44,7 @@ test('classic graph controls and music copilot work on desktop and mobile', asyn
   await page.getByRole('button', { name: 'Browse documents', exact: true }).press('Space');
   await page.getByRole('option', { name: /Melodic 01/ }).click();
   await expect(page.getByRole('dialog', { name: 'Melodic 01', exact: true })).toBeVisible();
-  await expect(page.getByText('Estimated tempo', { exact: true })).toBeVisible();
+  await expect(page.getByText('Tempo', { exact: true })).toBeVisible();
   await expect(page.locator('.audio-transport')).toBeVisible();
   await expect(page.locator('.audio-transport').getByRole('button', { name: 'Play sample' })).toBeDisabled();
   await expect(page.getByText('Audio is not saved here. Add the original file again to play it.')).toBeVisible();
