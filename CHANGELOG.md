@@ -33,7 +33,7 @@ This project follows the Keep a Changelog format.
 
 ### Changed
 - Node 24 is the declared runtime: `.nvmrc`, `engines.node` (`>=22`), and the release workflow now agree with CI and the Docker image (the release workflow previously built on Node 22). The release workflow also checks that the tag matches `package.json` **before** spending minutes on builds instead of after.
-- Removed five orphaned modules that nothing imported: `WorkspaceChrome`, `ThemeToggle`, `ClusterAtmosphere`, `NebulaClouds`, and `audio/evaluationSignals`.
+- Removed four orphaned modules that nothing imported: `WorkspaceChrome`, `ThemeToggle`, `ClusterAtmosphere`, and `NebulaClouds`. (`audio/evaluationSignals` stays: it is a documented helper library for the evaluation workflow in `docs/audio-evaluation-infrastructure.md`, not dead code.)
 - `scripts/sanitize-airgap.mjs` now also neutralizes `signaling.yjs.dev` in the air-gapped bundle and documents which attribution-link hostnames it deliberately leaves alone.
 - README and AGENTS.md state that the first `npm run dev` / `npm run build` needs network access for the ~190 MB audio-model download, and that `npm run setup:music` pre-fetches it for offline work.
 
