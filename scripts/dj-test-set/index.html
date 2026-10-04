@@ -1,0 +1,64 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sound check</title>
+<style>
+:root{--bg:#070712;--panel:#111628;--line:rgba(158,176,255,.16);--text:#e6eaf8;--muted:#8b93b8;--accent:#8e7dff;--accent-soft:rgba(142,125,255,.18);--ok:#7ee8c4}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 "Space Grotesk",system-ui,sans-serif;display:grid;place-items:start center;min-height:100vh;padding:28px 16px}
+main{width:min(760px,100%)}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.bar{flex:1;height:6px;background:var(--panel);border-radius:3px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--accent);transition:width .2s}
+.count{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+.play{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.play button{width:54px;height:54px;border-radius:50%;border:0;background:var(--accent);color:#fff;font-size:20px;cursor:pointer}
+.play span{color:var(--muted)}
+h2{margin:18px 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.chips{display:flex;flex-wrap:wrap;gap:8px;min-height:38px}
+.opt{padding:12px 10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);font:inherit;cursor:pointer;text-align:left}
+.chips .opt{padding:8px 12px;border-radius:999px}
+.opt kbd{float:right;color:var(--muted);font:11px ui-monospace,monospace;margin-left:8px}
+.opt.on{background:var(--accent-soft);border-color:var(--accent);color:#fff}
+.nav{display:flex;gap:10px;margin-top:22px}.nav button{padding:12px 18px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);font:inherit;cursor:pointer}
+.nav .next{flex:1;background:var(--accent);border:0;color:#fff;font-weight:600}.nav .next:disabled{opacity:.35;cursor:default}
+.hint{margin-top:14px;color:var(--muted);font-size:12px}.done{text-align:center;padding:40px 10px}.done b{color:var(--ok);font-size:20px}
+@media(max-width:560px){.grid{grid-template-columns:repeat(2,1fr)}}
+</style></head><body><main>
+<div class="top"><div class="bar"><i id="bar"></i></div><div class="count" id="count"></div></div>
+<div class="card" id="card"></div>
+<p class="hint">Keys: <b>1–8</b> pick what it is · <b>letters</b> add detail · <b>Space</b> replay · <b>Enter</b> next · <b>←</b> back. Saves after every clip. Close anytime.</p>
+</main><script>
+const FAMILIES=[['drum hit','Drum hit'],['drum loop','Drum loop'],['bass','Bass'],['synth','Synth / melodic'],['vocal','Vocal'],['fx','FX / transition'],['texture','Texture / ambience'],['unsure','Not sure / other']];
+const DETAILS={'drum hit':['kick','snare','clap','hi-hat','cymbal','tom','other percussion'],'drum loop':['full drum loop','top loop','percussion loop','drum fill','breakbeat'],
+ bass:['808','sub bass','reese','wobble / growl','other bass'],synth:['lead','pluck','pad','chord','stab','arp'],vocal:['chop','phrase','ad-lib / shout','chant / choir'],
+ fx:['riser','downlifter','impact','whoosh / sweep','glitch','other fx'],texture:['ambience','drone','foley','noise'],unsure:[]};
+const EFFECTS=['reverb','delay / echo','distorted'];const KEYS='qwertyu';const FXKEYS='zxc';
+let clips=[],labels={},i=0,cur={};const audio=new Audio();
+const $=s=>document.querySelector(s);
+async function load(){const s=await (await fetch('/state')).json();clips=s.clips;labels=s.labels;i=clips.findIndex(c=>!labels[c]);if(i<0)i=clips.length;show();}
+function show(){const n=Object.keys(labels).length;$('#bar').style.width=(n/clips.length*100)+'%';$('#count').textContent=`${n} of ${clips.length} done`;
+ if(i>=clips.length){audio.pause();$('#card').innerHTML=`<div class="done"><b>All ${clips.length} done</b><p>Tell Claude "test set done".</p></div>`;return;}
+ const saved=labels[clips[i]];cur=saved?{family:saved.family,details:[...saved.details],effects:[...saved.effects]}:{family:null,details:[],effects:[]};
+ audio.src=`/audio/${clips[i]}.mp3`;audio.play().catch(()=>{});render();}
+function render(){const d=DETAILS[cur.family]||[];
+ $('#card').innerHTML=`<div class="play"><button id="pl" aria-label="Replay">▶</button><span>Clip ${i+1}. What is this sound?</span></div>
+ <h2>What is it</h2><div class="grid">${FAMILIES.map(([k,t],n)=>`<button class="opt ${cur.family===k?'on':''}" data-f="${k}">${t}<kbd>${n+1}</kbd></button>`).join('')}</div>
+ <h2>More specific (optional)</h2><div class="chips">${d.map((t,n)=>`<button class="opt ${cur.details.includes(t)?'on':''}" data-d="${t}">${t}<kbd>${KEYS[n].toUpperCase()}</kbd></button>`).join('')||'<span style="color:var(--muted)">Pick what it is first</span>'}</div>
+ <h2>Effects you can clearly hear (optional)</h2><div class="chips">${EFFECTS.map((t,n)=>`<button class="opt ${cur.effects.includes(t)?'on':''}" data-e="${t}">${t}<kbd>${FXKEYS[n].toUpperCase()}</kbd></button>`).join('')}</div>
+ <div class="nav"><button id="back" ${i?'':'disabled'}>← Back</button><button class="next" id="next" ${cur.family?'':'disabled'}>Next ↵</button></div>`;
+ $('#pl').onclick=replay;$('#back').onclick=back;$('#next').onclick=next;
+ document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>family(b.dataset.f));
+ document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>toggle('details',b.dataset.d));
+ document.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>toggle('effects',b.dataset.e));}
+function replay(){audio.currentTime=0;audio.play().catch(()=>{});}
+function family(f){if(cur.family!==f){cur.family=f;cur.details=[];}render();}
+function toggle(k,v){cur[k]=cur[k].includes(v)?cur[k].filter(x=>x!==v):[...cur[k],v];render();}
+async function next(){if(!cur.family)return;const id=clips[i];labels[id]={...cur};
+ const r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,...cur})});
+ if(!r.ok){alert('Could not save. Is the review server still running?');return;}i++;show();}
+function back(){if(i>0){i--;show();}}
+addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey||i>=clips.length)return;const k=e.key.toLowerCase();
+ if(k===' '){e.preventDefault();replay();}else if(k==='enter'){e.preventDefault();next();}else if(k==='arrowleft')back();
+ else if(k>='1'&&k<='8')family(FAMILIES[+k-1][0]);
+ else if(KEYS.includes(k)&&cur.family){const t=(DETAILS[cur.family]||[])[KEYS.indexOf(k)];if(t)toggle('details',t);}
+ else if(FXKEYS.includes(k))toggle('effects',EFFECTS[FXKEYS.indexOf(k)]);});
+load();
+</script></body></html>
