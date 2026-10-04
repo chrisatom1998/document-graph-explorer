@@ -49,8 +49,7 @@
     "maath": "^0.10.8",
     "mdast-util-to-string": "^4.0.0",
     "onnxruntime-web": "1.26.0-dev.20260416-b7804b056c",
-    "openai": "^7.27.0",
-    "pdfjs-dist": "^6.1.200",
+    "pdfjs-dist": "^6.4.299",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "remark-gfm": "^4.0.1",
@@ -74,12 +73,13 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.0",
     "@vitejs/plugin-react": "^5.2.0",
-    "electron": "^43.2.0",
+    "electron": "^43.7.7",
     "electron-builder": "^26.15.3",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
+    "openai": "^7.27.0",
     "pkg": "^5.8.1",
     "resedit": "^2.0.3",
     "tailwindcss": "^4.3.3",
@@ -87,7 +87,7 @@
     "typescript-eslint": "^8.62.1",
     "vite": "^7.3.6",
     "vite-node": "^3.0.0",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.11"
   },
   "build": {
     "appId": "com.documentgraph.explorer",

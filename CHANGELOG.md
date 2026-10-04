@@ -31,6 +31,12 @@ This project follows the Keep a Changelog format.
 - Collaboration invite hashes ask before joining; notes/tags stay local unless opted in; public STUN is disabled (host ICE only); share-link summaries can be up to 2000 characters (connection evidence is capped at 200).
 - Batch enrichment now sends each document's **full stored text** to the provider. Previously only the first 1,200 characters were included, so summaries and topics were written from a stub. Enormous files are truncated only as a last resort at `DOCUMENT_AI_MAX_CONTEXT_CHARS` (240,000 characters); batches split when that would overflow a typical model context window. Settings, SECURITY.md, and the user guide disclose the full-text send.
 
+### Security
+- Updated `pdfjs-dist` to 6.4.299 (fixes GHSA-hq66-cqwq-w95j, arbitrary JavaScript execution when opening a malicious PDF), `electron` to 43.7.7 (sandbox-inheritance and protocol-handler advisories), and `vitest` to 4.1.11 (`@vitest/mocker` path traversal).
+- `openai` is now a devDependency: it is used only by the dev-server-only DJ assistant plugins and no longer sits in the production dependency tree.
+- `.dockerignore` excludes `.env*` so a local `OPENAI_API_KEY` can never be copied into a Docker build layer.
+- SECURITY.md documents the `npm run dev`-only OpenAI side channel (sound search, voice transcription, sample review) and the local Python reviewer it spawns, and clarifies that no built artifact includes it.
+
 ## [1.1.14] - 2026-07-29
 
 ### Added
