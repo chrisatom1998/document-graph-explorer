@@ -1,7 +1,8 @@
 /**
- * Single source of the app's Content-Security-Policy. In airgap builds the
- * external connect-src host (OpenRouter) is removed, so the browser
- * physically blocks every off-origin request. Consumed by
+ * Single source of the app's Content-Security-Policy. In airgap builds every
+ * external connect-src host (OpenRouter, the Ollama loopback ports, and the
+ * collaboration signaling server) is removed, so the browser physically
+ * blocks every off-origin request. Consumed by
  * vite.config.ts's injectCsp plugin at build time.
  *
  * Any host added here must also be reflected in docker/security-headers.conf,

@@ -4,6 +4,9 @@
   "version": "1.1.14",
   "main": "desktop/main.cjs",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build && node scripts/verify-runtime-assets.mjs dist && node scripts/check-bundle.mjs dist",

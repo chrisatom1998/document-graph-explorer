@@ -15,7 +15,12 @@
 // Deliberately NOT touched: XML/SVG namespace URIs (www.w3.org, ns.adobe.com,
 // www.xfa.org). Those are required, non-network standard identifiers — an SVG
 // won't render without its `xmlns="http://www.w3.org/2000/svg"` — and stripping
-// them would break rendering. They are not network destinations.
+// them would break rendering. They are not network destinations. Also left
+// intact: the sample-pack *source attribution* links (freesound.org, kenney.nl,
+// freepats.zenvoid.org, uiowa.edu) rendered as plain <a href> text in the audio
+// UI. Nothing fetches them; they open only on a deliberate user click, which
+// SECURITY.md's "Scope of the guarantee" explicitly carves out. A string scan
+// of dist-airgap will therefore still list those four hostnames.
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 
 const ASSETS = new URL('../dist-airgap/assets/', import.meta.url);
@@ -25,8 +30,13 @@ const ASSETS = new URL('../dist-airgap/assets/', import.meta.url);
 // The github.com/huggingface/... entry is an inert issue-reporting URL baked into
 // transformers.js error text — never fetched, but "huggingface" is a keyword an AI
 // DLP watchlist targets, so it's neutralized along with the real model/CDN hosts.
+// signaling.yjs.dev is the collaboration signaling server; createCollabSession
+// refuses to start under AIRGAP and the CSP has no connect-src for it, so the
+// string is inert — but it is still an external service hostname, so it gets
+// the same treatment.
 const HOSTS = [
   'github.com/huggingface/transformers.js',
+  'signaling.yjs.dev',
   'openrouter.ai',
   'cdn.jsdelivr.net',
   'huggingface.co',

@@ -31,6 +31,12 @@ This project follows the Keep a Changelog format.
 - Collaboration invite hashes ask before joining; notes/tags stay local unless opted in; public STUN is disabled (host ICE only); share-link summaries can be up to 2000 characters (connection evidence is capped at 200).
 - Batch enrichment now sends each document's **full stored text** to the provider. Previously only the first 1,200 characters were included, so summaries and topics were written from a stub. Enormous files are truncated only as a last resort at `DOCUMENT_AI_MAX_CONTEXT_CHARS` (240,000 characters); batches split when that would overflow a typical model context window. Settings, SECURITY.md, and the user guide disclose the full-text send.
 
+### Changed
+- Node 24 is the declared runtime: `.nvmrc`, `engines.node` (`>=22`), and the release workflow now agree with CI and the Docker image (the release workflow previously built on Node 22). The release workflow also checks that the tag matches `package.json` **before** spending minutes on builds instead of after.
+- Removed five orphaned modules that nothing imported: `WorkspaceChrome`, `ThemeToggle`, `ClusterAtmosphere`, `NebulaClouds`, and `audio/evaluationSignals`.
+- `scripts/sanitize-airgap.mjs` now also neutralizes `signaling.yjs.dev` in the air-gapped bundle and documents which attribution-link hostnames it deliberately leaves alone.
+- README and AGENTS.md state that the first `npm run dev` / `npm run build` needs network access for the ~190 MB audio-model download, and that `npm run setup:music` pre-fetches it for offline work.
+
 ### Security
 - Updated `pdfjs-dist` to 6.4.299 (fixes GHSA-hq66-cqwq-w95j, arbitrary JavaScript execution when opening a malicious PDF), `electron` to 43.7.7 (sandbox-inheritance and protocol-handler advisories), and `vitest` to 4.1.11 (`@vitest/mocker` path traversal).
 - `openai` is now a devDependency: it is used only by the dev-server-only DJ assistant plugins and no longer sits in the production dependency tree.
