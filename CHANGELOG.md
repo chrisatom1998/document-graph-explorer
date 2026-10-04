@@ -41,6 +41,7 @@ This project follows the Keep a Changelog format.
 
 ### Security
 - Updated `pdfjs-dist` to 6.4.299 (fixes GHSA-hq66-cqwq-w95j, arbitrary JavaScript execution when opening a malicious PDF), `electron` to 43.7.7 (sandbox-inheritance and protocol-handler advisories), and `vitest` to 4.1.11 (`@vitest/mocker` path traversal).
+- `@huggingface/transformers` 4.2.0 → 4.3.0 together with its coupled `onnxruntime-web` pin (1.26.0-dev → 1.31.0-dev.20260914); the two must move as a pair or the bundle ends up with two ONNX runtimes. Pulls in patched `sharp` 0.35 and `onnxruntime-node` 1.30 (clears the libvips/libheif and adm-zip advisories). Verified end to end in the browser: demo-corpus embeddings and local audio inference both run on the new runtime, and the air-gap sanitizer still finds zero external hosts.
 - `openai` is now a devDependency: it is used only by the dev-server-only DJ assistant plugins and no longer sits in the production dependency tree.
 - `.dockerignore` excludes `.env*` so a local `OPENAI_API_KEY` can never be copied into a Docker build layer.
 - SECURITY.md documents the `npm run dev`-only OpenAI side channel (sound search, voice transcription, sample review) and the local Python reviewer it spawns, and clarifies that no built artifact includes it.
