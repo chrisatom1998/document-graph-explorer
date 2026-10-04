@@ -135,8 +135,8 @@ async function windowsNodeBinary() {
   return exe;
 }
 
-async function injectBlob(targetPath, blob) {
-  await inject(targetPath, 'NODE_SEA_BLOB', blob, { sentinelFuse: SEA_FUSE });
+async function injectBlob(targetPath, blob, extra = {}) {
+  await inject(targetPath, 'NODE_SEA_BLOB', blob, { sentinelFuse: SEA_FUSE, ...extra });
   const out = readFileSync(targetPath);
   if (!out.includes(`${SEA_FUSE}:1`)) throw new Error(`SEA fuse was not flipped in ${rel(targetPath)}`);
 }
@@ -150,7 +150,15 @@ async function selfTest(blob) {
   chmodSync(bin, 0o755);
   // The launcher serves the dist/ folder that sits beside the executable.
   symlinkSync(path.join(repoRoot, 'dist'), path.join(testDir, 'dist'), 'junction');
-  await injectBlob(bin, blob);
+  // Darwin Mach-O: Node looks for NODE_SEA_BLOB in the NODE_SEA segment, and
+  // the host binary is signed — strip, inject, then ad-hoc re-sign.
+  if (process.platform === 'darwin') {
+    execFileSync('codesign', ['--remove-signature', bin], { stdio: 'inherit' });
+  }
+  await injectBlob(bin, blob, process.platform === 'darwin' ? { machoSegmentName: 'NODE_SEA' } : {});
+  if (process.platform === 'darwin') {
+    execFileSync('codesign', ['--sign', '-', bin], { stdio: 'inherit' });
+  }
 
   const port = 18317 + Math.floor(Math.random() * 1000);
   const child = spawn(bin, [], { env: { ...process.env, PORT: String(port) }, stdio: ['ignore', 'pipe', 'pipe'] });
