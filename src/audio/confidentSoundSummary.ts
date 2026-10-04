@@ -6,11 +6,13 @@ import { dimensionLabels, type Dimension } from './recognition';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 
 /** Presentation only: does not change stored evidence, acceptance, cache identity or graph links. */
-export const SOUND_DISPLAY_POLICY = 'model-score-floor-0.50-v1';
+export const SOUND_DISPLAY_POLICY = 'tested-models-only-v1';
 export const SOUND_DISPLAY_FLOOR = .5;
 export interface DisplaySound { dimension: Dimension; label: string; origin: 'confirmed by you' | 'model estimate'; scores?: {model:string;score:number}[] }
 const validScore=(score:unknown):score is number=>typeof score==='number'&&Number.isFinite(score)&&score>=SOUND_DISPLAY_FLOOR&&score<=1;
 const profileNames:Record<string,string>={'AudioSet AST':'AST score','MTG-Jamendo':'Jamendo score','Music CLAP':'CLAP similarity','Reviewed examples':'Reviewed-example similarity','Trained head':'Trained head score'};
+/** Only these scores come from detectors that passed held-out testing; other models still show under Model scores. */
+const TESTED_SCORES=new Set(['Trained head score','Baseline fallback score']);
 const nativeNames={ast:'AST score',jamendo:'Jamendo score',clap:'CLAP similarity',rhythm:'Tempo score',tonal:'Key score'};
 export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):DisplaySound[] {
   const result=new Map<string,DisplaySound>();
@@ -50,5 +52,5 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   for(const tag of audio.soundProfile?.djTags??[])estimate(tag.group==='source'?'source':tag.group==='character'?'character':'effect',tag.label,tag.score,tag.model??'Sound tag model');
   const fusion=fusionPresentation(audio.fusion,audio.durationSeconds,fusionMode??audio.recognition?.mode??'full');
   if(fusion?.qualified)for(const w of fusion.windows)for(const d of w.decisions)if(d.state!=='unavailable')estimate('source',d.label,d.decisionProbability,`${d.source==='learned-head'?'Trained head':'Baseline fallback'} score${d.state==='positive'?'':' (below policy acceptance)'}`);
-  return [...result.values()];
+  return [...result.values()].filter(s=>s.origin==='confirmed by you'||s.scores?.some(x=>TESTED_SCORES.has(x.model)));
 }

@@ -159,8 +159,8 @@ it('keeps duration, sound possibilities and corrections visible while diagnostic
   recordEvidence(recognition, 'jamendo', { start: 10, end: 20 }, [{ dimension: 'source', labelId: 'oboe', score: .8 }]);
   render(<MusicFeatures node={{ ...node, audio: { ...node.audio!, recognition } }} />);
   expect(screen.getByText('3:00', { selector: 'dd' })).toBeVisible();
-  expect(screen.getByText('oboe', { selector: '.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)' })).toBeVisible();
-  expect(screen.getByRole('region',{name:'Sound identification'})).toHaveTextContent('Jamendo score 0.80');
+  expect(screen.queryByText('oboe', { selector: '.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)' })).toBeNull();
+  expect(screen.getByRole('region',{name:'Sound identification'})).toHaveTextContent('Nothing identified yet');
   expect(screen.queryByText('Correct the instrument')).toBeNull();
   expect(screen.queryByText('Correct DJ tags')).toBeNull();
   expect(screen.getByText('Coverage by component')).not.toBeVisible();
@@ -172,9 +172,9 @@ it('keeps duration, sound possibilities and corrections visible while diagnostic
 it('preserves saved corrections across disclosure and rerender without offering review actions',()=>{
  const audio={...node.audio!,confirmedInstruments:['flute']};const before=structuredClone(audio);const view=render(<MusicFeatures node={{...node,audio}}/>);fireEvent.click(screen.getByText('Technical details'));fireEvent.click(screen.getByText('Technical details'));view.rerender(<MusicFeatures node={{...node,audio}}/>);expect(within(screen.getByRole('region',{name:'Sound identification'})).getByText('flute')).toBeVisible();expect(screen.queryByRole('button',{name:/^(Confirm|Reject|Unsure)$/})).toBeNull();expect(audio).toEqual(before);
 });
-it.each([.49,.5,.8])('applies the revised display floor to legacy prediction score %s',score=>{
+it.each([.49,.5,.8])('hides the untested legacy prediction at score %s',score=>{
  render(<MusicFeatures node={{...node,audio:{...node.audio!,instruments:[],instrumentPrediction:{label:'synthesizer',score,margin:.01}}}}/>);
- expect(within(screen.getByRole('region',{name:'Sound identification'})).queryByText('synthesizer')!==null).toBe(score>=.5);expect(screen.getByText('Technical details').closest('details')).not.toHaveAttribute('open');
+ expect(within(screen.getByRole('region',{name:'Sound identification'})).queryByText('synthesizer')).toBeNull();expect(screen.getByText('Technical details').closest('details')).not.toHaveAttribute('open');
 });
 
 it.each(['rejected','uncertain'] as const)('does not revive %s effect/character reviews in profile groups or correction defaults',decision=>{

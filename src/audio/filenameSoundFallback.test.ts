@@ -18,13 +18,13 @@ it('ignores folders and numeric IDs, without deriving tempo or key',()=>{
   expect(labels('C:/piano/glass_hit/303_128_C5.wav')).toEqual([]);
 });
 it('keeps the inclusive audio floor and does not contradict audio sources',()=>{
-  const a=audio();a.instruments=[{label:'piano',score:.5}];
+  const a=audio();a.soundProfile={version:1,models:[],character:[],roles:[],disagreement:false,djTags:[{group:'source',label:'piano',score:.5,model:'Trained head'},{group:'production',label:'glass hit',score:.5,model:'Trained head'}]};
   expect(labels('flute_glass_hit.wav',a)).toEqual([]);
-  a.instruments[0].score=.499999;
+  a.soundProfile.djTags!.forEach(t=>t.score=.499999);
   expect(labels('flute_glass_hit.wav',a).map(x=>x.label)).toEqual(['flute','glass hit']);
 });
 it('only fills missing dimensions',()=>{
-  const a=audio();a.soundProfile={version:1,models:[],character:[],roles:[],disagreement:false,djTags:[{group:'character',label:'dark',score:.7}]};
+  const a=audio();a.soundProfile={version:1,models:[],character:[],roles:[],disagreement:false,djTags:[{group:'character',label:'dark',score:.7,model:'Trained head'}]};
   expect(labels('piano_bright.wav',a).map(x=>x.label)).toEqual(['piano']);
 });
 it.each(['rejected','uncertain'] as const)('respects latest %s source and effect reviews',decision=>{

@@ -45,6 +45,10 @@ export function ModelScores({ profile, audio }: { profile?: SoundProfile; audio?
     if (best.size) models.push({ model: 'Trained detector', complete: true,
       candidates: [...best].map(([label, score]) => ({ label: fusionLabelText(label as Parameters<typeof fusionLabelText>[0]), score })) });
   }
+  // Trained DJ heads store their scores on the tags they produced, not in profile.models.
+  const heads = new Map<string, number>();
+  for (const t of profile?.djTags ?? []) if (t.model === 'Trained head' && t.group !== 'source' && Number.isFinite(t.score)) heads.set(t.label, Math.max(heads.get(t.label) ?? 0, t.score));
+  if (heads.size) models.push({ model: 'Trained sounds', complete: true, candidates: [...heads].map(([label, score]) => ({ label, score })) });
   models.push(...(profile?.models.filter(m => m.candidates.length) ?? []));
   if (!models.length) return null;
   return <details className="model-scores">

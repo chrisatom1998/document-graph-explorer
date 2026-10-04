@@ -8,7 +8,7 @@ it('shows simultaneous possible sources, window playback, uncertainty and compon
   const run=createRecognition(20,'full'); run.jobs[0].status='failed'; run.jobs[0].error='missing weights';
   recordEvidence(run,'jamendo',{start:10,end:20},[{dimension:'source',labelId:'oboe',score:.8},{dimension:'source',labelId:'viola',score:.7}]);
   const seek=vi.fn(); render(<RecognitionEvidence recognition={run} duration={20} onSeek={seek} />);
-  expect(screen.getByText('oboe')).toBeVisible(); expect(screen.getByText('viola')).toBeVisible();
+  expect(screen.queryByText('oboe',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull(); expect(screen.queryByText('viola',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull();
   expect(screen.getByText(/uncalibrated/)).not.toBeVisible();
   fireEvent.click(screen.getByText('Details'));
   expect(screen.getByText(/uncalibrated/)).toBeVisible();
@@ -35,7 +35,7 @@ it('explains the qualifying vocal prompt instead of presenting its score as dire
  const run=createRecognition(3,'full');
  recordEvidence(run,'clap',{start:0,end:3},[{dimension:'source',labelId:'voice',score:.5,derivedFrom:{group:'sample',labelId:'vocal chops'}}]);
  const seek=vi.fn();render(<RecognitionEvidence recognition={run} duration={3} onSeek={seek}/>);
- expect(screen.getByText('voice')).toBeVisible();
+ expect(screen.queryByText('voice',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull();
  fireEvent.click(screen.getByText('Details'));
  fireEvent.click(screen.getByText('Evidence for voice (1 windows)'));
  expect(screen.getByText('CLAP “vocal chops” score 0.500 (supports voice)')).toBeInTheDocument();
@@ -48,7 +48,7 @@ it('removes every repeated review control group',()=>{
  const run=createRecognition(10,'full');
  recordEvidence(run,'jamendo',{start:0,end:10},[{dimension:'source',labelId:'piano',score:.8},{dimension:'source',labelId:'guitar',score:.8}]);
  render(<RecognitionEvidence recognition={run} duration={10}/>);
- expect(screen.queryByRole('group',{name:'Review piano for this track'})).toBeNull();expect(screen.queryByRole('group',{name:'Review guitar for this track'})).toBeNull();expect(screen.getByText('piano',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeVisible();expect(screen.getByText('guitar',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeVisible();
+ expect(screen.queryByRole('group',{name:'Review piano for this track'})).toBeNull();expect(screen.queryByRole('group',{name:'Review guitar for this track'})).toBeNull();expect(screen.queryByText('piano',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull();expect(screen.queryByText('guitar',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull();
 });
 
 it('keeps analysis failure and incomplete evidence visible outside diagnostic details',()=>{
@@ -58,11 +58,11 @@ it('keeps analysis failure and incomplete evidence visible outside diagnostic de
   expect(screen.getByText('Evidence incomplete.')).toBeVisible();
   expect(screen.getByText('Coverage by component')).not.toBeVisible();
 });
-it('keeps qualifying estimates visible without review actions',()=>{
+it('hides untested estimates without review actions',()=>{
   const recognition=createRecognition(10,'full'); const review=vi.fn();
   recordEvidence(recognition,'jamendo',{start:0,end:10},[{dimension:'source',labelId:'flute',score:.8}]);
   render(<RecognitionEvidence recognition={recognition} duration={10} onReview={review}/>);
-  expect(screen.getByText('flute',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeVisible();expect(screen.queryByRole('group',{name:'Review flute for this track'})).toBeNull();expect(screen.queryByRole('button',{name:/^(Confirm|Reject|Unsure)$/})).toBeNull();expect(review).not.toHaveBeenCalled();
+  expect(screen.queryByText('flute',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull();expect(screen.queryByRole('group',{name:'Review flute for this track'})).toBeNull();expect(screen.queryByRole('button',{name:/^(Confirm|Reject|Unsure)$/})).toBeNull();expect(review).not.toHaveBeenCalled();
 });
 
 it('retains a concise availability warning when a completed run has a failed component',()=>{
