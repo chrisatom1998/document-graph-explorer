@@ -60,3 +60,13 @@ it('adds a trained-head tag under its own name without overriding a reviewed exa
   // A head that stays under its threshold says nothing.
   expect(learnedDjScores(vector.map(v => -v), model)).toEqual([]);
 });
+it('carries a maybe-level head through to a maybe tag, and rejects a malformed maybe flag', async () => {
+  const { applyReviewedDecisions } = await import('./djTags');
+  const vector = Array.from({ length: 512 }, (_, i) => (i === 0 ? 1 : 0));
+  const head = { group: 'production', label: 'snare', weights: vector.map(v => v * 6), bias: 0, threshold: .6 };
+  const model = sanitizeLearnedDjModel({ version: 1, encoder: 'e', revision: 'r', examples: [], heads: [{ ...head, maybe: true }] })!;
+  const [score] = learnedDjScores(vector, model);
+  expect(score).toMatchObject({ label: 'snare', basis: 'head', maybe: true });
+  expect(applyReviewedDecisions([], [score])[0].model).toBe('Trained head (maybe)');
+  expect(sanitizeLearnedDjModel({ version: 1, encoder: 'e', revision: 'r', examples: [], heads: [{ ...head, maybe: 'yes' }] })).toBeUndefined();
+});

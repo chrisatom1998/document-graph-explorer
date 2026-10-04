@@ -39,3 +39,7 @@ it('does not invent scores for profile strings, AI drafts or unsupported labels'
 it.each([.499999,.5])('applies inclusive boundaries to character and effect tag scores %s',score=>{
  const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'production',label:'riser',score,model:'Trained head'},{group:'character',label:'bright',score,model:'Trained head'}]};expect(confidentSoundSummary(a).length).toBe(score>=.5?2:0);
 });
+it('marks labels backed only by maybe-level trained heads, and lets a full head win',()=>{
+ const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'production',label:'snare',score:.9,model:'Trained head (maybe)'},{group:'production',label:'kick',score:.8,model:'Trained head'}]};
+ expect(confidentSoundSummary(a).map(s=>[s.label,s.maybe===true])).toEqual([['snare',true],['kick',false]]);
+});

@@ -18,7 +18,7 @@ export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnal
   return <section aria-label="Sound identification" data-display-policy={SOUND_DISPLAY_POLICY} data-filename-policy="missing-dimension-v1" className="sound-tags">
     <h4 className="sound-tags__title">Sounds</h4>
     {labels.length ? <ul className="sound-tags__list">{labels.map(l => {
-      const kind = l.origin === 'confirmed by you' ? 'confirmed' : l.origin === 'From filename' ? 'name' : l.dimension === 'source' ? 'source' : 'detail';
+      const kind = l.origin === 'confirmed by you' ? 'confirmed' : l.origin === 'From filename' ? 'name' : 'maybe' in l && l.maybe ? 'maybe' : l.dimension === 'source' ? 'source' : 'detail';
       const hover = [DIMENSION_NAME[l.dimension as keyof typeof DIMENSION_NAME] ?? l.dimension,
         l.origin === 'From filename' ? 'from the file name, not the audio' : l.origin,
         ...(l.scores ?? []).map(s => `${s.model} ${s.score.toFixed(2)}`)].join(' · ');
@@ -26,6 +26,7 @@ export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnal
         {kind === 'confirmed' && <span className="sound-tag__mark" aria-hidden="true">✓</span>}
         <span>{pretty(l.label)}</span>
         {kind === 'name' && <span className="sound-tag__note">name</span>}
+        {kind === 'maybe' && <span className="sound-tag__note">maybe</span>}
         <span className="sr-only"> — {hover}</span>
       </li>;
     })}</ul> : <p className="sound-tags__empty">Nothing identified yet</p>}
@@ -47,7 +48,7 @@ export function ModelScores({ profile, audio }: { profile?: SoundProfile; audio?
   }
   // Trained DJ heads store their scores on the tags they produced, not in profile.models.
   const heads = new Map<string, number>();
-  for (const t of profile?.djTags ?? []) if (t.model === 'Trained head' && t.group !== 'source' && Number.isFinite(t.score)) heads.set(t.label, Math.max(heads.get(t.label) ?? 0, t.score));
+  for (const t of profile?.djTags ?? []) if ((t.model === 'Trained head' || t.model === 'Trained head (maybe)') && t.group !== 'source' && Number.isFinite(t.score)) heads.set(t.label, Math.max(heads.get(t.label) ?? 0, t.score));
   if (heads.size) models.push({ model: 'Trained sounds', complete: true, candidates: [...heads].map(([label, score]) => ({ label, score })) });
   models.push(...(profile?.models.filter(m => m.candidates.length) ?? []));
   if (!models.length) return null;
