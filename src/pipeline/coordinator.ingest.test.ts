@@ -806,7 +806,10 @@ describe('WAV music ingestion', () => {
     expect(name).toBe('uploaded.OGG');
     expect(blob.type).toBe('audio/ogg');
     expect(supportsFusionInput(10, options.mode, blob.type)).toBe(true);
-    expect(supportsFusionInput(9, options.mode, blob.type)).toBe(false);
+    // Any full-mode recording above the policy minimum is scored, whatever the container.
+    expect(supportsFusionInput(9, options.mode, blob.type)).toBe(true);
+    expect(supportsFusionInput(183, options.mode, 'audio/mpeg')).toBe(true);
+    expect(supportsFusionInput(1, options.mode, blob.type)).toBe(false);
     expect(persistence.putOriginalIfMissing).toHaveBeenCalledWith(expect.any(String), name, blob);
   });
 

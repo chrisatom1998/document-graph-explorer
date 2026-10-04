@@ -1,0 +1,37 @@
+{
+  "kind": "fsld-role-to-app-label-aliases-v1",
+  "frozenAt": "2026-10-04",
+  "note": "Predeclared before any prediction was scored. An FSLD role counts as predicted when the app reports ANY listed app label in the listed dimension. FSLD roles describe the musical role a loop plays; app labels name sources, production types and characters. The mapping is deliberately generous on the app side because a role can be carried by several sound types.",
+  "roles": {
+    "percussion": {
+      "source": ["drums", "percussion", "hand percussion"],
+      "production": ["kick", "snare", "clap", "closed hi-hat", "open hi-hat", "ride cymbal", "crash cymbal", "rimshot", "tom", "shaker", "tambourine", "conga", "bongo", "cowbell", "clave", "woodblock", "finger snap", "percussion hit", "drum loop", "percussion loop", "hi-hat loop", "shaker loop", "breakbeat", "drum fill", "snare roll", "top loop"],
+      "role": ["rhythm"]
+    },
+    "bass": {
+      "source": ["bass guitar"],
+      "production": ["sub bass", "reese bass", "wobble bass", "bass growl", "acid bass", "808 bass", "bass pluck", "foghorn bass", "rubbery bass"],
+      "role": ["bass"]
+    },
+    "chords": {
+      "source": [],
+      "production": ["synth chord", "atmospheric pad", "vocal pad"],
+      "role": ["pad", "chord"]
+    },
+    "melody": {
+      "source": [],
+      "production": ["synth lead", "synth pluck", "synth arpeggio", "synth sequence", "synth stab", "bell synth", "supersaw"],
+      "role": ["lead", "arpeggio"]
+    },
+    "fx": {
+      "source": ["sound effect", "noise", "foley"],
+      "production": ["riser", "downlifter", "impact", "whoosh", "reverse cymbal", "reverse impact", "noise sweep", "sub drop", "laser", "siren", "air horn", "vinyl scratch", "record stop", "stutter effect", "glitch effect", "reverse effect", "texture", "ambient drone", "vinyl crackle", "static noise"],
+      "role": ["atmosphere"]
+    },
+    "vocal": {
+      "source": ["voice", "breath"],
+      "production": ["vocal chops", "chops", "vocal phrase", "spoken phrase", "whisper", "vocal shout", "vocal chant", "vocal ad-lib", "vocal hum", "vocal vowel", "choir", "vocal harmony", "vocal scream", "vocal laugh", "vocal gasp", "beatbox", "vocoder vocal", "pitched vocal", "reversed vocal", "vocal pad", "vocal breath", "vocal shush"],
+      "role": []
+    }
+  }
+}

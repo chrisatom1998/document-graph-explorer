@@ -3,7 +3,7 @@ import {musicCacheKey,musicCacheFingerprint,readMusicCache,writeMusicCache} from
 import { createRecognition, finishJob, type Recognition } from './recognition';
 import { fusionPresentation } from './fusionPresentation';
 import { sanitizeMusicAnalysis } from './musicTypes';
-import { FUSION_LABELS, type FusionAnalysis } from './fusion';
+import { FUSION_LABELS, unavailableFusionDecisions, type FusionAnalysis } from './fusion';
 import type { FusionReleaseIdentity } from './fusionRelease';
 import type {MusicAnalysis} from './musicTypes';
 const db=vi.hoisted(()=>{
@@ -13,7 +13,7 @@ const db=vi.hoisted(()=>{
 });
 vi.mock('../persistence/db',()=>({getDb:async()=>({get:async(_store:string,k:string)=>db.store.get(k),transaction:()=>({store:db.store,done:Promise.resolve()})})}));
 const releaseState=vi.hoisted(()=>({value:undefined as FusionReleaseIdentity|undefined}));
-vi.mock('./fusionRelease',()=>({releaseForScorer:()=>undefined,installedFusionIdentity:()=>releaseState.value,fusionRuntimeSupported:()=>!!releaseState.value,fusionConfiguration:()=>JSON.stringify(releaseState.value??'disabled'),supportsFusionInput:(duration:number,mode:string,mime:string)=>duration===10&&mode==='full'&&['audio/ogg','application/ogg'].includes(mime),sanitizeFusionReleaseIdentity:(v:unknown)=>v,sameFusionRelease:(a:unknown,b:unknown)=>!!a&&!!b&&JSON.stringify(a)===JSON.stringify(b)}));
+vi.mock('./fusionRelease',()=>({releaseForScorer:()=>undefined,installedFusionIdentity:()=>releaseState.value,fusionRuntimeSupported:()=>!!releaseState.value,fusionConfiguration:()=>JSON.stringify(releaseState.value??'disabled'),FUSION_MINIMUM_SECONDS:2.048,supportsFusionInput:(duration:number,mode:string)=>mode==='full'&&duration>=2.048,sanitizeFusionReleaseIdentity:(v:unknown)=>v,sameFusionRelease:(a:unknown,b:unknown)=>!!a&&!!b&&JSON.stringify(a)===JSON.stringify(b)}));
 beforeEach(()=>{db.values.clear();releaseState.value=undefined;});afterEach(()=>vi.unstubAllGlobals());
 function completedRecognition(duration=10):Recognition {
  const recognition=createRecognition(duration,'full');
@@ -101,7 +101,7 @@ it.each(['full','fast'] as const)('caches completed %s plans with intentional un
  expect(await readMusicCache('music-analysis:v2:sampled')).toBeDefined();
 });
 
-it('reuses only the exact qualified ten-second fusion window',async()=>{
+it('reuses a qualified fusion result and rejects one that was not fully scored',async()=>{
  const release: FusionReleaseIdentity={modelSha256:'a'.repeat(64),policySha256:'b'.repeat(64),scorerSha256:'c'.repeat(64),modelFileSha256:'d'.repeat(64),receiptSha256:'e'.repeat(64),runtimeSha256:'f'.repeat(64),inputTier:'ogg-full-ten-second-window-v1'};
  releaseState.value=release;
  const fusion: FusionAnalysis={version:1,scope:'window',validation:'policy-qualified',release,identity:release,planned:1,counts:{complete:1,failed:0,unsupported:0,empty:0},omittedWindows:0,windows:[{start:0,end:10,status:'complete',decisions:FUSION_LABELS.map(label=>({label,state:'negative',source:'learned-head',headProbability:.1,decisionProbability:.1,eligible:true,positiveGroups:3,negativeGroups:4}))}]};
@@ -111,11 +111,22 @@ it('reuses only the exact qualified ten-second fusion window',async()=>{
  await writeMusicCache('music-analysis:v2:qualified',qualified,'audio/ogg');
  expect(db.values.has('music-analysis:v2:qualified')).toBe(true);
  expect((await readMusicCache('music-analysis:v2:qualified','audio/ogg'))?.fusion?.validation).toBe('policy-qualified');
+ // Windows need not tile the whole recording: the analysis plan chooses what to scan,
+ // and analyzedSeconds already reports the coverage. A shorter scanned window is reusable.
  for(const [start,end] of [[0,9],[1,10]]){
-  const changed=structuredClone(qualified);changed.fusion.windows[0].start=start;changed.fusion.windows[0].end=end;
-  db.values.set('music-analysis:v2:stored-truncated',{audio:changed});
-  expect(await readMusicCache('music-analysis:v2:stored-truncated','audio/ogg')).toBeUndefined();
-  await writeMusicCache('music-analysis:v2:rejected',changed,'audio/ogg');
+  const partial=structuredClone(qualified);partial.fusion.windows[0].start=start;partial.fusion.windows[0].end=end;
+  db.values.set('music-analysis:v2:stored-partial',{audio:partial});
+  expect((await readMusicCache('music-analysis:v2:stored-partial','audio/ogg'))?.fusion?.validation).toBe('policy-qualified');
+ }
+ // A window the scorer could not complete still invalidates the entry: that recording
+ // was not fully scored, so a cached answer would understate what is present.
+ for(const status of ['failed','unsupported'] as const){
+  const broken=structuredClone(qualified);
+  broken.fusion.windows[0]={start:0,end:10,status,decisions:unavailableFusionDecisions()};
+  broken.fusion.counts={complete:0,failed:0,unsupported:0,empty:0};broken.fusion.counts[status]=1;
+  db.values.set('music-analysis:v2:stored-broken',{audio:broken});
+  expect(await readMusicCache('music-analysis:v2:stored-broken','audio/ogg')).toBeUndefined();
+  await writeMusicCache('music-analysis:v2:rejected',broken,'audio/ogg');
   expect(db.values.has('music-analysis:v2:rejected')).toBe(false);
  }
 });

@@ -35,8 +35,14 @@ const configuredRelease = (): FusionRelease | undefined => BUILT_IN_FUSION_RELEA
 export const installedFusionIdentity = (): FusionReleaseIdentity | undefined => configuredRelease()?.identity;
 export const fusionConfiguration = () => JSON.stringify(installedFusionIdentity() ?? 'disabled');
 export const fusionRuntimeSupported = () => configuredRelease()?.isRuntimeSupported() ?? false;
-export function supportsFusionInput(duration: number, mode: string, mime?: string): boolean {
-  return mode === 'full' && duration === 10 && (mime === 'audio/ogg' || mime === 'application/ogg');
+/** Declared by the release's own policy.inputSupport rule (app-mse-v1), which is a
+ * content guard — minimum seconds and non-silence — not a container-format guard.
+ * The scorer never sees the container: every model reads decoded PCM. */
+export const FUSION_MINIMUM_SECONDS = 2.048;
+/** Window length the heads were fitted on. Longer inputs are scored as repeated windows. */
+export const FUSION_WINDOW_SECONDS = 10;
+export function supportsFusionInput(duration: number, mode: string, _mime?: string): boolean {
+  return mode === 'full' && Number.isFinite(duration) && duration >= FUSION_MINIMUM_SECONDS;
 }
 async function sha(bytes: Uint8Array): Promise<string> {
   const hash = await crypto.subtle.digest('SHA-256', new Uint8Array(bytes));
