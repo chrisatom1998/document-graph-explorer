@@ -1,6 +1,8 @@
-// CJS launcher entry for packaging a Windows executable with `pkg`.
-// Serves the normal `dist` build from the executable's folder (or project
-// root in dev) by default; pass --airgap to serve the sealed dist-airgap.
+// CJS launcher entry for the Windows executable, built as a Node Single
+// Executable Application by scripts/build-win-exe.mjs (esbuild bundles this
+// file with staticServer.cjs because a SEA main script can only require()
+// builtins). Serves the normal `dist` build from the executable's folder (or
+// project root in dev) by default; pass --airgap to serve dist-airgap.
 const { createServer } = require('node:http');
 const { existsSync } = require('node:fs');
 const path = require('node:path');
@@ -8,7 +10,14 @@ const { spawn } = require('node:child_process');
 const { createRequestHandler } = require('./staticServer.cjs');
 
 const AIRGAP_MODE = process.argv.includes('--airgap');
-const APP_BASE = process.pkg ? path.dirname(process.execPath) : path.resolve(__dirname, '..');
+function runningAsSea() {
+  try {
+    return require('node:sea').isSea();
+  } catch {
+    return false;
+  }
+}
+const APP_BASE = runningAsSea() ? path.dirname(process.execPath) : path.resolve(__dirname, '..');
 const ROOT = path.join(APP_BASE, AIRGAP_MODE ? 'dist-airgap' : 'dist');
 const INDEX_HTML = path.join(ROOT, 'index.html');
 const DEFAULT_PORT = 8317;

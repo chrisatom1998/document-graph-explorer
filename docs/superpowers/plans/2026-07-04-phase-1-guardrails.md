@@ -306,7 +306,7 @@ In `docs/project-plan.md`, under "Key Capabilities (v1)" add a short subsection 
 
 ```markdown
 ### Distribution & Security
-- **Air-gapped build** (`npm run build:airgap`): zero external network, enforced by a host-free CSP, runtime refusal, and a post-build verify gate. See [SECURITY.md](../SECURITY.md).
+- **Air-gapped build** (`npm run build:airgap`): zero external network, enforced by a host-free CSP, runtime refusal, and a post-build verify gate. See [SECURITY.md](../../SECURITY.md).
 ```
 
 - [ ] **Step 4: Update the README feature list + add a Builds section**
