@@ -84,7 +84,7 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
         <div><dt>{hints.tempo ? "Tempo · from name" : "Estimated tempo"}</dt><dd>{hints.tempo ? `${hints.tempo.value.toFixed(1)} BPM` : analysis.tempo ? `${analysis.tempo.bpm.toFixed(1)} BPM` : analysis.stage === 'preview' ? 'Not checked yet' : 'Uncertain / no steady beat'}</dd></div>
         <div><dt>{hints.key ? "Key · from name" : "Estimated key"}</dt><dd>{hints.key ? hints.key.displayName : analysis.key ? keyName(analysis.key) : analysis.stage === 'preview' ? 'Not checked yet' : 'Uncertain / no stable key'}</dd></div>
       </dl>
-      <ConfidentSoundSummary audio={analysis} />
+      <ConfidentSoundSummary audio={analysis} node={node} />
       <details className="music-analysis-details">
         <summary>Details</summary>
         {recognitionProps && <RecognitionDiagnostics {...recognitionProps} />}
