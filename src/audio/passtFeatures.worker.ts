@@ -1,12 +1,13 @@
 import type * as Ort from 'onnxruntime-web';
 import manifest from '../../public/passt-model/manifest.json';
-import { musicInferenceThreads } from './musicRuntime';
 
 const MODEL_SHA = manifest.sha256['model.onnx'];
 let session: Promise<{ ort: typeof Ort; model: Ort.InferenceSession }> | undefined;
 async function load() {
   const ort = await import('onnxruntime-web');
-  ort.env.wasm.numThreads = musicInferenceThreads();
+  // A multi-threaded session never finished creating in Chromium (measured 2026-10-05); one thread loads in
+  // under 20 s and keeps a hung session from silently turning PaSST off for the tab.
+  ort.env.wasm.numThreads = 1;
   const response = await fetch(`${import.meta.env.BASE_URL}passt-model/model.onnx`);
   if (!response.ok) throw Error('PaSST model unavailable');
   const bytes = new Uint8Array(await response.arrayBuffer());
