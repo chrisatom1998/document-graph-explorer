@@ -11,6 +11,7 @@ import { DescriptionAccumulator, selectDescriptions, type DescriptionScore } fro
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
+import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { createRecognition, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
@@ -121,6 +122,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   let musicCount = 0;
   const descriptions = new DescriptionAccumulator();
   const djEvidence = new DjTagEvidence();
+  const eventEvidence = new EventWindowEvidence();
   const completed = new Set<string>();
   const stopped = new Set<ModelId>();
   const messages: Partial<Record<ModelId, string>> = {
@@ -135,7 +137,10 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     result.instruments = astEvidence.results();
     result.soundProfile = combineSoundModels(result.instruments, musicScores, descriptions.average(),
       { ast: job('ast').status === 'complete', jamendo: job('jamendo').status === 'complete', clap: job('clap').status === 'complete' });
-    mergeDjTags(result.soundProfile, djEvidence.results(), descriptions.average());
+    // Event-window tags only fill gaps: a tag the 10 s windows already found keeps its own (stronger) evidence.
+    const windowTags = djEvidence.results(), found = new Set(windowTags.map(t => `${t.group}:${t.label}`));
+    const eventTags = eventEvidence.results().filter(h => !found.has(`${h.tag.group}:${h.tag.label}`)).map(h => ({ ...h.tag, segments: h.segments.slice(0, 3) }));
+    mergeDjTags(result.soundProfile, [...windowTags, ...eventTags], descriptions.average());
     for (const suggestion of jamendoSuggestions(musicScores)) {
       if (!result.instruments.some(i => i.label === suggestion.label)) result.instruments.push({ label: suggestion.label, score: suggestion.score, status: 'possible' });
     }
@@ -257,6 +262,35 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
       return undefined;
     }
   }
+  /** One-shot heads on short windows where new sounds start (src/audio/eventWindows.ts). Optional: a failure
+   * leaves the 10 s results as they are. */
+  async function eventPass(): Promise<void> {
+    try {
+      const candidates: ReturnType<typeof onsetCandidates> = [];
+      for (let start = 0; start < duration; start += 30) {
+        check(); candidates.push(...onsetCandidates(await read(start, Math.min(30, duration - start), 16000), start));
+      }
+      const starts = pickEventStarts(candidates, duration);
+      for (const [i, t] of starts.entries()) {
+        check();
+        const interval = { start: t - EVENT_WINDOW_BEFORE, end: t + EVENT_WINDOW_AFTER }, seconds = interval.end - interval.start;
+        options.onProgress?.(`one-shot windows: ${i + 1}/${starts.length}; ${Math.floor(interval.start)}s of ${Math.ceil(duration)}s`);
+        const key = `${modelCacheKey(fingerprint, job('clap'), interval)}:event-window-v1`;
+        let output = cache.get<DescriptionScore[]>(key);
+        if (!output) {
+          const samples = await read(interval.start, seconds, 48000), samples16 = await read(interval.start, seconds, 16000);
+          check();
+          if (!audible(samples) || samples.length < Math.round(seconds * 48000) - 1) continue;
+          output = await request<DescriptionScore[]>({ kind: 'profile', samples, samples16 }, [samples.buffer, samples16.buffer]);
+          check(); cache.set(key, output);
+        }
+        eventEvidence.add(output, interval.start, interval.end);
+      }
+      publish();
+    } catch (error) {
+      if (options.signal?.aborted) throw error;
+    }
+  }
   const leads = concurrent ? (['ast','jamendo','clap'] as const).map(id => scoreAhead(id).catch(() => {})) : [];
   try {
     if (!options.fusion) await sound('jamendo', job('jamendo').planned[0]);
@@ -340,6 +374,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     }
     // A stopped family may still hold one window in flight; let it settle before the decoder closes.
     stopAhead(); await Promise.all(leads);
+    if (mode === 'full' && duration > SHORT_CLIP_MAX_SECONDS && !stopped.has('clap') && !job('clap').unsupportedReason) await eventPass();
     refresh(false, true);
     return result;
   } catch (error) {

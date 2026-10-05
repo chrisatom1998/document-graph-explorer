@@ -1,0 +1,281 @@
+{
+ "split": "test",
+ "items": 2023,
+ "analysed": 2023,
+ "families": 466,
+ "target": 0.7,
+ "displayedIncludingMaybe": {
+  "role:synth hit": {
+   "precision": 0.836,
+   "recall": 0.869,
+   "precisionCI95": [
+    0.745,
+    0.914
+   ],
+   "recallCI95": [
+    0.788,
+    0.939
+   ],
+   "truePositives": 153,
+   "falseDetections": 30,
+   "misses": 23,
+   "positives": 176,
+   "negatives": 1399,
+   "positiveFamilies": 44,
+   "negativeFamilies": 310,
+   "detections": 183,
+   "abstainedOnPositives": 23,
+   "missesNotAnalysed": 0,
+   "meetsTarget": true
+  },
+  "source:synthesizer": {
+   "precision": 0.795,
+   "recall": 0.477,
+   "precisionCI95": [
+    0.677,
+    0.885
+   ],
+   "recallCI95": [
+    0.391,
+    0.57
+   ],
+   "truePositives": 105,
+   "falseDetections": 27,
+   "misses": 115,
+   "positives": 220,
+   "negatives": 1399,
+   "positiveFamilies": 55,
+   "negativeFamilies": 310,
+   "detections": 132,
+   "abstainedOnPositives": 115,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  }
+ },
+ "displayedWithoutMaybe": {
+  "role:synth hit": {
+   "precision": 0.836,
+   "recall": 0.869,
+   "precisionCI95": [
+    0.745,
+    0.914
+   ],
+   "recallCI95": [
+    0.788,
+    0.939
+   ],
+   "truePositives": 153,
+   "falseDetections": 30,
+   "misses": 23,
+   "positives": 176,
+   "negatives": 1399,
+   "positiveFamilies": 44,
+   "negativeFamilies": 310,
+   "detections": 183,
+   "abstainedOnPositives": 23,
+   "missesNotAnalysed": 0,
+   "meetsTarget": true
+  },
+  "source:synthesizer": {
+   "precision": 0.795,
+   "recall": 0.477,
+   "precisionCI95": [
+    0.677,
+    0.885
+   ],
+   "recallCI95": [
+    0.391,
+    0.57
+   ],
+   "truePositives": 105,
+   "falseDetections": 27,
+   "misses": 115,
+   "positives": 220,
+   "negatives": 1399,
+   "positiveFamilies": 55,
+   "negativeFamilies": 310,
+   "detections": 132,
+   "abstainedOnPositives": 115,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  }
+ },
+ "musical": {
+  "keyShown": 0,
+  "tempoShown": 0,
+  "singleEvents": 0,
+  "pitchNotes": 0,
+  "pitchShown": 0,
+  "pitchCorrect": 0,
+  "pitchWrong": 0,
+  "pitchPrecision": null,
+  "pitchRecall": null
+ },
+ "slicesIncludingMaybe": {
+  "1.0-2.25 s": {
+   "found": 137,
+   "positives": 218,
+   "recall": 0.628
+  },
+  "<=1.0 s": {
+   "found": 121,
+   "positives": 178,
+   "recall": 0.68
+  },
+  "normal level": {
+   "found": 258,
+   "positives": 396,
+   "recall": 0.652
+  },
+  "nsynth-train": {
+   "found": 258,
+   "positives": 396,
+   "recall": 0.652
+  }
+ },
+ "clipsWithNoScoredTag": 750,
+ "run": {
+  "split": "test",
+  "clips": 2023,
+  "timings": [
+   {
+    "clips": 60,
+    "seconds": 728.981
+   },
+   {
+    "clips": 60,
+    "seconds": 268.546
+   },
+   {
+    "clips": 60,
+    "seconds": 805.118
+   },
+   {
+    "clips": 60,
+    "seconds": 573.996
+   },
+   {
+    "clips": 60,
+    "seconds": 289.641
+   },
+   {
+    "clips": 60,
+    "seconds": 263.005
+   },
+   {
+    "clips": 60,
+    "seconds": 272.355
+   },
+   {
+    "clips": 60,
+    "seconds": 303.959
+   },
+   {
+    "clips": 60,
+    "seconds": 246.048
+   },
+   {
+    "clips": 60,
+    "seconds": 264.764
+   },
+   {
+    "clips": 60,
+    "seconds": 364.403
+   },
+   {
+    "clips": 60,
+    "seconds": 260.46
+   },
+   {
+    "clips": 60,
+    "seconds": 387.053
+   },
+   {
+    "clips": 60,
+    "seconds": 288.874
+   },
+   {
+    "clips": 60,
+    "seconds": 227.09
+   },
+   {
+    "clips": 60,
+    "seconds": 236.393
+   },
+   {
+    "clips": 60,
+    "seconds": 145.933
+   },
+   {
+    "clips": 60,
+    "seconds": 161.903
+   },
+   {
+    "clips": 60,
+    "seconds": 205.271
+   },
+   {
+    "clips": 60,
+    "seconds": 216.394
+   },
+   {
+    "clips": 60,
+    "seconds": 181.079
+   },
+   {
+    "clips": 60,
+    "seconds": 161.37
+   },
+   {
+    "clips": 60,
+    "seconds": 162.925
+   },
+   {
+    "clips": 60,
+    "seconds": 153.623
+   },
+   {
+    "clips": 60,
+    "seconds": 164.978
+   },
+   {
+    "clips": 60,
+    "seconds": 156.262
+   },
+   {
+    "clips": 60,
+    "seconds": 171.306
+   },
+   {
+    "clips": 60,
+    "seconds": 174.075
+   },
+   {
+    "clips": 60,
+    "seconds": 173.081
+   },
+   {
+    "clips": 60,
+    "seconds": 187.771
+   },
+   {
+    "clips": 60,
+    "seconds": 196.831
+   },
+   {
+    "clips": 60,
+    "seconds": 187.701
+   },
+   {
+    "clips": 60,
+    "seconds": 202.176
+   },
+   {
+    "clips": 43,
+    "seconds": 152.516
+   }
+  ],
+  "pageErrors": [],
+  "at": "2026-10-05T11:34:02.488Z"
+ }
+}

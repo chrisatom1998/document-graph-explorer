@@ -4,12 +4,16 @@ Every render is a Surge synthesizer note, so source:synthesizer is a fact of how
 Role labels (bass hit / synth hit) come from the Surge library's own patch category, a curated
 creator category, and are used only to fit models; they never enter the benchmark.
 Notes: first 1.0 or 2.0 s of two notes per preset, 10 ms fade-out (same treatment as benchmark NSynth notes).
+Bass hit also depends on register: a Bass patch played above E3 no longer sounds like a bass, and a lead played at or
+below E3 may. Only notes on the 'right' side of MIDI 52 get a bass-hit label; the rest stay unknown
+(tested in scripts/short-clip-bass-relabel.py, variant Bk).
 """
 import json, os, re, hashlib, subprocess
 
 D = '/Users/chrisjohnson/Documents/Media/audio-datasets/surge-presets/x/surge'
 W = '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints/short-clips'
 h = lambda *p: hashlib.sha256('|'.join(map(str, p)).encode()).hexdigest()
+BASS_MAX_MIDI = 52   # E3
 CATS = ['Leads', 'Lead', 'Basses', 'Bass', 'Plucks', 'Pads', 'Atmospheres', 'Sequences', 'Chords', 'Brass', 'Keys', 'Organs', 'Arps', 'Percussion', 'Sound', 'FX', 'Vocoder', 'Pad', 'Pluck']
 ROLE_ABSENT = ['role:kick', 'role:snare', 'role:hi-hat', 'role:cymbal', 'role:clap', 'role:finger snap', 'role:tambourine', 'role:cowbell', 'role:shaker',
                'role:vinyl scratch', 'role:vocal one-shot', 'role:beatbox', 'source:voice', 'source:guitar', 'source:bass guitar', 'source:piano']
@@ -31,8 +35,10 @@ for preset in sorted(os.listdir(D)):
             for k in ROLE_ABSENT: t[k] = 'absent'
             t['role:percussion hit'] = t['source:drums'] = t['role:impact'] = t['role:whoosh'] = 'absent'
         if cat == 'Vocoder': t.pop('role:vocal one-shot', None); t.pop('source:voice', None)
-        if cat in ('Basses', 'Bass'): t['role:bass hit'] = 'present'
-        elif cat in ('Leads', 'Lead', 'Plucks', 'Pluck', 'Keys', 'Pads', 'Pad', 'Atmospheres', 'Chords', 'Organs', 'Brass'): t['role:bass hit'] = 'absent'
+        low = int(note[4:7]) <= BASS_MAX_MIDI
+        if cat in ('Basses', 'Bass'):
+            if low: t['role:bass hit'] = 'present'
+        elif cat in ('Leads', 'Lead', 'Plucks', 'Pluck', 'Keys', 'Pads', 'Pad', 'Atmospheres', 'Chords', 'Organs', 'Brass') and not low: t['role:bass hit'] = 'absent'
         if cat in ('Leads', 'Lead', 'Plucks', 'Pluck', 'Keys', 'Basses', 'Bass', 'Chords', 'Organs', 'Brass'): t['role:synth hit'] = 'present'
         if cat in ('Sequences', 'Arps'): t['role:loop'] = 'present'
         elif not drumlike: t['role:loop'] = 'absent'

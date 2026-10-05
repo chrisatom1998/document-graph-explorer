@@ -1,5 +1,5 @@
 {
- "at": "2026-10-05T02:34:43.102182+00:00",
+ "at": "2026-10-05T06:25:33.482786+00:00",
  "features": [
   "clapRepeat"
  ],
@@ -7,15 +7,15 @@
  "selection": "uploader/preset/participant-grouped 5-fold out-of-fold predictions over train+calibration; test never read",
  "categories": {
   "role:bass hit": {
-   "C": 0.03,
-   "threshold": 0.9598,
-   "precision": 0.705,
-   "recall": 0.391,
-   "f1": 0.503,
-   "pos": 580,
-   "neg": 8072,
-   "posFamilies": 279,
-   "ships": false
+   "C": 0.3,
+   "threshold": 0.8588,
+   "precision": 0.82,
+   "recall": 0.804,
+   "f1": 0.812,
+   "pos": 255,
+   "neg": 7522,
+   "posFamilies": 180,
+   "ships": true
   },
   "role:clap": {
    "C": 0.03,
