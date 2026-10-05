@@ -27,6 +27,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import {
   CHUNK_TOKENS,
@@ -64,8 +65,8 @@ import { handleLexical, handleSemantic } from '../workers/aggregatorHandlers';
 import { pairKey, scoreClusters, scorePairs, type PRScore } from './graphAccuracy';
 
 const COUNT = GENERATED_DEMO_DOCUMENT_COUNT;
-const MODEL_ROOT = new URL('../../public/models/', import.meta.url).pathname;
-const DEMO_DIR = new URL('../../public/demo/', import.meta.url).pathname;
+const MODEL_ROOT = fileURLToPath(new URL('../../public/models/', import.meta.url));
+const DEMO_DIR = fileURLToPath(new URL('../../public/demo/', import.meta.url));
 
 interface CorpusDoc {
   id: string;
@@ -217,6 +218,8 @@ describe('graph accuracy on the generated demo corpus', () => {
     // rarely have; this row is what the inferred edge kinds find on their own.
     const inferred = scorePairs(edges.filter((e) => e.kind !== 'reference'), related);
     const references = scorePairs(edges.filter((e) => e.kind === 'reference'), cited);
+    // Every record must be clustered; scoreClusters skips missing ids.
+    expect(Object.keys(clusters).sort()).toEqual(docs.map((d) => d.id).sort());
     const clusterScore = scoreClusters(clusters, new Map(docs.map((d) => [d.id, d.theme])));
 
     process.stdout.write(
@@ -246,8 +249,13 @@ describe('graph accuracy on the generated demo corpus', () => {
     expect(inferred.recall).toBeGreaterThanOrEqual(0.55);
     expect(byKind.entity!.precision).toBeGreaterThanOrEqual(0.9);
     expect(byKind.semantic!.precision).toBeGreaterThanOrEqual(0.93);
+    // The relative margin trades filler for precision: semantic recall fell
+    // from 58% to 44% while precision rose from 66% to 97%.
+    expect(byKind.semantic!.recall).toBeGreaterThanOrEqual(0.42);
     expect(byKind.keyword!.precision).toBeGreaterThanOrEqual(0.88);
+    expect(byKind.keyword!.recall).toBeGreaterThanOrEqual(0.5);
     expect(byKind.title!.precision).toBe(1);
+    expect(byKind.title!.recall).toBeGreaterThanOrEqual(0.5);
     // Themes are never split, and Louvain rarely merges two into one cluster.
     expect(clusterScore.inversePurity).toBeGreaterThanOrEqual(0.97);
     expect(clusterScore.purity).toBeGreaterThanOrEqual(0.9);
