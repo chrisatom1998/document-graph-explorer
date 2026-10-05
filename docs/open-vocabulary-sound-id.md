@@ -6,8 +6,8 @@ latest held-out measurements (rounds 16 and 18 are kept for comparison).
 
 ## Result
 
-**83 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
-ships in `learned.json` or `short-clip.json`. All 32 new labels come from this branch. Another session swapped the
+**88 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
+ships in `learned.json` or `short-clip.json`. All 37 new labels come from this branch. Another session swapped the
 existing distorted head for a different version and promoted five existing heads to full tags.
 
 | Bucket (45/45 bar, measured on held-out sources, round 19) | Labels |
@@ -29,6 +29,7 @@ New active labels on this branch (★ = full):
   vocal breath, foghorn bass, riser, texture, triangle.
 - Round 18: spoken phrase★, breakbeat, cello, electric piano, flute.
 - Round 19: chiptune synth, falling, glassy, horn, whistle.
+- Measured character labels (all maybe): bright, dark, sustained, percussive, rhythmic.
 - Round 20 (model strength per label, chosen on training rows only): acid synth. Over 78 near or failing labels this
   was neutral (10 better, 10 worse).
 
@@ -95,6 +96,37 @@ shows them faded with "maybe". The maybe tier stays as a display hint.
 | 0.36 s kick one-shot (the source clip's length) | kick, drums, impact |
 | 5 s silence | nothing |
 | Random-bytes .wav | not added to the graph; no page errors |
+
+## Measured character labels
+
+Uploader tags for words like "bright" are unreliable (round 19: bright 0/36, sustained 0/19). So
+`dsp-character-labels.py` defines five character words by measurement on 14,415 real Freesound previews:
+
+| Label | Measured as |
+|---|---|
+| bright / dark | energy-weighted spectral centroid in the top / bottom 20% |
+| sustained / percussive | share of frames within 10 dB of the loudest frame, top / bottom 25% |
+| rhythmic | onset autocorrelation peak ≥ 0.45 at 0.25–1.5 s |
+
+CLAP heads trained to predict these are scored on held-out uploaders. The scores below are strict: clips between the
+cut-offs count as negatives.
+
+| Label | Precision / recall | Test positives |
+|---|---|---|
+| bright | 0.79 / 0.77 | 721 |
+| dark | 0.80 / 0.81 | 722 |
+| sustained | 0.78 / 0.75 | 903 |
+| percussive | 0.77 / 0.77 | 903 |
+| rhythmic | 0.64 / 0.66 | 552 |
+
+They ship as "maybe", following the user's earlier rule for character tags.
+
+These numbers measure agreement with the definitions, not with listeners. On the user's 17,891-clip sample library
+the heads fire on bright 42%, rhythmic 35%, percussive 29%, dark 19% and sustained 18% of clips. Producer samples are
+brighter than the average Freesound clip, so "bright" is common there.
+
+"pulsing" was dropped: its measure fired on 63% of clips, which means it captured "smooth volume envelope", not
+pulsing. Results are in `dsp-character-results.json`.
 
 ## Rejected experiments
 
