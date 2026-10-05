@@ -131,12 +131,11 @@ describe('session persistence', () => {
     expect(useGraphStore.getState().phase).toBe('ready');
   });
 
-  it('rebuilds audio-based musical links on restore, ignores name tags, and keeps the sound analysis', async () => {
+  it('rebuilds name-based musical links on restore without overwriting the sound analysis', async () => {
     const nodes = ['one', 'two'].map(id => ({ ...makeNode(id), path: `Synths/${id}_Dm_140.wav`, fileType: 'audio' as const,
       audio: { version: 2 as const, durationSeconds: 5, analyzedSeconds: 5, tempo: { bpm: 70, confidence: .75 }, instruments: [], notes: [] } }));
     await hydrateFromRecord({ version: 1, createdAt: '', generator: 'knowledge-nebula', includeEmbeddings: false, nodes, edges: [] }, {}, 'music');
-    expect(useGraphStore.getState().edges.map(edge => edge.kind).sort()).toEqual(['tempo']);
-    expect(useGraphStore.getState().edges[0].evidence[0]).toContain('70.0 and 70.0 BPM');
+    expect(useGraphStore.getState().edges.map(edge => edge.kind).sort()).toEqual(['instrument', 'key', 'tempo']);
     expect(useGraphStore.getState().nodes[0].audio?.tempo?.bpm).toBe(70);
   });
 

@@ -11,11 +11,14 @@ const node = (id: string, features: Partial<MusicAnalysis> = {}): DocNode => ({ 
 const tempo = (bpm: number, confidence = 0.9) => ({bpm, confidence});
 const key = (tonic: number, mode: 'major' | 'minor' = 'major', strength = 0.9) => ({tonic, mode, strength});
 describe('musical relationships', () => {
-  it('never links key tags in file names', () => {
-    expect(musicPairEdges({ ...node('a'), path: 'Bleacher_D#m.wav' }, { ...node('b'), path: 'other_Ebm.wav' })).toEqual([]);
-    const edges = musicPairEdges({ ...node('a', { key: key(3, 'minor') }), path: 'Bleacher_D#m.wav' }, node('b', { key: key(3, 'minor') }));
-    expect(edges.map(e => e.kind)).toEqual(['key']);
-    expect(edges[0].evidence[0]).toContain('E♭ minor and E♭ minor: same estimated key. Based on audio estimates.');
+  it('matches equivalent sharp and flat names while preserving their spelling in explanations', () => {
+    const a = { ...node('a'), path: 'Bleacher_D#m.wav' };
+    const b = { ...node('b'), path: 'other_Ebm.wav' };
+    const edges = musicPairEdges(a, b);
+    expect(edges).toHaveLength(1);
+    expect(edges[0].kind).toBe('key');
+    expect(edges[0].evidence[0]).toContain('D♯ minor and E♭ minor');
+    expect(musicPairEdges(a, { ...node('c'), path: 'other_Em.wav' })).toHaveLength(0);
   });
   it('uses saved corrections for links without presenting them as model detections', () => {
     const confirmedInstruments = ['synthesizer'];
@@ -116,22 +119,28 @@ it('does not equate a repeated pitch with a confirmed musical key', () => {
   expect(musicPairEdges(node('a', { detectedPitch: { pitchClass: 2, confidence: 0.95 } }), node('b', { key: key(2, 'minor') }))).toEqual([]);
 });
 
-it('ignores tempo, key and instrument tags in names; only audio estimates link', () => {
+it('uses name tags for relationships while preserving conflicting audio estimates', () => {
   const a = { ...node('a', { tempo: tempo(70), key: key(5, 'minor') }), path: 'Synths/Action_Dm_140.wav' };
   const b = { ...node('b'), path: 'Synths/Other_Dm_140.wav' };
-  expect(musicPairEdges(a, b)).toEqual([]);
-  const edges = musicPairEdges(a, { ...node('c', { tempo: tempo(71), key: key(5, 'minor') }), path: 'Drums/Other_Am_128.wav' });
-  expect(edges.map(e => e.kind)).toEqual(['tempo', 'key']);
-  expect(edges[0].evidence[0]).toContain('70.0 and 71.0');
+  const edges = musicPairEdges(a, b);
+  expect(edges.map(e => e.kind)).toEqual(['tempo', 'key', 'instrument']);
+  expect(edges.every(e => e.evidence[0].includes('Name tags are not verified audio detections'))).toBe(true);
+  expect(edges[0].evidence[0]).toContain('140.0 and 140.0');
+  expect(a.audio?.tempo?.bpm).toBe(70);
+  expect(a.audio?.key?.tonic).toBe(5);
 });
 it('keeps user-confirmed instruments above folder clues', () => {
   const a = { ...node('a', { confirmedInstruments: ['trumpet'] }), path: 'Synths/clip.wav' };
   const b = { ...node('b'), path: 'Synths/other.wav' };
   expect(musicPairEdges(a, b)).toEqual([]);
 });
-it('does not link instrument words in file names', () => {
+it('keeps name-derived instrument links after an unsure machine-label review', () => {
   const review = { dimension: 'source' as const, labelId: 'oboe', decision: 'uncertain' as const, scope: 'track' as const, at: '2026-10-03T00:00:00Z', evidenceRunId: 'run' };
-  expect(musicPairEdges({ ...node('a', { soundReviews: [review] }), path: 'Piano Loop.wav' }, { ...node('b'), path: 'Piano Hit.wav' })).toEqual([]);
+  const a = { ...node('a', { soundReviews: [review] }), path: 'Piano Loop.wav' };
+  const b = { ...node('b'), path: 'Piano Hit.wav' };
+  const edges = musicPairEdges(a, b);
+  expect(edges.map(e => e.kind)).toContain('instrument');
+  expect(edges.find(e => e.kind === 'instrument')?.evidence[0]).toContain('piano');
 });
 it('links strong voice detections without promoting uncertain vocal guesses', () => {
  const a=node('a',{instruments:[{label:'voice',score:.93,status:'likely'}]});
@@ -200,8 +209,11 @@ it('bounds both endpoints, keeps ordering deterministic, and handles tiny bucket
   expect(buildMusicEdges([nodes[0]])).toEqual([]);
   expect(buildMusicEdges(nodes.slice(0,2)).length).toBeGreaterThan(0);
 });
-it('weights audio confidence, and never matches a name against a confirmed instrument', () => {
-  expect(musicPairEdges({...node('named'),path:'Piano.wav'},node('confirmed',{confirmedInstruments:['piano']}))).toEqual([]);
+it('weights audio confidence and name hints below reviewed instruments', () => {
+  const named={...node('named'),path:'Piano.wav'};
+  const confirmed=node('confirmed',{confirmedInstruments:['piano']});
+  expect(musicPairEdges(named,confirmed)[0].weight).toBe(.45);
+  expect(musicPairEdges(named,confirmed)[0].evidence[0]).toContain('instrument hints');
   expect(musicPairEdges(node('a',{tempo:tempo(120,.5)}),node('b',{tempo:tempo(120,.9)}))[0].weight).toBe(.5);
   for(const bad of [NaN,Infinity,0,-120]) expect(musicPairEdges(node('a',{tempo:tempo(bad)}),node('b',{tempo:tempo(bad)}))).toEqual([]);
 });
@@ -238,14 +250,13 @@ describe('sound-alike relationships', () => {
     expect(edge.evidence[0]).toContain('Both also have: riser (production / effect), metallic (character), confirmed by you on both tracks.');
     expect(edge.evidence[0]).toContain('Shared sound properties: riser (production / effect), metallic (character).');
   });
-  it('does not link a shared tempo or key between fingerprinted tracks that sound unrelated', () => {
+  it('still links a shared tempo, key or file-name tag between tracks that sound unrelated', () => {
     const beat = { tempo: tempo(120), key: key(0) };
     const nodes = [sounding('a0', 0, 0, beat), sounding('a1', 0, 1), sounding('a2', 0, 2), sounding('b0', 1, 0, beat), sounding('b1', 1, 1), sounding('b2', 1, 2)];
-    const policy = { ...SOUND_LINK_POLICY, relatedK: 2 };
-    expect(buildMusicEdges(nodes, policy).filter(e => e.kind === 'tempo' || e.kind === 'key')).toEqual([]);
-    // Without fingerprints there is nothing to judge the match by, so the audio estimates still link.
-    const plain = [node('a0', beat), node('b0', beat)];
-    expect(buildMusicEdges(plain, policy).map(e => e.kind)).toEqual(['tempo', 'key']);
+    const kinds = buildMusicEdges(nodes).filter(e => (e.source === 'a0' && e.target === 'b0')).map(e => e.kind);
+    expect(kinds).toEqual(['tempo', 'key']);
+    const named = buildMusicEdges([{ ...sounding('x', 0, 0), path: 'Drums/Kick 140bpm.wav' }, { ...sounding('y', 1, 0), path: 'Drums/Snare 140bpm.wav' }]);
+    expect(named.map(e => e.kind)).toEqual(['tempo']);
   });
   it('never compares fingerprints from different models, and keeps every track within its link budget', () => {
     expect(musicPairEdges(node('a', { soundEmbedding: fingerprint(0, 0, 'clap:a') }), node('b', { soundEmbedding: fingerprint(0, 1, 'clap:b') }))).toEqual([]);

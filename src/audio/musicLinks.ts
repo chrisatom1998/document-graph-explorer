@@ -1,4 +1,5 @@
-import { confirmedInstrumentList, reliableInstruments } from './instrumentEvidence';
+import { musicNameHints } from './nameHints';
+import { confirmedInstrumentList, reliableInstruments, sourceReviewAllows } from './instrumentEvidence';
 import { resolvedNonSourceLabels } from './soundReviewPolicy';
 import { cosine, decodeSoundEmbedding } from './soundEmbedding';
 import type { DocNode, Edge } from '../model/types';
@@ -13,10 +14,9 @@ const MAX_CANDIDATES = 128;
 /** When sound-alike links are made from the tracks' CLAP fingerprints (src/audio/soundEmbedding.ts).
  * CLAP cosines are not calibrated and every track shares a large common component, so a link needs
  * a mutual nearest-neighbour match (each track is among the other's closest `mutualK` sounds) and a floor.
- * Tempo and key only link two fingerprinted tracks that are also among each other's `relatedK` closest
- * sounds: a shared tempo between tracks that sound nothing alike is a coincidence, not a relationship. */
-export interface SoundLinkPolicy { mutualK: number; floor: number; relatedK: number }
-export const SOUND_LINK_POLICY: SoundLinkPolicy = { mutualK: 3, floor: .5, relatedK: 8 };
+ * Tempo, key, instrument, tag and file-name links are made independently of these. */
+export interface SoundLinkPolicy { mutualK: number; floor: number }
+export const SOUND_LINK_POLICY: SoundLinkPolicy = { mutualK: 3, floor: .5 };
 /** All-pairs similarity up to this many fingerprints; larger libraries compare within hashed neighbourhoods. */
 const EXACT_SIMILARITY_LIMIT = 800;
 const validScore = (n: number) => Number.isFinite(n) && n >= 0 && n <= 1;
@@ -27,16 +27,20 @@ function keyRelation(a: NonNullable<MusicAnalysis['key']>, b: NonNullable<MusicA
   if (a.mode === b.mode && [5, 7].includes((a.tonic - b.tonic + 12) % 12)) return 'neighboring keys on the circle of fifths';
   return null;
 }
-/** Project evidence once per rebuild; never mutate saved estimates or corrections. Only audio analysis and
- * your own corrections count: file and folder names never create or strengthen a link. */
+/** Project evidence once per rebuild; never mutate saved estimates or corrections. */
 function features(node: DocNode) {
   const audio = node.audio!;
-  const tempo = audio.tempo;
-  const key = audio.key;
+  const hints = musicNameHints(node);
+  const tempo = hints.tempo ? { bpm: hints.tempo.value, confidence: .65 } : audio.tempo;
+  const key = hints.key ? { ...hints.key.value, strength: .65 } : audio.key;
   const human = confirmedInstrumentList(audio) !== undefined;
+  // Names are useful search clues, but cannot replace stronger audio evidence.
+  const reliable = reliableInstruments(audio);
+  const named = !human && !reliable.length && hints.instruments;
+  const instruments = named ? named.value.filter(label => sourceReviewAllows(audio, label)).map(label => ({ label, score: .45 })) : reliable;
   const embedding = audio.soundEmbedding && decodeSoundEmbedding(audio.soundEmbedding);
   return {
-    node, human, instruments: reliableInstruments(audio).filter(i => validScore(i.score)),
+    node, hints, human, named: !!named, instruments: instruments.filter(i => validScore(i.score)),
     tempo: tempo && Number.isFinite(tempo.bpm) && tempo.bpm >= 40 && tempo.bpm <= 250 && validScore(tempo.confidence) && tempo.confidence >= .5 ? tempo : undefined,
     key: key && Number.isInteger(key.tonic) && key.tonic >= 0 && key.tonic < 12 && ['major','minor'].includes(key.mode) && validScore(key.strength) && key.strength >= .6 ? key : undefined,
     // Raw similarity scores are not calibrated acceptance policies. Only reviewed
@@ -57,15 +61,14 @@ function features(node: DocNode) {
 }
 type Features = ReturnType<typeof features>;
 /** How two fingerprinted tracks relate by sound. Absent when either track has no comparable fingerprint. */
-interface SoundMatch { similarity: number; alike: boolean; related: boolean }
+interface SoundMatch { similarity: number; alike: boolean }
 const NOTE = 'Match strength reflects available evidence, not a probability. Musical similarities are not proof of sampling or influence.';
 function pairEdges(a: Features, b: Features, match?: SoundMatch): Edge[] {
   const [source, target] = [a.node.id, b.node.id].sort();
   const edges: Edge[] = [];
   const add = (kind: MusicKind, weight: number, evidence: string) => edges.push({ id: `${source}->${target}:${kind}`, source, target, kind, weight, evidence: [evidence, NOTE] });
-  // Both tracks have fingerprints and they sound unrelated: tempo or key alone is not a relationship.
-  const properties = !match || match.related;
-  if (properties && a.tempo && b.tempo) {
+  const sources = (kind: 'tempo' | 'key') => ` Sources: ${a.hints[kind]?.source ?? 'audio estimate'} and ${b.hints[kind]?.source ?? 'audio estimate'}. Name tags are not verified audio detections.`;
+  if (a.tempo && b.tempo) {
     const at = a.tempo.bpm; const bt = b.tempo.bpm;
     const low = Math.min(at, bt); const high = Math.max(at, bt);
     const directDelta = high - low;
@@ -79,19 +82,22 @@ function pairEdges(a: Features, b: Features, match?: SoundMatch): Edge[] {
       const reason = direct
         ? `Similar estimated tempo: ${at.toFixed(1)} and ${bt.toFixed(1)} BPM (${directDelta.toFixed(1)} BPM apart).`
         : `Half/double-time tempo: ${at.toFixed(1)} and ${bt.toFixed(1)} BPM (${halfDelta.toFixed(1)} BPM apart after doubling ${low.toFixed(1)}). Related pulse rates, not the same measured tempo.`;
-      add('tempo', weight, `${reason} Based on audio estimates.`);
+      add('tempo', weight, reason + (a.hints.tempo || b.hints.tempo ? sources('tempo') : ' Based on audio estimates.'));
     }
   }
-  if (properties && a.key && b.key) {
+  if (a.key && b.key) {
     const relation = keyRelation(a.key, b.key);
-    if (relation) add('key', Math.min(a.key.strength, b.key.strength) * (relation === 'same estimated key' ? 1 : .8), `${keyName(a.key)} and ${keyName(b.key)}: ${relation}. Based on audio estimates.`);
+    if (relation) add('key', Math.min(a.key.strength, b.key.strength) * (relation === 'same estimated key' ? 1 : .8), `${a.hints.key?.displayName ?? keyName(a.key)} and ${b.hints.key?.displayName ?? keyName(b.key)}: ${relation}.${a.hints.key || b.hints.key ? sources('key') : ' Based on audio estimates.'}`);
   }
   const shared = a.instruments.filter(i => b.instruments.some(j => j.label === i.label));
   if (shared.length) {
-    const provenance = a.human && b.human ? 'Confirmed by you on both tracks.'
+    const hasName = a.named || b.named;
+    const provenance = hasName
+      ? `Sources: ${a.human ? 'confirmed by you' : a.named ? a.hints.instruments!.source : 'audio estimate'} and ${b.human ? 'confirmed by you' : b.named ? b.hints.instruments!.source : 'audio estimate'}. Name tags are not verified audio detections.`
+      : a.human && b.human ? 'Confirmed by you on both tracks.'
       : a.human || b.human ? 'Confirmed by you on one track; estimated from audio on the other.'
       : 'Supported by strong or repeated audio detections; not confirmed instrumentation.';
-    add('instrument', Math.max(...shared.map(i => Math.min(i.score, b.instruments.find(j => j.label === i.label)!.score))), `Shared instruments: ${shared.map(i => i.label).join(', ')}. ${provenance}`);
+    add('instrument', Math.max(...shared.map(i => Math.min(i.score, b.instruments.find(j => j.label === i.label)!.score))), `${hasName ? 'Shared instrument hints' : 'Shared instruments'}: ${shared.map(i => i.label).join(', ')}. ${provenance}`);
   }
   const sound = a.sound.filter(i => b.sound.some(j => j.group === i.group && j.label === i.label));
   // A tag either side confirmed counts at that side's strength; instruments already linked above are not repeated.
@@ -123,7 +129,7 @@ export function musicPairEdges(a: DocNode, b: DocNode): Edge[] {
   if (a.fileType !== 'audio' || b.fileType !== 'audio' || !a.audio || !b.audio || a.id === b.id) return [];
   const fa = features(a); const fb = features(b);
   const similarity = fa.fingerprint && fb.fingerprint?.model === fa.fingerprint.model ? cosine(fa.fingerprint.vector, fb.fingerprint.vector) : undefined;
-  return pairEdges(fa, fb, similarity === undefined ? undefined : { similarity, alike: similarity >= SOUND_LINK_POLICY.floor, related: similarity >= SOUND_LINK_POLICY.floor });
+  return pairEdges(fa, fb, similarity === undefined ? undefined : { similarity, alike: similarity >= SOUND_LINK_POLICY.floor });
 }
 const keyToken = (k: NonNullable<Features['key']>) => `k:${k.tonic}:${k.mode}`;
 function tokens(f: Features, query = false): string[] {
@@ -203,7 +209,7 @@ function soundNeighbors(audio: Features[], keep: number): Map<number, { other: n
  * not exhaustive all-pairs ranking; work/memory scale with the candidate budget. */
 export function buildMusicEdges(nodes: DocNode[], policy: SoundLinkPolicy = SOUND_LINK_POLICY): Edge[] {
   const audio = nodes.filter(n => n.fileType === 'audio' && n.audio).sort((a,b) => a.id.localeCompare(b.id)).map(features);
-  const neighbors = soundNeighbors(audio, Math.max(policy.mutualK, policy.relatedK));
+  const neighbors = soundNeighbors(audio, policy.mutualK);
   const rank = (i: number, other: number) => neighbors.get(i)?.findIndex(n => n.other === other) ?? -1;
   const match = (i: number, other: number): SoundMatch | undefined => {
     const a = audio[i].fingerprint, b = audio[other].fingerprint;
@@ -211,7 +217,7 @@ export function buildMusicEdges(nodes: DocNode[], policy: SoundLinkPolicy = SOUN
     const similarity = cosine(a.vector, b.vector);
     const ri = rank(i, other), ro = rank(other, i);
     const within = (r: number, k: number) => r >= 0 && r < k;
-    return { similarity, alike: similarity >= policy.floor && within(ri, policy.mutualK) && within(ro, policy.mutualK), related: within(ri, policy.relatedK) || within(ro, policy.relatedK) };
+    return { similarity, alike: similarity >= policy.floor && within(ri, policy.mutualK) && within(ro, policy.mutualK) };
   };
   const buckets = new Map<string, number[]>();
   audio.forEach((f, index) => { for (const token of tokens(f)) { const list = buckets.get(token) ?? []; list.push(index); buckets.set(token, list); } });
