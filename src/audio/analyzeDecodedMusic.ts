@@ -11,7 +11,7 @@ import { DescriptionAccumulator, selectDescriptions, type DescriptionScore } fro
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
-import { createRecognition, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
+import { createRecognition, recognitionConfiguration, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
   /** Qualification-only opt-in; callers must bind and validate the scorer. */
@@ -184,7 +184,10 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
       const passt = samples16 && options.passt ? await options.passt(await read(0, duration, 32000), options.signal) : undefined;
       output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}), ...(passt ? { passt } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
       if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
-      check(); cache.set(key, output);
+      // PaSST was wanted but unavailable: the CLAP-only scores are not reused as PaSST-era results.
+      if (samples16 && options.passt && !passt) recognition.configurationHash = recognitionConfiguration(mode, duration, false);
+      else { check(); cache.set(key, output); }
+      check();
     }
     return { output, cacheHit };
   }

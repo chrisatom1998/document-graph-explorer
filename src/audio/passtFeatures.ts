@@ -9,11 +9,23 @@ let loaded = false;
 let nextId = 0;
 const deviceMemory = () => typeof navigator === 'undefined' ? undefined : (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
 
-export function passtFeatures(samples32k: Float32Array, signal?: AbortSignal): Promise<number[] | undefined> {
+/** Whether this tab can still produce PaSST features; a saved CLAP-only result stays current when it cannot. */
+export function passtExpected(): boolean {
   const memory = deviceMemory();
-  if (disabled || (memory !== undefined && memory < 4) || typeof Worker === 'undefined') return Promise.resolve(undefined);
+  return !disabled && !(memory !== undefined && memory < 4) && typeof Worker !== 'undefined';
+}
+// One shared worker answers one request at a time: concurrent analyses wait their turn, so a second
+// caller never replaces the first one's reply handler (which would time out and turn PaSST off).
+let queue: Promise<unknown> = Promise.resolve();
+export function passtFeatures(samples32k: Float32Array, signal?: AbortSignal): Promise<number[] | undefined> {
+  const run = queue.then(() => passtFeaturesNow(samples32k, signal));
+  queue = run.catch(() => {});
+  return run;
+}
+function passtFeaturesNow(samples32k: Float32Array, signal?: AbortSignal): Promise<number[] | undefined> {
+  if (!passtExpected()) return Promise.resolve(undefined);
   signal?.throwIfAborted();
-  worker ??= new Worker(new URL('./passtFeatures.worker.ts', import.meta.url), { type: 'module' });
+  if (!worker) worker = new Worker(new URL('./passtFeatures.worker.ts', import.meta.url), { type: 'module' });
   const current = worker, id = ++nextId;
   const samples = new Float32Array(320000); samples.set(samples32k.subarray(0, 320000));
   return new Promise((resolve, reject) => {
