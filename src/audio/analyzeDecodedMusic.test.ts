@@ -379,3 +379,34 @@ describe('one-shot windows inside long recordings', { timeout: 60_000 }, () => {
     expect((await run('fast')).windows).toEqual([]);
   });
 });
+
+describe('AST device choice', { timeout: 60_000 }, () => {
+  // Only the validated source classifier (full analyses past 2.048 s) must keep the WASM q8 scores it was fitted on.
+  async function astMessages(duration: number, mode: 'fast' | 'full') {
+    const sent: Record<string, unknown>[] = [];
+    const decoder: MusicDecoder = { durationSeconds: duration, close() {}, read: async (start, seconds, rate) => new Float32Array(Math.round(Math.max(0, Math.min(seconds, duration - start)) * rate)).fill(.1) };
+    const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
+      if (message.kind === 'instruments') { sent.push(message); return { scores: {}, musicScore: 0 } as T; }
+      if (message.kind === 'rhythm' || message.kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: duration, instruments: [], notes: [] } as T;
+      return (message.kind === 'jamendo' ? {} : []) as T;
+    };
+    await analyzeDecodedMusic(decoder, request, { mode, cache: new ResultCache() });
+    return sent;
+  }
+  it('asks for the GPU only where no validated scorer reads AST scores', async () => {
+    for (const [duration, mode, gpu] of [[1.5, 'full', true], [1.5, 'fast', true], [30, 'fast', true], [30, 'full', undefined]] as const) {
+      const sent = await astMessages(duration, mode);
+      expect(sent.length).toBeGreaterThan(0);
+      expect(sent.every(m => m.gpu === gpu)).toBe(true);
+    }
+  });
+  it('records where the GPU was allowed in the AST job, so saved ledgers and cache keys tell the runs apart', async () => {
+    const { createRecognition, refreshRuntimeIdentity } = await import('./recognition');
+    const ast = (duration: number, mode: 'fast' | 'full') => createRecognition(duration, mode).jobs.find(j => j.modelId === 'ast')!.preprocessingVersion;
+    expect(ast(1.5, 'full')).toContain(':webgpu-fp32-allowed');
+    expect(ast(30, 'fast')).toContain(':webgpu-fp32-allowed');
+    expect(ast(30, 'full')).not.toContain('webgpu');
+    const run = createRecognition(1.5, 'full'); refreshRuntimeIdentity(run, 1.5);
+    expect(run.jobs.find(j => j.modelId === 'ast')!.preprocessingVersion).toContain(':webgpu-fp32-allowed');
+  });
+});
