@@ -43,6 +43,22 @@ describe('musical relationships', () => {
     for(const k of [key(0),key(9,'minor'),key(5),key(7)]) expect(musicPairEdges(a,node('b',{key:k})).map(e=>e.kind)).toEqual(['key']);
     for(const k of [key(6),key(0,'major',0.3)]) expect(musicPairEdges(a,node('b',{key:k}))).toHaveLength(0);
   });
+  it('links tracks that share tags the panel shows as likely, ranked below confirmed matches', () => {
+    const tagged = (id: string, tags: { group: 'character' | 'production'; label: string; score: number; model?: 'Trained head' | 'Trained head (maybe)' }[]) =>
+      node(id, { soundProfile: { version: 1, character: [], djTags: tags.map(t => ({ model: 'Trained head', ...t })) } as MusicAnalysis['soundProfile'] });
+    const a = tagged('a', [{ group: 'character', label: 'airy', score: .9 }, { group: 'production', label: 'vinyl scratch', score: .8 }]);
+    const b = tagged('b', [{ group: 'character', label: 'airy', score: .7 }, { group: 'production', label: 'vinyl scratch', score: .6 }]);
+    const [edge] = musicPairEdges(a, b);
+    expect(edge).toMatchObject({ kind: 'sound' });
+    expect(edge.evidence[0]).toContain('Shared sound tags: airy, vinyl scratch (model estimates shown as likely on both tracks)');
+    expect(edge.weight).toBeLessThan(.85);
+    // More shared tags rank higher; a maybe-level head or a possible-tier score never links.
+    expect(edge.weight).toBeGreaterThan(musicPairEdges(a, tagged('c', [{ group: 'character', label: 'airy', score: .7 }]))[0].weight);
+    expect(musicPairEdges(a, tagged('d', [{ group: 'character', label: 'airy', score: .9, model: 'Trained head (maybe)' }]))).toEqual([]);
+    expect(musicPairEdges(a, tagged('e', [{ group: 'character', label: 'airy', score: .45 }]))).toEqual([]);
+    // The candidate search finds tag-only pairs too.
+    expect(buildMusicEdges([a, b]).map(e => e.kind)).toEqual(['sound']);
+  });
   it('links shared instruments independently and ignores low-score guesses', () => {
     const a=node('a',{instruments:[{label:'piano',score:0.9,status:'likely'}]});
     expect(musicPairEdges(a,node('b',{instruments:[{label:'piano',score:0.8,status:'likely'}]}))[0].kind).toBe('instrument');
