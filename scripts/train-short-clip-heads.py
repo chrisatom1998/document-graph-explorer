@@ -31,6 +31,8 @@ train = json.load(open(f'{W}/train-items.json'))['items'] + (json.load(open(f'{W
 def table(items):
     items = [i for i in items if i['id'] in feats]
     lab = [{f"{r['dimension']}:{r['label']}": r['state'] for r in i['reviews']} for i in items]
+    for l in lab:   # Definition, not a source label: a kick drum is never a bass hit (scripts/short-clip-bass-relabel.py, Bk).
+        if 'role:bass hit' not in l and l.get('role:kick') == 'present': l['role:bass hit'] = 'absent'
     return items, lab, np.array([i['groups']['artist'] for i in items])
 tr_items, tr_lab, tr_groups = table(train)
 ca_items, ca_lab, ca_groups = table(cal)
