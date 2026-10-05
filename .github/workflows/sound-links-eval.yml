@@ -83,7 +83,7 @@ jobs:
           mkdir -p out
           for set in songs-tune notes-tune; do npx vite-node scripts/sound-links/tune.mjs data/$set.json data/$set.jsonl out/$set.json; done
       - name: Held-out check of the shipped policy
-        run: for set in songs-test notes-test; do npx vite-node scripts/sound-links/tune.mjs data/$set.json data/$set.jsonl out/$set.json '{"mutualK":3,"floor":0.5,"relatedK":8}'; done
+        run: for set in songs-test notes-test; do npx vite-node scripts/sound-links/tune.mjs data/$set.json data/$set.jsonl out/$set.json '{"neighbors":3,"floor":0.7}'; done
       - uses: actions/upload-artifact@v4
         if: always()
         with:

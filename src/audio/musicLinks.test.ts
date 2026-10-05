@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DocNode } from '../model/types';
 import type { MusicAnalysis } from './musicTypes';
 import { sanitizeMusicAnalysis } from './musicTypes';
-import { buildMusicEdges, musicPairEdges, refreshMusicEdges, MUSIC_NEIGHBOR_LIMIT, MUSIC_NEIGHBORS_PER_KIND, SOUND_LINK_POLICY } from './musicLinks';
+import { buildMusicEdges, musicPairEdges, refreshMusicEdges, MUSIC_NEIGHBOR_LIMIT, MUSIC_NEIGHBORS_PER_KIND } from './musicLinks';
 import { instrumentScores } from './instrumentLabels';
 import { sanitizeGraphExport } from '../persistence/validateImport';
 import { createRecognition } from './recognition';
@@ -268,14 +268,14 @@ function fingerprint(group: number, member: number): number[] {
   return v.map(x => x / n);
 }
 const sounding = (id: string, group: number, member: number, extra: Partial<MusicAnalysis> = {}) => node(id, { embedding: fingerprint(group, member), ...extra });
-describe('mutual sound-alike neighbours', () => {
-  it('links tracks that are among each other\'s closest sounds, explains why, and leaves different sounds apart', () => {
+describe('sound-alike links: reasons and scale', () => {
+  it('links tracks that sound alike, explains why, and leaves different sounds apart', () => {
     const nodes = [0, 1, 2].flatMap(g => [0, 1, 2].map(m => sounding(`g${g}m${m}`, g, m)));
     const edges = buildMusicEdges(nodes);
     const similar = edges.filter(e => e.kind === 'similar');
     expect(similar.length).toBeGreaterThan(0);
     for (const e of similar) expect(e.source.slice(0, 2)).toBe(e.target.slice(0, 2));
-    expect(similar[0].evidence[0]).toMatch(/^Sounds alike: the two recordings' sound fingerprints are \d+% similar, and each is among the other's closest-sounding tracks\./);
+    expect(similar[0].evidence[0]).toMatch(/^Sounds alike: the two recordings' sound fingerprints are \d+% similar\./);
     expect(buildMusicEdges([...nodes].reverse())).toEqual(edges);
   });
   it('names the tested tags and confirmations both tracks share', () => {
@@ -294,7 +294,7 @@ describe('mutual sound-alike neighbours', () => {
   it('keeps each track within its sound-alike budget', () => {
     const nodes = Array.from({ length: 60 }, (_, i) => sounding(String(i).padStart(2, '0'), i % 4, i));
     const edges = buildMusicEdges(nodes);
-    for (const n of nodes) expect(edges.filter(e => e.kind === 'similar' && (e.source === n.id || e.target === n.id)).length).toBeLessThanOrEqual(SOUND_LINK_POLICY.mutualK);
+    for (const n of nodes) expect(edges.filter(e => e.kind === 'similar' && (e.source === n.id || e.target === n.id)).length).toBeLessThanOrEqual(MUSIC_NEIGHBORS_PER_KIND);
   });
   it('stays bounded and deterministic for libraries too large to compare every pair', () => {
     const nodes = Array.from({ length: 1200 }, (_, i) => sounding(String(i).padStart(4, '0'), i % 8, i));

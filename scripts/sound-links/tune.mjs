@@ -34,7 +34,7 @@ function score(edges) {
   for (const r of relations) row[r] = sound.length ? sound.filter(e => label[e.source][r] === label[e.target][r]).length / sound.length : NaN;
   return row;
 }
-const grid = policyArg ? [JSON.parse(policyArg)] : [1, 2, 3, 5].flatMap(mutualK => [0, .3, .5, .6, .7, .8].map(floor => ({ ...SOUND_LINK_POLICY, mutualK, floor })));
+const grid = policyArg ? [JSON.parse(policyArg)] : [1, 2, 3, 5].flatMap(neighbors => [0, .3, .5, .6, .7, .8].map(floor => ({ ...SOUND_LINK_POLICY, neighbors, floor })));
 const rows = [];
 for (const center of [false, true]) for (const policy of grid) rows.push({ center, ...policy, ...score(buildMusicEdges(nodes(center), policy)) });
 // Nearest-neighbour precision ignores any threshold: how often a clip's single closest clip shares the label.
@@ -53,7 +53,7 @@ for (const center of [false, true]) {
 }
 const pct = x => Number.isFinite(x) ? `${(100 * x).toFixed(0)}%` : '–';
 console.log(`\n${manifest.kind} (${manifestPath}): ${items.length} clips. Random-pair rate: ${relations.map(r => `${r} ${pct(baseRate(r))}`).join(', ')}. Closest-clip precision: ${Object.entries(nn).map(([k, v]) => `${k} ${pct(v)}`).join(', ')}`);
-console.log(`| centered | mutualK | floor | links | clips linked | ${relations.map(r => `same ${r}`).join(' | ')} |`);
+console.log(`| centered | neighbors | floor | links | clips linked | ${relations.map(r => `same ${r}`).join(' | ')} |`);
 console.log(`|---|---|---|---|---|${relations.map(() => '---').join('|')}|`);
-for (const r of rows) console.log(`| ${r.center ? 'yes' : 'no'} | ${r.mutualK} | ${r.floor} | ${r.links} | ${pct(r.linkedClips)} | ${relations.map(x => pct(r[x])).join(' | ')} |`);
+for (const r of rows) console.log(`| ${r.center ? 'yes' : 'no'} | ${r.neighbors} | ${r.floor} | ${r.links} | ${pct(r.linkedClips)} | ${relations.map(x => pct(r[x])).join(' | ')} |`);
 if (outPath) writeFileSync(outPath, JSON.stringify({ manifest: manifestPath, clips: items.length, baseRates: Object.fromEntries(relations.map(r => [r, baseRate(r)])), nearest: nn, mean, rows }, null, 1));
