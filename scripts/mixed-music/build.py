@@ -66,10 +66,14 @@ if os.path.exists(path):
     if json.load(open(path))['items'] != items: sys.exit('Computed selection differs from the frozen manifest; refusing to continue.')
 else:
     json.dump(manifest, open(path, 'w'), indent=1)
-for it in items:
-    key = it['sampleKey']
-    data = tf.extractfile(member(f'audio/{key[:3]}/{key}.ogg')).read()
-    open(os.path.join(audio_out, f"{it['id']}.ogg"), 'wb').write(data)
+# One sequential pass: random access into a .tgz re-decompresses from the start for every clip.
+wanted = {f"{it['sampleKey']}.ogg": it['id'] for it in items}
+with tarfile.open(tgz, 'r|gz') as stream:
+    for m in stream:
+        name = os.path.basename(m.name)
+        if m.isfile() and '/audio/' in f'/{m.name}' and not name.startswith('._') and name in wanted:
+            open(os.path.join(audio_out, f"{wanted.pop(name)}.ogg"), 'wb').write(stream.extractfile(m).read())
+if wanted: sys.exit(f'{len(wanted)} selected clips missing from the archive, e.g. {list(wanted)[:3]}')
 counts = {}
 for it in items:
     for r in it['reviews']: counts.setdefault(r['label'], [0, 0])[r['state'] == 'absent'] += 1

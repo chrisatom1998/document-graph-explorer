@@ -9,7 +9,8 @@ no tag; drums, synth, piano and voice mostly missed). The short-clip benchmark i
   non-share-alike Creative Commons licences or CC0, at most three per FMA artist, ranked by a fixed-seed hash of the sample
   key. Labels never influence selection. Intervals are bootstrapped over artists.
 - Revision before any result was read: the first freeze (CC-BY/CC0, one clip per artist) gave only 118 clips with 5–9
-  positives per class, too few to measure; it was replaced, unscored.
+  positives per class, too few to measure, so the selection was widened. That first run had already been started and
+  finished; its numbers are reported as a pilot, not as the result.
 - Labels: OpenMIC aggregated crowd annotations (relevance ≥ 0.5 present, below absent, missing pair unknown) for drums,
   voice, synthesizer, piano, guitar, bass, cymbals, organ, violin, trumpet, saxophone.
 - Scoring: `scripts/mixed-music/score.mjs` reads the app's own Sounds-panel tags (`confidentSoundSummary`) from the graph
