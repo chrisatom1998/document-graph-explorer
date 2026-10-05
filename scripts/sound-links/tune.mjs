@@ -4,7 +4,6 @@
 // sound-similarity part of src/audio/musicLinks.ts. Precision = share of links whose two clips share the label.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { buildMusicEdges, SOUND_LINK_POLICY } from '../../src/audio/musicLinks';
-import { encodeSoundEmbedding } from '../../src/audio/soundEmbedding';
 
 const [manifestPath, embeddingsPath, outPath, policyArg] = process.argv.slice(2);
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -19,7 +18,7 @@ function nodes(center) {
   return items.map(i => {
     const v = unit(vectors.get(i.id));
     return { id: i.id, title: i.id, kind: 'document', fileType: 'audio', topics: [], entities: [], keywords: [], wordCount: 0, degree: 0, cluster: 0, status: 'ok',
-      audio: { version: 2, durationSeconds: 10, analyzedSeconds: 10, instruments: [], notes: [], soundEmbedding: encodeSoundEmbedding(center ? v.map((x, d) => x - mean[d]) : v, 'clap', 1) } };
+      audio: { version: 2, durationSeconds: 10, analyzedSeconds: 10, instruments: [], notes: [], embedding: unit(center ? v.map((x, d) => x - mean[d]) : v).map(x => Math.round(x * 1e4) / 1e4) } };
   });
 }
 const label = Object.fromEntries(items.map(i => [i.id, i.labels]));
@@ -29,7 +28,7 @@ function baseRate(relation) {
   return same / all;
 }
 function score(edges) {
-  const sound = edges.filter(e => e.kind === 'sound');
+  const sound = edges.filter(e => e.kind === 'similar');
   const linked = new Set(sound.flatMap(e => [e.source, e.target]));
   const row = { links: sound.length, linkedClips: linked.size / items.length };
   for (const r of relations) row[r] = sound.length ? sound.filter(e => label[e.source][r] === label[e.target][r]).length / sound.length : NaN;
