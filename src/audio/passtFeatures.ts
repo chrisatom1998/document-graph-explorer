@@ -8,6 +8,9 @@ let worker: Worker | undefined;
 let disabled = !(soundManifest.sha256 as Record<string, string>)['short-clip-passt.json'];
 let loaded = false;
 let nextId = 0;
+/** PaSST zero-pads every clip to 10 s, so a very short one-shot is almost all silence: on 28 bass one-shots under
+ * 0.5 s the CLAP+PaSST head found 1, against 3 for CLAP alone (2026-10-05). Shorter clips keep the CLAP-only head. */
+export const PASST_MIN_SECONDS = 0.5;
 // Same bound the other models use for a threaded start (musicAnalysis.worker.ts); a working start takes a few seconds.
 const THREADED_START_LIMIT_MS = 20_000;
 const deviceMemory = () => typeof navigator === 'undefined' ? undefined : (navigator as Navigator & { deviceMemory?: number }).deviceMemory;

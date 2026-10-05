@@ -45,6 +45,8 @@ describe('PaSST features', () => {
     const { recognitionConfiguration } = await import('./recognition');
     expect(recognitionConfiguration('full', 1, true)).toContain('-passt-');
     expect(recognitionConfiguration('full', 1, false)).not.toContain('-passt-');
+    // Under 0.5 s PaSST never runs, so the CLAP-only identity is the expected one and those clips stay current.
+    expect(recognitionConfiguration('full', .3, true)).toBe(recognitionConfiguration('full', .3, false));
     expect(recognitionConfiguration('full', 60, true)).toBe(recognitionConfiguration('full', 60, false));
     const { createRecognition, refreshRuntimeIdentity } = await import('./recognition');
     const run = createRecognition(1, 'full'); refreshRuntimeIdentity(run, 1, false);

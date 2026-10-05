@@ -3,7 +3,7 @@ import { musicRuntimeIdentity } from './musicRuntime';
 import ast from '../../public/music-model/manifest.json';
 import clap from '../../public/sound-model/manifest.json';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
-import { passtExpected } from './passtFeatures';
+import { PASST_MIN_SECONDS, passtExpected } from './passtFeatures';
 import jamendo from '../../public/jamendo-model/manifest.json';
 import { EFFECT_EVENT_LABELS } from './soundReviewPolicy';
 import { DJ_LABELS } from './djTags';
@@ -71,7 +71,7 @@ export function familyOf(label: string): string {
  * Event windows never use PaSST, so long recordings keep the CLAP-only identity. */
 const passtPin = (clap.sha256 as Record<string, string>)['short-clip-passt.json'];
 const oneShotIdentity = (passt: boolean) => `one-shot-${((clap.sha256 as Record<string, string>)['short-clip.json'] ?? 'none').slice(0, 12)}${passt && passtPin ? `-passt-${passtPin.slice(0, 12)}` : ''}-prompts-${clap.sha256['prompts.json'].slice(0, 12)}`;
-export const recognitionConfiguration = (mode: 'fast' | 'full', durationSeconds?: number, passt = passtExpected()) => `timeline-v1:${mode}:decoder-mono-v3-short-pcm:${musicRuntimeIdentity()}:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1${durationSeconds !== undefined && durationSeconds <= SHORT_CLIP_MAX_SECONDS ? `:${oneShotIdentity(passt)}` : mode === 'full' && durationSeconds !== undefined ? `:event-windows-v1:${oneShotIdentity(false)}` : ''}:uncalibrated`;
+export const recognitionConfiguration = (mode: 'fast' | 'full', durationSeconds?: number, passt = passtExpected()) => `timeline-v1:${mode}:decoder-mono-v3-short-pcm:${musicRuntimeIdentity()}:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1${durationSeconds !== undefined && durationSeconds <= SHORT_CLIP_MAX_SECONDS ? `:${oneShotIdentity(passt && durationSeconds >= PASST_MIN_SECONDS)}` : mode === 'full' && durationSeconds !== undefined ? `:event-windows-v1:${oneShotIdentity(false)}` : ''}:uncalibrated`;
 export function createRecognition(duration: number, mode: 'fast' | 'full', audioFingerprint?: string): Recognition {
   // Checksum prefixes keep the growing Jamendo asset list inside the 512-character ledger bound.
   const versions = [ast.revision, Object.values(jamendo.sha256).map(hash => hash.slice(0, 16)).join(':'), clap.revision, 'essentia-0.1.3-tempo-1', 'essentia-0.1.3-key-2'];

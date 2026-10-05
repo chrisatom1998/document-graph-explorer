@@ -11,6 +11,7 @@ import { DescriptionAccumulator, selectDescriptions, type DescriptionScore } fro
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
+import { PASST_MIN_SECONDS } from './passtFeatures';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { musicRuntimeIdentity } from './musicRuntime';
 import { createRecognition, recognitionConfiguration, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
@@ -201,11 +202,12 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       const hasAudio = audible(samples);
       // A whole short clip also goes to the one-shot heads, which read the unchanged 16 kHz audio.
       const samples16 = id === 'clap' && interval.start === 0 && interval.end >= duration && duration <= SHORT_CLIP_MAX_SECONDS ? await read(0, duration, 16000) : undefined;
-      const passt = samples16 && options.passt ? await options.passt(await read(0, duration, 32000), options.signal) : undefined;
+      const wantsPasst = !!samples16 && !!options.passt && duration >= PASST_MIN_SECONDS;
+      const passt = wantsPasst ? await options.passt!(await read(0, duration, 32000), options.signal) : undefined;
       output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}), ...(passt ? { passt } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
       if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
       // PaSST was wanted but unavailable: the CLAP-only scores are not reused as PaSST-era results.
-      if (samples16 && options.passt && !passt) { passtMissing = true; recognition.configurationHash = recognitionConfiguration(mode, duration, false); }
+      if (wantsPasst && !passt) { passtMissing = true; recognition.configurationHash = recognitionConfiguration(mode, duration, false); }
       else { check(); cache.set(key, output); }
       check();
     }
