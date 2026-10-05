@@ -4,6 +4,8 @@ import { fusionPresentation } from './fusionPresentation';
 import type { MusicAnalysis } from './musicTypes';
 import { dimensionLabels, type Dimension } from './recognition';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
+import calibratedLabelList from './calibratedLabels.json';
+import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 
 /** Presentation only: does not change stored evidence, acceptance, cache identity or graph links. */
@@ -15,7 +17,17 @@ export const TRACK_SOUND_FLOOR = .4;
 /** @deprecated kept for older callers: the likely cutoff. */
 export const SOUND_DISPLAY_FLOOR = LIKELY_SOUND_CUTOFF;
 export type SoundTier = 'likely' | 'possible';
-export interface DisplaySound { dimension: Dimension; label: string; origin: 'confirmed by you' | 'model estimate'; scores?: {model:string;score:number}[]; /** Only maybe-level detectors back it. */ maybe?: boolean; /** Model estimates only: possible = best tested score between the track floor and the likely cutoff. */ tier?: SoundTier }
+export interface DisplaySound { dimension: Dimension; label: string; origin: 'confirmed by you' | 'model estimate'; scores?: {model:string;score:number}[]; /** Only maybe-level detectors back it. */ maybe?: boolean; /** Model estimates only: possible = best tested score between the track floor and the likely cutoff. */ tier?: SoundTier;
+  /** No tested detector exists for this label: shown from the raw CLAP catalog similarity (>= the track floor, after
+   * the catalog's own margin check), always as "possible", on recordings longer than one-shots only. */
+  uncalibrated?: boolean }
+/** Labels that have a held-out-tested detector (learned.json / short-clip.json); kept in sync by add-maybe-heads.py and a test. */
+export const CALIBRATED_LABELS: ReadonlySet<string> = new Set(calibratedLabelList as string[]);
+/** Raw-CLAP fallback floor. Measured on 9,000 clips: at 0.40 only 23% of fallback tags agreed with the clip's own
+ * labels, at 0.50 41% (docs/evaluations/open-vocab-2026-10-05/unverified-fallback-cost.json), so the floor is raised. */
+export const UNVERIFIED_SOUND_FLOOR = .5;
+/** Labels whose fallback tags were measured as almost always wrong (>= 15 firings, < 10% agreement): never shown. */
+export const UNVERIFIED_BLOCKED: ReadonlySet<string> = new Set(unverifiedBlocked.blocked);
 /** One-shots (≤ SHORT_CLIP_MAX_SECONDS) keep the 0.50 rule; longer audio uses the 0.40 floor. */
 export const soundDisplayFloor=(durationSeconds:number|undefined)=>Number.isFinite(durationSeconds)&&durationSeconds!>SHORT_CLIP_MAX_SECONDS?TRACK_SOUND_FLOOR:LIKELY_SOUND_CUTOFF;
 export const soundTier=(score:number):SoundTier=>score>=LIKELY_SOUND_CUTOFF?'likely':'possible';
@@ -76,11 +88,15 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     for(const model of audio.soundProfile?.models??[])for(const candidate of model.candidates)if(dimensionLabels.source.includes(candidate.label))estimate('source',candidate.label,candidate.score,model.model);
   }
   // Profile tags carry their own source-specific display score. Bare character/source strings and AI drafts do not.
+  const catalogClap=new Set<string>();
+  for(const tag of audio.soundProfile?.djTags??[]){const dim:Dimension=tag.group==='source'?'source':tag.group==='character'?'character':'effect';if(tag.model==='Music CLAP')catalogClap.add(`${dim}:${canonical(dim,tag.label)}`);}
   for(const tag of audio.soundProfile?.djTags??[])estimate(tag.group==='source'?'source':tag.group==='character'?'character':'effect',tag.label,tag.score,tag.model??'Sound tag model');
   const fusion=fusionPresentation(audio.fusion,audio.durationSeconds,fusionMode??audio.recognition?.mode??'full');
   if(fusion?.qualified)for(const w of fusion.windows)for(const d of w.decisions)if(d.state!=='unavailable')estimate('source',d.label,d.decisionProbability,`${d.source==='learned-head'?'Trained head':'Baseline fallback'} score${d.state==='positive'?'':' (below policy acceptance)'}`);
   const tiered=(s:DisplaySound,models:(m:string)=>boolean):DisplaySound=>({...s,tier:soundTier(Math.max(...s.scores!.filter(x=>models(x.model)).map(x=>x.score)))});
+  const long=floor===TRACK_SOUND_FLOOR;
   return [...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
     :s.scores?.some(x=>TESTED_SCORES.has(x.model))?[tiered(s,m=>TESTED_SCORES.has(m))]
-    :s.scores?.some(x=>x.model===MAYBE_SCORE)?[{...tiered(s,m=>m===MAYBE_SCORE),maybe:true}]:[]);
+    :s.scores?.some(x=>x.model===MAYBE_SCORE)?[{...tiered(s,m=>m===MAYBE_SCORE),maybe:true}]
+    :long&&!CALIBRATED_LABELS.has(s.label)&&!UNVERIFIED_BLOCKED.has(s.label)&&catalogClap.has(`${s.dimension}:${s.label}`)&&s.scores?.some(x=>x.model==='CLAP similarity'&&x.score>=UNVERIFIED_SOUND_FLOOR)?[{...s,tier:'possible' as const,uncalibrated:true}]:[]);
 }

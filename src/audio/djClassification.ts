@@ -1,4 +1,4 @@
-import { DJ_LABELS, DJ_TYPE_SOURCE, applyReviewedDecisions, selectDjTags, type DjTag } from './djTags';
+import { DJ_LABELS, DJ_TYPE_SOURCE, applyReviewedDecisions, deriveTestedSources, outranksDjTag, selectDjTags, type DjTag } from './djTags';
 import type { DescriptionScore } from './profileDescriptions';
 import type { InstrumentEstimate } from './musicTypes';
 import type { SoundProfile } from './soundProfile';
@@ -29,7 +29,11 @@ export function applyDjClassification(profile: SoundProfile, ast: InstrumentEsti
     if ((DJ_LABELS.source as readonly string[]).includes(source)) tags.push({group:'source',label:source,model:profile.source.basis,score:Math.max(0,...profile.models.flatMap(m=>m.candidates.filter(c=>c.label===profile.source?.label).map(c=>c.score)),...tags.filter(t=>t.group==='production' && DJ_TYPE_SOURCE[t.label]===source).map(t=>t.score))});
   }
   for (const label of profile.character) if ((DJ_LABELS.character as readonly string[]).includes(label)) tags.push({group:'character',label,model:'Music CLAP',score:Math.max(0,...scores.filter(s=>s.label===label).map(s=>s.score))});
-  profile.djTags=applyReviewedDecisions([...new Map(tags.map(t=>[`${t.group}:${t.label}`,t])).values()],scores);
+  // Keep the best-checked tag per label: a profile source labelled with an untested model must not hide a tested head.
+  const byLabel=new Map<string,DjTag>();
+  for (const t of tags) { const key=`${t.group}:${t.label}`; if (outranksDjTag(t,byLabel.get(key))) byLabel.set(key,t); }
+  deriveTestedSources(byLabel);
+  profile.djTags=applyReviewedDecisions([...byLabel.values()],scores);
   const learned = profile.djTags.filter(t=>t.model==='Reviewed examples');
   if (scores.some(s=>s.group==='dj-learned' && s.learnedGroup==='source' && s.decision==='exclude' && s.score>=.94 && s.label===profile.source?.label)) delete profile.source;
   const source = learned.find(t=>t.group==='source');
@@ -45,12 +49,13 @@ export function mergeDjTags(profile: SoundProfile, passages: DjTag[], scores: De
     if (tag.group === 'source' && tag.model === 'Music CLAP' && profile.source?.basis === 'AudioSet AST' && tag.label !== profile.source.label && !['voice','breath'].includes(tag.label)) continue;
     if (tag.model !== 'Reviewed examples' && tag.group==='production' && DJ_TYPE_SOURCE[tag.label]==='synthesizer' && profile.source?.basis==='AudioSet AST' && profile.source.label!=='synthesizer') continue;
     const key=`${tag.group}:${tag.label}`; const existing=all.get(key);
-    all.set(key,existing && existing.score>tag.score ? {...existing,segments:tag.segments}:tag);
+    all.set(key,existing && !outranksDjTag(tag,existing) ? {...existing,segments:tag.segments}:tag);
     if (tag.model !== 'Reviewed examples' && tag.group==='production' && DJ_TYPE_SOURCE[tag.label]) {
       const label=DJ_TYPE_SOURCE[tag.label];
       if (!all.has(`source:${label}`)) all.set(`source:${label}`,{...tag,group:'source',label});
     }
   }
+  deriveTestedSources(all);
   profile.djTags=applyReviewedDecisions([...all.values()],scores);
   const rejectedSources=new Set(scores.filter(s=>s.group==='dj-learned'&&s.learnedGroup==='source'&&s.decision==='exclude'&&s.score>=.94).map(s=>s.label));
   profile.djTags=profile.djTags.filter(t=>t.group!=='production'||!rejectedSources.has(DJ_TYPE_SOURCE[t.label]));

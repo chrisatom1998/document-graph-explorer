@@ -1,0 +1,90 @@
+{
+ "kind": "added-maybe-heads-v1",
+ "builtAt": "2026-10-05T15:26:25.433405+00:00",
+ "learnedSha256": "833fad04575088f761b1b3b9a6d42f8d565c7a81b4fa4420ce98b151048f4d4f",
+ "heads": [
+  {
+   "kind": "label",
+   "name": "bright",
+   "testedOn": "real recordings",
+   "precision": 0.7911931818181818,
+   "recall": 0.7725381414701803,
+   "threshold": 0.718,
+   "trainPositive": 2162,
+   "testPositive": 721,
+   "uses": null,
+   "group": "character",
+   "added": true,
+   "tier": "maybe"
+  },
+  {
+   "kind": "label",
+   "name": "dark",
+   "testedOn": "real recordings",
+   "precision": 0.8035714285714286,
+   "recall": 0.8102493074792244,
+   "threshold": 0.703,
+   "trainPositive": 2161,
+   "testPositive": 722,
+   "uses": null,
+   "group": "character",
+   "added": true,
+   "tier": "maybe"
+  },
+  {
+   "kind": "label",
+   "name": "sustained",
+   "testedOn": "real recordings",
+   "precision": 0.7773933102652826,
+   "recall": 0.7464008859357697,
+   "threshold": 0.67,
+   "trainPositive": 2702,
+   "testPositive": 903,
+   "uses": null,
+   "group": "character",
+   "added": true,
+   "tier": "maybe"
+  },
+  {
+   "kind": "label",
+   "name": "percussive",
+   "testedOn": "real recordings",
+   "precision": 0.7685492801771872,
+   "recall": 0.7685492801771872,
+   "threshold": 0.657,
+   "trainPositive": 2701,
+   "testPositive": 903,
+   "uses": null,
+   "group": "character",
+   "added": true,
+   "tier": "maybe"
+  },
+  {
+   "kind": "label",
+   "name": "pulsing",
+   "testedOn": "real recordings",
+   "precision": 0.8792246520874751,
+   "recall": 0.7762176393154893,
+   "threshold": 0.5,
+   "trainPositive": 6741,
+   "testPositive": 2279,
+   "uses": null,
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "rhythmic",
+   "testedOn": "real recordings",
+   "precision": 0.6393728222996515,
+   "recall": 0.6648550724637681,
+   "threshold": 0.744,
+   "trainPositive": 1641,
+   "testPositive": 552,
+   "uses": null,
+   "group": "character",
+   "added": true,
+   "tier": "maybe"
+  }
+ ]
+}

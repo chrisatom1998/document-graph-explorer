@@ -1,0 +1,653 @@
+{
+ "percussion": [
+  "The sound of percussion.",
+  "A recording of percussion.",
+  "Percussion.",
+  "A short percussion sample.",
+  "Unpitched percussion instruments playing a rhythm.",
+  "A solo percussion playing a melody.",
+  "Music played on the percussion."
+ ],
+ "vocal hum": [
+  "The sound of vocal hum.",
+  "A recording of vocal hum.",
+  "Vocal hum.",
+  "A short vocal hum sample.",
+  "A human voice humming pitched notes with a closed mouth.",
+  "A vocal hum in an electronic dance music track.",
+  "A vocal hum sound from a DJ sample pack.",
+  "The sound of humming."
+ ],
+ "vocal vowel": [
+  "The sound of vocal vowel.",
+  "A recording of vocal vowel.",
+  "Vocal vowel.",
+  "A short vocal vowel sample.",
+  "A sustained human voice singing an ah, oh or oo vowel.",
+  "A vocal vowel in an electronic dance music track.",
+  "A vocal vowel sound from a DJ sample pack.",
+  "The sound of vowel.",
+  "The sound of ah."
+ ],
+ "vocal harmony": [
+  "The sound of vocal harmony.",
+  "A recording of vocal harmony.",
+  "Vocal harmony.",
+  "A short vocal harmony sample.",
+  "Layered sung voices harmonizing a musical phrase.",
+  "A vocal harmony in an electronic dance music track.",
+  "A vocal harmony sound from a DJ sample pack.",
+  "The sound of harmony vocals."
+ ],
+ "vocal scream": [
+  "The sound of vocal scream.",
+  "A recording of vocal scream.",
+  "Vocal scream.",
+  "A short vocal scream sample.",
+  "A human voice screaming or shrieking.",
+  "A vocal scream in an electronic dance music track.",
+  "A vocal scream sound from a DJ sample pack.",
+  "The sound of scream."
+ ],
+ "vocal pad": [
+  "The sound of vocal pad.",
+  "A recording of vocal pad.",
+  "Vocal pad.",
+  "A short vocal pad sample.",
+  "Sustained airy human vocal layers forming a background musical texture.",
+  "A vocal pad in an electronic dance music track.",
+  "A vocal pad sound from a DJ sample pack.",
+  "The sound of choir pad."
+ ],
+ "synth pluck": [
+  "The sound of synth pluck.",
+  "A recording of synth pluck.",
+  "Synth pluck.",
+  "A short synth pluck sample.",
+  "A short electronic synthesizer pluck with a sharp attack and quick decay.",
+  "A synth pluck in an electronic dance music track.",
+  "A synth pluck sound from a DJ sample pack.",
+  "The sound of pluck."
+ ],
+ "synth stab": [
+  "The sound of synth stab.",
+  "A recording of synth stab.",
+  "Synth stab.",
+  "A short synth stab sample.",
+  "Short punchy synthesizer chord stabs.",
+  "A synth stab in an electronic dance music track.",
+  "A synth stab sound from a DJ sample pack.",
+  "The sound of stab.",
+  "The sound of chord stab."
+ ],
+ "synth lead": [
+  "The sound of synth lead.",
+  "A recording of synth lead.",
+  "Synth lead.",
+  "A short synth lead sample.",
+  "A synthesizer playing a prominent lead melody.",
+  "A synth lead in an electronic dance music track.",
+  "A synth lead sound from a DJ sample pack.",
+  "The sound of lead."
+ ],
+ "synth bass": [
+  "The sound of synth bass.",
+  "A recording of synth bass.",
+  "Synth bass.",
+  "A short synth bass sample.",
+  "A deep electronic synth bass line.",
+  "A synth bass in an electronic dance music track.",
+  "A synth bass sound from a DJ sample pack."
+ ],
+ "vocal-like synth": [
+  "The sound of vocal-like synth.",
+  "A recording of vocal-like synth.",
+  "Vocal-like synth.",
+  "A short vocal-like synth sample.",
+  "An electronic synthesizer with a vowel-like tone imitating a human voice.",
+  "A vocal-like synth in an electronic dance music track.",
+  "A vocal-like synth sound from a DJ sample pack.",
+  "The sound of formant synth."
+ ],
+ "synth chord": [
+  "The sound of synth chord.",
+  "A recording of synth chord.",
+  "Synth chord.",
+  "A short synth chord sample.",
+  "A synthesizer playing several musical notes together as chords.",
+  "A synth chord in an electronic dance music track.",
+  "A synth chord sound from a DJ sample pack.",
+  "The sound of synth chords."
+ ],
+ "supersaw": [
+  "The sound of supersaw.",
+  "A recording of supersaw.",
+  "Supersaw.",
+  "A short supersaw sample.",
+  "A wide bright layered detuned sawtooth synthesizer playing musical notes.",
+  "A supersaw in an electronic dance music track.",
+  "A supersaw sound from a DJ sample pack.",
+  "The sound of super saw.",
+  "The sound of detuned saw."
+ ],
+ "bell synth": [
+  "The sound of bell synth.",
+  "A recording of bell synth.",
+  "Bell synth.",
+  "A short bell synth sample.",
+  "A synthesizer playing clear metallic bell-like notes.",
+  "A bell synth in an electronic dance music track.",
+  "A bell synth sound from a DJ sample pack.",
+  "The sound of synth bell."
+ ],
+ "organ synth": [
+  "The sound of organ synth.",
+  "A recording of organ synth.",
+  "Organ synth.",
+  "A short organ synth sample.",
+  "A synthesizer playing sustained organ-like tones.",
+  "A organ synth in an electronic dance music track.",
+  "A organ synth sound from a DJ sample pack."
+ ],
+ "brass synth": [
+  "The sound of brass synth.",
+  "A recording of brass synth.",
+  "Brass synth.",
+  "A short brass synth sample.",
+  "A synthesizer playing bright brass-like stabs or melodies.",
+  "A brass synth in an electronic dance music track.",
+  "A brass synth sound from a DJ sample pack."
+ ],
+ "string synth": [
+  "The sound of string synth.",
+  "A recording of string synth.",
+  "String synth.",
+  "A short string synth sample.",
+  "A synthesizer playing layered bowed-string-like tones.",
+  "A string synth in an electronic dance music track.",
+  "A string synth sound from a DJ sample pack."
+ ],
+ "fm synth": [
+  "The sound of fm synth.",
+  "A recording of fm synth.",
+  "Fm synth.",
+  "A short fm synth sample.",
+  "An electronic synth with bright clangorous metallic tones and complex overtones.",
+  "A fm synth in an electronic dance music track.",
+  "A fm synth sound from a DJ sample pack.",
+  "The sound of fm."
+ ],
+ "synth drone": [
+  "The sound of synth drone.",
+  "A recording of synth drone.",
+  "Synth drone.",
+  "A short synth drone sample.",
+  "A sustained electronic tone with little melodic movement.",
+  "A synth drone in an electronic dance music track.",
+  "A synth drone sound from a DJ sample pack.",
+  "The sound of drone."
+ ],
+ "reese bass": [
+  "The sound of reese bass.",
+  "A recording of reese bass.",
+  "Reese bass.",
+  "A short reese bass sample.",
+  "A low detuned buzzing bass sound with beating and moving overtones.",
+  "A reese bass in an electronic dance music track.",
+  "A reese bass sound from a DJ sample pack.",
+  "The sound of reese."
+ ],
+ "wobble bass": [
+  "The sound of wobble bass.",
+  "A recording of wobble bass.",
+  "Wobble bass.",
+  "A short wobble bass sample.",
+  "A low synthesized bass with a rhythmic opening and closing filter.",
+  "A wobble bass in an electronic dance music track.",
+  "A wobble bass sound from a DJ sample pack.",
+  "The sound of wobble."
+ ],
+ "acid bass": [
+  "The sound of acid bass.",
+  "A recording of acid bass.",
+  "Acid bass.",
+  "A short acid bass sample.",
+  "A low resonant squelching electronic bass pattern with sliding notes.",
+  "A acid bass in an electronic dance music track.",
+  "A acid bass sound from a DJ sample pack.",
+  "The sound of 303 bass."
+ ],
+ "bass pluck": [
+  "The sound of bass pluck.",
+  "A recording of bass pluck.",
+  "Bass pluck.",
+  "A short bass pluck sample.",
+  "A short low synthesized bass note with a sharp attack and quick decay.",
+  "A bass pluck in an electronic dance music track.",
+  "A bass pluck sound from a DJ sample pack."
+ ],
+ "rubbery bass": [
+  "The sound of rubbery bass.",
+  "A recording of rubbery bass.",
+  "Rubbery bass.",
+  "A short rubbery bass sample.",
+  "A low electronic bass with a springy bouncing pitch or filter sound.",
+  "A rubbery bass in an electronic dance music track.",
+  "A rubbery bass sound from a DJ sample pack."
+ ],
+ "rimshot": [
+  "The sound of rimshot.",
+  "A recording of rimshot.",
+  "Rimshot.",
+  "A short rimshot sample.",
+  "A sharp woody snare rimshot or rim click.",
+  "A rimshot in an electronic dance music track.",
+  "A rimshot sound from a DJ sample pack.",
+  "The sound of rim.",
+  "The sound of rim click."
+ ],
+ "conga": [
+  "The sound of conga.",
+  "A recording of conga.",
+  "Conga.",
+  "A short conga sample.",
+  "A resonant hand-struck conga drum sound.",
+  "A conga in an electronic dance music track.",
+  "A conga sound from a DJ sample pack."
+ ],
+ "bongo": [
+  "The sound of bongo.",
+  "A recording of bongo.",
+  "Bongo.",
+  "A short bongo sample.",
+  "A high hollow hand-struck bongo drum sound.",
+  "A bongo in an electronic dance music track.",
+  "A bongo sound from a DJ sample pack."
+ ],
+ "clave": [
+  "The sound of clave.",
+  "A recording of clave.",
+  "Clave.",
+  "A short clave sample.",
+  "A short dry woody clave stick hit.",
+  "A clave in an electronic dance music track.",
+  "A clave sound from a DJ sample pack.",
+  "The sound of claves."
+ ],
+ "woodblock": [
+  "The sound of woodblock.",
+  "A recording of woodblock.",
+  "Woodblock.",
+  "A short woodblock sample.",
+  "A hollow woody woodblock percussion hit.",
+  "A woodblock in an electronic dance music track.",
+  "A woodblock sound from a DJ sample pack."
+ ],
+ "shaker loop": [
+  "The sound of shaker loop.",
+  "A recording of shaker loop.",
+  "Shaker loop.",
+  "A short shaker loop sample.",
+  "A repeating rattling shaker percussion rhythm.",
+  "A shaker loop in an electronic dance music track.",
+  "A shaker loop sound from a DJ sample pack."
+ ],
+ "downlifter": [
+  "The sound of downlifter.",
+  "A recording of downlifter.",
+  "Downlifter.",
+  "A short downlifter sample.",
+  "A falling electronic transition effect descending in pitch.",
+  "A downlifter in an electronic dance music track.",
+  "A downlifter sound from a DJ sample pack.",
+  "The sound of downer.",
+  "The sound of downsweep."
+ ],
+ "noise sweep": [
+  "The sound of noise sweep.",
+  "A recording of noise sweep.",
+  "Noise sweep.",
+  "A short noise sweep sample.",
+  "A filtered broadband noise sound sweeping through frequencies.",
+  "A noise sweep in an electronic dance music track.",
+  "A noise sweep sound from a DJ sample pack.",
+  "The sound of sweep."
+ ],
+ "laser": [
+  "The sound of laser.",
+  "A recording of laser.",
+  "Laser.",
+  "A short laser sample.",
+  "A short electronic laser zap with a rapid pitch sweep.",
+  "A laser in an electronic dance music track.",
+  "A laser sound from a DJ sample pack.",
+  "The sound of zap."
+ ],
+ "siren": [
+  "The sound of siren.",
+  "A recording of siren.",
+  "Siren.",
+  "A short siren sample.",
+  "An oscillating rising and falling alarm-like tone.",
+  "A siren in an electronic dance music track.",
+  "A siren sound from a DJ sample pack."
+ ],
+ "air horn": [
+  "The sound of air horn.",
+  "A recording of air horn.",
+  "Air horn.",
+  "A short air horn sample.",
+  "A loud brassy compressed-air horn blast.",
+  "A air horn in an electronic dance music track.",
+  "A air horn sound from a DJ sample pack.",
+  "The sound of airhorn."
+ ],
+ "glitch effect": [
+  "The sound of glitch effect.",
+  "A recording of glitch effect.",
+  "Glitch effect.",
+  "A short glitch effect sample.",
+  "Short irregular digital clicks cuts and bursts.",
+  "A glitch effect in an electronic dance music track.",
+  "A glitch effect sound from a DJ sample pack.",
+  "The sound of glitch."
+ ],
+ "static noise": [
+  "The sound of static noise.",
+  "A recording of static noise.",
+  "Static noise.",
+  "A short static noise sample.",
+  "Broadband radio-like static noise.",
+  "A static noise in an electronic dance music track.",
+  "A static noise sound from a DJ sample pack.",
+  "The sound of static.",
+  "The sound of white noise."
+ ],
+ "wind ambience": [
+  "The sound of wind ambience.",
+  "A recording of wind ambience.",
+  "Wind ambience.",
+  "A short wind ambience sample.",
+  "Wind blowing and rustling.",
+  "A wind ambience in an electronic dance music track.",
+  "A wind ambience sound from a DJ sample pack.",
+  "The sound of wind."
+ ],
+ "foley hit": [
+  "The sound of foley hit.",
+  "A recording of foley hit.",
+  "Foley hit.",
+  "A short foley hit sample.",
+  "A short recorded everyday object contact or movement sound.",
+  "A foley hit in an electronic dance music track.",
+  "A foley hit sound from a DJ sample pack.",
+  "The sound of found sound."
+ ],
+ "metallic": [
+  "The sound of metallic.",
+  "A recording of metallic.",
+  "Metallic.",
+  "A short metallic sample.",
+  "A bright metallic ringing sound.",
+  "A metallic sounding synthesizer.",
+  "A metallic sound effect.",
+  "Music that sounds metallic."
+ ],
+ "gritty": [
+  "The sound of gritty.",
+  "A recording of gritty.",
+  "Gritty.",
+  "A short gritty sample.",
+  "A rough grainy noisy musical texture.",
+  "A gritty sounding synthesizer.",
+  "A gritty sound effect.",
+  "Music that sounds gritty.",
+  "The sound of gritty tone."
+ ],
+ "smooth": [
+  "The sound of smooth.",
+  "A recording of smooth.",
+  "Smooth.",
+  "A short smooth sample.",
+  "A smooth even tone without rough or harsh overtones.",
+  "A smooth sounding synthesizer.",
+  "A smooth sound effect.",
+  "Music that sounds smooth."
+ ],
+ "hollow": [
+  "The sound of hollow.",
+  "A recording of hollow.",
+  "Hollow.",
+  "A short hollow sample.",
+  "A hollow resonant tone with a woody or tubular sound.",
+  "A hollow sounding synthesizer.",
+  "A hollow sound effect.",
+  "Music that sounds hollow."
+ ],
+ "woody": [
+  "The sound of woody.",
+  "A recording of woody.",
+  "Woody.",
+  "A short woody sample.",
+  "A dry woody resonant sound.",
+  "A woody sounding synthesizer.",
+  "A woody sound effect.",
+  "Music that sounds woody."
+ ],
+ "plucked": [
+  "The sound of plucked.",
+  "A recording of plucked.",
+  "Plucked.",
+  "A short plucked sample.",
+  "Short plucked musical notes with a sharp attack and decay.",
+  "A plucked sounding synthesizer.",
+  "A plucked sound effect.",
+  "Music that sounds plucked."
+ ],
+ "syncopated": [
+  "The sound of syncopated.",
+  "A recording of syncopated.",
+  "Syncopated.",
+  "A short syncopated sample.",
+  "A musical rhythm with accents between the main beats.",
+  "A syncopated sounding synthesizer.",
+  "A syncopated sound effect.",
+  "Music that sounds syncopated."
+ ],
+ "rolling": [
+  "The sound of rolling.",
+  "A recording of rolling.",
+  "Rolling.",
+  "A short rolling sample.",
+  "A continuous rapid rolling rhythm.",
+  "A rolling sounding synthesizer.",
+  "A rolling sound effect.",
+  "Music that sounds rolling."
+ ],
+ "rising": [
+  "The sound of rising.",
+  "A recording of rising.",
+  "Rising.",
+  "A short rising sample.",
+  "A sound rising in pitch over time.",
+  "A rising sounding synthesizer.",
+  "A rising sound effect.",
+  "Music that sounds rising."
+ ],
+ "gliding": [
+  "The sound of gliding.",
+  "A recording of gliding.",
+  "Gliding.",
+  "A short gliding sample.",
+  "A musical note smoothly gliding between pitches.",
+  "A gliding sounding synthesizer.",
+  "A gliding sound effect.",
+  "Music that sounds gliding.",
+  "The sound of portamento.",
+  "The sound of slide."
+ ],
+ "bitcrushed": [
+  "The sound of bitcrushed.",
+  "A recording of bitcrushed.",
+  "Bitcrushed.",
+  "A short bitcrushed sample.",
+  "A grainy digitally crushed sound with low resolution artifacts.",
+  "A bitcrushed sounding synthesizer.",
+  "A bitcrushed sound effect.",
+  "Music that sounds bitcrushed.",
+  "The sound of bit crush.",
+  "The sound of lo-fi digital."
+ ],
+ "chorused": [
+  "The sound of chorused.",
+  "A recording of chorused.",
+  "Chorused.",
+  "A short chorused sample.",
+  "A widened detuned sound with gentle beating tones.",
+  "A chorused sounding synthesizer.",
+  "A chorused sound effect.",
+  "Music that sounds chorused.",
+  "The sound of chorus."
+ ],
+ "flanged": [
+  "The sound of flanged.",
+  "A recording of flanged.",
+  "Flanged.",
+  "A short flanged sample.",
+  "A sound with moving comb-filter whooshing overtones.",
+  "A flanged sounding synthesizer.",
+  "A flanged sound effect.",
+  "Music that sounds flanged.",
+  "The sound of flanger."
+ ],
+ "saturated": [
+  "The sound of saturated.",
+  "A recording of saturated.",
+  "Saturated.",
+  "A short saturated sample.",
+  "A thick mildly overdriven musical tone.",
+  "A saturated sounding synthesizer.",
+  "A saturated sound effect.",
+  "Music that sounds saturated.",
+  "The sound of overdriven."
+ ],
+ "tuba": [
+  "The sound of tuba.",
+  "A recording of tuba.",
+  "Tuba.",
+  "A short tuba sample.",
+  "A tuba playing very low resonant brass notes.",
+  "A solo tuba playing a melody.",
+  "Music played on the tuba."
+ ],
+ "bassoon": [
+  "The sound of bassoon.",
+  "A recording of bassoon.",
+  "Bassoon.",
+  "A short bassoon sample.",
+  "A bassoon playing low woody double reed tones.",
+  "A solo bassoon playing a melody.",
+  "Music played on the bassoon."
+ ],
+ "banjo": [
+  "The sound of banjo.",
+  "A recording of banjo.",
+  "Banjo.",
+  "A short banjo sample.",
+  "A banjo playing bright twangy plucked strings.",
+  "A solo banjo playing a melody.",
+  "Music played on the banjo."
+ ],
+ "sitar": [
+  "The sound of sitar.",
+  "A recording of sitar.",
+  "Sitar.",
+  "A short sitar sample.",
+  "A sitar playing buzzing resonant plucked notes.",
+  "A solo sitar playing a melody.",
+  "Music played on the sitar."
+ ],
+ "steel guitar": [
+  "The sound of steel guitar.",
+  "A recording of steel guitar.",
+  "Steel guitar.",
+  "A short steel guitar sample.",
+  "A steel guitar playing smooth sliding string tones.",
+  "A solo steel guitar playing a melody.",
+  "Music played on the steel guitar."
+ ],
+ "double bass": [
+  "The sound of double bass.",
+  "A recording of double bass.",
+  "Double bass.",
+  "A short double bass sample.",
+  "A double bass playing low resonant plucked or bowed notes.",
+  "A solo double bass playing a melody.",
+  "Music played on the double bass."
+ ],
+ "viola": [
+  "The sound of viola.",
+  "A recording of viola.",
+  "Viola.",
+  "A short viola sample.",
+  "A viola playing midrange bowed string notes.",
+  "A solo viola playing a melody.",
+  "Music played on the viola."
+ ],
+ "vibraphone": [
+  "The sound of vibraphone.",
+  "A recording of vibraphone.",
+  "Vibraphone.",
+  "A short vibraphone sample.",
+  "A vibraphone playing sustained metallic pitched notes.",
+  "A solo vibraphone playing a melody.",
+  "Music played on the vibraphone."
+ ],
+ "steel drum": [
+  "The sound of steel drum.",
+  "A recording of steel drum.",
+  "Steel drum.",
+  "A short steel drum sample.",
+  "A steelpan playing bright resonant metallic pitched notes.",
+  "A solo steel drum playing a melody.",
+  "Music played on the steel drum."
+ ],
+ "cajon": [
+  "The sound of cajon.",
+  "A recording of cajon.",
+  "Cajon.",
+  "A short cajon sample.",
+  "A cajon playing woody box drum thumps and snare-like slaps.",
+  "A solo cajon playing a melody.",
+  "Music played on the cajon."
+ ],
+ "waterphone": [
+  "The sound of waterphone.",
+  "A recording of waterphone.",
+  "Waterphone.",
+  "A short waterphone sample.",
+  "An eerie resonant metallic waterphone sound.",
+  "A solo waterphone playing a melody.",
+  "Music played on the waterphone."
+ ],
+ "vocal shush": [
+  "The sound of vocal shush.",
+  "A recording of vocal shush.",
+  "Vocal shush.",
+  "A short vocal shush sample.",
+  "A person making a shh or shushing sound with their mouth to ask for quiet.",
+  "A vocal shush in an electronic dance music track.",
+  "A vocal shush sound from a DJ sample pack."
+ ],
+ "synth hit": [
+  "The sound of synth hit.",
+  "A recording of synth hit.",
+  "Synth hit.",
+  "A short synth hit sample.",
+  "A single synthesizer note or chord one-shot, such as a stab or pluck.",
+  "A synth hit in an electronic dance music track.",
+  "A synth hit sound from a DJ sample pack.",
+  "The sound of synth shot.",
+  "The sound of synth one-shot."
+ ]
+}

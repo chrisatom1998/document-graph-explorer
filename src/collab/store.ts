@@ -371,7 +371,7 @@ function parseCameraPose(value: unknown): CameraPose | undefined {
 const FILE_TYPES = new Set<FileType>([
   'audio', 'md', 'txt', 'pdf', 'html', 'json', 'yaml', 'csv', 'docx', 'pptx', 'xlsx', 'code', 'other',
 ]);
-const EDGE_KINDS = new Set<EdgeKind>(['reference', 'semantic', 'keyword', 'entity', 'topic', 'tempo', 'key', 'instrument', 'sound', 'title']);
+const EDGE_KINDS = new Set<EdgeKind>(['reference', 'semantic', 'keyword', 'entity', 'topic', 'tempo', 'key', 'instrument', 'sound', 'similar', 'title']);
 
 export function sanitizeSharedFilter(value: unknown): Partial<GraphFilter> | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
