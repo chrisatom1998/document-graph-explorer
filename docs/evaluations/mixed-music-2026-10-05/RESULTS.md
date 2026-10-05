@@ -27,3 +27,27 @@ Where the branch's missed positives were found (from `missedPositivesFoundIn`):
 Reading: the display fix helps but full-mix recall stays low. The biggest remaining lever is that MTG-Jamendo already finds
 most missed synth, guitar and drums but is not shown because it has never been measured. Calibrating it would have to use
 a different set from this one (see the pre-registration caveats).
+
+## Correction (2026-10-05, after merge)
+
+Both builds above predate PR #104, which fixed the trained instrument detector (fusion) on songs. In these runs
+fusion failed on every window, so the table measures the app without its main full-mix detector and understates
+current main. PR #113 later analysed 600 of these clips with current main (records in
+`docs/evaluations/edm-genre-tags-2026-10-05/openmic-main.json` on that branch). Scored the same way:
+
+| Label | current main P / R |
+|---|---|
+| drums | 0.88 / 1.00 |
+| voice | 0.83 / 1.00 |
+| synthesizer | 0.95 / 0.93 |
+| piano | 0.94 / 0.80 |
+| cymbals | 0.94 / 0.92 |
+| trumpet | 0.83 / 0.98 |
+| bass | 0.55 / 0.82 |
+| organ | 0.29 / 0.88 |
+| guitar | 1.00 / 0.16 |
+| violin, saxophone | — / 0.00 |
+
+Fusion was fitted on OpenMIC's train partition, so these numbers are optimistic for other music. The remaining
+OpenMIC gaps on current main are guitar, violin and saxophone recall and bass and organ precision; the "MTG-Jamendo is
+the biggest lever" reading above applied to the pre-#104 build.
