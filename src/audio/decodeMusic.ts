@@ -32,17 +32,20 @@ export async function openMusicDecoder(blob: Blob, name: string, signal?: AbortS
   const base = `${import.meta.env.BASE_URL}audio-runtime/`;
   const input = `input.${name.split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'audio'}`;
   try {
-    const load = () => ff.load({ coreURL: `${base}ffmpeg-core.js`, wasmURL: `${base}ffmpeg-core.wasm`, classWorkerURL: `${base}worker.js` });
+    const load = (instance = ff) => instance.load({ coreURL: `${base}ffmpeg-core.js`, wasmURL: `${base}ffmpeg-core.wasm`, classWorkerURL: `${base}worker.js` });
     const bytes = new Uint8Array(await blob.arrayBuffer());
     await load();
     // writeFile transfers its buffer to the FFmpeg worker; keep the original for a fresh instance.
     await ff.writeFile(input, bytes.slice());
     let decodes = 0;
     const fresh = async () => {
-      ff.terminate(); ff = new FFmpeg(); decodes = 0;
-      await load(); await ff.writeFile(input, bytes.slice());
-      signal?.throwIfAborted();
-      if (closed) throw new Error('The audio decoder was closed.');
+      const next = new FFmpeg();
+      try {
+        await load(next); await next.writeFile(input, bytes.slice());
+        signal?.throwIfAborted();
+        if (closed) throw new Error('The audio decoder was closed.');
+      } catch (error) { next.terminate(); throw error; }
+      ff.terminate(); ff = next; decodes = 0;
     };
     await ff.ffprobe(['-v', 'error', '-show_entries', 'format=duration', '-of', 'json', input, '-o', 'probe.json']);
     let durationSeconds = 0;
@@ -113,7 +116,8 @@ export async function openMusicDecoder(blob: Blob, name: string, signal?: AbortS
             return samples.slice(from, Math.max(from, Math.round((start + seconds) * sampleRate)));
           }
         }
-        const readTimer = setTimeout(close, 120_000);
+        // Unstick a hung instance for this window only. Closing would take down every model.
+        let readTimer = setTimeout(() => { ff.terminate(); }, 120_000);
         const section = async () => {
           decodes++;
           // Flush delayed codec/resampler samples, then crop by sample count.
@@ -123,12 +127,15 @@ export async function openMusicDecoder(blob: Blob, name: string, signal?: AbortS
           return await readSamples('clip.f32', Math.round(seconds * sampleRate));
         };
         try {
-          if (decodes >= RECYCLE_AFTER_DECODES) await fresh();
-          try { return await section(); }
-          catch (error) {
+          try {
+            if (decodes >= RECYCLE_AFTER_DECODES) await fresh();
+            return await section();
+          } catch (error) {
             signal?.throwIfAborted();
             if (closed) throw error;
             // A crashed instance fails every later call; retry this section once on a fresh one.
+            clearTimeout(readTimer);
+            readTimer = setTimeout(() => { ff.terminate(); }, 120_000);
             await fresh();
             return await section();
           }
