@@ -46,7 +46,8 @@ for name, spec in EXTRAS:
 SRC = np.concatenate([np.full(len(p[1]), i) for i, p in enumerate(parts)])   # 0 = library, 1.. = extras in order
 X = np.vstack([p[0] for p in parts]); LAB = sum((p[1] for p in parts), []); IDS = sum((p[4] for p in parts), []); G = np.concatenate([p[2] for p in parts])
 IS_VAULT = np.concatenate([p[3] for p in parts])
-HAS_FSD = any(i.startswith('fsd50k:') for i in IDS)
+# Real recordings with human labels: the only fair test for instruments (rendered stems are not).
+REAL = tuple(n for n in ('fsd50k:', 'fsl10k:') if any(i.startswith(n) for i in IDS))
 FAM = np.array([(lambda f: f.pop() if len(f) == 1 else None)({FAMILY.get(catalog.get(l, {}).get('family')) for l in s} - {None}) for s in LAB], dtype=object)
 print(f'total {len(LAB)} clips ({IS_VAULT.sum()} library, {(~IS_VAULT).sum()} extra)')
 
@@ -102,9 +103,10 @@ def run(kind, name):
     test = use & IS_VAULT & np.isin(G, sorted(library_test)); where = 'library brands'
     if pos[test].sum() < MIN_TEST:
         # Instruments fall back to real recordings (FSD50K) when present, never to rendered stems.
-        pool = ~IS_VAULT & (np.char.startswith(G.astype(str), 'fsd50k:') if kind == 'instrument' and HAS_FSD else True)
+        real = np.isin([i.split(':')[0] + ':' for i in IDS], REAL)
+        pool = ~IS_VAULT & (real if kind == 'instrument' and REAL.__len__() else True)
         extra_test = held_out(f'{kind}:{name}:extra', G[pool & use], pos[pool & use])
-        test = use & pool & np.isin(G, sorted(extra_test)); where = 'real recordings' if kind == 'instrument' and HAS_FSD else 'extra sources'
+        test = use & pool & np.isin(G, sorted(extra_test)); where = 'real recordings' if kind == 'instrument' and REAL else 'extra sources'
     train = use & ~test & (IS_VAULT | (pos | ~IS_VAULT))
     r = {'kind': kind, 'name': name, 'testedOn': where, 'trainPositive': int(pos[train].sum()), 'testPositive': int(pos[test].sum())}
     if pos[test].sum() < MIN_TEST or pos[train].sum() < 30 or len(set(G[train & pos])) < 3: return {**r, 'verdict': 'not enough data'}
