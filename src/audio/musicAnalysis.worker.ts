@@ -177,9 +177,10 @@ async function shortClipProfile(model: ShortClipModel, samples48: Float32Array, 
   return shortClipScores(model, inputs).scores;
 }
 /** Load one family's weights ahead of its first clip. Scores are unaffected: the same memoized sessions serve later requests. */
-async function warmFamily(family: string): Promise<void> {
-  // Quick analyses and short clips use the GPU model; warming it here keeps its ~6 s load off the first file.
-  if (family === 'instruments') { await getClassifier(); await getGpuClassifier().catch(() => { gpuUnavailable = true; }); }
+async function warmFamily(family: string, mode?: string): Promise<void> {
+  // Quick analyses use the GPU model, so warming it keeps its ~6 s load off the first file. Full analyses only use it
+  // for clips up to 2.048 s; there it loads on the first such clip instead of holding 347 MB for long recordings.
+  if (family === 'instruments') { await getClassifier(); if (mode !== 'full') await getGpuClassifier().catch(() => { gpuUnavailable = true; }); }
   else if (family === 'profile' || family === 'sound') await Promise.all([getSoundDescriptions(), getSoundClassifier()]);
   else if (family === 'jamendo') await Promise.all([ready, preloadJamendo()]);
   else await ready;
@@ -189,7 +190,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
   // The main thread decided this browser needs the single-thread runtime (see THREADED_RUNTIME_STALLED).
   if ((data as { singleThread?: boolean }).singleThread) switchToSingleThreadRuntime(false);
   if (data.kind === 'warm') {
-    try { await warmFamily(data.family); self.postMessage({ id, warmed: true }); }
+    try { await warmFamily(data.family, (data as { mode?: string }).mode); self.postMessage({ id, warmed: true }); }
     catch (error) { self.postMessage({ id, error: error instanceof Error ? error.message : String(error) }); }
     return;
   }
