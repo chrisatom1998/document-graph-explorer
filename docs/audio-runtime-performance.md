@@ -96,3 +96,22 @@ npm run preview -- --host 127.0.0.1 --port 4250 --strictPort
 ```
 
 The application is served at `http://127.0.0.1:4250/`.
+
+## Preloaded models and side-by-side families (2026-10-04)
+
+The sections above describe serialized inference. This change keeps the same models, thread counts and runtime identity (`wasm-threads-4-jamendo-1-v2`), so saved results stay valid.
+
+- **Preload.** When audio is added, or older tracks are reanalyzed, all four family workers start and load their weights at once instead of one after another on first use. Hosts that retain one worker skip this.
+- **Side by side.** On hosts that retain four workers and report at least 8 logical CPUs, AST, CLAP, Jamendo and Essentia run at the same time. Each worker still takes one request at a time. Outputs are applied in the previous fixed order, so results do not depend on which model answers first. Section reads on the single FFmpeg instance are queued. Other hosts keep one serialized queue.
+- **Shared workers across Quick and Full.** The worker fingerprint no longer includes the analysis mode, so interleaved Quick and Full requests reuse loaded models instead of discarding them.
+
+Apple M5 Max, 18 logical CPUs, Chrome reporting 32 GiB, Vite dev server, full mode, one sample per row. Saved per-clip results were cleared before each run and every model request executed inference.
+
+| Input | Before | After |
+| --- | ---: | ---: |
+| First 8-second clip after page load, no preload vs preload (two runs each) | 29.9 s, 23.4 s | 7.4 s, 10.4 s |
+| 8-second flute WAV, models warm | 8.8 s | 3.8 s |
+| 20-second synthetic WAV, models warm | 14.4 s | 9.6 s |
+| 45-second synthetic WAV, models warm | 38.4 s | 21.6 s |
+
+For the three warm rows, the complete analysis JSON (all scores, evidence, tempo, key and notes; run id and timestamps excluded) is byte-identical between the serialized and side-by-side paths. Unit tests cover the same equality with out-of-order completion, including a failing family. Peak memory, batch throughput on large folders and the built app were not measured.

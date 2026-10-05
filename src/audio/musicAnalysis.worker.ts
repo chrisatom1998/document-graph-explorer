@@ -6,7 +6,7 @@ import Essentia from 'essentia.js/dist/essentia.js-core.es.js';
 import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
 import { instrumentScores, musicScore, type InstrumentPredictions } from './instrumentLabels';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_ANALYSIS_REVISION, type MusicAnalysis } from './musicTypes';
-import { classifyJamendo } from './jamendo';
+import { classifyJamendo, preloadJamendo } from './jamendo';
 import { detectRepeatedPitch } from './detectedPitch';
 import { estimateTempo } from './tempo';
 import { soundSuggestions } from './soundSuggestions';
@@ -101,8 +101,20 @@ async function disposeTensors(values: Record<string, unknown>): Promise<void> {
     if (tensor && typeof tensor === 'object' && 'dispose' in tensor && typeof tensor.dispose === 'function') await tensor.dispose();
   }
 }
-self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array }>) => {
+/** Load one family's weights ahead of its first clip. Scores are unaffected: the same memoized sessions serve later requests. */
+async function warmFamily(family: string): Promise<void> {
+  if (family === 'instruments') await getClassifier();
+  else if (family === 'profile' || family === 'sound') await Promise.all([getSoundDescriptions(), getSoundClassifier()]);
+  else if (family === 'jamendo') await Promise.all([ready, preloadJamendo()]);
+  else await ready;
+}
+self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array }>) => {
   const { id } = data;
+  if (data.kind === 'warm') {
+    try { await warmFamily(data.family); self.postMessage({ id, warmed: true }); }
+    catch (error) { self.postMessage({ id, error: error instanceof Error ? error.message : String(error) }); }
+    return;
+  }
   const runtime = data.kind === 'rhythm' || data.kind === 'tonal'
     ? { backend: 'essentia-wasm', configuredInferenceThreads: 1, identity: 'essentia-wasm-v1' }
     : musicRuntimeDiagnostics(data.kind);

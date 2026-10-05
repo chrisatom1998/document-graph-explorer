@@ -12,6 +12,7 @@ vi.mock('./fusionRelease', async importOriginal => ({ ...(await importOriginal<t
 vi.mock('./musicAnalysisCache', () => ({
   musicCacheKey: vi.fn(async () => 'key'),
   musicCacheFingerprint: () => state.fingerprint,
+  musicWorkerFingerprint: () => state.fingerprint,
   readMusicCache: vi.fn(async () => state.cache),
   writeMusicCache: vi.fn(async () => {}),
 }));
@@ -252,9 +253,11 @@ it('retains native analysis when a qualified artifact fails to load', async () =
 });
 
 
-it.each([{deviceMemory:8,hardwareConcurrency:8},{hardwareConcurrency:18}])('retains warm bounded families on the verified faster host profile %j',async navigatorProfile=>{
+it.each([{deviceMemory:8,hardwareConcurrency:8},{hardwareConcurrency:18}])('retains warm bounded families and runs them side by side on the faster host profile %j',async navigatorProfile=>{
  vi.stubGlobal('navigator',navigatorProfile);vi.resetModules();const isolated=await import('./analyzeMusic');const created=state.created;
  await isolated.analyzeMusic(new Blob(['warm-local-one']),'one.wav',{mode:'full',force:true});
  expect(state.created-created).toBe(4);
- await isolated.analyzeMusic(new Blob(['warm-local-two']),'two.wav',{mode:'full',force:true});expect(state.created-created).toBe(4);expect(state.maxModels).toBe(1);
+ await isolated.analyzeMusic(new Blob(['warm-local-two']),'two.wav',{mode:'full',force:true});expect(state.created-created).toBe(4);
+ // One request per family worker at most: families overlap, a family never overlaps itself.
+ expect(state.maxModels).toBeGreaterThan(1);expect(state.maxModels).toBeLessThanOrEqual(4);
 });

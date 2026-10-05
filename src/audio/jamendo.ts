@@ -70,10 +70,14 @@ async function loadModels() {
     return { ort, embed, head, classes, nsynth };
   } catch (error) { for (const session of opened) await session.release(); throw error; }
 }
+/** Open the sessions before the first clip arrives; later calls share the same load. */
+export function preloadJamendo(): ReturnType<typeof loadModels> {
+  return models ??= loadModels().catch(error => { models = undefined; throw error; });
+}
 export async function classifyJamendo(engine: Essentia, samples: Float32Array): Promise<Record<string, number>> {
   const patches = jamendoPatches(engine, samples);
   if (!patches.length) throw new Error('Unsupported Jamendo input: at least 2.048 seconds required.');
-  const { ort, embed, head, classes, nsynth } = await (models ??= loadModels().catch(error => { models = undefined; throw error; }));
+  const { ort, embed, head, classes, nsynth } = await preloadJamendo();
   const sums = new Float64Array(classes.length);
   const nsynthSums = nsynth.map(h => new Float64Array(h.classes.length));
   for (const patch of patches) {

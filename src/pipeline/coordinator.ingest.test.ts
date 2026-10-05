@@ -38,7 +38,7 @@ import { rememberWorldOrigin } from '../scene/ingestBirth';
 import { createRecognition } from '../audio/recognition';
 import { supportsFusionInput, fusionConfiguration } from '../audio/fusionRelease';
 
-const music = vi.hoisted(() => ({ analyzeMusic: vi.fn() }));
+const music = vi.hoisted(() => ({ analyzeMusic: vi.fn(), preloadMusicModels: vi.fn(async () => {}) }));
 vi.mock('../audio/analyzeMusic', () => music);
 
 const layout = vi.hoisted(() => ({

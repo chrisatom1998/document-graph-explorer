@@ -1528,6 +1528,8 @@ function settleCancelledIngest(): void {
  * them before they start.
  */
 export function ingestFiles(files: IngestFile[]): Promise<void> {
+  // Load the audio models while the drop is hashed and parsed, not after.
+  if (files.some(f => f.fileType === 'audio')) preloadAudioModels();
   const spawnOrigin = snapshotIngestOrigin({
     flat: useUiStore.getState().dims === 2,
   });
@@ -1813,12 +1815,19 @@ export function resetCorpus(): void {
   useChatStore.getState().clearMessages();
 }
 
+function preloadAudioModels(): void {
+  const mode = useSettingsStore.getState().musicAnalysisMode;
+  void import('../audio/analyzeMusic').then(m => m.preloadMusicModels(mode)).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
+}
+
 /** Run inside the existing mutation queue; every estimate belongs to this corpus snapshot. */
 async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], originals?: Map<string, { blob: Blob; name: string }>): Promise<void> {
   const mode = useSettingsStore.getState().musicAnalysisMode;
   const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (!n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION || (n.audio.recognition && n.audio.recognition.configurationHash !== recognitionConfiguration(n.audio.recognition.mode)) || (installedFusionIdentity() && (n.audio.classifierConfiguration !== fusionConfiguration() || (n.audio.fusion && !fusionPresentation(n.audio.fusion,n.audio.durationSeconds,n.audio.recognition?.mode ?? mode)?.qualified))) || forceIds.includes(n.id)));
   if (!nodes.length) return;
-  const { analyzeMusic } = await import('../audio/analyzeMusic');
+  const { analyzeMusic, preloadMusicModels } = await import('../audio/analyzeMusic');
+  // Reanalysis after a reload starts cold; load every family while the first file decodes.
+  void preloadMusicModels(mode).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
   const store = useGraphStore.getState;
   let finished = 0;
   let queuedScopeActive = true;

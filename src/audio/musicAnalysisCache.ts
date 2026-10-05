@@ -70,3 +70,5 @@ export async function writeMusicCache(key:string,audio:MusicAnalysis,mime?:strin
  }catch{/* Cache failures never prevent analysis. */}
 }
 export function musicCacheFingerprint(key:string):string {return JSON.stringify(JSON.parse(key.slice(PREFIX.length)).slice(2,7));}
+/** Loaded weights depend on revisions and manifests, not on Quick/Full: interleaved modes share workers. */
+export function musicWorkerFingerprint(key:string):string {const parts=JSON.parse(key.slice(PREFIX.length));return JSON.stringify([...parts.slice(2,5),parts[6]]);}
