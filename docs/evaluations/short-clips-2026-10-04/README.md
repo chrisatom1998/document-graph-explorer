@@ -151,6 +151,13 @@ Musical: 0 keys shown on 333 single events in every build; 1 tempo shown on a si
 single-note pitch on NSynth: shown 98 → 198 of 222, correct 98 → 197 (1 wrong).
 
 
+### Adjusted after seeing test results (2026-10-05)
+
+The `synth hit` and `synthesizer` one-shot heads were **removed** at the user's request because of the false tags
+described below. Re-scoring the v2 run with those tags dropped (offline, exact for removals): still 13 categories meet
+70/70; synthesizer and synth hit now abstain (0 false tags, all 42 / 36 positives missed); clips with no scored tag
+490 → 665. A retrained synth detector must be measured on a new frozen test set.
+
 ## 6. Below target, unsupported, or open
 
 - **Below 70/70:** see the table. Biggest problem: `source:synthesizer` shows on 174 non-synth clips (about 12% of
