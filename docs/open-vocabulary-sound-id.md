@@ -141,6 +141,12 @@ the answers a detector needs most. Open it with
 `DJ_REVIEW_DATA=artifacts/review-blocked DJ_REVIEW_NO_APPLY=1 python3 scripts/dj-review-server.py`.
 `NO_APPLY` keeps the review tool from rebuilding the shipped model; the confirmed labels feed the next training round.
 
+**Title judgements (user request).** `title-labels.py` labelled the 194 queued clips yes / no / unsure from their
+titles only (provenance "assistant title judgement", never a human confirmation): 85 yes, 61 no, 48 unsure. Applied
+to training, this corrected 31 clips. Round 24 shows no new pass: synth bass 0.23 / 0.33, synth stab 0.09 / 0.03,
+supersaw 1.00 / 0.03, rising 0.50 / 0.06, syncopated 0.09 / 0.04. Bass pluck and shaker loop had too few test clips.
+Titles repeat what the uploader tags already said, so they add little; listening is still needed.
+
 **This makes 186 of 198 labels able to appear:** 111 from tested detectors and 75 as "unverified". The other 12 are
 blocked because measurement says they would mostly be wrong. "Unverified" tags are honest about being untested.
 They are not accurate detection.
