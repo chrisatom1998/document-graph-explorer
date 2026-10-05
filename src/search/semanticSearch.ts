@@ -1,6 +1,6 @@
 /** Search UI adapter over the provider-independent hybrid retriever. */
 
-import { SEARCH_MAX_RESULTS, SEARCH_MIN_SCORE } from '../config';
+import { QUERY_MIN_SEMANTIC_SCORE, SEARCH_MAX_RESULTS } from '../config';
 import { retrieveCorpus, type RetrievalMatchKind } from './retrieval';
 
 export interface SearchHit {
@@ -61,7 +61,7 @@ async function runSearch(query: string, semantic: boolean, eligibleDocIds?: Read
     limit: SEARCH_MAX_RESULTS,
     perDocument: 1,
     timeoutMs: 15_000,
-    minSemanticScore: SEARCH_MIN_SCORE,
+    minSemanticScore: QUERY_MIN_SEMANTIC_SCORE,
     maxPassageChars: 500,
     semantic,
   });
