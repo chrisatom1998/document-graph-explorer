@@ -14,7 +14,7 @@ import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { PASST_MIN_SECONDS } from './passtFeatures';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { musicRuntimeIdentity } from './musicRuntime';
-import { createRecognition, recognitionConfiguration, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
+import { astGpuAllowed, createRecognition, recognitionConfiguration, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
   /** Qualification-only opt-in; callers must bind and validate the scorer. */
@@ -78,6 +78,9 @@ export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicR
   }
 }
 
+/** The fusion scorer's contract is the fixed prompt catalog it was trained on. Trained-head,
+ * reviewed-example and one-shot scores ride along in the same output for tagging and are not part of it. */
+export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot');
 /** Model jobs share a bounded timeline, but never each other's validity. Evidence is applied in one fixed order. */
 export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
   // The runtime each AST/CLAP output came from: a threaded stall can switch this browser to one thread mid-run.
@@ -204,7 +207,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       const samples16 = id === 'clap' && interval.start === 0 && interval.end >= duration && duration <= SHORT_CLIP_MAX_SECONDS ? await read(0, duration, 16000) : undefined;
       const wantsPasst = !!samples16 && !!options.passt && duration >= PASST_MIN_SECONDS;
       const passt = wantsPasst ? await options.passt!(await read(0, duration, 32000), options.signal) : undefined;
-      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}), ...(passt ? { passt } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
+      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}), ...(passt ? { passt } : {}), ...(id === 'ast' && astOnGpu ? { gpu: true } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
       if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
       // PaSST was wanted but unavailable: the CLAP-only scores are not reused as PaSST-era results.
       if (wantsPasst && !passt) { passtMissing = true; recognition.configurationHash = recognitionConfiguration(mode, duration, false); }
@@ -221,12 +224,17 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const applied: Record<SoundId, number> = { ast: 0, jamendo: 0, clap: 0 };
   const wake: Partial<Record<SoundId, () => void>> = {};
   let ended = false;
+  // AST runs on the graphics card (full-precision weights, about 8x faster) only where no validated scorer reads
+  // its scores (recognition astGpuAllowed). The AST job's preprocessing version records it, so cache keys and
+  // saved ledgers both tell GPU-allowed runs apart from q8 WASM ones.
+  const astOnGpu = astGpuAllowed(duration, mode);
+  const windowKey = (id: SoundId, interval: Interval) => modelCacheKey(fingerprint, job(id), interval);
   async function scoreAhead(id: SoundId): Promise<void> {
     const j = job(id);
     for (let i = 0; i < j.planned.length; i++) {
       while (!ended && i - applied[id] >= MAX_AHEAD) await new Promise<void>(resolve => { wake[id] = resolve; });
       if (ended || stopped.has(id) || j.unsupportedReason || options.signal?.aborted) return;
-      const key = modelCacheKey(fingerprint, j, j.planned[i]);
+      const key = windowKey(id, j.planned[i]);
       if (started.has(key)) continue;
       started.add(key);
       const pending = fetchRaw(id, j.planned[i], key);
@@ -239,7 +247,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   async function sound(id: SoundId, interval: Interval): Promise<{ output: Raw; cacheKey: string; cacheHit: boolean } | undefined> {
     check();
     if (stopped.has(id) || job(id).unsupportedReason) return;
-    const j = job(id); const key = modelCacheKey(fingerprint, j, interval);
+    const j = job(id); const key = windowKey(id, interval);
     if (completed.has(key)) return;
     j.status = 'running'; j.attempted.push(interval);
     options.onProgress?.(`${id}: ${j.successful.length}/${j.planned.length} windows; ${Math.floor(interval.start)}–${Math.ceil(interval.end)}s of ${Math.ceil(duration)}s`);
@@ -373,9 +381,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
           else {
             const ast = outputs.get('ast')!.output as InstrumentPredictions;
             const jamendo = jamendoInstrumentScores(outputs.get('jamendo')!.output as Record<string, number>);
-            // The scorer's contract is the fixed prompt catalog. Trained-head and reviewed-example
-            // scores ride along in the same output for tagging and are not part of that contract.
-            const clap = (outputs.get('clap')!.output as DescriptionScore[]).filter(d => d.group !== 'dj-learned');
+            const clap = fusionClapDescriptions(outputs.get('clap')!.output as DescriptionScore[]);
             if (!Object.keys(ast.scores).length || !Object.keys(jamendo).length || !clap.length) {
               window = { ...window, status: 'empty', reason: 'Silent or empty native output; no fusion decision' };
             } else {

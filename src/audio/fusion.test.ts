@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { analyzeDecodedMusic, type MusicRequest } from './analyzeDecodedMusic';
+import { readFileSync } from 'node:fs';
+import { analyzeDecodedMusic, fusionClapDescriptions, type MusicRequest } from './analyzeDecodedMusic';
+import { descriptionScores } from './profileDescriptions';
 import { FUSION_LABELS, MAX_FUSION_WINDOWS, sanitizeFusion, type FusionDecision, type FusionScorer } from './fusion';
 import { ResultCache } from './recognition';
 import { sanitizeMusicAnalysis } from './musicTypes';
@@ -18,6 +20,14 @@ function fixture(duration = 20, config: { silent?: boolean; fail?: string; mode?
   return { calls, score, run: (fusion = true) => analyzeDecodedMusic(decoder, request, { mode: config.mode, audioFingerprint: 'input', cache: config.cache, ...(fusion ? { fusion: scorer } : {}) }) };
 }
 describe('optional per-window fusion foundation', () => {
+  it('hands the scorer exactly the frozen CLAP catalog, even after new tagging prompts are added', () => {
+    const prompts = JSON.parse(readFileSync('public/sound-model/prompts.json', 'utf8'));
+    const { clapDescriptionOrder } = JSON.parse(readFileSync('public/fusion-model/model.json', 'utf8'));
+    const scores = descriptionScores(prompts[0].vector, prompts);
+    expect(scores).toHaveLength(prompts.length);
+    const sent = fusionClapDescriptions([...scores, { group: 'dj-learned', label: 'kick', score: .9 }]);
+    expect(sent.map(d => [d.group, d.label, d.alternative ?? null, d.learnedGroup ?? null, d.decision ?? null])).toEqual(clapDescriptionOrder);
+  });
   it('keeps default scheduling and five native jobs unchanged', async () => {
     const f = fixture(); const result = await f.run(false);
     expect(f.calls).toEqual(['jamendo','rhythm','tonal','instruments','instruments','instruments','jamendo','jamendo','profile','profile','profile']);

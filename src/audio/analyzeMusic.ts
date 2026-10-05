@@ -80,11 +80,11 @@ export function preloadMusicModels(mode: AnalysisOptions['mode'] = 'fast'): Prom
     if (!key) return;
     const fingerprint = musicWorkerFingerprint(key);
     clearTimeout(idleTimer);
-    await Promise.allSettled(PRELOAD_FAMILIES.map(family => warmWorker(workerFor(family, fingerprint), family)));
+    await Promise.allSettled(PRELOAD_FAMILIES.map(family => warmWorker(workerFor(family, fingerprint), family, mode ?? 'fast')));
   })().finally(() => { preloading = undefined; parkWorker(); });
 }
 
-function warmWorker(worker: Worker, family: string): Promise<void> {
+function warmWorker(worker: Worker, family: string, mode: 'fast' | 'full' = 'fast'): Promise<void> {
   const id = ++nextId;
   return new Promise<void>((resolve, reject) => {
     // A listener, not onmessage, so a real request that starts meanwhile keeps its own handler.
@@ -98,7 +98,7 @@ function warmWorker(worker: Worker, family: string): Promise<void> {
     const timer = setTimeout(() => done(new Error('Music model preload timed out.')), 180_000);
     worker.addEventListener('message', onMessage);
     worker.addEventListener('error', onError);
-    worker.postMessage({ kind: 'warm', family, id, ...threadHint() });
+    worker.postMessage({ kind: 'warm', family, mode, id, ...threadHint() });
   });
 }
 
