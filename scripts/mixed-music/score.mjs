@@ -1,13 +1,13 @@
 // Score the Sounds-panel source tags DGE showed on the frozen mixed-music benchmark.
-// Usage: npx vite-node scripts/mixed-music/score.mjs <graph-export.json> <report.json>
+// Usage: npx vite-node scripts/mixed-music/score.mjs <report.json> <graph-export.json>...
 // Uses the app's own display function; only the fixed label mapping below is defined here.
 // Only explicit present/absent labels count; unknown pairs are skipped, never treated as absent.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { confidentSoundSummary } from '../../src/audio/confidentSoundSummary';
 
-const [exportPath, outPath] = process.argv.slice(2);
+const [outPath, ...exportPaths] = process.argv.slice(2);
 const manifest = JSON.parse(readFileSync(process.env.MANIFEST ?? 'docs/evaluations/mixed-music-2026-10-05/manifest.json', 'utf8'));
-const graph = JSON.parse(readFileSync(exportPath, 'utf8'));
+const graph = { nodes: exportPaths.flatMap(p => JSON.parse(readFileSync(p, 'utf8')).nodes) };
 /** Displayed source label -> benchmark class. Fixed before any scoring. */
 const MAP = {
   drums: ['drums', 'drum kit', 'drum machine'], voice: ['voice'], synthesizer: ['synthesizer'], piano: ['piano', 'electric piano'],

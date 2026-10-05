@@ -14,6 +14,8 @@ const AUDIO = process.env.AUDIO_DIR ?? '/Users/chrisjohnson/Documents/Media/dj-t
 const manifest = JSON.parse(readFileSync(process.env.MANIFEST ?? 'docs/evaluations/short-clips-2026-10-04/manifest.json', 'utf8'));
 let ids = manifest.items.filter(i => i.split === split).map(i => i.id);
 if (limitArg) ids = ids.slice(0, Number(limitArg));
+// SHARD=i/n keeps every n-th clip starting at i, so one benchmark can run on several machines.
+if (process.env.SHARD) { const [i, n] = process.env.SHARD.split('/').map(Number); ids = ids.filter((_, k) => k % n === i); }
 mkdirSync(outDir, { recursive: true });
 const PORT = Number(process.env.PORT ?? 4291);
 const server = spawn('npx', ['vite', 'preview', '--host', '127.0.0.1', '--port', String(PORT), '--strictPort', ...(process.env.DIST ? ['--outDir', process.env.DIST] : [])], { stdio: 'ignore' });

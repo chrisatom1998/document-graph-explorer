@@ -40,7 +40,7 @@ jobs:
           git add docs/evaluations/mixed-music-2026-10-05/manifest.json
           if ! git diff --cached --quiet; then
             git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-              commit -m "Freeze the mixed-music tag benchmark (400 OpenMIC test clips)"
+              commit -m "Freeze the mixed-music tag benchmark (OpenMIC test clips)"
             for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" && break; sleep $((2**i)); done
           fi
       - uses: actions/upload-artifact@v4
@@ -59,6 +59,7 @@ jobs:
       fail-fast: false
       matrix:
         build: [base, branch]
+        shard: [0, 1, 2]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,19 +89,44 @@ jobs:
       - name: Analyse in the real app
         run: |
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
-          AUDIO_DIR=mm/mixed-audio AUDIO_EXT=ogg MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json \
+          AUDIO_DIR=mm/mixed-audio AUDIO_EXT=ogg MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json SHARD=${{ matrix.shard }}/3 \
             node scripts/short-clip-upload-eval.mjs out/run test 20
-      - name: Score
-        if: always()
-        run: |
-          git checkout HEAD -- src
-          MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json npx vite-node scripts/mixed-music/score.mjs out/run/graph-export.json out/report.json
-          node scripts/compare-tag-reports.mjs --min-positives 5 out/report.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mixed-music-${{ matrix.build }}
-          path: |
-            out/report.json
-            out/run/run.json
+          name: mixed-music-${{ matrix.build }}-${{ matrix.shard }}
+          path: out/run/graph-export.json
+          retention-days: 30
+
+  score:
+    needs: eval
+    if: always()
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [base, branch]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mixed-music-${{ matrix.build }}-*
+          path: exports
+      - uses: actions/download-artifact@v4
+        with:
+          name: mixed-music-audio
+          path: mm
+      - name: Score
+        run: |
+          MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json npx vite-node scripts/mixed-music/score.mjs report.json exports/*/graph-export.json
+          node scripts/compare-tag-reports.mjs --min-positives 5 report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mixed-music-report-${{ matrix.build }}
+          path: report.json
           retention-days: 30
