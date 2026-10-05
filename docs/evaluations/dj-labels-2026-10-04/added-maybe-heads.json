@@ -1,0 +1,272 @@
+{
+ "kind": "added-maybe-heads-v1",
+ "builtAt": "2026-10-05T02:42:49.248167+00:00",
+ "learnedSha256": "0835b17fb7f54d0929c90681c7b3e666a3c0d3d4e5d4c2da676181235ff40f74",
+ "heads": [
+  {
+   "kind": "label",
+   "name": "beatbox",
+   "testedOn": "extra sources",
+   "precision": 1.0,
+   "recall": 0.9563492063492064,
+   "threshold": 0.843,
+   "trainPositive": 2241,
+   "testPositive": 756,
+   "uses": [
+    "percussion"
+   ],
+   "group": "production",
+   "added": true
+  },
+  {
+   "kind": "label",
+   "name": "cowbell",
+   "testedOn": "extra sources",
+   "precision": 1.0,
+   "recall": 0.8651685393258427,
+   "threshold": 0.964,
+   "trainPositive": 230,
+   "testPositive": 89,
+   "uses": [
+    "fsd50k",
+    "percussion"
+   ],
+   "group": "production",
+   "added": true
+  },
+  {
+   "kind": "label",
+   "name": "crowd ambience",
+   "testedOn": "extra sources",
+   "precision": 0.9207920792079208,
+   "recall": 0.8942307692307693,
+   "threshold": 0.969,
+   "trainPositive": 351,
+   "testPositive": 104,
+   "uses": [
+    "fsd50k"
+   ],
+   "group": "production",
+   "added": true
+  },
+  {
+   "kind": "label",
+   "name": "vocal gasp",
+   "testedOn": "extra sources",
+   "precision": 0.8518518518518519,
+   "recall": 0.8214285714285714,
+   "threshold": 0.979,
+   "trainPositive": 83,
+   "testPositive": 28,
+   "uses": [
+    "fsd50k"
+   ],
+   "group": "production",
+   "added": true
+  },
+  {
+   "kind": "label",
+   "name": "vocal laugh",
+   "testedOn": "extra sources",
+   "precision": 0.9509803921568627,
+   "recall": 0.9065420560747663,
+   "threshold": 0.965,
+   "trainPositive": 319,
+   "testPositive": 107,
+   "uses": [
+    "fsd50k"
+   ],
+   "group": "production",
+   "added": true
+  },
+  {
+   "kind": "instrument",
+   "name": "accordion",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.7857142857142857,
+   "threshold": 0.959,
+   "trainPositive": 60,
+   "testPositive": 42,
+   "uses": [
+    "fsd50k"
+   ],
+   "group": "source",
+   "added": true
+  },
+  {
+   "kind": "instrument",
+   "name": "drums",
+   "testedOn": "library brands",
+   "precision": 0.9309068476249229,
+   "recall": 0.9003579952267303,
+   "threshold": 0.506,
+   "trainPositive": 20432,
+   "testPositive": 1676,
+   "uses": [],
+   "group": "source",
+   "added": true
+  },
+  {
+   "kind": "instrument",
+   "name": "electric guitar",
+   "testedOn": "real recordings",
+   "precision": 0.9764705882352941,
+   "recall": 0.8137254901960784,
+   "threshold": 0.933,
+   "trainPositive": 1005,
+   "testPositive": 102,
+   "uses": [
+    "slakh",
+    "nsynth",
+    "fsd50k"
+   ],
+   "group": "source",
+   "added": true
+  },
+  {
+   "kind": "instrument",
+   "name": "gong",
+   "testedOn": "real recordings",
+   "precision": 0.9508196721311475,
+   "recall": 0.8055555555555556,
+   "threshold": 0.923,
+   "trainPositive": 205,
+   "testPositive": 72,
+   "uses": [
+    "fsd50k"
+   ],
+   "group": "source",
+   "added": true
+  },
+  {
+   "kind": "instrument",
+   "name": "harmonica",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.9099099099099099,
+   "threshold": 0.964,
+   "trainPositive": 112,
+   "testPositive": 111,
+   "uses": [
+    "fsd50k"
+   ],
+   "group": "source",
+   "added": true
+  },
+  {
+   "kind": "instrument",
+   "name": "harp",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.8428571428571429,
+   "threshold": 0.927,
+   "trainPositive": 164,
+   "testPositive": 70,
+   "uses": [
+    "fsd50k"
+   ],
+   "group": "source",
+   "added": true
+  },
+  {
+   "kind": "instrument",
+   "name": "mallet instrument",
+   "testedOn": "real recordings",
+   "precision": 0.9863013698630136,
+   "recall": 0.8,
+   "threshold": 0.936,
+   "trainPositive": 756,
+   "testPositive": 90,
+   "uses": [
+    "slakh",
+    "nsynth",
+    "fsd50k"
+   ],
+   "group": "source",
+   "added": true
+  },
+  {
+   "kind": "instrument",
+   "name": "organ",
+   "testedOn": "real recordings",
+   "precision": 0.9883720930232558,
+   "recall": 0.9042553191489362,
+   "threshold": 0.92,
+   "trainPositive": 856,
+   "testPositive": 94,
+   "uses": [
+    "slakh",
+    "nsynth",
+    "fsd50k"
+   ],
+   "group": "source",
+   "added": true
+  },
+  {
+   "kind": "instrument",
+   "name": "piano",
+   "testedOn": "real recordings",
+   "precision": 0.9882352941176471,
+   "recall": 0.8155339805825242,
+   "threshold": 0.85,
+   "trainPositive": 1075,
+   "testPositive": 103,
+   "uses": [
+    "slakh",
+    "nsynth",
+    "fsd50k"
+   ],
+   "group": "source",
+   "added": true
+  },
+  {
+   "kind": "instrument",
+   "name": "strings",
+   "testedOn": "real recordings",
+   "precision": 0.9876543209876543,
+   "recall": 0.7843137254901961,
+   "threshold": 0.924,
+   "trainPositive": 1014,
+   "testPositive": 102,
+   "uses": [
+    "slakh",
+    "nsynth",
+    "fsd50k"
+   ],
+   "group": "source",
+   "added": true
+  },
+  {
+   "kind": "instrument",
+   "name": "tabla",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.75,
+   "threshold": 0.923,
+   "trainPositive": 69,
+   "testPositive": 28,
+   "uses": [
+    "fsd50k"
+   ],
+   "group": "source",
+   "added": true
+  },
+  {
+   "kind": "instrument",
+   "name": "trumpet",
+   "testedOn": "real recordings",
+   "precision": 0.937007874015748,
+   "recall": 0.8321678321678322,
+   "threshold": 0.88,
+   "trainPositive": 325,
+   "testPositive": 143,
+   "uses": [
+    "slakh",
+    "fsd50k"
+   ],
+   "group": "source",
+   "added": true
+  }
+ ]
+}
