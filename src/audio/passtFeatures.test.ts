@@ -46,5 +46,8 @@ describe('PaSST features', () => {
     expect(recognitionConfiguration('full', 1, true)).toContain('-passt-');
     expect(recognitionConfiguration('full', 1, false)).not.toContain('-passt-');
     expect(recognitionConfiguration('full', 60, true)).toBe(recognitionConfiguration('full', 60, false));
+    const { createRecognition, refreshRuntimeIdentity } = await import('./recognition');
+    const run = createRecognition(1, 'full'); refreshRuntimeIdentity(run, 1, false);
+    expect(run.configurationHash).toBe(recognitionConfiguration('full', 1, false));
   });
 });

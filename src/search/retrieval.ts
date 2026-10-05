@@ -92,6 +92,32 @@ function normalized(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
+/** Scripts written without spaces between words: substring is the only word test. */
+const UNSPACED_SCRIPT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}\p{Script=Lao}\p{Script=Khmer}\p{Script=Myanmar}]/u;
+const WORD_CHAR = /[\p{L}\p{M}\p{N}]/u;
+/** Terms this short must match a whole word (plural allowed): 'sla' is not 'slack'. */
+const SHORT_TERM_MAX_LEN = 3;
+
+/**
+ * Whether `term` occurs in `text` starting at a word boundary. Longer terms may
+ * run on as a word prefix so 'invoice' still finds 'invoices' and 'deploy'
+ * finds 'deployment'; a plain substring test also let 'shed' match
+ * 'published' and 'art' match 'start'. Both inputs are already lowercased.
+ */
+export function containsTerm(text: string, term: string): boolean {
+  if (!term) return false;
+  if (UNSPACED_SCRIPT.test(term)) return text.includes(term);
+  const wholeWord = term.length <= SHORT_TERM_MAX_LEN;
+  for (let at = text.indexOf(term); at >= 0; at = text.indexOf(term, at + 1)) {
+    if (at > 0 && WORD_CHAR.test(text[at - 1]!)) continue;
+    if (!wholeWord) return true;
+    let end = at + term.length;
+    if (text[end] === 's') end += 1;
+    if (end >= text.length || !WORD_CHAR.test(text[end]!)) return true;
+  }
+  return false;
+}
+
 export function lexicalRelevance(
   query: string,
   text: string,
@@ -101,14 +127,14 @@ export function lexicalRelevance(
   if (!queryText) return { score: 0, titleMatch: false };
   const body = normalized(text);
   const normalizedTitle = normalized(title);
-  const titleMatch = normalizedTitle.length > 0 && normalizedTitle.includes(queryText);
-  const exactPhrase = queryText.length > 1 && body.includes(queryText);
+  const titleMatch = normalizedTitle.length > 0 && containsTerm(normalizedTitle, queryText);
+  const exactPhrase = queryText.length > 1 && containsTerm(body, queryText);
   const terms = retrievalTerms(query);
   if (terms.length === 0) {
     return { score: (titleMatch ? 0.7 : 0) + (exactPhrase ? 1.2 : 0), titleMatch };
   }
-  const bodyHits = terms.filter((term) => body.includes(term)).length;
-  const titleHits = terms.filter((term) => normalizedTitle.includes(term)).length;
+  const bodyHits = terms.filter((term) => containsTerm(body, term)).length;
+  const titleHits = terms.filter((term) => containsTerm(normalizedTitle, term)).length;
   const coverage = bodyHits / terms.length;
   const titleCoverage = titleHits / terms.length;
 

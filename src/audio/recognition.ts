@@ -80,6 +80,13 @@ export function createRecognition(duration: number, mode: 'fast' | 'full', audio
     jobs:MODEL_IDS.map((modelId,i)=>({modelId,weightsVersion:versions[i],preprocessingVersion:'decoder-mono-v3-short-pcm:'+(['ast','jamendo','clap'].includes(modelId)?musicRuntimeIdentity(modelId)+':':'')+(['ast','jamendo'].includes(modelId)?16000:modelId==='clap'?48000:44100)+':'+(modelId==='ast'?ast.sha256['preprocessor_config.json']:modelId==='clap'?clap.sha256['preprocessor_config.json']:'features-v1'),
       ...(modelId==='clap'?{promptVersion:clap.sha256['prompts.json']}:{}),status:'pending',planned:[],attempted:[],successful:[],analyzedSeconds:0,gaps:duration>0?[{start:0,end:duration}]:[]})) };
 }
+/** A threaded-runtime stall switches this browser to one inference thread mid-run. Stamp the finished ledger
+ * with the runtime that actually produced it, so the cache and the coordinator treat the result as current. */
+export function refreshRuntimeIdentity(recognition: Recognition, duration: number, passt?: boolean): void {
+  const fresh = createRecognition(duration, recognition.mode);
+  recognition.configurationHash = passt === undefined ? fresh.configurationHash : recognitionConfiguration(recognition.mode, duration, passt);
+  for (const job of recognition.jobs) job.preprocessingVersion = fresh.jobs.find(j => j.modelId === job.modelId)?.preprocessingVersion ?? job.preprocessingVersion;
+}
 export function unionIntervals(intervals: Interval[]): Interval[] {
   const result: Interval[]=[];
   for(const interval of [...intervals].sort((a,b)=>a.start-b.start)) {

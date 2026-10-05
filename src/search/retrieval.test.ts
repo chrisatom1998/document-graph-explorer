@@ -9,6 +9,7 @@ vi.mock('../pipeline/coordinator', () => ({
 }));
 
 import {
+  containsTerm,
   lexicalRelevance,
   retrieveCorpus,
   retrievalTerms,
@@ -51,6 +52,18 @@ describe('shared hybrid retrieval', () => {
   it('scores exact lexical evidence and rejects weak multi-term overlap', () => {
     expect(lexicalRelevance('API rate limit', 'The API rate limit is 100/min.').score).toBeGreaterThan(1);
     expect(lexicalRelevance('API rate limit', 'This document only mentions the API.').score).toBe(0);
+  });
+
+  it('matches terms at word starts, not inside other words', () => {
+    expect(containsTerm('invoices were delayed', 'invoice')).toBe(true);
+    expect(containsTerm('the deployment guide', 'deploy')).toBe(true);
+    expect(containsTerm('the report was published', 'shed')).toBe(false);
+    expect(containsTerm('restart the service', 'art')).toBe(false);
+    expect(containsTerm('post in slack', 'sla')).toBe(false);
+    expect(containsTerm('enterprise slas and credits', 'sla')).toBe(true);
+    expect(containsTerm('node.js and c++ services', 'c++')).toBe(true);
+    expect(containsTerm('東京にある会社', '会社')).toBe(true);
+    expect(lexicalRelevance('Which dog breeds shed the least?', 'Breaking changes are published as ...').score).toBe(0);
   });
 
   it('matches non-Latin titles and phrases and stopword-only titles', () => {

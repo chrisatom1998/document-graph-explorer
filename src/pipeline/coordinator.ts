@@ -36,6 +36,7 @@ import {
   MAX_EMBED_TEXT_BYTES,
   MAX_NODES,
   MIN_MENTION_TITLE_LEN,
+  SIM_RELATIVE_MARGIN,
   SIM_THRESHOLD,
   SIM_TOP_K,
   TFIDF_TOP_N,
@@ -1117,7 +1118,12 @@ async function runLexicalPass(
 // incremental semantic similarity (see similarity.ts's SemanticIndex)
 // ---------------------------------------------------------------------------
 
-const SIM_PARAMS = { threshold: SIM_THRESHOLD, topK: SIM_TOP_K, dupThreshold: DUP_SIM_THRESHOLD };
+const SIM_PARAMS = {
+  threshold: SIM_THRESHOLD,
+  topK: SIM_TOP_K,
+  dupThreshold: DUP_SIM_THRESHOLD,
+  relativeMargin: SIM_RELATIVE_MARGIN,
+};
 
 /**
  * Full O(n²) rebuilds are still exact and cheap in absolute terms, but
@@ -1218,7 +1224,7 @@ async function runSemanticPass(lexEdges: Edge[], signal?: AbortSignal): Promise<
       const newVectors = vectorsFor(newIds);
       semanticIndex = addToSemanticIndex(semanticIndex!, newIds, newVectors, SIM_PARAMS);
       additionsSinceRebuild += newIds.length;
-      edges = edgesFromIndex(semanticIndex, SIM_THRESHOLD);
+      edges = edgesFromIndex(semanticIndex, SIM_THRESHOLD, SIM_RELATIVE_MARGIN);
       duplicates = semanticIndex.duplicates;
 
       // Clustering still needs a corpus-wide pass over the FULL edge set
