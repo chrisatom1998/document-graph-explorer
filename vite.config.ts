@@ -2,12 +2,27 @@ import { djAssistantPlugin } from './src/server/djAssistant';
 import { djCopilotPlugin } from './src/server/djCopilot';
 import { djReviewerPlugin } from './src/server/djReviewer';
 /// <reference types="vitest/config" />
-import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { defineConfig, loadEnv, searchForWorkspaceRoot, type Plugin } from 'vite';
+import { existsSync, realpathSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { buildCsp } from './src/security/csp';
 import pkg from './package.json';
 import { essentiaCsp } from './scripts/essentia-csp';
+
+// In a git worktree, node_modules is a symlink to the main checkout. Because
+// onnxruntime-web is in optimizeDeps.exclude below, its .wasm files are served
+// from their real path, which then lies outside the worktree root: Vite's fs
+// guard refuses them, the SPA fallback answers with index.html, and every ONNX
+// model fails with "no available backend found" (the wasm compiler reports
+// `expected magic word 00 61 73 6d, found 0a 20 20 20` — that is the HTML).
+// Allowing the resolved node_modules keeps worktrees working; in an ordinary
+// checkout it resolves inside the root and changes nothing.
+function serveRoots(): string[] {
+  const roots = [searchForWorkspaceRoot(process.cwd())];
+  if (existsSync('node_modules')) roots.push(realpathSync('node_modules'));
+  return roots;
+}
 
 function injectCsp(airgap: boolean): Plugin {
   const csp = buildCsp({ airgap });
@@ -54,7 +69,7 @@ const SECURITY_HEADERS = {
 export default defineConfig(({ mode }) => ({
   plugins: [essentiaCsp(), react(), tailwindcss(), injectCsp(mode === 'airgap'), ...(mode === 'airgap' ? [] : [djAssistantPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djCopilotPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djReviewerPlugin()])],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
-  server: { headers: { ...SECURITY_HEADERS, 'Permissions-Policy': mode === 'airgap' ? SECURITY_HEADERS['Permissions-Policy'] : SECURITY_HEADERS['Permissions-Policy'].replace('microphone=()', 'microphone=(self)') } },
+  server: { fs: { allow: serveRoots() }, headers: { ...SECURITY_HEADERS, 'Permissions-Policy': mode === 'airgap' ? SECURITY_HEADERS['Permissions-Policy'] : SECURITY_HEADERS['Permissions-Policy'].replace('microphone=()', 'microphone=(self)') } },
   // Workers receive Vercel's CSP as a response header, not the page's meta tag.
   // Exercise the same restrictions in built-app browser tests.
   preview: { headers: { ...SECURITY_HEADERS, 'Content-Security-Policy': `${buildCsp({ airgap: mode === 'airgap' })}; frame-ancestors 'none'` } },
