@@ -186,6 +186,16 @@ it('rejects cached reads after cancellation and fails closed on a partial multi-
  } finally { broken.close(); }
 });
 
+it('does not start an FFmpeg worker when cancelled while the file is still being buffered', async () => {
+ const abort = new AbortController();
+ const blob = new Blob(['audio']);
+ const arrayBuffer = blob.arrayBuffer.bind(blob);
+ blob.arrayBuffer = async () => { abort.abort(); return arrayBuffer(); };
+ await expect(openMusicDecoder(blob, 'clip.wav', abort.signal)).rejects.toMatchObject({name:'AbortError'});
+ expect(mock.load).not.toHaveBeenCalled();
+ expect(mock.terminate).toHaveBeenCalledTimes(1);
+});
+
 it('rejects in-flight short decode after abort instead of repopulating released PCM', async () => {
  audioFixture();
  const abort = new AbortController();
