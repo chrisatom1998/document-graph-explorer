@@ -13,7 +13,9 @@ const fixture = JSON.stringify({version:1,generator:'knowledge-nebula',createdAt
 ],edges:[{id:'notes-link',source:'alpha',target:'notes',kind:'reference',weight:1,evidence:['Session notes'],authored:true}]});
 
 test('automatic audio graph explains matches, updates corrections, exports, and works on desktop/mobile', async ({page},testInfo)=>{
- page.setDefaultTimeout(15000);
+ // Software WebGL on shared CI runners can hold the main thread well past 15s
+ // while the graph scene rebuilds, so plain toolbar clicks get the same budget.
+ page.setDefaultTimeout(60_000);
  const errors:string[]=[]; page.on('pageerror',error=>errors.push(error.message));
  await page.addInitScript(()=>localStorage.setItem('knowledge-nebula-theme','dark'));
  await page.setViewportSize({width:1440,height:1000});
@@ -48,7 +50,8 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
   await expect(dismiss).toHaveCount(0);
  };
  await importFixture(fixture);
- await page.getByRole('button',{name:'Switch to 2D view',exact:true}).click();
+ // The first scene builds right after import; under software WebGL that can hold the main thread past the 15s default.
+ await page.getByRole('button',{name:'Switch to 2D view',exact:true}).click({timeout:60_000});
  await expect(page.getByRole('application',{name:/Interactive 2D/})).toBeVisible();
  await page.getByRole('button',{name:'Fit the whole graph in view'}).click();
  await page.mouse.move(500,300);await page.mouse.down();await page.mouse.move(570,350,{steps:10});await page.mouse.up();await page.mouse.wheel(0,-120);
@@ -92,8 +95,7 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  const reexported=JSON.parse(await exportGraph());
  expect(reexported.edges).toEqual(updated.edges);
  expect(reexported.nodes.find((n:{id:string})=>n.id==='alpha').audio.confirmedDjTags.character).toEqual([]);
- // Building the 3D scene under software WebGL can hold the main thread past the 15s default.
- await page.getByRole('button',{name:'Switch to 3D view',exact:true}).click({timeout:60_000});
+ await page.getByRole('button',{name:'Switch to 3D view',exact:true}).click();
  await expect(page.getByRole('application',{name:/Interactive 3D/})).toBeVisible();
  await page.getByRole('button',{name:'Fit the whole graph in view'}).click();
  await page.mouse.move(500,300);await page.mouse.down();await page.mouse.move(570,350,{steps:10});await page.mouse.up();await page.mouse.wheel(0,120);

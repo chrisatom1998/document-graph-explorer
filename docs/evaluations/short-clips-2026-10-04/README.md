@@ -156,7 +156,7 @@ single-note pitch on NSynth: shown 98 → 198 of 222, correct 98 → 197 (1 wron
 The `synth hit` and `synthesizer` one-shot heads were **removed** at the user's request because of the false tags
 described below. Re-scoring the v2 run with those tags dropped (offline, exact for removals): still 13 categories meet
 70/70; synthesizer and synth hit now abstain (0 false tags, all 42 / 36 positives missed); clips with no scored tag
-490 → 665. A retrained synth detector must be measured on a new frozen test set.
+490 → 665. A retrained synth detector must be measured on a new frozen test set. **Update:** retrained on NSynth-train notes and measured on the fresh synth test set (`../synth-clips-2026-10-05/README.md`): synth hit ships (0.84 / 0.87); synthesizer stays hidden (0.80 / 0.48). Pass bar is now 60/60 (user, 2026-10-05).
 
 ## 6. Below target, unsupported, or open
 
