@@ -30,8 +30,8 @@ it.each(['imported','unvalidated'] as const)('never promotes %s diagnostics into
 it.each(['rejected','uncertain'] as const)('does not revive a %s trained label through the score display',decision=>{
  vi.mocked(installedFusionIdentity).mockReturnValue(release);render(<FusionEvidence fusion={fixture()} duration={10} mode="full" reviews={[{dimension:'source',labelId:'accordion',decision,scope:'track',at:'now',evidenceRunId:'old'}]}/>);expect(screen.queryByText('accordion',{selector:'.sound-tag span'})).toBeNull();
 });
-it.each([.499999,.5])('uses valid qualified decision scores at inclusive boundary %s',score=>{
- vi.mocked(installedFusionIdentity).mockReturnValue(release);const fusion=fixture();fusion.windows[0].decisions[0].decisionProbability=score;fusion.windows[0].decisions[0].headProbability=score;render(<FusionEvidence fusion={fusion} duration={10} mode="full"/>);expect(screen.queryByText('accordion',{selector:'.sound-tag span'})!==null).toBe(score>=.5);
+it.each([.399999,.4])('uses valid qualified decision scores at the inclusive track floor %s',score=>{
+ vi.mocked(installedFusionIdentity).mockReturnValue(release);const fusion=fixture();fusion.windows[0].decisions[0].decisionProbability=score;fusion.windows[0].decisions[0].headProbability=score;render(<FusionEvidence fusion={fusion} duration={10} mode="full"/>);expect(screen.queryByText('accordion',{selector:'.sound-tag span'})!==null).toBe(score>=.4);
 });
 
 it('does not substitute an inapplicable head score for a binary fallback with no numeric decision confidence',()=>{
