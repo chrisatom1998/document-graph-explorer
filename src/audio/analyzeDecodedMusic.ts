@@ -197,7 +197,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       const hasAudio = audible(samples);
       // A whole short clip also goes to the one-shot heads, which read the unchanged 16 kHz audio.
       const samples16 = id === 'clap' && interval.start === 0 && interval.end >= duration && duration <= SHORT_CLIP_MAX_SECONDS ? await read(0, duration, 16000) : undefined;
-      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
+      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}), ...(id === 'ast' && astOnGpu ? { gpu: true } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
       if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
       check(); cache.set(key, output);
     }
@@ -211,12 +211,16 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const applied: Record<SoundId, number> = { ast: 0, jamendo: 0, clap: 0 };
   const wake: Partial<Record<SoundId, () => void>> = {};
   let ended = false;
+  // AST runs on the graphics card (full-precision weights, about 8x faster) only where no validated scorer reads
+  // its scores: the trained source classifier was qualified on the WASM q8 model for full analyses past 2.048 s.
+  const astOnGpu = !supportsFusionInput(duration, mode, options.sourceMime);
+  const windowKey = (id: SoundId, interval: Interval) => modelCacheKey(fingerprint, job(id), interval) + (id === 'ast' && astOnGpu ? ':ast-webgpu-allowed' : '');
   async function scoreAhead(id: SoundId): Promise<void> {
     const j = job(id);
     for (let i = 0; i < j.planned.length; i++) {
       while (!ended && i - applied[id] >= MAX_AHEAD) await new Promise<void>(resolve => { wake[id] = resolve; });
       if (ended || stopped.has(id) || j.unsupportedReason || options.signal?.aborted) return;
-      const key = modelCacheKey(fingerprint, j, j.planned[i]);
+      const key = windowKey(id, j.planned[i]);
       if (started.has(key)) continue;
       started.add(key);
       const pending = fetchRaw(id, j.planned[i], key);
@@ -229,7 +233,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   async function sound(id: SoundId, interval: Interval): Promise<{ output: Raw; cacheKey: string; cacheHit: boolean } | undefined> {
     check();
     if (stopped.has(id) || job(id).unsupportedReason) return;
-    const j = job(id); const key = modelCacheKey(fingerprint, j, interval);
+    const j = job(id); const key = windowKey(id, interval);
     if (completed.has(key)) return;
     j.status = 'running'; j.attempted.push(interval);
     options.onProgress?.(`${id}: ${j.successful.length}/${j.planned.length} windows; ${Math.floor(interval.start)}–${Math.ceil(interval.end)}s of ${Math.ceil(duration)}s`);
