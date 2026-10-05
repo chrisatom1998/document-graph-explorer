@@ -7,7 +7,7 @@ name: Mixed-music tag check
 on:
   push:
     branches: [claude/weak-sound-labels-2phv35]
-    paths: [.github/workflows/mixed-music-eval.yml, scripts/mixed-music/**]
+    paths: [scripts/mixed-music/build.py]
   workflow_dispatch:
 
 permissions:
@@ -100,7 +100,8 @@ jobs:
 
   score:
     needs: eval
-    if: always()
+    # Score whatever shards finished, but not when the freeze failed and nothing ran.
+    if: ${{ !cancelled() && needs.eval.result != 'skipped' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
