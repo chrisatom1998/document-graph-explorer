@@ -2,9 +2,11 @@
 as faded "maybe" tags, without touching the heads already there. Use this instead of
 ship-round-heads.py when other scripts own some of the shipped heads (it rebuilds the file).
 A head whose tag already ships is left alone. Only the learned.json line in manifest.json changes.
+FULL_BAR=0.60 (optional): heads whose held-out precision AND recall reach it ship as full tags, the rest as maybe.
 Usage: add-maybe-heads.py <round-export.json> <report.json>"""
-import json, sys, hashlib, datetime
+import json, sys, hashlib, datetime, os
 SRC, REPORT = sys.argv[1:3]
+FULL_BAR = float(os.environ['FULL_BAR']) if os.environ.get('FULL_BAR') else None
 LEARNED, MANIFEST = 'public/sound-model/learned.json', 'public/sound-model/manifest.json'
 catalog = {c['label']: c for c in json.load(open('src/audio/djCatalog.json'))['categories']}
 model = json.load(open(LEARNED)); shipped = {(h['group'], h['label']) for h in model['heads']}
@@ -15,8 +17,10 @@ for r in json.load(open(SRC))['results']:
     if 'head' not in r: report.append({**row, 'added': False, 'why': 'no exported weights'}); continue
     if group not in ('source', 'production', 'character'): report.append({**row, 'added': False, 'why': 'not an app tag'}); continue
     if (group, r['name']) in shipped: report.append({**row, 'added': False, 'why': 'already ships'}); continue
-    added.append({'group': group, 'label': r['name'], **r['head'], 'threshold': round(r['threshold'], 4), 'maybe': True})
-    report.append({**row, 'group': group, 'added': True})
+    full = FULL_BAR is not None and min(r['precision'], r['recall']) >= FULL_BAR
+    added.append({'group': group, 'label': r['name'], **r['head'], 'threshold': round(r['threshold'], 4), **({} if full else {'maybe': True})})
+    shipped.add((group, r['name']))   # first export of a label wins (instrument vs label job)
+    report.append({**row, 'group': group, 'added': True, 'tier': 'full' if full else 'maybe'})
 model['heads'] += added; model['revision'] = model['revision'].split('+')[0] + f'+maybe-{datetime.date.today()}'
 body = json.dumps(model, separators=(',', ':')) + '\n'
 open(LEARNED, 'w').write(body)
@@ -25,5 +29,5 @@ man = json.load(open(MANIFEST)); man['sha256']['learned.json'] = digest
 open(MANIFEST, 'w').write(json.dumps(man, indent=2) + '\n')
 json.dump({'kind': 'added-maybe-heads-v1', 'builtAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
            'learnedSha256': digest, 'heads': report}, open(REPORT, 'w'), indent=1)
-for x in report: print(f"{x['name']:<18}{(x['precision'] or 0)*100:>5.0f}%{(x['recall'] or 0)*100:>5.0f}%  " + ('ADDED as maybe' if x['added'] else 'no - ' + x['why']))
+for x in report: print(f"{x['name']:<18}{(x['precision'] or 0)*100:>5.0f}%{(x['recall'] or 0)*100:>5.0f}%  " + (f"ADDED as {x['tier']}" if x['added'] else 'no - ' + x['why']))
 print(f"\n{len(added)} added -> {len(model['heads'])} heads, learned.json {len(body)//1024} KB, pinned {digest[:12]}")

@@ -63,7 +63,7 @@ SRC = np.concatenate([np.full(len(p[1]), i) for i, p in enumerate(parts)])   # 0
 X = np.vstack([p[0] for p in parts]); LAB = sum((p[1] for p in parts), []); IDS = sum((p[4] for p in parts), []); G = np.concatenate([p[2] for p in parts])
 IS_VAULT = np.concatenate([p[3] for p in parts])
 # Real recordings with human labels: the only fair test for instruments (rendered stems are not).
-REAL = tuple(n for n in ('fsd50k:', 'fsl10k:') if any(i.startswith(n) for i in IDS))
+REAL = tuple(n for n in ('fsd50k:', 'fsl10k:', 'fsm:') if any(i.startswith(n) for i in IDS))
 FAM = np.array([(lambda f: f.pop() if len(f) == 1 else None)({FAMILY.get(catalog.get(l, {}).get('family')) for l in s} - {None}) for s in LAB], dtype=object)
 print(f'total {len(LAB)} clips ({IS_VAULT.sum()} library, {(~IS_VAULT).sum()} extra)')
 if os.environ.get('MIXTEST'):
@@ -74,7 +74,14 @@ OVERLAP = [{'chops', 'vocal chops'}, {'riser', 'noise sweep', 'whoosh'}, {'impac
            {'808 bass', 'sub bass'}, {'reese bass', 'wobble bass', 'bass growl', 'synth bass'}, {'synth chord', 'atmospheric pad', 'synth stab'},
            {'synth lead', 'synth arpeggio', 'synth pluck', 'synth chord', 'synth stab'},
            {'texture', 'atmospheric pad', 'static noise', 'rain ambience', 'noise sweep'}, {'static noise', 'noise sweep'},
-           {'glitch effect', 'stutter effect', 'reverse effect'}, {'crash cymbal', 'ride cymbal', 'closed hi-hat', 'open hi-hat'}]
+           {'glitch effect', 'stutter effect', 'reverse effect'}, {'crash cymbal', 'ride cymbal', 'closed hi-hat', 'open hi-hat'},
+           # character words people use loosely for the same sound: never negatives for each other
+           {'saturated', 'distorted', 'gritty', 'bitcrushed', 'warm'}, {'chorused', 'flanged', 'wobbling'}, {'rising', 'swelling', 'gliding'},
+           {'falling', 'gliding'}, {'dark', 'filtered', 'warm', 'smooth', 'hollow'}, {'bright', 'airy', 'glassy', 'metallic'},
+           {'pulsing', 'rhythmic', 'syncopated', 'rolling', 'wobbling'}, {'percussive', 'staccato', 'plucked'}, {'echoing', 'reverberant'},
+           {'sustained', 'swelling', 'smooth'}, {'vocal breath', 'breath'}, {'vocal phrase', 'spoken phrase', 'vocal chops', 'chops'},
+           {'vocal pad', 'vocal harmony', 'atmospheric pad'}, {'acid bass', 'acid synth', 'synth bass'}, {'bass pluck', 'synth pluck', 'synth bass'},
+           {'reese bass', 'supersaw'}, {'riser', 'swelling', 'rising'}, {'downlifter', 'falling'}]
 def compatible(a, b):
     if a == b: return True
     fa, fb = catalog.get(a, {}).get('family'), catalog.get(b, {}).get('family')
@@ -173,7 +180,7 @@ def run(kind, name):
     return {**r, 'uses': [EXTRAS[i - 1][0] for i in chosen], 'threshold': th, 'tp': tp, 'fp': fp, 'fn': fn, 'precision': P, 'recall': R,
             'f1': 2*P*R/(P+R) if P+R else 0.0, 'passes': bool(P >= BAR and R >= BAR), 'verdict': 'PASS' if P >= BAR and R >= BAR else 'fails'}
 
-prod = sorted({l for s in LAB for l in s if catalog.get(l, {}).get('group') == 'production'})
+prod = sorted({l for s in LAB for l in s if catalog.get(l, {}).get('group') in ('production', 'character')})
 # Instrument labels for every clip whose instrument is known. Instrument datasets name it outright;
 # elsewhere drums and synth families imply drums and synthesizer, vocal/FX/texture clips contain no
 # instrument, a library file name can name one ("Rhodes Chords"), and anything else stays unknown.
