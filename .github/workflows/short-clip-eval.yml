@@ -1,0 +1,76 @@
+name: Short-clip tag check
+
+# Re-measures what the Sounds panel shows on the frozen short-clip benchmark
+# (docs/evaluations/short-clips-2026-10-04): uploads each clip into the built app in headless Chromium,
+# exports the graph and scores the displayed tags. "base" builds the app source at BASE_REF, "branch" at
+# this commit; both use this commit's scoring scripts. Audio is fetched at run time and never committed.
+on:
+  push:
+    branches: [claude/weak-sound-labels-2phv35]
+    paths: [.github/workflows/short-clip-eval.yml, scripts/short-clip-fetch-audio.py, src/audio/djTags.ts, src/audio/djClassification.ts]
+  workflow_dispatch:
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  BASE_REF: d1b7b05928804975802348288f29384ce5a40245
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [base, branch]
+        split: [calibration, test]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install ffmpeg + Playwright Chromium
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          npx playwright install --with-deps chromium
+      - name: Fetch benchmark audio
+        run: python3 scripts/short-clip-fetch-audio.py "$RUNNER_TEMP/clips" ${{ matrix.split }} "$RUNNER_TEMP/sources"
+      - name: Use the base app source
+        if: matrix.build == 'base'
+        run: git checkout "$BASE_REF" -- src && git status --short | head
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR="$RUNNER_TEMP/clips" node scripts/short-clip-upload-eval.mjs out/run ${{ matrix.split }} 60
+      - name: Score
+        if: always()
+        run: |
+          git checkout HEAD -- src
+          npx vite-node scripts/short-clip-displayed.mjs out/run/graph-export.json out/run/r
+          python3 scripts/short-clip-report.py out/run ${{ matrix.split }} > out/report.json
+          node scripts/compare-tag-reports.mjs out/report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: short-clip-${{ matrix.build }}-${{ matrix.split }}
+          path: |
+            out/report.json
+            out/run/run.json
+            out/run/r-*.json
+          retention-days: 30
