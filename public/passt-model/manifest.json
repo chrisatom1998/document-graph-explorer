@@ -6,6 +6,6 @@
     "model.onnx": "79142146b9b56a2c3c4fb14f5585f28d66ecd756aaefad6f89ff8eb50b820cd9"
   },
   "sources": {
-    "model.onnx": "https://huggingface.co/cmjatom/passt-openmic-features-onnx/resolve/main/model.onnx"
+    "model.onnx": "https://huggingface.co/cmjatom/passt-openmic-features-onnx/resolve/a61c5959bca6bf5b83246ebf5a2d9fc183a54b2b/model.onnx"
   }
 }
