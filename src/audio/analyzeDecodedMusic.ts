@@ -3,7 +3,7 @@ import { MAX_FUSION_WINDOWS, sanitizeFusionIdentity, sanitizeFusionDecisions, un
 import { DjTagEvidence, selectDjTags } from './djTags';
 import { mergeDjTags } from './djClassification';
 import type { MusicDecoder } from './decodeMusic';
-import { jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabels } from './jamendo';
+import { jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabels, JamendoRecordingScores } from './jamendo';
 import { InstrumentEvidence, instrumentWindowStarts } from './instrumentEvidence';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, type MusicAnalysis, type MusicAnalysisMode } from './musicTypes';
 import type { InstrumentPredictions } from './instrumentLabels';
@@ -117,8 +117,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   // A per-run identity still permits preview reuse without cross-file collisions.
   const fingerprint = options.audioFingerprint ?? recognition.runId;
   const astEvidence = new InstrumentEvidence();
-  const musicScores: Record<string, number> = {};
-  let musicCount = 0;
+  const musicScores = new JamendoRecordingScores();
   const descriptions = new DescriptionAccumulator();
   const djEvidence = new DjTagEvidence();
   const completed = new Set<string>();
@@ -133,10 +132,11 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     for (const j of recognition.jobs) finishJob(j, duration, cancelled);
     const soundComplete = ['ast','jamendo','clap'].every(id => ['complete','unsupported'].includes(job(id as ModelId).status));
     result.instruments = astEvidence.results();
-    result.soundProfile = combineSoundModels(result.instruments, musicScores, descriptions.average(),
+    const music = musicScores.scores();
+    result.soundProfile = combineSoundModels(result.instruments, music, descriptions.average(),
       { ast: job('ast').status === 'complete', jamendo: job('jamendo').status === 'complete', clap: job('clap').status === 'complete' });
     mergeDjTags(result.soundProfile, djEvidence.results(), descriptions.average());
-    for (const suggestion of jamendoSuggestions(musicScores)) {
+    for (const suggestion of jamendoSuggestions(music)) {
       if (!result.instruments.some(i => i.label === suggestion.label)) result.instruments.push({ label: suggestion.label, score: suggestion.score, status: 'possible' });
     }
     result.instrumentScan = { revision: INSTRUMENT_ANALYSIS_REVISION, mode, complete: soundComplete && !cancelled,
@@ -229,8 +229,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
           .map(([labelId,score]) => ({ dimension: 'source', labelId, score })));
       } else if (id === 'jamendo') {
         const scores = output as Record<string, number>;
-        for (const label of new Set([...Object.keys(musicScores), ...Object.keys(scores)])) musicScores[label] = ((musicScores[label] ?? 0) * musicCount + (scores[label] ?? 0)) / (musicCount + 1);
-        musicCount++;
+        musicScores.add(scores);
         recordEvidence(recognition, id, interval, [...jamendoLabels(scores), ...nsynthLabels(scores)]);
       } else {
         const scores = output as DescriptionScore[];

@@ -24,6 +24,26 @@ export function jamendoSuggestions(scores: Record<string, number>): SoundSuggest
   const ranked = [...candidates].sort((a,b) => b[1]-a[1]);
   return ranked.filter(([label, score]) => score >= (label === 'voice' ? 0.5 : 0.3)).slice(0, 3).map(([label, score]) => ({ label, score, margin: Math.max(0, score - (ranked.find(([other]) => other !== label)?.[1] ?? 0)) }));
 }
+/** Recording-level Jamendo scores: each label's mean over its two strongest windows. A plain average
+ * over every window dilutes an instrument that plays in only part of a long recording; requiring two
+ * windows keeps one noisy window from adding a label on its own. A window without a label counts as 0,
+ * so one- and two-window recordings get exactly the plain average. */
+export class JamendoRecordingScores {
+  private top = new Map<string, [number, number]>();
+  private windows = 0;
+  add(scores: Record<string, number>): void {
+    this.windows++;
+    for (const [label, score] of Object.entries(scores)) {
+      if (!Number.isFinite(score) || score < 0 || score > 1) continue;
+      const best = this.top.get(label) ?? [0, 0];
+      if (score > best[0]) this.top.set(label, [score, best[0]]);
+      else this.top.set(label, [best[0], Math.max(best[1], score)]);
+    }
+  }
+  scores(): Record<string, number> {
+    return Object.fromEntries([...this.top].map(([label, [first, second]]) => [label, this.windows === 1 ? first : (first + second) / 2]));
+  }
+}
 /** NSynth heads share the Jamendo EffNet embedding. Their scores travel in the same
  * map under a prefix, so the Jamendo instrument family keeps its exact class set. */
 const NSYNTH_HEADS = ['instrument', 'bright_dark', 'reverb', 'acoustic_electronic'] as const;

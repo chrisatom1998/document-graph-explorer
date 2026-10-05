@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { classifyJamendo, jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabels } from './jamendo';
+import { classifyJamendo, JamendoRecordingScores, jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabels } from './jamendo';
 import { jamendoPatches } from './jamendoFeatures';
 import { sanitizeMusicAnalysis } from './musicTypes';
 import type Essentia from 'essentia.js/dist/essentia.js-core.es.js';
@@ -65,4 +65,28 @@ it('keeps the Jamendo weights version within the persisted ledger bound as heads
   const job = createRecognition(10, 'full').jobs.find(j => j.modelId === 'jamendo')!;
   expect(job.weightsVersion.split(':')).toHaveLength(12);
   expect(job.weightsVersion.length).toBeLessThanOrEqual(512);
+});
+
+it('scores a recording by its two strongest windows, so a part-time instrument is not averaged away', () => {
+  const song = new JamendoRecordingScores();
+  for (let i = 0; i < 40; i++) song.add(i === 20 || i === 21 ? { saxophone: .8, drums: .6 } : { drums: .6 });
+  expect(song.scores()).toEqual({ saxophone: .8, drums: .6 });
+  expect(jamendoSuggestions(song.scores()).map(s => s.label)).toContain('saxophone');
+});
+
+it('needs a second window before one strong window counts in full', () => {
+  const song = new JamendoRecordingScores();
+  for (let i = 0; i < 40; i++) song.add(i === 7 ? { saxophone: .5 } : {});
+  expect(song.scores().saxophone).toBe(.25);
+  expect(jamendoSuggestions(song.scores())).toEqual([]);
+});
+
+it('keeps the plain average for one- and two-window recordings and ignores invalid scores', () => {
+  const one = new JamendoRecordingScores();
+  one.add({ piano: .4, organ: Number.NaN, flute: 1.5 });
+  expect(one.scores()).toEqual({ piano: .4 });
+  const two = new JamendoRecordingScores();
+  two.add({ piano: .4 }); two.add({ piano: .2, voice: .6 });
+  expect(two.scores().piano).toBeCloseTo(.3);
+  expect(two.scores().voice).toBeCloseTo(.3);
 });
