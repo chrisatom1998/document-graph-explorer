@@ -1,4 +1,4 @@
-import { EMBED_DIMS } from '../config';
+import { EMBED_DIMS, QUERY_MIN_SEMANTIC_SCORE } from '../config';
 import type { DocNode } from '../model/types';
 import { embedQuery as defaultEmbedQuery } from '../pipeline/coordinator';
 import {
@@ -70,7 +70,6 @@ interface Candidate {
 const DEFAULT_LIMIT = 12;
 const DEFAULT_PER_DOCUMENT = 1;
 const DEFAULT_TIMEOUT_MS = 15_000;
-const DEFAULT_MIN_SEMANTIC_SCORE = 0.3;
 const DEFAULT_MAX_PASSAGE_CHARS = 3_000;
 /** Notes/tags/cluster evidence — not a real chunk, must not collide with index 0. */
 const EXTRA_PASSAGE_INDEX = -1;
@@ -273,7 +272,7 @@ export async function retrieveCorpus(
   const limit = Math.max(1, options.limit ?? DEFAULT_LIMIT);
   const perDocument = Math.max(1, options.perDocument ?? DEFAULT_PER_DOCUMENT);
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-  const minSemanticScore = options.minSemanticScore ?? DEFAULT_MIN_SEMANTIC_SCORE;
+  const minSemanticScore = options.minSemanticScore ?? QUERY_MIN_SEMANTIC_SCORE;
   const maxPassageChars = options.maxPassageChars ?? DEFAULT_MAX_PASSAGE_CHARS;
   const includeSearchMetadata = options.includeSearchMetadata !== false;
   const candidates = new Map<string, Candidate>();

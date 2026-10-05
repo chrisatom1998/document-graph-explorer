@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { DocNode } from '../model/types';
 import { loadDemoCorpus, resetCorpus } from '../pipeline/coordinator';
-import { SEARCH_MIN_SCORE } from '../config';
+import { QUERY_MIN_SEMANTIC_SCORE, SEARCH_MIN_SCORE } from '../config';
 import { retrieveCorpus, retrievalTerms, type RetrievalHit } from '../search/retrieval';
 import {
   buildBenchmarkReport,
@@ -92,7 +92,7 @@ export default function RetrievalBenchmarkPanel() {
           limit: 4096,
           perDocument: 256,
           timeoutMs: 15_000,
-          minSemanticScore: SEARCH_MIN_SCORE,
+          minSemanticScore: QUERY_MIN_SEMANTIC_SCORE,
         });
         const latencyMs = performance.now() - started;
         const common = {
