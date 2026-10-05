@@ -131,6 +131,69 @@
   },
   {
    "kind": "label",
+   "name": "wobbling",
+   "testedOn": "real recordings",
+   "definition": "measured (see script)",
+   "trainPositive": 1622,
+   "testPositive": 541,
+   "strict": {
+    "precision": 0.695906432748538,
+    "recall": 0.6598890942698706,
+    "clips": 1805
+   },
+   "threshold": 0.746,
+   "tp": 357,
+   "fp": 68,
+   "fn": 184,
+   "precision": 0.695906432748538,
+   "recall": 0.6598890942698706,
+   "passes": true,
+   "verdict": "PASS"
+  },
+  {
+   "kind": "label",
+   "name": "airy",
+   "testedOn": "real recordings",
+   "definition": "measured (see script)",
+   "trainPositive": 1622,
+   "testPositive": 541,
+   "strict": {
+    "precision": 0.7344827586206897,
+    "recall": 0.7874306839186691,
+    "clips": 2107
+   },
+   "threshold": 0.742,
+   "tp": 426,
+   "fp": 35,
+   "fn": 115,
+   "precision": 0.7344827586206897,
+   "recall": 0.7874306839186691,
+   "passes": true,
+   "verdict": "PASS"
+  },
+  {
+   "kind": "label",
+   "name": "smooth",
+   "testedOn": "real recordings",
+   "definition": "measured (see script)",
+   "trainPositive": 2162,
+   "testPositive": 721,
+   "strict": {
+    "precision": 0.7265822784810126,
+    "recall": 0.7961165048543689,
+    "clips": 2036
+   },
+   "threshold": 0.692,
+   "tp": 574,
+   "fp": 111,
+   "fn": 147,
+   "precision": 0.7265822784810126,
+   "recall": 0.7961165048543689,
+   "passes": false,
+   "verdict": "held back: on the library it fires with percussive on 14% of clips (contradicts its definition)"
+  },
+  {
+   "kind": "label",
    "name": "rising",
    "testedOn": "real recordings",
    "definition": "measured (see script)",
