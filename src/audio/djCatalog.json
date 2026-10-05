@@ -1656,7 +1656,9 @@
       "label": "plucked",
       "source": null,
       "description": "Short plucked musical notes with a sharp attack and decay.",
-      "aliases": [],
+      "aliases": [
+        "one shot"
+      ],
       "recognition": "experimental",
       "axis": "dj-articulation"
     },

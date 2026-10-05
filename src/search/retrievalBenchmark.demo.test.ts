@@ -42,7 +42,8 @@ const ROOT = join(__dirname, '../..');
 const DEMO_DIR = join(ROOT, 'public/demo');
 
 // Measured on this corpus when the floor was calibrated: Recall@5 0.958,
-// MRR@10 0.979, critical 6/6. Small slack absorbs ONNX runtime drift.
+// MRR@10 0.979, critical 6/6. With the exact-identifier boost (retrieval.ts)
+// MRR@10 is 1.0 on macOS arm64. Small slack absorbs ONNX runtime drift.
 const MIN_RECALL_AT_5 = 0.95;
 const MIN_MRR_AT_10 = 0.97;
 

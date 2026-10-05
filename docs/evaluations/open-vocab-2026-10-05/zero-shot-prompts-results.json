@@ -1,0 +1,1772 @@
+{
+ "kind": "zero-shot-heads-v1",
+ "bar": 0.45,
+ "results": [
+  {
+   "kind": "label",
+   "name": "percussion",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Music played on the percussion.",
+    "A recording of percussion."
+   ],
+   "real": {
+    "testPositive": 1013,
+    "calPositive": 3039,
+    "cutoff": 0.287957091331482,
+    "precision": 0.764367816091954,
+    "recall": 0.26258637709772953,
+    "tp": 266
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.764367816091954,
+   "recall": 0.26258637709772953,
+   "testPositive": 1013,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vocal hum",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of humming."
+   ],
+   "real": {
+    "testPositive": 90,
+    "calPositive": 267,
+    "cutoff": 0.44883970975875853,
+    "precision": 0.9411764705882353,
+    "recall": 0.17777777777777778,
+    "tp": 16
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.9411764705882353,
+   "recall": 0.17777777777777778,
+   "testPositive": 90,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vocal vowel",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of vowel.",
+    "A sustained human voice singing an ah, oh or oo vowel."
+   ],
+   "real": {
+    "testPositive": 80,
+    "calPositive": 237,
+    "cutoff": 0.4356416380405427,
+    "precision": 0.9545454545454546,
+    "recall": 0.2625,
+    "tp": 21
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.9545454545454546,
+   "recall": 0.2625,
+   "testPositive": 80,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vocal harmony",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 6,
+    "calPositive": 11
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 6,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vocal scream",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A vocal scream in an electronic dance music track."
+   ],
+   "real": {
+    "testPositive": 504,
+    "calPositive": 1483,
+    "cutoff": 0.32698787927627565,
+    "precision": 0.9016393442622951,
+    "recall": 0.3273809523809524,
+    "tp": 165
+   },
+   "library": {
+    "testPositive": 20,
+    "calPositive": 17,
+    "cutoff": 0.48703287601470946,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.9016393442622951,
+   "recall": 0.3273809523809524,
+   "testPositive": 504,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vocal pad",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A recording of vocal pad."
+   ],
+   "real": {
+    "testPositive": 41,
+    "calPositive": 122,
+    "cutoff": 0.5191857218742372,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "library": {
+    "testPositive": 4,
+    "calPositive": 8
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 41,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth pluck",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A synth pluck in an electronic dance music track."
+   ],
+   "real": {
+    "testPositive": 128,
+    "calPositive": 383,
+    "cutoff": 0.4098426079750063,
+    "precision": 0.7666666666666667,
+    "recall": 0.1796875,
+    "tp": 23
+   },
+   "library": {
+    "testPositive": 111,
+    "calPositive": 284,
+    "cutoff": 0.40508404195308684,
+    "precision": 0.8444444444444444,
+    "recall": 0.34234234234234234,
+    "tp": 38
+   },
+   "testedOn": "real recordings",
+   "precision": 0.7666666666666667,
+   "recall": 0.1796875,
+   "testPositive": 128,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth stab",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of chord stab.",
+    "Synth stab."
+   ],
+   "real": {
+    "testPositive": 254,
+    "calPositive": 609,
+    "cutoff": 0.4599442768096924,
+    "precision": 0.3888888888888889,
+    "recall": 0.08267716535433071,
+    "tp": 21
+   },
+   "library": {
+    "testPositive": 135,
+    "calPositive": 263,
+    "cutoff": 0.45094784021377565,
+    "precision": 0.13592233009708737,
+    "recall": 0.1037037037037037,
+    "tp": 14
+   },
+   "testedOn": "real recordings",
+   "precision": 0.3888888888888889,
+   "recall": 0.08267716535433071,
+   "testPositive": 254,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth lead",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A recording of synth lead.",
+    "Synth lead."
+   ],
+   "real": {
+    "testPositive": 244,
+    "calPositive": 730,
+    "cutoff": 0.3889075744152069,
+    "precision": 0.7807017543859649,
+    "recall": 0.36475409836065575,
+    "tp": 89
+   },
+   "library": {
+    "testPositive": 101,
+    "calPositive": 286,
+    "cutoff": 0.41325623989105226,
+    "precision": 0.5974025974025974,
+    "recall": 0.45544554455445546,
+    "tp": 46
+   },
+   "testedOn": "real recordings",
+   "precision": 0.7807017543859649,
+   "recall": 0.36475409836065575,
+   "testPositive": 244,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth bass",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Synth bass."
+   ],
+   "real": {
+    "testPositive": 38,
+    "calPositive": 114,
+    "cutoff": 0.505196727514267,
+    "precision": 1.0,
+    "recall": 0.5263157894736842,
+    "tp": 20
+   },
+   "library": {
+    "testPositive": 55,
+    "calPositive": 28,
+    "cutoff": 0.48821118116378787,
+    "precision": 0.1111111111111111,
+    "recall": 0.05454545454545454,
+    "tp": 3
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.5263157894736842,
+   "testPositive": 38,
+   "passes": false,
+   "verdict": "fails on library"
+  },
+  {
+   "kind": "label",
+   "name": "vocal-like synth",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A vocal-like synth sound from a DJ sample pack."
+   ],
+   "real": {
+    "testPositive": 64,
+    "calPositive": 154,
+    "cutoff": 0.38102288961410524,
+    "precision": 0.4,
+    "recall": 0.0625,
+    "tp": 4
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.4,
+   "recall": 0.0625,
+   "testPositive": 64,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth chord",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A synthesizer playing several musical notes together as chords.",
+    "A synth chord in an electronic dance music track."
+   ],
+   "real": {
+    "testPositive": 31,
+    "calPositive": 91,
+    "cutoff": 0.520007848739624,
+    "precision": 1.0,
+    "recall": 0.25806451612903225,
+    "tp": 8
+   },
+   "library": {
+    "testPositive": 142,
+    "calPositive": 255,
+    "cutoff": 0.4027681374549866,
+    "precision": 0.16258351893095768,
+    "recall": 0.5140845070422535,
+    "tp": 73
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.25806451612903225,
+   "testPositive": 31,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "supersaw",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of super saw."
+   ],
+   "real": {
+    "testPositive": 62,
+    "calPositive": 182,
+    "cutoff": 0.46568850517272947,
+    "precision": 0.5384615384615384,
+    "recall": 0.11290322580645161,
+    "tp": 7
+   },
+   "library": {
+    "testPositive": 18,
+    "calPositive": 2
+   },
+   "testedOn": "real recordings",
+   "precision": 0.5384615384615384,
+   "recall": 0.11290322580645161,
+   "testPositive": 62,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "bell synth",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 4,
+    "calPositive": 9
+   },
+   "library": {
+    "testPositive": 3,
+    "calPositive": 7
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 4,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "organ synth",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 1,
+    "calPositive": 1
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 1,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "brass synth",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of brass synth."
+   ],
+   "real": {
+    "testPositive": 36,
+    "calPositive": 42,
+    "cutoff": 0.29686798334121706,
+    "precision": 0.6666666666666666,
+    "recall": 0.05555555555555555,
+    "tp": 2
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 2
+   },
+   "testedOn": "real recordings",
+   "precision": 0.6666666666666666,
+   "recall": 0.05555555555555555,
+   "testPositive": 36,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "string synth",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 35,
+    "calPositive": 14
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 35,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "fm synth",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of fm synth."
+   ],
+   "real": {
+    "testPositive": 258,
+    "calPositive": 772,
+    "cutoff": 0.439495689868927,
+    "precision": 0.625,
+    "recall": 0.03875968992248062,
+    "tp": 10
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.625,
+   "recall": 0.03875968992248062,
+   "testPositive": 258,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth drone",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A recording of synth drone.",
+    "A synth drone sound from a DJ sample pack.",
+    "A sustained electronic tone with little melodic movement."
+   ],
+   "real": {
+    "testPositive": 786,
+    "calPositive": 2357,
+    "cutoff": 0.34760151505470277,
+    "precision": 0.6047008547008547,
+    "recall": 0.36005089058524176,
+    "tp": 283
+   },
+   "library": {
+    "testPositive": 141,
+    "calPositive": 109,
+    "cutoff": 0.4374611723423004,
+    "precision": 0.5368421052631579,
+    "recall": 0.3617021276595745,
+    "tp": 51
+   },
+   "testedOn": "real recordings",
+   "precision": 0.6047008547008547,
+   "recall": 0.36005089058524176,
+   "testPositive": 786,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "reese bass",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Reese bass.",
+    "The sound of reese bass."
+   ],
+   "real": {
+    "testPositive": 23,
+    "calPositive": 68,
+    "cutoff": 0.5495835781097412,
+    "precision": 0.6153846153846154,
+    "recall": 0.34782608695652173,
+    "tp": 8
+   },
+   "library": {
+    "testPositive": 103,
+    "calPositive": 207,
+    "cutoff": 0.4904902386665344,
+    "precision": 0.7627118644067796,
+    "recall": 0.4368932038834951,
+    "tp": 45
+   },
+   "testedOn": "real recordings",
+   "precision": 0.6153846153846154,
+   "recall": 0.34782608695652173,
+   "testPositive": 23,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "wobble bass",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of wobble."
+   ],
+   "real": {
+    "testPositive": 238,
+    "calPositive": 710,
+    "cutoff": 0.43440143823623656,
+    "precision": 0.7083333333333334,
+    "recall": 0.2857142857142857,
+    "tp": 68
+   },
+   "library": {
+    "testPositive": 63,
+    "calPositive": 137,
+    "cutoff": 0.4030052196979523,
+    "precision": 0.06315789473684211,
+    "recall": 0.09523809523809523,
+    "tp": 6
+   },
+   "testedOn": "real recordings",
+   "precision": 0.7083333333333334,
+   "recall": 0.2857142857142857,
+   "testPositive": 238,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "acid bass",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of 303 bass.",
+    "A recording of acid bass."
+   ],
+   "real": {
+    "testPositive": 320,
+    "calPositive": 842,
+    "cutoff": 0.42685610949993136,
+    "precision": 0.625,
+    "recall": 0.25,
+    "tp": 80
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.625,
+   "recall": 0.25,
+   "testPositive": 320,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "bass pluck",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "library": {
+    "testPositive": 5,
+    "calPositive": 6
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 0,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "rubbery bass",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A rubbery bass sound from a DJ sample pack."
+   ],
+   "real": {
+    "testPositive": 11,
+    "calPositive": 30
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 11,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "rimshot",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of rimshot."
+   ],
+   "real": {
+    "testPositive": 70,
+    "calPositive": 116,
+    "cutoff": 0.4781358540058136,
+    "precision": 0.72,
+    "recall": 0.2571428571428571,
+    "tp": 18
+   },
+   "library": {
+    "testPositive": 212,
+    "calPositive": 159,
+    "cutoff": 0.4242663848400116,
+    "precision": 0.7310924369747899,
+    "recall": 0.41037735849056606,
+    "tp": 87
+   },
+   "testedOn": "real recordings",
+   "precision": 0.72,
+   "recall": 0.2571428571428571,
+   "testPositive": 70,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "conga",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of conga."
+   ],
+   "real": {
+    "testPositive": 61,
+    "calPositive": 119,
+    "cutoff": 0.4862880563735962,
+    "precision": 0.875,
+    "recall": 0.11475409836065574,
+    "tp": 7
+   },
+   "library": {
+    "testPositive": 34,
+    "calPositive": 15,
+    "cutoff": 0.5104764938354492,
+    "precision": 0.8571428571428571,
+    "recall": 0.35294117647058826,
+    "tp": 12
+   },
+   "testedOn": "real recordings",
+   "precision": 0.875,
+   "recall": 0.11475409836065574,
+   "testPositive": 61,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "bongo",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A short bongo sample.",
+    "A recording of bongo."
+   ],
+   "real": {
+    "testPositive": 64,
+    "calPositive": 165,
+    "cutoff": 0.48988468885421754,
+    "precision": 1.0,
+    "recall": 0.40625,
+    "tp": 26
+   },
+   "library": {
+    "testPositive": 15,
+    "calPositive": 30,
+    "cutoff": 0.5030991673469544,
+    "precision": 0.9,
+    "recall": 0.6,
+    "tp": 9
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.40625,
+   "testPositive": 64,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "clave",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A recording of clave.",
+    "The sound of clave."
+   ],
+   "real": {
+    "testPositive": 18,
+    "calPositive": 52,
+    "cutoff": 0.5362766122817993,
+    "precision": 0.9,
+    "recall": 0.5,
+    "tp": 9
+   },
+   "library": {
+    "testPositive": 2,
+    "calPositive": 4
+   },
+   "testedOn": "real recordings",
+   "precision": 0.9,
+   "recall": 0.5,
+   "testPositive": 18,
+   "passes": true,
+   "verdict": "PASS",
+   "threshold": 0.5
+  },
+  {
+   "kind": "label",
+   "name": "woodblock",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Woodblock.",
+    "A woodblock in an electronic dance music track."
+   ],
+   "real": {
+    "testPositive": 11,
+    "calPositive": 29
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 2
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 11,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "shaker loop",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A shaker loop sound from a DJ sample pack."
+   ],
+   "real": {
+    "testPositive": 7,
+    "calPositive": 21
+   },
+   "library": {
+    "testPositive": 67,
+    "calPositive": 7
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 7,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "downlifter",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A short downlifter sample."
+   ],
+   "real": {
+    "testPositive": 14,
+    "calPositive": 41
+   },
+   "library": {
+    "testPositive": 112,
+    "calPositive": 288,
+    "cutoff": 0.4647600793838501,
+    "precision": 0.27205882352941174,
+    "recall": 0.33035714285714285,
+    "tp": 37
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 14,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "noise sweep",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A noise sweep sound from a DJ sample pack.",
+    "The sound of sweep."
+   ],
+   "real": {
+    "testPositive": 336,
+    "calPositive": 997,
+    "cutoff": 0.3906578743457794,
+    "precision": 0.5952380952380952,
+    "recall": 0.22321428571428573,
+    "tp": 75
+   },
+   "library": {
+    "testPositive": 128,
+    "calPositive": 268,
+    "cutoff": 0.45247652530670174,
+    "precision": 0.7363636363636363,
+    "recall": 0.6328125,
+    "tp": 81
+   },
+   "testedOn": "real recordings",
+   "precision": 0.5952380952380952,
+   "recall": 0.22321428571428573,
+   "testPositive": 336,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "laser",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A short electronic laser zap with a rapid pitch sweep."
+   ],
+   "real": {
+    "testPositive": 469,
+    "calPositive": 1406,
+    "cutoff": 0.28954456746578217,
+    "precision": 0.796812749003984,
+    "recall": 0.42643923240938164,
+    "tp": 200
+   },
+   "library": {
+    "testPositive": 68,
+    "calPositive": 141,
+    "cutoff": 0.34885273575782777,
+    "precision": 0.26153846153846155,
+    "recall": 0.5,
+    "tp": 34
+   },
+   "testedOn": "real recordings",
+   "precision": 0.796812749003984,
+   "recall": 0.42643923240938164,
+   "testPositive": 469,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "siren",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A short siren sample.",
+    "A siren sound from a DJ sample pack."
+   ],
+   "real": {
+    "testPositive": 325,
+    "calPositive": 974,
+    "cutoff": 0.42390382766723633,
+    "precision": 0.8674033149171271,
+    "recall": 0.48307692307692307,
+    "tp": 157
+   },
+   "library": {
+    "testPositive": 40,
+    "calPositive": 73,
+    "cutoff": 0.4777699112892151,
+    "precision": 0.38095238095238093,
+    "recall": 0.2,
+    "tp": 8
+   },
+   "testedOn": "real recordings",
+   "precision": 0.8674033149171271,
+   "recall": 0.48307692307692307,
+   "testPositive": 325,
+   "passes": false,
+   "verdict": "fails on library"
+  },
+  {
+   "kind": "label",
+   "name": "air horn",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Air horn."
+   ],
+   "real": {
+    "testPositive": 14,
+    "calPositive": 35
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 14,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "glitch effect",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of glitch effect.",
+    "A short glitch effect sample."
+   ],
+   "real": {
+    "testPositive": 800,
+    "calPositive": 2389,
+    "cutoff": 0.3201641750335693,
+    "precision": 0.7127371273712737,
+    "recall": 0.32875,
+    "tp": 263
+   },
+   "library": {
+    "testPositive": 133,
+    "calPositive": 267,
+    "cutoff": 0.35041682481765746,
+    "precision": 0.2248062015503876,
+    "recall": 0.21804511278195488,
+    "tp": 29
+   },
+   "testedOn": "real recordings",
+   "precision": 0.7127371273712737,
+   "recall": 0.32875,
+   "testPositive": 800,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "static noise",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A recording of static noise.",
+    "Static noise.",
+    "Broadband radio-like static noise."
+   ],
+   "real": {
+    "testPositive": 470,
+    "calPositive": 1408,
+    "cutoff": 0.37027664184570314,
+    "precision": 0.627906976744186,
+    "recall": 0.4021276595744681,
+    "tp": 189
+   },
+   "library": {
+    "testPositive": 61,
+    "calPositive": 35,
+    "cutoff": 0.451407516002655,
+    "precision": 0.18181818181818182,
+    "recall": 0.03278688524590164,
+    "tp": 2
+   },
+   "testedOn": "real recordings",
+   "precision": 0.627906976744186,
+   "recall": 0.4021276595744681,
+   "testPositive": 470,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "wind ambience",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of wind.",
+    "A wind ambience sound from a DJ sample pack."
+   ],
+   "real": {
+    "testPositive": 648,
+    "calPositive": 1939,
+    "cutoff": 0.3727493524551391,
+    "precision": 0.7537091988130564,
+    "recall": 0.39197530864197533,
+    "tp": 254
+   },
+   "library": {
+    "testPositive": 15,
+    "calPositive": 20,
+    "cutoff": 0.4461102533340454,
+    "precision": 0.14285714285714285,
+    "recall": 0.2,
+    "tp": 3
+   },
+   "testedOn": "real recordings",
+   "precision": 0.7537091988130564,
+   "recall": 0.39197530864197533,
+   "testPositive": 648,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "foley hit",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of found sound."
+   ],
+   "real": {
+    "testPositive": 151,
+    "calPositive": 451,
+    "cutoff": 0.42943668365478516,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "library": {
+    "testPositive": 100,
+    "calPositive": 298,
+    "cutoff": 0.3578240966796875,
+    "precision": 0.13580246913580246,
+    "recall": 0.22,
+    "tp": 22
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 151,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "metallic",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A metallic sounding synthesizer."
+   ],
+   "real": {
+    "testPositive": 573,
+    "calPositive": 1719,
+    "cutoff": 0.15732565581798555,
+    "precision": 0.24856046065259116,
+    "recall": 0.45200698080279234,
+    "tp": 259
+   },
+   "library": {
+    "testPositive": 210,
+    "calPositive": 22,
+    "cutoff": 0.44030298531055445,
+    "precision": 0.0125,
+    "recall": 0.004761904761904762,
+    "tp": 1
+   },
+   "testedOn": "real recordings",
+   "precision": 0.24856046065259116,
+   "recall": 0.45200698080279234,
+   "testPositive": 573,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "gritty",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Music that sounds gritty."
+   ],
+   "real": {
+    "testPositive": 32,
+    "calPositive": 93,
+    "cutoff": 0.44434359550476077,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "library": {
+    "testPositive": 9,
+    "calPositive": 7
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 32,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "smooth",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Smooth."
+   ],
+   "real": {
+    "testPositive": 119,
+    "calPositive": 356,
+    "cutoff": 0.4621758162975312,
+    "precision": 0.225,
+    "recall": 0.07563025210084033,
+    "tp": 9
+   },
+   "library": {
+    "testPositive": 24,
+    "calPositive": 7
+   },
+   "testedOn": "real recordings",
+   "precision": 0.225,
+   "recall": 0.07563025210084033,
+   "testPositive": 119,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "hollow",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Music that sounds hollow."
+   ],
+   "real": {
+    "testPositive": 82,
+    "calPositive": 239,
+    "cutoff": 0.4804781973361971,
+    "precision": 0.3,
+    "recall": 0.07317073170731707,
+    "tp": 6
+   },
+   "library": {
+    "testPositive": 20,
+    "calPositive": 30,
+    "cutoff": 0.4813385093212127,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.3,
+   "recall": 0.07317073170731707,
+   "testPositive": 82,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "woody",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Woody."
+   ],
+   "real": {
+    "testPositive": 567,
+    "calPositive": 1694,
+    "cutoff": 0.3647393345832825,
+    "precision": 0.5025641025641026,
+    "recall": 0.1728395061728395,
+    "tp": 98
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 3
+   },
+   "testedOn": "real recordings",
+   "precision": 0.5025641025641026,
+   "recall": 0.1728395061728395,
+   "testPositive": 567,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "plucked",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A short plucked sample.",
+    "Music that sounds plucked."
+   ],
+   "real": {
+    "testPositive": 115,
+    "calPositive": 342,
+    "cutoff": 0.481321257352829,
+    "precision": 0.2564102564102564,
+    "recall": 0.08695652173913043,
+    "tp": 10
+   },
+   "library": {
+    "testPositive": 6,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.2564102564102564,
+   "recall": 0.08695652173913043,
+   "testPositive": 115,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "syncopated",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "shipped prompt"
+   ],
+   "real": {
+    "testPositive": 25,
+    "calPositive": 73,
+    "cutoff": 0.49016190171241764,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "library": {
+    "testPositive": 3,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 25,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "rolling",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A short rolling sample.",
+    "A recording of rolling."
+   ],
+   "real": {
+    "testPositive": 207,
+    "calPositive": 620,
+    "cutoff": 0.4377098965644836,
+    "precision": 0.6875,
+    "recall": 0.21256038647342995,
+    "tp": 44
+   },
+   "library": {
+    "testPositive": 3,
+    "calPositive": 9
+   },
+   "testedOn": "real recordings",
+   "precision": 0.6875,
+   "recall": 0.21256038647342995,
+   "testPositive": 207,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "rising",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A short rising sample.",
+    "A recording of rising."
+   ],
+   "real": {
+    "testPositive": 77,
+    "calPositive": 231,
+    "cutoff": 0.46298928260803224,
+    "precision": 0.2692307692307692,
+    "recall": 0.09090909090909091,
+    "tp": 7
+   },
+   "library": {
+    "testPositive": 14,
+    "calPositive": 3
+   },
+   "testedOn": "real recordings",
+   "precision": 0.2692307692307692,
+   "recall": 0.09090909090909091,
+   "testPositive": 77,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "gliding",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of portamento."
+   ],
+   "real": {
+    "testPositive": 303,
+    "calPositive": 907,
+    "cutoff": 0.38301833868026736,
+    "precision": 0.5584415584415584,
+    "recall": 0.1419141914191419,
+    "tp": 43
+   },
+   "library": {
+    "testPositive": 38,
+    "calPositive": 26,
+    "cutoff": 0.43736839294433594,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.5584415584415584,
+   "recall": 0.1419141914191419,
+   "testPositive": 303,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "bitcrushed",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of bitcrushed."
+   ],
+   "real": {
+    "testPositive": 646,
+    "calPositive": 1903,
+    "cutoff": 0.3506698727607727,
+    "precision": 0.6521739130434783,
+    "recall": 0.2089783281733746,
+    "tp": 135
+   },
+   "library": {
+    "testPositive": 3,
+    "calPositive": 4
+   },
+   "testedOn": "real recordings",
+   "precision": 0.6521739130434783,
+   "recall": 0.2089783281733746,
+   "testPositive": 646,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "chorused",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "The sound of chorus.",
+    "A recording of chorused."
+   ],
+   "real": {
+    "testPositive": 109,
+    "calPositive": 263,
+    "cutoff": 0.4807207703590393,
+    "precision": 0.21739130434782608,
+    "recall": 0.045871559633027525,
+    "tp": 5
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.21739130434782608,
+   "recall": 0.045871559633027525,
+   "testPositive": 109,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "flanged",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A recording of flanged.",
+    "A flanged sound effect."
+   ],
+   "real": {
+    "testPositive": 52,
+    "calPositive": 134,
+    "cutoff": 0.5103651952743531,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "library": {
+    "testPositive": 2,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 52,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "saturated",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A short saturated sample."
+   ],
+   "real": {
+    "testPositive": 35,
+    "calPositive": 104,
+    "cutoff": 0.47434991002082816,
+    "precision": 1.0,
+    "recall": 0.02857142857142857,
+    "tp": 1
+   },
+   "library": {
+    "testPositive": 6,
+    "calPositive": 7
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.02857142857142857,
+   "testPositive": 35,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "tuba",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Tuba.",
+    "A short tuba sample."
+   ],
+   "real": {
+    "testPositive": 41,
+    "calPositive": 93,
+    "cutoff": 0.5175115299224854,
+    "precision": 1.0,
+    "recall": 0.04878048780487805,
+    "tp": 2
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.04878048780487805,
+   "testPositive": 41,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "bassoon",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A short bassoon sample."
+   ],
+   "real": {
+    "testPositive": 48,
+    "calPositive": 129,
+    "cutoff": 0.5064165878295899,
+    "precision": 1.0,
+    "recall": 0.14583333333333334,
+    "tp": 7
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.14583333333333334,
+   "testPositive": 48,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "banjo",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A solo banjo playing a melody.",
+    "A short banjo sample."
+   ],
+   "real": {
+    "testPositive": 14,
+    "calPositive": 41
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 14,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "sitar",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Sitar."
+   ],
+   "real": {
+    "testPositive": 19,
+    "calPositive": 56,
+    "cutoff": 0.5288406610488892,
+    "precision": 0.8888888888888888,
+    "recall": 0.42105263157894735,
+    "tp": 8
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.8888888888888888,
+   "recall": 0.42105263157894735,
+   "testPositive": 19,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "steel guitar",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Music played on the steel guitar.",
+    "A steel guitar playing smooth sliding string tones."
+   ],
+   "real": {
+    "testPositive": 19,
+    "calPositive": 22,
+    "cutoff": 0.5512585949897766,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 19,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "double bass",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A double bass playing low resonant plucked or bowed notes.",
+    "Music played on the double bass."
+   ],
+   "real": {
+    "testPositive": 43,
+    "calPositive": 124,
+    "cutoff": 0.47555845201015473,
+    "precision": 0.9047619047619048,
+    "recall": 0.4418604651162791,
+    "tp": 19
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.9047619047619048,
+   "recall": 0.4418604651162791,
+   "testPositive": 43,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "viola",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A solo viola playing a melody."
+   ],
+   "real": {
+    "testPositive": 75,
+    "calPositive": 182,
+    "cutoff": 0.4064617455005646,
+    "precision": 0.9583333333333334,
+    "recall": 0.30666666666666664,
+    "tp": 23
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.9583333333333334,
+   "recall": 0.30666666666666664,
+   "testPositive": 75,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vibraphone",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Vibraphone.",
+    "A short vibraphone sample.",
+    "The sound of vibraphone."
+   ],
+   "real": {
+    "testPositive": 26,
+    "calPositive": 76,
+    "cutoff": 0.523155152797699,
+    "precision": 1.0,
+    "recall": 0.5,
+    "tp": 13
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.5,
+   "testPositive": 26,
+   "passes": true,
+   "verdict": "PASS",
+   "threshold": 0.5
+  },
+  {
+   "kind": "label",
+   "name": "steel drum",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Music played on the steel drum.",
+    "A steelpan playing bright resonant metallic pitched notes."
+   ],
+   "real": {
+    "testPositive": 9,
+    "calPositive": 19
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 9,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "cajon",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "Music played on the cajon."
+   ],
+   "real": {
+    "testPositive": 36,
+    "calPositive": 32,
+    "cutoff": 0.48827041387557985,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 36,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "waterphone",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "An eerie resonant metallic waterphone sound."
+   ],
+   "real": {
+    "testPositive": 44,
+    "calPositive": 15,
+    "cutoff": 0.48044292211532597,
+    "precision": 1.0,
+    "recall": 0.29545454545454547,
+    "tp": 13
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.29545454545454547,
+   "testPositive": 44,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vocal shush",
+   "method": "zero-shot CLAP text",
+   "prompts": [
+    "A recording of vocal shush."
+   ],
+   "real": {
+    "testPositive": 14,
+    "calPositive": 42
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 14,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth hit",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 5,
+    "calPositive": 13
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 5,
+   "passes": false,
+   "verdict": "fails"
+  }
+ ]
+}

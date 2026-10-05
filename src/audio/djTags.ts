@@ -14,6 +14,9 @@ export interface DjTag { group: DjGroup; label: string; score: number; model?: '
 export const DJ_TYPE_SOURCE: Record<string, string> = Object.fromEntries(
   DJ_CATALOG.filter(c => c.group === 'production' && c.source).map(c => [c.label, c.source!]),
 );
+/** On-screen name for a label. The stored label stays the same so trained heads and saved corrections keep working. */
+const DISPLAY_NAMES: Record<string, string> = { plucked: 'one shot' };
+export function soundLabelText(label: string): string { return DISPLAY_NAMES[label] ?? label.replaceAll('_', ' '); }
 export function canonicalDjLabel(group: DjGroup, raw: unknown): string | undefined {
   if (typeof raw !== 'string') return;
   const label = raw.trim().toLowerCase();
