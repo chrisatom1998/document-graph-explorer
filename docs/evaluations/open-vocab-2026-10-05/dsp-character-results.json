@@ -92,21 +92,84 @@
    "name": "pulsing",
    "testedOn": "real recordings",
    "definition": "measured (see script)",
-   "trainPositive": 6741,
-   "testPositive": 2279,
+   "trainPositive": 1622,
+   "testPositive": 541,
    "strict": {
-    "precision": 0.8792246520874751,
-    "recall": 0.7762176393154893,
-    "clips": 3237
+    "precision": 0.6610169491525424,
+    "recall": 0.6487985212569316,
+    "clips": 2102
    },
-   "threshold": 0.5,
-   "tp": 1769,
-   "fp": 143,
-   "fn": 510,
-   "precision": 0.8792246520874751,
-   "recall": 0.7762176393154893,
+   "threshold": 0.726,
+   "tp": 351,
+   "fp": 86,
+   "fn": 190,
+   "precision": 0.6610169491525424,
+   "recall": 0.6487985212569316,
+   "passes": true,
+   "verdict": "PASS"
+  },
+  {
+   "kind": "label",
+   "name": "swelling",
+   "testedOn": "real recordings",
+   "definition": "measured (see script)",
+   "trainPositive": 1160,
+   "testPositive": 387,
+   "strict": {
+    "precision": 0.7079037800687286,
+    "recall": 0.5322997416020672,
+    "clips": 1607
+   },
+   "threshold": 0.757,
+   "tp": 206,
+   "fp": 55,
+   "fn": 181,
+   "precision": 0.7079037800687286,
+   "recall": 0.5322997416020672,
+   "passes": true,
+   "verdict": "PASS"
+  },
+  {
+   "kind": "label",
+   "name": "rising",
+   "testedOn": "real recordings",
+   "definition": "measured (see script)",
+   "trainPositive": 1142,
+   "testPositive": 384,
+   "strict": {
+    "precision": 0.44954128440366975,
+    "recall": 0.2552083333333333,
+    "clips": 1803
+   },
+   "threshold": 0.715,
+   "tp": 98,
+   "fp": 97,
+   "fn": 286,
+   "precision": 0.44954128440366975,
+   "recall": 0.2552083333333333,
    "passes": false,
-   "verdict": "rejected: definition too loose (63% of clips)"
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "staccato",
+   "testedOn": "real recordings",
+   "definition": "measured (see script)",
+   "trainPositive": 924,
+   "testPositive": 308,
+   "strict": {
+    "precision": 0.5172413793103449,
+    "recall": 0.5357142857142857,
+    "clips": 1574
+   },
+   "threshold": 0.779,
+   "tp": 165,
+   "fp": 41,
+   "fn": 143,
+   "precision": 0.5172413793103449,
+   "recall": 0.5357142857142857,
+   "passes": true,
+   "verdict": "PASS"
   },
   {
    "kind": "label",

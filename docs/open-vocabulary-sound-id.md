@@ -6,8 +6,8 @@ latest held-out measurements (rounds 16 and 18 are kept for comparison).
 
 ## Result
 
-**88 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
-ships in `learned.json` or `short-clip.json`. All 37 new labels come from this branch. Another session swapped the
+**91 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
+ships in `learned.json` or `short-clip.json`. All 40 new labels come from this branch. Another session swapped the
 existing distorted head for a different version and promoted five existing heads to full tags.
 
 | Bucket (45/45 bar, measured on held-out sources, round 19) | Labels |
@@ -29,7 +29,7 @@ New active labels on this branch (★ = full):
   vocal breath, foghorn bass, riser, texture, triangle.
 - Round 18: spoken phrase★, breakbeat, cello, electric piano, flute.
 - Round 19: chiptune synth, falling, glassy, horn, whistle.
-- Measured character labels (all maybe): bright, dark, sustained, percussive, rhythmic.
+- Measured character labels (all maybe): bright, dark, sustained, percussive, rhythmic, pulsing, swelling, staccato.
 - Round 20 (model strength per label, chosen on training rows only): acid synth. Over 78 near or failing labels this
   was neutral (10 better, 10 worse).
 
@@ -107,6 +107,9 @@ Uploader tags for words like "bright" are unreliable (round 19: bright 0/36, sus
 | bright / dark | energy-weighted spectral centroid in the top / bottom 20% |
 | sustained / percussive | share of frames within 10 dB of the loudest frame, top / bottom 25% |
 | rhythmic | onset autocorrelation peak ≥ 0.45 at 0.25–1.5 s |
+| pulsing | autocorrelation peak of the volume envelope at 2–12 Hz, top 15% by prominence |
+| swelling | loudness rises ≥ 10 dB across the clip |
+| staccato | ≥ 3 onsets per second and sustain share at or below the median |
 
 CLAP heads trained to predict these are scored on held-out uploaders. The scores below are strict: clips between the
 cut-offs count as negatives.
@@ -118,15 +121,20 @@ cut-offs count as negatives.
 | sustained | 0.78 / 0.75 | 903 |
 | percussive | 0.77 / 0.77 | 903 |
 | rhythmic | 0.64 / 0.66 | 552 |
+| pulsing | 0.66 / 0.65 | 541 |
+| swelling | 0.71 / 0.53 | 387 |
+| staccato | 0.52 / 0.54 | 308 |
 
 They ship as "maybe", following the user's earlier rule for character tags.
 
 These numbers measure agreement with the definitions, not with listeners. On the user's 17,891-clip sample library
-the heads fire on bright 42%, rhythmic 35%, percussive 29%, dark 19% and sustained 18% of clips. Producer samples are
+the heads fire on bright 42%, rhythmic 35%, pulsing 33%, percussive 29%, staccato 23%, dark 19%,
+sustained 18% and swelling 5% of clips. Producer samples are
 brighter than the average Freesound clip, so "bright" is common there.
 
-"pulsing" was dropped: its measure fired on 63% of clips, which means it captured "smooth volume envelope", not
-pulsing. Results are in `dsp-character-results.json`.
+The first "pulsing" measure fired on 63% of clips, which means it captured "smooth volume envelope", not pulsing. It
+was replaced by the peak-prominence measure above. "rising" (spectral centroid climbing ≥ 0.7 octave) failed at
+0.45 / 0.26. Results are in `dsp-character-results.json`.
 
 ## Rejected experiments
 
