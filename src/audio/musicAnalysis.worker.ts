@@ -241,8 +241,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
       // Settle the device before choosing the cache identity, so a WASM fallback is never saved as a GPU result.
       let gpuModel: Awaited<ReturnType<typeof getClassifier>> | undefined;
       if ((data as { gpu?: boolean }).gpu === true && !gpuUnavailable) try { gpuModel = await getGpuClassifier(); } catch { gpuUnavailable = true; }
-      if (gpuModel) Object.assign(runtime, { backend: 'webgpu', identity: 'webgpu-fp32-v1' });
-      const result = await cachedAudioInference('music-model', `ast-16khz:${gpuModel ? 'webgpu-fp32-v1' : musicRuntimeIdentity('ast')}`, data.samples, isInstrumentPredictions, async () => {
+      const classify = () => cachedAudioInference('music-model', `ast-16khz:${gpuModel ? 'webgpu-fp32-v1' : musicRuntimeIdentity('ast')}`, data.samples, isInstrumentPredictions, async () => {
         const { model, processor } = gpuModel ?? await getClassifier();
         const inputs = await processor(data.samples);
         try {
@@ -253,6 +252,14 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
           } finally { await disposeTensors(output); }
         } finally { await disposeTensors(inputs); }
       }, () => self.postMessage({ id, progress: 'Reusing saved instrument features' }));
+      // Load errors already latch gpuUnavailable; inference errors (device lost, GPU OOM) must too.
+      const result = await classify().catch(error => {
+        if (!gpuModel) throw error;
+        gpuUnavailable = true;
+        gpuModel = undefined;
+        return classify();
+      });
+      if (gpuModel) Object.assign(runtime, { backend: 'webgpu', identity: 'webgpu-fp32-v1' });
       await postResult(result);
       return;
     }
