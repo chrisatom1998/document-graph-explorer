@@ -28,14 +28,22 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - name: Restore datasets
+        id: datasets
+        uses: actions/cache@v4
+        with:
+          path: datasets
+          key: sound-links-datasets-v1
       - name: Download datasets
+        if: steps.datasets.outputs.cache-hit != 'true'
         run: |
-          curl -fsSL --retry 6 -o "$RUNNER_TEMP/openmic.tgz" "$OPENMIC"
-          echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $RUNNER_TEMP/openmic.tgz" | md5sum -c -
-          curl -fsSL --retry 6 -o "$RUNNER_TEMP/fma_metadata.zip" "$FMA_METADATA"
-          curl -fsSL --retry 6 -o "$RUNNER_TEMP/nsynth.tgz" "$NSYNTH"
+          mkdir -p datasets
+          curl -fsSL --retry 6 -o datasets/openmic.tgz "$OPENMIC"
+          echo "e4ccf187e2bb5ab2e115416e8aafe7f4  datasets/openmic.tgz" | md5sum -c -
+          curl -fsSL --retry 6 -o datasets/fma_metadata.zip "$FMA_METADATA"
+          curl -fsSL --retry 6 -o datasets/nsynth.tgz "$NSYNTH"
       - name: Select clips
-        run: python3 scripts/sound-links/select.py "$RUNNER_TEMP/openmic.tgz" "$RUNNER_TEMP/fma_metadata.zip" "$RUNNER_TEMP/nsynth.tgz" data
+        run: python3 scripts/sound-links/select.py datasets/openmic.tgz datasets/fma_metadata.zip datasets/nsynth.tgz data
       - uses: actions/upload-artifact@v4
         with:
           name: sound-links-data

@@ -39,7 +39,7 @@ for r in csv.DictReader(io.StringIO(read('openmic-2018-aggregated-labels.csv')))
     if float(r['relevance']) >= .5: instruments.setdefault(r['sample_key'], set()).add(r['instrument'])
 
 with zipfile.ZipFile(fma_zip) as z:
-    name = next(n for n in z.namelist() if n.endswith('tracks.csv'))
+    name = next(n for n in z.namelist() if os.path.basename(n) == 'tracks.csv')
     rows = csv.reader(io.TextIOWrapper(z.open(name), encoding='utf-8'))
     top, sub = next(rows), next(rows); next(rows)
     cols = [i for i, b in enumerate(sub) if b.strip() == 'genre_top'] or [i for i, a in enumerate(top) if a.strip() == 'genre_top']
