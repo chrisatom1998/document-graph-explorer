@@ -88,12 +88,12 @@ shows them faded with "maybe". The maybe tier stays as a display hint.
 6. **Real-upload check** (`ui-upload-check.mjs`, `ui-export-tags.mjs`): uploads files into the built app in headless
    Chromium, then reads the Sounds panel and the app's own export.
 
-## Upload check in the real app (build with 65 learned heads)
+## Upload check in the real app (final build, 86 learned heads)
 
 | File | Shown |
 |---|---|
-| Electro track, 3:46 | 120.1 BPM, A minor; piano, voice, sound effect, texture (all maybe). Screenshot: `upload-electro-track.png` |
-| House track, 5:21 | 126 BPM; drums, drum loop, synthesizer (maybe), sound effect (maybe). Analysis "partial" (machine at load ~400) |
+| Electro track, 3:46 | 120.1 BPM, A minor; piano, electric piano, voice, sound effect, texture, dark, pulsing, rhythmic, wobbling, sustained (all maybe). Screenshot: `upload-electro-track.png` |
+| House track, 5:21 | 126 BPM; drums, drum loop; maybe: synthesizer, sound effect, rhythmic, pulsing, wobbling, sustained, airy. Analysis "partial" (machine at load ~400) |
 | 0.36 s kick one-shot (the source clip's length) | kick, drums, impact |
 | 5 s silence | nothing |
 | Random-bytes .wav | not added to the graph; no page errors |
