@@ -6,8 +6,8 @@ latest held-out measurements (rounds 16 and 18 are kept for comparison).
 
 ## Result
 
-**101 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
-ships in `learned.json` or `short-clip.json`. All 50 new labels come from this branch. Another session swapped the
+**108 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
+ships in `learned.json` or `short-clip.json`. All 57 new labels come from this branch. Another session swapped the
 existing distorted head for a different version and promoted five existing heads to full tags.
 
 | Bucket (45/45 bar, measured on held-out sources, round 19) | Labels |
@@ -103,6 +103,30 @@ shows them faded with "maybe". The maybe tier stays as a display hint.
 | 0.36 s kick one-shot (the source clip's length) | kick, drums, impact |
 | 5 s silence | nothing |
 | Random-bytes .wav | not added to the graph; no page errors |
+
+## Zero-shot CLAP detectors
+
+Labels that trained heads could not learn were also tried zero-shot (`zero-shot-heads.py`). The score is the cosine
+between a clip's CLAP fingerprint and the mean of that label's own text-prompt vectors (already in `prompts.json`).
+One cut-off per label is chosen on calibration groups and then scored on held-out groups.
+
+7 of 73 pass 45/45 on held-out real recordings (none of them has library test clips):
+
+| Label | Precision / recall | Test positives |
+|---|---|---|
+| djembe | 0.96 / 0.91 | 58 |
+| oboe | 1.00 / 0.80 | 69 |
+| xylophone | 0.96 / 0.62 | 86 |
+| marimba | 0.93 / 0.62 | 63 |
+| mandolin | 0.89 / 0.55 | 29 |
+| trombone | 0.83 / 0.57 | 35 |
+| violin / fiddle | 0.81 / 0.47 | 307 |
+
+They ship as maybe heads in the existing format: weights = 60 × text vector and bias = −60 × cut-off, so a score of
+0.5 or more means exactly "cosine ≥ cut-off". No app code changed.
+
+vocal scream (0.94 / 0.49 on real recordings) was held back because it fails on the library. Full results are in
+`zero-shot-results.json`.
 
 ## Measured character labels
 
