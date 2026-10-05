@@ -65,6 +65,7 @@ interface Candidate {
   lexicalScore?: number;
   semanticRank?: number;
   lexicalRank?: number;
+  identifierHits?: number;
 }
 
 const DEFAULT_LIMIT = 12;
@@ -86,6 +87,32 @@ export function retrievalTerms(value: string): string[] {
     (value.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{M}\p{N}+#._-]*/gu) ?? [])
       .filter((term) => term.length > 1 && !STOP_WORDS.has(term)),
   )];
+}
+
+/**
+ * Query tokens that look like codes: letters and digits joined by "-", "_" or "."
+ * (PT-01, SEARCH-2214, MC-27001-88412). A passage that contains one is very likely
+ * the document the user means, however the rank fusion scores it.
+ */
+export function identifierTerms(query: string): string[] {
+  return [...new Set(
+    (query.toLowerCase().match(/[\p{L}\p{N}]+(?:[-_.][\p{L}\p{N}]+)+/gu) ?? [])
+      .filter((term) => /\p{L}/u.test(term) && /\p{N}/u.test(term)),
+  )];
+}
+
+/** How many identifiers appear in the text as whole tokens (so "PT-01" does not match "PT-010"). */
+export function identifierHits(identifiers: readonly string[], text: string): number {
+  if (identifiers.length === 0) return 0;
+  const body = text.toLowerCase();
+  return identifiers.filter((id) => {
+    for (let at = body.indexOf(id); at >= 0; at = body.indexOf(id, at + 1)) {
+      const before = body[at - 1] ?? ' ';
+      const after = body[at + id.length] ?? ' ';
+      if (!/[\p{L}\p{N}]/u.test(before) && !/[\p{L}\p{N}]/u.test(after)) return true;
+    }
+    return false;
+  }).length;
 }
 
 function normalized(value: string): string {
@@ -276,6 +303,7 @@ export async function retrieveCorpus(
   const maxPassageChars = options.maxPassageChars ?? DEFAULT_MAX_PASSAGE_CHARS;
   const includeSearchMetadata = options.includeSearchMetadata !== false;
   const candidates = new Map<string, Candidate>();
+  const identifiers = identifierTerms(q);
 
   // Full text is evictable (store/textHydration): the loops below fall back
   // to it only for docs with no indexed chunk texts, so rehydrate those few
@@ -309,7 +337,7 @@ export async function retrieveCorpus(
       const lexical = lexicalRelevance(q, text, node.title);
       if (lexical.score <= 0) continue;
       matchedBody = true;
-      upsertCandidate(candidates, {
+      const candidate = upsertCandidate(candidates, {
         docId: node.id,
         docTitle: node.title,
         passageIndex,
@@ -317,6 +345,7 @@ export async function retrieveCorpus(
         lexicalScore: lexical.score + extraLex.score,
         titleMatch: lexical.titleMatch,
       });
+      candidate.identifierHits = identifierHits(identifiers, `${node.title}\n${text}`);
     }
     // A title remains searchable even when an import or unreadable file has
     // no source passages. It is metadata, so do not invent a chunk index.

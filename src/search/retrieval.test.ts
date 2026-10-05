@@ -9,6 +9,8 @@ vi.mock('../pipeline/coordinator', () => ({
 }));
 
 import {
+  identifierHits,
+  identifierTerms,
   lexicalRelevance,
   retrieveCorpus,
   retrievalTerms,
@@ -128,6 +130,31 @@ describe('shared hybrid retrieval', () => {
     expect(result[0].matchKind).toBe('hybrid');
     expect(result[0].semanticRank).toBe(2);
     expect(result[0].lexicalRank).toBe(1);
+  });
+
+  it('treats letter-digit codes as identifiers and matches them as whole tokens', () => {
+    expect(identifierTerms('PT-01 rate limiting, SEARCH-2214 and MC-27001-88412 on rate-limit v2')).toEqual([
+      'pt-01', 'search-2214', 'mc-27001-88412',
+    ]);
+    expect(identifierTerms('Postgres 16 logical replication')).toEqual([]);
+    expect(identifierHits(['pt-01'], 'Finding PT-01: header spoofing')).toBe(1);
+    expect(identifierHits(['pt-01'], 'Finding PT-010 and XPT-01')).toBe(0);
+  });
+
+  it('puts a passage containing the exact identifier above closer semantic matches', async () => {
+    const chunks = new Map<string, ChunkData>([
+      ['style', { texts: ['rate limiting bypass header spoofing guidance'], vectors: new Float32Array([1, 0]), dims: 2 }],
+      ['other', { texts: ['unrelated wording'], vectors: new Float32Array([0.9, 0.44]), dims: 2 }],
+      ['pentest', { texts: ['PT-01 rate limiting bypass header spoofing'], vectors: new Float32Array([0.5, 0.87]), dims: 2 }],
+    ]);
+    const result = await retrieveCorpus('PT-01 rate limiting bypass header spoofing', { minSemanticScore: 0, limit: 3 }, dependencies(
+      [node('style', 'Style guide'), node('other', 'Other'), node('pentest', 'Pen test')],
+      chunks,
+      async () => new Float32Array([1, 0]),
+    ));
+
+    expect(result.map((hit) => hit.docId)).toEqual(['pentest', 'style', 'other']);
+    expect(result[0].fusedScore).toBeGreaterThan(result[1].fusedScore);
   });
 
   it('uses stable candidate ids to break equal-score ties', async () => {
