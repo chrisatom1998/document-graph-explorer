@@ -42,7 +42,9 @@ with zipfile.ZipFile(fma_zip) as z:
     name = next(n for n in z.namelist() if n.endswith('tracks.csv'))
     rows = csv.reader(io.TextIOWrapper(z.open(name), encoding='utf-8'))
     top, sub = next(rows), next(rows); next(rows)
-    col = next(i for i, (a, b) in enumerate(zip(top, sub)) if a == 'track' and b == 'genre_top')
+    cols = [i for i, b in enumerate(sub) if b.strip() == 'genre_top'] or [i for i, a in enumerate(top) if a.strip() == 'genre_top']
+    if not cols: sys.exit(f'no genre_top column in {name}: {top[:8]} / {sub[:8]}')
+    col = cols[0]
     genre = {int(r[0]): r[col] for r in rows if len(r) > col and r[col] and r[0].isdigit()}
 track = lambda m: int(m['track_id']) if m.get('track_id', '').strip().isdigit() else None
 print(f'FMA genre_top known for {len(genre)} tracks')
