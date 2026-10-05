@@ -2197,6 +2197,58 @@
       "aliases": [],
       "recognition": "experimental",
       "axis": "dj-custom-production"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "hi-hat",
+      "source": "drums",
+      "description": "A single short hi-hat cymbal hit, open or closed.",
+      "aliases": [
+        "hat",
+        "hihat",
+        "hi hat"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-one-shot"
+    },
+    {
+      "group": "production",
+      "family": "drum-hit",
+      "label": "cymbal",
+      "source": "drums",
+      "description": "A single crash, ride or splash cymbal hit, not a hi-hat.",
+      "aliases": [
+        "cymbal hit"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-one-shot"
+    },
+    {
+      "group": "production",
+      "family": "bass",
+      "label": "bass hit",
+      "source": null,
+      "description": "A single low bass note one-shot from a bass guitar or bass synthesizer.",
+      "aliases": [
+        "bass shot",
+        "bass one-shot"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-one-shot"
+    },
+    {
+      "group": "production",
+      "family": "synth",
+      "label": "synth hit",
+      "source": "synthesizer",
+      "description": "A single synthesizer note or chord one-shot, such as a stab or pluck.",
+      "aliases": [
+        "synth shot",
+        "synth one-shot"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-one-shot"
     }
   ]
 }

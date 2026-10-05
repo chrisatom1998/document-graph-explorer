@@ -10,6 +10,7 @@ import type { InstrumentPredictions } from './instrumentLabels';
 import { DescriptionAccumulator, selectDescriptions, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
+import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { createRecognition, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
@@ -176,7 +177,9 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
       check();
       if (!samples.length || samples.length < Math.round((interval.end - interval.start) * rate) - 1) throw new Error('Audio window could not be fully decoded');
       const hasAudio = audible(samples);
-      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples }, [samples.buffer]);
+      // A whole short clip also goes to the one-shot heads, which read the unchanged 16 kHz audio.
+      const samples16 = id === 'clap' && interval.start === 0 && interval.end >= duration && duration <= SHORT_CLIP_MAX_SECONDS ? await read(0, duration, 16000) : undefined;
+      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
       if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
       check(); cache.set(key, output);
     }

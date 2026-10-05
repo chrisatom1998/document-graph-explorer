@@ -2558,5 +2558,110 @@
     "group": "dj-custom-production",
     "label": null,
     "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": "hi-hat",
+    "prompt": "A single short hi-hat cymbal hit, open or closed."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": "cymbal",
+    "prompt": "A single crash, ride or splash cymbal hit, not a hi-hat."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": "bass hit",
+    "prompt": "A single low bass note one-shot from a bass guitar or bass synthesizer."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": "synth hit",
+    "prompt": "A single synthesizer note or chord one-shot, such as a stab or pluck."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable one-shot sound."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-one-shot",
+    "label": null,
+    "prompt": "A vocal chop loop."
   }
 ]

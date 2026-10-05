@@ -296,3 +296,25 @@ it.each([.7,2,2.048,8])('review: default %s-second run never dispatches crops or
  expect(result.recognition?.status).toBe('complete');
  expect(result.recognition?.jobs.find(j=>j.modelId==='jamendo')?.status).toBe(duration<2.048?'unsupported':'complete');
 });
+
+describe('short one-shots', () => {
+  async function profileMessages(duration: number) {
+    const messages: Record<string, unknown>[] = [];
+    const decoder: MusicDecoder = { durationSeconds: duration, close() {}, read: async (start, seconds, rate) =>
+      new Float32Array(Math.round(Math.max(0, Math.min(seconds, duration - start)) * rate)).fill(.1) };
+    const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
+      if (message.kind === 'profile') messages.push(message);
+      if (message.kind === 'rhythm' || message.kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: duration, instruments: [], notes: [] } as T;
+      if (message.kind === 'instruments') return { scores: {}, musicScore: 0 } as T;
+      return (message.kind === 'jamendo' ? {} : []) as T;
+    };
+    await analyzeDecodedMusic(decoder, request, {});
+    return messages;
+  }
+  it('sends a whole short clip unchanged at 16 kHz with its CLAP request, and nothing extra for longer audio', async () => {
+    const [short] = await profileMessages(1.2);
+    expect((short.samples as Float32Array).length).toBe(Math.round(1.2 * 48000));
+    expect((short.samples16 as Float32Array).length).toBe(Math.round(1.2 * 16000));
+    for (const message of await profileMessages(6)) expect(message.samples16).toBeUndefined();
+  });
+});

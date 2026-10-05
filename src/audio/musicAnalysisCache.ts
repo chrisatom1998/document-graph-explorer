@@ -37,7 +37,7 @@ function shortClipJamendoUnsupported(job:ModelJob,duration:number):boolean {
 }
 function completeCurrent(audio:MusicAnalysis|undefined,mime?:string):boolean {
  const recognition=audio?.recognition;
- if(!audio?.instrumentScan?.complete||audio.stage==='preview'||recognition?.status!=='complete'||recognition.configurationHash!==recognitionConfiguration(recognition.mode))return false;
+ if(!audio?.instrumentScan?.complete||audio.stage==='preview'||recognition?.status!=='complete'||recognition.configurationHash!==recognitionConfiguration(recognition.mode,audio.durationSeconds))return false;
  const release=installedFusionIdentity();
  const needsFusion=!!release && fusionRuntimeSupported() && supportsFusionInput(audio.durationSeconds,recognition.mode,mime);
  if(release && audio.classifierConfiguration!==fusionConfiguration())return false;
