@@ -22,7 +22,7 @@ labeler = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(label
 
 FP = '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints'
 OUT = sys.argv[1]; EXTRAS = [a.split('=', 1) for a in sys.argv[2:]]
-BAR, MIN_TEST = float(os.environ.get("BAR", 0.65)), 15
+BAR, MIN_TEST = float(os.environ.get("BAR", 0.65)), int(os.environ.get("MIN_TEST", 15))
 catalog = {c['label']: c for c in json.load(open('src/audio/djCatalog.json'))['categories']}
 FAMILY = {'drum-hit': 'drum hit', 'drum-pattern': 'drum loop', 'vocal': 'vocal', 'editing': 'vocal', 'breath': 'vocal',
           'transition': 'fx', 'bass': 'bass', 'synth': 'synth', 'texture': 'texture'}
@@ -64,6 +64,8 @@ X = np.vstack([p[0] for p in parts]); LAB = sum((p[1] for p in parts), []); IDS 
 IS_VAULT = np.concatenate([p[3] for p in parts])
 # Real recordings with human labels: the only fair test for instruments (rendered stems are not).
 REAL = tuple(n for n in ('fsd50k:', 'fsl10k:', 'fsm:') if any(i.startswith(n) for i in IDS))
+# Real (not rendered or edited) audio from other extras; usable for label tests, not for instrument tests.
+REAL_LABEL = REAL + tuple(n for n in ('fs:', 'ep:', 'hh:', 'fsperc:') if any(i.startswith(n) for i in IDS))
 FAM = np.array([(lambda f: f.pop() if len(f) == 1 else None)({FAMILY.get(catalog.get(l, {}).get('family')) for l in s} - {None}) for s in LAB], dtype=object)
 print(f'total {len(LAB)} clips ({IS_VAULT.sum()} library, {(~IS_VAULT).sum()} extra)')
 if os.environ.get('MIXTEST'):
@@ -133,7 +135,8 @@ def run(kind, name):
         pool = ~IS_VAULT & (real if kind == 'instrument' and REAL.__len__() else True)
         extra_test = held_out(f'{kind}:{name}:extra', G[pool & use], pos[pool & use])
         test = use & pool & np.isin(G, sorted(extra_test)); where = 'real recordings' if kind == 'instrument' and REAL else 'extra sources'
-        if kind == 'label' and REAL:
+        if kind == 'label' and REAL_LABEL:
+            real = np.isin([i.split(':')[0] + ':' for i in IDS], REAL_LABEL)
             # Renders and edited clips are easy to tell apart from their dry versions; prefer a test on
             # real recordings (FSD50K, FSL10K, tag-mined Freesound) whenever it has enough positives.
             real_pool = ~IS_VAULT & real

@@ -7,6 +7,8 @@ Usage: add-maybe-heads.py <round-export.json> <report.json>"""
 import json, sys, hashlib, datetime, os
 SRC, REPORT = sys.argv[1:3]
 FULL_BAR = float(os.environ['FULL_BAR']) if os.environ.get('FULL_BAR') else None
+SKIP = set(filter(None, os.environ.get('SKIP', '').split(',')))   # labels another session owns
+REAL_ONLY = os.environ.get('REAL_ONLY') == '1'   # only heads measured on library brands or real recordings
 LEARNED, MANIFEST = 'public/sound-model/learned.json', 'public/sound-model/manifest.json'
 catalog = {c['label']: c for c in json.load(open('src/audio/djCatalog.json'))['categories']}
 model = json.load(open(LEARNED)); shipped = {(h['group'], h['label']) for h in model['heads']}
@@ -17,6 +19,8 @@ for r in json.load(open(SRC))['results']:
     if 'head' not in r: report.append({**row, 'added': False, 'why': 'no exported weights'}); continue
     if group not in ('source', 'production', 'character'): report.append({**row, 'added': False, 'why': 'not an app tag'}); continue
     if (group, r['name']) in shipped: report.append({**row, 'added': False, 'why': 'already ships'}); continue
+    if r['name'] in SKIP: report.append({**row, 'added': False, 'why': 'owned by another session'}); continue
+    if REAL_ONLY and r.get('testedOn') not in ('library brands', 'real recordings'): report.append({**row, 'added': False, 'why': 'tested on made-up clips only'}); continue
     full = FULL_BAR is not None and min(r['precision'], r['recall']) >= FULL_BAR
     added.append({'group': group, 'label': r['name'], **r['head'], 'threshold': round(r['threshold'], 4), **({} if full else {'maybe': True})})
     shipped.add((group, r['name']))   # first export of a label wins (instrument vs label job)
