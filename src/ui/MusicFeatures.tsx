@@ -14,7 +14,7 @@ import { OtherModelGuesses, SoundExplanation } from './SoundIdentification';
 import { confidentSoundSummary } from '../audio/confidentSoundSummary';
 import { filenameSoundFallback } from '../audio/filenameSoundFallback';
 import { RecognitionDiagnostics, type RecognitionEvidenceProps } from './RecognitionEvidence';
-const time = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+import { clockTime as time } from './clockTime';
 export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?: (seconds: number) => void }) {
   const job = useMusicJobs(s => s.jobs[node.id]);
   const phase = useGraphStore(s => s.phase);
