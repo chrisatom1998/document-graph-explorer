@@ -7,7 +7,7 @@ import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 
 /** Presentation only: does not change stored evidence, acceptance, cache identity or graph links. */
-export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v2';
+export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v3';
 /** A detector score at or above this shows as "likely" (and is the only floor for short clips). */
 export const LIKELY_SOUND_CUTOFF = .5;
 /** Longer recordings also show "possible" tags from this raw score up to the likely cutoff. Scores are not calibrated probabilities. */
@@ -23,6 +23,17 @@ const profileNames:Record<string,string>={'AudioSet AST':'AST score','MTG-Jamend
 /** Only these scores come from detectors that passed held-out testing; other models still show under Model scores. */
 export const TESTED_SCORES=new Set(['Trained head score','Baseline fallback score']);
 const MAYBE_SCORE='Trained head score (maybe)';
+/** Jamendo (music-trained) window scores that passed a held-out full-mix check: thresholds were picked on half the
+ * frozen OpenMIC test selection and checked on the other half (scripts/calibrate-full-mix-jamendo.py). Only recordings of at
+ * least one full ten-second window qualify; shorter loops and one-shots were never measured. */
+export const FULL_MIX_JAMENDO_SCORE='Jamendo score (tested on full mixes)';
+export const FULL_MIX_MIN_SECONDS=10;
+export const FULL_MIX_JAMENDO:Record<string,{label:string;threshold:number}>={
+  synthesizer:{label:'synthesizer',threshold:.4},
+  'drum kit':{label:'drums',threshold:.4},
+  'drum machine':{label:'drums',threshold:.4},
+};
+TESTED_SCORES.add(FULL_MIX_JAMENDO_SCORE);
 const nativeNames={ast:'AST score',jamendo:'Jamendo score',clap:'CLAP similarity',rhythm:'Tempo score',tonal:'Key score'};
 export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):DisplaySound[] {
   const result=new Map<string,DisplaySound>();
@@ -52,9 +63,13 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     const same=item.scores!.find(s=>s.model===model);if(same)same.score=Math.max(same.score,score);else item.scores!.push({model,score});result.set(key,item);
   };
   // A current observation must reference matching evidence; orphan/historical score rows do not become labels.
+  const fullMix=Number.isFinite(audio.durationSeconds)&&audio.durationSeconds>=FULL_MIX_MIN_SECONDS;
   if(audio.recognition){const evidenceById=new Map(audio.recognition.evidence.map(e=>[e.id,e]));for(const observation of audio.recognition.observations){
     if(!['source','effect','character'].includes(observation.dimension))continue;
-    for(const id of observation.evidenceIds){const e=evidenceById.get(id);if(e&&e.dimension===observation.dimension&&e.labelId===observation.labelId)estimate(e.dimension,e.labelId,e.score,nativeNames[e.modelId]+(e.derivedFrom?` (${e.derivedFrom.labelId} supports ${e.labelId})`:''));}
+    for(const id of observation.evidenceIds){const e=evidenceById.get(id);if(!e||e.dimension!==observation.dimension||e.labelId!==observation.labelId)continue;
+      estimate(e.dimension,e.labelId,e.score,nativeNames[e.modelId]+(e.derivedFrom?` (${e.derivedFrom.labelId} supports ${e.labelId})`:''));
+      const rule=fullMix&&e.modelId==='jamendo'&&e.dimension==='source'?FULL_MIX_JAMENDO[e.labelId]:undefined;
+      if(rule&&e.score>=rule.threshold)estimate('source',rule.label,e.score,FULL_MIX_JAMENDO_SCORE);}
   }}else{
     for(const i of audio.instruments)estimate('source',i.label,i.score,'Instrument model');
     if(audio.instrumentPrediction)estimate('source',audio.instrumentPrediction.label,audio.instrumentPrediction.score,audio.instrumentPrediction.model??'Instrument model');

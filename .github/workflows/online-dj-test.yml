@@ -10,6 +10,9 @@ on:
     paths: [scripts/online-dj/**, .github/workflows/online-dj-test.yml]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 env:
   ONNXRUNTIME_NODE_INSTALL: skip
   MUSIC_MODEL_PATHS: |
@@ -23,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [main]
+        app: [main, branch]
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
@@ -36,7 +39,8 @@ jobs:
           path: online-dj-tools
       - name: Use this branch's test scripts against the app version under test
         run: |
-          rm -rf scripts/online-dj && cp -r online-dj-tools/scripts/online-dj scripts/online-dj && rm -rf online-dj-tools
+          rm -rf scripts/online-dj && cp -r online-dj-tools/scripts/online-dj scripts/online-dj
+          cp online-dj-tools/scripts/full-mix/extract.mjs online-dj-extract.mjs && rm -rf online-dj-tools
           git log -1 --format='app under test: %H %s'
       - uses: actions/setup-node@v4
         with:
@@ -67,6 +71,33 @@ jobs:
       - name: Summarise
         if: always()
         run: npx vite-node scripts/online-dj/summarize.mjs online-dj/run/graph-export.json online-dj/manifest.json online-dj/summary.json
-      - name: Diagnose
+      - name: Extract
         if: always()
-        run: npx vite-node scripts/online-dj/diagnose.mjs online-dj/run/graph-export.json online-dj/manifest.json online-dj/audio
+        run: |
+          mkdir -p scripts/full-mix && cp online-dj-extract.mjs scripts/full-mix/extract.mjs
+          npx vite-node scripts/full-mix/extract.mjs online-dj/soundcloud-${{ matrix.app }}.json online-dj/run/graph-export.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: soundcloud-${{ matrix.app }}
+          path: online-dj/soundcloud-${{ matrix.app }}.json
+          retention-days: 14
+
+  commit:
+    needs: online-dj
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: soundcloud-*
+          path: records
+          merge-multiple: true
+      - name: Commit the compact records
+        run: |
+          mkdir -p docs/evaluations/edm-genre-tags-2026-10-05
+          cp records/*.json docs/evaluations/edm-genre-tags-2026-10-05/
+          git add docs/evaluations/edm-genre-tags-2026-10-05
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "Online DJ check: SoundCloud records, main and branch"
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" && break; sleep $((2**i)); done

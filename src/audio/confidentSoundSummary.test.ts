@@ -58,3 +58,20 @@ it('can display every catalog label once a trained head reports it',async()=>{
  }).map(c=>c.label);
  expect(missing).toEqual([]);
 });
+it('shows full-mix-tested Jamendo synthesizer and drums on recordings of at least ten seconds only',async()=>{
+ const {FULL_MIX_JAMENDO,FULL_MIX_JAMENDO_SCORE}=await import('./confidentSoundSummary');
+ const synth=FULL_MIX_JAMENDO.synthesizer.threshold,drums=FULL_MIX_JAMENDO['drum kit'].threshold;
+ const song=(duration:number)=>{const a:MusicAnalysis={version:2,durationSeconds:duration,analyzedSeconds:duration,instruments:[],notes:[]};a.recognition=createRecognition(duration,'full');
+  recordEvidence(a.recognition,'jamendo',{start:0,end:Math.min(10,duration)},[{dimension:'source',labelId:'synthesizer',score:synth},{dimension:'source',labelId:'drum kit',score:drums},{dimension:'source',labelId:'piano',score:.95}]);return a;};
+ expect(confidentSoundSummary(song(15)).map(s=>[s.label,s.scores?.find(x=>x.model===FULL_MIX_JAMENDO_SCORE)?.score])).toEqual([['synthesizer',synth],['drums',drums]]);
+ // Shorter loops were never measured: Jamendo stays an untested model score there.
+ expect(confidentSoundSummary(song(8))).toEqual([]);
+});
+it('keeps full-mix Jamendo scores below their measured threshold hidden, and honours rejections',async()=>{
+ const {FULL_MIX_JAMENDO}=await import('./confidentSoundSummary');
+ const a:MusicAnalysis={version:2,durationSeconds:30,analyzedSeconds:30,instruments:[],notes:[]};a.recognition=createRecognition(30,'full');
+ recordEvidence(a.recognition,'jamendo',{start:0,end:10},[{dimension:'source',labelId:'synthesizer',score:FULL_MIX_JAMENDO.synthesizer.threshold-.01}]);
+ recordEvidence(a.recognition,'jamendo',{start:10,end:20},[{dimension:'source',labelId:'drum kit',score:.99}]);
+ a.soundReviews=[{dimension:'source',labelId:'drums',decision:'rejected',scope:'track',at:'now',evidenceRunId:'old'}];
+ expect(confidentSoundSummary(a)).toEqual([]);
+});
