@@ -13,6 +13,7 @@ import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { musicRuntimeIdentity } from './musicRuntime';
+import { SoundEmbeddingAccumulator } from './soundEmbedding';
 import { createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
@@ -78,6 +79,9 @@ export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicR
 /** The fusion scorer's contract is the fixed prompt catalog it was trained on. Trained-head,
  * reviewed-example and one-shot scores ride along in the same output for tagging and are not part of it. */
 export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot');
+/** A CLAP window's output: description scores plus the raw sound embedding. A bare score list (older hosts, tests) has none. */
+export type ClapOutput = DescriptionScore[] | { scores: DescriptionScore[]; embedding?: number[] };
+export const clapOutput = (output: ClapOutput): { scores: DescriptionScore[]; embedding?: number[] } => Array.isArray(output) ? { scores: output } : output;
 /** Model jobs share a bounded timeline, but never each other's validity. Evidence is applied in one fixed order. */
 export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
   // The runtime each AST/CLAP output came from: a threaded stall can switch this browser to one thread mid-run.
@@ -131,6 +135,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const musicScores: Record<string, number> = {};
   let musicCount = 0;
   const descriptions = new DescriptionAccumulator();
+  const soundEmbedding = new SoundEmbeddingAccumulator();
   const djEvidence = new DjTagEvidence();
   const eventEvidence = new EventWindowEvidence();
   const completed = new Set<string>();
@@ -154,6 +159,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     const windowTags = djEvidence.results(), found = new Set(windowTags.map(t => `${t.group}:${t.label}`));
     const eventTags = eventEvidence.results().filter(h => !found.has(`${h.tag.group}:${h.tag.label}`)).map(h => ({ ...h.tag, segments: h.segments.slice(0, 3) }));
     mergeDjTags(result.soundProfile, [...windowTags, ...eventTags], descriptions.average());
+    const fingerprint = soundEmbedding.result(`clap:${job('clap').weightsVersion}`);
+    if (fingerprint) result.soundEmbedding = fingerprint;
     for (const suggestion of jamendoSuggestions(musicScores)) {
       if (!result.instruments.some(i => i.label === suggestion.label)) result.instruments.push({ label: suggestion.label, score: suggestion.score, status: 'possible' });
     }
@@ -175,7 +182,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     check();
   };
   type SoundId = 'ast' | 'jamendo' | 'clap';
-  type Raw = InstrumentPredictions | Record<string, number> | DescriptionScore[];
+  type Raw = InstrumentPredictions | Record<string, number> | ClapOutput;
   const concurrent = options.concurrentModels === true;
   // One FFmpeg instance writes one output file: overlapping section reads must queue.
   let reading: Promise<unknown> = Promise.resolve();
@@ -254,8 +261,9 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
         musicCount++;
         recordEvidence(recognition, id, interval, [...jamendoLabels(scores), ...nsynthLabels(scores)]);
       } else {
-        const scores = output as DescriptionScore[];
+        const { scores, embedding } = clapOutput(output as ClapOutput);
         descriptions.add(scores);
+        soundEmbedding.add(embedding);
         djEvidence.add(selectDjTags(scores), interval.start, interval.end);
         const selected = selectDescriptions(scores);
         const candidates: EvidenceCandidate[] = selected.sources.map(s => ({ dimension: 'source', labelId: s.label, score: s.score }));
@@ -292,17 +300,19 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
         const interval = { start: t - EVENT_WINDOW_BEFORE, end: t + EVENT_WINDOW_AFTER }, seconds = interval.end - interval.start;
         options.onProgress?.(`one-shot windows: ${i + 1}/${starts.length}; ${Math.floor(interval.start)}s of ${Math.ceil(duration)}s`);
         const key = `${modelCacheKey(fingerprint, job('clap'), interval)}:event-window-v1`;
-        let output = cache.get<DescriptionScore[]>(key);
+        let output = cache.get<ClapOutput>(key);
         if (output) producedBy.add(startRuntime);
         else {
           const samples = await read(interval.start, seconds, 48000), samples16 = await read(interval.start, seconds, 16000);
           check();
           if (!audible(samples) || samples.length < Math.round(seconds * 48000) - 1) continue;
-          output = await request<DescriptionScore[]>({ kind: 'profile', samples, samples16 }, [samples.buffer, samples16.buffer]);
+          output = await request<ClapOutput>({ kind: 'profile', samples, samples16 }, [samples.buffer, samples16.buffer]);
           check(); cache.set(key, output);
         }
-        eventEvidence.add(output, interval.start, interval.end);
-        recordEvidence(recognition, 'clap', interval, output.flatMap(s => {
+        // Event windows are short one-shot views; they do not enter the track's sound fingerprint.
+        const { scores } = clapOutput(output);
+        eventEvidence.add(scores, interval.start, interval.end);
+        recordEvidence(recognition, 'clap', interval, scores.flatMap(s => {
           if (s.group !== 'dj-learned' || s.basis !== 'head' || s.decision !== 'include' || !s.learnedGroup || !s.label || !EVENT_WINDOW_LABELS.has(s.label)) return [];
           return [{ dimension: s.learnedGroup === 'source' ? 'source' as const : 'effect' as const, labelId: s.label, score: s.score }];
         }));
@@ -366,7 +376,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
           else {
             const ast = outputs.get('ast')!.output as InstrumentPredictions;
             const jamendo = jamendoInstrumentScores(outputs.get('jamendo')!.output as Record<string, number>);
-            const clap = fusionClapDescriptions(outputs.get('clap')!.output as DescriptionScore[]);
+            const clap = fusionClapDescriptions(clapOutput(outputs.get('clap')!.output as ClapOutput).scores);
             if (!Object.keys(ast.scores).length || !Object.keys(jamendo).length || !clap.length) {
               window = { ...window, status: 'empty', reason: 'Silent or empty native output; no fusion decision' };
             } else {

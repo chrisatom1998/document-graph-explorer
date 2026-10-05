@@ -18,11 +18,12 @@ export function titlePhrases(title: string): string[] {
   return [...phrases];
 }
 
-/** A small group is fully linked; large groups stay connected with bounded edges. */
+/** A small group is fully linked; large groups stay connected with bounded edges. Audio is linked by how it
+ * sounds (src/audio/musicLinks.ts), never by its file name. */
 export function buildTitleEdges(nodes: DocNode[]): Edge[] {
   const groups = new Map<string, string[]>();
   for (const node of nodes) {
-    if (node.kind !== 'document') continue;
+    if (node.kind !== 'document' || node.fileType === 'audio') continue;
     for (const phrase of titlePhrases(node.title)) {
       const ids = groups.get(phrase) ?? [];
       ids.push(node.id); groups.set(phrase, ids);

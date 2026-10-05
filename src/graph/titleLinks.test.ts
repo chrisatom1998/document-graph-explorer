@@ -2,8 +2,13 @@ import { expect, it } from 'vitest';
 import { buildTitleEdges, titlePhrases } from './titleLinks';
 import type { DocNode } from '../model/types';
 import { sanitizeGraphExport } from '../persistence/validateImport';
-const node = (id: string, title: string): DocNode => ({ id, title, kind: 'document', fileType: 'audio', topics: [], entities: [], keywords: [], wordCount: 0, cluster: 0, degree: 0, status: 'ok' });
-it('links every small-group pair by melodic loop even without audio analysis', () => {
+const node = (id: string, title: string): DocNode => ({ id, title, kind: 'document', fileType: 'txt', topics: [], entities: [], keywords: [], wordCount: 0, cluster: 0, degree: 0, status: 'ok' });
+it('never links audio by its file name: sounds are linked by how they sound', () => {
+ const nodes = Array.from({length:3},(_,i)=>({...node(String(i),`SHADOW_UK1_Melodic_Loop_Clip${i}.wav`),fileType:'audio' as const}));
+ expect(buildTitleEdges(nodes)).toEqual([]);
+ expect(buildTitleEdges([...nodes,node('doc','Melodic Loop notes')])).toEqual([]);
+});
+it('links every small-group pair by a shared title phrase', () => {
  const nodes = Array.from({length:7},(_,i)=>node(String(i),`SHADOW_UK1_Melodic_Loop_Clip${i}_${i%2?'Dm_140':'D#m_130'}.wav`));
  const edges=buildTitleEdges(nodes);
  expect(edges).toHaveLength(21);
@@ -17,8 +22,8 @@ it('normalizes case, separators and plurals, without matching pack IDs or musica
  expect(buildTitleEdges([node('a','same filename'),node('b','same filename')])).toEqual([]);
 });
 it('also links ordinary documents and updates after renaming', () => {
- const a={...node('a','Project Plan Alpha'),fileType:'txt' as const};
- const b={...node('b','project-plan-beta'),fileType:'txt' as const};
+ const a=node('a','Project Plan Alpha');
+ const b=node('b','project-plan-beta');
  expect(buildTitleEdges([a,b])).toHaveLength(1);
  expect(buildTitleEdges([a,{...b,title:'Meeting Notes'}])).toEqual([]);
 });
