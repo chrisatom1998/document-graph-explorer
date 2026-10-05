@@ -1,6 +1,6 @@
 """Choose full-mix Jamendo display thresholds on half the OpenMIC test selection and check them on the other half.
 
-Usage: python3 scripts/calibrate-full-mix-jamendo.py <records.json> <mixed-music manifest.json>
+Usage: python3 scripts/calibrate-full-mix-jamendo.py docs/evaluations/edm-genre-tags-2026-10-05/openmic-main.json docs/evaluations/mixed-music-2026-10-05/manifest.json
 
 records.json comes from scripts/full-mix/extract.mjs (main build). Clips are split by a fixed hash of the FMA artist,
 so no artist is in both halves. Only explicit present/absent labels count (as in scripts/mixed-music/score.mjs).
