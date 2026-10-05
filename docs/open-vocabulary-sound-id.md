@@ -6,8 +6,8 @@ latest held-out measurements (rounds 16 and 18 are kept for comparison).
 
 ## Result
 
-**110 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
-ships in `learned.json` or `short-clip.json`. All 59 new labels come from this branch. Another session swapped the
+**111 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
+ships in `learned.json` or `short-clip.json`. All 60 new labels come from this branch. Another session swapped the
 existing distorted head for a different version and promoted five existing heads to full tags.
 
 | Bucket (45/45 bar, measured on held-out sources, round 19) | Labels |
@@ -103,6 +103,13 @@ shows them faded with "maybe". The maybe tier stays as a display hint.
 | 0.36 s kick one-shot (the source clip's length) | kick, drums, impact |
 | 5 s silence | nothing |
 | Random-bytes .wav | not added to the graph; no page errors |
+
+## TinySOL orchestral notes (round 23)
+
+TinySOL is 2,913 real recorded notes from 14 orchestral instruments (Zenodo 3685367, CC BY 4.0); 60 notes per
+instrument were added to training. Tests stay on held-out real recordings. Bassoon passes (0.91 / 0.47 on 45 test
+clips) and ships as maybe. Double bass (0.70 / 0.29), horn (0.84 / 0.42), viola (0.58 / 0.40) and tuba (0 / 0) still
+fail.
 
 ## Zero-shot CLAP detectors
 
