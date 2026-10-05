@@ -9,6 +9,7 @@ import { ResultCache } from './recognition';
 const cache = new ResultCache(128);
 const decodedCache = new DecodedMusicCache();
 import { MusicTaskQueue } from './musicTaskQueue';
+import { musicInferenceThreads, musicRuntimeIdentity, THREADED_RUNTIME_STALLED, switchToSingleThreadRuntime } from './musicRuntime';
 const workers = new Map<string, Worker>();
 // Pinned quantized native weights total about190MB. Bound retained family sessions
 // and preserve the low-memory fallback of one serialized session.
@@ -36,12 +37,13 @@ let nextId = 0;
 let idleTimer: ReturnType<typeof setTimeout> | undefined;
 // A terminated worker never answers: fail its request now instead of at the timeout.
 const inFlight = new Map<Worker, (error: Error) => void>();
+const WORKER_REPLACED = 'Music analysis worker was replaced.';
 function discard(current?: Worker) {
   for (const [family, worker] of workers) {
     if (current && current !== worker) continue;
     const fail = inFlight.get(worker);
     inFlight.delete(worker); worker.terminate(); workers.delete(family);
-    fail?.(new Error('Music analysis worker was replaced.'));
+    fail?.(new Error(WORKER_REPLACED));
   }
 }
 function parkWorker() {
@@ -87,17 +89,42 @@ function warmWorker(worker: Worker, family: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     // A listener, not onmessage, so a real request that starts meanwhile keeps its own handler.
     const done = (error?: Error) => { clearTimeout(timer); worker.removeEventListener('message', onMessage); worker.removeEventListener('error', onError); if (error) reject(error); else resolve(); };
-    const onMessage = ({ data }: MessageEvent<{ id: number; warmed?: boolean; error?: string }>) => { if (data.id === id) done(data.error ? new Error(data.error) : undefined); };
+    const onMessage = ({ data }: MessageEvent<{ id: number; warmed?: boolean; error?: string }>) => {
+      if (data.id !== id) return;
+      if (data.error === THREADED_RUNTIME_STALLED) singleThreadEverywhere();
+      done(data.error ? new Error(data.error) : undefined);
+    };
     const onError = () => done(new Error('Music model preload failed.'));
     const timer = setTimeout(() => done(new Error('Music model preload timed out.')), 180_000);
     worker.addEventListener('message', onMessage);
     worker.addEventListener('error', onError);
-    worker.postMessage({ kind: 'warm', family, id });
+    worker.postMessage({ kind: 'warm', family, id, ...threadHint() });
   });
 }
 
+/** Tells a worker to use one inference thread once this browser has shown its threads never start. */
+const threadHint = () => musicInferenceThreads() === 1 ? { singleThread: true } : {};
+/** Once one worker's threads fail to start, every retained model worker is retired, not only that one: a sibling
+ * that already loaded a multi-threaded session would otherwise keep it and report results under the one-thread
+ * identity. Their in-flight requests fail with WORKER_REPLACED and are retried below on fresh workers. */
+function singleThreadEverywhere(): void {
+  if (musicInferenceThreads() === 1) return;
+  switchToSingleThreadRuntime();
+  discard();
+}
 function request<T>(message: Record<string, unknown>, transfer: Transferable[], options: Options, priority: 'preview' | 'analysis', fingerprint?: string): Promise<T> {
-  return queueFor(familyOf(message.kind)).schedule(priority, () => runRequest<T>(message, transfer, options, fingerprint), options.signal);
+  return queueFor(familyOf(message.kind)).schedule(priority, async () => {
+    // Only a multi-threaded worker can stall; keep a copy of the audio (the first attempt transfers it away).
+    const retryCopy = musicInferenceThreads() > 1 ? structuredClone(message) : undefined;
+    try { return await runRequest<T>(message, transfer, options, fingerprint); }
+    catch (error) {
+      // Retry once on a fresh single-thread worker: this worker's threads never started, or the switch retired it.
+      const switched = error instanceof Error && (error.message === THREADED_RUNTIME_STALLED || (error.message === WORKER_REPLACED && musicInferenceThreads() === 1));
+      if (!switched || !retryCopy) throw error;
+      singleThreadEverywhere();
+      return runRequest<T>(retryCopy, [], options, fingerprint);
+    }
+  }, options.signal);
 }
 
 function runRequest<T>(message: Record<string, unknown>, transfer: Transferable[], options: Options, fingerprint?: string): Promise<T> {
@@ -119,7 +146,7 @@ function runRequest<T>(message: Record<string, unknown>, transfer: Transferable[
       else if (data.result) { if (data.runtime) { try { options.onRuntime?.({ kind: String(message.kind), ...data.runtime }); } catch { /* Observations cannot change classification. */ } } cleanup(); resolve(data.result); }
       else fail(new Error(data.error || 'Music analysis failed.'));
     };
-    try { current.postMessage({ ...message, id }, transfer); }
+    try { current.postMessage({ ...message, id, ...threadHint() }, transfer); }
     catch (error) { fail(error instanceof Error ? error : new Error('Music analysis worker failed.')); }
   });
 }
@@ -146,7 +173,7 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
       const preview = await previewDecodedMusic(decoder, (message, transfer) => request(message, transfer, options, 'preview', fingerprint), { ...options, mode });
       options.onProgress?.(preview ? 'Preview ready. Waiting for deeper checks' : 'Waiting for deeper checks; the initial estimate was unavailable');
       if (!options.signal?.aborted) decodedCache.remember(audioFingerprint, decoder.snapshot?.());
-      return { preview, key, fingerprint, audioFingerprint };
+      return { preview, key, fingerprint, audioFingerprint, runtime: musicRuntimeIdentity() };
     } finally { decoder.close(); parkWorker(); }
   }, options.signal);
   return initial.then(first => {
@@ -177,7 +204,9 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
         }
         if (fusionFailed) result.notes.push('The trained source classifier is unavailable; native analysis is retained.');
         else if (!injectedFusion && (!prepared || prepared.usedFallback()) && !result.fusion?.counts.failed) result.classifierConfiguration = fusionConfiguration();
-        if (first.key && !injectedFusion && !fusionFailed && !experimentalPaSST) await writeMusicCache(first.key, result, blob.type);
+        // The key names the runtime; after a single-thread fallback, save under the key the next lookup will use.
+        const key = first.key && first.runtime !== musicRuntimeIdentity() ? await musicCacheKey(blob, mode) : first.key;
+        if (key && !injectedFusion && !fusionFailed && !experimentalPaSST) await writeMusicCache(key, result, blob.type);
         options.signal?.throwIfAborted();
         return result;
       } finally { decoder.close(); parkWorker(); }

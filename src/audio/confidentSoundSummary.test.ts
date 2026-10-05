@@ -1,10 +1,17 @@
 import {expect,it} from 'vitest';
-import {confidentSoundSummary} from './confidentSoundSummary';
+import {confidentSoundSummary,LIKELY_SOUND_CUTOFF,TRACK_SOUND_FLOOR} from './confidentSoundSummary';
 import {createRecognition,recordEvidence} from './recognition';
 import type {MusicAnalysis} from './musicTypes';
 const audio=():MusicAnalysis=>({version:2,durationSeconds:8,analyzedSeconds:8,instruments:[{label:'piano',score:.99,status:'likely'}],notes:[]});
 const head=(score:number):MusicAnalysis=>({...audio(),instruments:[],soundProfile:{version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'production',label:'kick',score,model:'Trained head'}]}});
-it.each([.49,.499999,NaN,Infinity,-1,1.01])('excludes invalid or below-floor scores %s',score=>{expect(confidentSoundSummary(head(score))).toEqual([])});
+it.each([.39,.399999,NaN,Infinity,-1,1.01])('excludes invalid or below-floor scores %s',score=>{expect(confidentSoundSummary(head(score))).toEqual([])});
+it('uses 0.40 as the track floor and 0.50 as the likely cutoff',()=>{expect([TRACK_SOUND_FLOOR,LIKELY_SOUND_CUTOFF]).toEqual([.4,.5])});
+it.each([[.39,undefined],[.4,'possible'],[.49,'possible'],[.5,'likely'],[.9,'likely']] as const)('tiers a track score of %s as %s',(score,tier)=>{expect(confidentSoundSummary(head(score))[0]?.tier).toBe(tier)});
+it.each([.4,.49])('keeps the 0.50 floor on one-shots (≤2.25 s): %s hidden',score=>{expect(confidentSoundSummary({...head(score),durationSeconds:1.5,analyzedSeconds:1.5})).toEqual([])});
+it('shows a one-shot at 0.50 as likely',()=>{expect(confidentSoundSummary({...head(.5),durationSeconds:1.5,analyzedSeconds:1.5})[0].tier).toBe('likely')});
+it('tiers by the best tested score, not an untested model score',()=>{
+ const a=head(.45);a.soundProfile!.djTags!.push({group:'production',label:'kick',score:.9,model:'Music CLAP'});expect(confidentSoundSummary(a)[0].tier).toBe('possible');
+});
 it.each([.5,.500001,1])('includes finite scores at or above the inclusive floor %s',score=>{expect(confidentSoundSummary(head(score))[0]).toMatchObject({label:'kick',origin:'model estimate',scores:[{model:'Trained head score',score}]})});
 it('hides labels that only untested models support',()=>{
  const a=audio();a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'production',label:'riser',score:.9,model:'Music CLAP'},{group:'character',label:'dark',score:.9,model:'Music CLAP'}]};
@@ -36,10 +43,18 @@ it.each(['rejected','uncertain'] as const)('suppresses %s native and profile sco
 it('does not invent scores for profile strings, AI drafts or unsupported labels',()=>{
  const a=audio();a.instruments=[{label:'invented instrument',score:1}];a.soundProfile={version:1,source:{label:'guitar',basis:'Music CLAP',corroborated:true},character:['bright'],roles:[],models:[],disagreement:false};a.copilotProperties={model:'draft',tags:{source:['piano'],production:['riser'],character:['bright']}};expect(confidentSoundSummary(a)).toEqual([]);
 });
-it.each([.499999,.5])('applies inclusive boundaries to character and effect tag scores %s',score=>{
- const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'production',label:'riser',score,model:'Trained head'},{group:'character',label:'bright',score,model:'Trained head'}]};expect(confidentSoundSummary(a).length).toBe(score>=.5?2:0);
+it.each([.399999,.4])('applies inclusive boundaries to character and effect tag scores %s',score=>{
+ const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'production',label:'riser',score,model:'Trained head'},{group:'character',label:'bright',score,model:'Trained head'}]};expect(confidentSoundSummary(a).length).toBe(score>=.4?2:0);
 });
 it('marks labels backed only by maybe-level trained heads, and lets a full head win',()=>{
  const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'production',label:'snare',score:.9,model:'Trained head (maybe)'},{group:'production',label:'kick',score:.8,model:'Trained head'}]};
  expect(confidentSoundSummary(a).map(s=>[s.label,s.maybe===true])).toEqual([['snare',true],['kick',false]]);
+});
+it('can display every catalog label once a trained head reports it',async()=>{
+ const {default:catalog}=await import('./djCatalog.json');
+ const missing=catalog.categories.filter(c=>{
+  const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:c.group as 'source'|'production'|'character',label:c.label,score:.9,model:'Trained head'}]};
+  return !confidentSoundSummary(a).some(s=>s.label===c.label);
+ }).map(c=>c.label);
+ expect(missing).toEqual([]);
 });

@@ -9,8 +9,8 @@ import { join } from 'node:path';
 
 const [outDir, split = 'test', batchArg = '60', limitArg] = process.argv.slice(2);
 if (!outDir) throw new Error('Usage: node scripts/short-clip-upload-eval.mjs <out-dir> [split] [batch] [limit]');
-const AUDIO = '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints/short-clips/bench-audio';
-const manifest = JSON.parse(readFileSync('docs/evaluations/short-clips-2026-10-04/manifest.json', 'utf8'));
+const AUDIO = process.env.AUDIO_DIR ?? '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints/short-clips/bench-audio';
+const manifest = JSON.parse(readFileSync(process.env.MANIFEST ?? 'docs/evaluations/short-clips-2026-10-04/manifest.json', 'utf8'));
 let ids = manifest.items.filter(i => i.split === split).map(i => i.id);
 if (limitArg) ids = ids.slice(0, Number(limitArg));
 mkdirSync(outDir, { recursive: true });

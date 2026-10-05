@@ -64,9 +64,10 @@ export function familyOf(label: string): string {
   if (/bongo|conga|percussion|tabla|bell|maraca|gong|chime|rattle|tambourine|marimba|vibraphone|glockenspiel|steelpan|wood block|singing bowl/.test(label)) return 'percussion';
   return 'unknown';
 }
-/** One-shot heads change what short clips display; a new file re-runs only those clips, never long recordings. */
+/** One-shot heads change what short clips display, and full analyses of long recordings use them on event windows
+ * (analyzeDecodedMusic eventPass): a new file re-runs both. Fast long analyses never use them and stay current. */
 const oneShotIdentity = `one-shot-${((clap.sha256 as Record<string, string>)['short-clip.json'] ?? 'none').slice(0, 12)}-prompts-${clap.sha256['prompts.json'].slice(0, 12)}`;
-export const recognitionConfiguration = (mode: 'fast' | 'full', durationSeconds?: number) => `timeline-v1:${mode}:decoder-mono-v3-short-pcm:${musicRuntimeIdentity()}:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1${durationSeconds !== undefined && durationSeconds <= SHORT_CLIP_MAX_SECONDS ? `:${oneShotIdentity}` : ''}:uncalibrated`;
+export const recognitionConfiguration = (mode: 'fast' | 'full', durationSeconds?: number) => `timeline-v1:${mode}:decoder-mono-v3-short-pcm:${musicRuntimeIdentity()}:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1${durationSeconds !== undefined && durationSeconds <= SHORT_CLIP_MAX_SECONDS ? `:${oneShotIdentity}` : mode === 'full' && durationSeconds !== undefined ? `:event-windows-v1:${oneShotIdentity}` : ''}:uncalibrated`;
 export function createRecognition(duration: number, mode: 'fast' | 'full', audioFingerprint?: string): Recognition {
   // Checksum prefixes keep the growing Jamendo asset list inside the 512-character ledger bound.
   const versions = [ast.revision, Object.values(jamendo.sha256).map(hash => hash.slice(0, 16)).join(':'), clap.revision, 'essentia-0.1.3-tempo-1', 'essentia-0.1.3-key-2'];
@@ -74,6 +75,13 @@ export function createRecognition(duration: number, mode: 'fast' | 'full', audio
     startedAt:new Date().toISOString(),status:'running',mode,calibration:'unvalidated',evidence:[],observations:[],
     jobs:MODEL_IDS.map((modelId,i)=>({modelId,weightsVersion:versions[i],preprocessingVersion:'decoder-mono-v3-short-pcm:'+(['ast','jamendo','clap'].includes(modelId)?musicRuntimeIdentity(modelId)+':':'')+(['ast','jamendo'].includes(modelId)?16000:modelId==='clap'?48000:44100)+':'+(modelId==='ast'?ast.sha256['preprocessor_config.json']:modelId==='clap'?clap.sha256['preprocessor_config.json']:'features-v1'),
       ...(modelId==='clap'?{promptVersion:clap.sha256['prompts.json']}:{}),status:'pending',planned:[],attempted:[],successful:[],analyzedSeconds:0,gaps:duration>0?[{start:0,end:duration}]:[]})) };
+}
+/** A threaded-runtime stall switches this browser to one inference thread mid-run. Stamp the finished ledger
+ * with the runtime that actually produced it, so the cache and the coordinator treat the result as current. */
+export function refreshRuntimeIdentity(recognition: Recognition, duration: number): void {
+  const fresh = createRecognition(duration, recognition.mode);
+  recognition.configurationHash = fresh.configurationHash;
+  for (const job of recognition.jobs) job.preprocessingVersion = fresh.jobs.find(j => j.modelId === job.modelId)?.preprocessingVersion ?? job.preprocessingVersion;
 }
 export function unionIntervals(intervals: Interval[]): Interval[] {
   const result: Interval[]=[];

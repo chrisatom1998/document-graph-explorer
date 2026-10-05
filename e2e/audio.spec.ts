@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { correctDjTags } from './sampleAssistant';
 
 test('local synthetic audio is analyzed, playable, and corrections survive reload', async ({ page }) => {
   const errors: string[] = [];
@@ -67,10 +68,7 @@ test('local synthetic audio is analyzed, playable, and corrections survive reloa
   await expect.poll(() => page.locator('audio').evaluate(audio => (audio as HTMLAudioElement).paused)).toBe(true);
   await expect(page.locator('.audio-controls--preview').getByRole('button', { name: 'Play sample' })).toBeEnabled();
   await expect(page.locator('.audio-controls--preview .audio-waveform line')).toHaveCount(101);
-  await page.getByText('Correct the instrument', { exact: true }).click();
-  await page.getByLabel('Known instrument', { exact: false }).selectOption('synthesizer');
-  await page.getByRole('button', { name: 'Save confirmed instrument' }).click();
-  await expect(page.locator('.music-features')).toContainText('Saved on this device.');
+  await correctDjTags(page, /Synthetic tone/i, card => card.getByRole('checkbox', { name: 'synthesizer', exact: true }).check(), 'Your DJ tags are saved.');
   await page.reload();
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeVisible();
   await openTrack();

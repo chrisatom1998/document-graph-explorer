@@ -3,6 +3,12 @@
 // --- Extraction (spec §5) ---
 export const SIM_THRESHOLD = 0.62; // semantic edge: cosine similarity floor
 export const SIM_TOP_K = 5; //         ...AND within each doc's top-k neighbors
+// ...AND within this much cosine of both docs' best match. bge-small scores
+// nearly every pair of prose docs above 0.85, so the floor above filters
+// nothing; this margin is what separates a doc's real neighbors from the
+// least-far filler. Calibrated by src/eval/graphAccuracy.test.ts (semantic
+// edge precision 66% → 97% on the generated demo records).
+export const SIM_RELATIVE_MARGIN = 0.03;
 export const TFIDF_TOP_N = 15; // keywords kept per document
 export const KEYWORD_EDGE_MIN_SHARED = 2; // shared rare keywords to form a keyword edge
 export const KEYWORD_EDGES_PER_DOC = 5; // cap keyword edges per doc (anti-hairball)
@@ -64,7 +70,13 @@ export const DOCUMENT_AI_MAX_CONTEXT_CHARS = 240_000;
 export const ENRICH_BATCH_MAX_CHARS = 400_000;
 
 // --- Search ---
-export const SEARCH_MIN_SCORE = 0.35; // semantic search relevance floor
+export const SEARCH_MIN_SCORE = 0.35; // document-to-document similarity floor
+// Query-to-passage semantic floor. bge-small scores off-topic questions up to
+// ~0.57 against the demo corpus and on-topic paraphrases from ~0.60, so 0.58
+// lets search answer "no match" without dropping real hits. Calibrated and
+// guarded by src/search/retrievalBenchmark.demo.test.ts — re-run it if the
+// embedding model, query prefix, or chunking changes.
+export const QUERY_MIN_SEMANTIC_SCORE = 0.58;
 export const SEARCH_MAX_RESULTS = 12;
 
 // --- Extractive (local, no-LLM) chat answers ---

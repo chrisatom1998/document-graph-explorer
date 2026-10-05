@@ -9,6 +9,18 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # onnxruntime-node (pulled in transitively) otherwise downloads the CUDA binaries from
+  # api.nuget.org in its postinstall on every run. CI only uses the CPU build, and that
+  # host has timed out npm ci on hosted runners more than once.
+  ONNXRUNTIME_NODE_INSTALL: skip
+  # Gitignored, checksum-verified weights fetched by scripts/download-music-model.mjs.
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -23,6 +35,31 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # The audio model weights come from upstream hosts (huggingface.co,
+      # essentia.upf.edu) that sometimes time out. Restore them from cache and
+      # save them right after a successful download, so a later failing step
+      # or a flaky host never forces the next run to download them again.
+      - name: Restore audio model weights
+        id: music-models
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          # A PR that edits any manifest gets a new key; fall back to the newest cache so
+          # setup:music only fetches what changed instead of everything from upstream hosts.
+          restore-keys: music-models-
+
+      - name: Download audio model weights
+        if: steps.music-models.outputs.cache-hit != 'true'
+        run: npm run setup:music
+
+      - name: Save audio model weights
+        if: steps.music-models.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
 
       - name: Lint
         run: npm run lint
@@ -72,6 +109,31 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # The audio model weights come from upstream hosts (huggingface.co,
+      # essentia.upf.edu) that sometimes time out. Restore them from cache and
+      # save them right after a successful download, so a later failing step
+      # or a flaky host never forces the next run to download them again.
+      - name: Restore audio model weights
+        id: music-models
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          # A PR that edits any manifest gets a new key; fall back to the newest cache so
+          # setup:music only fetches what changed instead of everything from upstream hosts.
+          restore-keys: music-models-
+
+      - name: Download audio model weights
+        if: steps.music-models.outputs.cache-hit != 'true'
+        run: npm run setup:music
+
+      - name: Save audio model weights
+        if: steps.music-models.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium

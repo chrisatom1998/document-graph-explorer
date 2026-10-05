@@ -19,14 +19,16 @@ export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnal
     <h4 className="sound-tags__title">Sounds</h4>
     {labels.length ? <ul className="sound-tags__list">{labels.map(l => {
       const kind = l.origin === 'confirmed by you' ? 'confirmed' : l.origin === 'From filename' ? 'name' : 'maybe' in l && l.maybe ? 'maybe' : l.dimension === 'source' ? 'source' : 'detail';
+      const possible = 'tier' in l && l.tier === 'possible';
       const hover = [DIMENSION_NAME[l.dimension as keyof typeof DIMENSION_NAME] ?? l.dimension,
         l.origin === 'From filename' ? 'from the file name, not the audio' : l.origin,
+        ...(possible ? ['possible: detector score 0.40–0.49, not calibrated (not a 40% chance)'] : []),
         ...(l.scores ?? []).map(s => `${s.model} ${s.score.toFixed(2)}`)].join(' · ');
-      return <li key={`${l.dimension}:${l.label}`} className={`sound-tag sound-tag--${kind}`} title={hover}>
+      return <li key={`${l.dimension}:${l.label}`} className={`sound-tag sound-tag--${kind}${possible ? ' sound-tag--possible' : ''}`} data-tier={'tier' in l ? l.tier : undefined} title={hover}>
         {kind === 'confirmed' && <span className="sound-tag__mark" aria-hidden="true">✓</span>}
         <span>{pretty(l.label)}</span>
         {kind === 'name' && <span className="sound-tag__note">name</span>}
-        {kind === 'maybe' && <span className="sound-tag__note">maybe</span>}
+        {possible ? <span className="sound-tag__note">possible</span> : kind === 'maybe' && <span className="sound-tag__note">maybe</span>}
         <span className="sr-only"> — {hover}</span>
       </li>;
     })}</ul> : <p className="sound-tags__empty">Nothing identified yet</p>}
@@ -36,15 +38,18 @@ export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnal
 /** Each model's own top guesses with its raw score. Scales differ between models
  * (AST and Jamendo give probabilities, CLAP gives similarity), so bars are not compared across rows. */
 export function ModelScores({ profile, audio }: { profile?: SoundProfile; audio?: MusicAnalysis }) {
-  const models: { model: string; complete: boolean; candidates: { label: string; score: number }[] }[] = [];
+  const models: { model: string; complete: boolean; candidates: { label: string; score: number; untested?: boolean }[] }[] = [];
   // The trained detector only counts when its run is qualified for this recording.
   const fusion = audio ? fusionPresentation(audio.fusion, audio.durationSeconds, audio.recognition?.mode ?? 'full') : undefined;
   if (fusion?.qualified) {
-    const best = new Map<string, number>();
-    for (const w of fusion.windows) if (w.status === 'complete') for (const d of w.decisions)
+    const best = new Map<string, number>(), untested = new Set<string>();
+    for (const w of fusion.windows) if (w.status === 'complete') for (const d of w.decisions) {
       if (d.headProbability !== null) best.set(d.label, Math.max(best.get(d.label) ?? 0, d.headProbability));
+      // Heads that failed held-out testing never decide a tag; their raw score is shown but marked.
+      if (!d.eligible) untested.add(d.label);
+    }
     if (best.size) models.push({ model: 'Trained detector', complete: true,
-      candidates: [...best].map(([label, score]) => ({ label: fusionLabelText(label as Parameters<typeof fusionLabelText>[0]), score })) });
+      candidates: [...best].map(([label, score]) => ({ label: fusionLabelText(label as Parameters<typeof fusionLabelText>[0]), score, untested: untested.has(label) })) });
   }
   // Trained DJ heads store their scores on the tags they produced, not in profile.models.
   const heads = new Map<string, number>();
@@ -56,8 +61,9 @@ export function ModelScores({ profile, audio }: { profile?: SoundProfile; audio?
     <summary>Model scores</summary>
     <div className="model-scores__grid">{models.map(m => <div key={m.model} className="model-scores__model">
       <h5>{m.model}{!m.complete && <small> · partial</small>}</h5>
-      <ul>{[...m.candidates].sort((a, b) => b.score - a.score).slice(0, 4).map(c => <li key={c.label}>
-        <span className="model-scores__label">{pretty(c.label)}</span>
+      <ul>{[...m.candidates].sort((a, b) => b.score - a.score).slice(0, 4).map(c => <li key={c.label} className={c.untested ? 'model-scores__item--untested' : undefined}
+        title={c.untested ? 'This detector failed testing, so it never adds a sound tag' : undefined}>
+        <span className="model-scores__label">{pretty(c.label)}{c.untested && <small className="model-scores__flag"> untested</small>}</span>
         <span className="model-scores__bar" aria-hidden="true"><span style={{ width: `${Math.max(2, Math.min(100, c.score * 100))}%` }} /></span>
         <span className="model-scores__value">{c.score.toFixed(2)}</span>
       </li>)}</ul>

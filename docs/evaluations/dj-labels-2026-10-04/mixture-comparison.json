@@ -1,0 +1,474 @@
+{
+ "kind": "mixture-comparison-v1",
+ "drop": 0.02,
+ "rows": [
+  {
+   "name": "ambient drone",
+   "isolated": [
+    0.8591549295774648,
+    0.6880733944954128
+   ],
+   "mixture": [
+    0.0,
+    0.4666666666666667
+   ],
+   "mixPrecision": [
+    0.0,
+    0.6511627906976745
+   ],
+   "mixRecall": [
+    0.0,
+    0.4666666666666667
+   ],
+   "buriedRecall": [
+    0.0,
+    0.34210526315789475
+   ],
+   "mixPositive": 60,
+   "testedOn": "extra sources",
+   "improves": false
+  },
+  {
+   "name": "atmospheric pad",
+   "isolated": [
+    0.24347826086956523,
+    0.22608695652173913
+   ],
+   "mixture": [
+    0.0,
+    0.03333333333333333
+   ],
+   "mixPrecision": [
+    0.0,
+    0.25
+   ],
+   "mixRecall": [
+    0.0,
+    0.03333333333333333
+   ],
+   "buriedRecall": [
+    0.0,
+    0.0
+   ],
+   "mixPositive": 60,
+   "testedOn": "library brands",
+   "improves": true
+  },
+  {
+   "name": "drum loop",
+   "isolated": [
+    0.5620437956204379,
+    0.5165562913907285
+   ],
+   "mixture": [
+    0.5494155154091392,
+    0.9861849096705633
+   ],
+   "mixPrecision": [
+    1.0,
+    1.0
+   ],
+   "mixRecall": [
+    0.5494155154091392,
+    0.9861849096705633
+   ],
+   "buriedRecall": [
+    0.5874730021598272,
+    0.9892008639308856
+   ],
+   "mixPositive": 941,
+   "testedOn": "library brands",
+   "improves": false
+  },
+  {
+   "name": "foley hit",
+   "isolated": [
+    0.09803921568627451,
+    0.10457516339869281
+   ],
+   "mixture": [
+    0.0,
+    0.0
+   ],
+   "mixPrecision": [
+    0.0,
+    0.0
+   ],
+   "mixRecall": [
+    0.0,
+    0.0
+   ],
+   "buriedRecall": [
+    0.0,
+    0.0
+   ],
+   "mixPositive": 60,
+   "testedOn": "library brands",
+   "improves": false
+  },
+  {
+   "name": "glitch effect",
+   "isolated": [
+    0.4434782608695652,
+    0.46956521739130436
+   ],
+   "mixture": [
+    0.03278688524590164,
+    0.18032786885245902
+   ],
+   "mixPrecision": [
+    0.6666666666666666,
+    0.4583333333333333
+   ],
+   "mixRecall": [
+    0.03278688524590164,
+    0.18032786885245902
+   ],
+   "buriedRecall": [
+    0.0,
+    0.0967741935483871
+   ],
+   "mixPositive": 61,
+   "testedOn": "library brands",
+   "improves": true
+  },
+  {
+   "name": "impact",
+   "isolated": [
+    0.37037037037037035,
+    0.3888888888888889
+   ],
+   "mixture": [
+    0.0,
+    0.016666666666666666
+   ],
+   "mixPrecision": [
+    0.0,
+    1.0
+   ],
+   "mixRecall": [
+    0.0,
+    0.016666666666666666
+   ],
+   "buriedRecall": [
+    0.0,
+    0.0
+   ],
+   "mixPositive": 60,
+   "testedOn": "library brands",
+   "improves": true
+  },
+  {
+   "name": "laser",
+   "isolated": [
+    0.1111111111111111,
+    0.1746031746031746
+   ],
+   "mixture": [
+    0.0,
+    0.16393442622950818
+   ],
+   "mixPrecision": [
+    0.0,
+    0.5882352941176471
+   ],
+   "mixRecall": [
+    0.0,
+    0.16393442622950818
+   ],
+   "buriedRecall": [
+    0.0,
+    0.08333333333333333
+   ],
+   "mixPositive": 61,
+   "testedOn": "library brands",
+   "improves": true
+  },
+  {
+   "name": "noise sweep",
+   "isolated": [
+    0.168141592920354,
+    0.15503875968992248
+   ],
+   "mixture": [
+    0.0,
+    0.046153846153846156
+   ],
+   "mixPrecision": [
+    0.0,
+    0.3333333333333333
+   ],
+   "mixRecall": [
+    0.0,
+    0.046153846153846156
+   ],
+   "buriedRecall": [
+    0.0,
+    0.09090909090909091
+   ],
+   "mixPositive": 65,
+   "testedOn": "library brands",
+   "improves": true
+  },
+  {
+   "name": "reverse effect",
+   "isolated": [
+    0.25757575757575757,
+    0.4090909090909091
+   ],
+   "mixture": [
+    0.02631578947368421,
+    0.13157894736842105
+   ],
+   "mixPrecision": [
+    0.16666666666666666,
+    0.22727272727272727
+   ],
+   "mixRecall": [
+    0.02631578947368421,
+    0.13157894736842105
+   ],
+   "buriedRecall": [
+    0.0625,
+    0.125
+   ],
+   "mixPositive": 38,
+   "testedOn": "library brands",
+   "improves": true
+  },
+  {
+   "name": "stutter effect",
+   "isolated": [
+    0.4,
+    0.3793103448275862
+   ],
+   "mixture": [
+    0.0,
+    0.09523809523809523
+   ],
+   "mixPrecision": [
+    0.0,
+    0.18181818181818182
+   ],
+   "mixRecall": [
+    0.0,
+    0.09523809523809523
+   ],
+   "buriedRecall": [
+    0.0,
+    0.09090909090909091
+   ],
+   "mixPositive": 21,
+   "testedOn": "extra sources",
+   "improves": false
+  },
+  {
+   "name": "synth bass",
+   "isolated": [
+    0.14814814814814814,
+    0.2222222222222222
+   ],
+   "mixture": [
+    0.0,
+    0.016666666666666666
+   ],
+   "mixPrecision": [
+    0.0,
+    0.1
+   ],
+   "mixRecall": [
+    0.0,
+    0.016666666666666666
+   ],
+   "buriedRecall": [
+    0.0,
+    0.0
+   ],
+   "mixPositive": 60,
+   "testedOn": "library brands",
+   "improves": true
+  },
+  {
+   "name": "synth chord",
+   "isolated": [
+    0.1625441696113074,
+    0.1485148514851485
+   ],
+   "mixture": [
+    0.05555555555555555,
+    0.14814814814814814
+   ],
+   "mixPrecision": [
+    0.75,
+    0.7272727272727273
+   ],
+   "mixRecall": [
+    0.05555555555555555,
+    0.14814814814814814
+   ],
+   "buriedRecall": [
+    0.05,
+    0.1
+   ],
+   "mixPositive": 54,
+   "testedOn": "library brands",
+   "improves": true
+  },
+  {
+   "name": "synth lead",
+   "isolated": [
+    0.06862745098039216,
+    0.09803921568627451
+   ],
+   "mixture": [
+    0.0,
+    0.03333333333333333
+   ],
+   "mixPrecision": [
+    0.0,
+    1.0
+   ],
+   "mixRecall": [
+    0.0,
+    0.03333333333333333
+   ],
+   "buriedRecall": [
+    0.0,
+    0.0
+   ],
+   "mixPositive": 60,
+   "testedOn": "library brands",
+   "improves": true
+  },
+  {
+   "name": "synth pluck",
+   "isolated": [
+    0.4154929577464789,
+    0.4295774647887324
+   ],
+   "mixture": [
+    0.0,
+    0.05
+   ],
+   "mixPrecision": [
+    0.0,
+    0.375
+   ],
+   "mixRecall": [
+    0.0,
+    0.05
+   ],
+   "buriedRecall": [
+    0.0,
+    0.0
+   ],
+   "mixPositive": 60,
+   "testedOn": "library brands",
+   "improves": true
+  },
+  {
+   "name": "synth sequence",
+   "isolated": [
+    0.4358974358974359,
+    0.4266666666666667
+   ],
+   "mixture": [
+    0.0,
+    0.03333333333333333
+   ],
+   "mixPrecision": [
+    0.0,
+    0.13333333333333333
+   ],
+   "mixRecall": [
+    0.0,
+    0.03333333333333333
+   ],
+   "buriedRecall": [
+    0.0,
+    0.0
+   ],
+   "mixPositive": 60,
+   "testedOn": "extra sources",
+   "improves": true
+  },
+  {
+   "name": "texture",
+   "isolated": [
+    0.04081632653061224,
+    0.07142857142857142
+   ],
+   "mixture": [
+    0.016666666666666666,
+    0.13333333333333333
+   ],
+   "mixPrecision": [
+    1.0,
+    0.5333333333333333
+   ],
+   "mixRecall": [
+    0.016666666666666666,
+    0.13333333333333333
+   ],
+   "buriedRecall": [
+    0.03571428571428571,
+    0.10714285714285714
+   ],
+   "mixPositive": 60,
+   "testedOn": "library brands",
+   "improves": true
+  },
+  {
+   "name": "vinyl scratch",
+   "isolated": [
+    0.5517241379310345,
+    0.41379310344827586
+   ],
+   "mixture": [
+    0.018867924528301886,
+    0.3584905660377358
+   ],
+   "mixPrecision": [
+    1.0,
+    0.5135135135135135
+   ],
+   "mixRecall": [
+    0.018867924528301886,
+    0.3584905660377358
+   ],
+   "buriedRecall": [
+    0.0,
+    0.40625
+   ],
+   "mixPositive": 53,
+   "testedOn": "extra sources",
+   "improves": false
+  },
+  {
+   "name": "whoosh",
+   "isolated": [
+    0.8141592920353983,
+    0.609271523178808
+   ],
+   "mixture": [
+    0.0,
+    0.05
+   ],
+   "mixPrecision": [
+    0.0,
+    0.6
+   ],
+   "mixRecall": [
+    0.0,
+    0.05
+   ],
+   "buriedRecall": [
+    0.0,
+    0.045454545454545456
+   ],
+   "mixPositive": 60,
+   "testedOn": "extra sources",
+   "improves": false
+  }
+ ]
+}

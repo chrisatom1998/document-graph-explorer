@@ -11,7 +11,9 @@ import { DescriptionAccumulator, selectDescriptions, type DescriptionScore } fro
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
-import { createRecognition, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
+import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
+import { musicRuntimeIdentity } from './musicRuntime';
+import { createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
   /** Qualification-only opt-in; callers must bind and validate the scorer. */
@@ -73,8 +75,17 @@ export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicR
   }
 }
 
+/** The fusion scorer's contract is the fixed prompt catalog it was trained on. Trained-head,
+ * reviewed-example and one-shot scores ride along in the same output for tagging and are not part of it. */
+export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot');
 /** Model jobs share a bounded timeline, but never each other's validity. Evidence is applied in one fixed order. */
-export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
+export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
+  // The runtime each AST/CLAP output came from: a threaded stall can switch this browser to one thread mid-run.
+  const startRuntime = musicRuntimeIdentity(), producedBy = new Set<string>();
+  const request: MusicRequest = <T>(message: Record<string, unknown>, transfer: Transferable[]) => send<T>(message, transfer).then(result => {
+    if (message.kind === 'instruments' || message.kind === 'profile') producedBy.add(musicRuntimeIdentity());
+    return result;
+  });
   const check = () => options.signal?.throwIfAborted();
   check();
   const release = releaseForScorer(options.fusion);
@@ -120,8 +131,10 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   const musicScores = new JamendoRecordingScores();
   const descriptions = new DescriptionAccumulator();
   const djEvidence = new DjTagEvidence();
+  const eventEvidence = new EventWindowEvidence();
   const completed = new Set<string>();
   const stopped = new Set<ModelId>();
+  let eventPassFailed = false;
   const messages: Partial<Record<ModelId, string>> = {
     ast: 'Instrument recognition was unavailable. Reanalyze to retry.',
     jamendo: 'Music-trained instrument recognition was unavailable. Reanalyze to retry.',
@@ -130,12 +143,17 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   };
   const refresh = (cancelled = false, ended = false) => {
     for (const j of recognition.jobs) finishJob(j, duration, cancelled);
+    // Event windows are extra CLAP work. A failed pass must not look like a closed job.
+    if (eventPassFailed && job('clap').status === 'complete') job('clap').status = 'partial';
     const soundComplete = ['ast','jamendo','clap'].every(id => ['complete','unsupported'].includes(job(id as ModelId).status));
     result.instruments = astEvidence.results();
     const music = musicScores.scores();
     result.soundProfile = combineSoundModels(result.instruments, music, descriptions.average(),
       { ast: job('ast').status === 'complete', jamendo: job('jamendo').status === 'complete', clap: job('clap').status === 'complete' });
-    mergeDjTags(result.soundProfile, djEvidence.results(), descriptions.average());
+    // Event-window tags only fill gaps: a tag the 10 s windows already found keeps its own (stronger) evidence.
+    const windowTags = djEvidence.results(), found = new Set(windowTags.map(t => `${t.group}:${t.label}`));
+    const eventTags = eventEvidence.results().filter(h => !found.has(`${h.tag.group}:${h.tag.label}`)).map(h => ({ ...h.tag, segments: h.segments.slice(0, 3) }));
+    mergeDjTags(result.soundProfile, [...windowTags, ...eventTags], descriptions.average());
     for (const suggestion of jamendoSuggestions(music)) {
       if (!result.instruments.some(i => i.label === suggestion.label)) result.instruments.push({ label: suggestion.label, score: suggestion.score, status: 'possible' });
     }
@@ -143,6 +161,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
       analyzedSeconds: job('ast').analyzedSeconds, windows: job('ast').successful.length };
     recognition.status = cancelled ? 'cancelled' : ended ? recognition.jobs.every(j => ['complete','unsupported'].includes(j.status)) ? 'complete'
       : recognition.jobs.some(j => j.successful.length) ? 'partial' : 'failed' : 'running';
+    // Relabel only when every AST/CLAP output came from the final runtime; a mixed run stays stale and is redone.
+    if (ended && [...producedBy].every(runtime => runtime === musicRuntimeIdentity())) refreshRuntimeIdentity(recognition, duration);
     if (ended || cancelled) recognition.endedAt = new Date().toISOString();
     if (cancelled) recognition.cancellationReason = 'Cancelled by user';
   };
@@ -169,6 +189,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   async function fetchRaw(id: SoundId, interval: Interval, key: string): Promise<{ output: Raw | undefined; cacheHit: boolean }> {
     let output = cache.get<Raw>(key);
     const cacheHit = output !== undefined;
+    if (cacheHit && id !== 'jamendo') producedBy.add(startRuntime);
     const preview = options.initialPreview;
     if (!output && id === 'jamendo' && preview?.start === interval.start && Math.abs(preview.end - interval.end) < 1 / 16000) output = preview.scores;
     if (!output) {
@@ -256,6 +277,43 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
       return undefined;
     }
   }
+  /** One-shot heads on short windows where new sounds start (src/audio/eventWindows.ts). Optional: a failure
+   * leaves the 10 s results as they are. */
+  async function eventPass(): Promise<void> {
+    try {
+      const candidates: ReturnType<typeof onsetCandidates> = [];
+      for (let start = 0; start < duration; start += 30) {
+        check(); candidates.push(...onsetCandidates(await read(start, Math.min(30, duration - start), 16000), start));
+      }
+      const starts = pickEventStarts(candidates, duration);
+      for (const [i, t] of starts.entries()) {
+        check();
+        const interval = { start: t - EVENT_WINDOW_BEFORE, end: t + EVENT_WINDOW_AFTER }, seconds = interval.end - interval.start;
+        options.onProgress?.(`one-shot windows: ${i + 1}/${starts.length}; ${Math.floor(interval.start)}s of ${Math.ceil(duration)}s`);
+        const key = `${modelCacheKey(fingerprint, job('clap'), interval)}:event-window-v1`;
+        let output = cache.get<DescriptionScore[]>(key);
+        if (output) producedBy.add(startRuntime);
+        else {
+          const samples = await read(interval.start, seconds, 48000), samples16 = await read(interval.start, seconds, 16000);
+          check();
+          if (!audible(samples) || samples.length < Math.round(seconds * 48000) - 1) continue;
+          output = await request<DescriptionScore[]>({ kind: 'profile', samples, samples16 }, [samples.buffer, samples16.buffer]);
+          check(); cache.set(key, output);
+        }
+        eventEvidence.add(output, interval.start, interval.end);
+        recordEvidence(recognition, 'clap', interval, output.flatMap(s => {
+          if (s.group !== 'dj-learned' || s.basis !== 'head' || s.decision !== 'include' || !s.learnedGroup || !s.label || !EVENT_WINDOW_LABELS.has(s.label)) return [];
+          return [{ dimension: s.learnedGroup === 'source' ? 'source' as const : 'effect' as const, labelId: s.label, score: s.score }];
+        }));
+      }
+      publish();
+    } catch (error) {
+      if (options.signal?.aborted) throw error;
+      eventPassFailed = true;
+      job('clap').error = error instanceof Error ? error.message : 'Unavailable';
+      result.notes.push('Event-window recognition was unavailable. Reanalyze to retry.');
+    }
+  }
   const leads = concurrent ? (['ast','jamendo','clap'] as const).map(id => scoreAhead(id).catch(() => {})) : [];
   try {
     if (!options.fusion) await sound('jamendo', job('jamendo').planned[0]);
@@ -307,9 +365,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
           else {
             const ast = outputs.get('ast')!.output as InstrumentPredictions;
             const jamendo = jamendoInstrumentScores(outputs.get('jamendo')!.output as Record<string, number>);
-            // The scorer's contract is the fixed prompt catalog. Trained-head and reviewed-example
-            // scores ride along in the same output for tagging and are not part of that contract.
-            const clap = (outputs.get('clap')!.output as DescriptionScore[]).filter(d => d.group !== 'dj-learned');
+            const clap = fusionClapDescriptions(outputs.get('clap')!.output as DescriptionScore[]);
             if (!Object.keys(ast.scores).length || !Object.keys(jamendo).length || !clap.length) {
               window = { ...window, status: 'empty', reason: 'Silent or empty native output; no fusion decision' };
             } else {
@@ -339,6 +395,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     }
     // A stopped family may still hold one window in flight; let it settle before the decoder closes.
     stopAhead(); await Promise.all(leads);
+    if (mode === 'full' && duration > SHORT_CLIP_MAX_SECONDS && !stopped.has('clap') && !job('clap').unsupportedReason) await eventPass();
     refresh(false, true);
     return result;
   } catch (error) {

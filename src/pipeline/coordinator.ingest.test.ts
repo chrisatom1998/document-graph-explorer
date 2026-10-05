@@ -35,7 +35,7 @@ import {
   setAudioReview,
 } from './coordinator';
 import { rememberWorldOrigin } from '../scene/ingestBirth';
-import { createRecognition } from '../audio/recognition';
+import { createRecognition, recognitionConfiguration } from '../audio/recognition';
 import { supportsFusionInput, fusionConfiguration } from '../audio/fusionRelease';
 
 const music = vi.hoisted(() => ({ analyzeMusic: vi.fn(), preloadMusicModels: vi.fn(async () => {}) }));
@@ -1045,6 +1045,31 @@ describe('WAV music ingestion', () => {
     expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.confirmedDjTags?.source).toEqual(['piano']);
     await setAudioDjTags(node.id);
     expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.soundReviews).toEqual(updated.soundReviews);
+  });
+  it('re-runs saved one-shots and full long recordings after a one-shot model change, keeping their reviews', async () => {
+    await ingestFiles([wav('hit.wav'), wav('song.wav')]);
+    const [hit, song] = useGraphStore.getState().nodes.filter(n => n.fileType === 'audio');
+    const old = (seconds: number) => ({ ...createRecognition(seconds, 'full'), configurationHash: recognitionConfiguration('full') });
+    useGraphStore.getState().patchNodes(new Map([
+      [hit.id, { audio: { ...hit.audio!, durationSeconds: 1.5, recognition: old(1.5) } }],
+      [song.id, { audio: { ...song.audio!, durationSeconds: 30, recognition: old(30) } }],
+    ]));
+    await setAudioReview(hit.id, 'piano', 'source', 'rejected');
+    await setAudioDjTags(hit.id, { source: [], production: ['kick'], character: [] });
+    const saved = useGraphStore.getState().nodes.find(n => n.id === hit.id)!.audio!;
+    const songBefore = useGraphStore.getState().nodes.find(n => n.id === song.id)!.audio;
+    // Two tracks re-run now: each needs its own result object, as real analyses return.
+    const fresh = await music.analyzeMusic();
+    music.analyzeMusic.mockClear();
+    music.analyzeMusic.mockImplementation(async () => structuredClone(fresh));
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob(['RIFF']), name: 'hit.wav' });
+    await analyzeAudioCorpus();
+    // The song's full analysis used the one-shot heads on its event windows, so it re-runs too.
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(2);
+    const after = useGraphStore.getState().nodes.find(n => n.id === hit.id)!.audio!;
+    expect(after.soundReviews).toEqual(saved.soundReviews);
+    expect(after.confirmedDjTags).toEqual(saved.confirmedDjTags);
+    expect(useGraphStore.getState().nodes.find(n => n.id === song.id)!.audio).not.toEqual(songBefore);
   });
   it('reanalyzes only selected audio while other stale results stay untouched', async () => {
     await ingestFiles([wav('selected.wav'), wav('stale.wav')]);

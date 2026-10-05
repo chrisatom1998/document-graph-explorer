@@ -20,7 +20,7 @@ it('ignores folders and numeric IDs, without deriving tempo or key',()=>{
 it('keeps the inclusive audio floor and does not contradict audio sources',()=>{
   const a=audio();a.soundProfile={version:1,models:[],character:[],roles:[],disagreement:false,djTags:[{group:'source',label:'piano',score:.5,model:'Trained head'},{group:'production',label:'glass hit',score:.5,model:'Trained head'}]};
   expect(labels('flute_glass_hit.wav',a)).toEqual([]);
-  a.soundProfile.djTags!.forEach(t=>t.score=.499999);
+  a.soundProfile.djTags!.forEach(t=>t.score=.399999);
   expect(labels('flute_glass_hit.wav',a).map(x=>x.label)).toEqual(['flute','glass hit']);
 });
 it('only fills missing dimensions',()=>{

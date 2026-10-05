@@ -1,0 +1,150 @@
+{
+ "windows": 941,
+ "shortClipRevision": "short-clip-2026-10-04-clapRepeat",
+ "learnedRevision": "trained-heads-2026-10-04-r6c+maybe-2026-10-04+drums-full+hardneg-distorted-hard+hardneg-reverberant-none",
+ "labels": {
+  "impact": {
+   "positive": 60,
+   "oneShot": {
+    "available": true,
+    "tp": 1,
+    "fp": 0,
+    "precision": 1,
+    "recall": 0.016666666666666666,
+    "buriedRecall": 0
+   },
+   "longHeads": {
+    "available": false,
+    "tp": 0,
+    "fp": 0,
+    "precision": 0,
+    "recall": 0,
+    "buriedRecall": 0
+   }
+  },
+  "whoosh": {
+   "positive": 60,
+   "oneShot": {
+    "available": true,
+    "tp": 0,
+    "fp": 0,
+    "precision": 0,
+    "recall": 0,
+    "buriedRecall": 0
+   },
+   "longHeads": {
+    "available": true,
+    "tp": 0,
+    "fp": 1,
+    "precision": 0,
+    "recall": 0,
+    "buriedRecall": 0
+   }
+  },
+  "vinyl scratch": {
+   "positive": 53,
+   "oneShot": {
+    "available": true,
+    "tp": 32,
+    "fp": 2,
+    "precision": 0.9411764705882353,
+    "recall": 0.6037735849056604,
+    "buriedRecall": 0.53125
+   },
+   "longHeads": {
+    "available": true,
+    "tp": 12,
+    "fp": 2,
+    "precision": 0.8571428571428571,
+    "recall": 0.22641509433962265,
+    "buriedRecall": 0.15625
+   }
+  },
+  "synth hit": {
+   "positive": 117,
+   "oneShot": {
+    "available": true,
+    "tp": 92,
+    "fp": 551,
+    "precision": 0.14307931570762053,
+    "recall": 0.7863247863247863,
+    "buriedRecall": 0.64
+   },
+   "longHeads": {
+    "available": false,
+    "tp": 0,
+    "fp": 0,
+    "precision": 0,
+    "recall": 0,
+    "buriedRecall": 0
+   }
+  },
+  "synthesizer": {
+   "positive": 405,
+   "oneShot": {
+    "available": true,
+    "tp": 271,
+    "fp": 160,
+    "precision": 0.62877030162413,
+    "recall": 0.6691358024691358,
+    "buriedRecall": 0.5706806282722513
+   },
+   "longHeads": {
+    "available": false,
+    "tp": 0,
+    "fp": 0,
+    "precision": 0,
+    "recall": 0,
+    "buriedRecall": 0
+   }
+  },
+  "reverse effect": {
+   "positive": 38,
+   "oneShot": {
+    "available": false,
+    "tp": 0,
+    "fp": 0,
+    "precision": 0,
+    "recall": 0,
+    "buriedRecall": 0
+   },
+   "longHeads": {
+    "available": true,
+    "tp": 0,
+    "fp": 2,
+    "precision": 0,
+    "recall": 0,
+    "buriedRecall": 0
+   }
+  },
+  "ambient drone": {
+   "positive": 60,
+   "oneShot": {
+    "available": false,
+    "tp": 0,
+    "fp": 0,
+    "precision": 0,
+    "recall": 0,
+    "buriedRecall": 0
+   },
+   "longHeads": {
+    "available": true,
+    "tp": 0,
+    "fp": 0,
+    "precision": 0,
+    "recall": 0,
+    "buriedRecall": 0
+   }
+  }
+ },
+ "drumHeadFireRate": {
+  "kick": 0.023379383634431455,
+  "snare": 0.05100956429330499,
+  "hi-hat": 0.03294367693942614,
+  "cymbal": 0,
+  "clap": 0.018065887353878853,
+  "drums": 0.19872476089266738,
+  "shaker": 0.003188097768331562,
+  "percussion hit": 0.1381509032943677
+ }
+}

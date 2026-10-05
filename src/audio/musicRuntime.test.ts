@@ -41,3 +41,18 @@ it('binds Jamendo to its frozen single-thread runtime independently of AST/CLAP'
   expect(musicRuntimeIdentity('ast')).toBe('wasm-threads-4-v1');
   expect(musicRuntimeIdentity('clap')).toBe('wasm-threads-4-v1');
 });
+
+it('switches to one thread for good once threads are found not to start', async () => {
+  vi.stubGlobal('crossOriginIsolated', true);
+  vi.stubGlobal('SharedArrayBuffer', class {});
+  vi.stubGlobal('navigator', {hardwareConcurrency: 18});
+  const stored = new Map<string, string>();
+  vi.stubGlobal('localStorage', {getItem: (k: string) => stored.get(k) ?? null, setItem: (k: string, v: string) => stored.set(k, v)});
+  vi.resetModules();
+  const runtime = await import('./musicRuntime');
+  expect(runtime.musicInferenceThreads()).toBe(4);
+  runtime.switchToSingleThreadRuntime();
+  expect([runtime.musicInferenceThreads(), runtime.musicRuntimeIdentity('instruments')]).toEqual([1, 'wasm-threads-1-v1']);
+  vi.resetModules();
+  expect((await import('./musicRuntime')).musicInferenceThreads()).toBe(1);
+});
