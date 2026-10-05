@@ -16,7 +16,7 @@ from sklearn.model_selection import GroupKFold
 W = '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints/short-clips'
 ROOT = os.path.join(os.path.dirname(__file__), '..')
 MODE = sys.argv[1] if len(sys.argv) > 1 else 'compare'
-TARGET = 0.70
+TARGET = float(os.environ.get('TARGET', '0.70'))
 
 feats = {}
 for f in glob.glob(f'{W}/features-*.jsonl'):
@@ -27,10 +27,21 @@ manifest = json.load(open(f'{ROOT}/docs/evaluations/short-clips-2026-10-04/manif
 cal = [i for i in manifest['items'] if i['split'] == 'calibration']
 assert not any(i['split'] == 'test' and i['id'] in feats for i in manifest['items']), 'test features must not be cached for selection'
 train = json.load(open(f'{W}/train-items.json'))['items'] + (json.load(open(f'{W}/train-items-surge.json'))['items'] if os.path.exists(f'{W}/train-items-surge.json') else [])
+if os.environ.get('SYNTH_FRESH'):
+    # Synth retrain (2026-10-05): add NSynth-train notes and keep the fresh synth test's families out of training.
+    train += json.load(open(f'{W}/train-items-nsynth.json'))['items']
+    reserved = json.load(open(f'{ROOT}/docs/evaluations/synth-clips-2026-10-05/reserved-test-families.json'))
+    held = set(reserved['nsynthTestInstruments']) | set(reserved['fsdUploaders'])
+    train = [i for i in train if i['groups']['artist'] not in held]
 
 def table(items):
     items = [i for i in items if i['id'] in feats]
     lab = [{f"{r['dimension']}:{r['label']}": r['state'] for r in i['reviews']} for i in items]
+    # A clip known not to be a synthesizer (drum, voice, impact...) is not a synth hit either.
+    for l in lab:
+        if l.get('source:synthesizer') == 'absent' and 'role:synth hit' not in l: l['role:synth hit'] = 'absent'
+    for l in lab:   # Definition, not a source label: a kick drum is never a bass hit (scripts/short-clip-bass-relabel.py, Bk).
+        if 'role:bass hit' not in l and l.get('role:kick') == 'present': l['role:bass hit'] = 'absent'
     return items, lab, np.array([i['groups']['artist'] for i in items])
 tr_items, tr_lab, tr_groups = table(train)
 ca_items, ca_lab, ca_groups = table(cal)
@@ -45,9 +56,13 @@ SETS = {'clapRepeat': ['clapRepeat'], 'clapZero': ['clapZero'], 'event': ['event
         'clapZero+event': ['clapZero', 'event'], 'clapZero+ast+event': ['clapZero', 'ast', 'event'],
         'clapRepeat+ast+event': ['clapRepeat', 'ast', 'event'], 'ast+event': ['ast', 'event'], 'clapRepeat+event': ['clapRepeat', 'event']}
 
+FIXED_STATS = None
+if os.environ.get('STATS_FROM'):
+    _m = json.load(open(os.environ['STATS_FROM'])); FIXED_STATS = (np.array(_m['mean']), np.array(_m['std']))
+
 def matrix(items, names, stats=None):
     X = np.hstack([block(items, n) for n in names])
-    if stats is None: stats = (X.mean(0), X.std(0) + 1e-6)
+    if stats is None: stats = FIXED_STATS or (X.mean(0), X.std(0) + 1e-6)
     return (X - stats[0]) / stats[1], stats
 
 CATS = sorted({k for lab in tr_lab + ca_lab for k, v in lab.items() if v == 'present'})
@@ -144,7 +159,8 @@ EMIT = {'role:kick': ('production', 'kick'), 'role:snare': ('production', 'snare
 # On clips these heads cover, the app hides every looped-CLAP head (none was validated on one-shots).
 if MODE == 'export':
     names = os.environ.get('SET', 'clapRepeat').split('+')
-    res = run_set(names, cats=[c for c in CATS if c in EMIT])
+    only = [c for c in os.environ.get('ONLY', '').split(',') if c]
+    res = run_set(names, cats=[c for c in CATS if c in EMIT and (not only or c in only)])
     heads, report = [], {}
     stats = None
     for cat, r in sorted(res.items()):
@@ -162,8 +178,18 @@ if MODE == 'export':
              'blocks': [block_names[n] for n in names], 'maxSeconds': 2.25,
              'mean': [round(float(v), 6) for v in stats[0]], 'std': [round(float(v), 6) for v in stats[1]],
              'heads': heads}
+    selection = f'{ROOT}/docs/evaluations/short-clips-2026-10-04/development-selection.json'
+    if os.environ.get('MERGE_INTO'):
+        # Replace only the retrained heads; the shared standardisation must be the existing model's.
+        assert FIXED_STATS is not None, 'MERGE_INTO needs STATS_FROM'
+        base = json.load(open(os.environ['MERGE_INTO']))
+        retrained = {EMIT[c][1] for c in report}
+        base['heads'] = [h for h in base['heads'] if h['label'] not in retrained] + heads
+        base['revision'] = base['revision'] + '+' + os.environ.get('REVISION_SUFFIX', 'retrained')
+        model = base
+        selection = os.environ.get('SELECTION_OUT', selection)
     json.dump(model, open(f'{ROOT}/public/sound-model/short-clip.json', 'w'), separators=(',', ':'))
     json.dump({'at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'features': names, 'target': TARGET,
                'selection': 'uploader/preset/participant-grouped 5-fold out-of-fold predictions over train+calibration; test never read',
-               'categories': report}, open(f'{ROOT}/docs/evaluations/short-clips-2026-10-04/development-selection.json', 'w'), indent=1)
+               'categories': report}, open(selection, 'w'), indent=1)
     print(json.dumps({c: (r['precision'], r['recall'], r['ships']) for c, r in report.items()}, indent=0))

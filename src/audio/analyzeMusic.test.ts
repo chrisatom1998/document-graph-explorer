@@ -261,3 +261,109 @@ it.each([{deviceMemory:8,hardwareConcurrency:8},{hardwareConcurrency:18}])('reta
  // One request per family worker at most: families overlap, a family never overlaps itself.
  expect(state.maxModels).toBeGreaterThan(1);expect(state.maxModels).toBeLessThanOrEqual(4);
 });
+
+it('retries a model request once on a fresh single-thread worker when the threaded runtime never starts', async () => {
+  vi.stubGlobal('crossOriginIsolated', true);
+  vi.stubGlobal('SharedArrayBuffer', class {});
+  vi.stubGlobal('navigator', { deviceMemory: 16, hardwareConcurrency: 18 });
+  vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
+  const { THREADED_RUNTIME_STALLED } = await import('./musicRuntime');
+  const sent: { kind: string; singleThread?: boolean }[] = [];
+  class StallingWorker extends FakeWorker {
+    override postMessage(message: { id: number; kind: string; singleThread?: boolean; samples?: Float32Array }) {
+      sent.push({ kind: message.kind, singleThread: message.singleThread });
+      if ((message.kind === 'instruments' || message.kind === 'profile') && !message.singleThread) {
+        setTimeout(() => this.onmessage?.({ data: { id: message.id, error: THREADED_RUNTIME_STALLED } }), 0);
+        return;
+      }
+      expect(message.samples === undefined || message.samples.length > 0).toBe(true);
+      super.postMessage(message);
+    }
+  }
+  vi.stubGlobal('Worker', StallingWorker);
+  vi.resetModules();
+  const isolated = await import('./analyzeMusic');
+  const terminated = state.terminated;
+  const result = await isolated.analyzeMusic(new Blob(['stall']), 'stall.wav', { mode: 'full' });
+  expect(result.instrumentScan?.complete).toBe(true);
+  expect(sent.filter(m => m.kind === 'instruments').map(m => !!m.singleThread)).toEqual([false, true]);
+  // Families run side by side, so CLAP may stall once too; it is retried the same way and later requests go single-thread.
+  const profile = sent.filter(m => m.kind === 'profile').map(m => !!m.singleThread);
+  expect(profile.at(-1)).toBe(true);
+  expect(profile.filter(v => !v).length).toBeLessThanOrEqual(1);
+  expect(state.terminated).toBeGreaterThan(terminated);
+});
+
+it('retries an in-flight analysis request when a concurrent warmup hits the threaded stall', async () => {
+  vi.stubGlobal('crossOriginIsolated', true);
+  vi.stubGlobal('SharedArrayBuffer', class {});
+  vi.stubGlobal('navigator', { deviceMemory: 16, hardwareConcurrency: 18 });
+  vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
+  const { THREADED_RUNTIME_STALLED } = await import('./musicRuntime');
+  const sent: { kind: string; singleThread?: boolean }[] = [];
+  const pendingWarms: WarmStallWorker[] = [];
+  class WarmStallWorker {
+    onmessage: ((event: { data: unknown }) => void) | null = null;
+    onerror: ((event: { message: string }) => void) | null = null;
+    private listeners = new Set<(event: { data: unknown }) => void>();
+    private terminated = false;
+    warmId?: number;
+    constructor() { state.created++; }
+    terminate() { this.terminated = true; state.terminated++; }
+    addEventListener(type: string, listener: (event: { data: unknown }) => void) {
+      if (type === 'message') this.listeners.add(listener);
+    }
+    removeEventListener(_type: string, listener: (event: { data: unknown }) => void) {
+      this.listeners.delete(listener);
+    }
+    deliver(data: unknown) {
+      if (this.terminated) return;
+      const event = { data };
+      for (const listener of [...this.listeners]) listener(event);
+      this.onmessage?.(event);
+    }
+    stallWarm() {
+      if (this.warmId === undefined) return;
+      this.deliver({ id: this.warmId, error: THREADED_RUNTIME_STALLED });
+      this.warmId = undefined;
+    }
+    postMessage(message: { id: number; kind: string; family?: string; singleThread?: boolean; samples?: Float32Array }) {
+      sent.push({ kind: message.kind, singleThread: message.singleThread });
+      if (this.terminated) return;
+      if (message.kind === 'warm') {
+        if (!message.singleThread && (message.family === 'instruments' || message.family === 'profile')) {
+          this.warmId = message.id;
+          pendingWarms.push(this);
+          return;
+        }
+        queueMicrotask(() => this.deliver({ id: message.id, warmed: true }));
+        return;
+      }
+      if ((message.kind === 'instruments' || message.kind === 'profile') && !message.singleThread) {
+        // Stall every overlapping warmup now so discard hits this in-flight analysis request.
+        for (const worker of pendingWarms.splice(0)) worker.stallWarm();
+        if (this.warmId !== undefined) this.stallWarm();
+        return;
+      }
+      queueMicrotask(() => {
+        if (this.terminated) return;
+        const result = message.kind === 'jamendo' ? { piano: .7 }
+          : message.kind === 'rhythm' ? { version: 2, durationSeconds: 3, analyzedSeconds: 2, instruments: [], notes: [] }
+          : message.kind === 'instruments' ? { scores: { piano: .95 }, musicScore: .9 }
+          : [{ group: 'source', label: 'piano', score: .6 }];
+        this.deliver({ id: message.id, result });
+      });
+    }
+  }
+  vi.stubGlobal('Worker', WarmStallWorker);
+  vi.resetModules();
+  const isolated = await import('./analyzeMusic');
+  void isolated.preloadMusicModels('full');
+  await vi.waitFor(() => expect(pendingWarms.length).toBeGreaterThan(0));
+  const result = await isolated.analyzeMusic(new Blob(['warm-stall']), 'stall.wav', { mode: 'full' });
+  expect(result.instrumentScan?.complete).toBe(true);
+  expect(result.notes).not.toContain('Instrument recognition was unavailable. Reanalyze to retry.');
+  expect(result.notes).not.toContain('Sound character recognition was unavailable. Reanalyze to retry.');
+  expect(sent.filter(m => m.kind === 'instruments').map(m => !!m.singleThread)).toEqual([false, true]);
+  expect(sent.filter(m => m.kind === 'profile').some(m => m.singleThread)).toBe(true);
+});

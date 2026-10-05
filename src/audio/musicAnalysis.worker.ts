@@ -1,4 +1,4 @@
-import { musicInferenceThreads, musicRuntimeDiagnostics, musicRuntimeIdentity } from './musicRuntime';
+import { musicInferenceThreads, musicRuntimeDiagnostics, musicRuntimeIdentity, THREADED_RUNTIME_STALLED, switchToSingleThreadRuntime } from './musicRuntime';
 import soundManifest from '../../public/sound-model/manifest.json';
 import passtManifest from '../../public/passt-model/manifest.json';
 import { learnedDjScores, sanitizeLearnedDjModel, type LearnedDjModel } from './learnedDjModel';
@@ -21,6 +21,19 @@ declare const self: DedicatedWorkerGlobalScope;
 const ready = new Promise<void>(resolve => {
   if (EssentiaWASM.calledRun) resolve(); else EssentiaWASM.onRuntimeInitialized = resolve;
 });
+/** Model loads with several threads must start within 20 s of the weights arriving (a cached load takes about
+ * a second); otherwise the runtime is stuck and the main thread retries on a fresh single-thread worker. */
+const THREADED_START_LIMIT_MS = 20_000;
+async function loadModel<T>(load: (progress_callback?: (p: { status?: string; file?: string }) => void) => Promise<T>): Promise<T> {
+  if (musicInferenceThreads() === 1) return load();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let stall: (error: Error) => void = () => {};
+  const stalled = new Promise<never>((_, reject) => { stall = reject; });
+  const progress_callback = (p: { status?: string; file?: string }) => {
+    if (p.status === 'done' && p.file?.endsWith('.onnx')) { clearTimeout(timer); timer = setTimeout(() => stall(new Error(THREADED_RUNTIME_STALLED)), THREADED_START_LIMIT_MS); }
+  };
+  try { return await Promise.race([load(progress_callback), stalled]); } finally { clearTimeout(timer); }
+}
 let classifier: Promise<{ model: Awaited<ReturnType<typeof AutoModelForAudioClassification.from_pretrained>>; processor: Awaited<ReturnType<typeof AutoProcessor.from_pretrained>> }> | null = null;
 function getClassifier() {
   return classifier ??= (async () => {
@@ -28,7 +41,7 @@ function getClassifier() {
     env.allowRemoteModels = false; env.allowLocalModels = true;
     env.localModelPath = import.meta.env.BASE_URL;
     if (env.backends.onnx.wasm) { env.backends.onnx.wasm.wasmPaths = undefined; env.backends.onnx.wasm.numThreads = musicInferenceThreads(); }
-    const model = await AutoModelForAudioClassification.from_pretrained('music-model', { dtype: 'q8', device: 'wasm', local_files_only: true });
+    const model = await loadModel(progress_callback => AutoModelForAudioClassification.from_pretrained('music-model', { dtype: 'q8', device: 'wasm', local_files_only: true, progress_callback }));
     const processor = await AutoProcessor.from_pretrained('music-model', { local_files_only: true });
     return { model, processor };
   })().catch(error => { classifier = null; throw error; });
@@ -49,7 +62,7 @@ function getSoundClassifier() {
     env.cacheKey = 'dge-clap-music-and-speech-e9fd5ac1';
     let model; let processor;
     try {
-      model = await ClapAudioModelWithProjection.from_pretrained('sound-model', { dtype: 'q8', device: 'wasm', local_files_only: true });
+      model = await loadModel(progress_callback => ClapAudioModelWithProjection.from_pretrained('sound-model', { dtype: 'q8', device: 'wasm', local_files_only: true, progress_callback }));
       processor = await AutoProcessor.from_pretrained('sound-model', { local_files_only: true });
     } finally { env.cacheKey = previousCache; }
     return { model, processor };
@@ -160,6 +173,8 @@ async function warmFamily(family: string): Promise<void> {
 }
 self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array; samples16?: Float32Array; passt?: number[] }>) => {
   const { id } = data;
+  // The main thread decided this browser needs the single-thread runtime (see THREADED_RUNTIME_STALLED).
+  if ((data as { singleThread?: boolean }).singleThread) switchToSingleThreadRuntime(false);
   if (data.kind === 'warm') {
     try { await warmFamily(data.family); self.postMessage({ id, warmed: true }); }
     catch (error) { self.postMessage({ id, error: error instanceof Error ? error.message : String(error) }); }
