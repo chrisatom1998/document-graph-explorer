@@ -37,7 +37,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: tools
-      - run: cp -r tools/scripts/full-mix scripts/full-mix && rm -rf tools && git log -1 --format='app under test: %H %s'
+      - run: |
+          cp -r tools/scripts/full-mix scripts/full-mix && rm -rf tools && git log -1 --format='app under test: %H %s'
       - uses: actions/download-artifact@v4
         with:
           name: mixed-music-audio
