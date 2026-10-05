@@ -7,7 +7,7 @@ name: Short-clip tag check
 on:
   push:
     branches: [claude/weak-sound-labels-2phv35]
-    paths: [.github/workflows/short-clip-eval.yml, scripts/short-clip-fetch-audio.py, src/audio/djTags.ts, src/audio/djClassification.ts]
+    paths: [scripts/short-clip-fetch-audio.py, src/audio/djTags.ts, src/audio/djClassification.ts]
   workflow_dispatch:
 
 env:
@@ -64,7 +64,7 @@ jobs:
           git checkout HEAD -- src
           npx vite-node scripts/short-clip-displayed.mjs out/run/graph-export.json out/run/r
           python3 scripts/short-clip-report.py out/run ${{ matrix.split }} > out/report.json
-          node scripts/compare-tag-reports.mjs out/report.json
+          set -o pipefail; node scripts/compare-tag-reports.mjs out/report.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -74,3 +74,25 @@ jobs:
             out/run/run.json
             out/run/r-*.json
           retention-days: 30
+
+  compare:
+    # Base and branch side by side per split; fails if any label that passes 60/60 on base fails on the branch.
+    needs: eval
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        split: [calibration, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: short-clip-*-${{ matrix.split }}
+          path: reports
+      - name: Compare
+        run: |
+          cp reports/short-clip-base-${{ matrix.split }}/report.json base.json
+          cp reports/short-clip-branch-${{ matrix.split }}/report.json branch.json
+          set -o pipefail; node scripts/compare-tag-reports.mjs base.json branch.json | tee compare.txt
+          ! grep -q 'branch: now fails' compare.txt

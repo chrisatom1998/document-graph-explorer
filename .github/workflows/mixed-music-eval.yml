@@ -125,9 +125,27 @@ jobs:
       - name: Score
         run: |
           MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json npx vite-node scripts/mixed-music/score.mjs report.json exports/*/graph-export.json
-          node scripts/compare-tag-reports.mjs --min-positives 5 report.json
+          set -o pipefail; node scripts/compare-tag-reports.mjs --min-positives 5 report.json
       - uses: actions/upload-artifact@v4
         with:
           name: mixed-music-report-${{ matrix.build }}
           path: report.json
           retention-days: 30
+
+  compare:
+    # Base and branch side by side; fails if any label that passes 60/60 on base fails on the branch.
+    needs: score
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: mixed-music-report-*
+          path: reports
+      - name: Compare
+        run: |
+          cp reports/mixed-music-report-base/report.json base.json
+          cp reports/mixed-music-report-branch/report.json branch.json
+          set -o pipefail; node scripts/compare-tag-reports.mjs --min-positives 5 base.json branch.json | tee compare.txt
+          ! grep -q 'branch: now fails' compare.txt

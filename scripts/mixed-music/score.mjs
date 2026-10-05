@@ -18,7 +18,7 @@ const nodes = new Map(graph.nodes.filter(n => n.audio).map(n => [(n.path ?? n.ti
 const shown = new Map(), noTag = [], missing = [];
 for (const item of manifest.items) {
   const audio = nodes.get(item.id)?.audio;
-  if (!audio) { missing.push(item.id); shown.set(item.id, new Set()); continue; }
+  if (!audio) { missing.push(item.id); continue; }   // not analysed: left out of every count below, never scored as a miss
   const tags = confidentSoundSummary(audio, audio.recognition?.mode);
   if (!tags.length) noTag.push(item.id);
   shown.set(item.id, new Set(Object.entries(MAP).filter(([, l]) => tags.some(t => t.dimension === 'source' && l.includes(t.label))).map(([c]) => c)));
@@ -27,7 +27,7 @@ const table = {};
 for (const cls of Object.keys(MAP)) {
   const fams = new Map(); let tp = 0, fp = 0, fn = 0, pos = 0, neg = 0;
   for (const item of manifest.items) for (const r of item.reviews) {
-    if (r.label !== cls) continue;
+    if (r.label !== cls || !shown.has(item.id)) continue;
     const hit = shown.get(item.id).has(cls), f = fams.get(item.groups.artist) ?? [0, 0, 0]; fams.set(item.groups.artist, f);
     if (r.state === 'present') { pos++; if (hit) { tp++; f[0]++; } else { fn++; f[2]++; } }
     else { neg++; if (hit) { fp++; f[1]++; } }
@@ -48,7 +48,7 @@ for (const cls of Object.keys(MAP)) {
 // Why positives were missed: was the label anywhere in the analysis, only under an untested model?
 const why = {};
 for (const item of manifest.items) for (const r of item.reviews) {
-  if (r.state !== 'present' || shown.get(item.id).has(r.label)) continue;
+  if (r.state !== 'present' || !shown.has(item.id) || shown.get(item.id).has(r.label)) continue;
   const audio = nodes.get(item.id)?.audio, names = MAP[r.label];
   const inTags = (audio?.soundProfile?.djTags ?? []).filter(t => t.group === 'source' && names.includes(t.label)).map(t => t.model ?? '?');
   const inAst = (audio?.instruments ?? []).some(i => names.includes(i.label));
