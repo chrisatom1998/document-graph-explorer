@@ -8,8 +8,7 @@
     "onnx/audio_model_quantized.onnx": "021dd4fb962b4ed20cc3a6730b09e0ccf9f9c49931047032118a3b64828513a6",
     "prompts.json": "e4c1cb64bd72ca9c8320beaf06d458e5b67930abd2b145e83c8cd53b7050e172",
     "learned.json": "f4932c46eb70c57d1bbb9117c9cf1b8788fb710436ed4fbe26d1c2f83e096ed7",
-    "short-clip.json": "83a2dcf8ec2f337f18d579c1204b394735958f0932c643b6621a53ca805a9405",
-    "short-clip-passt.json": "2f204b30515b5bc670dcaa16c753350ec06634788a7b80b45c3d94a3a718a880"
+    "short-clip.json": "83a2dcf8ec2f337f18d579c1204b394735958f0932c643b6621a53ca805a9405"
   },
   "profileVersion": 1,
   "catalogVersion": 2
