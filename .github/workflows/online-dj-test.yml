@@ -1,0 +1,61 @@
+name: Online DJ tag check
+
+# One-off real-world check: downloads ~12 freely licensed DJ tracks, runs them through the
+# built app's real analysis pipeline in headless Chromium, and prints the tags it showed.
+# Audio is fetched at run time and never committed.
+on:
+  push:
+    branches: [claude/project-thread-rjgnlw]
+    paths: [scripts/online-dj/**, .github/workflows/online-dj-test.yml]
+  workflow_dispatch:
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  online-dj:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        id: music-models
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install ffmpeg + Playwright Chromium
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          npx playwright install --with-deps chromium
+      - name: Fetch tracks
+        run: node scripts/online-dj/fetch-tracks.mjs online-dj/audio online-dj/manifest.json
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=online-dj/audio MANIFEST=online-dj/manifest.json node scripts/short-clip-upload-eval.mjs online-dj/run test 20
+      - name: Summarise
+        if: always()
+        run: npx vite-node scripts/online-dj/summarize.mjs online-dj/run/graph-export.json online-dj/manifest.json online-dj/summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: online-dj-results
+          path: |
+            online-dj/manifest.json
+            online-dj/summary.json
+            online-dj/run/*.json
+          retention-days: 14
