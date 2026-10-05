@@ -50,6 +50,7 @@ track = lambda m: int(m['track_id']) if m.get('track_id', '').strip().isdigit() 
 print(f'FMA genre_top known for {len(genre)} tracks')
 
 songs = {'tune': [], 'test': []}
+wanted = {}  # archive file name -> output path; gzip archives are read once, in order (random access re-decompresses)
 for split in songs:
     pool = {}
     for key, p in partition.items():
@@ -69,7 +70,17 @@ for split in songs:
             songs[split].append({'id': iid, 'path': f'audio/{iid}.ogg', 'split': split, 'tier': 'song',
                                  'labels': {'genre': g, 'artist': m['artist_id'], 'instruments': sorted(instruments.get(key, []))},
                                  'source': f"OpenMIC-2018 {key}: {m.get('track_title', '')} by {m.get('artist_name', '')} ({m.get('license_url', '')})"})
-            open(f'{out}/audio/{iid}.ogg', 'wb').write(tf.extractfile(member(f'audio/{key[:3]}/{key}.ogg')).read())
+            wanted[f'{key}.ogg'] = f'{out}/audio/{iid}.ogg'
+tf.close()
+def extract(archive, wanted):
+    with tarfile.open(archive, 'r|gz') as stream:
+        for m in stream:
+            path = wanted.get(os.path.basename(m.name))
+            if path and m.isfile() and not os.path.basename(m.name).startswith('._'):
+                open(path, 'wb').write(stream.extractfile(m).read())
+    missing = [p for p in wanted.values() if not os.path.exists(p)]
+    if missing: sys.exit(f'{len(missing)} clips missing from {archive}')
+extract(openmic, wanted)
 
 # --- notes -------------------------------------------------------------------------------------------------------
 notes = {'tune': [], 'test': []}
@@ -79,7 +90,7 @@ with tarfile.open(nsynth_tgz) as nt:
     by_instrument = {}
     for note, e in examples.items():
         if 36 <= e['pitch'] <= 84 and e['velocity'] >= 75: by_instrument.setdefault(e['instrument_str'], []).append(note)
-    audio = {os.path.basename(n)[:-4]: m for n, m in nm.items() if n.endswith('.wav')}
+    wanted = {}
     for inst, keys in sorted(by_instrument.items()):
         split = 'tune' if int(h(SEED, 'instrument', inst)[:8], 16) % 2 == 0 else 'test'
         keys = sorted(keys, key=lambda k: examples[k]['pitch'])
@@ -89,7 +100,8 @@ with tarfile.open(nsynth_tgz) as nt:
             notes[split].append({'id': iid, 'path': f'audio/{iid}.wav', 'split': split, 'tier': 'note',
                                  'labels': {'family': e['instrument_family_str'], 'instrument': inst, 'source': e['instrument_source_str'], 'pitch': e['pitch']},
                                  'source': f'NSynth test note {k} (CC BY 4.0)'})
-            open(f'{out}/audio/{iid}.wav', 'wb').write(nt.extractfile(audio[k]).read())
+            wanted[f'{k}.wav'] = f'{out}/audio/{iid}.wav'
+extract(nsynth_tgz, wanted)
 
 for kind, sets in (('songs', songs), ('notes', notes)):
     for split, items in sets.items():
