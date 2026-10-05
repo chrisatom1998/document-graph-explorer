@@ -9,6 +9,9 @@ from concurrent.futures import ThreadPoolExecutor
 ROOT = sys.argv[1]; MODEL = sys.argv[2] if len(sys.argv) > 2 else 'gemini-3.8-flash'
 WORKERS = int(os.environ.get('WORKERS', '1'))      # free-tier keys allow only a few requests a minute
 KEY = os.environ.get('GEMINI_API_KEY') or sys.exit('Set GEMINI_API_KEY (for example GEMINI_API_KEY=$(pbpaste)).')
+KEY = KEY.strip()
+if not re.fullmatch(r'[A-Za-z0-9_.\-]{20,}', KEY):       # e.g. the clipboard held something else
+    sys.exit('GEMINI_API_KEY does not look like an API key. Copy the key from https://aistudio.google.com/apikey and run again.')
 # The default model writes gemini.json; any other model gets its own file so runs can be compared.
 OUT = os.path.join(ROOT, 'gemini.json' if len(sys.argv) <= 2 else f'gemini-{MODEL}.json')
 # The same choices as scripts/dj-test-set/index.html, so answers compare one to one.
