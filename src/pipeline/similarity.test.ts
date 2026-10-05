@@ -148,4 +148,27 @@ describe('addToSemanticIndex — incremental vs. full rebuild', () => {
     expect(index.nearest[0]?.j).toBe(1);
     expect(index.nearest[0]?.sim).toBeCloseTo(0.58, 5);
   });
+
+  it('drops mutual top-k pairs that sit well below either doc\'s best match', () => {
+    const unit = (x: number, y: number): number[] => {
+      const n = Math.hypot(x, y);
+      return [x / n, y / n, 0, 0];
+    };
+    // a's best match is b (cos ≈ 0.995); c is a's mutual top-k neighbor but
+    // ~0.1 further away, so only the relative margin can drop it.
+    const ids = ['a', 'b', 'c'];
+    const vectors = pack([unit(1, 0), unit(1, 0.1), unit(1, 0.6)]);
+    const loose = { threshold: 0.5, topK: 5 };
+    const index = buildSemanticIndex(ids, vectors, dims, loose);
+
+    const pairs = (edges: { source: string; target: string }[]) =>
+      edges.map((e) => `${e.source}-${e.target}`).sort();
+    expect(pairs(edgesFromIndex(index, loose.threshold))).toEqual(['a-b', 'a-c', 'b-c']);
+    // b-c survives: it is c's nearest pair, which always links
+    expect(pairs(edgesFromIndex(index, loose.threshold, 0.03))).toEqual(['a-b', 'b-c']);
+    expect(pairs(semanticEdges(ids, vectors, dims, { ...loose, relativeMargin: 0.03 }).edges)).toEqual([
+      'a-b',
+      'b-c',
+    ]);
+  });
 });

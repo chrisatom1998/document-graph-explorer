@@ -472,6 +472,17 @@ describe('extractEntities', () => {
     expect(entities).toContain('refresh_token_flow');
     expect(entities).toContain('JWT');
   });
+
+  it('skips generic acronyms and the words of shouted headings', () => {
+    const text =
+      'LOAD TEST RESULTS\nThe API gateway passed. SOC and GDPR reviews are on file, ' +
+      'see the PDF. Times in UTC. Result: PASS. AWS IAM roles were rotated.';
+    const entities = extractEntities(text);
+    for (const generic of ['LOAD', 'TEST', 'RESULTS', 'API', 'PDF', 'UTC', 'PASS']) {
+      expect(entities).not.toContain(generic);
+    }
+    for (const kept of ['SOC', 'GDPR', 'AWS', 'IAM']) expect(entities).toContain(kept);
+  });
 });
 
 // ---------------------------------------------------------------------------
