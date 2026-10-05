@@ -65,7 +65,7 @@ export function familyOf(label: string): string {
   return 'unknown';
 }
 /** One-shot heads change what short clips display; a new file re-runs only those clips, never long recordings. */
-const oneShotIdentity = `one-shot-${((clap.sha256 as Record<string, string>)['short-clip.json'] ?? 'none').slice(0, 12)}-prompts-${clap.sha256['prompts.json'].slice(0, 12)}`;
+const oneShotIdentity = `one-shot-${((clap.sha256 as Record<string, string>)['short-clip.json'] ?? 'none').slice(0, 12)}${(clap.sha256 as Record<string, string>)['short-clip-passt.json'] ? `-passt-${(clap.sha256 as Record<string, string>)['short-clip-passt.json'].slice(0, 12)}` : ''}-prompts-${clap.sha256['prompts.json'].slice(0, 12)}`;
 export const recognitionConfiguration = (mode: 'fast' | 'full', durationSeconds?: number) => `timeline-v1:${mode}:decoder-mono-v3-short-pcm:${musicRuntimeIdentity()}:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1${durationSeconds !== undefined && durationSeconds <= SHORT_CLIP_MAX_SECONDS ? `:${oneShotIdentity}` : ''}:uncalibrated`;
 export function createRecognition(duration: number, mode: 'fast' | 'full', audioFingerprint?: string): Recognition {
   // Checksum prefixes keep the growing Jamendo asset list inside the 512-character ledger bound.

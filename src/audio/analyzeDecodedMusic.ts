@@ -25,6 +25,8 @@ export interface AnalysisOptions {
   mode?: MusicAnalysisMode;
   audioFingerprint?: string;
   cache?: ResultCache;
+  /** PaSST features for a whole short clip (32 kHz); undefined keeps the CLAP-only one-shot heads. */
+  passt?: (samples32k: Float32Array, signal?: AbortSignal) => Promise<number[] | undefined>;
   onProgress?: (note: string) => void;
   /** Live worker observations, never evidence that cached scores executed inference. */
   onRuntime?: (runtime: { kind: string; backend: string; configuredInferenceThreads: number; effectiveInferenceThreads?: number; inferenceExecuted: boolean }) => void;
@@ -179,7 +181,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
       const hasAudio = audible(samples);
       // A whole short clip also goes to the one-shot heads, which read the unchanged 16 kHz audio.
       const samples16 = id === 'clap' && interval.start === 0 && interval.end >= duration && duration <= SHORT_CLIP_MAX_SECONDS ? await read(0, duration, 16000) : undefined;
-      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
+      const passt = samples16 && options.passt ? await options.passt(await read(0, duration, 32000), options.signal) : undefined;
+      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}), ...(passt ? { passt } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
       if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
       check(); cache.set(key, output);
     }

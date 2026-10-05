@@ -1,5 +1,6 @@
 import { musicInferenceThreads, musicRuntimeDiagnostics, musicRuntimeIdentity } from './musicRuntime';
 import soundManifest from '../../public/sound-model/manifest.json';
+import passtManifest from '../../public/passt-model/manifest.json';
 import { learnedDjScores, sanitizeLearnedDjModel, type LearnedDjModel } from './learnedDjModel';
 import { sanitizeShortClipModel, shortClipScores, type ShortClipModel } from './shortClipModel';
 import { eventFeatures } from './eventFeatures';
@@ -54,7 +55,7 @@ function getSoundClassifier() {
     return { model, processor };
   })().catch(error => { soundClassifier = null; throw error; });
 }
-let soundDescriptions: Promise<{ prompts: DescriptionPrompt[]; learned?: LearnedDjModel; shortClip?: ShortClipModel }> | null = null;
+let soundDescriptions: Promise<{ prompts: DescriptionPrompt[]; learned?: LearnedDjModel; shortClip?: ShortClipModel; shortClipPasst?: ShortClipModel }> | null = null;
 /** Optional pinned asset: a missing, altered or malformed file leaves short clips on the existing analysis. */
 async function pinnedJson(name: string): Promise<unknown> {
   const pinned = (soundManifest.sha256 as Record<string,string>)[name];
@@ -88,7 +89,10 @@ function getSoundDescriptions() {
     if (learned && learned.encoder !== CLAP_ENCODER) learned = undefined;
     let shortClip = sanitizeShortClipModel(await pinnedJson('short-clip.json'));
     if (shortClip && shortClip.clapEncoder !== CLAP_ENCODER) shortClip = undefined;
-    return { prompts: await response.json() as DescriptionPrompt[], learned, shortClip };
+    // Heads that also read PaSST; they replace the same-label CLAP-only head only when PaSST features arrive.
+    let shortClipPasst = sanitizeShortClipModel(await pinnedJson('short-clip-passt.json'));
+    if (shortClipPasst && (shortClipPasst.clapEncoder !== CLAP_ENCODER || shortClipPasst.passtModel !== passtManifest.sha256['model.onnx'])) shortClipPasst = undefined;
+    return { prompts: await response.json() as DescriptionPrompt[], learned, shortClip, shortClipPasst };
   })().catch(error => { soundDescriptions = null; throw error; });
 }
 function isInstrumentPredictions(value: unknown): value is InstrumentPredictions {
@@ -121,7 +125,7 @@ async function disposeTensors(values: Record<string, unknown>): Promise<void> {
 const isLogits = (v: unknown): v is number[] => Array.isArray(v) && v.length === 527 && v.every(x => typeof x === 'number' && Number.isFinite(x));
 /** One-shot features exactly as scripts/short-clip-features.mjs computes them: CLAP with silence after the clip
  * (never looped), all AudioSet AST logits on the unchanged clip, and attack/body/decay features. */
-async function shortClipProfile(model: ShortClipModel, samples48: Float32Array, samples16: Float32Array, embedding: number[]) {
+async function shortClipProfile(model: ShortClipModel, samples48: Float32Array, samples16: Float32Array, embedding: number[], passt?: { model: ShortClipModel; features: number[] }) {
   const inputs: Parameters<typeof shortClipScores>[1] = { clapRepeat: embedding };
   if (model.blocks.includes('event')) inputs.event = eventFeatures(samples16);
   if (!inputs.event && model.blocks.includes('event')) return [];
@@ -142,7 +146,10 @@ async function shortClipProfile(model: ShortClipModel, samples48: Float32Array, 
     try { const output = await ast(features); try { return Array.from(output.logits.data) as number[]; } finally { await disposeTensors(output); } }
     finally { await disposeTensors(features); }
   });
-  return shortClipScores(model, inputs).scores;
+  if (!passt) return shortClipScores(model, inputs).scores;
+  const replaced = new Set(passt.model.heads.map(h => `${h.group}:${h.label}`));
+  const base = { ...model, heads: model.heads.filter(h => !replaced.has(`${h.group}:${h.label}`)) };
+  return [...shortClipScores(base, inputs).scores, ...shortClipScores(passt.model, { clapRepeat: embedding, passt: passt.features }).scores];
 }
 /** Load one family's weights ahead of its first clip. Scores are unaffected: the same memoized sessions serve later requests. */
 async function warmFamily(family: string): Promise<void> {
@@ -151,7 +158,7 @@ async function warmFamily(family: string): Promise<void> {
   else if (family === 'jamendo') await Promise.all([ready, preloadJamendo()]);
   else await ready;
 }
-self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array; samples16?: Float32Array }>) => {
+self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array; samples16?: Float32Array; passt?: number[] }>) => {
   const { id } = data;
   if (data.kind === 'warm') {
     try { await warmFamily(data.family); self.postMessage({ id, warmed: true }); }
@@ -179,7 +186,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
       return;
     }
     if (data.kind === 'sound' || data.kind === 'profile') {
-      const { prompts, learned, shortClip } = await getSoundDescriptions();
+      const { prompts, learned, shortClip, shortClipPasst } = await getSoundDescriptions();
       const embedding = await cachedAudioInference('sound-model', `clap-48khz:${musicRuntimeIdentity('clap')}`, data.samples, isAudioEmbedding, async () => {
         const { model, processor } = await getSoundClassifier();
         const inputs = await processor(data.samples);
@@ -193,7 +200,9 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
       let learnedScores = learned ? learnedDjScores(embedding, learned) : [];
       // A whole short clip arrives with its 16 kHz copy: score it with heads trained on one-shots.
       const short = data.samples16 && shortClip && data.samples.length <= shortClip.maxSeconds * 48000 ? shortClip : undefined;
-      const oneShot = short ? await shortClipProfile(short, data.samples, data.samples16!, embedding) : [];
+      const passtFeatures = data.kind === 'profile' && Array.isArray(data.passt) && data.passt.length === 768 ? data.passt : undefined;
+      const passt = shortClipPasst && passtFeatures ? { model: shortClipPasst, features: passtFeatures } : undefined;
+      const oneShot = short ? await shortClipProfile(short, data.samples, data.samples16!, embedding, passt) : [];
       if (short) {
         // Heads trained on longer audio were never validated on one-shots (several misfired, e.g. loop tags):
         // only the one-shot heads tag these clips. The user's own reviewed examples still apply.

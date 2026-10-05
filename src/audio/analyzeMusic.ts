@@ -169,7 +169,8 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
         if (prepared) fusion = prepared.scorer;
         options.signal?.throwIfAborted();
         const result = await analyzeDecodedMusic(decoder, (message, transfer) => request(message, transfer, options, 'analysis', first.fingerprint),
-          { ...options, fusion, sourceMime: blob.type, mode, initialPreview: first.preview, audioFingerprint: first.audioFingerprint, cache, concurrentModels: concurrentModels() });
+          { ...options, fusion, sourceMime: blob.type, mode, initialPreview: first.preview, audioFingerprint: first.audioFingerprint, cache, concurrentModels: concurrentModels(),
+            passt: options.passt ?? (async (samples, signal) => (await import('./passtFeatures')).passtFeatures(samples, signal)) });
         if (prepared) {
           result.fusion = prepared.restore(result.fusion);
           result.notes.push(prepared.usedFallback() ? 'Experimental source model unavailable; installed detector retained.' : 'Experimental PaSST source diagnostics; calibration only, no validation receipt.');

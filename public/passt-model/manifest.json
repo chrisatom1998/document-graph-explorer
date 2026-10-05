@@ -1,0 +1,11 @@
+{
+  "description": "PaSST-S OpenMIC checkpoint (openmic-passt-s-f128-10sec-p16-s10-ap.85.pt), frozen backbone exported with its 32 kHz mel frontend by artifacts/astra90/experiments/export_passt_features.py. Input float32[1,320000]; outputs features float32[1,768] and scores float32[1,20]. Only the short-clip bass-hit head reads it.",
+  "checkpointSha256": "dc229428753176e8be0373d25887116fc15b490af86f671cecf9ed76a0f287da",
+  "optional": true,
+  "sha256": {
+    "model.onnx": "79142146b9b56a2c3c4fb14f5585f28d66ecd756aaefad6f89ff8eb50b820cd9"
+  },
+  "sources": {
+    "model.onnx": "https://huggingface.co/cmjatom/passt-openmic-features-onnx/resolve/main/model.onnx"
+  }
+}

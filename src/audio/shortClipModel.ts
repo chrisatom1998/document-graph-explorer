@@ -6,8 +6,9 @@ import { EVENT_FEATURE_NAMES, EVENT_FEATURE_VERSION } from './eventFeatures';
  * the clip with silence instead. AST pads its own features; event features read the unchanged audio. Nothing is stretched. */
 /** Longest clip the one-shot benchmark measured; longer audio keeps the existing analysis. */
 export const SHORT_CLIP_MAX_SECONDS = 2.25;
-export type ShortClipBlock = 'clapRepeat' | 'clapZero' | 'ast' | 'event';
-export const SHORT_CLIP_BLOCK_SIZES: Record<ShortClipBlock, number> = { clapRepeat: 512, clapZero: 512, ast: 527, event: EVENT_FEATURE_NAMES.length };
+/** PaSST is the frozen OpenMIC backbone's 768-number representation of the first 10 s at 32 kHz, zero-padded. */
+export type ShortClipBlock = 'clapRepeat' | 'clapZero' | 'ast' | 'event' | 'passt';
+export const SHORT_CLIP_BLOCK_SIZES: Record<ShortClipBlock, number> = { clapRepeat: 512, clapZero: 512, ast: 527, event: EVENT_FEATURE_NAMES.length, passt: 768 };
 export interface ShortClipHead { group: 'source' | 'production' | 'character'; label: string; weights: number[]; bias: number; threshold: number; maybe?: boolean }
 export interface ShortClipModel {
   version: 1;
@@ -15,6 +16,8 @@ export interface ShortClipModel {
   revision: string;
   clapEncoder: string;
   astModel?: string;
+  /** SHA-256 of the PaSST ONNX export whose features the heads were trained on. */
+  passtModel?: string;
   eventFeatures: string;
   blocks: ShortClipBlock[];
   /** Applies only to clips no longer than this; longer audio keeps the existing analysis. */
@@ -23,7 +26,7 @@ export interface ShortClipModel {
   std: number[];
   heads: ShortClipHead[];
 }
-export interface ShortClipInputs { clapRepeat?: ArrayLike<number>; clapZero?: ArrayLike<number>; ast?: ArrayLike<number>; event?: ArrayLike<number> }
+export interface ShortClipInputs { clapRepeat?: ArrayLike<number>; clapZero?: ArrayLike<number>; ast?: ArrayLike<number>; event?: ArrayLike<number>; passt?: ArrayLike<number> }
 
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 export function sanitizeShortClipModel(raw: unknown): ShortClipModel | undefined {
@@ -33,12 +36,13 @@ export function sanitizeShortClipModel(raw: unknown): ShortClipModel | undefined
   if (m.eventFeatures !== EVENT_FEATURE_VERSION || !finite(m.maxSeconds) || m.maxSeconds <= 0 || m.maxSeconds > SHORT_CLIP_MAX_SECONDS) return;
   if (!Array.isArray(m.blocks) || !m.blocks.length || m.blocks.some(b => !(b in SHORT_CLIP_BLOCK_SIZES)) || new Set(m.blocks).size !== m.blocks.length) return;
   if (m.blocks.includes('ast') && typeof m.astModel !== 'string') return;
+  if (m.blocks.includes('passt') && !(typeof m.passtModel === 'string' && /^[0-9a-f]{64}$/.test(m.passtModel))) return;
   const width = m.blocks.reduce((n, b) => n + SHORT_CLIP_BLOCK_SIZES[b], 0);
   if (!Array.isArray(m.mean) || !Array.isArray(m.std) || m.mean.length !== width || m.std.length !== width || !m.mean.every(finite) || !m.std.every(v => finite(v) && v > 0)) return;
   if (!Array.isArray(m.heads) || m.heads.length > 200 || m.heads.some(h => !h || !['source', 'production', 'character'].includes(h.group) || typeof h.label !== 'string' || !h.label
     || h.label.length > 80 || !Array.isArray(h.weights) || h.weights.length !== width || !h.weights.every(finite) || !finite(h.bias)
     || !finite(h.threshold) || h.threshold < .5 || h.threshold > 1 || (h.maybe !== undefined && typeof h.maybe !== 'boolean'))) return;
-  return { version: 1, kind: 'short-clip-heads', revision: m.revision, clapEncoder: m.clapEncoder, ...(m.astModel ? { astModel: m.astModel } : {}),
+  return { version: 1, kind: 'short-clip-heads', revision: m.revision, clapEncoder: m.clapEncoder, ...(m.astModel ? { astModel: m.astModel } : {}), ...(m.passtModel ? { passtModel: m.passtModel } : {}),
     eventFeatures: m.eventFeatures, blocks: [...m.blocks], maxSeconds: m.maxSeconds, mean: m.mean, std: m.std, heads: m.heads };
 }
 
@@ -49,8 +53,8 @@ function vector(model: ShortClipModel, inputs: ShortClipInputs): number[] | unde
     if (!values || values.length !== SHORT_CLIP_BLOCK_SIZES[block]) return;
     const raw = Array.from(values);
     if (!raw.every(Number.isFinite)) return;
-    // Same scaling as scripts/train-short-clip-heads.py: unit-length CLAP, AST logits / 10, event features as computed.
-    if (block === 'clapZero' || block === 'clapRepeat') { const n = Math.hypot(...raw) + 1e-9; out.push(...raw.map(v => v / n)); }
+    // Same scaling as scripts/train-short-clip-heads.py: unit-length CLAP and PaSST, AST logits / 10, event features as computed.
+    if (block === 'clapZero' || block === 'clapRepeat' || block === 'passt') { const n = Math.hypot(...raw) + 1e-9; out.push(...raw.map(v => v / n)); }
     else if (block === 'ast') out.push(...raw.map(v => v / 10));
     else out.push(...raw);
   }

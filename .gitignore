@@ -40,6 +40,7 @@ public/audio-runtime/
 public/music-model/**/*.onnx
 public/sound-model/**/*.onnx
 public/jamendo-model/*.onnx
+public/passt-model/*.onnx
 # NSynth heads are converted locally from Essentia .pb files (no upstream ONNX), so they are committed
 !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
 # learned.json and short-clip.json are small trained heads committed with the app (pinned in manifest.json)

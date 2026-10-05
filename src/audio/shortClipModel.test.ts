@@ -31,6 +31,16 @@ describe('short-clip heads', () => {
     expect(shortClipScores(m, { clapRepeat: [3, ...new Array(511).fill(0)] }).scores).toMatchObject([{ label: 'hi-hat' }]);
     expect(shortClipScores(m, { clapZero: [3, ...new Array(511).fill(0)] }).scores).toEqual([]);
   });
+  it('needs a pinned PaSST export and its unit-length features for a PaSST head', () => {
+    const passt = model({ blocks: ['clapRepeat', 'passt'], mean: new Array(1280).fill(0), std: new Array(1280).fill(1),
+      heads: [{ group: 'production', label: 'bass hit', weights: [...new Array(512).fill(0), 4, ...new Array(767).fill(0)], bias: 0, threshold: .9 }] });
+    expect(sanitizeShortClipModel(passt)).toBeUndefined();
+    expect(sanitizeShortClipModel({ ...passt, passtModel: 'abc' })).toBeUndefined();
+    const m = sanitizeShortClipModel({ ...passt, passtModel: 'a'.repeat(64) })!;
+    const clap = [1, ...new Array(511).fill(0)];
+    expect(shortClipScores(m, { clapRepeat: clap, passt: [7, ...new Array(767).fill(0)] }).scores).toMatchObject([{ label: 'bass hit' }]);
+    expect(shortClipScores(m, { clapRepeat: clap }).scores).toEqual([]);
+  });
 });
 
 describe('event features', () => {

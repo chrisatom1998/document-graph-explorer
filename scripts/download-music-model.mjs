@@ -40,3 +40,23 @@ for (const root of ['public/music-model', 'public/sound-model', 'public/jamendo-
     await writeFile(path, data);
   }
 }
+
+// Optional large weights: a missing source or failed download leaves the feature off, never the build.
+for (const root of ['public/passt-model']) {
+  const manifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
+  for (const name of Object.keys(manifest.sha256)) {
+    const path = join(root, name);
+    try {
+      if (checksum(await readFile(path)) === manifest.sha256[name]) continue;
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    const url = manifest.sources?.[name];
+    if (!url) { console.warn(`Optional model ${root}/${name} has no download source; skipped.`); continue; }
+    try {
+      const data = await download(url, manifest.sha256[name]);
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, data);
+    } catch (error) { console.warn(`Optional model ${root}/${name} unavailable; skipped. ${error.message}`); }
+  }
+}
