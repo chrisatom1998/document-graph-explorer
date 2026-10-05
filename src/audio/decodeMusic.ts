@@ -34,6 +34,9 @@ export async function openMusicDecoder(blob: Blob, name: string, signal?: AbortS
   try {
     const load = (instance = ff) => instance.load({ coreURL: `${base}ffmpeg-core.js`, wasmURL: `${base}ffmpeg-core.wasm`, classWorkerURL: `${base}worker.js` });
     const bytes = new Uint8Array(await blob.arrayBuffer());
+    // A close during buffering already ran terminate; loading now would start a worker nothing releases.
+    signal?.throwIfAborted();
+    if (closed) throw new Error('The audio decoder was closed.');
     await load();
     // writeFile transfers its buffer to the FFmpeg worker; keep the original for a fresh instance.
     await ff.writeFile(input, bytes.slice());
