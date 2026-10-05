@@ -6,6 +6,9 @@
             (buzzy leads and basses for distorted) and the IDMT/EGFx dry and modulation-effect takes
   paired    hard + the IDMT/EGFx takes WITH the effect as positives, so the same guitar and bass notes
             appear both with and without it (scored too on held-out effect takes: effect recall)
+  rendered  cleaned + electronic sounds rendered dry and with each effect (build-effect-renders.py), so the
+            same synth or drum-machine part appears with and without it (scored too on held-out renders)
+  rendered+hard  both of the above
 
 All three are scored on the same test: Freesound uploaders held out on BOTH sides (the old test
 held out only positive uploaders, so distorted had 0 test negatives), plus held-out Surge presets and
@@ -22,13 +25,19 @@ CHARACTER = ['distorted', 'reverberant', 'echoing', 'filtered']
 HEADS = os.environ.get('HEADS', 'distorted,reverberant').split(',')
 # Words in Freesound tags/names, or Surge preset names, that mean the clip has the effect.
 HAS = {'distorted': re.compile(r'distort|overdriv|drive|fuzz|crush|saturat|grit|dirt|scream|growl|filth|nasty|harsh|rasp'),
-       'reverberant': re.compile(r'reverb|hall|cathedral|cave|church|room|space|echo|delay|ambien')}
+       'reverberant': re.compile(r'reverb|hall|cathedral|cave|church|room|space|echo|delay|ambien'),
+       'echoing': re.compile(r'echo|delay|reverb|dub'),
+       'filtered': re.compile(r'filter|lowpass|low-pass|highpass|high-pass|sweep|muffl|telephone|radio|lo-fi|lofi')}
+# Renders whose effect overlaps the head's are neither positive nor negative for it.
+OVERLAP = {'reverberant': {'echoing'}, 'echoing': {'reverberant'}}
 # Surge preset types that make useful near misses: buzzy and bright for distorted, long and sustained for reverberant.
 SURGE_TYPES = {'distorted': {'synth lead', 'synth bass', 'synth pluck', 'brass synth', 'synth sequence'},
-               'reverberant': {'synth lead', 'synth bass', 'synth pluck', 'organ synth', 'brass synth'}}
+               'reverberant': {'synth lead', 'synth bass', 'synth pluck', 'organ synth', 'brass synth'},
+               'echoing': {'synth lead', 'synth bass', 'synth pluck', 'synth sequence'},
+               'filtered': {'synth lead', 'synth bass', 'synth pluck', 'synth sequence', 'brass synth'}}
 MODULATION = ['dry', 'chorus', 'flanger', 'phaser', 'tremolo', 'vibrato']
 CAP = 1500
-BAR = 0.65
+BAR = 0.60   # user ruling 2026-10-05: precision AND recall >= 0.60
 rng = np.random.default_rng(int(os.environ.get('SEED', '417')))
 
 def embeddings(folder, want):
@@ -57,7 +66,10 @@ SN = [c['group'].lower() for c in surge]; ST = [set(c.get('labels') or []) for c
 man = json.load(open(f'{B}/effects-clap/manifest.json'))['clips']
 eemb = embeddings(f'{B}/effects-clap', {c['id'] for c in man}); man = [c for c in man if c['id'] in eemb]
 EX = matrix([c['id'] for c in man], eemb); EL = np.array([c['label'] for c in man]); EG = np.array(['fx:' + c['group'] for c in man])
-print(f'freesound {len(fs)}, surge {len(surge)}, effect sets {len(man)}')
+rman = json.load(open(f'{B}/effect-renders/manifest.json'))['clips']
+remb = embeddings(f'{B}/effect-renders', {c['id'] for c in rman}); rman = [c for c in rman if c['id'] in remb]
+RX = matrix([c['id'] for c in rman], remb); RL = np.array([c['label'] for c in rman]); RG = np.array(['fxr:' + c['group'] for c in rman])
+print(f'freesound {len(fs)}, surge {len(surge)}, effect sets {len(man)}, electronic renders {len(rman)}')
 
 def held(name, groups, share=0.25):
     """Hash-ordered whole groups until about `share` of the rows are held out."""
@@ -99,17 +111,24 @@ for L in HEADS:
     ep_tr = np.where(ep & ~ep_test)[0]; ep_tr = rng.choice(ep_tr, min(len(ep_tr), CAP), replace=False)
     ep_te = np.where(ep & ep_test)[0]; ep_te = rng.choice(ep_te, min(len(ep_te), 1000), replace=False)
 
+    # Rendered pairs: held out by source group, so a test render's dry twin never trains.
+    r_ok = (RL == L) | ~np.isin(RL, sorted(OVERLAP.get(L, set())))
+    r_test = np.isin(RG, sorted(held(f'{L}:render', list(RG[r_ok]))))
+    r_tr = np.where(r_ok & ~r_test)[0]; r_te = np.where(r_ok & r_test)[0]
+
     test_mask = fs_test & (pos | (other & ~tagged))
     Xte, yte = FX[test_mask], pos[test_mask]
-    setups = {'baseline': pos | other, 'cleaned': pos | (other & ~tagged), 'hard': pos | (other & ~tagged), 'paired': pos | (other & ~tagged)}
+    setups = {'baseline': pos | other, 'cleaned': pos | (other & ~tagged), 'hard': pos | (other & ~tagged), 'paired': pos | (other & ~tagged),
+              'rendered': pos | (other & ~tagged), 'rendered+hard': pos | (other & ~tagged)}
     row = {'label': L, 'testPositive': int(yte.sum()), 'testNegative': int((~yte).sum()),
            'heldOutUploaders': len(set(FG[test_mask])), 'surgeTest': int(len(s_te)), 'effectTest': int(len(e_te)), 'setups': {}}
     for name, use in setups.items():
         tr = use & ~fs_test
         X, y, g = FX[tr], pos[tr], FG[tr]
-        extra = np.vstack([SX[s_tr], EX[e_tr]]) if name in ('hard', 'paired') else np.zeros((0, FX.shape[1]))
+        extra = np.vstack([SX[s_tr], EX[e_tr]]) if name in ('hard', 'paired', 'rendered+hard') else np.zeros((0, FX.shape[1]))
         ey = np.zeros(len(extra), bool)
         if name == 'paired': extra = np.vstack([extra, EX[ep_tr]]); ey = np.concatenate([ey, np.ones(len(ep_tr), bool)])
+        if name.startswith('rendered'): extra = np.vstack([extra, RX[r_tr]]); ey = np.concatenate([ey, RL[r_tr] == L])
         # Threshold from out-of-fold scores on the training uploaders only; near misses join every training fold.
         p = np.full(len(y), np.nan)
         for a, b in GroupKFold(n_splits=5).split(X, y, g):
@@ -124,20 +143,25 @@ for L in HEADS:
         sfa = float((m.predict_proba(SX[s_te])[:, 1] >= th).mean()) if len(s_te) else None
         efa = float((m.predict_proba(EX[e_te])[:, 1] >= th).mean()) if len(e_te) else None
         erec = float((m.predict_proba(EX[ep_te])[:, 1] >= th).mean()) if len(ep_te) else None
+        rp = m.predict_proba(RX[r_te])[:, 1] >= th; rt = RL[r_te] == L
+        rrec, rfa = float(rp[rt].mean()) if rt.any() else None, float(rp[~rt].mean()) if (~rt).any() else None
         row['setups'][name] = {'threshold': th, 'trainNegative': int((~y).sum() + len(extra)), 'tp': tp, 'fp': fp, 'fn': fn,
-                               'precision': P, 'recall': R, 'surgeFalseAlarm': sfa, 'effectFalseAlarm': efa, 'effectRecall': erec,
+                               'precision': P, 'recall': R, 'surgeFalseAlarm': sfa, 'effectFalseAlarm': efa, 'effectRecall': erec, 'renderRecall': rrec, 'renderFalseAlarm': rfa,
                                'passes': bool(P >= BAR and R >= BAR),
                                'falseAlarmIds': [fs[i][0] for i in np.where(test_mask)[0][pr & ~yte]]}
         # The shippable head refits on every uploader and both near-miss splits, keeping the tested threshold.
         full_extra, full_y = extra, ey
-        if name in ('hard', 'paired'):
+        if name in ('hard', 'paired', 'rendered+hard'):
             full_extra = np.vstack([SX[np.concatenate([s_tr, s_te])], EX[np.concatenate([e_tr, e_te])]]); full_y = np.zeros(len(full_extra), bool)
+        elif name == 'rendered': full_extra, full_y = np.zeros((0, FX.shape[1])), np.zeros(0, bool)
+        if name.startswith('rendered'):
+            ri = np.concatenate([r_tr, r_te]); full_extra = np.vstack([full_extra, RX[ri]]); full_y = np.concatenate([full_y, RL[ri] == L])
         if name == 'paired':
             full_extra = np.vstack([full_extra, EX[np.concatenate([ep_tr, ep_te])]]); full_y = np.concatenate([full_y, np.ones(len(ep_tr) + len(ep_te), bool)])
         mf = fit(np.vstack([FX[use], full_extra]), np.concatenate([pos[use], full_y]))
         row['setups'][name]['head'] = {'weights': [round(float(w), 6) for w in mf.coef_[0]], 'bias': round(float(mf.intercept_[0]), 6)}
         print(f"{L:<12} {name:<9} test +{row['testPositive']}/-{row['testNegative']}  precision {P:.0%}  recall {R:.0%}  "
-              f"near-miss false alarms: synth {sfa:.0%}  effect takes {efa:.0%}  effect recall {erec:.0%}  {'PASS' if P >= BAR and R >= BAR else 'fails'}")
+              f"near-miss false alarms: synth {sfa:.0%}  effect takes {efa:.0%}  renders: finds {rrec:.0%}, false {rfa:.0%}  {'PASS' if P >= BAR and R >= BAR else 'fails'}")
     results.append(row)
 json.dump({'kind': 'character-hardneg-v1', 'at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'bar': BAR, 'results': results},
           open(sys.argv[1], 'w'), indent=1)

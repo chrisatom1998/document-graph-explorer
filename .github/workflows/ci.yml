@@ -10,6 +10,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # onnxruntime-node (pulled in transitively) otherwise downloads the CUDA binaries from
+  # api.nuget.org in its postinstall on every run. CI only uses the CPU build, and that
+  # host has timed out npm ci on hosted runners more than once.
+  ONNXRUNTIME_NODE_INSTALL: skip
   # Gitignored, checksum-verified weights fetched by scripts/download-music-model.mjs.
   MUSIC_MODEL_PATHS: |
     public/music-model/**/*.onnx
@@ -42,6 +46,9 @@ jobs:
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          # A PR that edits any manifest gets a new key; fall back to the newest cache so
+          # setup:music only fetches what changed instead of everything from upstream hosts.
+          restore-keys: music-models-
 
       - name: Download audio model weights
         if: steps.music-models.outputs.cache-hit != 'true'
@@ -113,6 +120,9 @@ jobs:
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          # A PR that edits any manifest gets a new key; fall back to the newest cache so
+          # setup:music only fetches what changed instead of everything from upstream hosts.
+          restore-keys: music-models-
 
       - name: Download audio model weights
         if: steps.music-models.outputs.cache-hit != 'true'
