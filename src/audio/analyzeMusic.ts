@@ -9,7 +9,7 @@ import { ResultCache } from './recognition';
 const cache = new ResultCache(128);
 const decodedCache = new DecodedMusicCache();
 import { MusicTaskQueue } from './musicTaskQueue';
-import { musicInferenceThreads, THREADED_RUNTIME_STALLED, switchToSingleThreadRuntime } from './musicRuntime';
+import { musicInferenceThreads, musicRuntimeIdentity, THREADED_RUNTIME_STALLED, switchToSingleThreadRuntime } from './musicRuntime';
 const workers = new Map<string, Worker>();
 // Pinned quantized native weights total about190MB. Bound retained family sessions
 // and preserve the low-memory fallback of one serialized session.
@@ -80,11 +80,11 @@ export function preloadMusicModels(mode: AnalysisOptions['mode'] = 'fast'): Prom
     if (!key) return;
     const fingerprint = musicWorkerFingerprint(key);
     clearTimeout(idleTimer);
-    await Promise.allSettled(PRELOAD_FAMILIES.map(family => warmWorker(workerFor(family, fingerprint), family)));
+    await Promise.allSettled(PRELOAD_FAMILIES.map(family => warmWorker(workerFor(family, fingerprint), family, mode ?? 'fast')));
   })().finally(() => { preloading = undefined; parkWorker(); });
 }
 
-function warmWorker(worker: Worker, family: string): Promise<void> {
+function warmWorker(worker: Worker, family: string, mode: 'fast' | 'full' = 'fast'): Promise<void> {
   const id = ++nextId;
   return new Promise<void>((resolve, reject) => {
     // A listener, not onmessage, so a real request that starts meanwhile keeps its own handler.
@@ -98,7 +98,7 @@ function warmWorker(worker: Worker, family: string): Promise<void> {
     const timer = setTimeout(() => done(new Error('Music model preload timed out.')), 180_000);
     worker.addEventListener('message', onMessage);
     worker.addEventListener('error', onError);
-    worker.postMessage({ kind: 'warm', family, id, ...threadHint() });
+    worker.postMessage({ kind: 'warm', family, mode, id, ...threadHint() });
   });
 }
 
@@ -173,7 +173,7 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
       const preview = await previewDecodedMusic(decoder, (message, transfer) => request(message, transfer, options, 'preview', fingerprint), { ...options, mode });
       options.onProgress?.(preview ? 'Preview ready. Waiting for deeper checks' : 'Waiting for deeper checks; the initial estimate was unavailable');
       if (!options.signal?.aborted) decodedCache.remember(audioFingerprint, decoder.snapshot?.());
-      return { preview, key, fingerprint, audioFingerprint };
+      return { preview, key, fingerprint, audioFingerprint, runtime: musicRuntimeIdentity() };
     } finally { decoder.close(); parkWorker(); }
   }, options.signal);
   return initial.then(first => {
@@ -204,7 +204,9 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
         }
         if (fusionFailed) result.notes.push('The trained source classifier is unavailable; native analysis is retained.');
         else if (!injectedFusion && (!prepared || prepared.usedFallback()) && !result.fusion?.counts.failed) result.classifierConfiguration = fusionConfiguration();
-        if (first.key && !injectedFusion && !fusionFailed && !experimentalPaSST) await writeMusicCache(first.key, result, blob.type);
+        // The key names the runtime; after a single-thread fallback, save under the key the next lookup will use.
+        const key = first.key && first.runtime !== musicRuntimeIdentity() ? await musicCacheKey(blob, mode) : first.key;
+        if (key && !injectedFusion && !fusionFailed && !experimentalPaSST) await writeMusicCache(key, result, blob.type);
         options.signal?.throwIfAborted();
         return result;
       } finally { decoder.close(); parkWorker(); }

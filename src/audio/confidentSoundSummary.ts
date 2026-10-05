@@ -33,7 +33,7 @@ export const soundDisplayFloor=(durationSeconds:number|undefined)=>Number.isFini
 export const soundTier=(score:number):SoundTier=>score>=LIKELY_SOUND_CUTOFF?'likely':'possible';
 const profileNames:Record<string,string>={'AudioSet AST':'AST score','MTG-Jamendo':'Jamendo score','Music CLAP':'CLAP similarity','Reviewed examples':'Reviewed-example similarity','Trained head':'Trained head score','Trained head (maybe)':'Trained head score (maybe)'};
 /** Only these scores come from detectors that passed held-out testing; other models still show under Model scores. */
-const TESTED_SCORES=new Set(['Trained head score','Baseline fallback score']);
+export const TESTED_SCORES=new Set(['Trained head score','Baseline fallback score']);
 const MAYBE_SCORE='Trained head score (maybe)';
 const nativeNames={ast:'AST score',jamendo:'Jamendo score',clap:'CLAP similarity',rhythm:'Tempo score',tonal:'Key score'};
 export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):DisplaySound[] {

@@ -294,6 +294,34 @@ it('retries a model request once on a fresh single-thread worker when the thread
   expect(state.terminated).toBeGreaterThan(terminated);
 });
 
+it('saves a result recovered on one thread under the single-thread cache key', async () => {
+  vi.stubGlobal('crossOriginIsolated', true);
+  vi.stubGlobal('SharedArrayBuffer', class {});
+  vi.stubGlobal('navigator', { deviceMemory: 16, hardwareConcurrency: 18 });
+  vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
+  const { THREADED_RUNTIME_STALLED } = await import('./musicRuntime');
+  class StallingWorker extends FakeWorker {
+    override postMessage(message: { id: number; kind: string; singleThread?: boolean }) {
+      if (message.kind === 'instruments' && !message.singleThread) {
+        setTimeout(() => this.onmessage?.({ data: { id: message.id, error: THREADED_RUNTIME_STALLED } }), 0);
+        return;
+      }
+      super.postMessage(message);
+    }
+  }
+  vi.stubGlobal('Worker', StallingWorker);
+  vi.resetModules();
+  const runtime = await import('./musicRuntime');
+  const cacheModule = await import('./musicAnalysisCache');
+  vi.mocked(cacheModule.writeMusicCache).mockClear();
+  vi.mocked(cacheModule.musicCacheKey).mockImplementation(async () => `key:${runtime.musicRuntimeIdentity()}`);
+  const isolated = await import('./analyzeMusic');
+  await isolated.analyzeMusic(new Blob(['stall-key']), 'stall-key.wav', { mode: 'full' });
+  expect(vi.mocked(cacheModule.writeMusicCache).mock.calls.map(([key]) => key)).toEqual([`key:${runtime.musicRuntimeIdentity()}`]);
+  expect(runtime.musicRuntimeIdentity()).toContain('wasm-threads-1-');
+  vi.mocked(cacheModule.musicCacheKey).mockImplementation(async () => 'key');
+});
+
 it('retires sibling model workers on the switch and retries their in-flight requests single-thread', async () => {
   vi.stubGlobal('crossOriginIsolated', true);
   vi.stubGlobal('SharedArrayBuffer', class {});

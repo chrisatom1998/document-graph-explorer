@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EventWindowEvidence, eventWindowBudget, onsetCandidates, pickEventStarts } from './eventWindows';
+import shortClip from '../../public/sound-model/short-clip.json';
+import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, eventWindowBudget, onsetCandidates, pickEventStarts } from './eventWindows';
 import type { DescriptionScore } from './profileDescriptions';
 
 /** Quiet noise with loud 0.2 s bursts at the given times, at 16 kHz. */
@@ -40,6 +41,10 @@ describe('event window evidence', () => {
     expect(e.results()).toEqual([]);
     e.add([head('vinyl scratch', .95), head('synthesizer', .7, 'source')], 40, 42);
     expect(e.results()).toEqual([{ tag: { group: 'production', label: 'vinyl scratch', score: .95, model: 'Trained head (maybe)' }, segments: [{ start: 10, end: 12 }, { start: 40, end: 42 }] }]);
+  });
+  it('only advertises labels the shipped one-shot model has a head for', () => {
+    const shipped = new Set(shortClip.heads.map(h => h.label));
+    expect([...EVENT_WINDOW_LABELS].filter(label => !shipped.has(label))).toEqual([]);
   });
   it('cuts a window that stays within the one-shot limit', () => {
     expect(EVENT_WINDOW_BEFORE + EVENT_WINDOW_AFTER).toBeLessThanOrEqual(2.25);

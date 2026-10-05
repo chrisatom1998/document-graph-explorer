@@ -5,10 +5,12 @@ import type { DjTag } from './djTags';
  * In a 10 s window a short sound sits under the beat; cut at its start it fills most of the window.
  * Measured on held-out drum-loop mixes at the known start (docs/evaluations/dj-labels-2026-10-04/event-windows.json):
  * vinyl scratch 94% precision / 60% recall, synthesizer 63% / 67%; impact and whoosh did not work, so only
- * the measured labels are kept, always as "maybe" (a real song's starts are found, not known). */
+ * the measured labels are kept, always as "maybe" (a real song's starts are found, not known).
+ * The synthesizer head is hidden from the shipped one-shot model (it over-fired on the short-clip test), so it is
+ * left out here until a validated head ships; a test keeps this list inside the shipped heads. */
 export const EVENT_WINDOW_BEFORE = 0.05;
 export const EVENT_WINDOW_AFTER = 2.0;
-export const EVENT_WINDOW_LABELS: ReadonlySet<string> = new Set(['vinyl scratch', 'synthesizer']);
+export const EVENT_WINDOW_LABELS: ReadonlySet<string> = new Set(['vinyl scratch']);
 /** A song-level tag needs this many separate windows to agree; one window alone is a guess. */
 export const EVENT_WINDOW_MIN_HITS = 2;
 const RATE = 16000, HOP = 160, FRAME = 320, MIN_GAP = 1.0;

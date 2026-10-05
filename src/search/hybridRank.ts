@@ -22,7 +22,13 @@ export function reciprocalRankFusion<T extends RankedCandidate>(candidates: T[])
         (candidate.identifierHits ?? 0) * IDENTIFIER_BONUS,
     }))
     .filter((candidate) => candidate.score > 0)
-    .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+    // An exact tie (e.g. lexical #1 + semantic #4 vs lexical #4 + semantic #1)
+    // goes to the stronger keyword match, so an exact identifier like a ticket
+    // number wins on evidence rather than on id order.
+    .sort((a, b) =>
+      b.score - a.score
+      || (a.lexicalRank ?? Infinity) - (b.lexicalRank ?? Infinity)
+      || a.id.localeCompare(b.id));
 }
 
 /** Greedy diversity cap: preserves the best evidence while avoiding one-document result walls. */
