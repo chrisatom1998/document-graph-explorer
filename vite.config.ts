@@ -64,6 +64,20 @@ const SECURITY_HEADERS = {
     'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()',
 };
 
+// Worker entry files get a per-deploy suffix. Under COEP require-corp a
+// browser refuses to start a worker whose response lacks COEP, and a
+// content-hashed worker whose code didn't change keeps its old URL across a
+// header change — so visitors with a cached pre-COEP copy saw every worker
+// fail ("Layout engine failed"). A new URL per deploy means a cached copy
+// served with older headers can never be reused.
+const BUILD_ID = (process.env.VERCEL_GIT_COMMIT_SHA ?? 'local').slice(0, 8);
+/** pdf.js loads its worker from a plain asset URL (from the page and from
+ * inside pdf.worker.ts), so that asset needs the same suffix. */
+const workerAssetFileNames = (info: { names: string[] }): string =>
+  info.names.some((n) => /\.worker\b.*\.m?js$/.test(n))
+    ? `assets/[name]-[hash]-${BUILD_ID}[extname]`
+    : 'assets/[name]-[hash][extname]';
+
 // Isolation permits bounded ONNX WASM threading. All model/runtime resources
 // remain same-origin; hosts without isolation retain one-thread inference.
 export default defineConfig(({ mode }) => ({
@@ -73,7 +87,16 @@ export default defineConfig(({ mode }) => ({
   // Workers receive Vercel's CSP as a response header, not the page's meta tag.
   // Exercise the same restrictions in built-app browser tests.
   preview: { headers: { ...SECURITY_HEADERS, 'Content-Security-Policy': `${buildCsp({ airgap: mode === 'airgap' })}; frame-ancestors 'none'` } },
-  worker: { format: 'es', plugins: () => [essentiaCsp()] },
+  worker: {
+    format: 'es',
+    plugins: () => [essentiaCsp()],
+    rollupOptions: {
+      output: {
+        entryFileNames: `assets/[name]-[hash]-${BUILD_ID}.js`,
+        assetFileNames: workerAssetFileNames,
+      },
+    },
+  },
   build: {
     target: 'esnext',
     // Keep the app entry from eagerly preloading the React vendor chunk; the
@@ -89,6 +112,7 @@ export default defineConfig(({ mode }) => ({
         // Keep Rollup from pulling shared preload helpers into a named vendor
         // chunk and accidentally turning an async scene into an eager preload.
         onlyExplicitManualChunks: true,
+        assetFileNames: workerAssetFileNames,
         manualChunks(id) {
           // Follow-mode framing is used by the eager collaboration store, but
           // keeping that feature seam separate prevents camera sync growth from

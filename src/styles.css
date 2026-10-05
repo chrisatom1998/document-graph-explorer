@@ -2751,7 +2751,9 @@ mark.passage-mark {
 
 .insights-digest-layer {
   position: fixed;
-  top: 76px;
+  /* Sits just below the collapsed documents pill (src/ui/GraphNavigator.css:
+   * top 78px, ~55px tall) — this corner is shared, so move both together. */
+  top: 142px;
   left: 18px;
   z-index: var(--z-floating);
   pointer-events: none;

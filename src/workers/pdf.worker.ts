@@ -4,8 +4,11 @@
  * owned by pipeline/parsers/pdfWorkerClient.ts — concurrency is admission-
  * gated by parsePdf (4 slots), and keeping ONE instance means ocr.ts's
  * module-scope queue still serializes Tesseract heaps exactly as it did on
- * the main thread. pdf.js spawns its own nested worker in here, and
- * tesseract.js spawns another (CSP already allows `worker-src 'self' blob:`).
+ * the main thread. pdf.js can't spawn a nested worker from here (its setup
+ * reads `window.location`, which a worker lacks), so it runs inline on this
+ * thread and logs "Setting up fake worker" once — expected, and still off the
+ * main thread. tesseract.js does spawn its own worker (CSP already allows
+ * `worker-src 'self' blob:`).
  * OCR progress streams back as pdf:ocr-progress; a final pdf:done carries
  * the result (the engine encodes parse failures as unreadable/partial
  * results, so pdf:error means infrastructure trouble and the client retries
