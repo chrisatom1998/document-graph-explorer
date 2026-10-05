@@ -27,3 +27,6 @@ release-id.txt
 playwright-report
 test-results
 *.trace.zip
+
+# Local secrets (e.g. OPENAI_API_KEY for the dev-only DJ assistant) must never enter a build layer
+.env*

@@ -31,6 +31,21 @@ This project follows the Keep a Changelog format.
 - Collaboration invite hashes ask before joining; notes/tags stay local unless opted in; public STUN is disabled (host ICE only); share-link summaries can be up to 2000 characters (connection evidence is capped at 200).
 - Batch enrichment now sends each document's **full stored text** to the provider. Previously only the first 1,200 characters were included, so summaries and topics were written from a stub. Enormous files are truncated only as a last resort at `DOCUMENT_AI_MAX_CONTEXT_CHARS` (240,000 characters); batches split when that would overflow a typical model context window. Settings, SECURITY.md, and the user guide disclose the full-text send.
 
+### Changed
+- Node 24 is the declared runtime: `.nvmrc`, `engines.node` (`>=22`), and the release workflow now agree with CI and the Docker image (the release workflow previously built on Node 22). The release workflow also checks that the tag matches `package.json` **before** spending minutes on builds instead of after.
+- Removed four orphaned modules that nothing imported: `WorkspaceChrome`, `ThemeToggle`, `ClusterAtmosphere`, and `NebulaClouds`. (`audio/evaluationSignals` stays: it is a documented helper library for the evaluation workflow in `docs/audio-evaluation-infrastructure.md`, not dead code.)
+- `scripts/sanitize-airgap.mjs` now also neutralizes `signaling.yjs.dev` in the air-gapped bundle and documents which attribution-link hostnames it deliberately leaves alone.
+- README and AGENTS.md state that the first `npm run dev` / `npm run build` needs network access for the ~190 MB audio-model download, and that `npm run setup:music` pre-fetches it for offline work.
+
+- The portable Windows runtime (`npm run build:exe`) is now a Node **Single Executable Application** built by `scripts/build-win-exe.mjs`: esbuild bundles the launcher, `node --experimental-sea-config` writes the blob, the official Windows `node.exe` of the same Node version is downloaded and SHA-256-verified against `SHASUMS256.txt`, and `postject` injects the blob. A `--self-test` boots a host-platform SEA against `dist/` and checks it serves the app and refuses path traversal; `scripts/verify-win-exe.mjs` gates the final exe (x64 PE, SEA fuse on, `NODE_SEA_BLOB` resource, icon). This drops `pkg` (archived upstream, unfixable GHSA-22r3-9w55-cj54, Node 18-only) and ships a current Node runtime instead of end-of-life Node 18. The exe is larger (~80 MB vs ~40 MB) because it is an unstripped official build.
+
+### Security
+- Updated `pdfjs-dist` to 6.4.299 (fixes GHSA-hq66-cqwq-w95j, arbitrary JavaScript execution when opening a malicious PDF), `electron` to 43.7.7 (sandbox-inheritance and protocol-handler advisories), and `vitest` to 4.1.11 (`@vitest/mocker` path traversal).
+- `@huggingface/transformers` 4.2.0 → 4.3.0 together with its coupled `onnxruntime-web` pin (1.26.0-dev → 1.31.0-dev.20260914); the two must move as a pair or the bundle ends up with two ONNX runtimes. Pulls in patched `sharp` 0.35 and `onnxruntime-node` 1.30 (clears the libvips/libheif and adm-zip advisories). Verified end to end in the browser: demo-corpus embeddings and local audio inference both run on the new runtime, and the air-gap sanitizer still finds zero external hosts.
+- `openai` is now a devDependency: it is used only by the dev-server-only DJ assistant plugins and no longer sits in the production dependency tree.
+- `.dockerignore` excludes `.env*` so a local `OPENAI_API_KEY` can never be copied into a Docker build layer.
+- SECURITY.md documents the `npm run dev`-only OpenAI side channel (sound search, voice transcription, sample review) and the local Python reviewer it spawns, and clarifies that no built artifact includes it.
+
 ## [1.1.14] - 2026-07-29
 
 ### Added

@@ -1,8 +1,8 @@
 // Shared static-file-serving core, consumed by scripts/serve.mjs (dev/local
-// launcher), scripts/serve-exe.cjs (packaged Windows .exe via pkg), and
+// launcher), scripts/serve-exe.cjs (packaged Windows .exe, Node SEA), and
 // desktop/main.cjs (Electron's local server for the built app). CommonJS so
-// all three — including the plain-CJS pkg target — can require() it without
-// a build step.
+// all three can require() it without a build step (the SEA build bundles it
+// with esbuild because a SEA main script can only require() builtins).
 //
 // Binds/serves are the caller's job; this module only resolves request paths
 // safely and answers them. Node builtins ONLY — no npm packages.

@@ -158,6 +158,11 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   // Reload directly from the editor, before the debounce or panel-close flush.
   await page.getByRole('textbox', { name: 'Document note' }).fill('Immediate reload note');
   await page.reload();
+  // Restoration may return to the graph or retain selection. Reopen the same
+  // document in either case and verify the edit made immediately before reload.
+  await expect(page.locator('.graph-navigator__summary').or(page.getByRole('button', { name: 'Back to graph', exact: true }))).toBeVisible();
+  const restoredPanel = page.getByRole('button', { name: 'Back to graph', exact: true });
+  if (await restoredPanel.isVisible()) await restoredPanel.click();
   await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents');
   await openPostgres();
   await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('Immediate reload note');
@@ -266,7 +271,9 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await page.screenshot({ path: testInfo.outputPath('filters.png') });
     await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
     await expect(page.locator('#graph-filter-status')).toHaveText('3 documents match');
-    await minimum.press('Escape');
+    // Clear filters also closes advanced controls; Escape from the retained
+    // filter toggle must still restore focus and dismiss the filter panel.
+    await page.getByRole('button', { name: 'Hide graph filters', exact: true }).press('Escape');
     await expect(page.getByRole('button', { name: 'Show graph filters' })).toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
   });

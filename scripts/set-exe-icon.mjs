@@ -1,9 +1,11 @@
-// Injects the app icon (and version metadata) into a pkg-built Windows
-// executable. pkg's base binaries carry Node's own icon/metadata; this is
-// the officially recommended post-processing step to brand the output
-// (see https://yao-pkg.github.io/pkg/guide/advanced-windows-metadata).
-// Other resource editors (e.g. rcedit, Resource Hacker) are known to
-// corrupt pkg executables, so this project standardizes on resedit.
+// Injects the app icon (and version metadata) into the SEA-built Windows
+// executable (scripts/build-win-exe.mjs). The base binary is the official
+// node.exe, which carries Node's own icon/metadata and an Authenticode
+// signature that the blob injection has already invalidated; resedit parses
+// it with `ignoreCert` and `generate()` emits an unsigned executable, which is
+// what Node's SEA guide prescribes (remove the signature, then re-sign if you
+// have a certificate). Other resource editors (rcedit, Resource Hacker) are
+// known to corrupt Node binaries, so this project standardizes on resedit.
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -28,7 +30,7 @@ function versionParts(version) {
 
 function main() {
   const exeData = readFileSync(exePath);
-  const exe = ResEdit.NtExecutable.from(exeData);
+  const exe = ResEdit.NtExecutable.from(exeData, { ignoreCert: true });
   const res = ResEdit.NtExecutableResource.from(exe);
 
   const iconFile = ResEdit.Data.IconFile.from(readFileSync(iconPath));
