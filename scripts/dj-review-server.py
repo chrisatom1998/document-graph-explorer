@@ -14,6 +14,8 @@ LOCK = threading.RLock()
 BUSY = threading.Lock()
 JOBS = {}
 PORT = int(os.environ.get('DJ_REVIEW_PORT', '8766'))
+# Check sets (listening tests of disputed clips) save labels but must never rebuild the shipped model.
+NO_APPLY = os.environ.get('DJ_REVIEW_NO_APPLY') == '1'
 ORIGIN = f'http://127.0.0.1:{PORT}'
 GROUPS = ('source', 'production', 'character')
 HUMAN_CONFIRMATION = 'explicit human confirmation'
@@ -282,7 +284,7 @@ class Handler(SimpleHTTPRequestHandler):
                     category={'group':group,'family':'custom-'+group,'label':label,'description':description,'source':source,'aliases':[],'recognition':'experimental','axis':'dj-custom-'+group}
                     custom.append(category);write(DATA/'custom-categories.json',custom)
                 return self.json({'category':category},201)
-            if path=='/api/apply':return self.json(run_job(apply_model),202)
+            if path=='/api/apply':return self.json(run_job((lambda progress:{'skipped':'Check set: labels saved, model not rebuilt.'}) if NO_APPLY else apply_model),202)
             return self.json({'error':'Not found'},404)
         except (ValueError,KeyError,TypeError,json.JSONDecodeError) as error:return self.json({'error':str(error)},400)
         except Exception:return self.json({'error':'The local operation failed. Check the server log.'},500)
