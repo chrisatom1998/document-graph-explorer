@@ -171,4 +171,31 @@ describe('addToSemanticIndex — incremental vs. full rebuild', () => {
       'b-c',
     ]);
   });
+
+  it("keeps a doc's closest mutual neighbor even when its absolute best is a non-mutual hub", () => {
+    // spoke's closest neighbor is hub, but hub's top-2 is filled by hubA/hubB,
+    // so spoke–hub is not mutual. spoke–peer is mutual, yet sits >0.03 below
+    // both spoke's hub score and peer's near-duplicate twin. A bypass that
+    // only protects absolute top-1 would drop it and leave spoke with no
+    // semantic edge.
+    const ids = ['hub', 'hubA', 'hubB', 'spoke', 'peer', 'peerTwin'];
+    const vectors = pack([
+      [1, 0, 0, 0],
+      [0.99, -0.12, 0.08, 0],
+      [0.99, -0.12, 0, 0.08],
+      [0.95, 0.3122, 0, 0],
+      [0.74, Math.sqrt(1 - 0.74 ** 2), 0, 0],
+      [0.72, Math.sqrt(1 - 0.72 ** 2), 0, 0],
+    ]);
+    const tight = { threshold: 0.5, topK: 2 };
+    const index = buildSemanticIndex(ids, vectors, dims, tight);
+
+    expect(index.top[3][0]?.j).toBe(0); // spoke's absolute best is hub
+    expect(index.top[0].some((c) => c.j === 3)).toBe(false); // hub does not list spoke
+
+    const pairs = (edges: { source: string; target: string }[]) =>
+      edges.map((e) => `${e.source}-${e.target}`).sort();
+    expect(pairs(edgesFromIndex(index, tight.threshold))).toContain('peer-spoke');
+    expect(pairs(edgesFromIndex(index, tight.threshold, 0.03))).toContain('peer-spoke');
+  });
 });

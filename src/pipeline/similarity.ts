@@ -273,8 +273,19 @@ export function edgesFromIndex(
   const { ids, top } = index;
   const edges: Edge[] = [];
   const denom = 1 - threshold;
-  // top lists are sorted descending, so [0] is each doc's best match
+  // top lists are sorted descending, so [0] is each doc's best match —
+  // which need not be mutual. The margin scale uses that absolute best;
+  // the bypass uses each doc's closest mutual neighbor so a closer hub
+  // that does not list this doc back cannot strand it.
   const best = (i: number): number => top[i][0]?.sim ?? -Infinity;
+  const closestMutual = top.map((cands, i) => {
+    for (const cand of cands) {
+      for (const back of top[cand.j]) {
+        if (back.j === i) return cand.j;
+      }
+    }
+    return undefined;
+  });
   for (let i = 0; i < ids.length; i += 1) {
     for (const cand of top[i]) {
       const j = cand.j;
@@ -287,7 +298,7 @@ export function edgesFromIndex(
         }
       }
       if (!mutual) continue; // edge iff each is in the other's top-k
-      const nearestOfEither = top[i][0]?.j === j || top[j][0]?.j === i;
+      const nearestOfEither = closestMutual[i] === j || closestMutual[j] === i;
       if (!nearestOfEither && cand.sim < Math.max(best(i), best(j)) - relativeMargin) continue;
       const a = ids[i] < ids[j] ? ids[i] : ids[j];
       const b = ids[i] < ids[j] ? ids[j] : ids[i];
