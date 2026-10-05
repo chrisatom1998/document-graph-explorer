@@ -84,9 +84,10 @@ REPEATS = int(os.environ.get('REPEATS', '1')); SPLITS = os.environ.get('SPLITS',
 for split, bedset in (('train', train_beds), ('test', test_beds)):
     jobs = []
     for t in pick(split):
-        for _ in range(REPEATS if split == 'train' else 1):
+        for k in range(REPEATS if split == 'train' else 1):
             bed = rand.choice(bedset); level = round(rand.uniform(-12, 6), 1)
-            mid = 'mix:' + hashlib.sha256(f'{split}|{t[0]}|{bed["id"]}'.encode()).hexdigest()[:16]
+            # The repeat index keeps two repeats that draw the same bed from sharing an id and a file.
+            mid = 'mix:' + hashlib.sha256((f'{split}|{t[0]}|{bed["id"]}' + (f'|{k}' if k else '')).encode()).hexdigest()[:16]
             jobs.append((t, bed, level, f'{OUT}/audio/{mid[4:]}.wav', rand.random(), mid))
     if split not in SPLITS: continue
     placed = Parallel(n_jobs=-1)(delayed(render)(t, bed, level, path, u) for t, bed, level, path, u, _ in jobs)

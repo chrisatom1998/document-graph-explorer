@@ -25,7 +25,7 @@ const DRUMS = ['kick', 'snare', 'hi-hat', 'cymbal', 'clap', 'drums', 'shaker', '
 const unit = (v: number[]) => { const n = Math.hypot(...v) + 1e-9; return v.map(x => x / n); };
 const learnedFires = (v: number[]) => {
   const x = unit(v); const out = new Set<string>();
-  for (const h of learned.heads) { const z = h.bias + h.weights.reduce((s, w, i) => s + w * x[i], 0); if (1 / (1 + Math.exp(-z)) >= h.threshold) out.add(h.label); }
+  for (const h of learned.heads ?? []) { const z = h.bias + h.weights.reduce((s, w, i) => s + w * x[i], 0); if (1 / (1 + Math.exp(-z)) >= h.threshold) out.add(h.label); }
   return out;
 };
 const fired = rows.map(c => {
@@ -40,7 +40,7 @@ for (const [label, truth] of Object.entries(TRUTH)) {
   const score = (which: 'short' | 'long') => {
     const p = fired.map(f => f[which].has(label)); const tp = p.filter((v, i) => v && t[i]).length; const fp = p.filter((v, i) => v && !t[i]).length;
     const buried = fired.map((f, i) => t[i] && f.c.levelDb < -3); const bt = buried.filter(Boolean).length;
-    return { available: (which === 'short' ? short.heads : learned.heads).some(h => h.label === label), tp, fp, precision: tp / Math.max(tp + fp, 1),
+    return { available: (which === 'short' ? short.heads : learned.heads ?? []).some(h => h.label === label), tp, fp, precision: tp / Math.max(tp + fp, 1),
       recall: tp / Math.max(t.filter(Boolean).length, 1), buriedRecall: p.filter((v, i) => v && buried[i]).length / Math.max(bt, 1) };
   };
   const s = score('short'), l = score('long');

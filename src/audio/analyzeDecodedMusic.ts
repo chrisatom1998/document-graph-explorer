@@ -11,7 +11,7 @@ import { DescriptionAccumulator, selectDescriptions, type DescriptionScore } fro
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
-import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
+import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { createRecognition, recognitionConfiguration, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
@@ -127,6 +127,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   const eventEvidence = new EventWindowEvidence();
   const completed = new Set<string>();
   const stopped = new Set<ModelId>();
+  let eventPassFailed = false;
   const messages: Partial<Record<ModelId, string>> = {
     ast: 'Instrument recognition was unavailable. Reanalyze to retry.',
     jamendo: 'Music-trained instrument recognition was unavailable. Reanalyze to retry.',
@@ -135,6 +136,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   };
   const refresh = (cancelled = false, ended = false) => {
     for (const j of recognition.jobs) finishJob(j, duration, cancelled);
+    // Event windows are extra CLAP work. A failed pass must not look like a closed job.
+    if (eventPassFailed && job('clap').status === 'complete') job('clap').status = 'partial';
     const soundComplete = ['ast','jamendo','clap'].every(id => ['complete','unsupported'].includes(job(id as ModelId).status));
     result.instruments = astEvidence.results();
     result.soundProfile = combineSoundModels(result.instruments, musicScores, descriptions.average(),
@@ -291,10 +294,17 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
           check(); cache.set(key, output);
         }
         eventEvidence.add(output, interval.start, interval.end);
+        recordEvidence(recognition, 'clap', interval, output.flatMap(s => {
+          if (s.group !== 'dj-learned' || s.basis !== 'head' || s.decision !== 'include' || !s.learnedGroup || !s.label || !EVENT_WINDOW_LABELS.has(s.label)) return [];
+          return [{ dimension: s.learnedGroup === 'source' ? 'source' as const : 'effect' as const, labelId: s.label, score: s.score }];
+        }));
       }
       publish();
     } catch (error) {
       if (options.signal?.aborted) throw error;
+      eventPassFailed = true;
+      job('clap').error = error instanceof Error ? error.message : 'Unavailable';
+      result.notes.push('Event-window recognition was unavailable. Reanalyze to retry.');
     }
   }
   const leads = concurrent ? (['ast','jamendo','clap'] as const).map(id => scoreAhead(id).catch(() => {})) : [];

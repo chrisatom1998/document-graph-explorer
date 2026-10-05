@@ -102,12 +102,15 @@ it('preserves explicit catalog sources through persistence and evidence review',
 });
 
 describe('one-shot configuration scope', () => {
-  it('changes the configuration only for clips the one-shot heads cover, so long recordings are not re-run', async () => {
+  it('ties short clips and full long analyses (event windows) to the one-shot model, but not fast long analyses', async () => {
     const { recognitionConfiguration, createRecognition } = await import('./recognition');
     expect(recognitionConfiguration('full', 1)).not.toBe(recognitionConfiguration('full', 30));
-    expect(recognitionConfiguration('full', 30)).toBe(recognitionConfiguration('full'));
+    expect(recognitionConfiguration('full', 30)).not.toBe(recognitionConfiguration('full'));
+    expect(recognitionConfiguration('full', 30)).toMatch(/:event-windows-v1:one-shot-/);
+    expect(recognitionConfiguration('full', 30)).toBe(recognitionConfiguration('full', 180));
+    expect(recognitionConfiguration('fast', 30)).toBe(recognitionConfiguration('fast'));
     expect(recognitionConfiguration('full', 2.25)).toBe(recognitionConfiguration('full', 1));
     expect(createRecognition(1.5, 'full').configurationHash).toBe(recognitionConfiguration('full', 1.5));
-    expect(createRecognition(180, 'full').configurationHash).toBe(recognitionConfiguration('full'));
+    expect(createRecognition(180, 'full').configurationHash).toBe(recognitionConfiguration('full', 180));
   });
 });

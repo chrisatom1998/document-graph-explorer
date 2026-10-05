@@ -1,0 +1,570 @@
+{
+ "kind": "head-scorecard-v1",
+ "bars": {
+  "full": 0.6,
+  "maybe": 0.45
+ },
+ "heads": [
+  {
+   "label": "top loop",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.9215686274509803,
+   "recall": 0.9494949494949495,
+   "testPositive": 99,
+   "source": "shipped-heads-r4.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "ambient drone",
+   "group": "production",
+   "shown": "full",
+   "precision": 1.0,
+   "recall": 0.8969072164948454,
+   "testPositive": 97,
+   "source": "added-heads-round14-bar45.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "vocal ad-lib",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.8285714285714286,
+   "recall": 1.0,
+   "testPositive": 58,
+   "source": "added-heads-round14-bar45.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "percussion hit",
+   "group": "production",
+   "shown": "full",
+   "verdict": "unverified"
+  },
+  {
+   "label": "ride cymbal",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.794392523364486,
+   "recall": 0.8173076923076923,
+   "testPositive": 104,
+   "source": "shipped-heads-r4.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "whoosh",
+   "group": "production",
+   "shown": "full",
+   "precision": 1.0,
+   "recall": 0.7733333333333333,
+   "testPositive": 150,
+   "source": "shipped-heads-r4.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "sub bass",
+   "group": "production",
+   "shown": "full",
+   "verdict": "unverified"
+  },
+  {
+   "label": "drum loop",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.7396937573616019,
+   "recall": 0.7667887667887668,
+   "testPositive": 819,
+   "source": "shipped-heads-r4.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "percussion loop",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.8560606060606061,
+   "recall": 0.7337662337662337,
+   "testPositive": 154,
+   "source": "shipped-heads-r4.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "vocal chant",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.7294117647058823,
+   "recall": 0.8051948051948052,
+   "testPositive": 77,
+   "source": "added-heads-round14-bar45.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "hi-hat loop",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.7,
+   "recall": 0.9130434782608695,
+   "testPositive": 46,
+   "source": "shipped-heads-r4.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "crash cymbal",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.8823529411764706,
+   "recall": 0.6756756756756757,
+   "testPositive": 111,
+   "source": "shipped-heads-r4.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "kick",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.8191489361702128,
+   "recall": 0.6754385964912281,
+   "testPositive": 114,
+   "source": "shipped-heads-r4.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "reverse effect",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.6486486486486487,
+   "recall": 0.7272727272727273,
+   "testPositive": 132,
+   "source": "shipped-heads-r4.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "shaker",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.810126582278481,
+   "recall": 0.6464646464646465,
+   "testPositive": 99,
+   "source": "shipped-heads-r4.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "open hi-hat",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.60625,
+   "recall": 0.708029197080292,
+   "testPositive": 137,
+   "source": "added-heads-round14-bar45.json",
+   "should": "full",
+   "verdict": "ok",
+   "ambiguous": [
+    "added-heads-round14-bar45.json",
+    "shipped-heads-r4.json"
+   ]
+  },
+  {
+   "label": "synth arpeggio",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.63125,
+   "recall": 0.7651515151515151,
+   "testPositive": 132,
+   "source": "shipped-heads-r4.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "voice",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 0.6570048309178744,
+   "recall": 0.5862068965517241,
+   "testPositive": 696,
+   "source": "shipped-heads.json",
+   "should": "maybe",
+   "verdict": "ok"
+  },
+  {
+   "label": "vinyl scratch",
+   "group": "production",
+   "shown": "full",
+   "precision": 1.0,
+   "recall": 0.6046511627906976,
+   "testPositive": 43,
+   "source": "shipped-heads-r4.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "finger snap",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 0.6842105263157895,
+   "recall": 0.582089552238806,
+   "testPositive": 67,
+   "source": "shipped-heads-r4.json",
+   "should": "maybe",
+   "verdict": "ok"
+  },
+  {
+   "label": "snare",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 0.7283950617283951,
+   "recall": 0.5673076923076923,
+   "testPositive": 104,
+   "source": "shipped-heads-r4.json",
+   "should": "maybe",
+   "verdict": "ok"
+  },
+  {
+   "label": "sound effect",
+   "group": "source",
+   "shown": "maybe",
+   "verdict": "unverified"
+  },
+  {
+   "label": "drum fill",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 0.5575221238938053,
+   "recall": 0.6428571428571429,
+   "testPositive": 98,
+   "source": "added-heads-round14-bar45.json",
+   "should": "maybe",
+   "verdict": "ok"
+  },
+  {
+   "label": "tom",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 0.6391752577319587,
+   "recall": 0.5254237288135594,
+   "testPositive": 118,
+   "source": "shipped-heads-r4.json",
+   "should": "maybe",
+   "verdict": "ok"
+  },
+  {
+   "label": "choir",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 0.75,
+   "recall": 0.5142857142857142,
+   "testPositive": 35,
+   "source": "added-heads-round14-bar45.json",
+   "should": "maybe",
+   "verdict": "ok"
+  },
+  {
+   "label": "distorted",
+   "group": "character",
+   "shown": "full",
+   "precision": 0.6666666666666666,
+   "recall": 0.6923076923076923,
+   "testPositive": 26,
+   "source": "character-hardneg.json:baseline",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "beatbox",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 1.0,
+   "recall": 0.9563492063492064,
+   "testPositive": 756,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "cowbell",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 1.0,
+   "recall": 0.8651685393258427,
+   "testPositive": 89,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "crowd ambience",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 0.9207920792079208,
+   "recall": 0.8942307692307693,
+   "testPositive": 104,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "vocal gasp",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 0.8518518518518519,
+   "recall": 0.8214285714285714,
+   "testPositive": 28,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "vocal laugh",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 0.9509803921568627,
+   "recall": 0.9065420560747663,
+   "testPositive": 107,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "accordion",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 1.0,
+   "recall": 0.7857142857142857,
+   "testPositive": 42,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "drums",
+   "group": "source",
+   "shown": "full",
+   "precision": 0.9309068476249229,
+   "recall": 0.9003579952267303,
+   "testPositive": 1676,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "electric guitar",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 0.9764705882352941,
+   "recall": 0.8137254901960784,
+   "testPositive": 102,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "gong",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 0.9508196721311475,
+   "recall": 0.8055555555555556,
+   "testPositive": 72,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "harmonica",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 1.0,
+   "recall": 0.9099099099099099,
+   "testPositive": 111,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "harp",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 1.0,
+   "recall": 0.8428571428571429,
+   "testPositive": 70,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "mallet instrument",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 0.9863013698630136,
+   "recall": 0.8,
+   "testPositive": 90,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "organ",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 0.9883720930232558,
+   "recall": 0.9042553191489362,
+   "testPositive": 94,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "piano",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 0.9882352941176471,
+   "recall": 0.8155339805825242,
+   "testPositive": 103,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "strings",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 0.9876543209876543,
+   "recall": 0.7843137254901961,
+   "testPositive": 102,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "tabla",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 1.0,
+   "recall": 0.75,
+   "testPositive": 28,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "trumpet",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 0.937007874015748,
+   "recall": 0.8321678321678322,
+   "testPositive": 143,
+   "source": "added-maybe-heads.json",
+   "should": "full",
+   "verdict": "maybe -> full"
+  },
+  {
+   "label": "bird ambience",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 0.864406779661017,
+   "recall": 0.5795454545454546,
+   "testPositive": 88,
+   "source": "added-heads-round14-bar45.json",
+   "should": "maybe",
+   "verdict": "ok"
+  },
+  {
+   "label": "chops",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 0.45,
+   "recall": 0.7325581395348837,
+   "testPositive": 86,
+   "source": "added-heads-round14-bar45.json",
+   "should": "maybe",
+   "verdict": "ok"
+  },
+  {
+   "label": "clap",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 0.7857142857142857,
+   "recall": 0.5092592592592593,
+   "testPositive": 108,
+   "source": "added-heads-round14-bar45.json",
+   "should": "maybe",
+   "verdict": "ok"
+  },
+  {
+   "label": "stutter effect",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 1.0,
+   "recall": 0.45,
+   "testPositive": 20,
+   "source": "added-heads-round14-bar45.json",
+   "should": "maybe",
+   "verdict": "ok"
+  },
+  {
+   "label": "synth sequence",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 1.0,
+   "recall": 0.48148148148148145,
+   "testPositive": 54,
+   "source": "added-heads-round14-bar45.json",
+   "should": "maybe",
+   "verdict": "ok"
+  },
+  {
+   "label": "vocal chops",
+   "group": "production",
+   "shown": "maybe",
+   "precision": 0.4956521739130435,
+   "recall": 0.7307692307692307,
+   "testPositive": 78,
+   "source": "added-heads-round14-bar45.json",
+   "should": "maybe",
+   "verdict": "ok"
+  },
+  {
+   "label": "whisper",
+   "group": "production",
+   "shown": "full",
+   "precision": 0.98,
+   "recall": 0.875,
+   "testPositive": 56,
+   "source": "added-heads-round14-bar45.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "acoustic guitar",
+   "group": "source",
+   "shown": "full",
+   "precision": 0.9230769230769231,
+   "recall": 0.8421052631578947,
+   "testPositive": 57,
+   "source": "added-heads-round14-bar45.json",
+   "should": "full",
+   "verdict": "ok"
+  },
+  {
+   "label": "synthesizer",
+   "group": "source",
+   "shown": "maybe",
+   "precision": 0.5932415519399249,
+   "recall": 0.6694915254237288,
+   "testPositive": 708,
+   "source": "added-heads-round14-bar45.json",
+   "should": "maybe",
+   "verdict": "ok"
+  }
+ ]
+}

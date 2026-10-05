@@ -22,14 +22,26 @@ labeler = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(label
 
 FP = '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints'
 OUT = sys.argv[1]; EXTRAS = [a.split('=', 1) for a in sys.argv[2:]]
-BAR, MIN_TEST = 0.65, 15
+BAR, MIN_TEST = float(os.environ.get("BAR", 0.65)), int(os.environ.get("MIN_TEST", 15))
 catalog = {c['label']: c for c in json.load(open('src/audio/djCatalog.json'))['categories']}
 FAMILY = {'drum-hit': 'drum hit', 'drum-pattern': 'drum loop', 'vocal': 'vocal', 'editing': 'vocal', 'breath': 'vocal',
           'transition': 'fx', 'bass': 'bass', 'synth': 'synth', 'texture': 'texture'}
 
 EXCLUDED = set(json.load(open(os.environ['EXCLUDE']))['excludeIds']) if os.environ.get('EXCLUDE') else set()
+# Frozen test sets: their recordings and whole families (uploaders, NSynth instruments) never reach training.
+RES_IDS, RES_FAMILIES = set(), set()
+for _f in ('docs/evaluations/short-clips-2026-10-04/reserved-test-families.json', 'docs/evaluations/synth-clips-2026-10-05/reserved-test-families.json'):
+    if os.path.exists(_f):
+        _d = json.load(open(_f)); RES_IDS |= set(map(str, _d.get('freesoundIds', [])))
+        for _k in ('freesoundUploaders', 'fsdUploaders', 'nsynthInstruments', 'nsynthTestInstruments', 'avpParticipants'):
+            RES_FAMILIES |= {str(u).split(':', 1)[-1] for u in _d.get(_k, [])}
+def reserved(c):
+    if c['id'].startswith(('vault:', 'proc:', 'surge', 'slakh', 'mix')): return False
+    tail = c['id'].rsplit(':', 1)[-1]
+    family = str(c.get('group') or c.get('vendor') or '').split(':', 1)[-1]
+    return tail in RES_IDS or family in RES_FAMILIES
 def load(manifest, folder, source):
-    meta = {c['id']: c for c in json.load(open(manifest))['clips'] if source == 'vault' or c['id'] not in EXCLUDED}; got = {}
+    meta = {c['id']: c for c in json.load(open(manifest))['clips'] if source == 'vault' or (c['id'] not in EXCLUDED and not reserved(c))}; got = {}
     for f in sorted(glob.glob(f'{folder}/emb-*.jsonl')):
         for line in open(f):
             r = json.loads(line)
@@ -51,7 +63,9 @@ SRC = np.concatenate([np.full(len(p[1]), i) for i, p in enumerate(parts)])   # 0
 X = np.vstack([p[0] for p in parts]); LAB = sum((p[1] for p in parts), []); IDS = sum((p[4] for p in parts), []); G = np.concatenate([p[2] for p in parts])
 IS_VAULT = np.concatenate([p[3] for p in parts])
 # Real recordings with human labels: the only fair test for instruments (rendered stems are not).
-REAL = tuple(n for n in ('fsd50k:', 'fsl10k:') if any(i.startswith(n) for i in IDS))
+REAL = tuple(n for n in ('fsd50k:', 'fsl10k:', 'fsm:') if any(i.startswith(n) for i in IDS))
+# Real (not rendered or edited) audio from other extras; usable for label tests, not for instrument tests.
+REAL_LABEL = REAL + tuple(n for n in ('fs:', 'ep:', 'hh:', 'fsperc:') if any(i.startswith(n) for i in IDS))
 FAM = np.array([(lambda f: f.pop() if len(f) == 1 else None)({FAMILY.get(catalog.get(l, {}).get('family')) for l in s} - {None}) for s in LAB], dtype=object)
 print(f'total {len(LAB)} clips ({IS_VAULT.sum()} library, {(~IS_VAULT).sum()} extra)')
 if os.environ.get('MIXTEST'):
@@ -62,7 +76,14 @@ OVERLAP = [{'chops', 'vocal chops'}, {'riser', 'noise sweep', 'whoosh'}, {'impac
            {'808 bass', 'sub bass'}, {'reese bass', 'wobble bass', 'bass growl', 'synth bass'}, {'synth chord', 'atmospheric pad', 'synth stab'},
            {'synth lead', 'synth arpeggio', 'synth pluck', 'synth chord', 'synth stab'},
            {'texture', 'atmospheric pad', 'static noise', 'rain ambience', 'noise sweep'}, {'static noise', 'noise sweep'},
-           {'glitch effect', 'stutter effect', 'reverse effect'}, {'crash cymbal', 'ride cymbal', 'closed hi-hat', 'open hi-hat'}]
+           {'glitch effect', 'stutter effect', 'reverse effect'}, {'crash cymbal', 'ride cymbal', 'closed hi-hat', 'open hi-hat'},
+           # character words people use loosely for the same sound: never negatives for each other
+           {'saturated', 'distorted', 'gritty', 'bitcrushed', 'warm'}, {'chorused', 'flanged', 'wobbling'}, {'rising', 'swelling', 'gliding'},
+           {'falling', 'gliding'}, {'dark', 'filtered', 'warm', 'smooth', 'hollow'}, {'bright', 'airy', 'glassy', 'metallic'},
+           {'pulsing', 'rhythmic', 'syncopated', 'rolling', 'wobbling'}, {'percussive', 'staccato', 'plucked'}, {'echoing', 'reverberant'},
+           {'sustained', 'swelling', 'smooth'}, {'vocal breath', 'breath'}, {'vocal phrase', 'spoken phrase', 'vocal chops', 'chops'},
+           {'vocal pad', 'vocal harmony', 'atmospheric pad'}, {'acid bass', 'acid synth', 'synth bass'}, {'bass pluck', 'synth pluck', 'synth bass'},
+           {'reese bass', 'supersaw'}, {'riser', 'swelling', 'rising'}, {'downlifter', 'falling'}]
 def compatible(a, b):
     if a == b: return True
     fa, fb = catalog.get(a, {}).get('family'), catalog.get(b, {}).get('family')
@@ -114,6 +135,14 @@ def run(kind, name):
         pool = ~IS_VAULT & (real if kind == 'instrument' and REAL.__len__() else True)
         extra_test = held_out(f'{kind}:{name}:extra', G[pool & use], pos[pool & use])
         test = use & pool & np.isin(G, sorted(extra_test)); where = 'real recordings' if kind == 'instrument' and REAL else 'extra sources'
+        if kind == 'label' and REAL_LABEL:
+            real = np.isin([i.split(':')[0] + ':' for i in IDS], REAL_LABEL)
+            # Renders and edited clips are easy to tell apart from their dry versions; prefer a test on
+            # real recordings (FSD50K, FSL10K, tag-mined Freesound) whenever it has enough positives.
+            real_pool = ~IS_VAULT & real
+            real_test = held_out(f'{kind}:{name}:real', G[real_pool & use], pos[real_pool & use])
+            t2 = use & real_pool & np.isin(G, sorted(real_test))
+            if pos[t2].sum() >= MIN_TEST: test, where = t2, 'real recordings'
     train = use & ~test & (IS_VAULT | (pos | ~IS_VAULT))
     r = {'kind': kind, 'name': name, 'testedOn': where, 'trainPositive': int(pos[train].sum()), 'testPositive': int(pos[test].sum())}
     if pos[test].sum() < MIN_TEST or pos[train].sum() < 30 or len(set(G[train & pos])) < 3: return {**r, 'verdict': 'not enough data'}
@@ -161,7 +190,7 @@ def run(kind, name):
     return {**r, 'uses': [EXTRAS[i - 1][0] for i in chosen], 'threshold': th, 'tp': tp, 'fp': fp, 'fn': fn, 'precision': P, 'recall': R,
             'f1': 2*P*R/(P+R) if P+R else 0.0, 'passes': bool(P >= BAR and R >= BAR), 'verdict': 'PASS' if P >= BAR and R >= BAR else 'fails'}
 
-prod = sorted({l for s in LAB for l in s if catalog.get(l, {}).get('group') == 'production'})
+prod = sorted({l for s in LAB for l in s if catalog.get(l, {}).get('group') in ('production', 'character')})
 # Instrument labels for every clip whose instrument is known. Instrument datasets name it outright;
 # elsewhere drums and synth families imply drums and synthesizer, vocal/FX/texture clips contain no
 # instrument, a library file name can name one ("Rhodes Chords"), and anything else stays unknown.
