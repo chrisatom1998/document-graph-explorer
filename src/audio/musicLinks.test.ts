@@ -305,4 +305,12 @@ describe('sound-alike links: reasons and scale', () => {
     expect(similar.length).toBeGreaterThan(nodes.length / 2);
     for (const e of similar) expect(Number(e.source) % 8).toBe(Number(e.target) % 8);
   });
+  it('stays fast when many tracks share one fingerprint', () => {
+    const same = fingerprint(0, 0);
+    const nodes = Array.from({ length: 3000 }, (_, i) => node(String(i).padStart(4, '0'), { embedding: same }));
+    const started = performance.now();
+    const similar = buildMusicEdges(nodes).filter(e => e.kind === 'similar');
+    expect(performance.now() - started).toBeLessThan(20000);
+    expect(similar.length).toBeGreaterThan(0);
+  });
 });

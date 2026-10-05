@@ -170,14 +170,22 @@ function soundNeighbors(audio: Features[], keep: number): Map<number, { other: n
     });
   });
   members.forEach((i, m) => { for (const code of codes[m]) { const list = buckets.get(code) ?? []; list.push(i); buckets.set(code, list); } });
+  // Each bucket is in index order; compare only with a fixed window around this track, so identical
+  // fingerprints filling one bucket cannot make the search quadratic.
+  const WINDOW = 16;
   members.forEach((i, m) => {
     const seen = new Set<number>();
-    for (const code of codes[m]) for (const other of buckets.get(code)!) {
-      if (other === i || seen.has(other) || seen.size >= 256) continue;
-      seen.add(other);
-      if (other > i) continue; // each pair is scored from its higher index
-      const similarity = cosine(vector(i), vector(other));
-      offer(i, other, similarity); offer(other, i, similarity);
+    for (const code of codes[m]) {
+      const list = buckets.get(code)!;
+      let lo = 0, hi = list.length;
+      while (lo < hi) { const mid = (lo + hi) >>> 1; if (list[mid] < i) lo = mid + 1; else hi = mid; }
+      for (let k = Math.max(0, lo - WINDOW); k < Math.min(list.length, lo + WINDOW + 1); k++) {
+        const other = list[k];
+        if (other >= i || seen.has(other)) continue; // each pair is scored from its higher index
+        seen.add(other);
+        const similarity = cosine(vector(i), vector(other));
+        offer(i, other, similarity); offer(other, i, similarity);
+      }
     }
   });
   return result;
