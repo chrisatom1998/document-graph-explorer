@@ -11,13 +11,18 @@ const option = (name, fallback) => {
   const i = args.indexOf(name);
   if (i < 0) return fallback;
   const value = args[i + 1];
+  if (value === undefined || value.startsWith('--')) throw new Error(`${name} needs a value`);
   args.splice(i, 2);
   return value;
 };
 const BAR = Number(option('--bar', '0.60'));
 const MIN_POSITIVES = Number(option('--min-positives', '10'));
 const VIEW = option('--view', 'including');
-if (!args.length || !(BAR > 0 && BAR <= 1)) throw new Error('Usage: node scripts/compare-tag-reports.mjs [--bar 0.60] [--min-positives 10] [--view including|without] <report.json>...');
+const USAGE = 'Usage: node scripts/compare-tag-reports.mjs [--bar 0.60] [--min-positives 10] [--view including|without] <report.json>...';
+if (!args.length || args.some(a => a.startsWith('--'))) throw new Error(USAGE);
+if (!(BAR > 0 && BAR <= 1)) throw new Error(`--bar must be in (0, 1], got ${BAR}. ${USAGE}`);
+if (!(Number.isInteger(MIN_POSITIVES) && MIN_POSITIVES >= 0)) throw new Error(`--min-positives must be a whole number, got ${MIN_POSITIVES}. ${USAGE}`);
+if (VIEW !== 'including' && VIEW !== 'without') throw new Error(`--view must be "including" or "without", got "${VIEW}". ${USAGE}`);
 
 /** label -> { precision, recall, positives } for one report. */
 function labels(file) {
@@ -42,7 +47,8 @@ console.log(`| Label | Positives | ${reports.map(r => `${r.name} P / R`).join(' 
 console.log(`|---|---|${reports.map(() => '---|').join('')}${reports.map(() => '---|').join('')}---|`);
 for (const label of all) {
   const rows = reports.map(r => r.labels.get(label));
-  const positives = Math.max(...rows.map(r => r?.positives ?? 0));
+  // The smallest support across reports, so a label that is thin in any run is still flagged.
+  const positives = Math.min(...rows.map(r => r?.positives ?? 0));
   const first = passes(rows[0]), last = passes(rows.at(-1));
   const change = reports.length < 2 || first === last ? '' : last ? 'now passes' : 'now fails';
   console.log(`| ${label} | ${positives}${positives < MIN_POSITIVES ? ' (low)' : ''} | ${rows.map(r => `${pct(r?.precision)} / ${pct(r?.recall)}`).join(' | ')} | ${rows.map(r => (passes(r) ? 'yes' : 'no')).join(' | ')} | ${change} |`);
