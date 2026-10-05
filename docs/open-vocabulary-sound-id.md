@@ -39,6 +39,12 @@ New active labels on this branch (★ = full):
   weaker evidence. laser, siren and vocal scream pass on real recordings but fail on the library, so they are held
   back. Results: `round21-largertest-results.json`. Over 78 near or failing labels this
   was neutral (10 better, 10 worse).
+- AMARI new-brand round (`round24-amari`; 2,261 clips from the user's AMARI drive as training-only data: Serato
+  Packs, ADSR Label Sampler, Tamber, Komorebi, RETRODISE and small free packs; brands already in the library and
+  near-copies of library clips removed): replaces three shipped heads, all now maybe. reverse effect 0.58/0.24 →
+  0.63/0.46, snare 0.73/0.39 → 0.71/0.53, tom 0.59/0.36 → 0.57/0.47, same held-out library brands as round 19.
+  Overall neutral (22 better, 21 worse; 74 → 77 passing). No other head changed. Results:
+  `dj-labels-2026-10-04/added-heads-round24.json`.
 
 ### More real data is what helped
 

@@ -1085,15 +1085,15 @@
    "label": "snare",
    "group": "production",
    "family": "drum-hit",
-   "bucket": "active (full)",
-   "shipped": "full",
+   "bucket": "active (maybe)",
+   "shipped": "maybe",
    "activeBefore": true,
-   "precision": 0.732,
-   "recall": 0.394,
+   "precision": 0.714,
+   "recall": 0.529,
    "testPositive": 104,
-   "tp": 41,
+   "tp": 55,
    "testedOn": "library brands",
-   "verdict": "fails"
+   "verdict": "passes 45/45"
   },
   {
    "label": "clap",
@@ -1186,12 +1186,12 @@
    "bucket": "active (maybe)",
    "shipped": "maybe",
    "activeBefore": true,
-   "precision": 0.589,
-   "recall": 0.364,
+   "precision": 0.566,
+   "recall": 0.475,
    "testPositive": 118,
-   "tp": 43,
+   "tp": 56,
    "testedOn": "library brands",
-   "verdict": "fails"
+   "verdict": "passes 45/45"
   },
   {
    "label": "shaker",
@@ -1645,15 +1645,15 @@
    "label": "reverse effect",
    "group": "production",
    "family": "transition",
-   "bucket": "active (full)",
-   "shipped": "full",
+   "bucket": "active (maybe)",
+   "shipped": "maybe",
    "activeBefore": true,
-   "precision": 0.582,
-   "recall": 0.242,
+   "precision": 0.629,
+   "recall": 0.462,
    "testPositive": 132,
-   "tp": 32,
+   "tp": 61,
    "testedOn": "library brands",
-   "verdict": "fails"
+   "verdict": "passes 45/45"
   },
   {
    "label": "texture",
