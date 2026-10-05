@@ -1,38 +1,51 @@
 # Open-vocabulary sound ID: coverage push (2026-10-05)
 
 Branch `open-vocab-all-labels`. This note follows `dge-open-vocabulary-sound-id-instructions.md`. Raw numbers are in
-`docs/evaluations/open-vocab-2026-10-05/`. `scorecard.json` lists every label; `round16-results.json` holds the
-held-out measurements.
+`docs/evaluations/open-vocab-2026-10-05/`. `scorecard.json` lists every label; `round19-results.json` holds the
+latest held-out measurements (rounds 16 and 18 are kept for comparison).
 
 ## Result
 
-**72 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
-ships in `learned.json` or `short-clip.json`. All 21 new labels come from this branch. Another session swapped
-the existing distorted head for a different version and promoted five existing heads to full tags.
+**82 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
+ships in `learned.json` or `short-clip.json`. All 31 new labels come from this branch. Another session swapped the
+existing distorted head for a different version and promoted five existing heads to full tags.
 
-| Bucket (45/45 bar, measured on held-out sources) | Labels |
+| Bucket (45/45 bar, measured on held-out sources, round 19) | Labels |
 |---|---|
-| Active, full tag (precision and recall ≥ 0.60) | 41 |
-| Active, "maybe" tag (0.45–0.60) | 31 |
-| Near: one of precision/recall ≥ 0.45 | 51 |
-| Failing: both < 0.45 | 32 |
-| Untestable: under 15 held-out positives | 15 |
+| Active, full tag (precision and recall ≥ 0.60) | 42 |
+| Active, "maybe" tag (0.45–0.60) | 40 |
+| Near: one of precision/recall ≥ 0.45 | 42 |
+| Failing: both < 0.45 | 36 |
+| Untestable: under 15 held-out positives | 10 |
 | Measured on made-up clips only (not shipped) | 4 |
 | Owned by the other session (not shipped here) | 24 |
 
 All 198 labels can be displayed: a unit test checks that each catalog label shows once a head reports it.
 Labels with no head simply never fire.
 
-New active labels on this branch (★ = full): acoustic guitar★, saxophone★, whisper★, snare roll★, ukulele★,
-kalimba★, jaw harp★, singing bowl★, synthesizer, clarinet, vocal chops, chops, vocal phrase, vocal breath,
-synth sequence, foghorn bass, riser, stutter effect, texture, bird ambience, triangle.
+New active labels on this branch (★ = full):
+- Round 14: acoustic guitar★, whisper★, synthesizer, vocal chops, chops, synth sequence, stutter effect, bird ambience.
+- Round 16: saxophone★, snare roll★, ukulele★, kalimba★, jaw harp★, singing bowl★, clarinet, vocal phrase,
+  vocal breath, foghorn bass, riser, texture, triangle.
+- Round 18: spoken phrase★, breakbeat, cello, electric piano, flute.
+- Round 19: chiptune synth, falling, glassy, horn, whistle.
+
+### More real data is what helped
+
+| Round | Tag-mined Freesound clips | Labels newly passing |
+|---|---|---|
+| 16 | 12.7k (≤150 per label, ≤4 per uploader) | 13 |
+| 18 | +16.8k (≤400 per label, ≤8 per uploader) | 5 |
+| 19 | +23.4k (≤1,000 per label, ≤15 per uploader) | 5 |
+
+Each round re-draws its held-out uploaders, so some labels also moved down between rounds. In round 19, about as many
+near labels lost ground as gained it. The returns from tag-mined data are flattening.
 
 ## Pass bar: conflicting rulings
 
-The user told this session **45/45**. Another session relayed **60/60** from the same night. Both are honoured with
-two tiers. Heads at 60/60 or better ship as full tags. Heads between 45 and 60 ship with `maybe: true`, so the panel
-shows them faded with "maybe". **The user should confirm which bar they want.** If it's 60/60, remove the heads with `maybe: true`
-from `learned.json` and re-pin its hash in `manifest.json` (as in commit c91a8c7). `add-maybe-heads.py` only adds heads.
+The user told this session **45/45**. Another session relayed **60/60** the same night. **The user then confirmed
+45/45.** Heads at 60/60 or better ship as full tags. Heads between 45 and 60 ship with `maybe: true`, so the panel
+shows them faded with "maybe". The maybe tier stays as a display hint.
 
 ## What was built
 
@@ -51,7 +64,8 @@ from `learned.json` and re-pin its hash in `manifest.json` (as in commit c91a8c7
    - `fetch-freesound-previews.mjs` downloads the first ~15 s of each public preview (no API token) and records the
      clip's own licence.
    - `freesound-mined-merge.py` merges both passes into one row per sound.
-   - Result: 12,684 clips for 140+ labels. Licences: CC0 6,036; CC-BY 4,635; CC-BY-NC 1,771; Sampling+ 238; other 4.
+   - Result after the first pass: 12,684 clips for 140+ labels; after three passes, 52,976 clips. Licences: CC0 25,723; CC-BY 19,579;
+     CC-BY-NC 6,643; Sampling+ 1,026; other 5.
      Non-commercial clips are allowed because the app is not commercial.
    - Labels come from uploader tags, so they are noisy. A missing tag counts as unknown, not as absent.
 3. **Synth types from Surge preset names** (`surge-name-manifest.py`): FM, acid, organ, string, brass, vocal-like,
@@ -101,16 +115,16 @@ from `learned.json` and re-pin its hash in `manifest.json` (as in commit c91a8c7
   on training rows the head separates easily. More real positives per label is the fix, not a lower threshold.
   Best candidates:
 
-  | Label | Precision / recall | Test positives |
+  | Label | Precision / recall (round 19) | Test positives |
   |---|---|---|
-  | spoken phrase | 1.00 / 0.44 | 34 |
-  | 808 bass | 0.88 / 0.43 | 108 |
-  | electric piano | 0.88 / 0.44 | 32 |
-  | marimba | 0.76 / 0.43 | 30 |
-  | double bass | 0.78 / 0.41 | 17 |
-  | horn | 0.88 / 0.39 | 57 |
-  | reese bass | 0.81 / 0.38 | 103 |
-  | plucked | 0.79 / 0.38 | 39 |
+  | bass growl | 0.45 / 0.72 (precision just under the bar) | 137 |
+  | percussion | 0.78 / 0.45 (recall just under the bar) | 1,014 |
+  | violin / fiddle | 0.84 / 0.44 | 307 |
+  | woody | 0.68 / 0.43 | 566 |
+  | viola | 0.52 / 0.42 | 65 |
+  | acid synth | 1.00 / 0.40 | 40 |
+  | glitch effect | 0.66 / 0.40 | 115 |
+  | closed hi-hat | 0.41 / 0.86 | 44 |
 
 - **Failing labels are mostly character words and synth subtypes.** Examples: bright, warm, metallic, airy, nasal,
   sustained, syncopated, saturated, fm synth, synth stab, synth chord. Uploader tags for these words are unreliable,
