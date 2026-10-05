@@ -1,0 +1,72 @@
+name: Online DJ tag check
+
+# Real-world check: the frozen list of 15 s clips from Creative Commons SoundCloud tracks
+# (scripts/online-dj/soundcloud-clips.json) runs through the built app's real analysis pipeline
+# in headless Chromium, once per app version, so before/after see identical audio.
+# Audio is fetched at run time and never committed.
+on:
+  push:
+    branches: [claude/edm-genre-tags-5qvvso]
+    paths: [scripts/online-dj/**, .github/workflows/online-dj-test.yml]
+  workflow_dispatch:
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  online-dj:
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [main]
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.app == 'main' && 'main' || github.sha }}
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          path: online-dj-tools
+      - name: Use this branch's test scripts against the app version under test
+        run: |
+          rm -rf scripts/online-dj && cp -r online-dj-tools/scripts/online-dj scripts/online-dj && rm -rf online-dj-tools
+          git log -1 --format='app under test: %H %s'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Download any missing model weights
+        run: npm run setup:music
+      - name: Install ffmpeg, yt-dlp + Playwright Chromium
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          python3 -m pip install --quiet --upgrade yt-dlp
+          npx playwright install --with-deps chromium
+      - name: Fetch the frozen SoundCloud clips
+        run: node scripts/online-dj/refetch-soundcloud.mjs online-dj/audio online-dj/manifest.json
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=online-dj/audio MANIFEST=online-dj/manifest.json node scripts/online-dj/upload-eval.mjs online-dj/run test 20
+      - name: Summarise
+        if: always()
+        run: npx vite-node scripts/online-dj/summarize.mjs online-dj/run/graph-export.json online-dj/manifest.json online-dj/summary.json
+      - name: Diagnose
+        if: always()
+        run: npx vite-node scripts/online-dj/diagnose.mjs online-dj/run/graph-export.json online-dj/manifest.json online-dj/audio
