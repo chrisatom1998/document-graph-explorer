@@ -4,6 +4,8 @@
   cleaned   drops negatives whose uploader tags or name say they have the effect (distorted 808s, cave pads)
   hard      cleaned + near-miss negatives: Surge synth presets without the effect in their name
             (buzzy leads and basses for distorted) and the IDMT/EGFx dry and modulation-effect takes
+  paired    hard + the IDMT/EGFx takes WITH the effect as positives, so the same guitar and bass notes
+            appear both with and without it (scored too on held-out effect takes: effect recall)
 
 All three are scored on the same test: Freesound uploaders held out on BOTH sides (the old test
 held out only positive uploaders, so distorted had 0 test negatives), plus held-out Surge presets and
@@ -17,7 +19,7 @@ from sklearn.model_selection import GroupKFold
 B = '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints'
 INDEX = '/Users/chrisjohnson/Documents/Media/dj-training-sounds/index.json'
 CHARACTER = ['distorted', 'reverberant', 'echoing', 'filtered']
-HEADS = ['distorted', 'reverberant']
+HEADS = os.environ.get('HEADS', 'distorted,reverberant').split(',')
 # Words in Freesound tags/names, or Surge preset names, that mean the clip has the effect.
 HAS = {'distorted': re.compile(r'distort|overdriv|drive|fuzz|crush|saturat|grit|dirt|scream|growl|filth|nasty|harsh|rasp'),
        'reverberant': re.compile(r'reverb|hall|cathedral|cave|church|room|space|echo|delay|ambien')}
@@ -27,7 +29,7 @@ SURGE_TYPES = {'distorted': {'synth lead', 'synth bass', 'synth pluck', 'brass s
 MODULATION = ['dry', 'chorus', 'flanger', 'phaser', 'tremolo', 'vibrato']
 CAP = 1500
 BAR = 0.65
-rng = np.random.default_rng(417)
+rng = np.random.default_rng(int(os.environ.get('SEED', '417')))
 
 def embeddings(folder, want):
     got = {}
@@ -93,39 +95,49 @@ for L in HEADS:
     s_tr = rng.choice(s_tr, min(len(s_tr), CAP), replace=False); e_tr = rng.choice(e_tr, min(len(e_tr), CAP), replace=False)
     s_te = np.where(s_ok & s_test)[0]; e_te = np.where(e_ok & e_test)[0]
     e_te = rng.choice(e_te, min(len(e_te), 1000), replace=False)
+    ep = EL == L; ep_test = np.isin(EG, sorted(held(f'{L}:fxpos', list(EG[ep]))))
+    ep_tr = np.where(ep & ~ep_test)[0]; ep_tr = rng.choice(ep_tr, min(len(ep_tr), CAP), replace=False)
+    ep_te = np.where(ep & ep_test)[0]; ep_te = rng.choice(ep_te, min(len(ep_te), 1000), replace=False)
 
     test_mask = fs_test & (pos | (other & ~tagged))
     Xte, yte = FX[test_mask], pos[test_mask]
-    setups = {'baseline': pos | other, 'cleaned': pos | (other & ~tagged), 'hard': pos | (other & ~tagged)}
+    setups = {'baseline': pos | other, 'cleaned': pos | (other & ~tagged), 'hard': pos | (other & ~tagged), 'paired': pos | (other & ~tagged)}
     row = {'label': L, 'testPositive': int(yte.sum()), 'testNegative': int((~yte).sum()),
            'heldOutUploaders': len(set(FG[test_mask])), 'surgeTest': int(len(s_te)), 'effectTest': int(len(e_te)), 'setups': {}}
     for name, use in setups.items():
         tr = use & ~fs_test
         X, y, g = FX[tr], pos[tr], FG[tr]
-        extra = np.vstack([SX[s_tr], EX[e_tr]]) if name == 'hard' else np.zeros((0, FX.shape[1]))
+        extra = np.vstack([SX[s_tr], EX[e_tr]]) if name in ('hard', 'paired') else np.zeros((0, FX.shape[1]))
+        ey = np.zeros(len(extra), bool)
+        if name == 'paired': extra = np.vstack([extra, EX[ep_tr]]); ey = np.concatenate([ey, np.ones(len(ep_tr), bool)])
         # Threshold from out-of-fold scores on the training uploaders only; near misses join every training fold.
         p = np.full(len(y), np.nan)
         for a, b in GroupKFold(n_splits=5).split(X, y, g):
-            p[b] = fit(np.vstack([X[a], extra]), np.concatenate([y[a], np.zeros(len(extra), bool)])).predict_proba(X[b])[:, 1]
+            p[b] = fit(np.vstack([X[a], extra]), np.concatenate([y[a], ey])).predict_proba(X[b])[:, 1]
         best = threshold(y, p)
         if not best: row['setups'][name] = {'verdict': 'no usable threshold'}; continue
         th = best[1]
-        m = fit(np.vstack([X, extra]), np.concatenate([y, np.zeros(len(extra), bool)]))
+        m = fit(np.vstack([X, extra]), np.concatenate([y, ey]))
         pr = m.predict_proba(Xte)[:, 1] >= th
         tp, fp, fn = int((pr & yte).sum()), int((pr & ~yte).sum()), int((~pr & yte).sum())
         P = tp / (tp + fp) if tp + fp else 0.0; R = tp / (tp + fn) if tp + fn else 0.0
         sfa = float((m.predict_proba(SX[s_te])[:, 1] >= th).mean()) if len(s_te) else None
         efa = float((m.predict_proba(EX[e_te])[:, 1] >= th).mean()) if len(e_te) else None
+        erec = float((m.predict_proba(EX[ep_te])[:, 1] >= th).mean()) if len(ep_te) else None
         row['setups'][name] = {'threshold': th, 'trainNegative': int((~y).sum() + len(extra)), 'tp': tp, 'fp': fp, 'fn': fn,
-                               'precision': P, 'recall': R, 'surgeFalseAlarm': sfa, 'effectFalseAlarm': efa,
+                               'precision': P, 'recall': R, 'surgeFalseAlarm': sfa, 'effectFalseAlarm': efa, 'effectRecall': erec,
                                'passes': bool(P >= BAR and R >= BAR),
                                'falseAlarmIds': [fs[i][0] for i in np.where(test_mask)[0][pr & ~yte]]}
         # The shippable head refits on every uploader and both near-miss splits, keeping the tested threshold.
-        full_extra = np.vstack([SX[np.concatenate([s_tr, s_te])], EX[np.concatenate([e_tr, e_te])]]) if name == 'hard' else extra
-        mf = fit(np.vstack([FX[use], full_extra]), np.concatenate([pos[use], np.zeros(len(full_extra), bool)]))
+        full_extra, full_y = extra, ey
+        if name in ('hard', 'paired'):
+            full_extra = np.vstack([SX[np.concatenate([s_tr, s_te])], EX[np.concatenate([e_tr, e_te])]]); full_y = np.zeros(len(full_extra), bool)
+        if name == 'paired':
+            full_extra = np.vstack([full_extra, EX[np.concatenate([ep_tr, ep_te])]]); full_y = np.concatenate([full_y, np.ones(len(ep_tr) + len(ep_te), bool)])
+        mf = fit(np.vstack([FX[use], full_extra]), np.concatenate([pos[use], full_y]))
         row['setups'][name]['head'] = {'weights': [round(float(w), 6) for w in mf.coef_[0]], 'bias': round(float(mf.intercept_[0]), 6)}
         print(f"{L:<12} {name:<9} test +{row['testPositive']}/-{row['testNegative']}  precision {P:.0%}  recall {R:.0%}  "
-              f"near-miss false alarms: synth {sfa:.0%}  effect takes {efa:.0%}  {'PASS' if P >= BAR and R >= BAR else 'fails'}")
+              f"near-miss false alarms: synth {sfa:.0%}  effect takes {efa:.0%}  effect recall {erec:.0%}  {'PASS' if P >= BAR and R >= BAR else 'fails'}")
     results.append(row)
 json.dump({'kind': 'character-hardneg-v1', 'at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'bar': BAR, 'results': results},
           open(sys.argv[1], 'w'), indent=1)
