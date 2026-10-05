@@ -66,6 +66,10 @@ it('shows full-mix-tested Jamendo synthesizer and drums on recordings of at leas
  expect(confidentSoundSummary(song(15)).map(s=>[s.label,s.scores?.find(x=>x.model===FULL_MIX_JAMENDO_SCORE)?.score])).toEqual([['synthesizer',synth],['drums',drums]]);
  // Shorter loops were never measured: Jamendo stays an untested model score there.
  expect(confidentSoundSummary(song(8))).toEqual([]);
+ // A row shorter than the calibrated 10 s window is not promoted, even on a long recording.
+ const partial=song(15);partial.recognition=createRecognition(15,'full');
+ recordEvidence(partial.recognition,'jamendo',{start:10,end:15},[{dimension:'source',labelId:'synthesizer',score:.99}]);
+ expect(confidentSoundSummary(partial)).toEqual([]);
 });
 it('keeps full-mix Jamendo scores below their measured threshold hidden, and honours rejections',async()=>{
  const {FULL_MIX_JAMENDO}=await import('./confidentSoundSummary');

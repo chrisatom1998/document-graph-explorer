@@ -80,7 +80,8 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     if(!['source','effect','character'].includes(observation.dimension))continue;
     for(const id of observation.evidenceIds){const e=evidenceById.get(id);if(!e||e.dimension!==observation.dimension||e.labelId!==observation.labelId)continue;
       estimate(e.dimension,e.labelId,e.score,nativeNames[e.modelId]+(e.derivedFrom?` (${e.derivedFrom.labelId} supports ${e.labelId})`:''));
-      const rule=fullMix&&e.modelId==='jamendo'&&e.dimension==='source'?FULL_MIX_JAMENDO[e.labelId]:undefined;
+      // Calibrated on whole 10 s windows only: a shorter (e.g. imported) row is not promoted.
+      const rule=fullMix&&e.modelId==='jamendo'&&e.dimension==='source'&&e.end-e.start>=FULL_MIX_MIN_SECONDS-1e-6?FULL_MIX_JAMENDO[e.labelId]:undefined;
       if(rule&&e.score>=rule.threshold)estimate('source',rule.label,e.score,FULL_MIX_JAMENDO_SCORE);}
   }}else{
     for(const i of audio.instruments)estimate('source',i.label,i.score,'Instrument model');
