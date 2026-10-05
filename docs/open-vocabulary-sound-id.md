@@ -104,6 +104,34 @@ shows them faded with "maybe". The maybe tier stays as a display hint.
 | 5 s silence | nothing |
 | Random-bytes .wav | not added to the graph; no page errors |
 
+## Unverified fallback for labels with no tested detector
+
+Step 7 of the instructions allows a label with too little data to fall back to the raw model score with a
+"not calibrated" marker. The Sounds panel now does that for every catalog label without a tested detector:
+- the raw CLAP catalog similarity must pass the catalog's own winner-and-margin check;
+- recordings over 2.25 s only;
+- shown as "unverified" (dashed, possible tier), with hover text saying it is raw, uncalibrated CLAP;
+- never for a label that has a tested detector (`calibratedLabels.json`, kept in sync by a test);
+- presentation only, so never graph evidence.
+
+The cost was measured with the app's own `selectDjTags` on 6,000 real recordings and 3,000 library clips
+(`unverified-fallback-cost.json`, `scripts/unverified-fallback-cost.mjs`). Agreement with the clips' own labels is a
+lower bound on precision, because tags and file names are incomplete.
+
+| Fallback floor | Real: tags shown / agreeing | Library: tags shown / agreeing |
+|---|---|---|
+| 0.40 (the plain 40% rule) | 2,405 / 23% | 1,402 / 7% |
+| 0.50 (shipped) | 740 / 41% | 459 / 11% |
+
+Because 0.40 was mostly wrong, the fallback floor is 0.50, the instructions' "raise that category's threshold" option.
+12 labels were measured as almost always wrong (≥ 15 firings, < 10% agreement) and are blocked from the fallback
+(`unverifiedBlocked.json`): synth bass, shaker loop, filtered, rising, bass pluck, dry, echoing, supersaw,
+syncopated, reverberant, reverse impact, synth stab.
+
+**This makes 186 of 198 labels able to appear:** 111 from tested detectors and 75 as "unverified". The other 12 are
+blocked because measurement says they would mostly be wrong. "Unverified" tags are honest about being untested.
+They are not accurate detection.
+
 ## TinySOL orchestral notes (round 23)
 
 TinySOL is 2,913 real recorded notes from 14 orchestral instruments (Zenodo 3685367, CC BY 4.0); 60 notes per

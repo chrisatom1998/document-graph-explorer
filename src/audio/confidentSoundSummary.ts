@@ -5,6 +5,7 @@ import type { MusicAnalysis } from './musicTypes';
 import { dimensionLabels, type Dimension } from './recognition';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import calibratedLabelList from './calibratedLabels.json';
+import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 
 /** Presentation only: does not change stored evidence, acceptance, cache identity or graph links. */
@@ -22,6 +23,11 @@ export interface DisplaySound { dimension: Dimension; label: string; origin: 'co
   uncalibrated?: boolean }
 /** Labels that have a held-out-tested detector (learned.json / short-clip.json); kept in sync by add-maybe-heads.py and a test. */
 export const CALIBRATED_LABELS: ReadonlySet<string> = new Set(calibratedLabelList as string[]);
+/** Raw-CLAP fallback floor. Measured on 9,000 clips: at 0.40 only 23% of fallback tags agreed with the clip's own
+ * labels, at 0.50 41% (docs/evaluations/open-vocab-2026-10-05/unverified-fallback-cost.json), so the floor is raised. */
+export const UNVERIFIED_SOUND_FLOOR = .5;
+/** Labels whose fallback tags were measured as almost always wrong (>= 15 firings, < 10% agreement): never shown. */
+export const UNVERIFIED_BLOCKED: ReadonlySet<string> = new Set(unverifiedBlocked.blocked);
 /** One-shots (≤ SHORT_CLIP_MAX_SECONDS) keep the 0.50 rule; longer audio uses the 0.40 floor. */
 export const soundDisplayFloor=(durationSeconds:number|undefined)=>Number.isFinite(durationSeconds)&&durationSeconds!>SHORT_CLIP_MAX_SECONDS?TRACK_SOUND_FLOOR:LIKELY_SOUND_CUTOFF;
 export const soundTier=(score:number):SoundTier=>score>=LIKELY_SOUND_CUTOFF?'likely':'possible';
@@ -77,5 +83,5 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   return [...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
     :s.scores?.some(x=>TESTED_SCORES.has(x.model))?[tiered(s,m=>TESTED_SCORES.has(m))]
     :s.scores?.some(x=>x.model===MAYBE_SCORE)?[{...tiered(s,m=>m===MAYBE_SCORE),maybe:true}]
-    :long&&!CALIBRATED_LABELS.has(s.label)&&catalogClap.has(`${s.dimension}:${s.label}`)&&s.scores?.some(x=>x.model==='CLAP similarity')?[{...s,tier:'possible' as const,uncalibrated:true}]:[]);
+    :long&&!CALIBRATED_LABELS.has(s.label)&&!UNVERIFIED_BLOCKED.has(s.label)&&catalogClap.has(`${s.dimension}:${s.label}`)&&s.scores?.some(x=>x.model==='CLAP similarity'&&x.score>=UNVERIFIED_SOUND_FLOOR)?[{...s,tier:'possible' as const,uncalibrated:true}]:[]);
 }
