@@ -10,7 +10,7 @@ from collections import defaultdict
 
 run, split = sys.argv[1], (sys.argv[2] if len(sys.argv) > 2 else 'test')
 ROOT = os.path.join(os.path.dirname(__file__), '..')
-B = f'{ROOT}/docs/evaluations/short-clips-2026-10-04'
+B = os.environ.get('BENCH', f'{ROOT}/docs/evaluations/short-clips-2026-10-04')
 manifest = json.load(open(f'{B}/manifest.json'))
 meta = json.load(open(f'{B}/item-meta.json'))
 items = [i for i in manifest['items'] if i['split'] == split]

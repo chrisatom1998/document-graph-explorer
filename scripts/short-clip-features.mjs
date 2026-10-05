@@ -44,8 +44,11 @@ for (const clip of clips.filter(c => !done.has(c.id))) {
     const s48 = await decode(clip.path, 48000), s16 = await decode(clip.path, 16000);
     const row = { id: clip.id, seconds: s16.length / 16000 };
     row.clapRepeat = await clapEmbed(s48, 'repeatpad');
-    row.clapZero = await clapEmbed(s48, 'pad');
-    row.ast = Array.from((await ast(await astProc(s16))).logits.data, r);
+    // REPEAT_ONLY: the chosen model reads only the looped fingerprint; skip the inputs that lost the comparison.
+    if (!process.env.REPEAT_ONLY) {
+      row.clapZero = await clapEmbed(s48, 'pad');
+      row.ast = Array.from((await ast(await astProc(s16))).logits.data, r);
+    }
     row.event = eventFeatures(s16) ?? null;
     appendFileSync(OUT, JSON.stringify(row) + '\n');
   } catch (e) { console.log(`skip ${clip.id}: ${String(e.message).slice(0, 100)}`); }
