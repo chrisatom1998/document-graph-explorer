@@ -270,7 +270,7 @@ it('retries a model request once on a fresh single-thread worker when the thread
   const { THREADED_RUNTIME_STALLED } = await import('./musicRuntime');
   const sent: { kind: string; singleThread?: boolean }[] = [];
   class StallingWorker extends FakeWorker {
-    postMessage(message: { id: number; kind: string; singleThread?: boolean; samples?: Float32Array }) {
+    override postMessage(message: { id: number; kind: string; singleThread?: boolean; samples?: Float32Array }) {
       sent.push({ kind: message.kind, singleThread: message.singleThread });
       if ((message.kind === 'instruments' || message.kind === 'profile') && !message.singleThread) {
         setTimeout(() => this.onmessage?.({ data: { id: message.id, error: THREADED_RUNTIME_STALLED } }), 0);
