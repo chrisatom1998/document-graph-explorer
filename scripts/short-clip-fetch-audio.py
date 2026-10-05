@@ -8,7 +8,7 @@ Reads docs/evaluations/short-clips-2026-10-04/manifest.json and writes <out-dir>
   * AVP utterances: the manifest's start/end crop with a 10 ms fade-out.
 Every clip's duration is checked against item-meta.json; a mismatch stops the run rather than scoring different audio.
 """
-import concurrent.futures, io, json, os, re, subprocess, sys, tarfile, time, urllib.request, wave, zipfile
+import concurrent.futures, io, json, os, re, subprocess, sys, tarfile, tempfile, time, urllib.request, wave, zipfile
 
 ROOT = os.path.join(os.path.dirname(__file__), '..')
 B = os.environ.get('BENCH', f'{ROOT}/docs/evaluations/short-clips-2026-10-04')
@@ -38,9 +38,13 @@ def duration(data):
     with wave.open(io.BytesIO(data)) as w: return w.getnframes() / w.getframerate()
 
 def crop(src, start, dur, fade=0.01):
-    return subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', 'pipe:0', '-ss', f'{start:.4f}', '-t', f'{dur:.4f}',
-                           '-af', f'afade=t=out:st={max(0, dur - fade):.4f}:d={fade}', '-ac', '1', '-c:a', 'pcm_s16le', '-f', 'wav', 'pipe:1'],
-                          input=src, capture_output=True, check=True).stdout
+    # Same ffmpeg filter as the benchmark build, written to a seekable file so the WAV header carries real sizes.
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, 'clip.wav')
+        subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', 'pipe:0', '-ss', f'{start:.4f}', '-t', f'{dur:.4f}',
+                        '-af', f'afade=t=out:st={max(0, dur - fade):.4f}:d={fade}', '-ac', '1', '-c:a', 'pcm_s16le', '-bitexact', path],
+                       input=src, capture_output=True, check=True)
+        return open(path, 'rb').read()
 
 def save(item, data):
     want = meta[item['id']]['durationSeconds']
