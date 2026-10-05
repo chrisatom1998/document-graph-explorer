@@ -23,7 +23,7 @@
    "precision": 1.0,
    "recall": 0.8969072164948454,
    "testPositive": 97,
-   "source": "shipped-heads-r4.json",
+   "source": "added-heads-round14-bar45.json",
    "should": "full",
    "verdict": "ok"
   },
@@ -34,7 +34,7 @@
    "precision": 0.8285714285714286,
    "recall": 1.0,
    "testPositive": 58,
-   "source": "shipped-heads-r4.json",
+   "source": "added-heads-round14-bar45.json",
    "should": "full",
    "verdict": "ok"
   },
@@ -101,7 +101,7 @@
    "precision": 0.7294117647058823,
    "recall": 0.8051948051948052,
    "testPositive": 77,
-   "source": "shipped-heads-r4.json",
+   "source": "added-heads-round14-bar45.json",
    "should": "full",
    "verdict": "ok"
   },
@@ -141,46 +141,50 @@
   {
    "label": "reverse effect",
    "group": "production",
-   "shown": "maybe",
+   "shown": "full",
    "precision": 0.6486486486486487,
    "recall": 0.7272727272727273,
    "testPositive": 132,
    "source": "shipped-heads-r4.json",
    "should": "full",
-   "verdict": "maybe -> full"
+   "verdict": "ok"
   },
   {
    "label": "shaker",
    "group": "production",
-   "shown": "maybe",
+   "shown": "full",
    "precision": 0.810126582278481,
    "recall": 0.6464646464646465,
    "testPositive": 99,
    "source": "shipped-heads-r4.json",
    "should": "full",
-   "verdict": "maybe -> full"
+   "verdict": "ok"
   },
   {
    "label": "open hi-hat",
    "group": "production",
-   "shown": "maybe",
-   "precision": 0.6329113924050633,
-   "recall": 0.7299270072992701,
+   "shown": "full",
+   "precision": 0.60625,
+   "recall": 0.708029197080292,
    "testPositive": 137,
-   "source": "shipped-heads-r4.json",
+   "source": "added-heads-round14-bar45.json",
    "should": "full",
-   "verdict": "maybe -> full"
+   "verdict": "ok",
+   "ambiguous": [
+    "added-heads-round14-bar45.json",
+    "shipped-heads-r4.json"
+   ]
   },
   {
    "label": "synth arpeggio",
    "group": "production",
-   "shown": "maybe",
+   "shown": "full",
    "precision": 0.63125,
    "recall": 0.7651515151515151,
    "testPositive": 132,
    "source": "shipped-heads-r4.json",
    "should": "full",
-   "verdict": "maybe -> full"
+   "verdict": "ok"
   },
   {
    "label": "voice",
@@ -196,13 +200,13 @@
   {
    "label": "vinyl scratch",
    "group": "production",
-   "shown": "maybe",
+   "shown": "full",
    "precision": 1.0,
    "recall": 0.6046511627906976,
    "testPositive": 43,
    "source": "shipped-heads-r4.json",
    "should": "full",
-   "verdict": "maybe -> full"
+   "verdict": "ok"
   },
   {
    "label": "finger snap",
@@ -239,7 +243,7 @@
    "precision": 0.5575221238938053,
    "recall": 0.6428571428571429,
    "testPositive": 98,
-   "source": "shipped-heads-r4.json",
+   "source": "added-heads-round14-bar45.json",
    "should": "maybe",
    "verdict": "ok"
   },
@@ -261,7 +265,7 @@
    "precision": 0.75,
    "recall": 0.5142857142857142,
    "testPositive": 35,
-   "source": "shipped-heads-r4.json",
+   "source": "added-heads-round14-bar45.json",
    "should": "maybe",
    "verdict": "ok"
   },
@@ -272,7 +276,7 @@
    "precision": 0.6666666666666666,
    "recall": 0.6923076923076923,
    "testPositive": 26,
-   "source": "character-rendered.json:baseline",
+   "source": "character-hardneg.json:baseline",
    "should": "full",
    "verdict": "ok"
   },
@@ -497,80 +501,14 @@
    "verdict": "ok"
   },
   {
-   "label": "pitched vocal",
-   "group": "production",
-   "shown": "full",
-   "precision": 1.0,
-   "recall": 0.91,
-   "testPositive": 100,
-   "source": "added-heads-round14-bar45.json",
-   "should": "full",
-   "verdict": "ok"
-  },
-  {
-   "label": "record stop",
-   "group": "production",
-   "shown": "full",
-   "precision": 1.0,
-   "recall": 0.97,
-   "testPositive": 100,
-   "source": "added-heads-round14-bar45.json",
-   "should": "full",
-   "verdict": "ok"
-  },
-  {
-   "label": "reverse cymbal",
-   "group": "production",
-   "shown": "full",
-   "precision": 1.0,
-   "recall": 0.8888888888888888,
-   "testPositive": 99,
-   "source": "added-heads-round14-bar45.json",
-   "should": "full",
-   "verdict": "ok"
-  },
-  {
-   "label": "reverse impact",
-   "group": "production",
-   "shown": "full",
-   "precision": 1.0,
-   "recall": 0.9222222222222223,
-   "testPositive": 90,
-   "source": "added-heads-round14-bar45.json",
-   "should": "full",
-   "verdict": "ok"
-  },
-  {
-   "label": "reversed vocal",
-   "group": "production",
-   "shown": "full",
-   "precision": 1.0,
-   "recall": 0.8932038834951457,
-   "testPositive": 103,
-   "source": "added-heads-round14-bar45.json",
-   "should": "full",
-   "verdict": "ok"
-  },
-  {
    "label": "stutter effect",
    "group": "production",
    "shown": "maybe",
    "precision": 1.0,
    "recall": 0.45,
    "testPositive": 20,
-   "source": "shipped-heads-r4.json",
-   "should": "maybe",
-   "verdict": "ok"
-  },
-  {
-   "label": "sub drop",
-   "group": "production",
-   "shown": "full",
-   "precision": 1.0,
-   "recall": 0.9666666666666667,
-   "testPositive": 120,
    "source": "added-heads-round14-bar45.json",
-   "should": "full",
+   "should": "maybe",
    "verdict": "ok"
   },
   {
@@ -585,24 +523,13 @@
    "verdict": "ok"
   },
   {
-   "label": "vinyl crackle",
-   "group": "production",
-   "shown": "full",
-   "precision": 1.0,
-   "recall": 0.9583333333333334,
-   "testPositive": 48,
-   "source": "added-heads-round14-bar45.json",
-   "should": "full",
-   "verdict": "ok"
-  },
-  {
    "label": "vocal chops",
    "group": "production",
    "shown": "maybe",
    "precision": 0.4956521739130435,
    "recall": 0.7307692307692307,
    "testPositive": 78,
-   "source": "shipped-heads-r4.json",
+   "source": "added-heads-round14-bar45.json",
    "should": "maybe",
    "verdict": "ok"
   },

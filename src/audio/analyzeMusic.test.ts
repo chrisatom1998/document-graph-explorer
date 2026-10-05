@@ -293,3 +293,31 @@ it('retries a model request once on a fresh single-thread worker when the thread
   expect(profile.filter(v => !v).length).toBeLessThanOrEqual(1);
   expect(state.terminated).toBeGreaterThan(terminated);
 });
+
+it('retires sibling model workers on the switch and retries their in-flight requests single-thread', async () => {
+  vi.stubGlobal('crossOriginIsolated', true);
+  vi.stubGlobal('SharedArrayBuffer', class {});
+  vi.stubGlobal('navigator', { deviceMemory: 16, hardwareConcurrency: 18 });
+  vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
+  const { THREADED_RUNTIME_STALLED } = await import('./musicRuntime');
+  const sent: { kind: string; singleThread?: boolean }[] = [];
+  class SiblingWorker extends FakeWorker {
+    override postMessage(message: { id: number; kind: string; singleThread?: boolean }) {
+      sent.push({ kind: message.kind, singleThread: message.singleThread });
+      if (!message.singleThread && message.kind === 'profile') return;   // a sibling on a multi-threaded session, still working
+      if (!message.singleThread && message.kind === 'instruments') {
+        setTimeout(() => this.onmessage?.({ data: { id: message.id, error: THREADED_RUNTIME_STALLED } }), 5);
+        return;
+      }
+      super.postMessage(message);
+    }
+  }
+  vi.stubGlobal('Worker', SiblingWorker);
+  vi.resetModules();
+  const isolated = await import('./analyzeMusic');
+  const result = await isolated.analyzeMusic(new Blob(['sibling']), 'sibling.wav', { mode: 'full', concurrentModels: true } as never);
+  expect(result.instrumentScan?.complete).toBe(true);
+  const profile = sent.filter(m => m.kind === 'profile').map(m => !!m.singleThread);
+  expect(profile[0]).toBe(false);
+  expect(profile.at(-1)).toBe(true);
+});

@@ -64,9 +64,10 @@ export function familyOf(label: string): string {
   if (/bongo|conga|percussion|tabla|bell|maraca|gong|chime|rattle|tambourine|marimba|vibraphone|glockenspiel|steelpan|wood block|singing bowl/.test(label)) return 'percussion';
   return 'unknown';
 }
-/** One-shot heads change what short clips display; a new file re-runs only those clips, never long recordings. */
+/** One-shot heads change what short clips display, and full analyses of long recordings use them on event windows
+ * (analyzeDecodedMusic eventPass): a new file re-runs both. Fast long analyses never use them and stay current. */
 const oneShotIdentity = `one-shot-${((clap.sha256 as Record<string, string>)['short-clip.json'] ?? 'none').slice(0, 12)}-prompts-${clap.sha256['prompts.json'].slice(0, 12)}`;
-export const recognitionConfiguration = (mode: 'fast' | 'full', durationSeconds?: number) => `timeline-v1:${mode}:decoder-mono-v3-short-pcm:${musicRuntimeIdentity()}:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1${durationSeconds !== undefined && durationSeconds <= SHORT_CLIP_MAX_SECONDS ? `:${oneShotIdentity}` : ''}:uncalibrated`;
+export const recognitionConfiguration = (mode: 'fast' | 'full', durationSeconds?: number) => `timeline-v1:${mode}:decoder-mono-v3-short-pcm:${musicRuntimeIdentity()}:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1${durationSeconds !== undefined && durationSeconds <= SHORT_CLIP_MAX_SECONDS ? `:${oneShotIdentity}` : mode === 'full' && durationSeconds !== undefined ? `:event-windows-v1:${oneShotIdentity}` : ''}:uncalibrated`;
 export function createRecognition(duration: number, mode: 'fast' | 'full', audioFingerprint?: string): Recognition {
   // Checksum prefixes keep the growing Jamendo asset list inside the 512-character ledger bound.
   const versions = [ast.revision, Object.values(jamendo.sha256).map(hash => hash.slice(0, 16)).join(':'), clap.revision, 'essentia-0.1.3-tempo-1', 'essentia-0.1.3-key-2'];

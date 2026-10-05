@@ -37,12 +37,13 @@ let nextId = 0;
 let idleTimer: ReturnType<typeof setTimeout> | undefined;
 // A terminated worker never answers: fail its request now instead of at the timeout.
 const inFlight = new Map<Worker, (error: Error) => void>();
+const WORKER_REPLACED = 'Music analysis worker was replaced.';
 function discard(current?: Worker) {
   for (const [family, worker] of workers) {
     if (current && current !== worker) continue;
     const fail = inFlight.get(worker);
     inFlight.delete(worker); worker.terminate(); workers.delete(family);
-    fail?.(new Error('Music analysis worker was replaced.'));
+    fail?.(new Error(WORKER_REPLACED));
   }
 }
 function parkWorker() {
@@ -90,7 +91,7 @@ function warmWorker(worker: Worker, family: string): Promise<void> {
     const done = (error?: Error) => { clearTimeout(timer); worker.removeEventListener('message', onMessage); worker.removeEventListener('error', onError); if (error) reject(error); else resolve(); };
     const onMessage = ({ data }: MessageEvent<{ id: number; warmed?: boolean; error?: string }>) => {
       if (data.id !== id) return;
-      if (data.error === THREADED_RUNTIME_STALLED) { switchToSingleThreadRuntime(); discard(worker); }
+      if (data.error === THREADED_RUNTIME_STALLED) singleThreadEverywhere();
       done(data.error ? new Error(data.error) : undefined);
     };
     const onError = () => done(new Error('Music model preload failed.'));
@@ -103,15 +104,24 @@ function warmWorker(worker: Worker, family: string): Promise<void> {
 
 /** Tells a worker to use one inference thread once this browser has shown its threads never start. */
 const threadHint = () => musicInferenceThreads() === 1 ? { singleThread: true } : {};
+/** Once one worker's threads fail to start, every retained model worker is retired, not only that one: a sibling
+ * that already loaded a multi-threaded session would otherwise keep it and report results under the one-thread
+ * identity. Their in-flight requests fail with WORKER_REPLACED and are retried below on fresh workers. */
+function singleThreadEverywhere(): void {
+  if (musicInferenceThreads() === 1) return;
+  switchToSingleThreadRuntime();
+  discard();
+}
 function request<T>(message: Record<string, unknown>, transfer: Transferable[], options: Options, priority: 'preview' | 'analysis', fingerprint?: string): Promise<T> {
   return queueFor(familyOf(message.kind)).schedule(priority, async () => {
     // Only a multi-threaded worker can stall; keep a copy of the audio (the first attempt transfers it away).
     const retryCopy = musicInferenceThreads() > 1 ? structuredClone(message) : undefined;
     try { return await runRequest<T>(message, transfer, options, fingerprint); }
     catch (error) {
-      if (!(error instanceof Error) || error.message !== THREADED_RUNTIME_STALLED || !retryCopy) throw error;
-      // The stuck worker was discarded; run the same request once more on a fresh single-thread worker.
-      switchToSingleThreadRuntime();
+      // Retry once on a fresh single-thread worker: this worker's threads never started, or the switch retired it.
+      const switched = error instanceof Error && (error.message === THREADED_RUNTIME_STALLED || (error.message === WORKER_REPLACED && musicInferenceThreads() === 1));
+      if (!switched || !retryCopy) throw error;
+      singleThreadEverywhere();
       return runRequest<T>(retryCopy, [], options, fingerprint);
     }
   }, options.signal);

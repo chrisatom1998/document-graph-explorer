@@ -13,7 +13,7 @@ for spec in sys.argv[2:]:
         row = clips.setdefault(key, {**c, 'labels': [], 'path': path, 'licence': state[key].get('licence'), 'author': c['username'],
                                      'url': f"https://freesound.org/people/{c['username']}/sounds/{key}/"})
         row['labels'] = sorted(set(row['labels']) | set(c['labels']))
-os.makedirs(os.path.dirname(OUT), exist_ok=True)
+if os.path.dirname(OUT): os.makedirs(os.path.dirname(OUT), exist_ok=True)
 json.dump({'kind': 'freesound-mined-v1', 'clips': list(clips.values())}, open(OUT, 'w'), indent=1)
 from collections import Counter
 lic = Counter((c['licence'] or 'unknown').split('/')[4] if c['licence'] else 'unknown' for c in clips.values())
