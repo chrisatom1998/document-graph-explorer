@@ -1,7 +1,8 @@
 name: Online DJ tag check
 
-# One-off real-world check: downloads ~12 freely licensed DJ tracks, runs them through the
-# built app's real analysis pipeline in headless Chromium, and prints the tags it showed.
+# One-off real-world check: cuts 15 s clips from Creative Commons DJ tracks on SoundCloud
+# (falling back to ccMixter / Internet Archive netlabels), runs them through the built app's
+# real analysis pipeline in headless Chromium, and prints the tags it showed.
 # Audio is fetched at run time and never committed.
 on:
   push:
@@ -38,9 +39,12 @@ jobs:
       - name: Install ffmpeg + Playwright Chromium
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          python3 -m pip install --quiet --upgrade yt-dlp
           npx playwright install --with-deps chromium
       - name: Fetch tracks
-        run: node scripts/online-dj/fetch-tracks.mjs online-dj/audio online-dj/manifest.json
+        run: |
+          node scripts/online-dj/fetch-soundcloud.mjs online-dj/audio online-dj/manifest.json 15 \
+            || CLIP_START=60 CLIP_SECONDS=15 node scripts/online-dj/fetch-tracks.mjs online-dj/audio online-dj/manifest.json
       - name: Build
         run: npm run build
       - name: Analyse in the real app

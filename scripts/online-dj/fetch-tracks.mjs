@@ -10,6 +10,7 @@ import { join } from 'node:path';
 const [audioDir, manifestPath] = process.argv.slice(2);
 if (!audioDir || !manifestPath) throw new Error('Usage: node scripts/online-dj/fetch-tracks.mjs <audio-dir> <manifest.json>');
 mkdirSync(audioDir, { recursive: true });
+const START = Number(process.env.CLIP_START ?? 60), CLIP = Number(process.env.CLIP_SECONDS ?? 90);
 
 const GENRES = [
   ['house', ['house'], 'house'],
@@ -87,9 +88,9 @@ for (const [slug, tags, genre] of GENRES) {
     const r = await fetch(track.url, { signal: AbortSignal.timeout(180_000), redirect: 'follow' });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     writeFileSync(mp3, Buffer.from(await r.arrayBuffer()));
-    execFileSync('ffmpeg', ['-v', 'error', '-y', '-ss', '60', '-t', '90', '-i', mp3, '-ac', '2', '-ar', '44100', join(audioDir, `${id}.wav`)]);
+    execFileSync('ffmpeg', ['-v', 'error', '-y', '-ss', String(START), '-t', String(CLIP), '-i', mp3, '-ac', '2', '-ar', '44100', join(audioDir, `${id}.wav`)]);
   } catch (e) { console.log(`download failed for ${genre}: ${e.message}`); continue; }
-  items.push({ id, split: 'test', genre, ...track, excerpt: { startSeconds: 60, durationSeconds: 90 } });
+  items.push({ id, split: 'test', genre, ...track, excerpt: { startSeconds: START, durationSeconds: CLIP } });
   console.log(`${id}: "${track.title}" by ${track.artist} (${track.source}, ${track.license}) tags=[${track.sourceTags.join(', ')}]`);
 }
 writeFileSync(manifestPath, JSON.stringify({ items }, null, 1));
