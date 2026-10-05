@@ -34,6 +34,15 @@ if os.environ.get('SYNTH_FRESH'):
     held = set(reserved['nsynthTestInstruments']) | set(reserved['fsdUploaders'])
     train = [i for i in train if i['groups']['artist'] not in held]
 
+if os.environ.get('CROPS'):
+    # Short training clips from scripts/short-clip-crops.py: the start of longer development clips, with their
+    # labels and family groups, so grouped CV keeps each crop with its source.
+    for f in glob.glob(f'{W}/crops/features-crops-*.jsonl'):
+        for line in open(f):
+            r = json.loads(line)
+            if r.get('event'): feats[r['id']] = r
+    train += json.load(open(f'{W}/crops/crop-items.json'))['items']
+
 def table(items):
     items = [i for i in items if i['id'] in feats]
     lab = [{f"{r['dimension']}:{r['label']}": r['state'] for r in i['reviews']} for i in items]

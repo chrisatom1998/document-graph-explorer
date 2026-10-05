@@ -203,3 +203,18 @@ npx vite-node scripts/short-clip-displayed.mjs <out-dir>/graph-export.json <out-
 python3 scripts/short-clip-report.py <out-dir> test > <out-dir>/report.json
 node scripts/short-clip-timing.mjs <out.json> 3
 ```
+
+## Very short clips (2026-10-05)
+
+Bass one-shots under about 1 s were mostly missed. The development set had only **3 bass-hit positives under 0.5 s, and 20 under 1 s, of 255**. An external pack of 80 bass one-shots (0.2–1.8 s, positives only, never trained on) found 17/80 with the shipped head, and 3/28 of those under 0.5 s.
+
+`scripts/short-clip-crops.py` (seed 20261005) adds training clips cut from the start of longer development clips: 0.15–1.0 s, 25 ms fade-out. It uses 252 bass-hit sources and 2,500 other labelled sources, and keeps each source's labels and family group. Fingerprints are `clapRepeat` only (`REPEAT_ONLY=1 node scripts/short-clip-features.mjs`). The bass-hit head was retrained with `CROPS=1 ONLY='role:bass hit'`, merged into `short-clip.json` with the existing standardisation (`STATS_FROM`/`MERGE_INTO`); every other head is unchanged.
+
+Grouped 5-fold out-of-fold, same C, threshold picked on the original clips (highest F1 with precision ≥ 0.70):
+
+| Training | Original clips F1 | Crops < 0.5 s recall | Crops 0.5–1 s recall | False tags on crops < 0.5 s |
+|---|---|---|---|---|
+| without crops | 0.814 | 70/101 | 107/151 | 2/1107 |
+| with crops | 0.810 | 80/101 | 112/151 | 7/1107 |
+
+The external pack, read three times during this work and **not to be used for further tuning**, went from 17/80 to 36/80 with crops at the comparison threshold. Its remaining misses mostly score 0.5–0.87, and their nearest training neighbours are synthesizer / synth-hit clips: a sound-character gap, not only length. CLAP + PaSST features scored 1/28 on that pack under 0.5 s (PaSST zero-pads to 10 s), so PaSST is not used there. No held-out test number exists for this head; a new frozen set is needed for one. Selection report: `development-selection-bass-crops.json`.
