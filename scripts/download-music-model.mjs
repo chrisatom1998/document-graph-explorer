@@ -6,18 +6,20 @@ import { setTimeout as delay } from 'node:timers/promises';
 const checksum = data => createHash('sha256').update(data).digest('hex');
 
 // Upstream model hosts occasionally time out on clean CI/Docker builds.
-// Retry transport/server failures, but never accept a mismatched model.
+// Retry transport/server failures (backing off up to 30s, about a minute
+// of waiting in total), but never accept a mismatched model.
+const ATTEMPTS = 6;
 async function download(url, expectedHash) {
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
     let data;
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(120_000) });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       data = Buffer.from(await response.arrayBuffer());
     } catch (error) {
-      if (attempt === 3) throw new Error(`Model download failed after four attempts: ${url}`, { cause: error });
+      if (attempt === ATTEMPTS - 1) throw new Error(`Model download failed after ${ATTEMPTS} attempts: ${url}`, { cause: error });
       console.warn(`Model download attempt ${attempt + 1} failed; retrying ${url}`);
-      await delay(1000 * 2 ** attempt);
+      await delay(Math.min(30_000, 2000 * 2 ** attempt));
       continue;
     }
     if (checksum(data) !== expectedHash) throw new Error(`Music model checksum mismatch: ${url}`);
