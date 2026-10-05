@@ -1,5 +1,5 @@
 {
- "at": "2026-10-05T03:38:09.949382+00:00",
+ "at": "2026-10-05T03:39:59.812692+00:00",
  "category": "role:bass hit",
  "cutoffMidi": 52,
  "features": [
@@ -13,6 +13,25 @@
  },
  "results": {
   "current": {
+   "lowSoundCheck": {
+    "kickImpactDrumsUnknownBass": {
+     "tagged": 0,
+     "clips": 152,
+     "rate": 0.0
+    },
+    "nsynthNonBassAtOrBelowCutoff": {
+     "tagged": 0,
+     "clips": 14
+    }
+   },
+   "foundUnchangedByDataset": {
+    "fsd50k": 2,
+    "nsynth": 10
+   },
+   "positivesUnchangedByDataset": {
+    "fsd50k": 28,
+    "nsynth": 18
+   },
    "C": 0.03,
    "threshold": 0.9598,
    "overall": {
@@ -30,6 +49,25 @@
    }
   },
   "A": {
+   "lowSoundCheck": {
+    "kickImpactDrumsUnknownBass": {
+     "tagged": 1,
+     "clips": 152,
+     "rate": 0.0066
+    },
+    "nsynthNonBassAtOrBelowCutoff": {
+     "tagged": 0,
+     "clips": 14
+    }
+   },
+   "foundUnchangedByDataset": {
+    "fsd50k": 13,
+    "nsynth": 16
+   },
+   "positivesUnchangedByDataset": {
+    "fsd50k": 28,
+    "nsynth": 18
+   },
    "C": 0.03,
    "threshold": 0.9446,
    "overall": {
@@ -47,6 +85,25 @@
    }
   },
   "B": {
+   "lowSoundCheck": {
+    "kickImpactDrumsUnknownBass": {
+     "tagged": 10,
+     "clips": 152,
+     "rate": 0.0658
+    },
+    "nsynthNonBassAtOrBelowCutoff": {
+     "tagged": 1,
+     "clips": 14
+    }
+   },
+   "foundUnchangedByDataset": {
+    "fsd50k": 24,
+    "nsynth": 15
+   },
+   "positivesUnchangedByDataset": {
+    "fsd50k": 28,
+    "nsynth": 18
+   },
    "C": 0.3,
    "threshold": 0.912,
    "overall": {

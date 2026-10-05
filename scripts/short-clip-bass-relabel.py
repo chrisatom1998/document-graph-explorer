@@ -16,6 +16,12 @@ a variant counts as a fix only if it finds at least 5 more of those 46 at its se
 2 more false detections on the same unchanged negatives. Same grouped 5-fold procedure and C grid as
 scripts/train-short-clip-heads.py. Test split never read. Nothing is exported.
 
+Low-sound check (added after A and B were read, to test the one risk B creates: removing low lead/pluck
+negatives could turn the head into a 'low pitch' detector). Each variant's head, at its own threshold, is scored on
+  - clips with bass hit unknown but kick, impact or drums present (full-fit head; these never trained this head)
+  - NSynth calibration notes that are not bass, at MIDI 52 or below (out-of-fold; they are labelled negatives)
+If B tags these clearly more often than A, A is the recommendation.
+
 Usage: <venv>/python scripts/short-clip-bass-relabel.py > docs/evaluations/short-clips-2026-10-04/bass-relabel.json
 """
 import importlib.util, json, os, re, sys, datetime
@@ -43,6 +49,21 @@ def labels(variant):
 
 X, _ = heads.matrix(heads.DEV, ['clapRepeat'])
 fixed = np.array([not surge(i) for i in heads.DEV])
+item_meta = json.load(open(f'{ROOT}/docs/evaluations/short-clips-2026-10-04/item-meta.json'))
+def dataset(i):
+    o = i['groups']['original']
+    return 'nsynth' if o.startswith('nsynth') or item_meta.get(i['id'], {}).get('dataset') == 'nsynth' else 'fsd50k' if o.startswith('freesound') else o.split(':')[0]
+nonsurge_dataset = {i['id']: dataset(i) for i in heads.DEV if not surge(i)}
+LAB0 = [dict(l) for l in heads.DEV_LAB]
+low_drum = np.array([CAT not in l and any(l.get(k) == 'present' for k in ('role:kick', 'role:impact', 'source:drums')) for l in LAB0])
+low_note = np.array([item_meta.get(i['id'], {}).get('dataset') == 'nsynth' and l.get(CAT) == 'absent' and item_meta[i['id']]['midiPitch'] <= CUTOFF
+                     for i, l in zip(heads.DEV, LAB0)])
+
+def run_low_check(lab, m, y, p, t, C):
+    full = heads.fit(X[m], y, C).predict_proba(X[low_drum])[:, 1] >= t
+    oof_hit = np.zeros(len(heads.DEV), bool); oof_hit[np.where(m)[0]] = p >= t
+    return dict(kickImpactDrumsUnknownBass=dict(tagged=int(full.sum()), clips=int(low_drum.sum()), rate=round(float(full.mean()), 4)),
+                nsynthNonBassAtOrBelowCutoff=dict(tagged=int(oof_hit[low_note].sum()), clips=int(low_note.sum())))
 
 def run(variant):
     lab = labels(variant)
@@ -55,9 +76,14 @@ def run(variant):
     C, t, P, R, f1, p = best
     hit, fx = p >= t, fixed[m]
     yf, hf = y[fx], hit[fx]
-    return dict(C=C, threshold=round(float(t), 4), overall=dict(precision=round(float(P), 3), recall=round(float(R), 3), f1=round(float(f1), 3),
+    ids = [i['id'] for i, k in zip(heads.DEV, m) if k]
+    found = [i for i, h, yy in zip(ids, hit, y) if h and yy and i in nonsurge_dataset]
+    low = run_low_check(lab, m, y, p, t, C)
+    return dict(lowSoundCheck=low, foundUnchangedByDataset={d: sum(nonsurge_dataset[i] == d for i in found) for d in ('fsd50k', 'nsynth')},
+                positivesUnchangedByDataset={d: sum(nonsurge_dataset[i] == d for i, yy in zip(ids, y) if yy and i in nonsurge_dataset) for d in ('fsd50k', 'nsynth')},
+                **dict(C=C, threshold=round(float(t), 4), overall=dict(precision=round(float(P), 3), recall=round(float(R), 3), f1=round(float(f1), 3),
                                                               pos=int(y.sum()), neg=int((~y).sum())),
-                unchangedClips=dict(found=int((yf & hf).sum()), positives=int(yf.sum()), falseDetections=int((hf & ~yf).sum()), negatives=int((~yf).sum())))
+                unchangedClips=dict(found=int((yf & hf).sum()), positives=int(yf.sum()), falseDetections=int((hf & ~yf).sum()), negatives=int((~yf).sum()))))
 
 res = {v: run(v) for v in ('current', 'A', 'B')}
 # Where today's Surge false detections sit, by note register (diagnostic for variant B).
@@ -75,5 +101,5 @@ print(json.dumps({'at': datetime.datetime.now(datetime.timezone.utc).isoformat()
                                                 'byCategory': {c: sum(i['meta']['category'] == c for i in fd) for c in sorted({i['meta']['category'] for i in fd})}}},
                  indent=1))
 for v, r in res.items():
-    print(f"{v:8s} overall {r['overall']} | unchanged {r['unchangedClips']}", file=sys.stderr)
+    print(f"{v:8s} overall {r['overall']} | unchanged {r['unchangedClips']} {r['foundUnchangedByDataset']} of {r['positivesUnchangedByDataset']} | low {r['lowSoundCheck']}", file=sys.stderr)
 print('isFix', verdict, file=sys.stderr)
