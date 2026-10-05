@@ -28,6 +28,25 @@ const MAX_EVIDENCE_ENTITIES = 4;
  */
 const MAX_ENTITY_DF_FOR_PAIRING = 150;
 
+/**
+ * Entities mentioned by more than this share of the corpus are corpus-wide
+ * vocabulary (the company name, a ticket prefix, a team-wide acronym), not
+ * evidence that two particular docs belong together. They neither pair docs
+ * nor count toward `minShared`.
+ */
+const MAX_IDENTIFIER_DOC_FRACTION = 0.1;
+/**
+ * Capitalized phrases are mostly names of people and customers, who show up
+ * across unrelated work, so they go corpus-wide sooner. On the generated demo
+ * records, shared people and customer names linked unrelated records over
+ * half the time (src/eval/graphAccuracy.test.ts).
+ */
+const MAX_PHRASE_DOC_FRACTION = 0.05;
+/** ...but never below this many docs, so small corpora keep their entity links. */
+const MIN_ENTITY_DF_CAP = 4;
+/** Shape of entities.ts's capitalized-phrase pattern ("Maya Patel", "Search Engineering"). */
+const CAPITALIZED_PHRASE = /^[A-Z][a-z]+(?: [A-Z][a-z]+)+$/;
+
 /** Minimum length for a corpus-unique entity to link a pair on its own. */
 const UNIQUE_ENTITY_MIN_LEN = 6;
 
@@ -66,6 +85,10 @@ export function entityEdges(
   }
 
   const n = docs.length;
+  const dfCap = (fraction: number): number =>
+    Math.min(MAX_ENTITY_DF_FOR_PAIRING, Math.max(MIN_ENTITY_DF_CAP, Math.ceil(n * fraction)));
+  const identifierMaxDf = dfCap(MAX_IDENTIFIER_DOC_FRACTION);
+  const phraseMaxDf = dfCap(MAX_PHRASE_DOC_FRACTION);
   const idf = new Map<string, number>();
   for (const [entity, ids] of docsByEntity) {
     idf.set(entity, Math.log(1 + n / ids.length));
@@ -74,7 +97,8 @@ export function entityEdges(
   // accumulate pair scores from co-occurring entities
   const pairs = new Map<string, PairAcc>();
   for (const [entity, ids] of docsByEntity) {
-    if (ids.length < 2 || ids.length > MAX_ENTITY_DF_FOR_PAIRING) continue;
+    const maxDf = CAPITALIZED_PHRASE.test(entity) ? phraseMaxDf : identifierMaxDf;
+    if (ids.length < 2 || ids.length > maxDf) continue;
     const weight = idf.get(entity) ?? 0;
     for (let i = 0; i < ids.length; i += 1) {
       for (let j = i + 1; j < ids.length; j += 1) {

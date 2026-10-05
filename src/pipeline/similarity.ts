@@ -1,7 +1,9 @@
 /**
  * Semantic edges from unit-norm document vectors (spec §5.2).
- * Edge rule: cosine sim ≥ threshold AND mutual top-k — the top-k constraint
- * is what keeps a large corpus from becoming a hairball.
+ * Edge rule: cosine sim ≥ threshold AND mutual top-k AND within a margin of
+ * each doc's best match (see edgesFromIndex) — the top-k constraint keeps a
+ * large corpus from becoming a hairball, the margin keeps it from filling
+ * every doc's list with filler.
  *
  * Also collects near-duplicate pairs (cosine ≥ dupThreshold) as a side
  * channel, independent of the mutual-top-k edge rule: a doc with many
@@ -101,6 +103,8 @@ interface SemanticParams {
   threshold: number;
   topK: number;
   dupThreshold?: number;
+  /** See edgesFromIndex; omitted = no relative filter. */
+  relativeMargin?: number;
 }
 
 function dot(vectors: Float32Array, dims: number, i: number, j: number): number {
@@ -250,10 +254,38 @@ export function addToSemanticIndex(
 }
 
 /** Derive mutual-top-k semantic edges (spec §5.2) from a bounded top-k index. */
-export function edgesFromIndex(index: SemanticIndex, threshold: number): Edge[] {
+/**
+ * Semantic edges from an index. A pair links when each doc is in the other's
+ * top-k (above `threshold`) AND the pair is nearly as close as either doc's
+ * best match: sim ≥ best − `relativeMargin` for both ends.
+ *
+ * The relative test is what actually filters: bge-small puts almost every
+ * pair of English prose docs above 0.85, so an absolute floor passes them all
+ * and top-k alone fills each doc's list with whatever is least far away. A
+ * doc's own closest match sets the scale instead. A doc's mutual-nearest
+ * pair always links, so the margin never strands a doc with no semantic edge.
+ */
+export function edgesFromIndex(
+  index: SemanticIndex,
+  threshold: number,
+  relativeMargin = Infinity,
+): Edge[] {
   const { ids, top } = index;
   const edges: Edge[] = [];
   const denom = 1 - threshold;
+  // top lists are sorted descending, so [0] is each doc's best match —
+  // which need not be mutual. The margin scale uses that absolute best;
+  // the bypass uses each doc's closest mutual neighbor so a closer hub
+  // that does not list this doc back cannot strand it.
+  const best = (i: number): number => top[i][0]?.sim ?? -Infinity;
+  const closestMutual = top.map((cands, i) => {
+    for (const cand of cands) {
+      for (const back of top[cand.j]) {
+        if (back.j === i) return cand.j;
+      }
+    }
+    return undefined;
+  });
   for (let i = 0; i < ids.length; i += 1) {
     for (const cand of top[i]) {
       const j = cand.j;
@@ -266,6 +298,8 @@ export function edgesFromIndex(index: SemanticIndex, threshold: number): Edge[] 
         }
       }
       if (!mutual) continue; // edge iff each is in the other's top-k
+      const nearestOfEither = closestMutual[i] === j || closestMutual[j] === i;
+      if (!nearestOfEither && cand.sim < Math.max(best(i), best(j)) - relativeMargin) continue;
       const a = ids[i] < ids[j] ? ids[i] : ids[j];
       const b = ids[i] < ids[j] ? ids[j] : ids[i];
       const ratio = denom > 0 ? (cand.sim - threshold) / denom : 1;
@@ -286,10 +320,13 @@ export function semanticEdges(
   ids: string[],
   vectors: Float32Array,
   dims: number,
-  params: { threshold: number; topK: number; dupThreshold?: number },
+  params: SemanticParams,
 ): { edges: Edge[]; duplicates: DuplicatePair[] } {
   if (ids.length < 2 || dims <= 0 || params.topK <= 0) return { edges: [], duplicates: [] };
   const index = buildSemanticIndex(ids, vectors, dims, params);
   // duplicates is already sorted descending by the bounded insert
-  return { edges: edgesFromIndex(index, params.threshold), duplicates: index.duplicates };
+  return {
+    edges: edgesFromIndex(index, params.threshold, params.relativeMargin),
+    duplicates: index.duplicates,
+  };
 }

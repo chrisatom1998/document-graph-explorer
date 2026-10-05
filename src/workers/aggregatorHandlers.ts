@@ -16,8 +16,10 @@ import { computeIdf, keywordEdges, topKeywords } from '../pipeline/tfidf';
 
 // Higher resolution -> more, smaller communities (more distinct hues). Tuned
 // so a densely cross-linked corpus separates into several colored clusters
-// instead of one blob.
-const CLUSTER_RESOLUTION = 1.25;
+// instead of one blob. 1.5 stops Louvain merging neighboring topics on the
+// demo corpus (generated-record cluster purity 81% → 95%) without splitting
+// any topic or the hand-labelled groups in the committed demo PDFs.
+const CLUSTER_RESOLUTION = 1.5;
 
 /** Seeded PRNG so community ids (and thus colors) are stable across reloads. */
 function mulberry32(seed: number): () => number {
@@ -151,7 +153,7 @@ export async function handleSemantic(
       note: progress.note,
     });
   });
-  const semEdges = edgesFromIndex(index, params.threshold);
+  const semEdges = edgesFromIndex(index, params.threshold, params.relativeMargin);
 
   const clusters = clusterFromEdges(ids, [
     ...existingEdges,
