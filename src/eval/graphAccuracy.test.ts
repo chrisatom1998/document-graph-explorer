@@ -19,6 +19,7 @@
  * made the graph less accurate; a rise means the floor can be raised.
  */
 
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   CHUNK_TOKENS,
@@ -53,7 +54,7 @@ import { handleLexical, handleSemantic } from '../workers/aggregatorHandlers';
 import { pairKey, scoreClusters, scorePairs, type PRScore } from './graphAccuracy';
 
 const COUNT = GENERATED_DEMO_DOCUMENT_COUNT;
-const MODEL_ROOT = new URL('../../public/models/', import.meta.url).pathname;
+const MODEL_ROOT = fileURLToPath(new URL('../../public/models/', import.meta.url));
 
 interface EvalDoc {
   id: string;
@@ -194,6 +195,8 @@ describe('graph accuracy on the generated demo corpus', () => {
     ) as Record<string, PRScore>;
     const overall = scorePairs(edges, related);
     const references = scorePairs(edges.filter((e) => e.kind === 'reference'), cited);
+    // Every record must be clustered; scoreClusters skips missing ids.
+    expect(Object.keys(clusters).sort()).toEqual(docs.map((d) => d.id).sort());
     const clusterScore = scoreClusters(clusters, new Map(docs.map((d) => [d.id, d.theme])));
 
     process.stdout.write(
@@ -217,8 +220,11 @@ describe('graph accuracy on the generated demo corpus', () => {
     // on shared people/customer names, then semantic top-k filler).
     expect(overall.precision).toBeGreaterThanOrEqual(0.52);
     expect(byKind.semantic!.precision).toBeGreaterThanOrEqual(0.6);
+    expect(byKind.semantic!.recall).toBeGreaterThanOrEqual(0.53);
     expect(byKind.keyword!.precision).toBeGreaterThanOrEqual(0.88);
+    expect(byKind.keyword!.recall).toBeGreaterThanOrEqual(0.5);
     expect(byKind.title!.precision).toBe(1);
+    expect(byKind.title!.recall).toBeGreaterThanOrEqual(0.5);
     // Themes are never split, but Louvain merges some into shared clusters.
     expect(clusterScore.inversePurity).toBeGreaterThanOrEqual(0.97);
     expect(clusterScore.purity).toBeGreaterThanOrEqual(0.62);
