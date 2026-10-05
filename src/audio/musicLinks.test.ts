@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DocNode } from '../model/types';
 import type { MusicAnalysis } from './musicTypes';
 import { sanitizeMusicAnalysis } from './musicTypes';
-import { buildMusicEdges, musicPairEdges } from './musicLinks';
+import { buildMusicEdges, musicPairEdges, refreshMusicEdges, MUSIC_NEIGHBOR_LIMIT, MUSIC_NEIGHBORS_PER_KIND } from './musicLinks';
 import { instrumentScores } from './instrumentLabels';
 import { sanitizeGraphExport } from '../persistence/validateImport';
 const node = (id: string, features: Partial<MusicAnalysis> = {}): DocNode => ({ id, title: 'same filename', kind: 'document', fileType: 'audio', wordCount: 0, topics: [], entities: [], keywords: [], degree: 0, cluster: 0, status: 'ok', audio: { version: 2, durationSeconds: 100, analyzedSeconds: 60, instruments: [], notes: [], ...features } });
@@ -32,8 +32,10 @@ describe('musical relationships', () => {
     const edges = musicPairEdges(node('a',{tempo:tempo(118)}),node('b',{tempo:tempo(121)}));
     expect(edges.map(e=>e.kind)).toEqual(['tempo']);expect(edges[0].evidence[0]).toContain('118.0 and 121.0');
   });
-  it('does not conflate half time or uncertain tempo with similar tempo', () => {
-    expect(musicPairEdges(node('a',{tempo:tempo(60)}),node('b',{tempo:tempo(120)}))).toHaveLength(0);
+  it('labels half time explicitly and excludes uncertain tempo', () => {
+    const half = musicPairEdges(node('a',{tempo:tempo(60)}),node('b',{tempo:tempo(120)}));
+    expect(half[0].evidence[0]).toContain('Half/double-time');
+    expect(half[0].weight).toBeLessThan(musicPairEdges(node('a',{tempo:tempo(120)}),node('b',{tempo:tempo(120)}))[0].weight);
     expect(musicPairEdges(node('a',{tempo:tempo(120,0.2)}),node('b',{tempo:tempo(120)}))).toHaveLength(0);
   });
   it('links same, relative, and neighboring keys but not unrelated or uncertain keys', () => {
@@ -123,4 +125,65 @@ it('uses explicit DJ corrections over filename hints and raw instrument guesses'
  expect(musicPairEdges(a,b).filter(edge=>edge.kind==='instrument')).toEqual([]);
  const confirmed={...node('confirmed',{confirmedDjTags:{source:['piano'],production:[],character:[]}}),path:'synth.wav'};
  expect(musicPairEdges(confirmed,node('other',{confirmedDjTags:{source:['piano'],production:[],character:[]}})).find(edge=>edge.kind==='instrument')?.evidence[0]).toContain('Confirmed by you on both tracks');
+});
+
+const reviewed = (production: string[] = [], character: string[] = []) => ({ source: [], production, character });
+it('matches reviewed effects and character without matching unsupported or unknown properties', () => {
+  const a = node('a', { confirmedDjTags: reviewed(['riser'], ['metallic']) });
+  const b = node('b', { confirmedDjTags: reviewed(['riser'], ['metallic']) });
+  const edge = musicPairEdges(a,b).find(e=>e.kind==='sound')!;
+  expect(edge.evidence[0]).toContain('riser (production / effect)');
+  expect(edge.evidence[0]).toContain('metallic (character)');
+  expect(musicPairEdges(a,node('unknown'))).toEqual([]);
+  expect(musicPairEdges(a,node('different',{confirmedDjTags:reviewed(['impact'],['warm'])}))).toEqual([]);
+  const raw = node('raw',{soundProfile:{version:1,character:['metallic'],roles:[],disagreement:false,models:[],djTags:[{group:'production',label:'riser',score:.99}]}});
+  expect(musicPairEdges(a,raw)).toEqual([]);
+});
+it('latest rejected and unsure reviews invalidate links and confirmation restores them', () => {
+  const a = node('a', { confirmedDjTags: reviewed([], ['metallic']) });
+  const b = node('b', { confirmedDjTags: reviewed([], ['metallic']) });
+  const initial = buildMusicEdges([a,b]);
+  expect(initial).toHaveLength(1);
+  for(const decision of ['rejected','uncertain'] as const) {
+    const review = {dimension:'character' as const,labelId:'metallic',decision,scope:'track' as const,at:'2026-10-04T00:00:00Z',evidenceRunId:'r'};
+    const changed = {...a,audio:{...a.audio!,soundReviews:[review]}};
+    expect(refreshMusicEdges([changed,b],initial)).toEqual([]);
+    expect(refreshMusicEdges([{...changed,audio:{...changed.audio,soundReviews:[review,{...review,decision:'confirmed'}]}},b],initial)).toHaveLength(1);
+  }
+});
+it('preserves document and authored edges and de-duplicates refreshes', () => {
+  const a=node('a',{tempo:tempo(120)}); const b=node('b',{tempo:tempo(120)});
+  const doc={...node('doc'),fileType:'txt' as const,audio:undefined};
+  const manual={id:'manual',source:'a',target:'b',kind:'reference' as const,authored:true,weight:1,evidence:['mine']};
+  const semantic={id:'semantic',source:'a',target:'doc',kind:'semantic' as const,weight:.8,evidence:[]};
+  const edges=refreshMusicEdges([a,b,doc],[manual,semantic]);
+  expect(refreshMusicEdges([a,b,doc],edges)).toEqual(edges);
+  expect(edges).toContain(manual); expect(edges).toContain(semantic);
+  expect(edges.filter(e=>e.kind==='tempo')).toHaveLength(1);
+});
+it('bounds both endpoints, keeps ordering deterministic, and handles tiny buckets', () => {
+  const nodes=Array.from({length:120},(_,i)=>node(String(i),{tempo:tempo(120),key:key(i%12),confirmedInstruments:['piano'],confirmedDjTags:reviewed([],['metallic'])}));
+  const edges=buildMusicEdges(nodes);
+  expect(buildMusicEdges([...nodes].reverse())).toEqual(edges);
+  for(const n of nodes) {
+    const incident=edges.filter(e=>e.source===n.id||e.target===n.id);
+    expect(new Set(incident.map(e=>e.source===n.id?e.target:e.source)).size).toBeLessThanOrEqual(MUSIC_NEIGHBOR_LIMIT);
+    for(const kind of ['tempo','key','instrument','sound']) expect(incident.filter(e=>e.kind===kind).length).toBeLessThanOrEqual(MUSIC_NEIGHBORS_PER_KIND);
+  }
+  expect(buildMusicEdges([nodes[0]])).toEqual([]);
+  expect(buildMusicEdges(nodes.slice(0,2)).length).toBeGreaterThan(0);
+});
+it('weights audio confidence and name hints below reviewed instruments', () => {
+  const named={...node('named'),path:'Piano.wav'};
+  const confirmed=node('confirmed',{confirmedInstruments:['piano']});
+  expect(musicPairEdges(named,confirmed)[0].weight).toBe(.45);
+  expect(musicPairEdges(named,confirmed)[0].evidence[0]).toContain('instrument hints');
+  expect(musicPairEdges(node('a',{tempo:tempo(120,.5)}),node('b',{tempo:tempo(120,.9)}))[0].weight).toBe(.5);
+  for(const bad of [NaN,Infinity,0,-120]) expect(musicPairEdges(node('a',{tempo:tempo(bad)}),node('b',{tempo:tempo(bad)}))).toEqual([]);
+});
+it('round trips reviewed sound relationships and prevents stale imported edges', () => {
+ const nodes=[node('a',{confirmedDjTags:reviewed([],['metallic'])}),node('b',{confirmedDjTags:reviewed([],['metallic'])})];
+ const restored=sanitizeGraphExport(JSON.parse(JSON.stringify({version:1,nodes,edges:buildMusicEdges(nodes)})));
+ expect(restored.edges[0].kind).toBe('sound');
+ expect(refreshMusicEdges(restored.nodes,restored.edges)).toEqual(restored.edges);
 });

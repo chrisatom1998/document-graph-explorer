@@ -100,3 +100,14 @@ it('preserves explicit catalog sources through persistence and evidence review',
  expect(audio.recognition?.observations.some(o=>o.labelId==='foley')).toBe(true);
  expect(reliableInstruments(audio)).toEqual([{label:'foley',score:1}]);
 });
+
+describe('one-shot configuration scope', () => {
+  it('changes the configuration only for clips the one-shot heads cover, so long recordings are not re-run', async () => {
+    const { recognitionConfiguration, createRecognition } = await import('./recognition');
+    expect(recognitionConfiguration('full', 1)).not.toBe(recognitionConfiguration('full', 30));
+    expect(recognitionConfiguration('full', 30)).toBe(recognitionConfiguration('full'));
+    expect(recognitionConfiguration('full', 2.25)).toBe(recognitionConfiguration('full', 1));
+    expect(createRecognition(1.5, 'full').configurationHash).toBe(recognitionConfiguration('full', 1.5));
+    expect(createRecognition(180, 'full').configurationHash).toBe(recognitionConfiguration('full'));
+  });
+});

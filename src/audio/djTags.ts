@@ -10,7 +10,7 @@ export const DJ_LABELS: Record<DjGroup, readonly string[]> = {
   character: DJ_CATALOG.filter(c => c.group === 'character').map(c => c.label),
 };
 export type ConfirmedDjTags = Record<DjGroup, string[]>;
-export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples'; segments?: { start: number; end: number }[] }
+export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples' | 'Trained head' | 'Trained head (maybe)'; segments?: { start: number; end: number }[] }
 export const DJ_TYPE_SOURCE: Record<string, string> = Object.fromEntries(
   DJ_CATALOG.filter(c => c.group === 'production' && c.source).map(c => [c.label, c.source!]),
 );
@@ -36,7 +36,7 @@ export function sanitizeDjTags(raw: unknown): DjTag[] {
     const group = v.group as DjGroup;
     if (!Object.hasOwn(DJ_LABELS, group) || !allowed(group,v.label) || !Number.isFinite(v.score) || v.score < 0 || v.score > 1) continue;
     const tag: DjTag = {group,label:v.label,score:v.score};
-    if (['AudioSet AST','MTG-Jamendo','Music CLAP','Reviewed examples'].includes(v.model)) tag.model=v.model;
+    if (['AudioSet AST','MTG-Jamendo','Music CLAP','Reviewed examples','Trained head','Trained head (maybe)'].includes(v.model)) tag.model=v.model;
     if (Array.isArray(v.segments)) tag.segments = v.segments.slice(0,3).filter((s: {start:number;end:number}) => s && Number.isFinite(s.start) && Number.isFinite(s.end) && s.start >= 0 && s.end > s.start && s.end <= 86400).map((s: {start:number;end:number})=>({start:s.start,end:s.end}));
     tags.set(`${group}:${tag.label}`,tag);
   }
@@ -92,6 +92,14 @@ export function applyReviewedDecisions(tags: DjTag[], scores: DescriptionScore[]
   for (const score of scores) {
     if (score.group !== 'dj-learned' || !score.learnedGroup || !score.label || !allowed(score.learnedGroup,score.label)) continue;
     const key = `${score.learnedGroup}:${score.label}`;
+    if (score.basis === 'head') {
+      // A trained head already cleared its own measured threshold. It adds a tag under its
+      // own name and never overrides a user-reviewed example or a stronger existing tag.
+      const existing = result.get(key);
+      if (score.decision === 'include' && existing?.model !== 'Reviewed examples' && (existing?.score ?? 0) < score.score)
+        result.set(key,{group:score.learnedGroup,label:score.label,score:score.score,model:score.maybe?'Trained head (maybe)':'Trained head'});
+      continue;
+    }
     if (score.decision === 'exclude' && score.score >= .94) result.delete(key);
     if (score.decision === 'include' && score.score >= .88) result.set(key,{group:score.learnedGroup,label:score.label,score:score.score,model:'Reviewed examples'});
   }

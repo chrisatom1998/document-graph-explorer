@@ -42,3 +42,31 @@ it('keeps learned attribution and production labels when saving a collection',as
  expect(restored?.soundProfile?.models.find(m=>m.model==='Reviewed examples')?.candidates.map(c=>c.label)).toContain('vocal breath');
  expect(restored?.soundProfile?.djTags?.find(t=>t.label==='vocal breath')?.model).toBe('Reviewed examples');
 });
+
+// Trained heads ship without reviewed examples; their tags carry their own name and
+// never displace something the user reviewed.
+it('adds a trained-head tag under its own name without overriding a reviewed example', async () => {
+  const { applyReviewedDecisions } = await import('./djTags');
+  const vector = Array.from({ length: 512 }, (_, i) => (i === 0 ? 1 : 0));
+  const model = sanitizeLearnedDjModel({ version: 1, encoder: 'e', revision: 'r', examples: [],
+    heads: [{ group: 'production', label: 'kick', weights: vector.map(v => v * 6), bias: 0, threshold: .6 }] })!;
+  const scores = learnedDjScores(vector, model);
+  expect(scores).toEqual([expect.objectContaining({ group: 'dj-learned', label: 'kick', learnedGroup: 'production', decision: 'include', basis: 'head' })]);
+  // Below the reviewed-example gate of 0.88 it is still kept, because the head has its own measured threshold.
+  const head = { ...scores[0], score: .7 };
+  expect(applyReviewedDecisions([], [head])).toEqual([{ group: 'production', label: 'kick', score: .7, model: 'Trained head' }]);
+  const reviewed = { group: 'production' as const, label: 'kick', score: .9, model: 'Reviewed examples' as const };
+  expect(applyReviewedDecisions([reviewed], [head])).toEqual([reviewed]);
+  // A head that stays under its threshold says nothing.
+  expect(learnedDjScores(vector.map(v => -v), model)).toEqual([]);
+});
+it('carries a maybe-level head through to a maybe tag, and rejects a malformed maybe flag', async () => {
+  const { applyReviewedDecisions } = await import('./djTags');
+  const vector = Array.from({ length: 512 }, (_, i) => (i === 0 ? 1 : 0));
+  const head = { group: 'production', label: 'snare', weights: vector.map(v => v * 6), bias: 0, threshold: .6 };
+  const model = sanitizeLearnedDjModel({ version: 1, encoder: 'e', revision: 'r', examples: [], heads: [{ ...head, maybe: true }] })!;
+  const [score] = learnedDjScores(vector, model);
+  expect(score).toMatchObject({ label: 'snare', basis: 'head', maybe: true });
+  expect(applyReviewedDecisions([], [score])[0].model).toBe('Trained head (maybe)');
+  expect(sanitizeLearnedDjModel({ version: 1, encoder: 'e', revision: 'r', examples: [], heads: [{ ...head, maybe: 'yes' }] })).toBeUndefined();
+});

@@ -150,11 +150,8 @@ export async function hydrateFromRecord(
 
   // Existing sessions also adopt explicit name tags without altering saved audio evidence.
   if (exportData.nodes.some(node => node.fileType === 'audio')) {
-    const { buildMusicEdges } = await import('../audio/musicLinks');
-    exportData.edges = [
-      ...exportData.edges.filter(edge => edge.authored || !['tempo', 'key', 'instrument'].includes(edge.kind)),
-      ...buildMusicEdges(exportData.nodes),
-    ];
+    const { refreshMusicEdges } = await import('../audio/musicLinks');
+    exportData.edges = refreshMusicEdges(exportData.nodes, exportData.edges);
     exportData.edges = [...new Map(exportData.edges.map(edge => [edge.id, edge])).values()];
   }
 

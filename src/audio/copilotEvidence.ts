@@ -1,3 +1,5 @@
+import { dimensionLabels } from './recognition';
+import { resolvedNonSourceLabels } from './soundReviewPolicy';
 import type { DocNode } from '../model/types';
 import { sanitizeMusicAnalysis, keyName } from './musicTypes';
 import { musicNameHints } from './nameHints';
@@ -18,7 +20,7 @@ export interface CopilotSample {
   estimates: { label: string; score: number }[];
   filenameHints: { bpm: number | null; key: string | null };
 }
-const labels = new Set<string>([...INSTRUMENT_LABELS, ...DJ_CATALOG.map(c => c.label)]);
+const labels = new Set<string>([...INSTRUMENT_LABELS, ...DJ_CATALOG.map(c => c.label),...dimensionLabels.effect,...dimensionLabels.character]);
 const finite = (v: unknown, max: number): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= max;
 const musicalKey = (v: unknown): v is string => typeof v === 'string' && /^[A-G](?:[#b♯♭])? (?:major|minor)$/.test(v);
 
@@ -27,13 +29,15 @@ export function copilotEvidence(node: DocNode, index: number): CopilotSample | n
   const a = sanitizeMusicAnalysis(node.audio);
   if (node.fileType !== 'audio' || !a) return null;
   const hints = musicNameHints(node);
+  const nonSource = resolvedNonSourceLabels(a);
+  const confirmed = nonSource.filter(t=>t.source==='confirmed').map(t=>t.label);
   return {
     ref: `Sample ${index + 1}`, durationSeconds: a.durationSeconds, analyzedSeconds: a.analyzedSeconds,
     preview: a.stage === 'preview', tempo: a.tempo ? { bpm: a.tempo.bpm, confidence: a.tempo.confidence } : null,
     key: a.key ? { name: keyName(a.key), strength: a.key.strength } : null,
-    confirmedTags: a.confirmedDjTags === undefined ? null : [...(confirmedInstrumentList(a)??[]),...a.confirmedDjTags.production,...a.confirmedDjTags.character],
+    confirmedTags: a.confirmedDjTags === undefined && !confirmed.length ? null : [...(confirmedInstrumentList(a)??[]),...confirmed],
     confirmedInstruments: confirmedInstrumentList(a) ?? null,
-    estimates: [...(a.soundProfile?.djTags ?? []), ...a.instruments].filter(t => labels.has(t.label)).slice(0, 30).map(t => ({ label: t.label, score: t.score })),
+    estimates: [...(a.soundProfile?.djTags ?? []).filter(t=>t.group==='source'), ...a.instruments, ...nonSource.filter((t): t is typeof t & {score:number}=>t.source==='estimated'&&t.score!==undefined)].filter(t => labels.has(t.label)).slice(0, 30).map(t => ({ label: t.label, score: t.score })),
     filenameHints: { bpm: hints.tempo?.value ?? null, key: hints.key?.displayName ?? null },
   };
 }

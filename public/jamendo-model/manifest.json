@@ -3,12 +3,24 @@
     "discogs-effnet-bsdynamic-1.onnx": "https://essentia.upf.edu/models/feature-extractors/discogs-effnet/discogs-effnet-bsdynamic-1.onnx",
     "mtg_jamendo_instrument-discogs-effnet-1.onnx": "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.onnx",
     "discogs-effnet-bsdynamic-1.json": "https://essentia.upf.edu/models/feature-extractors/discogs-effnet/discogs-effnet-bsdynamic-1.json",
-    "mtg_jamendo_instrument-discogs-effnet-1.json": "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.json"
+    "mtg_jamendo_instrument-discogs-effnet-1.json": "https://essentia.upf.edu/models/classification-heads/mtg_jamendo_instrument/mtg_jamendo_instrument-discogs-effnet-1.json",
+    "nsynth_instrument-discogs-effnet-1.json": "https://essentia.upf.edu/models/classification-heads/nsynth_instrument/nsynth_instrument-discogs-effnet-1.json",
+    "nsynth_bright_dark-discogs-effnet-1.json": "https://essentia.upf.edu/models/classification-heads/nsynth_bright_dark/nsynth_bright_dark-discogs-effnet-1.json",
+    "nsynth_reverb-discogs-effnet-1.json": "https://essentia.upf.edu/models/classification-heads/nsynth_reverb/nsynth_reverb-discogs-effnet-1.json",
+    "nsynth_acoustic_electronic-discogs-effnet-1.json": "https://essentia.upf.edu/models/classification-heads/nsynth_acoustic_electronic/nsynth_acoustic_electronic-discogs-effnet-1.json"
   },
   "sha256": {
     "discogs-effnet-bsdynamic-1.onnx": "a280825b334797cf677939db8cd5762c0392aedd0ca6415dbc1cd083f045e43c",
     "mtg_jamendo_instrument-discogs-effnet-1.onnx": "9ae2d9e763d66bd8eed654d1ac3aa171e6539cb8a0e11f3dcd53df1428980802",
     "discogs-effnet-bsdynamic-1.json": "a2e85b2e7372d5f8e0f35bdd6aeae1139f101087d183d0b2fb60b0ea0f01a0ff",
-    "mtg_jamendo_instrument-discogs-effnet-1.json": "7d02204c6451b5615e2968ec6364bbae3b915c886e608f05f00d3a38dc5177c4"
+    "mtg_jamendo_instrument-discogs-effnet-1.json": "7d02204c6451b5615e2968ec6364bbae3b915c886e608f05f00d3a38dc5177c4",
+    "nsynth_instrument-discogs-effnet-1.onnx": "9b900a340b08d4aa49a7345650c023a0adecb64391fc316cd3e18ee1ec1dd55c",
+    "nsynth_instrument-discogs-effnet-1.json": "c30e7b565e1a27de328f0774047165fd29f335994c8fc18045023a6eba15e9d8",
+    "nsynth_bright_dark-discogs-effnet-1.onnx": "63c2d83ea5f0192ca89e46372e71d189fdd3819de821184b6b155f5c52f78c3d",
+    "nsynth_bright_dark-discogs-effnet-1.json": "44197a8bc881af427038159c7566b44a38d9362db85e21c086e453a4b3a0c420",
+    "nsynth_reverb-discogs-effnet-1.onnx": "a29922989ef40bc76fad4266e8f946d5548538992869f37dda1976b6d37e27c6",
+    "nsynth_reverb-discogs-effnet-1.json": "acc5ffb803470cf1f1b9c5164082e05c4a328b95eb7cf67ebd1d0a82a8885a79",
+    "nsynth_acoustic_electronic-discogs-effnet-1.onnx": "3b5d52256883b7a2bddd196f170526ef3b944e830047d31eadec6c86b36e2f52",
+    "nsynth_acoustic_electronic-discogs-effnet-1.json": "60f1da176a48184616879bc0e3dfb0329952ce451e9021aff9a97d0706bfbe0e"
   }
 }

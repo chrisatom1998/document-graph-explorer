@@ -23,6 +23,8 @@ export interface LearnedDjHead {
   weights: number[];
   bias: number;
   threshold: number;
+  /** Measured on unseen brands between the 50% and 65% bars: shown as a maybe. */
+  maybe?: boolean;
 }
 const groups: ReviewedGroup[] = ['source', 'production', 'character'];
 interface ReviewedIndex { group: ReviewedGroup; label: string; decisions: Int8Array }
@@ -66,7 +68,7 @@ export function sanitizeLearnedDjModel(raw: unknown): LearnedDjModel | undefined
   if (model.heads !== undefined && (!Array.isArray(model.heads) || model.heads.length > 2000 || model.heads.some(h =>
     !h || !groups.includes(h.group) || typeof h.label !== 'string' || !h.label || h.label.length > 80 ||
     !Array.isArray(h.weights) || h.weights.length !== 512 || !h.weights.every(Number.isFinite) ||
-    !Number.isFinite(h.bias) || !Number.isFinite(h.threshold) || h.threshold < .5 || h.threshold > 1))) return;
+    !Number.isFinite(h.bias) || !Number.isFinite(h.threshold) || h.threshold < .5 || h.threshold > 1 || (h.maybe !== undefined && typeof h.maybe !== 'boolean')))) return;
   return {version:1,encoder:model.encoder,revision:model.revision,examples,...(model.heads ? {heads:model.heads} : {})};
 }
 /** Conservative exemplar classifier over frozen CLAP features; not base-model fine-tuning.
@@ -102,7 +104,7 @@ export function learnedDjScores(embedding: ArrayLike<number>, model: LearnedDjMo
     if (results.some(r => r.learnedGroup === head.group && r.label === head.label)) continue;
     const logit = head.bias + head.weights.reduce((sum,w,i) => sum + w * vector[i] / norm, 0);
     const score = 1 / (1 + Math.exp(-Math.max(-35,Math.min(35,logit))));
-    if (score >= head.threshold) results.push({group:'dj-learned',label:head.label,score,learnedGroup:head.group,decision:'include'});
+    if (score >= head.threshold) results.push({group:'dj-learned',label:head.label,score,learnedGroup:head.group,decision:'include',basis:'head',...(head.maybe ? {maybe:true} : {})});
   }
   return results;
 }

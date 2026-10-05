@@ -14,6 +14,11 @@ describe('audio-only pitch fallback', () => {
     expect(detectRepeatedPitch(engine, signal)).toMatchObject({ pitchClass: 2, confidence: expect.closeTo(0.94) });
     expect(dispose.mock.calls.length).toBeGreaterThan(8);
   });
+  it('reads a single one-second note with denser frames, but not a sub-half-second blip', () => {
+    const { engine } = setup(() => ({ pitch: 220, pitchConfidence: 0.95 }));
+    expect(detectRepeatedPitch(engine, new Float32Array(44100).fill(0.2))).toMatchObject({ pitchClass: 9 });
+    expect(detectRepeatedPitch(engine, new Float32Array(20000).fill(0.2))).toBeUndefined();
+  });
   it('rejects noisy, inconsistent, silent, and too-short evidence', () => {
     const weak = setup(() => ({ pitch: 293.6648, pitchConfidence: 0.4 }));
     expect(detectRepeatedPitch(weak.engine, signal)).toBeUndefined();

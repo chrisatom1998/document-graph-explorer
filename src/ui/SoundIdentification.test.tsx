@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { afterEach, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import SoundIdentification from './SoundIdentification';
+import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import SoundIdentification, { OtherModelGuesses } from './SoundIdentification';
 import type { SoundProfile } from '../audio/soundProfile';
 afterEach(cleanup);
 const profile: SoundProfile = { version: 1, source: { label: 'synthesizer', basis: 'MTG-Jamendo', corroborated: false }, resemblance: 'trumpet', character: ['pulsing', 'reverberant'], roles: ['lead'], disagreement: false, models: [{model:'AudioSet AST',complete:true,candidates:[]},{model:'MTG-Jamendo',complete:true,candidates:[{label:'synthesizer',score:.6}]},{model:'Music CLAP',complete:false,candidates:[{label:'trumpet',score:.5}]}] };
@@ -61,4 +61,28 @@ it('displays a vocal-chop result as the main label instead of synthesizer or gen
  expect(screen.getByText('vocal chops',{selector:'dd'})).toBeVisible();
  expect(screen.queryByText('synthesizer',{selector:'dd'})).toBeNull();
  expect(screen.queryByText('voice',{selector:'dd'})).toBeNull();
+});
+
+describe('OtherModelGuesses', () => {
+  const profile = { version: 1 as const, character: [], roles: [], models: [], disagreement: false, djTags: [
+    { group: 'source' as const, label: 'drums', score: .4 }, { group: 'source' as const, label: 'synthesizer', score: .4 },
+    { group: 'production' as const, label: 'drum loop', score: .4 }, { group: 'character' as const, label: 'rhythmic_stabs', score: .4 },
+  ] };
+  it('shows untested guesses by group, without repeating tags already in Sounds', () => {
+    render(<OtherModelGuesses profile={profile} exclude={['Drums']} />);
+    const region = screen.getByRole('region', { name: 'Other model guesses' });
+    expect(region).not.toHaveTextContent('untested');
+    expect(within(region).queryByText('drums')).toBeNull();
+    expect(within(region).getByText('synthesizer')).toBeVisible();
+    expect(within(region).getByText('drum loop')).toBeVisible();
+    expect(within(region).getByText('rhythmic stabs')).toBeVisible();
+  });
+  it('hides empty groups, confirmed groups and itself when nothing is left', () => {
+    const { container } = render(<OtherModelGuesses profile={profile} exclude={[]} skipSource
+      reviewedLabels={[{ group: 'production', label: 'drum loop', source: 'confirmed' }, { group: 'character', label: 'rhythmic_stabs', source: 'estimated' }]} />);
+    expect(container).not.toHaveTextContent(/Source|drum loop|Production type/);
+    expect(container).toHaveTextContent('rhythmic stabs');
+    const empty = render(<OtherModelGuesses profile={profile} exclude={[]} confirmedDjTags={{ source: ['piano'], production: [], character: [] }} />);
+    expect(empty.container).toBeEmptyDOMElement();
+  });
 });

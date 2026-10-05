@@ -1,0 +1,365 @@
+{
+ "frozenAt": "2026-10-04T23:30:00Z",
+ "counts": {
+  "test fsd50k": 1112,
+  "eval excluded: uploader/id used in DGE training": 118,
+  "test capped per uploader": 45,
+  "train fsd50k": 6553,
+  "calibration fsd50k": 671,
+  "calibration capped per uploader": 892,
+  "train capped per uploader": 3586,
+  "calibration nsynth": 96,
+  "test nsynth": 222,
+  "test avp": 111,
+  "train avp": 59,
+  "calibration avp": 42
+ },
+ "labels": {
+  "calibration/effect:distorted": {
+   "present": 14,
+   "absent": 82
+  },
+  "calibration/effect:reverberant": {
+   "present": 18,
+   "absent": 78
+  },
+  "calibration/musical:key": {
+   "present": 0,
+   "absent": 138
+  },
+  "calibration/musical:tempo": {
+   "present": 0,
+   "absent": 138
+  },
+  "calibration/role:bass hit": {
+   "present": 18,
+   "absent": 680
+  },
+  "calibration/role:beatbox": {
+   "present": 42,
+   "absent": 0
+  },
+  "calibration/role:clap": {
+   "present": 29,
+   "absent": 714
+  },
+  "calibration/role:cowbell": {
+   "present": 0,
+   "absent": 744
+  },
+  "calibration/role:cymbal": {
+   "present": 3,
+   "absent": 692
+  },
+  "calibration/role:finger snap": {
+   "present": 4,
+   "absent": 739
+  },
+  "calibration/role:hi-hat": {
+   "present": 2,
+   "absent": 681
+  },
+  "calibration/role:impact": {
+   "present": 96,
+   "absent": 577
+  },
+  "calibration/role:kick": {
+   "present": 7,
+   "absent": 607
+  },
+  "calibration/role:loop": {
+   "present": 0,
+   "absent": 138
+  },
+  "calibration/role:percussion hit": {
+   "present": 58,
+   "absent": 467
+  },
+  "calibration/role:shaker": {
+   "present": 11,
+   "absent": 729
+  },
+  "calibration/role:snare": {
+   "present": 13,
+   "absent": 647
+  },
+  "calibration/role:synth hit": {
+   "present": 12,
+   "absent": 90
+  },
+  "calibration/role:tambourine": {
+   "present": 11,
+   "absent": 723
+  },
+  "calibration/role:vinyl scratch": {
+   "present": 1,
+   "absent": 756
+  },
+  "calibration/role:vocal one-shot": {
+   "present": 189,
+   "absent": 519
+  },
+  "calibration/role:whoosh": {
+   "present": 17,
+   "absent": 739
+  },
+  "calibration/source:bass guitar": {
+   "present": 0,
+   "absent": 704
+  },
+  "calibration/source:brass": {
+   "present": 17,
+   "absent": 698
+  },
+  "calibration/source:drums": {
+   "present": 66,
+   "absent": 509
+  },
+  "calibration/source:guitar": {
+   "present": 32,
+   "absent": 734
+  },
+  "calibration/source:piano": {
+   "present": 13,
+   "absent": 711
+  },
+  "calibration/source:synthesizer": {
+   "present": 18,
+   "absent": 696
+  },
+  "calibration/source:voice": {
+   "present": 189,
+   "absent": 519
+  },
+  "test/effect:distorted": {
+   "present": 49,
+   "absent": 173
+  },
+  "test/effect:reverberant": {
+   "present": 78,
+   "absent": 144
+  },
+  "test/musical:key": {
+   "present": 0,
+   "absent": 333
+  },
+  "test/musical:tempo": {
+   "present": 0,
+   "absent": 333
+  },
+  "test/role:bass hit": {
+   "present": 54,
+   "absent": 1203
+  },
+  "test/role:beatbox": {
+   "present": 111,
+   "absent": 0
+  },
+  "test/role:clap": {
+   "present": 15,
+   "absent": 1313
+  },
+  "test/role:cowbell": {
+   "present": 21,
+   "absent": 1361
+  },
+  "test/role:cymbal": {
+   "present": 11,
+   "absent": 1243
+  },
+  "test/role:finger snap": {
+   "present": 17,
+   "absent": 1388
+  },
+  "test/role:hi-hat": {
+   "present": 60,
+   "absent": 1213
+  },
+  "test/role:impact": {
+   "present": 113,
+   "absent": 1061
+  },
+  "test/role:kick": {
+   "present": 33,
+   "absent": 1167
+  },
+  "test/role:loop": {
+   "present": 0,
+   "absent": 333
+  },
+  "test/role:percussion hit": {
+   "present": 231,
+   "absent": 793
+  },
+  "test/role:shaker": {
+   "present": 8,
+   "absent": 1335
+  },
+  "test/role:snare": {
+   "present": 43,
+   "absent": 1202
+  },
+  "test/role:synth hit": {
+   "present": 36,
+   "absent": 219
+  },
+  "test/role:tambourine": {
+   "present": 23,
+   "absent": 1330
+  },
+  "test/role:vinyl scratch": {
+   "present": 29,
+   "absent": 1381
+  },
+  "test/role:vocal one-shot": {
+   "present": 369,
+   "absent": 974
+  },
+  "test/role:whoosh": {
+   "present": 54,
+   "absent": 1355
+  },
+  "test/source:bass guitar": {
+   "present": 12,
+   "absent": 1269
+  },
+  "test/source:brass": {
+   "present": 41,
+   "absent": 1275
+  },
+  "test/source:drums": {
+   "present": 212,
+   "absent": 909
+  },
+  "test/source:guitar": {
+   "present": 70,
+   "absent": 1359
+  },
+  "test/source:piano": {
+   "present": 18,
+   "absent": 1255
+  },
+  "test/source:synthesizer": {
+   "present": 42,
+   "absent": 1225
+  },
+  "test/source:voice": {
+   "present": 369,
+   "absent": 974
+  },
+  "train/musical:key": {
+   "present": 0,
+   "absent": 59
+  },
+  "train/musical:tempo": {
+   "present": 0,
+   "absent": 59
+  },
+  "train/role:bass hit": {
+   "present": 28,
+   "absent": 5726
+  },
+  "train/role:beatbox": {
+   "present": 59,
+   "absent": 0
+  },
+  "train/role:clap": {
+   "present": 141,
+   "absent": 5893
+  },
+  "train/role:cowbell": {
+   "present": 26,
+   "absent": 6142
+  },
+  "train/role:cymbal": {
+   "present": 21,
+   "absent": 6077
+  },
+  "train/role:finger snap": {
+   "present": 79,
+   "absent": 6123
+  },
+  "train/role:hi-hat": {
+   "present": 146,
+   "absent": 5951
+  },
+  "train/role:impact": {
+   "present": 312,
+   "absent": 4789
+  },
+  "train/role:kick": {
+   "present": 113,
+   "absent": 5822
+  },
+  "train/role:loop": {
+   "present": 0,
+   "absent": 59
+  },
+  "train/role:percussion hit": {
+   "present": 688,
+   "absent": 4131
+  },
+  "train/role:shaker": {
+   "present": 71,
+   "absent": 6073
+  },
+  "train/role:snare": {
+   "present": 128,
+   "absent": 5824
+  },
+  "train/role:synth hit": {
+   "present": 0,
+   "absent": 59
+  },
+  "train/role:tambourine": {
+   "present": 33,
+   "absent": 6039
+  },
+  "train/role:vinyl scratch": {
+   "present": 46,
+   "absent": 6092
+  },
+  "train/role:vocal one-shot": {
+   "present": 909,
+   "absent": 4925
+  },
+  "train/role:whoosh": {
+   "present": 129,
+   "absent": 6049
+  },
+  "train/source:bass guitar": {
+   "present": 28,
+   "absent": 6075
+  },
+  "train/source:brass": {
+   "present": 9,
+   "absent": 6274
+  },
+  "train/source:drums": {
+   "present": 631,
+   "absent": 4259
+  },
+  "train/source:guitar": {
+   "present": 308,
+   "absent": 6075
+  },
+  "train/source:piano": {
+   "present": 142,
+   "absent": 6169
+  },
+  "train/source:synthesizer": {
+   "present": 0,
+   "absent": 5939
+  },
+  "train/source:voice": {
+   "present": 909,
+   "absent": 4925
+  }
+ },
+ "families": {
+  "test": 614,
+  "calibration": 256,
+  "train": 1266
+ },
+ "manifestSha256": "80bac01368ca6cff76ad1a8f7c6dbe87440513b623484f96113a3cb8501038e0"
+}

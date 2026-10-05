@@ -1,6 +1,6 @@
 import { CHARACTER_LABELS, RESEMBLANCE_LABELS, ROLE_LABELS, VOCAL_LABELS } from './soundProfile';
 export type DescriptionGroup = 'source' | 'articulation' | 'tone' | 'space' | 'role' | 'vocal' | 'sample' | 'dj-type' | 'breath' | 'dj-tone' | 'dj-rhythm' | `dj-${string}`;
-export interface DescriptionScore { group: DescriptionGroup; label: string | null; score: number; alternative?: string; learnedGroup?: 'source' | 'production' | 'character'; decision?: 'include' | 'exclude'; }
+export interface DescriptionScore { group: DescriptionGroup; label: string | null; score: number; alternative?: string; learnedGroup?: 'source' | 'production' | 'character'; decision?: 'include' | 'exclude'; /** Set when a trained head, not a reviewed example, produced this score. */ basis?: 'head'; /** The head passed at 50% but not 65% on unseen brands: show it as a maybe. */ maybe?: boolean; }
 export interface DescriptionPrompt { group: DescriptionGroup; label: string | null; vector: number[]; prompt?: string; }
 export function descriptionScores(embedding: ArrayLike<number>, prompts: DescriptionPrompt[]): DescriptionScore[] {
   const audio = Array.from(embedding); const norm = Math.hypot(...audio);

@@ -1,12 +1,14 @@
 import { musicInferenceThreads, musicRuntimeDiagnostics, musicRuntimeIdentity } from './musicRuntime';
 import soundManifest from '../../public/sound-model/manifest.json';
 import { learnedDjScores, sanitizeLearnedDjModel, type LearnedDjModel } from './learnedDjModel';
+import { sanitizeShortClipModel, shortClipScores, type ShortClipModel } from './shortClipModel';
+import { eventFeatures } from './eventFeatures';
 import { cachedAudioInference, isAudioEmbedding, isScoreMap } from './audioInferenceCache';
 import Essentia from 'essentia.js/dist/essentia.js-core.es.js';
 import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
 import { instrumentScores, musicScore, type InstrumentPredictions } from './instrumentLabels';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_ANALYSIS_REVISION, type MusicAnalysis } from './musicTypes';
-import { classifyJamendo } from './jamendo';
+import { classifyJamendo, preloadJamendo } from './jamendo';
 import { detectRepeatedPitch } from './detectedPitch';
 import { estimateTempo } from './tempo';
 import { soundSuggestions } from './soundSuggestions';
@@ -30,6 +32,7 @@ function getClassifier() {
     return { model, processor };
   })().catch(error => { classifier = null; throw error; });
 }
+const CLAP_ENCODER = 'Xenova/larger_clap_music_and_speech@e9fd5ac1dbf3280936a7fc3ec8a020453ff184db';
 let soundClassifier: Promise<{
   model: Awaited<ReturnType<typeof import('@huggingface/transformers')['ClapAudioModelWithProjection']['from_pretrained']>>;
   processor: Awaited<ReturnType<typeof AutoProcessor.from_pretrained>>;
@@ -51,7 +54,19 @@ function getSoundClassifier() {
     return { model, processor };
   })().catch(error => { soundClassifier = null; throw error; });
 }
-let soundDescriptions: Promise<{ prompts: DescriptionPrompt[]; learned?: LearnedDjModel }> | null = null;
+let soundDescriptions: Promise<{ prompts: DescriptionPrompt[]; learned?: LearnedDjModel; shortClip?: ShortClipModel }> | null = null;
+/** Optional pinned asset: a missing, altered or malformed file leaves short clips on the existing analysis. */
+async function pinnedJson(name: string): Promise<unknown> {
+  const pinned = (soundManifest.sha256 as Record<string,string>)[name];
+  if (!pinned) return;
+  try {
+    const response = await fetch(`${import.meta.env.BASE_URL}sound-model/${name}?v=${INSTRUMENT_ANALYSIS_REVISION}`, {cache:'no-store'});
+    if (!response.ok) return;
+    const bytes = await response.arrayBuffer();
+    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+    return hash === pinned ? JSON.parse(new TextDecoder().decode(bytes)) : undefined;
+  } catch { return; }
+}
 function getSoundDescriptions() {
   return soundDescriptions ??= (async () => {
     const response = await fetch(`${import.meta.env.BASE_URL}sound-model/prompts.json?v=${INSTRUMENT_ANALYSIS_REVISION}`);
@@ -70,8 +85,10 @@ function getSoundDescriptions() {
         }
       } catch { /* Optional local model must not prevent pinned model inference. */ }
     }
-    if (learned && learned.encoder !== 'Xenova/larger_clap_music_and_speech@e9fd5ac1dbf3280936a7fc3ec8a020453ff184db') learned = undefined;
-    return { prompts: await response.json() as DescriptionPrompt[], learned };
+    if (learned && learned.encoder !== CLAP_ENCODER) learned = undefined;
+    let shortClip = sanitizeShortClipModel(await pinnedJson('short-clip.json'));
+    if (shortClip && shortClip.clapEncoder !== CLAP_ENCODER) shortClip = undefined;
+    return { prompts: await response.json() as DescriptionPrompt[], learned, shortClip };
   })().catch(error => { soundDescriptions = null; throw error; });
 }
 function isInstrumentPredictions(value: unknown): value is InstrumentPredictions {
@@ -101,8 +118,46 @@ async function disposeTensors(values: Record<string, unknown>): Promise<void> {
     if (tensor && typeof tensor === 'object' && 'dispose' in tensor && typeof tensor.dispose === 'function') await tensor.dispose();
   }
 }
-self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array }>) => {
+const isLogits = (v: unknown): v is number[] => Array.isArray(v) && v.length === 527 && v.every(x => typeof x === 'number' && Number.isFinite(x));
+/** One-shot features exactly as scripts/short-clip-features.mjs computes them: CLAP with silence after the clip
+ * (never looped), all AudioSet AST logits on the unchanged clip, and attack/body/decay features. */
+async function shortClipProfile(model: ShortClipModel, samples48: Float32Array, samples16: Float32Array, embedding: number[]) {
+  const inputs: Parameters<typeof shortClipScores>[1] = { clapRepeat: embedding };
+  if (model.blocks.includes('event')) inputs.event = eventFeatures(samples16);
+  if (!inputs.event && model.blocks.includes('event')) return [];
+  if (model.blocks.includes('clapZero')) inputs.clapZero = await cachedAudioInference('sound-model', `clap-48khz-silence-pad:${musicRuntimeIdentity('clap')}`, samples48, isAudioEmbedding, async () => {
+    const { model: clap, processor } = await getSoundClassifier();
+    const extractor = (processor as unknown as { feature_extractor: { config: { padding: string } } }).feature_extractor;
+    const previous = extractor.config.padding;
+    extractor.config.padding = 'pad';
+    try {
+      const features = await processor(samples48);
+      try { const output = await clap(features); try { return Array.from(output.audio_embeds.data) as number[]; } finally { await disposeTensors(output); } }
+      finally { await disposeTensors(features); }
+    } finally { extractor.config.padding = previous; }
+  });
+  if (model.blocks.includes('ast')) inputs.ast = await cachedAudioInference('music-model', `ast-16khz-logits:${musicRuntimeIdentity('ast')}`, samples16, isLogits, async () => {
+    const { model: ast, processor } = await getClassifier();
+    const features = await processor(samples16);
+    try { const output = await ast(features); try { return Array.from(output.logits.data) as number[]; } finally { await disposeTensors(output); } }
+    finally { await disposeTensors(features); }
+  });
+  return shortClipScores(model, inputs).scores;
+}
+/** Load one family's weights ahead of its first clip. Scores are unaffected: the same memoized sessions serve later requests. */
+async function warmFamily(family: string): Promise<void> {
+  if (family === 'instruments') await getClassifier();
+  else if (family === 'profile' || family === 'sound') await Promise.all([getSoundDescriptions(), getSoundClassifier()]);
+  else if (family === 'jamendo') await Promise.all([ready, preloadJamendo()]);
+  else await ready;
+}
+self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array; samples16?: Float32Array }>) => {
   const { id } = data;
+  if (data.kind === 'warm') {
+    try { await warmFamily(data.family); self.postMessage({ id, warmed: true }); }
+    catch (error) { self.postMessage({ id, error: error instanceof Error ? error.message : String(error) }); }
+    return;
+  }
   const runtime = data.kind === 'rhythm' || data.kind === 'tonal'
     ? { backend: 'essentia-wasm', configuredInferenceThreads: 1, identity: 'essentia-wasm-v1' }
     : musicRuntimeDiagnostics(data.kind);
@@ -124,7 +179,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'rhythm' | 't
       return;
     }
     if (data.kind === 'sound' || data.kind === 'profile') {
-      const { prompts, learned } = await getSoundDescriptions();
+      const { prompts, learned, shortClip } = await getSoundDescriptions();
       const embedding = await cachedAudioInference('sound-model', `clap-48khz:${musicRuntimeIdentity('clap')}`, data.samples, isAudioEmbedding, async () => {
         const { model, processor } = await getSoundClassifier();
         const inputs = await processor(data.samples);
@@ -134,7 +189,17 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'rhythm' | 't
           finally { await disposeTensors(output); }
         } finally { await disposeTensors(inputs); }
       }, () => self.postMessage({ id, progress: 'Applying current reviews to saved sound features' }));
-      await postResult(data.kind === 'profile' ? [...descriptionScores(embedding, prompts), ...(learned ? learnedDjScores(embedding, learned) : [])] : soundSuggestions(embedding, prompts.filter(p => p.group === 'source')));
+      if (data.kind !== 'profile') { await postResult(soundSuggestions(embedding, prompts.filter(p => p.group === 'source'))); return; }
+      let learnedScores = learned ? learnedDjScores(embedding, learned) : [];
+      // A whole short clip arrives with its 16 kHz copy: score it with heads trained on one-shots.
+      const short = data.samples16 && shortClip && data.samples.length <= shortClip.maxSeconds * 48000 ? shortClip : undefined;
+      const oneShot = short ? await shortClipProfile(short, data.samples, data.samples16!, embedding) : [];
+      if (short) {
+        // Heads trained on longer audio were never validated on one-shots (several misfired, e.g. loop tags):
+        // only the one-shot heads tag these clips. The user's own reviewed examples still apply.
+        learnedScores = learnedScores.filter(s => s.basis !== 'head');
+      }
+      await postResult([...descriptionScores(embedding, prompts), ...learnedScores, ...oneShot]);
       return;
     }
     if (data.kind === 'instruments') {
@@ -208,7 +273,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'rhythm' | 't
         ? `Repeated ${KEY_NAMES[result.detectedPitch.pitchClass]} pitch detected from the audio; there is insufficient evidence for a full major/minor key.`
         : 'No stable major/minor key detected confidently.');
     }
-    await postResult(result);
+    self.postMessage({ id, runtime, result });
   } catch (error) { self.postMessage({ id, error: error instanceof Error ? error.message : String(error) }); }
   finally { engine?.delete(); }
 };

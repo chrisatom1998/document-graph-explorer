@@ -12,6 +12,7 @@ vi.mock('./fusionRelease', async importOriginal => ({ ...(await importOriginal<t
 vi.mock('./musicAnalysisCache', () => ({
   musicCacheKey: vi.fn(async () => 'key'),
   musicCacheFingerprint: () => state.fingerprint,
+  musicWorkerFingerprint: () => state.fingerprint,
   readMusicCache: vi.fn(async () => state.cache),
   writeMusicCache: vi.fn(async () => {}),
 }));
@@ -227,11 +228,21 @@ it('bypasses whole-analysis cache reads and writes for an optional fusion scorer
 });
 
 it('does not load the trained head outside the qualified input tier', async () => {
- await analyzeMusic(new Blob(['unsupported'],{type:'audio/wav'}), 'unsupported.wav', {mode:'full'});
- expect(loadBuiltInFusion).not.toHaveBeenCalled();
+ // Fast analysis samples a few sections, so its windows are not the scored tier.
  state.duration=10;
  await analyzeMusic(new Blob(['fast'],{type:'audio/ogg'}), 'fast.ogg', {mode:'fast'});
  expect(loadBuiltInFusion).not.toHaveBeenCalled();
+ // Below policy.inputSupport.minimumSeconds nothing is scored either.
+ state.duration=1;
+ await analyzeMusic(new Blob(['tiny'],{type:'audio/wav'}), 'tiny.wav', {mode:'full'});
+ expect(loadBuiltInFusion).not.toHaveBeenCalled();
+});
+it('loads the trained head for ordinary uploads of any container and length', async () => {
+ for (const [duration, type, name] of [[9,'audio/wav','loop.wav'],[183,'audio/mpeg','song.mp3'],[10,'audio/ogg','clip.ogg']] as const) {
+  vi.mocked(loadBuiltInFusion).mockClear(); state.duration=duration;
+  await analyzeMusic(new Blob(['widened'],{type}), name, {mode:'full'});
+  expect(loadBuiltInFusion).toHaveBeenCalledOnce();
+ }
 });
 it('retains native analysis when a qualified artifact fails to load', async () => {
  state.duration=10; vi.mocked(loadBuiltInFusion).mockRejectedValue(new Error('Corrupt artifact'));
@@ -242,9 +253,11 @@ it('retains native analysis when a qualified artifact fails to load', async () =
 });
 
 
-it.each([{deviceMemory:8,hardwareConcurrency:8},{hardwareConcurrency:18}])('retains warm bounded families on the verified faster host profile %j',async navigatorProfile=>{
+it.each([{deviceMemory:8,hardwareConcurrency:8},{hardwareConcurrency:18}])('retains warm bounded families and runs them side by side on the faster host profile %j',async navigatorProfile=>{
  vi.stubGlobal('navigator',navigatorProfile);vi.resetModules();const isolated=await import('./analyzeMusic');const created=state.created;
  await isolated.analyzeMusic(new Blob(['warm-local-one']),'one.wav',{mode:'full',force:true});
  expect(state.created-created).toBe(4);
- await isolated.analyzeMusic(new Blob(['warm-local-two']),'two.wav',{mode:'full',force:true});expect(state.created-created).toBe(4);expect(state.maxModels).toBe(1);
+ await isolated.analyzeMusic(new Blob(['warm-local-two']),'two.wav',{mode:'full',force:true});expect(state.created-created).toBe(4);
+ // One request per family worker at most: families overlap, a family never overlaps itself.
+ expect(state.maxModels).toBeGreaterThan(1);expect(state.maxModels).toBeLessThanOrEqual(4);
 });

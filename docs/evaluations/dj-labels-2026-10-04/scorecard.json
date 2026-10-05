@@ -1,0 +1,621 @@
+{
+ "kind": "dj-label-scorecard-v1",
+ "target": {
+  "precision": 0.7,
+  "recall": 0.7
+ },
+ "clips": 138,
+ "aliasesFrom": "docs/evaluations/dj-labels-2026-10-04/role-aliases.json",
+ "roles": {
+  "percussion": {
+   "tp": 60,
+   "fp": 34,
+   "fn": 9,
+   "tn": 35,
+   "unknown": 0,
+   "precision": 0.6382978723404256,
+   "recall": 0.8695652173913043,
+   "f1": 0.736196319018405,
+   "meetsTarget": false,
+   "positiveSupport": 69,
+   "negativeSupport": 69,
+   "falsePositives": [
+    "fsld_347751",
+    "fsld_21732",
+    "fsld_152448",
+    "fsld_401819",
+    "fsld_46682",
+    "fsld_19798",
+    "fsld_180656",
+    "fsld_395059",
+    "fsld_403905",
+    "fsld_484430",
+    "fsld_161948",
+    "fsld_467919"
+   ],
+   "falseNegatives": [
+    "fsld_337764",
+    "fsld_476192",
+    "fsld_369227",
+    "fsld_161865",
+    "fsld_324983",
+    "fsld_3092",
+    "fsld_332643",
+    "fsld_398391",
+    "fsld_96463"
+   ]
+  },
+  "bass": {
+   "tp": 24,
+   "fp": 46,
+   "fn": 8,
+   "tn": 60,
+   "unknown": 0,
+   "precision": 0.34285714285714286,
+   "recall": 0.75,
+   "f1": 0.47058823529411753,
+   "meetsTarget": false,
+   "positiveSupport": 32,
+   "negativeSupport": 106,
+   "falsePositives": [
+    "fsld_255377",
+    "fsld_21732",
+    "fsld_145586",
+    "fsld_401819",
+    "fsld_337764",
+    "fsld_170452",
+    "fsld_19798",
+    "fsld_387181",
+    "fsld_344081",
+    "fsld_180656",
+    "fsld_398099",
+    "fsld_403071"
+   ],
+   "falseNegatives": [
+    "fsld_58580",
+    "fsld_395059",
+    "fsld_448384",
+    "fsld_403905",
+    "fsld_414445",
+    "fsld_369227",
+    "fsld_214069",
+    "fsld_440233"
+   ]
+  },
+  "chords": {
+   "tp": 3,
+   "fp": 2,
+   "fn": 26,
+   "tn": 107,
+   "unknown": 0,
+   "precision": 0.6,
+   "recall": 0.10344827586206896,
+   "f1": 0.17647058823529413,
+   "meetsTarget": false,
+   "positiveSupport": 29,
+   "negativeSupport": 109,
+   "falsePositives": [
+    "fsld_414265",
+    "fsld_138163"
+   ],
+   "falseNegatives": [
+    "fsld_170452",
+    "fsld_387181",
+    "fsld_344081",
+    "fsld_180656",
+    "fsld_26464",
+    "fsld_397659",
+    "fsld_80503",
+    "fsld_466077",
+    "fsld_370351",
+    "fsld_427027",
+    "fsld_259297",
+    "fsld_462873"
+   ]
+  },
+  "melody": {
+   "tp": 28,
+   "fp": 21,
+   "fn": 16,
+   "tn": 73,
+   "unknown": 0,
+   "precision": 0.5714285714285714,
+   "recall": 0.6363636363636364,
+   "f1": 0.6021505376344085,
+   "meetsTarget": false,
+   "positiveSupport": 44,
+   "negativeSupport": 94,
+   "falsePositives": [
+    "fsld_401819",
+    "fsld_19798",
+    "fsld_476192",
+    "fsld_387181",
+    "fsld_58580",
+    "fsld_262132",
+    "fsld_102886",
+    "fsld_436808",
+    "fsld_467919",
+    "fsld_259297",
+    "fsld_462873",
+    "fsld_215048"
+   ],
+   "falseNegatives": [
+    "fsld_444923",
+    "fsld_26464",
+    "fsld_402458",
+    "fsld_443421",
+    "fsld_161948",
+    "fsld_54353",
+    "fsld_135524",
+    "fsld_43581",
+    "fsld_59774",
+    "fsld_327522",
+    "fsld_87135",
+    "fsld_417945"
+   ]
+  },
+  "fx": {
+   "tp": 7,
+   "fp": 4,
+   "fn": 44,
+   "tn": 82,
+   "unknown": 1,
+   "precision": 0.6363636363636364,
+   "recall": 0.13725490196078433,
+   "f1": 0.22580645161290325,
+   "meetsTarget": false,
+   "positiveSupport": 51,
+   "negativeSupport": 86,
+   "falsePositives": [
+    "fsld_58580",
+    "fsld_157456",
+    "fsld_398391",
+    "fsld_431449"
+   ],
+   "falseNegatives": [
+    "fsld_255377",
+    "fsld_256331",
+    "fsld_407941",
+    "fsld_145586",
+    "fsld_401819",
+    "fsld_337764",
+    "fsld_170452",
+    "fsld_55085",
+    "fsld_19798",
+    "fsld_476192",
+    "fsld_387181",
+    "fsld_180656"
+   ]
+  },
+  "vocal": {
+   "tp": 7,
+   "fp": 29,
+   "fn": 0,
+   "tn": 102,
+   "unknown": 0,
+   "precision": 0.19444444444444445,
+   "recall": 1,
+   "f1": 0.32558139534883723,
+   "meetsTarget": false,
+   "positiveSupport": 7,
+   "negativeSupport": 131,
+   "falsePositives": [
+    "fsld_407941",
+    "fsld_145586",
+    "fsld_55085",
+    "fsld_387181",
+    "fsld_344081",
+    "fsld_26464",
+    "fsld_475978",
+    "fsld_403905",
+    "fsld_29764",
+    "fsld_403071",
+    "fsld_397659",
+    "fsld_213654"
+   ],
+   "falseNegatives": []
+  }
+ },
+ "labelActivity": [
+  {
+   "label": "source:synthesizer",
+   "clips": 119
+  },
+  {
+   "label": "source:drums",
+   "clips": 93
+  },
+  {
+   "label": "source:bass",
+   "clips": 71
+  },
+  {
+   "label": "role:bass",
+   "clips": 67
+  },
+  {
+   "label": "source:drum machine",
+   "clips": 43
+  },
+  {
+   "label": "source:cymbals",
+   "clips": 37
+  },
+  {
+   "label": "character:rhythmic stabs",
+   "clips": 36
+  },
+  {
+   "label": "source:drum kit",
+   "clips": 35
+  },
+  {
+   "label": "source:voice",
+   "clips": 34
+  },
+  {
+   "label": "production:drum loop",
+   "clips": 30
+  },
+  {
+   "label": "character:syncopated",
+   "clips": 26
+  },
+  {
+   "label": "character:rhythmic",
+   "clips": 25
+  },
+  {
+   "label": "character:pulsing",
+   "clips": 22
+  },
+  {
+   "label": "role:lead",
+   "clips": 21
+  },
+  {
+   "label": "production:synth lead",
+   "clips": 20
+  },
+  {
+   "label": "character:dry",
+   "clips": 19
+  },
+  {
+   "label": "source:guitar",
+   "clips": 18
+  },
+  {
+   "label": "source:electric guitar",
+   "clips": 16
+  },
+  {
+   "label": "production:vocal chops",
+   "clips": 15
+  },
+  {
+   "label": "production:synth bass",
+   "clips": 14
+  },
+  {
+   "label": "character:distorted",
+   "clips": 13
+  },
+  {
+   "label": "role:arpeggio",
+   "clips": 13
+  },
+  {
+   "label": "source:flute",
+   "clips": 12
+  },
+  {
+   "label": "source:percussion",
+   "clips": 12
+  },
+  {
+   "label": "source:organ",
+   "clips": 12
+  },
+  {
+   "label": "source:piano",
+   "clips": 12
+  },
+  {
+   "label": "character:warm",
+   "clips": 12
+  },
+  {
+   "label": "source:drum",
+   "clips": 10
+  },
+  {
+   "label": "source:sound effect",
+   "clips": 9
+  },
+  {
+   "label": "source:trumpet",
+   "clips": 9
+  },
+  {
+   "label": "source:cello",
+   "clips": 9
+  },
+  {
+   "label": "character:rolling",
+   "clips": 8
+  },
+  {
+   "label": "source:electric piano",
+   "clips": 8
+  },
+  {
+   "label": "source:bass guitar",
+   "clips": 7
+  },
+  {
+   "label": "source:bass drum",
+   "clips": 7
+  },
+  {
+   "label": "production:chops",
+   "clips": 6
+  },
+  {
+   "label": "character:chorused",
+   "clips": 6
+  },
+  {
+   "label": "production:breakbeat",
+   "clips": 6
+  },
+  {
+   "label": "character:saturated",
+   "clips": 5
+  },
+  {
+   "label": "production:synth stab",
+   "clips": 5
+  },
+  {
+   "label": "source:sampler",
+   "clips": 5
+  },
+  {
+   "label": "source:snare drum",
+   "clips": 5
+  },
+  {
+   "label": "source:mallet_percussion",
+   "clips": 5
+  },
+  {
+   "label": "source:saxophone",
+   "clips": 4
+  },
+  {
+   "label": "source:clarinet",
+   "clips": 4
+  },
+  {
+   "label": "role:pad",
+   "clips": 4
+  },
+  {
+   "label": "source:cymbal",
+   "clips": 4
+  },
+  {
+   "label": "source:hi-hat",
+   "clips": 4
+  },
+  {
+   "label": "character:plucked",
+   "clips": 4
+  },
+  {
+   "label": "source:mandolin",
+   "clips": 4
+  },
+  {
+   "label": "character:echoing",
+   "clips": 4
+  },
+  {
+   "label": "production:beatbox",
+   "clips": 3
+  },
+  {
+   "label": "source:noise",
+   "clips": 3
+  },
+  {
+   "label": "role:rhythm",
+   "clips": 3
+  },
+  {
+   "label": "production:top loop",
+   "clips": 3
+  },
+  {
+   "label": "source:plucked string instrument",
+   "clips": 3
+  },
+  {
+   "label": "source:acoustic guitar",
+   "clips": 3
+  },
+  {
+   "label": "source:ukulele",
+   "clips": 3
+  },
+  {
+   "label": "production:brass synth",
+   "clips": 3
+  },
+  {
+   "label": "source:didgeridoo",
+   "clips": 2
+  },
+  {
+   "label": "production:acid synth",
+   "clips": 2
+  },
+  {
+   "label": "character:filtered",
+   "clips": 2
+  },
+  {
+   "label": "source:banjo",
+   "clips": 2
+  },
+  {
+   "label": "character:bright",
+   "clips": 2
+  },
+  {
+   "label": "character:reverberant",
+   "clips": 2
+  },
+  {
+   "label": "source:keyboard (musical)",
+   "clips": 2
+  },
+  {
+   "label": "production:glitch effect",
+   "clips": 2
+  },
+  {
+   "label": "character:dark",
+   "clips": 2
+  },
+  {
+   "label": "production:atmospheric pad",
+   "clips": 2
+  },
+  {
+   "label": "character:sustained",
+   "clips": 2
+  },
+  {
+   "label": "production:synth sequence",
+   "clips": 2
+  },
+  {
+   "label": "character:staccato",
+   "clips": 2
+  },
+  {
+   "label": "source:environmental sound",
+   "clips": 2
+  },
+  {
+   "label": "production:vinyl scratch",
+   "clips": 1
+  },
+  {
+   "label": "production:siren",
+   "clips": 1
+  },
+  {
+   "label": "character:woody",
+   "clips": 1
+  },
+  {
+   "label": "production:supersaw",
+   "clips": 1
+  },
+  {
+   "label": "character:percussive",
+   "clips": 1
+  },
+  {
+   "label": "source:singing bowl",
+   "clips": 1
+  },
+  {
+   "label": "source:hammond organ",
+   "clips": 1
+  },
+  {
+   "label": "character:falling",
+   "clips": 1
+  },
+  {
+   "label": "source:turntable",
+   "clips": 1
+  },
+  {
+   "label": "production:vinyl crackle",
+   "clips": 1
+  },
+  {
+   "label": "character:bitcrushed",
+   "clips": 1
+  },
+  {
+   "label": "production:impact",
+   "clips": 1
+  },
+  {
+   "label": "production:whoosh",
+   "clips": 1
+  },
+  {
+   "label": "production:vocal-like synth",
+   "clips": 1
+  },
+  {
+   "label": "source:string section",
+   "clips": 1
+  },
+  {
+   "label": "source:harp",
+   "clips": 1
+  },
+  {
+   "label": "production:bass growl",
+   "clips": 1
+  },
+  {
+   "label": "character:nasal",
+   "clips": 1
+  },
+  {
+   "label": "production:record stop",
+   "clips": 1
+  },
+  {
+   "label": "character:swelling",
+   "clips": 1
+  },
+  {
+   "label": "character:gritty",
+   "clips": 1
+  },
+  {
+   "label": "source:bell",
+   "clips": 1
+  },
+  {
+   "label": "character:rising",
+   "clips": 1
+  },
+  {
+   "label": "character:airy",
+   "clips": 1
+  },
+  {
+   "label": "source:djembe",
+   "clips": 1
+  },
+  {
+   "label": "production:foley hit",
+   "clips": 1
+  },
+  {
+   "label": "production:synth chord",
+   "clips": 1
+  }
+ ]
+}

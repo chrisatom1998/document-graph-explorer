@@ -139,6 +139,18 @@ describe('session persistence', () => {
     expect(useGraphStore.getState().nodes[0].audio?.tempo?.bpm).toBe(70);
   });
 
+  it('rebuilds reviewed sound links on reload and removes stale uncertain links', async () => {
+    const nodes=['one','two'].map(id=>({...makeNode(id),fileType:'audio' as const,audio:{version:2 as const,durationSeconds:8,analyzedSeconds:8,instruments:[],notes:[],confirmedDjTags:{source:[],production:[],character:['metallic']}}}));
+    const record={version:1 as const,createdAt:'',generator:'knowledge-nebula' as const,includeEmbeddings:false,nodes,edges:[]};
+    await hydrateFromRecord(record,{},'sound');
+    const edges=useGraphStore.getState().edges;
+    expect(edges.filter(e=>e.kind==='sound')).toHaveLength(1);
+    const reviewed=nodes.map((n,i)=>i?n:{...n,audio:{...n.audio,soundReviews:[{dimension:'character' as const,labelId:'metallic',decision:'uncertain' as const,scope:'track' as const,at:'2026-10-04T00:00:00Z',evidenceRunId:'r'}]}});
+    useGraphStore.getState().reset();
+    await hydrateFromRecord({...record,nodes:reviewed,edges},{},'sound');
+    expect(useGraphStore.getState().edges.filter(e=>e.kind==='sound')).toHaveLength(0);
+    expect(useGraphStore.getState().nodes[0].audio?.soundReviews?.[0].decision).toBe('uncertain');
+  });
   it('hydrates a saved graph back into the runtime stores and layout', async () => {
     const node = makeNode('doc-1', 'Doc One');
     const exportData: GraphExport = {

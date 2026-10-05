@@ -59,6 +59,7 @@ const EDGE_KINDS: ReadonlySet<string> = new Set([
   'tempo',
   'key',
   'instrument',
+  'sound',
   'reference',
   'semantic',
   'keyword',

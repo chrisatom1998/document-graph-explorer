@@ -24,6 +24,55 @@ function fixture(duration: number, options: AnalysisOptions = {}, fail?: string)
   };
   return { calls, decoder, run: () => analyzeDecodedMusic(decoder, request, options) };
 }
+describe('side-by-side model families', () => {
+  /** Varying, out-of-order completion: results must not depend on which family answers first. */
+  function timed(duration: number, options: AnalysisOptions, fail?: string) {
+    let active = 0, maxActive = 0, reads = 0, maxReads = 0;
+    const perFamily: Record<string, number> = {};
+    let familyOverlap = false;
+    const decoder: MusicDecoder = { durationSeconds: duration, close() {}, read: async (start, seconds, rate) => {
+      maxReads = Math.max(maxReads, ++reads); await new Promise(r => setTimeout(r, 1)); reads--;
+      return new Float32Array(Math.round(Math.max(0, Math.min(seconds, duration - start)) * rate)).fill(.1);
+    } };
+    const delays: Record<string, number> = { instruments: 7, jamendo: 1, profile: 4, rhythm: 3, tonal: 2 };
+    const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
+      const kind = String(message.kind);
+      maxActive = Math.max(maxActive, ++active);
+      if ((perFamily[kind] = (perFamily[kind] ?? 0) + 1) > 1) familyOverlap = true;
+      const samples = message.samples as Float32Array | undefined;
+      const n = (samples?.length ?? 0) % 97 / 97;
+      await new Promise(r => setTimeout(r, delays[kind]));
+      active--; perFamily[kind]--;
+      if (kind === fail) throw new Error('Model unavailable');
+      if (kind === 'rhythm' || kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: Math.min(60, duration), instruments: [], notes: [] } as T;
+      if (kind === 'instruments') return { scores: { piano: .6 + n * .3, guitar: .4 + n * .2 }, musicScore: .9 } as T;
+      if (kind === 'jamendo') return { synthesizer: .5 + n * .3, drums: .3 + n / 3 } as T;
+      return [{group:'source',label:'piano',score:.5 + n * .2}] as T;
+    };
+    return { run: () => analyzeDecodedMusic(decoder, request, options), stats: () => ({ maxActive, maxReads, familyOverlap }) };
+  }
+  const comparable = (analysis: MusicAnalysis) => {
+    const copy = structuredClone(analysis);
+    if (copy.recognition) { copy.recognition.runId = ''; copy.recognition.startedAt = ''; copy.recognition.endedAt = ''; }
+    return copy;
+  };
+  it.each([['full', undefined], ['fast', undefined], ['full', 'profile'], ['full', 'instruments']] as const)('matches one-at-a-time results exactly (%s, failing %s)', async (mode, fail) => {
+    const base = { mode, audioFingerprint: 'same-audio' } as const;
+    const serial = timed(47, { ...base }, fail), side = timed(47, { ...base, concurrentModels: true }, fail);
+    const [a, b] = [await serial.run(), await side.run()];
+    expect(comparable(b)).toEqual(comparable(a));
+    expect(serial.stats()).toMatchObject({ maxActive: 1, familyOverlap: false });
+    expect(side.stats().familyOverlap).toBe(false);
+    expect(side.stats().maxReads).toBe(1); // one FFmpeg instance: section reads queue
+    if (mode === 'full') expect(side.stats().maxActive).toBeGreaterThan(1);
+  });
+  it('stops scoring ahead when the run is cancelled', async () => {
+    const controller = new AbortController();
+    const f = timed(300, { signal: controller.signal, concurrentModels: true });
+    const run = f.run(); setTimeout(() => controller.abort(new DOMException('cancelled', 'AbortError')), 20);
+    await expect(run).rejects.toMatchObject({ name: 'AbortError' });
+  });
+});
 describe('early estimates and selectable music scans', () => {
   it('publishes a preliminary estimate before the expensive scan and reuses its model result', async () => {
     let preview: MusicAnalysis | undefined;
@@ -222,4 +271,50 @@ it('avoids unused growing snapshots when the consumer only needs cancellation ev
   expect(partial).not.toHaveBeenCalled();expect(clone.mock.calls.some(([value])=>value && typeof value==='object' && 'recognition' in value)).toBe(false);
   expect(result.recognition?.jobs.every(j=>j.status==='complete')).toBe(true);
  } finally {clone.mockRestore();}
+});
+
+it('finishes supported work on a sub-two-second effect without treating unsupported Jamendo as a failed run', async()=>{
+ const r=await fixture(.7).run();
+ expect(r.recognition?.status).toBe('complete');
+ expect(r.recognition?.jobs.find(j=>j.modelId==='jamendo')?.status).toBe('unsupported');
+});
+
+
+// Independent reviewer regressions; scratch only.
+it.each(['instruments','profile','rhythm','tonal'])('review: short unsupported Jamendo does not mask %s failure',async fail=>{
+ const result=await fixture(.7,{},fail).run();
+ expect(result.recognition?.status).toBe('partial');
+ expect(result.recognition?.jobs.find(j=>j.modelId==='jamendo')?.status).toBe('unsupported');
+ expect(result.recognition?.jobs.find(j=>j.modelId===({instruments:'ast',profile:'clap',rhythm:'rhythm',tonal:'tonal'} as Record<string,string>)[fail])?.status).toBe('failed');
+ expect(sanitizeMusicAnalysis(result)?.recognition?.status).toBe('partial');
+});
+it.each([.7,2,2.048,8])('review: default %s-second run never dispatches crops or competitors',async duration=>{
+ const f=fixture(duration);const result=await f.run();
+ expect(f.calls.filter(c=>c==='profile')).toHaveLength(1);
+ expect(result.recognition?.configurationHash).not.toContain('short-events');
+ expect(result.notes.some(n=>/Experimental short-event|unresolved/.test(n))).toBe(false);
+ expect(result.recognition?.status).toBe('complete');
+ expect(result.recognition?.jobs.find(j=>j.modelId==='jamendo')?.status).toBe(duration<2.048?'unsupported':'complete');
+});
+
+describe('short one-shots', () => {
+  async function profileMessages(duration: number) {
+    const messages: Record<string, unknown>[] = [];
+    const decoder: MusicDecoder = { durationSeconds: duration, close() {}, read: async (start, seconds, rate) =>
+      new Float32Array(Math.round(Math.max(0, Math.min(seconds, duration - start)) * rate)).fill(.1) };
+    const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
+      if (message.kind === 'profile') messages.push(message);
+      if (message.kind === 'rhythm' || message.kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: duration, instruments: [], notes: [] } as T;
+      if (message.kind === 'instruments') return { scores: {}, musicScore: 0 } as T;
+      return (message.kind === 'jamendo' ? {} : []) as T;
+    };
+    await analyzeDecodedMusic(decoder, request, {});
+    return messages;
+  }
+  it('sends a whole short clip unchanged at 16 kHz with its CLAP request, and nothing extra for longer audio', async () => {
+    const [short] = await profileMessages(1.2);
+    expect((short.samples as Float32Array).length).toBe(Math.round(1.2 * 48000));
+    expect((short.samples16 as Float32Array).length).toBe(Math.round(1.2 * 16000));
+    for (const message of await profileMessages(6)) expect(message.samples16).toBeUndefined();
+  });
 });

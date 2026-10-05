@@ -6,3 +6,10 @@ Both require noncommercial use and attribution; retain the official LICENSE and 
 https://creativecommons.org/licenses/by-nc-sa/4.0/
 Commercial licensing: https://www.upf.edu/web/mtg/contact
 Unmodified official ONNX weights. See included metadata for authors and citations.
+
+NSynth classification heads (nsynth_instrument, nsynth_bright_dark, nsynth_reverb,
+nsynth_acoustic_electronic; discogs-effnet-1), same authors and catalog licence.
+Source: https://essentia.upf.edu/models.html#nsynth
+Essentia publishes these heads only as TensorFlow .pb graphs. The bundled .onnx files are
+a format conversion (tf2onnx 1.17.0, opset 13) with unchanged weights; outputs match the
+.pb graphs to within 3e-5 on test inputs. Metadata JSON files are unmodified.

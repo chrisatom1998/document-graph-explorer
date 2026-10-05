@@ -9,6 +9,11 @@
  * mip chain — so degraded tiers switch to the Kawase path at half res while
  * tiers 0-1 keep the prettier mipmap blur.
  *
+ * Anti-aliasing is two passes, not one: EffectComposer multisampling (MSAA)
+ * only resolves GEOMETRY edges, so it does nothing for the shader aliasing
+ * inside the additive halo shells or on starfield points. SMAA runs after
+ * the resolve and catches that shimmer. Degraded tiers (halfRes) drop it.
+ *
  * Tone mapping: the Canvas keeps R3F's default ACESFilmic; the composer
  * internally renders untonemapped and every nebula material opts out via
  * toneMapped={false}, so brightness authored in scene colors survives to the
@@ -16,9 +21,10 @@
  * tension (luminanceThreshold here is the other half of that contract).
  */
 
+import type { ReactElement } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useThree } from '@react-three/fiber';
-import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing';
+import { Bloom, EffectComposer, SMAA, Vignette } from '@react-three/postprocessing';
 import { onLayoutSettled } from '../layout/layoutBridge';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -96,6 +102,7 @@ export default function Effects() {
         />
       )}
       <Vignette darkness={flat ? FLAT_VIGNETTE : 0.32 - densitySoftening * 0.06} offset={flat ? 0.28 : 0.18} />
+      {halfRes ? (null as unknown as ReactElement) : <SMAA />}
     </EffectComposer>
   );
 }

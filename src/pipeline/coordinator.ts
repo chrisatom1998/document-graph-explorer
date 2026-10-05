@@ -22,7 +22,7 @@ import { assertAudioContent } from '../audio/parseAudio';
  * (or a removal) while a run is in flight queues behind it (promise chain).
  */
 
-import { buildMusicEdges } from '../audio/musicLinks';
+import { refreshMusicEdges } from '../audio/musicLinks';
 import { INSTRUMENT_LABELS } from '../audio/instrumentLabels';
 import { sanitizeSoundReviews, type SoundReview } from '../audio/recognition';
 import { getOriginal } from '../persistence/originals';
@@ -1076,7 +1076,7 @@ async function runLexicalPass(
       { signal },
     );
     const liveIds = new Set(documentNodes().map((n) => n.id));
-    lexEdges = [...lexical.edges, ...buildTitleEdges(documentNodes()), ...buildMusicEdges(documentNodes()), ...store().edges.filter((e) => e.authored && liveIds.has(e.source) && liveIds.has(e.target))];
+    lexEdges = refreshMusicEdges(documentNodes(), [...lexical.edges, ...buildTitleEdges(documentNodes()), ...store().edges.filter((e) => e.authored && liveIds.has(e.source) && liveIds.has(e.target))]);
     boilerplate = new Set(lexical.boilerplateLines);
 
     const nodesById = new Map(documentNodes().map((n) => [n.id, n]));
@@ -1528,6 +1528,8 @@ function settleCancelledIngest(): void {
  * them before they start.
  */
 export function ingestFiles(files: IngestFile[]): Promise<void> {
+  // Load the audio models while the drop is hashed and parsed, not after.
+  if (files.some(f => f.fileType === 'audio')) preloadAudioModels();
   const spawnOrigin = snapshotIngestOrigin({
     flat: useUiStore.getState().dims === 2,
   });
@@ -1813,12 +1815,19 @@ export function resetCorpus(): void {
   useChatStore.getState().clearMessages();
 }
 
+function preloadAudioModels(): void {
+  const mode = useSettingsStore.getState().musicAnalysisMode;
+  void import('../audio/analyzeMusic').then(m => m.preloadMusicModels(mode)).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
+}
+
 /** Run inside the existing mutation queue; every estimate belongs to this corpus snapshot. */
 async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], originals?: Map<string, { blob: Blob; name: string }>): Promise<void> {
   const mode = useSettingsStore.getState().musicAnalysisMode;
-  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (!n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION || (n.audio.recognition && n.audio.recognition.configurationHash !== recognitionConfiguration(n.audio.recognition.mode)) || (installedFusionIdentity() && (n.audio.classifierConfiguration !== fusionConfiguration() || (n.audio.fusion && !fusionPresentation(n.audio.fusion,n.audio.durationSeconds,n.audio.recognition?.mode ?? mode)?.qualified))) || forceIds.includes(n.id)));
+  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (!n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION || (n.audio.recognition && n.audio.recognition.configurationHash !== recognitionConfiguration(n.audio.recognition.mode, n.audio.durationSeconds)) || (installedFusionIdentity() && (n.audio.classifierConfiguration !== fusionConfiguration() || (n.audio.fusion && !fusionPresentation(n.audio.fusion,n.audio.durationSeconds,n.audio.recognition?.mode ?? mode)?.qualified))) || forceIds.includes(n.id)));
   if (!nodes.length) return;
-  const { analyzeMusic } = await import('../audio/analyzeMusic');
+  const { analyzeMusic, preloadMusicModels } = await import('../audio/analyzeMusic');
+  // Reanalysis after a reload starts cold; load every family while the first file decodes.
+  void preloadMusicModels(mode).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
   const store = useGraphStore.getState;
   let finished = 0;
   let queuedScopeActive = true;
@@ -1853,7 +1862,7 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
               if (!current) return false;
               store().patchNodes(new Map([[node.id, { audio: { ...partial, confirmedInstruments: current.audio?.confirmedInstruments, soundReviews: current.audio?.soundReviews, confirmedDjTags: current.audio?.confirmedDjTags, copilotProperties: current.audio?.copilotProperties } }]]));
               markDocsDirty([node.id]);
-              const edges = [...store().edges.filter(e => e.authored || !['tempo','key','instrument'].includes(e.kind)), ...buildMusicEdges(documentNodes())];
+              const edges = refreshMusicEdges(documentNodes(), store().edges);
               store().setEdges(edges); layoutSetLinks(toLinkInput(edges));
               return true;
             };
@@ -1905,7 +1914,7 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
               if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller))return;
               store().patchNodes(new Map([[node.id,{audio:{...result,confirmedInstruments:current.audio?.confirmedInstruments,soundReviews:current.audio?.soundReviews,confirmedDjTags:current.audio?.confirmedDjTags,copilotProperties:current.audio?.copilotProperties},warning:undefined}]]));
               markDocsDirty([node.id]);
-              const edges=[...store().edges.filter(e=>e.authored || !['tempo','key','instrument'].includes(e.kind)),...buildMusicEdges(documentNodes())];
+              const edges=refreshMusicEdges(documentNodes(), store().edges);
               store().setEdges(edges);layoutSetLinks(toLinkInput(edges));layoutReheat(.5);
               await saveSession();
             });
@@ -1941,7 +1950,7 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
         store().setFileStatus({ fileId, name, stage: incomplete ? 'error' : 'placed',
           ...(incomplete ? { error: 'Instrument analysis stopped early. Select the track and reanalyze to finish.' } : {}) });
         // Publish connections as each track finishes, even in a long batch.
-        const edges = [...store().edges.filter(e => e.authored || !['tempo', 'key', 'instrument'].includes(e.kind)), ...buildMusicEdges(documentNodes())];
+        const edges = refreshMusicEdges(documentNodes(), store().edges);
         store().setEdges(edges);
         layoutSetLinks(toLinkInput(edges));
         layoutReheat(0.5);
@@ -1997,7 +2006,7 @@ export function setAudioInstruments(ids: string[], labels?: string[]): Promise<{
     });
     state.patchNodes(new Map(patches));
     markDocsDirty(targets.map(node => node.id));
-    const edges = [...state.edges.filter(edge => edge.authored || !['tempo', 'key', 'instrument'].includes(edge.kind)), ...buildMusicEdges(documentNodes())];
+    const edges = refreshMusicEdges(documentNodes(), state.edges);
     useGraphStore.getState().setEdges(edges);
     layoutSetLinks(toLinkInput(edges));
     layoutReheat(0.5);
@@ -2030,7 +2039,7 @@ export function setAudioReview(id: string, labelId: string, dimension: SoundRevi
       });
     state.patchNodes(new Map([[id,{audio:{...node.audio,soundReviews,confirmedInstruments}}]]));
     markDocsDirty([id]);
-    const edges=[...state.edges.filter(e=>!['tempo','key','instrument'].includes(e.kind)),...buildMusicEdges(documentNodes())];
+    const edges=refreshMusicEdges(documentNodes(), state.edges);
     useGraphStore.getState().setEdges(edges);layoutSetLinks(toLinkInput(edges));layoutReheat(.5);
     const {saveAudioGraph}=await import('../audio/saveAudioGraph');
     await saveAudioGraph();
@@ -2082,7 +2091,7 @@ export function setAudioDjTags(id: string, labels?: ConfirmedDjTags): Promise<bo
       ...(audio.soundReviews?{soundReviews:[...audio.soundReviews,...reconciliations]}:{})}}]]));
     markDocsDirty([id]);
     const state = useGraphStore.getState();
-    const edges = [...state.edges.filter(e => e.authored || !['tempo', 'key', 'instrument'].includes(e.kind)), ...buildMusicEdges(documentNodes())];
+    const edges = refreshMusicEdges(documentNodes(), state.edges);
     state.setEdges(edges); layoutSetLinks(toLinkInput(edges)); layoutReheat(.5);
     await saveAudioGraph();
     return useCorpusStore.getState().mode === 'local';

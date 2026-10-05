@@ -37,7 +37,7 @@ function shortClipJamendoUnsupported(job:ModelJob,duration:number):boolean {
 }
 function completeCurrent(audio:MusicAnalysis|undefined,mime?:string):boolean {
  const recognition=audio?.recognition;
- if(!audio?.instrumentScan?.complete||audio.stage==='preview'||recognition?.status!=='complete'||recognition.configurationHash!==recognitionConfiguration(recognition.mode))return false;
+ if(!audio?.instrumentScan?.complete||audio.stage==='preview'||recognition?.status!=='complete'||recognition.configurationHash!==recognitionConfiguration(recognition.mode,audio.durationSeconds))return false;
  const release=installedFusionIdentity();
  const needsFusion=!!release && fusionRuntimeSupported() && supportsFusionInput(audio.durationSeconds,recognition.mode,mime);
  if(release && audio.classifierConfiguration!==fusionConfiguration())return false;
@@ -70,3 +70,5 @@ export async function writeMusicCache(key:string,audio:MusicAnalysis,mime?:strin
  }catch{/* Cache failures never prevent analysis. */}
 }
 export function musicCacheFingerprint(key:string):string {return JSON.stringify(JSON.parse(key.slice(PREFIX.length)).slice(2,7));}
+/** Loaded weights depend on revisions and manifests, not on Quick/Full: interleaved modes share workers. */
+export function musicWorkerFingerprint(key:string):string {const parts=JSON.parse(key.slice(PREFIX.length));return JSON.stringify([...parts.slice(2,5),parts[6]]);}

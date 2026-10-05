@@ -1,0 +1,503 @@
+{
+ "kind": "shipped-heads-report-v2",
+ "builtAt": "2026-10-04T22:21:15.511360+00:00",
+ "bars": {
+  "full": 0.65,
+  "maybe": 0.5
+ },
+ "learnedSha256": "3bf330fa87fe59f7a9131cb8e63c6ea1a6b303ca6df2fb04af9a68df6aa6177e",
+ "heads": [
+  {
+   "kind": "family",
+   "name": "bass",
+   "precision": 0.6258205689277899,
+   "recall": 0.6124197002141327,
+   "threshold": 0.815,
+   "trainPositive": 1905,
+   "testPositive": 467,
+   "uses": [
+    "freesound",
+    "hiphop"
+   ],
+   "ships": false,
+   "why": "no matching app tag"
+  },
+  {
+   "kind": "family",
+   "name": "drum hit",
+   "precision": 0.8983911939034717,
+   "recall": 0.8099236641221375,
+   "threshold": 0.716,
+   "trainPositive": 6492,
+   "testPositive": 1310,
+   "uses": [
+    "freesound"
+   ],
+   "tag": [
+    "production",
+    "percussion hit"
+   ],
+   "ships": true,
+   "maybe": false
+  },
+  {
+   "kind": "family",
+   "name": "drum loop",
+   "precision": 0.7396937573616019,
+   "recall": 0.7667887667887668,
+   "threshold": 0.755,
+   "trainPositive": 1509,
+   "testPositive": 819,
+   "uses": [],
+   "tag": [
+    "production",
+    "drum loop"
+   ],
+   "ships": true,
+   "maybe": false
+  },
+  {
+   "kind": "family",
+   "name": "fx",
+   "precision": 0.6611570247933884,
+   "recall": 0.5610098176718092,
+   "threshold": 0.753,
+   "trainPositive": 4568,
+   "testPositive": 713,
+   "uses": [],
+   "tag": [
+    "source",
+    "sound effect"
+   ],
+   "ships": true,
+   "maybe": true
+  },
+  {
+   "kind": "family",
+   "name": "vocal",
+   "precision": 0.6661828737300436,
+   "recall": 0.6219512195121951,
+   "threshold": 0.5,
+   "trainPositive": 1164,
+   "testPositive": 738,
+   "uses": [],
+   "tag": [
+    "source",
+    "voice"
+   ],
+   "ships": true,
+   "maybe": true
+  },
+  {
+   "kind": "label",
+   "name": "ambient drone",
+   "precision": 1.0,
+   "recall": 0.8969072164948454,
+   "threshold": 0.957,
+   "trainPositive": 289,
+   "testPositive": 97,
+   "uses": [
+    "epidemic"
+   ],
+   "tag": [
+    "production",
+    "ambient drone"
+   ],
+   "ships": true,
+   "maybe": false
+  },
+  {
+   "kind": "label",
+   "name": "choir",
+   "precision": 0.75,
+   "recall": 0.5142857142857142,
+   "threshold": 0.967,
+   "trainPositive": 55,
+   "testPositive": 35,
+   "uses": [],
+   "tag": [
+    "production",
+    "choir"
+   ],
+   "ships": true,
+   "maybe": true
+  },
+  {
+   "kind": "label",
+   "name": "crash cymbal",
+   "precision": 0.8823529411764706,
+   "recall": 0.6756756756756757,
+   "threshold": 0.838,
+   "trainPositive": 888,
+   "testPositive": 111,
+   "uses": [
+    "hiphop"
+   ],
+   "tag": [
+    "production",
+    "crash cymbal"
+   ],
+   "ships": true,
+   "maybe": false
+  },
+  {
+   "kind": "label",
+   "name": "drum fill",
+   "precision": 0.5575221238938053,
+   "recall": 0.6428571428571429,
+   "threshold": 0.909,
+   "trainPositive": 291,
+   "testPositive": 98,
+   "uses": [],
+   "tag": [
+    "production",
+    "drum fill"
+   ],
+   "ships": true,
+   "maybe": true
+  },
+  {
+   "kind": "label",
+   "name": "drum loop",
+   "precision": 0.5620437956204379,
+   "recall": 0.7403846153846154,
+   "threshold": 0.894,
+   "trainPositive": 292,
+   "testPositive": 104,
+   "uses": [],
+   "ships": false,
+   "why": "a stronger head for the same tag ships"
+  },
+  {
+   "kind": "label",
+   "name": "finger snap",
+   "precision": 0.6842105263157895,
+   "recall": 0.582089552238806,
+   "threshold": 0.851,
+   "trainPositive": 116,
+   "testPositive": 67,
+   "uses": [],
+   "tag": [
+    "production",
+    "finger snap"
+   ],
+   "ships": true,
+   "maybe": true
+  },
+  {
+   "kind": "label",
+   "name": "hi-hat loop",
+   "precision": 0.7,
+   "recall": 0.9130434782608695,
+   "threshold": 0.745,
+   "trainPositive": 353,
+   "testPositive": 46,
+   "uses": [],
+   "tag": [
+    "production",
+    "hi-hat loop"
+   ],
+   "ships": true,
+   "maybe": false
+  },
+  {
+   "kind": "label",
+   "name": "kick",
+   "precision": 0.8191489361702128,
+   "recall": 0.6754385964912281,
+   "threshold": 0.951,
+   "trainPositive": 952,
+   "testPositive": 114,
+   "uses": [],
+   "tag": [
+    "production",
+    "kick"
+   ],
+   "ships": true,
+   "maybe": false
+  },
+  {
+   "kind": "label",
+   "name": "open hi-hat",
+   "precision": 0.6329113924050633,
+   "recall": 0.7299270072992701,
+   "threshold": 0.896,
+   "trainPositive": 551,
+   "testPositive": 137,
+   "uses": [],
+   "tag": [
+    "production",
+    "open hi-hat"
+   ],
+   "ships": true,
+   "maybe": true
+  },
+  {
+   "kind": "label",
+   "name": "percussion loop",
+   "precision": 0.8560606060606061,
+   "recall": 0.7337662337662337,
+   "threshold": 0.881,
+   "trainPositive": 242,
+   "testPositive": 154,
+   "uses": [],
+   "tag": [
+    "production",
+    "percussion loop"
+   ],
+   "ships": true,
+   "maybe": false
+  },
+  {
+   "kind": "label",
+   "name": "reverse effect",
+   "precision": 0.6486486486486487,
+   "recall": 0.7272727272727273,
+   "threshold": 0.894,
+   "trainPositive": 370,
+   "testPositive": 132,
+   "uses": [],
+   "tag": [
+    "production",
+    "reverse effect"
+   ],
+   "ships": true,
+   "maybe": true
+  },
+  {
+   "kind": "label",
+   "name": "ride cymbal",
+   "precision": 0.794392523364486,
+   "recall": 0.8173076923076923,
+   "threshold": 0.894,
+   "trainPositive": 291,
+   "testPositive": 104,
+   "uses": [],
+   "tag": [
+    "production",
+    "ride cymbal"
+   ],
+   "ships": true,
+   "maybe": false
+  },
+  {
+   "kind": "label",
+   "name": "shaker",
+   "precision": 0.810126582278481,
+   "recall": 0.6464646464646465,
+   "threshold": 0.909,
+   "trainPositive": 293,
+   "testPositive": 99,
+   "uses": [],
+   "tag": [
+    "production",
+    "shaker"
+   ],
+   "ships": true,
+   "maybe": true
+  },
+  {
+   "kind": "label",
+   "name": "snare",
+   "precision": 0.7283950617283951,
+   "recall": 0.5673076923076923,
+   "threshold": 0.95,
+   "trainPositive": 937,
+   "testPositive": 104,
+   "uses": [
+    "freesound"
+   ],
+   "tag": [
+    "production",
+    "snare"
+   ],
+   "ships": true,
+   "maybe": true
+  },
+  {
+   "kind": "label",
+   "name": "stutter effect",
+   "precision": 1.0,
+   "recall": 0.45,
+   "threshold": 0.984,
+   "trainPositive": 79,
+   "testPositive": 20,
+   "uses": [
+    "epidemic"
+   ],
+   "ships": false,
+   "why": "below 50% on held-out brands"
+  },
+  {
+   "kind": "label",
+   "name": "sub bass",
+   "precision": 0.7522935779816514,
+   "recall": 0.7735849056603774,
+   "threshold": 0.951,
+   "trainPositive": 392,
+   "testPositive": 106,
+   "uses": [],
+   "tag": [
+    "production",
+    "sub bass"
+   ],
+   "ships": true,
+   "maybe": false
+  },
+  {
+   "kind": "label",
+   "name": "synth arpeggio",
+   "precision": 0.63125,
+   "recall": 0.7651515151515151,
+   "threshold": 0.894,
+   "trainPositive": 256,
+   "testPositive": 132,
+   "uses": [],
+   "tag": [
+    "production",
+    "synth arpeggio"
+   ],
+   "ships": true,
+   "maybe": true
+  },
+  {
+   "kind": "label",
+   "name": "tom",
+   "precision": 0.6391752577319587,
+   "recall": 0.5254237288135594,
+   "threshold": 0.898,
+   "trainPositive": 275,
+   "testPositive": 118,
+   "uses": [],
+   "tag": [
+    "production",
+    "tom"
+   ],
+   "ships": true,
+   "maybe": true
+  },
+  {
+   "kind": "label",
+   "name": "top loop",
+   "precision": 0.9215686274509803,
+   "recall": 0.9494949494949495,
+   "threshold": 0.899,
+   "trainPositive": 268,
+   "testPositive": 99,
+   "uses": [],
+   "tag": [
+    "production",
+    "top loop"
+   ],
+   "ships": true,
+   "maybe": false
+  },
+  {
+   "kind": "label",
+   "name": "vinyl scratch",
+   "precision": 1.0,
+   "recall": 0.6046511627906976,
+   "threshold": 0.978,
+   "trainPositive": 141,
+   "testPositive": 43,
+   "uses": [
+    "freesound",
+    "epidemic"
+   ],
+   "tag": [
+    "production",
+    "vinyl scratch"
+   ],
+   "ships": true,
+   "maybe": true
+  },
+  {
+   "kind": "label",
+   "name": "vocal ad-lib",
+   "precision": 0.8285714285714286,
+   "recall": 1.0,
+   "threshold": 0.562,
+   "trainPositive": 339,
+   "testPositive": 58,
+   "uses": [],
+   "tag": [
+    "production",
+    "vocal ad-lib"
+   ],
+   "ships": true,
+   "maybe": false
+  },
+  {
+   "kind": "label",
+   "name": "vocal chant",
+   "precision": 0.7294117647058823,
+   "recall": 0.8051948051948052,
+   "threshold": 0.67,
+   "trainPositive": 313,
+   "testPositive": 77,
+   "uses": [],
+   "tag": [
+    "production",
+    "vocal chant"
+   ],
+   "ships": true,
+   "maybe": false
+  },
+  {
+   "kind": "label",
+   "name": "vocal chops",
+   "precision": 0.4956521739130435,
+   "recall": 0.7307692307692307,
+   "threshold": 0.904,
+   "trainPositive": 115,
+   "testPositive": 78,
+   "uses": [],
+   "ships": false,
+   "why": "below 50% on held-out brands"
+  },
+  {
+   "kind": "label",
+   "name": "whoosh",
+   "precision": 1.0,
+   "recall": 0.7733333333333333,
+   "threshold": 0.941,
+   "trainPositive": 564,
+   "testPositive": 150,
+   "uses": [
+    "freesound",
+    "epidemic"
+   ],
+   "tag": [
+    "production",
+    "whoosh"
+   ],
+   "ships": true,
+   "maybe": false
+  }
+ ],
+ "updates": [
+  {
+   "label": "sub bass",
+   "from": "round6 cleaned Freesound",
+   "precision": 0.7870370370370371,
+   "recall": 0.8018867924528302,
+   "replaces": "round4 75%/77%"
+  },
+  {
+   "label": "distorted",
+   "group": "character",
+   "maybe": true,
+   "from": "Freesound character folders, held out by uploader",
+   "precision": 1.0,
+   "recall": 0.6176470588235294
+  },
+  {
+   "label": "reverberant",
+   "group": "character",
+   "maybe": true,
+   "from": "Freesound character folders, held out by uploader",
+   "precision": 0.9333333333333333,
+   "recall": 0.56
+  }
+ ]
+}

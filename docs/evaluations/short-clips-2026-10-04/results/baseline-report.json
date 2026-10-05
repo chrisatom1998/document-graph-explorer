@@ -1,0 +1,1400 @@
+{
+ "split": "test",
+ "items": 1445,
+ "analysed": 1445,
+ "families": 614,
+ "target": 0.7,
+ "displayedIncludingMaybe": {
+  "effect:distorted": {
+   "precision": 0.148,
+   "recall": 0.082,
+   "precisionCI95": [
+    0.0,
+    0.462
+   ],
+   "recallCI95": [
+    0.0,
+    0.293
+   ],
+   "truePositives": 4,
+   "falseDetections": 23,
+   "misses": 45,
+   "positives": 49,
+   "negatives": 173,
+   "positiveFamilies": 10,
+   "negativeFamilies": 31,
+   "detections": 27,
+   "abstainedOnPositives": 45,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "effect:reverberant": {
+   "precision": 0.167,
+   "recall": 0.013,
+   "precisionCI95": [
+    0.0,
+    1.0
+   ],
+   "recallCI95": [
+    0.0,
+    0.042
+   ],
+   "truePositives": 1,
+   "falseDetections": 5,
+   "misses": 77,
+   "positives": 78,
+   "negatives": 144,
+   "positiveFamilies": 13,
+   "negativeFamilies": 24,
+   "detections": 6,
+   "abstainedOnPositives": 77,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "musical:key": {
+   "precision": null,
+   "recall": null,
+   "precisionCI95": null,
+   "recallCI95": null,
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 0,
+   "positives": 0,
+   "negatives": 333,
+   "positiveFamilies": 0,
+   "negativeFamilies": 52,
+   "detections": 0,
+   "abstainedOnPositives": 0,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "musical:tempo": {
+   "precision": 0.0,
+   "recall": null,
+   "precisionCI95": [
+    0.0,
+    0.0
+   ],
+   "recallCI95": null,
+   "truePositives": 0,
+   "falseDetections": 1,
+   "misses": 0,
+   "positives": 0,
+   "negatives": 333,
+   "positiveFamilies": 0,
+   "negativeFamilies": 52,
+   "detections": 1,
+   "abstainedOnPositives": 0,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:bass hit": {
+   "precision": 0.778,
+   "recall": 0.13,
+   "precisionCI95": [
+    0.4,
+    1.0
+   ],
+   "recallCI95": [
+    0.038,
+    0.231
+   ],
+   "truePositives": 7,
+   "falseDetections": 2,
+   "misses": 47,
+   "positives": 54,
+   "negatives": 1203,
+   "positiveFamilies": 17,
+   "negativeFamilies": 560,
+   "detections": 9,
+   "abstainedOnPositives": 47,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:beatbox": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 111,
+   "positives": 111,
+   "negatives": 0,
+   "positiveFamilies": 15,
+   "negativeFamilies": 0,
+   "detections": 0,
+   "abstainedOnPositives": 111,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:clap": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 15,
+   "positives": 15,
+   "negatives": 1313,
+   "positiveFamilies": 9,
+   "negativeFamilies": 573,
+   "detections": 0,
+   "abstainedOnPositives": 15,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:cowbell": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 21,
+   "positives": 21,
+   "negatives": 1361,
+   "positiveFamilies": 12,
+   "negativeFamilies": 590,
+   "detections": 0,
+   "abstainedOnPositives": 21,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:cymbal": {
+   "precision": 0.179,
+   "recall": 0.909,
+   "precisionCI95": [
+    0.039,
+    0.345
+   ],
+   "recallCI95": [
+    0.6,
+    1.0
+   ],
+   "truePositives": 10,
+   "falseDetections": 46,
+   "misses": 1,
+   "positives": 11,
+   "negatives": 1243,
+   "positiveFamilies": 6,
+   "negativeFamilies": 575,
+   "detections": 56,
+   "abstainedOnPositives": 1,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:finger snap": {
+   "precision": 0.789,
+   "recall": 0.882,
+   "precisionCI95": [
+    0.571,
+    1.0
+   ],
+   "recallCI95": [
+    0.667,
+    1.0
+   ],
+   "truePositives": 15,
+   "falseDetections": 4,
+   "misses": 2,
+   "positives": 17,
+   "negatives": 1388,
+   "positiveFamilies": 16,
+   "negativeFamilies": 592,
+   "detections": 19,
+   "abstainedOnPositives": 2,
+   "missesNotAnalysed": 0,
+   "meetsTarget": true
+  },
+  "role:hi-hat": {
+   "precision": 1.0,
+   "recall": 0.867,
+   "precisionCI95": [
+    1.0,
+    1.0
+   ],
+   "recallCI95": [
+    0.762,
+    0.95
+   ],
+   "truePositives": 52,
+   "falseDetections": 0,
+   "misses": 8,
+   "positives": 60,
+   "negatives": 1213,
+   "positiveFamilies": 37,
+   "negativeFamilies": 568,
+   "detections": 52,
+   "abstainedOnPositives": 8,
+   "missesNotAnalysed": 0,
+   "meetsTarget": true
+  },
+  "role:impact": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 113,
+   "positives": 113,
+   "negatives": 1061,
+   "positiveFamilies": 68,
+   "negativeFamilies": 475,
+   "detections": 0,
+   "abstainedOnPositives": 113,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:kick": {
+   "precision": 1.0,
+   "recall": 0.364,
+   "precisionCI95": [
+    1.0,
+    1.0
+   ],
+   "recallCI95": [
+    0.182,
+    0.538
+   ],
+   "truePositives": 12,
+   "falseDetections": 0,
+   "misses": 21,
+   "positives": 33,
+   "negatives": 1167,
+   "positiveFamilies": 23,
+   "negativeFamilies": 552,
+   "detections": 12,
+   "abstainedOnPositives": 21,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:loop": {
+   "precision": 0.0,
+   "recall": null,
+   "precisionCI95": [
+    0.0,
+    0.0
+   ],
+   "recallCI95": null,
+   "truePositives": 0,
+   "falseDetections": 2,
+   "misses": 0,
+   "positives": 0,
+   "negatives": 333,
+   "positiveFamilies": 0,
+   "negativeFamilies": 52,
+   "detections": 2,
+   "abstainedOnPositives": 0,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:percussion hit": {
+   "precision": 0.951,
+   "recall": 0.675,
+   "precisionCI95": [
+    0.906,
+    0.983
+   ],
+   "recallCI95": [
+    0.551,
+    0.787
+   ],
+   "truePositives": 156,
+   "falseDetections": 8,
+   "misses": 75,
+   "positives": 231,
+   "negatives": 793,
+   "positiveFamilies": 94,
+   "negativeFamilies": 389,
+   "detections": 164,
+   "abstainedOnPositives": 75,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:shaker": {
+   "precision": 0.8,
+   "recall": 1.0,
+   "precisionCI95": [
+    0.5,
+    1.0
+   ],
+   "recallCI95": [
+    1.0,
+    1.0
+   ],
+   "truePositives": 8,
+   "falseDetections": 2,
+   "misses": 0,
+   "positives": 8,
+   "negatives": 1335,
+   "positiveFamilies": 6,
+   "negativeFamilies": 587,
+   "detections": 10,
+   "abstainedOnPositives": 0,
+   "missesNotAnalysed": 0,
+   "meetsTarget": true
+  },
+  "role:snare": {
+   "precision": 0.929,
+   "recall": 0.605,
+   "precisionCI95": [
+    0.808,
+    1.0
+   ],
+   "recallCI95": [
+    0.405,
+    0.773
+   ],
+   "truePositives": 26,
+   "falseDetections": 2,
+   "misses": 17,
+   "positives": 43,
+   "negatives": 1202,
+   "positiveFamilies": 28,
+   "negativeFamilies": 568,
+   "detections": 28,
+   "abstainedOnPositives": 17,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:synth hit": {
+   "precision": 1.0,
+   "recall": 0.139,
+   "precisionCI95": [
+    1.0,
+    1.0
+   ],
+   "recallCI95": [
+    0.028,
+    0.25
+   ],
+   "truePositives": 5,
+   "falseDetections": 0,
+   "misses": 31,
+   "positives": 36,
+   "negatives": 219,
+   "positiveFamilies": 6,
+   "negativeFamilies": 33,
+   "detections": 5,
+   "abstainedOnPositives": 31,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:tambourine": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 23,
+   "positives": 23,
+   "negatives": 1330,
+   "positiveFamilies": 10,
+   "negativeFamilies": 586,
+   "detections": 0,
+   "abstainedOnPositives": 23,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:vinyl scratch": {
+   "precision": 0.842,
+   "recall": 0.552,
+   "precisionCI95": [
+    0.565,
+    1.0
+   ],
+   "recallCI95": [
+    0.3,
+    0.774
+   ],
+   "truePositives": 16,
+   "falseDetections": 3,
+   "misses": 13,
+   "positives": 29,
+   "negatives": 1381,
+   "positiveFamilies": 19,
+   "negativeFamilies": 586,
+   "detections": 19,
+   "abstainedOnPositives": 13,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:vocal one-shot": {
+   "precision": 0.842,
+   "recall": 0.591,
+   "precisionCI95": [
+    0.777,
+    0.898
+   ],
+   "recallCI95": [
+    0.497,
+    0.696
+   ],
+   "truePositives": 218,
+   "falseDetections": 41,
+   "misses": 151,
+   "positives": 369,
+   "negatives": 974,
+   "positiveFamilies": 170,
+   "negativeFamilies": 423,
+   "detections": 259,
+   "abstainedOnPositives": 151,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:whoosh": {
+   "precision": 0.95,
+   "recall": 0.704,
+   "precisionCI95": [
+    0.879,
+    1.0
+   ],
+   "recallCI95": [
+    0.577,
+    0.817
+   ],
+   "truePositives": 38,
+   "falseDetections": 2,
+   "misses": 16,
+   "positives": 54,
+   "negatives": 1355,
+   "positiveFamilies": 42,
+   "negativeFamilies": 573,
+   "detections": 40,
+   "abstainedOnPositives": 16,
+   "missesNotAnalysed": 0,
+   "meetsTarget": true
+  },
+  "source:bass guitar": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 12,
+   "positives": 12,
+   "negatives": 1269,
+   "positiveFamilies": 10,
+   "negativeFamilies": 573,
+   "detections": 0,
+   "abstainedOnPositives": 12,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "source:brass": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 41,
+   "positives": 41,
+   "negatives": 1275,
+   "positiveFamilies": 10,
+   "negativeFamilies": 584,
+   "detections": 0,
+   "abstainedOnPositives": 41,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "source:drums": {
+   "precision": 0.786,
+   "recall": 0.104,
+   "precisionCI95": [
+    0.594,
+    0.935
+   ],
+   "recallCI95": [
+    0.057,
+    0.161
+   ],
+   "truePositives": 22,
+   "falseDetections": 6,
+   "misses": 190,
+   "positives": 212,
+   "negatives": 909,
+   "positiveFamilies": 87,
+   "negativeFamilies": 407,
+   "detections": 28,
+   "abstainedOnPositives": 190,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "source:guitar": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 70,
+   "positives": 70,
+   "negatives": 1359,
+   "positiveFamilies": 31,
+   "negativeFamilies": 588,
+   "detections": 0,
+   "abstainedOnPositives": 70,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "source:piano": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 18,
+   "positives": 18,
+   "negatives": 1255,
+   "positiveFamilies": 4,
+   "negativeFamilies": 579,
+   "detections": 0,
+   "abstainedOnPositives": 18,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "source:synthesizer": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "precisionCI95": [
+    0.0,
+    0.0
+   ],
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 3,
+   "misses": 42,
+   "positives": 42,
+   "negatives": 1225,
+   "positiveFamilies": 7,
+   "negativeFamilies": 561,
+   "detections": 3,
+   "abstainedOnPositives": 42,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "source:voice": {
+   "precision": 0.48,
+   "recall": 0.257,
+   "precisionCI95": [
+    0.381,
+    0.581
+   ],
+   "recallCI95": [
+    0.2,
+    0.323
+   ],
+   "truePositives": 95,
+   "falseDetections": 103,
+   "misses": 274,
+   "positives": 369,
+   "negatives": 974,
+   "positiveFamilies": 170,
+   "negativeFamilies": 423,
+   "detections": 198,
+   "abstainedOnPositives": 274,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  }
+ },
+ "displayedWithoutMaybe": {
+  "effect:distorted": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 49,
+   "positives": 49,
+   "negatives": 173,
+   "positiveFamilies": 10,
+   "negativeFamilies": 31,
+   "detections": 0,
+   "abstainedOnPositives": 49,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "effect:reverberant": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 78,
+   "positives": 78,
+   "negatives": 144,
+   "positiveFamilies": 13,
+   "negativeFamilies": 24,
+   "detections": 0,
+   "abstainedOnPositives": 78,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "musical:key": {
+   "precision": null,
+   "recall": null,
+   "precisionCI95": null,
+   "recallCI95": null,
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 0,
+   "positives": 0,
+   "negatives": 333,
+   "positiveFamilies": 0,
+   "negativeFamilies": 52,
+   "detections": 0,
+   "abstainedOnPositives": 0,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "musical:tempo": {
+   "precision": 0.0,
+   "recall": null,
+   "precisionCI95": [
+    0.0,
+    0.0
+   ],
+   "recallCI95": null,
+   "truePositives": 0,
+   "falseDetections": 1,
+   "misses": 0,
+   "positives": 0,
+   "negatives": 333,
+   "positiveFamilies": 0,
+   "negativeFamilies": 52,
+   "detections": 1,
+   "abstainedOnPositives": 0,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:bass hit": {
+   "precision": 0.778,
+   "recall": 0.13,
+   "precisionCI95": [
+    0.4,
+    1.0
+   ],
+   "recallCI95": [
+    0.038,
+    0.231
+   ],
+   "truePositives": 7,
+   "falseDetections": 2,
+   "misses": 47,
+   "positives": 54,
+   "negatives": 1203,
+   "positiveFamilies": 17,
+   "negativeFamilies": 560,
+   "detections": 9,
+   "abstainedOnPositives": 47,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:beatbox": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 111,
+   "positives": 111,
+   "negatives": 0,
+   "positiveFamilies": 15,
+   "negativeFamilies": 0,
+   "detections": 0,
+   "abstainedOnPositives": 111,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:clap": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 15,
+   "positives": 15,
+   "negatives": 1313,
+   "positiveFamilies": 9,
+   "negativeFamilies": 573,
+   "detections": 0,
+   "abstainedOnPositives": 15,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:cowbell": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 21,
+   "positives": 21,
+   "negatives": 1361,
+   "positiveFamilies": 12,
+   "negativeFamilies": 590,
+   "detections": 0,
+   "abstainedOnPositives": 21,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:cymbal": {
+   "precision": 0.179,
+   "recall": 0.909,
+   "precisionCI95": [
+    0.039,
+    0.345
+   ],
+   "recallCI95": [
+    0.6,
+    1.0
+   ],
+   "truePositives": 10,
+   "falseDetections": 46,
+   "misses": 1,
+   "positives": 11,
+   "negatives": 1243,
+   "positiveFamilies": 6,
+   "negativeFamilies": 575,
+   "detections": 56,
+   "abstainedOnPositives": 1,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:finger snap": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 17,
+   "positives": 17,
+   "negatives": 1388,
+   "positiveFamilies": 16,
+   "negativeFamilies": 592,
+   "detections": 0,
+   "abstainedOnPositives": 17,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:hi-hat": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 60,
+   "positives": 60,
+   "negatives": 1213,
+   "positiveFamilies": 37,
+   "negativeFamilies": 568,
+   "detections": 0,
+   "abstainedOnPositives": 60,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:impact": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 113,
+   "positives": 113,
+   "negatives": 1061,
+   "positiveFamilies": 68,
+   "negativeFamilies": 475,
+   "detections": 0,
+   "abstainedOnPositives": 113,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:kick": {
+   "precision": 1.0,
+   "recall": 0.364,
+   "precisionCI95": [
+    1.0,
+    1.0
+   ],
+   "recallCI95": [
+    0.182,
+    0.538
+   ],
+   "truePositives": 12,
+   "falseDetections": 0,
+   "misses": 21,
+   "positives": 33,
+   "negatives": 1167,
+   "positiveFamilies": 23,
+   "negativeFamilies": 552,
+   "detections": 12,
+   "abstainedOnPositives": 21,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:loop": {
+   "precision": null,
+   "recall": null,
+   "precisionCI95": null,
+   "recallCI95": null,
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 0,
+   "positives": 0,
+   "negatives": 333,
+   "positiveFamilies": 0,
+   "negativeFamilies": 52,
+   "detections": 0,
+   "abstainedOnPositives": 0,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:percussion hit": {
+   "precision": 0.961,
+   "recall": 0.641,
+   "precisionCI95": [
+    0.923,
+    0.987
+   ],
+   "recallCI95": [
+    0.523,
+    0.752
+   ],
+   "truePositives": 148,
+   "falseDetections": 6,
+   "misses": 83,
+   "positives": 231,
+   "negatives": 793,
+   "positiveFamilies": 94,
+   "negativeFamilies": 389,
+   "detections": 154,
+   "abstainedOnPositives": 83,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:shaker": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 8,
+   "positives": 8,
+   "negatives": 1335,
+   "positiveFamilies": 6,
+   "negativeFamilies": 587,
+   "detections": 0,
+   "abstainedOnPositives": 8,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:snare": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 43,
+   "positives": 43,
+   "negatives": 1202,
+   "positiveFamilies": 28,
+   "negativeFamilies": 568,
+   "detections": 0,
+   "abstainedOnPositives": 43,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:synth hit": {
+   "precision": 1.0,
+   "recall": 0.139,
+   "precisionCI95": [
+    1.0,
+    1.0
+   ],
+   "recallCI95": [
+    0.028,
+    0.25
+   ],
+   "truePositives": 5,
+   "falseDetections": 0,
+   "misses": 31,
+   "positives": 36,
+   "negatives": 219,
+   "positiveFamilies": 6,
+   "negativeFamilies": 33,
+   "detections": 5,
+   "abstainedOnPositives": 31,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:tambourine": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 23,
+   "positives": 23,
+   "negatives": 1330,
+   "positiveFamilies": 10,
+   "negativeFamilies": 586,
+   "detections": 0,
+   "abstainedOnPositives": 23,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:vinyl scratch": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 29,
+   "positives": 29,
+   "negatives": 1381,
+   "positiveFamilies": 19,
+   "negativeFamilies": 586,
+   "detections": 0,
+   "abstainedOnPositives": 29,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:vocal one-shot": {
+   "precision": 0.891,
+   "recall": 0.577,
+   "precisionCI95": [
+    0.842,
+    0.934
+   ],
+   "recallCI95": [
+    0.485,
+    0.676
+   ],
+   "truePositives": 213,
+   "falseDetections": 26,
+   "misses": 156,
+   "positives": 369,
+   "negatives": 974,
+   "positiveFamilies": 170,
+   "negativeFamilies": 423,
+   "detections": 239,
+   "abstainedOnPositives": 156,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "role:whoosh": {
+   "precision": 0.95,
+   "recall": 0.704,
+   "precisionCI95": [
+    0.879,
+    1.0
+   ],
+   "recallCI95": [
+    0.577,
+    0.817
+   ],
+   "truePositives": 38,
+   "falseDetections": 2,
+   "misses": 16,
+   "positives": 54,
+   "negatives": 1355,
+   "positiveFamilies": 42,
+   "negativeFamilies": 573,
+   "detections": 40,
+   "abstainedOnPositives": 16,
+   "missesNotAnalysed": 0,
+   "meetsTarget": true
+  },
+  "source:bass guitar": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 12,
+   "positives": 12,
+   "negatives": 1269,
+   "positiveFamilies": 10,
+   "negativeFamilies": 573,
+   "detections": 0,
+   "abstainedOnPositives": 12,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "source:brass": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 41,
+   "positives": 41,
+   "negatives": 1275,
+   "positiveFamilies": 10,
+   "negativeFamilies": 584,
+   "detections": 0,
+   "abstainedOnPositives": 41,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "source:drums": {
+   "precision": 0.812,
+   "recall": 0.061,
+   "precisionCI95": [
+    0.583,
+    1.0
+   ],
+   "recallCI95": [
+    0.027,
+    0.104
+   ],
+   "truePositives": 13,
+   "falseDetections": 3,
+   "misses": 199,
+   "positives": 212,
+   "negatives": 909,
+   "positiveFamilies": 87,
+   "negativeFamilies": 407,
+   "detections": 16,
+   "abstainedOnPositives": 199,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "source:guitar": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 70,
+   "positives": 70,
+   "negatives": 1359,
+   "positiveFamilies": 31,
+   "negativeFamilies": 588,
+   "detections": 0,
+   "abstainedOnPositives": 70,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "source:piano": {
+   "precision": null,
+   "recall": 0.0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 18,
+   "positives": 18,
+   "negatives": 1255,
+   "positiveFamilies": 4,
+   "negativeFamilies": 579,
+   "detections": 0,
+   "abstainedOnPositives": 18,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "source:synthesizer": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "precisionCI95": [
+    0.0,
+    0.0
+   ],
+   "recallCI95": [
+    0.0,
+    0.0
+   ],
+   "truePositives": 0,
+   "falseDetections": 3,
+   "misses": 42,
+   "positives": 42,
+   "negatives": 1225,
+   "positiveFamilies": 7,
+   "negativeFamilies": 561,
+   "detections": 3,
+   "abstainedOnPositives": 42,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  },
+  "source:voice": {
+   "precision": 0.486,
+   "recall": 0.046,
+   "precisionCI95": [
+    0.296,
+    0.686
+   ],
+   "recallCI95": [
+    0.024,
+    0.074
+   ],
+   "truePositives": 17,
+   "falseDetections": 18,
+   "misses": 352,
+   "positives": 369,
+   "negatives": 974,
+   "positiveFamilies": 170,
+   "negativeFamilies": 423,
+   "detections": 35,
+   "abstainedOnPositives": 352,
+   "missesNotAnalysed": 0,
+   "meetsTarget": false
+  }
+ },
+ "musical": {
+  "keyShown": 0,
+  "tempoShown": 1,
+  "singleEvents": 333,
+  "pitchNotes": 222,
+  "pitchShown": 98,
+  "pitchCorrect": 98,
+  "pitchWrong": 0,
+  "pitchPrecision": 1.0,
+  "pitchRecall": 0.441
+ },
+ "slicesIncludingMaybe": {
+  "1.0-2.25 s": {
+   "found": 385,
+   "positives": 970,
+   "recall": 0.397
+  },
+  "<=1.0 s": {
+   "found": 300,
+   "positives": 1149,
+   "recall": 0.261
+  },
+  "avp": {
+   "found": 10,
+   "positives": 333,
+   "recall": 0.03
+  },
+  "fsd50k": {
+   "found": 654,
+   "positives": 1485,
+   "recall": 0.44
+  },
+  "normal level": {
+   "found": 609,
+   "positives": 1671,
+   "recall": 0.364
+  },
+  "nsynth": {
+   "found": 21,
+   "positives": 301,
+   "recall": 0.07
+  },
+  "quiet": {
+   "found": 76,
+   "positives": 448,
+   "recall": 0.17
+  }
+ },
+ "clipsWithNoScoredTag": 633,
+ "run": {
+  "split": "test",
+  "clips": 1445,
+  "timings": [
+   {
+    "clips": 60,
+    "seconds": 336.058
+   },
+   {
+    "clips": 60,
+    "seconds": 261.981
+   },
+   {
+    "clips": 60,
+    "seconds": 261.357
+   },
+   {
+    "clips": 60,
+    "seconds": 245.673
+   },
+   {
+    "clips": 60,
+    "seconds": 209.075
+   },
+   {
+    "clips": 60,
+    "seconds": 222.684
+   },
+   {
+    "clips": 60,
+    "seconds": 196.521
+   },
+   {
+    "clips": 60,
+    "seconds": 201.753
+   },
+   {
+    "clips": 60,
+    "seconds": 254.212
+   },
+   {
+    "clips": 60,
+    "seconds": 264.317
+   },
+   {
+    "clips": 60,
+    "seconds": 253.07
+   },
+   {
+    "clips": 60,
+    "seconds": 246.994
+   },
+   {
+    "clips": 60,
+    "seconds": 266.553
+   },
+   {
+    "clips": 60,
+    "seconds": 315.149
+   },
+   {
+    "clips": 60,
+    "seconds": 319.009
+   },
+   {
+    "clips": 60,
+    "seconds": 254.929
+   },
+   {
+    "clips": 60,
+    "seconds": 226.527
+   },
+   {
+    "clips": 60,
+    "seconds": 210.913
+   },
+   {
+    "clips": 60,
+    "seconds": 214.55
+   },
+   {
+    "clips": 60,
+    "seconds": 226.707
+   },
+   {
+    "clips": 60,
+    "seconds": 219.743
+   },
+   {
+    "clips": 60,
+    "seconds": 210.259
+   },
+   {
+    "clips": 60,
+    "seconds": 195.455
+   },
+   {
+    "clips": 60,
+    "seconds": 194.936
+   },
+   {
+    "clips": 5,
+    "seconds": 30.232
+   }
+  ],
+  "pageErrors": [],
+  "at": "2026-10-05T02:01:31.088Z"
+ }
+}

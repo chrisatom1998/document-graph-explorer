@@ -38,7 +38,7 @@ import { rememberWorldOrigin } from '../scene/ingestBirth';
 import { createRecognition } from '../audio/recognition';
 import { supportsFusionInput, fusionConfiguration } from '../audio/fusionRelease';
 
-const music = vi.hoisted(() => ({ analyzeMusic: vi.fn() }));
+const music = vi.hoisted(() => ({ analyzeMusic: vi.fn(), preloadMusicModels: vi.fn(async () => {}) }));
 vi.mock('../audio/analyzeMusic', () => music);
 
 const layout = vi.hoisted(() => ({
@@ -806,7 +806,10 @@ describe('WAV music ingestion', () => {
     expect(name).toBe('uploaded.OGG');
     expect(blob.type).toBe('audio/ogg');
     expect(supportsFusionInput(10, options.mode, blob.type)).toBe(true);
-    expect(supportsFusionInput(9, options.mode, blob.type)).toBe(false);
+    // Any full-mode recording above the policy minimum is scored, whatever the container.
+    expect(supportsFusionInput(9, options.mode, blob.type)).toBe(true);
+    expect(supportsFusionInput(183, options.mode, 'audio/mpeg')).toBe(true);
+    expect(supportsFusionInput(1, options.mode, blob.type)).toBe(false);
     expect(persistence.putOriginalIfMissing).toHaveBeenCalledWith(expect.any(String), name, blob);
   });
 
@@ -970,6 +973,24 @@ describe('WAV music ingestion', () => {
     try { expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.recognition?.status).not.toBe('cancelled'); } finally { release(); }
     await blocker;await enqueueRun(async()=>undefined);
     expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.recognition?.status).toBe('cancelled');
+  });
+  it('invalidates sound links after reviews and preserves authored collisions through full reanalysis', async () => {
+    await ingestFiles([wav('alpha.wav'), wav('beta.wav')]);
+    const ids=documentIds();
+    for(const id of ids)await setAudioDjTags(id,{source:['piano'],production:[],character:['metallic']});
+    expect(useGraphStore.getState().edges.filter(e=>e.kind==='sound')).toHaveLength(1);
+    const selected=useGraphStore.getState().nodes.find(n=>n.id===ids[0])!;
+    useGraphStore.getState().patchNodes(new Map([[selected.id,{audio:{...selected.audio!,recognition:createRecognition(selected.audio!.durationSeconds,'full')}}]]));
+    await setAudioReview(selected.id,'metallic','character','uncertain');
+    expect(useGraphStore.getState().edges.filter(e=>e.kind==='sound')).toHaveLength(0);
+    await setAudioReview(selected.id,'metallic','character','confirmed');
+    expect(useGraphStore.getState().edges.filter(e=>e.kind==='sound')).toHaveLength(1);
+    const automatic=useGraphStore.getState().edges.find(e=>e.kind==='tempo')!;
+    const authored={...automatic,authored:true,weight:.123,evidence:['My saved tempo relationship']};
+    useGraphStore.getState().setEdges(useGraphStore.getState().edges.map(e=>e.id===authored.id?authored:e));
+    persistence.getOriginal.mockResolvedValue({blob:new Blob(['RIFF']),name:'alpha.wav'});
+    await analyzeAudioCorpus(ids);
+    expect(useGraphStore.getState().edges.find(e=>e.id===authored.id)).toEqual(authored);
   });
   it('saves review history and retains it across reanalysis without promoting rejected labels',async()=>{
     await ingestFiles([wav('review.wav')]);

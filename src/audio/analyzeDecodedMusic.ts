@@ -3,13 +3,14 @@ import { MAX_FUSION_WINDOWS, sanitizeFusionIdentity, sanitizeFusionDecisions, un
 import { DjTagEvidence, selectDjTags } from './djTags';
 import { mergeDjTags } from './djClassification';
 import type { MusicDecoder } from './decodeMusic';
-import { jamendoSuggestions, jamendoLabels } from './jamendo';
+import { jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabels } from './jamendo';
 import { InstrumentEvidence, instrumentWindowStarts } from './instrumentEvidence';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, type MusicAnalysis, type MusicAnalysisMode } from './musicTypes';
 import type { InstrumentPredictions } from './instrumentLabels';
 import { DescriptionAccumulator, selectDescriptions, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
+import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { createRecognition, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
@@ -29,6 +30,9 @@ export interface AnalysisOptions {
   onRuntime?: (runtime: { kind: string; backend: string; configuredInferenceThreads: number; effectiveInferenceThreads?: number; inferenceExecuted: boolean }) => void;
   onPreview?: (analysis: MusicAnalysis) => void;
   onPartial?: (analysis: MusicAnalysis) => void;
+  /** Hosts with one retained worker per model family may run the families side by side.
+   * Outputs are still applied in the sequential order, so results do not depend on timing. */
+  concurrentModels?: boolean;
   /** Cancellation-only consumers avoid copying the growing ledger after every window. */
   partialUpdates?: 'all' | 'cancelled';
 }
@@ -69,7 +73,7 @@ export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicR
   }
 }
 
-/** Sequential model jobs share a bounded timeline, but never each other's validity. */
+/** Model jobs share a bounded timeline, but never each other's validity. Evidence is applied in one fixed order. */
 export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
   const check = () => options.signal?.throwIfAborted();
   check();
@@ -137,7 +141,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     }
     result.instrumentScan = { revision: INSTRUMENT_ANALYSIS_REVISION, mode, complete: soundComplete && !cancelled,
       analyzedSeconds: job('ast').analyzedSeconds, windows: job('ast').successful.length };
-    recognition.status = cancelled ? 'cancelled' : ended ? recognition.jobs.every(j => j.status === 'complete') ? 'complete'
+    recognition.status = cancelled ? 'cancelled' : ended ? recognition.jobs.every(j => ['complete','unsupported'].includes(j.status)) ? 'complete'
       : recognition.jobs.some(j => j.successful.length) ? 'partial' : 'failed' : 'running';
     if (ended || cancelled) recognition.endedAt = new Date().toISOString();
     if (cancelled) recognition.cancellationReason = 'Cancelled by user';
@@ -150,7 +154,61 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     }
     check();
   };
-  async function sound(id: 'ast' | 'jamendo' | 'clap', interval: Interval): Promise<{ output: InstrumentPredictions | Record<string, number> | DescriptionScore[]; cacheKey: string; cacheHit: boolean } | undefined> {
+  type SoundId = 'ast' | 'jamendo' | 'clap';
+  type Raw = InstrumentPredictions | Record<string, number> | DescriptionScore[];
+  const concurrent = options.concurrentModels === true;
+  // One FFmpeg instance writes one output file: overlapping section reads must queue.
+  let reading: Promise<unknown> = Promise.resolve();
+  const read = (start: number, seconds: number, rate: number): Promise<Float32Array> => {
+    if (!concurrent) return decoder.read(start, seconds, rate);
+    const next = reading.then(() => decoder.read(start, seconds, rate));
+    reading = next.catch(() => {});
+    return next;
+  };
+  /** Decode and score one window. Touches no shared evidence, so families may overlap. */
+  async function fetchRaw(id: SoundId, interval: Interval, key: string): Promise<{ output: Raw | undefined; cacheHit: boolean }> {
+    let output = cache.get<Raw>(key);
+    const cacheHit = output !== undefined;
+    const preview = options.initialPreview;
+    if (!output && id === 'jamendo' && preview?.start === interval.start && Math.abs(preview.end - interval.end) < 1 / 16000) output = preview.scores;
+    if (!output) {
+      const rate = id === 'clap' ? 48000 : 16000;
+      const samples = await read(interval.start, interval.end - interval.start, rate);
+      check();
+      if (!samples.length || samples.length < Math.round((interval.end - interval.start) * rate) - 1) throw new Error('Audio window could not be fully decoded');
+      const hasAudio = audible(samples);
+      // A whole short clip also goes to the one-shot heads, which read the unchanged 16 kHz audio.
+      const samples16 = id === 'clap' && interval.start === 0 && interval.end >= duration && duration <= SHORT_CLIP_MAX_SECONDS ? await read(0, duration, 16000) : undefined;
+      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
+      if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
+      check(); cache.set(key, output);
+    }
+    return { output, cacheHit };
+  }
+  // Each family scores ahead of the ordered pass below. One window per family is in
+  // flight, and small outputs wait at most MAX_AHEAD windows before they are applied.
+  const MAX_AHEAD = 256;
+  const ahead = new Map<string, ReturnType<typeof fetchRaw>>();
+  const started = new Set<string>();
+  const applied: Record<SoundId, number> = { ast: 0, jamendo: 0, clap: 0 };
+  const wake: Partial<Record<SoundId, () => void>> = {};
+  let ended = false;
+  async function scoreAhead(id: SoundId): Promise<void> {
+    const j = job(id);
+    for (let i = 0; i < j.planned.length; i++) {
+      while (!ended && i - applied[id] >= MAX_AHEAD) await new Promise<void>(resolve => { wake[id] = resolve; });
+      if (ended || stopped.has(id) || j.unsupportedReason || options.signal?.aborted) return;
+      const key = modelCacheKey(fingerprint, j, j.planned[i]);
+      if (started.has(key)) continue;
+      started.add(key);
+      const pending = fetchRaw(id, j.planned[i], key);
+      ahead.set(key, pending);
+      // The ordered pass reports this window's failure; here it only ends the family's lead.
+      try { await pending; } catch { return; }
+    }
+  }
+  const stopAhead = () => { ended = true; for (const id of ['ast','jamendo','clap'] as const) wake[id]?.(); };
+  async function sound(id: SoundId, interval: Interval): Promise<{ output: Raw; cacheKey: string; cacheHit: boolean } | undefined> {
     check();
     if (stopped.has(id) || job(id).unsupportedReason) return;
     const j = job(id); const key = modelCacheKey(fingerprint, j, interval);
@@ -158,20 +216,11 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     j.status = 'running'; j.attempted.push(interval);
     options.onProgress?.(`${id}: ${j.successful.length}/${j.planned.length} windows; ${Math.floor(interval.start)}–${Math.ceil(interval.end)}s of ${Math.ceil(duration)}s`);
     try {
-      let output = cache.get<InstrumentPredictions | Record<string, number> | DescriptionScore[]>(key);
-      const cacheHit = output !== undefined;
-      const preview = options.initialPreview;
-      if (!output && id === 'jamendo' && preview?.start === interval.start && Math.abs(preview.end - interval.end) < 1 / 16000) output = preview.scores;
-      if (!output) {
-        const rate = id === 'clap' ? 48000 : 16000;
-        const samples = await decoder.read(interval.start, interval.end - interval.start, rate);
-        check();
-        if (!samples.length || samples.length < Math.round((interval.end - interval.start) * rate) - 1) throw new Error('Audio window could not be fully decoded');
-        const hasAudio = audible(samples);
-        output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples }, [samples.buffer]);
-        if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
-        check(); cache.set(key, output);
-      }
+      const early = ahead.get(key);
+      ahead.delete(key); started.add(key);
+      let output: Raw | undefined, cacheHit: boolean;
+      try { ({ output, cacheHit } = await (early ?? fetchRaw(id, interval, key))); }
+      finally { applied[id]++; wake[id]?.(); }
       if (!output) throw new Error('Native model returned no output');
       if (id === 'ast') {
         const predictions = output as InstrumentPredictions;
@@ -182,7 +231,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         const scores = output as Record<string, number>;
         for (const label of new Set([...Object.keys(musicScores), ...Object.keys(scores)])) musicScores[label] = ((musicScores[label] ?? 0) * musicCount + (scores[label] ?? 0)) / (musicCount + 1);
         musicCount++;
-        recordEvidence(recognition, id, interval, jamendoLabels(scores));
+        recordEvidence(recognition, id, interval, [...jamendoLabels(scores), ...nsynthLabels(scores)]);
       } else {
         const scores = output as DescriptionScore[];
         descriptions.add(scores);
@@ -208,6 +257,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
       return undefined;
     }
   }
+  const leads = concurrent ? (['ast','jamendo','clap'] as const).map(id => scoreAhead(id).catch(() => {})) : [];
   try {
     if (!options.fusion) await sound('jamendo', job('jamendo').planned[0]);
     refresh();
@@ -219,7 +269,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         const samples: Float32Array[] = [];
         for (const interval of j.planned) {
           check(); j.attempted.push(interval);
-          const sample = await decoder.read(interval.start, interval.end - interval.start, 44100);
+          const sample = await read(interval.start, interval.end - interval.start, 44100);
           if (!sample.length || sample.length < Math.round((interval.end - interval.start) * 44100) - 1) throw new Error('Audio excerpt could not be fully decoded');
           samples.push(sample);
         }
@@ -257,8 +307,10 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
           else if (outputs.size !== 3) window = { ...window, status: 'failed', reason: 'A required native model failed or stopped' };
           else {
             const ast = outputs.get('ast')!.output as InstrumentPredictions;
-            const jamendo = outputs.get('jamendo')!.output as Record<string, number>;
-            const clap = outputs.get('clap')!.output as DescriptionScore[];
+            const jamendo = jamendoInstrumentScores(outputs.get('jamendo')!.output as Record<string, number>);
+            // The scorer's contract is the fixed prompt catalog. Trained-head and reviewed-example
+            // scores ride along in the same output for tagging and are not part of that contract.
+            const clap = (outputs.get('clap')!.output as DescriptionScore[]).filter(d => d.group !== 'dj-learned');
             if (!Object.keys(ast.scores).length || !Object.keys(jamendo).length || !clap.length) {
               window = { ...window, status: 'empty', reason: 'Silent or empty native output; no fusion decision' };
             } else {
@@ -286,10 +338,12 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         for (const interval of job(id).planned) { await sound(id, interval); publish(); if (stopped.has(id)) break; }
       }
     }
+    // A stopped family may still hold one window in flight; let it settle before the decoder closes.
+    stopAhead(); await Promise.all(leads);
     refresh(false, true);
     return result;
   } catch (error) {
     if (options.signal?.aborted) { refresh(true, true); options.onPartial?.(structuredClone(result)); }
     throw error;
-  }
+  } finally { stopAhead(); }
 }

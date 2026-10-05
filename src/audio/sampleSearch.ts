@@ -1,3 +1,4 @@
+import { djReviewAllows, resolvedNonSourceLabels } from './soundReviewPolicy';
 import type { DocNode } from '../model/types';
 import { DJ_CATALOG } from './djTags';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
@@ -19,16 +20,14 @@ export function sampleLabels(node: DocNode): Evidence[] {
   const a = node.audio;
   if (!a) return [];
   const confirmedInstruments = confirmedInstrumentList(a);
-  const tags: Evidence[] = a.confirmedDjTags !== undefined
-    ? [...a.confirmedDjTags.production,...a.confirmedDjTags.character].map(label => ({ label, source: 'confirmed' }))
-    : (a.soundProfile?.djTags ?? []).filter(t=>t.group!=='source'||(confirmedInstruments===undefined&&sourceReviewAllows(a,t.label))).map(t => ({ label: t.label, source: 'estimated' }));
+  const tags: Evidence[] = resolvedNonSourceLabels(a, true).map(({label,source})=>({label,source}));
+  if (a.confirmedDjTags === undefined && confirmedInstruments === undefined) tags.push(...(a.soundProfile?.djTags ?? []).filter(t=>t.group==='source'&&sourceReviewAllows(a,t.label)).map(t=>({label:t.label,source:'estimated' as const})));
   // Confirmed DJ labels supersede inconsistent automatic instrument names too.
   if (confirmedInstruments !== undefined) tags.push(...confirmedInstruments.map(label => ({ label, source: 'confirmed' as const })));
   else if (a.confirmedDjTags === undefined) tags.push(...reliableInstruments(a).map(t => ({ label: t.label, source: 'estimated' as const })));
-  if (a.confirmedDjTags === undefined && confirmedInstruments === undefined) tags.push(...(a.soundProfile?.character ?? []).map(label => ({ label, source: 'estimated' as const })));
   if (a.confirmedDjTags === undefined && confirmedInstruments === undefined && a.copilotProperties) {
     const proposed = a.copilotProperties.tags;
-    tags.push(...[...proposed.source.filter(label=>sourceReviewAllows(a,label)), ...proposed.production, ...proposed.character]
+    tags.push(...proposed.source.filter(label=>sourceReviewAllows(a,label))
       .map(label => ({ label, source: 'suggested' as const })));
   }
   return tags;
@@ -55,6 +54,7 @@ export function searchSamples(nodes: DocNode[], query: SampleQuery, referenceId?
       const isSource = INSTRUMENT_LABELS.some(label=>canonical(label)===wanted)||DJ_CATALOG.some(c=>c.group==='source'&&canonical(c.label)===wanted);
       const latest=a?.soundReviews?.filter(r=>r.dimension==='source'&&canonical(r.labelId)===wanted).at(-1);
       if(isSource && a && (confirmedInstrumentList(a)!==undefined || (latest&&latest.decision!=='confirmed')))return undefined;
+      if (a && (!djReviewAllows(a,'production',wanted)||!djReviewAllows(a,'character',wanted))) return undefined;
       if (!query.confirmedOnly && !(isCategory && a?.confirmedDjTags !== undefined) && normalize(node.title).includes(normalize(term))) return `Filename hint: ${term}`;
       return undefined;
     };

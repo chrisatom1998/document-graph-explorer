@@ -1,0 +1,241 @@
+{
+ "at": "2026-10-05T02:34:43.102182+00:00",
+ "features": [
+  "clapRepeat"
+ ],
+ "target": 0.7,
+ "selection": "uploader/preset/participant-grouped 5-fold out-of-fold predictions over train+calibration; test never read",
+ "categories": {
+  "role:bass hit": {
+   "C": 0.03,
+   "threshold": 0.9598,
+   "precision": 0.705,
+   "recall": 0.391,
+   "f1": 0.503,
+   "pos": 580,
+   "neg": 8072,
+   "posFamilies": 279,
+   "ships": false
+  },
+  "role:clap": {
+   "C": 0.03,
+   "threshold": 0.8712,
+   "precision": 0.935,
+   "recall": 0.935,
+   "f1": 0.935,
+   "pos": 170,
+   "neg": 8973,
+   "posFamilies": 71,
+   "ships": true
+  },
+  "role:cowbell": {
+   "C": 0.03,
+   "threshold": 0.5,
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0,
+   "pos": 26,
+   "neg": 9252,
+   "posFamilies": 3,
+   "ships": true
+  },
+  "role:cymbal": {
+   "C": 0.3,
+   "threshold": 0.9801,
+   "precision": 0.944,
+   "recall": 0.708,
+   "f1": 0.81,
+   "pos": 24,
+   "neg": 9230,
+   "posFamilies": 10,
+   "ships": true
+  },
+  "role:finger snap": {
+   "C": 0.3,
+   "threshold": 0.9595,
+   "precision": 1.0,
+   "recall": 0.976,
+   "f1": 0.988,
+   "pos": 83,
+   "neg": 9228,
+   "posFamilies": 14,
+   "ships": true
+  },
+  "role:hi-hat": {
+   "C": 0.03,
+   "threshold": 0.867,
+   "precision": 0.966,
+   "recall": 0.959,
+   "f1": 0.963,
+   "pos": 148,
+   "neg": 9093,
+   "posFamilies": 30,
+   "ships": true
+  },
+  "role:impact": {
+   "C": 0.3,
+   "threshold": 0.8697,
+   "precision": 0.908,
+   "recall": 0.875,
+   "f1": 0.891,
+   "pos": 408,
+   "neg": 7732,
+   "posFamilies": 168,
+   "ships": true
+  },
+  "role:kick": {
+   "C": 0.03,
+   "threshold": 0.7824,
+   "precision": 0.909,
+   "recall": 0.917,
+   "f1": 0.913,
+   "pos": 120,
+   "neg": 8889,
+   "posFamilies": 58,
+   "ships": true
+  },
+  "role:percussion hit": {
+   "C": 0.03,
+   "threshold": 0.688,
+   "precision": 0.925,
+   "recall": 0.933,
+   "f1": 0.929,
+   "pos": 745,
+   "neg": 7059,
+   "posFamilies": 142,
+   "ships": true
+  },
+  "role:shaker": {
+   "C": 0.03,
+   "threshold": 0.8874,
+   "precision": 0.927,
+   "recall": 0.927,
+   "f1": 0.927,
+   "pos": 82,
+   "neg": 9169,
+   "posFamilies": 26,
+   "ships": true
+  },
+  "role:snare": {
+   "C": 0.03,
+   "threshold": 0.5794,
+   "precision": 0.972,
+   "recall": 0.979,
+   "f1": 0.975,
+   "pos": 141,
+   "neg": 8931,
+   "posFamilies": 45,
+   "ships": true
+  },
+  "role:synth hit": {
+   "C": 0.03,
+   "threshold": 0.5,
+   "precision": 0.996,
+   "recall": 0.993,
+   "f1": 0.995,
+   "pos": 1738,
+   "neg": 55,
+   "posFamilies": 865,
+   "ships": true
+  },
+  "role:tambourine": {
+   "C": 0.3,
+   "threshold": 0.5,
+   "precision": 0.953,
+   "recall": 0.953,
+   "f1": 0.953,
+   "pos": 43,
+   "neg": 9129,
+   "posFamilies": 11,
+   "ships": true
+  },
+  "role:vinyl scratch": {
+   "C": 0.03,
+   "threshold": 0.8286,
+   "precision": 1.0,
+   "recall": 0.936,
+   "f1": 0.967,
+   "pos": 47,
+   "neg": 9214,
+   "posFamilies": 13,
+   "ships": true
+  },
+  "role:whoosh": {
+   "C": 0.03,
+   "threshold": 0.8215,
+   "precision": 0.979,
+   "recall": 0.973,
+   "f1": 0.976,
+   "pos": 146,
+   "neg": 9154,
+   "posFamilies": 38,
+   "ships": true
+  },
+  "source:bass guitar": {
+   "C": 0.03,
+   "threshold": 0.9233,
+   "precision": 0.87,
+   "recall": 0.714,
+   "f1": 0.784,
+   "pos": 28,
+   "neg": 9145,
+   "posFamilies": 9,
+   "ships": true
+  },
+  "source:drums": {
+   "C": 0.3,
+   "threshold": 0.7229,
+   "precision": 0.946,
+   "recall": 0.911,
+   "f1": 0.928,
+   "pos": 696,
+   "neg": 7135,
+   "posFamilies": 147,
+   "ships": true
+  },
+  "source:guitar": {
+   "C": 0.03,
+   "threshold": 0.6598,
+   "precision": 0.853,
+   "recall": 0.974,
+   "f1": 0.909,
+   "pos": 340,
+   "neg": 9175,
+   "posFamilies": 58,
+   "ships": true
+  },
+  "source:piano": {
+   "C": 0.3,
+   "threshold": 0.6352,
+   "precision": 0.947,
+   "recall": 0.929,
+   "f1": 0.938,
+   "pos": 155,
+   "neg": 9246,
+   "posFamilies": 27,
+   "ships": true
+  },
+  "source:synthesizer": {
+   "C": 0.03,
+   "threshold": 0.6664,
+   "precision": 0.986,
+   "recall": 0.989,
+   "f1": 0.988,
+   "pos": 2562,
+   "neg": 6539,
+   "posFamilies": 1276,
+   "ships": true
+  },
+  "source:voice": {
+   "C": 0.03,
+   "threshold": 0.7495,
+   "precision": 0.983,
+   "recall": 0.973,
+   "f1": 0.978,
+   "pos": 1004,
+   "neg": 7903,
+   "posFamilies": 268,
+   "ships": true
+  }
+ }
+}

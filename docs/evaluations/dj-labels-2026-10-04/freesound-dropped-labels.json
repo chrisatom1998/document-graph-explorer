@@ -1,0 +1,284 @@
+{
+ "kept": 1472,
+ "dropped": [
+  {
+   "id": "fs:synth-chord:1169",
+   "labels": [
+    "synth chord"
+   ],
+   "group": "walkerbelm",
+   "name": "swoosh.wav",
+   "why": "flagged by ear"
+  },
+  {
+   "id": "fs:synth-chord:559449",
+   "labels": [
+    "synth chord"
+   ],
+   "group": "Crabflag",
+   "name": "Hard Pad Synth Note_PSS560.aif",
+   "why": "name says atmospheric pad"
+  },
+  {
+   "id": "fs:synth-chord:147580",
+   "labels": [
+    "synth chord"
+   ],
+   "group": ".Andre_Onate",
+   "name": "Angelic Sweep.wav",
+   "why": "name says noise sweep"
+  },
+  {
+   "id": "fs:sub-bass:391401",
+   "labels": [
+    "sub bass"
+   ],
+   "group": "tatimeow",
+   "name": "005_wobble_220",
+   "why": "name says wobble bass"
+  },
+  {
+   "id": "fs:sub-bass:239501",
+   "labels": [
+    "sub bass"
+   ],
+   "group": "luckylittleraven",
+   "name": "sawtooth-wobble-up.wav",
+   "why": "name says wobble bass"
+  },
+  {
+   "id": "fs:sub-bass:239500",
+   "labels": [
+    "sub bass"
+   ],
+   "group": "luckylittleraven",
+   "name": "sawtooth-wobble-down.wav",
+   "why": "name says wobble bass"
+  },
+  {
+   "id": "fs:sub-bass:391403",
+   "labels": [
+    "sub bass"
+   ],
+   "group": "tatimeow",
+   "name": "007_wobble_440_note5",
+   "why": "name says wobble bass"
+  },
+  {
+   "id": "fs:sub-bass:391402",
+   "labels": [
+    "sub bass"
+   ],
+   "group": "tatimeow",
+   "name": "006_wobble_melody",
+   "why": "name says wobble bass"
+  },
+  {
+   "id": "fs:sub-bass:239504",
+   "labels": [
+    "sub bass"
+   ],
+   "group": "luckylittleraven",
+   "name": "angry-sawtooth-wobble-down.wav",
+   "why": "name says wobble bass"
+  },
+  {
+   "id": "fs:sub-bass:160354",
+   "labels": [
+    "sub bass"
+   ],
+   "group": "Snapper4298",
+   "name": "break beat 126 808 boom.wav",
+   "why": "name says 808 bass, breakbeat, impact"
+  },
+  {
+   "id": "fs:wobble-bass:48541",
+   "labels": [
+    "wobble bass"
+   ],
+   "group": "asdftekno",
+   "name": "Freeze 2-noise_2.wav",
+   "why": "name says noise sweep"
+  },
+  {
+   "id": "fs:wobble-bass:115525",
+   "labels": [
+    "wobble bass"
+   ],
+   "group": "Ongitak",
+   "name": "Bass Stab 11.wav",
+   "why": "name says synth stab"
+  },
+  {
+   "id": "fs:wobble-bass:644419",
+   "labels": [
+    "wobble bass"
+   ],
+   "group": "Raining-0n-Satrn",
+   "name": "Tense Atmosphere",
+   "why": "name says atmospheric pad"
+  },
+  {
+   "id": "fs:kick:488468",
+   "labels": [
+    "kick"
+   ],
+   "group": "Logicogonist",
+   "name": "snare Finnish.wav",
+   "why": "name says snare"
+  },
+  {
+   "id": "fs:glitch-effect:801904",
+   "labels": [
+    "glitch effect"
+   ],
+   "group": "CVLTIV8R",
+   "name": "Droid Buzz Drone.wav",
+   "why": "name says atmospheric pad"
+  },
+  {
+   "id": "fs:glitch-effect:801903",
+   "labels": [
+    "glitch effect"
+   ],
+   "group": "CVLTIV8R",
+   "name": "DestructoDroid Noise FX.wav",
+   "why": "name says noise sweep"
+  },
+  {
+   "id": "fs:glitch-effect:170721",
+   "labels": [
+    "glitch effect"
+   ],
+   "group": "Andromadax24",
+   "name": "Woosh_Glitched.01.wav",
+   "why": "name says whoosh"
+  },
+  {
+   "id": "fs:glitch-effect:170720",
+   "labels": [
+    "glitch effect"
+   ],
+   "group": "Andromadax24",
+   "name": "Woosh_Glitched.02.wav",
+   "why": "name says whoosh"
+  },
+  {
+   "id": "fs:glitch-effect:26243",
+   "labels": [
+    "glitch effect"
+   ],
+   "group": "bassmatiker",
+   "name": "DL_BA019_175.wav",
+   "why": "flagged by ear"
+  },
+  {
+   "id": "fs:glitch-effect:245354",
+   "labels": [
+    "glitch effect"
+   ],
+   "group": "Insidebeat",
+   "name": "drummer X remix 3 (original : \"junk break\" by VEXST).wav",
+   "why": "name says breakbeat"
+  },
+  {
+   "id": "fs:glitch-effect:245346",
+   "labels": [
+    "glitch effect"
+   ],
+   "group": "Insidebeat",
+   "name": "drummer x remix2. (original : \"junk break\" by VEXST)wav",
+   "why": "name says breakbeat"
+  },
+  {
+   "id": "fs:synth-stab:128128",
+   "labels": [
+    "synth stab"
+   ],
+   "group": "zgump",
+   "name": "ASBS - House Chord 003.wav",
+   "why": "name says synth chord"
+  },
+  {
+   "id": "fs:synth-stab:128129",
+   "labels": [
+    "synth stab"
+   ],
+   "group": "zgump",
+   "name": "ASBS - House Chord 001.wav",
+   "why": "name says synth chord"
+  },
+  {
+   "id": "fs:synth-stab:415601",
+   "labels": [
+    "synth stab"
+   ],
+   "group": "Teacoma",
+   "name": "Tech House Chord",
+   "why": "name says synth chord"
+  },
+  {
+   "id": "fs:synth-stab:571583",
+   "labels": [
+    "synth stab"
+   ],
+   "group": "tarane468",
+   "name": "B-Minor-Chord II  .wav",
+   "why": "name says synth chord"
+  },
+  {
+   "id": "fs:synth-stab:571573",
+   "labels": [
+    "synth stab"
+   ],
+   "group": "tarane468",
+   "name": "B-Minor Chord.wav",
+   "why": "name says synth chord"
+  },
+  {
+   "id": "fs:synth-stab:128127",
+   "labels": [
+    "synth stab"
+   ],
+   "group": "zgump",
+   "name": "ASBS - House Chord 012.wav",
+   "why": "name says synth chord"
+  },
+  {
+   "id": "fs:synth-stab:415605",
+   "labels": [
+    "synth stab"
+   ],
+   "group": "Teacoma",
+   "name": "Techno Chords",
+   "why": "name says synth chord"
+  },
+  {
+   "id": "fs:808-bass:455640",
+   "labels": [
+    "808 bass"
+   ],
+   "group": "Uberproduktion",
+   "name": "FD808A Rimshot.wav",
+   "why": "name says snare"
+  },
+  {
+   "id": "fs:808-bass:455632",
+   "labels": [
+    "808 bass"
+   ],
+   "group": "Uberproduktion",
+   "name": "FD808A Clap.wav",
+   "why": "name says clap"
+  },
+  {
+   "id": "fs:808-bass:158657",
+   "labels": [
+    "808 bass"
+   ],
+   "group": "stomachache",
+   "name": "808sd5horntail.WAV",
+   "why": "flagged by ear"
+  }
+ ]
+}

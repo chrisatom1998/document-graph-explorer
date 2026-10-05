@@ -1,16 +1,24 @@
+import { resolvedNonSourceLabels } from '../audio/soundReviewPolicy';
+import { confirmedInstrumentList, sourceReviewAllows } from '../audio/instrumentEvidence';
 import { useState } from 'react';
 import { DJ_CATALOG, DJ_LABELS, type ConfirmedDjTags, type DjGroup } from '../audio/djTags';
 import type { DocNode } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 const names: Record<DjGroup,string> = {source:'Source',production:'Production type',character:'Character'};
 function automaticTags(node: DocNode): ConfirmedDjTags {
-  return Object.fromEntries(Object.keys(DJ_LABELS).map(group => [
-    group, node.audio?.soundProfile?.djTags?.filter(tag => tag.group === group).map(tag => tag.label) ?? [],
-  ])) as ConfirmedDjTags;
+  const audio=node.audio;
+  if(!audio)return {source:[],production:[],character:[]};
+  const nonSource=resolvedNonSourceLabels(audio);
+  return {source:confirmedInstrumentList(audio)??audio.soundProfile?.djTags?.filter(t=>t.group==='source'&&sourceReviewAllows(audio,t.label)).map(t=>t.label)??[],
+    production:nonSource.filter(t=>t.group==='production').map(t=>t.label),
+    character:nonSource.filter(t=>t.group==='character').map(t=>t.label)};
 }
 export default function DjTagCorrection({node}:{node:DocNode}) {
+  return <DjTagEditor key={JSON.stringify([node.id,node.audio?.soundReviews])} node={node}/>;
+}
+function DjTagEditor({node}:{node:DocNode}) {
   const phase=useGraphStore(s=>s.phase);
-  const [labels,setLabels]=useState<ConfirmedDjTags>(()=>node.audio?.confirmedDjTags ?? automaticTags(node));
+  const [labels,setLabels]=useState<ConfirmedDjTags>(()=>automaticTags(node));
   const [query,setQuery]=useState('');
   const [busy,setBusy]=useState(false);const [message,setMessage]=useState('');
   const save = async (reset = false) => {

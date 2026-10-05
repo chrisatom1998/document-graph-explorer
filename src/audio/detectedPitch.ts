@@ -15,8 +15,10 @@ export function pitchClassAt(frequency: number): number | undefined {
 
 /** Fallback for sparse tonal clips. A detected pitch is not a musical key. */
 export function detectRepeatedPitch(engine: PitchEngine, samples: Float32Array): MusicAnalysis['detectedPitch'] {
-  if (samples.length < RATE * 1.5) return;
-  const count = Math.min(96, Math.floor((samples.length - FRAME) / 4410) + 1);
+  // A single short note still needs enough analysis frames; denser hops give a 0.5-1.5 s note the same vote count.
+  if (samples.length < RATE * 0.5) return;
+  const hop = samples.length < RATE * 1.5 ? 1024 : 4410;
+  const count = Math.min(96, Math.floor((samples.length - FRAME) / hop) + 1);
   const votes = new Array<number>(12).fill(0);
   const confidence = new Array<number>(12).fill(0);
   let voiced = 0;

@@ -10,6 +10,7 @@
  * search and local chat fall back to exported summaries/topics/keywords.
  */
 
+import { refreshMusicEdges } from '../audio/musicLinks';
 import { EMBED_DIMS } from '../config';
 import {
   layoutAddNodes,
@@ -162,7 +163,7 @@ async function doImportGraphExportData(
   mode: 'shared' | 'imported',
 ): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
   let nodes = data.nodes;
-  let edges = data.edges;
+  let edges = refreshMusicEdges(nodes, data.edges);
 
   // Clean slate first (pipeline owns worker/store/layout teardown).
   const { resetCorpus } = await import('../pipeline/coordinatorLazy');
