@@ -4,11 +4,11 @@ import type { DocNode } from '../model/types';
 import { confidentSoundSummary, SOUND_DISPLAY_POLICY } from '../audio/confidentSoundSummary';
 import type { MusicAnalysis } from '../audio/musicTypes';
 import type { SoundProfile } from '../audio/soundProfile';
+import { soundLabelText } from '../audio/djTags';
 import { fusionPresentation, fusionLabelText } from '../audio/fusionPresentation';
 
 const ORDER = ['source', 'effect', 'character', 'vocal', 'role'] as const;
 const DIMENSION_NAME = { source: 'Sound source', effect: 'Sound type', character: 'Character', vocal: 'Vocal', role: 'Role' };
-const pretty = (label: string) => label.replaceAll('_', ' ');
 
 /** The identified sounds as tags. Explanations live in hover text, not on the page. */
 export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnalysis;mode?:string;node?:Pick<DocNode, 'path' | 'title'>}) {
@@ -27,7 +27,7 @@ export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnal
         ...(l.scores ?? []).map(s => `${s.model} ${s.score.toFixed(2)}`)].join(' · ');
       return <li key={`${l.dimension}:${l.label}`} className={`sound-tag sound-tag--${kind}${possible ? ' sound-tag--possible' : ''}`} data-tier={'tier' in l ? l.tier : undefined} title={hover}>
         {kind === 'confirmed' && <span className="sound-tag__mark" aria-hidden="true">✓</span>}
-        <span>{pretty(l.label)}</span>
+        <span>{soundLabelText(l.label)}</span>
         {kind === 'name' && <span className="sound-tag__note">name</span>}
         {unverified ? <span className="sound-tag__note">unverified</span> : possible ? <span className="sound-tag__note">possible</span> : kind === 'maybe' && <span className="sound-tag__note">maybe</span>}
         <span className="sr-only"> — {hover}</span>
@@ -64,7 +64,7 @@ export function ModelScores({ profile, audio }: { profile?: SoundProfile; audio?
       <h5>{m.model}{!m.complete && <small> · partial</small>}</h5>
       <ul>{[...m.candidates].sort((a, b) => b.score - a.score).slice(0, 4).map(c => <li key={c.label} className={c.untested ? 'model-scores__item--untested' : undefined}
         title={c.untested ? 'This detector failed testing, so it never adds a sound tag' : undefined}>
-        <span className="model-scores__label">{pretty(c.label)}{c.untested && <small className="model-scores__flag"> untested</small>}</span>
+        <span className="model-scores__label">{soundLabelText(c.label)}{c.untested && <small className="model-scores__flag"> untested</small>}</span>
         <span className="model-scores__bar" aria-hidden="true"><span style={{ width: `${Math.max(2, Math.min(100, c.score * 100))}%` }} /></span>
         <span className="model-scores__value">{c.score.toFixed(2)}</span>
       </li>)}</ul>

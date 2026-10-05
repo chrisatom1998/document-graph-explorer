@@ -1,5 +1,5 @@
 import type { ResolvedDjLabel } from '../audio/soundReviewPolicy';
-import { DJ_TYPE_SOURCE, type ConfirmedDjTags, type DjGroup } from '../audio/djTags';
+import { DJ_TYPE_SOURCE, soundLabelText, type ConfirmedDjTags, type DjGroup } from '../audio/djTags';
 import type { SoundProfile } from '../audio/soundProfile';
 type SoundProps = { reviewedLabels?: ResolvedDjLabel[]; confirmedDjTags?: ConfirmedDjTags; preliminary?: boolean; profile: SoundProfile; sourceOverride?: { label: string; origin: string; allowVoice?: boolean } };
 
@@ -97,7 +97,7 @@ export default function SoundIdentification({ summaryOnly = false, ...props }: S
     <dl className="music-feature-grid">
       <div><dt>Sound</dt><dd>{source || 'Not identified yet'}</dd></div>
     </dl>
-    {props.profile.character.length > 0 && !props.confirmedDjTags && <div className="sound-character-chips" aria-label="Estimated sound character">{props.profile.character.slice(0, 3).map(label => <span className="chip" key={label}>{label}</span>)}</div>}
+    {props.profile.character.length > 0 && !props.confirmedDjTags && <div className="sound-character-chips" aria-label="Estimated sound character">{props.profile.character.slice(0, 3).map(label => <span className="chip" key={label}>{soundLabelText(label)}</span>)}</div>}
     {!summaryOnly && <>
       <details><summary>Explanations</summary><SoundExplanation {...props} /></details>
       <SoundModelComparisons profile={props.profile} />
