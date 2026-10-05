@@ -49,8 +49,9 @@ for (const label of all) {
   const rows = reports.map(r => r.labels.get(label));
   // The smallest support across reports, so a label that is thin in any run is still flagged.
   const positives = Math.min(...rows.map(r => r?.positives ?? 0));
-  const first = passes(rows[0]), last = passes(rows.at(-1));
-  const change = reports.length < 2 || first === last ? '' : last ? 'now passes' : 'now fails';
+  // Every later report is compared with the reference, so a pass that comes and goes is not hidden.
+  const reference = passes(rows[0]);
+  const change = rows.slice(1).map((r, i) => (passes(r) === reference ? '' : `${reports[i + 1].name}: ${passes(r) ? 'now passes' : 'now fails'}`)).filter(Boolean).join('; ');
   console.log(`| ${label} | ${positives}${positives < MIN_POSITIVES ? ' (low)' : ''} | ${rows.map(r => `${pct(r?.precision)} / ${pct(r?.recall)}`).join(' | ')} | ${rows.map(r => (passes(r) ? 'yes' : 'no')).join(' | ')} | ${change} |`);
 }
 console.log('');
