@@ -37,12 +37,12 @@ let nextId = 0;
 let idleTimer: ReturnType<typeof setTimeout> | undefined;
 // A terminated worker never answers: fail its request now instead of at the timeout.
 const inFlight = new Map<Worker, (error: Error) => void>();
-function discard(current?: Worker) {
+function discard(current?: Worker, reason = 'Music analysis worker was replaced.') {
   for (const [family, worker] of workers) {
     if (current && current !== worker) continue;
     const fail = inFlight.get(worker);
     inFlight.delete(worker); worker.terminate(); workers.delete(family);
-    fail?.(new Error('Music analysis worker was replaced.'));
+    fail?.(new Error(reason));
   }
 }
 function parkWorker() {
@@ -90,7 +90,7 @@ function warmWorker(worker: Worker, family: string): Promise<void> {
     const done = (error?: Error) => { clearTimeout(timer); worker.removeEventListener('message', onMessage); worker.removeEventListener('error', onError); if (error) reject(error); else resolve(); };
     const onMessage = ({ data }: MessageEvent<{ id: number; warmed?: boolean; error?: string }>) => {
       if (data.id !== id) return;
-      if (data.error === THREADED_RUNTIME_STALLED) { switchToSingleThreadRuntime(); discard(worker); }
+      if (data.error === THREADED_RUNTIME_STALLED) { switchToSingleThreadRuntime(); discard(worker, THREADED_RUNTIME_STALLED); }
       done(data.error ? new Error(data.error) : undefined);
     };
     const onError = () => done(new Error('Music model preload failed.'));
