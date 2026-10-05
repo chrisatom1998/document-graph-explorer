@@ -133,6 +133,13 @@ def run(kind, name):
         pool = ~IS_VAULT & (real if kind == 'instrument' and REAL.__len__() else True)
         extra_test = held_out(f'{kind}:{name}:extra', G[pool & use], pos[pool & use])
         test = use & pool & np.isin(G, sorted(extra_test)); where = 'real recordings' if kind == 'instrument' and REAL else 'extra sources'
+        if kind == 'label' and REAL:
+            # Renders and edited clips are easy to tell apart from their dry versions; prefer a test on
+            # real recordings (FSD50K, FSL10K, tag-mined Freesound) whenever it has enough positives.
+            real_pool = ~IS_VAULT & real
+            real_test = held_out(f'{kind}:{name}:real', G[real_pool & use], pos[real_pool & use])
+            t2 = use & real_pool & np.isin(G, sorted(real_test))
+            if pos[t2].sum() >= MIN_TEST: test, where = t2, 'real recordings'
     train = use & ~test & (IS_VAULT | (pos | ~IS_VAULT))
     r = {'kind': kind, 'name': name, 'testedOn': where, 'trainPositive': int(pos[train].sum()), 'testPositive': int(pos[test].sum())}
     if pos[test].sum() < MIN_TEST or pos[train].sum() < 30 or len(set(G[train & pos])) < 3: return {**r, 'verdict': 'not enough data'}
