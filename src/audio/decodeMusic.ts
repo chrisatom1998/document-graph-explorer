@@ -2,6 +2,10 @@ import type { DecodedMusicSnapshot } from './musicDecodedCache';
 import { instrumentWindowStarts } from './instrumentEvidence';
 const SHORT_CLIP_SECONDS = 30;
 const MODEL_SAMPLE_RATES = [16000, 44100, 48000];
+/** This FFmpeg WASM build runs out of memory after roughly 150 section decodes in one instance (a 5-minute
+ * song crashed with "memory access out of bounds" about 4 minutes in, 2026-10-05). A fresh instance every
+ * 50 decodes stays well clear; the decoded samples are unchanged. */
+const RECYCLE_AFTER_DECODES = 50;
 export interface MusicExcerpts { samples: Float32Array[]; durationSeconds: number; }
 export interface MusicDecoder {
   durationSeconds: number;
@@ -14,7 +18,7 @@ export interface MusicDecoder {
 export async function openMusicDecoder(blob: Blob, name: string, signal?: AbortSignal): Promise<MusicDecoder> {
   const { FFmpeg } = await import('@ffmpeg/ffmpeg');
   signal?.throwIfAborted();
-  const ff = new FFmpeg();
+  let ff = new FFmpeg();
   const decoded = new Map<number, Float32Array>();
   let shortDecode: Promise<void> | undefined;
   let closed = false;
@@ -28,8 +32,21 @@ export async function openMusicDecoder(blob: Blob, name: string, signal?: AbortS
   const base = `${import.meta.env.BASE_URL}audio-runtime/`;
   const input = `input.${name.split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'audio'}`;
   try {
-    await ff.load({ coreURL: `${base}ffmpeg-core.js`, wasmURL: `${base}ffmpeg-core.wasm`, classWorkerURL: `${base}worker.js` });
-    await ff.writeFile(input, new Uint8Array(await blob.arrayBuffer()));
+    const load = (instance = ff) => instance.load({ coreURL: `${base}ffmpeg-core.js`, wasmURL: `${base}ffmpeg-core.wasm`, classWorkerURL: `${base}worker.js` });
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    await load();
+    // writeFile transfers its buffer to the FFmpeg worker; keep the original for a fresh instance.
+    await ff.writeFile(input, bytes.slice());
+    let decodes = 0;
+    const fresh = async () => {
+      const next = new FFmpeg();
+      try {
+        await load(next); await next.writeFile(input, bytes.slice());
+        signal?.throwIfAborted();
+        if (closed) throw new Error('The audio decoder was closed.');
+      } catch (error) { next.terminate(); throw error; }
+      ff.terminate(); ff = next; decodes = 0;
+    };
     await ff.ffprobe(['-v', 'error', '-show_entries', 'format=duration', '-of', 'json', input, '-o', 'probe.json']);
     let durationSeconds = 0;
     let duration = 0;
@@ -99,13 +116,29 @@ export async function openMusicDecoder(blob: Blob, name: string, signal?: AbortS
             return samples.slice(from, Math.max(from, Math.round((start + seconds) * sampleRate)));
           }
         }
-        const readTimer = setTimeout(close, 120_000);
-        try {
+        // Unstick a hung instance for this window only. Closing would take down every model.
+        let readTimer = setTimeout(() => { ff.terminate(); }, 120_000);
+        const section = async () => {
+          decodes++;
           // Flush delayed codec/resampler samples, then crop by sample count.
           // Never pad a genuinely short endpoint.
           const status = await ff.exec(['-ss', String(start), '-i', input, '-t', String(seconds + 1), '-map', '0:a:0', '-vn', '-ac', '1', '-ar', String(sampleRate), '-f', 'f32le', '-y', 'clip.f32'], 90_000);
           if (status !== 0) throw new Error('This audio could not be decoded for music analysis.');
           return await readSamples('clip.f32', Math.round(seconds * sampleRate));
+        };
+        try {
+          try {
+            if (decodes >= RECYCLE_AFTER_DECODES) await fresh();
+            return await section();
+          } catch (error) {
+            signal?.throwIfAborted();
+            if (closed) throw error;
+            // A crashed instance fails every later call; retry this section once on a fresh one.
+            clearTimeout(readTimer);
+            readTimer = setTimeout(() => { ff.terminate(); }, 120_000);
+            await fresh();
+            return await section();
+          }
         } finally { clearTimeout(readTimer); }
       },
     };

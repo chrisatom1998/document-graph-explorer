@@ -39,6 +39,55 @@ it('does not pad a genuinely short decoded tail or hide decoder failures',async(
  mock.exec.mockResolvedValue(1);
  await expect(decoder.read(10,1,16000)).rejects.toThrow('could not be decoded');decoder.close();
 });
+it('restarts FFmpeg every 50 section decodes and retries a crashed section once on a fresh instance',async()=>{
+ mock.readFile.mockResolvedValue('{"format":{"duration":"300"}}');
+ const decoder=await openMusicDecoder(new Blob(['audio']),'song.mp3');
+ const values=new Float32Array(16000);
+ mock.exec.mockResolvedValue(0);mock.readFile.mockResolvedValue(new Uint8Array(values.buffer));
+ for(let i=0;i<50;i++)await decoder.read(i,1,16000);
+ expect(mock.terminate).not.toHaveBeenCalled();
+ await decoder.read(50,1,16000);
+ expect(mock.terminate).toHaveBeenCalledTimes(1);
+ expect(mock.load).toHaveBeenCalledTimes(2);
+ expect(mock.writeFile).toHaveBeenCalledTimes(2);
+ // The WASM build reports its crash as a thrown string.
+ mock.exec.mockRejectedValueOnce('RuntimeError: memory access out of bounds');
+ expect(await decoder.read(60,1,16000)).toHaveLength(16000);
+ expect(mock.terminate).toHaveBeenCalledTimes(2);
+ mock.exec.mockRejectedValue('RuntimeError: memory access out of bounds');
+ await expect(decoder.read(70,1,16000)).rejects.toBe('RuntimeError: memory access out of bounds');
+ decoder.close();
+});
+it('keeps the live decoder when recycle setup fails and retries the section',async()=>{
+ mock.readFile.mockResolvedValue('{"format":{"duration":"300"}}');
+ const decoder=await openMusicDecoder(new Blob(['audio']),'song.mp3');
+ const values=new Float32Array(16000);
+ mock.exec.mockResolvedValue(0);mock.readFile.mockResolvedValue(new Uint8Array(values.buffer));
+ for(let i=0;i<50;i++)await decoder.read(i,1,16000);
+ mock.load.mockRejectedValueOnce(new Error('load failed'));
+ expect(await decoder.read(50,1,16000)).toHaveLength(16000);
+ expect(await decoder.read(51,1,16000)).toHaveLength(16000);
+ decoder.close();
+});
+it('does not permanently close the shared decoder when recycle and retry outlast the section watchdog',async()=>{
+ vi.useFakeTimers();
+ mock.readFile.mockResolvedValue('{"format":{"duration":"300"}}');
+ const decoder=await openMusicDecoder(new Blob(['audio']),'song.mp3');
+ try {
+  const values=new Float32Array(16000);
+  mock.exec.mockResolvedValue(0);mock.readFile.mockResolvedValue(new Uint8Array(values.buffer));
+  for(let i=0;i<50;i++)await decoder.read(i,1,16000);
+  mock.exec.mockImplementationOnce(()=>new Promise((_,reject)=>{
+   setTimeout(()=>reject('RuntimeError: memory access out of bounds'),90_000);
+  })).mockImplementationOnce(()=>new Promise(resolve=>{
+   setTimeout(()=>resolve(0),90_000);
+  }));
+  const reading=decoder.read(50,1,16000);
+  await vi.advanceTimersByTimeAsync(180_000);
+  expect(await reading).toHaveLength(16000);
+  expect(await decoder.read(60,1,16000)).toHaveLength(16000);
+ } finally { decoder.close(); vi.useRealTimers(); }
+});
 
 function audioFixture(duration = 10, actualDuration = duration) {
  mock.exec.mockResolvedValue(0);
