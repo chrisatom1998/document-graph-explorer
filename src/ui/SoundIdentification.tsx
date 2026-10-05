@@ -3,11 +3,34 @@ import { DJ_TYPE_SOURCE, type ConfirmedDjTags, type DjGroup } from '../audio/djT
 import type { SoundProfile } from '../audio/soundProfile';
 type SoundProps = { reviewedLabels?: ResolvedDjLabel[]; confirmedDjTags?: ConfirmedDjTags; preliminary?: boolean; profile: SoundProfile; sourceOverride?: { label: string; origin: string; allowVoice?: boolean } };
 
+/**
+ * The confirmed/estimated label chips, split out of SoundExplanation so the
+ * panel can show them for a track that has no SoundProfile. Confirmed
+ * instruments used to be printed a second time further down the panel purely
+ * to cover that case; this component is now the single place they appear, so
+ * `profile` is optional.
+ */
+export function SoundTagGroups({ profile, confirmedDjTags, reviewedLabels }: Omit<SoundProps, 'profile'> & { profile?: SoundProfile }) {
+  if (!((profile?.djTags?.length ?? 0)>0 || confirmedDjTags || reviewedLabels?.length)) return null;
+  return <dl className="dj-tag-groups">{(['source','production','character'] as DjGroup[]).map(group=>{
+    // Each label is its own chip, but the label STRING stays whole inside it:
+    // tests assert the group's textContent contains "distorted (confirmed by
+    // you)" contiguously, so the suffix must not be split into a sibling.
+    const values = group !== 'source' && reviewedLabels
+      ? reviewedLabels.filter(t=>t.group===group).map(t=>t.label+(t.source==='confirmed'&&!confirmedDjTags?' (confirmed by you)':''))
+      : confirmedDjTags?.[group] ?? profile?.djTags?.filter(t=>t.group===group).map(t=>t.label) ?? [];
+    return <div key={group}>
+      <dt>{group==='production'?'Production type':group==='source'?'Source':'Character'}</dt>
+      <dd>{values.length ? values.map(value=><span className="chip" key={value}>{value}</span>) : <span className="chip chip--empty">Uncertain</span>}</dd>
+    </div>;
+  })}</dl>;
+}
+
 export function SoundExplanation({ profile, sourceOverride, confirmedDjTags, reviewedLabels, preliminary = false }: SoundProps) {
   return <>
-    {confirmedDjTags ? <p>Sound labels confirmed by you.</p> : sourceOverride ? <p>Instrument source: {sourceOverride.origin}.</p> : profile.source ? <p>Sound estimated by {profile.source.basis}{profile.source.corroborated ? ', with support from another model' : ''}. This is not a confirmed instrument or preset.</p> : <p>No instrument was identified confidently.</p>}
+    {confirmedDjTags ? <p className="sound-origin"><span className="rec-badge rec-badge--confirmed">confirmed by you</span></p> : sourceOverride ? <p>Instrument source: {sourceOverride.origin}.</p> : profile.source ? <p>Sound estimated by {profile.source.basis}{profile.source.corroborated ? ', with support from another model' : ''}. This is not a confirmed instrument or preset.</p> : <p>No instrument was identified confidently.</p>}
     {!confirmedDjTags && (!sourceOverride || sourceOverride.allowVoice) && profile.voice && (profile.source?.label !== 'voice' || profile.voice.style) && <p>Voice estimated by {profile.voice.basis}{profile.voice.corroborated ? ', with support from another model' : ''}.{profile.voice.style ? ` ${profile.voice.basis === 'Reviewed examples' ? 'Reviewed examples' : 'Music CLAP'} suggests ${profile.voice.style}.` : ''}</p>}
-    {((profile.djTags?.length ?? 0)>0 || confirmedDjTags || reviewedLabels?.length) && <dl className="dj-tag-groups">{(['source','production','character'] as DjGroup[]).map(group=><div key={group}><dt>{group==='production'?'Production type':group==='source'?'Source':'Character'}{confirmedDjTags?' · confirmed by you':''}</dt><dd>{(group !== 'source' && reviewedLabels ? reviewedLabels.filter(t=>t.group===group).map(t=>t.label+(t.source==='confirmed'&&!confirmedDjTags?' (confirmed by you)':'')) : confirmedDjTags?.[group] ?? profile.djTags?.filter(t=>t.group===group).map(t=>t.label) ?? []).join(', ') || 'Uncertain'}</dd></div>)}</dl>}
+    <SoundTagGroups profile={profile} confirmedDjTags={confirmedDjTags} reviewedLabels={reviewedLabels} />
     {preliminary && <p>Early estimate; verification is still in progress.</p>}
     {profile.disagreement && <p>The instrument models disagree, so the estimate is uncertain.</p>}
   </>;

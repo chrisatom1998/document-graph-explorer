@@ -40,6 +40,33 @@
 .music-features .music-track-actions { margin-top: 0; }
 .music-analysis-details > :not(summary) { font-size: 12px; }
 
+/* Technical details readability: the disclosure is ~20 flat siblings of equal
+   weight, which reads as a wall. Give it a vertical rhythm, turn the h4s into
+   real section dividers, and demote the explanatory prose to footnote weight
+   so the data (evidence, coverage, confirmed labels) stays dominant. */
+.music-analysis-details > :not(summary) { max-width: 62ch; line-height: 1.5; }
+.music-analysis-details > p { margin: 0 0 8px; color: var(--text-secondary); }
+.music-analysis-details > h4 {
+  margin: 16px 0 6px; padding-top: 10px;
+  border-top: 1px solid var(--border-glass);
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text-faint);
+}
+.music-analysis-details > h4:first-of-type { border-top: 0; padding-top: 0; }
+.music-analysis-details > ul { margin: 0 0 8px; padding-left: 16px; }
+.music-analysis-details > ul > li { margin-bottom: 3px; }
+.music-analysis-details > details { margin: 4px 0 8px; }
+
+/* Trailing caveats: present for the careful reader, never competing with data. */
+.music-analysis-notes { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--border-glass); }
+.music-analysis-notes > h4 {
+  margin: 0 0 6px;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text-faint);
+}
+.music-analysis-notes > p { margin: 0 0 6px; max-width: 62ch; line-height: 1.5; color: var(--text-faint); }
+.music-analysis-notes > p:last-child { margin-bottom: 0; }
+
 /* Model scores: one compact column per model. */
 .model-scores__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px 18px; margin: 8px 0 4px; }
 .model-scores__model ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
@@ -55,3 +82,38 @@
 .audio-preview .music-features,
 .audio-preview .music-manual-link { border-top-color: var(--border-glass); }
 .audio-preview .music-features { margin-top: 10px; padding-top: 4px; }
+
+/* Recognition diagnostics: compact, native-app rows instead of prose.
+   Coverage was a list of sentences ("AST: complete; 8/8 windows; 0:40 of 0:40
+   analyzed."); it is now a name + meter + count row so the eye scans a column
+   of bars. The standing caveats collapse into one "About these numbers"
+   disclosure rather than four paragraphs interleaved with the data. */
+.rec-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.rec-badge {
+  flex: none; padding: 2px 7px; border-radius: 999px;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
+  background: var(--surface-raised); color: var(--text-secondary);
+}
+.rec-badge--complete { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+.rec-badge--failed { background: color-mix(in srgb, #f87171 18%, transparent); color: #f87171; }
+.rec-head__note { flex: 1 1 14ch; min-width: 0; color: var(--text-faint); line-height: 1.45; }
+
+.rec-coverage { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
+/* Flex, not grid: the row's leading "AST: complete" is a bare text node (see
+   the component), so it cannot be targeted as a grid item. As an anonymous
+   flex item it keeps its natural width and the meter/count wrap below it in a
+   narrow side panel instead of being squeezed into a fixed column. */
+.rec-coverage__row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+  color: var(--text-secondary);
+}
+.rec-coverage__meter { flex: none; margin-left: auto; width: 46px; height: 4px; border-radius: 2px; background: var(--surface-raised); overflow: hidden; }
+.rec-coverage__meter > span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+.rec-coverage__row--failed .rec-coverage__meter > span { background: #f87171; }
+.rec-coverage__count { flex: 1 0 100%; font-variant-numeric: tabular-nums; color: var(--text-faint); font-size: 11px; }
+.rec-coverage__flag { flex: 1 0 100%; color: var(--text-faint); }
+.rec-coverage__gaps { flex: 1 0 100%; }
+
+.rec-fineprint > summary { color: var(--text-faint); }
+.rec-fineprint > p { margin: 0 0 6px; max-width: 62ch; line-height: 1.5; color: var(--text-faint); }
+.rec-badge--confirmed { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }

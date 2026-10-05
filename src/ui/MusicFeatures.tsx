@@ -10,7 +10,7 @@ import type { DocNode } from '../model/types';
 import { KEY_NAMES, keyName, type InstrumentEstimate } from '../audio/musicTypes';
 import { isBroadInstrument } from '../audio/instrumentLabels';
 import { useGraphStore } from '../store/graphStore';
-import { SoundExplanation } from './SoundIdentification';
+import { SoundExplanation, SoundTagGroups } from './SoundIdentification';
 import { RecognitionDiagnostics, type RecognitionEvidenceProps } from './RecognitionEvidence';
 const time = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?: (seconds: number) => void }) {
@@ -21,7 +21,11 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
   const analysis = node.audio;
   const confirmed = analysis ? confirmedInstrumentList(analysis) : undefined;
   const reviewedLabels = analysis ? resolvedNonSourceLabels(analysis) : [];
-  const confirmedTags=analysis?.confirmedDjTags?{...analysis.confirmedDjTags,source:confirmed??[],
+  // Keyed off `confirmed`, not off confirmedDjTags: a track confirmed through
+  // the legacy confirmedInstruments field (or through a source review) has no
+  // confirmedDjTags, and gating on that used to leave the chips empty and force
+  // a second "Confirmed instruments" list further down the panel.
+  const confirmedTags=confirmed!==undefined?{...(analysis?.confirmedDjTags??{source:[],production:[],character:[]}),source:confirmed,
     production:reviewedLabels.filter(t=>t.group==='production'&&t.source==='confirmed').map(t=>t.label),
     character:reviewedLabels.filter(t=>t.group==='character'&&t.source==='confirmed').map(t=>t.label)}:undefined;
   const profile = analysis ? reviewedSoundProfile(analysis) : undefined;
@@ -113,8 +117,8 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
         <p>Used as lower-strength connection hints when reviewed or reliable audio instruments are unavailable. Sound-based estimates remain below for comparison.</p>
       </>}
       {confirmed !== undefined ? <>
-        <h4>Confirmed instruments</h4>
-        <ul>{confirmed.map(label => <li key={label}>{label}</li>)}</ul>
+        {/* With a profile, SoundExplanation above already rendered these chips. */}
+        {!analysis.soundProfile && <SoundTagGroups confirmedDjTags={confirmedTags} reviewedLabels={reviewedLabels} />}
         <p>Confirmed by you. These instruments are used for connections.</p>
       </> : analysis.recognition ? <p>Machine suggestions and their coverage are shown above. Your saved reviews remain separate from model estimates.</p> : analysis.version === 1 ? <p>Earlier instrument estimates used short excerpts. Reanalyze to scan the full track.</p> : <>
         {prediction && !analysis.soundProfile && <>
@@ -130,9 +134,12 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
         {(likely.length > 0 || prediction) && possible.length > 0 && <details><summary>Possible instruments ({possible.length})</summary><p>Weaker detections. These do not create instrument links.</p>{list(possible)}</details>}
         {analysis.instrumentScan && <p>{analysis.stage === 'preview' ? 'Verification coverage' : analysis.instrumentScan.mode === 'fast' ? 'Sampled instrument scan' : analysis.instrumentScan.complete ? 'Full-track instrument scan' : 'Partial instrument scan'}: {time(analysis.instrumentScan.analyzedSeconds)} of {time(analysis.durationSeconds)}.</p>}
       </>}
-      <p>Tempo and key use {Math.round(analysis.analyzedSeconds)} seconds of excerpts. Instrument estimates can miss sounds or confuse similar timbres; an unlisted instrument may still be present.</p>
-      {analysis.notes.filter(note => !analysis.confirmedInstruments || !note.startsWith('No instruments identified')).map(note => <p key={note}>{note}</p>)}
-      <p>Connections use tempo, compatible keys, instruments, and confirmed sound properties. Half/double-time matches and name hints are labeled with lower strength. Your reviews take priority; unknown evidence does not match. Up to 8 audio neighbors, with 4 per relationship type.</p>
+      <section className="music-analysis-notes" aria-label="Limits and connection rules">
+        <h4>Limits and connection rules</h4>
+        <p>Tempo and key use {Math.round(analysis.analyzedSeconds)} seconds of excerpts. Instrument estimates can miss sounds or confuse similar timbres; an unlisted instrument may still be present.</p>
+        {analysis.notes.filter(note => !analysis.confirmedInstruments || !note.startsWith('No instruments identified')).map(note => <p key={note}>{note}</p>)}
+        <p>Connections use tempo, compatible keys, instruments, and confirmed sound properties. Half/double-time matches and name hints are labeled with lower strength. Your reviews take priority; unknown evidence does not match. Up to 8 audio neighbors, with 4 per relationship type.</p>
+      </section>
       </details>
     </> : <p>Analyze this track to find its tempo, key, and instruments.</p>}
     <details className="music-track-actions"><summary>Track actions</summary>

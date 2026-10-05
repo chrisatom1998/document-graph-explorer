@@ -40,27 +40,25 @@ it('shows the automatic synth label with uncertainty without requiring a confirm
   expect(screen.getByRole('heading', { name: 'Estimated instrument' })).toBeVisible();
   expect(screen.getByText('synthesizer', { selector: 'p' })).toBeVisible();
   expect(screen.getByText(/Automatically classified from the audio.*Uncertain/)).toBeVisible();
-  expect(screen.queryByText('Confirmed instruments')).toBeNull();
+  expect(screen.queryByText('Confirmed by you. These instruments are used for connections.')).toBeNull();
 });
 it('clearly distinguishes confirmed instruments from model guesses', () => {
   renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, confirmedInstruments: ['synthesizer'] } }} />);
-  expect(screen.getByRole('heading', { name: 'Confirmed instruments' })).toBeVisible();
-  expect(screen.getByText('synthesizer', { selector: 'li' })).toBeVisible();
+  expect(screen.getByText('synthesizer', { selector: '.dj-tag-groups .chip' })).toBeVisible();
   expect(screen.queryByText('trumpet', { selector: 'span' })).toBeNull();
   expect(screen.getByText('Confirmed by you. These instruments are used for connections.')).toBeVisible();
 });
 it('updates the confirmed summary after a later rejection', () => {
   renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, confirmedInstruments: ['synthesizer', 'trumpet'], soundReviews: [{ labelId: 'synthesizer', dimension: 'source', decision: 'rejected', scope: 'track', at: '2026-10-03T00:00:00Z', evidenceRunId: 'run' }] } }} />);
-  expect(screen.getByRole('heading', { name: 'Confirmed instruments' })).toBeVisible();
-  expect(screen.getByText('trumpet', { selector: 'li' })).toBeVisible();
-  expect(screen.queryByText('synthesizer', { selector: 'li' })).toBeNull();
+  expect(screen.getByText('trumpet', { selector: '.dj-tag-groups .chip' })).toBeVisible();
+  expect(screen.queryByText('synthesizer', { selector: '.dj-tag-groups .chip' })).toBeNull();
   expect(screen.getByText('trumpet', { selector: '.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)' })).toBeVisible();
 });
 it('keeps name-derived instruments after an unsure machine-label review', () => {
   renderExpanded(<MusicFeatures node={{ ...node, path: 'Piano Loop.wav', audio: { ...node.audio!, soundReviews: [{ labelId: 'oboe', dimension: 'source', decision: 'uncertain', scope: 'track', at: '2026-10-03T00:00:00Z', evidenceRunId: 'run' }] } }} />);
   expect(screen.getByText('Instruments from name')).toBeVisible();
   expect(screen.getAllByText('piano').length).toBeGreaterThan(0);
-  expect(screen.queryByText('Confirmed instruments')).toBeNull();
+  expect(screen.queryByText('Confirmed by you. These instruments are used for connections.')).toBeNull();
 });
 const node: DocNode = { id: 'track', kind: 'document', title: 'Track', fileType: 'audio', topics: [], entities: [], keywords: [], wordCount: 0, cluster: 0, degree: 0, status: 'ok', audio: { version: 2, durationSeconds: 180, analyzedSeconds: 60, notes: [], instrumentScan: { complete: true, analyzedSeconds: 180, windows: 35 }, instruments: [{ label: 'trumpet', status: 'likely', score: .9, segments: [{ start: 70, end: 80, score: .9 }] }, { label: 'cello', status: 'possible', score: .5 }] } };
 it('shows whole-track coverage and lets listeners verify the strongest instrument passage', () => {
@@ -111,7 +109,7 @@ it('shows name-derived features and retains conflicting audio for comparison', (
 it('attributes the added music model instead of presenting it as a confirmed label', () => {
   renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, instruments: [], instrumentPrediction: { label: 'synthesizer', score: .56, margin: .2, model: 'MTG-Jamendo' } } }} />);
   expect(screen.getByText(/Music model: MTG-Jamendo/)).toBeVisible();
-  expect(screen.queryByText('Confirmed instruments')).toBeNull();
+  expect(screen.queryByText('Confirmed by you. These instruments are used for connections.')).toBeNull();
 });
 
 it('selects the persistent analysis mode and labels sampled coverage truthfully', () => {

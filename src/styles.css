@@ -5821,8 +5821,16 @@ input {
 .dj-tag-choices { display: flex; flex-wrap: wrap; gap: .45rem .7rem; margin: .5rem 0; }
 .dj-tag-choices label { display: inline-flex; align-items: center; gap: .3rem; font-size: .82rem; }
 .dj-tag-groups { display: grid; gap: .65rem; }
-.dj-tag-groups dt { color: var(--text-muted); font-size: .8rem; }
-.dj-tag-groups dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
+.dj-tag-groups dt {
+  color: var(--text-faint); font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+/* Values are chips, not a comma-joined sentence: a row of labels is faster to
+   scan and makes "Uncertain" read as an empty slot rather than a value. */
+.dj-tag-groups dd { margin: .3rem 0 0; display: flex; flex-wrap: wrap; gap: 4px; overflow-wrap: anywhere; }
+.dj-tag-groups dd .chip { white-space: normal; padding: 2px 8px; font-size: 11px; }
+.dj-tag-groups dd .chip--empty { background: transparent; border-style: dashed; color: var(--text-faint); }
+.sound-origin { margin: 0 0 8px; }
 
 /* Standalone controls also work in the classic graph layout. */
 .toolbar .workspace-dims,
