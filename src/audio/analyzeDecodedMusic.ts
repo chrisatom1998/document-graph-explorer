@@ -13,7 +13,7 @@ import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { musicRuntimeIdentity } from './musicRuntime';
-import { createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
+import { astGpuAllowed, createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
   /** Qualification-only opt-in; callers must bind and validate the scorer. */
@@ -212,9 +212,10 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const wake: Partial<Record<SoundId, () => void>> = {};
   let ended = false;
   // AST runs on the graphics card (full-precision weights, about 8x faster) only where no validated scorer reads
-  // its scores: the trained source classifier was qualified on the WASM q8 model for full analyses past 2.048 s.
-  const astOnGpu = !supportsFusionInput(duration, mode, options.sourceMime);
-  const windowKey = (id: SoundId, interval: Interval) => modelCacheKey(fingerprint, job(id), interval) + (id === 'ast' && astOnGpu ? ':ast-webgpu-allowed' : '');
+  // its scores (recognition astGpuAllowed). The AST job's preprocessing version records it, so cache keys and
+  // saved ledgers both tell GPU-allowed runs apart from q8 WASM ones.
+  const astOnGpu = astGpuAllowed(duration, mode);
+  const windowKey = (id: SoundId, interval: Interval) => modelCacheKey(fingerprint, job(id), interval);
   async function scoreAhead(id: SoundId): Promise<void> {
     const j = job(id);
     for (let i = 0; i < j.planned.length; i++) {

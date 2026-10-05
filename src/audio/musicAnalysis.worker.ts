@@ -238,12 +238,11 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
       return;
     }
     if (data.kind === 'instruments') {
-      // Settle the device before choosing the cache identity, so a WASM fallback is never saved as a GPU result.
+      // Settle the device before choosing the cache identity, so a WASM result is never saved as a GPU result.
       let gpuModel: Awaited<ReturnType<typeof getClassifier>> | undefined;
       if ((data as { gpu?: boolean }).gpu === true && !gpuUnavailable) try { gpuModel = await getGpuClassifier(); } catch { gpuUnavailable = true; }
-      if (gpuModel) Object.assign(runtime, { backend: 'webgpu', identity: 'webgpu-fp32-v1' });
-      const result = await cachedAudioInference('music-model', `ast-16khz:${gpuModel ? 'webgpu-fp32-v1' : musicRuntimeIdentity('ast')}`, data.samples, isInstrumentPredictions, async () => {
-        const { model, processor } = gpuModel ?? await getClassifier();
+      const infer = (load: () => ReturnType<typeof getClassifier>) => async () => {
+        const { model, processor } = await load();
         const inputs = await processor(data.samples);
         try {
           const output = await model(inputs); inferenceExecuted = true;
@@ -252,7 +251,20 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
             return { scores: instrumentScores(output.logits.data, labels), musicScore: musicScore(output.logits.data, labels) };
           } finally { await disposeTensors(output); }
         } finally { await disposeTensors(inputs); }
-      }, () => self.postMessage({ id, progress: 'Reusing saved instrument features' }));
+      };
+      const reuse = () => self.postMessage({ id, progress: 'Reusing saved instrument features' });
+      let result: InstrumentPredictions | undefined;
+      if (gpuModel) {
+        const loaded = gpuModel;
+        try {
+          result = await cachedAudioInference('music-model', 'ast-16khz:webgpu-fp32-v1', data.samples, isInstrumentPredictions, infer(async () => loaded), reuse);
+          Object.assign(runtime, { backend: 'webgpu', identity: 'webgpu-fp32-v1' });
+        } catch {
+          // A session that loaded can still fail at run time (device loss, out of memory): drop it and redo this window on WASM.
+          gpuUnavailable = true; gpuClassifier = null;
+        }
+      }
+      result ??= await cachedAudioInference('music-model', `ast-16khz:${musicRuntimeIdentity('ast')}`, data.samples, isInstrumentPredictions, infer(getClassifier), reuse);
       await postResult(result);
       return;
     }

@@ -400,4 +400,13 @@ describe('AST device choice', { timeout: 60_000 }, () => {
       expect(sent.every(m => m.gpu === gpu)).toBe(true);
     }
   });
+  it('records where the GPU was allowed in the AST job, so saved ledgers and cache keys tell the runs apart', async () => {
+    const { createRecognition, refreshRuntimeIdentity } = await import('./recognition');
+    const ast = (duration: number, mode: 'fast' | 'full') => createRecognition(duration, mode).jobs.find(j => j.modelId === 'ast')!.preprocessingVersion;
+    expect(ast(1.5, 'full')).toContain(':webgpu-fp32-allowed');
+    expect(ast(30, 'fast')).toContain(':webgpu-fp32-allowed');
+    expect(ast(30, 'full')).not.toContain('webgpu');
+    const run = createRecognition(1.5, 'full'); refreshRuntimeIdentity(run, 1.5);
+    expect(run.jobs.find(j => j.modelId === 'ast')!.preprocessingVersion).toContain(':webgpu-fp32-allowed');
+  });
 });
