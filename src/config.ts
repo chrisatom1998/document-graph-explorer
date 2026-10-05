@@ -64,7 +64,13 @@ export const DOCUMENT_AI_MAX_CONTEXT_CHARS = 240_000;
 export const ENRICH_BATCH_MAX_CHARS = 400_000;
 
 // --- Search ---
-export const SEARCH_MIN_SCORE = 0.35; // semantic search relevance floor
+export const SEARCH_MIN_SCORE = 0.35; // document-to-document similarity floor
+// Query-to-passage semantic floor. bge-small scores off-topic questions up to
+// ~0.57 against the demo corpus and on-topic paraphrases from ~0.60, so 0.58
+// lets search answer "no match" without dropping real hits. Calibrated and
+// guarded by src/search/retrievalBenchmark.demo.test.ts — re-run it if the
+// embedding model, query prefix, or chunking changes.
+export const QUERY_MIN_SEMANTIC_SCORE = 0.58;
 export const SEARCH_MAX_RESULTS = 12;
 
 // --- Extractive (local, no-LLM) chat answers ---
