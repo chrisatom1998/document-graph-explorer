@@ -19,6 +19,9 @@ class Handler(BaseHTTPRequestHandler):
         if self.path in ('/', '/index.html'): return self.send(200, open(PAGE, 'rb').read(), 'text/html; charset=utf-8')
         if self.path == '/state':
             clips = read(os.path.join(ROOT, 'clips.json'), {'clips': []})['clips']
+            # queue.json (from compare-gemini-detectors.py) puts the clips worth a human check first.
+            order = {cid: n for n, cid in enumerate(read(os.path.join(ROOT, 'queue.json'), {}).get('order', []))}
+            clips = sorted(clips, key=lambda c: order.get(c['id'], len(order)))
             # The reviewer never sees file names or the label guessed from them.
             return self.send(200, json.dumps({'clips': [c['id'] for c in clips], 'labels': read(LABELS, {})}))
         m = re.fullmatch(r'/audio/([0-9a-f]{12})\.mp3', self.path)
