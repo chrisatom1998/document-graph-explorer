@@ -27,7 +27,7 @@ h = lambda *p: hashlib.sha256('|'.join(map(str, p)).encode()).hexdigest()
 tf = tarfile.open(tgz)
 members = {m.name: m for m in tf.getmembers() if m.isfile()}
 def member(suffix):
-    found = [m for n, m in members.items() if n.endswith(suffix)]
+    found = [m for n, m in members.items() if n == suffix or n.endswith('/' + suffix)]   # not macOS ._ shadow files
     if len(found) != 1: sys.exit(f'expected one archive member ending {suffix}, found {len(found)}')
     return found[0]
 read = lambda suffix: tf.extractfile(member(suffix)).read().decode('utf-8-sig')
