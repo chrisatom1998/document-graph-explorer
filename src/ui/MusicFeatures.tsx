@@ -86,6 +86,7 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
     <h3 className="sr-only">Track details</h3>
     {analysis?.stage === 'preview' && <p role="status" className="music-status">{job || phase === 'parsing' ? 'Quick estimate — still checking in the background.' : 'Quick estimate only. Reanalyze to finish.'}</p>}
     {analysis?.instrumentScan && !analysis.instrumentScan.complete && analysis.stage !== 'preview' && <p role="status" className="music-status">Analysis incomplete. Reanalyze to finish.</p>}
+    {analysis?.recognition && analysis.recognition.status !== 'complete' && <p role="status" className="music-status">Analysis: {analysis.recognition.status}.</p>}
     {analysis ? <>
       <dl className="music-stats">
         <div><dt>Length</dt><dd>{time(analysis.durationSeconds)}</dd></div>
