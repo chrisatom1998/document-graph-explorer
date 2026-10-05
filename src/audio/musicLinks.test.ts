@@ -284,6 +284,11 @@ describe('sound-alike links: reasons and scale', () => {
     expect([edge.source, edge.target]).toEqual(['a', 'b']);
     expect(edge.evidence[0]).toContain('Both also have: riser (production / effect), metallic (character), confirmed by you on both tracks.');
   });
+  it('says "some confirmed by you" when a shared tag is confirmed on one track only', () => {
+    const tags = { confirmedDjTags: { source: [], production: ['riser'], character: [] } };
+    const edge = buildMusicEdges([sounding('a', 0, 0, tags), sounding('b', 0, 1, { soundProfile: { version: 1, character: [], roles: [], disagreement: false, models: [], djTags: [{ group: 'production', label: 'riser', score: .9, model: 'Trained head' }] } })]).find(e => e.kind === 'similar');
+    expect(edge!.evidence[0]).toContain('riser (production / effect), some confirmed by you.');
+  });
   it('keeps tempo and file-name links between tracks that sound different', () => {
     const beat = { tempo: tempo(120), key: key(0) };
     const nodes = [sounding('a0', 0, 0, beat), sounding('a1', 0, 1), sounding('a2', 0, 2), sounding('b0', 1, 0, beat), sounding('b1', 1, 1), sounding('b2', 1, 2)];

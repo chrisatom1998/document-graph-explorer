@@ -103,8 +103,10 @@ function pairEdges(a: Features, b: Features, floor = SOUND_LINK_POLICY.floor): E
   if (similarity !== undefined && similarity >= floor) {
     // Tags already explained by the instrument link are not repeated.
     const both = a.alikeTags.filter(t => b.alikeTags.some(u => u.dimension === t.dimension && u.label === t.label) && !(t.dimension === 'source' && shared.some(i => i.label === t.label)));
-    const confirmed = both.filter(t => t.origin === 'confirmed by you' && b.alikeTags.find(u => u.dimension === t.dimension && u.label === t.label)!.origin === 'confirmed by you');
-    const detail = both.length ? ` Both also have: ${both.map(t => `${t.label.replaceAll('_', ' ')} (${t.dimension === 'effect' ? 'production / effect' : t.dimension})`).join(', ')}${confirmed.length === both.length ? ', confirmed by you on both tracks' : confirmed.length ? ', some confirmed by you' : ', detected by tested sound models'}.` : '';
+    const origins = both.map(t => [t.origin, b.alikeTags.find(u => u.dimension === t.dimension && u.label === t.label)!.origin]);
+    const byYou = (o: string) => o === 'confirmed by you';
+    const source = origins.every(o => o.every(byYou)) ? ', confirmed by you on both tracks' : origins.some(o => o.some(byYou)) ? ', some confirmed by you' : ', detected by tested sound models';
+    const detail = both.length ? ` Both also have: ${both.map(t => `${t.label.replaceAll('_', ' ')} (${t.dimension === 'effect' ? 'production / effect' : t.dimension})`).join(', ')}${source}.` : '';
     add('similar', Math.min(1, similarity), `Sounds alike: the two recordings' sound fingerprints are ${Math.floor(similarity * 100)}% similar.${detail} Similar sound is not proof of sampling, a shared source or influence.`);
   }
   return edges;
@@ -129,11 +131,16 @@ function tokens(f: Features, query = false): string[] {
   }
   return result;
 }
-/** Deterministic random hyperplanes (fixed seed) for libraries too large to compare all pairs. */
+/** Deterministic random hyperplanes (fixed seed) for libraries too large to compare all pairs; built once. */
+const planeCache = new Map<string, Float32Array[]>();
 function hyperplanes(count: number, dimensions: number): Float32Array[] {
+  const cached = planeCache.get(`${count}:${dimensions}`);
+  if (cached) return cached;
   let seed = 0x2f6b1d3;
   const next = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32 - .5; };
-  return Array.from({ length: count }, () => Float32Array.from({ length: dimensions }, next));
+  const planes = Array.from({ length: count }, () => Float32Array.from({ length: dimensions }, next));
+  planeCache.set(`${count}:${dimensions}`, planes);
+  return planes;
 }
 /** Each fingerprinted track's closest-sounding tracks (by index), most similar first. */
 function soundNeighbors(audio: Features[], keep: number): Map<number, { other: number; similarity: number }[]> {
