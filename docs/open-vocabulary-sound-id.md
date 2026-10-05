@@ -6,15 +6,15 @@ latest held-out measurements (rounds 16 and 18 are kept for comparison).
 
 ## Result
 
-**82 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
-ships in `learned.json` or `short-clip.json`. All 31 new labels come from this branch. Another session swapped the
+**83 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
+ships in `learned.json` or `short-clip.json`. All 32 new labels come from this branch. Another session swapped the
 existing distorted head for a different version and promoted five existing heads to full tags.
 
 | Bucket (45/45 bar, measured on held-out sources, round 19) | Labels |
 |---|---|
 | Active, full tag (precision and recall ≥ 0.60) | 42 |
-| Active, "maybe" tag (0.45–0.60) | 40 |
-| Near: one of precision/recall ≥ 0.45 | 42 |
+| Active, "maybe" tag (0.45–0.60) | 41 |
+| Near: one of precision/recall ≥ 0.45 | 41 |
 | Failing: both < 0.45 | 36 |
 | Untestable: under 15 held-out positives | 10 |
 | Measured on made-up clips only (not shipped) | 4 |
@@ -29,6 +29,8 @@ New active labels on this branch (★ = full):
   vocal breath, foghorn bass, riser, texture, triangle.
 - Round 18: spoken phrase★, breakbeat, cello, electric piano, flute.
 - Round 19: chiptune synth, falling, glassy, horn, whistle.
+- Round 20 (model strength per label, chosen on training rows only): acid synth. Over 78 near or failing labels this
+  was neutral (10 better, 10 worse).
 
 ### More real data is what helped
 
