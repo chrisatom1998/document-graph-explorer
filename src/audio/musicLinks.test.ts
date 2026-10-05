@@ -53,8 +53,10 @@ describe('musical relationships', () => {
     expect(edge).toMatchObject({ kind: 'sound' });
     expect(edge.evidence[0]).toContain('Shared sound tags: airy, vinyl scratch (model estimates shown as likely on both tracks)');
     expect(edge.weight).toBeLessThan(.85);
-    // More shared tags rank higher; a maybe-level head or a possible-tier score never links.
-    expect(edge.weight).toBeGreaterThan(musicPairEdges(a, tagged('c', [{ group: 'character', label: 'airy', score: .7 }]))[0].weight);
+    // The weakest shared tag (vinyl scratch at .6 on b) sets the weight, plus .05 for the extra shared tag.
+    expect(edge.weight).toBeCloseTo(.55 * .6 + .05);
+    // More shared tags rank higher than one tag at that strength; a maybe-level head or a possible-tier score never links.
+    expect(edge.weight).toBeGreaterThan(musicPairEdges(a, tagged('c', [{ group: 'character', label: 'airy', score: .6 }]))[0].weight);
     expect(musicPairEdges(a, tagged('d', [{ group: 'character', label: 'airy', score: .9, model: 'Trained head (maybe)' }]))).toEqual([]);
     expect(musicPairEdges(a, tagged('e', [{ group: 'character', label: 'airy', score: .45 }]))).toEqual([]);
     // The candidate search finds tag-only pairs too.

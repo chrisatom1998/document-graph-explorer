@@ -93,8 +93,8 @@ function pairEdges(a: Features, b: Features): Edge[] {
   const group = (list: typeof tags, how: string) => list.length ? `${list.map(t => t.label).join(', ')} (${how})` : '';
   const tagText = tags.length ? `Shared sound tags: ${[group(tags.filter(t => !t.oneConfirmed), 'model estimates shown as likely on both tracks'), group(tags.filter(t => t.oneConfirmed), 'confirmed by you on one track, a model estimate on the other')].filter(Boolean).join('; ')}. Not confirmed on both.` : '';
   if (sound.length) add('sound', .85, `Shared sound properties: ${sound.map(i => `${i.label} (${i.group === 'production' ? 'production / effect' : 'character'})`).join(', ')}. Confirmed by you on both tracks.${tagText ? ' ' + tagText : ''}`);
-  // Below every confirmed match (.85), and more shared tags rank a pair higher.
-  else if (tags.length) add('sound', Math.min(.75, .55 * Math.max(...tags.map(t => t.score)) + .05 * (tags.length - 1)), tagText);
+  // The weakest shared tag sets the weight, plus a little for each extra shared tag; always below a confirmed match (.85).
+  else if (tags.length) add('sound', Math.min(.75, .55 * Math.min(...tags.map(t => t.score)) + .05 * (tags.length - 1)), tagText);
   return edges;
 }
 export function musicPairEdges(a: DocNode, b: DocNode): Edge[] {
