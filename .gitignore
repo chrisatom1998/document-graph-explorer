@@ -18,6 +18,7 @@ docker/downloads/*
 !docker/downloads/.gitkeep
 .codex/
 .cursor/
+.agents/
 .codex-devserver*.log
 .playwright-mcp/
 playwright-report/
