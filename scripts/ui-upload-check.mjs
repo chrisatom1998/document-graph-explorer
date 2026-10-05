@@ -54,9 +54,9 @@ for (const f of files) {
     models: node?.audio?.recognition?.runs?.map?.(r => [r.modelId, r.status]) };
   try {
     await page.keyboard.press('Escape').catch(() => {});
-    await page.getByRole('button', { name: 'Search documents' }).click();
-    await page.keyboard.type(name.replace(/\.\w+$/, '').slice(3, 12));
-    await page.getByRole('option').first().click({ timeout: 30_000 });
+    await page.getByRole('button', { name: 'Browse documents' }).click();
+    const core = name.replace(/\.\w+$/, '').replace(/^ui-/, '');
+    await page.getByText(new RegExp(core, 'i')).first().click({ timeout: 30_000 });
     const panel = page.locator('section[aria-label="Sound identification"]');
     await panel.waitFor({ timeout: 60_000 });
     row.policy = await panel.getAttribute('data-display-policy');

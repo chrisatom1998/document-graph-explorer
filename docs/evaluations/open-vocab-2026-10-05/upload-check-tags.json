@@ -1,0 +1,80 @@
+[
+ {
+  "file": "ui-oneshotkick.wav",
+  "seconds": 0.3591875,
+  "status": "complete",
+  "jobs": {
+   "ast": "complete",
+   "jamendo": "unsupported",
+   "clap": "complete",
+   "rhythm": "complete",
+   "tonal": "complete"
+  },
+  "tempo": null,
+  "key": null,
+  "tags": [
+   "effect:impact [likely] Trained head score 1.00",
+   "effect:kick [likely] Trained head score 0.89",
+   "source:drums [likely] Trained head score 0.89"
+  ],
+  "filename": []
+ },
+ {
+  "file": "ui-housebighouse.wav",
+  "seconds": 321.253878,
+  "status": "partial",
+  "jobs": {
+   "ast": "partial",
+   "jamendo": "partial",
+   "clap": "partial",
+   "rhythm": "complete",
+   "tonal": "complete"
+  },
+  "tempo": 126,
+  "key": null,
+  "tags": [
+   "source:synthesizer [likely] (maybe) Jamendo score 0.71, Trained head score (maybe) 0.88",
+   "source:drums [likely] Trained head score 0.78",
+   "source:sound effect [likely] (maybe) Trained head score (maybe) 0.81",
+   "effect:drum loop [likely] Trained head score 0.87"
+  ],
+  "filename": []
+ },
+ {
+  "file": "ui-electroemerge.wav",
+  "seconds": 226.298776,
+  "status": "complete",
+  "jobs": {
+   "ast": "complete",
+   "jamendo": "complete",
+   "clap": "complete",
+   "rhythm": "complete",
+   "tonal": "complete"
+  },
+  "tempo": 120.1,
+  "key": "9",
+  "tags": [
+   "source:piano [likely] (maybe) AST score 0.76, Jamendo score 0.42, Trained head score (maybe) 0.94",
+   "source:voice [likely] (maybe) Trained head score (maybe) 0.74",
+   "effect:texture [likely] (maybe) Trained head score (maybe) 0.74",
+   "source:sound effect [likely] (maybe) Trained head score (maybe) 0.74"
+  ],
+  "filename": []
+ },
+ {
+  "file": "ui-silentfile.wav",
+  "seconds": 5,
+  "status": "complete",
+  "jobs": {
+   "ast": "complete",
+   "jamendo": "complete",
+   "clap": "complete",
+   "rhythm": "complete",
+   "tonal": "complete"
+  },
+  "tempo": null,
+  "key": null,
+  "tags": [],
+  "filename": []
+ }
+]
