@@ -10,7 +10,7 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GroupKFold
 
-FULL, MAYBE, MIN_TEST = 0.65, 0.5, 15
+FULL, MAYBE, MIN_TEST = 0.60, 0.5, 15   # pass bar 60/60 (user ruling 2026-10-05)
 fit = lambda A, y: LogisticRegression(C=1.0, class_weight='balanced', max_iter=800, tol=1e-3).fit(A, y)
 
 def load(spec):
