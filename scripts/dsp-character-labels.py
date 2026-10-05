@@ -11,6 +11,10 @@ cut-offs are left unknown (neither positive nor negative):
   wobbling        brightness (log centroid) swings periodically at 1-8 Hz: top 15% of peak prominence x swing depth
   airy            share of energy above 5 kHz x its spectral flatness: top 15% (noisy air, not just treble)
   smooth          mean positive spectral change between frames: bottom 20%
+  rolling         >= 6 onsets/s with even spacing (inter-onset CV < 0.35)
+  syncopated      among rhythmic clips, onset strength half a beat off the fitted grid: top 15%
+  warm            150-800 Hz energy share minus 4-8 kHz share: top 15%
+  nasal           800-2500 Hz energy vs the bands either side: top 15%
   staccato        >= 3 onsets/s and sustain share at or below median (negative < 1.5 onsets/s or sustain above 65th pct)
   rhythmic        onset-strength autocorrelation peak at 0.25-1.5 s lags >= 0.45 (negative < 0.2)
 Gap clips are left out of training; precision/recall reported are the WORSE of the gap-free score and a strict
@@ -67,7 +71,28 @@ def features(path):
     flat = float(np.median(np.exp(np.log(hspec).mean(1)) / hspec.mean(1)))
     flux_mean = float(np.mean(np.maximum(np.diff(np.log(spec + 1e-6), axis=0), 0).mean(1)[db[1:] > db.max() - 30])) if (db[1:] > db.max() - 30).any() else 0.0
     return {'centroid': centroid, 'sustain': sustain, 'pulse': pulse, 'rhythm': rhythm, 'rmsSlope': rms_slope, 'centSlope': cent_slope,
-            'pulseProminence': prom, 'onsetRate': onset_rate, 'wobble': wob, 'air': hf_ratio * flat, 'flux': flux_mean}
+            'pulseProminence': prom, 'onsetRate': onset_rate, 'wobble': wob, 'air': hf_ratio * flat, 'flux': flux_mean,
+            **extra(x, spec, freqs, energy, flux, fa, fps, peaks)}
+
+def extra(x, spec, freqs, energy, flux, fa, fps, peaks):
+    on = np.where(peaks)[0] + 1
+    ioi = np.diff(on) / fps if len(on) > 3 else np.array([])
+    even = float(np.std(ioi) / np.mean(ioi)) if len(ioi) > 3 else 9.0
+    # Beat period = strongest onset-autocorrelation lag at 0.25-1.5 s; offbeat share = onset strength half a beat
+    # away from the beat grid that best fits the strongest onsets.
+    syn = 0.0
+    lo, hi = int(.25 * fps), int(1.5 * fps) + 1
+    if len(fa) > hi and len(on) > 4:
+        period = lo + int(np.argmax(fa[lo:hi])); w = np.maximum(flux, 0)
+        phase = int(np.argmax([w[k::period].sum() for k in range(period)]))
+        on_beat = sum(w[max(0, i - 1):i + 2].sum() for i in range(phase, len(w), period))
+        off = sum(w[max(0, i - 1):i + 2].sum() for i in range(phase + period // 2, len(w), period))
+        syn = float(off / (on_beat + off + 1e-9))
+    band = lambda a, b: float(energy_band[(freqs >= a) & (freqs < b)].sum())
+    energy_band = (spec ** 2).sum(0); tot = energy_band.sum() + 1e-12
+    warm = (band(150, 800) - band(4000, 8000)) / tot
+    nasal = band(800, 2500) / (band(300, 800) + band(2500, 5000) + 1e-9)
+    return {'evenness': even, 'syncopation': syn, 'warmth': warm, 'nasality': float(nasal)}
 
 clips = json.load(open(MAN))['clips']
 clips = sorted(clips, key=lambda c: hashlib.sha256(c['id'].encode()).hexdigest())[:LIMIT]
@@ -84,7 +109,7 @@ for f in glob.glob(f'{EMB}/emb-*.jsonl'):
         if r['id'] in feat and feat[r['id']] and r['id'] not in emb: emb[r['id']] = r['embedding']
 rows = [c for c in clips if c['id'] in emb]
 X = np.asarray([emb[c['id']] for c in rows], dtype=np.float32); X /= np.linalg.norm(X, axis=1, keepdims=True)
-G = np.array([c['group'] for c in rows]); F = {k: np.array([feat[c['id']][k] for c in rows]) for k in ('centroid', 'sustain', 'pulse', 'rhythm', 'rmsSlope', 'centSlope', 'pulseProminence', 'onsetRate', 'wobble', 'air', 'flux')}
+G = np.array([c['group'] for c in rows]); F = {k: np.array([feat[c['id']][k] for c in rows]) for k in ('centroid', 'sustain', 'pulse', 'rhythm', 'rmsSlope', 'centSlope', 'pulseProminence', 'onsetRate', 'wobble', 'air', 'flux', 'evenness', 'syncopation', 'warmth', 'nasality')}
 q = lambda k, p: np.percentile(F[k], p)
 DEF = {  # label: (positive mask, negative mask)
     'bright': (F['centroid'] >= q('centroid', 80), F['centroid'] < q('centroid', 70)),
@@ -96,6 +121,10 @@ DEF = {  # label: (positive mask, negative mask)
     'wobbling': (F['wobble'] >= q('wobble', 85), F['wobble'] < q('wobble', 70)),
     'airy': (F['air'] >= q('air', 85), F['air'] < q('air', 70)),
     'smooth': (F['flux'] <= q('flux', 20), F['flux'] > q('flux', 35)),
+    'rolling': ((F['onsetRate'] >= 6) & (F['evenness'] < .35), (F['onsetRate'] < 3) | (F['evenness'] > .6)),
+    'syncopated': ((F['rhythm'] >= .35) & (F['syncopation'] >= q('syncopation', 85)), (F['rhythm'] >= .35) & (F['syncopation'] < q('syncopation', 60))),
+    'warm': (F['warmth'] >= q('warmth', 85), F['warmth'] < q('warmth', 70)),
+    'nasal': (F['nasality'] >= q('nasality', 85), F['nasality'] < q('nasality', 70)),
     'rising': (F['centSlope'] >= .7, F['centSlope'] < .25),
     'staccato': ((F['onsetRate'] >= 3) & (F['sustain'] <= np.median(F['sustain'])), (F['onsetRate'] < 1.5) | (F['sustain'] > q('sustain', 65))),
     'rhythmic': (F['rhythm'] >= .45, F['rhythm'] < .35),
