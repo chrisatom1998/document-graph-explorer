@@ -6,8 +6,8 @@ latest held-out measurements (rounds 16 and 18 are kept for comparison).
 
 ## Result
 
-**108 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
-ships in `learned.json` or `short-clip.json`. All 57 new labels come from this branch. Another session swapped the
+**110 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
+ships in `learned.json` or `short-clip.json`. All 59 new labels come from this branch. Another session swapped the
 existing distorted head for a different version and promoted five existing heads to full tags.
 
 | Bucket (45/45 bar, measured on held-out sources, round 19) | Labels |
@@ -125,7 +125,12 @@ One cut-off per label is chosen on calibration groups and then scored on held-ou
 They ship as maybe heads in the existing format: weights = 60 × text vector and bias = −60 × cut-off, so a score of
 0.5 or more means exactly "cosine ≥ cut-off". No app code changed.
 
-vocal scream (0.94 / 0.49 on real recordings) was held back because it fails on the library. Full results are in
+A second pass added 519 new prompts for 66 labels (`extra-prompts.json`), encoded one at a time with
+`encode-prompts.mjs`. Each label picks a prompt subset greedily on calibration groups only. Two more labels pass:
+clave (0.90 / 0.50, 18 test positives) and vibraphone (1.00 / 0.50, 26 test positives).
+
+Held back because they fail on the library: vocal scream (0.94 / 0.49 on real recordings), synth bass (1.00 / 0.53)
+and siren (0.87 / 0.48). Full results are in
 `zero-shot-results.json`.
 
 ## Measured character labels

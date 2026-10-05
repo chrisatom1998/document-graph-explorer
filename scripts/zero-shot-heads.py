@@ -20,7 +20,11 @@ LABELS = [l for l in (os.environ['LABELS'].split(',') if os.environ.get('LABELS'
 vec = {}
 for p in json.load(open('public/sound-model/prompts.json')):
     if p['label'] in cat: vec.setdefault(p['label'], []).append(np.asarray(p['vector'], dtype=np.float64))
-T = {l: (lambda m: m / np.linalg.norm(m))(np.mean([v / np.linalg.norm(v) for v in vs], axis=0)) for l, vs in vec.items()}
+unit = lambda v: v / np.linalg.norm(v)
+T = {l: unit(np.mean([unit(v) for v in vs], axis=0)) for l, vs in vec.items()}
+# EXTRA_VECTORS=file.json {label: [{prompt, vector}]}: candidate prompts; a subset is picked per label on calibration groups.
+EXTRA = json.load(open(os.environ['EXTRA_VECTORS'])) if os.environ.get('EXTRA_VECTORS') else {}
+CANDS = {l: [('shipped prompt', unit(v)) for v in vec.get(l, [])] + [(e['prompt'], unit(np.asarray(e['vector']))) for e in EXTRA.get(l, [])] for l in cat}
 
 RES = set()
 for _f in ('docs/evaluations/short-clips-2026-10-04/reserved-test-families.json', 'docs/evaluations/synth-clips-2026-10-05/reserved-test-families.json'):
@@ -45,20 +49,45 @@ def score(t, p):
     tp = int((p & t).sum()); P = tp / p.sum() if p.sum() else 0.0; R = tp / t.sum() if t.sum() else 0.0
     return P, R, tp
 results = []
+def split(label, pos, use, pool):
+    m = use & (POOL == pool)
+    groups = sorted(set(G[m & pos]), key=lambda g: hashlib.sha256(f'zs|{label}|{g}'.encode()).hexdigest())
+    held, n = set(), 0
+    for g in groups:
+        if n >= .25 * pos[m].sum(): break
+        held.add(g); n += int((G[m & pos] == g).sum())
+    test = m & np.isin(G, sorted(held)); return test, m & ~test
+def cal_score(sv, pos, cal):
+    if pos[cal].sum() < 15: return None
+    best = 0.0
+    for cut in np.quantile(sv[cal & pos], np.linspace(.02, .98, 49)):
+        P, R, _ = score(pos[cal], sv[cal] >= cut); best = max(best, min(P, R))
+    return best
 for label in LABELS:
-    s = X @ T[label].astype(np.float32)
     pos = np.array([label in l for l in L])
     # Same-family labels are not evidence of absence (a "synth lead" clip may also be a "supersaw").
     use = pos | np.array([FAMILY_OF(label) not in {FAMILY_OF(o) for o in l} for l in L])
     row = {'kind': 'label', 'name': label, 'method': 'zero-shot CLAP text'}
+    cals = [split(label, pos, use, p)[1] for p in ('real', 'library')]
+    vector = T[label]
+    if EXTRA.get(label):
+        # Greedy prompt subset, judged only on calibration groups (worse of the two yardsticks that have data).
+        C = [(name, v, X @ v.astype(np.float32)) for name, v in CANDS[label]]
+        def judge(idx):
+            sv = np.mean([C[i][2] for i in idx], axis=0); vals = [cal_score(sv, pos, c) for c in cals]; vals = [v for v in vals if v is not None]
+            return min(vals) if vals else -1.0
+        chosen, best = [], -1.0
+        while True:
+            options = [(judge(chosen + [i]), i) for i in range(len(C)) if i not in chosen]
+            if not options: break
+            v, i = max(options)
+            if v <= best + .005: break
+            chosen, best = chosen + [i], v
+        if chosen:
+            vector = unit(np.mean([C[i][1] for i in chosen], axis=0)); row['prompts'] = [C[i][0] for i in chosen]
+    s = X @ vector.astype(np.float32)
     for pool in ('real', 'library'):
-        m = use & (POOL == pool)
-        groups = sorted(set(G[m & pos]), key=lambda g: hashlib.sha256(f'zs|{label}|{g}'.encode()).hexdigest())
-        held, n = set(), 0
-        for g in groups:
-            if n >= .25 * pos[m].sum(): break
-            held.add(g); n += int((G[m & pos] == g).sum())
-        test = m & np.isin(G, sorted(held)); cal = m & ~test
+        test, cal = split(label, pos, use, pool)
         row[pool] = {'testPositive': int(pos[test].sum()), 'calPositive': int(pos[cal].sum())}
         if pos[cal].sum() < 15 or pos[test].sum() < 15: continue
         best = None
@@ -75,7 +104,7 @@ for label in LABELS:
                 'verdict': 'PASS' if ok_real and ok_lib else ('fails on library' if ok_real else 'fails')})
     if row['passes']:
         row['threshold'] = 0.5
-        row['head'] = {'weights': [round(float(w), 6) for w in K * T[label]], 'bias': round(-K * real['cutoff'], 6)}
+        row['head'] = {'weights': [round(float(w), 6) for w in K * vector], 'bias': round(-K * real['cutoff'], 6)}
     results.append(row)
     print(f"{label:<20} real {real.get('precision', 0):.2f}/{real.get('recall', 0):.2f} n{real.get('testPositive', 0):<5} library {lib.get('precision', 0):.2f}/{lib.get('recall', 0):.2f} n{lib.get('testPositive', 0):<5} {row['verdict']}")
 json.dump({'kind': 'zero-shot-heads-v1', 'bar': BAR, 'results': results}, open(OUT, 'w'), indent=1)
