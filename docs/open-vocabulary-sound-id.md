@@ -134,6 +134,13 @@ either stays mostly wrong (best: shaker loop 3 of 29, rising 3 of 22, filtered 1
 altogether. A label switched on at a cut-off where it never fires would be "active" in name only, so all 12 stay
 blocked.
 
+**Ready-to-label queue.** `build-review-queue.py` wrote `artifacts/review-blocked/` with 194 clips for the 7 blocked
+labels this branch owns (synth bass, synth stab, supersaw, bass pluck, shaker loop, rising, syncopated). For each
+label it holds up to 15 clips whose Freesound tags name it and 15 untagged clips that raw CLAP ranks highest, which are
+the answers a detector needs most. Open it with
+`DJ_REVIEW_DATA=artifacts/review-blocked DJ_REVIEW_NO_APPLY=1 python3 scripts/dj-review-server.py`.
+`NO_APPLY` keeps the review tool from rebuilding the shipped model; the confirmed labels feed the next training round.
+
 **This makes 186 of 198 labels able to appear:** 111 from tested detectors and 75 as "unverified". The other 12 are
 blocked because measurement says they would mostly be wrong. "Unverified" tags are honest about being untested.
 They are not accurate detection.
