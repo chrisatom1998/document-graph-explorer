@@ -48,7 +48,8 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
   await expect(dismiss).toHaveCount(0);
  };
  await importFixture(fixture);
- await page.getByRole('button',{name:'Switch to 2D view',exact:true}).click();
+ // The first scene builds right after import; under software WebGL that can hold the main thread past the 15s default.
+ await page.getByRole('button',{name:'Switch to 2D view',exact:true}).click({timeout:60_000});
  await expect(page.getByRole('application',{name:/Interactive 2D/})).toBeVisible();
  await page.getByRole('button',{name:'Fit the whole graph in view'}).click();
  await page.mouse.move(500,300);await page.mouse.down();await page.mouse.move(570,350,{steps:10});await page.mouse.up();await page.mouse.wheel(0,-120);
