@@ -20,15 +20,16 @@ export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnal
     {labels.length ? <ul className="sound-tags__list">{labels.map(l => {
       const kind = l.origin === 'confirmed by you' ? 'confirmed' : l.origin === 'From filename' ? 'name' : 'maybe' in l && l.maybe ? 'maybe' : l.dimension === 'source' ? 'source' : 'detail';
       const possible = 'tier' in l && l.tier === 'possible';
+      const unverified = 'uncalibrated' in l && !!l.uncalibrated;
       const hover = [DIMENSION_NAME[l.dimension as keyof typeof DIMENSION_NAME] ?? l.dimension,
         l.origin === 'From filename' ? 'from the file name, not the audio' : l.origin,
-        ...(possible ? ['possible: detector score 0.40–0.49, not calibrated (not a 40% chance)'] : []),
+        ...(unverified ? ['unverified: no tested detector for this sound yet; raw CLAP similarity, not calibrated'] : possible ? ['possible: detector score 0.40–0.49, not calibrated (not a 40% chance)'] : []),
         ...(l.scores ?? []).map(s => `${s.model} ${s.score.toFixed(2)}`)].join(' · ');
       return <li key={`${l.dimension}:${l.label}`} className={`sound-tag sound-tag--${kind}${possible ? ' sound-tag--possible' : ''}`} data-tier={'tier' in l ? l.tier : undefined} title={hover}>
         {kind === 'confirmed' && <span className="sound-tag__mark" aria-hidden="true">✓</span>}
         <span>{pretty(l.label)}</span>
         {kind === 'name' && <span className="sound-tag__note">name</span>}
-        {possible ? <span className="sound-tag__note">possible</span> : kind === 'maybe' && <span className="sound-tag__note">maybe</span>}
+        {unverified ? <span className="sound-tag__note">unverified</span> : possible ? <span className="sound-tag__note">possible</span> : kind === 'maybe' && <span className="sound-tag__note">maybe</span>}
         <span className="sr-only"> — {hover}</span>
       </li>;
     })}</ul> : <p className="sound-tags__empty">Nothing identified yet</p>}

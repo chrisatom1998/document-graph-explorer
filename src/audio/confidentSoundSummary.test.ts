@@ -58,3 +58,19 @@ it('can display every catalog label once a trained head reports it',async()=>{
  }).map(c=>c.label);
  expect(missing).toEqual([]);
 });
+it('keeps the calibrated-label list in sync with the shipped detectors',async()=>{
+ const {readFileSync}=await import('node:fs');const {CALIBRATED_LABELS}=await import('./confidentSoundSummary');
+ const shipped=new Set(['learned.json','short-clip.json'].flatMap(f=>JSON.parse(readFileSync(`public/sound-model/${f}`,'utf8')).heads.map((h:{label:string})=>h.label)));
+ expect([...CALIBRATED_LABELS].sort()).toEqual([...shipped].sort());
+});
+const clapOnly=(label:string,group:'source'|'production'|'character',score:number,durationSeconds=8):MusicAnalysis=>({...audio(),durationSeconds,analyzedSeconds:durationSeconds,instruments:[],soundProfile:{version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group,label,score,model:'Music CLAP'}]}});
+it('shows an untested label from raw CLAP only as unverified/possible on long recordings',()=>{
+ expect(confidentSoundSummary(clapOnly('banjo','source',.45))[0]).toMatchObject({label:'banjo',tier:'possible',uncalibrated:true});
+ expect(confidentSoundSummary(clapOnly('air horn','production',.62))[0]).toMatchObject({label:'air horn',tier:'possible',uncalibrated:true});
+});
+it.each([[.39,8],[.45,1.5]] as const)('does not fall back below the floor or on one-shots (score %s, %s s)',(score,seconds)=>{
+ expect(confidentSoundSummary(clapOnly('banjo','source',score,seconds))).toEqual([]);
+});
+it('never falls back to raw CLAP for a label that has a tested detector',()=>{
+ expect(confidentSoundSummary(clapOnly('kick','production',.9))).toEqual([]);
+});
