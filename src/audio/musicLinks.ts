@@ -90,10 +90,10 @@ function pairEdges(a: Features, b: Features, match?: SoundMatch): Edge[] {
     // Tags already explained by the instrument link are not repeated here.
     const tags = a.tags.filter(t => b.tags.some(u => u.dimension === t.dimension && u.label === t.label) && !(t.dimension === 'source' && shared.some(i => i.label === t.label)));
     const confirmed = tags.filter(t => t.origin === 'confirmed by you' && b.tags.find(u => u.dimension === t.dimension && u.label === t.label)!.origin === 'confirmed by you');
-    const detail = tags.length ? ` Both also have: ${tags.map(t => `${t.label} (${t.dimension === 'effect' ? 'production / effect' : t.dimension})`).join(', ')}${confirmed.length === tags.length ? ', confirmed by you on both tracks' : confirmed.length ? ', some confirmed by you' : ', detected by tested sound models'}.` : '';
+    const detail = tags.length ? ` Both also have: ${tags.map(t => `${t.label.replaceAll('_', ' ')} (${t.dimension === 'effect' ? 'production / effect' : t.dimension})`).join(', ')}${confirmed.length === tags.length ? ', confirmed by you on both tracks' : confirmed.length ? ', some confirmed by you' : ', detected by tested sound models'}.` : '';
     const reviewed = sound.length ? ` Shared sound properties: ${sound.map(i => `${i.label} (${i.group === 'production' ? 'production / effect' : 'character'})`).join(', ')}. Confirmed by you on both tracks.` : '';
     const weight = Math.min(1, .6 + .4 * Math.max(0, match.similarity) + .05 * tags.length + (sound.length ? .1 : 0));
-    add('sound', weight, `Sounds alike: the two recordings' sound fingerprints are ${Math.round(Math.max(0, match.similarity) * 100)}% similar, and each is among the other's closest-sounding tracks.${detail}${reviewed}`);
+    add('sound', weight, `Sounds alike: the two recordings' sound fingerprints are ${Math.floor(Math.max(0, match.similarity) * 100)}% similar, and each is among the other's closest-sounding tracks.${detail}${reviewed}`);
   } else if (sound.length) add('sound', .85, `Shared sound properties: ${sound.map(i => `${i.label} (${i.group === 'production' ? 'production / effect' : 'character'})`).join(', ')}. Confirmed by you on both tracks.`);
   return edges;
 }

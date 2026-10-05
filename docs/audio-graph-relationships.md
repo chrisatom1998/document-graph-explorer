@@ -22,3 +22,14 @@ Each track's closest-sounding tracks are always candidates. Fingerprints are com
 Run `./node_modules/.bin/vite-node scripts/bench-music-links.mjs` for a reproducible 100/1,000/5,000-node benchmark. The October 4 implementation run on Chris's Mac measured 12/113/544 ms, with 787/7,966/39,861 typed edges and a maximum of 8 neighbors. Timing varies with evidence and hardware.
 
 The existing connection panel exposes reasons, provenance, and strength; Filters includes **sound properties**. Imported graphs remain temporary: export corrections to retain them. Local collections retain their existing session persistence.
+
+## Measured accuracy (2026-10-05)
+
+`.github/workflows/sound-links-eval.yml` (benchmark: `scripts/sound-links/select.py`) uploads opaque-named clips into the built app and checks whether linked clips belong together: 10 s OpenMIC full-mix songs by FMA genre, and NSynth single notes by instrument family. The link policy was chosen on separate tuning clips (OpenMIC train partition; NSynth instruments not in the test set) and fixed before the test clips were scored.
+
+| Test set (150 clips each) | Links before → after | Right genre / family before → after | Random pair |
+|---|---|---|---|
+| Songs | 494 → 306 | 9% → 38% (sound-alike links alone 44%) | 9% |
+| Instrument notes | 14 → 152 | 21% → 94% (same instrument 89%) | 13% |
+
+Before, song links were tempo and key coincidences (no better than random); notes were barely linked. Fingerprint-only scoring of all test clips gives 50% (songs, 298 clips) and 97% (notes, 270 clips).
