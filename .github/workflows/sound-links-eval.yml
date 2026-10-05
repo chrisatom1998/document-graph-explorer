@@ -12,7 +12,7 @@ on:
 
 env:
   ONNXRUNTIME_NODE_INSTALL: skip
-  BASE_REF: a16b672fed5fe7ee44352d4e71e72d5deca01cb1
+  BASE_REF: af2454dc38079dce620ee9e15b7dc89cfcfaed32
   OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
   FMA_METADATA: https://os.unil.cloud.switch.ch/fma/fma_metadata.zip
   NSYNTH: http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-test.jsonwav.tar.gz

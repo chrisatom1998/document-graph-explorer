@@ -2,7 +2,7 @@
 
 Audio analysis, saved corrections, imports, and session restoration refresh the same derived relationships. Existing document connections and authored relationships are preserved.
 
-- **Sounds alike:** each analysed track keeps a CLAP sound fingerprint (`soundEmbedding`: the mean of its 10-second window embeddings, stored as 512 signed bytes). Two tracks are linked when each is among the other's 3 closest-sounding tracks and their fingerprints are at least 50% similar (`SOUND_LINK_POLICY` in `src/audio/musicLinks.ts`). The reason shows the similarity and the tags both tracks share in the Sounds panel's tested-tag ranking (`confidentSoundSummary`, likely tier) or that you confirmed. Fingerprints from different model weights are never compared.
+- **Sounds alike:** each analysed track keeps a CLAP sound fingerprint (`embedding`: the unit-length mean of its 10-second window embeddings). Two tracks are linked when each is among the other's 3 closest-sounding tracks and their fingerprints are at least 50% similar (`SOUND_LINK_POLICY` in `src/audio/musicLinks.ts`). The reason shows the similarity and the tags both tracks share in the Sounds panel's tested-tag ranking (`confidentSoundSummary`, likely tier) or that you confirmed.
 - **Tempo:** estimates with confidence at least 0.5, within 3 BPM or 4%. Half/double-time pulse rates use the same tolerance at the faster rate, are explicitly labeled, and receive 25% less weight. Missing/invalid BPM and confidence do not match.
 - **Key:** strength at least 0.6; same, relative major/minor, and adjacent circle-of-fifths keys. A detected single pitch is not a key.
 - **Instruments:** current reviewed source evidence takes precedence, including empty corrections and latest Reject/Unsure decisions. Otherwise the existing reliable-instrument policy applies. Filename/folder clues are fallback hints only, labeled as unverified and limited to 0.45 weight. They cannot replace reliable audio instrumentation.
@@ -14,7 +14,7 @@ Tempo/key filename tags retain their existing precedence over estimates but use 
 
 Each audio node has at most **8 distinct automatic audio neighbors** and **4 edges per relationship type**. Limits apply to both endpoints. Existing document/title/authored relationships are outside these limits.
 
-Each track's closest-sounding tracks are always candidates. Fingerprints are compared all-pairs up to 800 tracks per model; larger libraries compare within fixed-seed random-hyperplane buckets. Feature buckets propose at most 128 further candidates per node, using local deterministic neighborhoods in large buckets. Candidate pairs are ranked by strongest evidence plus a small multiple-feature bonus. Selection is deliberately approximate for large packs, not an exhaustive nearest-neighbor search. Unknown values never create buckets. Evidence is projected once per node per rebuild.
+Each track's closest-sounding tracks are always candidates. Fingerprints are compared all-pairs up to 800 tracks; larger libraries compare within fixed-seed random-hyperplane buckets. Feature buckets propose at most 128 further candidates per node, using local deterministic neighborhoods in large buckets. Candidate pairs are ranked by strongest evidence plus a small multiple-feature bonus. Selection is deliberately approximate for large packs, not an exhaustive nearest-neighbor search. Unknown values never create buckets. Evidence is projected once per node per rebuild.
 
 Run `./node_modules/.bin/vite-node scripts/bench-music-links.mjs` for a reproducible 100/1,000/5,000-node benchmark. The October 4 implementation run on Chris's Mac measured 12/113/544 ms, with 787/7,966/39,861 typed edges and a maximum of 8 neighbors. Timing varies with evidence and hardware.
 
@@ -24,9 +24,13 @@ The existing connection panel exposes reasons, provenance, and strength; Filters
 
 `.github/workflows/sound-links-eval.yml` (benchmark: `scripts/sound-links/select.py`) uploads opaque-named clips into the built app and checks whether linked clips belong together: 10 s OpenMIC full-mix songs by FMA genre, and NSynth single notes by instrument family. The link policy was chosen on separate tuning clips (OpenMIC train partition; NSynth instruments not in the test set) and fixed before the test clips were scored.
 
+Results are being re-measured against main with #110's sound-alike links as the baseline.
+
+Earlier run, against main before #110 (no sound-alike links at all):
+
 | Test set (150 clips each) | Links before → after | Right genre / family before → after | Random pair |
 |---|---|---|---|
 | Songs | 494 → 550 | 9% → 17% (sound-alike links alone 44%; tempo 10%, key 10%) | 9% |
 | Instrument notes | 14 → 191 | 21% → 79% (sound-alike links alone 83%, same instrument 78%) | 13% |
 
-Before, song links were tempo and key coincidences (no better than random); notes were barely linked. Tempo, key and file-name links are kept as they were, so on songs they still dilute the overall figure. The benchmark uses opaque file names, so file-name and title links do not appear in it. Fingerprint-only scoring of all test clips gives 50% (songs, 298 clips) and 97% (notes, 270 clips).
+Tempo, key and file-name links are kept as they were, so on songs they still dilute the overall figure. The benchmark uses opaque file names, so file-name and title links do not appear in it.
