@@ -366,7 +366,11 @@ function supportsWebGL(): boolean {
   if (typeof document === 'undefined') return false;
   try {
     const probe = document.createElement('canvas');
-    return Boolean(probe.getContext('webgl2') || probe.getContext('webgl'));
+    const context = probe.getContext('webgl2') || probe.getContext('webgl');
+    // Capability probe only — release it so it doesn't count against the
+    // browser's live-context limit (same as NebulaCanvas's probe).
+    context?.getExtension('WEBGL_lose_context')?.loseContext();
+    return Boolean(context);
   } catch {
     return false;
   }

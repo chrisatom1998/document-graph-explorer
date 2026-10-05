@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { correctDjTags } from './sampleAssistant';
 
 test('unavailable models stay explicit through correction, cancellation and restart', async ({ page }) => {
   const errors: string[] = [];
@@ -36,8 +37,8 @@ test('unavailable models stay explicit through correction, cancellation and rest
     await expect(page.locator('.audio-preview')).toBeVisible();
   };
   await openTrack();
-  await expect(page.getByRole('region', { name: 'Sound evidence' })).toContainText('Analysis: partial');
-  const details = page.getByText('Details', { exact: true });
+  await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('Analysis: partial');
+  const details = page.getByText('Technical details', { exact: true });
   if (await details.locator('..').getAttribute('open') === null) await details.click();
   await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('AST: failed');
   await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('Jamendo: failed');
@@ -51,10 +52,7 @@ test('unavailable models stay explicit through correction, cancellation and rest
   await page.getByText('Track actions', { exact: true }).click();
   await expect(page.getByRole('button', { name: 'Reanalyze musical features' })).toBeEnabled();
   await expect(page.locator('audio')).toHaveAttribute('src', /^blob:/);
-  await page.getByText('Correct the instrument', { exact: true }).click();
-  await page.getByLabel('Known instrument', { exact: false }).selectOption('synthesizer');
-  await page.getByRole('button', { name: 'Save confirmed instrument' }).click();
-  await expect(page.locator('.music-features')).toContainText('Saved on this device.');
+  await correctDjTags(page, /Synthetic tone/i, card => card.getByRole('checkbox', { name: 'synthesizer', exact: true }).check(), 'Your DJ tags are saved.');
   await page.reload();
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeVisible();
   await openTrack();
@@ -66,7 +64,7 @@ test('unavailable models stay explicit through correction, cancellation and rest
   await expect(page.locator('.music-features')).toContainText('synthesizer');
   await page.getByRole('button', { name: 'Reanalyze musical features' }).click();
   await expect(page.getByRole('button', { name: 'Reanalyze musical features' })).toBeEnabled({ timeout: 120_000 });
-  await page.getByText('Details', { exact: true }).click();
+  await page.getByText('Technical details', { exact: true }).click();
   await expect(page.getByRole('region', { name: 'Musical features' })).toContainText('AST: failed');
   await expect(page.locator('.music-features')).toContainText('synthesizer');
   await page.screenshot({ path: '/tmp/dge-models-unavailable.png', fullPage: true });

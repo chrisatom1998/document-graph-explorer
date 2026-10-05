@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { correctDjTags } from './sampleAssistant';
 
 const base = { kind:'document',fileType:'audio',topics:[],entities:[],keywords:[],wordCount:0,degree:0,cluster:0,status:'ok' };
 const analysis = {version:2,analyzedSeconds:8,durationSeconds:8,instruments:[],notes:[]};
@@ -12,7 +13,9 @@ const fixture = JSON.stringify({version:1,generator:'knowledge-nebula',createdAt
 ],edges:[{id:'notes-link',source:'alpha',target:'notes',kind:'reference',weight:1,evidence:['Session notes'],authored:true}]});
 
 test('automatic audio graph explains matches, updates corrections, exports, and works on desktop/mobile', async ({page},testInfo)=>{
- page.setDefaultTimeout(15000);
+ // Software WebGL on shared CI runners can hold the main thread well past 15s
+ // while the graph scene rebuilds, so plain toolbar clicks get the same budget.
+ page.setDefaultTimeout(60_000);
  const errors:string[]=[]; page.on('pageerror',error=>errors.push(error.message));
  await page.addInitScript(()=>localStorage.setItem('knowledge-nebula-theme','dark'));
  await page.setViewportSize({width:1440,height:1000});
@@ -71,12 +74,10 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  await page.screenshot({path:testInfo.outputPath('audio-match-reasons-mobile.png')});
  await page.setViewportSize({width:1440,height:1000});
  // Change a reviewed label through the real editor and verify derived edges update.
- await page.getByText('Track actions',{exact:true}).click();
- await page.getByText('Correct DJ tags',{exact:true}).click();
- await page.getByRole('checkbox',{name:'metallic',exact:true}).uncheck();
- await page.getByRole('checkbox',{name:'riser',exact:true}).uncheck();
- await page.getByRole('button',{name:'Save DJ tags',exact:true}).click();
- await expect(page.getByText('Tags updated. Export this graph to keep the changes.',{exact:true})).toBeVisible();
+ await correctDjTags(page,'Alpha piano',async card=>{
+  await card.getByRole('checkbox',{name:'metallic',exact:true}).uncheck();
+  await card.getByRole('checkbox',{name:'riser',exact:true}).uncheck();
+ },'Tags updated. Export this graph to keep the changes.');
  const corrected=await exportGraph(); const updated=JSON.parse(corrected);
  expect(updated.edges.some((e:{kind:string})=>e.kind==='sound')).toBe(false);
  expect(updated.edges.some((e:{kind:string})=>e.kind==='instrument')).toBe(true);
