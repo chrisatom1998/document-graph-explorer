@@ -179,8 +179,9 @@ it.each([.49,.5,.8])('hides the untested legacy prediction at score %s',score=>{
 
 it.each(['rejected','uncertain'] as const)('does not revive %s effect/character reviews in profile groups or correction defaults',decision=>{
  const audio={...node.audio!,confirmedDjTags:{source:['piano'],production:['riser'],character:['distorted']},soundProfile:{version:1 as const,character:['distorted'],roles:[],models:[],disagreement:false,djTags:[{group:'production' as const,label:'riser',score:.8},{group:'character' as const,label:'distorted',score:.8}]},soundReviews:[{dimension:'effect' as const,labelId:'riser',decision,scope:'track' as const,at:'2026-10-03T00:00:00Z',evidenceRunId:'old'},{dimension:'character' as const,labelId:'distorted',decision,scope:'track' as const,at:'2026-10-03T00:00:00Z',evidenceRunId:'old'}]};
- const before=structuredClone(audio);const view=renderExpanded(<MusicFeatures node={{...node,audio}}/>);
- expect(view.container.textContent).not.toMatch(/riser|distorted/);
+ const before=structuredClone(audio);renderExpanded(<MusicFeatures node={{...node,audio}}/>);
+ const attributes=screen.getByRole('region',{name:'All sound attributes'});
+ for(const label of ['riser','distorted'])expect(within(attributes).getByText(label).closest('li')).toHaveTextContent(`${decision==='uncertain'?'unsure':decision} by you`);
  expect(screen.getByRole('region',{name:'Sound identification'})).not.toHaveTextContent(/riser|distorted/);
  expect(audio).toEqual(before);
 });

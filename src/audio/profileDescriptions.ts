@@ -1,6 +1,11 @@
 import { CHARACTER_LABELS, RESEMBLANCE_LABELS, ROLE_LABELS, VOCAL_LABELS } from './soundProfile';
-export type DescriptionGroup = 'source' | 'articulation' | 'tone' | 'space' | 'role' | 'vocal' | 'sample' | 'dj-type' | 'breath' | 'dj-tone' | 'dj-rhythm' | `dj-${string}`;
-export interface DescriptionScore { group: DescriptionGroup; label: string | null; score: number; alternative?: string; learnedGroup?: 'source' | 'production' | 'character'; decision?: 'include' | 'exclude'; /** Set when a trained head, not a reviewed example, produced this score. */ basis?: 'head'; /** The head passed at 50% but not 65% on unseen brands: show it as a maybe. */ maybe?: boolean; }
+export type DescriptionGroup = 'embedding' | 'source' | 'articulation' | 'tone' | 'space' | 'role' | 'vocal' | 'sample' | 'dj-type' | 'breath' | 'dj-tone' | 'dj-rhythm' | `dj-${string}`;
+export interface DescriptionScore { group: DescriptionGroup; label: string | null; score: number; alternative?: string; learnedGroup?: 'source' | 'production' | 'character'; decision?: 'include' | 'exclude'; /** Set when a trained head, not a reviewed example, produced this score. */ basis?: 'head'; /** The head passed at 50% but not 65% on unseen brands: show it as a maybe. */ maybe?: boolean; /** Only on group 'embedding': the window's 512-d CLAP audio vector. */ embedding?: number[]; }
+/** The worker appends the window's audio vector to its scores; peel it off before scoring. */
+export function splitEmbedding(output: DescriptionScore[]): { scores: DescriptionScore[]; embedding?: number[] } {
+  const entry = output.find(s => s.group === 'embedding');
+  return { scores: entry ? output.filter(s => s !== entry) : output, ...(entry?.embedding ? { embedding: entry.embedding } : {}) };
+}
 export interface DescriptionPrompt { group: DescriptionGroup; label: string | null; vector: number[]; prompt?: string; }
 export function descriptionScores(embedding: ArrayLike<number>, prompts: DescriptionPrompt[]): DescriptionScore[] {
   const audio = Array.from(embedding); const norm = Math.hypot(...audio);
@@ -10,6 +15,16 @@ export function descriptionScores(embedding: ArrayLike<number>, prompts: Descrip
     const score = p.vector.reduce((sum, x, i) => sum + x * audio[i], 0) / (Math.hypot(...p.vector) * norm);
     return Number.isFinite(score) ? [{ group: p.group, label: p.label, score: Math.max(-1, Math.min(1, score)), ...(p.label === null && p.prompt ? {alternative:p.prompt} : {}) }] : [];
   });
+}
+/** Unit-length mean of window vectors: one fingerprint per sound. */
+export function meanEmbedding(vectors: number[][]): number[] | undefined {
+  const valid = vectors.filter(v => v.length === 512);
+  if (!valid.length) return undefined;
+  const unit = valid.map(v => { const n = Math.hypot(...v); return n > 1e-8 ? v.map(x => x / n) : undefined; }).filter((v): v is number[] => !!v);
+  if (!unit.length) return undefined;
+  const mean = Array.from({ length: 512 }, (_, i) => unit.reduce((s, v) => s + v[i], 0) / unit.length);
+  const norm = Math.hypot(...mean);
+  return norm > 1e-8 ? mean.map(x => Math.round(x / norm * 1e4) / 1e4) : undefined;
 }
 export function averageDescriptions(passages: DescriptionScore[][]): DescriptionScore[] {
   if (!passages.length) return [];

@@ -1,6 +1,7 @@
 import type { ResolvedDjLabel } from '../audio/soundReviewPolicy';
 import { DJ_TYPE_SOURCE, soundLabelText, type ConfirmedDjTags, type DjGroup } from '../audio/djTags';
 import type { SoundProfile } from '../audio/soundProfile';
+import { otherModelGuessGroups } from '../audio/soundMatchLabels';
 type SoundProps = { reviewedLabels?: ResolvedDjLabel[]; confirmedDjTags?: ConfirmedDjTags; preliminary?: boolean; profile: SoundProfile; sourceOverride?: { label: string; origin: string; allowVoice?: boolean } };
 
 /**
@@ -27,7 +28,6 @@ export function SoundTagGroups({ profile, confirmedDjTags, reviewedLabels }: Omi
 }
 
 const GROUP_NAME: Record<DjGroup, string> = { source: 'Source', production: 'Production type', character: 'Character' };
-const labelKey = (label: string) => label.replaceAll('_', ' ').toLowerCase();
 
 /**
  * Untested model guesses, shown next to the tested Sounds row so they are visible
@@ -38,15 +38,7 @@ export function OtherModelGuesses({ profile, confirmedDjTags, reviewedLabels, ex
   profile?: SoundProfile; confirmedDjTags?: ConfirmedDjTags; reviewedLabels?: ResolvedDjLabel[];
   /** Labels the Sounds row already shows. */ exclude: Iterable<string>; /** Instruments are confirmed or named, so source guesses are moot. */ skipSource?: boolean;
 }) {
-  const shown = new Set([...exclude].map(labelKey));
-  const groups = (['source', 'production', 'character'] as DjGroup[]).flatMap(group => {
-    if (group === 'source' ? skipSource || confirmedDjTags : confirmedDjTags) return [];
-    const raw = group !== 'source' && reviewedLabels?.length
-      ? reviewedLabels.filter(t => t.group === group && t.source !== 'confirmed').map(t => t.label)
-      : profile?.djTags?.filter(t => t.group === group).map(t => t.label) ?? [];
-    const values = [...new Set(raw)].filter(label => !shown.has(labelKey(label)));
-    return values.length ? [{ group, values }] : [];
-  });
+  const groups = otherModelGuessGroups({ profile, confirmedDjTags, reviewedLabels, exclude, skipSource });
   if (!groups.length) return null;
   return <section className="sound-guesses" aria-label="Other model guesses">
     <h4 className="sound-tags__title">Other model guesses</h4>

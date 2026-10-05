@@ -7,7 +7,7 @@ import { jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabel
 import { InstrumentEvidence, instrumentWindowStarts } from './instrumentEvidence';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, type MusicAnalysis, type MusicAnalysisMode } from './musicTypes';
 import type { InstrumentPredictions } from './instrumentLabels';
-import { DescriptionAccumulator, selectDescriptions, type DescriptionScore } from './profileDescriptions';
+import { DescriptionAccumulator, meanEmbedding, selectDescriptions, splitEmbedding, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
@@ -121,6 +121,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   const musicScores: Record<string, number> = {};
   let musicCount = 0;
   const descriptions = new DescriptionAccumulator();
+  const embeddings: number[][] = [];
   const djEvidence = new DjTagEvidence();
   const eventEvidence = new EventWindowEvidence();
   const completed = new Set<string>();
@@ -144,6 +145,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
     const windowTags = djEvidence.results(), found = new Set(windowTags.map(t => `${t.group}:${t.label}`));
     const eventTags = eventEvidence.results().filter(h => !found.has(`${h.tag.group}:${h.tag.label}`)).map(h => ({ ...h.tag, segments: h.segments.slice(0, 3) }));
     mergeDjTags(result.soundProfile, [...windowTags, ...eventTags], descriptions.average());
+    const audioVector = meanEmbedding(embeddings);
+    if (audioVector) result.embedding = audioVector; else delete result.embedding;
     for (const suggestion of jamendoSuggestions(musicScores)) {
       if (!result.instruments.some(i => i.label === suggestion.label)) result.instruments.push({ label: suggestion.label, score: suggestion.score, status: 'possible' });
     }
@@ -241,7 +244,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         musicCount++;
         recordEvidence(recognition, id, interval, [...jamendoLabels(scores), ...nsynthLabels(scores)]);
       } else {
-        const scores = output as DescriptionScore[];
+        const { scores, embedding } = splitEmbedding(output as DescriptionScore[]);
+        if (embedding) embeddings.push(embedding);
         descriptions.add(scores);
         djEvidence.add(selectDjTags(scores), interval.start, interval.end);
         const selected = selectDescriptions(scores);
@@ -287,6 +291,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
           output = await request<DescriptionScore[]>({ kind: 'profile', samples, samples16 }, [samples.buffer, samples16.buffer]);
           check(); cache.set(key, output);
         }
+        output = splitEmbedding(output).scores;
         eventEvidence.add(output, interval.start, interval.end);
         recordEvidence(recognition, 'clap', interval, output.flatMap(s => {
           if (s.group !== 'dj-learned' || s.basis !== 'head' || s.decision !== 'include' || !s.learnedGroup || !s.label || !EVENT_WINDOW_LABELS.has(s.label)) return [];
@@ -354,7 +359,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
             const jamendo = jamendoInstrumentScores(outputs.get('jamendo')!.output as Record<string, number>);
             // The scorer's contract is the fixed prompt catalog. Trained-head and reviewed-example
             // scores ride along in the same output for tagging and are not part of that contract.
-            const clap = (outputs.get('clap')!.output as DescriptionScore[]).filter(d => d.group !== 'dj-learned');
+            const clap = (outputs.get('clap')!.output as DescriptionScore[]).filter(d => d.group !== 'dj-learned' && d.group !== 'embedding');
             if (!Object.keys(ast.scores).length || !Object.keys(jamendo).length || !clap.length) {
               window = { ...window, status: 'empty', reason: 'Silent or empty native output; no fusion decision' };
             } else {
