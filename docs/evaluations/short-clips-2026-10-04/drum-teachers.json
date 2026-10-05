@@ -1,0 +1,337 @@
+{
+ "at": "2026-10-05T03:13:50.168242+00:00",
+ "target": 0.7,
+ "note": "train + Surge train + calibration, grouped 5-fold out-of-fold; test never read",
+ "clipsScored": 9869,
+ "devClipsWithoutTeacherScore": 0,
+ "teachers": {
+  "airasoul": "airasoul/wav2vec2-base-drum-kit",
+  "yojul": "yojul/wav2vec2-base-one-shot-hip-hop-drums-clf"
+ },
+ "results": {
+  "clapRepeat": {
+   "role:kick": {
+    "C": 0.03,
+    "threshold": 0.7824,
+    "precision": 0.909,
+    "recall": 0.917,
+    "f1": 0.913,
+    "pos": 120,
+    "neg": 8889,
+    "posFamilies": 58
+   },
+   "role:snare": {
+    "C": 0.03,
+    "threshold": 0.5794,
+    "precision": 0.972,
+    "recall": 0.979,
+    "f1": 0.975,
+    "pos": 141,
+    "neg": 8931,
+    "posFamilies": 45
+   },
+   "role:hi-hat": {
+    "C": 0.03,
+    "threshold": 0.867,
+    "precision": 0.966,
+    "recall": 0.959,
+    "f1": 0.963,
+    "pos": 148,
+    "neg": 9093,
+    "posFamilies": 30
+   },
+   "role:cymbal": {
+    "C": 0.3,
+    "threshold": 0.9801,
+    "precision": 0.944,
+    "recall": 0.708,
+    "f1": 0.81,
+    "pos": 24,
+    "neg": 9230,
+    "posFamilies": 10
+   },
+   "role:clap": {
+    "C": 0.03,
+    "threshold": 0.8712,
+    "precision": 0.935,
+    "recall": 0.935,
+    "f1": 0.935,
+    "pos": 170,
+    "neg": 8973,
+    "posFamilies": 71
+   }
+  },
+  "airasoul alone": {
+   "role:kick": {
+    "precision": 0.833,
+    "recall": 0.042,
+    "argmaxPrecision": 0.125,
+    "argmaxRecall": 0.458,
+    "pos": 120,
+    "neg": 8889
+   },
+   "role:snare": {
+    "precision": 0.583,
+    "recall": 0.099,
+    "argmaxPrecision": 0.208,
+    "argmaxRecall": 0.574,
+    "pos": 141,
+    "neg": 8931
+   },
+   "role:hi-hat": {
+    "precision": 0.093,
+    "recall": 0.081,
+    "argmaxPrecision": 0.112,
+    "argmaxRecall": 0.291,
+    "pos": 148,
+    "neg": 9093
+   },
+   "role:cymbal": {
+    "precision": 0.017,
+    "recall": 0.208,
+    "argmaxPrecision": 0.005,
+    "argmaxRecall": 1.0,
+    "pos": 24,
+    "neg": 9230
+   },
+   "role:clap": {
+    "precision": 0.707,
+    "recall": 0.341,
+    "argmaxPrecision": 0.175,
+    "argmaxRecall": 0.665,
+    "pos": 170,
+    "neg": 8973
+   }
+  },
+  "airasoul alone, drum clips only": {
+   "role:kick": {
+    "precision": 0.821,
+    "recall": 0.458,
+    "argmaxPrecision": 0.797,
+    "argmaxRecall": 0.458,
+    "pos": 120,
+    "neg": 736
+   },
+   "role:snare": {
+    "precision": 0.729,
+    "recall": 0.496,
+    "argmaxPrecision": 0.698,
+    "argmaxRecall": 0.574,
+    "pos": 141,
+    "neg": 548
+   },
+   "role:hi-hat": {
+    "precision": 0.681,
+    "recall": 0.216,
+    "argmaxPrecision": 0.717,
+    "argmaxRecall": 0.291,
+    "pos": 148,
+    "neg": 557
+   },
+   "role:cymbal": {
+    "precision": 0.381,
+    "recall": 0.333,
+    "argmaxPrecision": 0.094,
+    "argmaxRecall": 1.0,
+    "pos": 24,
+    "neg": 726
+   },
+   "role:clap": {
+    "precision": 0.933,
+    "recall": 0.653,
+    "argmaxPrecision": 0.934,
+    "argmaxRecall": 0.665,
+    "pos": 170,
+    "neg": 604
+   }
+  },
+  "clapRepeat+airasoul": {
+   "role:kick": {
+    "C": 0.03,
+    "threshold": 0.8638,
+    "precision": 0.939,
+    "recall": 0.9,
+    "f1": 0.919,
+    "pos": 120,
+    "neg": 8889,
+    "posFamilies": 58
+   },
+   "role:snare": {
+    "C": 0.03,
+    "threshold": 0.691,
+    "precision": 0.979,
+    "recall": 0.972,
+    "f1": 0.975,
+    "pos": 141,
+    "neg": 8931,
+    "posFamilies": 45
+   },
+   "role:hi-hat": {
+    "C": 0.03,
+    "threshold": 0.6442,
+    "precision": 0.948,
+    "recall": 0.98,
+    "f1": 0.963,
+    "pos": 148,
+    "neg": 9093,
+    "posFamilies": 30
+   },
+   "role:cymbal": {
+    "C": 0.03,
+    "threshold": 0.961,
+    "precision": 0.857,
+    "recall": 0.75,
+    "f1": 0.8,
+    "pos": 24,
+    "neg": 9230,
+    "posFamilies": 10
+   },
+   "role:clap": {
+    "C": 0.3,
+    "threshold": 0.7795,
+    "precision": 0.935,
+    "recall": 0.935,
+    "f1": 0.935,
+    "pos": 170,
+    "neg": 8973,
+    "posFamilies": 71
+   }
+  },
+  "yojul alone": {
+   "role:kick": {
+    "precision": 0.1,
+    "recall": 0.033,
+    "argmaxPrecision": 0.087,
+    "argmaxRecall": 0.908,
+    "pos": 120,
+    "neg": 8889
+   },
+   "role:snare": {
+    "precision": 0.667,
+    "recall": 0.014,
+    "argmaxPrecision": 0.056,
+    "argmaxRecall": 0.901,
+    "pos": 141,
+    "neg": 8931
+   },
+   "role:hi-hat": {
+    "precision": 0.198,
+    "recall": 0.108,
+    "argmaxPrecision": 0.088,
+    "argmaxRecall": 0.473,
+    "pos": 148,
+    "neg": 9093
+   },
+   "role:cymbal": {
+    "precision": 0.043,
+    "recall": 0.167,
+    "argmaxPrecision": 0.011,
+    "argmaxRecall": 1.0,
+    "pos": 24,
+    "neg": 9230
+   },
+   "role:clap": {
+    "precision": 0.724,
+    "recall": 0.324,
+    "argmaxPrecision": 0.121,
+    "argmaxRecall": 0.765,
+    "pos": 170,
+    "neg": 8973
+   }
+  },
+  "yojul alone, drum clips only": {
+   "role:kick": {
+    "precision": 0.872,
+    "recall": 0.908,
+    "argmaxPrecision": 0.858,
+    "argmaxRecall": 0.908,
+    "pos": 120,
+    "neg": 736
+   },
+   "role:snare": {
+    "precision": 0.759,
+    "recall": 0.78,
+    "argmaxPrecision": 0.583,
+    "argmaxRecall": 0.901,
+    "pos": 141,
+    "neg": 548
+   },
+   "role:hi-hat": {
+    "precision": 0.663,
+    "recall": 0.426,
+    "argmaxPrecision": 0.619,
+    "argmaxRecall": 0.473,
+    "pos": 148,
+    "neg": 557
+   },
+   "role:cymbal": {
+    "precision": 0.35,
+    "recall": 0.292,
+    "argmaxPrecision": 0.238,
+    "argmaxRecall": 1.0,
+    "pos": 24,
+    "neg": 726
+   },
+   "role:clap": {
+    "precision": 0.948,
+    "recall": 0.753,
+    "argmaxPrecision": 0.935,
+    "argmaxRecall": 0.765,
+    "pos": 170,
+    "neg": 604
+   }
+  },
+  "clapRepeat+yojul": {
+   "role:kick": {
+    "C": 0.03,
+    "threshold": 0.7167,
+    "precision": 0.902,
+    "recall": 0.925,
+    "f1": 0.914,
+    "pos": 120,
+    "neg": 8889,
+    "posFamilies": 58
+   },
+   "role:snare": {
+    "C": 0.3,
+    "threshold": 0.579,
+    "precision": 0.972,
+    "recall": 0.979,
+    "f1": 0.975,
+    "pos": 141,
+    "neg": 8931,
+    "posFamilies": 45
+   },
+   "role:hi-hat": {
+    "C": 0.03,
+    "threshold": 0.7684,
+    "precision": 0.966,
+    "recall": 0.959,
+    "f1": 0.963,
+    "pos": 148,
+    "neg": 9093,
+    "posFamilies": 30
+   },
+   "role:cymbal": {
+    "C": 0.3,
+    "threshold": 0.9804,
+    "precision": 0.895,
+    "recall": 0.708,
+    "f1": 0.791,
+    "pos": 24,
+    "neg": 9230,
+    "posFamilies": 10
+   },
+   "role:clap": {
+    "C": 0.03,
+    "threshold": 0.8623,
+    "precision": 0.93,
+    "recall": 0.935,
+    "f1": 0.933,
+    "pos": 170,
+    "neg": 8973,
+    "posFamilies": 71
+   }
+  }
+ }
+}
