@@ -1,8 +1,8 @@
 name: Online DJ tag check
 
-# One-off real-world check: cuts 15 s clips from Creative Commons DJ tracks on SoundCloud
-# (falling back to ccMixter / Internet Archive netlabels), runs them through the built app's
-# real analysis pipeline in headless Chromium, and prints the tags it showed.
+# Real-world check: the frozen list of 15 s clips from Creative Commons SoundCloud tracks
+# (scripts/online-dj/soundcloud-clips.json) runs through the built app's real analysis pipeline
+# in headless Chromium, once per app version, so before/after see identical audio.
 # Audio is fetched at run time and never committed.
 on:
   push:
@@ -20,46 +20,49 @@ env:
 
 jobs:
   online-dj:
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [main, claude/weak-sound-labels-2phv35]
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.app }}
+      - uses: actions/checkout@v4
+        with:
+          path: online-dj-tools
+      - name: Use this branch's test scripts against the app version under test
+        run: |
+          rm -rf scripts/online-dj && cp -r online-dj-tools/scripts/online-dj scripts/online-dj && rm -rf online-dj-tools
+          git log -1 --format='app under test: %H %s'
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Restore audio model weights
-        id: music-models
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
           restore-keys: music-models-
-      - name: Install ffmpeg + Playwright Chromium
+      - name: Download any missing model weights
+        run: npm run setup:music
+      - name: Install ffmpeg, yt-dlp + Playwright Chromium
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
           python3 -m pip install --quiet --upgrade yt-dlp
           npx playwright install --with-deps chromium
-      - name: Fetch tracks
-        run: |
-          node scripts/online-dj/fetch-soundcloud.mjs online-dj/audio online-dj/manifest.json 15 \
-            || CLIP_START=60 CLIP_SECONDS=15 node scripts/online-dj/fetch-tracks.mjs online-dj/audio online-dj/manifest.json
+      - name: Fetch the frozen SoundCloud clips
+        run: node scripts/online-dj/refetch-soundcloud.mjs online-dj/audio online-dj/manifest.json
       - name: Build
         run: npm run build
       - name: Analyse in the real app
         run: |
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
-          AUDIO_DIR=online-dj/audio MANIFEST=online-dj/manifest.json node scripts/short-clip-upload-eval.mjs online-dj/run test 20
+          AUDIO_DIR=online-dj/audio MANIFEST=online-dj/manifest.json node scripts/online-dj/upload-eval.mjs online-dj/run test 20
       - name: Summarise
         if: always()
         run: npx vite-node scripts/online-dj/summarize.mjs online-dj/run/graph-export.json online-dj/manifest.json online-dj/summary.json
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: online-dj-results
-          path: |
-            online-dj/manifest.json
-            online-dj/summary.json
-            online-dj/run/*.json
-          retention-days: 14
