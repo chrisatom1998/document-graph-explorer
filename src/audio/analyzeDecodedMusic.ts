@@ -75,6 +75,9 @@ export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicR
   }
 }
 
+/** The fusion scorer's contract is the fixed prompt catalog it was trained on. Trained-head,
+ * reviewed-example and one-shot scores ride along in the same output for tagging and are not part of it. */
+export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot');
 /** Model jobs share a bounded timeline, but never each other's validity. Evidence is applied in one fixed order. */
 export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
   // The runtime each AST/CLAP output came from: a threaded stall can switch this browser to one thread mid-run.
@@ -363,9 +366,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
           else {
             const ast = outputs.get('ast')!.output as InstrumentPredictions;
             const jamendo = jamendoInstrumentScores(outputs.get('jamendo')!.output as Record<string, number>);
-            // The scorer's contract is the fixed prompt catalog. Trained-head and reviewed-example
-            // scores ride along in the same output for tagging and are not part of that contract.
-            const clap = (outputs.get('clap')!.output as DescriptionScore[]).filter(d => d.group !== 'dj-learned');
+            const clap = fusionClapDescriptions(outputs.get('clap')!.output as DescriptionScore[]);
             if (!Object.keys(ast.scores).length || !Object.keys(jamendo).length || !clap.length) {
               window = { ...window, status: 'empty', reason: 'Silent or empty native output; no fusion decision' };
             } else {
