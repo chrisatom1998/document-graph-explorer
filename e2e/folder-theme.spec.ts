@@ -46,11 +46,16 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     await page.getByRole('button', { name: /^Add a folder/ }).click();
     await (await chooserPromise).setFiles(folder);
     await expect.poll(() => embeddingRequested, { timeout: 120000 }).toBe(true);
-    await page.getByRole('button', { name: 'Minimize processing details' }).click();
-    await expect(page.getByRole('button', { name: 'Show processing details' })).toBeVisible();
-    await page.getByRole('button', { name: 'Show processing details' }).click();
-    await expect(page.getByRole('button', { name: 'Minimize processing details' })).toBeVisible();
-    await page.getByRole('button', { name: 'Minimize processing details' }).click();
+    // The graph scene builds right after import. Under software WebGL that holds the main
+    // thread for several 10-20s stretches (about 45s in total in CI traces), and a click
+    // waits on animation frames to judge the button stable, so this exchange needs a
+    // budget wider than the 30s default or it times out inside the freeze.
+    const sceneBuild = { timeout: 120000 };
+    await page.getByRole('button', { name: 'Minimize processing details' }).click(sceneBuild);
+    await expect(page.getByRole('button', { name: 'Show processing details' })).toBeVisible(sceneBuild);
+    await page.getByRole('button', { name: 'Show processing details' }).click(sceneBuild);
+    await expect(page.getByRole('button', { name: 'Minimize processing details' })).toBeVisible(sceneBuild);
+    await page.getByRole('button', { name: 'Minimize processing details' }).click(sceneBuild);
     await expect(page.getByRole('button', { name: 'Search documents' })).toHaveCount(0);
     releaseEmbedding();
     await expect(page.locator('.graph-navigator__summary')).toContainText('3 documents', { timeout: 120000 });

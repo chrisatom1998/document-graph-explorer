@@ -134,4 +134,28 @@ describe('entityEdges', () => {
     );
     expect(tinyCorpus).toHaveLength(0);
   });
+
+  it('ignores entities carried by a large share of the corpus', () => {
+    // 'Nebula Systems' and 'SOC' each appear in 12 of 40 docs (above the
+    // corpus-wide caps), so sharing both is not evidence; 'AuthService' +
+    // 'refresh_token_flow' still link their two docs.
+    const docs = Array.from({ length: 40 }, (_, i) => ({
+      id: `d${String(i).padStart(2, '0')}`,
+      entities: i < 12 ? ['Nebula Systems', 'SOC'] : [`only_${i}`],
+    }));
+    docs[20]!.entities.push('AuthService', 'refresh_token_flow');
+    docs[21]!.entities.push('AuthService', 'refresh_token_flow');
+    const edges = entityEdges(docs, params);
+    expect(edges.map((e) => e.id)).toEqual(['d20->d21:entity']);
+  });
+
+  it('caps capitalized names sooner than identifiers', () => {
+    // 6 of 60 docs (10%): over the 5% cap for names, at the 10% cap for acronyms.
+    const docs = Array.from({ length: 60 }, (_, i) => ({ id: `d${String(i).padStart(2, '0')}`, entities: [] as string[] }));
+    for (let i = 0; i < 6; i += 1) docs[i]!.entities.push('Maya Rostami', 'Owen Patel');
+    for (let i = 10; i < 16; i += 1) docs[i]!.entities.push('GDPR', 'DPIA');
+    const edges = entityEdges(docs, { minShared: 2, edgesPerDoc: 10 });
+    expect(edges.length).toBeGreaterThan(0);
+    expect(edges.every((e) => e.evidence[0]!.includes('GDPR'))).toBe(true);
+  });
 });

@@ -106,7 +106,7 @@ export function musicPairEdges(a: DocNode, b: DocNode): Edge[] {
 }
 const keyToken = (k: NonNullable<Features['key']>) => `k:${k.tonic}:${k.mode}`;
 function tokens(f: Features, query = false): string[] {
-  const result = [...f.instruments.map(i => `i:${i.label}`), ...f.sound.map(i => `s:${i.group}:${i.label}`)];
+  const result = [...f.instruments.map(i => `i:${i.label}`), ...f.sound.map(i => `s:${i.group === 'production' ? 'effect' : 'character'}:${i.label}`)];
   if (f.key) {
     result.push(keyToken(f.key));
     if (query) {

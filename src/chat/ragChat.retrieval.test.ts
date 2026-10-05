@@ -4,6 +4,7 @@ vi.mock('../pipeline/coordinator', () => ({
   embedQuery: vi.fn(),
 }));
 
+import { QUERY_MIN_SEMANTIC_SCORE } from '../config';
 import { buildPrompt, diversifyChunks, keywordEvidence, retrievalOptionsForChat } from './ragChat';
 
 describe('RAG retrieval helpers', () => {
@@ -61,7 +62,7 @@ describe('RAG retrieval helpers', () => {
     expect(retrievalOptionsForChat('relevant')).toMatchObject({
       limit: 8,
       perDocument: 2,
-      minSemanticScore: 0.3,
+      minSemanticScore: QUERY_MIN_SEMANTIC_SCORE,
     });
     expect(retrievalOptionsForChat('all', 47)).toMatchObject({
       limit: 47,

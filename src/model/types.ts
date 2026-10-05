@@ -310,7 +310,7 @@ export type AggRequest =
       vectors: Float32Array; // flattened [n * dims]
       dims: number;
       existingEdges: { source: string; target: string; weight: number }[];
-      params: { threshold: number; topK: number; dupThreshold: number };
+      params: { threshold: number; topK: number; dupThreshold: number; relativeMargin?: number };
     }
   | {
       // Clustering-only pass: Louvain over a caller-supplied edge set, no

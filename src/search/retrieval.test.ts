@@ -9,6 +9,7 @@ vi.mock('../pipeline/coordinator', () => ({
 }));
 
 import {
+  containsTerm,
   identifierHits,
   identifierTerms,
   lexicalRelevance,
@@ -53,6 +54,18 @@ describe('shared hybrid retrieval', () => {
   it('scores exact lexical evidence and rejects weak multi-term overlap', () => {
     expect(lexicalRelevance('API rate limit', 'The API rate limit is 100/min.').score).toBeGreaterThan(1);
     expect(lexicalRelevance('API rate limit', 'This document only mentions the API.').score).toBe(0);
+  });
+
+  it('matches terms at word starts, not inside other words', () => {
+    expect(containsTerm('invoices were delayed', 'invoice')).toBe(true);
+    expect(containsTerm('the deployment guide', 'deploy')).toBe(true);
+    expect(containsTerm('the report was published', 'shed')).toBe(false);
+    expect(containsTerm('restart the service', 'art')).toBe(false);
+    expect(containsTerm('post in slack', 'sla')).toBe(false);
+    expect(containsTerm('enterprise slas and credits', 'sla')).toBe(true);
+    expect(containsTerm('node.js and c++ services', 'c++')).toBe(true);
+    expect(containsTerm('東京にある会社', '会社')).toBe(true);
+    expect(lexicalRelevance('Which dog breeds shed the least?', 'Breaking changes are published as ...').score).toBe(0);
   });
 
   it('matches non-Latin titles and phrases and stopword-only titles', () => {
@@ -139,6 +152,23 @@ describe('shared hybrid retrieval', () => {
     expect(identifierTerms('Postgres 16 logical replication')).toEqual([]);
     expect(identifierHits(['pt-01'], 'Finding PT-01: header spoofing')).toBe(1);
     expect(identifierHits(['pt-01'], 'Finding PT-010 and XPT-01')).toBe(0);
+    expect(identifierHits(['pt-01'], 'See PT-01-A, PT-01_extra, PT-01.2 and A.PT-01')).toBe(0);
+    expect(identifierHits(['pt-01'], 'Closed in PT-01.')).toBe(1);
+  });
+
+  it('gives the identifier bonus to a semantic-only passage that misses the lexical gate', async () => {
+    const chunks = new Map<string, ChunkData>([
+      ['close', { texts: ['quarterly revenue forecast assumptions overview'], vectors: new Float32Array([1, 0]), dims: 2 }],
+      ['coded', { texts: ['Ticket FIN-4410 closed'], vectors: new Float32Array([0.6, 0.8]), dims: 2 }],
+    ]);
+    const result = await retrieveCorpus('FIN-4410 quarterly revenue forecast assumptions', { minSemanticScore: 0, limit: 2 }, dependencies(
+      [node('close', 'Forecast'), node('coded', 'Tickets')],
+      chunks,
+      async () => new Float32Array([1, 0]),
+    ));
+
+    expect(result.map((hit) => hit.docId)).toEqual(['coded', 'close']);
+    expect(result[0].lexicalRank).toBeUndefined();
   });
 
   it('puts a passage containing the exact identifier above closer semantic matches', async () => {

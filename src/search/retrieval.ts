@@ -101,15 +101,23 @@ export function identifierTerms(query: string): string[] {
   )];
 }
 
-/** How many identifiers appear in the text as whole tokens (so "PT-01" does not match "PT-010"). */
+const IDENTIFIER_CHAR = /[\p{L}\p{N}]/u;
+const IDENTIFIER_JOINER = /[-_.]/;
+
+/**
+ * How many identifiers appear in the text as whole tokens: "PT-01" does not match
+ * "PT-010", "XPT-01", "PT-01-A" or "PT-01.2", but does match "PT-01." at a sentence end.
+ */
 export function identifierHits(identifiers: readonly string[], text: string): number {
   if (identifiers.length === 0) return 0;
   const body = text.toLowerCase();
+  const continues = (joinerOrChar: string | undefined, next: string | undefined) =>
+    !!joinerOrChar && (IDENTIFIER_CHAR.test(joinerOrChar)
+      || (IDENTIFIER_JOINER.test(joinerOrChar) && !!next && IDENTIFIER_CHAR.test(next)));
   return identifiers.filter((id) => {
     for (let at = body.indexOf(id); at >= 0; at = body.indexOf(id, at + 1)) {
-      const before = body[at - 1] ?? ' ';
-      const after = body[at + id.length] ?? ' ';
-      if (!/[\p{L}\p{N}]/u.test(before) && !/[\p{L}\p{N}]/u.test(after)) return true;
+      const end = at + id.length;
+      if (!continues(body[at - 1], body[at - 2]) && !continues(body[end], body[end + 1])) return true;
     }
     return false;
   }).length;
@@ -117,6 +125,32 @@ export function identifierHits(identifiers: readonly string[], text: string): nu
 
 function normalized(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/** Scripts written without spaces between words: substring is the only word test. */
+const UNSPACED_SCRIPT = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}\p{Script=Lao}\p{Script=Khmer}\p{Script=Myanmar}]/u;
+const WORD_CHAR = /[\p{L}\p{M}\p{N}]/u;
+/** Terms this short must match a whole word (plural allowed): 'sla' is not 'slack'. */
+const SHORT_TERM_MAX_LEN = 3;
+
+/**
+ * Whether `term` occurs in `text` starting at a word boundary. Longer terms may
+ * run on as a word prefix so 'invoice' still finds 'invoices' and 'deploy'
+ * finds 'deployment'; a plain substring test also let 'shed' match
+ * 'published' and 'art' match 'start'. Both inputs are already lowercased.
+ */
+export function containsTerm(text: string, term: string): boolean {
+  if (!term) return false;
+  if (UNSPACED_SCRIPT.test(term)) return text.includes(term);
+  const wholeWord = term.length <= SHORT_TERM_MAX_LEN;
+  for (let at = text.indexOf(term); at >= 0; at = text.indexOf(term, at + 1)) {
+    if (at > 0 && WORD_CHAR.test(text[at - 1]!)) continue;
+    if (!wholeWord) return true;
+    let end = at + term.length;
+    if (text[end] === 's') end += 1;
+    if (end >= text.length || !WORD_CHAR.test(text[end]!)) return true;
+  }
+  return false;
 }
 
 export function lexicalRelevance(
@@ -128,14 +162,14 @@ export function lexicalRelevance(
   if (!queryText) return { score: 0, titleMatch: false };
   const body = normalized(text);
   const normalizedTitle = normalized(title);
-  const titleMatch = normalizedTitle.length > 0 && normalizedTitle.includes(queryText);
-  const exactPhrase = queryText.length > 1 && body.includes(queryText);
+  const titleMatch = normalizedTitle.length > 0 && containsTerm(normalizedTitle, queryText);
+  const exactPhrase = queryText.length > 1 && containsTerm(body, queryText);
   const terms = retrievalTerms(query);
   if (terms.length === 0) {
     return { score: (titleMatch ? 0.7 : 0) + (exactPhrase ? 1.2 : 0), titleMatch };
   }
-  const bodyHits = terms.filter((term) => body.includes(term)).length;
-  const titleHits = terms.filter((term) => normalizedTitle.includes(term)).length;
+  const bodyHits = terms.filter((term) => containsTerm(body, term)).length;
+  const titleHits = terms.filter((term) => containsTerm(normalizedTitle, term)).length;
   const coverage = bodyHits / terms.length;
   const titleCoverage = titleHits / terms.length;
 
@@ -400,13 +434,16 @@ export async function retrieveCorpus(
       for (let passageIndex = 0; passageIndex < chunkCount; passageIndex++) {
         const semanticScore = dotProduct(vectors, queryVector, passageIndex * dims, dims);
         if (semanticScore < minSemanticScore) continue;
-        upsertCandidate(candidates, {
+        const passageText = chunkData.texts[passageIndex] ?? '';
+        const candidate = upsertCandidate(candidates, {
           docId,
           docTitle: titleById.get(docId) ?? docId.slice(0, 8),
           passageIndex,
-          text: (chunkData.texts[passageIndex] ?? '').slice(0, maxPassageChars),
+          text: passageText.slice(0, maxPassageChars),
           semanticScore,
         });
+        // A passage can carry the exact code yet miss the lexical coverage gate on a long query.
+        candidate.identifierHits ??= identifierHits(identifiers, `${candidate.docTitle}\n${passageText}`);
       }
     }
 
@@ -417,13 +454,14 @@ export async function retrieveCorpus(
       if (semanticScore < minSemanticScore) continue;
       // Snippet only — an evicted/absent full text must not drop the hit.
       const text = deps.texts.get(docId) ?? deps.chunks.get(docId)?.texts[0] ?? '';
-      upsertCandidate(candidates, {
+      const candidate = upsertCandidate(candidates, {
         docId,
         docTitle: titleById.get(docId) ?? docId.slice(0, 8),
         passageIndex: 0,
         text: text.slice(0, maxPassageChars),
         semanticScore,
       });
+      candidate.identifierHits ??= identifierHits(identifiers, `${candidate.docTitle}\n${text}`);
     }
   } catch (error) {
     console.warn('[knowledge-nebula] semantic retrieval unavailable - lexical results only', error);
