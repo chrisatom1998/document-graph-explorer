@@ -9,6 +9,7 @@ import { join } from 'node:path';
 
 const [outDir, split = 'test', batchArg = '60', limitArg] = process.argv.slice(2);
 if (!outDir) throw new Error('Usage: node scripts/short-clip-upload-eval.mjs <out-dir> [split] [batch] [limit]');
+const EXT = process.env.AUDIO_EXT ?? 'wav';
 const AUDIO = process.env.AUDIO_DIR ?? '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints/short-clips/bench-audio';
 const manifest = JSON.parse(readFileSync(process.env.MANIFEST ?? 'docs/evaluations/short-clips-2026-10-04/manifest.json', 'utf8'));
 let ids = manifest.items.filter(i => i.split === split).map(i => i.id);
@@ -47,7 +48,7 @@ for (let start = 0; start < ids.length; start += Number(batchArg)) {
     page.once('filechooser', () => {});
     await page.getByRole('button', { name: 'Add files', exact: true }).click({ timeout: 180_000 });
   }
-  await picker.setInputFiles(batch.map(id => join(AUDIO, `${id}.wav`)));
+  await picker.setInputFiles(batch.map(id => join(AUDIO, `${id}.${EXT}`)));
   // 2D view: same analysis, far less software rendering competing with the models.
   if (start === 0) await page.getByRole('button', { name: 'Switch to 2D view' }).click({ timeout: 120_000 }).catch(() => {});
   let done = 0;
@@ -59,7 +60,7 @@ for (let start = 0; start < ids.length; start += Number(batchArg)) {
     }
     const graph = await exportGraph().catch(e => { if (process.env.DEBUG) console.log('\nexport failed', e.message); });
     if (!graph) continue;
-    const want = new Set(batch.map(id => `${id}.wav`));
+    const want = new Set(batch.map(id => `${id}.${EXT}`));
     const nodes = graph.nodes.filter(n => want.has(n.path ?? n.title));
     done = nodes.filter(n => finished(n.audio)).length;
     process.stdout.write(`\r${start + done}/${ids.length} analysed`);

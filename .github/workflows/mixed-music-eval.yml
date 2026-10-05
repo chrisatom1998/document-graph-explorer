@@ -1,0 +1,106 @@
+name: Mixed-music tag check
+
+# Measures what the Sounds panel shows on full-mix music: a frozen set of 10 s OpenMIC-2018 test clips
+# (one per artist, CC-BY/CC0, human instrument labels). "base" builds the app source at BASE_REF, "branch" at
+# this commit; both use this commit's scripts. The first run freezes and commits the manifest; audio is fetched at run
+# time and never committed.
+on:
+  push:
+    branches: [claude/weak-sound-labels-2phv35]
+    paths: [.github/workflows/mixed-music-eval.yml, scripts/mixed-music/**]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  BASE_REF: d1b7b05928804975802348288f29384ce5a40245
+  OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download OpenMIC-2018
+        run: |
+          curl -fsSL --retry 6 -o "$RUNNER_TEMP/openmic.tgz" "$OPENMIC"
+          echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $RUNNER_TEMP/openmic.tgz" | md5sum -c -
+      - name: Select clips
+        run: python3 scripts/mixed-music/build.py "$RUNNER_TEMP/openmic.tgz" mixed-audio
+      - name: Commit the frozen manifest
+        run: |
+          git add docs/evaluations/mixed-music-2026-10-05/manifest.json
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m "Freeze the mixed-music tag benchmark (400 OpenMIC test clips)"
+            for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" && break; sleep $((2**i)); done
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mixed-music-audio
+          path: |
+            mixed-audio
+            docs/evaluations/mixed-music-2026-10-05/manifest.json
+          retention-days: 7
+
+  eval:
+    needs: freeze
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [base, branch]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: mixed-music-audio
+          path: mm
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Use the base app source
+        if: matrix.build == 'base'
+        run: git checkout "$BASE_REF" -- src
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=mm/mixed-audio AUDIO_EXT=ogg MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json \
+            node scripts/short-clip-upload-eval.mjs out/run test 20
+      - name: Score
+        if: always()
+        run: |
+          git checkout HEAD -- src
+          MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json npx vite-node scripts/mixed-music/score.mjs out/run/graph-export.json out/report.json
+          node scripts/compare-tag-reports.mjs --min-positives 5 out/report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mixed-music-${{ matrix.build }}
+          path: |
+            out/report.json
+            out/run/run.json
+          retention-days: 30
