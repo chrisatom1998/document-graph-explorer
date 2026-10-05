@@ -31,6 +31,7 @@ class Handler(BaseHTTPRequestHandler):
         if not re.fullmatch(r'[0-9a-f]{12}', str(body.get('id', ''))): return self.send(400, '{}')
         labels = read(LABELS, {})
         labels[body['id']] = {'family': body.get('family'), 'details': body.get('details', []), 'effects': body.get('effects', []),
+                              'instruments': body.get('instruments', []),
                               'at': time.strftime('%Y-%m-%dT%H:%M:%S')}
         tmp = LABELS + '.tmp'; json.dump(labels, open(tmp, 'w'), indent=1); os.replace(tmp, LABELS)   # never a half-written file
         self.send(200, json.dumps({'saved': len(labels)}))

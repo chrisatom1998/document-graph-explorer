@@ -24,32 +24,40 @@ h2{margin:18px 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercas
 </style></head><body><main>
 <div class="top"><div class="bar"><i id="bar"></i></div><div class="count" id="count"></div></div>
 <div class="card" id="card"></div>
-<p class="hint">Keys: <b>1–8</b> pick what it is · <b>letters</b> add detail · <b>Space</b> replay · <b>Enter</b> next · <b>←</b> back. Saves after every clip. Close anytime.</p>
+<p class="hint">Keys: <b>1–8</b> pick what it is · <b>Q–U</b> add detail · <b>A–M</b> instruments · <b>Space</b> replay · <b>Enter</b> next · <b>←</b> back. Saves after every clip. Close anytime.</p>
 </main><script>
 const FAMILIES=[['drum hit','Drum hit'],['drum loop','Drum loop'],['bass','Bass'],['synth','Synth / melodic'],['vocal','Vocal'],['fx','FX / transition'],['texture','Texture / ambience'],['unsure','Not sure / other']];
 const DETAILS={'drum hit':['kick','snare','clap','hi-hat','cymbal','tom','other percussion'],'drum loop':['full drum loop','top loop','percussion loop','drum fill','breakbeat'],
  bass:['808','sub bass','reese','wobble / growl','other bass'],synth:['lead','pluck','pad','chord','stab','arp'],vocal:['chop','phrase','ad-lib / shout','chant / choir'],
  fx:['riser','downlifter','impact','whoosh / sweep','glitch','other fx'],texture:['ambience','drone','foley','noise'],unsure:[]};
 const EFFECTS=['reverb','delay / echo','distorted'];const KEYS='qwertyu';const FXKEYS='zxc';
+// Instruments are stored as catalog labels. "none" is a real answer (no instrument heard); an empty list means not checked.
+const INSTRUMENTS=[['piano','piano'],['electric piano','electric piano'],['organ','organ'],['acoustic guitar','acoustic guitar'],['electric guitar','electric guitar'],
+ ['bass guitar','bass guitar'],['strings','strings'],['brass','brass'],['woodwind','sax / woodwind'],['mallet instrument','mallets / bells'],['synthesizer','synth'],['drums','drums'],['none','none of these']];
+const INKEYS='asdfghjklvbnm';
 let clips=[],labels={},i=0,cur={};const audio=new Audio();
 const $=s=>document.querySelector(s);
 async function load(){const s=await (await fetch('/state')).json();clips=s.clips;labels=s.labels;i=clips.findIndex(c=>!labels[c]);if(i<0)i=clips.length;show();}
 function show(){const n=Object.keys(labels).length;$('#bar').style.width=(n/clips.length*100)+'%';$('#count').textContent=`${n} of ${clips.length} done`;
  if(i>=clips.length){audio.pause();$('#card').innerHTML=`<div class="done"><b>All ${clips.length} done</b><p>Tell Claude "test set done".</p></div>`;return;}
- const saved=labels[clips[i]];cur=saved?{family:saved.family,details:[...saved.details],effects:[...saved.effects]}:{family:null,details:[],effects:[]};
+ const saved=labels[clips[i]];cur=saved?{family:saved.family,details:[...saved.details],effects:[...saved.effects],instruments:[...(saved.instruments||[])]}:{family:null,details:[],effects:[],instruments:[]};
  audio.src=`/audio/${clips[i]}.mp3`;audio.play().catch(()=>{});render();}
 function render(){const d=DETAILS[cur.family]||[];
  $('#card').innerHTML=`<div class="play"><button id="pl" aria-label="Replay">▶</button><span>Clip ${i+1}. What is this sound?</span></div>
  <h2>What is it</h2><div class="grid">${FAMILIES.map(([k,t],n)=>`<button class="opt ${cur.family===k?'on':''}" data-f="${k}">${t}<kbd>${n+1}</kbd></button>`).join('')}</div>
  <h2>More specific (optional)</h2><div class="chips">${d.map((t,n)=>`<button class="opt ${cur.details.includes(t)?'on':''}" data-d="${t}">${t}<kbd>${KEYS[n].toUpperCase()}</kbd></button>`).join('')||'<span style="color:var(--muted)">Pick what it is first</span>'}</div>
  <h2>Effects you can clearly hear (optional)</h2><div class="chips">${EFFECTS.map((t,n)=>`<button class="opt ${cur.effects.includes(t)?'on':''}" data-e="${t}">${t}<kbd>${FXKEYS[n].toUpperCase()}</kbd></button>`).join('')}</div>
+ <h2>Instruments you can hear (optional)</h2><div class="chips">${INSTRUMENTS.map(([v,t],n)=>`<button class="opt ${cur.instruments.includes(v)?'on':''}" data-i="${v}">${t}<kbd>${INKEYS[n].toUpperCase()}</kbd></button>`).join('')}</div>
  <div class="nav"><button id="back" ${i?'':'disabled'}>← Back</button><button class="next" id="next" ${cur.family?'':'disabled'}>Next ↵</button></div>`;
  $('#pl').onclick=replay;$('#back').onclick=back;$('#next').onclick=next;
  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>family(b.dataset.f));
  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>toggle('details',b.dataset.d));
- document.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>toggle('effects',b.dataset.e));}
+ document.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>toggle('effects',b.dataset.e));
+ document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>instrument(b.dataset.i));}
 function replay(){audio.currentTime=0;audio.play().catch(()=>{});}
 function family(f){if(cur.family!==f){cur.family=f;cur.details=[];}render();}
+// "none" and a named instrument contradict each other, so picking one clears the other.
+function instrument(v){const on=cur.instruments.includes(v);cur.instruments=on?cur.instruments.filter(x=>x!==v):v==='none'?['none']:[...cur.instruments.filter(x=>x!=='none'),v];render();}
 function toggle(k,v){cur[k]=cur[k].includes(v)?cur[k].filter(x=>x!==v):[...cur[k],v];render();}
 async function next(){if(!cur.family)return;const id=clips[i];labels[id]={...cur};
  const r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,...cur})});
@@ -59,6 +67,7 @@ addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey||i>=clips.lengt
  if(k===' '){e.preventDefault();replay();}else if(k==='enter'){e.preventDefault();next();}else if(k==='arrowleft')back();
  else if(k>='1'&&k<='8')family(FAMILIES[+k-1][0]);
  else if(KEYS.includes(k)&&cur.family){const t=(DETAILS[cur.family]||[])[KEYS.indexOf(k)];if(t)toggle('details',t);}
- else if(FXKEYS.includes(k))toggle('effects',EFFECTS[FXKEYS.indexOf(k)]);});
+ else if(FXKEYS.includes(k))toggle('effects',EFFECTS[FXKEYS.indexOf(k)]);
+ else if(INKEYS.includes(k))instrument(INSTRUMENTS[INKEYS.indexOf(k)][0]);});
 load();
 </script></body></html>
