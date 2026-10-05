@@ -1,7 +1,7 @@
 [
  {
-  "file": "ui-silentfile.wav",
-  "seconds": 5,
+  "file": "ui-electroemerge.wav",
+  "seconds": 226.298776,
   "status": "complete",
   "jobs": {
    "ast": "complete",
@@ -10,9 +10,22 @@
    "rhythm": "complete",
    "tonal": "complete"
   },
-  "tempo": null,
-  "key": null,
-  "tags": [],
+  "tempo": 120.1,
+  "key": "9",
+  "tags": [
+   "source:piano [likely] (maybe) AST score 0.76, Jamendo score 0.42, Trained head score (maybe) 0.94",
+   "source:electric piano [likely] (maybe) AST score 0.78, Trained head score (maybe) 0.99",
+   "character:dark [likely] (maybe) Jamendo score 1.00, Trained head score (maybe) 1.00",
+   "character:warm [likely] (maybe) CLAP similarity 0.88, Trained head score (maybe) 0.90",
+   "character:pulsing [likely] (maybe) CLAP similarity 0.88, Trained head score (maybe) 0.96",
+   "source:voice [likely] (maybe) Trained head score (maybe) 0.74",
+   "character:rhythmic [likely] (maybe) Trained head score (maybe) 0.97",
+   "character:wobbling [likely] (maybe) Trained head score (maybe) 0.99",
+   "character:sustained [likely] (maybe) Trained head score (maybe) 0.95",
+   "source:bassoon [likely] (maybe) Trained head score (maybe) 0.98",
+   "effect:texture [likely] (maybe) Trained head score (maybe) 0.74",
+   "source:sound effect [likely] (maybe) Trained head score (maybe) 0.74"
+  ],
   "filename": []
  },
  {
@@ -29,7 +42,7 @@
   "tempo": 126,
   "key": null,
   "tags": [
-   "source:synthesizer [likely] (maybe) Jamendo score 0.68, Trained head score (maybe) 0.88",
+   "source:synthesizer [likely] (maybe) Jamendo score 0.71, Trained head score (maybe) 0.88",
    "source:drums [likely] Trained head score 0.78",
    "character:rhythmic [likely] (maybe) Trained head score (maybe) 0.95",
    "character:pulsing [likely] (maybe) Trained head score (maybe) 0.94",
@@ -58,34 +71,6 @@
    "effect:impact [likely] Trained head score 1.00",
    "effect:kick [likely] Trained head score 0.89",
    "source:drums [likely] Trained head score 0.89"
-  ],
-  "filename": []
- },
- {
-  "file": "ui-electroemerge.wav",
-  "seconds": 226.298776,
-  "status": "complete",
-  "jobs": {
-   "ast": "complete",
-   "jamendo": "complete",
-   "clap": "complete",
-   "rhythm": "complete",
-   "tonal": "complete"
-  },
-  "tempo": 120.1,
-  "key": "9",
-  "tags": [
-   "source:piano [likely] (maybe) AST score 0.76, Jamendo score 0.42, Trained head score (maybe) 0.94",
-   "source:electric piano [likely] (maybe) AST score 0.78, Trained head score (maybe) 0.99",
-   "character:dark [likely] (maybe) Jamendo score 1.00, Trained head score (maybe) 1.00",
-   "character:warm [likely] (maybe) CLAP similarity 0.88, Trained head score (maybe) 0.90",
-   "character:pulsing [likely] (maybe) CLAP similarity 0.88, Trained head score (maybe) 0.96",
-   "source:voice [likely] (maybe) Trained head score (maybe) 0.74",
-   "character:rhythmic [likely] (maybe) Trained head score (maybe) 0.97",
-   "character:wobbling [likely] (maybe) Trained head score (maybe) 0.99",
-   "character:sustained [likely] (maybe) Trained head score (maybe) 0.95",
-   "effect:texture [likely] (maybe) Trained head score (maybe) 0.74",
-   "source:sound effect [likely] (maybe) Trained head score (maybe) 0.74"
   ],
   "filename": []
  }
