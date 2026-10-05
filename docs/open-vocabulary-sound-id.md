@@ -194,6 +194,9 @@ second) had only 6 test positives, too few to judge. Results are in `dsp-charact
   0 of 36). Removed. These labels belong to the other session.
 - **Round 17 (thresholds picked on real training rows only):** 12 labels better, 22 worse, same 78 passing.
   Rejected. This change was chosen after seeing round 16, so its numbers are not clean.
+- **Text prior (round 22):** the label's text direction was added as an extra input to the trained head. Over 54
+  labels it hurt more than it helped (10 better, 21 worse). The one pass, static noise at 0.50 / 0.48 on 27 clips,
+  was not shipped: picking the single winner from a method that mostly hurts would be cherry-picking.
 - **Smaller test minimum (10) for banjo, cajon, mandolin, oboe, air horn, vocal shush, woodblock, organ synth,
   vocal harmony:** none passed.
 - **A "precise but rarely fires" tier** (e.g. electric piano 0.88/0.44, clave 1.00/0.37 on 7 hits) was considered
