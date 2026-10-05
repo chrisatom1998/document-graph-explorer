@@ -12,7 +12,7 @@ import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
-import { createRecognition, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
+import { createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
   /** Qualification-only opt-in; callers must bind and validate the scorer. */
@@ -151,6 +151,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
       analyzedSeconds: job('ast').analyzedSeconds, windows: job('ast').successful.length };
     recognition.status = cancelled ? 'cancelled' : ended ? recognition.jobs.every(j => ['complete','unsupported'].includes(j.status)) ? 'complete'
       : recognition.jobs.some(j => j.successful.length) ? 'partial' : 'failed' : 'running';
+    if (ended) refreshRuntimeIdentity(recognition, duration);
     if (ended || cancelled) recognition.endedAt = new Date().toISOString();
     if (cancelled) recognition.cancellationReason = 'Cancelled by user';
   };
