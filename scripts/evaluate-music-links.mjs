@@ -17,7 +17,10 @@ if (!model) throw Error('The current shipped short-clip heads are invalid.');
 const nodes = rows.map(r => ({ id: r.id, title: r.id, path: `${r.id}.wav`, kind: 'document', fileType: 'audio',
   topics: [], entities: [], keywords: [], wordCount: 0, degree: 0, cluster: 0, status: 'ok',
   audio: { version: 2, durationSeconds: r.seconds, analyzedSeconds: r.seconds, instruments: [], notes: [], embedding: r.clapRepeat,
-    soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false, djTags: selectDjTags(shortClipScores(model, r).scores) } } }));
+    // The analysis worker applies the short-clip heads only within their validated duration; mirror that gate
+    // so longer rows do not pick up out-of-domain tags that would skew the edge metrics and the browser fixture.
+    soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false,
+      djTags: r.seconds <= model.maxSeconds ? selectDjTags(shortClipScores(model, r).scores) : [] } } }));
 const byId = new Map(nodes.map(n => [n.id, n]));
 const truth = new Map(rows.map(r => [r.id, r.annotation]));
 const baseline = baselinePath ? await import(resolve(baselinePath)) : undefined;
