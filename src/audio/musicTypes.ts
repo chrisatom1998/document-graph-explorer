@@ -5,13 +5,11 @@ import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
-import { sanitizeSoundEmbedding, type SoundEmbedding } from './soundEmbedding';
 export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 2;
 export const TEMPO_ANALYSIS_REVISION = 1;
 // Enabling the built-in policy makes persisted native-only documents eligible for reanalysis.
-// 68/67: analyses keep the CLAP sound fingerprint that sound-similarity links need.
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 68 : 67;
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 67 : 66;
 export interface InstrumentEstimate {
   label: string;
   score: number;
@@ -45,8 +43,8 @@ export interface MusicAnalysis {
   /** Accepted AI suggestions, not human-confirmed labels or audio measurements. */
   copilotProperties?: CopilotProperties;
   soundProfile?: SoundProfile;
-  /** Mean CLAP embedding of the analysed windows; links tracks that sound alike. */
-  soundEmbedding?: SoundEmbedding;
+  /** 512-d unit CLAP audio vector (mean of analyzed windows). Lives here, not in EmbeddingRecord, which is the text pipeline's table. Powers 'similar' edges. */
+  embedding?: number[];
   instrumentScan?: { mode?: MusicAnalysisMode; revision?: number; complete: boolean; analyzedSeconds: number; windows: number };
   notes: string[];
 }
@@ -76,9 +74,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   if (confirmedDjTags) out.confirmedDjTags = confirmedDjTags;
   const copilotProperties = sanitizeCopilotProperties(m.copilotProperties);
   if (copilotProperties) out.copilotProperties = copilotProperties;
+  if (Array.isArray(m.embedding) && m.embedding.length === 512 && m.embedding.every(v => typeof v === 'number' && Number.isFinite(v)) && Math.hypot(...(m.embedding as number[])) > 1e-8) out.embedding = m.embedding as number[];
   out.soundProfile = sanitizeSoundProfile(m.soundProfile);
-  const soundEmbedding = sanitizeSoundEmbedding(m.soundEmbedding);
-  if (soundEmbedding) out.soundEmbedding = soundEmbedding;
   if (!out.soundProfile) delete out.soundProfile;
   const prediction = m.instrumentPrediction as Record<string, unknown> | undefined;
   if (prediction && typeof prediction.label === 'string' && INSTRUMENT_LABELS.includes(prediction.label) && positive(prediction.score, 1) && positive(prediction.margin, 2)) {

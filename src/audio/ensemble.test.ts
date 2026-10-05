@@ -134,3 +134,13 @@ it('keeps standalone drums and ambiguous chops from being forced into a vocal la
  expect(combineSoundModels([],{drums:.8},[],complete).source?.label).toBe('drum kit');
  expect(combineSoundModels([],{drums:.8},[{group:'sample',label:'vocal chops',score:.32}],complete).source?.label).toBe('drum kit');
 });
+it('keeps tested one-shot heads visible when an untested model names the same source', () => {
+ const head = (label: string, learnedGroup: 'source' | 'production', score: number) => ({ group: 'dj-learned' as const, label, score, learnedGroup, decision: 'include' as const, basis: 'head' as const });
+ // AST is confident about drums and voice, but its scores are untested: they must not replace the tested head tags.
+ const kick = combineSoundModels([{ label: 'drum kit', score: .97, status: 'likely' }], {}, [head('kick', 'production', .9)], complete);
+ expect(kick.djTags).toEqual(expect.arrayContaining([{ group: 'production', label: 'kick', score: .9, model: 'Trained head' }, { group: 'source', label: 'drums', score: .9, model: 'Trained head' }]));
+ const voice = combineSoundModels([{ label: 'voice', score: .97, status: 'likely' }], {}, [head('voice', 'source', .8)], complete);
+ expect(voice.djTags).toContainEqual({ group: 'source', label: 'voice', score: .8, model: 'Trained head' });
+ // Without a head, the untested source stays as it was.
+ expect(combineSoundModels([{ label: 'drum kit', score: .97, status: 'likely' }], {}, [], complete).djTags).toContainEqual(expect.objectContaining({ group: 'source', label: 'drums', model: 'AudioSet AST' }));
+});

@@ -1,6 +1,7 @@
 import { resolvedNonSourceLabels, reviewedSoundProfile } from '../audio/soundReviewPolicy';
 import { useMusicJobs } from '../store/musicJobs';
 import CopilotProperties from './CopilotProperties';
+import MainSoundAttributes from './MainSoundAttributes';
 import ConfidentSoundSummary, { ModelScores } from './ConfidentSoundSummary';
 import MusicAnalysisMode from './MusicAnalysisMode';
 import { musicNameHints, type NamedHint } from '../audio/nameHints';
@@ -101,6 +102,7 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
       <OtherModelGuesses profile={displayProfile} confirmedDjTags={analysis.confirmedDjTags ? confirmedTags : undefined} reviewedLabels={reviewedLabels}
         skipSource={confirmed !== undefined || !!hints.instruments} exclude={shownSounds} />
       <ModelScores profile={displayProfile} audio={analysis} />
+      <MainSoundAttributes audio={analysis} node={node} />
       <details className="music-analysis-details">
         <summary>Technical details</summary>
         {recognitionProps && <RecognitionDiagnostics {...recognitionProps} />}

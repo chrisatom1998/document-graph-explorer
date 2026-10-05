@@ -37,3 +37,12 @@ it('does not bypass the breath-versus-noise comparison through the production ax
  const scores=[{group:'dj-type' as const,label:'vocal breath',score:.6},{group:'breath' as const,label:'vocal breath',score:.6},{group:'breath' as const,label:'noise',score:.7}];
  expect(selectDjTags(scores)).toEqual([]);
 });
+it('lets a tested passage tag replace an untested one and stand for its source', async () => {
+ const { mergeDjTags } = await import('./djClassification');
+ const profile = combineSoundModels([{ label: 'drum kit', score: .97, status: 'likely' }], {}, [], { ast: true, jamendo: true, clap: true });
+ mergeDjTags(profile, [{ group: 'production', label: 'snare', score: .7, model: 'Trained head' }]);
+ expect(profile.djTags).toContainEqual({ group: 'source', label: 'drums', score: .7, model: 'Trained head' });
+ // A maybe head never replaces a full tested tag.
+ mergeDjTags(profile, [{ group: 'production', label: 'snare', score: .99, model: 'Trained head (maybe)' }]);
+ expect(profile.djTags).toContainEqual(expect.objectContaining({ label: 'snare', model: 'Trained head', score: .7 }));
+});

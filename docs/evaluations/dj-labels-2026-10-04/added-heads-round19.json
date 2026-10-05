@@ -1,0 +1,3164 @@
+{
+ "kind": "added-maybe-heads-v1",
+ "builtAt": "2026-10-05T15:14:25.364141+00:00",
+ "learnedSha256": "06569736bd2220dc12eb700554f86104a63ebce13aaf0d8efd168cc2867161f7",
+ "heads": [
+  {
+   "kind": "family",
+   "name": "bass",
+   "testedOn": "library brands",
+   "precision": 0.5811623246492986,
+   "recall": 0.6209850107066381,
+   "threshold": 0.776,
+   "trainPositive": 5286,
+   "testPositive": 467,
+   "uses": [
+    "freesound",
+    "hiphop",
+    "fsm"
+   ],
+   "added": false,
+   "why": "not an app tag"
+  },
+  {
+   "kind": "family",
+   "name": "drum hit",
+   "testedOn": "library brands",
+   "precision": 0.8871662360034454,
+   "recall": 0.7862595419847328,
+   "threshold": 0.703,
+   "trainPositive": 17076,
+   "testPositive": 1310,
+   "uses": [
+    "freesound",
+    "hiphop",
+    "fsd50k",
+    "percussion",
+    "fsm"
+   ],
+   "added": false,
+   "why": "not an app tag"
+  },
+  {
+   "kind": "family",
+   "name": "drum loop",
+   "testedOn": "library brands",
+   "precision": 0.7442176870748299,
+   "recall": 0.6678876678876678,
+   "threshold": 0.863,
+   "trainPositive": 2106,
+   "testPositive": 819,
+   "uses": [
+    "freesound",
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "family",
+   "name": "fx",
+   "testedOn": "library brands",
+   "precision": 0.6288135593220339,
+   "recall": 0.520336605890603,
+   "threshold": 0.695,
+   "trainPositive": 11252,
+   "testPositive": 713,
+   "uses": [
+    "freesound",
+    "epidemic",
+    "fsd50k",
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "not an app tag"
+  },
+  {
+   "kind": "family",
+   "name": "synth",
+   "testedOn": "library brands",
+   "precision": 0.4348894348894349,
+   "recall": 0.7808823529411765,
+   "threshold": 0.638,
+   "trainPositive": 13836,
+   "testPositive": 680,
+   "uses": [
+    "freesound",
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "family",
+   "name": "texture",
+   "testedOn": "library brands",
+   "precision": 0.808695652173913,
+   "recall": 0.4217687074829932,
+   "threshold": 0.682,
+   "trainPositive": 11635,
+   "testPositive": 441,
+   "uses": [
+    "epidemic",
+    "fsd50k",
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "family",
+   "name": "vocal",
+   "testedOn": "library brands",
+   "precision": 0.7701612903225806,
+   "recall": 0.5176151761517616,
+   "threshold": 0.729,
+   "trainPositive": 9556,
+   "testPositive": 738,
+   "uses": [
+    "fsd50k",
+    "percussion",
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "not an app tag"
+  },
+  {
+   "kind": "label",
+   "name": "808 bass",
+   "testedOn": "library brands",
+   "precision": 0.8333333333333334,
+   "recall": 0.37037037037037035,
+   "threshold": 0.948,
+   "trainPositive": 1618,
+   "testPositive": 108,
+   "uses": [
+    "freesound",
+    "hiphop",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "acid bass",
+   "testedOn": "real recordings",
+   "precision": 0.5444444444444444,
+   "recall": 0.16225165562913907,
+   "threshold": 0.954,
+   "trainPositive": 873,
+   "testPositive": 302,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "acid synth",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.4,
+   "threshold": 0.997,
+   "trainPositive": 142,
+   "testPositive": 40,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "air horn",
+   "testedOn": "extra sources",
+   "precision": null,
+   "recall": null,
+   "threshold": null,
+   "trainPositive": 36,
+   "testPositive": 13,
+   "uses": null,
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "airy",
+   "testedOn": "real recordings",
+   "precision": 0.3157894736842105,
+   "recall": 0.05825242718446602,
+   "threshold": 0.966,
+   "trainPositive": 242,
+   "testPositive": 103,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "ambient drone",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.8865979381443299,
+   "threshold": 0.958,
+   "trainPositive": 289,
+   "testPositive": 97,
+   "uses": [
+    "epidemic"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "atmospheric pad",
+   "testedOn": "library brands",
+   "precision": 0.6981132075471698,
+   "recall": 0.3217391304347826,
+   "threshold": 0.898,
+   "trainPositive": 3652,
+   "testPositive": 115,
+   "uses": [
+    "freesound",
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "bass growl",
+   "testedOn": "library brands",
+   "precision": 0.44954128440366975,
+   "recall": 0.7153284671532847,
+   "threshold": 0.916,
+   "trainPositive": 1793,
+   "testPositive": 137,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "bass pluck",
+   "testedOn": "extra sources",
+   "precision": 1.0,
+   "recall": 0.2222222222222222,
+   "threshold": 0.983,
+   "trainPositive": 89,
+   "testPositive": 27,
+   "uses": [
+    "surge"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "beatbox",
+   "testedOn": "extra sources",
+   "precision": 1.0,
+   "recall": 0.9656084656084656,
+   "threshold": 0.841,
+   "trainPositive": 2241,
+   "testPositive": 756,
+   "uses": [
+    "percussion"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "bell synth",
+   "testedOn": "extra sources",
+   "precision": 0.0,
+   "recall": 0.0,
+   "threshold": 0.997,
+   "trainPositive": 72,
+   "testPositive": 23,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "bird ambience",
+   "testedOn": "real recordings",
+   "precision": 0.5481481481481482,
+   "recall": 0.39572192513368987,
+   "threshold": 0.995,
+   "trainPositive": 572,
+   "testPositive": 187,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "bitcrushed",
+   "testedOn": "real recordings",
+   "precision": 0.5539906103286385,
+   "recall": 0.36990595611285265,
+   "threshold": 0.907,
+   "trainPositive": 2209,
+   "testPositive": 638,
+   "uses": [
+    "chr",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "bongo",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.11538461538461539,
+   "threshold": 0.995,
+   "trainPositive": 196,
+   "testPositive": 78,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "brass synth",
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "threshold": 0.992,
+   "trainPositive": 141,
+   "testPositive": 39,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "breakbeat",
+   "testedOn": "library brands",
+   "precision": 0.8648648648648649,
+   "recall": 0.3076923076923077,
+   "threshold": 0.938,
+   "trainPositive": 1040,
+   "testPositive": 104,
+   "uses": [
+    "freesound",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "bright",
+   "testedOn": "real recordings",
+   "precision": 0.23076923076923078,
+   "recall": 0.04580152671755725,
+   "threshold": 0.909,
+   "trainPositive": 747,
+   "testPositive": 131,
+   "uses": [
+    "chr",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "chiptune synth",
+   "testedOn": "real recordings",
+   "precision": 0.8571428571428571,
+   "recall": 0.523943661971831,
+   "threshold": 0.959,
+   "trainPositive": 1086,
+   "testPositive": 355,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "group": "production",
+   "added": true,
+   "tier": "maybe"
+  },
+  {
+   "kind": "label",
+   "name": "choir",
+   "testedOn": "library brands",
+   "precision": 0.75,
+   "recall": 0.5142857142857142,
+   "threshold": 0.967,
+   "trainPositive": 55,
+   "testPositive": 35,
+   "uses": [],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "chops",
+   "testedOn": "library brands",
+   "precision": 0.5222222222222223,
+   "recall": 0.5465116279069767,
+   "threshold": 0.966,
+   "trainPositive": 267,
+   "testPositive": 86,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "chorused",
+   "testedOn": "real recordings",
+   "precision": 0.696969696969697,
+   "recall": 0.24731182795698925,
+   "threshold": 0.96,
+   "trainPositive": 574,
+   "testPositive": 93,
+   "uses": [
+    "chr",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "clap",
+   "testedOn": "library brands",
+   "precision": 0.7857142857142857,
+   "recall": 0.5092592592592593,
+   "threshold": 0.943,
+   "trainPositive": 951,
+   "testPositive": 108,
+   "uses": [
+    "freesound",
+    "hiphop",
+    "percussion"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "clave",
+   "testedOn": "real recordings",
+   "precision": 0.7777777777777778,
+   "recall": 0.30434782608695654,
+   "threshold": 0.985,
+   "trainPositive": 74,
+   "testPositive": 23,
+   "uses": [
+    "percussion",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "closed hi-hat",
+   "testedOn": "library brands",
+   "precision": 0.40860215053763443,
+   "recall": 0.8636363636363636,
+   "threshold": 0.978,
+   "trainPositive": 795,
+   "testPositive": 44,
+   "uses": [
+    "hiphop",
+    "percussion",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "conga",
+   "testedOn": "real recordings",
+   "precision": 0.4117647058823529,
+   "recall": 0.14,
+   "threshold": 0.993,
+   "trainPositive": 197,
+   "testPositive": 50,
+   "uses": [
+    "percussion",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "cowbell",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.7586206896551724,
+   "threshold": 0.943,
+   "trainPositive": 217,
+   "testPositive": 58,
+   "uses": [
+    "fsd50k",
+    "percussion"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "crash cymbal",
+   "testedOn": "library brands",
+   "precision": 0.9565217391304348,
+   "recall": 0.5945945945945946,
+   "threshold": 0.925,
+   "trainPositive": 1135,
+   "testPositive": 111,
+   "uses": [
+    "hiphop",
+    "fsd50k",
+    "percussion"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "crowd ambience",
+   "testedOn": "real recordings",
+   "precision": 0.891566265060241,
+   "recall": 0.7628865979381443,
+   "threshold": 0.981,
+   "trainPositive": 332,
+   "testPositive": 97,
+   "uses": [
+    "fsd50k"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "cymbal",
+   "testedOn": "real recordings",
+   "precision": 0.9009009009009009,
+   "recall": 0.6944444444444444,
+   "threshold": 0.943,
+   "trainPositive": 429,
+   "testPositive": 144,
+   "uses": [
+    "fsd50k"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "label",
+   "name": "dark",
+   "testedOn": "real recordings",
+   "precision": 0.4488517745302714,
+   "recall": 0.2777777777777778,
+   "threshold": 0.879,
+   "trainPositive": 2611,
+   "testPositive": 774,
+   "uses": [
+    "chr",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "distorted",
+   "testedOn": "library brands",
+   "precision": 0.02727272727272727,
+   "recall": 0.08823529411764706,
+   "threshold": 0.87,
+   "trainPositive": 862,
+   "testPositive": 34,
+   "uses": [
+    "fxr"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "downlifter",
+   "testedOn": "library brands",
+   "precision": 0.36893203883495146,
+   "recall": 0.3392857142857143,
+   "threshold": 0.984,
+   "trainPositive": 343,
+   "testPositive": 112,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "drum fill",
+   "testedOn": "library brands",
+   "precision": 0.5575221238938053,
+   "recall": 0.6428571428571429,
+   "threshold": 0.909,
+   "trainPositive": 291,
+   "testPositive": 98,
+   "uses": [],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "drum loop",
+   "testedOn": "library brands",
+   "precision": 0.5096774193548387,
+   "recall": 0.7596153846153846,
+   "threshold": 0.841,
+   "trainPositive": 692,
+   "testPositive": 104,
+   "uses": [
+    "processed"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "dry",
+   "testedOn": "extra sources",
+   "precision": 0.3888888888888889,
+   "recall": 0.34146341463414637,
+   "threshold": 0.933,
+   "trainPositive": 594,
+   "testPositive": 205,
+   "uses": [
+    "fxr"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "echoing",
+   "testedOn": "library brands",
+   "precision": 0.0,
+   "recall": 0.0,
+   "threshold": 0.839,
+   "trainPositive": 875,
+   "testPositive": 21,
+   "uses": [
+    "fxr"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "falling",
+   "testedOn": "real recordings",
+   "precision": 0.7760416666666666,
+   "recall": 0.4790996784565916,
+   "threshold": 0.933,
+   "trainPositive": 1281,
+   "testPositive": 311,
+   "uses": [
+    "chr",
+    "fsm"
+   ],
+   "group": "character",
+   "added": true,
+   "tier": "maybe"
+  },
+  {
+   "kind": "label",
+   "name": "filtered",
+   "testedOn": "extra sources",
+   "precision": 0.9736842105263158,
+   "recall": 0.8043478260869565,
+   "threshold": 0.913,
+   "trainPositive": 581,
+   "testPositive": 184,
+   "uses": [
+    "fxr"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "label",
+   "name": "finger snap",
+   "testedOn": "library brands",
+   "precision": 0.8157894736842105,
+   "recall": 0.4626865671641791,
+   "threshold": 0.933,
+   "trainPositive": 267,
+   "testPositive": 67,
+   "uses": [
+    "fsd50k",
+    "percussion"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "flanged",
+   "testedOn": "real recordings",
+   "precision": 0.2222222222222222,
+   "recall": 0.0851063829787234,
+   "threshold": 0.96,
+   "trainPositive": 463,
+   "testPositive": 47,
+   "uses": [
+    "chr",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "fm synth",
+   "testedOn": "real recordings",
+   "precision": 0.2826086956521739,
+   "recall": 0.1,
+   "threshold": 0.941,
+   "trainPositive": 872,
+   "testPositive": 260,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "foghorn bass",
+   "testedOn": "real recordings",
+   "precision": 0.1875,
+   "recall": 0.1875,
+   "threshold": 0.999,
+   "trainPositive": 53,
+   "testPositive": 16,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "foley hit",
+   "testedOn": "library brands",
+   "precision": 0.125,
+   "recall": 0.013071895424836602,
+   "threshold": 0.954,
+   "trainPositive": 847,
+   "testPositive": 153,
+   "uses": [
+    "epidemic",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "glassy",
+   "testedOn": "real recordings",
+   "precision": 0.8464163822525598,
+   "recall": 0.4979919678714859,
+   "threshold": 0.949,
+   "trainPositive": 1509,
+   "testPositive": 498,
+   "uses": [
+    "fsm"
+   ],
+   "group": "character",
+   "added": true,
+   "tier": "maybe"
+  },
+  {
+   "kind": "label",
+   "name": "gliding",
+   "testedOn": "real recordings",
+   "precision": 0.6933333333333334,
+   "recall": 0.34098360655737703,
+   "threshold": 0.918,
+   "trainPositive": 1248,
+   "testPositive": 305,
+   "uses": [
+    "chr",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "glitch effect",
+   "testedOn": "library brands",
+   "precision": 0.6571428571428571,
+   "recall": 0.4,
+   "threshold": 0.895,
+   "trainPositive": 3474,
+   "testPositive": 115,
+   "uses": [
+    "freesound",
+    "epidemic",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "gritty",
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "threshold": 0.968,
+   "trainPositive": 109,
+   "testPositive": 32,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "hi-hat",
+   "testedOn": "real recordings",
+   "precision": 0.5614035087719298,
+   "recall": 0.735632183908046,
+   "threshold": 0.936,
+   "trainPositive": 261,
+   "testPositive": 87,
+   "uses": [
+    "fsd50k"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "label",
+   "name": "hi-hat loop",
+   "testedOn": "library brands",
+   "precision": 0.5915492957746479,
+   "recall": 0.9130434782608695,
+   "threshold": 0.662,
+   "trainPositive": 377,
+   "testPositive": 46,
+   "uses": [
+    "processed"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "hollow",
+   "testedOn": "real recordings",
+   "precision": 0.2857142857142857,
+   "recall": 0.04878048780487805,
+   "threshold": 0.962,
+   "trainPositive": 278,
+   "testPositive": 82,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "impact",
+   "testedOn": "library brands",
+   "precision": 0.8913043478260869,
+   "recall": 0.37962962962962965,
+   "threshold": 0.907,
+   "trainPositive": 905,
+   "testPositive": 108,
+   "uses": [
+    "freesound",
+    "epidemic"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "kick",
+   "testedOn": "library brands",
+   "precision": 0.6861313868613139,
+   "recall": 0.8245614035087719,
+   "threshold": 0.921,
+   "trainPositive": 1914,
+   "testPositive": 114,
+   "uses": [
+    "freesound",
+    "hiphop",
+    "fsd50k",
+    "percussion"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "laser",
+   "testedOn": "library brands",
+   "precision": 0.20754716981132076,
+   "recall": 0.1746031746031746,
+   "threshold": 0.917,
+   "trainPositive": 2021,
+   "testPositive": 63,
+   "uses": [
+    "epidemic",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "machine ambience",
+   "testedOn": "real recordings",
+   "precision": 0.6363636363636364,
+   "recall": 0.22435897435897437,
+   "threshold": 0.976,
+   "trainPositive": 466,
+   "testPositive": 156,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "metallic",
+   "testedOn": "library brands",
+   "precision": 0.05,
+   "recall": 0.1016949152542373,
+   "threshold": 0.892,
+   "trainPositive": 2462,
+   "testPositive": 59,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "nasal",
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "threshold": 0.994,
+   "trainPositive": 89,
+   "testPositive": 55,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "noise sweep",
+   "testedOn": "library brands",
+   "precision": 0.16574585635359115,
+   "recall": 0.28846153846153844,
+   "threshold": 0.929,
+   "trainPositive": 1625,
+   "testPositive": 104,
+   "uses": [
+    "freesound",
+    "epidemic",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "open hi-hat",
+   "testedOn": "library brands",
+   "precision": 0.60625,
+   "recall": 0.708029197080292,
+   "threshold": 0.896,
+   "trainPositive": 562,
+   "testPositive": 137,
+   "uses": [
+    "hiphop",
+    "percussion"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "organ synth",
+   "testedOn": "extra sources",
+   "precision": null,
+   "recall": null,
+   "threshold": null,
+   "trainPositive": 35,
+   "testPositive": 12,
+   "uses": null,
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "percussion hit",
+   "testedOn": "library brands",
+   "precision": 0.4146341463414634,
+   "recall": 0.34,
+   "threshold": 0.592,
+   "trainPositive": 6594,
+   "testPositive": 100,
+   "uses": [
+    "percussion"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "percussion loop",
+   "testedOn": "library brands",
+   "precision": 0.8818181818181818,
+   "recall": 0.6298701298701299,
+   "threshold": 0.917,
+   "trainPositive": 251,
+   "testPositive": 154,
+   "uses": [
+    "processed"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "percussive",
+   "testedOn": "real recordings",
+   "precision": 0.4114285714285714,
+   "recall": 0.15254237288135594,
+   "threshold": 0.92,
+   "trainPositive": 1424,
+   "testPositive": 472,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "pitched vocal",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.3125,
+   "threshold": 0.988,
+   "trainPositive": 445,
+   "testPositive": 16,
+   "uses": [
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "plucked",
+   "testedOn": "real recordings",
+   "precision": 0.684931506849315,
+   "recall": 0.32679738562091504,
+   "threshold": 0.978,
+   "trainPositive": 310,
+   "testPositive": 153,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "pulsing",
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "threshold": 0.975,
+   "trainPositive": 357,
+   "testPositive": 31,
+   "uses": [
+    "chr",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "rain ambience",
+   "testedOn": "library brands",
+   "precision": 0.6666666666666666,
+   "recall": 0.3,
+   "threshold": 0.911,
+   "trainPositive": 2557,
+   "testPositive": 20,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "record stop",
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "threshold": 0.965,
+   "trainPositive": 464,
+   "testPositive": 20,
+   "uses": [
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "reese bass",
+   "testedOn": "library brands",
+   "precision": 0.8125,
+   "recall": 0.2524271844660194,
+   "threshold": 0.988,
+   "trainPositive": 304,
+   "testPositive": 103,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "reverberant",
+   "testedOn": "extra sources",
+   "precision": 0.852112676056338,
+   "recall": 0.605,
+   "threshold": 0.923,
+   "trainPositive": 599,
+   "testPositive": 200,
+   "uses": [
+    "fxr"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "label",
+   "name": "reverse cymbal",
+   "testedOn": "extra sources",
+   "precision": 1.0,
+   "recall": 0.9207920792079208,
+   "threshold": 0.946,
+   "trainPositive": 311,
+   "testPositive": 101,
+   "uses": [
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "label",
+   "name": "reverse effect",
+   "testedOn": "library brands",
+   "precision": 0.5818181818181818,
+   "recall": 0.24242424242424243,
+   "threshold": 0.908,
+   "trainPositive": 370,
+   "testPositive": 132,
+   "uses": [
+    "epidemic"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "reverse impact",
+   "testedOn": "extra sources",
+   "precision": 0.9879518072289156,
+   "recall": 0.9010989010989011,
+   "threshold": 0.919,
+   "trainPositive": 270,
+   "testPositive": 91,
+   "uses": [
+    "processed"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "label",
+   "name": "reversed vocal",
+   "testedOn": "extra sources",
+   "precision": 0.9859154929577465,
+   "recall": 0.660377358490566,
+   "threshold": 0.985,
+   "trainPositive": 312,
+   "testPositive": 106,
+   "uses": [
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "label",
+   "name": "rhythmic",
+   "testedOn": "real recordings",
+   "precision": 0.4,
+   "recall": 0.06842105263157895,
+   "threshold": 0.938,
+   "trainPositive": 1052,
+   "testPositive": 380,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "ride cymbal",
+   "testedOn": "library brands",
+   "precision": 0.7631578947368421,
+   "recall": 0.8365384615384616,
+   "threshold": 0.899,
+   "trainPositive": 306,
+   "testPositive": 104,
+   "uses": [
+    "percussion"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "rimshot",
+   "testedOn": "library brands",
+   "precision": 0.275,
+   "recall": 0.2357142857142857,
+   "threshold": 0.949,
+   "trainPositive": 480,
+   "testPositive": 140,
+   "uses": [
+    "percussion",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "riser",
+   "testedOn": "library brands",
+   "precision": 0.5865384615384616,
+   "recall": 0.6039603960396039,
+   "threshold": 0.975,
+   "trainPositive": 548,
+   "testPositive": 101,
+   "uses": [
+    "freesound",
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "rising",
+   "testedOn": "real recordings",
+   "precision": 0.6,
+   "recall": 0.06315789473684211,
+   "threshold": 0.965,
+   "trainPositive": 542,
+   "testPositive": 95,
+   "uses": [
+    "chr",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "rolling",
+   "testedOn": "real recordings",
+   "precision": 0.7058823529411765,
+   "recall": 0.28846153846153844,
+   "threshold": 0.973,
+   "trainPositive": 631,
+   "testPositive": 208,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "rubbery bass",
+   "testedOn": "extra sources",
+   "precision": null,
+   "recall": null,
+   "threshold": null,
+   "trainPositive": 34,
+   "testPositive": 13,
+   "uses": null,
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "saturated",
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "threshold": 0.972,
+   "trainPositive": 408,
+   "testPositive": 39,
+   "uses": [
+    "chr",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "shaker",
+   "testedOn": "library brands",
+   "precision": 0.847457627118644,
+   "recall": 0.5050505050505051,
+   "threshold": 0.931,
+   "trainPositive": 294,
+   "testPositive": 99,
+   "uses": [
+    "percussion"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "shaker loop",
+   "testedOn": "extra sources",
+   "precision": null,
+   "recall": null,
+   "threshold": null,
+   "trainPositive": 95,
+   "testPositive": 10,
+   "uses": null,
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "siren",
+   "testedOn": "library brands",
+   "precision": 0.37037037037037035,
+   "recall": 0.23255813953488372,
+   "threshold": 0.952,
+   "trainPositive": 1369,
+   "testPositive": 43,
+   "uses": [
+    "epidemic",
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "smooth",
+   "testedOn": "real recordings",
+   "precision": 0.40476190476190477,
+   "recall": 0.14049586776859505,
+   "threshold": 0.963,
+   "trainPositive": 385,
+   "testPositive": 121,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "snare",
+   "testedOn": "library brands",
+   "precision": 0.7321428571428571,
+   "recall": 0.3942307692307692,
+   "threshold": 0.886,
+   "trainPositive": 2287,
+   "testPositive": 104,
+   "uses": [
+    "freesound",
+    "hiphop",
+    "fsd50k",
+    "percussion"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "snare roll",
+   "testedOn": "library brands",
+   "precision": 0.8333333333333334,
+   "recall": 0.6666666666666666,
+   "threshold": 0.991,
+   "trainPositive": 95,
+   "testPositive": 15,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "spoken phrase",
+   "testedOn": "real recordings",
+   "precision": 0.8769230769230769,
+   "recall": 0.6129032258064516,
+   "threshold": 0.941,
+   "trainPositive": 635,
+   "testPositive": 93,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "staccato",
+   "testedOn": "real recordings",
+   "precision": 0.6,
+   "recall": 0.21052631578947367,
+   "threshold": 0.983,
+   "trainPositive": 156,
+   "testPositive": 57,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "static noise",
+   "testedOn": "library brands",
+   "precision": 0.5555555555555556,
+   "recall": 0.18518518518518517,
+   "threshold": 0.922,
+   "trainPositive": 1947,
+   "testPositive": 27,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "string synth",
+   "testedOn": "extra sources",
+   "precision": 1.0,
+   "recall": 0.02564102564102564,
+   "threshold": 0.997,
+   "trainPositive": 59,
+   "testPositive": 39,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "stutter effect",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.10416666666666667,
+   "threshold": 0.994,
+   "trainPositive": 161,
+   "testPositive": 48,
+   "uses": [
+    "epidemic",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "sub bass",
+   "testedOn": "library brands",
+   "precision": 0.794392523364486,
+   "recall": 0.8018867924528302,
+   "threshold": 0.954,
+   "trainPositive": 379,
+   "testPositive": 106,
+   "uses": [
+    "freesound"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "sub drop",
+   "testedOn": "extra sources",
+   "precision": 1.0,
+   "recall": 0.753968253968254,
+   "threshold": 0.985,
+   "trainPositive": 335,
+   "testPositive": 126,
+   "uses": [
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "label",
+   "name": "supersaw",
+   "testedOn": "real recordings",
+   "precision": 0.6,
+   "recall": 0.02631578947368421,
+   "threshold": 0.978,
+   "trainPositive": 183,
+   "testPositive": 114,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "sustained",
+   "testedOn": "real recordings",
+   "precision": 0.058823529411764705,
+   "recall": 0.012658227848101266,
+   "threshold": 0.946,
+   "trainPositive": 231,
+   "testPositive": 79,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "swelling",
+   "testedOn": "real recordings",
+   "precision": 0.3235294117647059,
+   "recall": 0.11224489795918367,
+   "threshold": 0.977,
+   "trainPositive": 584,
+   "testPositive": 98,
+   "uses": [
+    "chr",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "syncopated",
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "threshold": 0.998,
+   "trainPositive": 76,
+   "testPositive": 25,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "synth arpeggio",
+   "testedOn": "library brands",
+   "precision": 0.6692307692307692,
+   "recall": 0.6590909090909091,
+   "threshold": 0.92,
+   "trainPositive": 286,
+   "testPositive": 132,
+   "uses": [
+    "surge"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "synth bass",
+   "testedOn": "library brands",
+   "precision": 0.19230769230769232,
+   "recall": 0.18518518518518517,
+   "threshold": 0.973,
+   "trainPositive": 1072,
+   "testPositive": 27,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "synth chord",
+   "testedOn": "library brands",
+   "precision": 0.16806722689075632,
+   "recall": 0.19801980198019803,
+   "threshold": 0.979,
+   "trainPositive": 487,
+   "testPositive": 101,
+   "uses": [
+    "freesound",
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "synth drone",
+   "testedOn": "library brands",
+   "precision": 0.15306122448979592,
+   "recall": 0.22727272727272727,
+   "threshold": 0.898,
+   "trainPositive": 3327,
+   "testPositive": 66,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "synth hit",
+   "testedOn": "extra sources",
+   "precision": null,
+   "recall": null,
+   "threshold": null,
+   "trainPositive": 17,
+   "testPositive": 7,
+   "uses": null,
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "synth lead",
+   "testedOn": "library brands",
+   "precision": 0.5294117647058824,
+   "recall": 0.08823529411764706,
+   "threshold": 0.933,
+   "trainPositive": 2330,
+   "testPositive": 102,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "synth pluck",
+   "testedOn": "library brands",
+   "precision": 0.47560975609756095,
+   "recall": 0.2746478873239437,
+   "threshold": 0.949,
+   "trainPositive": 1325,
+   "testPositive": 142,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "synth sequence",
+   "testedOn": "real recordings",
+   "precision": 0.2222222222222222,
+   "recall": 0.07692307692307693,
+   "threshold": 0.973,
+   "trainPositive": 395,
+   "testPositive": 52,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "synth stab",
+   "testedOn": "library brands",
+   "precision": 0.07272727272727272,
+   "recall": 0.03278688524590164,
+   "threshold": 0.921,
+   "trainPositive": 1166,
+   "testPositive": 122,
+   "uses": [
+    "freesound",
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "tambourine",
+   "testedOn": "library brands",
+   "precision": 0.6,
+   "recall": 0.4411764705882353,
+   "threshold": 0.919,
+   "trainPositive": 323,
+   "testPositive": 68,
+   "uses": [
+    "fsd50k",
+    "percussion"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "texture",
+   "testedOn": "library brands",
+   "precision": 0.125,
+   "recall": 0.02040816326530612,
+   "threshold": 0.937,
+   "trainPositive": 1031,
+   "testPositive": 98,
+   "uses": [
+    "epidemic",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "tom",
+   "testedOn": "library brands",
+   "precision": 0.589041095890411,
+   "recall": 0.3644067796610169,
+   "threshold": 0.93,
+   "trainPositive": 366,
+   "testPositive": 118,
+   "uses": [
+    "percussion"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "top loop",
+   "testedOn": "library brands",
+   "precision": 0.9072164948453608,
+   "recall": 0.8888888888888888,
+   "threshold": 0.893,
+   "trainPositive": 499,
+   "testPositive": 99,
+   "uses": [
+    "processed"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "vinyl crackle",
+   "testedOn": "real recordings",
+   "precision": 0.7222222222222222,
+   "recall": 0.2826086956521739,
+   "threshold": 0.981,
+   "trainPositive": 573,
+   "testPositive": 46,
+   "uses": [
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "vinyl scratch",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.7037037037037037,
+   "threshold": 0.983,
+   "trainPositive": 256,
+   "testPositive": 81,
+   "uses": [
+    "freesound",
+    "epidemic",
+    "fsd50k"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "vocal ad-lib",
+   "testedOn": "library brands",
+   "precision": 0.8285714285714286,
+   "recall": 1.0,
+   "threshold": 0.562,
+   "trainPositive": 339,
+   "testPositive": 58,
+   "uses": [],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "vocal breath",
+   "testedOn": "real recordings",
+   "precision": 0.6153846153846154,
+   "recall": 0.20512820512820512,
+   "threshold": 0.999,
+   "trainPositive": 117,
+   "testPositive": 39,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "vocal chant",
+   "testedOn": "library brands",
+   "precision": 0.7294117647058823,
+   "recall": 0.8051948051948052,
+   "threshold": 0.67,
+   "trainPositive": 313,
+   "testPositive": 77,
+   "uses": [],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "vocal chops",
+   "testedOn": "library brands",
+   "precision": 0.6705882352941176,
+   "recall": 0.7307692307692307,
+   "threshold": 0.989,
+   "trainPositive": 134,
+   "testPositive": 78,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "vocal gasp",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.5263157894736842,
+   "threshold": 0.989,
+   "trainPositive": 57,
+   "testPositive": 19,
+   "uses": [
+    "fsd50k"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "vocal harmony",
+   "testedOn": "extra sources",
+   "precision": null,
+   "recall": null,
+   "threshold": null,
+   "trainPositive": 11,
+   "testPositive": 7,
+   "uses": null,
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "vocal hum",
+   "testedOn": "real recordings",
+   "precision": 0.8636363636363636,
+   "recall": 0.2111111111111111,
+   "threshold": 0.983,
+   "trainPositive": 267,
+   "testPositive": 90,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "vocal laugh",
+   "testedOn": "real recordings",
+   "precision": 0.9210526315789473,
+   "recall": 0.8677685950413223,
+   "threshold": 0.94,
+   "trainPositive": 360,
+   "testPositive": 121,
+   "uses": [
+    "fsd50k"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "vocal pad",
+   "testedOn": "real recordings",
+   "precision": 0.7692307692307693,
+   "recall": 0.13157894736842105,
+   "threshold": 0.998,
+   "trainPositive": 99,
+   "testPositive": 76,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "vocal phrase",
+   "testedOn": "real recordings",
+   "precision": 0.9333333333333333,
+   "recall": 0.4117647058823529,
+   "threshold": 0.996,
+   "trainPositive": 182,
+   "testPositive": 34,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "vocal scream",
+   "testedOn": "library brands",
+   "precision": 0.0,
+   "recall": 0.0,
+   "threshold": 0.931,
+   "trainPositive": 2007,
+   "testPositive": 17,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "vocal shout",
+   "testedOn": "real recordings",
+   "precision": 0.9102564102564102,
+   "recall": 0.5503875968992248,
+   "threshold": 0.993,
+   "trainPositive": 327,
+   "testPositive": 129,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "label",
+   "name": "vocal shush",
+   "testedOn": "extra sources",
+   "precision": 1.0,
+   "recall": 0.09090909090909091,
+   "threshold": 0.996,
+   "trainPositive": 34,
+   "testPositive": 22,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "vocal vowel",
+   "testedOn": "real recordings",
+   "precision": 0.8947368421052632,
+   "recall": 0.20987654320987653,
+   "threshold": 0.993,
+   "trainPositive": 237,
+   "testPositive": 81,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "vocal-like synth",
+   "testedOn": "real recordings",
+   "precision": 0.38461538461538464,
+   "recall": 0.09090909090909091,
+   "threshold": 0.981,
+   "trainPositive": 217,
+   "testPositive": 55,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "vocoder vocal",
+   "testedOn": "real recordings",
+   "precision": 0.6,
+   "recall": 0.08823529411764706,
+   "threshold": 0.98,
+   "trainPositive": 524,
+   "testPositive": 34,
+   "uses": [
+    "surge",
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "warm",
+   "testedOn": "real recordings",
+   "precision": 0.40625,
+   "recall": 0.1326530612244898,
+   "threshold": 0.945,
+   "trainPositive": 314,
+   "testPositive": 98,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "water ambience",
+   "testedOn": "library brands",
+   "precision": 0.7619047619047619,
+   "recall": 0.35555555555555557,
+   "threshold": 0.925,
+   "trainPositive": 3311,
+   "testPositive": 45,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "whisper",
+   "testedOn": "real recordings",
+   "precision": 0.9583333333333334,
+   "recall": 0.75,
+   "threshold": 0.964,
+   "trainPositive": 529,
+   "testPositive": 92,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "whoosh",
+   "testedOn": "real recordings",
+   "precision": 0.93717277486911,
+   "recall": 0.8364485981308412,
+   "threshold": 0.952,
+   "trainPositive": 755,
+   "testPositive": 214,
+   "uses": [
+    "freesound",
+    "epidemic",
+    "fsd50k"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "label",
+   "name": "wind ambience",
+   "testedOn": "library brands",
+   "precision": 0.0,
+   "recall": 0.0,
+   "threshold": 0.917,
+   "trainPositive": 2606,
+   "testPositive": 16,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "wobble bass",
+   "testedOn": "library brands",
+   "precision": 0.34615384615384615,
+   "recall": 0.15,
+   "threshold": 0.952,
+   "trainPositive": 1088,
+   "testPositive": 60,
+   "uses": [
+    "freesound",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "wobbling",
+   "testedOn": "real recordings",
+   "precision": 0.6323529411764706,
+   "recall": 0.25443786982248523,
+   "threshold": 0.92,
+   "trainPositive": 1286,
+   "testPositive": 338,
+   "uses": [
+    "chr",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "woodblock",
+   "testedOn": "extra sources",
+   "precision": null,
+   "recall": null,
+   "threshold": null,
+   "trainPositive": 32,
+   "testPositive": 11,
+   "uses": null,
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "label",
+   "name": "woody",
+   "testedOn": "real recordings",
+   "precision": 0.6815642458100558,
+   "recall": 0.43109540636042404,
+   "threshold": 0.931,
+   "trainPositive": 1699,
+   "testPositive": 566,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "accordion",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.75,
+   "threshold": 0.977,
+   "trainPositive": 56,
+   "testPositive": 40,
+   "uses": [
+    "fsd50k"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "acoustic guitar",
+   "testedOn": "real recordings",
+   "precision": 0.8739495798319328,
+   "recall": 0.8888888888888888,
+   "threshold": 0.965,
+   "trainPositive": 916,
+   "testPositive": 117,
+   "uses": [
+    "slakh",
+    "nsynth",
+    "fsd50k",
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "animal sound",
+   "testedOn": "real recordings",
+   "precision": 0.7121212121212122,
+   "recall": 0.3745019920318725,
+   "threshold": 0.984,
+   "trainPositive": 750,
+   "testPositive": 251,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "banjo",
+   "testedOn": "real recordings",
+   "precision": null,
+   "recall": null,
+   "threshold": null,
+   "trainPositive": 41,
+   "testPositive": 14,
+   "uses": null,
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "bass guitar",
+   "testedOn": "real recordings",
+   "precision": 0.96875,
+   "recall": 0.21379310344827587,
+   "threshold": 0.933,
+   "trainPositive": 808,
+   "testPositive": 145,
+   "uses": [
+    "slakh",
+    "nsynth",
+    "fsd50k",
+    "processed"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "bassoon",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.13333333333333333,
+   "threshold": 0.984,
+   "trainPositive": 132,
+   "testPositive": 45,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "bell",
+   "testedOn": "real recordings",
+   "precision": 0.7349397590361446,
+   "recall": 0.547085201793722,
+   "threshold": 0.975,
+   "trainPositive": 666,
+   "testPositive": 223,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "instrument",
+   "name": "breath",
+   "testedOn": "real recordings",
+   "precision": 0.8068181818181818,
+   "recall": 0.5,
+   "threshold": 0.988,
+   "trainPositive": 426,
+   "testPositive": 142,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "instrument",
+   "name": "cajon",
+   "testedOn": "real recordings",
+   "precision": 0.375,
+   "recall": 0.35294117647058826,
+   "threshold": 0.951,
+   "trainPositive": 51,
+   "testPositive": 17,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "cello",
+   "testedOn": "real recordings",
+   "precision": 0.7105263157894737,
+   "recall": 0.4462809917355372,
+   "threshold": 0.984,
+   "trainPositive": 340,
+   "testPositive": 121,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "clarinet",
+   "testedOn": "real recordings",
+   "precision": 0.6,
+   "recall": 0.2903225806451613,
+   "threshold": 0.995,
+   "trainPositive": 146,
+   "testPositive": 31,
+   "uses": [
+    "slakh",
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "djembe",
+   "testedOn": "real recordings",
+   "precision": 0.6521739130434783,
+   "recall": 0.2459016393442623,
+   "threshold": 0.986,
+   "trainPositive": 169,
+   "testPositive": 61,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "double bass",
+   "testedOn": "real recordings",
+   "precision": 0.75,
+   "recall": 0.30612244897959184,
+   "threshold": 0.971,
+   "trainPositive": 118,
+   "testPositive": 49,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "drums",
+   "testedOn": "library brands",
+   "precision": 0.9524485450674237,
+   "recall": 0.8007159904534606,
+   "threshold": 0.749,
+   "trainPositive": 19641,
+   "testPositive": 1676,
+   "uses": [
+    "freesound",
+    "hiphop",
+    "slakh",
+    "fsd50k",
+    "percussion",
+    "fsl10k",
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "electric guitar",
+   "testedOn": "real recordings",
+   "precision": 0.9565217391304348,
+   "recall": 0.946236559139785,
+   "threshold": 0.929,
+   "trainPositive": 880,
+   "testPositive": 93,
+   "uses": [
+    "slakh",
+    "nsynth",
+    "fsd50k",
+    "processed"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "electric piano",
+   "testedOn": "real recordings",
+   "precision": 0.6851851851851852,
+   "recall": 0.4805194805194805,
+   "threshold": 0.953,
+   "trainPositive": 713,
+   "testPositive": 77,
+   "uses": [
+    "slakh",
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "environmental sound",
+   "testedOn": "real recordings",
+   "precision": 0.36995515695067266,
+   "recall": 0.3235294117647059,
+   "threshold": 0.937,
+   "trainPositive": 1425,
+   "testPositive": 510,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "flute",
+   "testedOn": "real recordings",
+   "precision": 0.8048780487804879,
+   "recall": 0.42038216560509556,
+   "threshold": 0.961,
+   "trainPositive": 634,
+   "testPositive": 157,
+   "uses": [
+    "slakh",
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "foley",
+   "testedOn": "real recordings",
+   "precision": 0.6455696202531646,
+   "recall": 0.3072289156626506,
+   "threshold": 0.969,
+   "trainPositive": 498,
+   "testPositive": 166,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "glockenspiel",
+   "testedOn": "real recordings",
+   "precision": 0.8571428571428571,
+   "recall": 0.21052631578947367,
+   "threshold": 0.993,
+   "trainPositive": 169,
+   "testPositive": 57,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "gong",
+   "testedOn": "real recordings",
+   "precision": 0.9772727272727273,
+   "recall": 0.6935483870967742,
+   "threshold": 0.931,
+   "trainPositive": 179,
+   "testPositive": 62,
+   "uses": [
+    "fsd50k"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "hand percussion",
+   "testedOn": "real recordings",
+   "precision": 0.9739130434782609,
+   "recall": 0.7272727272727273,
+   "threshold": 0.986,
+   "trainPositive": 456,
+   "testPositive": 154,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "instrument",
+   "name": "harmonica",
+   "testedOn": "real recordings",
+   "precision": 0.9090909090909091,
+   "recall": 0.9090909090909091,
+   "threshold": 0.973,
+   "trainPositive": 92,
+   "testPositive": 33,
+   "uses": [
+    "fsd50k"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "harp",
+   "testedOn": "real recordings",
+   "precision": 0.9807692307692307,
+   "recall": 0.85,
+   "threshold": 0.94,
+   "trainPositive": 155,
+   "testPositive": 60,
+   "uses": [
+    "fsd50k"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "horn",
+   "testedOn": "real recordings",
+   "precision": 0.8146067415730337,
+   "recall": 0.4588607594936709,
+   "threshold": 0.953,
+   "trainPositive": 947,
+   "testPositive": 316,
+   "uses": [
+    "fsm"
+   ],
+   "group": "source",
+   "added": true,
+   "tier": "maybe"
+  },
+  {
+   "kind": "instrument",
+   "name": "jaw harp",
+   "testedOn": "real recordings",
+   "precision": 0.7142857142857143,
+   "recall": 0.7894736842105263,
+   "threshold": 0.97,
+   "trainPositive": 55,
+   "testPositive": 19,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "kalimba",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.4827586206896552,
+   "threshold": 0.987,
+   "trainPositive": 87,
+   "testPositive": 29,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "mallet instrument",
+   "testedOn": "real recordings",
+   "precision": 0.9850746268656716,
+   "recall": 0.8354430379746836,
+   "threshold": 0.937,
+   "trainPositive": 558,
+   "testPositive": 79,
+   "uses": [
+    "slakh",
+    "nsynth",
+    "fsd50k",
+    "processed"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "mandolin",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.08695652173913043,
+   "threshold": 0.997,
+   "trainPositive": 59,
+   "testPositive": 46,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "marimba",
+   "testedOn": "real recordings",
+   "precision": 0.9090909090909091,
+   "recall": 0.38461538461538464,
+   "threshold": 0.994,
+   "trainPositive": 153,
+   "testPositive": 52,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "noise",
+   "testedOn": "real recordings",
+   "precision": 0.21875,
+   "recall": 0.0995260663507109,
+   "threshold": 0.913,
+   "trainPositive": 1025,
+   "testPositive": 211,
+   "uses": [
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "oboe",
+   "testedOn": "real recordings",
+   "precision": 0.6666666666666666,
+   "recall": 0.04878048780487805,
+   "threshold": 0.993,
+   "trainPositive": 80,
+   "testPositive": 41,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "organ",
+   "testedOn": "real recordings",
+   "precision": 0.9770114942528736,
+   "recall": 0.9239130434782609,
+   "threshold": 0.948,
+   "trainPositive": 655,
+   "testPositive": 92,
+   "uses": [
+    "slakh",
+    "nsynth",
+    "fsd50k",
+    "processed"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "percussion",
+   "testedOn": "real recordings",
+   "precision": 0.7775862068965518,
+   "recall": 0.4447731755424063,
+   "threshold": 0.863,
+   "trainPositive": 3038,
+   "testPositive": 1014,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "piano",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.7777777777777778,
+   "threshold": 0.918,
+   "trainPositive": 887,
+   "testPositive": 126,
+   "uses": [
+    "slakh",
+    "fsd50k",
+    "processed"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "saxophone",
+   "testedOn": "real recordings",
+   "precision": 0.7333333333333333,
+   "recall": 0.39285714285714285,
+   "threshold": 0.976,
+   "trainPositive": 444,
+   "testPositive": 28,
+   "uses": [
+    "slakh",
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "singing bowl",
+   "testedOn": "real recordings",
+   "precision": 0.9565217391304348,
+   "recall": 0.7096774193548387,
+   "threshold": 0.988,
+   "trainPositive": 80,
+   "testPositive": 31,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "sitar",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.2631578947368421,
+   "threshold": 0.994,
+   "trainPositive": 56,
+   "testPositive": 19,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "sound effect",
+   "testedOn": "real recordings",
+   "precision": 0.5142857142857142,
+   "recall": 0.15384615384615385,
+   "threshold": 0.939,
+   "trainPositive": 348,
+   "testPositive": 117,
+   "uses": [
+    "fsl10k"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "steel guitar",
+   "testedOn": "real recordings",
+   "precision": null,
+   "recall": null,
+   "threshold": null,
+   "trainPositive": 30,
+   "testPositive": 11,
+   "uses": null,
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "strings",
+   "testedOn": "real recordings",
+   "precision": 0.9797979797979798,
+   "recall": 0.8660714285714286,
+   "threshold": 0.906,
+   "trainPositive": 909,
+   "testPositive": 112,
+   "uses": [
+    "slakh",
+    "nsynth",
+    "fsd50k",
+    "processed"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "synthesizer",
+   "testedOn": "library brands",
+   "precision": 0.6136363636363636,
+   "recall": 0.7627118644067796,
+   "threshold": 0.695,
+   "trainPositive": 14260,
+   "testPositive": 708,
+   "uses": [
+    "freesound",
+    "surge",
+    "slakh",
+    "nsynth",
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "triangle",
+   "testedOn": "real recordings",
+   "precision": 0.7857142857142857,
+   "recall": 0.3235294117647059,
+   "threshold": 0.997,
+   "trainPositive": 86,
+   "testPositive": 34,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "trombone",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.11363636363636363,
+   "threshold": 0.989,
+   "trainPositive": 186,
+   "testPositive": 44,
+   "uses": [
+    "slakh",
+    "processed",
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "trumpet",
+   "testedOn": "real recordings",
+   "precision": 0.9076923076923077,
+   "recall": 0.8939393939393939,
+   "threshold": 0.832,
+   "trainPositive": 449,
+   "testPositive": 132,
+   "uses": [
+    "slakh",
+    "fsd50k",
+    "processed"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "tuba",
+   "testedOn": "real recordings",
+   "precision": 0.5,
+   "recall": 0.058823529411764705,
+   "threshold": 0.975,
+   "trainPositive": 100,
+   "testPositive": 34,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "tuned percussion",
+   "testedOn": "real recordings",
+   "precision": 0.9012345679012346,
+   "recall": 0.453416149068323,
+   "threshold": 0.988,
+   "trainPositive": 381,
+   "testPositive": 161,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "instrument",
+   "name": "turntable",
+   "testedOn": "real recordings",
+   "precision": 0.9736842105263158,
+   "recall": 0.4625,
+   "threshold": 0.991,
+   "trainPositive": 216,
+   "testPositive": 80,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "added": false,
+   "why": "owned by another session"
+  },
+  {
+   "kind": "instrument",
+   "name": "ukulele",
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.72,
+   "threshold": 0.995,
+   "trainPositive": 71,
+   "testPositive": 25,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "vibraphone",
+   "testedOn": "real recordings",
+   "precision": 0.6,
+   "recall": 0.06521739130434782,
+   "threshold": 0.995,
+   "trainPositive": 56,
+   "testPositive": 46,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "viola",
+   "testedOn": "real recordings",
+   "precision": 0.5192307692307693,
+   "recall": 0.4153846153846154,
+   "threshold": 0.975,
+   "trainPositive": 192,
+   "testPositive": 65,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "violin / fiddle",
+   "testedOn": "real recordings",
+   "precision": 0.8375,
+   "recall": 0.4364820846905538,
+   "threshold": 0.956,
+   "trainPositive": 919,
+   "testPositive": 307,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "voice",
+   "testedOn": "real recordings",
+   "precision": 0.8145454545454546,
+   "recall": 0.5714285714285714,
+   "threshold": 0.936,
+   "trainPositive": 1573,
+   "testPositive": 392,
+   "uses": [
+    "fsd50k",
+    "fsl10k",
+    "processed"
+   ],
+   "added": false,
+   "why": "already ships"
+  },
+  {
+   "kind": "instrument",
+   "name": "waterphone",
+   "testedOn": "real recordings",
+   "precision": 0.4,
+   "recall": 0.13333333333333333,
+   "threshold": 0.818,
+   "trainPositive": 44,
+   "testPositive": 15,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  },
+  {
+   "kind": "instrument",
+   "name": "whistle",
+   "testedOn": "real recordings",
+   "precision": 0.8306878306878307,
+   "recall": 0.47289156626506024,
+   "threshold": 0.918,
+   "trainPositive": 996,
+   "testPositive": 332,
+   "uses": [
+    "fsm"
+   ],
+   "group": "source",
+   "added": true,
+   "tier": "maybe"
+  },
+  {
+   "kind": "instrument",
+   "name": "xylophone",
+   "testedOn": "real recordings",
+   "precision": 0.575,
+   "recall": 0.2169811320754717,
+   "threshold": 0.985,
+   "trainPositive": 235,
+   "testPositive": 106,
+   "uses": [
+    "fsm"
+   ],
+   "added": false,
+   "why": "no exported weights"
+  }
+ ]
+}

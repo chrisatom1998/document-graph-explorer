@@ -15,7 +15,11 @@ const manifest = JSON.parse(readFileSync(process.env.MANIFEST ?? 'docs/evaluatio
 let ids = manifest.items.filter(i => i.split === split).map(i => i.id);
 if (limitArg) ids = ids.slice(0, Number(limitArg));
 // SHARD=i/n keeps every n-th clip starting at i, so one benchmark can run on several machines.
-if (process.env.SHARD) { const [i, n] = process.env.SHARD.split('/').map(Number); ids = ids.filter((_, k) => k % n === i); }
+if (process.env.SHARD) {
+  const m = /^(\d+)\/(\d+)$/.exec(process.env.SHARD), [i, n] = m ? [Number(m[1]), Number(m[2])] : [];
+  if (!m || n < 1 || i >= n) throw new Error(`SHARD must be i/n with 0 <= i < n, got "${process.env.SHARD}"`);
+  ids = ids.filter((_, k) => k % n === i);
+}
 mkdirSync(outDir, { recursive: true });
 const PORT = Number(process.env.PORT ?? 4291);
 const server = spawn('npx', ['vite', 'preview', '--host', '127.0.0.1', '--port', String(PORT), '--strictPort', ...(process.env.DIST ? ['--outDir', process.env.DIST] : [])], { stdio: 'ignore' });

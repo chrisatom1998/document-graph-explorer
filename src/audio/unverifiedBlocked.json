@@ -1,0 +1,18 @@
+{
+ "floor": 0.5,
+ "rule": "blocked when >= 15 firings on the 9,000-clip sample and < 10% agree with the clip labels",
+ "blocked": [
+  "bass pluck",
+  "dry",
+  "echoing",
+  "filtered",
+  "reverberant",
+  "reverse impact",
+  "rising",
+  "shaker loop",
+  "supersaw",
+  "syncopated",
+  "synth bass",
+  "synth stab"
+ ]
+}

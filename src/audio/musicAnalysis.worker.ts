@@ -235,8 +235,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
         // only the one-shot heads tag these clips. The user's own reviewed examples still apply.
         learnedScores = learnedScores.filter(s => s.basis !== 'head');
       }
-      // The raw fingerprint rides along so tracks can be linked by how they sound (src/audio/soundEmbedding.ts).
-      await postResult({ scores: [...descriptionScores(embedding, prompts), ...learnedScores, ...oneShot], embedding });
+      await postResult([...descriptionScores(embedding, prompts), ...learnedScores, ...oneShot, { group: 'embedding', label: null, score: 0, embedding: embedding.map(v => Math.round(v * 1e4) / 1e4) }]);
       return;
     }
     if (data.kind === 'instruments') {

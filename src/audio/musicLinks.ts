@@ -1,24 +1,20 @@
 import { musicNameHints } from './nameHints';
 import { confirmedInstrumentList, reliableInstruments, sourceReviewAllows } from './instrumentEvidence';
-import { resolvedNonSourceLabels } from './soundReviewPolicy';
-import { cosine, decodeSoundEmbedding } from './soundEmbedding';
+import { soundMatchLabels, MATCH_ORIGIN_TEXT, type MatchLabel } from './soundMatchLabels';
 import type { DocNode, Edge } from '../model/types';
 import { keyName, type MusicAnalysis } from './musicTypes';
-import { confidentSoundSummary, TESTED_SCORES } from './confidentSoundSummary';
-export const MUSIC_EDGE_KINDS = ['tempo', 'key', 'instrument', 'sound'] as const;
+export const MUSIC_EDGE_KINDS = ['tempo', 'key', 'instrument', 'sound', 'similar'] as const;
 type MusicKind = typeof MUSIC_EDGE_KINDS[number];
 export const MUSIC_NEIGHBOR_LIMIT = 8;
 export const MUSIC_NEIGHBORS_PER_KIND = 4;
 const CANDIDATES_PER_BUCKET = 12;
 const MAX_CANDIDATES = 128;
-/** When sound-alike links are made from the tracks' CLAP fingerprints (src/audio/soundEmbedding.ts).
- * CLAP cosines are not calibrated and every track shares a large common component, so a link needs
- * a mutual nearest-neighbour match (each track is among the other's closest `mutualK` sounds) and a floor.
- * Tempo, key, instrument, tag and file-name links are made independently of these. */
-export interface SoundLinkPolicy { mutualK: number; floor: number }
-export const SOUND_LINK_POLICY: SoundLinkPolicy = { mutualK: 3, floor: .5 };
-/** All-pairs similarity up to this many fingerprints; larger libraries compare within hashed neighbourhoods. */
-const EXACT_SIMILARITY_LIMIT = 800;
+/** CLAP audio cosines run high, so rank by nearest neighbors and keep only a soft floor. */
+const SIMILAR_FLOOR = .7;
+const SIMILAR_NEIGHBORS = 3;
+/** Above this many fingerprints, all-pairs is skipped; sound-alike links then only appear for already-bucketed pairs. */
+const SIMILAR_ALL_PAIRS_MAX = 1000;
+const cosine = (a: number[], b: number[]) => { let dot = 0; for (let i = 0; i < a.length; i++) dot += a[i] * b[i]; return dot; };
 const validScore = (n: number) => Number.isFinite(n) && n >= 0 && n <= 1;
 function keyRelation(a: NonNullable<MusicAnalysis['key']>, b: NonNullable<MusicAnalysis['key']>): string | null {
   if (a.tonic === b.tonic && a.mode === b.mode) return 'same estimated key';
@@ -37,36 +33,25 @@ function features(node: DocNode) {
   // Names are useful search clues, but cannot replace stronger audio evidence.
   const reliable = reliableInstruments(audio);
   const named = !human && !reliable.length && hints.instruments;
-  const instruments = named ? named.value.filter(label => sourceReviewAllows(audio, label)).map(label => ({ label, score: .45 })) : reliable;
-  const embedding = audio.soundEmbedding && decodeSoundEmbedding(audio.soundEmbedding);
+  const base = named ? named.value.filter(label => sourceReviewAllows(audio, label)).map(label => ({ label, score: .45 })) : reliable;
+  // Source labels the panel's Sounds / Other model guesses sections show also count, at their own strength.
+  const matches = soundMatchLabels(node);
+  const shownSources = matches.filter(m => m.group === 'source' && !(human && m.origin !== 'confirmed'));
+  const instruments = [...base, ...shownSources.filter(m => !base.some(i => i.label === m.label)).map(m => ({ label: m.label, score: m.weight }))];
   return {
-    node, hints, human, named: !!named, instruments: instruments.filter(i => validScore(i.score)),
+    node, hints, human, matches, shownSources, vector: audio.embedding && audio.embedding.length === 512 ? audio.embedding : undefined,
+     named: !!named, instruments: instruments.filter(i => validScore(i.score)),
     tempo: tempo && Number.isFinite(tempo.bpm) && tempo.bpm >= 40 && tempo.bpm <= 250 && validScore(tempo.confidence) && tempo.confidence >= .5 ? tempo : undefined,
     key: key && Number.isInteger(key.tonic) && key.tonic >= 0 && key.tonic < 12 && ['major','minor'].includes(key.mode) && validScore(key.strength) && key.strength >= .6 ? key : undefined,
-    // Raw similarity scores are not calibrated acceptance policies. Only reviewed
-    // non-source properties are reliable enough to link on their own.
-    sound: resolvedNonSourceLabels(audio).filter(label => label.source === 'confirmed'),
-    // Character/effect tags the panel shows as likely. Source stays on the instrument path
-    // (Confirm, or pre-recognition likely instruments) so machine source scores never become
-    // neighbors. Weight uses the tested detector that made the tag visible, not raw similarity.
-    tags: confidentSoundSummary(audio).flatMap(s => {
-      const tested = s.scores?.filter(x => TESTED_SCORES.has(x.model));
-      return s.origin === 'model estimate' && s.tier === 'likely' && !s.maybe && (s.dimension === 'character' || s.dimension === 'effect') && tested?.length
-        ? [{ key: `${s.dimension}:${s.label}`, label: s.label, score: Math.max(...tested.map(x => x.score)) }] : [];
-    }).filter(t => validScore(t.score)),
-    // The Sounds panel's tested tags (and your confirmations) describe what two similar tracks share.
-    alikeTags: confidentSoundSummary(audio).filter(t => t.origin === 'confirmed by you' || (!t.maybe && t.tier === 'likely')),
-    fingerprint: embedding ? { model: audio.soundEmbedding!.model, vector: embedding } : undefined,
+    // Exactly what the Sounds and Other model guesses sections list; rejected/unsure reviews are already excluded.
+    sound: matches.filter(m => m.group !== 'source'),
   };
 }
 type Features = ReturnType<typeof features>;
-/** How two fingerprinted tracks relate by sound. Absent when either track has no comparable fingerprint. */
-interface SoundMatch { similarity: number; alike: boolean }
-const NOTE = 'Match strength reflects available evidence, not a probability. Musical similarities are not proof of sampling or influence.';
-function pairEdges(a: Features, b: Features, match?: SoundMatch): Edge[] {
+function pairEdges(a: Features, b: Features): Edge[] {
   const [source, target] = [a.node.id, b.node.id].sort();
   const edges: Edge[] = [];
-  const add = (kind: MusicKind, weight: number, evidence: string) => edges.push({ id: `${source}->${target}:${kind}`, source, target, kind, weight, evidence: [evidence, NOTE] });
+  const add = (kind: MusicKind, weight: number, evidence: string) => edges.push({ id: `${source}->${target}:${kind}`, source, target, kind, weight, evidence: [evidence, 'Match strength reflects available evidence, not a probability. Musical similarities are not proof of sampling or influence.'] });
   const sources = (kind: 'tempo' | 'key') => ` Sources: ${a.hints[kind]?.source ?? 'audio estimate'} and ${b.hints[kind]?.source ?? 'audio estimate'}. Name tags are not verified audio detections.`;
   if (a.tempo && b.tempo) {
     const at = a.tempo.bpm; const bt = b.tempo.bpm;
@@ -97,43 +82,31 @@ function pairEdges(a: Features, b: Features, match?: SoundMatch): Edge[] {
       : a.human && b.human ? 'Confirmed by you on both tracks.'
       : a.human || b.human ? 'Confirmed by you on one track; estimated from audio on the other.'
       : 'Supported by strong or repeated audio detections; not confirmed instrumentation.';
-    add('instrument', Math.max(...shared.map(i => Math.min(i.score, b.instruments.find(j => j.label === i.label)!.score))), `${hasName ? 'Shared instrument hints' : 'Shared instruments'}: ${shared.map(i => i.label).join(', ')}. ${provenance}`);
+    const modelShown = shared.some(i => [a, b].some(f => f.shownSources.some(m => m.label === i.label && m.origin !== 'confirmed')));
+    add('instrument', Math.max(...shared.map(i => Math.min(i.score, b.instruments.find(j => j.label === i.label)!.score))), `${hasName ? 'Shared instrument hints' : 'Shared instruments'}: ${shared.map(i => i.label).join(', ')}. ${provenance}${modelShown ? ' Includes source labels from the Sounds / Other model guesses lists, which are model estimates or untested guesses.' : ''}`);
   }
-  const sound = a.sound.filter(i => b.sound.some(j => j.group === i.group && j.label === i.label));
-  // A tag either side confirmed counts at that side's strength; instruments already linked above are not repeated.
-  type Tag = { label: string; score: number; confirmed: boolean };
-  const tagSets = [a, b].map(f => new Map<string, Tag>([...f.tags.map((t): [string, Tag] => [t.key, { label: t.label, score: t.score, confirmed: false }]),
-    ...f.sound.map((i): [string, Tag] => [`${i.group === 'production' ? 'effect' : 'character'}:${i.label}`, { label: i.label, score: 1, confirmed: true }])]));
-  const confirmedBoth = new Set(sound.map(i => `${i.group === 'production' ? 'effect' : 'character'}:${i.label}`));
-  const linkedInstruments = new Set(shared.map(i => `source:${i.label}`));
-  const tags = [...tagSets[0]].filter(([key]) => tagSets[1].has(key) && !confirmedBoth.has(key) && !linkedInstruments.has(key))
-    .map(([key, t]) => { const u = tagSets[1].get(key)!; return { label: t.label, score: Math.min(t.score, u.score), oneConfirmed: t.confirmed || u.confirmed }; });
-  const group = (list: typeof tags, how: string) => list.length ? `${list.map(t => t.label).join(', ')} (${how})` : '';
-  const tagText = tags.length ? `Shared sound tags: ${[group(tags.filter(t => !t.oneConfirmed), 'model estimates shown as likely on both tracks'), group(tags.filter(t => t.oneConfirmed), 'confirmed by you on one track, a model estimate on the other')].filter(Boolean).join('; ')}. Not confirmed on both.` : '';
-  if (match?.alike) {
-    // Tags already explained by the instrument link are not repeated here.
-    const both = a.alikeTags.filter(t => b.alikeTags.some(u => u.dimension === t.dimension && u.label === t.label) && !(t.dimension === 'source' && shared.some(i => i.label === t.label)));
-    const confirmed = both.filter(t => t.origin === 'confirmed by you' && b.alikeTags.find(u => u.dimension === t.dimension && u.label === t.label)!.origin === 'confirmed by you');
-    const detail = both.length ? ` Both also have: ${both.map(t => `${t.label.replaceAll('_', ' ')} (${t.dimension === 'effect' ? 'production / effect' : t.dimension})`).join(', ')}${confirmed.length === both.length ? ', confirmed by you on both tracks' : confirmed.length ? ', some confirmed by you' : ', detected by tested sound models'}.` : '';
-    const reviewed = sound.length ? ` Shared sound properties: ${sound.map(i => `${i.label} (${i.group === 'production' ? 'production / effect' : 'character'})`).join(', ')}. Confirmed by you on both tracks.` : '';
-    const weight = Math.min(1, .6 + .4 * Math.max(0, match.similarity) + .05 * both.length + (sound.length ? .1 : 0));
-    add('sound', weight, `Sounds alike: the two recordings' sound fingerprints are ${Math.floor(Math.max(0, match.similarity) * 100)}% similar, and each is among the other's closest-sounding tracks.${detail}${reviewed}`);
-  // Tracks that do not sound alike can still share confirmed properties or likely tags.
-  } else if (sound.length) add('sound', .85, `Shared sound properties: ${sound.map(i => `${i.label} (${i.group === 'production' ? 'production / effect' : 'character'})`).join(', ')}. Confirmed by you on both tracks.${tagText ? ' ' + tagText : ''}`);
-  // The weakest shared tag sets the weight, plus a little for each extra shared tag; always below a confirmed match (.85).
-  else if (tags.length) add('sound', Math.min(.75, .55 * Math.min(...tags.map(t => t.score)) + .05 * (tags.length - 1)), tagText);
+  const find = (side: MatchLabel[], i: MatchLabel) => side.find(j => j.group === i.group && j.label === i.label);
+  const sound = a.sound.filter(i => find(b.sound, i));
+  if (sound.length) {
+    const pairs = sound.map(i => ({ i, other: find(b.sound, i)! }));
+    const confirmed = pairs.every(({ i, other }) => i.origin === 'confirmed' && other.origin === 'confirmed');
+    const names = pairs.map(({ i }) => `${i.label} (${i.group === 'production' ? 'production / effect' : 'character'})`).join(', ');
+    const basis = pairs.map(({ i, other }) => `${i.label}: ${MATCH_ORIGIN_TEXT[i.origin]} / ${MATCH_ORIGIN_TEXT[other.origin]}`).join('; ');
+    add('sound', Math.max(...pairs.map(({ i, other }) => Math.min(i.weight, other.weight))), `Shared sound properties: ${names}. ${confirmed ? 'Confirmed by you on both tracks.' : `Not confirmed by you on at least one track (${basis}). Matches the Sounds and Other model guesses lists.`}`);
+  }
+  if (a.vector && b.vector) {
+    const sim = cosine(a.vector, b.vector);
+    if (sim >= SIMILAR_FLOOR) add('similar', Math.min(1, sim), `Sounds alike by audio fingerprint (similarity ${sim.toFixed(2)}). Similar sound is not proof of sampling, a shared source or influence.`);
+  }
   return edges;
 }
-/** A single pair has no library to rank against, so only its fingerprint floor applies. */
 export function musicPairEdges(a: DocNode, b: DocNode): Edge[] {
   if (a.fileType !== 'audio' || b.fileType !== 'audio' || !a.audio || !b.audio || a.id === b.id) return [];
-  const fa = features(a); const fb = features(b);
-  const similarity = fa.fingerprint && fb.fingerprint?.model === fa.fingerprint.model ? cosine(fa.fingerprint.vector, fb.fingerprint.vector) : undefined;
-  return pairEdges(fa, fb, similarity === undefined ? undefined : { similarity, alike: similarity >= SOUND_LINK_POLICY.floor });
+  return pairEdges(features(a), features(b));
 }
 const keyToken = (k: NonNullable<Features['key']>) => `k:${k.tonic}:${k.mode}`;
 function tokens(f: Features, query = false): string[] {
-  const result = [...f.instruments.map(i => `i:${i.label}`), ...f.sound.map(i => `s:${i.group === 'production' ? 'effect' : 'character'}:${i.label}`), ...f.tags.map(t => `s:${t.key}`)];
+  const result = [...f.instruments.map(i => `i:${i.label}`), ...f.sound.map(i => `s:${i.group === 'production' ? 'effect' : 'character'}:${i.label}`)];
   if (f.key) {
     result.push(keyToken(f.key));
     if (query) {
@@ -147,83 +120,24 @@ function tokens(f: Features, query = false): string[] {
   }
   return result;
 }
-/** Deterministic random hyperplanes (fixed seed) for libraries too large to compare all pairs. */
-function hyperplanes(count: number, dimensions: number): Float32Array[] {
-  let seed = 0x2f6b1d3;
-  const next = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32 - .5; };
-  return Array.from({ length: count }, () => Float32Array.from({ length: dimensions }, next));
-}
-/** Each fingerprinted track's closest-sounding tracks (by index), most similar first. Fingerprints from
- * different models are never compared. */
-function soundNeighbors(audio: Features[], keep: number): Map<number, { other: number; similarity: number }[]> {
-  const result = new Map<number, { other: number; similarity: number }[]>();
-  const byModel = new Map<string, number[]>();
-  audio.forEach((f, i) => { if (f.fingerprint) { const list = byModel.get(f.fingerprint.model) ?? []; list.push(i); byModel.set(f.fingerprint.model, list); } });
-  const offer = (i: number, other: number, similarity: number) => {
-    const list = result.get(i) ?? [];
-    if (list.length >= keep && similarity <= list[list.length - 1].similarity) return;
-    list.push({ other, similarity });
-    list.sort((x, y) => y.similarity - x.similarity || x.other - y.other);
-    if (list.length > keep) list.pop();
-    result.set(i, list);
-  };
-  for (const members of byModel.values()) {
-    const vector = (i: number) => audio[i].fingerprint!.vector;
-    if (members.length <= EXACT_SIMILARITY_LIMIT) {
-      for (let x = 0; x < members.length; x++) for (let y = x + 1; y < members.length; y++) {
-        const similarity = cosine(vector(members[x]), vector(members[y]));
-        offer(members[x], members[y], similarity); offer(members[y], members[x], similarity);
-      }
-      continue;
-    }
-    // Hash the common-component-removed fingerprints into buckets; compare within shared buckets only.
-    const dimensions = vector(members[0]).length;
-    const mean = new Float32Array(dimensions);
-    for (const i of members) { const v = vector(i); for (let d = 0; d < dimensions; d++) mean[d] += v[d] / members.length; }
-    const TABLES = 12, BITS = 10, planes = hyperplanes(TABLES * BITS, dimensions);
-    const buckets = new Map<string, number[]>();
-    const codes = members.map(i => {
-      const v = vector(i);
-      return Array.from({ length: TABLES }, (_, t) => {
-        let code = 0;
-        for (let b = 0; b < BITS; b++) { const p = planes[t * BITS + b]; let dot = 0; for (let d = 0; d < dimensions; d++) dot += p[d] * (v[d] - mean[d]); code = code * 2 + (dot > 0 ? 1 : 0); }
-        return `${t}:${code}`;
-      });
-    });
-    members.forEach((i, m) => { for (const code of codes[m]) { const list = buckets.get(code) ?? []; list.push(i); buckets.set(code, list); } });
-    members.forEach((i, m) => {
-      const seen = new Set<number>();
-      for (const code of codes[m]) for (const other of buckets.get(code)!) {
-        if (other === i || seen.has(other) || seen.size >= 256) continue;
-        seen.add(other);
-        if (other > i) continue; // each pair is scored from its higher index
-        const similarity = cosine(vector(i), vector(other));
-        offer(i, other, similarity); offer(other, i, similarity);
-      }
-    });
-  }
-  return result;
+/** Nearest sounds by audio fingerprint; every such pair is evaluated whether or not any label is shared. */
+function nearestByAudio(audio: Features[], index: number): number[] {
+  const me = audio[index].vector;
+  if (!me || audio.length > SIMILAR_ALL_PAIRS_MAX) return [];
+  const scored: { other: number; sim: number }[] = [];
+  audio.forEach((f, other) => { if (other !== index && f.vector) { const sim = cosine(me, f.vector); if (sim >= SIMILAR_FLOOR) scored.push({ other, sim }); } });
+  return scored.sort((x, y) => y.sim - x.sim || x.other - y.other).slice(0, SIMILAR_NEIGHBORS).map(s => s.other);
 }
 /** Bounded candidate search, then strongest-first selection with hard bounds at
  * BOTH endpoints. Large identical packs use deterministic local neighborhoods,
  * not exhaustive all-pairs ranking; work/memory scale with the candidate budget. */
-export function buildMusicEdges(nodes: DocNode[], policy: SoundLinkPolicy = SOUND_LINK_POLICY): Edge[] {
+export function buildMusicEdges(nodes: DocNode[]): Edge[] {
   const audio = nodes.filter(n => n.fileType === 'audio' && n.audio).sort((a,b) => a.id.localeCompare(b.id)).map(features);
-  const neighbors = soundNeighbors(audio, policy.mutualK);
-  const rank = (i: number, other: number) => neighbors.get(i)?.findIndex(n => n.other === other) ?? -1;
-  const match = (i: number, other: number): SoundMatch | undefined => {
-    const a = audio[i].fingerprint, b = audio[other].fingerprint;
-    if (!a || !b || a.model !== b.model) return undefined;
-    const similarity = cosine(a.vector, b.vector);
-    const ri = rank(i, other), ro = rank(other, i);
-    const within = (r: number, k: number) => r >= 0 && r < k;
-    return { similarity, alike: similarity >= policy.floor && within(ri, policy.mutualK) && within(ro, policy.mutualK) };
-  };
   const buckets = new Map<string, number[]>();
   audio.forEach((f, index) => { for (const token of tokens(f)) { const list = buckets.get(token) ?? []; list.push(index); buckets.set(token, list); } });
   const pairs = new Map<string, Edge[]>();
   audio.forEach((f, index) => {
-    const candidates = new Set<number>((neighbors.get(index) ?? []).map(n => n.other));
+    const candidates = new Set<number>();
     for (const token of tokens(f, true)) {
       const list = buckets.get(token);
       if (!list) continue;
@@ -234,23 +148,24 @@ export function buildMusicEdges(nodes: DocNode[], policy: SoundLinkPolicy = SOUN
         if (candidate !== index && candidates.size < MAX_CANDIDATES) candidates.add(candidate);
       }
     }
+    for (const other of nearestByAudio(audio, index)) candidates.add(other);
     for (const other of candidates) {
       const key = `${Math.min(index, other)}:${Math.max(index, other)}`;
-      if (!pairs.has(key)) pairs.set(key, pairEdges(f, audio[other], match(index, other)));
+      if (!pairs.has(key)) pairs.set(key, pairEdges(f, audio[other]));
     }
   });
   const score = (edges: Edge[]) => Math.max(...edges.map(e => e.weight)) + .05 * (edges.length - 1);
   const ranked = [...pairs.values()].filter(edges => edges.length).sort((a,b) => score(b) - score(a) || a[0].id.localeCompare(b[0].id));
-  const linked = new Map<string, Set<string>>(); const counts = new Map<string, number>(); const result: Edge[] = [];
+  const neighbors = new Map<string, Set<string>>(); const counts = new Map<string, number>(); const result: Edge[] = [];
   for (const edges of ranked) {
     const { source, target } = edges[0];
-    const a = linked.get(source) ?? new Set<string>(); const b = linked.get(target) ?? new Set<string>();
+    const a = neighbors.get(source) ?? new Set<string>(); const b = neighbors.get(target) ?? new Set<string>();
     if (a.size >= MUSIC_NEIGHBOR_LIMIT || b.size >= MUSIC_NEIGHBOR_LIMIT) continue;
     for (const edge of edges) {
       const ak = `${source}:${edge.kind}`; const bk = `${target}:${edge.kind}`;
       if ((counts.get(ak) ?? 0) >= MUSIC_NEIGHBORS_PER_KIND || (counts.get(bk) ?? 0) >= MUSIC_NEIGHBORS_PER_KIND) continue;
       result.push(edge); counts.set(ak, (counts.get(ak) ?? 0) + 1); counts.set(bk, (counts.get(bk) ?? 0) + 1);
-      a.add(target); b.add(source); linked.set(source,a); linked.set(target,b);
+      a.add(target); b.add(source); neighbors.set(source,a); neighbors.set(target,b);
     }
   }
   return result;

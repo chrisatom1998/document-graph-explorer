@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DocNode } from '../model/types';
 import type { MusicAnalysis } from './musicTypes';
 import { sanitizeMusicAnalysis } from './musicTypes';
-import { buildMusicEdges, musicPairEdges, refreshMusicEdges, MUSIC_NEIGHBOR_LIMIT, MUSIC_NEIGHBORS_PER_KIND, SOUND_LINK_POLICY } from './musicLinks';
-import { encodeSoundEmbedding } from './soundEmbedding';
+import { buildMusicEdges, musicPairEdges, refreshMusicEdges, MUSIC_NEIGHBOR_LIMIT, MUSIC_NEIGHBORS_PER_KIND } from './musicLinks';
 import { instrumentScores } from './instrumentLabels';
 import { sanitizeGraphExport } from '../persistence/validateImport';
 import { createRecognition } from './recognition';
@@ -45,39 +44,41 @@ describe('musical relationships', () => {
     for(const k of [key(0),key(9,'minor'),key(5),key(7)]) expect(musicPairEdges(a,node('b',{key:k})).map(e=>e.kind)).toEqual(['key']);
     for(const k of [key(6),key(0,'major',0.3)]) expect(musicPairEdges(a,node('b',{key:k}))).toHaveLength(0);
   });
-  it('links tracks that share tags the panel shows as likely, ranked below confirmed matches', () => {
+  it('links tracks that share tags the panel lists, ranked below confirmed matches', () => {
     const tagged = (id: string, tags: { group: 'character' | 'production'; label: string; score: number; model?: 'Trained head' | 'Trained head (maybe)' }[]) =>
       node(id, { soundProfile: { version: 1, character: [], roles: [], disagreement: false, models: [], djTags: tags.map(t => ({ model: 'Trained head', ...t })) } as MusicAnalysis['soundProfile'] });
     const a = tagged('a', [{ group: 'character', label: 'airy', score: .9 }, { group: 'production', label: 'vinyl scratch', score: .8 }]);
     const b = tagged('b', [{ group: 'character', label: 'airy', score: .7 }, { group: 'production', label: 'vinyl scratch', score: .6 }]);
     const [edge] = musicPairEdges(a, b);
     expect(edge).toMatchObject({ kind: 'sound' });
-    expect(edge.evidence[0]).toContain('Shared sound tags: airy, vinyl scratch (model estimates shown as likely on both tracks)');
+    expect(edge.evidence[0]).toContain('airy (character), vinyl scratch (production / effect)');
+    expect(edge.evidence[0]).toContain('Not confirmed by you');
     expect(edge.weight).toBeLessThan(.85);
-    // The weakest shared tag (vinyl scratch at .6 on b) sets the weight, plus .05 for the extra shared tag.
-    expect(edge.weight).toBeCloseTo(.55 * .6 + .05);
-    // More shared tags rank higher than one tag at that strength; a maybe-level head or a possible-tier score never links.
-    expect(edge.weight).toBeGreaterThan(musicPairEdges(a, tagged('c', [{ group: 'character', label: 'airy', score: .6 }]))[0].weight);
-    expect(musicPairEdges(a, tagged('d', [{ group: 'character', label: 'airy', score: .9, model: 'Trained head (maybe)' }]))).toEqual([]);
-    expect(musicPairEdges(a, tagged('e', [{ group: 'character', label: 'airy', score: .45 }]))).toEqual([]);
+    // A maybe-level head still links, but weaker than a likely-level match.
+    const maybe = musicPairEdges(a, tagged('d', [{ group: 'character', label: 'airy', score: .9, model: 'Trained head (maybe)' }]))[0];
+    expect(maybe.kind).toBe('sound');
+    expect(maybe.weight).toBeLessThan(edge.weight);
     // The candidate search finds tag-only pairs too.
     expect(buildMusicEdges([a, b]).map(e => e.kind)).toEqual(['sound']);
   });
-  it('does not create graph edges from unconfirmed machine source tags', () => {
+  it('links machine source tags the panel lists, but marks them unconfirmed and weaker than confirmed instruments', () => {
     const source = (id: string) => node(id, {
       recognition: createRecognition(100, 'full'),
       instruments: [{ label: 'piano', score: .99, status: 'likely' }],
       soundProfile: { version: 1, character: [], roles: [], disagreement: false, models: [], djTags: [{ group: 'source', label: 'piano', score: .9, model: 'Trained head' }] } as MusicAnalysis['soundProfile'],
     });
-    expect(musicPairEdges(source('a'), source('b'))).toEqual([]);
+    const [edge] = musicPairEdges(source('a'), source('b'));
+    expect(edge.kind).toBe('instrument');
+    expect(edge.evidence[0]).toContain('model estimates or untested guesses');
+    expect(edge.weight).toBeLessThan(.85);
   });
-  it('weights likely tag links by the tested detector, not raw similarity', () => {
+  it('weights listed tag links by origin, not by raw similarity', () => {
     const tagged = (id: string, tags: { group: 'character'; label: string; score: number; model?: 'Trained head' | 'Music CLAP' }[]) =>
       node(id, { soundProfile: { version: 1, character: [], roles: [], disagreement: false, models: [], djTags: tags.map(t => ({ model: 'Trained head' as const, ...t })) } as MusicAnalysis['soundProfile'] });
     const mixed = (id: string) => tagged(id, [{ group: 'character', label: 'airy', score: .51 }, { group: 'character', label: 'airy', score: .95, model: 'Music CLAP' }]);
     const tested = (id: string) => tagged(id, [{ group: 'character', label: 'airy', score: .51 }]);
     expect(musicPairEdges(mixed('a'), mixed('b'))[0].weight).toBe(musicPairEdges(tested('c'), tested('d'))[0].weight);
-    expect(musicPairEdges(mixed('a'), mixed('b'))[0].weight).toBeCloseTo(.55 * .51);
+    expect(musicPairEdges(mixed('a'), mixed('b'))[0].weight).toBeCloseTo(.7);
   });
   it('links shared instruments independently and ignores low-score guesses', () => {
     const a=node('a',{instruments:[{label:'piano',score:0.9,status:'likely'}]});
@@ -173,7 +174,9 @@ it('matches reviewed effects and character without matching unsupported or unkno
   expect(musicPairEdges(a,node('unknown'))).toEqual([]);
   expect(musicPairEdges(a,node('different',{confirmedDjTags:reviewed(['impact'],['warm'])}))).toEqual([]);
   const raw = node('raw',{soundProfile:{version:1,character:['metallic'],roles:[],disagreement:false,models:[],djTags:[{group:'production',label:'riser',score:.99}]}});
-  expect(musicPairEdges(a,raw)).toEqual([]);
+  const estimated = musicPairEdges(a,raw).find(e=>e.kind==='sound')!;
+  expect(estimated.weight).toBeLessThan(.85);
+  expect(estimated.evidence[0]).toContain('Not confirmed by you');expect(estimated.evidence[0]).toContain('untested model guess');
 });
 it('latest rejected and unsure reviews invalidate links and confirmation restores them', () => {
   const a = node('a', { confirmedDjTags: reviewed([], ['metallic']) });
@@ -224,59 +227,34 @@ it('round trips reviewed sound relationships and prevents stale imported edges',
  expect(refreshMusicEdges(restored.nodes,restored.edges)).toEqual(restored.edges);
 });
 
-/** Unit vectors around a few distinct directions, with small deterministic noise. */
-function fingerprint(group: number, member: number, model = 'clap:test'): MusicAnalysis['soundEmbedding'] {
-  let seed = group * 7919 + member * 104729 + 1;
-  const noise = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648 - .5; };
-  const v = Array.from({ length: 512 }, (_, i) => (Math.floor(i / 64) === group ? 1 : 0) + .6 * noise());
-  return encodeSoundEmbedding(v, model, 1);
-}
-const sounding = (id: string, group: number, member: number, extra: Partial<MusicAnalysis> = {}) => node(id, { soundEmbedding: fingerprint(group, member), ...extra });
-describe('sound-alike relationships', () => {
-  it('links tracks that sound alike, explains why, and leaves different sounds apart', () => {
-    const nodes = [0, 1, 2].flatMap(g => [0, 1, 2].map(m => sounding(`g${g}m${m}`, g, m)));
-    const edges = buildMusicEdges(nodes);
-    const sound = edges.filter(e => e.kind === 'sound');
-    expect(sound.length).toBeGreaterThan(0);
-    for (const e of sound) expect(e.source.slice(0, 2)).toBe(e.target.slice(0, 2));
-    expect(sound[0].evidence[0]).toMatch(/^Sounds alike: the two recordings' sound fingerprints are \d+% similar/);
-    expect(buildMusicEdges([...nodes].reverse())).toEqual(edges);
+describe('sounds-alike links', () => {
+  const unit = (hot: number[]) => { const v = new Array(512).fill(0); hot.forEach((i, k) => { v[i] = 1 - k * .01; }); const n = Math.hypot(...v); return v.map(x => x / n); };
+  it('links near-identical audio fingerprints with no shared labels, and leaves unrelated audio alone', () => {
+    const a = node('a', { embedding: unit([1, 2, 3]) });
+    const b = node('b', { embedding: unit([1, 2, 3, 4]) });
+    const c = node('c', { embedding: unit([300, 301, 302]) });
+    const edges = buildMusicEdges([a, b, c]).filter(e => e.kind === 'similar');
+    expect(edges).toHaveLength(1);
+    expect([edges[0].source, edges[0].target].sort()).toEqual(['a', 'b']);
+    expect(edges[0].weight).toBeGreaterThan(.8);
+    expect(musicPairEdges(a, c)).toEqual([]);
   });
-  it('names the tested tags and confirmed properties both tracks share', () => {
-    const tags = { confirmedDjTags: { source: [], production: ['riser'], character: ['metallic'] } };
-    const edges = buildMusicEdges([sounding('a', 0, 0, tags), sounding('b', 0, 1, tags), sounding('c', 3, 0)]);
-    const edge = edges.find(e => e.kind === 'sound')!;
-    expect([edge.source, edge.target]).toEqual(['a', 'b']);
-    expect(edge.evidence[0]).toContain('Both also have: riser (production / effect), metallic (character), confirmed by you on both tracks.');
-    expect(edge.evidence[0]).toContain('Shared sound properties: riser (production / effect), metallic (character).');
+});
+
+describe('links follow the Sounds and Other model guesses lists', () => {
+  const guessed = (id: string) => node(id, { soundProfile: { version: 1, character: [], roles: [], disagreement: false, models: [], djTags: [{ group: 'production', label: 'synth bass', score: .3 }, { group: 'character', label: 'rhythmic stabs', score: .3 }, { group: 'source', label: 'synthesizer', score: .3 }] } });
+  it('links two sounds that share an untested guess, at a weaker strength than confirmed labels', () => {
+    const edges = musicPairEdges(guessed('a'), guessed('b'));
+    const sound = edges.find(e => e.kind === 'sound')!;
+    expect(sound.evidence[0]).toContain('synth bass (production / effect)');
+    expect(sound.evidence[0]).toContain('rhythmic stabs (character)');
+    expect(sound.weight).toBeLessThan(.5);
+    const instrument = edges.find(e => e.kind === 'instrument')!;
+    expect(instrument.evidence[0]).toContain('synthesizer');
+    expect(instrument.weight).toBeLessThan(.5);
   });
-  it('still links a shared tempo, key or file-name tag between tracks that sound unrelated', () => {
-    const beat = { tempo: tempo(120), key: key(0) };
-    const nodes = [sounding('a0', 0, 0, beat), sounding('a1', 0, 1), sounding('a2', 0, 2), sounding('b0', 1, 0, beat), sounding('b1', 1, 1), sounding('b2', 1, 2)];
-    const kinds = buildMusicEdges(nodes).filter(e => (e.source === 'a0' && e.target === 'b0')).map(e => e.kind);
-    expect(kinds).toEqual(['tempo', 'key']);
-    const named = buildMusicEdges([{ ...sounding('x', 0, 0), path: 'Drums/Kick 140bpm.wav' }, { ...sounding('y', 1, 0), path: 'Drums/Snare 140bpm.wav' }]);
-    expect(named.map(e => e.kind)).toEqual(['tempo']);
-  });
-  it('never compares fingerprints from different models, and keeps every track within its link budget', () => {
-    expect(musicPairEdges(node('a', { soundEmbedding: fingerprint(0, 0, 'clap:a') }), node('b', { soundEmbedding: fingerprint(0, 1, 'clap:b') }))).toEqual([]);
-    const nodes = Array.from({ length: 60 }, (_, i) => sounding(String(i).padStart(2, '0'), i % 4, i));
-    const edges = buildMusicEdges(nodes);
-    for (const n of nodes) expect(edges.filter(e => e.kind === 'sound' && (e.source === n.id || e.target === n.id)).length).toBeLessThanOrEqual(SOUND_LINK_POLICY.mutualK);
-  });
-  it('round trips fingerprints and drops malformed ones', () => {
-    const a = sounding('a', 0, 0);
-    const restored = sanitizeMusicAnalysis(JSON.parse(JSON.stringify(a.audio)));
-    expect(restored?.soundEmbedding).toEqual(a.audio?.soundEmbedding);
-    for (const bad of [{ ...a.audio!.soundEmbedding, vector: 'AAAA' }, { ...a.audio!.soundEmbedding, windows: 0 }, { vector: a.audio!.soundEmbedding!.vector }]) expect(sanitizeMusicAnalysis({ ...a.audio, soundEmbedding: bad })?.soundEmbedding).toBeUndefined();
-  });
-  it('stays bounded and deterministic for libraries too large to compare every pair', () => {
-    const nodes = Array.from({ length: 1200 }, (_, i) => sounding(String(i).padStart(4, '0'), i % 8, i));
-    const started = performance.now();
-    const edges = buildMusicEdges(nodes);
-    expect(performance.now() - started).toBeLessThan(20000);
-    const sound = edges.filter(e => e.kind === 'sound');
-    expect(sound.length).toBeGreaterThan(nodes.length / 2);
-    for (const e of sound) expect(Number(e.source) % 8).toBe(Number(e.target) % 8);
+  it('does not link sounds whose lists share nothing', () => {
+    const other = node('c', { soundProfile: { version: 1, character: [], roles: [], disagreement: false, models: [], djTags: [{ group: 'production', label: 'riser', score: .3 }] } });
+    expect(musicPairEdges(guessed('a'), other).filter(e => e.kind === 'sound' || e.kind === 'instrument')).toEqual([]);
   });
 });

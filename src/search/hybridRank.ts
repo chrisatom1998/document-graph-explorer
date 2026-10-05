@@ -4,9 +4,13 @@ export interface RankedCandidate {
   semanticRank?: number;
   lexicalRank?: number;
   groupId?: string;
+  /** Exact identifier tokens from the query (e.g. "PT-01") found in this candidate. */
+  identifierHits?: number;
 }
 
 const RRF_K = 60;
+/** The largest score plain rank fusion can give, so each identifier hit outranks any rank-only candidate. */
+const IDENTIFIER_BONUS = 2 / (RRF_K + 1);
 
 export function reciprocalRankFusion<T extends RankedCandidate>(candidates: T[]): Array<T & { score: number }> {
   return candidates
@@ -14,7 +18,8 @@ export function reciprocalRankFusion<T extends RankedCandidate>(candidates: T[])
       ...candidate,
       score:
         (candidate.semanticRank ? 1 / (RRF_K + candidate.semanticRank) : 0) +
-        (candidate.lexicalRank ? 1 / (RRF_K + candidate.lexicalRank) : 0),
+        (candidate.lexicalRank ? 1 / (RRF_K + candidate.lexicalRank) : 0) +
+        (candidate.identifierHits ?? 0) * IDENTIFIER_BONUS,
     }))
     .filter((candidate) => candidate.score > 0)
     // An exact tie (e.g. lexical #1 + semantic #4 vs lexical #4 + semantic #1)
