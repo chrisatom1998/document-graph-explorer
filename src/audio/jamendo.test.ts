@@ -74,11 +74,16 @@ it('scores a recording by its two strongest windows, so a part-time instrument i
   expect(jamendoSuggestions(song.scores()).map(s => s.label)).toContain('saxophone');
 });
 
-it('needs a second window before one strong window counts in full', () => {
+it('needs a second window at the bar before one confident window can add a label', () => {
   const song = new JamendoRecordingScores();
-  for (let i = 0; i < 40; i++) song.add(i === 7 ? { saxophone: .5 } : {});
-  expect(song.scores().saxophone).toBe(.25);
+  // One sax window at .8 and one voice window at 1 among 40: halving alone would still clear the .3 and .5 bars.
+  for (let i = 0; i < 40; i++) song.add(i === 7 ? { saxophone: .8, voice: 1 } : { saxophone: .1 });
+  expect(song.scores()).toEqual({ saxophone: 0, voice: 0 });
   expect(jamendoSuggestions(song.scores())).toEqual([]);
+  expect(jamendoLabels(song.scores())).toEqual([]);
+  // A second window at the bar is enough, and the score is still the mean of the two strongest.
+  song.add({ saxophone: .3 });
+  expect(song.scores().saxophone).toBeCloseTo(.55);
 });
 
 it('keeps the plain average for one- and two-window recordings and ignores invalid scores', () => {

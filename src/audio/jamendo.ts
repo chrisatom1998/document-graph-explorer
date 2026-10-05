@@ -3,9 +3,11 @@ import { jamendoPatches } from './jamendoFeatures';
 import { INSTRUMENT_LABELS, isBroadInstrument } from './instrumentLabels';
 import type { SoundSuggestion } from './soundSuggestions';
 import { sourceLabels, type Dimension } from './recognition';
+/** The score a Jamendo label needs before it counts; voice is noisier, so it needs more. */
+export const jamendoBar = (label: string) => label === 'voice' ? .5 : .3;
 export function jamendoLabels(scores: Record<string, number>): { dimension: Dimension; labelId: string; score: number }[] {
   return Object.entries(scores).flatMap(([raw, score]) => {
-    if (!Number.isFinite(score) || score < (raw === 'voice' ? .5 : .3) || score > 1) return [];
+    if (!Number.isFinite(score) || score < jamendoBar(raw) || score > 1) return [];
     const role = ({ bass: 'bass', beat: 'rhythm', pad: 'pad' } as Record<string,string>)[raw];
     if (role) return [{ dimension: 'role' as Dimension, labelId: role, score }];
     const labelId = aliases[raw] ?? ({ acousticbassguitar: 'bass guitar', brass: 'brass instrument', keyboard: 'keyboard (musical)' } as Record<string,string>)[raw] ?? raw;
@@ -22,12 +24,13 @@ export function jamendoSuggestions(scores: Record<string, number>): SoundSuggest
     if (INSTRUMENT_LABELS.includes(label) && !isBroadInstrument(label) && Number.isFinite(score) && score >= 0 && score <= 1) candidates.set(label, Math.max(candidates.get(label) ?? 0, score));
   }
   const ranked = [...candidates].sort((a,b) => b[1]-a[1]);
-  return ranked.filter(([label, score]) => score >= (label === 'voice' ? 0.5 : 0.3)).slice(0, 3).map(([label, score]) => ({ label, score, margin: Math.max(0, score - (ranked.find(([other]) => other !== label)?.[1] ?? 0)) }));
+  return ranked.filter(([label, score]) => score >= jamendoBar(label)).slice(0, 3).map(([label, score]) => ({ label, score, margin: Math.max(0, score - (ranked.find(([other]) => other !== label)?.[1] ?? 0)) }));
 }
 /** Recording-level Jamendo scores: each label's mean over its two strongest windows. A plain average
- * over every window dilutes an instrument that plays in only part of a long recording; requiring two
- * windows keeps one noisy window from adding a label on its own. A window without a label counts as 0,
- * so one- and two-window recordings get exactly the plain average. */
+ * over every window dilutes an instrument that plays in only part of a long recording. Past two windows,
+ * the second-strongest window must itself clear the label's bar, or the label scores 0: halving alone
+ * would still let one confident window (0.6 or more) reach the bar by itself. A window without a label
+ * counts as 0, so one- and two-window recordings get exactly the plain average. */
 export class JamendoRecordingScores {
   private top = new Map<string, [number, number]>();
   private windows = 0;
@@ -41,7 +44,10 @@ export class JamendoRecordingScores {
     }
   }
   scores(): Record<string, number> {
-    return Object.fromEntries([...this.top].map(([label, [first, second]]) => [label, this.windows === 1 ? first : (first + second) / 2]));
+    return Object.fromEntries([...this.top].map(([label, [first, second]]) => {
+      if (this.windows === 1) return [label, first];
+      return [label, this.windows > 2 && second < jamendoBar(label) ? 0 : (first + second) / 2];
+    }));
   }
 }
 /** NSynth heads share the Jamendo EffNet embedding. Their scores travel in the same
