@@ -50,3 +50,11 @@ it('marks labels backed only by maybe-level trained heads, and lets a full head 
  const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'production',label:'snare',score:.9,model:'Trained head (maybe)'},{group:'production',label:'kick',score:.8,model:'Trained head'}]};
  expect(confidentSoundSummary(a).map(s=>[s.label,s.maybe===true])).toEqual([['snare',true],['kick',false]]);
 });
+it('can display every catalog label once a trained head reports it',async()=>{
+ const {default:catalog}=await import('./djCatalog.json');
+ const missing=catalog.categories.filter(c=>{
+  const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:c.group as 'source'|'production'|'character',label:c.label,score:.9,model:'Trained head'}]};
+  return !confidentSoundSummary(a).some(s=>s.label===c.label);
+ }).map(c=>c.label);
+ expect(missing).toEqual([]);
+});

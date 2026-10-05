@@ -22,14 +22,26 @@ labeler = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(label
 
 FP = '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints'
 OUT = sys.argv[1]; EXTRAS = [a.split('=', 1) for a in sys.argv[2:]]
-BAR, MIN_TEST = 0.65, 15
+BAR, MIN_TEST = float(os.environ.get("BAR", 0.65)), 15
 catalog = {c['label']: c for c in json.load(open('src/audio/djCatalog.json'))['categories']}
 FAMILY = {'drum-hit': 'drum hit', 'drum-pattern': 'drum loop', 'vocal': 'vocal', 'editing': 'vocal', 'breath': 'vocal',
           'transition': 'fx', 'bass': 'bass', 'synth': 'synth', 'texture': 'texture'}
 
 EXCLUDED = set(json.load(open(os.environ['EXCLUDE']))['excludeIds']) if os.environ.get('EXCLUDE') else set()
+# Frozen test sets: their recordings and whole families (uploaders, NSynth instruments) never reach training.
+RES_IDS, RES_FAMILIES = set(), set()
+for _f in ('docs/evaluations/short-clips-2026-10-04/reserved-test-families.json', 'docs/evaluations/synth-clips-2026-10-05/reserved-test-families.json'):
+    if os.path.exists(_f):
+        _d = json.load(open(_f)); RES_IDS |= set(map(str, _d.get('freesoundIds', [])))
+        for _k in ('freesoundUploaders', 'fsdUploaders', 'nsynthInstruments', 'nsynthTestInstruments', 'avpParticipants'):
+            RES_FAMILIES |= {str(u).split(':', 1)[-1] for u in _d.get(_k, [])}
+def reserved(c):
+    if c['id'].startswith(('vault:', 'proc:', 'surge', 'slakh', 'mix')): return False
+    tail = c['id'].rsplit(':', 1)[-1]
+    family = str(c.get('group') or c.get('vendor') or '').split(':', 1)[-1]
+    return tail in RES_IDS or family in RES_FAMILIES
 def load(manifest, folder, source):
-    meta = {c['id']: c for c in json.load(open(manifest))['clips'] if source == 'vault' or c['id'] not in EXCLUDED}; got = {}
+    meta = {c['id']: c for c in json.load(open(manifest))['clips'] if source == 'vault' or (c['id'] not in EXCLUDED and not reserved(c))}; got = {}
     for f in sorted(glob.glob(f'{folder}/emb-*.jsonl')):
         for line in open(f):
             r = json.loads(line)
