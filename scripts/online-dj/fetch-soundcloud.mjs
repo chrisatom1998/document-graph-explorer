@@ -16,7 +16,8 @@ const GENRES = [
   ['dubstep', 'dubstep creative commons'], ['trance', 'trance creative commons'], ['breakbeat', 'breakbeat creative commons'],
   ['electro', 'electro house creative commons'], ['triphop', 'trip hop creative commons'], ['hiphop', 'hip hop beat creative commons'],
   ['disco', 'nu disco creative commons'], ['ambient', 'ambient electronic creative commons'], ['trap', 'trap beat creative commons'],
-  ['garage', 'uk garage creative commons'], ['lofi', 'lofi hip hop creative commons'],
+  ['garage', 'uk garage creative commons'], ['lofi', 'lofi hip hop creative commons'], ['tech-house', 'tech house creative commons'],
+  ['synthwave', 'synthwave creative commons'], ['progressive', 'progressive house creative commons'],
 ];
 
 const ytdlp = args => execFileSync('yt-dlp', args, { encoding: 'utf8', maxBuffer: 64 << 20, timeout: 600_000 });
@@ -29,7 +30,7 @@ for (const [slug, query] of GENRES) {
     let found;
     try {
       // Full metadata per hit, so the license and tags are known before anything is downloaded.
-      found = ytdlp(['--dump-json', '--skip-download', '--ignore-errors', `scsearch25:${q}`]);
+      found = ytdlp(['--dump-json', '--skip-download', '--ignore-errors', '--sleep-requests', '2', '--no-warnings', `scsearch12:${q}`]);
     } catch (e) { found = String(e.stdout ?? ''); }
     entries.push(...found.trim().split('\n').filter(Boolean).flatMap(l => { try { return [JSON.parse(l)]; } catch { return []; } }));
     if (entries.some(isCc)) break;
@@ -41,7 +42,7 @@ for (const [slug, query] of GENRES) {
   const id = `sc-${String(items.length + 1).padStart(2, '0')}-${slug}`;
   const start = Math.round(track.duration * 0.35);
   try {
-    ytdlp(['-x', '--audio-format', 'mp3', '-o', join(audioDir, `${id}.full.%(ext)s`), track.webpage_url]);
+    ytdlp(['--no-warnings', '--sleep-requests', '2', '-x', '--audio-format', 'mp3', '-o', join(audioDir, `${id}.full.%(ext)s`), track.webpage_url]);
     const full = readdirSync(audioDir).find(f => f.startsWith(`${id}.full.`));
     execFileSync('ffmpeg', ['-v', 'error', '-y', '-ss', String(start), '-t', String(CLIP), '-i', join(audioDir, full), '-ac', '2', '-ar', '44100', join(audioDir, `${id}.wav`)]);
   } catch (e) { console.log(`download failed for ${slug}: ${String(e.message).slice(0, 200)}`); continue; }
@@ -53,4 +54,4 @@ for (const [slug, query] of GENRES) {
 }
 writeFileSync(manifestPath, JSON.stringify({ items }, null, 1));
 console.log(`${items.length} SoundCloud clips ready`);
-if (items.length < 6) process.exit(1);
+if (items.length < 4) process.exit(1);
