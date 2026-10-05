@@ -414,6 +414,41 @@ const PRESSURES = [
   'a staffing gap on the on-call rotation',
 ];
 
+/** Theme slug a generated record is written about (themes cycle by index). */
+export function generatedDemoThemeSlug(index: number): string {
+  return THEMES[(index - 1) % THEMES.length]!.slug;
+}
+
+/**
+ * Deterministic cross-references — indexes of the sibling records a generated
+ * record cites by exact filename, so the reference-edge pass (mentions in body
+ * text) yields real, predictable connections: chains within a theme
+ * (prev/next) and a bridge across themes (partner). Also the ground truth for
+ * the graph accuracy eval.
+ */
+export function generatedDemoCrossReferences(
+  index: number,
+  count = GENERATED_DEMO_DOCUMENT_COUNT,
+): { prevInTheme: number; nextInTheme: number; partner: number } {
+  const prevInTheme =
+    count > THEMES.length * 2
+      ? index - THEMES.length >= 1
+        ? index - THEMES.length
+        : index + THEMES.length * 2
+      : ((index - THEMES.length - 1 + count) % count) + 1;
+  const nextInTheme =
+    count > THEMES.length * 2
+      ? index + THEMES.length <= count
+        ? index + THEMES.length
+        : index - THEMES.length * 2
+      : ((index + THEMES.length - 1) % count) + 1;
+  let partner = ((index * 137 + 71) % count) + 1;
+  if (partner === index || (partner - index + count) % THEMES.length === 0) {
+    partner = (partner % count) + 1;
+  }
+  return { prevInTheme, nextInTheme, partner };
+}
+
 /**
  * Deterministic, per-index body text. Same-theme records intentionally diverge
  * in entities, narrative, and numbers so embedding cosine stays below the
@@ -482,26 +517,7 @@ export function generatedDemoText(
     `Stamp for graph joins: ${ref}/${alias}/${theme.slug}/w${week}-q${quarter}/${index}.`,
   ];
 
-  // Deterministic cross-references — exact filenames of sibling records, so
-  // the reference-edge pass (mentions in body text) yields real, predictable
-  // connections: chains within a theme, bridges across themes, and citations
-  // into the committed sample PDFs.
-  const prevInTheme =
-    count > THEMES.length * 2
-      ? index - THEMES.length >= 1
-        ? index - THEMES.length
-        : index + THEMES.length * 2
-      : ((index - THEMES.length - 1 + count) % count) + 1;
-  const nextInTheme =
-    count > THEMES.length * 2
-      ? index + THEMES.length <= count
-        ? index + THEMES.length
-        : index - THEMES.length * 2
-      : ((index + THEMES.length - 1) % count) + 1;
-  let partner = ((index * 137 + 71) % count) + 1;
-  if (partner === index || (partner - index + count) % THEMES.length === 0) {
-    partner = (partner % count) + 1;
-  }
+  const { prevInTheme, nextInTheme, partner } = generatedDemoCrossReferences(index, count);
   const partnerTheme = THEMES[(partner - 1) % THEMES.length]!;
   const citations = SAMPLE_CITATIONS[theme.slug] ?? [];
   const citation = citations.length > 0 && index % 2 === 0 ? citations[index % citations.length]! : null;

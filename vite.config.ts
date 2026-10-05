@@ -2,12 +2,27 @@ import { djAssistantPlugin } from './src/server/djAssistant';
 import { djCopilotPlugin } from './src/server/djCopilot';
 import { djReviewerPlugin } from './src/server/djReviewer';
 /// <reference types="vitest/config" />
-import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { defineConfig, loadEnv, searchForWorkspaceRoot, type Plugin } from 'vite';
+import { existsSync, realpathSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { buildCsp } from './src/security/csp';
 import pkg from './package.json';
 import { essentiaCsp } from './scripts/essentia-csp';
+
+// In a git worktree, node_modules is a symlink to the main checkout. Because
+// onnxruntime-web is in optimizeDeps.exclude below, its .wasm files are served
+// from their real path, which then lies outside the worktree root: Vite's fs
+// guard refuses them, the SPA fallback answers with index.html, and every ONNX
+// model fails with "no available backend found" (the wasm compiler reports
+// `expected magic word 00 61 73 6d, found 0a 20 20 20` — that is the HTML).
+// Allowing the resolved node_modules keeps worktrees working; in an ordinary
+// checkout it resolves inside the root and changes nothing.
+function serveRoots(): string[] {
+  const roots = [searchForWorkspaceRoot(process.cwd())];
+  if (existsSync('node_modules')) roots.push(realpathSync('node_modules'));
+  return roots;
+}
 
 function injectCsp(airgap: boolean): Plugin {
   const csp = buildCsp({ airgap });
@@ -49,16 +64,39 @@ const SECURITY_HEADERS = {
     'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()',
 };
 
+// Worker entry files get a per-deploy suffix. Under COEP require-corp a
+// browser refuses to start a worker whose response lacks COEP, and a
+// content-hashed worker whose code didn't change keeps its old URL across a
+// header change — so visitors with a cached pre-COEP copy saw every worker
+// fail ("Layout engine failed"). A new URL per deploy means a cached copy
+// served with older headers can never be reused.
+const BUILD_ID = (process.env.VERCEL_GIT_COMMIT_SHA ?? 'local').slice(0, 8);
+/** pdf.js loads its worker from a plain asset URL (from the page and from
+ * inside pdf.worker.ts), so that asset needs the same suffix. */
+const workerAssetFileNames = (info: { names: string[] }): string =>
+  info.names.some((n) => /\.worker\b.*\.m?js$/.test(n))
+    ? `assets/[name]-[hash]-${BUILD_ID}[extname]`
+    : 'assets/[name]-[hash][extname]';
+
 // Isolation permits bounded ONNX WASM threading. All model/runtime resources
 // remain same-origin; hosts without isolation retain one-thread inference.
 export default defineConfig(({ mode }) => ({
   plugins: [essentiaCsp(), react(), tailwindcss(), injectCsp(mode === 'airgap'), ...(mode === 'airgap' ? [] : [djAssistantPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djCopilotPlugin(loadEnv(mode, process.cwd(), '').OPENAI_API_KEY ?? ''), djReviewerPlugin()])],
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
-  server: { headers: { ...SECURITY_HEADERS, 'Permissions-Policy': mode === 'airgap' ? SECURITY_HEADERS['Permissions-Policy'] : SECURITY_HEADERS['Permissions-Policy'].replace('microphone=()', 'microphone=(self)') } },
+  server: { fs: { allow: serveRoots() }, headers: { ...SECURITY_HEADERS, 'Permissions-Policy': mode === 'airgap' ? SECURITY_HEADERS['Permissions-Policy'] : SECURITY_HEADERS['Permissions-Policy'].replace('microphone=()', 'microphone=(self)') } },
   // Workers receive Vercel's CSP as a response header, not the page's meta tag.
   // Exercise the same restrictions in built-app browser tests.
   preview: { headers: { ...SECURITY_HEADERS, 'Content-Security-Policy': `${buildCsp({ airgap: mode === 'airgap' })}; frame-ancestors 'none'` } },
-  worker: { format: 'es', plugins: () => [essentiaCsp()] },
+  worker: {
+    format: 'es',
+    plugins: () => [essentiaCsp()],
+    rollupOptions: {
+      output: {
+        entryFileNames: `assets/[name]-[hash]-${BUILD_ID}.js`,
+        assetFileNames: workerAssetFileNames,
+      },
+    },
+  },
   build: {
     target: 'esnext',
     // Keep the app entry from eagerly preloading the React vendor chunk; the
@@ -74,6 +112,7 @@ export default defineConfig(({ mode }) => ({
         // Keep Rollup from pulling shared preload helpers into a named vendor
         // chunk and accidentally turning an async scene into an eager preload.
         onlyExplicitManualChunks: true,
+        assetFileNames: workerAssetFileNames,
         manualChunks(id) {
           // Follow-mode framing is used by the eager collaboration store, but
           // keeping that feature seam separate prevents camera sync growth from

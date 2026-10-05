@@ -37,7 +37,7 @@ const all = [];
 const full = [];
 for (const node of graph.nodes) {
   const name = node.path ?? node.title;
-  if (!node.audio || !/^sc-[0-9a-f]{16}\.wav$/.test(name)) continue;
+  if (!node.audio || !/^s[cy]-[0-9a-f]{16}\.wav$/.test(name)) continue;
   const itemId = name.slice(0, -4);
   const audio = node.audio;
   const scored = confidentSoundSummary(audio, audio.recognition?.mode);
