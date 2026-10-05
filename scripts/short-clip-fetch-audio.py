@@ -12,6 +12,7 @@ import concurrent.futures, io, json, os, re, subprocess, sys, tarfile, tempfile,
 
 ROOT = os.path.join(os.path.dirname(__file__), '..')
 B = os.environ.get('BENCH', f'{ROOT}/docs/evaluations/short-clips-2026-10-04')
+if len(sys.argv) < 2: sys.exit(__doc__)
 out = sys.argv[1]; split = sys.argv[2] if len(sys.argv) > 2 else 'test'
 cache = sys.argv[3] if len(sys.argv) > 3 else os.path.join(out, '..', 'short-clip-sources')
 os.makedirs(out, exist_ok=True); os.makedirs(cache, exist_ok=True)

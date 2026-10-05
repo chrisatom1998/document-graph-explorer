@@ -5,9 +5,6 @@ name: Short-clip tag check
 # exports the graph and scores the displayed tags. "base" builds the app source at BASE_REF, "branch" at
 # this commit; both use this commit's scoring scripts. Audio is fetched at run time and never committed.
 on:
-  push:
-    branches: [claude/weak-sound-labels-2phv35]
-    paths: [scripts/short-clip-fetch-audio.py, src/audio/djTags.ts, src/audio/djClassification.ts]
   workflow_dispatch:
 
 env:
