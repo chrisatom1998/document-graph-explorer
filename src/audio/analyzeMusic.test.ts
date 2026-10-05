@@ -313,7 +313,7 @@ it('retries an in-flight analysis request when a concurrent warmup hits the thre
     addEventListener(type: string, listener: (event: { data: unknown }) => void) {
       if (type === 'message') this.listeners.add(listener);
     }
-    removeEventListener(type: string, listener: (event: { data: unknown }) => void) {
+    removeEventListener(_type: string, listener: (event: { data: unknown }) => void) {
       this.listeners.delete(listener);
     }
     deliver(data: unknown) {

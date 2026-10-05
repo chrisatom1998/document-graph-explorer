@@ -51,7 +51,13 @@ export default tseslint.config(
       sourceType: 'module',
       globals: { ...globals.browser, ...globals.worker },
       parserOptions: {
-        projectService: true,
+        // scripts/score-event-windows.ts is a standalone analysis script: it is
+        // not under tsconfig's include ("src", vite.config.ts, playwright.config.ts)
+        // and nothing in the program imports it, so the project service cannot
+        // place it and typed linting fails to parse it at all. The other
+        // scripts/ entries are .mjs (untyped) or, like essentia-csp.ts, reached
+        // through vite.config.ts. Let this one lint against the default project.
+        projectService: { allowDefaultProject: ['scripts/score-event-windows.ts'] },
         tsconfigRootDir,
       },
     },
