@@ -261,3 +261,35 @@ it.each([{deviceMemory:8,hardwareConcurrency:8},{hardwareConcurrency:18}])('reta
  // One request per family worker at most: families overlap, a family never overlaps itself.
  expect(state.maxModels).toBeGreaterThan(1);expect(state.maxModels).toBeLessThanOrEqual(4);
 });
+
+it('retries a model request once on a fresh single-thread worker when the threaded runtime never starts', async () => {
+  vi.stubGlobal('crossOriginIsolated', true);
+  vi.stubGlobal('SharedArrayBuffer', class {});
+  vi.stubGlobal('navigator', { deviceMemory: 16, hardwareConcurrency: 18 });
+  vi.stubGlobal('localStorage', { getItem: () => null, setItem: () => {} });
+  const { THREADED_RUNTIME_STALLED } = await import('./musicRuntime');
+  const sent: { kind: string; singleThread?: boolean }[] = [];
+  class StallingWorker extends FakeWorker {
+    postMessage(message: { id: number; kind: string; singleThread?: boolean; samples?: Float32Array }) {
+      sent.push({ kind: message.kind, singleThread: message.singleThread });
+      if ((message.kind === 'instruments' || message.kind === 'profile') && !message.singleThread) {
+        setTimeout(() => this.onmessage?.({ data: { id: message.id, error: THREADED_RUNTIME_STALLED } }), 0);
+        return;
+      }
+      expect(message.samples === undefined || message.samples.length > 0).toBe(true);
+      super.postMessage(message);
+    }
+  }
+  vi.stubGlobal('Worker', StallingWorker);
+  vi.resetModules();
+  const isolated = await import('./analyzeMusic');
+  const terminated = state.terminated;
+  const result = await isolated.analyzeMusic(new Blob(['stall']), 'stall.wav', { mode: 'full' });
+  expect(result.instrumentScan?.complete).toBe(true);
+  expect(sent.filter(m => m.kind === 'instruments').map(m => !!m.singleThread)).toEqual([false, true]);
+  // Families run side by side, so CLAP may stall once too; it is retried the same way and later requests go single-thread.
+  const profile = sent.filter(m => m.kind === 'profile').map(m => !!m.singleThread);
+  expect(profile.at(-1)).toBe(true);
+  expect(profile.filter(v => !v).length).toBeLessThanOrEqual(1);
+  expect(state.terminated).toBeGreaterThan(terminated);
+});

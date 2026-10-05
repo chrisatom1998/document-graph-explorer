@@ -9,6 +9,7 @@ import { ResultCache } from './recognition';
 const cache = new ResultCache(128);
 const decodedCache = new DecodedMusicCache();
 import { MusicTaskQueue } from './musicTaskQueue';
+import { musicInferenceThreads, THREADED_RUNTIME_STALLED, switchToSingleThreadRuntime } from './musicRuntime';
 const workers = new Map<string, Worker>();
 // Pinned quantized native weights total about190MB. Bound retained family sessions
 // and preserve the low-memory fallback of one serialized session.
@@ -87,17 +88,33 @@ function warmWorker(worker: Worker, family: string): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     // A listener, not onmessage, so a real request that starts meanwhile keeps its own handler.
     const done = (error?: Error) => { clearTimeout(timer); worker.removeEventListener('message', onMessage); worker.removeEventListener('error', onError); if (error) reject(error); else resolve(); };
-    const onMessage = ({ data }: MessageEvent<{ id: number; warmed?: boolean; error?: string }>) => { if (data.id === id) done(data.error ? new Error(data.error) : undefined); };
+    const onMessage = ({ data }: MessageEvent<{ id: number; warmed?: boolean; error?: string }>) => {
+      if (data.id !== id) return;
+      if (data.error === THREADED_RUNTIME_STALLED) { switchToSingleThreadRuntime(); discard(worker); }
+      done(data.error ? new Error(data.error) : undefined);
+    };
     const onError = () => done(new Error('Music model preload failed.'));
     const timer = setTimeout(() => done(new Error('Music model preload timed out.')), 180_000);
     worker.addEventListener('message', onMessage);
     worker.addEventListener('error', onError);
-    worker.postMessage({ kind: 'warm', family, id });
+    worker.postMessage({ kind: 'warm', family, id, ...threadHint() });
   });
 }
 
+/** Tells a worker to use one inference thread once this browser has shown its threads never start. */
+const threadHint = () => musicInferenceThreads() === 1 ? { singleThread: true } : {};
 function request<T>(message: Record<string, unknown>, transfer: Transferable[], options: Options, priority: 'preview' | 'analysis', fingerprint?: string): Promise<T> {
-  return queueFor(familyOf(message.kind)).schedule(priority, () => runRequest<T>(message, transfer, options, fingerprint), options.signal);
+  return queueFor(familyOf(message.kind)).schedule(priority, async () => {
+    // Only a multi-threaded worker can stall; keep a copy of the audio (the first attempt transfers it away).
+    const retryCopy = musicInferenceThreads() > 1 ? structuredClone(message) : undefined;
+    try { return await runRequest<T>(message, transfer, options, fingerprint); }
+    catch (error) {
+      if (!(error instanceof Error) || error.message !== THREADED_RUNTIME_STALLED || !retryCopy) throw error;
+      // The stuck worker was discarded; run the same request once more on a fresh single-thread worker.
+      switchToSingleThreadRuntime();
+      return runRequest<T>(retryCopy, [], options, fingerprint);
+    }
+  }, options.signal);
 }
 
 function runRequest<T>(message: Record<string, unknown>, transfer: Transferable[], options: Options, fingerprint?: string): Promise<T> {
@@ -119,7 +136,7 @@ function runRequest<T>(message: Record<string, unknown>, transfer: Transferable[
       else if (data.result) { if (data.runtime) { try { options.onRuntime?.({ kind: String(message.kind), ...data.runtime }); } catch { /* Observations cannot change classification. */ } } cleanup(); resolve(data.result); }
       else fail(new Error(data.error || 'Music analysis failed.'));
     };
-    try { current.postMessage({ ...message, id }, transfer); }
+    try { current.postMessage({ ...message, id, ...threadHint() }, transfer); }
     catch (error) { fail(error instanceof Error ? error : new Error('Music analysis worker failed.')); }
   });
 }
