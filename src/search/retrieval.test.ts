@@ -152,6 +152,23 @@ describe('shared hybrid retrieval', () => {
     expect(identifierTerms('Postgres 16 logical replication')).toEqual([]);
     expect(identifierHits(['pt-01'], 'Finding PT-01: header spoofing')).toBe(1);
     expect(identifierHits(['pt-01'], 'Finding PT-010 and XPT-01')).toBe(0);
+    expect(identifierHits(['pt-01'], 'See PT-01-A, PT-01_extra, PT-01.2 and A.PT-01')).toBe(0);
+    expect(identifierHits(['pt-01'], 'Closed in PT-01.')).toBe(1);
+  });
+
+  it('gives the identifier bonus to a semantic-only passage that misses the lexical gate', async () => {
+    const chunks = new Map<string, ChunkData>([
+      ['close', { texts: ['quarterly revenue forecast assumptions overview'], vectors: new Float32Array([1, 0]), dims: 2 }],
+      ['coded', { texts: ['Ticket FIN-4410 closed'], vectors: new Float32Array([0.6, 0.8]), dims: 2 }],
+    ]);
+    const result = await retrieveCorpus('FIN-4410 quarterly revenue forecast assumptions', { minSemanticScore: 0, limit: 2 }, dependencies(
+      [node('close', 'Forecast'), node('coded', 'Tickets')],
+      chunks,
+      async () => new Float32Array([1, 0]),
+    ));
+
+    expect(result.map((hit) => hit.docId)).toEqual(['coded', 'close']);
+    expect(result[0].lexicalRank).toBeUndefined();
   });
 
   it('puts a passage containing the exact identifier above closer semantic matches', async () => {

@@ -52,7 +52,7 @@ export function OtherModelGuesses({ profile, confirmedDjTags, reviewedLabels, ex
     <h4 className="sound-tags__title">Other model guesses</h4>
     <dl className="dj-tag-groups sound-guesses__groups">{groups.map(({ group, values }) => <div key={group}>
       <dt>{GROUP_NAME[group]}</dt>
-      <dd>{values.map(value => <span className="chip chip--guess" key={value} title="From a model that has not passed held-out testing">{value.replaceAll('_', ' ')}</span>)}</dd>
+      <dd>{values.map(value => <span className="chip chip--guess" key={value} title="From a model that has not passed held-out testing">{soundLabelText(value)}</span>)}</dd>
     </div>)}</dl>
   </section>;
 }
