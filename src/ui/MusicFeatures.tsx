@@ -10,7 +10,9 @@ import type { DocNode } from '../model/types';
 import { KEY_NAMES, keyName, type InstrumentEstimate } from '../audio/musicTypes';
 import { isBroadInstrument } from '../audio/instrumentLabels';
 import { useGraphStore } from '../store/graphStore';
-import { SoundExplanation, SoundTagGroups } from './SoundIdentification';
+import { OtherModelGuesses, SoundExplanation } from './SoundIdentification';
+import { confidentSoundSummary } from '../audio/confidentSoundSummary';
+import { filenameSoundFallback } from '../audio/filenameSoundFallback';
 import { RecognitionDiagnostics, type RecognitionEvidenceProps } from './RecognitionEvidence';
 const time = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?: (seconds: number) => void }) {
@@ -21,6 +23,8 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
   const analysis = node.audio;
   const confirmed = analysis ? confirmedInstrumentList(analysis) : undefined;
   const reviewedLabels = analysis ? resolvedNonSourceLabels(analysis) : [];
+  // What the Sounds row already shows, so the untested guesses below it never repeat a tag.
+  const shownSounds = analysis ? (() => { const scored = confidentSoundSummary(analysis); return [...scored, ...filenameSoundFallback(analysis, node, scored)].map(s => s.label); })() : [];
   // Keyed off `confirmed`, not off confirmedDjTags: a track confirmed through
   // the legacy confirmedInstruments field (or through a source review) has no
   // confirmedDjTags, and gating on that used to leave the chips empty and force
@@ -93,13 +97,15 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
           : <dd className="is-unknown" title={analysis.stage === 'preview' ? 'Not checked yet' : 'No stable key detected'}>{analysis.stage === 'preview' ? '…' : '—'}</dd>}</div>
       </dl>
       <ConfidentSoundSummary audio={analysis} node={node} />
+      <OtherModelGuesses profile={displayProfile} confirmedDjTags={analysis.confirmedDjTags ? confirmedTags : undefined} reviewedLabels={reviewedLabels}
+        skipSource={confirmed !== undefined || !!hints.instruments} exclude={shownSounds} />
       <ModelScores profile={displayProfile} audio={analysis} />
       <details className="music-analysis-details">
         <summary>Technical details</summary>
         {recognitionProps && <RecognitionDiagnostics {...recognitionProps} />}
         {!!analysis.soundReviews?.length && <p>Saved reviews remain effective and take precedence over earlier confirmations.</p>}
         <CopilotProperties audio={analysis} />
-        {analysis.soundProfile && <SoundExplanation reviewedLabels={reviewedLabels} confirmedDjTags={confirmedTags} preliminary={analysis.stage === 'preview'} profile={displayProfile!} sourceOverride={confirmed !== undefined ? { label: confirmed.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
+        {analysis.soundProfile && <SoundExplanation showTags={false} reviewedLabels={reviewedLabels} confirmedDjTags={confirmedTags} preliminary={analysis.stage === 'preview'} profile={displayProfile!} sourceOverride={confirmed !== undefined ? { label: confirmed.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
       {(hints.tempo || hints.key || hints.pitch || hints.instruments) && <>
         {[...nameSources].map(([id, group]) => <p key={id}>From {group.source}: {group.values.join(' · ')}</p>)}
         <p>These labels are used to connect tracks. They come from the file or folder name, not from listening to the audio.</p>
@@ -117,10 +123,9 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
         <p>Used as lower-strength connection hints when reviewed or reliable audio instruments are unavailable. Sound-based estimates remain below for comparison.</p>
       </>}
       {confirmed !== undefined ? <>
-        {/* With a profile, SoundExplanation above already rendered these chips. */}
-        {!analysis.soundProfile && <SoundTagGroups confirmedDjTags={confirmedTags} reviewedLabels={reviewedLabels} />}
+        {/* Confirmed labels appear as ✓ tags in the Sounds row at the top. */}
         <p>Confirmed by you. These instruments are used for connections.</p>
-      </> : analysis.recognition ? <p>Machine suggestions and their coverage are shown above. Your saved reviews remain separate from model estimates.</p> : analysis.version === 1 ? <p>Earlier instrument estimates used short excerpts. Reanalyze to scan the full track.</p> : <>
+      </> : analysis.recognition ? <p>Model guesses are shown at the top; their evidence and coverage are above. Your saved reviews remain separate from model estimates.</p> : analysis.version === 1 ? <p>Earlier instrument estimates used short excerpts. Reanalyze to scan the full track.</p> : <>
         {prediction && !analysis.soundProfile && <>
           <h4>Estimated instrument</h4>
           <p className="automatic-instrument">{prediction.label}</p>

@@ -44,13 +44,15 @@ it('shows the automatic synth label with uncertainty without requiring a confirm
 });
 it('clearly distinguishes confirmed instruments from model guesses', () => {
   renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, confirmedInstruments: ['synthesizer'] } }} />);
-  expect(screen.getByText('synthesizer', { selector: '.dj-tag-groups .chip' })).toBeVisible();
+  expect(screen.getByText('synthesizer', { selector: '.sound-tag--confirmed > span:not(.sr-only):not(.sound-tag__mark)' })).toBeVisible();
   expect(screen.queryByText('trumpet', { selector: 'span' })).toBeNull();
+  expect(screen.queryByRole('region', { name: 'Other model guesses' })).toBeNull();
   expect(screen.getByText('Confirmed by you. These instruments are used for connections.')).toBeVisible();
 });
 it('updates the confirmed summary after a later rejection', () => {
   renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, confirmedInstruments: ['synthesizer', 'trumpet'], soundReviews: [{ labelId: 'synthesizer', dimension: 'source', decision: 'rejected', scope: 'track', at: '2026-10-03T00:00:00Z', evidenceRunId: 'run' }] } }} />);
-  expect(screen.getByText('trumpet', { selector: '.dj-tag-groups .chip' })).toBeVisible();
+  expect(screen.getByText('trumpet', { selector: '.sound-tag--confirmed > span:not(.sr-only):not(.sound-tag__mark)' })).toBeVisible();
+  expect(screen.queryByText('synthesizer', { selector: '.sound-tag > span' })).toBeNull();
   expect(screen.queryByText('synthesizer', { selector: '.dj-tag-groups .chip' })).toBeNull();
   expect(screen.getByText('trumpet', { selector: '.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)' })).toBeVisible();
 });
@@ -178,7 +180,7 @@ it.each([.49,.5,.8])('hides the untested legacy prediction at score %s',score=>{
 it.each(['rejected','uncertain'] as const)('does not revive %s effect/character reviews in profile groups or correction defaults',decision=>{
  const audio={...node.audio!,confirmedDjTags:{source:['piano'],production:['riser'],character:['distorted']},soundProfile:{version:1 as const,character:['distorted'],roles:[],models:[],disagreement:false,djTags:[{group:'production' as const,label:'riser',score:.8},{group:'character' as const,label:'distorted',score:.8}]},soundReviews:[{dimension:'effect' as const,labelId:'riser',decision,scope:'track' as const,at:'2026-10-03T00:00:00Z',evidenceRunId:'old'},{dimension:'character' as const,labelId:'distorted',decision,scope:'track' as const,at:'2026-10-03T00:00:00Z',evidenceRunId:'old'}]};
  const before=structuredClone(audio);const view=renderExpanded(<MusicFeatures node={{...node,audio}}/>);
- expect(view.container.querySelector('.dj-tag-groups')?.textContent).not.toMatch(/riser|distorted/);
+ expect(view.container.textContent).not.toMatch(/riser|distorted/);
  expect(screen.getByRole('region',{name:'Sound identification'})).not.toHaveTextContent(/riser|distorted/);
  expect(audio).toEqual(before);
 });
@@ -188,7 +190,7 @@ it('updates profile confirmations and correction defaults on the latest review w
  expect(screen.getByRole('region',{name:'Sound identification'})).not.toHaveTextContent('distorted');
  const updated={...audio,soundReviews:[...audio.soundReviews,{...audio.soundReviews[0],decision:'confirmed' as const}]};
  view.rerender(<MusicFeatures node={{...node,audio:updated}}/>);
- expect(view.container.querySelector('.dj-tag-groups')?.textContent).toContain('distorted (confirmed by you)');
+ expect(screen.queryByRole('region',{name:'Other model guesses'})).toBeNull(); // confirmed, so not repeated as a guess
  expect(screen.getByRole('region',{name:'Sound identification'})).toHaveTextContent(/distorted — Character · confirmed by you/);
  expect(updated.soundProfile.djTags[0].score).toBe(.8);expect(updated.soundReviews).toHaveLength(2);
 });

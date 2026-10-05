@@ -26,11 +26,42 @@ export function SoundTagGroups({ profile, confirmedDjTags, reviewedLabels }: Omi
   })}</dl>;
 }
 
-export function SoundExplanation({ profile, sourceOverride, confirmedDjTags, reviewedLabels, preliminary = false }: SoundProps) {
+const GROUP_NAME: Record<DjGroup, string> = { source: 'Source', production: 'Production type', character: 'Character' };
+const labelKey = (label: string) => label.replaceAll('_', ' ').toLowerCase();
+
+/**
+ * Untested model guesses, shown next to the tested Sounds row so they are visible
+ * without opening Technical details. Confirmed labels and anything already shown
+ * in Sounds are left out, and empty groups are hidden.
+ */
+export function OtherModelGuesses({ profile, confirmedDjTags, reviewedLabels, exclude, skipSource = false }: {
+  profile?: SoundProfile; confirmedDjTags?: ConfirmedDjTags; reviewedLabels?: ResolvedDjLabel[];
+  /** Labels the Sounds row already shows. */ exclude: Iterable<string>; /** Instruments are confirmed or named, so source guesses are moot. */ skipSource?: boolean;
+}) {
+  const shown = new Set([...exclude].map(labelKey));
+  const groups = (['source', 'production', 'character'] as DjGroup[]).flatMap(group => {
+    if (group === 'source' ? skipSource || confirmedDjTags : confirmedDjTags) return [];
+    const raw = group !== 'source' && reviewedLabels?.length
+      ? reviewedLabels.filter(t => t.group === group && t.source !== 'confirmed').map(t => t.label)
+      : profile?.djTags?.filter(t => t.group === group).map(t => t.label) ?? [];
+    const values = [...new Set(raw)].filter(label => !shown.has(labelKey(label)));
+    return values.length ? [{ group, values }] : [];
+  });
+  if (!groups.length) return null;
+  return <section className="sound-guesses" aria-label="Other model guesses">
+    <h4 className="sound-tags__title">Other model guesses</h4>
+    <dl className="dj-tag-groups sound-guesses__groups">{groups.map(({ group, values }) => <div key={group}>
+      <dt>{GROUP_NAME[group]}</dt>
+      <dd>{values.map(value => <span className="chip chip--guess" key={value} title="From a model that has not passed held-out testing">{value.replaceAll('_', ' ')}</span>)}</dd>
+    </div>)}</dl>
+  </section>;
+}
+
+export function SoundExplanation({ profile, sourceOverride, confirmedDjTags, reviewedLabels, preliminary = false, showTags = true }: SoundProps & { showTags?: boolean }) {
   return <>
     {confirmedDjTags ? <p className="sound-origin"><span className="rec-badge rec-badge--confirmed">confirmed by you</span></p> : sourceOverride ? <p>Instrument source: {sourceOverride.origin}.</p> : profile.source ? <p>Sound estimated by {profile.source.basis}{profile.source.corroborated ? ', with support from another model' : ''}. This is not a confirmed instrument or preset.</p> : <p>No instrument was identified confidently.</p>}
     {!confirmedDjTags && (!sourceOverride || sourceOverride.allowVoice) && profile.voice && (profile.source?.label !== 'voice' || profile.voice.style) && <p>Voice estimated by {profile.voice.basis}{profile.voice.corroborated ? ', with support from another model' : ''}.{profile.voice.style ? ` ${profile.voice.basis === 'Reviewed examples' ? 'Reviewed examples' : 'Music CLAP'} suggests ${profile.voice.style}.` : ''}</p>}
-    <SoundTagGroups profile={profile} confirmedDjTags={confirmedDjTags} reviewedLabels={reviewedLabels} />
+    {showTags && <SoundTagGroups profile={profile} confirmedDjTags={confirmedDjTags} reviewedLabels={reviewedLabels} />}
     {preliminary && <p>Early estimate; verification is still in progress.</p>}
     {profile.disagreement && <p>The instrument models disagree, so the estimate is uncertain.</p>}
   </>;
