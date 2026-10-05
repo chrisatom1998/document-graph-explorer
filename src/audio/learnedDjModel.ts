@@ -23,7 +23,7 @@ export interface LearnedDjHead {
   weights: number[];
   bias: number;
   threshold: number;
-  /** Measured on unseen brands between the 50% and 65% bars: shown as a maybe. */
+  /** Passed the 45/45 bar but not 60/60 on held-out sources (older heads: between 50% and 65%): shown as a maybe. */
   maybe?: boolean;
 }
 const groups: ReviewedGroup[] = ['source', 'production', 'character'];
