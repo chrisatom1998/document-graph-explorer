@@ -10,6 +10,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # onnxruntime-node (pulled in transitively) otherwise downloads the CUDA binaries from
+  # api.nuget.org in its postinstall on every run. CI only uses the CPU build, and that
+  # host has timed out npm ci on hosted runners more than once.
+  ONNXRUNTIME_NODE_INSTALL: skip
   # Gitignored, checksum-verified weights fetched by scripts/download-music-model.mjs.
   MUSIC_MODEL_PATHS: |
     public/music-model/**/*.onnx
