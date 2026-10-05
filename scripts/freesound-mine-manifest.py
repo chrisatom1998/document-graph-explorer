@@ -18,6 +18,9 @@ PER_LABEL, PER_UPLOADER = int(os.environ.get('PER_LABEL', 120)), int(os.environ.
 SKIP = set(filter(None, os.environ.get('SKIP', '').split(',')))
 # EXTRA_TERMS=file.json {label: [terms]}: extra search words; with ONLY_EXTRA=1 only those labels are mined.
 EXTRA = json.load(open(os.environ['EXTRA_TERMS'])) if os.environ.get('EXTRA_TERMS') else {}
+# ONLY_LABELS=a,b: mine just these labels. SKIP_IDS=cands.json,...: never re-pick sounds already in those lists.
+ONLY_LABELS = set(filter(None, os.environ.get('ONLY_LABELS', '').split(',')))
+SKIP_IDS = {str(c['freesoundId']) for f in filter(None, os.environ.get('SKIP_IDS', '').split(',')) for c in json.load(open(f))['clips']}
 FP = '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints'
 catalog = json.load(open('src/audio/djCatalog.json'))['categories']
 coverage = {r['label']: r['terms'] for r in json.load(open(f'{FP}/coverage.json'))['rows']}
@@ -33,7 +36,7 @@ norm = lambda s: re.sub(r'[\s_\-]+', ' ', s.lower()).strip()
 targets = {}
 for c in catalog:
     label = c['label']
-    if label in shipped or label in SKIP or (os.environ.get('ONLY_EXTRA') == '1' and label not in EXTRA): continue
+    if label in shipped or label in SKIP or (os.environ.get('ONLY_EXTRA') == '1' and label not in EXTRA) or (ONLY_LABELS and label not in ONLY_LABELS): continue
     terms = {norm(t) for t in coverage.get(label, []) + [label] + c.get('aliases', []) + EXTRA.get(label, [])} - {''}
     # 'violin / fiddle' style labels: each side is its own term
     terms |= {norm(p) for t in list(terms) if '/' in t for p in t.split('/')}
@@ -42,7 +45,7 @@ for c in catalog:
 t = pq.read_table(META).to_pydict()
 cands = {l: [] for l in targets}
 for sid, title, tags, user in zip(t['id'], t['title'], t['tags:'], t['username']):
-    if str(sid) in reserved_ids or user in reserved_users: continue
+    if str(sid) in reserved_ids or user in reserved_users or str(sid) in SKIP_IDS: continue
     tagset = {norm(x) for x in (tags or '').split(',') if x.strip()}
     ttl = ' ' + norm(title or '') + ' '
     for label, terms in targets.items():
