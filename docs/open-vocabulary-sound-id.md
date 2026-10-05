@@ -129,6 +129,11 @@ Because 0.40 was mostly wrong, the fallback floor is 0.50, the instructions' "ra
 (`unverifiedBlocked.json`): synth bass, shaker loop, filtered, rising, bass pluck, dry, echoing, supersaw,
 syncopated, reverberant, reverse impact, synth stab.
 
+Per-label higher cut-offs were also checked for the 12 blocked labels (0.55–0.70). None became accurate: each one
+either stays mostly wrong (best: shaker loop 3 of 29, rising 3 of 22, filtered 1 of 23 at 0.55) or stops firing
+altogether. A label switched on at a cut-off where it never fires would be "active" in name only, so all 12 stay
+blocked.
+
 **This makes 186 of 198 labels able to appear:** 111 from tested detectors and 75 as "unverified". The other 12 are
 blocked because measurement says they would mostly be wrong. "Unverified" tags are honest about being untested.
 They are not accurate detection.
