@@ -3,7 +3,7 @@
 Scope: DJ one-shots and other 1–2 s clips, measured through real uploads into the built app.
 Every number below is what the **Sounds panel displayed** (tags with a score ≥ 0.50, "maybe" tags included), computed by
 the app's own `confidentSoundSummary` + `filenameSoundFallback` on DGE's graph export, and spot-checked against the
-rendered panel (15/15 identical in each measured build). A 0.50 score is a detector threshold, not 50% accuracy.
+rendered panel: 15/15 identical in the after-v1 and v2 test runs, 4/4 in a baseline calibration smoke run (the baseline test run had no on-screen check). A 0.50 score is a detector threshold, not 50% accuracy.
 
 ## 1. Audit: what happened to a short clip before this change
 
@@ -137,7 +137,12 @@ Final-run 95% family-bootstrap intervals (v2):
 Key results (v2, final): **13 of 27 measurable categories meet ≥70% precision and ≥70% recall (baseline: 4).** v2 matched
 after-v1 in every category; 13 more clips show no scored tag in v2 (490 vs 477) because unvalidated long-audio heads
 (e.g. tom, sound effect) are hidden on short clips. Loop-type false tags on one-shots: 2 (baseline) → 0. False cymbals: 46 → 0.
-Sounds-panel check: 15/15 clips identical to the computed tags in every measured build.
+Sounds-panel check: 15/15 clips identical to the computed tags in after-v1 and v2.
+
+**Merge check.** All measured builds predate the 2026-10-05 merge of `origin/main` (commit `b26b1fe`). On 240 calibration
+clips the merged build showed identical tags to the measured v2 build on 237; the other 3 each gained one tag
+(`sound effect` next to `impact` twice, plus one extra `impact` and one extra `hi-hat`). The test numbers above describe
+the pre-merge v2 build; expect the merged build to differ on roughly 1% of clips.
 
 Slices (pooled recall over present labels, v2 vs baseline): ≤1.0 s 0.44 vs 0.26; 1.0–2.25 s 0.55 vs 0.40;
 quiet clips 0.17 vs 0.17 (no gain); AVP vocal imitations 0.015 vs 0.03.
@@ -148,14 +153,19 @@ single-note pitch on NSynth: shown 98 → 198 of 222, correct 98 → 197 (1 wron
 
 ## 6. Below target, unsupported, or open
 
-- **Below 70/70:** see the table. Biggest problem: `source:synthesizer` fires on many non-synth clips (Surge-only training).
+- **Below 70/70:** see the table. Biggest problem: `source:synthesizer` shows on 174 non-synth clips (about 12% of
+  non-synth one-shots). 154 of those also show `synth hit`: the synth-hit head fires on drums, voices, explosions and
+  gunshots, and the app copies a `synth hit` tag into the `synthesizer` source. FSD50K clips are *unknown* for the synth-hit
+  role, so the table's synth-hit precision (0.68, counted on NSynth only) overstates it. Both heads were trained on Surge
+  renders that are easy to tell apart from Freesound audio. Removing or retraining them would be a change made after
+  seeing test results; it needs a fresh test set or must be reported as such.
 - **Unsupported, abstains (every positive counted as a miss):** distorted / reverberant (no short-clip training labels), bass hit (failed on development data), beatbox (no labelled negatives), vocal one-shot role (no generic role label; `voice` source shown instead), brass, risers (no licensed labelled data found).
 - **Quiet clips** did not improve (recall 0.17 before and after).
 - **Tempo/key:** 0 keys shown on 333 single events; 1 tempo shown (both builds).
 - **Contamination risk:** another session's training list (`extras/percussion.json`, Freesound One-Shot Percussive) contains 108 of these test clips. Measured builds used `learned.json` `3bf330fa…`, and v2 hides all `learned.json` heads on short clips, so results here are unaffected. Future heads must exclude `reserved-test-families.json`.
 - **Stale e2e test:** `e2e/audio.spec.ts` fails on the baseline build too: the "Play sample"/"Correct the instrument" controls it drives no longer exist.
 
-## 7. Upload-to-result time (real app, headless Chromium, software rendering)
+## 7. Upload-to-result time (real app, headless Chromium, software rendering) — pre-merge builds
 
 `scripts/short-clip-timing.mjs`: seconds from handing the file to DGE until its finished analysis is in the graph export.
 Cold = fresh browser profile; warm = a different clip of the same length right after. Calibration clips only.
