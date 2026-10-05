@@ -3,7 +3,7 @@ import { confirmedInstrumentList, reliableInstruments, sourceReviewAllows } from
 import { resolvedNonSourceLabels } from './soundReviewPolicy';
 import type { DocNode, Edge } from '../model/types';
 import { keyName, type MusicAnalysis } from './musicTypes';
-import { confidentSoundSummary } from './confidentSoundSummary';
+import { confidentSoundSummary, TESTED_SCORES } from './confidentSoundSummary';
 export const MUSIC_EDGE_KINDS = ['tempo', 'key', 'instrument', 'sound'] as const;
 type MusicKind = typeof MUSIC_EDGE_KINDS[number];
 export const MUSIC_NEIGHBOR_LIMIT = 8;
@@ -34,10 +34,14 @@ function features(node: DocNode) {
     tempo: tempo && Number.isFinite(tempo.bpm) && tempo.bpm >= 40 && tempo.bpm <= 250 && validScore(tempo.confidence) && tempo.confidence >= .5 ? tempo : undefined,
     key: key && Number.isInteger(key.tonic) && key.tonic >= 0 && key.tonic < 12 && ['major','minor'].includes(key.mode) && validScore(key.strength) && key.strength >= .6 ? key : undefined,
     sound: resolvedNonSourceLabels(audio).filter(label => label.source === 'confirmed'),
-    // The tags the panel shows as likely: tested detectors only (raw similarity scores and maybe-level heads
-    // are not acceptance policies), so a link never rests on a tag the user cannot see.
-    tags: confidentSoundSummary(audio).flatMap(s => s.origin === 'model estimate' && s.tier === 'likely' && !s.maybe && ['source', 'character', 'effect'].includes(s.dimension) && s.scores?.length
-      ? [{ key: `${s.dimension}:${s.label}`, label: s.label, score: Math.max(...s.scores.map(x => x.score)) }] : []).filter(t => validScore(t.score)),
+    // Character/effect tags the panel shows as likely. Source stays on the instrument path
+    // (Confirm, or pre-recognition likely instruments) so machine source scores never become
+    // neighbors. Weight uses the tested detector that made the tag visible, not raw similarity.
+    tags: confidentSoundSummary(audio).flatMap(s => {
+      const tested = s.scores?.filter(x => TESTED_SCORES.has(x.model));
+      return s.origin === 'model estimate' && s.tier === 'likely' && !s.maybe && (s.dimension === 'character' || s.dimension === 'effect') && tested?.length
+        ? [{ key: `${s.dimension}:${s.label}`, label: s.label, score: Math.max(...tested.map(x => x.score)) }] : [];
+    }).filter(t => validScore(t.score)),
   };
 }
 type Features = ReturnType<typeof features>;

@@ -5,6 +5,7 @@ import { sanitizeMusicAnalysis } from './musicTypes';
 import { buildMusicEdges, musicPairEdges, refreshMusicEdges, MUSIC_NEIGHBOR_LIMIT, MUSIC_NEIGHBORS_PER_KIND } from './musicLinks';
 import { instrumentScores } from './instrumentLabels';
 import { sanitizeGraphExport } from '../persistence/validateImport';
+import { createRecognition } from './recognition';
 const node = (id: string, features: Partial<MusicAnalysis> = {}): DocNode => ({ id, title: 'same filename', kind: 'document', fileType: 'audio', wordCount: 0, topics: [], entities: [], keywords: [], degree: 0, cluster: 0, status: 'ok', audio: { version: 2, durationSeconds: 100, analyzedSeconds: 60, instruments: [], notes: [], ...features } });
 const tempo = (bpm: number, confidence = 0.9) => ({bpm, confidence});
 const key = (tonic: number, mode: 'major' | 'minor' = 'major', strength = 0.9) => ({tonic, mode, strength});
@@ -58,6 +59,22 @@ describe('musical relationships', () => {
     expect(musicPairEdges(a, tagged('e', [{ group: 'character', label: 'airy', score: .45 }]))).toEqual([]);
     // The candidate search finds tag-only pairs too.
     expect(buildMusicEdges([a, b]).map(e => e.kind)).toEqual(['sound']);
+  });
+  it('does not create graph edges from unconfirmed machine source tags', () => {
+    const source = (id: string) => node(id, {
+      recognition: createRecognition(100, 'full'),
+      instruments: [{ label: 'piano', score: .99, status: 'likely' }],
+      soundProfile: { version: 1, character: [], djTags: [{ group: 'source', label: 'piano', score: .9, model: 'Trained head' }] } as MusicAnalysis['soundProfile'],
+    });
+    expect(musicPairEdges(source('a'), source('b'))).toEqual([]);
+  });
+  it('weights likely tag links by the tested detector, not raw similarity', () => {
+    const tagged = (id: string, tags: { group: 'character'; label: string; score: number; model?: 'Trained head' | 'Music CLAP' }[]) =>
+      node(id, { soundProfile: { version: 1, character: [], djTags: tags.map(t => ({ model: 'Trained head' as const, ...t })) } as MusicAnalysis['soundProfile'] });
+    const mixed = (id: string) => tagged(id, [{ group: 'character', label: 'airy', score: .51 }, { group: 'character', label: 'airy', score: .95, model: 'Music CLAP' }]);
+    const tested = (id: string) => tagged(id, [{ group: 'character', label: 'airy', score: .51 }]);
+    expect(musicPairEdges(mixed('a'), mixed('b'))[0].weight).toBe(musicPairEdges(tested('c'), tested('d'))[0].weight);
+    expect(musicPairEdges(mixed('a'), mixed('b'))[0].weight).toBeCloseTo(.55 * .51);
   });
   it('links shared instruments independently and ignores low-score guesses', () => {
     const a=node('a',{instruments:[{label:'piano',score:0.9,status:'likely'}]});
