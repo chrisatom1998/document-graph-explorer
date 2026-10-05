@@ -96,14 +96,18 @@ function pairEdges(a: Features, b: Features, includeSimilar = true): Edge[] {
   }
   const shared = a.instruments.filter(i => b.instruments.some(j => j.label === i.label));
   if (shared.length) {
-    const hasName = a.named || b.named;
+    const pairs = shared.map(i => ({ i, other: b.instruments.find(j => j.label === i.label)! }));
+    // Provenance follows the shared labels' own origins, not the node: a track named piano.wav can still
+    // share a model-estimated guitar, and that edge must not claim the file name as its source.
+    const aNamed = pairs.some(({ i }) => i.origin === 'filename'), bNamed = pairs.some(({ other }) => other.origin === 'filename');
+    const hasName = aNamed || bNamed;
+    const sideSource = (f: Features, named: boolean) => f.human ? 'confirmed by you' : named ? f.hints.instruments!.source : 'audio estimate';
     const provenance = hasName
-      ? `Sources: ${a.human ? 'confirmed by you' : a.named ? a.hints.instruments!.source : 'audio estimate'} and ${b.human ? 'confirmed by you' : b.named ? b.hints.instruments!.source : 'audio estimate'}. Name tags are not verified audio detections.`
+      ? `Sources: ${sideSource(a, aNamed)} and ${sideSource(b, bNamed)}. Name tags are not verified audio detections.`
       : a.human && b.human ? 'Confirmed by you on both tracks.'
       : a.human || b.human ? 'Confirmed by you on one track; estimated from audio on the other.'
       : 'Not confirmed instrumentation.';
     const originText = (i: Features['instruments'][number]) => i.origin === 'reliable' ? 'strong or repeated audio detection (unconfirmed)' : MATCH_ORIGIN_TEXT[i.origin];
-    const pairs = shared.map(i => ({ i, other: b.instruments.find(j => j.label === i.label)! }));
     const basis = pairs.map(({ i, other }) => `${i.label}: ${originText(i)} / ${originText(other)}`).join('; ');
     const modelShown = pairs.some(({ i, other }) => [i, other].some(j => ['sounds', 'maybe', 'guess', 'unverified'].includes(j.origin)));
     add('instrument', Math.max(...pairs.map(({ i, other }) => Math.min(i.score, other.score))), `${hasName ? 'Shared instrument hints' : 'Shared instruments'}: ${shared.map(i => i.label).join(', ')}. ${provenance} ${basis}.${modelShown ? ' Includes source labels from the Sounds / Other model guesses lists, which are model estimates or untested guesses.' : ''}`);

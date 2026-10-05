@@ -1,5 +1,5 @@
 // Existing licensed features only. No inference, downloads, training, or writes to source data.
-// Usage: vite-node scripts/evaluate-music-links.mjs <features-with-annotations.json> <output-directory> [baseline-musicLinks.ts]
+// Usage: npx vite-node scripts/evaluate-music-links.mjs <features-with-annotations.json> <output-directory> [baseline-musicLinks.ts]
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { createHash } from 'node:crypto';
