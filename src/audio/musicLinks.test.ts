@@ -46,7 +46,7 @@ describe('musical relationships', () => {
   });
   it('links tracks that share tags the panel shows as likely, ranked below confirmed matches', () => {
     const tagged = (id: string, tags: { group: 'character' | 'production'; label: string; score: number; model?: 'Trained head' | 'Trained head (maybe)' }[]) =>
-      node(id, { soundProfile: { version: 1, character: [], djTags: tags.map(t => ({ model: 'Trained head', ...t })) } as MusicAnalysis['soundProfile'] });
+      node(id, { soundProfile: { version: 1, character: [], roles: [], disagreement: false, models: [], djTags: tags.map(t => ({ model: 'Trained head', ...t })) } as MusicAnalysis['soundProfile'] });
     const a = tagged('a', [{ group: 'character', label: 'airy', score: .9 }, { group: 'production', label: 'vinyl scratch', score: .8 }]);
     const b = tagged('b', [{ group: 'character', label: 'airy', score: .7 }, { group: 'production', label: 'vinyl scratch', score: .6 }]);
     const [edge] = musicPairEdges(a, b);
@@ -64,13 +64,13 @@ describe('musical relationships', () => {
     const source = (id: string) => node(id, {
       recognition: createRecognition(100, 'full'),
       instruments: [{ label: 'piano', score: .99, status: 'likely' }],
-      soundProfile: { version: 1, character: [], djTags: [{ group: 'source', label: 'piano', score: .9, model: 'Trained head' }] } as MusicAnalysis['soundProfile'],
+      soundProfile: { version: 1, character: [], roles: [], disagreement: false, models: [], djTags: [{ group: 'source', label: 'piano', score: .9, model: 'Trained head' }] } as MusicAnalysis['soundProfile'],
     });
     expect(musicPairEdges(source('a'), source('b'))).toEqual([]);
   });
   it('weights likely tag links by the tested detector, not raw similarity', () => {
     const tagged = (id: string, tags: { group: 'character'; label: string; score: number; model?: 'Trained head' | 'Music CLAP' }[]) =>
-      node(id, { soundProfile: { version: 1, character: [], djTags: tags.map(t => ({ model: 'Trained head' as const, ...t })) } as MusicAnalysis['soundProfile'] });
+      node(id, { soundProfile: { version: 1, character: [], roles: [], disagreement: false, models: [], djTags: tags.map(t => ({ model: 'Trained head' as const, ...t })) } as MusicAnalysis['soundProfile'] });
     const mixed = (id: string) => tagged(id, [{ group: 'character', label: 'airy', score: .51 }, { group: 'character', label: 'airy', score: .95, model: 'Music CLAP' }]);
     const tested = (id: string) => tagged(id, [{ group: 'character', label: 'airy', score: .51 }]);
     expect(musicPairEdges(mixed('a'), mixed('b'))[0].weight).toBe(musicPairEdges(tested('c'), tested('d'))[0].weight);
