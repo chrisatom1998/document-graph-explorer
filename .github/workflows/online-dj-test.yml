@@ -23,13 +23,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [main, claude/weak-sound-labels-2phv35]
+        app: [main, claude/weak-sound-labels-2phv35+main]
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.app }}
+          ref: ${{ startsWith(matrix.app, 'main') && 'main' || 'claude/weak-sound-labels-2phv35' }}
+          fetch-depth: 0
+      - name: Merge current main into the fix branch (PR #106 as it would land)
+        if: ${{ !startsWith(matrix.app, 'main') }}
+        run: |
+          git config user.name ci && git config user.email ci@example.invalid
+          git merge --no-edit origin/main
       - uses: actions/checkout@v4
         with:
           path: online-dj-tools
