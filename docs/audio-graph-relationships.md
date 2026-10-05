@@ -26,7 +26,7 @@ The existing connection panel exposes reasons, provenance, and strength; Filters
 
 | Test set (150 clips each) | Links before → after | Right genre / family before → after | Random pair |
 |---|---|---|---|
-| Songs | 494 → 306 | 9% → 38% (sound-alike links alone 44%) | 9% |
-| Instrument notes | 14 → 152 | 21% → 94% (same instrument 89%) | 13% |
+| Songs | 494 → 550 | 9% → 17% (sound-alike links alone 44%; tempo 10%, key 10%) | 9% |
+| Instrument notes | 14 → 191 | 21% → 79% (sound-alike links alone 83%, same instrument 78%) | 13% |
 
-Before, song links were tempo and key coincidences (no better than random); notes were barely linked. Fingerprint-only scoring of all test clips gives 50% (songs, 298 clips) and 97% (notes, 270 clips).
+Before, song links were tempo and key coincidences (no better than random); notes were barely linked. Tempo, key and file-name links are kept as they were, so on songs they still dilute the overall figure. The benchmark uses opaque file names, so file-name and title links do not appear in it. Fingerprint-only scoring of all test clips gives 50% (songs, 298 clips) and 97% (notes, 270 clips).
