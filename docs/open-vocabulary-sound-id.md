@@ -7,8 +7,8 @@ held-out measurements.
 ## Result
 
 **72 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
-ships in `learned.json` or `short-clip.json`. This branch added 21 of the new ones. The other session added the
-distorted head and promoted five existing heads (see "Other sessions" below).
+ships in `learned.json` or `short-clip.json`. All 21 new labels come from this branch. Another session swapped
+the existing distorted head for a different version and promoted five existing heads to full tags.
 
 | Bucket (45/45 bar, measured on held-out sources) | Labels |
 |---|---|
@@ -31,8 +31,8 @@ synth sequence, foghorn bass, riser, stutter effect, texture, bird ambience, tri
 
 The user told this session **45/45**. Another session relayed **60/60** from the same night. Both are honoured with
 two tiers. Heads at 60/60 or better ship as full tags. Heads between 45 and 60 ship with `maybe: true`, so the panel
-shows them faded with "maybe". **The user should confirm which bar they want.** If it's 60/60, run
-`add-maybe-heads.py` with `FULL_BAR` and drop the maybe heads by label.
+shows them faded with "maybe". **The user should confirm which bar they want.** If it's 60/60, remove the heads with `maybe: true`
+from `learned.json` and re-pin its hash in `manifest.json` (as in commit c91a8c7). `add-maybe-heads.py` only adds heads.
 
 ## What was built
 
@@ -76,7 +76,7 @@ shows them faded with "maybe". **The user should confirm which bar they want.** 
 |---|---|
 | Electro track, 3:46 | 120.1 BPM, A minor; piano, voice, sound effect, texture (all maybe). Screenshot: `upload-electro-track.png` |
 | House track, 5:21 | 126 BPM; drums, drum loop, synthesizer (maybe), sound effect (maybe). Analysis "partial" (machine at load ~400) |
-| 1.5 s kick (reported as 0.36 s after trimming silence) | kick, drums, impact |
+| 0.36 s kick one-shot (the source clip's length) | kick, drums, impact |
 | 5 s silence | nothing |
 | Random-bytes .wav | not added to the graph; no page errors |
 
@@ -131,6 +131,7 @@ shows them faded with "maybe". **The user should confirm which bar they want.** 
   - animal sound 0.71/0.55
 
   The round-16 export in `~/Documents/Media/dj-training-fingerprints/rounds/round16.json` holds their weights.
+- Per-label baseline numbers (before this branch) are in `~/Documents/Media/dj-training-fingerprints/rounds/round13-export.json`.
 - The held-out groups are re-drawn each round, so these are development numbers, not frozen-test numbers. A new,
   dated, frozen, hand-checked test set (one-shots, loops and a few full tracks with time ranges) is still the main
   missing asset.
