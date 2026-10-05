@@ -6,6 +6,9 @@ Extra datasets are added to TRAINING ONLY, so any gain is a gain on unseen brand
 Sounds the library cannot test (too few held-out examples) are scored on held-out groups
 of the extra data instead, and reported separately as new coverage.
 
+MIXTEST=manifest.json@dir also scores each sound on held-out layered mixtures (build-mixtures.py), split by
+target level; EXCLUDE=manifest.json drops that manifest's `excludeIds` (the mixture-test targets) from every
+extra dataset, so no test sound is heard in training. Use both in every round being compared.
 Usage: train-with-extras.py <out.json> [name=manifest.json@fingerprint_dir ...]
 Every manifest clip needs: id, labels (app label names), group (independence unit)."""
 import json, sys, glob, hashlib, os, datetime, re
@@ -24,8 +27,9 @@ catalog = {c['label']: c for c in json.load(open('src/audio/djCatalog.json'))['c
 FAMILY = {'drum-hit': 'drum hit', 'drum-pattern': 'drum loop', 'vocal': 'vocal', 'editing': 'vocal', 'breath': 'vocal',
           'transition': 'fx', 'bass': 'bass', 'synth': 'synth', 'texture': 'texture'}
 
+EXCLUDED = set(json.load(open(os.environ['EXCLUDE']))['excludeIds']) if os.environ.get('EXCLUDE') else set()
 def load(manifest, folder, source):
-    meta = {c['id']: c for c in json.load(open(manifest))['clips']}; got = {}
+    meta = {c['id']: c for c in json.load(open(manifest))['clips'] if source == 'vault' or c['id'] not in EXCLUDED}; got = {}
     for f in sorted(glob.glob(f'{folder}/emb-*.jsonl')):
         for line in open(f):
             r = json.loads(line)
@@ -36,12 +40,12 @@ def load(manifest, folder, source):
     if source == 'vault':   # re-check library labels so song titles no longer count as sounds
         labels = [l & set(labeler.match(r['id'][len('vault:'):])) for l, r in zip(labels, rows)]
     groups = np.array([f"{source}:{r.get('vendor') or r.get('group')}" for r in rows])
-    return X, labels, groups, [r['id'] for r in rows]
+    return X, labels, groups, [r['id'] for r in rows], rows
 
-VX, VL, VG, VI = load(f'{FP}/vault-clap/manifest.json', f'{FP}/vault-clap', 'vault')
+VX, VL, VG, VI, _ = load(f'{FP}/vault-clap/manifest.json', f'{FP}/vault-clap', 'vault')
 parts = [(VX, VL, VG, np.ones(len(VL), bool), VI)]
 for name, spec in EXTRAS:
-    man, folder = spec.split('@'); X, L, G, I = load(man, folder, name)
+    man, folder = spec.split('@'); X, L, G, I, _ = load(man, folder, name)
     parts.append((X, L, G, np.zeros(len(L), bool), I)); print(f'+ {name}: {len(L)} clips')
 SRC = np.concatenate([np.full(len(p[1]), i) for i, p in enumerate(parts)])   # 0 = library, 1.. = extras in order
 X = np.vstack([p[0] for p in parts]); LAB = sum((p[1] for p in parts), []); IDS = sum((p[4] for p in parts), []); G = np.concatenate([p[2] for p in parts])
@@ -50,6 +54,9 @@ IS_VAULT = np.concatenate([p[3] for p in parts])
 REAL = tuple(n for n in ('fsd50k:', 'fsl10k:') if any(i.startswith(n) for i in IDS))
 FAM = np.array([(lambda f: f.pop() if len(f) == 1 else None)({FAMILY.get(catalog.get(l, {}).get('family')) for l in s} - {None}) for s in LAB], dtype=object)
 print(f'total {len(LAB)} clips ({IS_VAULT.sum()} library, {(~IS_VAULT).sum()} extra)')
+if os.environ.get('MIXTEST'):
+    MX, ML, _, _, MROWS = load(*os.environ['MIXTEST'].split('@'), 'mixtest'); MLEVEL = np.array([r['levelDb'] for r in MROWS])
+    print(f'mixture test: {len(ML)} held-out mixes')
 
 OVERLAP = [{'chops', 'vocal chops'}, {'riser', 'noise sweep', 'whoosh'}, {'impact', 'sub drop', 'downlifter'},
            {'808 bass', 'sub bass'}, {'reese bass', 'wobble bass', 'bass growl', 'synth bass'}, {'synth chord', 'atmospheric pad', 'synth stab'},
@@ -135,12 +142,22 @@ def run(kind, name):
     a = np.where(train & (IS_VAULT | np.isin(SRC, chosen)))[0]; oof = oof_for(a); ok = ~np.isnan(oof)
     th = threshold(pos[a][ok], oof[ok])
     if th is None: return {**r, 'verdict': 'no usable threshold'}
-    b = np.where(test)[0]; pr = fit(X[a], pos[a]).predict_proba(X[b])[:, 1] >= th; t = pos[b]
+    model = fit(X[a], pos[a])
+    b = np.where(test)[0]; pr = model.predict_proba(X[b])[:, 1] >= th; t = pos[b]
     tp, fp, fn = int((pr & t).sum()), int((pr & ~t).sum()), int((~pr & t).sum())
     P = tp / (tp + fp) if tp + fp else 0.0; R = tp / (tp + fn)
     if EXPORT is not None and min(P, R) >= EXPORT:      # refit on every row it may use, same threshold
         m = fit(X[np.where(use & (IS_VAULT | np.isin(SRC, chosen)))[0]], pos[np.where(use & (IS_VAULT | np.isin(SRC, chosen)))[0]])
         r['head'] = {'weights': [round(float(w), 6) for w in m.coef_[0]], 'bias': round(float(m.intercept_[0]), 6)}
+    if kind == 'label' and os.environ.get('MIXTEST'):
+        # Same head and threshold, scored on sounds layered under held-out drum kits.
+        mpos = np.array([name in s for s in ML]); muse = mpos | np.array([not any(compatible(name, o) for o in s) for s in ML])
+        if mpos[muse].sum() >= MIN_TEST:
+            mp = model.predict_proba(MX)[:, 1] >= th
+            def score(rows):
+                t_, p_ = mpos[rows], mp[rows]; tp_ = int((p_ & t_).sum()); fp_ = int((p_ & ~t_).sum())
+                return {'positive': int(t_.sum()), 'tp': tp_, 'fp': fp_, 'precision': tp_ / (tp_ + fp_) if tp_ + fp_ else 0.0, 'recall': tp_ / t_.sum() if t_.sum() else 0.0}
+            r['mixture'] = {**score(muse), 'buried': score(muse & (MLEVEL < -3)), 'onTop': score(muse & (MLEVEL >= -3))}
     return {**r, 'uses': [EXTRAS[i - 1][0] for i in chosen], 'threshold': th, 'tp': tp, 'fp': fp, 'fn': fn, 'precision': P, 'recall': R,
             'f1': 2*P*R/(P+R) if P+R else 0.0, 'passes': bool(P >= BAR and R >= BAR), 'verdict': 'PASS' if P >= BAR and R >= BAR else 'fails'}
 
