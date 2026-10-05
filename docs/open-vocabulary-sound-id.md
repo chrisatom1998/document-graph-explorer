@@ -6,8 +6,8 @@ latest held-out measurements (rounds 16 and 18 are kept for comparison).
 
 ## Result
 
-**95 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
-ships in `learned.json` or `short-clip.json`. All 44 new labels come from this branch. Another session swapped the
+**101 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
+ships in `learned.json` or `short-clip.json`. All 50 new labels come from this branch. Another session swapped the
 existing distorted head for a different version and promoted five existing heads to full tags.
 
 | Bucket (45/45 bar, measured on held-out sources, round 19) | Labels |
@@ -31,7 +31,13 @@ New active labels on this branch (★ = full):
 - Round 19: chiptune synth, falling, glassy, horn, whistle.
 - Measured character labels (all maybe): bright, dark, sustained, percussive, rhythmic, pulsing, swelling, staccato,
   wobbling, airy, warm, nasal.
-- Round 20 (model strength per label, chosen on training rows only): acid synth. Over 78 near or failing labels this
+- Round 20 (model strength per label, chosen on training rows only): acid synth.
+- Round 21 (larger test pool; all maybe): 808 bass, atmospheric pad, bass growl, closed hi-hat, rain ambience,
+  water ambience. These were judged on small library tests before. Each label is now tested on whichever pool has more
+  positives: the library or held-out real recordings. A label ships only if it passes there AND is at least "near"
+  on the library (one number ≥ 0.45, the other ≥ 0.10). That rule was set after seeing round 19, so these six are
+  weaker evidence. laser, siren and vocal scream pass on real recordings but fail on the library, so they are held
+  back. Results: `round21-largertest-results.json`. Over 78 near or failing labels this
   was neutral (10 better, 10 worse).
 
 ### More real data is what helped

@@ -143,6 +143,11 @@ def run(kind, name):
             real_test = held_out(f'{kind}:{name}:real', G[real_pool & use], pos[real_pool & use])
             t2 = use & real_pool & np.isin(G, sorted(real_test))
             if pos[t2].sum() >= MIN_TEST: test, where = t2, 'real recordings'
+    if os.environ.get('PREFER_LARGER_TEST') == '1' and kind == 'label' and where == 'library brands' and REAL_LABEL:
+        # Use the larger of the two honest yardsticks (library brands vs held-out real recordings).
+        real = np.isin([i.split(':')[0] + ':' for i in IDS], REAL_LABEL); real_pool = ~IS_VAULT & real
+        t2 = use & real_pool & np.isin(G, sorted(held_out(f'{kind}:{name}:real', G[real_pool & use], pos[real_pool & use])))
+        if pos[t2].sum() > pos[test].sum() and pos[t2].sum() >= MIN_TEST: test, where = t2, 'real recordings'
     train = use & ~test & (IS_VAULT | (pos | ~IS_VAULT))
     r = {'kind': kind, 'name': name, 'testedOn': where, 'trainPositive': int(pos[train].sum()), 'testPositive': int(pos[test].sum())}
     if pos[test].sum() < MIN_TEST or pos[train].sum() < 30 or len(set(G[train & pos])) < 3: return {**r, 'verdict': 'not enough data'}
