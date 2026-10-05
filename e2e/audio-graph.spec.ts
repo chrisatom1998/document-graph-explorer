@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { correctDjTags } from './sampleAssistant';
 
 const base = { kind:'document',fileType:'audio',topics:[],entities:[],keywords:[],wordCount:0,degree:0,cluster:0,status:'ok' };
 const analysis = {version:2,analyzedSeconds:8,durationSeconds:8,instruments:[],notes:[]};
@@ -71,12 +72,10 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  await page.screenshot({path:testInfo.outputPath('audio-match-reasons-mobile.png')});
  await page.setViewportSize({width:1440,height:1000});
  // Change a reviewed label through the real editor and verify derived edges update.
- await page.getByText('Track actions',{exact:true}).click();
- await page.getByText('Correct DJ tags',{exact:true}).click();
- await page.getByRole('checkbox',{name:'metallic',exact:true}).uncheck();
- await page.getByRole('checkbox',{name:'riser',exact:true}).uncheck();
- await page.getByRole('button',{name:'Save DJ tags',exact:true}).click();
- await expect(page.getByText('Tags updated. Export this graph to keep the changes.',{exact:true})).toBeVisible();
+ await correctDjTags(page,'Alpha piano',async card=>{
+  await card.getByRole('checkbox',{name:'metallic',exact:true}).uncheck();
+  await card.getByRole('checkbox',{name:'riser',exact:true}).uncheck();
+ },'Tags updated. Export this graph to keep the changes.');
  const corrected=await exportGraph(); const updated=JSON.parse(corrected);
  expect(updated.edges.some((e:{kind:string})=>e.kind==='sound')).toBe(false);
  expect(updated.edges.some((e:{kind:string})=>e.kind==='instrument')).toBe(true);
@@ -86,7 +85,8 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  const reexported=JSON.parse(await exportGraph());
  expect(reexported.edges).toEqual(updated.edges);
  expect(reexported.nodes.find((n:{id:string})=>n.id==='alpha').audio.confirmedDjTags.character).toEqual([]);
- await page.getByRole('button',{name:'Switch to 3D view',exact:true}).click();
+ // Building the 3D scene under software WebGL can hold the main thread past the 15s default.
+ await page.getByRole('button',{name:'Switch to 3D view',exact:true}).click({timeout:60_000});
  await expect(page.getByRole('application',{name:/Interactive 3D/})).toBeVisible();
  await page.getByRole('button',{name:'Fit the whole graph in view'}).click();
  await page.mouse.move(500,300);await page.mouse.down();await page.mouse.move(570,350,{steps:10});await page.mouse.up();await page.mouse.wheel(0,120);
