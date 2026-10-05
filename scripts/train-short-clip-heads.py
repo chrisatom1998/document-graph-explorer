@@ -91,6 +91,8 @@ def pick_threshold(p, y):
     return best
 
 DEV = tr_items + ca_items; DEV_LAB = tr_lab + ca_lab; DEV_GROUPS = np.concatenate([tr_groups, ca_groups])
+# Crops (CROPS=1) are training-only: they join every fold's fit but never choose C, the threshold or reported metrics.
+AUG = np.array([i['id'].startswith('crop-') for i in DEV])
 
 def oof(X, y, groups, C, folds=5):
     ps = np.zeros(len(y))
@@ -100,15 +102,15 @@ def oof(X, y, groups, C, folds=5):
 
 def one_cat(X, stats, names, cat, Cs):
     m = np.array([cat in l for l in DEV_LAB]); y = np.array([l.get(cat) == 'present' for l in DEV_LAB])[m]
-    if y.sum() < 10: return cat, None
-    Xm, gm = X[m], DEV_GROUPS[m]
+    if y[~AUG[m]].sum() < 10: return cat, None
+    Xm, gm = X[m], DEV_GROUPS[m]; real = ~AUG[m]
     best = None
     for C in Cs:
-        p = oof(Xm, y, gm, C); t, P, R, _, f1 = pick_threshold(p, y)
+        p = oof(Xm, y, gm, C); t, P, R, _, f1 = pick_threshold(p[real], y[real])
         if best is None or (P >= TARGET and R >= TARGET, f1) > (best[2] >= TARGET and best[3] >= TARGET, best[4]): best = (C, t, P, R, f1)
     C, t, P, R, f1 = best
     return cat, dict(C=C, threshold=float(t), precision=round(float(P), 3), recall=round(float(R), 3), f1=round(float(f1), 3),
-                     pos=int(y.sum()), neg=int((~y).sum()), posFamilies=len(set(gm[y])), model=fit(Xm, y, C), stats=stats, names=names)
+                     pos=int(y[real].sum()), neg=int((~y[real]).sum()), posFamilies=len(set(gm[real & y])), **({'augmented': int((~real).sum())} if (~real).any() else {}), model=fit(Xm, y, C), stats=stats, names=names)
 
 def run_set(names, cats=None, Cs=(0.03, 0.3)):
     """Uploader-grouped out-of-fold predictions over ALL development data (train + calibration) pick C and the threshold."""

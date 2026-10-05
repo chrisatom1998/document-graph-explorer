@@ -210,11 +210,11 @@ Bass one-shots under about 1 s were mostly missed. The development set had only 
 
 `scripts/short-clip-crops.py` (seed 20261005) adds training clips cut from the start of longer development clips: 0.15–1.0 s, 25 ms fade-out. It uses 252 bass-hit sources and 2,500 other labelled sources, and keeps each source's labels and family group. Fingerprints are `clapRepeat` only (`REPEAT_ONLY=1 node scripts/short-clip-features.mjs`). The bass-hit head was retrained with `CROPS=1 ONLY='role:bass hit'`, merged into `short-clip.json` with the existing standardisation (`STATS_FROM`/`MERGE_INTO`); every other head is unchanged.
 
-Grouped 5-fold out-of-fold, same C, threshold picked on the original clips (highest F1 with precision ≥ 0.70):
+Crops are training-only (`AUG` in the trainer): they join every fold's fit, but C, the threshold and every reported metric use original clips only. Grouped 5-fold out-of-fold, the trainer's own threshold rule:
 
-| Training | Original clips F1 | Crops < 0.5 s recall | Crops 0.5–1 s recall | False tags on crops < 0.5 s |
-|---|---|---|---|---|
-| without crops | 0.814 | 70/101 | 107/151 | 2/1107 |
-| with crops | 0.810 | 80/101 | 112/151 | 7/1107 |
+| Training | Original clips P / R / F1 | Threshold | Crops < 0.5 s recall | Crops 0.5–1 s recall | False tags on crops < 0.5 s |
+|---|---|---|---|---|---|
+| without crops | 0.838 / 0.792 / 0.815 | 0.908 | 72/101 | 108/151 | 7/1107 |
+| with crops (shipped) | 0.850 / 0.776 / 0.811 | 0.946 | 81/101 | 116/151 | 8/1107 |
 
-The external pack, read three times during this work and **not to be used for further tuning**, went from 17/80 to 36/80 with crops at the comparison threshold. Its remaining misses mostly score 0.5–0.87, and their nearest training neighbours are synthesizer / synth-hit clips: a sound-character gap, not only length. CLAP + PaSST features scored 1/28 on that pack under 0.5 s (PaSST zero-pads to 10 s), so PaSST is not used there. No held-out test number exists for this head; a new frozen set is needed for one. Selection report: `development-selection-bass-crops.json`.
+The external pack, read three times during this work and **not to be used for further tuning**, went from 17/80 to 36/80 with crops at an earlier comparison threshold (0.873); the shipped head's higher threshold (0.946) was not re-read on it. Its remaining misses mostly score 0.5–0.87, and their nearest training neighbours are synthesizer / synth-hit clips: a sound-character gap, not only length. CLAP + PaSST features scored 1/28 on that pack under 0.5 s (PaSST zero-pads to 10 s), so PaSST is not used there. No held-out test number exists for this head; a new frozen set is needed for one. Selection report: `development-selection-bass-crops.json`.
