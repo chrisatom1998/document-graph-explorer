@@ -12,7 +12,8 @@ import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
-import { createRecognition, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
+import { musicRuntimeIdentity } from './musicRuntime';
+import { createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
   /** Qualification-only opt-in; callers must bind and validate the scorer. */
@@ -75,7 +76,13 @@ export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicR
 }
 
 /** Model jobs share a bounded timeline, but never each other's validity. Evidence is applied in one fixed order. */
-export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
+export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
+  // The runtime each AST/CLAP output came from: a threaded stall can switch this browser to one thread mid-run.
+  const startRuntime = musicRuntimeIdentity(), producedBy = new Set<string>();
+  const request: MusicRequest = <T>(message: Record<string, unknown>, transfer: Transferable[]) => send<T>(message, transfer).then(result => {
+    if (message.kind === 'instruments' || message.kind === 'profile') producedBy.add(musicRuntimeIdentity());
+    return result;
+  });
   const check = () => options.signal?.throwIfAborted();
   check();
   const release = releaseForScorer(options.fusion);
@@ -151,6 +158,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
       analyzedSeconds: job('ast').analyzedSeconds, windows: job('ast').successful.length };
     recognition.status = cancelled ? 'cancelled' : ended ? recognition.jobs.every(j => ['complete','unsupported'].includes(j.status)) ? 'complete'
       : recognition.jobs.some(j => j.successful.length) ? 'partial' : 'failed' : 'running';
+    // Relabel only when every AST/CLAP output came from the final runtime; a mixed run stays stale and is redone.
+    if (ended && [...producedBy].every(runtime => runtime === musicRuntimeIdentity())) refreshRuntimeIdentity(recognition, duration);
     if (ended || cancelled) recognition.endedAt = new Date().toISOString();
     if (cancelled) recognition.cancellationReason = 'Cancelled by user';
   };
@@ -177,6 +186,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
   async function fetchRaw(id: SoundId, interval: Interval, key: string): Promise<{ output: Raw | undefined; cacheHit: boolean }> {
     let output = cache.get<Raw>(key);
     const cacheHit = output !== undefined;
+    if (cacheHit && id !== 'jamendo') producedBy.add(startRuntime);
     const preview = options.initialPreview;
     if (!output && id === 'jamendo' && preview?.start === interval.start && Math.abs(preview.end - interval.end) < 1 / 16000) output = preview.scores;
     if (!output) {
@@ -280,7 +290,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, request: MusicR
         options.onProgress?.(`one-shot windows: ${i + 1}/${starts.length}; ${Math.floor(interval.start)}s of ${Math.ceil(duration)}s`);
         const key = `${modelCacheKey(fingerprint, job('clap'), interval)}:event-window-v1`;
         let output = cache.get<DescriptionScore[]>(key);
-        if (!output) {
+        if (output) producedBy.add(startRuntime);
+        else {
           const samples = await read(interval.start, seconds, 48000), samples16 = await read(interval.start, seconds, 16000);
           check();
           if (!audible(samples) || samples.length < Math.round(seconds * 48000) - 1) continue;
