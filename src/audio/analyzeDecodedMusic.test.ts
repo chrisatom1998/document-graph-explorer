@@ -6,6 +6,7 @@ import type { MusicDecoder } from './decodeMusic';
 import { reliableInstruments } from './instrumentEvidence';
 import { ResultCache } from './recognition';
 import type { DescriptionScore } from './profileDescriptions';
+import { confidentSoundSummary } from './confidentSoundSummary';
 
 function fixture(duration: number, options: AnalysisOptions = {}, fail?: string) {
   const calls: string[] = [];
@@ -316,5 +317,38 @@ describe('short one-shots', () => {
     expect((short.samples as Float32Array).length).toBe(Math.round(1.2 * 48000));
     expect((short.samples16 as Float32Array).length).toBe(Math.round(1.2 * 16000));
     for (const message of await profileMessages(6)) expect(message.samples16).toBeUndefined();
+  });
+});
+
+describe('one-shot windows inside long recordings', { timeout: 60_000 }, () => {
+  // A 32 s recording with a loud burst every 6 s; the one-shot heads call every event window a vinyl scratch.
+  async function run(mode?: 'fast' | 'full', heads: DescriptionScore[] = [{ group: 'dj-learned', label: 'vinyl scratch', score: .9, learnedGroup: 'production', decision: 'include', basis: 'head' }]) {
+    const duration = 32, windows: Record<string, unknown>[] = [];
+    const decoder: MusicDecoder = { durationSeconds: duration, close() {}, read: async (start, seconds, rate) => {
+      const x = new Float32Array(Math.round(Math.max(0, Math.min(seconds, duration - start)) * rate));
+      for (let i = 0; i < x.length; i++) { const t = start + i / rate; x[i] = (t % 6) > 3 && (t % 6) < 3.2 ? .5 * Math.sin(i * .3) : .002 * Math.sin(i * 12.9898); }
+      return x;
+    } };
+    const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
+      if (message.kind === 'profile' && message.samples16) { windows.push(message); return heads as T; }
+      if (message.kind === 'rhythm' || message.kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: duration, instruments: [], notes: [] } as T;
+      if (message.kind === 'instruments') return { scores: {}, musicScore: 0 } as T;
+      return (message.kind === 'jamendo' ? {} : []) as T;
+    };
+    return { result: await analyzeDecodedMusic(decoder, request, mode ? { mode } : {}), windows };
+  }
+  it('scores 2.05 s windows at sound starts and shows an agreed measured label as a maybe tag', async () => {
+    const { result, windows } = await run();
+    expect(windows.length).toBe(3);
+    for (const w of windows) { expect((w.samples as Float32Array).length).toBe(Math.round(2.05 * 48000)); expect((w.samples16 as Float32Array).length).toBe(Math.round(2.05 * 16000)); }
+    const tag = result.soundProfile?.djTags?.find(t => t.label === 'vinyl scratch');
+    expect(tag).toMatchObject({ group: 'production', model: 'Trained head (maybe)' });
+    expect(tag?.segments?.length).toBeGreaterThanOrEqual(2);
+    expect(confidentSoundSummary(result).find(t => t.label === 'vinyl scratch')).toMatchObject({ maybe: true });
+  });
+  it('shows no tag for labels the windows were not measured on, and skips Fast mode', async () => {
+    const impact = await run('full', [{ group: 'dj-learned', label: 'impact', score: .99, learnedGroup: 'production', decision: 'include', basis: 'head' }]);
+    expect(impact.result.soundProfile?.djTags?.some(t => t.label === 'impact')).toBe(false);
+    expect((await run('fast')).windows).toEqual([]);
   });
 });

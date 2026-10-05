@@ -1,5 +1,5 @@
 {
- "at": "2026-10-05T03:39:59.812692+00:00",
+ "at": "2026-10-05T06:18:12.393980+00:00",
  "category": "role:bass hit",
  "cutoffMidi": 52,
  "features": [
@@ -11,13 +11,16 @@
   "A": true,
   "B": true
  },
+ "BkShipRule": "overall P and R >= 0.70, >= 35 of 46 unchanged positives, <= 2 of 152 kick/impact/drum clips tagged",
+ "BkShips": true,
  "results": {
   "current": {
    "lowSoundCheck": {
     "kickImpactDrumsUnknownBass": {
      "tagged": 0,
      "clips": 152,
-     "rate": 0.0
+     "rate": 0.0,
+     "scoredOutOfFold": 0
     },
     "nsynthNonBassAtOrBelowCutoff": {
      "tagged": 0,
@@ -53,7 +56,8 @@
     "kickImpactDrumsUnknownBass": {
      "tagged": 1,
      "clips": 152,
-     "rate": 0.0066
+     "rate": 0.0066,
+     "scoredOutOfFold": 0
     },
     "nsynthNonBassAtOrBelowCutoff": {
      "tagged": 0,
@@ -89,7 +93,8 @@
     "kickImpactDrumsUnknownBass": {
      "tagged": 10,
      "clips": 152,
-     "rate": 0.0658
+     "rate": 0.0658,
+     "scoredOutOfFold": 0
     },
     "nsynthNonBassAtOrBelowCutoff": {
      "tagged": 1,
@@ -117,6 +122,43 @@
     "found": 39,
     "positives": 46,
     "falseDetections": 2,
+    "negatives": 6310
+   }
+  },
+  "Bk": {
+   "lowSoundCheck": {
+    "kickImpactDrumsUnknownBass": {
+     "tagged": 2,
+     "clips": 152,
+     "rate": 0.0132,
+     "scoredOutOfFold": 120
+    },
+    "nsynthNonBassAtOrBelowCutoff": {
+     "tagged": 1,
+     "clips": 14
+    }
+   },
+   "foundUnchangedByDataset": {
+    "fsd50k": 20,
+    "nsynth": 16
+   },
+   "positivesUnchangedByDataset": {
+    "fsd50k": 28,
+    "nsynth": 18
+   },
+   "C": 0.3,
+   "threshold": 0.8588,
+   "overall": {
+    "precision": 0.82,
+    "recall": 0.804,
+    "f1": 0.812,
+    "pos": 255,
+    "neg": 7522
+   },
+   "unchangedClips": {
+    "found": 36,
+    "positives": 46,
+    "falseDetections": 10,
     "negatives": 6310
    }
   }

@@ -42,8 +42,16 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
   const download=await promise; const stream=await download.createReadStream();let text='';for await(const chunk of stream!)text+=chunk;
   return text;
  };
+ // Toasts auto-dismiss on a timer, so a count-then-click loop races a toast that vanishes between the two calls
+ // (click then waits 15s for a button that never returns). Click whatever is up now, then wait for the stack to empty.
+ const dismissToasts=async()=>{
+  const dismiss=page.getByRole('button',{name:'Dismiss notification',exact:true});
+  for(const button of await dismiss.all())await button.click({timeout:2000}).catch(()=>{});
+  await expect(dismiss).toHaveCount(0);
+ };
  await importFixture(fixture);
- await page.getByRole('button',{name:'Switch to 2D view',exact:true}).click();
+ // The first scene builds right after import; under software WebGL that can hold the main thread past the 15s default.
+ await page.getByRole('button',{name:'Switch to 2D view',exact:true}).click({timeout:60_000});
  await expect(page.getByRole('application',{name:/Interactive 2D/})).toBeVisible();
  await page.getByRole('button',{name:'Fit the whole graph in view'}).click();
  await page.mouse.move(500,300);await page.mouse.down();await page.mouse.move(570,350,{steps:10});await page.mouse.up();await page.mouse.wheel(0,-120);
@@ -60,7 +68,7 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  const showAll=page.getByRole('button',{name:/Show all \d+ connections/});if(await showAll.isVisible())await showAll.click();
  await expect(page.locator('.side-panel')).toContainText('Half/double-time tempo');
  await expect(page.locator('.side-panel')).toContainText('Shared sound properties');
- while(await page.getByRole('button',{name:'Dismiss notification',exact:true}).count())await page.getByRole('button',{name:'Dismiss notification',exact:true}).first().click();
+ await dismissToasts();
  await page.locator('.connection-row').filter({hasText:'Shared sound properties'}).scrollIntoViewIfNeeded();
  await page.screenshot({path:testInfo.outputPath('audio-match-reasons-desktop.png')});
  const exported=await exportGraph(); const graph=JSON.parse(exported);
@@ -68,7 +76,7 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  expect(graph.edges.some((e:{id:string})=>e.id==='notes-link')).toBe(true);
  expect(graph.edges.some((e:{source:string;target:string})=>[e.source,e.target].some(id=>['unknown','rejected'].includes(id)))).toBe(false);
  await page.setViewportSize({width:390,height:844});
- while(await page.getByRole('button',{name:'Dismiss notification',exact:true}).count())await page.getByRole('button',{name:'Dismiss notification',exact:true}).first().click();
+ await dismissToasts();
  await page.locator('.connection-row').filter({hasText:'Shared sound properties'}).scrollIntoViewIfNeeded();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
  await page.screenshot({path:testInfo.outputPath('audio-match-reasons-mobile.png')});
