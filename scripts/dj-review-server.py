@@ -48,12 +48,22 @@ def validate_review(value):
         if not isinstance(values,list) or any(not isinstance(v,str) or v not in allowed[g] for v in values):
             raise ValueError('Unknown label in review.')
         labels[g] = list(dict.fromkeys(values))
-    known = value.get('knownLabels', [g+':'+v for g in GROUPS for v in allowed[g]])
+    known = value.get('knownLabels', [g+':'+v for g in GROUPS for v in labels[g]])
     if not isinstance(known,list) or len(known)>2000 or any(not isinstance(v,str) or ':' not in v or v.split(':',1)[0] not in GROUPS or v.split(':',1)[1] not in allowed[v.split(':',1)[0]] for v in known):
         raise ValueError('Invalid category snapshot.')
     if any(g+':'+v not in known for g in GROUPS for v in labels[g]):
         raise ValueError('Selected labels must be in the review category snapshot.')
-    return {'labels':labels,'confirmed':value['confirmed'],'knownLabels':known,'reviewedAt':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'provenance':(value.get('provenance') if value.get('provenance') in (ASSISTANT_REVIEW,HUMAN_CONFIRMATION) else 'unverified review') if value['confirmed'] else 'draft'}
+    decisions = value.get('decisions', {})
+    all_keys = {g+':'+v for g in GROUPS for v in allowed[g]}
+    if not isinstance(decisions,dict) or any(k not in all_keys or v not in ('absent','unsure') for k,v in decisions.items()):
+        raise ValueError('Invalid per-label decision.')
+    present = {g+':'+v for g in GROUPS for v in labels[g]}
+    if present.intersection(decisions) or any(k in known for k,v in decisions.items() if v=='unsure'):
+        raise ValueError('Conflicting per-label decisions.')
+    if any(k not in known for k,v in decisions.items() if v=='absent'):
+        raise ValueError('Absent labels must be in the review snapshot.')
+    review_status = 'confirmed' if value['confirmed'] else 'uncertain' if value.get('reviewStatus')=='uncertain' else 'pending'
+    return {'decisions':decisions,'reviewStatus':review_status,'labels':labels,'confirmed':value['confirmed'],'knownLabels':known,'reviewedAt':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'provenance':(value.get('provenance') if value.get('provenance') in (ASSISTANT_REVIEW,HUMAN_CONFIRMATION) else 'unverified review') if value['confirmed'] else 'draft'}
 
 def is_training_confirmation(review):
     """Only a directly recorded human confirmation can create training data."""
@@ -90,7 +100,7 @@ def process_upload(path, name, digest, progress):
     result=read(output)['results'][0]
     if len(result['embedding'])!=512:
         raise ValueError('This clip is silent or could not produce audio features. Choose an audible sound.')
-    item={'id':digest,'title':name,'originalPath':str(path),'preview':'audio/'+preview.name,'seconds':result['seconds'],'folder':'Added sounds','proposedLabels':{g:[] for g in GROUPS},'labelProvenance':'unreviewed upload','hintReasons':[],'automaticTags':result['tags'],'embedding':result['embedding'],'reviewed':False}
+    item={'id':digest,'title':name,'originalPath':str(path),'preview':'audio/'+preview.name,'seconds':result['seconds'],'folder':'Added sounds','proposedLabels':{g:[] for g in GROUPS},'labelProvenance':'unreviewed upload','hintReasons':[],'automaticTags':result['tags'],'embedding':result['embedding'],'properties':result.get('properties'),'reviewed':False}
     with LOCK:
         manifest=read(DATA/'manifest.json', {'version':1,'items':[],'scope':'First ten seconds per clip.'})
         if not any(i['id']==digest for i in manifest['items']):manifest['items'].append(item)
@@ -110,7 +120,7 @@ def process_song(path, name, digest, progress):
             item_id=hashlib.sha256(f'{digest}:song:{start:.6f}'.encode()).hexdigest()
             preview=DATA/'audio'/f'{item_id}.wav'
             command(['ffmpeg','-v','error','-y','-ss',str(start),'-i',str(path),'-t','10','-ac','1','-ar','22050',str(preview)],log,120)
-            items.append({'id':item_id,'title':f"{name} · {start:.1f}–{start+result['seconds']:.1f}s",'originalPath':str(path),'preview':'audio/'+preview.name,'seconds':result['seconds'],'songId':digest,'startSeconds':start,'durationSeconds':result['duration'],'folder':'Song excerpts','proposedLabels':{g:[] for g in GROUPS},'labelProvenance':'unreviewed song excerpt','hintReasons':[],'automaticTags':result['tags'],'instrumentCandidates':result.get('instrumentCandidates',[]),'analysisVersion':2,'embedding':result['embedding'],'reviewed':False})
+            items.append({'id':item_id,'title':f"{name} · {start:.1f}–{start+result['seconds']:.1f}s",'originalPath':str(path),'preview':'audio/'+preview.name,'seconds':result['seconds'],'songId':digest,'startSeconds':start,'durationSeconds':result['duration'],'folder':'Song excerpts','proposedLabels':{g:[] for g in GROUPS},'labelProvenance':'unreviewed song excerpt','hintReasons':[],'automaticTags':result['tags'],'instrumentCandidates':result.get('instrumentCandidates',[]),'analysisVersion':2,'embedding':result['embedding'],'properties':result.get('properties'),'reviewed':False})
     if not items:raise ValueError('No audible sections could be analyzed in this song.')
     with LOCK:
         manifest=read(DATA/'manifest.json',{'version':1,'items':[]})
@@ -170,7 +180,7 @@ def process_pack(archive, info, progress):
                     skipped += 1
                     continue
                 ids.add(sound['id'])
-                manifest['items'].append({'id':sound['id'],'title':sound['title'],'originalPath':str(sound['path']), 'preview':f"audio/{sound['id']}.wav", 'seconds':result['seconds'], 'folder':info['name'], 'proposedLabels':{g:[] for g in GROUPS}, 'labelProvenance':'unreviewed pack import', 'hintReasons':[], 'automaticTags':result['tags'], 'embedding':result['embedding'], 'reviewed':False, 'packSource':sound['packSource']})
+                manifest['items'].append({'id':sound['id'],'title':sound['title'],'originalPath':str(sound['path']), 'preview':f"audio/{sound['id']}.wav", 'seconds':result['seconds'], 'folder':info['name'], 'proposedLabels':{g:[] for g in GROUPS}, 'labelProvenance':'unreviewed pack import', 'hintReasons':[], 'automaticTags':result['tags'], 'embedding':result['embedding'], 'properties':result.get('properties'), 'reviewed':False, 'packSource':sound['packSource']})
                 added.append(sound['id'])
             write(DATA/'manifest.json',manifest)
     return {'added':len(added),'skipped':skipped,'failed':failures,'itemIds':added,'name':info['name']}
