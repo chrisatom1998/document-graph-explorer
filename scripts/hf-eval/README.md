@@ -24,6 +24,9 @@ Tasks:
 - `genre-energy`: genre/energy features for one list (`task_args`: `beatport-judge`, `jamendo-fit`, ...) with the
   genre thread's `scripts/genre-energy` from `app_ref`; merged into `data/<list>.json.gz` on `claude/genre-energy-data`.
 
+- `accuracy-gate`: the accuracy gate (PR #124) for one change: `app_ref` is the head, `task_args` is
+  `<fast|full> [base commit]` (default base: main's tip). Builds and analyses both sides, scores each with its own
+  display code and writes `summary.md` plus both sides' aggregate reports (held-out: exports are deleted).
 - `holdout-r3`: the round 3 held-out check (`task_args`: `jamendo` or `mtgkey`, optionally `@<commit>` of the
   test set's branch) in the real app; pushes only aggregate reports to the test set's branch, and the workflow deletes
   the per-track exports from the HF dataset afterwards (`# HELD_OUT=1` in the task).

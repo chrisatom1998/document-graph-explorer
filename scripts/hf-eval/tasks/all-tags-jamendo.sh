@@ -16,6 +16,8 @@ run)
   python3 "$HARNESS/scripts/hf-eval/fetch-jamendo-ranges.py" "$HARNESS/$DOCS/jamendo-val-manifest.json" \
     "$WORK/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" $PART/$PARTS $WORK/audio
   cd "$APP"
+  # The harness's driver: it handles both the old toolbar and the Resonance layout (#137).
+  cp "$HARNESS/scripts/short-clip-upload-eval.mjs" scripts/
   npx playwright install --with-deps chromium > /dev/null
   npm run build > $WORK/build.log 2>&1 || { tail -40 $WORK/build.log; exit 1; }
   export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
