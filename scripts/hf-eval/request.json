@@ -1,0 +1,1 @@
+{"task": "holdout-r3", "app_ref": "main", "task_args": "mtgkey", "parts": "4", "flavor": "cpu-upgrade", "timeout": "90m", "max_cost": "1"}

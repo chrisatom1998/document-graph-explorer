@@ -1,0 +1,123 @@
+name: Key fix, browser check on round 2's 500 clips
+
+# Runs round 2's 500 GiantSteps MTG key excerpts through the built app from this branch, with round 2's harness and
+# frozen manifest taken from PR #119 (pinned below), and scores tempo and key exactly as round 2 did. The key profiles
+# were tuned without these tracks (scripts/key/tune.py). Reports go to docs/evaluations/key-2026-10-06/browser/.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  HARNESS_SHA: f691fa915b88796516d010a1b4b83f2c089e2c3a   # head of claude/project-thread-unl6fy (PR #119) on 2026-10-06
+  HARNESS: scripts/dj-clips scripts/short-clip-upload-eval.mjs docs/evaluations/dj-clips-round2-2026-10-06/mtg-key-manifest.json
+  MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
+  MTGKEY_REF: fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b
+  DOCS: docs/evaluations/dj-clips-round2-2026-10-06
+  OUT: docs/evaluations/key-2026-10-06/browser-cnn   # browser/ holds the #123 (chroma profile) run
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  clips:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch -q origin "$HARNESS_SHA" && git checkout "$HARNESS_SHA" -- $HARNESS
+      - name: Re-cut the frozen MTG key excerpts
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          git clone -q "$MTGKEY" "$RUNNER_TEMP/mk" && git -C "$RUNNER_TEMP/mk" checkout -q "$MTGKEY_REF"
+          python3 scripts/dj-clips/mtg-key.py "$RUNNER_TEMP/mk" audio
+      - uses: actions/upload-artifact@v4
+        with:
+          name: keyfix-mtgkey-audio
+          path: audio
+          retention-days: 3
+
+  eval:
+    needs: clips
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch -q origin "$HARNESS_SHA" && git checkout "$HARNESS_SHA" -- $HARNESS
+      - uses: actions/download-artifact@v4
+        with:
+          name: keyfix-mtgkey-audio
+          path: audio
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=audio AUDIO_EXT=wav MANIFEST=$DOCS/mtg-key-manifest.json SHARD=${{ matrix.shard }}/4 \
+            node scripts/short-clip-upload-eval.mjs out/run test 20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: keyfix-mtgkey-export-${{ matrix.shard }}
+          path: out/run/graph-export.json
+          retention-days: 30
+
+  score:
+    needs: eval
+    if: ${{ !cancelled() && needs.eval.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch -q origin "$HARNESS_SHA" && git checkout "$HARNESS_SHA" -- $HARNESS
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: keyfix-mtgkey-export-*
+          path: exports
+      - name: Score
+        run: |
+          set -o pipefail
+          mkdir -p "$OUT"
+          MANIFEST=$DOCS/mtg-key-manifest.json BENCHMARK=dj-clips-round2-2026-10-06/mtg-key@key-fix \
+            npx vite-node scripts/dj-clips/score-giantsteps.mjs "$OUT/mtg-key.json" exports/keyfix-mtgkey-export-*/graph-export.json | tee "$OUT/mtg-key.txt"
+          echo "app $GITHUB_SHA; round 2 harness $HARNESS_SHA (run $GITHUB_RUN_ID)" > "$OUT/tested-commit.txt"
+      - name: Commit the reports
+        run: |
+          git reset -q
+          git add "$OUT"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record the browser check of the key fix on round 2's 500 clips" || exit 0
+          git stash -q --include-untracked   # round 2's harness files, so the rebase below has a clean tree
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done

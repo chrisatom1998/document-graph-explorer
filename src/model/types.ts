@@ -22,7 +22,7 @@ export type FileType =
   | 'code'
   | 'other';
 export type NodeStatus = 'ok' | 'partial' | 'unreadable';
-export type EdgeKind = 'reference' | 'semantic' | 'keyword' | 'entity' | 'topic' | 'tempo' | 'key' | 'instrument' | 'sound' | 'similar' | 'title';
+export type EdgeKind = 'reference' | 'semantic' | 'keyword' | 'entity' | 'topic' | 'tempo' | 'key' | 'instrument' | 'sound' | 'similar' | 'version' | 'title';
 
 export interface DocNode {
   id: string; // SHA-256 of path + content
@@ -113,6 +113,14 @@ export interface IngestFile {
    * retained "original" — thousands of redundant IndexedDB writes avoided.
    */
   reconstructable?: boolean;
+  /**
+   * Set when the remembered library (persistence/library.ts) already knows the
+   * document this path, size and modified time produced. `bytes` is then left
+   * empty: the file is neither read nor hashed unless its stored record is gone,
+   * in which case ingest reads it through `readBytes`.
+   */
+  knownId?: string;
+  readBytes?: () => Promise<ArrayBuffer>;
 }
 
 export type FileStage =

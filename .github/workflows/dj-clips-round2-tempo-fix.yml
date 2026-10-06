@@ -1,0 +1,118 @@
+name: DJ clip round 2, tempo fix from PR 116
+
+# Runs round 2's 500 GiantSteps MTG key excerpts through the app with src/ taken from PR #116's tempo fix (pinned below).
+# #116 tuned that fix on unused GiantSteps tempo tracks and GTZAN, none of which are in the MTG key set, so this is a
+# clean check of the fix. Reports go to docs/evaluations/dj-clips-round2-2026-10-06/results/tempo-fix-116/.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-unl6fy]
+    paths: [.github/workflows/dj-clips-round2-tempo-fix.yml]
+
+permissions:
+  contents: write
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  FIX_SHA: 473946166e5481aab5fd28c86e67b8522c3c347f   # head of claude/project-thread-if86oo (PR #116) on 2026-10-06
+  MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
+  MTGKEY_REF: fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b
+  DOCS: docs/evaluations/dj-clips-round2-2026-10-06
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  clips:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Re-cut the frozen MTG key excerpts
+        run: |
+          test -f "$DOCS/mtg-key-manifest.json"
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          git clone -q "$MTGKEY" "$RUNNER_TEMP/mk" && git -C "$RUNNER_TEMP/mk" checkout -q "$MTGKEY_REF"
+          python3 scripts/dj-clips/mtg-key.py "$RUNNER_TEMP/mk" audio
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fix-mtgkey-audio
+          path: audio
+          retention-days: 3
+
+  eval:
+    needs: clips
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Use PR 116's app source
+        run: git checkout "$FIX_SHA" -- src
+      - uses: actions/download-artifact@v4
+        with:
+          name: fix-mtgkey-audio
+          path: audio
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=audio AUDIO_EXT=wav MANIFEST=$DOCS/mtg-key-manifest.json SHARD=${{ matrix.shard }}/4 \
+            node scripts/short-clip-upload-eval.mjs out/run test 20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fix-mtgkey-export-${{ matrix.shard }}
+          path: out/run/graph-export.json
+          retention-days: 30
+
+  score:
+    needs: eval
+    if: ${{ !cancelled() && needs.eval.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: fix-mtgkey-export-*
+          path: exports
+      - name: Score
+        run: |
+          set -o pipefail
+          R="$DOCS/results/tempo-fix-116"; mkdir -p "$R"
+          MANIFEST=$DOCS/mtg-key-manifest.json BENCHMARK=dj-clips-round2-2026-10-06/mtg-key@pr116 \
+            npx vite-node scripts/dj-clips/score-giantsteps.mjs "$R/mtg-key.json" exports/fix-mtgkey-export-*/graph-export.json | tee "$R/mtg-key.txt"
+          echo "app src from $FIX_SHA; harness $GITHUB_SHA (run $GITHUB_RUN_ID)" > "$R/tested-commit.txt"
+      - name: Commit the reports
+        run: |
+          git add "$DOCS/results/tempo-fix-116"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record round 2 tempo results for PR 116's fix" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done

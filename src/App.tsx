@@ -17,25 +17,34 @@ import { initializeCorpusRepository } from './persistence/corpusRepository';
 import { reportPersistenceUnavailable } from './persistence/cache';
 import { initChatHistorySync } from './persistence/chatHistorySync';
 import { useSettingsStore } from './store/settingsStore';
+import { audioAnalysisUsedBefore } from './audio/speculativePreload';
 import './styles.css';
 
-/** Fetch and warm the audio models once the restored graph has settled, so the
- * first sound dropped skips the model download. Dynamic import keeps analyzeMusic
+/** Fetch and warm the audio models once a restored graph that contains audio has
+ * settled, so the next sound dropped skips the model download. Dynamic import keeps analyzeMusic
  * out of the main chunk; preloadMusicModels skips hosts too small to hold them,
  * and the drop-time preload in coordinator.ts stays as the fallback. A run that is
  * already parsing or embedding (demo corpus, an early drop) goes first: the warmup
  * waits for the pipeline to return to idle rather than competing with it, and a
  * document-only ingest that starts later stops it (speculativePreload.ts). */
 function preloadAudioModelsWhenIdle(): void {
+  // A restored workspace settles in 'ready', an empty one in 'idle'.
+  const settled = (phase: string) => phase === 'idle' || phase === 'ready';
   const start = () => {
-    if (useGraphStore.getState().phase !== 'idle') {
+    if (!settled(useGraphStore.getState().phase)) {
       const unsubscribe = useGraphStore.subscribe(s => {
-        if (s.phase !== 'idle') return;
+        if (!settled(s.phase)) return;
         unsubscribe();
         preloadAudioModelsWhenIdle();
       });
       return;
     }
+    // Only someone who works with audio is likely to need the models soon.
+    // Everyone else (first visit, documents only) would pay ~180 MB of
+    // downloads, plus ~350 MB more where WebGPU is available, and four busy
+    // model workers on every launch for nothing; their first audio drop still
+    // preloads while the files are hashed and parsed (coordinator.ts).
+    if (!audioAnalysisUsedBefore() && !useGraphStore.getState().nodes.some(n => n.kind === 'document' && n.fileType === 'audio')) return;
     const mode = useSettingsStore.getState().musicAnalysisMode;
     void import('./audio/analyzeMusic').then(m => m.preloadMusicModels(mode, { speculative: true })).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
   };
@@ -51,17 +60,12 @@ const DropZone = lazy(() => import('./ingest/DropZone'));
 // to delay the interactive shell or graph bundle on a restored workspace.
 const EmptyState = lazy(() => import('./ui/EmptyState'));
 const ProgressStrip = lazy(() => import('./ui/ProgressStrip'));
-const Toolbar = lazy(() => import('./ui/Toolbar'));
-const IngestDimsToggle = lazy(() => import('./ui/DimsToggleButton'));
-const GraphNavigator = lazy(() => import('./ui/GraphNavigator'));
-const FilterBar = lazy(() => import('./ui/FilterBar'));
-const Minimap = lazy(() => import('./ui/Minimap'));
-const ChatLauncher = lazy(() => import('./ui/ChatLauncher'));
+// The Resonance shell owns the toolbar, filters and inspector around the graph.
+const ResonanceShell = lazy(() => import('./ui/resonance/ResonanceShell'));
 const InsightsDigest = lazy(() => import('./ui/InsightsDigest'));
 const FirstRunGuide = lazy(() => import('./ui/FirstRunGuide'));
 const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
 const PathPanel = lazy(() => import('./ui/PathPanel'));
-const SidePanel = lazy(() => import('./ui/SidePanel'));
 const ComparePanel = lazy(() => import('./ui/ComparePanel'));
 const SnapshotDrawer = lazy(() => import('./ui/SnapshotDrawer'));
 const SearchOverlay = lazy(() => import('./ui/SearchOverlay'));
@@ -71,6 +75,10 @@ const DjAssistant = lazy(() => import('./ui/DjAssistant'));
 const MusicBackgroundStatus = lazy(() => import('./ui/MusicBackgroundStatus'));
 const ChatPanel = lazy(() => import('./ui/ChatPanel'));
 const HelpPopover = lazy(() => import('./ui/HelpPopover'));
+
+function hasSavedDims(): boolean {
+  try { return localStorage.getItem('knowledge-nebula-dims') !== null; } catch { return true; }
+}
 
 const RetrievalBenchmarkPanel = import.meta.env.DEV
   ? lazy(() => import('./dev/RetrievalBenchmarkPanel'))
@@ -101,7 +109,6 @@ declare global {
 export default function App() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const phase = useGraphStore((s) => s.phase);
-  const selectedId = useUiStore((s) => s.selectedId);
   const searchOpen = useUiStore((s) => s.searchOpen);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
   const insightsOpen = useUiStore((s) => s.insightsOpen);
@@ -117,6 +124,9 @@ export default function App() {
     // worker still defaults to 3D. Re-post it here, ahead of every hydration
     // path below, so restored nodes are added to an already-flat simulation
     // (no visible collapse) and a worker respawn replays the right dims.
+    // Resonance is a flat map first: a fresh profile starts in 2D, while a
+    // saved 2D/3D choice is kept.
+    if (!hasSavedDims()) useUiStore.getState().setDims(2);
     if (useUiStore.getState().dims === 2) layoutSetDims(2);
     initPersistence();
     void (async () => {
@@ -366,12 +376,14 @@ export default function App() {
   return (
     <div className="app-root">
       <Suspense fallback={null}><CollabAppBridge /></Suspense>
-      <Suspense fallback={null}><TitleRelationships /><DjAssistant /><MusicBackgroundStatus /><UploadInsightsAgent /></Suspense>
+      <Suspense fallback={null}><TitleRelationships /><DjAssistant showLauncher={false} /><MusicBackgroundStatus /><UploadInsightsAgent /></Suspense>
       <Suspense fallback={<div className="scene-loading" role="status" aria-label="Loading interactive graph" />}>
-        <NebulaCanvas />
+        <ResonanceShell>
+          <Suspense fallback={<div className="scene-loading" role="status" aria-label="Loading interactive graph" />}>
+            <NebulaCanvas />
+          </Suspense>
+        </ResonanceShell>
       </Suspense>
-      {phase === 'ready' && <Suspense fallback={null}><Toolbar /><GraphNavigator /><FilterBar /><Minimap /><ChatLauncher /></Suspense>}
-      {hasNodes && phase !== 'ready' && <Suspense fallback={null}><IngestDimsToggle /></Suspense>}
       <Suspense fallback={null}><InsightsDigest /><FirstRunGuide /></Suspense>
       <Suspense fallback={null}><DropZone /></Suspense>
       {!hasNodes && phase === 'idle' && (
@@ -388,9 +400,6 @@ export default function App() {
       )}
       {pathMode && (
         <Suspense fallback={null}><PathPanel /></Suspense>
-      )}
-      {selectedId && (
-        <Suspense fallback={null}><SidePanel /></Suspense>
       )}
       <Tooltip />
       {phase === 'ready' && searchOpen && (

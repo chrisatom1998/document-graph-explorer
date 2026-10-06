@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { correctDjTags } from './sampleAssistant';
+import { advancedFilters, closeDetails, fitAll, openTab, startIn3D } from './resonance';
 
 const base = { kind:'document',fileType:'audio',topics:[],entities:[],keywords:[],wordCount:0,degree:0,cluster:0,status:'ok' };
 const analysis = {version:2,analyzedSeconds:8,durationSeconds:8,instruments:[],notes:[]};
@@ -19,6 +20,7 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  const errors:string[]=[]; page.on('pageerror',error=>errors.push(error.message));
  await page.addInitScript(()=>localStorage.setItem('knowledge-nebula-theme','dark'));
  await page.setViewportSize({width:1440,height:1000});
+ await startIn3D(page);
  await page.goto('/');
  const importFixture=async(contents:string)=>{
   await page.getByRole('button',{name:'Import a graph',exact:true}).click();
@@ -36,10 +38,13 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
   await page.getByRole('button',{name:'Connections',exact:true}).click();
  };
  const exportGraph=async()=>{
-  await page.getByRole('button',{name:'Data options',exact:true}).click();
+  await openTab(page,'Export');
   const promise=page.waitForEvent('download');
   await page.getByRole('button',{name:'Export graph JSON',exact:true}).click();
   const download=await promise; const stream=await download.createReadStream();let text='';for await(const chunk of stream!)text+=chunk;
+  // Back to the graph: the Export tab covers the stage, so the drags and view checks
+  // that follow would otherwise land on the overlay instead of the scene.
+  await openTab(page,'Graph');
   return text;
  };
  // Toasts auto-dismiss on a timer, so a count-then-click loop races a toast that vanishes between the two calls
@@ -53,16 +58,16 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  // The first scene builds right after import; under software WebGL that can hold the main thread past the 15s default.
  await page.getByRole('button',{name:'Switch to 2D view',exact:true}).click({timeout:60_000});
  await expect(page.getByRole('application',{name:/Interactive 2D/})).toBeVisible();
- await page.getByRole('button',{name:'Fit the whole graph in view'}).click();
+ await fitAll(page);
  await page.mouse.move(500,300);await page.mouse.down();await page.mouse.move(570,350,{steps:10});await page.mouse.up();await page.mouse.wheel(0,-120);
- await page.getByRole('button',{name:'Fit the whole graph in view'}).click();
+ await fitAll(page);
  await page.screenshot({path:testInfo.outputPath('audio-graph-desktop.png')});
- await page.getByRole('button',{name:'Show graph filters',exact:true}).click();
+ await advancedFilters(page);
  await page.getByRole('button',{name:'More filters',exact:true}).click();
  await page.getByRole('button',{name:'sound properties',exact:true}).click();
  await expect(page.getByRole('button',{name:'sound properties',exact:true})).toHaveAttribute('aria-pressed','true');
  await page.getByRole('button',{name:'sound properties',exact:true}).click();
- await page.getByRole('button',{name:'Hide graph filters',exact:true}).click();
+ await advancedFilters(page,false);
  await openAlpha();
  await expect(page.locator('.connection-row__evidence')).toContainText(['Shared instruments: piano']);
  const showAll=page.getByRole('button',{name:/Show all \d+ connections/});if(await showAll.isVisible())await showAll.click();
@@ -97,10 +102,10 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  expect(reexported.nodes.find((n:{id:string})=>n.id==='alpha').audio.confirmedDjTags.character).toEqual([]);
  await page.getByRole('button',{name:'Switch to 3D view',exact:true}).click();
  await expect(page.getByRole('application',{name:/Interactive 3D/})).toBeVisible();
- await page.getByRole('button',{name:'Fit the whole graph in view'}).click();
+ await fitAll(page);
  await page.mouse.move(500,300);await page.mouse.down();await page.mouse.move(570,350,{steps:10});await page.mouse.up();await page.mouse.wheel(0,120);
  await openAlpha();
- await page.getByRole('button',{name:'Back to graph',exact:true}).click();
+ await closeDetails(page);
  await page.mouse.move(500,300);await page.mouse.down();await page.mouse.move(570,350,{steps:10});await page.mouse.up();
  await openAlpha();
  expect(errors).toEqual([]);

@@ -13,6 +13,11 @@ const EXT = process.env.AUDIO_EXT ?? 'wav';
 const AUDIO = process.env.AUDIO_DIR ?? '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints/short-clips/bench-audio';
 const manifest = JSON.parse(readFileSync(process.env.MANIFEST ?? 'docs/evaluations/short-clips-2026-10-04/manifest.json', 'utf8'));
 let ids = manifest.items.filter(i => i.split === split).map(i => i.id);
+// FILE_FIELD names a manifest field holding each item's file name (e.g. "file", or "originalName" to upload real
+// pack names); without it every clip is <id>.<AUDIO_EXT>.
+const fileName = Object.fromEntries(manifest.items.map(i => [i.id, process.env.FILE_FIELD ? i[process.env.FILE_FIELD] : `${i.id}.${EXT}`]));
+// ONLY_IDS names a JSON file with an array of item ids to analyse (others are skipped).
+if (process.env.ONLY_IDS) { const only = new Set(JSON.parse(readFileSync(process.env.ONLY_IDS, 'utf8'))); ids = ids.filter(id => only.has(id)); }
 if (limitArg) ids = ids.slice(0, Number(limitArg));
 // SHARD=i/n keeps every n-th clip starting at i, so one benchmark can run on several machines.
 if (process.env.SHARD) {
@@ -36,9 +41,15 @@ await page.addInitScript(() => localStorage.setItem('knowledge-nebula-settings',
 await page.goto(`http://127.0.0.1:${PORT}/`);
 
 async function exportGraph() {
-  await page.getByRole('button', { name: 'Data options' }).click();
+  // Older layout: a "Data options" toolbar menu; the Resonance layout (#137): an Export tab.
+  const dataOptions = page.getByRole('button', { name: 'Data options' });
+  if (await dataOptions.count()) await dataOptions.click();
+  else await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Export', exact: true }).evaluate(b => b.click());
   const download = page.waitForEvent('download', { timeout: 60_000 });
-  await page.getByRole('button', { name: /Export graph JSON/ }).click();
+  // If the click below fails, this promise still rejects later; keep that from crashing the whole run.
+  download.catch(() => {});
+  // A DOM click: floating cards (e.g. the "What we found" digest) can cover the button.
+  await page.getByRole('button', { name: /Export graph JSON/ }).evaluate(b => b.click());
   const file = join(outDir, 'graph-export.json');
   await (await download).saveAs(file);
   return JSON.parse(readFileSync(file, 'utf8'));
@@ -54,9 +65,19 @@ for (let start = 0; start < ids.length; start += Number(batchArg)) {
     page.once('filechooser', () => {});
     await page.getByRole('button', { name: 'Add files', exact: true }).click({ timeout: 180_000 });
   }
-  await picker.setInputFiles(batch.map(id => join(AUDIO, `${id}.${EXT}`)));
+  await picker.setInputFiles(batch.map(id => join(AUDIO, fileName[id])));
   // 2D view: same analysis, far less software rendering competing with the models.
-  if (start === 0) await page.getByRole('button', { name: 'Switch to 2D view' }).click({ timeout: 120_000 }).catch(() => {});
+  if (start === 0) {
+    const toggle = page.getByRole('button', { name: 'Switch to 2D view' });
+    if (await toggle.count()) await toggle.click({ timeout: 120_000 }).catch(() => {});
+    else {
+      await page.getByRole('button', { name: 'More tools' }).click({ timeout: 120_000 }).catch(() => {});
+      await page.getByRole('menuitem', { name: 'Switch to 2D' }).click({ timeout: 10_000 }).catch(() => {});
+      // The menu's scrim would swallow the later Export and Search clicks.
+      const scrim = page.getByRole('button', { name: 'Close menu' });
+      if (await scrim.count()) await scrim.click().catch(() => {});
+    }
+  }
   let done = 0;
   for (;;) {
     await page.waitForTimeout(5000);
@@ -66,7 +87,7 @@ for (let start = 0; start < ids.length; start += Number(batchArg)) {
     }
     const graph = await exportGraph().catch(e => { if (process.env.DEBUG) console.log('\nexport failed', e.message); });
     if (!graph) continue;
-    const want = new Set(batch.map(id => `${id}.${EXT}`));
+    const want = new Set(batch.map(id => fileName[id]));
     const nodes = graph.nodes.filter(n => want.has(n.path ?? n.title));
     done = nodes.filter(n => finished(n.audio)).length;
     process.stdout.write(`\r${start + done}/${ids.length} analysed`);

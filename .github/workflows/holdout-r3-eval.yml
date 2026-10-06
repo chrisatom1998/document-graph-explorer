@@ -1,0 +1,221 @@
+name: Held-out audio check, round 3
+
+# Judges sound-tag, tempo and key changes on two sets that no tuning has used (docs/evaluations/holdout-r3-2026-10-06):
+#   jamendo: 500 MTG-Jamendo split-0 test tracks (424 in DJ genres), middle 30 s, uploader instrument tags plus
+#            three-annotator voice/instrumental answers;
+#   mtgkey:  318 GiantSteps MTG key Beatport tracks that round 2 did not use and the hash rule holds out, middle 10 s,
+#            Beatport BPM and manual key.
+# The app under test is APP_REF: the "app_ref" input on a manual run, this commit on a push to a holdout-r3/** branch
+# (merge your branch into one to test it). Scripts, manifests and the analysis driver always come from this commit, so
+# older apps are driven with a driver that knows the current UI. Audio is fetched at run time and never committed. Only
+# aggregate reports are committed (to the triggering branch, never to the default branch), so per-track results don't
+# leak into tuning.
+on:
+  workflow_dispatch:
+    inputs:
+      app_ref:
+        description: Branch, tag or commit whose app to test
+        default: main
+  push:
+    branches: ['holdout-r3/**']
+    paths: [.github/workflows/holdout-r3-eval.yml, scripts/holdout-r3/**, src/**]
+
+permissions:
+  contents: write
+
+env:
+  APP_REF: ${{ inputs.app_ref || (startsWith(github.ref_name, 'holdout-r3/') && github.sha) || 'main' }}
+  ONNXRUNTIME_NODE_INSTALL: skip
+  DOCS: docs/evaluations/holdout-r3-2026-10-06
+  JAMENDO_META: https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f
+  MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
+  MTGKEY_REF: fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+concurrency:
+  group: holdout-r3-${{ github.ref_name }}-${{ inputs.app_ref || github.sha }}
+
+jobs:
+  jamendo-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the frozen selection against the pinned dataset metadata
+        run: |
+          M="$RUNNER_TEMP/mj"
+          for f in data/splits/split-0/autotagging_instrument-test.tsv data/raw_30s_cleantags.tsv \
+                   derived/music-classification-annotations/music-classification-annotations-clean.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
+            mkdir -p "$M/$(dirname $f)"; curl -fsSL --retry 6 -o "$M/$f" "$JAMENDO_META/$f"
+          done
+          python3 scripts/holdout-r3/select-jamendo.py "$M"
+      - name: Fetch and cut the tracks in this shard's archive folders
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          python3 scripts/holdout-r3/fetch-jamendo.py "$DOCS/jamendo-manifest.json" \
+            "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ matrix.shard }}/10 audio
+      - uses: actions/upload-artifact@v4
+        with:
+          name: h3-jamendo-audio-${{ matrix.shard }}
+          path: audio
+          retention-days: 7
+
+  mtgkey-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select and fetch the held-out MTG key excerpts
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          git clone -q "$MTGKEY" "$RUNNER_TEMP/mk" && git -C "$RUNNER_TEMP/mk" checkout -q "$MTGKEY_REF"
+          python3 scripts/holdout-r3/select-mtg-key.py "$RUNNER_TEMP/mk" "$DOCS/round2-mtg-key-tracks.txt" audio
+      - name: Commit the frozen manifest (first run only)
+        if: github.ref_name != github.event.repository.default_branch
+        run: |
+          git add "$DOCS/mtg-key-manifest.json"
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m "Freeze the round 3 held-out MTG key set"
+            for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+              && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: h3-mtgkey-audio
+          path: |
+            audio
+            ${{ env.DOCS }}/mtg-key-manifest.json
+          retention-days: 7
+
+  eval:
+    needs: [jamendo-audio, mtgkey-audio]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { set: jamendo, shard: 0, of: 10 }
+          - { set: jamendo, shard: 1, of: 10 }
+          - { set: jamendo, shard: 2, of: 10 }
+          - { set: jamendo, shard: 3, of: 10 }
+          - { set: jamendo, shard: 4, of: 10 }
+          - { set: jamendo, shard: 5, of: 10 }
+          - { set: jamendo, shard: 6, of: 10 }
+          - { set: jamendo, shard: 7, of: 10 }
+          - { set: jamendo, shard: 8, of: 10 }
+          - { set: jamendo, shard: 9, of: 10 }
+          - { set: mtgkey, shard: 0, of: 4 }
+          - { set: mtgkey, shard: 1, of: 4 }
+          - { set: mtgkey, shard: 2, of: 4 }
+          - { set: mtgkey, shard: 3, of: 4 }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.APP_REF }}
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ matrix.set == 'jamendo' && 'h3-jamendo-audio-*' || 'h3-mtgkey-audio' }}
+          # The Jamendo artifacts hold bare WAVs (one upload path); the MTG key one also holds its manifest under docs/.
+          path: ${{ matrix.set == 'jamendo' && 'clips/audio' || 'clips' }}
+          merge-multiple: true
+      - name: Pick the manifest
+        run: |
+          if [ ${{ matrix.set }} = jamendo ]; then cp harness/$DOCS/jamendo-manifest.json manifest.json; else cp clips/$DOCS/mtg-key-manifest.json manifest.json; fi
+          # The harness's driver handles both the old toolbar and the #137 layout; an app's own copy may not.
+          cp harness/scripts/short-clip-upload-eval.mjs scripts/
+          git log -1 --format='app under test: %H %s'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Record which Jamendo model was used
+        if: matrix.set == 'jamendo' && matrix.shard == 0
+        run: python3 -c "import json;m=json.load(open('public/jamendo-model/mtg_jamendo_instrument-discogs-effnet-1.json'));print(json.dumps({k:m.get(k) for k in ('name','version','dataset','inference')},indent=1))" || true
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=clips/audio AUDIO_EXT=wav MANIFEST=manifest.json SHARD=${{ matrix.shard }}/${{ matrix.of }} \
+            node scripts/short-clip-upload-eval.mjs out/run test 20
+          git rev-parse HEAD > out/run/app-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h3-${{ matrix.set }}-export-${{ matrix.shard }}
+          path: out/run/
+          retention-days: 30
+
+  score:
+    needs: eval
+    # Every shard must succeed: a partial run would be scored and committed as if every track were analysed.
+    if: ${{ !cancelled() && needs.eval.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.APP_REF }}
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: h3-*-export-*
+          path: exports
+      - uses: actions/download-artifact@v4
+        with:
+          name: h3-mtgkey-audio
+          path: clips
+      - name: Score
+        run: |
+          set -o pipefail
+          mkdir -p scripts/holdout-r3 && cp harness/scripts/holdout-r3/*.mjs scripts/holdout-r3/   # run against the app's own src
+          APP=$(git rev-parse HEAD); LABEL=$(echo "$APP_REF" | tr -c 'A-Za-z0-9._-\n' '-' | cut -c1-40)-${APP::7}
+          R="harness/$DOCS/results/$LABEL"; mkdir -p "$R"; echo "R=$R" >> "$GITHUB_ENV"
+          J=harness/$DOCS/jamendo-manifest.json
+          # strict: only uploader tags (present) and agreed voice answers; weak: also treats untagged as absent.
+          node -e "const fs=require('fs'),m=JSON.parse(fs.readFileSync(process.argv[1]));const v=(f,k)=>fs.writeFileSync(k,JSON.stringify({...m,items:m.items.filter(f).map(i=>({...i,reviews:i.reviews.filter(r=>!r.weak)}))}));
+            v(()=>true,'strict.json');v(i=>i.djTier==='dj genre','strict-dj.json');fs.writeFileSync('weak.json',JSON.stringify(m))" "$J"
+          for v in strict strict-dj weak; do
+            MANIFEST=$v.json npx vite-node scripts/holdout-r3/score-tags.mjs "$R/jamendo-tags-$v.json" exports/h3-jamendo-export-*/graph-export.json | tee "$R/jamendo-tags-$v.txt"
+          done
+          MANIFEST=clips/$DOCS/mtg-key-manifest.json BENCHMARK=holdout-r3-2026-10-06/mtg-key npx vite-node scripts/holdout-r3/score-tempo-key.mjs mtg-key-full.json exports/h3-mtgkey-export-*/graph-export.json | tee "$R/mtg-key.txt"
+          node -e "const fs=require('fs'),r=JSON.parse(fs.readFileSync('mtg-key-full.json'));delete r.rows;fs.writeFileSync(process.argv[1],JSON.stringify(r,null,1))" "$R/mtg-key.json"
+          echo "app $APP_REF at $APP; harness $GITHUB_SHA; run $GITHUB_RUN_ID" > "$R/tested-commit.txt"
+      - name: Commit the aggregate reports
+        if: github.ref_name != github.event.repository.default_branch
+        working-directory: harness
+        run: |
+          git add "${R#harness/}"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record round 3 held-out results for $APP_REF" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done

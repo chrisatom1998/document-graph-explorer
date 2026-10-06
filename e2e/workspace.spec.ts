@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { closeDetails, details, fitAll, openChat, openFiles, openTab, similarityFilter, startIn3D, toolMenu } from './resonance';
 
 // Small explicit fixture: visual checks need no external models or private samples.
 const fixture = JSON.stringify({
@@ -16,6 +17,7 @@ test('classic graph controls and music copilot work on desktop and mobile', asyn
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.setViewportSize({ width: 1440, height: 900 });
+  await startIn3D(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Import a graph', exact: true }).click();
   await page.locator('input[type="file"][accept*=".json"]').evaluate((element, contents) => {
@@ -25,40 +27,46 @@ test('classic graph controls and music copilot work on desktop and mobile', asyn
     element.dispatchEvent(new Event('change', { bubbles: true }));
   }, fixture);
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
-  await expect(page.locator('.toolbar').getByRole('button', { name: /^Current corpus:/ })).toHaveCount(1);
-  await page.getByRole('button', { name: 'Show graph filters' }).click();
-  await expect(page.getByRole('button', { name: 'More filters' })).toBeVisible();
-  await page.getByRole('button', { name: 'Hide graph filters' }).click();
-  await page.getByRole('button', { name: 'Analyze', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Corpus insights', exact: true })).toBeVisible();
-  await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'View options' }).click();
+  await expect(page.locator('.rs-top').getByRole('button', { name: /^Current corpus:/ })).toHaveCount(1);
+  // Filters live in the left sidebar now, not behind a toolbar disclosure.
+  await expect(page.getByRole('heading', { name: 'Filters', exact: true })).toBeVisible();
+  // The fixture only has key edges, and the sidebar lists kinds that exist.
+  await similarityFilter(page, 'Key');
+  await expect(page.getByRole('button', { name: 'Clear all', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Clear all', exact: true }).click();
+  await toolMenu(page, 'Insights');
+  await expect(page.getByRole('dialog', { name: 'Corpus insights', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Close insights', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Corpus insights', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'More tools' }).click();
   await expect(page.getByRole('button', { name: 'Save current view', exact: true })).toBeVisible();
-  await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  // Close through the trigger, which sits above the menu's click-away scrim.
+  await page.getByRole('button', { name: 'More tools' }).click();
+  await expect(page.getByRole('button', { name: 'Save current view', exact: true })).toHaveCount(0);
+  await toolMenu(page, 'Settings');
   await expect(page.getByLabel('Graph clarity', { exact: true })).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Chat provider', exact: true })).toBeHidden();
   await page.getByText('AI connections (optional)', { exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Chat provider', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Close settings', exact: true }).click();
-  await page.getByRole('button', { name: 'Browse documents', exact: true }).press('Space');
+  await openFiles(page);
   await page.getByRole('option', { name: /Melodic 01/ }).click();
-  await expect(page.getByRole('dialog', { name: 'Melodic 01', exact: true })).toBeVisible();
-  await expect(page.getByText('Tempo', { exact: true })).toBeVisible();
+  await expect(details(page)).toContainText('Melodic 01');
+  await expect(details(page).getByText('Tempo', { exact: true })).toBeVisible();
   await expect(page.locator('.audio-controls--preview')).toBeVisible();
   await expect(page.locator('.audio-controls--preview').getByRole('button', { name: 'Play sample' })).toBeDisabled();
   await expect(page.getByText('Audio is not saved here. Add the original file again to play it.')).toBeVisible();
-  await expect(page.locator('.toolbar').getByRole('button', { name: 'Search documents' })).toBeVisible();
-  await page.getByRole('button', { name: 'Back to graph', exact: true }).click();
-  await page.getByRole('button', { name: 'Fit the whole graph in view' }).click();
+  await expect(page.locator('.rs-top').getByRole('button', { name: 'Search documents' })).toBeVisible();
+  await closeDetails(page);
+  await fitAll(page);
   await page.screenshot({ path: testInfo.outputPath('workspace-desktop.png') });
 
   // Back to graph cleared selection; a contextual match request needs the
   // sample selected again in the classic workspace.
-  await page.getByRole('button', { name: 'Browse documents', exact: true }).press('Space');
+  await openFiles(page);
   await page.getByRole('option', { name: /Melodic 01/ }).click();
-  await expect(page.getByRole('dialog', { name: 'Melodic 01', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Chat with your documents' }).click();
+  await expect(details(page)).toContainText('Melodic 01');
+  await openChat(page);
   await expect(page.getByRole('dialog', { name: 'Music copilot', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Search, review & build crates ↗' })).toBeHidden();
   await page.screenshot({ path: testInfo.outputPath('workspace-copilot-start.png') });
@@ -71,19 +79,24 @@ test('classic graph controls and music copilot work on desktop and mobile', asyn
   await page.screenshot({ path: testInfo.outputPath('workspace-copilot.png') });
   await page.getByRole('button', { name: 'Close chat', exact: true }).click();
 
+  // "Show samples in graph" leaves the Library tab up; look at the graph before
+  // switching views so the checks run against the visible canvas, not one under
+  // the Library overlay.
+  await openTab(page, 'Graph');
+  await expect(page.getByRole('button', { name: 'Graph', exact: true })).toHaveAttribute('aria-current', 'page');
   await page.getByRole('button', { name: 'Switch to 2D view', exact: true }).click();
   await expect(page.getByRole('application', { name: /Interactive 2D/ })).toBeVisible();
   await page.getByRole('button', { name: 'Switch to 3D view', exact: true }).click();
   await expect(page.getByRole('application', { name: /Interactive 3D/ })).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Browse documents' }).press('Space');
+  await openFiles(page);
   await expect(page.getByRole('listbox', { name: 'Graph nodes' })).toBeVisible();
-  await page.getByRole('button', { name: 'Browse documents' }).press('Escape');
-  await page.getByRole('button', { name: 'Chat with your documents' }).click();
+  await openTab(page, 'Graph');
+  await openChat(page);
   await expect(page.getByRole('dialog', { name: 'Music copilot', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Close chat', exact: true }).click();
-  await page.getByRole('button', { name: 'Fit the whole graph in view' }).click();
+  await fitAll(page);
   await page.screenshot({ path: testInfo.outputPath('workspace-mobile.png') });
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   expect(errors).toEqual([]);

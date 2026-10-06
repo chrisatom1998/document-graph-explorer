@@ -2,6 +2,7 @@ import { MAX_INGEST_FILE_BYTES, MAX_INGEST_TOTAL_BYTES } from '../config';
 import type { IngestFile } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { lookupLibraryFiles, libraryKey, type LibraryHit } from '../persistence/library';
 import { isIngestCandidate, routeFileWithSniff } from './fileRouter';
 import { reportReadFailures, type ReadFailure } from './readFailures';
 
@@ -35,6 +36,12 @@ export interface PrepareOptions {
    */
   deferredWillRetry?: boolean;
   onReadError?: (failure: ReadFailure) => void;
+  /**
+   * Skip reading files the remembered library already knows by path, size and
+   * modified time. They do not count toward the batch size cap, so re-reading a
+   * large folder only reads what is new or changed.
+   */
+  reuseLibrary?: boolean;
 }
 
 export async function prepareIngestFiles(
@@ -48,7 +55,34 @@ export async function prepareIngestFiles(
   let totalBytes = 0;
   let totalCapHit = false;
 
+  const identity = (file: File, path?: string) =>
+    file.lastModified > 0 && file.size > 0
+      ? { path: path ?? file.name, size: file.size, lastModified: file.lastModified }
+      : undefined;
+  let remembered = new Map<string, LibraryHit>();
+  if (options.reuseLibrary) {
+    const identities = named
+      .map(({ file, path }) => identity(file, path))
+      .filter((id): id is NonNullable<typeof id> => id !== undefined);
+    remembered = await lookupLibraryFiles(identities);
+  }
+
   for (const { file, path } of named) {
+    const known = remembered.size ? identity(file, path) : undefined;
+    const hit = known ? remembered.get(libraryKey(known)) : undefined;
+    if (hit) {
+      output.push({
+        fileId: crypto.randomUUID(),
+        name: file.name,
+        path,
+        fileType: hit.fileType,
+        bytes: new ArrayBuffer(0),
+        lastModified: file.lastModified,
+        knownId: hit.docId,
+        readBytes: () => file.arrayBuffer(),
+      });
+      continue;
+    }
     const shouldRead = isIngestCandidate(file.name) || file.type.startsWith('audio/');
     if (shouldRead && file.size > MAX_INGEST_FILE_BYTES) {
       useGraphStore.getState().addIgnored(path ?? file.name, `too large (over ${MAX_INGEST_MB} MB)`);
@@ -104,7 +138,7 @@ export async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
   try {
     // A one-shot selection has no manifest to retry against, so deferred files
     // stay reported-and-skipped exactly as before.
-    const { files } = await prepareIngestFiles(named);
+    const { files } = await prepareIngestFiles(named, { reuseLibrary: true });
     if (files.length === 0) {
       // Fully rejected — no run will settle, so snapshot the rejections into
       // the persistent report here.

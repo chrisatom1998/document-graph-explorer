@@ -2663,5 +2663,95 @@
     "group": "dj-one-shot",
     "label": null,
     "prompt": "A vocal chop loop."
+  },
+  {
+    "group": "dj-effect",
+    "label": "filter sweep",
+    "prompt": "Music or noise swept through a resonant low-pass or high-pass filter."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "Silence with no identifiable sound."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A mixture of unrelated sounds without a clearly identifiable effect sound."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A human voice singing a melodic vocal phrase."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A short electronic synthesizer pluck with a sharp attack and quick decay."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A sustained atmospheric synthesizer pad with spacious soft chords."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "Short punchy synthesizer chord stabs."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A synthesizer playing a prominent lead melody."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A deep electronic synth bass line."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "An electronic synthesizer with a vowel-like tone imitating a human voice."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A rising electronic transition effect building in pitch and intensity."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A falling electronic transition effect descending in pitch."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A single dramatic cinematic impact hit."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A sweeping whoosh sound effect."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A rhythmic drum loop with kick, snare and hi hats."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A single short percussion hit."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "An atmospheric noise texture and ambient soundscape."
+  },
+  {
+    "group": "dj-effect",
+    "label": null,
+    "prompt": "A vocal chop loop."
   }
 ]

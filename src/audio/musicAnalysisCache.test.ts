@@ -1,5 +1,5 @@
 import {beforeEach,afterEach,it,expect,vi} from 'vitest';
-import {musicCacheKey,musicCacheFingerprint,readMusicCache,writeMusicCache} from './musicAnalysisCache';
+import {MUSIC_CACHE_LIMIT,musicCacheKey,musicCacheFingerprint,readMusicCache,writeMusicCache} from './musicAnalysisCache';
 import { createRecognition, finishJob, type Recognition } from './recognition';
 import { fusionPresentation } from './fusionPresentation';
 import { sanitizeMusicAnalysis } from './musicTypes';
@@ -39,8 +39,13 @@ it('caches only finished automatic results and does not copy user corrections',a
 });
 it('bounds cached entries without removing unrelated settings',async()=>{
  db.values.set('user-preference',true);
- for(let i=0;i<102;i++)await writeMusicCache('music-analysis:v2:'+i,audio);
- expect([...db.values.keys()].filter(k=>k.startsWith('music-analysis:v2:'))).toHaveLength(100);expect(db.values.get('user-preference')).toBe(true);
+ let now=0;const clock=vi.spyOn(Date,'now').mockImplementation(()=>++now);
+ for(let i=0;i<MUSIC_CACHE_LIMIT;i++)await writeMusicCache('music-analysis:v2:'+i,audio);
+ expect([...db.values.keys()].filter(k=>k.startsWith('music-analysis:v2:'))).toHaveLength(MUSIC_CACHE_LIMIT);
+ await writeMusicCache('music-analysis:v2:newest',audio);
+ const kept=[...db.values.keys()].filter(k=>k.startsWith('music-analysis:v2:'));
+ expect(kept).toHaveLength(Math.floor(MUSIC_CACHE_LIMIT*.9));expect(kept).toContain('music-analysis:v2:newest');expect(kept).not.toContain('music-analysis:v2:0');expect(db.values.get('user-preference')).toBe(true);
+ clock.mockRestore();
 });
 
 it('does not reuse pre-ledger or outdated-configuration results',async()=>{
@@ -152,4 +157,12 @@ it('review: actual short analysis survives persistent cache with unsupported met
  const obsolete=structuredClone(result);obsolete.recognition!.configurationHash=obsolete.recognition!.configurationHash.replace(':short-unsupported-completion-v1','');
  db.values.set('music-analysis:v2:review-obsolete',{audio:obsolete});
  expect(await readMusicCache('music-analysis:v2:review-obsolete')).toBeUndefined();
+});
+
+it('does not reuse a key from an older method or the fallback profiles',async()=>{
+ const {KEY_ANALYSIS_REVISION}=await import('./musicTypes');
+ await writeMusicCache('music-analysis:v2:fallback-key',{...audio,keyRevision:KEY_ANALYSIS_REVISION-1});
+ expect(await readMusicCache('music-analysis:v2:fallback-key')).toBeUndefined();
+ await writeMusicCache('music-analysis:v2:current-key',{...audio,keyRevision:KEY_ANALYSIS_REVISION});
+ expect(await readMusicCache('music-analysis:v2:current-key')).toBeDefined();
 });

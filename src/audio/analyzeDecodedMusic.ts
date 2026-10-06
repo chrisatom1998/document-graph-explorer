@@ -10,14 +10,19 @@ import type { InstrumentPredictions } from './instrumentLabels';
 import { DescriptionAccumulator, meanEmbedding, selectDescriptions, splitEmbedding, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
+import { detectStructure, representativeStart, StructureFeatures, STRUCTURE_MAX_SECONDS, STRUCTURE_MIN_SECONDS, STRUCTURE_RATE } from './structure';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { musicRuntimeIdentity } from './musicRuntime';
+import { FullMixEvidence, type FullMixModel } from './fullMixHeads';
+import { computeVersionPrint, VERSION_PRINT_SAMPLE_RATE } from './versionPrint';
 import { astGpuAllowed, createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
   /** Qualification-only opt-in; callers must bind and validate the scorer. */
   fusion?: FusionScorer;
+  /** Pinned full-mix instrument heads (src/audio/fullMixHeads.ts); scored from the windows' existing model outputs. */
+  fullMix?: FullMixModel;
   /** Original input MIME, used only by an installed qualified-tier scorer. */
   sourceMime?: string;
   signal?: AbortSignal;
@@ -37,6 +42,13 @@ export interface AnalysisOptions {
   concurrentModels?: boolean;
   /** Cancellation-only consumers avoid copying the growing ledger after every window. */
   partialUpdates?: 'all' | 'cancelled';
+}
+/** Local DSP only. A failure leaves version links to titles and sound fingerprints; it never fails the analysis. */
+export async function addVersionPrint(result: MusicAnalysis, read: (start: number, seconds: number) => Promise<Float32Array>, signal?: AbortSignal): Promise<void> {
+  try {
+    const print = await computeVersionPrint(read, result.durationSeconds, signal);
+    if (print) result.versionPrint = print;
+  } catch (error) { if (signal?.aborted) throw error; }
 }
 export interface MusicPreview {
   start: number;
@@ -76,8 +88,8 @@ export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicR
 }
 
 /** The fusion scorer's contract is the fixed prompt catalog it was trained on. Trained-head,
- * reviewed-example and one-shot scores ride along in the same output for tagging and are not part of it. */
-export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot' && d.group !== 'embedding');
+ * reviewed-example, one-shot and DJ-effect (dj-effect axis, added later) scores ride along in the same output for tagging and are not part of it. */
+export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot' && d.group !== 'dj-effect' && d.group !== 'embedding');
 /** Model jobs share a bounded timeline, but never each other's validity. Evidence is applied in one fixed order. */
 export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
   // The runtime each AST/CLAP output came from: a threaded stall can switch this browser to one thread mid-run.
@@ -113,11 +125,33 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const recognition = createRecognition(duration, mode, options.audioFingerprint);
   const result: MusicAnalysis = { version: 2, durationSeconds: duration, analyzedSeconds: 0, instruments: [], notes: [], recognition,
     tempoRevision: TEMPO_ANALYSIS_REVISION, keyRevision: KEY_ANALYSIS_REVISION };
+  // Mix points: one pass over the whole recording at 16 kHz, 60 s of PCM at a time (src/audio/structure.ts).
+  if (duration >= STRUCTURE_MIN_SECONDS && duration <= STRUCTURE_MAX_SECONDS) {
+    try {
+      options.onProgress?.('Finding the intro, drops and breakdowns');
+      const features = new StructureFeatures();
+      for (let start = 0; start < duration; start += 60) {
+        check();
+        const seconds = Math.min(60, duration - start), samples = await decoder.read(start, seconds, STRUCTURE_RATE);
+        // A short chunk would shift every later mix point earlier; drop the structure instead.
+        if (samples.length < Math.round(seconds * STRUCTURE_RATE) - 1) throw new Error('Audio could not be fully decoded');
+        features.add(samples);
+      }
+      result.structure = detectStructure(features.blocks);
+    } catch (error) {
+      if (options.signal?.aborted) throw error;
+      result.notes.push('Track structure was unavailable. Reanalyze to retry.');
+    }
+  }
+  // A quick scan listens to the first drop, where every part plays, instead of the middle of the track.
+  const dropStart = mode === 'fast' ? representativeStart(duration, result.structure) : undefined;
   const job = (id: ModelId) => recognition.jobs.find(j => j.modelId === id)!;
   const windows = (starts: number[], length = 10): Interval[] => starts.map(start => ({ start, end: Math.min(duration, start + length) }));
   const soundWindows = windows(instrumentWindowStarts(duration));
-  job('ast').planned = mode === 'full' ? soundWindows : windows(fastInstrumentStarts(duration));
-  for (const id of ['jamendo', 'clap'] as const) job(id).planned = mode === 'full' ? soundWindows : windows(descriptionStarts(duration, mode));
+  const fastAst = fastInstrumentStarts(duration);
+  if (dropStart !== undefined && fastAst.length === 3) fastAst[1] = dropStart;
+  job('ast').planned = mode === 'full' ? soundWindows : windows(fastAst);
+  for (const id of ['jamendo', 'clap'] as const) job(id).planned = mode === 'full' ? soundWindows : windows(dropStart !== undefined ? [dropStart] : descriptionStarts(duration, mode));
   const excerptStarts = duration > 60 ? [Math.max(0, duration * .1 - 10), duration * .5 - 10, Math.min(duration - 20, duration * .9 - 10)] : [0];
   for (const id of ['rhythm', 'tonal'] as const) job(id).planned = windows(excerptStarts, duration > 60 ? 20 : 60);
   if (duration < 2.048) job('jamendo').unsupportedReason = 'At least 2.048 seconds of audio are required; no Jamendo inference ran.';
@@ -133,6 +167,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const embeddings: number[][] = [];
   const djEvidence = new DjTagEvidence();
   const eventEvidence = new EventWindowEvidence();
+  const fullMixEvidence = options.fullMix && mode === 'full' ? new FullMixEvidence(options.fullMix) : undefined;
   const completed = new Set<string>();
   const stopped = new Set<ModelId>();
   let eventPassFailed = false;
@@ -155,6 +190,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     const windowTags = djEvidence.results(), found = new Set(windowTags.map(t => `${t.group}:${t.label}`));
     const eventTags = eventEvidence.results().filter(h => !found.has(`${h.tag.group}:${h.tag.label}`)).map(h => ({ ...h.tag, segments: h.segments.slice(0, 3) }));
     mergeDjTags(result.soundProfile, [...windowTags, ...eventTags], descriptions.average());
+    const fullMix = fullMixEvidence?.results();
+    if (fullMix) result.fullMix = fullMix; else delete result.fullMix;
     const audioVector = meanEmbedding(embeddings);
     if (audioVector) result.embedding = audioVector; else delete result.embedding;
     for (const suggestion of jamendoSuggestions(music)) {
@@ -254,15 +291,17 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       if (id === 'ast') {
         const predictions = output as InstrumentPredictions;
         astEvidence.add(predictions.scores, interval.start, interval.end, predictions.musicScore);
+        fullMixEvidence?.add(interval.start, interval.end, { ast: predictions.scores });
         recordEvidence(recognition, id, interval, Object.entries(predictions.scores).filter(([,score]) => score >= .35)
           .map(([labelId,score]) => ({ dimension: 'source', labelId, score })));
       } else if (id === 'jamendo') {
         const scores = output as Record<string, number>;
         musicScores.add(scores);
+        fullMixEvidence?.add(interval.start, interval.end, { jamendo: scores });
         recordEvidence(recognition, id, interval, [...jamendoLabels(scores), ...nsynthLabels(scores)]);
       } else {
         const { scores, embedding } = splitEmbedding(output as DescriptionScore[]);
-        if (embedding) embeddings.push(embedding);
+        if (embedding) { embeddings.push(embedding); fullMixEvidence?.add(interval.start, interval.end, { clap: embedding }); }
         descriptions.add(scores);
         djEvidence.add(selectDjTags(scores), interval.start, interval.end);
         const selected = selectDescriptions(scores);
@@ -344,7 +383,11 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
         const partial = await request<MusicAnalysis>({ kind: id, excerpts: { durationSeconds: duration, samples } }, samples.map(s => s.buffer));
         check();
         if (id === 'rhythm') result.tempo = partial.tempo;
-        else { result.key = partial.key; result.detectedPitch = partial.detectedPitch; }
+        else {
+          result.key = partial.key; result.detectedPitch = partial.detectedPitch;
+          // A key from the fallback profiles (network unavailable) carries an older revision, so it is retried later.
+          if (partial.keyRevision !== undefined && partial.keyRevision < KEY_ANALYSIS_REVISION) result.keyRevision = partial.keyRevision;
+        }
         result.notes.push(...(partial.notes ?? []));
         result.analyzedSeconds = Math.max(result.analyzedSeconds, j.planned.reduce((n,i) => n + i.end - i.start, 0));
         j.successful = [...j.planned];
@@ -406,6 +449,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     // A stopped family may still hold one window in flight; let it settle before the decoder closes.
     stopAhead(); await Promise.all(leads);
     if (mode === 'full' && duration > SHORT_CLIP_MAX_SECONDS && !stopped.has('clap') && !job('clap').unsupportedReason) await eventPass();
+    await addVersionPrint(result, (start, seconds) => read(start, seconds, VERSION_PRINT_SAMPLE_RATE), options.signal);
     refresh(false, true);
     return result;
   } catch (error) {
