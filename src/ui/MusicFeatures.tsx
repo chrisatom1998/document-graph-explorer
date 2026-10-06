@@ -54,9 +54,10 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
   const audioPitchLabel = analysis?.detectedPitch
     ? hints.key?.value.tonic === analysis.detectedPitch.pitchClass ? hints.key.displayName.split(' ')[0] : KEY_NAMES[analysis.detectedPitch.pitchClass]
     : undefined;
-  const tempoDiffers = !!hints.tempo && !!analysis?.tempo && Math.abs(hints.tempo.value - analysis.tempo.bpm) > 0.5;
+  // Compare the values as displayed (one decimal), so the card and the technical details always agree.
+  const tempoDiffers = !!hints.tempo && !!analysis?.tempo && Number(hints.tempo.value.toFixed(1)) !== Number(analysis.tempo.bpm.toFixed(1));
   const nameDisagrees = (!!hints.key && !!analysis?.key && !sameNamedKey)
-    || (!!hints.tempo && !!analysis?.tempo && Math.abs(hints.tempo.value - analysis.tempo.bpm) > 0.01);
+    || tempoDiffers;
   const nameSources = new Map<string, { source: string; name: string; values: string[] }>();
   const addSource = (hint: NamedHint<unknown> | undefined, value: string) => {
     if (!hint) return;

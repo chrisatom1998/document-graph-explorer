@@ -107,6 +107,9 @@ function mixReasons(row: MixSuggestion, selfBpm: number | undefined): NeighbourR
   return out;
 }
 
+/** Big libraries can have hundreds of compatible tracks; the list keeps the best few. */
+export const MIX_LIMIT = 20;
+
 /** One list per track: tracks that mix with this one (compatible key, beatmatchable tempo; see mixSuggestions) come
  * first, then other tracks the graph links to it. Each row carries every reason, so no track is listed twice. */
 export function musicNeighbours(node: DocNode, edges: Edge[], nodes: DocNode[], nodeIndex: Record<string, number>): MusicNeighbour[] {
@@ -124,7 +127,7 @@ export function musicNeighbours(node: DocNode, edges: Edge[], nodes: DocNode[], 
     .sort((a, b) => REASON_ORDER.indexOf(a.kind) - REASON_ORDER.indexOf(b.kind))
     .map((e) => reasonFor(e, node, other));
   const selfBpm = node.audio ? mixFeatures(node).tempo?.bpm : undefined;
-  const mixable = mixSuggestions(node, nodes, { limit: nodes.length }).map((row): MusicNeighbour => {
+  const mixable = mixSuggestions(node, nodes, { limit: MIX_LIMIT }).map((row): MusicNeighbour => {
     // Tempo, key and sound-alike come from the mix ranking; graph links add what it does not cover.
     const extra = edgeReasons(row.node, (byId.get(row.node.id)?.edges ?? []).filter((e) => !['tempo', 'key', 'similar'].includes(e.kind)));
     return { id: row.node.id, node: row.node, reasons: [...mixReasons(row, selfBpm), ...extra], score: row.score, mixable: true };
