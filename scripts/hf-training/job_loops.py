@@ -1,5 +1,5 @@
 """HF Jobs driver for tempo-loops-v1: the tempo-v1 song data plus FSL10K loops with uploader BPMs.
-Never trains on any FSL10K loop that has a listener annotation (those are the loop judge sets)."""
+Never trains on any FSL10K loop that has a listener annotation, nor on any loop by an uploader in the tempo judge set."""
 import hashlib, json, os, subprocess, sys, tarfile, urllib.request, concurrent.futures, time, zipfile, collections, numpy as np
 from huggingface_hub import HfApi, hf_hub_download
 REPO = 'cmjatom/dge-key-tempo-train'; RUN = os.environ.get('RUN', 'tempo-loops-v1'); api = HfApi(); CAP = int(os.environ.get('CAP', 200))
@@ -41,7 +41,9 @@ for sid, d in meta.items():
     try: b = float((d.get('annotations') or {}).get('bpm'))
     except Exception: continue
     if sid not in annotated and 40 <= b <= 250: loops.append({'id': sid, 'bpm': b, 'group': 'fsl:' + d['username']})
-print('annotated excluded', len(annotated), 'candidate loops', len(loops), flush=True)
+judge_up = {meta[s]['username'] for s in json.load(open(f'{HERE}/fsl-judge-ids.json'))['ids'] if s in meta}
+loops = [r for r in loops if r['group'][4:] not in judge_up]   # near-identical loops by the same uploader would leak
+print('annotated excluded', len(annotated), 'judge uploaders excluded', len(judge_up), 'candidate loops', len(loops), flush=True)
 per = collections.Counter(); keep = []
 for r in sorted(loops, key=lambda r: hashlib.sha256(r['id'].encode()).hexdigest()):
     if per[r['group']] < CAP: per[r['group']] += 1; keep.append(r)
