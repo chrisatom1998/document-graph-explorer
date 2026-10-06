@@ -46,9 +46,9 @@ it('explains the qualifying vocal prompt instead of presenting its score as dire
 
 it('removes every repeated review control group',()=>{
  const run=createRecognition(10,'full');
- recordEvidence(run,'jamendo',{start:0,end:10},[{dimension:'source',labelId:'piano',score:.8},{dimension:'source',labelId:'guitar',score:.8}]);
+ recordEvidence(run,'jamendo',{start:0,end:10},[{dimension:'source',labelId:'cello',score:.8},{dimension:'source',labelId:'guitar',score:.8}]);
  render(<RecognitionEvidence recognition={run} duration={10}/>);
- expect(screen.queryByRole('group',{name:'Review piano for this track'})).toBeNull();expect(screen.queryByRole('group',{name:'Review guitar for this track'})).toBeNull();expect(screen.queryByText('piano',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull();expect(screen.queryByText('guitar',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull();
+ expect(screen.queryByRole('group',{name:'Review cello for this track'})).toBeNull();expect(screen.queryByRole('group',{name:'Review guitar for this track'})).toBeNull();expect(screen.queryByText('cello',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull();expect(screen.queryByText('guitar',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull();
 });
 
 it('keeps analysis failure and incomplete evidence visible outside diagnostic details',()=>{

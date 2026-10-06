@@ -19,8 +19,9 @@
 .graph-navigator:not(.is-expanded) .graph-navigator__overview { display: none; }
 .graph-navigator__toggle strong { font-size: 16px; }
 
-/* Filters temporarily occupy the same corner; closing them restores Browse. */
-.app-root:has(#graph-filter-panel) .graph-navigator:not(.is-picking) { display: none; }
+/* The floating filter panel and the floating navigator shared a corner. The
+   Resonance sidebar embeds the panel permanently, so only the floating one hides. */
+.app-root:has(.filter-bar-layer:not(.filter-bar-layer--embedded) #graph-filter-panel) .graph-navigator:not(.is-picking) { display: none; }
 
 @media (max-width: 640px) {
   .app-root .graph-navigator:not(.graph-navigator--embedded) {

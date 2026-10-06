@@ -163,7 +163,7 @@ export default function ConnectedClips({ detailsOpen, onToggleDetails }: { detai
       )}
 
       <button type="button" ref={detailsButton} className="rs-inspector__details" aria-expanded={detailsOpen} aria-controls="rs-details" onClick={onToggleDetails}>
-        <span className="rs-inspector__details-text">{detailsOpen ? 'Hide' : 'More about'} <strong>{selected.title}</strong></span>
+        <span className="rs-inspector__details-text">{detailsOpen ? 'Hide full details' : 'Full details'} <strong>· {selected.title}</strong></span>
         <span aria-hidden="true">{detailsOpen ? '⌃' : '⌄'}</span>
       </button>
       {detailsOpen && (

@@ -11,7 +11,9 @@ import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_A
 import { classifyJamendo, preloadJamendo } from './jamendo';
 import { detectRepeatedPitch } from './detectedPitch';
 import { estimateTempo } from './tempo';
-import { combineKeys, excerptKey } from './key';
+import { essentiaKey, excerptChroma, recordingKey } from './key';
+import { keyProbabilities, profileWeight, recordingKeyFromProbabilities } from './keyCnn';
+import { combineTempo, predictCnnTempo } from './tempoCnn';
 import { soundSuggestions } from './soundSuggestions';
 import { descriptionScores, type DescriptionPrompt } from './profileDescriptions';
 import type { MusicExcerpts } from './decodeMusic';
@@ -216,8 +218,9 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
       const oneShot = short ? await shortClipProfile(short, data.samples, data.samples16!, embedding) : [];
       if (short) {
         // Heads trained on longer audio were never validated on one-shots (several misfired, e.g. loop tags):
-        // only the one-shot heads tag these clips. The user's own reviewed examples still apply.
-        learnedScores = learnedScores.filter(s => s.basis !== 'head');
+        // only the one-shot heads, and heads also tested on one-shots, tag these clips. Reviewed examples still apply.
+        const oneShotHeads = new Set(learned?.heads?.filter(h => h.oneShot).map(h => `${h.group}:${h.label}`));
+        learnedScores = learnedScores.filter(s => s.basis !== 'head' || oneShotHeads.has(`${s.learnedGroup}:${s.label}`));
       }
       await postResult([...descriptionScores(embedding, prompts), ...learnedScores, ...oneShot, { group: 'embedding', label: null, score: 0, embedding: embedding.map(v => Math.round(v * 1e4) / 1e4) }]);
       return;
@@ -258,7 +261,8 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
     engine = new Essentia(EssentiaWASM);
     const result: MusicAnalysis = { version: 2, keyRevision: KEY_ANALYSIS_REVISION, tempoRevision: TEMPO_ANALYSIS_REVISION, analyzedSeconds: excerpts.samples.reduce((s,v)=>s+v.length/44100,0), durationSeconds: excerpts.durationSeconds, instruments: [], notes: [] };
     const tempos: NonNullable<MusicAnalysis['tempo']>[] = [];
-    const keys: NonNullable<MusicAnalysis['key']>[] = [];
+    const chromas: number[][] = [];
+    const tonal: Float32Array[] = [];
     const pitches: NonNullable<MusicAnalysis['detectedPitch']>[] = [];
     const audible = excerpts.samples.filter(s => s.reduce((sum,v)=>sum+v*v,0) / s.length > 1e-8);
     self.postMessage({ id, progress: 'Estimating tempo and key' });
@@ -272,15 +276,40 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
         catch { /* A missing pitch hint must not prevent full-key estimation. */ }
         if (repeatedPitch) pitches.push(repeatedPitch);
       }
-      const key = excerptKey(engine, samples, repeatedPitch);
-      if (key) keys.push(key);
+      const chroma = excerptChroma(engine, samples, repeatedPitch);
+      if (chroma) { chromas.push(chroma); tonal.push(samples); }
     }
     if (tempos.length) {
       tempos.sort((a,b)=>a.bpm-b.bpm);const median = tempos[Math.floor(tempos.length/2)];
       const consistent = tempos.filter(t=>Math.abs(t.bpm-median.bpm)<=Math.max(3,median.bpm*0.04));
       if (consistent.length >= Math.ceil(excerpts.samples.length/2)) result.tempo = { ...median, bpm: Math.round(median.bpm*10)/10, confidence: Math.min(...consistent.map(t=>t.confidence)) };
     }
-    const key = combineKeys(keys, excerpts.samples.length);
+    // A learned tempo model overrides the beat tracker only when it confidently reads a different tempo. Recordings under
+    // 8 s keep the loop estimator's tempo and alternatives.
+    if (result.tempo && !result.tempo.alternatives) {
+      try {
+        const cnn = await predictCnnTempo(audible);
+        if (cnn) result.tempo = { ...result.tempo, ...combineTempo(result.tempo, cnn) };
+      } catch { /* Keep the beat tracker's tempo if the model is unavailable. */ }
+    }
+    // The learned key network reads the same tonal excerpts; the chroma profiles stay as the fallback when it cannot load.
+    let key: MusicAnalysis['key'];
+    if (data.kind === 'tonal' && tonal.length) {
+      try {
+        const probabilities: number[][] = [], profileKeys: MusicAnalysis['key'][] = [];
+        const weight = profileWeight(excerpts.durationSeconds);
+        for (const samples of tonal) {
+          probabilities.push(await keyProbabilities(engine, samples));
+          // The stock profile only counts for short files; songs skip its extra pass.
+          if (weight > 0) { try { profileKeys.push(essentiaKey(engine, samples)); } catch { profileKeys.push(undefined); } }
+        }
+        key = recordingKeyFromProbabilities(probabilities, excerpts.samples.length, profileKeys, weight);
+      } catch {
+        key = recordingKey(chromas, excerpts.samples.length);
+        // Marked one revision behind so the coordinator and the analysis cache retry with the network later.
+        result.keyRevision = KEY_ANALYSIS_REVISION - 1;
+      }
+    }
     if (key) result.key = key;
     if (data.kind === 'rhythm' && !result.tempo) result.notes.push('No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).');
     if (data.kind === 'tonal' && !result.key) {

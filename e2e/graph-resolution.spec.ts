@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { closeDetails, details, fitAll, openFiles, startIn3D, toolMenu } from './resonance';
 
 const graph = JSON.stringify({
   version: 1, generator: 'knowledge-nebula', createdAt: '2026-10-02T00:00:00.000Z', includeEmbeddings: false,
@@ -15,7 +16,10 @@ const graph = JSON.stringify({
 });
 
 async function loadGraph(page: Page, firstVisit = true) {
-  if (firstVisit) await page.goto('/');
+  if (firstVisit) {
+    await startIn3D(page);
+    await page.goto('/');
+  }
   await page.getByRole('button', { name: 'Import a graph', exact: true }).click();
   await page.locator('input[type="file"][accept*=".json"]').evaluate((element, contents) => {
     const transfer = new DataTransfer();
@@ -52,7 +56,7 @@ test.describe('retina graph clarity', () => {
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
     await loadGraph(page);
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await toolMenu(page, 'Settings');
     await expect(page.getByLabel('Graph clarity', { exact: true })).toHaveValue('high');
     // Hold full effects to make the numeric resolution check deterministic.
     await page.getByRole('checkbox', { name: 'Auto-adjust quality for smooth performance' }).uncheck();
@@ -66,20 +70,20 @@ test.describe('retina graph clarity', () => {
     await expect.poll(() => pixelRatio(page)).toBeCloseTo(3, 2);
     await finishFrames(page);
     await page.screenshot({ path: testInfo.outputPath('graph-2d-high.png') });
-    await page.getByRole('button', { name: 'Browse documents', exact: true }).press('Space');
+    await openFiles(page);
     await page.getByRole('option', { name: /Analog synth 01/ }).click();
-    await expect(page.getByRole('dialog', { name: 'Analog synth 01', exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Back to graph', exact: true }).click();
-    await page.getByRole('button', { name: 'Fit the whole graph in view' }).click();
+    await expect(details(page)).toContainText('Analog synth 01');
+    await closeDetails(page);
+    await fitAll(page);
     const canvas = await page.locator('.nebula-canvas canvas').boundingBox();
     await page.mouse.move(canvas!.x + 20, canvas!.y + 20);
     await page.mouse.down();
     await page.mouse.move(canvas!.x + 110, canvas!.y + 75, { steps: 12 });
     await page.mouse.up();
     await page.mouse.wheel(0, -180);
-    await page.getByRole('button', { name: 'Fit the whole graph in view' }).click();
+    await fitAll(page);
 
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await toolMenu(page, 'Settings');
     await page.getByLabel('Graph clarity', { exact: true }).selectOption('ultra');
     await expect.poll(() => pixelRatio(page)).toBeCloseTo(4, 2);
     await page.getByRole('button', { name: 'Close settings', exact: true }).click();
@@ -92,7 +96,7 @@ test.describe('retina graph clarity', () => {
     // must survive independently and apply when another graph is opened.
     await loadGraph(page, false);
     await expect.poll(() => pixelRatio(page)).toBeCloseTo(4, 2);
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await toolMenu(page, 'Settings');
     await expect(page.getByLabel('Graph clarity', { exact: true })).toHaveValue('ultra');
     await page.getByRole('checkbox', { name: 'Auto-adjust quality for smooth performance' }).uncheck();
     await page.getByLabel('Graph clarity', { exact: true }).selectOption('performance');
