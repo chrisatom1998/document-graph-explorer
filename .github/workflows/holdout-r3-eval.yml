@@ -128,7 +128,8 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: ${{ matrix.set == 'jamendo' && 'h3-jamendo-audio-*' || 'h3-mtgkey-audio' }}
-          path: clips
+          # The Jamendo artifacts hold bare WAVs (one upload path); the MTG key one also holds its manifest under docs/.
+          path: ${{ matrix.set == 'jamendo' && 'clips/audio' || 'clips' }}
           merge-multiple: true
       - name: Pick the manifest
         run: |
