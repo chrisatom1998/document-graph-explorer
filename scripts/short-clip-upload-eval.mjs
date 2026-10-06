@@ -16,6 +16,8 @@ let ids = manifest.items.filter(i => i.split === split).map(i => i.id);
 // FILE_FIELD names a manifest field holding each item's file name (e.g. "file", or "originalName" to upload real
 // pack names); without it every clip is <id>.<AUDIO_EXT>.
 const fileName = Object.fromEntries(manifest.items.map(i => [i.id, process.env.FILE_FIELD ? i[process.env.FILE_FIELD] : `${i.id}.${EXT}`]));
+// ONLY_IDS names a JSON file with an array of item ids to analyse (others are skipped).
+if (process.env.ONLY_IDS) { const only = new Set(JSON.parse(readFileSync(process.env.ONLY_IDS, 'utf8'))); ids = ids.filter(id => only.has(id)); }
 if (limitArg) ids = ids.slice(0, Number(limitArg));
 // SHARD=i/n keeps every n-th clip starting at i, so one benchmark can run on several machines.
 if (process.env.SHARD) {
@@ -41,6 +43,8 @@ await page.goto(`http://127.0.0.1:${PORT}/`);
 async function exportGraph() {
   await page.getByRole('button', { name: 'Data options' }).click();
   const download = page.waitForEvent('download', { timeout: 60_000 });
+  // If the click below fails, this promise still rejects later; keep that from crashing the whole run.
+  download.catch(() => {});
   await page.getByRole('button', { name: /Export graph JSON/ }).click();
   const file = join(outDir, 'graph-export.json');
   await (await download).saveAs(file);
