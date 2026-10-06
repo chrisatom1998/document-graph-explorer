@@ -14,6 +14,8 @@
 .sound-tag--source { border-color: transparent; background: var(--accent-soft); color: var(--accent-strong); font-weight: 500; }
 .sound-tag--confirmed { border-color: color-mix(in srgb, var(--success) 45%, transparent); color: var(--success); }
 .sound-tag--name { border-style: dashed; color: var(--text-secondary); }
+.sound-tags__list--likely { margin-top: 6px; }
+.sound-tag--likely-extra { border-style: dotted; color: var(--text-secondary); opacity: .7; }
 .sound-tag--maybe { border-style: dashed; color: var(--text-secondary); opacity: .75; }
 .sound-tag__mark { font-size: 11px; }
 .sound-tag__note { font-size: 10px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-faint); }
