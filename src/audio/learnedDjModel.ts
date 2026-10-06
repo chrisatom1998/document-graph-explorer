@@ -25,6 +25,9 @@ export interface LearnedDjHead {
   threshold: number;
   /** Below the full-tag bar on held-out sources (DJ-effect heads: under 70/70; older heads: 45/45 but not 60/60, or 50-65%): shown as a maybe. */
   maybe?: boolean;
+  /** Also tested on held-out whole clips of at most the one-shot length (scripts/dj-effects/oneshot.py), so it still
+   *  scores those clips; other heads stay off them and only the one-shot heads (short-clip.json) apply. */
+  oneShot?: boolean;
 }
 const groups: ReviewedGroup[] = ['source', 'production', 'character'];
 interface ReviewedIndex { group: ReviewedGroup; label: string; decisions: Int8Array }
@@ -68,7 +71,7 @@ export function sanitizeLearnedDjModel(raw: unknown): LearnedDjModel | undefined
   if (model.heads !== undefined && (!Array.isArray(model.heads) || model.heads.length > 2000 || model.heads.some(h =>
     !h || !groups.includes(h.group) || typeof h.label !== 'string' || !h.label || h.label.length > 80 ||
     !Array.isArray(h.weights) || h.weights.length !== 512 || !h.weights.every(Number.isFinite) ||
-    !Number.isFinite(h.bias) || !Number.isFinite(h.threshold) || h.threshold < .5 || h.threshold > 1 || (h.maybe !== undefined && typeof h.maybe !== 'boolean')))) return;
+    !Number.isFinite(h.bias) || !Number.isFinite(h.threshold) || h.threshold < .5 || h.threshold > 1 || (h.maybe !== undefined && typeof h.maybe !== 'boolean') || (h.oneShot !== undefined && typeof h.oneShot !== 'boolean')))) return;
   return {version:1,encoder:model.encoder,revision:model.revision,examples,...(model.heads ? {heads:model.heads} : {})};
 }
 /** Conservative exemplar classifier over frozen CLAP features; not base-model fine-tuning.

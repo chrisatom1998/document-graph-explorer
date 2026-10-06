@@ -145,10 +145,21 @@ jobs:
         with:
           path: work/remb
           key: dj-effects-remb-${{ hashFiles('scripts/dj-effects/render.py', 'scripts/embed-clap.mjs') }}-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json') }}-${{ github.run_id }}
+      - name: Measure clip durations (the app scores clips of at most 2.25 s with one-shot heads)
+        run: |
+          python3 - <<'EOF'
+          import json, subprocess
+          m = json.load(open('work/fs/manifest.json')); out = {}
+          for c in m['clips']:
+              try: out[c['id']] = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', c['path']],
+                                                       capture_output=True, text=True, check=True).stdout.strip())
+              except Exception: pass
+          json.dump(out, open('work/fs/durations.json', 'w')); print(len(out), 'durations;', sum(v <= 2.25 for v in out.values()), 'at most 2.25 s')
+          EOF
       - name: Train and score on held-out uploaders
         run: |
           cp work/remb/emb-r*.jsonl work/emb/
-          python3 scripts/dj-effects/train.py work/fs/manifest.json work/emb "$DOCS" work/render/manifest.json
+          DURATIONS=work/fs/durations.json python3 scripts/dj-effects/train.py work/fs/manifest.json work/emb "$DOCS" work/render/manifest.json
       - name: Record the clip list with licences
         run: |
           python3 - <<'EOF'

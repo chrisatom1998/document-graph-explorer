@@ -216,8 +216,9 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
       const oneShot = short ? await shortClipProfile(short, data.samples, data.samples16!, embedding) : [];
       if (short) {
         // Heads trained on longer audio were never validated on one-shots (several misfired, e.g. loop tags):
-        // only the one-shot heads tag these clips. The user's own reviewed examples still apply.
-        learnedScores = learnedScores.filter(s => s.basis !== 'head');
+        // only the one-shot heads, and heads also tested on one-shots, tag these clips. Reviewed examples still apply.
+        const oneShotHeads = new Set(learned?.heads?.filter(h => h.oneShot).map(h => `${h.group}:${h.label}`));
+        learnedScores = learnedScores.filter(s => s.basis !== 'head' || oneShotHeads.has(`${s.learnedGroup}:${s.label}`));
       }
       await postResult([...descriptionScores(embedding, prompts), ...learnedScores, ...oneShot, { group: 'embedding', label: null, score: 0, embedding: embedding.map(v => Math.round(v * 1e4) / 1e4) }]);
       return;
