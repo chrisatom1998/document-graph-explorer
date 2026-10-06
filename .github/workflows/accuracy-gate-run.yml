@@ -122,16 +122,25 @@ jobs:
     needs: plan
     if: needs.plan.outputs.run == 'true' && needs.plan.outputs.jamendo_cached != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    # Streaming a shard's MTG-Jamendo archives can take well over an hour; each shard caches its own tracks, so a
+    # re-run only fetches the shards that didn't finish.
+    timeout-minutes: 240
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ needs.plan.outputs.harness }}
+      - name: Restore this shard's tracks from an earlier run
+        id: part
+        uses: actions/cache/restore@v4
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-${{ matrix.shard }}-of-20
       - name: Check the frozen selection against the pinned dataset metadata
+        if: steps.part.outputs.cache-hit != 'true'
         run: |
           M="$RUNNER_TEMP/mj"
           for f in data/splits/split-0/autotagging_instrument-test.tsv data/raw_30s_cleantags.tsv \
@@ -140,10 +149,16 @@ jobs:
           done
           python3 scripts/holdout-r3/select-jamendo.py "$M"
       - name: Fetch and cut this shard's tracks
+        if: steps.part.outputs.cache-hit != 'true'
         run: |
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
           python3 scripts/holdout-r3/fetch-jamendo.py "$DOCS/jamendo-manifest.json" \
-            "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ matrix.shard }}/10 gate-audio/jamendo
+            "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ matrix.shard }}/20 gate-audio/jamendo
+      - uses: actions/cache/save@v4
+        if: steps.part.outputs.cache-hit != 'true'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo-part-${{ matrix.shard }}-of-20
       - uses: actions/upload-artifact@v4
         with:
           name: gate-audio-jamendo-${{ inputs.mode }}-${{ matrix.shard }}
@@ -204,7 +219,8 @@ jobs:
     needs: [plan, fetch-jamendo, fetch-mtgkey]
     if: >-
       ${{ !cancelled() && needs.plan.outputs.run == 'true'
-      && needs.fetch-jamendo.result != 'failure' && needs.fetch-mtgkey.result != 'failure' }}
+      && contains(fromJSON('["success","skipped"]'), needs.fetch-jamendo.result)
+      && contains(fromJSON('["success","skipped"]'), needs.fetch-mtgkey.result) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
@@ -239,6 +255,10 @@ jobs:
           # The app's own driver if it has one (it knows the app's UI), else the harness's.
           cp -n harness/scripts/short-clip-upload-eval.mjs scripts/ || true
           git log -1 --format='app under test: %H %s'
+          # Every track of the set must be here, or the run would quietly score fewer tracks.
+          node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync(process.argv[1])),gone=m.items.filter(i=>!fs.existsSync(`${process.argv[2]}/${i.id}.wav`));
+            if(gone.length){console.error(`${gone.length} of ${m.items.length} tracks have no audio, e.g. ${gone[0].id}`);process.exit(1)}' \
+            gate-manifests/${{ matrix.set }}.json gate-audio/${{ matrix.set }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
