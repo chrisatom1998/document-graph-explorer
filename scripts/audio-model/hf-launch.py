@@ -14,7 +14,7 @@ user = whoami()['name']; env.setdefault('HF_REPO', f'{user}/dge-instrument-tagge
 # started and then lost (a cancelled workflow) is stopped first, while a run in another lane keeps going.
 name = env.get('JOB_NAME') or 'dge-instrument-tagger'
 for old in list_jobs(status=['RUNNING', 'SCHEDULING']):
-    if getattr(old, 'name', None) == name:
+    if name in (getattr(old, 'name', None), (getattr(old, 'labels', None) or {}).get('lane')):   # older clients drop name
         print(f'cancelling earlier tagger job {old.id}', flush=True); cancel_job(job_id=old.id)
 script = open(os.path.join(os.path.dirname(__file__), 'hf-job.sh')).read()
 job = run_job(image='pytorch/pytorch:2.7.1-cuda12.8-cudnn9-runtime', command=['bash', '-c', script], env=env,

@@ -26,27 +26,60 @@ cp $W/dge/docs/evaluations/dj-clips-2026-10-06/openmic-manifest.json manifests/r
 nvidia-smi --query-gpu=name,memory.total --format=csv || true
 nproc; free -g | head -2; df -h $W | tail -1
 
-JM=https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f
-for f in data/raw_30s_cleantags.tsv data/splits/split-0/autotagging_instrument-train.tsv data/splits/split-0/autotagging_instrument-validation.tsv \
-         data/splits/split-0/autotagging_instrument-test.tsv \
-         derived/music-classification-annotations/music-classification-annotations-clean.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
-  mkdir -p mj/$(dirname $f); curl -fsSL --retry 6 -o mj/$f $JM/$f
-done
-( curl -fsSL --retry 6 -o openmic.tgz "https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1"
-  echo "e4ccf187e2bb5ab2e115416e8aafe7f4  openmic.tgz" | md5sum -c -
-  python3 $S/prepare.py openmic.tgz prep manifests/round1.json manifests/round2.json && rm openmic.tgz ) > openmic.log 2>&1 &
-python3 $S/prepare-jamendo.py mj manifests/holdout-r3-jamendo.json prepj --windows 2 --parallel 6 > jamendo.log 2>&1 &
-python3 $S/prepare-holdout.py manifests/holdout-r3-jamendo.json mj/data/download/raw_30s_audio-low_sha256_tracks.txt holdout/holdout-r3 > holdout.log 2>&1 &
-if [ "${ALL_TAGS:-0}" = 1 ]; then
-  python3 $S/prepare-fsd50k.py fsdprep --workers 32 > fsd50k.log 2>&1 &
-  python3 $S/prepare-nsynth.py nsprep --workers 4 > nsynth.log 2>&1 &
-  python3 $S/prepare-freesound.py fsprep > freesound.log 2>&1 &
-  for x in tinysol egfx fsld waivops surge; do python3 $S/prepare-extra.py $x xprep > $x.log 2>&1 & done
-  if [ -f $S/prepare-slakh.py ]; then python3 $S/prepare-slakh.py xprep > slakh.log 2>&1 & fi
+# Prepared data is cached in the private dataset <user>/dge-tagger-data under prep-cache/<key>, keyed by the prepare
+# scripts and label map, so a rerun with the same data skips the ~3 h prep. The upload runs alongside training.
+DIRS="prep prepj holdout"; [ "${ALL_TAGS:-0}" = 1 ] && DIRS="$DIRS fsdprep nsprep fsprep xprep"
+KEY=$( (cat $S/prepare*.py $S/labelmap.py; echo "$DIRS") | sha256sum | cut -c1-12)
+CACHE_PID=
+if python3 - "$KEY" $DIRS <<'PY'
+import os, shutil, sys
+from huggingface_hub import HfApi, snapshot_download
+key, dirs = sys.argv[1], sys.argv[2:]
+try:
+    api = HfApi(); repo = api.whoami()['name'] + '/dge-tagger-data'; base = f'prep-cache/{key}'
+    if not api.file_exists(repo, f'{base}/DONE', repo_type='dataset'): sys.exit(1)
+    snapshot_download(repo, repo_type='dataset', allow_patterns=[f'{base}/*'], local_dir='cache', max_workers=16)
+    for d in dirs: shutil.move(f'cache/{base}/{d}', d)
+    print(f'using cached prepared data {repo}/{base}')
+except SystemExit: raise
+except Exception as e:
+    print(f'prep cache unavailable ({e}); preparing from scratch'); [shutil.rmtree(d, True) for d in dirs]; sys.exit(1)
+PY
+then echo "data from cache took $(( ($(date +%s) - START) / 60 )) min"
+else
+  JM=https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f
+  for f in data/raw_30s_cleantags.tsv data/splits/split-0/autotagging_instrument-train.tsv data/splits/split-0/autotagging_instrument-validation.tsv \
+           data/splits/split-0/autotagging_instrument-test.tsv \
+           derived/music-classification-annotations/music-classification-annotations-clean.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
+    mkdir -p mj/$(dirname $f); curl -fsSL --retry 6 -o mj/$f $JM/$f
+  done
+  ( curl -fsSL --retry 6 -o openmic.tgz "https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1"
+    echo "e4ccf187e2bb5ab2e115416e8aafe7f4  openmic.tgz" | md5sum -c -
+    python3 $S/prepare.py openmic.tgz prep manifests/round1.json manifests/round2.json && rm openmic.tgz ) > openmic.log 2>&1 &
+  python3 $S/prepare-jamendo.py mj manifests/holdout-r3-jamendo.json prepj --windows 2 --parallel 6 > jamendo.log 2>&1 &
+  python3 $S/prepare-holdout.py manifests/holdout-r3-jamendo.json mj/data/download/raw_30s_audio-low_sha256_tracks.txt holdout/holdout-r3 > holdout.log 2>&1 &
+  if [ "${ALL_TAGS:-0}" = 1 ]; then
+    python3 $S/prepare-fsd50k.py fsdprep --workers 32 > fsd50k.log 2>&1 &
+    python3 $S/prepare-nsynth.py nsprep --workers 4 > nsynth.log 2>&1 &
+    python3 $S/prepare-freesound.py fsprep > freesound.log 2>&1 &
+    for x in tinysol egfx fsld waivops surge; do python3 $S/prepare-extra.py $x xprep > $x.log 2>&1 & done
+    if [ -f $S/prepare-slakh.py ]; then python3 $S/prepare-slakh.py xprep > slakh.log 2>&1 & fi
+  fi
+  LOGS=$(ls *.log)
+  for job in $(jobs -p); do wait $job || { tail -n 20 $LOGS; exit 1; }; done
+  tail -n 3 $LOGS; echo "data prep took $(( ($(date +%s) - START) / 60 )) min"; df -h $W | tail -1
+  python3 - "$KEY" $DIRS > cache-upload.txt 2>&1 <<'PY' &
+import sys
+from huggingface_hub import HfApi
+key, dirs = sys.argv[1], sys.argv[2:]
+api = HfApi(); repo = api.whoami()['name'] + '/dge-tagger-data'; base = f'prep-cache/{key}'
+api.create_repo(repo, repo_type='dataset', private=True, exist_ok=True)
+for d in dirs: api.upload_folder(repo_id=repo, repo_type='dataset', folder_path=d, path_in_repo=f'{base}/{d}', commit_message=f'Prepared data {key}: {d}')
+api.upload_file(path_or_fileobj=b'ok', path_in_repo=f'{base}/DONE', repo_id=repo, repo_type='dataset', commit_message=f'Prepared data {key} complete')
+print(f'cached prepared data at {repo}/{base}')
+PY
+  CACHE_PID=$!
 fi
-LOGS=$(ls *.log)
-for job in $(jobs -p); do wait $job || { tail -n 20 $LOGS; exit 1; }; done
-tail -n 3 $LOGS; echo "data prep took $(( ($(date +%s) - START) / 60 )) min"; df -h $W | tail -1
 
 EXTRA=()
 if [ -n "${SOUNDCLOUD_DATA:-}" ]; then   # "<dataset repo>:<folder>", uploaded by the workflow from its SoundCloud artifacts
@@ -82,3 +115,4 @@ api.upload_folder(repo_id=repo, folder_path='run', path_in_repo=os.environ.get('
                   commit_message='DGE tagger run at ${REPO_SHA:0:7}: ${MODEL}, ${EPOCHS} epochs')
 print('uploaded to https://huggingface.co/' + repo)
 EOF
+if [ -n "$CACHE_PID" ]; then wait $CACHE_PID || echo "prep cache upload failed (training results are unaffected)"; tail -n 2 cache-upload.txt; fi
