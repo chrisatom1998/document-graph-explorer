@@ -9,9 +9,6 @@ on:
       app_ref:
         description: Branch, tag or commit whose app to test
         default: main
-  push:
-    branches: [claude/fix-failing-sound-tags-nc73z1]
-    paths: [.github/workflows/all-tags-tinysol.yml]
 
 permissions:
   contents: write
@@ -129,6 +126,12 @@ jobs:
           MANIFEST=harness/$DOCS/tinysol-manifest.json BENCHMARK=all-tags-2026-10-06/tinysol npx vite-node scripts/all-tags/score.mjs "$R/tags.json" exports/ts-export-*/graph-export.json | tee "$R/tags.txt"
           npx vite-node scripts/dj-fix/extract.mjs "$R/records.json" exports/ts-export-*/graph-export.json
           echo "app $APP_REF at $APP; harness $GITHUB_SHA; run $GITHUB_RUN_ID" > "$R/tested-commit.txt"
+      # Kept on every run; on the default branch (no commit) this is the only copy.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ts-reports
+          path: ${{ env.R }}
+          retention-days: 90
       - name: Commit the reports
         if: github.ref_name != github.event.repository.default_branch
         working-directory: harness

@@ -24,7 +24,8 @@ const nodes = new Map(exportPaths.flatMap(p => JSON.parse(readFileSync(p, 'utf8'
 const shown = new Map(), missing = [];
 for (const item of items) {
   const audio = nodes.get(item.id)?.audio;
-  if (!audio) { missing.push(item.id); continue; }   // not analysed: left out of every count, never scored as a miss
+  // Not analysed, or the analysis failed or was cancelled: left out of every count and listed, never scored as a miss.
+  if (!audio || (audio.recognition && !['complete', 'partial'].includes(audio.recognition.status))) { missing.push(item.id); continue; }
   const labels = confidentSoundSummary(audio, audio.recognition?.mode).map(t => t.label);
   shown.set(item.id, new Set(Object.keys(MAP).filter(tag => MAP[tag].some(l => labels.includes(l)))));
 }

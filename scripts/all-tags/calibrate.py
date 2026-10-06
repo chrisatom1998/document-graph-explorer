@@ -20,7 +20,7 @@ MAP = {
 BAR, MIN_POS, MIN_GAIN, GRID = .70, 20, .10, [round(.05 * i, 2) for i in range(1, 20)]
 man, recs, out = sys.argv[1:4]
 items = {i['id']: i for i in json.load(open(man))['items']}
-rows = {r['id']: r for r in json.load(open(recs)) if r['id'] in items}
+rows = {r['id']: r for r in json.load(open(recs)) if r['id'] in items and r.get('status') in ('complete', 'partial')}   # failed or cancelled analyses are left out, never scored
 
 def sources(r, tag):
     """Best score per stored source for this tag."""

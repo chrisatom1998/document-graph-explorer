@@ -11,9 +11,6 @@ on:
       app_ref:
         description: Branch, tag or commit whose app to test
         default: main
-  push:
-    branches: [claude/fix-failing-sound-tags-nc73z1]
-    paths: [.github/workflows/all-tags-eval.yml]
 
 permissions:
   contents: write
@@ -146,6 +143,12 @@ jobs:
           done
           npx vite-node scripts/dj-fix/extract.mjs "$R/records.json" exports/at-export-*/graph-export.json
           echo "app $APP_REF at $APP; harness $GITHUB_SHA; run $GITHUB_RUN_ID" > "$R/tested-commit.txt"
+      # Kept on every run; on the default branch (no commit) this is the only copy.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: at-reports
+          path: ${{ env.R }}
+          retention-days: 90
       - name: Commit the reports
         if: github.ref_name != github.event.repository.default_branch
         working-directory: harness
