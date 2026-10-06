@@ -93,7 +93,7 @@ async function pinnedJson(name: string): Promise<unknown> {
   const pinned = (soundManifest.sha256 as Record<string,string>)[name];
   if (!pinned) return;
   try {
-    const response = await fetch(`${import.meta.env.BASE_URL}sound-model/${name}?v=${INSTRUMENT_ANALYSIS_REVISION}`, {cache:'no-store'});
+    const response = await fetch(`${import.meta.env.BASE_URL}sound-model/${name}?v=${INSTRUMENT_ANALYSIS_REVISION}`, {cache:'no-cache'});
     if (!response.ok) return;
     const bytes = await response.arrayBuffer();
     const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
@@ -110,7 +110,7 @@ function getSoundDescriptions() {
     const learnedHash = (soundManifest.sha256 as Record<string,string>)['learned.json'];
     if (learnedHash) {
       try {
-        const learnedResponse = await fetch(`${import.meta.env.BASE_URL}sound-model/learned.json?v=${INSTRUMENT_ANALYSIS_REVISION}`, {cache:'no-store'});
+        const learnedResponse = await fetch(`${import.meta.env.BASE_URL}sound-model/learned.json?v=${INSTRUMENT_ANALYSIS_REVISION}`, {cache:'no-cache'});
         if (learnedResponse.ok) {
           const bytes = await learnedResponse.arrayBuffer();
           const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');

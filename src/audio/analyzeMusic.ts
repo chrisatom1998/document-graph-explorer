@@ -7,7 +7,7 @@ import { addVersionPrint, analyzeDecodedMusic, previewDecodedMusic, type Analysi
 import { VERSION_PRINT_MIN_SECONDS, VERSION_PRINT_SAMPLE_RATE } from './versionPrint';
 import type { MusicAnalysis } from './musicTypes';
 import { ResultCache } from './recognition';
-import { setSpeculativePreloadStop } from './speculativePreload';
+import { rememberAudioAnalysisUsed, setSpeculativePreloadStop } from './speculativePreload';
 const cache = new ResultCache(128);
 const decodedCache = new DecodedMusicCache();
 import { MusicTaskQueue } from './musicTaskQueue';
@@ -90,7 +90,7 @@ function stopSpeculativePreload(): void {
  * actually needs the models; a non-speculative call claims the workers for real use. */
 export function preloadMusicModels(mode: AnalysisOptions['mode'] = 'fast', options: { speculative?: boolean } = {}): Promise<void> {
   if (typeof Worker === 'undefined' || workerCapacity() < PRELOAD_FAMILIES.length) return Promise.resolve();
-  if (!options.speculative) setSpeculativePreloadStop(null);
+  if (!options.speculative) { setSpeculativePreloadStop(null); rememberAudioAnalysisUsed(); }
   else if (!preloading) setSpeculativePreloadStop(stopSpeculativePreload);
   return preloading ??= (async () => {
     const key = await musicCacheKey(new Blob([]), mode ?? 'fast');
