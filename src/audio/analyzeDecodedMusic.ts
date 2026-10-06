@@ -10,6 +10,7 @@ import type { InstrumentPredictions } from './instrumentLabels';
 import { DescriptionAccumulator, meanEmbedding, selectDescriptions, splitEmbedding, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
+import { detectStructure, representativeStart, StructureFeatures, STRUCTURE_MAX_SECONDS, STRUCTURE_MIN_SECONDS, STRUCTURE_RATE } from './structure';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { musicRuntimeIdentity } from './musicRuntime';
@@ -121,11 +122,33 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const recognition = createRecognition(duration, mode, options.audioFingerprint);
   const result: MusicAnalysis = { version: 2, durationSeconds: duration, analyzedSeconds: 0, instruments: [], notes: [], recognition,
     tempoRevision: TEMPO_ANALYSIS_REVISION, keyRevision: KEY_ANALYSIS_REVISION };
+  // Mix points: one pass over the whole recording at 16 kHz, 60 s of PCM at a time (src/audio/structure.ts).
+  if (duration >= STRUCTURE_MIN_SECONDS && duration <= STRUCTURE_MAX_SECONDS) {
+    try {
+      options.onProgress?.('Finding the intro, drops and breakdowns');
+      const features = new StructureFeatures();
+      for (let start = 0; start < duration; start += 60) {
+        check();
+        const seconds = Math.min(60, duration - start), samples = await decoder.read(start, seconds, STRUCTURE_RATE);
+        // A short chunk would shift every later mix point earlier; drop the structure instead.
+        if (samples.length < Math.round(seconds * STRUCTURE_RATE) - 1) throw new Error('Audio could not be fully decoded');
+        features.add(samples);
+      }
+      result.structure = detectStructure(features.blocks);
+    } catch (error) {
+      if (options.signal?.aborted) throw error;
+      result.notes.push('Track structure was unavailable. Reanalyze to retry.');
+    }
+  }
+  // A quick scan listens to the first drop, where every part plays, instead of the middle of the track.
+  const dropStart = mode === 'fast' ? representativeStart(duration, result.structure) : undefined;
   const job = (id: ModelId) => recognition.jobs.find(j => j.modelId === id)!;
   const windows = (starts: number[], length = 10): Interval[] => starts.map(start => ({ start, end: Math.min(duration, start + length) }));
   const soundWindows = windows(instrumentWindowStarts(duration));
-  job('ast').planned = mode === 'full' ? soundWindows : windows(fastInstrumentStarts(duration));
-  for (const id of ['jamendo', 'clap'] as const) job(id).planned = mode === 'full' ? soundWindows : windows(descriptionStarts(duration, mode));
+  const fastAst = fastInstrumentStarts(duration);
+  if (dropStart !== undefined && fastAst.length === 3) fastAst[1] = dropStart;
+  job('ast').planned = mode === 'full' ? soundWindows : windows(fastAst);
+  for (const id of ['jamendo', 'clap'] as const) job(id).planned = mode === 'full' ? soundWindows : windows(dropStart !== undefined ? [dropStart] : descriptionStarts(duration, mode));
   const excerptStarts = duration > 60 ? [Math.max(0, duration * .1 - 10), duration * .5 - 10, Math.min(duration - 20, duration * .9 - 10)] : [0];
   for (const id of ['rhythm', 'tonal'] as const) job(id).planned = windows(excerptStarts, duration > 60 ? 20 : 60);
   if (duration < 2.048) job('jamendo').unsupportedReason = 'At least 2.048 seconds of audio are required; no Jamendo inference ran.';
