@@ -70,7 +70,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install -q pyarrow numpy scikit-learn
+      - run: pip install -q pyarrow numpy scipy scikit-learn
       - name: Fetch the Freesound metadata dump
         run: |
           curl -fsSL --retry 6 -o "$RUNNER_TEMP/meta.parquet" "$META_URL"
@@ -126,15 +126,36 @@ jobs:
         with:
           path: work/emb
           key: dj-effects-emb-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json', 'scripts/embed-clap.mjs') }}-${{ github.run_id }}
+      - name: Render effects onto training-split music clips (training only)
+        run: python3 scripts/dj-effects/render.py work/fs/manifest.json work/render
+      - name: Restore render fingerprints
+        uses: actions/cache/restore@v4
+        with:
+          path: work/remb
+          key: dj-effects-remb-${{ hashFiles('scripts/dj-effects/render.py', 'scripts/embed-clap.mjs') }}-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json') }}
+          restore-keys: dj-effects-remb-${{ hashFiles('scripts/dj-effects/render.py', 'scripts/embed-clap.mjs') }}-
+      - name: Fingerprint the renders
+        run: |
+          mkdir -p work/remb
+          pids=(); for s in 0 1 2 3; do THREADS=1 node scripts/embed-clap.mjs work/render/manifest.json work/remb/emb-r$s.jsonl $s 4 > work/remb-$s.log 2>&1 & pids+=($!); done
+          rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/remb-*.log; exit $rc
+      - name: Save render fingerprints
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: work/remb
+          key: dj-effects-remb-${{ hashFiles('scripts/dj-effects/render.py', 'scripts/embed-clap.mjs') }}-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json') }}-${{ github.run_id }}
       - name: Train and score on held-out uploaders
-        run: python3 scripts/dj-effects/train.py work/fs/manifest.json work/emb "$DOCS"
+        run: |
+          cp work/remb/emb-r*.jsonl work/emb/
+          python3 scripts/dj-effects/train.py work/fs/manifest.json work/emb "$DOCS" work/render/manifest.json
       - name: Record the clip list with licences
         run: |
           python3 - <<'EOF'
           import json, os
           d = os.environ['DOCS']
           m = json.load(open('work/fs/manifest.json'))
-          emb = {json.loads(l)['id'] for f in os.listdir('work/emb') for l in open(f'work/emb/{f}') if l.strip()}
+          emb = {json.loads(l)['id'] for f in os.listdir('work/emb') if f.startswith('emb-') for l in open(f'work/emb/{f}') if l.strip()}
           state = json.load(open('work/fs/state.json'))
           keep = ('id', 'freesoundId', 'username', 'split', 'labels', 'kind', 'title', 'tags', 'licence', 'url')
           clips = [{**{k: c.get(k) for k in keep}, 'preview': state.get(str(c['freesoundId']), {}).get('preview')} for c in m['clips'] if c['id'] in emb]

@@ -7,12 +7,12 @@ therefore never uses a clip tagged with a related effect as a negative (labels.j
 Splits by UPLOADER: sha256('dj-effects|'+username) % 4 == 0 goes to the held-out test split, which is
 never used to fit a head or to choose its threshold. At most PER_UPLOADER clips per uploader per label.
 Never selects a sound or uploader reserved by a frozen test set (docs/evaluations/*/reserved-test-families.json).
-Usage: mine.py <meta.parquet> <out.json>   env: PER_LABEL (300), PER_UPLOADER (3), NEGATIVES (1600)"""
+Usage: mine.py <meta.parquet> <out.json>   env: PER_LABEL (300), PER_UPLOADER (5), NEGATIVES (1600)"""
 import json, sys, os, re, glob, hashlib
 import pyarrow.parquet as pq
 
 META, OUT = sys.argv[1:3]
-PER_LABEL, PER_UPLOADER = int(os.environ.get('PER_LABEL', 300)), int(os.environ.get('PER_UPLOADER', 3))
+PER_LABEL, PER_UPLOADER = int(os.environ.get('PER_LABEL', 300)), int(os.environ.get('PER_UPLOADER', 5))
 NEGATIVES = int(os.environ.get('NEGATIVES', 1600))
 HERE = os.path.dirname(os.path.abspath(__file__))
 spec = json.load(open(f'{HERE}/labels.json'))

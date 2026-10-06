@@ -10,13 +10,16 @@ The heads that ship are the ones fitted on the training split, so the held-out n
 Also scores the heads the app ships today (public/sound-model/learned.json, short-clip.json) on the same
 held-out clips, so a new head can be compared with the current one on equal terms.
 Exported in the form learnedDjModel.ts evaluates: logit = bias + sum(w_i * v_i / |v|), shown when sigmoid >= threshold.
-Usage: train.py <audio-manifest.json> <embeddings dir> <out dir>"""
+With a renders manifest (render.py: effects applied by DSP to plain music clips from TRAINING uploaders), each label
+is fitted both without and with the renders, and the variant (and C) is chosen on out-of-fold scores of the REAL
+training clips only; the threshold is chosen on those real out-of-fold scores too. Renders never reach the held-out test.
+Usage: train.py <audio-manifest.json> <embeddings dir> <out dir> [renders-manifest.json]"""
 import json, sys, glob, os, datetime
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GroupKFold
 
-MANIFEST, EMB, OUT = sys.argv[1:4]
+MANIFEST, EMB, OUT = sys.argv[1:4]; RENDERS = sys.argv[4] if len(sys.argv) > 4 else None
 os.makedirs(OUT, exist_ok=True)
 HERE = os.path.dirname(os.path.abspath(__file__))
 spec = json.load(open(f'{HERE}/labels.json'))
@@ -24,6 +27,7 @@ GROUP = {L['label']: L['group'] for L in spec['labels']}
 OVERLAP = [set(s) for s in spec['overlap']]
 TARGET, MIN_TRAIN, MIN_TEST = 0.70, 25, 10
 meta = {c['id']: c for c in json.load(open(MANIFEST))['clips']}
+if RENDERS: meta.update({c['id']: c for c in json.load(open(RENDERS))['clips']})
 ids, X, seen = [], [], set()
 for f in sorted(glob.glob(f'{EMB}/emb-*.jsonl')):
     for line in open(f):
@@ -33,7 +37,8 @@ X = np.asarray(X, dtype=np.float64); X /= np.linalg.norm(X, axis=1, keepdims=Tru
 LAB = [set(meta[i]['labels']) for i in ids]
 G = np.array([meta[i]['group'] for i in ids]); TEST = np.array([meta[i]['split'] == 'heldout' for i in ids])
 assert not set(G[TEST]) & set(G[~TEST]), 'uploader in both splits'
-print(f'clips with fingerprints: {len(ids)} of {len(meta)}  (train {int((~TEST).sum())}, held-out {int(TEST.sum())}, uploaders {len(set(G))})')
+RENDER = np.array([meta[i].get('kind') == 'render' for i in ids]); assert not (RENDER & TEST).any()
+print(f'clips with fingerprints: {len(ids)} of {len(meta)}  (train {int((~TEST & ~RENDER).sum())} real + {int(RENDER.sum())} renders, held-out {int(TEST.sum())}, uploaders {len(set(G))})')
 
 related = lambda a, b: a == b or any(a in s and b in s for s in OVERLAP)
 sig = lambda z: 1 / (1 + np.exp(-z))
@@ -62,31 +67,38 @@ for label in [L['label'] for L in spec['labels']]:
     pos = np.array([label in s for s in LAB])
     use = pos | np.array([not any(related(label, o) for o in s) for s in LAB])
     tr, te = use & ~TEST, use & TEST
-    e = {'group': GROUP[label], 'trainPositive': int(pos[tr].sum()), 'trainNegative': int((~pos[tr]).sum()),
-         'testPositive': int(pos[te].sum()), 'testNegative': int((~pos[te]).sum()),
-         'trainUploaders': len(set(G[tr & pos])), 'testUploaders': len(set(G[te & pos]))}
+    real_tr = tr & ~RENDER
+    e = {'group': GROUP[label], 'trainPositive': int(pos[real_tr].sum()), 'trainNegative': int((~pos[real_tr]).sum()),
+         'trainRenders': int((pos & tr & RENDER).sum()), 'testPositive': int(pos[te].sum()), 'testNegative': int((~pos[te]).sum()),
+         'trainUploaders': len(set(G[real_tr & pos])), 'testUploaders': len(set(G[te & pos]))}
     # Today's shipped heads on the same held-out clips.
     for hd in shipped.get(label, []):
         p = sig(X[te] @ np.asarray(hd['weights']) + hd['bias'])
         e.setdefault('current', []).append({'file': hd['file'], 'maybe': bool(hd.get('maybe')), 'threshold': hd['threshold'], **prf(pos[te], p >= hd['threshold'])})
-    if e['trainPositive'] < MIN_TRAIN or e['trainUploaders'] < 5:
-        report[label] = {**e, 'verdict': 'too few training clips'}; continue
-    a = np.where(tr)[0]; folds = list(GroupKFold(n_splits=5).split(X[a], pos[a], G[a]))
-    def oof(C):
-        o = np.zeros(len(a))
-        for x, y in folds: o[y] = fit(X[a][x], pos[a][x], C).predict_proba(X[a][y])[:, 1]
-        return o
+    variants = {'real': real_tr}
+    if e['trainRenders']: variants['real+renders'] = tr
     best = None
-    for C in (0.3, 1.0, 3.0, 10.0):
-        o = oof(C); th, rule = choose_threshold(pos[a], o)
-        if th is None: continue
-        s = prf(pos[a], o >= th); F = 2 * s['precision'] * s['recall'] / (s['precision'] + s['recall']) if s['tp'] else 0
-        score = (rule.startswith('f1'), F if rule.startswith('f1') else min(s['precision'], s['recall']))
-        if best is None or score > best[0]: best = (score, C, th, rule, s)
-    if best is None: report[label] = {**e, 'verdict': 'no usable threshold'}; continue
-    _, C, th, rule, s = best
+    for name, rows in variants.items():
+        if pos[rows].sum() < MIN_TRAIN or len(set(G[rows & pos])) < 5: continue
+        a = np.where(rows)[0]; folds = list(GroupKFold(n_splits=5).split(X[a], pos[a], G[a]))
+        real = ~RENDER[a]
+        # Threshold and choice on real training clips; with almost no real positives, on all out-of-fold rows.
+        judge = real if pos[a][real].sum() >= 8 else np.ones(len(a), bool)
+        for C in (0.3, 1.0, 3.0, 10.0):
+            o = np.zeros(len(a))
+            for x, y in folds: o[y] = fit(X[a][x], pos[a][x], C).predict_proba(X[a][y])[:, 1]
+            th, rule = choose_threshold(pos[a][judge], o[judge])
+            if th is None: continue
+            sc = prf(pos[a][judge], o[judge] >= th); F = 2 * sc['precision'] * sc['recall'] / (sc['precision'] + sc['recall']) if sc['tp'] else 0
+            score = (rule.startswith('f1'), F if rule.startswith('f1') else min(sc['precision'], sc['recall']))
+            if best is None or score > best[0]:
+                best = (score, name, a, C, th, rule, sc, bool(judge.all() and not real.all()))
+    if best is None:
+        report[label] = {**e, 'verdict': 'too few training clips' if e['trainPositive'] + e['trainRenders'] < MIN_TRAIN else 'no usable threshold'}; continue
+    _, variant, a, C, th, rule, sc, judged_all = best
     model = fit(X[a], pos[a], C)
-    e.update(C=C, threshold=round(th, 4), thresholdRule=rule, trainOof={k: s[k] for k in ('precision', 'recall')})
+    e.update(variant=variant, C=C, threshold=round(th, 4), thresholdRule=rule + (' (on all out-of-fold rows incl. renders: < 8 real positives)' if judged_all else ' (on real training clips)'),
+             trainOof={k: sc[k] for k in ('precision', 'recall')})
     if e['testPositive'] < MIN_TEST:
         report[label] = {**e, 'verdict': f'fewer than {MIN_TEST} held-out positives; not tested'}; continue
     res = prf(pos[te], model.predict_proba(X[te])[:, 1] >= th)
@@ -97,11 +109,11 @@ for label in [L['label'] for L in spec['labels']]:
                   'bias': round(float(model.intercept_[0]), 6), 'threshold': round(th, 4)})
     report[label] = e
 
-lines = [f"{'label':<16}{'train+':>7}{'test+':>6}{'test-':>6}{'thresh':>8}{'P':>7}{'R':>7}   verdict          current head on same held-out"]
+lines = [f"{'label':<16}{'train+':>7}{'test+':>6}{'test-':>6}{'thresh':>8}{'P':>7}{'R':>7}   {'verdict':<17}{'trained on':<14}current head on same held-out"]
 for label, e in report.items():
     cur = '; '.join(f"{c['file'].split('.')[0]}{' maybe' if c['maybe'] else ''} P{c['precision']:.2f} R{c['recall']:.2f}" for c in e.get('current', [])) or '-'
-    if 'precision' not in e: lines.append(f"{label:<16}{e['trainPositive']:>7}{e['testPositive']:>6}{e['testNegative']:>6}{'-':>8}{'-':>7}{'-':>7}   {e['verdict']:<16} {cur}"); continue
-    lines.append(f"{label:<16}{e['trainPositive']:>7}{e['testPositive']:>6}{e['testNegative']:>6}{e['threshold']:>8.3f}{e['precision']:>7.2f}{e['recall']:>7.2f}   {e['verdict']:<16} {cur}")
+    if 'precision' not in e: lines.append(f"{label:<16}{e['trainPositive']:>7}{e['testPositive']:>6}{e['testNegative']:>6}{'-':>8}{'-':>7}{'-':>7}   {e['verdict']:<17} {e.get('variant', '-'):<14}{cur}"); continue
+    lines.append(f"{label:<16}{e['trainPositive']:>7}{e['testPositive']:>6}{e['testNegative']:>6}{e['threshold']:>8.3f}{e['precision']:>7.2f}{e['recall']:>7.2f}   {e['verdict']:<17} {e['variant']:<14}{cur}")
 text = '\n'.join(lines); print(text)
 open(f'{OUT}/report.txt', 'w').write(text + '\n')
 json.dump({'kind': 'dj-effect-heads-report-v1', 'trainedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
