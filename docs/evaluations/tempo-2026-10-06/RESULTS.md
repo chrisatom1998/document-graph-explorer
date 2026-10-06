@@ -43,5 +43,7 @@ On the 500 DJ clips, the score allowing half or double tempo rises from 73.8% to
 rises from 75.6% to 86.8%. On non-dance music the change is close to neutral. Hip-hop, metal and reggae improve
 slightly. Pop drops from 86% to 79% (6 of 97 clips broken), and rock and country lose 2–4 clips each.
 
-These GiantSteps clips and the app path are the same ones the 500-clip browser run used. The browser re-run of
-`dj-clips-eval.yml` on this branch confirms the number end to end.
+**Confirmed in the real app.** `dj-clips-eval.yml` re-ran all 500 clips through the built app in headless Chromium
+at 4739461 (run 37407942029, `../dj-clips-2026-10-06/results-tempo-fix/`). Tempo was within 4% on **71.6%**
+(53.6% before), and 85.4% allowing half or double tempo. Drum & bass reached 60%. Sound tags on both sets were identical
+to the baseline run.
