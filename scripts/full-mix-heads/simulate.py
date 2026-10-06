@@ -67,7 +67,8 @@ def main():
         name, rest = arg.split('=', 1); mpath, spath = rest.split(':')
         items = json.load(open(mpath))['items']
         base_rows = {r['id']: r for r in json.load(open(spath))}
-        variants = {v: {} for v in ('base', 'union', 'override')}
+        variants = {v: {} for v in ('base', 'union', 'override', 'shipped')}
+        replaces = {h['label'] for h in model['heads'] if h.get('replaces')}
         for it in items:
             r = base_rows.get(it['id'])
             if r is None or it['id'] not in by_id: continue
@@ -80,6 +81,7 @@ def main():
             variants['base'][it['id']] = base
             variants['union'][it['id']] = base | heads
             variants['override'][it['id']] = (base - covered) | heads
+            variants['shipped'][it['id']] = (base - replaces) | heads   # what src/audio/confidentSoundSummary.ts shows
         scored = {v: score(items, s) for v, s in variants.items()}
         print(f'\n{name}: {len(variants["base"])} clips')
         bar = float(os.environ.get('BAR', '0.7'))

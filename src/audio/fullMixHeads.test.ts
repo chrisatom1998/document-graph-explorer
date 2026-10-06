@@ -59,7 +59,22 @@ describe('full-mix heads', () => {
 
   it('sanitizes stored results', () => {
     expect(sanitizeFullMixAnalysis({ revision: 'r', windows: 2, labels: [{ label: 'guitar', score: .7, segments: [{ start: 0, end: 10 }, { start: 5, end: 99 }] }, { label: 'x', score: 2, segments: [] }] }, 20))
-      .toEqual({ revision: 'r', windows: 2, labels: [{ label: 'guitar', score: .7, segments: [{ start: 0, end: 10 }] }] });
+      .toEqual({ revision: 'r', windows: 2, labels: [{ label: 'guitar', score: .7, segments: [{ start: 0, end: 10 }] }], decides: [] });
     expect(sanitizeFullMixAnalysis({ revision: 'r', windows: 0, labels: [] }, 20)).toBeUndefined();
+  });
+});
+
+describe('pinned full-mix heads', () => {
+  it('ships a valid model whose revision and hash match the source pins', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { createHash } = await import('node:crypto');
+    const { FULL_MIX_REVISION, FULL_MIX_FILE } = await import('./fullMixHeads');
+    const bytes = readFileSync(new URL(`../../public/sound-model/${FULL_MIX_FILE}`, import.meta.url));
+    const manifest = JSON.parse(readFileSync(new URL('../../public/sound-model/manifest.json', import.meta.url), 'utf8'));
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(manifest.sha256[FULL_MIX_FILE]);
+    const model = sanitizeFullMixModel(JSON.parse(bytes.toString('utf8')))!;
+    expect(model.revision).toBe(FULL_MIX_REVISION);
+    expect(model.heads.map(h => h.label).sort()).toEqual(['bass', 'cymbals', 'drums', 'guitar', 'organ', 'piano', 'saxophone', 'synthesizer', 'trumpet', 'violin', 'voice']);
+    expect(model.heads.filter(h => h.replaces).map(h => h.label)).toEqual(['bass']);
   });
 });

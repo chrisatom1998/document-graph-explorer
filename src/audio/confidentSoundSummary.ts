@@ -7,7 +7,7 @@ import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import calibratedLabelList from './calibratedLabels.json';
 import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
-import { FULL_MIX_REVISION } from './fullMixHeads';
+import { FULL_MIX_FAMILY, FULL_MIX_REVISION } from './fullMixHeads';
 
 /** Presentation only: does not change stored evidence, acceptance, cache identity or graph links. */
 export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v3';
@@ -93,13 +93,18 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     if(audio.instrumentPrediction)estimate('source',audio.instrumentPrediction.label,audio.instrumentPrediction.score,audio.instrumentPrediction.model??'Instrument model');
     for(const model of audio.soundProfile?.models??[])for(const candidate of model.candidates)if(dimensionLabels.source.includes(candidate.label))estimate('source',candidate.label,candidate.score,model.model);
   }
-  if(fullMix&&FULL_MIX_REVISION&&audio.fullMix?.revision===FULL_MIX_REVISION)for(const l of audio.fullMix.labels)estimate('source',l.label,l.score,FULL_MIX_HEAD_SCORE);
+  const heads=fullMix&&FULL_MIX_REVISION&&audio.fullMix?.revision===FULL_MIX_REVISION?audio.fullMix:undefined;
+  if(heads)for(const l of heads.labels)estimate('source',l.label,l.score,FULL_MIX_HEAD_SCORE);
   // Profile tags carry their own source-specific display score. Bare character/source strings and AI drafts do not.
   const catalogClap=new Set<string>();
   for(const tag of audio.soundProfile?.djTags??[]){const dim:Dimension=tag.group==='source'?'source':tag.group==='character'?'character':'effect';if(tag.model==='Music CLAP')catalogClap.add(`${dim}:${canonical(dim,tag.label)}`);}
   for(const tag of audio.soundProfile?.djTags??[])estimate(tag.group==='source'?'source':tag.group==='character'?'character':'effect',tag.label,tag.score,tag.model??'Sound tag model');
   const fusion=fusionPresentation(audio.fusion,audio.durationSeconds,fusionMode??audio.recognition?.mode??'full');
   if(fusion?.qualified)for(const w of fusion.windows)for(const d of w.decisions)if(d.state!=='unavailable')estimate('source',d.label,d.decisionProbability,`${d.source==='learned-head'?'Trained head':'Baseline fallback'} score${d.state==='positive'?'':' (below policy acceptance)'}`);
+  // A head that replaces the other models for its instrument: only its own score stands for that instrument.
+  if(heads)for(const label of heads.decides)for(const name of FULL_MIX_FAMILY[label]??[label]){
+    const key=`source:${name}`,item=result.get(key);if(item?.origin!=='model estimate')continue;
+    const own=item.scores!.filter(x=>x.model===FULL_MIX_HEAD_SCORE);if(own.length)item.scores=own;else result.delete(key);}
   const tiered=(s:DisplaySound,models:(m:string)=>boolean):DisplaySound=>({...s,tier:soundTier(Math.max(...s.scores!.filter(x=>models(x.model)).map(x=>x.score)))});
   const long=floor===TRACK_SOUND_FLOOR;
   return [...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]

@@ -6,10 +6,14 @@ import soundManifest from '../../public/sound-model/manifest.json';
  * so they add no model download and no inference: about a thousand multiply-adds per head per window. */
 export const FULL_MIX_FILE = 'full-mix.json';
 /** The installed heads' revision (checked against the pinned file by a test). Display trusts only results from it. */
-export const FULL_MIX_REVISION: string | undefined = undefined;
+export const FULL_MIX_REVISION: string | undefined = 'openmic-train-2026-10-06-r1';
 /** Heads were fitted on whole ten-second windows; shorter windows (loops, one-shots) are never scored. */
 export const FULL_MIX_WINDOW_SECONDS = 10;
-export interface FullMixHead { label: string; weights: number[]; bias: number; threshold: number }
+/** `replaces`: on full mixes this head alone decides its label; other models' scores for it (and FULL_MIX_FAMILY
+ * relatives) are not shown. Used where the other models were measured as unreliable on full mixes (bass). */
+export interface FullMixHead { label: string; weights: number[]; bias: number; threshold: number; replaces?: boolean }
+/** Display labels other models use for the same instrument as a head label. */
+export const FULL_MIX_FAMILY: Record<string, string[]> = { bass: ['bass', 'bass guitar', 'double bass'] };
 export interface FullMixModel {
   version: 1;
   revision: string;
@@ -23,7 +27,8 @@ export interface FullMixWindowInput { ast?: Record<string, number>; jamendo?: Re
 /** `score` is the recording's head probability rescaled so the head's threshold reads 0.5 (the app's likely cutoff)
  * and 1 stays 1; only labels at or above their threshold are kept. */
 export interface FullMixLabel { label: string; score: number; segments: { start: number; end: number }[] }
-export interface FullMixAnalysis { revision: string; windows: number; labels: FullMixLabel[] }
+/** `decides`: head labels that replace other models' evidence on this recording (see FullMixHead.replaces). */
+export interface FullMixAnalysis { revision: string; windows: number; labels: FullMixLabel[]; decides: string[] }
 
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const names = (v: unknown, max: number): v is string[] => Array.isArray(v) && v.length <= max && v.every(s => typeof s === 'string' && s.length > 0 && s.length <= 80);
@@ -40,7 +45,8 @@ export function sanitizeFullMixModel(raw: unknown): FullMixModel | undefined {
   for (const h of m.heads) {
     if (!h || typeof h.label !== 'string' || !h.label || h.label.length > 80 || !Array.isArray(h.weights) || h.weights.length !== length
       || !h.weights.every(finite) || !finite(h.bias) || !finite(h.threshold) || h.threshold <= 0 || h.threshold >= 1) return;
-    heads.push({ label: h.label, weights: h.weights, bias: h.bias, threshold: h.threshold });
+    if (h.replaces !== undefined && typeof h.replaces !== 'boolean') return;
+    heads.push({ label: h.label, weights: h.weights, bias: h.bias, threshold: h.threshold, ...(h.replaces ? { replaces: true } : {}) });
   }
   return { version: 1, revision: m.revision, inputs: { clap: 512, ast: [...inputs.ast], jamendo: [...inputs.jamendo] }, aggregation: { top }, heads };
 }
@@ -95,7 +101,8 @@ export class FullMixEvidence {
       if (score >= head.threshold) labels.push({ label: head.label, score: Math.round((0.5 + 0.5 * (score - head.threshold) / (1 - head.threshold)) * 1e4) / 1e4,
         segments: ranked.filter(w => w.p >= head.threshold).slice(0, 3).map(w => ({ start: w.start, end: w.end })) });
     });
-    return { revision: this.model.revision, windows: windows.length, labels: labels.sort((a, b) => b.score - a.score) };
+    return { revision: this.model.revision, windows: windows.length, labels: labels.sort((a, b) => b.score - a.score),
+      decides: this.model.heads.filter(h => h.replaces).map(h => h.label) };
   }
 }
 
@@ -108,7 +115,8 @@ export function sanitizeFullMixAnalysis(raw: unknown, durationSeconds: number): 
     labels.push({ label: l.label, score: l.score, segments: l.segments.slice(0, 3).filter(s => s && finite(s.start) && finite(s.end) && s.start >= 0 && s.end > s.start && s.end <= durationSeconds + 1e-6)
       .map(s => ({ start: s.start, end: s.end })) });
   }
-  return { revision: f.revision, windows: f.windows, labels };
+  const decides = Array.isArray(f.decides) ? f.decides.filter((l): l is string => typeof l === 'string' && l.length > 0 && l.length <= 80).slice(0, 50) : [];
+  return { revision: f.revision, windows: f.windows, labels, decides };
 }
 
 /** The pinned model's revision, or undefined when this build ships no full-mix heads. Display only trusts stored
