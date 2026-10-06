@@ -4,19 +4,17 @@ import { soundMatchLabels, MATCH_ORIGIN_TEXT, type MatchLabel, type MatchOrigin 
 import { confidentSoundSummary } from './confidentSoundSummary';
 import type { DocNode, Edge } from '../model/types';
 import { keyName, type MusicAnalysis } from './musicTypes';
-import { SOUND_PROJECTION, soundVector } from './soundProjection';
 export const MUSIC_EDGE_KINDS = ['tempo', 'key', 'instrument', 'sound', 'similar'] as const;
 type MusicKind = typeof MUSIC_EDGE_KINDS[number];
 export const MUSIC_NEIGHBOR_LIMIT = 8;
 export const MUSIC_NEIGHBORS_PER_KIND = 4;
 const CANDIDATES_PER_BUCKET = 12;
 const MAX_CANDIDATES = 128;
-/** Each track's `neighbors` closest sounds are always candidates and a pair links at `floor` or above. Fingerprints
- * pass through the learned projection (soundProjection.ts) first; its neighbors and floor were picked with it on
- * MTG-Jamendo validation tracks (scripts/sound-alike). Raw CLAP used 3 closest at 0.7; a mutual-top-3 rule at 0.5
- * was tried with scripts/sound-links and rejected (more song links, lower precision). */
+/** CLAP audio cosines run high, so each track's `neighbors` closest sounds are always candidates and a pair links
+ * at `floor` or above. A mutual-top-3 rule at 0.5 was tried with scripts/sound-links: more song links but lower
+ * precision (45% vs 63% same genre), so this keeps the original policy. */
 export interface SoundLinkPolicy { neighbors: number; floor: number }
-export const SOUND_LINK_POLICY: SoundLinkPolicy = SOUND_PROJECTION.mix > 0 ? { neighbors: SOUND_PROJECTION.neighbors, floor: SOUND_PROJECTION.floor } : { neighbors: 3, floor: .7 };
+export const SOUND_LINK_POLICY: SoundLinkPolicy = { neighbors: 3, floor: .7 };
 /** All-pairs similarity up to this many valid fingerprints; larger libraries use bounded hashed neighborhoods. */
 const EXACT_SIMILARITY_LIMIT = 800;
 const cosine = (a: number[], b: number[]) => { let dot = 0; for (let i = 0; i < a.length; i++) dot += a[i] * b[i]; return dot; };
@@ -24,7 +22,7 @@ function unitVector(vector: number[] | undefined): number[] | undefined {
   if (!vector || vector.length !== 512 || !vector.every(Number.isFinite)) return;
   const norm = Math.hypot(...vector);
   if (!Number.isFinite(norm) || norm < 1e-8) return;
-  return soundVector(vector.map(value => value / norm));
+  return vector.map(value => value / norm);
 }
 const GENERIC_LABELS = new Set(['synthesizer', 'drums', 'sound effect', 'noise', 'percussion', 'environmental sound', 'airy', 'metallic', 'warm', 'bright', 'dry', 'reverberant', 'sustained', 'plucked']);
 const validScore = (n: number) => Number.isFinite(n) && n >= 0 && n <= 1;
