@@ -1,7 +1,7 @@
 """Train the "sounds alike" projection on top of an audio embedding (CLAP today; any fixed-size vector works).
 
 Usage: python3 scripts/sound-alike/train.py <tracks.json> <embeddings dir or .jsonl ...> --out <dir>
-       [--dim 128] [--hidden 0] [--epochs 60] [--library 150] [--draws 300]
+       [--dim 128] [--hidden 0] [--temperature .3] [--objective contrastive] [--max-mix .75] [--library 150] [--draws 300]
 
 <tracks.json> comes from select-jamendo.py; embeddings are embed-clap.mjs JSON lines with ids "<track>@<start>". The
 input size is read from the vectors, so other embeddings (e.g. MERT) can be trained the same way.
@@ -27,9 +27,14 @@ ap = argparse.ArgumentParser()
 ap.add_argument('tracks'); ap.add_argument('embeddings', nargs='+'); ap.add_argument('--out', required=True)
 ap.add_argument('--dim', type=int, default=128); ap.add_argument('--hidden', type=int, default=0)
 ap.add_argument('--epochs', type=int, default=60); ap.add_argument('--batch', type=int, default=1024)
-ap.add_argument('--temperature', type=float, default=.1); ap.add_argument('--lr', type=float, default=1e-3)
+ap.add_argument('--temperature', type=float, default=.3); ap.add_argument('--lr', type=float, default=1e-3)
 ap.add_argument('--library', type=int, default=150); ap.add_argument('--draws', type=int, default=300)
 ap.add_argument('--seed', type=int, default=0)
+ap.add_argument('--objective', choices=['contrastive', 'tags', 'both'], default='contrastive',
+                help='contrastive: soft supervised-contrastive; tags: predict the tags from the projection (multi-label); both: sum')
+ap.add_argument('--max-mix', type=float, default=.75,
+                help='largest learned share allowed; keeping some raw fingerprint protects sounds Jamendo lacks (one-shots, single notes)')
+ap.add_argument('--weights', default='genre=.5,mood=.25,instrument=.25', help='tag-group weights in the relevance target')
 args = ap.parse_args()
 os.makedirs(args.out, exist_ok=True)
 rng = np.random.default_rng(args.seed); torch.manual_seed(args.seed)
@@ -59,7 +64,7 @@ def multi_hot(g):
         for x in tracks[t][g]: m[i, index[x]] = 1
     return m
 tags = {g: multi_hot(g) for g in vocab}
-TAG_WEIGHT = {'genre': .5, 'mood': .25, 'instrument': .25}
+TAG_WEIGHT = {k: float(v) for k, v in (kv.split('=') for kv in args.weights.split(','))}
 tr, va = np.where(split == 'train')[0], np.where(split == 'validation')[0]
 assert not ({tracks[ids[i]]['artist'] for i in tr} & {tracks[ids[i]]['artist'] for i in va}), 'an artist is in both train and validation'
 print(f'{len(ids)} tracks embedded ({len(tr)} train, {len(va)} validation), {D}-d input, up to {W} windows; '
@@ -80,7 +85,22 @@ class Projection(torch.nn.Module):
         super().__init__()
         self.net = torch.nn.Linear(D, args.dim) if not args.hidden else torch.nn.Sequential(
             torch.nn.Linear(D, args.hidden), torch.nn.GELU(approximate='tanh'), torch.nn.Linear(args.hidden, args.dim))
+        self.head = torch.nn.Linear(args.dim, len(TAG_COLUMNS))  # training only (--objective tags/both)
     def forward(self, x): return torch.nn.functional.normalize(self.net(x), dim=-1)
+
+# Tags seen on at least 20 training tracks, for the tag objective; each group's loss is scaled by its weight.
+TAG_COLUMNS = [(g, j) for g in TAG_WEIGHT for j in np.where(tags[g][tr].sum(0) >= 20)[0]]
+TAG_TARGET = np.stack([tags[g][:, j] for g, j in TAG_COLUMNS], 1)
+TAG_SCALE = torch.tensor([TAG_WEIGHT[g] / sum(1 for h, _ in TAG_COLUMNS if h == g) for g, _ in TAG_COLUMNS]) * len(TAG_WEIGHT)
+def tag_loss(x, idx):
+    logits = model.head(model.net(x))
+    bce = torch.nn.functional.binary_cross_entropy_with_logits(logits, torch.from_numpy(TAG_TARGET[idx]), reduction='none')
+    return (bce * TAG_SCALE).sum(1).mean()
+def objective(x, idx):
+    loss = 0
+    if args.objective != 'tags': loss = loss + soft_supcon(model(x), relevance(idx))
+    if args.objective != 'contrastive': loss = loss + tag_loss(x, idx)
+    return loss
 
 model = Projection()
 opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
@@ -110,7 +130,7 @@ def val_loss():
     with torch.no_grad():
         for b in range(0, len(order), args.batch):
             idx = order[b:b + args.batch]
-            if len(idx) > 1: losses.append(float(soft_supcon(model(torch.from_numpy(mean_vec[idx])), relevance(idx))))
+            if len(idx) > 1: losses.append(float(objective(torch.from_numpy(mean_vec[idx]), idx)))
     return float(np.mean(losses))
 
 t0 = time.time(); best, best_state, history = 1e9, None, []
@@ -118,8 +138,8 @@ for epoch in range(args.epochs):
     model.train(); order = rng.permutation(tr); total = 0
     for b in range(0, len(order), args.batch):
         idx = order[b:b + args.batch]
-        loss = soft_supcon(model(augmented(idx)), relevance(idx))
-        opt.zero_grad(); loss.backward(); opt.step(); sched.step(); total += float(loss) * len(idx)
+        loss = objective(augmented(idx), idx)
+        opt.zero_grad(); loss.backward(); opt.step(); sched.step(); total += float(loss.detach()) * len(idx)
     model.eval(); vl = val_loss(); history.append({'epoch': epoch + 1, 'train': total / len(tr), 'validation': vl})
     if vl < best: best, best_state = vl, {k: v.clone() for k, v in model.state_dict().items()}
     if epoch % 5 == 4 or epoch == args.epochs - 1: print(f'epoch {epoch + 1}: train {total / len(tr):.4f}, validation {vl:.4f} ({time.time() - t0:.0f}s)', flush=True)
@@ -178,7 +198,7 @@ rows, mean_rows = grid(middle), grid(mean_vec)
 find = lambda table, r: next(x for x in table if x['mix'] == r['mix'] and x['neighbors'] == r['neighbors'] and abs(x['floor'] - r['floor']) < 1e-9)
 current = find(rows, {'mix': 0, 'neighbors': 3, 'floor': .7}); current_mean = find(mean_rows, current)
 # At least today's link count on both inputs; then the best same-genre rate averaged over the two.
-eligible = [r for r in rows if r['links'] >= current['links'] and find(mean_rows, r)['links'] >= current_mean['links']]
+eligible = [r for r in rows if r['mix'] <= args.max_mix and r['links'] >= current['links'] and find(mean_rows, r)['links'] >= current_mean['links']]
 score = lambda r: (round((r['sameGenre'] + find(mean_rows, r)['sameGenre']) / 2, 4), r['links'])
 chosen = max(eligible, key=score)
 raw_best = max((r for r in eligible if r['mix'] == 0), key=score)

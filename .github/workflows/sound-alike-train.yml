@@ -133,12 +133,10 @@ jobs:
             sel/tracks.json
           compression-level: 0
           retention-days: 30
-      - name: Train (linear and two-layer)
+      - name: Train (the defaults are what ships in src/audio/soundProjection.json)
         run: |
-          python3 scripts/sound-alike/train.py sel/tracks.json emb --out out/linear-128 --dim 128 | tee out-linear-128.log
-          python3 scripts/sound-alike/train.py sel/tracks.json emb --out out/linear-64 --dim 64 | tee out-linear-64.log
-          python3 scripts/sound-alike/train.py sel/tracks.json emb --out out/mlp-256-128 --hidden 256 --dim 128 | tee out-mlp.log
-          mv out-*.log out/
+          python3 scripts/sound-alike/train.py sel/tracks.json emb --out out | tee out.log
+          mv out.log out/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
