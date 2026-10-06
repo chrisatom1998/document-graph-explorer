@@ -41,7 +41,10 @@ await page.addInitScript(() => localStorage.setItem('knowledge-nebula-settings',
 await page.goto(`http://127.0.0.1:${PORT}/`);
 
 async function exportGraph() {
-  await page.getByRole('button', { name: 'Data options' }).click();
+  // Older layout: a "Data options" toolbar menu; the Resonance layout (#137): an Export tab.
+  const dataOptions = page.getByRole('button', { name: 'Data options' });
+  if (await dataOptions.count()) await dataOptions.click();
+  else await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Export', exact: true }).click();
   const download = page.waitForEvent('download', { timeout: 60_000 });
   // If the click below fails, this promise still rejects later; keep that from crashing the whole run.
   download.catch(() => {});
@@ -63,7 +66,17 @@ for (let start = 0; start < ids.length; start += Number(batchArg)) {
   }
   await picker.setInputFiles(batch.map(id => join(AUDIO, fileName[id])));
   // 2D view: same analysis, far less software rendering competing with the models.
-  if (start === 0) await page.getByRole('button', { name: 'Switch to 2D view' }).click({ timeout: 120_000 }).catch(() => {});
+  if (start === 0) {
+    const toggle = page.getByRole('button', { name: 'Switch to 2D view' });
+    if (await toggle.count()) await toggle.click({ timeout: 120_000 }).catch(() => {});
+    else {
+      await page.getByRole('button', { name: 'More tools' }).click({ timeout: 120_000 }).catch(() => {});
+      await page.getByRole('menuitem', { name: 'Switch to 2D' }).click({ timeout: 10_000 }).catch(() => {});
+      // The menu's scrim would swallow the later Export and Search clicks.
+      const scrim = page.getByRole('button', { name: 'Close menu' });
+      if (await scrim.count()) await scrim.click().catch(() => {});
+    }
+  }
   let done = 0;
   for (;;) {
     await page.waitForTimeout(5000);
