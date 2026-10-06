@@ -30,6 +30,13 @@ os.chdir(_cwd)
 
 CLASSES = ['accordion', 'banjo', 'bass', 'cello', 'clarinet', 'cymbals', 'drums', 'flute', 'guitar', 'mallet_percussion',
            'mandolin', 'organ', 'piano', 'saxophone', 'synthesizer', 'trombone', 'trumpet', 'ukulele', 'violin', 'voice']
+# Second head: MTG-Jamendo's 40 instrument tags (prepare-jamendo.py), trained on Jamendo windows only.
+JAMENDO_TAGS = ['accordion', 'acousticbassguitar', 'acousticguitar', 'bass', 'beat', 'bell', 'bongo', 'brass', 'cello', 'clarinet', 'classicalguitar',
+                'computer', 'doublebass', 'drummachine', 'drums', 'electricguitar', 'electricpiano', 'flute', 'guitar', 'harmonica', 'harp', 'horn',
+                'keyboard', 'oboe', 'orchestra', 'organ', 'pad', 'percussion', 'piano', 'pipeorgan', 'rhodes', 'sampler', 'saxophone', 'strings',
+                'synthesizer', 'trombone', 'trumpet', 'viola', 'violin', 'voice']
+OPENMIC = list(CLASSES)
+CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS]
 WIDTH = {'mn04_as': 0.4, 'mn05_as': 0.5, 'mn10_as': 1.0, 'mn20_as': 2.0, 'mn30_as': 3.0}
 FRAMES = 1000
 
@@ -50,7 +57,7 @@ def masked_ap(scores, y, w):
     from sklearn.metrics import average_precision_score
     aps = {}
     for j, c in enumerate(CLASSES):
-        k = w[:, j] >= 1                                   # strong labels only
+        k = w[:, j] > 0 if c.startswith('jamendo:') else w[:, j] >= 1   # strong labels only, except Jamendo's own tags
         if y[k, j].sum() >= 3 and (1 - y[k, j]).sum() >= 3: aps[c] = float(average_precision_score(y[k, j], scores[k, j]))
     return aps
 

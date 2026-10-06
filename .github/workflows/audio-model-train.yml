@@ -1,6 +1,6 @@
 name: Train the audio tagger
 
-# Fine-tunes DGE's own instrument tagger (scripts/audio-model/) on a Hugging Face Jobs GPU, billed to the HF_TOKEN
+# Fine-tunes DGE's own sound tagger (OpenMIC 20 classes + MTG-Jamendo's 40 instrument tags) on a Hugging Face Jobs GPU, billed to the HF_TOKEN
 # account, and uploads the run to that account's private dge-instrument-tagger model repo. OpenMIC and MTG-Jamendo
 # audio is fetched inside the job. The SoundCloud set's audio only exists as Actions artifacts, so this workflow turns
 # its train fold into log-mel windows (no audio leaves GitHub) for the job, and scores its held-out fold here after.

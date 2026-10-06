@@ -29,6 +29,12 @@ MAP = {'accordion': ['accordion'], 'bass': ['bass', 'doublebass', 'acousticbassg
        'guitar': ['guitar', 'acousticguitar', 'electricguitar', 'classicalguitar'], 'organ': ['organ', 'pipeorgan'],
        'piano': ['piano', 'electricpiano', 'rhodes'], 'saxophone': ['saxophone'], 'synthesizer': ['synthesizer'],
        'trombone': ['trombone'], 'trumpet': ['trumpet'], 'violin': ['violin'], 'voice': ['voice']}
+# Jamendo's own 40 instrument tags are trained as a second head ("jamendo:<tag>"), so labels like pad, sampler, beat,
+# rhodes, strings, brass or harp get trained outputs too.
+TAGS = ['accordion', 'acousticbassguitar', 'acousticguitar', 'bass', 'beat', 'bell', 'bongo', 'brass', 'cello', 'clarinet', 'classicalguitar',
+        'computer', 'doublebass', 'drummachine', 'drums', 'electricguitar', 'electricpiano', 'flute', 'guitar', 'harmonica', 'harp', 'horn',
+        'keyboard', 'oboe', 'orchestra', 'organ', 'pad', 'percussion', 'piano', 'pipeorgan', 'rhodes', 'sampler', 'saxophone', 'strings',
+        'synthesizer', 'trombone', 'trumpet', 'viola', 'violin', 'voice']
 SR, N = 32000, 320000
 
 ap = argparse.ArgumentParser()
@@ -73,6 +79,9 @@ for t in tracks:
     labels = {c: float(any(n in t['tags'] for n in names)) for c, names in MAP.items()}
     weak = [c for c, v in labels.items() if not v]
     if t['track'] in voice: labels['voice'] = float(voice[t['track']]); weak = [c for c in weak if c != 'voice']
+    for tag in TAGS:
+        labels[f'jamendo:{tag}'] = float(tag in t['tags'])
+        if tag not in t['tags']: weak.append(f'jamendo:{tag}')
     d = t['duration']; length = min(10, d)
     starts = [round(max(0, d * (k + 1) / (args.windows + 1) - length / 2), 2) for k in range(args.windows)]
     for k, s in enumerate(starts):
