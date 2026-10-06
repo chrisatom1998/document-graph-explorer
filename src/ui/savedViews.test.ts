@@ -33,7 +33,7 @@ describe('applySavedView', () => {
   it('restores dims and filter and issues a pose camera command', () => {
     useUiStore.setState({
       dims: 3,
-      filter: { fileTypes: null, clusters: null, minDegree: 0, minEdgeWeight: 0, edgeKinds: null, modifiedWithinDays: null },
+      filter: { fileTypes: null, clusters: null, minDegree: 0, minEdgeWeight: 0, edgeKinds: null, modifiedWithinDays: null, bpmRange: null, musicKey: null, style: null },
       cameraCommand: null,
     });
 
@@ -49,8 +49,17 @@ describe('applySavedView', () => {
       minEdgeWeight: 0.5,
       edgeKinds: null,
       modifiedWithinDays: null,
+      bpmRange: null,
+      musicKey: null,
+      style: null,
     });
     expect(state.cameraCommand?.kind).toBe('pose');
     expect(state.cameraCommand?.pose).toEqual({ px: 10, py: 20, pz: 30, tx: 1, ty: 2, tz: 3 });
+  });
+
+  it('restores saved audio facets', () => {
+    applySavedView(view({ filter: { fileTypes: null, clusters: null, minDegree: 0, minEdgeWeight: 0, bpmRange: [120, 130], musicKey: 'D minor', style: 'warm' } }));
+    const { filter } = useUiStore.getState();
+    expect([filter.bpmRange, filter.musicKey, filter.style]).toEqual([[120, 130], 'D minor', 'warm']);
   });
 });

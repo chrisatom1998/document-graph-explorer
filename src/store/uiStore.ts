@@ -66,6 +66,33 @@ export interface GraphFilter {
   edgeKinds: EdgeKind[] | null;
   /** Keep documents modified within this many days; null = any age. */
   modifiedWithinDays: number | null;
+  /** Clips whose detected tempo falls inside [min, max] BPM; null = any tempo. */
+  bpmRange: [number, number] | null;
+  /** Clips in this musical key (see keyName); null = any key. */
+  musicKey: string | null;
+  /** Clips tagged with this character/style label; null = any style. */
+  style: string | null;
+}
+
+/**
+ * Validates the audio facets from an untrusted source (saved views, collab
+ * snapshots). Only keys that are present and valid are returned, so callers
+ * can tell "absent" from "explicitly cleared" (null).
+ */
+export function sanitizeAudioFacets(source: Record<string, unknown>): Partial<Pick<GraphFilter, 'bpmRange' | 'musicKey' | 'style'>> {
+  const out: Partial<Pick<GraphFilter, 'bpmRange' | 'musicKey' | 'style'>> = {};
+  if (Object.hasOwn(source, 'bpmRange')) {
+    const r = source.bpmRange;
+    if (r === null) out.bpmRange = null;
+    else if (Array.isArray(r) && r.length === 2 && r.every(v => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1000) && r[0] <= r[1]) out.bpmRange = [r[0], r[1]];
+  }
+  for (const key of ['musicKey', 'style'] as const) {
+    if (!Object.hasOwn(source, key)) continue;
+    const v = source[key];
+    if (v === null) out[key] = null;
+    else if (typeof v === 'string' && v.length > 0 && v.length <= 64) out[key] = v;
+  }
+  return out;
 }
 
 export const DEFAULT_FILTER: GraphFilter = {
@@ -75,6 +102,9 @@ export const DEFAULT_FILTER: GraphFilter = {
   minEdgeWeight: 0,
   edgeKinds: null,
   modifiedWithinDays: null,
+  bpmRange: null,
+  musicKey: null,
+  style: null,
 };
 
 export interface SnapshotOverlay {

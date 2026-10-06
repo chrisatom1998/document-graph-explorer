@@ -1,0 +1,21 @@
+# Copied from the score job log of run 37415134127 (job 112124892140) on 0fc028b: the workflow's commit step failed
+# on round 2's checked-out harness files, so the JSON report was not committed. Tempo and tag lines are identical to
+# round 2's run of main + #116 (docs/evaluations/dj-clips-round2-2026-10-06/results/tempo-fix-116 on PR #119).
+500/500 analysed
+all                      n 500  tempo shown 1  acc1 0.842 (of shown 0.842)  acc2 0.91  half 8 double 26 other 45  confident 1 acc1 0.842  no tag 0  key n 395 shown 376 exact 0.544 mirex 0.64 (fifth 44 relative 23 parallel 45)
+dubstep                  n  51  key n 34 shown 32 exact 0.441 mirex 0.547 (fifth 2 relative 2 parallel 10)
+drum-and-bass            n  41  key n 26 shown 24 exact 0.423 mirex 0.546 (fifth 6 relative 0 parallel 1)
+hip-hop                  n  37  key n 33 shown 32 exact 0.364 mirex 0.5 (fifth 5 relative 6 parallel 1)
+breaks                   n  37  key n 32 shown 32 exact 0.719 mirex 0.775 (fifth 2 relative 2 parallel 1)
+electronica              n  35  key n 27 shown 26 exact 0.704 mirex 0.73 (fifth 0 relative 1 parallel 2)
+trance                   n  33  key n 27 shown 27 exact 0.63 mirex 0.696 (fifth 3 relative 1 parallel 0)
+psy-trance               n  33  key n 32 shown 31 exact 0.75 mirex 0.8 (fifth 1 relative 1 parallel 4)
+deep-house               n  32  key n 26 shown 24 exact 0.577 mirex 0.696 (fifth 5 relative 0 parallel 3)
+hard-dance               n  31  key n 26 shown 26 exact 0.5 mirex 0.631 (fifth 4 relative 2 parallel 4)
+minimal                  n  31  key n 21 shown 21 exact 0.476 mirex 0.61 (fifth 3 relative 1 parallel 5)
+electro-house            n  28  key n 26 shown 25 exact 0.654 mirex 0.731 (fifth 2 relative 2 parallel 2)
+techno                   n  27  key n 14 shown 14 exact 0.571 mirex 0.693 (fifth 2 relative 1 parallel 2)
+tech-house               n  26  key n 19 shown 18 exact 0.421 mirex 0.505 (fifth 2 relative 0 parallel 3)
+progressive-house        n  22  key n 20 shown 19 exact 0.55 mirex 0.655 (fifth 3 relative 0 parallel 3)
+house                    n  21  key n 20 shown 17 exact 0.4 mirex 0.515 (fifth 1 relative 4 parallel 3)
+chill-out                n  15  key n 12 shown 8 exact 0.333 mirex 0.475 (fifth 3 relative 0 parallel 1)

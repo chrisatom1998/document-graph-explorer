@@ -40,15 +40,24 @@ export function camelotRelation(a: Key, b: Key): KeyRelation {
 
 const validScore = (n: number) => Number.isFinite(n) && n >= 0 && n <= 1;
 /** Same evidence and gates as graph tempo/key links: file-name tags win over audio estimates. */
-export function mixFeatures(node: DocNode) {
+export function mixFeatures(node: DocNode): Features {
+  // Nodes are replaced, not mutated, when analysis or names change, so the node object is a safe cache key.
+  let features = featureCache.get(node);
+  if (!features) featureCache.set(node, features = projectFeatures(node));
+  return features;
+}
+function projectFeatures(node: DocNode) {
   const audio = node.audio as MusicAnalysis;
   const hints = musicNameHints(node);
   const tempo = hints.tempo ? { bpm: hints.tempo.value, confidence: .65, source: hints.tempo.source } : audio.tempo && { ...audio.tempo, source: 'audio estimate' as const };
   const key = hints.key ? { ...hints.key.value, strength: .65, source: hints.key.source, display: hints.key.displayName } : audio.key && { ...audio.key, source: 'audio estimate' as const, display: keyName(audio.key) };
-  let vector: number[] | undefined;
-  if (audio.embedding?.length === 512 && audio.embedding.every(Number.isFinite)) {
-    const norm = Math.hypot(...audio.embedding);
-    if (norm > 1e-8) vector = audio.embedding.map(v => v / norm);
+  // Keep the saved embedding and its inverse norm rather than copying a normalized 512-value array per track.
+  let vector: { values: number[]; scale: number } | undefined;
+  if (audio.embedding?.length === 512) {
+    let sum = 0;
+    for (const v of audio.embedding) sum += v * v;
+    const norm = Math.sqrt(sum);
+    if (Number.isFinite(norm) && norm > 1e-8) vector = { values: audio.embedding, scale: 1 / norm };
   }
   return {
     tempo: tempo && tempo.bpm >= 40 && tempo.bpm <= 250 && validScore(tempo.confidence) && tempo.confidence >= .5 ? tempo : undefined,
@@ -56,7 +65,8 @@ export function mixFeatures(node: DocNode) {
     vector,
   };
 }
-type Features = ReturnType<typeof mixFeatures>;
+type Features = ReturnType<typeof projectFeatures>;
+const featureCache = new WeakMap<DocNode, Features>();
 
 /** Best of same, half and double time; `changePct` is how far the candidate must be pitched to match. */
 export function tempoMatch(target: number, other: number): { relation: TempoRelation; changePct: number } {
@@ -91,8 +101,10 @@ function suggestion(target: Features, node: DocNode, other: Features, tolerance:
     reasons.push(`${camelotCode(other.key)} (${other.key.display}): ${KEY_TEXT[relation]}`);
   }
   if (target.vector && other.vector) {
+    const a = target.vector.values, b = other.vector.values;
     let dot = 0;
-    for (let i = 0; i < 512; i++) dot += target.vector[i] * other.vector[i];
+    for (let i = 0; i < 512; i++) dot += a[i] * b[i];
+    dot *= target.vector.scale * other.vector.scale;
     row.similarity = dot;
     sound = soundScore(dot);
     if (dot >= .7) reasons.push(`sounds ${Math.floor(dot * 100)}% alike`);
@@ -107,13 +119,20 @@ function suggestion(target: Features, node: DocNode, other: Features, tolerance:
 export function mixSuggestions(target: DocNode, nodes: DocNode[], options: MixOptions = {}): MixSuggestion[] {
   if (target.fileType !== 'audio' || !target.audio) return [];
   const { limit = 10, tempoTolerancePct = 6 } = options;
+  if (limit < 1) return [];
   const self = mixFeatures(target);
   if (!self.tempo && !self.key && !self.vector) return [];
+  const order = (a: MixSuggestion, b: MixSuggestion) => b.score - a.score || a.node.title.localeCompare(b.node.title) || a.node.id.localeCompare(b.node.id);
+  // Keep only the best `limit` rows so large libraries never sort every candidate.
   const rows: MixSuggestion[] = [];
   for (const node of nodes) {
     if (node.id === target.id || node.fileType !== 'audio' || !node.audio) continue;
     const row = suggestion(self, node, mixFeatures(node), tempoTolerancePct);
-    if (row) rows.push(row);
+    if (!row || (rows.length >= limit && order(row, rows[rows.length - 1]) >= 0)) continue;
+    let at = rows.length;
+    while (at > 0 && order(row, rows[at - 1]) < 0) at--;
+    rows.splice(at, 0, row);
+    if (rows.length > limit) rows.pop();
   }
-  return rows.sort((a, b) => b.score - a.score || a.node.title.localeCompare(b.node.title) || a.node.id.localeCompare(b.node.id)).slice(0, limit);
+  return rows;
 }
