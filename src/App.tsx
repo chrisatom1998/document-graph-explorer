@@ -17,10 +17,11 @@ import { initializeCorpusRepository } from './persistence/corpusRepository';
 import { reportPersistenceUnavailable } from './persistence/cache';
 import { initChatHistorySync } from './persistence/chatHistorySync';
 import { useSettingsStore } from './store/settingsStore';
+import { audioAnalysisUsedBefore } from './audio/speculativePreload';
 import './styles.css';
 
-/** Fetch and warm the audio models once the restored graph has settled, so the
- * first sound dropped skips the model download. Dynamic import keeps analyzeMusic
+/** Fetch and warm the audio models once a restored graph that contains audio has
+ * settled, so the next sound dropped skips the model download. Dynamic import keeps analyzeMusic
  * out of the main chunk; preloadMusicModels skips hosts too small to hold them,
  * and the drop-time preload in coordinator.ts stays as the fallback. A run that is
  * already parsing or embedding (demo corpus, an early drop) goes first: the warmup
@@ -36,6 +37,12 @@ function preloadAudioModelsWhenIdle(): void {
       });
       return;
     }
+    // Only someone who works with audio is likely to need the models soon.
+    // Everyone else (first visit, documents only) would pay ~180 MB of
+    // downloads, plus ~350 MB more where WebGPU is available, and four busy
+    // model workers on every launch for nothing; their first audio drop still
+    // preloads while the files are hashed and parsed (coordinator.ts).
+    if (!audioAnalysisUsedBefore() && !useGraphStore.getState().nodes.some(n => n.kind === 'document' && n.fileType === 'audio')) return;
     const mode = useSettingsStore.getState().musicAnalysisMode;
     void import('./audio/analyzeMusic').then(m => m.preloadMusicModels(mode, { speculative: true })).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
   };
