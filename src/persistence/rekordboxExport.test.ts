@@ -128,7 +128,7 @@ describe('buildRekordboxXml', () => {
       key: { tonic: 9, mode: 'minor', strength: 0.7 },
       confirmedInstruments: ['drums', 'bass'],
     }),
-    // Nothing detected: the file name's key and BPM fill in, as on the track panel.
+    // Nothing detected: the file name's key and BPM fill in.
     audioNode('DJ/Loops/SHADOW_UK1_Melodic_Loop_Fight_Gm_140.wav', { durationSeconds: 13.7 }),
     audioNode('Elsewhere/skip.mp3', { tempo: { bpm: 120, confidence: 1 } }),
     { ...audioNode('DJ/notes.md'), fileType: 'md', audio: undefined } as DocNode,
@@ -158,6 +158,22 @@ describe('buildRekordboxXml', () => {
     expect(tracks).toBe(0);
     expect(skipped).toBe(3);
     expect(XMLValidator.validate(xml)).toBe(true);
+  });
+
+  it('prefers a BPM and key in the name, like the track panel', () => {
+    const node = audioNode('DJ/Loop_Dm_140.wav', { tempo: { bpm: 70, confidence: 0.9 }, key: { tonic: 9, mode: 'minor', strength: 0.8 } });
+    const [track] = parseAndValidate(buildRekordboxXml([node], { folderPaths: { DJ: '/x/DJ' } }).xml);
+    expect(track).toMatchObject({ AverageBpm: '140.00', Tonality: 'Dm' });
+  });
+
+  it('leaves out files whose path is shared by same-named folders', () => {
+    const { xml, tracks, ambiguous } = buildRekordboxXml(
+      [audioNode('Crate/a.mp3'), { ...audioNode('Crate/a.mp3'), id: 'other' }, audioNode('Crate/b.mp3')],
+      { folderPaths: { Crate: '/x/Crate' } },
+    );
+    expect(tracks).toBe(1);
+    expect(ambiguous).toBe(2);
+    expect(parseAndValidate(xml).map(t => t.Location)).toEqual(['file://localhost/x/Crate/b.mp3']);
   });
 
   it('strips characters XML cannot carry', () => {

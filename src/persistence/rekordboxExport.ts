@@ -2,9 +2,8 @@
  * Rekordbox collection XML export (the DJ_PLAYLISTS format Rekordbox reads via
  * Preferences > Advanced > Database > rekordbox xml).
  *
- * Writes what the track panel shows: the detected BPM and key (falling back to
- * the file name's BPM/key when the audio left them undetermined) and the sound
- * tags on the Sounds row. Tags go in Comments, with the Camelot key first so
+ * Writes what the track panel shows: a BPM/key written in the file or folder
+ * name first, else the detected one, and the sound tags on the Sounds row. Tags go in Comments, with the Camelot key first so
  * they sort and search the way DJs expect.
  *
  * Deliberately left out:
@@ -54,8 +53,9 @@ export interface RekordboxTrackData {
 export function rekordboxTrackData(node: DocNode): RekordboxTrackData {
   const audio = node.audio;
   const hints = musicNameHints(node);
-  const bpm = audio?.tempo?.bpm ?? hints.tempo?.value;
-  const key = audio?.key ? { tonic: audio.key.tonic, mode: audio.key.mode } : hints.key?.value;
+  // Same precedence as the track panel: a BPM or key written in the name wins.
+  const bpm = hints.tempo?.value ?? audio?.tempo?.bpm;
+  const key = hints.key?.value ?? (audio?.key ? { tonic: audio.key.tonic, mode: audio.key.mode } : undefined);
   let tags: string[] = [];
   if (audio) {
     const scored = confidentSoundSummary(audio);
@@ -139,14 +139,27 @@ export interface RekordboxExportResult {
   tracks: number;
   /** Audio files left out because their folder location was missing or invalid. */
   skipped: number;
+  /**
+   * Audio files left out because another file has the same path. That happens
+   * when two folders with the same name were added from different places; the
+   * browser can't tell them apart, so neither copy gets a guessed location.
+   */
+  ambiguous: number;
 }
 
 export function buildRekordboxXml(nodes: DocNode[], options: RekordboxExportOptions): RekordboxExportResult {
   const date = (options.now ?? new Date()).toISOString().slice(0, 10);
   const tracks: string[] = [];
   let skipped = 0;
-  for (const node of nodes) {
-    if (node.kind !== 'document' || node.fileType !== 'audio') continue;
+  let ambiguous = 0;
+  const audioNodes = nodes.filter(node => node.kind === 'document' && node.fileType === 'audio');
+  const pathCounts = new Map<string, number>();
+  for (const node of audioNodes) pathCounts.set(node.path || node.title, (pathCounts.get(node.path || node.title) ?? 0) + 1);
+  for (const node of audioNodes) {
+    if (pathCounts.get(node.path || node.title)! > 1) {
+      ambiguous++;
+      continue;
+    }
     const root = rekordboxRootName(node);
     const folder = options.folderPaths[root];
     const location = folder && folderPathMatchesRoot(folder, root) ? rekordboxLocation(node, folder) : undefined;
@@ -190,5 +203,5 @@ export function buildRekordboxXml(nodes: DocNode[], options: RekordboxExportOpti
     '</DJ_PLAYLISTS>',
     '',
   ].join('\n');
-  return { xml, tracks: tracks.length, skipped };
+  return { xml, tracks: tracks.length, skipped, ambiguous };
 }

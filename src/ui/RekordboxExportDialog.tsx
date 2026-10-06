@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { DocNode } from '../model/types';
 import { dateStamp, downloadBlob } from '../persistence/exportImport';
 import { buildRekordboxXml, folderPathMatchesRoot, rekordboxRootName } from '../persistence/rekordboxExport';
+import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useFocusTrap } from './useFocusTrap';
 
@@ -48,10 +49,12 @@ export default function RekordboxExportDialog({ nodes, onClose }: { nodes: DocNo
   const exportXml = () => {
     const usable = Object.fromEntries(ready.map(([root]) => [root, folders[root]]));
     saveFolders(usable);
-    const { xml, tracks, skipped } = buildRekordboxXml(audioNodes, { folderPaths: usable, productVersion: typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : undefined });
+    // Read the store now: full analysis can still be refining BPM, key and tags.
+    const latest = useGraphStore.getState().nodes;
+    const { xml, tracks, skipped, ambiguous } = buildRekordboxXml(latest.length ? latest : audioNodes, { folderPaths: usable, productVersion: typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : undefined });
     downloadBlob(new Blob([xml], { type: 'application/xml' }), `rekordbox-${dateStamp()}.xml`);
     useUiStore.getState().pushToast(
-      `Rekordbox XML exported with ${tracks} track${tracks === 1 ? '' : 's'}${skipped ? `; ${skipped} left out without a folder location` : ''}.`,
+      `Rekordbox XML exported with ${tracks} track${tracks === 1 ? '' : 's'}${skipped ? `; ${skipped} left out without a folder location` : ''}${ambiguous ? `; ${ambiguous} left out because same-named folders from different places share their path` : ''}.`,
       'info',
     );
     onClose();
