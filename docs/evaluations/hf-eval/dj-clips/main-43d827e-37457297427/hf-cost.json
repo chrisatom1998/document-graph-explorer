@@ -1,0 +1,39 @@
+{
+ "task": "dj-clips",
+ "run_key": "dj-clips-37457297427-1",
+ "flavor": "cpu-upgrade",
+ "parts": 4,
+ "usd_per_hour": 0.03,
+ "wall_clock_min": 63.5,
+ "job_minutes": 244.6,
+ "cost_usd": 0.122,
+ "worst_case_usd": 0.24,
+ "failed_parts": [],
+ "jobs": [
+  {
+   "part": 0,
+   "job": "6ac4dcd0fbc85ba6823b40b1",
+   "stage": "COMPLETED",
+   "minutes": 63.1
+  },
+  {
+   "part": 1,
+   "job": "6ac4dcd0404719ba3765e9a0",
+   "stage": "COMPLETED",
+   "minutes": 61.0
+  },
+  {
+   "part": 2,
+   "job": "6ac4dcd0fbc85ba6823b40b6",
+   "stage": "COMPLETED",
+   "minutes": 62.0
+  },
+  {
+   "part": 3,
+   "job": "6ac4dcd0fbc85ba6823b40ba",
+   "stage": "COMPLETED",
+   "minutes": 58.5
+  }
+ ],
+ "finished": "2026-10-06T12:38:09+00:00"
+}
