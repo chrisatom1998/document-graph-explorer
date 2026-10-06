@@ -132,7 +132,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   // same annotated demo must survive reload, including without a user file.
   const openPostgres = async () => {
     await page.getByRole('button', { name: 'Search documents' }).click();
-    await page.getByRole('combobox').fill('Postgres Performance Tuning Guide');
+    await page.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('Postgres Performance Tuning Guide');
     await page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /^Postgres Performance Tuning Guide/ }).click();
     await expect(sidePanel).toBeVisible(frameBudget);
     await expect(sidePanel.getByRole('button', { name: 'Extracted text', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -201,7 +201,7 @@ test('normal-motion navigation and title-only Unicode search work after import',
   await expect(panel).toContainText('Boundary node 0001', { timeout: 150_000 });
   await closeDetails(page);
   await page.getByRole('button', { name: 'Search documents' }).click();
-  await page.getByRole('combobox').fill('東京');
+  await page.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('東京');
   await page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /東京 計画/ }).click();
   await expect(panel).toContainText('東京 計画', { timeout: 150_000 });
   await closeDetails(page);
@@ -223,7 +223,7 @@ test('search ranks within file filters before applying its result limit', async 
   await advancedFilters(page);
   await page.getByRole('button', { name: 'md · 1', exact: true }).click();
   await page.getByRole('button', { name: 'Search documents' }).click();
-  await page.getByRole('combobox').fill('Architecture');
+  await page.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('Architecture');
   await expect(page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /Architecture 13/ })).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Search documents' }).getByRole('option')).toHaveCount(1);
 });

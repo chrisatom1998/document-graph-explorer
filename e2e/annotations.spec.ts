@@ -17,7 +17,7 @@ test('competing tabs retain committed notes and deletion versions when an older 
     const tour = tab.getByRole('button', { name: 'Dismiss getting started' });
     if (await tour.isVisible()) await tour.click();
     await tab.getByRole('button', { name: 'Search documents', exact: true }).click();
-    await tab.getByRole('combobox').fill('Postgres Performance Tuning Guide');
+    await tab.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('Postgres Performance Tuning Guide');
     await tab.getByRole('option', { name: /^Postgres Performance Tuning Guide/ }).click();
     await expect(details(tab)).toBeVisible({ timeout: 150_000 });
     await tab.getByRole('button', { name: 'About', exact: true }).click();
