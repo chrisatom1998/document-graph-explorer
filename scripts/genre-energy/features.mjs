@@ -50,7 +50,7 @@ const t0 = Date.now();
 for (const [n, clip] of clips.entries()) {
   const raw = execFileSync('ffmpeg', ['-nostdin', '-v', 'error', '-i', clip.path, '-ac', '1', '-ar', '16000', '-f', 'f32le', '-'], { maxBuffer: 1 << 28 });
   const samples = new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength / 4).slice();
-  const { path: _path, ...row } = clip;
+  const row = { ...clip }; delete row.path;
   const duration = samples.length / 16000;
   row.seconds = +duration.toFixed(2);
   const at = start => samples.subarray(Math.round(start * 16000), Math.min(samples.length, Math.round((start + 10) * 16000)));
