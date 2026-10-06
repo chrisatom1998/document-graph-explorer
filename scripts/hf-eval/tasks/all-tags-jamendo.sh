@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The all-tags full-song test (.github/workflows/all-tags-eval.yml) in the real built app on HF Jobs: 600 MTG-Jamendo
 # split-0 validation songs, 26 tags, scored with the app's own display code. TASK_ARGS: optional track limit per part.
-#   run:     fetch this part's archive folders, build the app, analyse in headless Chromium (PROCS browsers in parallel).
+#   run:     fetch this part's tracks (byte ranges of the archive folders), build the app, analyse in headless Chromium (PROCS browsers in parallel).
 #   collect: score all parts (scripts/all-tags/score.mjs, all/pick/check halves) and extract per-track records.
 set -euo pipefail
 DOCS=docs/evaluations/all-tags-2026-10-06
@@ -13,7 +13,7 @@ run)
     mkdir -p "$WORK/mj/$(dirname $f)"; curl -fsSL --retry 6 -o "$WORK/mj/$f" "$JM/$f"
   done
   python3 "$HARNESS/scripts/all-tags/select-jamendo-val.py" "$WORK/mj"
-  python3 "$HARNESS/scripts/all-tags/fetch-jamendo.py" "$HARNESS/$DOCS/jamendo-val-manifest.json" \
+  python3 "$HARNESS/scripts/hf-eval/fetch-jamendo-ranges.py" "$HARNESS/$DOCS/jamendo-val-manifest.json" \
     "$WORK/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" $PART/$PARTS $WORK/audio
   cd "$APP"
   npx playwright install --with-deps chromium > /dev/null
