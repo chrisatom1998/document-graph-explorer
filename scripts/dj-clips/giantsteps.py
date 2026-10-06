@@ -54,7 +54,7 @@ with concurrent.futures.ThreadPoolExecutor(4) as pool:
 keep = [n for n in names if n in kept][:MAX_ITEMS]
 for n in set(kept) - set(keep): os.remove(os.path.join(audio_out, f"gs-{h(SEED, n)[:16]}.wav"))   # batch overshoot
 if frozen and len(keep) != len(frozen): sys.exit(f'{len(frozen) - len(keep)} frozen clips could not be fetched again: {failed[:5]}')
-if len(keep) < 100: sys.exit(f'only {len(keep)} previews downloaded; {len(failed)} failed, e.g. {failed[:5]}')
+if len(keep) < MAX_ITEMS: sys.exit(f'only {len(keep)} of {MAX_ITEMS} previews downloaded; {len(failed)} failed, e.g. {failed[:5]}')
 
 items = []
 for n in keep:
