@@ -1,0 +1,1417 @@
+{
+ "created": "2026-10-05",
+ "source": "Freesound CC0 previews (ogg), fetched by scripts/fetch-bass-oneshot-candidates.mjs",
+ "labeller": "owner, by ear, with a prefilled search-hint guess shown (Enter = accept)",
+ "items": [
+  {
+   "id": "13663",
+   "freesoundId": "13663",
+   "uploader": "ubergossen",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.081,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "28a52f9d4d80fdc7cfa59f16d2c098a9ce9b3acc18349ed36118b4ce0140d081"
+  },
+  {
+   "id": "16328",
+   "freesoundId": "16328",
+   "uploader": "sstokes",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.97898,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "d8e664dee21d1b5b4edf3de5b82d903bfb448a083376e9685366a05f5f166472"
+  },
+  {
+   "id": "18098",
+   "freesoundId": "18098",
+   "uploader": "SampleBasement",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.514467,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "801dd14a003dd3c348d659bf9ad118436a0570dbdf0df99e3c3e66191bce734a"
+  },
+  {
+   "id": "18099",
+   "freesoundId": "18099",
+   "uploader": "SampleBasement",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.597188,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "2123e5325eb3e52e397f6cd8efd645607914cdd1047d52e5b617c1c3235a3ff2"
+  },
+  {
+   "id": "18140",
+   "freesoundId": "18140",
+   "uploader": "nickm",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.45125,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "f098ac57ee80311fcaf9f71a84ae47692912941e1a57f605e1514d7e3bb8511a"
+  },
+  {
+   "id": "18141",
+   "freesoundId": "18141",
+   "uploader": "nickm",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.15229,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "655a158801a3b0e0fc6ceed1be90b1e5eb8eb1713097c5e43aba058572f5a312"
+  },
+  {
+   "id": "18190",
+   "freesoundId": "18190",
+   "uploader": "Roil Noise",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.589229,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "60c87101809fef314deac3ee6dcefc732d3aeb0cb2d3006ee5d9594fe2377b20"
+  },
+  {
+   "id": "19392",
+   "freesoundId": "19392",
+   "uploader": "Notofficial",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.907029,
+   "bassHit": false,
+   "searchHint": "negative: synth",
+   "sha256": "a6de8ba7d5fa5fd1f92f61b44f0954ce936ec51393d2aaf508bdb416091e6284"
+  },
+  {
+   "id": "32594",
+   "freesoundId": "32594",
+   "uploader": "FranticAerostat",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.01662,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "07ab52be244570f50a0bf3b78e53e84531bd11a10776752d1dd44f9e7b64851a"
+  },
+  {
+   "id": "70929",
+   "freesoundId": "70929",
+   "uploader": "jfajner",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.3932,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "7053594055a1a5c1be84258df13c421fcf1ad7805dc9689dab478f3ddc33557b"
+  },
+  {
+   "id": "110550",
+   "freesoundId": "110550",
+   "uploader": "Noisehag",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.95023,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "f802a36a7ff8e9061ece7fd50b5f9824cdd5716e0e84db9af2c0695080232824"
+  },
+  {
+   "id": "126355",
+   "freesoundId": "126355",
+   "uploader": "wildebrasje",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.254966,
+   "bassHit": false,
+   "searchHint": "negative: kick",
+   "sha256": "ed7461043ff16069e809fc260ee3ea0d815da4de809825330db9987508a7b85e"
+  },
+  {
+   "id": "164565",
+   "freesoundId": "164565",
+   "uploader": "deleted_user_2104797",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.44354,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "6a3206a9a6149c58b2ce0efb1ad6e6acde2a9d291d109dc8192625da6092de43"
+  },
+  {
+   "id": "164566",
+   "freesoundId": "164566",
+   "uploader": "deleted_user_2104797",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.44354,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "75926a235e34e45be0576c0a4903129555880154a6c88a215fa7610228af3c05"
+  },
+  {
+   "id": "178765",
+   "freesoundId": "178765",
+   "uploader": "aption",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.43968,
+   "bassHit": false,
+   "searchHint": "negative: kick",
+   "sha256": "04b1c30c861221f8fe98ecc561c0750b7518214f2094070f251c64f2aac6fbf0"
+  },
+  {
+   "id": "178767",
+   "freesoundId": "178767",
+   "uploader": "aption",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.197392,
+   "bassHit": true,
+   "searchHint": "negative: kick",
+   "sha256": "7d769b35141351be2b54e84a0894f1aa2c6e68ebecf6c36f3646aad4ba4b8a82"
+  },
+  {
+   "id": "201451",
+   "freesoundId": "201451",
+   "uploader": "Tverse",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.00096,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "f115e31f748207a0ab538141387316a45adbc98e0e0f9d9ff5ce4fdfb8536493"
+  },
+  {
+   "id": "201452",
+   "freesoundId": "201452",
+   "uploader": "Tverse",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.923625,
+   "bassHit": false,
+   "searchHint": "bass",
+   "sha256": "7bd66c3358b02c591b016e9a59cccf944b4d4362b5e45381f945b67fcd91fdc0"
+  },
+  {
+   "id": "204772",
+   "freesoundId": "204772",
+   "uploader": "Ai21z",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.499773,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "a88c6b50746079c47877d6419ce4793da08d5f5528add612d216398e0749c79f"
+  },
+  {
+   "id": "207808",
+   "freesoundId": "207808",
+   "uploader": "Exsomniel",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.72322,
+   "bassHit": false,
+   "searchHint": "bass",
+   "sha256": "c85e53be9ff16eee58d972382c2dc8b8a135a5f5a9e45253a2cdf95882343675"
+  },
+  {
+   "id": "233764",
+   "freesoundId": "233764",
+   "uploader": "fourge",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.84737,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "14d85d258f97d18927fb39c05793b8452317918253531bf1719d2b881db774af"
+  },
+  {
+   "id": "260001",
+   "freesoundId": "260001",
+   "uploader": "simonjsounds",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.380317,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "4efd19a7bb5d84ee9e70b315b629f4e38dbf81bf2ccbcba85e712baf76db42ab"
+  },
+  {
+   "id": "264779",
+   "freesoundId": "264779",
+   "uploader": "AnthonyChan0",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.396979,
+   "bassHit": false,
+   "searchHint": "bass",
+   "sha256": "acdcf2975b31b3eaeccc3459ca5303fb2545cda6227f7e55785330554aa97318"
+  },
+  {
+   "id": "271252",
+   "freesoundId": "271252",
+   "uploader": "pryere",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.92045,
+   "bassHit": false,
+   "searchHint": "negative: synth",
+   "sha256": "2bb458d32483f5498eeb578957263952aa3421acb8cdc43fa2b8caa04202fa42"
+  },
+  {
+   "id": "332430",
+   "freesoundId": "332430",
+   "uploader": "akmp",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.80955,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "a6d2c124c516b171f7d198c95d89904398c8b60c42bd50f616d09d3fa7ee86a4"
+  },
+  {
+   "id": "340467",
+   "freesoundId": "340467",
+   "uploader": "deleted_user_5205523",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.719819,
+   "bassHit": true,
+   "searchHint": "negative: drum",
+   "sha256": "5ea05640673b78bdbdfa70ab1469f52f489dbc75390c735353d00e16532e4021"
+  },
+  {
+   "id": "360545",
+   "freesoundId": "360545",
+   "uploader": "MichaelMalong",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.44644,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "c9b31f2a29e89063ff43deca409cb790213b7dcbe759c3c644364b5fa71ce37f"
+  },
+  {
+   "id": "375273",
+   "freesoundId": "375273",
+   "uploader": "sgossner",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.85805,
+   "bassHit": false,
+   "searchHint": "bass",
+   "sha256": "34947d669df712f8d4ab9b7c56c368638e432b95f951a2a6a63e18a6a59fb288"
+  },
+  {
+   "id": "375274",
+   "freesoundId": "375274",
+   "uploader": "sgossner",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.56102,
+   "bassHit": false,
+   "searchHint": "bass",
+   "sha256": "2f97bebc97752b329773a2ce1c30e2ead997d74fa103e9c811fd013521b94e57"
+  },
+  {
+   "id": "384911",
+   "freesoundId": "384911",
+   "uploader": "Ali_6868",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "5c83162e83f892947e29d3fb1eb0088d7ce4378f60d177b2ef1948ca40bb6893"
+  },
+  {
+   "id": "384914",
+   "freesoundId": "384914",
+   "uploader": "Ali_6868",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.375011,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "8253b768b475356cb45dce96a7d4fcc6f8ad84a7e8498940e353d700e69864ba"
+  },
+  {
+   "id": "400485",
+   "freesoundId": "400485",
+   "uploader": "Diaframe",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.07757,
+   "bassHit": false,
+   "searchHint": "bass",
+   "sha256": "e47d420df59458f1984119e5b52e666f4a84f8311bd008b972c7e25c3061560f"
+  },
+  {
+   "id": "400486",
+   "freesoundId": "400486",
+   "uploader": "Diaframe",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.678866,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "63c566920c22cc4019c7635ac1e25e9367904f31a5e184c781b632d95c242897"
+  },
+  {
+   "id": "415549",
+   "freesoundId": "415549",
+   "uploader": "hullum",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.93107,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "419a1d36a1768cc4f3d7a481d5397da50a47e665d415c767bc173ddc430447b6"
+  },
+  {
+   "id": "418194",
+   "freesoundId": "418194",
+   "uploader": "deleted_user_3656686",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.65225,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "4d0dc21d2128f48afc2b92029e2665cb592c809ed429bad9ec87eae546db42a3"
+  },
+  {
+   "id": "423680",
+   "freesoundId": "423680",
+   "uploader": "rugged163",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.942857,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "ce58e3e5e0bf6f58de334a3fed41cafc4a36f6b6c73f4a0fcd0b0186f08650dc"
+  },
+  {
+   "id": "424424",
+   "freesoundId": "424424",
+   "uploader": "Lavacoal123",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.973175,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "6b6d01b1ed408ac0b894e8fa274cd8e51fe799ec22c26e31438746013baffc05"
+  },
+  {
+   "id": "432912",
+   "freesoundId": "432912",
+   "uploader": "Kyanite_",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.484717,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "6e6bdffe91ce9e52945f2f4353e55d81a738659d434fbae0c8befd0619939168"
+  },
+  {
+   "id": "441055",
+   "freesoundId": "441055",
+   "uploader": "jnvrbs",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.165283,
+   "bassHit": true,
+   "searchHint": "negative: kick",
+   "sha256": "acbc6372fbdbb1b41e4d9b7426d84a04b88d95613ab43d6ce7ab39ab38846916"
+  },
+  {
+   "id": "468949",
+   "freesoundId": "468949",
+   "uploader": "goldenpotatobull",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.162063,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "5183834e47c9813d6d59e6bc143d404fce9c8bb1d411ba906b02a04a9b741a18"
+  },
+  {
+   "id": "471444",
+   "freesoundId": "471444",
+   "uploader": "Juaner_",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.159705,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "98d0374bab07563ef9a762c31eb63404de2a3ea79c869efa089f571960ff6326"
+  },
+  {
+   "id": "471445",
+   "freesoundId": "471445",
+   "uploader": "Juaner_",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.21,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "2cc3bd9f23b62051e4a805ccd4a76bfa0efae4017aba050c794eb746857d9301"
+  },
+  {
+   "id": "488000",
+   "freesoundId": "488000",
+   "uploader": "BenDrain",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.666667,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "9cc6470596f7846348017b2ac072e31ed860815c34563d2f9aee828ff4409684"
+  },
+  {
+   "id": "488256",
+   "freesoundId": "488256",
+   "uploader": "chaosZMemes",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.278639,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "f0bd28722f52bb7f79332caba569679c60150185355ff4033576beea48944080"
+  },
+  {
+   "id": "488459",
+   "freesoundId": "488459",
+   "uploader": "Trvth",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.519388,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "1b409a509f4b5eb0145200556ca937bc4048afd94bf49ee6134464b865be9862"
+  },
+  {
+   "id": "503854",
+   "freesoundId": "503854",
+   "uploader": "germona",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.98531,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "0e3e672ed737366b31a7edf9549c52d13c465879fd1d3fa6d440cb87dabcaa6b"
+  },
+  {
+   "id": "509527",
+   "freesoundId": "509527",
+   "uploader": "Sassaby",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.73036,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "3c70edb26bf04a1203f61e36d6a616a4033ea4cdd0825234be16ca880ae01912"
+  },
+  {
+   "id": "517523",
+   "freesoundId": "517523",
+   "uploader": "bikesnbassboi",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.788549,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "707a854aaf771c50c0a30dc8b945cc662d3f4be56e44321c7bcbabe3558df3fe"
+  },
+  {
+   "id": "517782",
+   "freesoundId": "517782",
+   "uploader": "Mutumaniac",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.940408,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "c4b73a619a9a34af06a2e355c30612917d014391df7d7dbb219bc7b3bedac2fd"
+  },
+  {
+   "id": "518557",
+   "freesoundId": "518557",
+   "uploader": "EcoDTR",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.40229,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "f53ea3184b6fd92d983f4c821b40227b7d5ed4ae19394d84e7676d22a5c3520b"
+  },
+  {
+   "id": "523088",
+   "freesoundId": "523088",
+   "uploader": "magnuswaker",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.21439,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "c5ec553ef9c82811ddeac10654eadde6f1381d844e3c6c4b20a64bed48538e3f"
+  },
+  {
+   "id": "528816",
+   "freesoundId": "528816",
+   "uploader": "magnuswaker",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.12644,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "86eca7573f4607e90865cad0fd62751cb7c0bbdd945eabfbff05d01ca8c99203"
+  },
+  {
+   "id": "536872",
+   "freesoundId": "536872",
+   "uploader": "curesforbrokenhearts",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.31478,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "f80c4a4765c552636037caa668c6c8c908910bdbfae91f19cb7549faf4f0ecb1"
+  },
+  {
+   "id": "542346",
+   "freesoundId": "542346",
+   "uploader": "daafmaas",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.222585,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "f73890c84955fd2d160c301f439ec8c5150e3acaf475073a3d9d6b69383c215c"
+  },
+  {
+   "id": "542818",
+   "freesoundId": "542818",
+   "uploader": "Rippleys_Circus",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.20639,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "1fc71663954da8494af8838f846881883ce7709396f6c77ad4da1821d0413833"
+  },
+  {
+   "id": "542823",
+   "freesoundId": "542823",
+   "uploader": "Rippleys_Circus",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.2563,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "4b8100e3fdec03014c80c2ce058d5062147199dc825112c042c1efd4d04433b2"
+  },
+  {
+   "id": "546784",
+   "freesoundId": "546784",
+   "uploader": "DylanSmithSound",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.5,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "8120ee91f217dd109d06da573465fdcd37b2ef44bd0d90850be27feae5e54ae5"
+  },
+  {
+   "id": "546785",
+   "freesoundId": "546785",
+   "uploader": "DylanSmithSound",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.5,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "28bc3a84e2bb4563e0fe50187c7b54b7175cb9eb4e233423567012579dc52857"
+  },
+  {
+   "id": "551400",
+   "freesoundId": "551400",
+   "uploader": "Noetech",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.55902,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "bf4df8333f420b3ad95092be0ccf2a00cb48a92f835b8dc63dbb9cbc91cfb170"
+  },
+  {
+   "id": "551401",
+   "freesoundId": "551401",
+   "uploader": "Noetech",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.75933,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "d5ce627b2edd8c06c5116bdd0e748230475beb693deb1c639cb478d4a73b8169"
+  },
+  {
+   "id": "555527",
+   "freesoundId": "555527",
+   "uploader": "stwime",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.999841,
+   "bassHit": true,
+   "searchHint": "negative: drum",
+   "sha256": "b6438b245b216d0758f5595a15ee1f7418baf686d2771f14a5e74407c87cd092"
+  },
+  {
+   "id": "555528",
+   "freesoundId": "555528",
+   "uploader": "stwime",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.999841,
+   "bassHit": true,
+   "searchHint": "negative: drum",
+   "sha256": "3c848549747cd1f223bc4fdaffd4f2932012d4708fd1413f04c93df4e7bb206c"
+  },
+  {
+   "id": "557133",
+   "freesoundId": "557133",
+   "uploader": "melisandepope",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.66577,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "90f0a91aaf1c0fabdb7a959f29539a5acce1bd431c263c01efc772bc51e9a71c"
+  },
+  {
+   "id": "564683",
+   "freesoundId": "564683",
+   "uploader": "PKSuperStar256",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.748062,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "866a084ec5d1ad4de22ddf5c20ec62df8f6017a568222636b97f8855effd92f0"
+  },
+  {
+   "id": "566899",
+   "freesoundId": "566899",
+   "uploader": "lennartgreen",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.71431,
+   "bassHit": false,
+   "searchHint": "negative: drum",
+   "sha256": "7612778e9462bc329f1eff0bc04315618a105f68e04343d311cc1246b29fcafb"
+  },
+  {
+   "id": "581458",
+   "freesoundId": "581458",
+   "uploader": "johnnydekk",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.839637,
+   "bassHit": true,
+   "searchHint": "negative: kick",
+   "sha256": "6fb1e2ae37111e6ba46a0937f6795369bc0dbf94293a00908755c377d2b1e061"
+  },
+  {
+   "id": "581460",
+   "freesoundId": "581460",
+   "uploader": "johnnydekk",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.1315,
+   "bassHit": false,
+   "searchHint": "negative: kick",
+   "sha256": "e74e38f5b08b5bc7cef780e3615ccc25d0efd480ca513bb57feb9ae4f43201e7"
+  },
+  {
+   "id": "581751",
+   "freesoundId": "581751",
+   "uploader": "hvvdi",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 2,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "2be061a6b8b51a50139e49cc017e098741f70d577716664de8a274d827d96734"
+  },
+  {
+   "id": "590095",
+   "freesoundId": "590095",
+   "uploader": "Vozme",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.396979,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "54bec1c00ce33e8bd19613773894bface9e55c8ec10565463defbe7d6483068b"
+  },
+  {
+   "id": "593886",
+   "freesoundId": "593886",
+   "uploader": "WilsonGamer123",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.684989,
+   "bassHit": true,
+   "searchHint": "negative: impact",
+   "sha256": "f629f75804206b36b32b28262a68b7c59b0c6b7ef5a33d72c8b9dc43e81e7cb5"
+  },
+  {
+   "id": "610727",
+   "freesoundId": "610727",
+   "uploader": "meganitro24",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.23134,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "77b3ff91d4f7c170ee8a8f4c1d36d8dddaf158d7aecc6d6ef345477317007018"
+  },
+  {
+   "id": "610728",
+   "freesoundId": "610728",
+   "uploader": "meganitro24",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.41107,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "b3c792c355bd9234f40d6c893adf75639389b12f918897d009fd7aff75977868"
+  },
+  {
+   "id": "611504",
+   "freesoundId": "611504",
+   "uploader": "harrisonlace",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.642857,
+   "bassHit": false,
+   "searchHint": "bass",
+   "sha256": "420fe8048d189ff74ed8b8a21d8b3df23b2a276043ac11ad379e5788fc036672"
+  },
+  {
+   "id": "611690",
+   "freesoundId": "611690",
+   "uploader": "metalfortress",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 2,
+   "bassHit": false,
+   "searchHint": "bass",
+   "sha256": "412798165c42751a4f0ce5223a6dd0d7cf1c93ff7e2d27b9be5c74db94c53add"
+  },
+  {
+   "id": "611691",
+   "freesoundId": "611691",
+   "uploader": "metalfortress",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.6,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "cc3a55f279ecc45b8affeea5d613a6323a7f00c80f81eca96843d979fa07ad78"
+  },
+  {
+   "id": "613290",
+   "freesoundId": "613290",
+   "uploader": "birdOfTheNorth",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.721995,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "c4693e82607907a02ca8f888bab899bfd1050b6d318bbec1ab9e2b73db138872"
+  },
+  {
+   "id": "614392",
+   "freesoundId": "614392",
+   "uploader": "jannevse",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.284558,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "052a87628bdf52f53a433b277fa80f154c9f97fb5f42e029234d2f6b2c77ef5a"
+  },
+  {
+   "id": "614398",
+   "freesoundId": "614398",
+   "uploader": "jannevse",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.423537,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "b8c4bf87326d50a1ec1c22092fa8db3e37169e5135388d467c387a97b3cb7ab9"
+  },
+  {
+   "id": "620077",
+   "freesoundId": "620077",
+   "uploader": "RyanKingArt",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.36929,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "b360f678fe2e21de7f25dcb225308d02abca83401f4fb2fd64bdb11c4edeb354"
+  },
+  {
+   "id": "629976",
+   "freesoundId": "629976",
+   "uploader": "Flem0527",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.456576,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "ab952d8962b0b76d3aae49e8b411a5ac615d21dd6016725043107ad995ab9cbb"
+  },
+  {
+   "id": "629977",
+   "freesoundId": "629977",
+   "uploader": "Flem0527",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.508753,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "b746577003705ce3194fb99c4259012e04b9e7e60f2764e5f15c171c8612eb12"
+  },
+  {
+   "id": "634917",
+   "freesoundId": "634917",
+   "uploader": "darcyadam",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.495063,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "fe24d97126597658226455a4835dd5a75276665c3f1c45624499d6ff7fef87a5"
+  },
+  {
+   "id": "634918",
+   "freesoundId": "634918",
+   "uploader": "darcyadam",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.239687,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "2ec12663bcee4120be3bc59ed886527f269bdfc5a3e0db4d7644e9197096b467"
+  },
+  {
+   "id": "639745",
+   "freesoundId": "639745",
+   "uploader": "Ryanz-Official",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.25644,
+   "bassHit": true,
+   "searchHint": "negative: impact",
+   "sha256": "9d2c5f63b6443676ec629137f7fc5ca33a79d9d9bd42d6f2d525d27fb99d14b2"
+  },
+  {
+   "id": "640204",
+   "freesoundId": "640204",
+   "uploader": "7of9Designs",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.748798,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "eb29896b9676177d32ba0957cc1ed0956fc7fe04801a2bbfefbd96bb2c636e44"
+  },
+  {
+   "id": "642476",
+   "freesoundId": "642476",
+   "uploader": "MirandaViscous",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.26122,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "45c7b1650908a67105f582229504e607bf828e289926e2b4415cf900cc28e80b"
+  },
+  {
+   "id": "650700",
+   "freesoundId": "650700",
+   "uploader": "ajanhallinta",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.714875,
+   "bassHit": true,
+   "searchHint": "negative: impact",
+   "sha256": "9f447122a168a126beb4f4009a3efbaa299fdd66e68b75d503180e6f329d4fef"
+  },
+  {
+   "id": "650701",
+   "freesoundId": "650701",
+   "uploader": "ajanhallinta",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.490794,
+   "bassHit": true,
+   "searchHint": "negative: impact",
+   "sha256": "1df388ab85bfe391cca5be2e9286438c1c0b7fda4f4304efac2374859d8b6f92"
+  },
+  {
+   "id": "659911",
+   "freesoundId": "659911",
+   "uploader": "PanPiper5",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.07973,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "53b5bb5307fbc404d8188bbf26b03f255defcdeaf4fab0fe9f24fdf956a284b1"
+  },
+  {
+   "id": "661854",
+   "freesoundId": "661854",
+   "uploader": "maronid",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.35478,
+   "bassHit": false,
+   "searchHint": "negative: low strings",
+   "sha256": "4088c5ab5903c0041f39fab1886e80c16d650e4c07c1503ed793e8b52b400bbb"
+  },
+  {
+   "id": "668993",
+   "freesoundId": "668993",
+   "uploader": "vestibule-door",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.991519,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "d0bd3ddfc0f170ef29717dd01aded88a250b69aee7d94abc3b2a0af0a3329960"
+  },
+  {
+   "id": "669459",
+   "freesoundId": "669459",
+   "uploader": "EricsSoundschmiede",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.78,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "3da72259f154ebbf89f5611da2804151e92943dc12d7f4cca68e072a4a25ad28"
+  },
+  {
+   "id": "672576",
+   "freesoundId": "672576",
+   "uploader": "Teaganbear",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.617098,
+   "bassHit": false,
+   "searchHint": "negative: drum",
+   "sha256": "8dc30c2fd59304c332781ab6ea0f809536180e4b9dcd851d9c15e7bbe20fd961"
+  },
+  {
+   "id": "672578",
+   "freesoundId": "672578",
+   "uploader": "Teaganbear",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.744739,
+   "bassHit": false,
+   "searchHint": "negative: drum",
+   "sha256": "4575273f4a3e24fa12c54fa0e74c6f65e51b4fd49da0fbd48b8e3255952647b7"
+  },
+  {
+   "id": "676335",
+   "freesoundId": "676335",
+   "uploader": "rubberduck9999",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.464399,
+   "bassHit": true,
+   "searchHint": "negative: impact",
+   "sha256": "1cf184d91690680fc372075c0d226bf1724711883319270fd78678d5a3643f10"
+  },
+  {
+   "id": "676337",
+   "freesoundId": "676337",
+   "uploader": "rubberduck9999",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.749977,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "39d94c8242b7199921ddfe8db4c16ce5d634f791f6bed2cbc706a08be6f43892"
+  },
+  {
+   "id": "676461",
+   "freesoundId": "676461",
+   "uploader": "NearTheAtmoshphere",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.46875,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "aa05c0156269844a1c3b36eec46738cac8b1de9669f29500954b6d66def8a78e"
+  },
+  {
+   "id": "676462",
+   "freesoundId": "676462",
+   "uploader": "NearTheAtmoshphere",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.3125,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "d718f0854b6867ef8ef7980f3546a8bcfb76f35e019706208b06779235a85d37"
+  },
+  {
+   "id": "685865",
+   "freesoundId": "685865",
+   "uploader": "Sound_Bar_KK",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.575533,
+   "bassHit": true,
+   "searchHint": "negative: kick",
+   "sha256": "ca4abfee700ab8f33eb0d66e630455ba3f13fb1a43a38c7334b9d4b60b12da3c"
+  },
+  {
+   "id": "689246",
+   "freesoundId": "689246",
+   "uploader": "datsinoil",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.00537,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "2c84d0af12bddec69830659d1dc1e702b087a446348994c041f07f866f248359"
+  },
+  {
+   "id": "695919",
+   "freesoundId": "695919",
+   "uploader": "synxwtf",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.422109,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "a8e5242a3abf1d6d3d41a0a6698a8efa1602c67305f718f558d6c76b9d8edc7a"
+  },
+  {
+   "id": "704264",
+   "freesoundId": "704264",
+   "uploader": "harrisonlace",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.40625,
+   "bassHit": false,
+   "searchHint": "bass",
+   "sha256": "e9087c5159c93b6736d23a4456d25420e11931d13ad52f0df8704e35eef18f79"
+  },
+  {
+   "id": "707198",
+   "freesoundId": "707198",
+   "uploader": "leonseptavaux",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.428604,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "b6738b4d322d96fc3bc4379cdd0af26689fb1f44f364ac738a1c61dfe13b5905"
+  },
+  {
+   "id": "707199",
+   "freesoundId": "707199",
+   "uploader": "leonseptavaux",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.230771,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "be65cf7ad58349c89ae744c46b7746570f2bfffe6fd59ae5893e21fa9f93a7a9"
+  },
+  {
+   "id": "711476",
+   "freesoundId": "711476",
+   "uploader": "oceansonmars",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.355805,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "03949a14d10ab550e4209e4f5a3dc59b9f532265d7a892d9e7d6bbc0e061e088"
+  },
+  {
+   "id": "711478",
+   "freesoundId": "711478",
+   "uploader": "oceansonmars",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.361179,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "c272c154333af53f9b649f457f50b80a34324258a014c6fb513a15686e4df017"
+  },
+  {
+   "id": "717961",
+   "freesoundId": "717961",
+   "uploader": "grvmusic",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.06249,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "0a6d2b70c06454293b3843d3fc5a32d788f8b3c39318c695425474b28674d72e"
+  },
+  {
+   "id": "717962",
+   "freesoundId": "717962",
+   "uploader": "grvmusic",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.989365,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "915b37b320502506d60538096df50f5932015356228f7f5d14157454499d5cf2"
+  },
+  {
+   "id": "724940",
+   "freesoundId": "724940",
+   "uploader": "djericmark",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.171875,
+   "bassHit": true,
+   "searchHint": "negative: kick",
+   "sha256": "d209203d2ad924142de827e1a226c8690d10a69e19a201ec83d4b6141b0e40f8"
+  },
+  {
+   "id": "724942",
+   "freesoundId": "724942",
+   "uploader": "djericmark",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.171875,
+   "bassHit": true,
+   "searchHint": "negative: kick",
+   "sha256": "b4659476126f1aae553eee384940c2ccafc10271e23ffb3777a4840256b24f42"
+  },
+  {
+   "id": "728515",
+   "freesoundId": "728515",
+   "uploader": "doudar41",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.34475,
+   "bassHit": true,
+   "searchHint": "negative: impact",
+   "sha256": "a12486ab9ed58f3243a0bd3fc2acf57a4eed34a6ea1084056298ea8286d5ceaf"
+  },
+  {
+   "id": "729515",
+   "freesoundId": "729515",
+   "uploader": "James_KuKu",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.625,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "f07f9a99f4c09d141a5948dbdf2c550d829684a9d85546f2a43b8dbee92dc50a"
+  },
+  {
+   "id": "729519",
+   "freesoundId": "729519",
+   "uploader": "James_KuKu",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.625,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "c5c99d4cde1058dad14b508d2f0ee8dbf5df5be921301c6fd71aeaba2c365f64"
+  },
+  {
+   "id": "732223",
+   "freesoundId": "732223",
+   "uploader": "1102bpm",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.62501,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "be4104e13f4d4ef8ebae5ae11b2f8e6a40e690554ebfb1e06ac97acf3ce0bae7"
+  },
+  {
+   "id": "733887",
+   "freesoundId": "733887",
+   "uploader": "velcronator",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.38778,
+   "bassHit": true,
+   "searchHint": "negative: impact",
+   "sha256": "1b386a28d23ac70dedae74211598d3aac05164dfcca6052620e5fed4b1724178"
+  },
+  {
+   "id": "738477",
+   "freesoundId": "738477",
+   "uploader": "quatricise",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.247177,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "0f1ef9c5e729f2993bed295ab30d4d401e97b75a03472ac820d998327ec42645"
+  },
+  {
+   "id": "738478",
+   "freesoundId": "738478",
+   "uploader": "quatricise",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.280469,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "dab27a54de62798c8112e6e259aeaaf30d4a724605e996c77524852f87b2fcdc"
+  },
+  {
+   "id": "750354",
+   "freesoundId": "750354",
+   "uploader": "SelectDetail57",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 2,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "509e330f20e2c778f7b1d5dc7efa3a6dacd97d2493e3eba542153264c201026e"
+  },
+  {
+   "id": "759275",
+   "freesoundId": "759275",
+   "uploader": "SelectDetail57",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.41175,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "587bd5972cab903034039d5e66624309e1881b36443b6b12d9063b8c523e226c"
+  },
+  {
+   "id": "761190",
+   "freesoundId": "761190",
+   "uploader": "halo4shaun",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.5,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "c315fc811dc3877dfb15db2bf2320116d2fe051b71e018adf57f24b5e7a272c7"
+  },
+  {
+   "id": "761192",
+   "freesoundId": "761192",
+   "uploader": "halo4shaun",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.5,
+   "bassHit": false,
+   "searchHint": "bass",
+   "sha256": "ed0f1e464ca7fef99260c52c956f821cd1f4acda0c3fc3c31a4b5d65c9ba53b5"
+  },
+  {
+   "id": "770904",
+   "freesoundId": "770904",
+   "uploader": "PLukx",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.2685,
+   "bassHit": false,
+   "searchHint": "negative: synth",
+   "sha256": "a584f6cd55504951a13dc74559bc6f4961d78699a261c17d9de27944aac4f6b2"
+  },
+  {
+   "id": "770936",
+   "freesoundId": "770936",
+   "uploader": "PLukx",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.17066,
+   "bassHit": false,
+   "searchHint": "negative: synth",
+   "sha256": "0825692f3919ad72ae7f3e234d62fbee293ccee6072ec8f606c4d32cae0dae90"
+  },
+  {
+   "id": "782289",
+   "freesoundId": "782289",
+   "uploader": "STTTL",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.5,
+   "bassHit": false,
+   "searchHint": "bass",
+   "sha256": "976fedff2aaa79a9d21b51f9ae672fedb13b997f490aacd7def860a9a3712479"
+  },
+  {
+   "id": "789388",
+   "freesoundId": "789388",
+   "uploader": "modusmogulus",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.948776,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "f00a9f3a77378e54dbaebe221e177a6e3d4e85657f5ab4326c2a79575321e05a"
+  },
+  {
+   "id": "789881",
+   "freesoundId": "789881",
+   "uploader": "NiftyGritt2020",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.09503,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "0a0d811d69c94eb435aea63239108faf25ffb33684ffa8fc1ba30dfeeab057aa"
+  },
+  {
+   "id": "789884",
+   "freesoundId": "789884",
+   "uploader": "NiftyGritt2020",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.52,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "a7e04a273b48738d32d3208b275d5508db0a29346e68879a9199d6f9684a28a3"
+  },
+  {
+   "id": "802130",
+   "freesoundId": "802130",
+   "uploader": "ScythicBlade",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "e6b34a8c7ca5e35a5165d075fda0679c11b2f1c269623d5a55b27ecedb1fe2e5"
+  },
+  {
+   "id": "826145",
+   "freesoundId": "826145",
+   "uploader": "Mihacappy",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.713562,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "712b7d88dd8858d6b18a0260a708017211cfd2748da2c5d5693f82954818ef59"
+  },
+  {
+   "id": "826146",
+   "freesoundId": "826146",
+   "uploader": "Mihacappy",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.475687,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "e1386a365b7dee49e66167e9a9e34807a8b04827ee17f5a35bfab7cc67c50f91"
+  },
+  {
+   "id": "826758",
+   "freesoundId": "826758",
+   "uploader": "tboneaudio",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.77419,
+   "bassHit": false,
+   "searchHint": "negative: kick",
+   "sha256": "009b3d36c7e90ca80993c3f277d32147c074d1da94f6e8f766dc9b8cf38d966e"
+  },
+  {
+   "id": "827871",
+   "freesoundId": "827871",
+   "uploader": "mm11x9",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.778254,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "5332a844a42e64a3d652d91380bdffdbe7ae6500eaefef85c4463574ff1cbcbd"
+  },
+  {
+   "id": "841274",
+   "freesoundId": "841274",
+   "uploader": "peoplearehappy",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.346168,
+   "bassHit": true,
+   "searchHint": "negative: impact",
+   "sha256": "d59b8542a9b0adb58dab092569307326ed2ba329e0aa53c1862bae0df0d2975b"
+  },
+  {
+   "id": "841893",
+   "freesoundId": "841893",
+   "uploader": "Fizzel136",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.791134,
+   "bassHit": false,
+   "searchHint": "negative: synth",
+   "sha256": "49271be995652a935e5bc75fc026d384ea1a9ceced33d8737c126130d9e80aca"
+  },
+  {
+   "id": "842139",
+   "freesoundId": "842139",
+   "uploader": "Fizzel136",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.424966,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "5c3464cd3b38657f5cabdbf3ef59c153d62267643d96585b26973be3fbc9e435"
+  },
+  {
+   "id": "843024",
+   "freesoundId": "843024",
+   "uploader": "tboneaudio",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1,
+   "bassHit": true,
+   "searchHint": "negative: kick",
+   "sha256": "21126e66c6b2d260a25b201f4862e1fc8878002d34c117a4745ffbc0dc3fa607"
+  },
+  {
+   "id": "844254",
+   "freesoundId": "844254",
+   "uploader": "Foxfire-",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.00002,
+   "bassHit": false,
+   "searchHint": "negative: impact",
+   "sha256": "75daf9f02822ffef5f0776fb3866a10395e72f01c44e736f3da887ae5c516300"
+  },
+  {
+   "id": "859980",
+   "freesoundId": "859980",
+   "uploader": "G.M_Isaac",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 0.8,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "34d35ef71440c6da7f01c7f4f570dae38d583259ed4ac2b22cd50789e738ed12"
+  },
+  {
+   "id": "860524",
+   "freesoundId": "860524",
+   "uploader": "lennartgreen",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.875,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "e9c48439aa8d9985c416d5f466a1534f092929fa31cc899bda95ac3633f0762a"
+  },
+  {
+   "id": "864206",
+   "freesoundId": "864206",
+   "uploader": "D_Yonqui",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.04349,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "bb294def187deb17c84943a0d88d265b6ad3dfc1da0a824aea2d2bb24259f76e"
+  },
+  {
+   "id": "864754",
+   "freesoundId": "864754",
+   "uploader": "D_Yonqui",
+   "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+   "duration": 1.39161,
+   "bassHit": true,
+   "searchHint": "bass",
+   "sha256": "746b4f02016795324154e2bb49795821506d35931bd20ad3e3b3cc56e1a0b6ba"
+  }
+ ]
+}
