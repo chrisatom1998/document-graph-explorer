@@ -134,7 +134,7 @@ jobs:
           set -o pipefail
           for f in exports/ts-export-*/app-commit.txt; do [ "$(cat "$f")" = "${{ needs.ref.outputs.sha }}" ] || { echo "$f is not ${{ needs.ref.outputs.sha }}"; exit 1; }; done
           mkdir -p scripts/all-tags scripts/dj-fix && cp harness/scripts/all-tags/score.mjs scripts/all-tags/ && cp harness/scripts/dj-fix/extract.mjs scripts/dj-fix/
-          APP=$(git rev-parse HEAD); LABEL=$(echo "$APP_REF" | tr -c 'A-Za-z0-9._-\n' '-' | cut -c1-40)-${APP::7}
+          APP=$(git rev-parse HEAD); LABEL=$(echo "$APP_REF" | tr -c 'A-Za-z0-9._\n-' '-' | cut -c1-40)-${APP::7}
           R="harness/$DOCS/results/tinysol-$LABEL"; mkdir -p "$R"; echo "R=$R" >> "$GITHUB_ENV"
           MANIFEST=harness/$DOCS/tinysol-manifest.json BENCHMARK=all-tags-2026-10-06/tinysol npx vite-node scripts/all-tags/score.mjs "$R/tags.json" exports/ts-export-*/graph-export.json | tee "$R/tags.txt"
           npx vite-node scripts/dj-fix/extract.mjs "$R/records.json" exports/ts-export-*/graph-export.json

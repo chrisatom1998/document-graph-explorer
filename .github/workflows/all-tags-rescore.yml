@@ -1,0 +1,72 @@
+name: All tags, re-score saved exports
+
+# Re-scores the graph exports an all-tags run already saved, with the scorer from this commit and the display code of
+# the app commit those exports came from (their app-commit.txt). Used when a run's own score step failed after a
+# successful analysis. Set SET and RUN_ID below and push.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/fix-failing-sound-tags-nc73z1]
+    paths: [.github/workflows/all-tags-rescore.yml]
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  DOCS: docs/evaluations/all-tags-2026-10-06
+  SET: tinysol            # tinysol | jamendo
+  RUN_ID: '37430919164'
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ env.SET == 'tinysol' && 'ts-export-*' || 'at-export-*' }}
+          path: exports
+          run-id: ${{ env.RUN_ID }}
+          github-token: ${{ github.token }}
+      - name: Check out the analysed app commit beside the harness
+        run: |
+          APP=$(cat exports/*/app-commit.txt | sort -u)
+          [ "$(echo "$APP" | wc -l)" = 1 ] || { echo "exports come from several commits: $APP"; exit 1; }
+          echo "APP=$APP" >> "$GITHUB_ENV"
+          git worktree add -q app "$APP"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Score
+        working-directory: app
+        run: |
+          set -o pipefail
+          npm ci
+          mkdir -p scripts/all-tags scripts/dj-fix && cp ../scripts/all-tags/score.mjs scripts/all-tags/ && cp ../scripts/dj-fix/extract.mjs scripts/dj-fix/
+          R="../$DOCS/results/$SET-main-${APP::7}"; mkdir -p "$R"; echo "R=${R#../}" >> "$GITHUB_ENV"
+          if [ "$SET" = tinysol ]; then
+            MANIFEST=../$DOCS/tinysol-manifest.json BENCHMARK=all-tags-2026-10-06/tinysol npx vite-node scripts/all-tags/score.mjs "$R/tags.json" ../exports/*/graph-export.json | tee "$R/tags.txt"
+          else
+            for h in all pick check; do
+              MANIFEST=../$DOCS/jamendo-val-manifest.json HALF=$h npx vite-node scripts/all-tags/score.mjs "$R/tags-$h.json" ../exports/*/graph-export.json | tee "$R/tags-$h.txt"
+            done
+          fi
+          npx vite-node scripts/dj-fix/extract.mjs "$R/records.json" ../exports/*/graph-export.json
+          echo "app $APP; harness $GITHUB_SHA; exports from run $RUN_ID; re-scored in run $GITHUB_RUN_ID" > "$R/tested-commit.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rescore-${{ env.SET }}
+          path: ${{ env.R }}
+          retention-days: 90
+      - name: Commit
+        run: |
+          git add "$R"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record all-tags $SET results (re-scored from run $RUN_ID)" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
