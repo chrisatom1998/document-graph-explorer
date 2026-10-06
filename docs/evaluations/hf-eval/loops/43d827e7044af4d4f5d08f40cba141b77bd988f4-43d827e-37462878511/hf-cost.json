@@ -1,0 +1,14 @@
+{
+ "task": "loops",
+ "run_key": "loops-37457305060-1",
+ "flavor": "cpu-upgrade",
+ "parts": 1,
+ "usd_per_hour": 0.03,
+ "wall_clock_min": 0,
+ "job_minutes": 0,
+ "cost_usd": 0.0,
+ "worst_case_usd": 0.0,
+ "failed_parts": [],
+ "jobs": [],
+ "finished": "2026-10-06T12:23:37+00:00"
+}
