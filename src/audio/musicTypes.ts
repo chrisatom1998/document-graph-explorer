@@ -5,6 +5,7 @@ import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
+import { sanitizeStructure, type TrackStructure } from './structure';
 export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 2;
 export const TEMPO_ANALYSIS_REVISION = 2;
@@ -45,6 +46,8 @@ export interface MusicAnalysis {
   soundProfile?: SoundProfile;
   /** 512-d unit CLAP audio vector (mean of analyzed windows). Lives here, not in EmbeddingRecord, which is the text pipeline's table. Powers 'similar' edges. */
   embedding?: number[];
+  /** Intro, drops, breakdowns and outro of a full track (src/audio/structure.ts); absent for clips under a minute. */
+  structure?: TrackStructure;
   instrumentScan?: { mode?: MusicAnalysisMode; revision?: number; complete: boolean; analyzedSeconds: number; windows: number };
   notes: string[];
 }
@@ -89,6 +92,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   if (out.tempo && Array.isArray(t?.alternatives)) out.tempo.alternatives = [...new Set(t.alternatives.filter((v): v is number => positive(v, 250) && v >= 40 && v !== out.tempo!.bpm))].slice(0, 2);
   const k = m.key as Record<string, unknown> | undefined;
   if (k && k.source !== 'filename' && positive(k.tonic, 11) && Number.isInteger(k.tonic) && (k.mode === 'major' || k.mode === 'minor') && positive(k.strength, 1)) out.key = { tonic: k.tonic, mode: k.mode, strength: k.strength };
+  const structure = sanitizeStructure(m.structure, out.durationSeconds);
+  if (structure) out.structure = structure;
   const pitch = m.detectedPitch as Record<string, unknown> | undefined;
   if (pitch && positive(pitch.pitchClass, 11) && Number.isInteger(pitch.pitchClass) && positive(pitch.confidence, 1)) out.detectedPitch = { pitchClass: pitch.pitchClass, confidence: pitch.confidence };
   if (Array.isArray(m.instruments)) out.instruments = m.instruments.slice(0, 100).flatMap((v: unknown) => {
