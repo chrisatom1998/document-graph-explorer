@@ -45,6 +45,9 @@ jobs:
           mkdir -p "$OUT"
           npx vite-node scripts/structure/features.ts "$RUNNER_TEMP/audio/manifest.json" "$RUNNER_TEMP/f.json"
           gzip -c "$RUNNER_TEMP/f.json" > "$OUT/shard-${{ matrix.shard }}.json.gz"
+          # Labels for every annotated track (timings and section names only), for scoring offline.
+          python3 -c "import json,sys; d=json.load(open(sys.argv[1])); json.dump({t['key']: {k: t[k] for k in ('fold','genre','duration','average_bpm','sections')} for t in d}, open(sys.argv[2],'w'))" \
+            "$RUNNER_TEMP/rf/raveform/structures/segments.json" "$OUT/labels.json"
       - name: Commit features
         run: |
           git add "$OUT"
