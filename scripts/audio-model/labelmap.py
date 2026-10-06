@@ -125,8 +125,13 @@ SURGE_ROLES = sorted({l for v in SURGE_CATEGORY.values() for l in v} | {l for _,
 # the fx tick as the app's 'sound effect'.
 FSLD_ROLES = ['percussion', 'bass', 'chords', 'melody', 'fx', 'vocal']
 
+# DJ effect labels mined from Freesound uploader tags by PR #141 (prepare-extra.py djfx); filter sweep, trance gate, beat
+# repeat, rewind and delay throw are new catalog entries that PR proposes.
+DJFX = ['air horn', 'beat repeat', 'bitcrushed', 'chops', 'delay throw', 'downlifter', 'filter sweep', 'flanged', 'glitch effect', 'impact',
+        'laser', 'noise sweep', 'record stop', 'reverse cymbal', 'reverse effect', 'reverse impact', 'rewind', 'riser', 'siren',
+        'stutter effect', 'sub drop', 'trance gate', 'vinyl scratch', 'vocal chops', 'whoosh']
 def cat_labels():
     s = {l for v in FSD50K.values() for l in v} | set(NSYNTH_TAUGHT) | set(NSYNTH_QUALITIES.values()) | set(EFFECTS) | set(FREESOUND)
-    s |= {l for v in TINYSOL.values() for l in v} | set(EGFX_TAUGHT) | set(WAIVOPS_TAUGHT) | set(SURGE_ROLES) | {'synthesizer', 'sound effect'}
+    s |= {l for v in TINYSOL.values() for l in v} | set(EGFX_TAUGHT) | set(WAIVOPS_TAUGHT) | set(SURGE_ROLES) | set(DJFX) | {'synthesizer', 'sound effect'}
     return sorted(s)
 CAT = cat_labels()

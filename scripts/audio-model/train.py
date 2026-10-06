@@ -75,7 +75,7 @@ def masked_ap(scores, y, w):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('run'); ap.add_argument('--openmic', required=True); ap.add_argument('--jamendo'); ap.add_argument('--soundcloud')
+    ap.add_argument('run'); ap.add_argument('--openmic'); ap.add_argument('--jamendo'); ap.add_argument('--soundcloud')
     ap.add_argument('--model', default='mn10_as'); ap.add_argument('--epochs', type=int, default=8)
     ap.add_argument('--lr', type=float, default=1e-4); ap.add_argument('--batch', type=int, default=32)
     ap.add_argument('--mixup', type=float, default=0.3); ap.add_argument('--weak', type=float, default=0.2)
@@ -92,7 +92,9 @@ def main():
     torch.set_num_threads(args.threads); torch.manual_seed(0); rng = np.random.default_rng(0)
     os.makedirs(args.run, exist_ok=True)
 
-    sources = [load_source('openmic', os.path.join(args.openmic, 'train-mel.npy'), json.load(open(os.path.join(args.openmic, 'train.json')))['items'], 1.0)]
+    sources = []
+    if args.openmic:
+        sources.append(load_source('openmic', os.path.join(args.openmic, 'train-mel.npy'), json.load(open(os.path.join(args.openmic, 'train.json')))['items'], 1.0))
     if args.jamendo:
         sources.append(load_source('jamendo', os.path.join(args.jamendo, 'jamendo-mel.npy'), json.load(open(os.path.join(args.jamendo, 'jamendo.json')))['items'], args.weak))
     if args.soundcloud:

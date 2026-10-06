@@ -16,7 +16,7 @@ name = env.get('JOB_NAME') or 'dge-instrument-tagger'
 for old in list_jobs(status=['RUNNING', 'SCHEDULING']):
     if name in (getattr(old, 'name', None), (getattr(old, 'labels', None) or {}).get('lane')):   # older clients drop name
         print(f'cancelling earlier tagger job {old.id}', flush=True); cancel_job(job_id=old.id)
-script = open(os.path.join(os.path.dirname(__file__), 'hf-job.sh')).read()
+script = open(os.path.join(os.path.dirname(__file__), env.get('JOB_SCRIPT') or 'hf-job.sh')).read()   # JOB_SCRIPT: hf-effects-job.sh
 job = run_job(image='pytorch/pytorch:2.7.1-cuda12.8-cudnn9-runtime', command=['bash', '-c', script], env=env,
               secrets={'HF_TOKEN': os.environ['HF_TOKEN']}, flavor=flavor, timeout=timeout, name=name,
               labels={'app': 'dge-tagger', 'lane': name})

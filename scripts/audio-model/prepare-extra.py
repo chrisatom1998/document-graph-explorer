@@ -8,6 +8,10 @@
             minus the DJ-label test loops, the short-clip and synth-clip reserved sounds and uploaders, and FSD50K eval
   waivops   WaivOps EDM-HSE and EDM-TECH rendered drum loops with their MIDI drum notes (Zenodo 13769544, 17584890,
             CC BY 4.0); every --every'th loop
+  djfx      DJ effect clips from Freesound (4,770 public previews, labels mined from uploader tags by the SoundCloud
+            thread, PR #141): its "train" uploaders only, minus CC BY-NC and Sampling+ clips; its "heldout" uploaders are
+            written as eval-djfx.npy/.json and never trained on. A label related to one a clip has (labels.json
+            "overlap") is left unlabelled for that clip, as #141 scores it
   surge     Surge synthesizer preset renders (Zenodo 4677097, CC BY 4.0), --per-preset notes of each preset in MIDI 36-84;
             all notes of a preset stay on one side of the split
 
@@ -15,7 +19,7 @@ Usage: python3 scripts/audio-model/prepare-extra.py <source> <out-dir> [--limit 
   -> <source>-mel.npy + <source>.json   training windows (10 s, or 600 frames for 4 s notes; train.py pads with silence)
 Labels are strong (a source knows every label it teaches), except where labelmap.py says otherwise.
 """
-import argparse, csv, hashlib, io, json, os, re, subprocess, sys, tarfile, urllib.request, warnings, zipfile
+import argparse, csv, time, hashlib, io, json, os, re, subprocess, sys, tarfile, urllib.request, warnings, zipfile
 from collections import defaultdict
 import numpy as np
 warnings.filterwarnings('ignore')
@@ -242,7 +246,39 @@ def surge(args, w):
                    'labels': lab, 'weakAbsent': weak}, x); taken[preset] += 1
     return 'Surge preset renders, Zenodo 4677097 (CC BY 4.0)'
 
-SOURCES = {'tinysol': (tinysol, 1000), 'egfx': (egfx, 1000), 'fsld': (fsld, 1000), 'waivops': (waivops, 1000), 'surge': (surge, 600)}
+DJFX_SHA = '32c438f8130318d0352faf187e1e21f921820cba'   # claude/soundcloud-training-j0wc3t (PR #141)
+DJFX = 'https://raw.githubusercontent.com/chrisatom1998/document-graph-explorer/' + DJFX_SHA + '/'
+
+def djfx(args, w):
+    from concurrent.futures import ThreadPoolExecutor
+    clips = json.load(urllib.request.urlopen(DJFX + 'docs/evaluations/dj-effects-2026-10-06/clips.json'))['clips']
+    overlap = json.load(urllib.request.urlopen(DJFX + 'scripts/dj-effects/labels.json'))['overlap']
+    taught = sorted({l for c in clips for l in c['labels']})
+    related = lambda a, b: a == b or any(a in g and b in g for g in overlap)
+    def labels(c):   # present, absent, or left out when related to a label the clip has (uploader tags are incomplete)
+        return {f'cat:{l}': float(l in c['labels']) for l in taught if l in c['labels'] or not any(related(l, o) for o in c['labels'])}
+    def fetch(c):
+        for k in range(4):
+            try: return decode(urllib.request.urlopen(c['preview'], timeout=60).read())
+            except Exception: time.sleep(2 ** k)
+        return None
+    train = [c for c in clips if c['split'] == 'train' and '/by-nc' not in c['licence'] and 'sampling+' not in c['licence']]
+    test = [c for c in clips if c['split'] == 'heldout']
+    if args.limit: train, test = train[:args.limit], test[:args.limit // 4]
+    with ThreadPoolExecutor(16) as pool:
+        for c, x in zip(train, pool.map(fetch, train)):
+            if x is not None: w.add({'id': c['id'], 'artist': f'freesound-user:{c["username"]}', 'labels': labels(c)}, x)
+        items, wavs = [], []
+        for c, x in zip(test, pool.map(fetch, test)):
+            if x is None: continue
+            wavs.append((x * 32767).astype(np.int16))
+            items.append({'id': c['id'], 'artist': f'freesound-user:{c["username"]}', 'labels': {k: 'present' if v else 'absent' for k, v in labels(c).items()}})
+    np.save(os.path.join(args.out, 'eval-djfx.npy'), np.stack(wavs) if wavs else np.zeros((0, 320000), np.int16))
+    json.dump({'source': f'DJ effect clips, held-out uploaders ({DJFX_SHA[:7]})', 'items': items}, open(os.path.join(args.out, 'eval-djfx.json'), 'w'))
+    print(f'eval-djfx: {len(items)} of {len(test)} held-out clips', flush=True)
+    return f'Freesound previews (CC0 / CC BY), DJ effect labels from PR #141 at {DJFX_SHA[:7]}'
+
+SOURCES = {'tinysol': (tinysol, 1000), 'egfx': (egfx, 1000), 'fsld': (fsld, 1000), 'waivops': (waivops, 1000), 'surge': (surge, 600), 'djfx': (djfx, 1000)}
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('source', choices=SOURCES); ap.add_argument('out')

@@ -53,7 +53,7 @@ for j, c in enumerate(classes):
     # Freesound-only tags have no outright absences (uploaders tag selectively): its untagged sounds count as absent,
     # so precision is a lower bound, as with Jamendo's tags.
     elif c.startswith('cat:') or c.startswith('fsld:'): fit = [(n, n == 'freesound' and c[4:] in FREESOUND) for n in val]
-    else: fit = [('openmic', False)]
+    else: fit = [('openmic', False)] if 'openmic' in val else []
     ys, ss = zip(*[view(n, j, kw) for n, kw in fit]) if fit else ((), ())
     y = np.concatenate(ys) if ys else np.zeros(0); s = np.concatenate(ss) if ss else np.zeros(0)
     pos, neg = int((y == 1).sum()), int((y == 0).sum())
