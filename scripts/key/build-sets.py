@@ -36,18 +36,21 @@ def key_of(text):
     return {'tonic': TONICS[parts[0]], 'mode': parts[1]}
 
 def fetch(base, md5_dir, n):
+    """The JKU backup first, then Beatport's own preview URL (the datasets' audio_dl.sh fallback); MD5-checked."""
     path = f'{out}/audio/{n}.mp3'
     want = open(os.path.join(md5_dir, n + '.md5')).read().split()[0]
-    for attempt in range(4):
-        try:
-            data = urllib.request.urlopen(base + n + '.mp3', timeout=60).read()
-            if hashlib.md5(data).hexdigest() == want:
-                open(path, 'wb').write(data); return path
-        except Exception: pass
-        time.sleep(2 ** attempt)
+    for url in (base + n + '.mp3', f'https://geo-samples.beatport.com/lofi/{n}.mp3'):
+        for attempt in range(3):
+            try:
+                data = urllib.request.urlopen(url, timeout=60).read()
+                if hashlib.md5(data).hexdigest() == want:
+                    open(path, 'wb').write(data); return path
+                break   # served but different audio: retrying the same URL will not help
+            except Exception: pass
+            time.sleep(2 ** attempt)
     return None
 
-rows, failed = [], 0
+rows, failed = [], []
 # GiantSteps MTG key
 manual = {r['ID'].strip(): r for r in csv.DictReader(open(f'{mk}/annotations/annotations.txt'), delimiter='\t')}
 meta = {r['ID'].strip(): r for r in csv.DictReader(open(f'{mk}/annotations/beatport_metadata.txt'), delimiter='\t')}
@@ -62,7 +65,7 @@ for n in names:
 with concurrent.futures.ThreadPoolExecutor(8) as pool:
     paths = dict(zip(labelled, pool.map(lambda n: fetch('https://www.cp.jku.at/datasets/giantsteps/mtg_key_backup/', f'{mk}/md5', n), labelled)))
 for n, p in paths.items():
-    if not p: failed += 1; continue
+    if not p: failed.append(f'mtg:{n}'); continue
     d = dur(p); base = {'track': f'mtg:{n}', 'path': p, 'truth': labelled[n], 'duration': round(d, 2),
                         'genre': slug(meta.get(n.split('.')[0], {}).get('BP GENRE', ''))}
     if n in held:
@@ -78,7 +81,7 @@ labelled = {n: k for n, k in labelled.items() if k}
 with concurrent.futures.ThreadPoolExecutor(8) as pool:
     paths = dict(zip(labelled, pool.map(lambda n: fetch('https://www.cp.jku.at/datasets/giantsteps/backup/', f'{gk}/md5', n), labelled)))
 for n, p in paths.items():
-    if not p: failed += 1; continue
+    if not p: failed.append(f'gs:{n}'); continue
     g = f'{gk}/annotations/genre/{n}.genre'
     d = dur(p); base = {'track': f'gs:{n}', 'path': p, 'truth': labelled[n], 'duration': round(d, 2), 'set': 'gs-key',
                         'genre': slug(open(g).read()) if os.path.exists(g) else ''}
@@ -105,6 +108,8 @@ with tarfile.open(gtzan_tgz, 'r|gz') as tf:
                      'truth': {'tonic': TONICS[GTZAN_ORDER[label % 12]], 'mode': 'major' if label < 12 else 'minor'}})
 
 json.dump(rows, open(f'{out}/clips.json', 'w'))
+# Tracks whose audio no source serves any more are listed, not silently dropped; the collect job commits the list.
+json.dump(sorted(failed), open(f'{out}/unavailable.json', 'w'))
 counts = {}
 for r in rows: counts[r['set']] = counts.get(r['set'], 0) + 1
-print(f'shard {shard}: {counts}; {failed} downloads failed')
+print(f'shard {shard}: {counts}; {len(failed)} tracks unavailable from every source')

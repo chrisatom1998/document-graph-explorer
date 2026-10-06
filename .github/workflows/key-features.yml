@@ -47,16 +47,21 @@ jobs:
           python3 scripts/key/build-sets.py "$RUNNER_TEMP/MTGKEY" "$RUNNER_TEMP/GSKEY" "$RUNNER_TEMP/GTZANKEY" "$RUNNER_TEMP/gtzan.tgz" \
             "$RUNNER_TEMP/kclips" ${{ matrix.shard }}/8
       - name: Compute features
-        run: npx vite-node scripts/key/features.mjs "$RUNNER_TEMP/kclips/clips.json" f.json
+        run: |
+          npx vite-node scripts/key/features.mjs "$RUNNER_TEMP/kclips/clips.json" f.json
+          cp "$RUNNER_TEMP/kclips/unavailable.json" unavailable.json
       - uses: actions/upload-artifact@v4
         with:
           name: key-f-${{ matrix.shard }}
-          path: f.json
+          path: |
+            f.json
+            unavailable.json
           retention-days: 7
 
   collect:
     needs: features
-    if: ${{ !cancelled() }}
+    # Every shard must succeed: a partial set would silently change what the model is fitted and judged on.
+    if: ${{ !cancelled() && needs.features.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +80,11 @@ jobs:
               part = sorted((r for r in rows if r['set'] == s), key=lambda r: r['id'])
               gzip.open(f"{os.environ['OUT']}/{s}.json.gz", 'wt').write(json.dumps(part))
               print(s, len(part), 'errors', sum(1 for r in part if r.get('error')))
-          print('shards', len(glob.glob('parts/key-f-*/f.json')))
+          shards = len(glob.glob('parts/key-f-*/f.json'))
+          assert shards == 8, f'{shards} of 8 shards'
+          missing = sorted(t for p in glob.glob('parts/key-f-*/unavailable.json') for t in json.load(open(p)))
+          json.dump(missing, open(f"{os.environ['OUT']}/unavailable.json", 'w'), indent=0)
+          print(len(missing), 'tracks unavailable from every source')
           EOF
           git add "$OUT"
           git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'

@@ -25,7 +25,9 @@ classes, under 3 s) and the half-of-excerpts vote for long recordings are unchan
 | gs-key | judging only | Original GiantSteps key set: 430 tracks, middle 10 s and whole preview | GiantSteps key annotations |
 | test-gtzan | judging only | The other 422 GTZAN clips | as tune-gtzan |
 
-The MTG key tracks reserved for round 3 (the fresh audio test set thread's rule) were never fetched. Features:
+The recorded run fetched audio from the JKU backup only; 174 of the 604 GiantSteps key tracks were not served there, so
+gs-key has 430. The harness now also tries Beatport's preview URL and lists any track no source serves
+(`unavailable.json`) instead of dropping it silently. The MTG key tracks reserved for round 3 (the fresh audio test set thread's rule) were never fetched. Features:
 `.github/workflows/key-features.yml` → `features/*.json.gz` (no audio). Model choice: track-grouped 5-fold
 cross-validation on the tuning sets only (`cv.txt`; 36 variants: 12 vs 36 bins, bass chroma, compression, L2).
 
