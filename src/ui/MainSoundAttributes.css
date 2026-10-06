@@ -1,0 +1,11 @@
+.main-sound-attributes { margin-block: 1rem; font-size: .82rem; overflow-wrap: anywhere; }
+.main-sound-attributes h4, .main-sound-attributes h5 { margin-block: .8rem .4rem; }
+.main-sound-attributes p { opacity: .8; }
+.main-sound-attributes__measurements { display: grid; gap: .45rem; }
+.main-sound-attributes__measurements dt { font-weight: 600; }
+.main-sound-attributes__measurements dd { margin: .15rem 0 0; }
+.main-sound-attributes__labels { list-style: none; padding: 0; display: grid; gap: .6rem; }
+.main-sound-attributes__labels > li { border: 1px solid #ffffff20; border-radius: .5rem; padding: .6rem; }
+.main-sound-attributes__labels ul { margin-top: .3rem; padding-left: 1.1rem; opacity: .8; }
+.main-sound-attributes__toggle { font: inherit; font-size: .78rem; margin-block: .2rem .6rem; padding: .25rem .65rem; border: 1px solid #ffffff30; border-radius: 999px; background: transparent; color: inherit; cursor: pointer; }
+.main-sound-attributes__toggle:hover, .main-sound-attributes__toggle[aria-pressed="true"] { background: #ffffff14; }

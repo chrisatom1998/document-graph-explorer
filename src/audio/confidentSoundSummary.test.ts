@@ -58,3 +58,43 @@ it('can display every catalog label once a trained head reports it',async()=>{
  }).map(c=>c.label);
  expect(missing).toEqual([]);
 });
+it('shows full-mix-tested Jamendo synthesizer and drums on recordings of at least ten seconds only',async()=>{
+ const {FULL_MIX_JAMENDO,FULL_MIX_JAMENDO_SCORE}=await import('./confidentSoundSummary');
+ const synth=FULL_MIX_JAMENDO.synthesizer.threshold,drums=FULL_MIX_JAMENDO['drum kit'].threshold;
+ const song=(duration:number)=>{const a:MusicAnalysis={version:2,durationSeconds:duration,analyzedSeconds:duration,instruments:[],notes:[]};a.recognition=createRecognition(duration,'full');
+  recordEvidence(a.recognition,'jamendo',{start:0,end:Math.min(10,duration)},[{dimension:'source',labelId:'synthesizer',score:synth},{dimension:'source',labelId:'drum kit',score:drums},{dimension:'source',labelId:'piano',score:.95}]);return a;};
+ expect(confidentSoundSummary(song(15)).map(s=>[s.label,s.scores?.find(x=>x.model===FULL_MIX_JAMENDO_SCORE)?.score])).toEqual([['synthesizer',synth],['drums',drums]]);
+ // Shorter loops were never measured: Jamendo stays an untested model score there.
+ expect(confidentSoundSummary(song(8))).toEqual([]);
+ // A row shorter than the calibrated 10 s window is not promoted, even on a long recording.
+ const partial=song(15);partial.recognition=createRecognition(15,'full');
+ recordEvidence(partial.recognition,'jamendo',{start:10,end:15},[{dimension:'source',labelId:'synthesizer',score:.99}]);
+ expect(confidentSoundSummary(partial)).toEqual([]);
+});
+it('keeps full-mix Jamendo scores below their measured threshold hidden, and honours rejections',async()=>{
+ const {FULL_MIX_JAMENDO}=await import('./confidentSoundSummary');
+ const a:MusicAnalysis={version:2,durationSeconds:30,analyzedSeconds:30,instruments:[],notes:[]};a.recognition=createRecognition(30,'full');
+ recordEvidence(a.recognition,'jamendo',{start:0,end:10},[{dimension:'source',labelId:'synthesizer',score:FULL_MIX_JAMENDO.synthesizer.threshold-.01}]);
+ recordEvidence(a.recognition,'jamendo',{start:10,end:20},[{dimension:'source',labelId:'drum kit',score:.99}]);
+ a.soundReviews=[{dimension:'source',labelId:'drums',decision:'rejected',scope:'track',at:'now',evidenceRunId:'old'}];
+ expect(confidentSoundSummary(a)).toEqual([]);
+});
+it('keeps the calibrated-label list in sync with the shipped detectors',async()=>{
+ const {readFileSync}=await import('node:fs');const {CALIBRATED_LABELS}=await import('./confidentSoundSummary');
+ const shipped=new Set(['learned.json','short-clip.json'].flatMap(f=>JSON.parse(readFileSync(`public/sound-model/${f}`,'utf8')).heads.map((h:{label:string})=>h.label)));
+ expect([...CALIBRATED_LABELS].sort()).toEqual([...shipped].sort());
+});
+const clapOnly=(label:string,group:'source'|'production'|'character',score:number,durationSeconds=8):MusicAnalysis=>({...audio(),durationSeconds,analyzedSeconds:durationSeconds,instruments:[],soundProfile:{version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group,label,score,model:'Music CLAP'}]}});
+it('shows an untested label from raw CLAP only as unverified/possible on long recordings',()=>{
+ expect(confidentSoundSummary(clapOnly('banjo','source',.5))[0]).toMatchObject({label:'banjo',tier:'possible',uncalibrated:true});
+ expect(confidentSoundSummary(clapOnly('air horn','production',.62))[0]).toMatchObject({label:'air horn',tier:'possible',uncalibrated:true});
+});
+it.each([[.49,8],[.6,1.5]] as const)('does not fall back below the 0.50 fallback floor or on one-shots (score %s, %s s)',(score,seconds)=>{
+ expect(confidentSoundSummary(clapOnly('banjo','source',score,seconds))).toEqual([]);
+});
+it('never falls back to raw CLAP for a label that has a tested detector',()=>{
+ expect(confidentSoundSummary(clapOnly('kick','production',.9))).toEqual([]);
+});
+it('never shows fallback tags for labels measured as almost always wrong',()=>{
+ expect(confidentSoundSummary(clapOnly('dry','character',.7))).toEqual([]);
+});

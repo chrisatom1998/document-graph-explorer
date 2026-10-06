@@ -1,0 +1,650 @@
+{
+ "kind": "extras-round-v1",
+ "at": "2026-10-05T15:55:14.352693+00:00",
+ "bar": 0.45,
+ "extras": [
+  "freesound",
+  "hiphop",
+  "epidemic",
+  "surge",
+  "slakh",
+  "nsynth",
+  "fsd50k",
+  "percussion",
+  "fsl10k",
+  "processed",
+  "chr",
+  "fxr",
+  "fsm"
+ ],
+ "results": [
+  {
+   "kind": "label",
+   "name": "808 bass",
+   "testedOn": "real recordings",
+   "trainPositive": 1393,
+   "testPositive": 333,
+   "uses": [
+    "freesound",
+    "hiphop",
+    "fsm"
+   ],
+   "threshold": 0.944,
+   "tp": 219,
+   "fp": 13,
+   "fn": 114,
+   "precision": 0.9439655172413793,
+   "recall": 0.6576576576576577,
+   "f1": 0.7752212389380532,
+   "passes": true,
+   "verdict": "PASS",
+   "libraryTest": {
+    "precision": 0.833,
+    "recall": 0.37,
+    "testPositive": 108
+   }
+  },
+  {
+   "kind": "label",
+   "name": "atmospheric pad",
+   "testedOn": "real recordings",
+   "trainPositive": 3136,
+   "testPositive": 631,
+   "uses": [
+    "freesound",
+    "surge",
+    "fsm"
+   ],
+   "threshold": 0.906,
+   "tp": 304,
+   "fp": 149,
+   "fn": 327,
+   "precision": 0.6710816777041942,
+   "recall": 0.48177496038034867,
+   "f1": 0.5608856088560885,
+   "passes": true,
+   "verdict": "PASS",
+   "libraryTest": {
+    "precision": 0.698,
+    "recall": 0.322,
+    "testPositive": 115
+   }
+  },
+  {
+   "kind": "label",
+   "name": "bass growl",
+   "testedOn": "real recordings",
+   "trainPositive": 1524,
+   "testPositive": 406,
+   "uses": [
+    "fsm"
+   ],
+   "threshold": 0.939,
+   "tp": 250,
+   "fp": 28,
+   "fn": 156,
+   "precision": 0.8992805755395683,
+   "recall": 0.6157635467980296,
+   "f1": 0.7309941520467836,
+   "passes": true,
+   "verdict": "PASS",
+   "libraryTest": {
+    "precision": 0.45,
+    "recall": 0.715,
+    "testPositive": 137
+   }
+  },
+  {
+   "kind": "label",
+   "name": "closed hi-hat",
+   "testedOn": "real recordings",
+   "trainPositive": 716,
+   "testPositive": 123,
+   "uses": [
+    "hiphop",
+    "percussion",
+    "fsm"
+   ],
+   "threshold": 0.978,
+   "tp": 89,
+   "fp": 2,
+   "fn": 34,
+   "precision": 0.978021978021978,
+   "recall": 0.7235772357723578,
+   "f1": 0.8317757009345794,
+   "passes": true,
+   "verdict": "PASS",
+   "libraryTest": {
+    "precision": 0.409,
+    "recall": 0.864,
+    "testPositive": 44
+   }
+  },
+  {
+   "kind": "label",
+   "name": "downlifter",
+   "testedOn": "library brands",
+   "trainPositive": 343,
+   "testPositive": 112,
+   "uses": [
+    "fsm"
+   ],
+   "threshold": 0.984,
+   "tp": 38,
+   "fp": 65,
+   "fn": 74,
+   "precision": 0.36893203883495146,
+   "recall": 0.3392857142857143,
+   "f1": 0.35348837209302325,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.369,
+    "recall": 0.339,
+    "testPositive": 112
+   }
+  },
+  {
+   "kind": "label",
+   "name": "foley hit",
+   "testedOn": "library brands",
+   "trainPositive": 847,
+   "testPositive": 153,
+   "uses": [
+    "epidemic",
+    "fsm"
+   ],
+   "threshold": 0.954,
+   "tp": 2,
+   "fp": 14,
+   "fn": 151,
+   "precision": 0.125,
+   "recall": 0.013071895424836602,
+   "f1": 0.023668639053254437,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.125,
+    "recall": 0.013,
+    "testPositive": 153
+   }
+  },
+  {
+   "kind": "label",
+   "name": "glitch effect",
+   "testedOn": "real recordings",
+   "trainPositive": 2778,
+   "testPositive": 811,
+   "uses": [
+    "freesound",
+    "epidemic",
+    "fsm"
+   ],
+   "threshold": 0.916,
+   "tp": 321,
+   "fp": 138,
+   "fn": 490,
+   "precision": 0.6993464052287581,
+   "recall": 0.3958076448828607,
+   "f1": 0.505511811023622,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.657,
+    "recall": 0.4,
+    "testPositive": 115
+   }
+  },
+  {
+   "kind": "label",
+   "name": "laser",
+   "testedOn": "real recordings",
+   "trainPositive": 1614,
+   "testPositive": 470,
+   "uses": [
+    "epidemic",
+    "fsm"
+   ],
+   "threshold": 0.932,
+   "tp": 246,
+   "fp": 40,
+   "fn": 224,
+   "precision": 0.8601398601398601,
+   "recall": 0.5234042553191489,
+   "f1": 0.6507936507936507,
+   "passes": false,
+   "verdict": "held back: fails on the library-brand test",
+   "libraryTest": {
+    "precision": 0.208,
+    "recall": 0.175,
+    "testPositive": 63
+   }
+  },
+  {
+   "kind": "label",
+   "name": "metallic",
+   "testedOn": "real recordings",
+   "trainPositive": 1947,
+   "testPositive": 574,
+   "uses": [
+    "fsm"
+   ],
+   "threshold": 0.918,
+   "tp": 247,
+   "fp": 121,
+   "fn": 327,
+   "precision": 0.6711956521739131,
+   "recall": 0.43031358885017423,
+   "f1": 0.524416135881104,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.05,
+    "recall": 0.102,
+    "testPositive": 59
+   }
+  },
+  {
+   "kind": "label",
+   "name": "noise sweep",
+   "testedOn": "real recordings",
+   "trainPositive": 1395,
+   "testPositive": 334,
+   "uses": [
+    "freesound",
+    "epidemic",
+    "fsm"
+   ],
+   "threshold": 0.944,
+   "tp": 101,
+   "fp": 46,
+   "fn": 233,
+   "precision": 0.6870748299319728,
+   "recall": 0.3023952095808383,
+   "f1": 0.41995841995842,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.166,
+    "recall": 0.288,
+    "testPositive": 104
+   }
+  },
+  {
+   "kind": "label",
+   "name": "rain ambience",
+   "testedOn": "real recordings",
+   "trainPositive": 1945,
+   "testPositive": 632,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "threshold": 0.926,
+   "tp": 475,
+   "fp": 51,
+   "fn": 157,
+   "precision": 0.903041825095057,
+   "recall": 0.7515822784810127,
+   "f1": 0.8203799654576857,
+   "passes": true,
+   "verdict": "PASS",
+   "libraryTest": {
+    "precision": 0.667,
+    "recall": 0.3,
+    "testPositive": 20
+   }
+  },
+  {
+   "kind": "label",
+   "name": "reese bass",
+   "testedOn": "library brands",
+   "trainPositive": 304,
+   "testPositive": 103,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "threshold": 0.988,
+   "tp": 26,
+   "fp": 6,
+   "fn": 77,
+   "precision": 0.8125,
+   "recall": 0.2524271844660194,
+   "f1": 0.3851851851851852,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.812,
+    "recall": 0.252,
+    "testPositive": 103
+   }
+  },
+  {
+   "kind": "label",
+   "name": "rimshot",
+   "testedOn": "library brands",
+   "trainPositive": 480,
+   "testPositive": 140,
+   "uses": [
+    "percussion",
+    "fsm"
+   ],
+   "threshold": 0.949,
+   "tp": 33,
+   "fp": 87,
+   "fn": 107,
+   "precision": 0.275,
+   "recall": 0.2357142857142857,
+   "f1": 0.2538461538461539,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.275,
+    "recall": 0.236,
+    "testPositive": 140
+   }
+  },
+  {
+   "kind": "label",
+   "name": "siren",
+   "testedOn": "real recordings",
+   "trainPositive": 1087,
+   "testPositive": 325,
+   "uses": [
+    "epidemic",
+    "fsd50k",
+    "fsm"
+   ],
+   "threshold": 0.959,
+   "tp": 195,
+   "fp": 40,
+   "fn": 130,
+   "precision": 0.8297872340425532,
+   "recall": 0.6,
+   "f1": 0.6964285714285714,
+   "passes": false,
+   "verdict": "held back: fails on the library-brand test",
+   "libraryTest": {
+    "precision": 0.37,
+    "recall": 0.233,
+    "testPositive": 43
+   }
+  },
+  {
+   "kind": "label",
+   "name": "static noise",
+   "testedOn": "real recordings",
+   "trainPositive": 1504,
+   "testPositive": 470,
+   "uses": [
+    "fsm"
+   ],
+   "threshold": 0.943,
+   "tp": 186,
+   "fp": 80,
+   "fn": 284,
+   "precision": 0.6992481203007519,
+   "recall": 0.39574468085106385,
+   "f1": 0.5054347826086956,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.556,
+    "recall": 0.185,
+    "testPositive": 27
+   }
+  },
+  {
+   "kind": "label",
+   "name": "synth bass",
+   "testedOn": "real recordings",
+   "trainPositive": 1042,
+   "testPositive": 57,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "threshold": 0.972,
+   "tp": 0,
+   "fp": 0,
+   "fn": 57,
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.192,
+    "recall": 0.185,
+    "testPositive": 27
+   }
+  },
+  {
+   "kind": "label",
+   "name": "synth chord",
+   "testedOn": "library brands",
+   "trainPositive": 487,
+   "testPositive": 101,
+   "uses": [
+    "freesound",
+    "surge",
+    "fsm"
+   ],
+   "threshold": 0.979,
+   "tp": 20,
+   "fp": 99,
+   "fn": 81,
+   "precision": 0.16806722689075632,
+   "recall": 0.19801980198019803,
+   "f1": 0.18181818181818182,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.168,
+    "recall": 0.198,
+    "testPositive": 101
+   }
+  },
+  {
+   "kind": "label",
+   "name": "synth drone",
+   "testedOn": "real recordings",
+   "trainPositive": 2605,
+   "testPositive": 788,
+   "uses": [
+    "fsm"
+   ],
+   "threshold": 0.917,
+   "tp": 325,
+   "fp": 285,
+   "fn": 463,
+   "precision": 0.5327868852459017,
+   "recall": 0.41243654822335024,
+   "f1": 0.46494992846924177,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.153,
+    "recall": 0.227,
+    "testPositive": 66
+   }
+  },
+  {
+   "kind": "label",
+   "name": "synth lead",
+   "testedOn": "real recordings",
+   "trainPositive": 2182,
+   "testPositive": 250,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "threshold": 0.931,
+   "tp": 57,
+   "fp": 45,
+   "fn": 193,
+   "precision": 0.5588235294117647,
+   "recall": 0.228,
+   "f1": 0.3238636363636364,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.529,
+    "recall": 0.088,
+    "testPositive": 102
+   }
+  },
+  {
+   "kind": "label",
+   "name": "synth pluck",
+   "testedOn": "library brands",
+   "trainPositive": 1325,
+   "testPositive": 142,
+   "uses": [
+    "surge",
+    "fsm"
+   ],
+   "threshold": 0.949,
+   "tp": 39,
+   "fp": 43,
+   "fn": 103,
+   "precision": 0.47560975609756095,
+   "recall": 0.2746478873239437,
+   "f1": 0.3482142857142857,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.476,
+    "recall": 0.275,
+    "testPositive": 142
+   }
+  },
+  {
+   "kind": "label",
+   "name": "synth stab",
+   "testedOn": "real recordings",
+   "trainPositive": 1071,
+   "testPositive": 217,
+   "uses": [
+    "freesound",
+    "surge",
+    "fsm"
+   ],
+   "threshold": 0.931,
+   "tp": 60,
+   "fp": 15,
+   "fn": 157,
+   "precision": 0.8,
+   "recall": 0.2764976958525346,
+   "f1": 0.41095890410958913,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.073,
+    "recall": 0.033,
+    "testPositive": 122
+   }
+  },
+  {
+   "kind": "label",
+   "name": "vocal scream",
+   "testedOn": "real recordings",
+   "trainPositive": 1527,
+   "testPositive": 497,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "threshold": 0.954,
+   "tp": 320,
+   "fp": 32,
+   "fn": 177,
+   "precision": 0.9090909090909091,
+   "recall": 0.6438631790744467,
+   "f1": 0.7538280329799765,
+   "passes": false,
+   "verdict": "held back: fails on the library-brand test",
+   "libraryTest": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "testPositive": 17
+   }
+  },
+  {
+   "kind": "label",
+   "name": "water ambience",
+   "testedOn": "real recordings",
+   "trainPositive": 2515,
+   "testPositive": 841,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "threshold": 0.935,
+   "tp": 521,
+   "fp": 122,
+   "fn": 320,
+   "precision": 0.8102643856920684,
+   "recall": 0.619500594530321,
+   "f1": 0.7021563342318058,
+   "passes": true,
+   "verdict": "PASS",
+   "libraryTest": {
+    "precision": 0.762,
+    "recall": 0.356,
+    "testPositive": 45
+   }
+  },
+  {
+   "kind": "label",
+   "name": "wind ambience",
+   "testedOn": "real recordings",
+   "trainPositive": 1975,
+   "testPositive": 647,
+   "uses": [
+    "fsd50k",
+    "fsm"
+   ],
+   "threshold": 0.934,
+   "tp": 257,
+   "fp": 104,
+   "fn": 390,
+   "precision": 0.7119113573407202,
+   "recall": 0.3972179289026275,
+   "f1": 0.5099206349206349,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "testPositive": 16
+   }
+  },
+  {
+   "kind": "label",
+   "name": "wobble bass",
+   "testedOn": "real recordings",
+   "trainPositive": 879,
+   "testPositive": 269,
+   "uses": [
+    "freesound",
+    "fsm"
+   ],
+   "threshold": 0.957,
+   "tp": 85,
+   "fp": 24,
+   "fn": 184,
+   "precision": 0.7798165137614679,
+   "recall": 0.3159851301115242,
+   "f1": 0.44973544973544977,
+   "passes": false,
+   "verdict": "fails",
+   "libraryTest": {
+    "precision": 0.346,
+    "recall": 0.15,
+    "testPositive": 60
+   }
+  }
+ ]
+}

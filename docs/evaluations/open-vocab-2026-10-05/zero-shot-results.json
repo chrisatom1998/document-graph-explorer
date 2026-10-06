@@ -1,0 +1,1728 @@
+{
+ "kind": "zero-shot-heads-v1",
+ "bar": 0.45,
+ "results": [
+  {
+   "kind": "label",
+   "name": "violin / fiddle",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 307,
+    "calPositive": 919,
+    "cutoff": 0.3068122386932373,
+    "precision": 0.8089887640449438,
+    "recall": 0.46905537459283386,
+    "tp": 144
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.8089887640449438,
+   "recall": 0.46905537459283386,
+   "testPositive": 307,
+   "passes": true,
+   "verdict": "PASS",
+   "threshold": 0.5
+  },
+  {
+   "kind": "label",
+   "name": "percussion",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 1013,
+    "calPositive": 3039,
+    "cutoff": 0.2545213520526886,
+    "precision": 0.6893732970027248,
+    "recall": 0.24975320829220138,
+    "tp": 253
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.6893732970027248,
+   "recall": 0.24975320829220138,
+   "testPositive": 1013,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vocal hum",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 90,
+    "calPositive": 267,
+    "cutoff": 0.43809342384338384,
+    "precision": 0.8,
+    "recall": 0.17777777777777778,
+    "tp": 16
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.8,
+   "recall": 0.17777777777777778,
+   "testPositive": 90,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vocal vowel",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 80,
+    "calPositive": 237,
+    "cutoff": 0.4097819542884827,
+    "precision": 0.8181818181818182,
+    "recall": 0.1125,
+    "tp": 9
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.8181818181818182,
+   "recall": 0.1125,
+   "testPositive": 80,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vocal harmony",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 6,
+    "calPositive": 11
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 6,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vocal scream",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 504,
+    "calPositive": 1483,
+    "cutoff": 0.35290567398071293,
+    "precision": 0.9386973180076629,
+    "recall": 0.4861111111111111,
+    "tp": 245
+   },
+   "library": {
+    "testPositive": 20,
+    "calPositive": 17,
+    "cutoff": 0.38010988235473636,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.9386973180076629,
+   "recall": 0.4861111111111111,
+   "testPositive": 504,
+   "passes": false,
+   "verdict": "fails on library"
+  },
+  {
+   "kind": "label",
+   "name": "vocal pad",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 41,
+    "calPositive": 122,
+    "cutoff": 0.4748570203781129,
+    "precision": 0.2857142857142857,
+    "recall": 0.04878048780487805,
+    "tp": 2
+   },
+   "library": {
+    "testPositive": 4,
+    "calPositive": 8
+   },
+   "testedOn": "real recordings",
+   "precision": 0.2857142857142857,
+   "recall": 0.04878048780487805,
+   "testPositive": 41,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth pluck",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 128,
+    "calPositive": 383,
+    "cutoff": 0.32042346835136426,
+    "precision": 0.4230769230769231,
+    "recall": 0.0859375,
+    "tp": 11
+   },
+   "library": {
+    "testPositive": 111,
+    "calPositive": 284,
+    "cutoff": 0.3216391885280609,
+    "precision": 0.23076923076923078,
+    "recall": 0.10810810810810811,
+    "tp": 12
+   },
+   "testedOn": "real recordings",
+   "precision": 0.4230769230769231,
+   "recall": 0.0859375,
+   "testPositive": 128,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth stab",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 254,
+    "calPositive": 609,
+    "cutoff": 0.35300808906555176,
+    "precision": 0.30952380952380953,
+    "recall": 0.051181102362204724,
+    "tp": 13
+   },
+   "library": {
+    "testPositive": 135,
+    "calPositive": 263,
+    "cutoff": 0.3936102318763733,
+    "precision": 0.028,
+    "recall": 0.05185185185185185,
+    "tp": 7
+   },
+   "testedOn": "real recordings",
+   "precision": 0.30952380952380953,
+   "recall": 0.051181102362204724,
+   "testPositive": 254,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth lead",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 244,
+    "calPositive": 730,
+    "cutoff": 0.4199773615598679,
+    "precision": 0.5113636363636364,
+    "recall": 0.18442622950819673,
+    "tp": 45
+   },
+   "library": {
+    "testPositive": 101,
+    "calPositive": 286,
+    "cutoff": 0.4143276810646057,
+    "precision": 0.7966101694915254,
+    "recall": 0.46534653465346537,
+    "tp": 47
+   },
+   "testedOn": "real recordings",
+   "precision": 0.5113636363636364,
+   "recall": 0.18442622950819673,
+   "testPositive": 244,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth bass",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 38,
+    "calPositive": 114,
+    "cutoff": 0.5418293690681457,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "library": {
+    "testPositive": 55,
+    "calPositive": 28,
+    "cutoff": 0.44133727431297304,
+    "precision": 0.05813953488372093,
+    "recall": 0.18181818181818182,
+    "tp": 10
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 38,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vocal-like synth",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 64,
+    "calPositive": 154,
+    "cutoff": 0.4246134746074678,
+    "precision": 0.625,
+    "recall": 0.15625,
+    "tp": 10
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.625,
+   "recall": 0.15625,
+   "testPositive": 64,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth chord",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 31,
+    "calPositive": 91,
+    "cutoff": 0.5020709276199341,
+    "precision": 1.0,
+    "recall": 0.0967741935483871,
+    "tp": 3
+   },
+   "library": {
+    "testPositive": 142,
+    "calPositive": 255,
+    "cutoff": 0.35534402132034304,
+    "precision": 0.1073170731707317,
+    "recall": 0.30985915492957744,
+    "tp": 44
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.0967741935483871,
+   "testPositive": 31,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "supersaw",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 62,
+    "calPositive": 182,
+    "cutoff": 0.3350056070089341,
+    "precision": 0.14516129032258066,
+    "recall": 0.14516129032258066,
+    "tp": 9
+   },
+   "library": {
+    "testPositive": 18,
+    "calPositive": 2
+   },
+   "testedOn": "real recordings",
+   "precision": 0.14516129032258066,
+   "recall": 0.14516129032258066,
+   "testPositive": 62,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "bell synth",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 4,
+    "calPositive": 9
+   },
+   "library": {
+    "testPositive": 3,
+    "calPositive": 7
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 4,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "organ synth",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 1,
+    "calPositive": 1
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 1,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "brass synth",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 36,
+    "calPositive": 42,
+    "cutoff": 0.3509994614124297,
+    "precision": 1.0,
+    "recall": 0.05555555555555555,
+    "tp": 2
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 2
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.05555555555555555,
+   "testPositive": 36,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "string synth",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 35,
+    "calPositive": 14
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 35,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "fm synth",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 258,
+    "calPositive": 772,
+    "cutoff": 0.36743513762950897,
+    "precision": 0.42857142857142855,
+    "recall": 0.06976744186046512,
+    "tp": 18
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.42857142857142855,
+   "recall": 0.06976744186046512,
+   "testPositive": 258,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth drone",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 786,
+    "calPositive": 2357,
+    "cutoff": 0.31751032352447506,
+    "precision": 0.5798969072164949,
+    "recall": 0.2862595419847328,
+    "tp": 225
+   },
+   "library": {
+    "testPositive": 141,
+    "calPositive": 109,
+    "cutoff": 0.3455329990386963,
+    "precision": 0.47058823529411764,
+    "recall": 0.5106382978723404,
+    "tp": 72
+   },
+   "testedOn": "real recordings",
+   "precision": 0.5798969072164949,
+   "recall": 0.2862595419847328,
+   "testPositive": 786,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "reese bass",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 23,
+    "calPositive": 68,
+    "cutoff": 0.47926947891712185,
+    "precision": 0.5,
+    "recall": 0.043478260869565216,
+    "tp": 1
+   },
+   "library": {
+    "testPositive": 103,
+    "calPositive": 207,
+    "cutoff": 0.3686302304267884,
+    "precision": 0.5419354838709678,
+    "recall": 0.8155339805825242,
+    "tp": 84
+   },
+   "testedOn": "real recordings",
+   "precision": 0.5,
+   "recall": 0.043478260869565216,
+   "testPositive": 23,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "wobble bass",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 238,
+    "calPositive": 710,
+    "cutoff": 0.4262505877017974,
+    "precision": 0.7058823529411765,
+    "recall": 0.25210084033613445,
+    "tp": 60
+   },
+   "library": {
+    "testPositive": 63,
+    "calPositive": 137,
+    "cutoff": 0.3815933048725128,
+    "precision": 0.03862660944206009,
+    "recall": 0.14285714285714285,
+    "tp": 9
+   },
+   "testedOn": "real recordings",
+   "precision": 0.7058823529411765,
+   "recall": 0.25210084033613445,
+   "testPositive": 238,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "acid bass",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 320,
+    "calPositive": 842,
+    "cutoff": 0.38722382485866547,
+    "precision": 0.47191011235955055,
+    "recall": 0.13125,
+    "tp": 42
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.47191011235955055,
+   "recall": 0.13125,
+   "testPositive": 320,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "bass pluck",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "library": {
+    "testPositive": 5,
+    "calPositive": 6
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 0,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "rubbery bass",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 11,
+    "calPositive": 30
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 11,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "rimshot",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 70,
+    "calPositive": 116,
+    "cutoff": 0.3783244490623474,
+    "precision": 0.375,
+    "recall": 0.17142857142857143,
+    "tp": 12
+   },
+   "library": {
+    "testPositive": 212,
+    "calPositive": 159,
+    "cutoff": 0.43900943517684937,
+    "precision": 0.8333333333333334,
+    "recall": 0.4009433962264151,
+    "tp": 85
+   },
+   "testedOn": "real recordings",
+   "precision": 0.375,
+   "recall": 0.17142857142857143,
+   "testPositive": 70,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "conga",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 61,
+    "calPositive": 119,
+    "cutoff": 0.4793279469013214,
+    "precision": 0.7777777777777778,
+    "recall": 0.11475409836065574,
+    "tp": 7
+   },
+   "library": {
+    "testPositive": 34,
+    "calPositive": 15,
+    "cutoff": 0.502186096906662,
+    "precision": 1.0,
+    "recall": 0.38235294117647056,
+    "tp": 13
+   },
+   "testedOn": "real recordings",
+   "precision": 0.7777777777777778,
+   "recall": 0.11475409836065574,
+   "testPositive": 61,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "bongo",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 64,
+    "calPositive": 165,
+    "cutoff": 0.43336393594741823,
+    "precision": 0.8,
+    "recall": 0.0625,
+    "tp": 4
+   },
+   "library": {
+    "testPositive": 15,
+    "calPositive": 30,
+    "cutoff": 0.43122628331184387,
+    "precision": 0.8181818181818182,
+    "recall": 0.6,
+    "tp": 9
+   },
+   "testedOn": "real recordings",
+   "precision": 0.8,
+   "recall": 0.0625,
+   "testPositive": 64,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "clave",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 18,
+    "calPositive": 52,
+    "cutoff": 0.5655203151702882,
+    "precision": 1.0,
+    "recall": 0.1111111111111111,
+    "tp": 2
+   },
+   "library": {
+    "testPositive": 2,
+    "calPositive": 4
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.1111111111111111,
+   "testPositive": 18,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "woodblock",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 11,
+    "calPositive": 29
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 2
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 11,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "shaker loop",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 7,
+    "calPositive": 21
+   },
+   "library": {
+    "testPositive": 67,
+    "calPositive": 7
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 7,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "downlifter",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 14,
+    "calPositive": 41
+   },
+   "library": {
+    "testPositive": 112,
+    "calPositive": 288,
+    "cutoff": 0.2844271051883698,
+    "precision": 0.47058823529411764,
+    "recall": 0.5,
+    "tp": 56
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 14,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "noise sweep",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 336,
+    "calPositive": 997,
+    "cutoff": 0.4018321216106414,
+    "precision": 0.3310344827586207,
+    "recall": 0.14285714285714285,
+    "tp": 48
+   },
+   "library": {
+    "testPositive": 128,
+    "calPositive": 268,
+    "cutoff": 0.34580868780612944,
+    "precision": 0.38961038961038963,
+    "recall": 0.46875,
+    "tp": 60
+   },
+   "testedOn": "real recordings",
+   "precision": 0.3310344827586207,
+   "recall": 0.14285714285714285,
+   "testPositive": 336,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "laser",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 469,
+    "calPositive": 1406,
+    "cutoff": 0.2964087724685669,
+    "precision": 0.8015873015873016,
+    "recall": 0.43070362473347545,
+    "tp": 202
+   },
+   "library": {
+    "testPositive": 68,
+    "calPositive": 141,
+    "cutoff": 0.35426310896873475,
+    "precision": 0.27419354838709675,
+    "recall": 0.5,
+    "tp": 34
+   },
+   "testedOn": "real recordings",
+   "precision": 0.8015873015873016,
+   "recall": 0.43070362473347545,
+   "testPositive": 469,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "siren",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 325,
+    "calPositive": 974,
+    "cutoff": 0.44399300336837777,
+    "precision": 0.7310924369747899,
+    "recall": 0.2676923076923077,
+    "tp": 87
+   },
+   "library": {
+    "testPositive": 40,
+    "calPositive": 73,
+    "cutoff": 0.4745299220085144,
+    "precision": 0.20454545454545456,
+    "recall": 0.225,
+    "tp": 9
+   },
+   "testedOn": "real recordings",
+   "precision": 0.7310924369747899,
+   "recall": 0.2676923076923077,
+   "testPositive": 325,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "air horn",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 14,
+    "calPositive": 35
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 14,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "glitch effect",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 800,
+    "calPositive": 2389,
+    "cutoff": 0.2746554458141327,
+    "precision": 0.6607142857142857,
+    "recall": 0.2775,
+    "tp": 222
+   },
+   "library": {
+    "testPositive": 133,
+    "calPositive": 267,
+    "cutoff": 0.2432167971134186,
+    "precision": 0.08843537414965986,
+    "recall": 0.19548872180451127,
+    "tp": 26
+   },
+   "testedOn": "real recordings",
+   "precision": 0.6607142857142857,
+   "recall": 0.2775,
+   "testPositive": 800,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "static noise",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 470,
+    "calPositive": 1408,
+    "cutoff": 0.323216450214386,
+    "precision": 0.6025641025641025,
+    "recall": 0.4,
+    "tp": 188
+   },
+   "library": {
+    "testPositive": 61,
+    "calPositive": 35,
+    "cutoff": 0.3842315673828125,
+    "precision": 0.045454545454545456,
+    "recall": 0.01639344262295082,
+    "tp": 1
+   },
+   "testedOn": "real recordings",
+   "precision": 0.6025641025641025,
+   "recall": 0.4,
+   "testPositive": 470,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "wind ambience",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 648,
+    "calPositive": 1939,
+    "cutoff": 0.2953511393070221,
+    "precision": 0.7435897435897436,
+    "recall": 0.44753086419753085,
+    "tp": 290
+   },
+   "library": {
+    "testPositive": 15,
+    "calPositive": 20,
+    "cutoff": 0.25995177030563354,
+    "precision": 0.08695652173913043,
+    "recall": 0.13333333333333333,
+    "tp": 2
+   },
+   "testedOn": "real recordings",
+   "precision": 0.7435897435897436,
+   "recall": 0.44753086419753085,
+   "testPositive": 648,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "foley hit",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 151,
+    "calPositive": 451,
+    "cutoff": 0.3890714645385742,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "library": {
+    "testPositive": 100,
+    "calPositive": 298,
+    "cutoff": 0.26386920690536503,
+    "precision": 0.016574585635359115,
+    "recall": 0.03,
+    "tp": 3
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 151,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "metallic",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 573,
+    "calPositive": 1719,
+    "cutoff": 0.27206227302551267,
+    "precision": 0.4326647564469914,
+    "recall": 0.26352530541012215,
+    "tp": 151
+   },
+   "library": {
+    "testPositive": 210,
+    "calPositive": 22,
+    "cutoff": 0.2610723513364793,
+    "precision": 0.07819383259911894,
+    "recall": 0.3380952380952381,
+    "tp": 71
+   },
+   "testedOn": "real recordings",
+   "precision": 0.4326647564469914,
+   "recall": 0.26352530541012215,
+   "testPositive": 573,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "gritty",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 32,
+    "calPositive": 93,
+    "cutoff": 0.4121364438533783,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "library": {
+    "testPositive": 9,
+    "calPositive": 7
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 32,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "smooth",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 119,
+    "calPositive": 356,
+    "cutoff": 0.3897610008716579,
+    "precision": 0.6,
+    "recall": 0.025210084033613446,
+    "tp": 3
+   },
+   "library": {
+    "testPositive": 24,
+    "calPositive": 7
+   },
+   "testedOn": "real recordings",
+   "precision": 0.6,
+   "recall": 0.025210084033613446,
+   "testPositive": 119,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "hollow",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 82,
+    "calPositive": 239,
+    "cutoff": 0.3642613077163696,
+    "precision": 0.075,
+    "recall": 0.036585365853658534,
+    "tp": 3
+   },
+   "library": {
+    "testPositive": 20,
+    "calPositive": 30,
+    "cutoff": 0.1348833760619165,
+    "precision": 0.007050528789659225,
+    "recall": 0.3,
+    "tp": 6
+   },
+   "testedOn": "real recordings",
+   "precision": 0.075,
+   "recall": 0.036585365853658534,
+   "testPositive": 82,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "woody",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 567,
+    "calPositive": 1694,
+    "cutoff": 0.3273253917694093,
+    "precision": 0.42857142857142855,
+    "recall": 0.1111111111111111,
+    "tp": 63
+   },
+   "library": {
+    "testPositive": 1,
+    "calPositive": 3
+   },
+   "testedOn": "real recordings",
+   "precision": 0.42857142857142855,
+   "recall": 0.1111111111111111,
+   "testPositive": 567,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "plucked",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 115,
+    "calPositive": 342,
+    "cutoff": 0.37616785645484924,
+    "precision": 0.1206896551724138,
+    "recall": 0.06086956521739131,
+    "tp": 7
+   },
+   "library": {
+    "testPositive": 6,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.1206896551724138,
+   "recall": 0.06086956521739131,
+   "testPositive": 115,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "syncopated",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 25,
+    "calPositive": 73,
+    "cutoff": 0.49016190171241764,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "library": {
+    "testPositive": 3,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 25,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "rolling",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 207,
+    "calPositive": 620,
+    "cutoff": 0.4250348949432373,
+    "precision": 0.32142857142857145,
+    "recall": 0.043478260869565216,
+    "tp": 9
+   },
+   "library": {
+    "testPositive": 3,
+    "calPositive": 9
+   },
+   "testedOn": "real recordings",
+   "precision": 0.32142857142857145,
+   "recall": 0.043478260869565216,
+   "testPositive": 207,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "rising",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 77,
+    "calPositive": 231,
+    "cutoff": 0.5271920919418336,
+    "precision": 0.36363636363636365,
+    "recall": 0.05194805194805195,
+    "tp": 4
+   },
+   "library": {
+    "testPositive": 14,
+    "calPositive": 3
+   },
+   "testedOn": "real recordings",
+   "precision": 0.36363636363636365,
+   "recall": 0.05194805194805195,
+   "testPositive": 77,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "gliding",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 303,
+    "calPositive": 907,
+    "cutoff": 0.38576538324356247,
+    "precision": 0.1590909090909091,
+    "recall": 0.0231023102310231,
+    "tp": 7
+   },
+   "library": {
+    "testPositive": 38,
+    "calPositive": 26,
+    "cutoff": 0.13589641451835632,
+    "precision": 0.013592233009708738,
+    "recall": 0.3684210526315789,
+    "tp": 14
+   },
+   "testedOn": "real recordings",
+   "precision": 0.1590909090909091,
+   "recall": 0.0231023102310231,
+   "testPositive": 303,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "bitcrushed",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 646,
+    "calPositive": 1903,
+    "cutoff": 0.3159486246109009,
+    "precision": 0.536144578313253,
+    "recall": 0.13777089783281735,
+    "tp": 89
+   },
+   "library": {
+    "testPositive": 3,
+    "calPositive": 4
+   },
+   "testedOn": "real recordings",
+   "precision": 0.536144578313253,
+   "recall": 0.13777089783281735,
+   "testPositive": 646,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "chorused",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 109,
+    "calPositive": 263,
+    "cutoff": 0.327165892124176,
+    "precision": 0.03367003367003367,
+    "recall": 0.09174311926605505,
+    "tp": 10
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.03367003367003367,
+   "recall": 0.09174311926605505,
+   "testPositive": 109,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "flanged",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 52,
+    "calPositive": 134,
+    "cutoff": 0.4285650998353958,
+    "precision": 0.2,
+    "recall": 0.07692307692307693,
+    "tp": 4
+   },
+   "library": {
+    "testPositive": 2,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.2,
+   "recall": 0.07692307692307693,
+   "testPositive": 52,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "saturated",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 35,
+    "calPositive": 104,
+    "cutoff": 0.4431863111257553,
+    "precision": 0.16666666666666666,
+    "recall": 0.05714285714285714,
+    "tp": 2
+   },
+   "library": {
+    "testPositive": 6,
+    "calPositive": 7
+   },
+   "testedOn": "real recordings",
+   "precision": 0.16666666666666666,
+   "recall": 0.05714285714285714,
+   "testPositive": 35,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "trombone",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 35,
+    "calPositive": 104,
+    "cutoff": 0.46286872029304504,
+    "precision": 0.8333333333333334,
+    "recall": 0.5714285714285714,
+    "tp": 20
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.8333333333333334,
+   "recall": 0.5714285714285714,
+   "testPositive": 35,
+   "passes": true,
+   "verdict": "PASS",
+   "threshold": 0.5
+  },
+  {
+   "kind": "label",
+   "name": "tuba",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 41,
+    "calPositive": 93,
+    "cutoff": 0.48753124713897705,
+    "precision": 0.5,
+    "recall": 0.04878048780487805,
+    "tp": 2
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.5,
+   "recall": 0.04878048780487805,
+   "testPositive": 41,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "oboe",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 69,
+    "calPositive": 52,
+    "cutoff": 0.4373039096593858,
+    "precision": 1.0,
+    "recall": 0.7971014492753623,
+    "tp": 55
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.7971014492753623,
+   "testPositive": 69,
+   "passes": true,
+   "verdict": "PASS",
+   "threshold": 0.5
+  },
+  {
+   "kind": "label",
+   "name": "bassoon",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 48,
+    "calPositive": 129,
+    "cutoff": 0.4737406754493714,
+    "precision": 1.0,
+    "recall": 0.10416666666666667,
+    "tp": 5
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.10416666666666667,
+   "testPositive": 48,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "banjo",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 14,
+    "calPositive": 41
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 14,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "sitar",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 19,
+    "calPositive": 56,
+    "cutoff": 0.4959031820297241,
+    "precision": 0.5555555555555556,
+    "recall": 0.2631578947368421,
+    "tp": 5
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.5555555555555556,
+   "recall": 0.2631578947368421,
+   "testPositive": 19,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "mandolin",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 29,
+    "calPositive": 76,
+    "cutoff": 0.4708198606967926,
+    "precision": 0.8888888888888888,
+    "recall": 0.5517241379310345,
+    "tp": 16
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.8888888888888888,
+   "recall": 0.5517241379310345,
+   "testPositive": 29,
+   "passes": true,
+   "verdict": "PASS",
+   "threshold": 0.5
+  },
+  {
+   "kind": "label",
+   "name": "steel guitar",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 19,
+    "calPositive": 22,
+    "cutoff": 0.48983920216560367,
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 19,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "double bass",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 43,
+    "calPositive": 124,
+    "cutoff": 0.47972739696502686,
+    "precision": 0.8947368421052632,
+    "recall": 0.3953488372093023,
+    "tp": 17
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.8947368421052632,
+   "recall": 0.3953488372093023,
+   "testPositive": 43,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "viola",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 75,
+    "calPositive": 182,
+    "cutoff": 0.401007640361786,
+    "precision": 0.96875,
+    "recall": 0.41333333333333333,
+    "tp": 31
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.96875,
+   "recall": 0.41333333333333333,
+   "testPositive": 75,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "xylophone",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 86,
+    "calPositive": 255,
+    "cutoff": 0.3871302008628845,
+    "precision": 0.9636363636363636,
+    "recall": 0.6162790697674418,
+    "tp": 53
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.9636363636363636,
+   "recall": 0.6162790697674418,
+   "testPositive": 86,
+   "passes": true,
+   "verdict": "PASS",
+   "threshold": 0.5
+  },
+  {
+   "kind": "label",
+   "name": "marimba",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 63,
+    "calPositive": 142,
+    "cutoff": 0.4222070837020874,
+    "precision": 0.9285714285714286,
+    "recall": 0.6190476190476191,
+    "tp": 39
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.9285714285714286,
+   "recall": 0.6190476190476191,
+   "testPositive": 63,
+   "passes": true,
+   "verdict": "PASS",
+   "threshold": 0.5
+  },
+  {
+   "kind": "label",
+   "name": "vibraphone",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 26,
+    "calPositive": 76,
+    "cutoff": 0.4066421687602997,
+    "precision": 0.25,
+    "recall": 0.3076923076923077,
+    "tp": 8
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.25,
+   "recall": 0.3076923076923077,
+   "testPositive": 26,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "steel drum",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 9,
+    "calPositive": 19
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 9,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "djembe",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 58,
+    "calPositive": 172,
+    "cutoff": 0.42642577826976774,
+    "precision": 0.9636363636363636,
+    "recall": 0.9137931034482759,
+    "tp": 53
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.9636363636363636,
+   "recall": 0.9137931034482759,
+   "testPositive": 58,
+   "passes": true,
+   "verdict": "PASS",
+   "threshold": 0.5
+  },
+  {
+   "kind": "label",
+   "name": "cajon",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 36,
+    "calPositive": 32,
+    "cutoff": 0.47488270998001103,
+    "precision": 1.0,
+    "recall": 0.027777777777777776,
+    "tp": 1
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.027777777777777776,
+   "testPositive": 36,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "waterphone",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 44,
+    "calPositive": 15,
+    "cutoff": 0.47721002221107484,
+    "precision": 1.0,
+    "recall": 0.29545454545454547,
+    "tp": 13
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 1.0,
+   "recall": 0.29545454545454547,
+   "testPositive": 44,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "vocal shush",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 14,
+    "calPositive": 42
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 14,
+   "passes": false,
+   "verdict": "fails"
+  },
+  {
+   "kind": "label",
+   "name": "synth hit",
+   "method": "zero-shot CLAP text",
+   "real": {
+    "testPositive": 5,
+    "calPositive": 13
+   },
+   "library": {
+    "testPositive": 0,
+    "calPositive": 0
+   },
+   "testedOn": "real recordings",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 5,
+   "passes": false,
+   "verdict": "fails"
+  }
+ ]
+}

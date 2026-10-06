@@ -9,10 +9,17 @@ import { join } from 'node:path';
 
 const [outDir, split = 'test', batchArg = '60', limitArg] = process.argv.slice(2);
 if (!outDir) throw new Error('Usage: node scripts/short-clip-upload-eval.mjs <out-dir> [split] [batch] [limit]');
+const EXT = process.env.AUDIO_EXT ?? 'wav';
 const AUDIO = process.env.AUDIO_DIR ?? '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints/short-clips/bench-audio';
 const manifest = JSON.parse(readFileSync(process.env.MANIFEST ?? 'docs/evaluations/short-clips-2026-10-04/manifest.json', 'utf8'));
 let ids = manifest.items.filter(i => i.split === split).map(i => i.id);
 if (limitArg) ids = ids.slice(0, Number(limitArg));
+// SHARD=i/n keeps every n-th clip starting at i, so one benchmark can run on several machines.
+if (process.env.SHARD) {
+  const m = /^(\d+)\/(\d+)$/.exec(process.env.SHARD), [i, n] = m ? [Number(m[1]), Number(m[2])] : [];
+  if (!m || n < 1 || i >= n) throw new Error(`SHARD must be i/n with 0 <= i < n, got "${process.env.SHARD}"`);
+  ids = ids.filter((_, k) => k % n === i);
+}
 mkdirSync(outDir, { recursive: true });
 const PORT = Number(process.env.PORT ?? 4291);
 const server = spawn('npx', ['vite', 'preview', '--host', '127.0.0.1', '--port', String(PORT), '--strictPort', ...(process.env.DIST ? ['--outDir', process.env.DIST] : [])], { stdio: 'ignore' });
@@ -47,7 +54,7 @@ for (let start = 0; start < ids.length; start += Number(batchArg)) {
     page.once('filechooser', () => {});
     await page.getByRole('button', { name: 'Add files', exact: true }).click({ timeout: 180_000 });
   }
-  await picker.setInputFiles(batch.map(id => join(AUDIO, `${id}.wav`)));
+  await picker.setInputFiles(batch.map(id => join(AUDIO, `${id}.${EXT}`)));
   // 2D view: same analysis, far less software rendering competing with the models.
   if (start === 0) await page.getByRole('button', { name: 'Switch to 2D view' }).click({ timeout: 120_000 }).catch(() => {});
   let done = 0;
@@ -59,7 +66,7 @@ for (let start = 0; start < ids.length; start += Number(batchArg)) {
     }
     const graph = await exportGraph().catch(e => { if (process.env.DEBUG) console.log('\nexport failed', e.message); });
     if (!graph) continue;
-    const want = new Set(batch.map(id => `${id}.wav`));
+    const want = new Set(batch.map(id => `${id}.${EXT}`));
     const nodes = graph.nodes.filter(n => want.has(n.path ?? n.title));
     done = nodes.filter(n => finished(n.audio)).length;
     process.stdout.write(`\r${start + done}/${ids.length} analysed`);

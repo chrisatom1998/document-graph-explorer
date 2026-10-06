@@ -244,7 +244,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
         // only the one-shot heads tag these clips. The user's own reviewed examples still apply.
         learnedScores = learnedScores.filter(s => s.basis !== 'head');
       }
-      await postResult([...descriptionScores(embedding, prompts), ...learnedScores, ...oneShot]);
+      await postResult([...descriptionScores(embedding, prompts), ...learnedScores, ...oneShot, { group: 'embedding', label: null, score: 0, embedding: embedding.map(v => Math.round(v * 1e4) / 1e4) }]);
       return;
     }
     if (data.kind === 'instruments') {

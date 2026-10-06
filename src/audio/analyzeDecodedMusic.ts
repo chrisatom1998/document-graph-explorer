@@ -3,11 +3,11 @@ import { MAX_FUSION_WINDOWS, sanitizeFusionIdentity, sanitizeFusionDecisions, un
 import { DjTagEvidence, selectDjTags } from './djTags';
 import { mergeDjTags } from './djClassification';
 import type { MusicDecoder } from './decodeMusic';
-import { jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabels } from './jamendo';
+import { jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabels, JamendoRecordingScores } from './jamendo';
 import { InstrumentEvidence, instrumentWindowStarts } from './instrumentEvidence';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, type MusicAnalysis, type MusicAnalysisMode } from './musicTypes';
 import type { InstrumentPredictions } from './instrumentLabels';
-import { DescriptionAccumulator, selectDescriptions, type DescriptionScore } from './profileDescriptions';
+import { DescriptionAccumulator, meanEmbedding, selectDescriptions, splitEmbedding, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
@@ -80,7 +80,7 @@ export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicR
 
 /** The fusion scorer's contract is the fixed prompt catalog it was trained on. Trained-head,
  * reviewed-example and one-shot scores ride along in the same output for tagging and are not part of it. */
-export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot');
+export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot' && d.group !== 'embedding');
 /** Model jobs share a bounded timeline, but never each other's validity. Evidence is applied in one fixed order. */
 export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
   // The runtime each AST/CLAP output came from: a threaded stall can switch this browser to one thread mid-run.
@@ -133,9 +133,9 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   // A per-run identity still permits preview reuse without cross-file collisions.
   const fingerprint = options.audioFingerprint ?? recognition.runId;
   const astEvidence = new InstrumentEvidence();
-  const musicScores: Record<string, number> = {};
-  let musicCount = 0;
+  const musicScores = new JamendoRecordingScores();
   const descriptions = new DescriptionAccumulator();
+  const embeddings: number[][] = [];
   const djEvidence = new DjTagEvidence();
   const eventEvidence = new EventWindowEvidence();
   const completed = new Set<string>();
@@ -153,13 +153,16 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     if (eventPassFailed && job('clap').status === 'complete') job('clap').status = 'partial';
     const soundComplete = ['ast','jamendo','clap'].every(id => ['complete','unsupported'].includes(job(id as ModelId).status));
     result.instruments = astEvidence.results();
-    result.soundProfile = combineSoundModels(result.instruments, musicScores, descriptions.average(),
+    const music = musicScores.scores();
+    result.soundProfile = combineSoundModels(result.instruments, music, descriptions.average(),
       { ast: job('ast').status === 'complete', jamendo: job('jamendo').status === 'complete', clap: job('clap').status === 'complete' });
     // Event-window tags only fill gaps: a tag the 10 s windows already found keeps its own (stronger) evidence.
     const windowTags = djEvidence.results(), found = new Set(windowTags.map(t => `${t.group}:${t.label}`));
     const eventTags = eventEvidence.results().filter(h => !found.has(`${h.tag.group}:${h.tag.label}`)).map(h => ({ ...h.tag, segments: h.segments.slice(0, 3) }));
     mergeDjTags(result.soundProfile, [...windowTags, ...eventTags], descriptions.average());
-    for (const suggestion of jamendoSuggestions(musicScores)) {
+    const audioVector = meanEmbedding(embeddings);
+    if (audioVector) result.embedding = audioVector; else delete result.embedding;
+    for (const suggestion of jamendoSuggestions(music)) {
       if (!result.instruments.some(i => i.label === suggestion.label)) result.instruments.push({ label: suggestion.label, score: suggestion.score, status: 'possible' });
     }
     result.instrumentScan = { revision: INSTRUMENT_ANALYSIS_REVISION, mode, complete: soundComplete && !cancelled,
@@ -265,11 +268,11 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
           .map(([labelId,score]) => ({ dimension: 'source', labelId, score })));
       } else if (id === 'jamendo') {
         const scores = output as Record<string, number>;
-        for (const label of new Set([...Object.keys(musicScores), ...Object.keys(scores)])) musicScores[label] = ((musicScores[label] ?? 0) * musicCount + (scores[label] ?? 0)) / (musicCount + 1);
-        musicCount++;
+        musicScores.add(scores);
         recordEvidence(recognition, id, interval, [...jamendoLabels(scores), ...nsynthLabels(scores)]);
       } else {
-        const scores = output as DescriptionScore[];
+        const { scores, embedding } = splitEmbedding(output as DescriptionScore[]);
+        if (embedding) embeddings.push(embedding);
         descriptions.add(scores);
         djEvidence.add(selectDjTags(scores), interval.start, interval.end);
         const selected = selectDescriptions(scores);
@@ -316,6 +319,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
           output = await request<DescriptionScore[]>({ kind: 'profile', samples, samples16 }, [samples.buffer, samples16.buffer]);
           check(); cache.set(key, output);
         }
+        output = splitEmbedding(output).scores;
         eventEvidence.add(output, interval.start, interval.end);
         recordEvidence(recognition, 'clap', interval, output.flatMap(s => {
           if (s.group !== 'dj-learned' || s.basis !== 'head' || s.decision !== 'include' || !s.learnedGroup || !s.label || !EVENT_WINDOW_LABELS.has(s.label)) return [];

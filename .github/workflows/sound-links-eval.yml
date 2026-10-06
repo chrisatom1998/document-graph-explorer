@@ -1,0 +1,150 @@
+name: Sound link check
+
+# Measures whether music-mode links connect tracks that really sound alike (scripts/sound-links/select.py has the
+# benchmark). "embed" scores sound-fingerprint links alone over a grid of link policies on the tuning sets; "app"
+# uploads the held-out test clips into the real built app (base = main before this change, branch = this commit) and
+# scores every link it made. Audio is fetched at run time and never committed.
+on:
+  push:
+    branches: [claude/sound-similarity-links-2189o9]
+    paths: [.github/workflows/sound-links-eval.yml, scripts/sound-links/**]
+  workflow_dispatch:
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  BASE_REF: af2454dc38079dce620ee9e15b7dc89cfcfaed32
+  OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
+  FMA_METADATA: https://os.unil.cloud.switch.ch/fma/fma_metadata.zip
+  NSYNTH: http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-test.jsonwav.tar.gz
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore datasets
+        id: datasets
+        uses: actions/cache@v4
+        with:
+          path: datasets
+          key: sound-links-datasets-v1
+      - name: Download datasets
+        if: steps.datasets.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p datasets
+          curl -fsSL --retry 6 -o datasets/openmic.tgz "$OPENMIC"
+          echo "e4ccf187e2bb5ab2e115416e8aafe7f4  datasets/openmic.tgz" | md5sum -c -
+          curl -fsSL --retry 6 -o datasets/fma_metadata.zip "$FMA_METADATA"
+          curl -fsSL --retry 6 -o datasets/nsynth.tgz "$NSYNTH"
+      - name: Select clips
+        run: python3 scripts/sound-links/select.py datasets/openmic.tgz datasets/fma_metadata.zip datasets/nsynth.tgz data
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sound-links-data
+          path: data
+          retention-days: 7
+
+  embed:
+    needs: select
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Fetch any model weights the cache lacks
+        run: npm run setup:music
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - uses: actions/download-artifact@v4
+        with:
+          name: sound-links-data
+          path: data
+      - name: Embed clips
+        run: |
+          cd data
+          for set in songs-tune songs-test notes-tune notes-test; do node ../scripts/embed-clap.mjs $set.json $set.jsonl; done
+      - name: Tune (tuning sets only)
+        run: |
+          mkdir -p out
+          for set in songs-tune notes-tune; do npx vite-node scripts/sound-links/tune.mjs data/$set.json data/$set.jsonl out/$set.json; done
+      - name: Held-out check of the shipped policy
+        run: for set in songs-test notes-test; do npx vite-node scripts/sound-links/tune.mjs data/$set.json data/$set.jsonl out/$set.json '{"neighbors":3,"floor":0.7}'; done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sound-links-tuning
+          path: |
+            out
+            data/*.jsonl
+          retention-days: 30
+
+  app:
+    needs: select
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [base, branch]
+        set: [songs-test, notes-test]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - uses: actions/download-artifact@v4
+        with:
+          name: sound-links-data
+          path: data
+      - name: Use the base app source
+        if: matrix.build == 'base'
+        run: git checkout "$BASE_REF" -- src && git status --short | head
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          EXT=$([ "${{ matrix.set }}" = songs-test ] && echo ogg || echo wav)
+          AUDIO_DIR=data/audio AUDIO_EXT=$EXT MANIFEST=data/${{ matrix.set }}.json \
+            node scripts/short-clip-upload-eval.mjs out/run test 50 150
+      - name: Score
+        if: always()
+        run: |
+          git checkout HEAD -- src
+          node scripts/sound-links/score.mjs data/${{ matrix.set }}.json out/run/graph-export.json "${{ matrix.build }} ${{ matrix.set }}" out/score.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sound-links-${{ matrix.build }}-${{ matrix.set }}
+          path: |
+            out/score.json
+            out/run/run.json
+            out/run/graph-export.json
+          retention-days: 30
