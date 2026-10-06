@@ -1,0 +1,314 @@
+{
+ "reversed vocal": {
+  "threshold": 0.98,
+  "trainPositive": 345,
+  "heldOutEdits": {
+   "positive": 55,
+   "tp": 35,
+   "fp": 15,
+   "precision": 0.7,
+   "recall": 0.636
+  },
+  "realLibrary": {
+   "positive": 9,
+   "tp": 0,
+   "fp": 9,
+   "precision": 0.0,
+   "recall": 0.0
+  },
+  "falseTagNames": [
+   [
+    "riser",
+    2
+   ],
+   [
+    "texture",
+    2
+   ],
+   [
+    "spoken phrase",
+    2
+   ],
+   [
+    "vocal phrase",
+    1
+   ],
+   [
+    "foley hit",
+    1
+   ],
+   [
+    "vocal chops",
+    1
+   ]
+  ]
+ },
+ "pitched vocal": {
+  "threshold": 0.98,
+  "trainPositive": 302,
+  "heldOutEdits": {
+   "positive": 98,
+   "tp": 50,
+   "fp": 46,
+   "precision": 0.521,
+   "recall": 0.51
+  },
+  "realLibrary": {
+   "positive": 0,
+   "tp": 0,
+   "fp": 7,
+   "precision": 0.0,
+   "recall": 0.0
+  },
+  "falseTagNames": [
+   [
+    "foley hit",
+    2
+   ],
+   [
+    "spoken phrase",
+    2
+   ],
+   [
+    "breakbeat",
+    1
+   ],
+   [
+    "vocal chant",
+    1
+   ],
+   [
+    "glitch effect",
+    1
+   ]
+  ]
+ },
+ "vocoder vocal": {
+  "threshold": 0.94,
+  "trainPositive": 267,
+  "heldOutEdits": {
+   "positive": 142,
+   "tp": 126,
+   "fp": 5,
+   "precision": 0.962,
+   "recall": 0.887
+  },
+  "realLibrary": {
+   "positive": 21,
+   "tp": 1,
+   "fp": 9,
+   "precision": 0.1,
+   "recall": 0.048
+  },
+  "falseTagNames": [
+   [
+    "atmospheric pad",
+    2
+   ],
+   [
+    "whisper",
+    2
+   ],
+   [
+    "kick",
+    1
+   ],
+   [
+    "percussion hit",
+    1
+   ],
+   [
+    "vocal chops",
+    1
+   ],
+   [
+    "chops",
+    1
+   ]
+  ]
+ },
+ "reverse cymbal": {
+  "threshold": 0.96,
+  "trainPositive": 306,
+  "heldOutEdits": {
+   "positive": 88,
+   "tp": 73,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 0.83
+  },
+  "realLibrary": {
+   "positive": 10,
+   "tp": 1,
+   "fp": 11,
+   "precision": 0.083,
+   "recall": 0.1
+  },
+  "falseTagNames": [
+   [
+    "riser",
+    8
+   ],
+   [
+    "ride cymbal",
+    8
+   ],
+   [
+    "reverse effect",
+    3
+   ]
+  ]
+ },
+ "reverse impact": {
+  "threshold": 0.97,
+  "trainPositive": 270,
+  "heldOutEdits": {
+   "positive": 89,
+   "tp": 75,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 0.843
+  },
+  "realLibrary": {
+   "positive": 0,
+   "tp": 0,
+   "fp": 6,
+   "precision": 0.0,
+   "recall": 0.0
+  },
+  "falseTagNames": [
+   [
+    "texture",
+    2
+   ],
+   [
+    "glitch effect",
+    2
+   ],
+   [
+    "reverse effect",
+    1
+   ],
+   [
+    "shaker",
+    1
+   ]
+  ]
+ },
+ "record stop": {
+  "threshold": 0.93,
+  "trainPositive": 304,
+  "heldOutEdits": {
+   "positive": 96,
+   "tp": 93,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 0.969
+  },
+  "realLibrary": {
+   "positive": 7,
+   "tp": 0,
+   "fp": 1,
+   "precision": 0.0,
+   "recall": 0.0
+  },
+  "falseTagNames": [
+   [
+    "synth chord",
+    1
+   ]
+  ]
+ },
+ "sub drop": {
+  "threshold": 0.93,
+  "trainPositive": 320,
+  "heldOutEdits": {
+   "positive": 80,
+   "tp": 79,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 0.988
+  },
+  "realLibrary": {
+   "positive": 36,
+   "tp": 0,
+   "fp": 1,
+   "precision": 0.0,
+   "recall": 0.0
+  },
+  "falseTagNames": [
+   [
+    "sub bass",
+    1
+   ]
+  ]
+ },
+ "noise": {
+  "threshold": 0.95,
+  "trainPositive": 320,
+  "heldOutEdits": {
+   "positive": 80,
+   "tp": 75,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 0.938
+  },
+  "realLibrary": {
+   "positive": 0,
+   "tp": 0,
+   "fp": 8,
+   "precision": 0.0,
+   "recall": 0.0
+  },
+  "falseTagNames": [
+   [
+    "static noise",
+    8
+   ],
+   [
+    "noise sweep",
+    6
+   ]
+  ]
+ },
+ "vinyl crackle": {
+  "threshold": 0.9,
+  "trainPositive": 345,
+  "heldOutEdits": {
+   "positive": 55,
+   "tp": 43,
+   "fp": 0,
+   "precision": 1.0,
+   "recall": 0.782
+  },
+  "realLibrary": {
+   "positive": 37,
+   "tp": 24,
+   "fp": 8,
+   "precision": 0.75,
+   "recall": 0.649
+  },
+  "falseTagNames": [
+   [
+    "texture",
+    3
+   ],
+   [
+    "reverse effect",
+    2
+   ],
+   [
+    "vocal chant",
+    1
+   ],
+   [
+    "rain ambience",
+    1
+   ],
+   [
+    "static noise",
+    1
+   ]
+  ]
+ }
+}

@@ -54,8 +54,9 @@ describe('musical relationships', () => {
     expect(edge.evidence[0]).toContain('airy (character), vinyl scratch (production / effect)');
     expect(edge.evidence[0]).toContain('Not confirmed by you');
     expect(edge.weight).toBeLessThan(.85);
-    // A maybe-level head still links, but weaker than a likely-level match.
-    const maybe = musicPairEdges(a, tagged('d', [{ group: 'character', label: 'airy', score: .9, model: 'Trained head (maybe)' }]))[0];
+    // A specific maybe-level effect still links below likely evidence. A lone
+    // broad maybe-level character is insufficient without another useful clue.
+    const maybe = musicPairEdges(a, tagged('d', [{ group: 'production', label: 'vinyl scratch', score: .9, model: 'Trained head (maybe)' }]))[0];
     expect(maybe.kind).toBe('sound');
     expect(maybe.weight).toBeLessThan(edge.weight);
     // The candidate search finds tag-only pairs too.

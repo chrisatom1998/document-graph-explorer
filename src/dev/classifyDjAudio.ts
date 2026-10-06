@@ -37,7 +37,7 @@ const songMode = process.argv.includes('--song');
 const instruments = songMode ? await AutoModelForAudioClassification.from_pretrained('./public/music-model',{dtype:'q8',local_files_only:true}) : null;
 const instrumentProcessor = songMode ? await AutoProcessor.from_pretrained('./public/music-model',{local_files_only:true}) : null;
 const musicModel = songMode ? await loadSongMusicModel() : null;
-const report: {file:string; start:number; duration:number; seconds:number; tags:ReturnType<typeof selectDjTags>; instrumentCandidates:SongInstrumentCandidate[]; embedding:number[]}[] = [];
+const report: {file:string; start:number; duration:number; seconds:number; tags:ReturnType<typeof selectDjTags>; instrumentCandidates:SongInstrumentCandidate[]; embedding:number[]; properties:{durationSeconds:number; sampleRate:number; rmsDbfs:number|null; peakDbfs:number|null; zeroCrossingRate:number}}[] = [];
 try {
   for (const path of paths) {
     const duration = Number(execFileSync('ffprobe',['-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',path],{encoding:'utf8'}).trim());
@@ -58,7 +58,10 @@ try {
       tags.push(...songInstrumentTags(scores));
       if(musicModel){const evidence=songMusicEvidence(await musicModel.classify(audio));tags.push(...evidence.tags);instrumentCandidates.push(...evidence.candidates);}
     }
-    report.push({file:path,start,duration,seconds:samples.length/48000,tags,instrumentCandidates,embedding});
+    let peak=0,crossings=0;
+    for(let i=0;i<samples.length;i++){peak=Math.max(peak,Math.abs(samples[i]));if(i>0&&(samples[i]>=0)!==(samples[i-1]>=0))crossings++;}
+    const properties={durationSeconds:samples.length/48000,sampleRate:48000,rmsDbfs:energy>0?10*Math.log10(energy):null,peakDbfs:peak>0?20*Math.log10(peak):null,zeroCrossingRate:crossings/Math.max(1,samples.length-1)};
+    report.push({file:path,start,duration,seconds:samples.length/48000,tags,instrumentCandidates,embedding,properties});
     console.log(JSON.stringify({file:path,start,tags}));
     }
   }
