@@ -9,3 +9,7 @@
 .main-sound-attributes__labels ul { margin-top: .3rem; padding-left: 1.1rem; opacity: .8; }
 .main-sound-attributes__toggle { font: inherit; font-size: .78rem; margin-block: .2rem .6rem; padding: .25rem .65rem; border: 1px solid #ffffff30; border-radius: 999px; background: transparent; color: inherit; cursor: pointer; }
 .main-sound-attributes__toggle:hover, .main-sound-attributes__toggle[aria-pressed="true"] { background: #ffffff14; }
+.main-sound-attributes__head { display: flex; align-items: center; gap: .4rem; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.main-sound-attributes__head::before { content: '▶'; font-size: .7em; transition: transform 150ms ease; }
+.main-sound-attributes__head[aria-expanded="true"]::before { transform: rotate(90deg); }
+.main-sound-attributes__head:hover { opacity: .85; }

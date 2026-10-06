@@ -9,7 +9,7 @@ import { annotationKey, annotationSyncSnapshot, ensureAnnotationsLoaded, useAnno
 import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
 import { useSettingsStore } from '../store/settingsStore';
-import { useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
+import { sanitizeAudioFacets, useUiStore, type CameraPose, type GraphFilter } from '../store/uiStore';
 import { isOffline, OFFLINE_MESSAGE } from '../offline';
 import type { DocAnnotationRecord } from '../persistence/db';
 import type { DocNode, EdgeKind, FileType } from '../model/types';
@@ -101,6 +101,9 @@ function cloneFilter(filter: GraphFilter): GraphFilter {
     minEdgeWeight: filter.minEdgeWeight,
     edgeKinds: filter.edgeKinds ? [...filter.edgeKinds] : null,
     modifiedWithinDays: filter.modifiedWithinDays,
+    bpmRange: filter.bpmRange ? [filter.bpmRange[0], filter.bpmRange[1]] : null,
+    musicKey: filter.musicKey,
+    style: filter.style,
   };
 }
 
@@ -426,6 +429,11 @@ export function sanitizeSharedFilter(value: unknown): Partial<GraphFilter> | und
       next.modifiedWithinDays = days;
       found = true;
     }
+  }
+  const facets = sanitizeAudioFacets(source);
+  if (Object.keys(facets).length) {
+    Object.assign(next, facets);
+    found = true;
   }
   return found ? next : undefined;
 }

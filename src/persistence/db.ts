@@ -124,6 +124,10 @@ export interface SavedViewRecord {
     minEdgeWeight: number;
     edgeKinds?: import('../model/types').EdgeKind[] | null;
     modifiedWithinDays?: number | null;
+    /** Audio facets; absent on views saved before they existed. */
+    bpmRange?: [number, number] | null;
+    musicKey?: string | null;
+    style?: string | null;
   };
 }
 

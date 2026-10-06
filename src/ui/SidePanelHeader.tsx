@@ -15,6 +15,8 @@ interface SidePanelHeaderProps {
   onArmRemove: () => void;
   onCancelRemove: () => void;
   closeButtonRef: RefObject<HTMLButtonElement | null>;
+  /** Replaces "Back to graph" (clear selection) with a collapse, for the inline panel. */
+  onClose?: () => void;
 }
 
 export default function SidePanelHeader({
@@ -24,6 +26,7 @@ export default function SidePanelHeader({
   onArmRemove,
   onCancelRemove,
   closeButtonRef,
+  onClose,
 }: SidePanelHeaderProps) {
   const setSelected = useUiStore((s) => s.setSelected);
   const pushToast = useUiStore((s) => s.pushToast);
@@ -60,9 +63,9 @@ export default function SidePanelHeader({
         )}
         <CloseButton
           ref={closeButtonRef}
-          title="Back to graph"
-          aria-label="Back to graph"
-          onClick={() => setSelected(null)}
+          title={onClose ? 'Hide full details' : 'Back to graph'}
+          aria-label={onClose ? 'Hide full details' : 'Back to graph'}
+          onClick={() => (onClose ? onClose() : setSelected(null))}
         />
       </div>
       {node.path && <p className="workspace-file-path" title={node.path}>{node.path}</p>}

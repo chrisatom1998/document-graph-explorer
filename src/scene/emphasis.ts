@@ -7,6 +7,8 @@
  */
 
 import type { DocNode, Edge } from '../model/types';
+import { keyName } from '../audio/musicTypes';
+import { styleTags } from '../audio/styleTags';
 import { buildAdjacency } from '../store/graphStore';
 import type { GraphFilter } from '../store/uiStore';
 
@@ -29,8 +31,25 @@ export function isFilterActive(filter: GraphFilter): boolean {
     filter.minDegree > 0 ||
     filter.minEdgeWeight > 0 ||
     (filter.edgeKinds !== null && filter.edgeKinds.length > 0) ||
-    (filter.modifiedWithinDays !== null && filter.modifiedWithinDays > 0)
+    (filter.modifiedWithinDays !== null && filter.modifiedWithinDays > 0) ||
+    filter.bpmRange !== null ||
+    filter.musicKey !== null ||
+    filter.style !== null
   );
+}
+
+/** Audio facets the Resonance filters match against; documents without analysis fail every audio filter. */
+function audioOk(node: DocNode, filter: GraphFilter): boolean {
+  if (filter.bpmRange === null && filter.musicKey === null && filter.style === null) return true;
+  const audio = node.audio;
+  if (!audio) return false;
+  if (filter.bpmRange) {
+    const bpm = audio.tempo?.bpm;
+    if (bpm === undefined || bpm < filter.bpmRange[0] || bpm > filter.bpmRange[1]) return false;
+  }
+  if (filter.musicKey !== null && (!audio.key || keyName(audio.key) !== filter.musicKey)) return false;
+  if (filter.style !== null && !styleTags(audio).includes(filter.style)) return false;
+  return true;
 }
 
 function kindOk(edges: Edge[], filter: GraphFilter): Set<string> | null {
@@ -97,6 +116,7 @@ export function nodesMatchingFilter(
     if (byWeight && !byWeight.has(n.id)) continue;
     if (byKind && n.kind === 'document' && !byKind.has(n.id)) continue;
     if (!recencyOk(n, filter, now)) continue;
+    if (n.kind === 'document' && !audioOk(n, filter)) continue;
     set.add(n.id);
   }
   return set;
