@@ -37,21 +37,21 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
   const docCount = useGraphStore(s => s.nodes.filter(n => n.kind === 'document').length);
   const edgeCount = useGraphStore(s => s.edges.length);
   const activeName = useCorpusStore(s => s.activeName);
-  const selectedId = useUiStore(s => s.selectedId);
   const dims = useUiStore(s => s.dims);
   const [tab, setTab] = useState<Tab>('graph');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const ready = phase === 'ready';
 
-  // The full side panel is opt-in here (the inspector covers the common case);
-  // it closes with the selection so a stale panel never outlives its node.
-  useEffect(() => { if (selectedId === null) setDetailsOpen(false); }, [selectedId]);
-  // A canvas click only fills the inspector. Search, chat citations, insights,
-  // paths and the library go through focusNode → commitPendingFocus, and those
-  // callers expect the reader: open the full panel when a pending focus commits.
+  // Full details follow how a clip was selected. Search, chat citations,
+  // insights, paths and the library go through focusNode → commitPendingFocus
+  // and expect the reader, so a committed focus opens it; any other selection
+  // change (a canvas click, Select in the inspector, clearing) closes it.
   useEffect(() => useUiStore.subscribe((state, prev) => {
-    if (prev.pendingFocus && !state.pendingFocus && state.selectedId === prev.pendingFocus.id) setDetailsOpen(true);
+    // A committed focus counts even when it re-selects the clip already shown.
+    const committedFocus = !!prev.pendingFocus && !state.pendingFocus && state.selectedId === prev.pendingFocus.id;
+    if (committedFocus) setDetailsOpen(true);
+    else if (state.selectedId !== prev.selectedId) setDetailsOpen(false);
   }), []);
   useEffect(() => { if (tab === 'export' && !ready && phase !== 'idle') setTab('graph'); }, [tab, ready, phase]);
 

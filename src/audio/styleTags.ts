@@ -1,13 +1,12 @@
 import type { MusicAnalysis } from './musicTypes';
+import { resolvedNonSourceLabels } from './soundReviewPolicy';
 
 /**
- * Character/style labels for a clip: the user's confirmed tags first, then the
- * model's character tags. Powers the "Genre / Style" filter and the clip facets.
+ * Character/style labels for a clip, resolved the same way as the rest of the
+ * sound pipeline: your saved tags replace model estimates, and labels you
+ * rejected or marked unsure never come back. Powers the "Genre / Style" filter.
  */
 export function styleTags(audio: MusicAnalysis | undefined): string[] {
   if (!audio) return [];
-  const tags = new Set<string>(audio.confirmedDjTags?.character ?? []);
-  for (const tag of audio.soundProfile?.djTags ?? []) if (tag.group === 'character') tags.add(tag.label);
-  for (const label of audio.soundProfile?.character ?? []) tags.add(label);
-  return [...tags];
+  return resolvedNonSourceLabels(audio).filter(l => l.group === 'character').map(l => l.label);
 }
