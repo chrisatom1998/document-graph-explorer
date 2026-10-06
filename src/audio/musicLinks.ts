@@ -1,6 +1,6 @@
 import { musicNameHints } from './nameHints';
 import { confirmedInstrumentList, reliableInstruments, sourceReviewAllows } from './instrumentEvidence';
-import { soundMatchLabels, MATCH_ORIGIN_TEXT, type MatchLabel } from './soundMatchLabels';
+import { soundMatchLabels, MATCH_ORIGIN_TEXT, type MatchLabel, type MatchOrigin } from './soundMatchLabels';
 import { confidentSoundSummary } from './confidentSoundSummary';
 import type { DocNode, Edge } from '../model/types';
 import { keyName, type MusicAnalysis } from './musicTypes';
@@ -15,9 +15,16 @@ const MAX_CANDIDATES = 128;
  * precision (45% vs 63% same genre), so this keeps the original policy. */
 export interface SoundLinkPolicy { neighbors: number; floor: number }
 export const SOUND_LINK_POLICY: SoundLinkPolicy = { neighbors: 3, floor: .7 };
-/** All-pairs similarity up to this many fingerprints; larger libraries compare within hashed neighbourhoods. */
+/** All-pairs similarity up to this many valid fingerprints; larger libraries use bounded hashed neighborhoods. */
 const EXACT_SIMILARITY_LIMIT = 800;
 const cosine = (a: number[], b: number[]) => { let dot = 0; for (let i = 0; i < a.length; i++) dot += a[i] * b[i]; return dot; };
+function unitVector(vector: number[] | undefined): number[] | undefined {
+  if (!vector || vector.length !== 512 || !vector.every(Number.isFinite)) return;
+  const norm = Math.hypot(...vector);
+  if (!Number.isFinite(norm) || norm < 1e-8) return;
+  return vector.map(value => value / norm);
+}
+const GENERIC_LABELS = new Set(['synthesizer', 'drums', 'sound effect', 'noise', 'percussion', 'environmental sound', 'airy', 'metallic', 'warm', 'bright', 'dry', 'reverberant', 'sustained', 'plucked']);
 const validScore = (n: number) => Number.isFinite(n) && n >= 0 && n <= 1;
 function keyRelation(a: NonNullable<MusicAnalysis['key']>, b: NonNullable<MusicAnalysis['key']>): string | null {
   if (a.tonic === b.tonic && a.mode === b.mode) return 'same estimated key';
@@ -36,13 +43,15 @@ function features(node: DocNode) {
   // Names are useful search clues, but cannot replace stronger audio evidence.
   const reliable = reliableInstruments(audio);
   const named = !human && !reliable.length && hints.instruments;
-  const base = named ? named.value.filter(label => sourceReviewAllows(audio, label)).map(label => ({ label, score: .45 })) : reliable;
+  type Instrument = { label: string; score: number; origin: MatchOrigin | 'reliable' };
+  const base: Instrument[] = named ? named.value.filter(label => sourceReviewAllows(audio, label)).map(label => ({ label, score: .45, origin: 'filename' }))
+    : reliable.map(i => ({ ...i, origin: human ? 'confirmed' : 'reliable' }));
   // Source labels the panel's Sounds / Other model guesses sections show also count, at their own strength.
   const matches = soundMatchLabels(node);
   const shownSources = matches.filter(m => m.group === 'source' && !(human && m.origin !== 'confirmed'));
-  const instruments = [...base, ...shownSources.filter(m => !base.some(i => i.label === m.label)).map(m => ({ label: m.label, score: m.weight }))];
+  const instruments = [...base, ...shownSources.filter(m => !base.some(i => i.label === m.label)).map(m => ({ label: m.label, score: m.weight, origin: m.origin }))];
   return {
-    node, hints, human, matches, shownSources, vector: audio.embedding && audio.embedding.length === 512 ? audio.embedding : undefined,
+    node, hints, human, vector: unitVector(audio.embedding),
      named: !!named, instruments: instruments.filter(i => validScore(i.score)),
     tempo: tempo && Number.isFinite(tempo.bpm) && tempo.bpm >= 40 && tempo.bpm <= 250 && validScore(tempo.confidence) && tempo.confidence >= .5 ? tempo : undefined,
     key: key && Number.isInteger(key.tonic) && key.tonic >= 0 && key.tonic < 12 && ['major','minor'].includes(key.mode) && validScore(key.strength) && key.strength >= .6 ? key : undefined,
@@ -77,18 +86,25 @@ function pairEdges(a: Features, b: Features, floor = SOUND_LINK_POLICY.floor): E
   }
   if (a.key && b.key) {
     const relation = keyRelation(a.key, b.key);
-    if (relation) add('key', Math.min(a.key.strength, b.key.strength) * (relation === 'same estimated key' ? 1 : .8), `${a.hints.key?.displayName ?? keyName(a.key)} and ${b.hints.key?.displayName ?? keyName(b.key)}: ${relation}.${a.hints.key || b.hints.key ? sources('key') : ' Based on audio estimates.'}`);
+    if (relation) add('key', Math.min(a.key.strength, b.key.strength) * (relation === 'same estimated key' ? 1 : .8), `Harmonic key relation: ${a.hints.key?.displayName ?? keyName(a.key)} and ${b.hints.key?.displayName ?? keyName(b.key)}: ${relation}.${a.hints.key || b.hints.key ? sources('key') : ' Based on audio estimates.'} This does not establish similar sound or mix quality.`);
   }
   const shared = a.instruments.filter(i => b.instruments.some(j => j.label === i.label));
   if (shared.length) {
-    const hasName = a.named || b.named;
+    const pairs = shared.map(i => ({ i, other: b.instruments.find(j => j.label === i.label)! }));
+    // Provenance follows the shared labels' own origins, not the node: a track named piano.wav can still
+    // share a model-estimated guitar, and that edge must not claim the file name as its source.
+    const aNamed = pairs.some(({ i }) => i.origin === 'filename'), bNamed = pairs.some(({ other }) => other.origin === 'filename');
+    const hasName = aNamed || bNamed;
+    const sideSource = (f: Features, named: boolean) => f.human ? 'confirmed by you' : named ? f.hints.instruments!.source : 'audio estimate';
     const provenance = hasName
-      ? `Sources: ${a.human ? 'confirmed by you' : a.named ? a.hints.instruments!.source : 'audio estimate'} and ${b.human ? 'confirmed by you' : b.named ? b.hints.instruments!.source : 'audio estimate'}. Name tags are not verified audio detections.`
+      ? `Sources: ${sideSource(a, aNamed)} and ${sideSource(b, bNamed)}. Name tags are not verified audio detections.`
       : a.human && b.human ? 'Confirmed by you on both tracks.'
       : a.human || b.human ? 'Confirmed by you on one track; estimated from audio on the other.'
-      : 'Supported by strong or repeated audio detections; not confirmed instrumentation.';
-    const modelShown = shared.some(i => [a, b].some(f => f.shownSources.some(m => m.label === i.label && m.origin !== 'confirmed')));
-    add('instrument', Math.max(...shared.map(i => Math.min(i.score, b.instruments.find(j => j.label === i.label)!.score))), `${hasName ? 'Shared instrument hints' : 'Shared instruments'}: ${shared.map(i => i.label).join(', ')}. ${provenance}${modelShown ? ' Includes source labels from the Sounds / Other model guesses lists, which are model estimates or untested guesses.' : ''}`);
+      : 'Not confirmed instrumentation.';
+    const originText = (i: Features['instruments'][number]) => i.origin === 'reliable' ? 'strong or repeated audio detection (unconfirmed)' : MATCH_ORIGIN_TEXT[i.origin];
+    const basis = pairs.map(({ i, other }) => `${i.label}: ${originText(i)} / ${originText(other)}`).join('; ');
+    const modelShown = pairs.some(({ i, other }) => [i, other].some(j => ['sounds', 'maybe', 'guess', 'unverified'].includes(j.origin)));
+    add('instrument', Math.max(...pairs.map(({ i, other }) => Math.min(i.score, other.score))), `${hasName ? 'Shared instrument hints' : 'Shared instruments'}: ${shared.map(i => i.label).join(', ')}. ${provenance} ${basis}.${modelShown ? ' Includes source labels from the Sounds / Other model guesses lists, which are model estimates or untested guesses.' : ''}`);
   }
   const find = (side: MatchLabel[], i: MatchLabel) => side.find(j => j.group === i.group && j.label === i.label);
   const sound = a.sound.filter(i => find(b.sound, i));
@@ -107,9 +123,13 @@ function pairEdges(a: Features, b: Features, floor = SOUND_LINK_POLICY.floor): E
     const byYou = (o: string) => o === 'confirmed by you';
     const source = origins.every(o => o.every(byYou)) ? ', confirmed by you on both tracks' : origins.some(o => o.some(byYou)) ? ', some confirmed by you' : ', detected by tested sound models';
     const detail = both.length ? ` Both also have: ${both.map(t => `${t.label.replaceAll('_', ' ')} (${t.dimension === 'effect' ? 'production / effect' : t.dimension})`).join(', ')}${source}.` : '';
-    add('similar', Math.min(1, similarity), `Sounds alike: the two recordings' sound fingerprints are ${Math.floor(similarity * 100)}% similar.${detail} Similar sound is not proof of sampling, a shared source or influence.`);
+    add('similar', Math.min(1, similarity), `Sounds alike: the two recordings' sound fingerprints are ${Math.floor(similarity * 100)}% similar.${detail} Similar sound is not proof of an exact duplicate, sampling, a shared source or influence.`);
   }
-  return edges;
+  const labels = [...shared.map(i => ({ label: i.label, weight: Math.min(i.score, b.instruments.find(j => j.label === i.label)!.score) })),
+    ...sound.map(i => ({ label: i.label, weight: Math.min(i.weight, find(b.sound, i)!.weight) }))];
+  const informative = labels.some(i => !GENERIC_LABELS.has(i.label) || i.weight >= .7);
+  const corroborated = edges.some(e => e.kind === 'tempo' || e.kind === 'similar');
+  return edges.filter(e => e.kind !== 'instrument' && e.kind !== 'sound' || informative || corroborated);
 }
 export function musicPairEdges(a: DocNode, b: DocNode): Edge[] {
   if (a.fileType !== 'audio' || b.fileType !== 'audio' || !a.audio || !b.audio || a.id === b.id) return [];
@@ -223,10 +243,19 @@ export function buildMusicEdges(nodes: DocNode[], policy: SoundLinkPolicy = SOUN
       if (!pairs.has(key)) pairs.set(key, pairEdges(f, audio[other], policy.floor));
     }
   });
-  const score = (edges: Edge[]) => Math.max(...edges.map(e => e.weight)) + .05 * (edges.length - 1);
-  const ranked = [...pairs.values()].filter(edges => edges.length).sort((a,b) => score(b) - score(a) || a[0].id.localeCompare(b[0].id));
+  const byId = new Map(audio.map(f => [f.node.id, new Set(tokens(f).filter(t => t.startsWith('i:') || t.startsWith('s:')))]));
+  const score = (edges: Edge[]) => {
+    const sharedTokens = [...byId.get(edges[0].source)!].filter(t => byId.get(edges[0].target)!.has(t));
+    // Specificity affects selection only; edge strength still describes provenance.
+    const specificity = sharedTokens.length ? Math.max(...sharedTokens.map(t => 1 - ((buckets.get(t)?.length ?? 2) - 2) / Math.max(1, audio.length - 2))) : 1;
+    return Math.max(...edges.map(e => e.weight)) * (.75 + .25 * specificity)
+      + .05 * Math.max(0, edges.filter(e => e.kind !== 'key').length - 1) + .025 * Math.min(3, Math.max(0, sharedTokens.length - 1));
+  };
+  const ranked = [...pairs.values()]
+    .filter(edges => edges.length).map(edges => ({ edges, score: score(edges) }))
+    .sort((a,b) => b.score - a.score || a.edges[0].id.localeCompare(b.edges[0].id));
   const neighbors = new Map<string, Set<string>>(); const counts = new Map<string, number>(); const result: Edge[] = [];
-  for (const edges of ranked) {
+  for (const { edges } of ranked) {
     const { source, target } = edges[0];
     const a = neighbors.get(source) ?? new Set<string>(); const b = neighbors.get(target) ?? new Set<string>();
     if (a.size >= MUSIC_NEIGHBOR_LIMIT || b.size >= MUSIC_NEIGHBOR_LIMIT) continue;

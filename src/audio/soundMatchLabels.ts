@@ -8,11 +8,11 @@ import { musicNameHints } from './nameHints';
 import { resolvedNonSourceLabels, reviewedSoundProfile, type ResolvedDjLabel } from './soundReviewPolicy';
 
 export const labelKey = (label: string) => label.replaceAll('_', ' ').toLowerCase();
-export type MatchOrigin = 'confirmed' | 'sounds' | 'maybe' | 'filename' | 'guess';
+export type MatchOrigin = 'confirmed' | 'sounds' | 'maybe' | 'filename' | 'guess' | 'unverified';
 export interface MatchLabel { group: DjGroup; label: string; origin: MatchOrigin; weight: number }
 /** How strongly each origin counts toward a link. None of these are probabilities. */
-export const MATCH_WEIGHT: Record<MatchOrigin, number> = { confirmed: .85, sounds: .7, maybe: .55, filename: .45, guess: .4 };
-export const MATCH_ORIGIN_TEXT: Record<MatchOrigin, string> = { confirmed: 'confirmed by you', sounds: 'model estimate', maybe: 'maybe-level model estimate', filename: 'from the file name', guess: 'untested model guess' };
+export const MATCH_WEIGHT: Record<MatchOrigin, number> = { confirmed: .85, sounds: .7, maybe: .55, filename: .45, guess: .4, unverified: .4 };
+export const MATCH_ORIGIN_TEXT: Record<MatchOrigin, string> = { confirmed: 'confirmed by you', sounds: 'model estimate', maybe: 'maybe-level model estimate', filename: 'from the file name', guess: 'untested model guess', unverified: 'uncalibrated catalog similarity' };
 
 /** The "Other model guesses" groups. Shared by the panel and by link building so they cannot drift apart. */
 export function otherModelGuessGroups({ profile, confirmedDjTags, reviewedLabels, exclude, skipSource = false }: {
@@ -42,7 +42,7 @@ export function soundMatchLabels(node: Pick<DocNode, 'path' | 'title' | 'audio'>
   };
   const scored = confidentSoundSummary(analysis);
   const fallback = filenameSoundFallback(analysis, node, scored);
-  for (const s of scored) put(toGroup(s.dimension), s.label, s.origin === 'confirmed by you' ? 'confirmed' : s.maybe || s.tier === 'possible' ? 'maybe' : 'sounds');
+  for (const s of scored) put(toGroup(s.dimension), s.label, s.origin === 'confirmed by you' ? 'confirmed' : s.uncalibrated ? 'unverified' : s.maybe || s.tier === 'possible' ? 'maybe' : 'sounds');
   for (const s of fallback) put(toGroup(s.dimension), s.label, 'filename');
   const confirmed = confirmedInstrumentList(analysis);
   const reviewedLabels = resolvedNonSourceLabels(analysis);
