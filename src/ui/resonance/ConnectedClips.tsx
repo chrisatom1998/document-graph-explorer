@@ -2,9 +2,10 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { DocNode, Edge } from '../../model/types';
 import { useGraphStore } from '../../store/graphStore';
 import { useUiStore } from '../../store/uiStore';
-import { EDGE_KIND_LABEL, hexFor } from '../../scene/palette';
+import { EDGE_KIND_LABEL } from '../../scene/palette';
 import { keyName } from '../../audio/musicTypes';
-import { ClipPlayer, ClipThumb, displayName, formatClock, useClipAudio } from './ClipWave';
+import { musicNameHints } from '../../audio/nameHints';
+import { ClipPlayer, ClipThumb, formatClock, useClipAudio } from './ClipWave';
 
 const ACCENT = '#c8f55a';
 const SidePanel = lazy(() => import('../SidePanel'));
@@ -27,44 +28,62 @@ function neighborsOf(id: string, nodes: DocNode[], nodeIndex: Record<string, num
   return [...byId.values()].sort((a, b) => b.strength - a.strength || a.node.title.localeCompare(b.node.title));
 }
 
-/** Row label and value for one shared edge: tempo/key show the measured value, everything else its strength. */
-function characteristic(edge: Edge, a: DocNode, b: DocNode): { label: string; value: string; fill: number } {
-  const label = EDGE_KIND_LABEL[edge.kind];
-  const pct = Math.round(edge.weight * 100);
+const strength = (w: number) => (w >= 0.75 ? 'Strong' : w >= 0.5 ? 'Medium' : 'Weak');
+/** Tempo and key as the detail panel shows them: a value in the file/folder name wins over the audio estimate. */
+function tempoOf(n: DocNode): number | null {
+  const hint = n.fileType === 'audio' ? musicNameHints(n).tempo : undefined;
+  return hint ? hint.value : n.audio?.tempo ? n.audio.tempo.bpm : null;
+}
+function keyOf(n: DocNode): string | null {
+  const hint = n.fileType === 'audio' ? musicNameHints(n).key : undefined;
+  return hint ? hint.displayName : n.audio?.key ? keyName(n.audio.key) : null;
+}
+const bpmText = (n: DocNode) => { const t = tempoOf(n); return t === null ? '?' : `${Math.round(t)}`; };
+
+/** One "why they're connected" row: what is shared, the measured values where they exist, and how strongly. */
+function reason(edge: Edge, a: DocNode, b: DocNode): { label: string; detail: string; fill: number } {
+  const pct = `${Math.round(edge.weight * 100)}%`;
+  // Measured values only when both clips have them; a link from file names alone falls back to its strength.
   if (edge.kind === 'tempo') {
-    const bpm = a.audio?.tempo?.bpm ?? b.audio?.tempo?.bpm;
-    return { label: 'Tempo match', value: bpm ? `${Math.round(bpm)} BPM` : `${pct}%`, fill: edge.weight };
+    const ta = bpmText(a), tb = bpmText(b);
+    const detail = ta === '?' || tb === '?' ? pct : ta === tb ? `both ${ta} BPM` : `${ta} vs ${tb} BPM`;
+    return { label: 'Similar tempo', detail, fill: edge.weight };
   }
   if (edge.kind === 'key') {
-    const key = a.audio?.key ?? b.audio?.key;
-    return { label: 'Key match', value: key ? keyName(key) : `${pct}%`, fill: edge.weight };
+    const ka = keyOf(a), kb = keyOf(b);
+    const detail = !ka || !kb ? pct : ka === kb ? `both ${ka}` : `${ka} vs ${kb}`;
+    return { label: 'Compatible key', detail, fill: edge.weight };
   }
-  const titled = label.charAt(0).toUpperCase() + label.slice(1);
-  return { label: edge.kind === 'similar' ? 'Sounds alike' : titled, value: `${pct}%`, fill: edge.weight };
+  const labels: Partial<Record<Edge['kind'], string>> = {
+    similar: 'Sounds alike', instrument: 'Same instruments', sound: 'Similar sound character', title: 'Similar names',
+    semantic: 'Similar meaning', keyword: 'Shared keywords', entity: 'Shared names', reference: 'Linked', topic: 'Shared topic',
+  };
+  const label = labels[edge.kind] ?? EDGE_KIND_LABEL[edge.kind];
+  return { label, detail: pct, fill: edge.weight };
 }
 
-function ClipCard({ node, accent, active, onOpen, title }: { node: DocNode; accent: string; active?: boolean; onOpen: () => void; title: string }) {
+function ClipCard({ node, accent, active, action }: { node: DocNode; accent: string; active?: boolean; action?: { label: string; run: () => void } }) {
   const { url, peaks } = useClipAudio(node);
-  const { name, file } = displayName(node);
+  const file = node.path?.split('/').pop() ?? node.title;
   const meta = node.fileType === 'audio'
-    ? [formatClock(node.audio?.durationSeconds), node.audio?.tempo ? `${Math.round(node.audio.tempo.bpm)} BPM` : null, file.split('.').pop()?.toUpperCase()]
+    ? [formatClock(node.audio?.durationSeconds), tempoOf(node) !== null ? `${bpmText(node)} BPM` : null, keyOf(node)]
     : [node.fileType.toUpperCase(), `${node.wordCount.toLocaleString()} words`];
   return (
     <article className="rs-clip">
-      <button type="button" className="rs-clip__head" onClick={onOpen} title={title}>
-        <ClipThumb node={node} peaks={peaks} active={active} />
+      <div className="rs-clip__head">
+        <ClipThumb node={node} peaks={peaks} active={active} size={52} />
         <span className="rs-clip__titles">
-          <strong>{name}</strong>
-          <span>{file}</span>
-          <small>{meta.filter(Boolean).join(' • ')}</small>
+          <strong title={file}>{node.title}</strong>
+          <small>{meta.filter(Boolean).join(' · ')}</small>
         </span>
-      </button>
+        {action && <button type="button" className="rs-clip__action" onClick={action.run}>{action.label}</button>}
+      </div>
       {node.fileType === 'audio' && <ClipPlayer node={node} url={url} peaks={peaks} color={accent} />}
     </article>
   );
 }
 
-/** Right-hand inspector: the selected clip, one connected clip at a time, and what they share. */
+/** Right-hand inspector: the selected clip, one connected clip at a time, and why they are connected. */
 export default function ConnectedClips({ detailsOpen, onToggleDetails }: { detailsOpen: boolean; onToggleDetails: () => void }) {
   const nodes = useGraphStore(s => s.nodes);
   const nodeIndex = useGraphStore(s => s.nodeIndex);
@@ -90,64 +109,64 @@ export default function ConnectedClips({ detailsOpen, onToggleDetails }: { detai
         <div>
           <span className="rs-inspector__mark" aria-hidden="true">◎</span>
           <h2>Pick a clip</h2>
-          <p>Click a node in the graph to hear it and see what it shares with its neighbours.</p>
+          <p>Click a node in the graph to hear it and see which clips sound like it.</p>
         </div>
       </aside>
     );
   }
 
   const audio = selected.fileType === 'audio';
-  const rows = current ? current.edges.map(e => characteristic(e, selected, current.node)).sort((a, b) => b.fill - a.fill) : [];
-  const evidence = current ? [...new Set(current.edges.flatMap(e => e.evidence))].slice(0, 3) : [];
+  const noun = audio ? 'clip' : 'document';
+  const rows = current ? current.edges.map(e => reason(e, selected, current.node)).sort((a, b) => b.fill - a.fill) : [];
+  const evidence = current ? [...new Set(current.edges.flatMap(e => e.evidence))] : [];
+  const select = (id: string) => { const ui = useUiStore.getState(); ui.setSelected(id); ui.sendCamera('frameNode', [id]); };
 
   return (
     <aside className="rs-inspector" aria-label={audio ? 'Connected clips' : 'Connected documents'}>
-      <header className="rs-inspector__bar">
-        <span className="rs-pill">{audio ? 'Connected clips' : 'Connected documents'}</span>
-        <span className="rs-inspector__count">{neighbors.length ? `${index + 1} of ${neighbors.length}` : 'No connections'}</span>
-        <span className="rs-inspector__nav">
-          <button type="button" aria-label="Previous connection" disabled={index <= 0} onClick={() => setIndex(i => Math.max(0, i - 1))}>‹</button>
-          <button type="button" aria-label="Next connection" disabled={index >= neighbors.length - 1} onClick={() => setIndex(i => Math.min(neighbors.length - 1, i + 1))}>›</button>
-        </span>
-      </header>
+      <section className="rs-block" aria-label={`Selected ${noun}`}>
+        <p className="rs-eyebrow">Selected {noun}</p>
+        <ClipCard node={selected} accent="#a89bff" action={{ label: 'Find', run: () => useUiStore.getState().sendCamera('frameNode', [selected.id]) }} />
+      </section>
 
-      <ClipCard node={selected} accent="#a89bff" title="Frame in graph" onOpen={() => useUiStore.getState().sendCamera('frameNode', [selected.id])} />
+      <section className="rs-block" aria-label={`Connected ${noun}s`}>
+        <div className="rs-block__head">
+          <p className="rs-eyebrow">{neighbors.length ? `Connected ${noun} ${index + 1} of ${neighbors.length}` : `Connected ${noun}s`}</p>
+          {neighbors.length > 1 && (
+            <span className="rs-inspector__nav">
+              <button type="button" aria-label={`Previous connected ${noun}`} disabled={index <= 0} onClick={() => setIndex(i => Math.max(0, i - 1))}>‹</button>
+              <button type="button" aria-label={`Next connected ${noun}`} disabled={index >= neighbors.length - 1} onClick={() => setIndex(i => Math.min(neighbors.length - 1, i + 1))}>›</button>
+            </span>
+          )}
+        </div>
+        {current
+          ? <ClipCard node={current.node} accent={ACCENT} active action={{ label: 'Select', run: () => select(current.node.id) }} />
+          : <p className="rs-inspector__none">No connected {noun}s yet. Clear the filters on the left or import more {audio ? 'clips' : 'files'}.</p>}
+      </section>
 
       {current && (
-        <>
-          <div className="rs-related">
-            <span className="rs-related__dot" />
-            <span className="rs-related__line" />
-            <span className="rs-related__label"><i /> Related</span>
-            <span className="rs-related__line" />
-            <button type="button" className="rs-related__more" aria-label={detailsOpen ? "Hide full details" : "Show full details"} title={detailsOpen ? "Hide full details" : "Show full details"} onClick={onToggleDetails}>⋮</button>
-          </div>
-          <ClipCard node={current.node} accent={ACCENT} active title="Select this clip" onOpen={() => { const ui = useUiStore.getState(); ui.setSelected(current.node.id); ui.sendCamera('frameNode', [current.node.id]); }} />
-
-          <section className="rs-shared" aria-label="Shared characteristics">
-            <h3>Shared characteristics</h3>
-            <ul>
-              {rows.map((row, i) => (
-                <li key={`${row.label}-${i}`}>
-                  <span className="rs-shared__icon" style={{ color: hexFor(current.node.cluster) }} aria-hidden="true">♪</span>
-                  <span className="rs-shared__label">{row.label}</span>
-                  <span className="rs-shared__value">{row.value}</span>
-                  <span className="rs-shared__bar"><i style={{ width: `${Math.round(row.fill * 100)}%`, background: i % 2 ? '#a89bff' : ACCENT }} /></span>
-                </li>
-              ))}
-            </ul>
-            {evidence.length > 0 && (
-              <p className="rs-shared__note">
-                <span aria-hidden="true">⫶</span>
-                {evidence.join(' ')}
-              </p>
-            )}
-          </section>
-        </>
+        <section className="rs-shared" aria-label="Why they're connected">
+          <h3>Why they’re connected</h3>
+          <ul>
+            {rows.map((row, i) => (
+              <li key={`${row.label}-${i}`}>
+                <span className="rs-shared__label">{row.label}</span>
+                <span className="rs-shared__value">{row.detail}</span>
+                <span className="rs-shared__bar" aria-hidden="true"><i style={{ width: `${Math.round(row.fill * 100)}%` }} /></span>
+                <span className="rs-shared__strength">{strength(row.fill)}</span>
+              </li>
+            ))}
+          </ul>
+          {evidence.length > 0 && (
+            <details className="rs-shared__evidence">
+              <summary>Show the evidence</summary>
+              <ul>{evidence.map(e => <li key={e}>{e}</li>)}</ul>
+            </details>
+          )}
+        </section>
       )}
-      {!current && <p className="rs-inspector__none">This {audio ? 'clip' : 'document'} has no connections yet. Lower the similarity filters or import more {audio ? 'clips' : 'files'}.</p>}
+
       <button type="button" ref={detailsButton} className="rs-inspector__details" aria-expanded={detailsOpen} aria-controls="rs-details" onClick={onToggleDetails}>
-        {detailsOpen ? 'Hide full details' : 'Full details'}
+        <span className="rs-inspector__details-text">{detailsOpen ? 'Hide' : 'More about'} <strong>{selected.title}</strong></span>
         <span aria-hidden="true">{detailsOpen ? '⌃' : '⌄'}</span>
       </button>
       {detailsOpen && (
