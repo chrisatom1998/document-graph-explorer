@@ -1,0 +1,14 @@
+500/500 analysed; 13 clips showed no tag
+source:drums         P 0.309  R 0.674  (95 TP / 212 FP / 46 FN; 141 pos, 359 neg)
+source:voice         P 0.299  R 0.868  (66 TP / 155 FP / 10 FN; 76 pos, 421 neg)
+source:synthesizer   P 0.46  R 0.9  (188 TP / 221 FP / 21 FN; 209 pos, 291 neg)
+source:piano         P 0.744  R 0.414  (58 TP / 20 FP / 82 FN; 140 pos, 360 neg)
+source:guitar        P 0.492  R 0.564  (62 TP / 64 FP / 48 FN; 110 pos, 390 neg)
+source:bass          P 0.269  R 0.257  (29 TP / 79 FP / 84 FN; 113 pos, 387 neg)
+source:cymbals       P —  R —  (0 TP / 0 FP / 0 FN; 0 pos, 0 neg)
+source:organ         P 0  R 0  (0 TP / 35 FP / 5 FN; 5 pos, 495 neg)
+source:violin        P 0.195  R 0.276  (8 TP / 33 FP / 21 FN; 29 pos, 471 neg)
+source:trumpet       P 0.143  R 0.3  (3 TP / 18 FP / 7 FN; 10 pos, 490 neg)
+source:saxophone     P 0.333  R 0.2  (3 TP / 6 FP / 12 FN; 15 pos, 485 neg)
+source:cello         P 0.086  R 0.25  (3 TP / 32 FP / 9 FN; 12 pos, 488 neg)
+missed positives, where the label was found: {"drums":{"nowhere":42,"instrument estimate only":3,"profile tag (MTG-Jamendo)":1},"bass":{"nowhere":83,"instrument estimate only":1},"guitar":{"nowhere":37,"instrument estimate only":8,"profile tag (MTG-Jamendo)":3},"piano":{"instrument estimate only":13,"nowhere":47,"profile tag (MTG-Jamendo)":22},"cello":{"nowhere":9},"organ":{"nowhere":5},"trumpet":{"nowhere":7},"synthesizer":{"profile tag (MTG-Jamendo)":2,"nowhere":15,"instrument estimate only":4},"violin":{"nowhere":18,"profile tag (MTG-Jamendo)":3},"saxophone":{"instrument estimate only":1,"nowhere":8,"profile tag (AudioSet AST)":3},"voice":{"nowhere":7,"instrument estimate only":1,"profile tag (Trained head)":2}}
