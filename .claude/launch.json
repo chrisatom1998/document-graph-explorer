@@ -3,12 +3,13 @@
   "configurations": [
     {
       "name": "dev",
-      "runtimeExecutable": "npm",
+      "runtimeExecutable": "sh",
       "runtimeArgs": [
-        "run",
-        "dev"
+        "-c",
+        "exec npx vite --port \"${PORT:-5173}\" --strictPort"
       ],
-      "port": 5173
+      "port": 5173,
+      "autoPort": true
     },
     {
       "name": "dev-alt",
@@ -23,15 +24,13 @@
     },
     {
       "name": "preview-dist",
-      "runtimeExecutable": "npx",
+      "runtimeExecutable": "sh",
       "runtimeArgs": [
-        "vite",
-        "preview",
-        "--port",
-        "4173",
-        "--strictPort"
+        "-c",
+        "exec npx vite preview --port \"${PORT:-4173}\" --strictPort"
       ],
-      "port": 4173
+      "port": 4173,
+      "autoPort": true
     },
     {
       "name": "dj-test-set",
@@ -42,6 +41,39 @@
         "5210"
       ],
       "port": 5210
+    },
+    {
+      "name": "dev-perf",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5233",
+        "--strictPort"
+      ],
+      "port": 5233
+    },
+    {
+      "name": "distorted-check",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DJ_REVIEW_DATA=artifacts/music-evaluation/distorted-check",
+        "DJ_REVIEW_PORT=8767",
+        "DJ_REVIEW_NO_APPLY=1",
+        "python3",
+        "scripts/dj-review-server.py"
+      ],
+      "port": 8767,
+      "url": "http://127.0.0.1:8767"
+    },
+    {
+      "name": "sound-label-studio",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "scripts/dj-review-server.py"
+      ],
+      "port": 8766,
+      "url": "http://127.0.0.1:8766"
     }
   ]
 }
