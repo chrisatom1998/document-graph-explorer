@@ -16,7 +16,7 @@ import { confidentSoundSummary } from '../audio/confidentSoundSummary';
 import { filenameSoundFallback } from '../audio/filenameSoundFallback';
 import { RecognitionDiagnostics, type RecognitionEvidenceProps } from './RecognitionEvidence';
 import { clockTime as time } from './clockTime';
-import { camelotCode } from './musicDisplay';
+import { camelotCode } from '../audio/mixSuggestions';
 import MusicNeighbours from './MusicNeighbours';
 export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?: (seconds: number) => void }) {
   const job = useMusicJobs(s => s.jobs[node.id]);
