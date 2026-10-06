@@ -123,7 +123,7 @@ export function nodeRadius(degree: number): number {
 // Stage builder
 // ---------------------------------------------------------------------------
 
-const EDGE_KINDS: EdgeKind[] = ['reference', 'semantic', 'keyword', 'entity', 'topic', 'tempo', 'key', 'instrument', 'sound', 'similar', 'version', 'title'];
+const EDGE_KINDS: EdgeKind[] = ['reference', 'semantic', 'keyword', 'entity', 'topic', 'tempo', 'key', 'instrument', 'sound', 'similar', 'version', 'genre', 'title'];
 
 export function buildUsdaStage(input: UsdStageInput): string {
   const lines: string[] = [];

@@ -62,6 +62,7 @@ const EDGE_KINDS: ReadonlySet<string> = new Set([
   'sound',
   'similar',
   'version',
+  'genre',
   'reference',
   'semantic',
   'keyword',

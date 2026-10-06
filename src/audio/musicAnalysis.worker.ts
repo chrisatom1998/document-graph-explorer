@@ -9,6 +9,7 @@ import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
 import { instrumentScores, musicScore, type InstrumentPredictions } from './instrumentLabels';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_ANALYSIS_REVISION, type MusicAnalysis } from './musicTypes';
 import { classifyJamendo, preloadJamendo } from './jamendo';
+import { GENRE_ENERGY_VERSION } from './genreEnergy';
 import { detectRepeatedPitch } from './detectedPitch';
 import { estimateTempo } from './tempo';
 import { combineKeys, excerptKey } from './key';
@@ -191,7 +192,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
   let engine: Essentia | undefined;
   try {
     if (data.kind === 'jamendo') {
-      const result = await cachedAudioInference('jamendo-model', `jamendo-16khz:${musicRuntimeIdentity('jamendo')}`, data.samples, isScoreMap, async () => {
+      const result = await cachedAudioInference('jamendo-model', `jamendo-16khz:${musicRuntimeIdentity('jamendo')}:styles-energy-${GENRE_ENERGY_VERSION}`, data.samples, isScoreMap, async () => {
         await ready; engine = new Essentia(EssentiaWASM);
         const result = await classifyJamendo(engine, data.samples); inferenceExecuted = true; return result;
       }, () => self.postMessage({ id, progress: 'Reusing saved instrument features' }));

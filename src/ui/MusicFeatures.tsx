@@ -20,6 +20,7 @@ import TrackStructure from './TrackStructure';
 import TrackVersions from './TrackVersions';
 import { camelotCode } from '../audio/mixSuggestions';
 import MusicNeighbours from './MusicNeighbours';
+import { energyFromScore, genreFromScores, genreText, styleName } from '../audio/genreEnergy';
 export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?: (seconds: number) => void }) {
   const job = useMusicJobs(s => s.jobs[node.id]);
   const phase = useGraphStore(s => s.phase);
@@ -81,6 +82,7 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
     } catch (error) { setMessage(abort.signal.aborted ? 'Analysis cancelled.' : error instanceof Error ? error.message : 'Analysis failed.'); }
     finally { setController(null); }
   };
+  const genre = genreFromScores(analysis?.genreScores?.scores), energy = energyFromScore(analysis?.energyScore);
   const list = (items: InstrumentEstimate[]) => <ul className="music-instruments">{items.map(i => <li key={i.label}>
     <span>{i.label}{isBroadInstrument(i.label) ? ' (family only)' : ''}</span>
     {i.segments?.[0] && <button type="button" disabled={!onSeek} onClick={() => onSeek?.(i.segments![0].start)} aria-label={`Listen for ${i.label} at ${time(i.segments[0].start)}`}>Listen at {time(i.segments[0].start)}</button>}
@@ -106,6 +108,10 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
         <div><dt>Key{hints.key && <small>from name</small>}</dt>{hints.key || analysis.key
           ? <dd>{hints.key ? hints.key.displayName : keyName(analysis.key!)} <span className="camelot" title="Camelot wheel code">{camelotCode(hints.key ? hints.key.value : analysis.key!)}</span>{!!hints.key && !!analysis.key && !sameNamedKey && <small className="music-stats__audio" title="The audio estimate differs from the file or folder name">audio {keyName(analysis.key)}</small>}</dd>
           : <dd className="is-unknown" title={analysis.stage === 'preview' ? 'Not checked yet' : 'No stable key detected'}>{analysis.stage === 'preview' ? '…' : '—'}</dd>}</div>
+        {genre && <div title={genre.tested ? 'Estimated from the audio by a tested genre rule' : 'Estimated from the audio; this genre did not reach 70% precision and recall in testing'}>
+          <dt>Genre{!genre.tested && <small>maybe</small>}</dt><dd className="music-genre">{genreText(genre.label)}</dd></div>}
+        {energy && <div title={energy.tested ? 'Estimated from the audio by a tested energy model' : 'Estimated from the audio; not reliable enough in testing to count as tested'}>
+          <dt>Energy{!energy.tested && <small>maybe</small>}</dt><dd className="music-energy">{energy.level}</dd></div>}
       </dl>
       {analysis.structure && <TrackStructure structure={analysis.structure} duration={analysis.durationSeconds} onSeek={onSeek} />}
       <TrackVersions node={node} />
@@ -118,6 +124,7 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
       <details className="music-analysis-details">
         <summary>Technical details</summary>
         {recognitionProps && <RecognitionDiagnostics {...recognitionProps} />}
+        {!!analysis.styles?.length && <p>Closest music styles: {analysis.styles.slice(0, 5).map(s => `${styleName(s.label)} ${Math.round(s.score * 100)}%`).join(', ')}. Style scores are model similarity, not probabilities.</p>}
         {!!analysis.soundReviews?.length && <p>Saved reviews remain effective and take precedence over earlier confirmations.</p>}
         <CopilotProperties audio={analysis} />
         {analysis.soundProfile && <SoundExplanation showTags={false} reviewedLabels={reviewedLabels} confirmedDjTags={confirmedTags} preliminary={analysis.stage === 'preview'} profile={displayProfile!} sourceOverride={confirmed !== undefined ? { label: confirmed.join(', ') || 'No confirmed instruments', origin: 'confirmed by you' } : hints.instruments ? { label: hints.instruments.value.join(', '), origin: hints.instruments.source, allowVoice: true } : undefined} />}
