@@ -113,6 +113,7 @@ import { parsePdf } from './parsers/pdf';
 import { clearIngestAbort, registerIngestAbort } from './ingestCancellation';
 import { publishIngestReport } from './ingestReport';
 import { enqueueRun } from './runQueue';
+import { stopSpeculativeAudioPreload } from '../audio/speculativePreload';
 import { prefersReducedMotion } from '../util/motion';
 import {
   beginIngestBirth,
@@ -1536,6 +1537,8 @@ function settleCancelledIngest(): void {
 export function ingestFiles(files: IngestFile[]): Promise<void> {
   // Load the audio models while the drop is hashed and parsed, not after.
   if (files.some(f => f.fileType === 'audio')) preloadAudioModels();
+  // A document-only drop must not share the machine with the app-open audio warmup.
+  else stopSpeculativeAudioPreload();
   const spawnOrigin = snapshotIngestOrigin({
     flat: useUiStore.getState().dims === 2,
   });

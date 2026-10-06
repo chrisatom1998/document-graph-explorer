@@ -6,6 +6,7 @@ import { openMusicDecoder } from './decodeMusic';
 import { analyzeDecodedMusic, previewDecodedMusic, type AnalysisOptions } from './analyzeDecodedMusic';
 import type { MusicAnalysis } from './musicTypes';
 import { ResultCache } from './recognition';
+import { setSpeculativePreloadStop } from './speculativePreload';
 const cache = new ResultCache(128);
 const decodedCache = new DecodedMusicCache();
 import { MusicTaskQueue } from './musicTaskQueue';
@@ -37,13 +38,17 @@ let nextId = 0;
 let idleTimer: ReturnType<typeof setTimeout> | undefined;
 // A terminated worker never answers: fail its request now instead of at the timeout.
 const inFlight = new Map<Worker, (error: Error) => void>();
+// Same for a preload warm, so a discarded warmup settles now instead of at its 180 s timeout.
+const warming = new Map<Worker, (error: Error) => void>();
 const WORKER_REPLACED = 'Music analysis worker was replaced.';
 function discard(current?: Worker) {
   for (const [family, worker] of workers) {
     if (current && current !== worker) continue;
     const fail = inFlight.get(worker);
-    inFlight.delete(worker); worker.terminate(); workers.delete(family);
+    const failWarm = warming.get(worker);
+    inFlight.delete(worker); warming.delete(worker); worker.terminate(); workers.delete(family);
     fail?.(new Error(WORKER_REPLACED));
+    failWarm?.(new Error(WORKER_REPLACED));
   }
 }
 function parkWorker() {
@@ -70,11 +75,22 @@ function workerFor(family: string, fingerprint?: string): Worker {
 const PRELOAD_FAMILIES = ['instruments', 'profile', 'jamendo', 'essentia'] as const;
 let preloading: Promise<void> | undefined;
 
+/** A speculative warmup yields to a document-only ingest: retire its workers unless real analysis is using them. */
+function stopSpeculativePreload(): void {
+  if (inFlight.size) return;
+  clearTimeout(idleTimer);
+  discard();
+}
+
 /** Start the model workers and load their weights before the first clip needs them.
  * Uses the same fingerprint as real requests, so the warm workers are reused rather than discarded.
- * Skipped on one-worker hosts, where each family would evict the previous one. */
-export function preloadMusicModels(mode: AnalysisOptions['mode'] = 'fast'): Promise<void> {
+ * Skipped on one-worker hosts, where each family would evict the previous one. A `speculative`
+ * warmup (app open, no audio yet) can be stopped by stopSpeculativeAudioPreload until audio
+ * actually needs the models; a non-speculative call claims the workers for real use. */
+export function preloadMusicModels(mode: AnalysisOptions['mode'] = 'fast', options: { speculative?: boolean } = {}): Promise<void> {
   if (typeof Worker === 'undefined' || workerCapacity() < PRELOAD_FAMILIES.length) return Promise.resolve();
+  if (!options.speculative) setSpeculativePreloadStop(null);
+  else if (!preloading) setSpeculativePreloadStop(stopSpeculativePreload);
   return preloading ??= (async () => {
     const key = await musicCacheKey(new Blob([]), mode ?? 'fast');
     if (!key) return;
@@ -88,7 +104,7 @@ function warmWorker(worker: Worker, family: string, mode: 'fast' | 'full' = 'fas
   const id = ++nextId;
   return new Promise<void>((resolve, reject) => {
     // A listener, not onmessage, so a real request that starts meanwhile keeps its own handler.
-    const done = (error?: Error) => { clearTimeout(timer); worker.removeEventListener('message', onMessage); worker.removeEventListener('error', onError); if (error) reject(error); else resolve(); };
+    const done = (error?: Error) => { clearTimeout(timer); warming.delete(worker); worker.removeEventListener('message', onMessage); worker.removeEventListener('error', onError); if (error) reject(error); else resolve(); };
     const onMessage = ({ data }: MessageEvent<{ id: number; warmed?: boolean; error?: string }>) => {
       if (data.id !== id) return;
       if (data.error === THREADED_RUNTIME_STALLED) singleThreadEverywhere();
@@ -96,6 +112,7 @@ function warmWorker(worker: Worker, family: string, mode: 'fast' | 'full' = 'fas
     };
     const onError = () => done(new Error('Music model preload failed.'));
     const timer = setTimeout(() => done(new Error('Music model preload timed out.')), 180_000);
+    warming.set(worker, error => done(error));
     worker.addEventListener('message', onMessage);
     worker.addEventListener('error', onError);
     worker.postMessage({ kind: 'warm', family, mode, id, ...threadHint() });
@@ -129,6 +146,8 @@ function request<T>(message: Record<string, unknown>, transfer: Transferable[], 
 
 function runRequest<T>(message: Record<string, unknown>, transfer: Transferable[], options: Options, fingerprint?: string): Promise<T> {
   options.signal?.throwIfAborted();
+  // Real analysis owns the workers now; a later document ingest must not retire them.
+  setSpeculativePreloadStop(null);
   clearTimeout(idleTimer);
   const current = workerFor(familyOf(message.kind), fingerprint);
   const id = ++nextId;
