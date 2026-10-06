@@ -11,7 +11,7 @@ import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_A
 import { classifyJamendo, preloadJamendo } from './jamendo';
 import { detectRepeatedPitch } from './detectedPitch';
 import { estimateTempo } from './tempo';
-import { combineKeys, excerptKey } from './key';
+import { excerptChroma, recordingKey } from './key';
 import { soundSuggestions } from './soundSuggestions';
 import { descriptionScores, type DescriptionPrompt } from './profileDescriptions';
 import type { MusicExcerpts } from './decodeMusic';
@@ -258,7 +258,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
     engine = new Essentia(EssentiaWASM);
     const result: MusicAnalysis = { version: 2, keyRevision: KEY_ANALYSIS_REVISION, tempoRevision: TEMPO_ANALYSIS_REVISION, analyzedSeconds: excerpts.samples.reduce((s,v)=>s+v.length/44100,0), durationSeconds: excerpts.durationSeconds, instruments: [], notes: [] };
     const tempos: NonNullable<MusicAnalysis['tempo']>[] = [];
-    const keys: NonNullable<MusicAnalysis['key']>[] = [];
+    const chromas: number[][] = [];
     const pitches: NonNullable<MusicAnalysis['detectedPitch']>[] = [];
     const audible = excerpts.samples.filter(s => s.reduce((sum,v)=>sum+v*v,0) / s.length > 1e-8);
     self.postMessage({ id, progress: 'Estimating tempo and key' });
@@ -272,15 +272,15 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
         catch { /* A missing pitch hint must not prevent full-key estimation. */ }
         if (repeatedPitch) pitches.push(repeatedPitch);
       }
-      const key = excerptKey(engine, samples, repeatedPitch);
-      if (key) keys.push(key);
+      const chroma = excerptChroma(engine, samples, repeatedPitch);
+      if (chroma) chromas.push(chroma);
     }
     if (tempos.length) {
       tempos.sort((a,b)=>a.bpm-b.bpm);const median = tempos[Math.floor(tempos.length/2)];
       const consistent = tempos.filter(t=>Math.abs(t.bpm-median.bpm)<=Math.max(3,median.bpm*0.04));
       if (consistent.length >= Math.ceil(excerpts.samples.length/2)) result.tempo = { ...median, bpm: Math.round(median.bpm*10)/10, confidence: Math.min(...consistent.map(t=>t.confidence)) };
     }
-    const key = combineKeys(keys, excerpts.samples.length);
+    const key = recordingKey(chromas, excerpts.samples.length);
     if (key) result.key = key;
     if (data.kind === 'rhythm' && !result.tempo) result.notes.push('No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).');
     if (data.kind === 'tonal' && !result.key) {
