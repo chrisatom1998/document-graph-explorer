@@ -75,6 +75,12 @@ describe('mix suggestions', () => {
     expect(rows[0].reasons.at(-1)).toMatch(/sounds 9\d% alike/);
     expect(rows[1].reasons.join(' ')).not.toContain('alike');
   });
+  it('never suggests a track on sound alone', () => {
+    const target = node('t', { embedding: vec(0) });
+    expect(mixSuggestions(target, [node('twin', { embedding: vec(.05) })])).toEqual([]);
+    const keyed = node('k', { key: key(9), embedding: vec(0) });
+    expect(mixSuggestions(keyed, [node('clash', { key: key(3), embedding: vec(.05) })])).toEqual([]);
+  });
   it('ignores uncertain estimates and non-audio nodes', () => {
     const target = node('t', { tempo: tempo(120), key: key(0) });
     const doc = { ...node('doc'), fileType: 'pdf' } as DocNode;

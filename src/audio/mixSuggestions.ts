@@ -97,9 +97,10 @@ function suggestion(target: Features, node: DocNode, other: Features, tolerance:
     sound = soundScore(dot);
     if (dot >= .7) reasons.push(`sounds ${Math.floor(dot * 100)}% alike`);
   }
-  // Key and tempo decide whether two tracks mix; sound-alike breaks ties between compatible tracks.
+  // Key and tempo decide whether two tracks mix; sound-alike only breaks ties between compatible tracks.
+  if (tempoScore <= 0 && keyScore <= 0) return null;
   row.score = .4 * tempoScore + .4 * keyScore + .2 * sound;
-  return row.score > 0 ? row : null;
+  return row;
 }
 
 /** Rank the rest of the library as tracks to mix into or out of `target`. */
