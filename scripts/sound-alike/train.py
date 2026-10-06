@@ -78,7 +78,7 @@ class Projection(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.net = torch.nn.Linear(D, args.dim) if not args.hidden else torch.nn.Sequential(
-            torch.nn.Linear(D, args.hidden), torch.nn.GELU(), torch.nn.Linear(args.hidden, args.dim))
+            torch.nn.Linear(D, args.hidden), torch.nn.GELU(approximate='tanh'), torch.nn.Linear(args.hidden, args.dim))
     def forward(self, x): return torch.nn.functional.normalize(self.net(x), dim=-1)
 
 model = Projection()
@@ -136,7 +136,7 @@ for layer in layers:
     quantized.append((q.astype(np.float32) * np.array(exported[-1]['scale'], np.float32)[:, None], np.array(exported[-1]['bias'], np.float32)))
 def project_q(x):
     h = x @ quantized[0][0].T + quantized[0][1]
-    if args.hidden: h = torch.nn.functional.gelu(torch.from_numpy(h)).numpy() @ quantized[1][0].T + quantized[1][1]
+    if args.hidden: h = torch.nn.functional.gelu(torch.from_numpy(h), approximate='tanh').numpy() @ quantized[1][0].T + quantized[1][1]
     return unit(h)
 
 # --- policy on validation libraries ------------------------------------------------------------------------------

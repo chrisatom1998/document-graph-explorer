@@ -1,16 +1,20 @@
 """Fetch one raw_30s/audio-low archive folder's selected tracks for embedding.
 
-Usage: python3 scripts/sound-alike/fetch-folder.py <tracks.json> <folder 0-99> <out-dir>
+Usage: python3 scripts/sound-alike/fetch-folder.py <tracks.json> <folder 0-99> <out-dir> [max tracks]
 
-Streams the folder's tar, keeps only tracks listed in tracks.json (SHA-256 checked) as <out-dir>/<track>.mp3 and
+Streams the folder's tar, keeps only tracks listed in tracks.json (SHA-256 checked; at most [max tracks], a fixed
+hash-ordered sample so reruns pick the same ones) as <out-dir>/<track>.mp3 and
 writes <out-dir>/manifest.json with one clip per 10 s window ({id: track@start, path, start}) for embed-clap.mjs.
 """
 import hashlib, json, os, sys, tarfile, time, urllib.request
 
 URL = 'https://cdn.freesound.org/mtg-jamendo/raw_30s/audio-low/raw_30s_audio-low-{:02d}.tar'
 tracks_path, folder, out = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+cap = int(sys.argv[4]) if len(sys.argv) > 4 else None
 os.makedirs(out, exist_ok=True)
-needed = {t['archivePath']: t for t in json.load(open(tracks_path))['tracks'] if int(t['archivePath'].split('/')[0]) == folder}
+pool = [t for t in json.load(open(tracks_path))['tracks'] if int(t['archivePath'].split('/')[0]) == folder]
+pool.sort(key=lambda t: hashlib.sha256(f"dge-sound-alike|{t['track']}".encode()).hexdigest())
+needed = {t['archivePath']: t for t in pool[:cap]}
 got = {}
 for attempt in range(6):
     try:
