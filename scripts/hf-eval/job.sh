@@ -4,12 +4,15 @@
 # then `scripts/hf-eval/tasks/$TASK.sh run`, and uploads $OUT to the private dataset $HF_DATASET under
 # runs/$RUN_KEY/part-$PART/ (no audio: tasks write results only).
 # Env from launch.py: TASK, PART, PARTS, RUN_KEY, HF_DATASET, APP_SHA, HARNESS_SHA, optional TASK_ARGS; HF_TOKEN (secret).
+# Tasks get CPUS, the machine's CPU quota, to size their parallelism.
 set -euo pipefail
 START=$(date +%s)
 export DEBIAN_FRONTEND=noninteractive ONNXRUNTIME_NODE_INSTALL=skip
 apt-get update -q > /dev/null && apt-get install -yq --no-install-recommends ffmpeg python3-pip > /dev/null
 pip install -q --break-system-packages huggingface_hub==2.1.1
-echo "part $PART/$PARTS of $TASK on $(nproc) CPUs, $(free -g | awk '/Mem/{print $2}') GB"
+# nproc shows the whole host (64 CPUs) on HF Jobs; launch.py passes the flavor's vCPU count as JOB_CPUS.
+export CPUS=${JOB_CPUS:-$(nproc)}
+echo "part $PART/$PARTS of $TASK on $CPUS CPUs (host $(nproc)), memory limit $(cat /sys/fs/cgroup/memory.max 2>/dev/null || echo unknown)"
 export WORK=/work HARNESS=/work/harness APP=/work/app OUT=/work/out
 mkdir -p $WORK $OUT && cd $WORK
 git clone -q https://github.com/chrisatom1998/document-graph-explorer.git harness && git -C harness checkout -q "$HARNESS_SHA"

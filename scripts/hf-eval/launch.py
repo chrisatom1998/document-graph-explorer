@@ -32,7 +32,7 @@ if worst > max_cost:
 
 user = whoami()['name']
 run_key = env.setdefault('RUN_KEY', f'{task}-{int(time.time())}')
-env.update(TASK=task, PARTS=str(parts), HF_DATASET=f'{user}/dge-eval-runs')
+env.update(TASK=task, PARTS=str(parts), HF_DATASET=f'{user}/dge-eval-runs', JOB_CPUS=hw[flavor]['cpu'].split()[0])
 script = open(os.path.join(os.path.dirname(__file__), 'job.sh')).read()
 jobs = []
 for i in range(parts):

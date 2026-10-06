@@ -21,7 +21,7 @@ run)
   curl -fsSL --retry 6 -o public/jamendo-model/discogs-effnet-bsdynamic-1.onnx "$ESSENTIA/feature-extractors/discogs-effnet/discogs-effnet-bsdynamic-1.onnx"
   echo "$(node -p "require('./public/jamendo-model/manifest.json').sha256['discogs-effnet-bsdynamic-1.onnx']")  public/jamendo-model/discogs-effnet-bsdynamic-1.onnx" | sha256sum -c -
   for e in onnx json; do curl -fsSL --retry 6 -o heads/mtg_jamendo_moodtheme-discogs-effnet-1.$e "$ESSENTIA/classification-heads/mtg_jamendo_moodtheme/mtg_jamendo_moodtheme-discogs-effnet-1.$e"; done
-  P=${PROCS:-$(nproc)}; N=$((PARTS * P)); pids=()
+  P=${PROCS:-$CPUS}; N=$((PARTS * P)); pids=()
   for p in $(seq 0 $((P - 1))); do
     g=$((PART * P + p))
     ( python3 scripts/genre-energy/fetch.py $WORK/lists/$SET.json $g/$N $WORK/audio-$p $WORK/clips-$p.json $WORK/mj/data/download/raw_30s_audio-low_sha256_tracks.txt \

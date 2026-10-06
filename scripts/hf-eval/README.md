@@ -22,4 +22,4 @@ Tasks:
 - `genre-energy`: genre/energy features for one list (`task_args`: `beatport-judge`, `jamendo-fit`, ...) with the
   genre thread's `scripts/genre-energy` from `app_ref`; merged into `data/<list>.json.gz` on `claude/genre-energy-data`.
 
-A task script gets `APP`, `HARNESS`, `OUT`, `WORK`, `PART`, `PARTS`, `TASK_ARGS` and optional `PROCS`.
+A task script gets `APP`, `HARNESS`, `OUT`, `WORK`, `PART`, `PARTS`, `TASK_ARGS`, `CPUS` (the machine's CPU quota; `nproc` shows the whole host) and optional `PROCS`.

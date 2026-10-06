@@ -21,7 +21,7 @@ run)
   export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
   # Browsers in parallel over the tracks fetched here; each gets its own preview port and output folder.
   ls $WORK/audio | sed 's/\.wav$//' | python3 -c "import json,sys; json.dump([l.strip() for l in sys.stdin if l.strip()], open('$WORK/ids.json','w'))"
-  P=${PROCS:-$(( $(nproc) / 2 > 0 ? $(nproc) / 2 : 1 ))}; pids=()
+  P=${PROCS:-$(( CPUS / 2 > 0 ? CPUS / 2 : 1 ))}; pids=()
   for p in $(seq 0 $((P - 1))); do
     ( cd "$APP" && AUDIO_DIR=$WORK/audio AUDIO_EXT=wav MANIFEST=$HARNESS/$DOCS/jamendo-val-manifest.json ONLY_IDS=$WORK/ids.json \
       SHARD=$p/$P PORT=$((4300 + p)) node scripts/short-clip-upload-eval.mjs $OUT/run-$p validation 20 ${TASK_ARGS:-} ) > $WORK/sub-$p.log 2>&1 &
