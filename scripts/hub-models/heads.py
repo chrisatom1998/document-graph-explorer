@@ -13,6 +13,7 @@ Feature sets (CLAP embeddings L2-normalized, AST logits clipped to +-15 as in tr
 """
 import glob, importlib.util, json, os, sys
 import numpy as np
+from joblib import Parallel, delayed
 from sklearn.metrics import average_precision_score
 
 ROOT = os.path.join(os.path.dirname(__file__), '..', '..')
@@ -60,14 +61,14 @@ def main():
     folds_all = np.array([fmh.fold_of(items[i[6:]]['artist']) if i.startswith('train:') and i[6:] in items else -1 for i in ids])
     report = {'trainClips': int(len(tr_rows)), 'sets': {}}
 
+    rows_of = lambda c: np.array([k for k in tr_rows if c in items[ids[k][6:]]['labels']])
+    y_of = lambda c: np.array([items[ids[k][6:]]['labels'][c] >= .5 for k in rows_of(c)], dtype=int)
+
     # MERT layer: picked on train only, by mean out-of-fold AP of a MERT-only head over the 11 classes.
     layer_ap = {}
     for layer in range(F['mert_mix'].shape[1]):
-        X = F['mert_mix'][:, layer]; aps = []
-        for c in CLASSES:
-            rows = np.array([k for k in tr_rows if c in items[ids[k][6:]]['labels']])
-            y = np.array([items[ids[k][6:]]['labels'][c] >= .5 for k in rows], dtype=int)
-            aps.append(oof_fit(X[rows], y, folds_all[rows])[0])
+        X = F['mert_mix'][:, layer]
+        aps = Parallel(n_jobs=-1)(delayed(lambda c: oof_fit(X[rows_of(c)], y_of(c), folds_all[rows_of(c)])[0])(c) for c in CLASSES)
         layer_ap[layer] = float(np.mean(aps)); print(f'MERT layer {layer}: mean OOF AP {layer_ap[layer]:.4f}', flush=True)
     layer = max(layer_ap, key=layer_ap.get); report['mertLayer'] = {'chosen': layer, 'meanOofAp': layer_ap}
 
@@ -77,10 +78,10 @@ def main():
             judge[f'{name}:{it["id"]}'] = it
     for sname, X in sets(F, layer).items():
         report['sets'][sname] = {}
+        fits = dict(zip(CLASSES, Parallel(n_jobs=-1)(delayed(oof_fit)(X[rows_of(c)], y_of(c), folds_all[rows_of(c)]) for c in CLASSES)))
         for c in CLASSES:
-            rows = np.array([k for k in tr_rows if c in items[ids[k][6:]]['labels']])
-            y = np.array([items[ids[k][6:]]['labels'][c] >= .5 for k in rows], dtype=int)
-            ap, C, oof = oof_fit(X[rows], y, folds_all[rows])
+            rows, y = rows_of(c), y_of(c)
+            ap, C, oof = fits[c]
             t = fmh.pick_threshold(y, oof)
             model = fmh.fit(X[rows], y, C)
             res = {'oofAp': round(ap, 4), 'C': C, 'threshold': t}
