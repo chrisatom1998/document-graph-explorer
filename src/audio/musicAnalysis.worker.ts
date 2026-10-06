@@ -12,7 +12,7 @@ import { classifyJamendo, preloadJamendo } from './jamendo';
 import { detectRepeatedPitch } from './detectedPitch';
 import { estimateTempo } from './tempo';
 import { essentiaKey, excerptChroma, recordingKey } from './key';
-import { keyProbabilities, recordingKeyFromProbabilities } from './keyCnn';
+import { keyProbabilities, profileWeight, recordingKeyFromProbabilities } from './keyCnn';
 import { soundSuggestions } from './soundSuggestions';
 import { descriptionScores, type DescriptionPrompt } from './profileDescriptions';
 import type { MusicExcerpts } from './decodeMusic';
@@ -291,7 +291,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
           probabilities.push(await keyProbabilities(engine, samples));
           try { profileKeys.push(essentiaKey(engine, samples)); } catch { profileKeys.push(undefined); }
         }
-        key = recordingKeyFromProbabilities(probabilities, excerpts.samples.length, profileKeys);
+        key = recordingKeyFromProbabilities(probabilities, excerpts.samples.length, profileKeys, profileWeight(excerpts.durationSeconds));
       } catch { key = recordingKey(chromas, excerpts.samples.length); }
     }
     if (key) result.key = key;

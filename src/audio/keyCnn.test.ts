@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { keyFilterbank, keySoftmax, keySpectrogram, loadKeyCnn, recordingKeyFromProbabilities, type KeyCnnEngine } from './keyCnn';
+import { keyFilterbank, keySoftmax, profileWeight, keySpectrogram, loadKeyCnn, recordingKeyFromProbabilities, type KeyCnnEngine } from './keyCnn';
 
 /** Stands in for Essentia's Spectrum: an exact DFT magnitude of the bins the key filters read (up to ~4.4 kHz). */
 const fakeEngine: KeyCnnEngine = {
@@ -53,6 +53,13 @@ describe('recordingKeyFromProbabilities', () => {
   it('needs at least half of the excerpts to be tonal', () => {
     expect(recordingKeyFromProbabilities([one(21)], 3)).toBeUndefined();
     expect(recordingKeyFromProbabilities([], 1)).toBeUndefined();
+  });
+
+  it('lets the stock profile decide short files only', () => {
+    const profile = { tonic: 2, mode: 'minor' as const, strength: .8 };
+    expect(recordingKeyFromProbabilities([one(21)], 1, [profile], profileWeight(6))).toMatchObject({ tonic: 2, mode: 'minor' });
+    expect(recordingKeyFromProbabilities([one(21)], 1, [profile], profileWeight(9.5))).toMatchObject({ tonic: 9, mode: 'minor' });
+    expect(recordingKeyFromProbabilities([one(21)], 1, [undefined], profileWeight(6))).toMatchObject({ tonic: 9, mode: 'minor' });
   });
 
   it('turns logits into probabilities', () => {

@@ -1,14 +1,17 @@
-"""Choose PROFILE_WEIGHT (src/audio/keyCnn.ts): how much Essentia's stock key profile counts against the key network.
+"""Choose PROFILE_WEIGHT and SHORT_SECONDS (src/audio/keyCnn.ts): how much Essentia's stock key profile counts
+against the key network, and for recordings shorter than how many seconds.
 
-The network reads songs better and the stock profile reads clean loops better. The weight is chosen on one half of
-the FSL10K drumless loops and one half of the GiantSteps key set (both split by a seeded hash), then the other
-halves, round 2's 500 and the GTZAN test half are each scored once.
-Usage: python3 scripts/key/blend.py <features dir> <fsl10k loop-keys.json> [weight]   (weight given: score only)
+The network reads songs better and the stock profile reads clean loops better. A weight for every recording costs
+songs about 3 points (tried first: weight 1.5 chosen on the tuning halves gave GTZAN 74% -> 70%), and neither the
+profile's strength nor the network's certainty separates loops from songs, so the profile only counts for short
+files. Weight and cut-off are chosen on one half of the FSL10K drumless loops and one half of the GiantSteps key set
+(seeded hash), then the other halves, round 2's 500 and the GTZAN test half are each scored once.
+Usage: python3 scripts/key/blend.py <features dir> <loops.json (scripts/key/loop-keys.mjs, plus seconds)> [weight cut]
 """
 import gzip, hashlib, json, math, sys
 
 feat_dir, loops_path = sys.argv[1:3]
-fixed = float(sys.argv[3]) if len(sys.argv) > 3 else None
+fixed = (float(sys.argv[3]), float(sys.argv[4])) if len(sys.argv) > 4 else None
 half = lambda tag, i: int(hashlib.sha256(f'{tag}|{i}'.encode()).hexdigest()[:8], 16) % 2
 
 def recording(probabilities, profile_keys, count, w):
@@ -26,11 +29,11 @@ def song_cases(set_name, plan_suffix=None):
     for r in json.load(gzip.open(f'{feat_dir}/{set_name}.json.gz')):
         if r.get('error') or (plan_suffix and not r['id'].endswith(plan_suffix)): continue
         tonal = [e for e in r['excerpts'] if not (e.get('pitch') and e['pitch']['confidence'] >= .9) and e['seconds'] >= 3 and e['diverse']]
-        out.append({'id': r['track'], 'truth': r['truth'], 'count': r['excerptCount'],
+        out.append({'id': r['track'], 'truth': r['truth'], 'count': r['excerptCount'], 'seconds': r['duration'] if r['plan'] == 'song' else r['seconds'],
                     'p': [e['cnn'] for e in tonal], 'k': [e.get('bgate') for e in tonal]})
     return out
 
-loops = [{'id': r['id'], 'truth': r['truth'], 'count': 1, 'p': [r['probabilities']] if r.get('probabilities') else [],
+loops = [{'id': r['id'], 'truth': r['truth'], 'count': 1, 'seconds': r['seconds'], 'p': [r['probabilities']] if r.get('probabilities') else [],
           'k': [r.get('bgateRaw')] if r.get('probabilities') else []} for r in json.load(open(loops_path))]
 gs10, gssong = song_cases('gs-key', '-mid10'), song_cases('gs-key', '-song')
 sets = {
@@ -43,14 +46,17 @@ sets = {
     "Round 2's 500 (confident key)": song_cases('mtg-500'),
     'GTZAN test half': song_cases('test-gtzan'),
 }
-exact = lambda cases, w: sum((k := recording(c['p'], c['k'], c['count'], w)) is not None and k == c['truth'] for c in cases) / len(cases)
+def exact(cases, rule):
+    w, cut = rule
+    return sum((k := recording(c['p'], c['k'], c['count'], w if c['seconds'] < cut else 0)) is not None and k == c['truth'] for c in cases) / len(cases)
 tuning = [n for n in sets if 'tuning half' in n]
 if fixed is None:
-    grid = [0, .5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8]
-    for w in grid: print(f'w={w:<4}', '  '.join(f'{exact(sets[n], w):.3f}' for n in tuning))
-    # Mean exact over the three tuning sets, so loops and songs count equally.
-    fixed = max(grid, key=lambda w: sum(exact(sets[n], w) for n in tuning))
-    print('chosen weight', fixed)
+    grid = [(w, cut) for cut in (6, 8, 10, 12, 20, 30, 1e9) for w in (1.5, 3, 10)]
+    for rule in grid: print(f'weight {rule[0]:<4} under {rule[1]:<5g} s', '  '.join(f'{exact(sets[n], rule):.3f}' for n in tuning))
+    # Best mean over the tuning halves among rules that cost no tuning song set anything.
+    safe = [r for r in grid if all(exact(sets[n], r) >= exact(sets[n], (0, 0)) for n in tuning if 'FSL' not in n)]
+    fixed = max(safe, key=lambda r: sum(exact(sets[n], r) for n in tuning))
+    print('chosen: weight', fixed[0], 'under', fixed[1], 's')
 for n, cases in sets.items():
     if 'tuning half' in n: continue
-    print(f'{n:40s} n={len(cases):4d}  network {exact(cases, 0):.1%}  blend {exact(cases, fixed):.1%}  profile first {exact(cases, 1e3):.1%}')
+    print(f'{n:40s} n={len(cases):4d}  network {exact(cases, (0, 0)):.1%}  with the rule {exact(cases, fixed):.1%}')

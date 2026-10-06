@@ -65,15 +65,20 @@ export function keySoftmax(logits: ArrayLike<number>): number[] {
   return e.map(v => v / total);
 }
 
-/** Weight of Essentia's stock key profile against the network (scripts/key/blend.py). */
-export const PROFILE_WEIGHT = 0;
+/** Essentia's stock key profile reads clean loops better than the network (473 drumless FSL10K loops: 68% vs 56%
+ * exact), the network reads songs better. For recordings shorter than SHORT_SECONDS the profile's key gets
+ * PROFILE_WEIGHT; a weight for every recording cost songs about 3 points (scripts/key/blend.py, blend.txt). */
+export const PROFILE_WEIGHT = 10;
+// Just under 10 s: 10 s song clips (the DJ clip tests) decode to a few ms either side of 10 s and must stay with the network.
+export const SHORT_SECONDS = 9.5;
+export const profileWeight = (durationSeconds: number) => durationSeconds < SHORT_SECONDS ? PROFILE_WEIGHT : 0;
 
 /** A recording's key from the mean probabilities of its tonal excerpts, which must be at least half of all
  * excerpts (the same rule as before). Each excerpt's Essentia key (stock profile), when given, adds
  * PROFILE_WEIGHT x its strength to that key's log probability, averaged over excerpts: the stock profile reads
  * clean loops better than the network, which reads songs better. Strength maps the network's probability p of the
  * chosen key to 0.6 + 0.4 p, so 0.6 still marks the weakest key the app shows. */
-export function recordingKeyFromProbabilities(probabilities: number[][], excerptCount: number, profileKeys: (Key | undefined)[] = [], weight = PROFILE_WEIGHT): Key | undefined {
+export function recordingKeyFromProbabilities(probabilities: number[][], excerptCount: number, profileKeys: (Key | undefined)[] = [], weight = 0): Key | undefined {
   if (!probabilities.length || probabilities.length < Math.ceil(excerptCount / 2)) return;
   const mean = Array.from({ length: 24 }, (_, i) => probabilities.reduce((a, p) => a + p[i], 0) / probabilities.length);
   if (mean.some(v => !Number.isFinite(v))) return;
