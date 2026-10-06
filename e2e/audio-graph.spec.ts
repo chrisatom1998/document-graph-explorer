@@ -42,6 +42,9 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
   const promise=page.waitForEvent('download');
   await page.getByRole('button',{name:'Export graph JSON',exact:true}).click();
   const download=await promise; const stream=await download.createReadStream();let text='';for await(const chunk of stream!)text+=chunk;
+  // Back to the graph: the Export tab covers the stage, so the drags and view checks
+  // that follow would otherwise land on the overlay instead of the scene.
+  await openTab(page,'Graph');
   return text;
  };
  // Toasts auto-dismiss on a timer, so a count-then-click loop races a toast that vanishes between the two calls
