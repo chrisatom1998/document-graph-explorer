@@ -73,6 +73,7 @@ import {
   reportPersistenceUnavailable,
   saveDocsToCache,
 } from '../persistence/cache';
+import { hasDocumentRecord, rememberLibraryFiles } from '../persistence/library';
 import { deleteOriginals, putOriginalIfMissing } from '../persistence/originals';
 import { saveSession } from '../persistence/sessionSave';
 import {
@@ -324,6 +325,8 @@ const nameOfDoc = new Map<string, string>();
 // Parsed documents and vectors can survive a cancelled/failed corpus pass.
 // Keep duplicate re-drops retryable until all derived connections are current.
 let derivedPassesIncomplete = false;
+/** Files in the latest ingest run whose saved results were reused instead of re-analysed. */
+let ingestReuse = { reused: 0, total: 0 };
 
 /**
  * A node id is derived from file content, so a reset followed by adding the
@@ -505,6 +508,7 @@ async function runIngestBodyInner(
 ): Promise<boolean> {
   const store = useGraphStore.getState;
 
+  ingestReuse = { reused: 0, total: 0 };
   // (a) route by extension; unsupported → ignored tray
   const routed: { file: IngestFile; fileType: FileType }[] = [];
   for (const file of files) {
@@ -513,12 +517,13 @@ async function runIngestBodyInner(
       store().addIgnored(file.path ?? file.name, artifact);
       continue;
     }
-    const fileType = file.fileType === 'audio' ? 'audio' : routeFileWithSniff(file.name, file.bytes);
+    // A remembered library file was routed when it was first read.
+    const fileType = file.knownId || file.fileType === 'audio' ? file.fileType : routeFileWithSniff(file.name, file.bytes);
     if (!fileType) {
       store().addIgnored(file.path ?? file.name, 'unsupported type');
       continue;
     }
-    if (fileType === 'audio') {
+    if (fileType === 'audio' && !file.knownId) {
       try { assertAudioContent(file.bytes); }
       catch (error) {
         store().addIgnored(file.path ?? file.name, (error as Error).message);
@@ -534,25 +539,51 @@ async function runIngestBodyInner(
   const pending: PendingFile[] = [];
   let retryIncomplete = false;
   const audioOriginals = new Map<string, { blob: Blob; name: string }>();
-  for (const { file, fileType } of routed) {
+  // Remembered audio is not re-read, but re-adding it still lets stale analyses catch up.
+  let audioReAdded = false;
+  const remembered: Parameters<typeof rememberLibraryFiles>[0] = [];
+  for (const routedFile of routed) {
+    let { file } = routedFile;
+    const { fileType } = routedFile;
     // hashing a large drop takes real time — bail between files, not after
     throwIfAborted(signal);
     const relPath = file.path ?? file.name;
-    const id = await documentContentId(relPath, file.bytes);
+    let id: string;
+    if (file.knownId && (seenIds.has(file.knownId) || store().nodeIndex[file.knownId] !== undefined || await hasDocumentRecord(file.knownId))) {
+      // Unchanged library file: its stored record (and original) stand in for the bytes.
+      id = file.knownId;
+    } else {
+      if (file.knownId) {
+        // The stored record vanished since the lookup: read the file after all.
+        try {
+          file = { ...file, bytes: await file.readBytes!(), knownId: undefined };
+        } catch (error) {
+          store().addIgnored(relPath, error instanceof Error ? error.message : 'could not be read');
+          store().setFileStatus({ fileId: file.fileId, name: file.name, path: file.path, stage: 'error', error: 'Could not read the file' });
+          continue;
+        }
+      }
+      id = await documentContentId(relPath, file.bytes);
+      if (file.lastModified !== undefined && file.bytes.byteLength > 0 && !file.reconstructable) {
+        remembered.push({ path: relPath, size: file.bytes.byteLength, lastModified: file.lastModified, docId: id, fileType });
+      }
+    }
     // Reconstructable sources (generated demo docs) skip original retention:
     // their bytes rebuild on demand, so an empty Blob stands in and the
-    // thousands of redundant IndexedDB original-writes never happen.
-    const original = file.reconstructable
+    // thousands of redundant IndexedDB original-writes never happen. A
+    // remembered library file's original is already stored.
+    const original = file.reconstructable || file.knownId
       ? new Blob([])
       : new Blob([file.bytes], { type: mimeForFilename(file.name) });
     if (fileType === 'audio') {
-      audioOriginals.set(id, { blob: original, name: file.name });
+      if (file.knownId) audioReAdded = true;
+      else audioOriginals.set(id, { blob: original, name: file.name });
       fileIdOfDoc.set(id, file.fileId);
       nameOfDoc.set(id, file.name);
     }
     if (seenIds.has(id) || store().nodeIndex[id] !== undefined) {
       // known doc — backfill the original if it predates original retention
-      if (!file.reconstructable) void putOriginalIfMissing(id, file.name, original);
+      if (!file.reconstructable && !file.knownId) void putOriginalIfMissing(id, file.name, original);
       const existing = store().nodes[store().nodeIndex[id]];
       if (existing && derivedPassesIncomplete) retryIncomplete = true;
       if (
@@ -568,12 +599,15 @@ async function runIngestBodyInner(
         nameOfDoc.set(id, file.name);
       }
       store().setFileStatus({ fileId: file.fileId, name: file.name, path: file.path, stage: 'cached' });
+      ingestReuse.reused += 1;
       continue;
     }
     seenIds.add(id);
     pending.push({ file, fileType, id, relPath, original });
   }
-  if (pending.length === 0 && !retryIncomplete && audioOriginals.size === 0) return false;
+  void rememberLibraryFiles(remembered);
+  ingestReuse.total = routed.length;
+  if (pending.length === 0 && !retryIncomplete && audioOriginals.size === 0 && !audioReAdded) return false;
   derivedPassesIncomplete = true;
 
   // (c) IndexedDB cache lookup (persistence subsystem)
@@ -615,8 +649,9 @@ async function runIngestBodyInner(
     if (cached.docVector) docVectorStore.set(p.id, cached.docVector);
     mdLinkTargetsStore.set(p.id, cached.mdLinkTargets);
     docLinksStore.set(p.id, cached.docLinks);
-    if (!p.file.reconstructable) void putOriginalIfMissing(p.id, p.file.name, p.original);
+    if (!p.file.reconstructable && !p.file.knownId) void putOriginalIfMissing(p.id, p.file.name, p.original);
     store().setFileStatus({ fileId: p.file.fileId, name: p.file.name, path: p.file.path, stage: 'cached' });
+    ingestReuse.reused += 1;
   }
 
   // (d) parse misses — pdf via parsePdf (dedicated worker or its main-thread
@@ -1577,6 +1612,7 @@ export function ingestFiles(files: IngestFile[]): Promise<void> {
     .then((changed) => {
       publishIngestReport();
       if (changed) useGraphStore.getState().markIngestSuccessful();
+      announceLibraryReuse(files);
     })
     .catch((err) => {
       // Cancellation is a user action, not a failure — settle the returned
@@ -1595,6 +1631,23 @@ export function ingestFiles(files: IngestFile[]): Promise<void> {
   // an unhandled rejection warning; it doesn't change what `run` resolves to.
   run.catch((err) => console.error('ingest run failed', err));
   return run;
+}
+
+/** Say when saved results stood in for analysis, so a fast re-read is visibly deliberate. */
+function announceLibraryReuse(files: IngestFile[]): void {
+  const { reused, total } = ingestReuse;
+  ingestReuse = { reused: 0, total: 0 };
+  // The demo corpus and other generated sources are not a library the user keeps.
+  if (reused === 0 || total === 0 || files.every((file) => file.reconstructable || file.lastModified === undefined)) return;
+  const noun = files.some((file) => file.fileType === 'audio') ? 'track' : 'file';
+  const plural = (n: number) => `${n} ${noun}${n === 1 ? '' : 's'}`;
+  const fresh = total - reused;
+  useUiStore.getState().pushToast(
+    fresh > 0
+      ? `Reused saved results for ${plural(reused)} from your library; ${fresh} new or changed ${fresh === 1 ? `${noun} was` : `${noun}s were`} analyzed.`
+      : `All ${plural(reused)} came from your saved library; nothing needed re-analyzing.`,
+    'info',
+  );
 }
 
 /**

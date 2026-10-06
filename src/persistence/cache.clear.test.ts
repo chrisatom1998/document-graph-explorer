@@ -7,7 +7,7 @@ vi.mock('./db', () => ({ getDb: getDbMock }));
 import { clearAllCaches } from './cache';
 
 describe('clearAllCaches', () => {
-  it('clears every persistent store, including chats and the corpus registry', async () => {
+  it('clears every persistent store, including chats, the corpus registry and the library index', async () => {
     const clears = new Map<string, ReturnType<typeof vi.fn>>();
     const objectStore = vi.fn((name: string) => {
       const clear = vi.fn().mockResolvedValue(undefined);
@@ -28,6 +28,7 @@ describe('clearAllCaches', () => {
         'originals',
         'chats',
         'corpora',
+        'library',
       ],
       'readwrite',
     );
@@ -40,6 +41,7 @@ describe('clearAllCaches', () => {
       'originals',
       'chats',
       'corpora',
+      'library',
     ]);
     for (const clear of clears.values()) expect(clear).toHaveBeenCalledOnce();
   });
