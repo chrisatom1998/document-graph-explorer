@@ -1,0 +1,1466 @@
+{
+ "target": 0.8,
+ "labels": {
+  "guitar": {
+   "trainPositives": 25,
+   "trainNegatives": 6,
+   "classes": [
+    "source:guitar",
+    "source:electric guitar",
+    "source:acoustic guitar"
+   ],
+   "chosen": null,
+   "trainSweep": {
+    "0.4": {
+     "precision": 1.0,
+     "recall": 0.56,
+     "tp": 14,
+     "fp": 0,
+     "fn": 11,
+     "pass": false
+    },
+    "0.45": {
+     "precision": 1.0,
+     "recall": 0.48,
+     "tp": 12,
+     "fp": 0,
+     "fn": 13,
+     "pass": false
+    },
+    "0.5": {
+     "precision": 1.0,
+     "recall": 0.48,
+     "tp": 12,
+     "fp": 0,
+     "fn": 13,
+     "pass": false
+    },
+    "0.55": {
+     "precision": 1.0,
+     "recall": 0.44,
+     "tp": 11,
+     "fp": 0,
+     "fn": 14,
+     "pass": false
+    },
+    "0.6": {
+     "precision": 1.0,
+     "recall": 0.44,
+     "tp": 11,
+     "fp": 0,
+     "fn": 14,
+     "pass": false
+    },
+    "0.65": {
+     "precision": 1.0,
+     "recall": 0.36,
+     "tp": 9,
+     "fp": 0,
+     "fn": 16,
+     "pass": false
+    },
+    "0.7": {
+     "precision": 1.0,
+     "recall": 0.32,
+     "tp": 8,
+     "fp": 0,
+     "fn": 17,
+     "pass": false
+    },
+    "0.75": {
+     "precision": 1.0,
+     "recall": 0.28,
+     "tp": 7,
+     "fp": 0,
+     "fn": 18,
+     "pass": false
+    },
+    "0.8": {
+     "precision": 1.0,
+     "recall": 0.24,
+     "tp": 6,
+     "fp": 0,
+     "fn": 19,
+     "pass": false
+    },
+    "0.85": {
+     "precision": 1.0,
+     "recall": 0.2,
+     "tp": 5,
+     "fp": 0,
+     "fn": 20,
+     "pass": false
+    },
+    "0.9": {
+     "precision": 1.0,
+     "recall": 0.2,
+     "tp": 5,
+     "fp": 0,
+     "fn": 20,
+     "pass": false
+    },
+    "0.95": {
+     "precision": 1.0,
+     "recall": 0.2,
+     "tp": 5,
+     "fp": 0,
+     "fn": 20,
+     "pass": false
+    }
+   }
+  },
+  "bass": {
+   "trainPositives": 41,
+   "trainNegatives": 0,
+   "classes": [
+    "source:bass guitar",
+    "source:double bass"
+   ],
+   "chosen": null,
+   "trainSweep": {
+    "0.4": {
+     "precision": 1.0,
+     "recall": 0.049,
+     "tp": 2,
+     "fp": 0,
+     "fn": 39,
+     "pass": false
+    },
+    "0.45": {
+     "precision": 1.0,
+     "recall": 0.049,
+     "tp": 2,
+     "fp": 0,
+     "fn": 39,
+     "pass": false
+    },
+    "0.5": {
+     "precision": 1.0,
+     "recall": 0.049,
+     "tp": 2,
+     "fp": 0,
+     "fn": 39,
+     "pass": false
+    },
+    "0.55": {
+     "precision": 1.0,
+     "recall": 0.049,
+     "tp": 2,
+     "fp": 0,
+     "fn": 39,
+     "pass": false
+    },
+    "0.6": {
+     "precision": 1.0,
+     "recall": 0.049,
+     "tp": 2,
+     "fp": 0,
+     "fn": 39,
+     "pass": false
+    },
+    "0.65": {
+     "precision": 1.0,
+     "recall": 0.049,
+     "tp": 2,
+     "fp": 0,
+     "fn": 39,
+     "pass": false
+    },
+    "0.7": {
+     "precision": 1.0,
+     "recall": 0.049,
+     "tp": 2,
+     "fp": 0,
+     "fn": 39,
+     "pass": false
+    },
+    "0.75": {
+     "precision": 1.0,
+     "recall": 0.049,
+     "tp": 2,
+     "fp": 0,
+     "fn": 39,
+     "pass": false
+    },
+    "0.8": {
+     "precision": 1.0,
+     "recall": 0.049,
+     "tp": 2,
+     "fp": 0,
+     "fn": 39,
+     "pass": false
+    },
+    "0.85": {
+     "precision": 1.0,
+     "recall": 0.049,
+     "tp": 2,
+     "fp": 0,
+     "fn": 39,
+     "pass": false
+    },
+    "0.9": {
+     "precision": 1.0,
+     "recall": 0.049,
+     "tp": 2,
+     "fp": 0,
+     "fn": 39,
+     "pass": false
+    },
+    "0.95": {
+     "precision": 1.0,
+     "recall": 0.049,
+     "tp": 2,
+     "fp": 0,
+     "fn": 39,
+     "pass": false
+    }
+   }
+  },
+  "piano": {
+   "trainPositives": 28,
+   "trainNegatives": 10,
+   "classes": [
+    "source:piano",
+    "source:electric piano"
+   ],
+   "chosen": 0.4,
+   "trainSweep": {
+    "0.4": {
+     "precision": 0.875,
+     "recall": 0.5,
+     "tp": 14,
+     "fp": 2,
+     "fn": 14,
+     "pass": false
+    },
+    "0.45": {
+     "precision": 0.846,
+     "recall": 0.393,
+     "tp": 11,
+     "fp": 2,
+     "fn": 17,
+     "pass": false
+    },
+    "0.5": {
+     "precision": 0.846,
+     "recall": 0.393,
+     "tp": 11,
+     "fp": 2,
+     "fn": 17,
+     "pass": false
+    },
+    "0.55": {
+     "precision": 0.846,
+     "recall": 0.393,
+     "tp": 11,
+     "fp": 2,
+     "fn": 17,
+     "pass": false
+    },
+    "0.6": {
+     "precision": 0.833,
+     "recall": 0.357,
+     "tp": 10,
+     "fp": 2,
+     "fn": 18,
+     "pass": false
+    },
+    "0.65": {
+     "precision": 0.833,
+     "recall": 0.357,
+     "tp": 10,
+     "fp": 2,
+     "fn": 18,
+     "pass": false
+    },
+    "0.7": {
+     "precision": 0.833,
+     "recall": 0.357,
+     "tp": 10,
+     "fp": 2,
+     "fn": 18,
+     "pass": false
+    },
+    "0.75": {
+     "precision": 0.833,
+     "recall": 0.357,
+     "tp": 10,
+     "fp": 2,
+     "fn": 18,
+     "pass": false
+    },
+    "0.8": {
+     "precision": 0.833,
+     "recall": 0.357,
+     "tp": 10,
+     "fp": 2,
+     "fn": 18,
+     "pass": false
+    },
+    "0.85": {
+     "precision": 0.833,
+     "recall": 0.357,
+     "tp": 10,
+     "fp": 2,
+     "fn": 18,
+     "pass": false
+    },
+    "0.9": {
+     "precision": 0.833,
+     "recall": 0.357,
+     "tp": 10,
+     "fp": 2,
+     "fn": 18,
+     "pass": false
+    },
+    "0.95": {
+     "precision": 0.833,
+     "recall": 0.357,
+     "tp": 10,
+     "fp": 2,
+     "fn": 18,
+     "pass": false
+    }
+   }
+  },
+  "violin": {
+   "trainPositives": 8,
+   "trainNegatives": 14,
+   "classes": [
+    "source:violin / fiddle"
+   ],
+   "chosen": null,
+   "trainSweep": {
+    "0.4": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "tp": 3,
+     "fp": 0,
+     "fn": 5,
+     "pass": false
+    },
+    "0.45": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "tp": 3,
+     "fp": 0,
+     "fn": 5,
+     "pass": false
+    },
+    "0.5": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "tp": 3,
+     "fp": 0,
+     "fn": 5,
+     "pass": false
+    },
+    "0.55": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "tp": 3,
+     "fp": 0,
+     "fn": 5,
+     "pass": false
+    },
+    "0.6": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "tp": 3,
+     "fp": 0,
+     "fn": 5,
+     "pass": false
+    },
+    "0.65": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "tp": 3,
+     "fp": 0,
+     "fn": 5,
+     "pass": false
+    },
+    "0.7": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "tp": 3,
+     "fp": 0,
+     "fn": 5,
+     "pass": false
+    },
+    "0.75": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "tp": 3,
+     "fp": 0,
+     "fn": 5,
+     "pass": false
+    },
+    "0.8": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "tp": 3,
+     "fp": 0,
+     "fn": 5,
+     "pass": false
+    },
+    "0.85": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "tp": 3,
+     "fp": 0,
+     "fn": 5,
+     "pass": false
+    },
+    "0.9": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "tp": 3,
+     "fp": 0,
+     "fn": 5,
+     "pass": false
+    },
+    "0.95": {
+     "precision": 1.0,
+     "recall": 0.375,
+     "tp": 3,
+     "fp": 0,
+     "fn": 5,
+     "pass": false
+    }
+   }
+  },
+  "saxophone": {
+   "trainPositives": 8,
+   "trainNegatives": 14,
+   "classes": [
+    "source:saxophone"
+   ],
+   "chosen": null,
+   "trainSweep": {
+    "0.4": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 8,
+     "pass": false
+    },
+    "0.45": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 8,
+     "pass": false
+    },
+    "0.5": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 8,
+     "pass": false
+    },
+    "0.55": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 8,
+     "pass": false
+    },
+    "0.6": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 8,
+     "pass": false
+    },
+    "0.65": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 8,
+     "pass": false
+    },
+    "0.7": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 8,
+     "pass": false
+    },
+    "0.75": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 8,
+     "pass": false
+    },
+    "0.8": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 8,
+     "pass": false
+    },
+    "0.85": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 8,
+     "pass": false
+    },
+    "0.9": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 8,
+     "pass": false
+    },
+    "0.95": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 8,
+     "pass": false
+    }
+   }
+  },
+  "trumpet": {
+   "trainPositives": 11,
+   "trainNegatives": 13,
+   "classes": [
+    "source:trumpet"
+   ],
+   "chosen": null,
+   "trainSweep": {
+    "0.4": {
+     "precision": 1.0,
+     "recall": 0.182,
+     "tp": 2,
+     "fp": 0,
+     "fn": 9,
+     "pass": false
+    },
+    "0.45": {
+     "precision": 1.0,
+     "recall": 0.182,
+     "tp": 2,
+     "fp": 0,
+     "fn": 9,
+     "pass": false
+    },
+    "0.5": {
+     "precision": 1.0,
+     "recall": 0.182,
+     "tp": 2,
+     "fp": 0,
+     "fn": 9,
+     "pass": false
+    },
+    "0.55": {
+     "precision": 1.0,
+     "recall": 0.182,
+     "tp": 2,
+     "fp": 0,
+     "fn": 9,
+     "pass": false
+    },
+    "0.6": {
+     "precision": 1.0,
+     "recall": 0.182,
+     "tp": 2,
+     "fp": 0,
+     "fn": 9,
+     "pass": false
+    },
+    "0.65": {
+     "precision": 1.0,
+     "recall": 0.182,
+     "tp": 2,
+     "fp": 0,
+     "fn": 9,
+     "pass": false
+    },
+    "0.7": {
+     "precision": 1.0,
+     "recall": 0.182,
+     "tp": 2,
+     "fp": 0,
+     "fn": 9,
+     "pass": false
+    },
+    "0.75": {
+     "precision": 1.0,
+     "recall": 0.182,
+     "tp": 2,
+     "fp": 0,
+     "fn": 9,
+     "pass": false
+    },
+    "0.8": {
+     "precision": 1.0,
+     "recall": 0.182,
+     "tp": 2,
+     "fp": 0,
+     "fn": 9,
+     "pass": false
+    },
+    "0.85": {
+     "precision": 1.0,
+     "recall": 0.182,
+     "tp": 2,
+     "fp": 0,
+     "fn": 9,
+     "pass": false
+    },
+    "0.9": {
+     "precision": 1.0,
+     "recall": 0.182,
+     "tp": 2,
+     "fp": 0,
+     "fn": 9,
+     "pass": false
+    },
+    "0.95": {
+     "precision": 1.0,
+     "recall": 0.182,
+     "tp": 2,
+     "fp": 0,
+     "fn": 9,
+     "pass": false
+    }
+   }
+  },
+  "organ": {
+   "trainPositives": 5,
+   "trainNegatives": 15,
+   "classes": [
+    "source:organ"
+   ],
+   "chosen": null,
+   "trainSweep": {
+    "0.4": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 1,
+     "fn": 5,
+     "pass": false
+    },
+    "0.45": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 1,
+     "fn": 5,
+     "pass": false
+    },
+    "0.5": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 1,
+     "fn": 5,
+     "pass": false
+    },
+    "0.55": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 1,
+     "fn": 5,
+     "pass": false
+    },
+    "0.6": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 1,
+     "fn": 5,
+     "pass": false
+    },
+    "0.65": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 1,
+     "fn": 5,
+     "pass": false
+    },
+    "0.7": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 1,
+     "fn": 5,
+     "pass": false
+    },
+    "0.75": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 1,
+     "fn": 5,
+     "pass": false
+    },
+    "0.8": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 1,
+     "fn": 5,
+     "pass": false
+    },
+    "0.85": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 1,
+     "fn": 5,
+     "pass": false
+    },
+    "0.9": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 1,
+     "fn": 5,
+     "pass": false
+    },
+    "0.95": {
+     "precision": 0.0,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 1,
+     "fn": 5,
+     "pass": false
+    }
+   }
+  },
+  "voice": {
+   "trainPositives": 39,
+   "trainNegatives": 35,
+   "classes": [
+    "source:voice"
+   ],
+   "chosen": null,
+   "trainSweep": {
+    "0.4": {
+     "precision": 0.603,
+     "recall": 0.897,
+     "tp": 35,
+     "fp": 23,
+     "fn": 4,
+     "pass": false
+    },
+    "0.45": {
+     "precision": 0.603,
+     "recall": 0.897,
+     "tp": 35,
+     "fp": 23,
+     "fn": 4,
+     "pass": false
+    },
+    "0.5": {
+     "precision": 0.603,
+     "recall": 0.897,
+     "tp": 35,
+     "fp": 23,
+     "fn": 4,
+     "pass": false
+    },
+    "0.55": {
+     "precision": 0.603,
+     "recall": 0.897,
+     "tp": 35,
+     "fp": 23,
+     "fn": 4,
+     "pass": false
+    },
+    "0.6": {
+     "precision": 0.603,
+     "recall": 0.897,
+     "tp": 35,
+     "fp": 23,
+     "fn": 4,
+     "pass": false
+    },
+    "0.65": {
+     "precision": 0.603,
+     "recall": 0.897,
+     "tp": 35,
+     "fp": 23,
+     "fn": 4,
+     "pass": false
+    },
+    "0.7": {
+     "precision": 0.603,
+     "recall": 0.897,
+     "tp": 35,
+     "fp": 23,
+     "fn": 4,
+     "pass": false
+    },
+    "0.75": {
+     "precision": 0.603,
+     "recall": 0.897,
+     "tp": 35,
+     "fp": 23,
+     "fn": 4,
+     "pass": false
+    },
+    "0.8": {
+     "precision": 0.603,
+     "recall": 0.897,
+     "tp": 35,
+     "fp": 23,
+     "fn": 4,
+     "pass": false
+    },
+    "0.85": {
+     "precision": 0.603,
+     "recall": 0.897,
+     "tp": 35,
+     "fp": 23,
+     "fn": 4,
+     "pass": false
+    },
+    "0.9": {
+     "precision": 0.603,
+     "recall": 0.897,
+     "tp": 35,
+     "fp": 23,
+     "fn": 4,
+     "pass": false
+    },
+    "0.95": {
+     "precision": 0.603,
+     "recall": 0.897,
+     "tp": 35,
+     "fp": 23,
+     "fn": 4,
+     "pass": false
+    }
+   }
+  }
+ },
+ "train": {
+  "drums": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.711,
+    "tp": 27,
+    "fp": 0,
+    "fn": 11,
+    "pass": true
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.711,
+    "tp": 27,
+    "fp": 0,
+    "fn": 11,
+    "pass": true
+   }
+  },
+  "voice": {
+   "before": {
+    "precision": 0.603,
+    "recall": 0.897,
+    "tp": 35,
+    "fp": 23,
+    "fn": 4,
+    "pass": false
+   },
+   "after": {
+    "precision": 0.603,
+    "recall": 0.897,
+    "tp": 35,
+    "fp": 23,
+    "fn": 4,
+    "pass": false
+   }
+  },
+  "synthesizer": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.938,
+    "tp": 15,
+    "fp": 0,
+    "fn": 1,
+    "pass": true
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.938,
+    "tp": 15,
+    "fp": 0,
+    "fn": 1,
+    "pass": true
+   }
+  },
+  "piano": {
+   "before": {
+    "precision": 0.833,
+    "recall": 0.357,
+    "tp": 10,
+    "fp": 2,
+    "fn": 18,
+    "pass": false
+   },
+   "after": {
+    "precision": 0.875,
+    "recall": 0.5,
+    "tp": 14,
+    "fp": 2,
+    "fn": 14,
+    "pass": false
+   }
+  },
+  "guitar": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.2,
+    "tp": 5,
+    "fp": 0,
+    "fn": 20,
+    "pass": false
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.2,
+    "tp": 5,
+    "fp": 0,
+    "fn": 20,
+    "pass": false
+   }
+  },
+  "bass": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.049,
+    "tp": 2,
+    "fp": 0,
+    "fn": 39,
+    "pass": false
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.049,
+    "tp": 2,
+    "fp": 0,
+    "fn": 39,
+    "pass": false
+   }
+  },
+  "cymbals": {
+   "before": {
+    "precision": null,
+    "recall": null,
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "pass": false
+   },
+   "after": {
+    "precision": null,
+    "recall": null,
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "pass": false
+   }
+  },
+  "organ": {
+   "before": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0,
+    "fp": 1,
+    "fn": 5,
+    "pass": false
+   },
+   "after": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "tp": 0,
+    "fp": 1,
+    "fn": 5,
+    "pass": false
+   }
+  },
+  "violin": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.375,
+    "tp": 3,
+    "fp": 0,
+    "fn": 5,
+    "pass": false
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.375,
+    "tp": 3,
+    "fp": 0,
+    "fn": 5,
+    "pass": false
+   }
+  },
+  "trumpet": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.182,
+    "tp": 2,
+    "fp": 0,
+    "fn": 9,
+    "pass": false
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.182,
+    "tp": 2,
+    "fp": 0,
+    "fn": 9,
+    "pass": false
+   }
+  },
+  "saxophone": {
+   "before": {
+    "precision": null,
+    "recall": 0.0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 8,
+    "pass": false
+   },
+   "after": {
+    "precision": null,
+    "recall": 0.0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 8,
+    "pass": false
+   }
+  }
+ },
+ "held-out": {
+  "drums": {
+   "before": {
+    "precision": 0.933,
+    "recall": 0.824,
+    "tp": 14,
+    "fp": 1,
+    "fn": 3,
+    "pass": true
+   },
+   "after": {
+    "precision": 0.933,
+    "recall": 0.824,
+    "tp": 14,
+    "fp": 1,
+    "fn": 3,
+    "pass": true
+   }
+  },
+  "voice": {
+   "before": {
+    "precision": 0.692,
+    "recall": 0.9,
+    "tp": 18,
+    "fp": 8,
+    "fn": 2,
+    "pass": false
+   },
+   "after": {
+    "precision": 0.692,
+    "recall": 0.9,
+    "tp": 18,
+    "fp": 8,
+    "fn": 2,
+    "pass": false
+   }
+  },
+  "synthesizer": {
+   "before": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "tp": 7,
+    "fp": 0,
+    "fn": 0,
+    "pass": true
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "tp": 7,
+    "fp": 0,
+    "fn": 0,
+    "pass": true
+   }
+  },
+  "piano": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.417,
+    "tp": 5,
+    "fp": 0,
+    "fn": 7,
+    "pass": false
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.417,
+    "tp": 5,
+    "fp": 0,
+    "fn": 7,
+    "pass": false
+   }
+  },
+  "guitar": {
+   "before": {
+    "precision": null,
+    "recall": 0.0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 9,
+    "pass": false
+   },
+   "after": {
+    "precision": null,
+    "recall": 0.0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 9,
+    "pass": false
+   }
+  },
+  "bass": {
+   "before": {
+    "precision": null,
+    "recall": 0.0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 7,
+    "pass": false
+   },
+   "after": {
+    "precision": null,
+    "recall": 0.0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 7,
+    "pass": false
+   }
+  },
+  "cymbals": {
+   "before": {
+    "precision": null,
+    "recall": null,
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "pass": false
+   },
+   "after": {
+    "precision": null,
+    "recall": null,
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "pass": false
+   }
+  },
+  "organ": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.625,
+    "tp": 5,
+    "fp": 0,
+    "fn": 3,
+    "pass": false
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.625,
+    "tp": 5,
+    "fp": 0,
+    "fn": 3,
+    "pass": false
+   }
+  },
+  "violin": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.111,
+    "tp": 1,
+    "fp": 0,
+    "fn": 8,
+    "pass": false
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.111,
+    "tp": 1,
+    "fp": 0,
+    "fn": 8,
+    "pass": false
+   }
+  },
+  "trumpet": {
+   "before": {
+    "precision": null,
+    "recall": 0.0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 9,
+    "pass": false
+   },
+   "after": {
+    "precision": null,
+    "recall": 0.0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 9,
+    "pass": false
+   }
+  },
+  "saxophone": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.111,
+    "tp": 1,
+    "fp": 0,
+    "fn": 8,
+    "pass": false
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.111,
+    "tp": 1,
+    "fp": 0,
+    "fn": 8,
+    "pass": false
+   }
+  }
+ },
+ "dj-openmic": {
+  "drums": {
+   "before": {
+    "precision": 0.857,
+    "recall": 0.968,
+    "tp": 30,
+    "fp": 5,
+    "fn": 1,
+    "pass": true
+   },
+   "after": {
+    "precision": 0.857,
+    "recall": 0.968,
+    "tp": 30,
+    "fp": 5,
+    "fn": 1,
+    "pass": true
+   }
+  },
+  "voice": {
+   "before": {
+    "precision": 0.885,
+    "recall": 0.958,
+    "tp": 23,
+    "fp": 3,
+    "fn": 1,
+    "pass": true
+   },
+   "after": {
+    "precision": 0.885,
+    "recall": 0.958,
+    "tp": 23,
+    "fp": 3,
+    "fn": 1,
+    "pass": true
+   }
+  },
+  "synthesizer": {
+   "before": {
+    "precision": 0.941,
+    "recall": 0.941,
+    "tp": 32,
+    "fp": 2,
+    "fn": 2,
+    "pass": true
+   },
+   "after": {
+    "precision": 0.941,
+    "recall": 0.941,
+    "tp": 32,
+    "fp": 2,
+    "fn": 2,
+    "pass": true
+   }
+  },
+  "piano": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.87,
+    "tp": 20,
+    "fp": 0,
+    "fn": 3,
+    "pass": true
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.957,
+    "tp": 22,
+    "fp": 0,
+    "fn": 1,
+    "pass": true
+   }
+  },
+  "guitar": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.3,
+    "tp": 9,
+    "fp": 0,
+    "fn": 21,
+    "pass": false
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.3,
+    "tp": 9,
+    "fp": 0,
+    "fn": 21,
+    "pass": false
+   }
+  },
+  "bass": {
+   "before": {
+    "precision": 0.214,
+    "recall": 0.667,
+    "tp": 6,
+    "fp": 22,
+    "fn": 3,
+    "pass": false
+   },
+   "after": {
+    "precision": 0.214,
+    "recall": 0.667,
+    "tp": 6,
+    "fp": 22,
+    "fn": 3,
+    "pass": false
+   }
+  },
+  "cymbals": {
+   "before": {
+    "precision": 0.943,
+    "recall": 0.98,
+    "tp": 50,
+    "fp": 3,
+    "fn": 1,
+    "pass": true
+   },
+   "after": {
+    "precision": 0.943,
+    "recall": 0.98,
+    "tp": 50,
+    "fp": 3,
+    "fn": 1,
+    "pass": true
+   }
+  },
+  "organ": {
+   "before": {
+    "precision": 0.621,
+    "recall": 0.947,
+    "tp": 18,
+    "fp": 11,
+    "fn": 1,
+    "pass": false
+   },
+   "after": {
+    "precision": 0.621,
+    "recall": 0.947,
+    "tp": 18,
+    "fp": 11,
+    "fn": 1,
+    "pass": false
+   }
+  },
+  "violin": {
+   "before": {
+    "precision": 0.6,
+    "recall": 0.25,
+    "tp": 3,
+    "fp": 2,
+    "fn": 9,
+    "pass": false
+   },
+   "after": {
+    "precision": 0.6,
+    "recall": 0.25,
+    "tp": 3,
+    "fp": 2,
+    "fn": 9,
+    "pass": false
+   }
+  },
+  "trumpet": {
+   "before": {
+    "precision": 0.65,
+    "recall": 0.765,
+    "tp": 13,
+    "fp": 7,
+    "fn": 4,
+    "pass": false
+   },
+   "after": {
+    "precision": 0.65,
+    "recall": 0.765,
+    "tp": 13,
+    "fp": 7,
+    "fn": 4,
+    "pass": false
+   }
+  },
+  "saxophone": {
+   "before": {
+    "precision": 1.0,
+    "recall": 0.292,
+    "tp": 7,
+    "fp": 0,
+    "fn": 17,
+    "pass": false
+   },
+   "after": {
+    "precision": 1.0,
+    "recall": 0.292,
+    "tp": 7,
+    "fp": 0,
+    "fn": 17,
+    "pass": false
+   }
+  }
+ },
+ "rules": {
+  "piano": {
+   "classes": [
+    "source:piano",
+    "source:electric piano"
+   ],
+   "threshold": 0.4
+  }
+ }
+}
