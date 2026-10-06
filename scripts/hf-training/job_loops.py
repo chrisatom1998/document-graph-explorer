@@ -65,7 +65,7 @@ for n in z.namelist():
 assert not (train_ids & annotated)
 print('loops kept', len(keep), 'uploaders', len(per), f'{time.time()-t0:.0f}s', flush=True)
 json.dump(items, open('items.json', 'w'))
-subprocess.run([sys.executable, 'feats.py', 'items.json', 'feats'], check=True, env={**os.environ, 'J': os.environ.get('J', str(len(os.sched_getaffinity(0))))})
+subprocess.run([sys.executable, 'feats.py', 'items.json', 'feats'], check=True, env={**os.environ, 'J': os.environ.get('J', '8'), 'OPENBLAS_NUM_THREADS': '1', 'OMP_NUM_THREADS': '1'})  # HF jobs report the 64-core host, not the flavor's CPUs
 rows = [{'f': f"{W}/feats/{d['stem']}.npz", 'bpm': d['bpm'], 'group': d['group'], 'src': d['src']} for d in labels if os.path.exists(f"feats/{d['stem']}.npz")]
 rows += [{'f': f"{W}/feats/fsl_{r['id']}.npz", 'bpm': r['bpm'], 'group': r['group'], 'src': 'fsl', 'loop': True} for r in keep if os.path.exists(f"feats/fsl_{r['id']}.npz")]
 json.dump({'tempo': rows}, open('labels.json', 'w')); print('features', len(rows), collections.Counter(r['src'] for r in rows), f'{time.time()-t0:.0f}s', flush=True)
