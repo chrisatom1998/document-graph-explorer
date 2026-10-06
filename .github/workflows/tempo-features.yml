@@ -3,9 +3,6 @@ name: Tempo features
 # Computes the app's tempo estimate plus raw Essentia tempo features for the tuning set (unused GiantSteps tracks and
 # half of GTZAN) and the two held-out sets, then commits them to the branch for offline tuning. Audio is never committed.
 on:
-  push:
-    branches: [claude/project-thread-if86oo]
-    paths: [scripts/tempo/**, .github/workflows/tempo-features.yml]
   workflow_dispatch:
 
 permissions:

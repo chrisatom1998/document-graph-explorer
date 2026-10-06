@@ -6,6 +6,10 @@ name: DJ clip accuracy check
 # Audio is fetched at run time and never committed.
 on:
   workflow_dispatch:
+    inputs:
+      results_dir:
+        description: Folder under the docs directory for the reports (keeps earlier runs intact)
+        default: results
 
 permissions:
   contents: write
@@ -16,6 +20,7 @@ env:
   GIANTSTEPS: https://github.com/GiantSteps/giantsteps-tempo-dataset.git
   GIANTSTEPS_REF: d51ab2422e76abacfaa86616a57054bc222ec9fd   # master on 2026-10-06, the revision the frozen set was built from
   DOCS: docs/evaluations/dj-clips-2026-10-06
+  RESULTS: ${{ inputs.results_dir || 'results' }}
   MUSIC_MODEL_PATHS: |
     public/music-model/**/*.onnx
     public/sound-model/**/*.onnx
@@ -128,7 +133,8 @@ jobs:
       - name: Score
         run: |
           set -o pipefail
-          mkdir -p "$DOCS/results"; R="$DOCS/results"
+          [[ "$RESULTS" =~ ^[a-z0-9-]+$ ]] || { echo "bad results_dir"; exit 1; }
+          R="$DOCS/$RESULTS"; mkdir -p "$R"
           OM=clips/dj-openmic-audio/$DOCS/openmic-manifest.json GS=clips/dj-giantsteps-audio/$DOCS/giantsteps-manifest.json
           node -e "const m=require('./'+process.argv[1]);m.items=m.items.filter(i=>i.djTier==='dj genre');require('fs').writeFileSync('dj-tier.json',JSON.stringify(m))" "$OM"
           MANIFEST=$OM npx vite-node scripts/mixed-music/score.mjs "$R/openmic-tags.json" exports/dj-openmic-export-*/graph-export.json | tee "$R/openmic-tags.txt"
@@ -140,7 +146,7 @@ jobs:
           echo "tested $GITHUB_SHA (run $GITHUB_RUN_ID)" > "$R/tested-commit.txt"
       - name: Commit the reports
         run: |
-          git add "$DOCS/results"
+          git add "$DOCS/$RESULTS"
           git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -qm "Record DJ clip accuracy results" || exit 0
           for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
