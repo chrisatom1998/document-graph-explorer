@@ -1,0 +1,104 @@
+name: Tempo triplet features
+
+# Tempo features (the app's tempo, raw Essentia estimates, the onset tempogram and the kick- and hi-hat-band tempograms)
+# for tuning the triplet-feel tempo check: the tempo tuning set and both held-out sets from tempo-features.yml, plus
+# GiantSteps MTG key tracks outside the round 2 DJ test and the round 3 reserve (tuning) and the round 2 excerpts themselves (held out).
+# Commits gzipped features to docs/evaluations/tempo-triplet-2026-10-06/features. Audio is never committed.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/fix-triplet-tempo-lkxolu]
+    paths: [.github/workflows/tempo-triplet-features.yml]
+
+permissions:
+  contents: write
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  GIANTSTEPS: https://github.com/GiantSteps/giantsteps-tempo-dataset.git
+  GIANTSTEPS_REF: d51ab2422e76abacfaa86616a57054bc222ec9fd
+  GTZAN: https://huggingface.co/datasets/marsyas/gtzan/resolve/main/data/genres.tar.gz
+  GTZAN_TEMPO: https://github.com/TempoBeatDownbeat/gtzan_tempo_beat.git
+  MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
+  MTGKEY_REF: fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b
+  OUT: docs/evaluations/tempo-triplet-2026-10-06/features
+
+jobs:
+  clips:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [giantsteps, mtg]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch datasets and cut clips
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          if [ "${{ matrix.source }}" = mtg ]; then
+            git clone -q "$MTGKEY" "$RUNNER_TEMP/mk" && git -C "$RUNNER_TEMP/mk" checkout -q "$MTGKEY_REF"
+            python3 scripts/tempo/build-mtg.py "$RUNNER_TEMP/mk" tclips
+          else
+            git clone -q "$GIANTSTEPS" "$RUNNER_TEMP/gs" && git -C "$RUNNER_TEMP/gs" checkout -q "$GIANTSTEPS_REF"
+            git clone -q --depth 1 "$GTZAN_TEMPO" gtzan-tempo
+            curl -fsSL --retry 6 -o "$RUNNER_TEMP/gtzan.tgz" "$GTZAN"
+            python3 scripts/tempo/build-sets.py "$RUNNER_TEMP/gs" "$RUNNER_TEMP/gtzan.tgz" tclips
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: triplet-clips-${{ matrix.source }}
+          path: tclips
+          retention-days: 3
+
+  features:
+    needs: clips
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        set: [tune, gtzan-test, holdout, mtg-tune, round2]
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: triplet-clips-${{ startsWith(matrix.set, 'mtg') && 'mtg' || matrix.set == 'round2' && 'mtg' || 'giantsteps' }}
+          path: tclips
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+      - name: Compute features
+        run: npx vite-node scripts/tempo/features.mjs tclips/clips-${{ matrix.set }}.json f.json ${{ matrix.shard }}/4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: triplet-f-${{ matrix.set }}-${{ matrix.shard }}
+          path: f.json
+          retention-days: 7
+
+  collect:
+    needs: features
+    if: ${{ !cancelled() && needs.features.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: triplet-f-*
+          path: parts
+      - name: Merge and commit
+        run: |
+          mkdir -p "$OUT"
+          for s in tune gtzan-test holdout mtg-tune round2; do
+            python3 -c "import json,glob,sys,gzip;rows=[r for p in sorted(glob.glob(f'parts/triplet-f-{sys.argv[1]}-*/f.json')) for r in json.load(open(p))];[r.pop('path',None) for r in rows];gzip.open(f'$OUT/{sys.argv[1]}.json.gz','wt').write(json.dumps(rows));print(sys.argv[1],len(rows))" $s
+          done
+          echo "$GITHUB_SHA" > "$OUT/tested-commit.txt"
+          git add "$OUT"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record tempo triplet features" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done

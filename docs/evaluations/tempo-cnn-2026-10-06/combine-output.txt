@@ -1,0 +1,79 @@
+tuning (out of fold), confidence > 0.3
+  all                    n=1369 within 4%: 0.753 -> 0.771  fixed 104 broke 79
+  gtzan 10 s             n= 500 within 4%: 0.702 -> 0.682  fixed 31 broke 41
+  gtzan full             n= 407 within 4%: 0.801 -> 0.762  fixed 13 broke 29
+  giantsteps 10 s        n= 322 within 4%: 0.745 -> 0.866  fixed 44 broke 5
+  giantsteps full        n= 140 within 4%: 0.814 -> 0.900  fixed 16 broke 4
+tuning (out of fold), confidence > 0.4
+  all                    n=1369 within 4%: 0.753 -> 0.785  fixed 79 broke 35
+  gtzan 10 s             n= 500 within 4%: 0.702 -> 0.702  fixed 16 broke 16
+  gtzan full             n= 407 within 4%: 0.801 -> 0.791  fixed 8 broke 12
+  giantsteps 10 s        n= 322 within 4%: 0.745 -> 0.857  fixed 39 broke 3
+  giantsteps full        n= 140 within 4%: 0.814 -> 0.900  fixed 16 broke 4
+tuning (out of fold), confidence > 0.5
+  all                    n=1369 within 4%: 0.753 -> 0.781  fixed 51 broke 13
+  gtzan 10 s             n= 500 within 4%: 0.702 -> 0.710  fixed 10 broke 6
+  gtzan full             n= 407 within 4%: 0.801 -> 0.799  fixed 1 broke 2
+  giantsteps 10 s        n= 322 within 4%: 0.745 -> 0.829  fixed 29 broke 2
+  giantsteps full        n= 140 within 4%: 0.814 -> 0.871  fixed 11 broke 3
+tuning (out of fold), confidence > 0.6
+  all                    n=1369 within 4%: 0.753 -> 0.768  fixed 25 broke 5
+  gtzan 10 s             n= 500 within 4%: 0.702 -> 0.704  fixed 2 broke 1
+  gtzan full             n= 407 within 4%: 0.801 -> 0.799  fixed 0 broke 1
+  giantsteps 10 s        n= 322 within 4%: 0.745 -> 0.789  fixed 15 broke 1
+  giantsteps full        n= 140 within 4%: 0.814 -> 0.857  fixed 8 broke 2
+round1 500 clips (10 s) (held out), confidence > 0.5
+  all                    n= 500 within 4%: 0.716 -> 0.824  fixed 60 broke 6
+  drum-and-bass          n= 104 within 4%: 0.596 -> 0.750  fixed 17 broke 1
+  dubstep                n=  57 within 4%: 0.649 -> 0.772  fixed 8 broke 1
+  trance                 n=  55 within 4%: 0.782 -> 0.964  fixed 10 broke 0
+  techno                 n=  43 within 4%: 0.814 -> 0.930  fixed 5 broke 0
+  electronica            n=  37 within 4%: 0.595 -> 0.757  fixed 7 broke 1
+  psy-trance             n=  24 within 4%: 0.833 -> 0.958  fixed 3 broke 0
+  deep-house             n=  21 within 4%: 0.857 -> 0.857  fixed 0 broke 0
+  house                  n=  21 within 4%: 0.810 -> 0.857  fixed 1 broke 0
+  electro-house          n=  19 within 4%: 0.895 -> 0.895  fixed 0 broke 0
+  breaks                 n=  18 within 4%: 0.778 -> 0.889  fixed 2 broke 0
+  progressive-house      n=  15 within 4%: 0.867 -> 0.933  fixed 1 broke 0
+  glitch-hop             n=  15 within 4%: 0.667 -> 0.800  fixed 2 broke 0
+round2 500 clips (10 s) (held out), confidence > 0.5
+  all                    n= 497 within 4%: 0.847 -> 0.865  fixed 14 broke 5
+  dubstep                n=  51 within 4%: 0.804 -> 0.843  fixed 2 broke 0
+  drum-and-bass          n=  41 within 4%: 0.268 -> 0.195  fixed 0 broke 3
+  hip-hop                n=  37 within 4%: 0.757 -> 0.811  fixed 2 broke 0
+  breaks                 n=  37 within 4%: 0.919 -> 0.946  fixed 1 broke 0
+  electronica            n=  34 within 4%: 0.853 -> 0.853  fixed 0 broke 0
+  trance                 n=  33 within 4%: 0.909 -> 0.879  fixed 0 broke 1
+  psy-trance             n=  33 within 4%: 0.879 -> 0.970  fixed 3 broke 0
+  hard-dance             n=  31 within 4%: 0.935 -> 1.000  fixed 2 broke 0
+  deep-house             n=  31 within 4%: 0.968 -> 0.968  fixed 1 broke 1
+  minimal                n=  31 within 4%: 0.968 -> 0.968  fixed 0 broke 0
+  electro-house          n=  28 within 4%: 0.964 -> 0.964  fixed 0 broke 0
+  techno                 n=  27 within 4%: 1.000 -> 1.000  fixed 0 broke 0
+  tech-house             n=  26 within 4%: 1.000 -> 1.000  fixed 0 broke 0
+  progressive-house      n=  22 within 4%: 0.909 -> 0.955  fixed 1 broke 0
+  house                  n=  21 within 4%: 0.857 -> 0.952  fixed 2 broke 0
+gtzan test half (mid10) (held out), confidence > 0.5
+  all                    n= 498 within 4%: 0.687 -> 0.699  fixed 12 broke 6
+  classical              n=  57 within 4%: 0.456 -> 0.456  fixed 0 broke 0
+  jazz                   n=  54 within 4%: 0.426 -> 0.444  fixed 1 broke 0
+  rock                   n=  54 within 4%: 0.722 -> 0.722  fixed 1 broke 1
+  blues                  n=  50 within 4%: 0.620 -> 0.660  fixed 4 broke 2
+  pop                    n=  50 within 4%: 0.840 -> 0.800  fixed 0 broke 2
+  metal                  n=  49 within 4%: 0.571 -> 0.592  fixed 1 broke 0
+  disco                  n=  48 within 4%: 0.958 -> 0.958  fixed 0 broke 0
+  hiphop                 n=  47 within 4%: 0.936 -> 0.957  fixed 1 broke 0
+  country                n=  46 within 4%: 0.609 -> 0.652  fixed 2 broke 0
+  reggae                 n=  43 within 4%: 0.814 -> 0.837  fixed 2 broke 1
+gtzan test half (full) (held out), confidence > 0.5
+  all                    n= 498 within 4%: 0.635 -> 0.639  fixed 6 broke 4
+  classical              n=  57 within 4%: 0.228 -> 0.228  fixed 0 broke 0
+  jazz                   n=  54 within 4%: 0.241 -> 0.241  fixed 0 broke 0
+  rock                   n=  54 within 4%: 0.704 -> 0.704  fixed 0 broke 0
+  blues                  n=  50 within 4%: 0.660 -> 0.660  fixed 2 broke 2
+  pop                    n=  50 within 4%: 0.820 -> 0.800  fixed 0 broke 1
+  metal                  n=  49 within 4%: 0.571 -> 0.571  fixed 0 broke 0
+  disco                  n=  48 within 4%: 0.958 -> 0.958  fixed 0 broke 0
+  hiphop                 n=  47 within 4%: 0.915 -> 0.915  fixed 0 broke 0
+  country                n=  46 within 4%: 0.609 -> 0.630  fixed 2 broke 1
+  reggae                 n=  43 within 4%: 0.767 -> 0.814  fixed 2 broke 0

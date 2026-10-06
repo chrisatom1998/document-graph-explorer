@@ -13,6 +13,7 @@ import { detectRepeatedPitch } from './detectedPitch';
 import { estimateTempo } from './tempo';
 import { essentiaKey, excerptChroma, recordingKey } from './key';
 import { keyProbabilities, profileWeight, recordingKeyFromProbabilities } from './keyCnn';
+import { combineTempo, predictCnnTempo } from './tempoCnn';
 import { soundSuggestions } from './soundSuggestions';
 import { descriptionScores, type DescriptionPrompt } from './profileDescriptions';
 import type { MusicExcerpts } from './decodeMusic';
@@ -281,6 +282,14 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
       tempos.sort((a,b)=>a.bpm-b.bpm);const median = tempos[Math.floor(tempos.length/2)];
       const consistent = tempos.filter(t=>Math.abs(t.bpm-median.bpm)<=Math.max(3,median.bpm*0.04));
       if (consistent.length >= Math.ceil(excerpts.samples.length/2)) result.tempo = { ...median, bpm: Math.round(median.bpm*10)/10, confidence: Math.min(...consistent.map(t=>t.confidence)) };
+    }
+    // A learned tempo model overrides the beat tracker only when it confidently reads a different tempo. Recordings under
+    // 8 s keep the loop estimator's tempo and alternatives.
+    if (result.tempo && !result.tempo.alternatives) {
+      try {
+        const cnn = await predictCnnTempo(audible);
+        if (cnn) result.tempo = { ...result.tempo, ...combineTempo(result.tempo, cnn) };
+      } catch { /* Keep the beat tracker's tempo if the model is unavailable. */ }
     }
     // The learned key network reads the same tonal excerpts; the chroma profiles stay as the fallback when it cannot load.
     let key: MusicAnalysis['key'];
