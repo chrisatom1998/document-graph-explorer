@@ -36,8 +36,8 @@ for r in sorted(chosen, key=lambda r: h(SEED, 'order', r['Path'])):
         reviews.append({'reviewer': 'TinySOL instrument identity', 'at': AT, 'dimension': 'source', 'label': tag, 'state': state})
     items.append({'id': 'ats-' + h(SEED, r['Path'])[:16], 'source': f"TinySOL v6 {r['Path']}",
                   'rights': {'evaluationAllowed': True, 'basis': 'TinySOL (CC-BY-4.0); audio fetched at run time, never committed'},
-                  'groups': {'original': f"tinysol:{r['Path']}", 'artist': f"tinysol:{inst}:{r['Instance ID']}", 'pack': f"tinysol:{inst}",
-                             'sampleFamily': f"tinysol:{inst}:{r['Instance ID']}"},
+                  'groups': {'original': f"tinysol:{r['Path']}", 'artist': f"tinysol:{inst}", 'pack': f"tinysol:{inst}",
+                             'sampleFamily': f"tinysol:{inst}"},   # one player and session per instrument
                   'instrument': inst, 'pitch': r['Pitch'], 'dynamics': r['Dynamics'], 'path': r['Path'],
                   'split': 'test', 'tier': 'one-shot', 'transformations': [], 'reviews': reviews})
 os.makedirs(OUT, exist_ok=True)

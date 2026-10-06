@@ -24,8 +24,9 @@ const nodes = new Map(exportPaths.flatMap(p => JSON.parse(readFileSync(p, 'utf8'
 const shown = new Map(), missing = [];
 for (const item of items) {
   const audio = nodes.get(item.id)?.audio;
-  // Not analysed, or the analysis failed or was cancelled: left out of every count and listed, never scored as a miss.
-  if (!audio || (audio.recognition && !['complete', 'partial'].includes(audio.recognition.status))) { missing.push(item.id); continue; }
+  // Not analysed, still a preview (the harness can time out a batch), or failed/cancelled: left out of every count and
+  // listed, never scored as a miss.
+  if (!audio || audio.stage === 'preview' || !audio.recognition || !['complete', 'partial'].includes(audio.recognition.status)) { missing.push(item.id); continue; }
   const labels = confidentSoundSummary(audio, audio.recognition?.mode).map(t => t.label);
   shown.set(item.id, new Set(Object.keys(MAP).filter(tag => MAP[tag].some(l => labels.includes(l)))));
 }

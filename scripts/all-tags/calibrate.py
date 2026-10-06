@@ -51,20 +51,20 @@ for tag in MAP:
     entry = {'main': base, 'rule': None, 'adopted': False, 'why': ''}
     report[tag] = entry
     if base['all']['positives'] < MIN_POS: entry['why'] = 'too few to judge'; continue
-    if (base['pick']['recall'] or 0) >= BAR: entry['why'] = 'recall already at 0.70 on pick'; continue
+    if (base['pick']['recall'] or 0) >= BAR - 1e-9: entry['why'] = 'recall already at 0.70 on pick'; continue
     srcs = sorted({s for r in rows.values() for s in sources(r, tag)})
     best = None
     for src in srcs:
         for t in GRID:                      # lowest t whose pick-half precision floor holds 0.70
             p = score(tag, 'pick', (src, t))
-            if (p['precisionFloor'] or 0) >= BAR:
+            if (p['precisionFloor'] or 0) >= BAR - 1e-9:
                 if not best or p['recall'] > best[2]['recall']: best = (src, t, p)
                 break
     if not best: entry['why'] = 'no source and threshold keeps the precision floor at 0.70 on pick'; continue
     chk = score(tag, 'check', best[:2])
     entry['rule'] = {'source': best[0], 'threshold': best[1], 'pick': best[2], 'check': chk, 'all': score(tag, 'all', best[:2])}
     gain = (chk['recall'] or 0) - (base['check']['recall'] or 0)
-    entry['adopted'] = gain >= MIN_GAIN and (chk['precisionFloor'] or 0) >= BAR
+    entry['adopted'] = gain >= MIN_GAIN - 1e-9 and (chk['precisionFloor'] or 0) >= BAR - 1e-9   # inclusive bounds
     entry['why'] = 'check half confirms' if entry['adopted'] else f'check half: recall +{gain:.2f}, precision floor {chk["precisionFloor"]}'
 json.dump(report, open(out, 'w'), indent=1)
 for tag, e in report.items():

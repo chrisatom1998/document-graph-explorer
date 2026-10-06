@@ -29,6 +29,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Resolve APP_REF once, so every shard and the scorer test the same commit even if the branch moves mid-run.
+  ref:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.r.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.APP_REF }}
+      - id: r
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
   audio:
     runs-on: ubuntu-latest
     steps:
@@ -48,7 +60,7 @@ jobs:
           retention-days: 7
 
   eval:
-    needs: audio
+    needs: [ref, audio]
     runs-on: ubuntu-latest
     timeout-minutes: 240
     strategy:
@@ -58,7 +70,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ env.APP_REF }}
+          ref: ${{ needs.ref.outputs.sha }}
       - uses: actions/checkout@v4
         with:
           path: harness
@@ -98,13 +110,13 @@ jobs:
           retention-days: 30
 
   score:
-    needs: eval
+    needs: [ref, eval]
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ env.APP_REF }}
+          ref: ${{ needs.ref.outputs.sha }}
       - uses: actions/checkout@v4
         with:
           path: harness
@@ -120,6 +132,7 @@ jobs:
       - name: Score with the app's own display code
         run: |
           set -o pipefail
+          for f in exports/ts-export-*/app-commit.txt; do [ "$(cat "$f")" = "${{ needs.ref.outputs.sha }}" ] || { echo "$f is not ${{ needs.ref.outputs.sha }}"; exit 1; }; done
           mkdir -p scripts/all-tags scripts/dj-fix && cp harness/scripts/all-tags/score.mjs scripts/all-tags/ && cp harness/scripts/dj-fix/extract.mjs scripts/dj-fix/
           APP=$(git rev-parse HEAD); LABEL=$(echo "$APP_REF" | tr -c 'A-Za-z0-9._-\n' '-' | cut -c1-40)-${APP::7}
           R="harness/$DOCS/results/tinysol-$LABEL"; mkdir -p "$R"; echo "R=$R" >> "$GITHUB_ENV"
