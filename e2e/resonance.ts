@@ -60,7 +60,7 @@ export async function openDetails(page: Page): Promise<Locator> {
 /** Collapse full details (replaces the side panel's "Back to graph"). */
 export async function closeDetails(page: Page): Promise<void> {
   const toggle = detailsToggle(page);
-  if ((await toggle.getAttribute('aria-expanded')) === 'true') await toggle.click();
+  if (await toggle.count() && (await toggle.getAttribute('aria-expanded')) === 'true') await toggle.click();
   await expect(details(page)).toHaveCount(0);
 }
 
@@ -86,8 +86,18 @@ export async function openSampleAssistant(page: Page): Promise<void> {
   await page.locator('.rs-assistant').click();
 }
 
+/**
+ * Make the filter column reachable. Below 860px (including the suite's
+ * default 800x500 window) it hides behind a "Filters" button.
+ */
+export async function showFilters(page: Page): Promise<void> {
+  const toggle = page.locator('.rs-narrow-filters');
+  if (await toggle.isVisible() && (await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+}
+
 /** Expand (or collapse) the sidebar's classic filter panel: clusters, connection counts, recency. */
 export async function advancedFilters(page: Page, open = true): Promise<void> {
+  await showFilters(page);
   const panel = page.locator('.rs-advanced');
   if ((await panel.evaluate(el => (el as HTMLDetailsElement).open)) !== open) {
     await panel.locator('summary').click();
@@ -97,6 +107,7 @@ export async function advancedFilters(page: Page, open = true): Promise<void> {
 
 /** Toggle one similarity-type filter checkbox in the left sidebar. */
 export async function similarityFilter(page: Page, label: string, on = true): Promise<void> {
+  await showFilters(page);
   const box = page.getByRole('checkbox', { name: label, exact: true });
   if (on) await box.check();
   else await box.uncheck();

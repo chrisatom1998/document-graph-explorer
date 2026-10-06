@@ -161,7 +161,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await page.reload();
   // Restoration may return to the graph or retain selection. Reopen the same
   // document in either case and verify the edit made immediately before reload.
-  await expect(corpusCount(page)).toBeVisible();
+  await expect(corpusCount(page)).toContainText('100 files', { timeout: 150_000 });
   await closeDetails(page);
   await expect(corpusCount(page)).toContainText('100 files');
   await openPostgres();

@@ -175,8 +175,10 @@
 .rs-advanced { padding: 8px 0 14px; border-top: 1px solid var(--rs-line); }
 .rs-advanced summary { cursor: pointer; font-size: 13px; padding: 6px 0; }
 .rs-advanced .filter-bar-layer--embedded { position: static; inset: auto; padding: 0; pointer-events: auto; }
-.rs-advanced .filter-bar { background: none; border: 0; box-shadow: none; padding: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.rs-advanced .filter-bar { width: 100%; max-width: 100%; max-height: none; overflow: visible; background: none; border: 0; box-shadow: none; padding: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
 .rs-advanced .filter-bar::before { display: none; }
+.rs-advanced .filter-bar__group, .rs-advanced .filter-bar__chips { flex-wrap: wrap; min-width: 0; }
+.rs-advanced .filter-bar__heading { display: none; }
 
 /* Collapse: the column shrinks to an icon rail and the graph takes the space. */
 .app-root.rs-side-collapsed { --rs-left: 64px; }

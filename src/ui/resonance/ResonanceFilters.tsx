@@ -154,11 +154,6 @@ export default function ResonanceFilters() {
         </select>
       </section>
 
-      <details className="rs-advanced">
-        <summary>Advanced filters</summary>
-        <Suspense fallback={null}><FilterBar embedded /></Suspense>
-      </details>
-
       <section className="rs-group">
         <h3>File type</h3>
         <select className="rs-select" aria-label="File type" value={filter.fileTypes?.[0] ?? ''} disabled={types.length < 2} onChange={e => setFilter({ fileTypes: e.target.value ? [e.target.value as FileType] : null })}>
@@ -166,6 +161,10 @@ export default function ResonanceFilters() {
           {types.map(t => <option key={t} value={t}>{TYPE_LABEL[t] ?? t}</option>)}
         </select>
       </section>
+      <details className="rs-advanced">
+        <summary>Advanced filters</summary>
+        <Suspense fallback={null}><FilterBar embedded /></Suspense>
+      </details>
     </aside>
   );
 }
