@@ -1,6 +1,6 @@
 {
  "kind": "dj-effect-heads-report-v1",
- "trainedAt": "2026-10-06T08:02:03.281579+00:00",
+ "trainedAt": "2026-10-06T10:04:55.227612+00:00",
  "clips": 8068,
  "trainClips": 6875,
  "heldOutClips": 1193,
@@ -35,6 +35,15 @@
    "trainOof": {
     "precision": 0.2702702702702703,
     "recall": 0.2830188679245283
+   },
+   "heldOutOneShot": {
+    "positives": 1,
+    "negatives": 210,
+    "tp": 0,
+    "fp": 7,
+    "fn": 1,
+    "precision": 0.0,
+    "recall": 0.0
    },
    "tp": 7,
    "fp": 43,
@@ -74,6 +83,15 @@
     "precision": 0.3673469387755102,
     "recall": 0.391304347826087
    },
+   "heldOutOneShot": {
+    "positives": 0,
+    "negatives": 210,
+    "tp": 0,
+    "fp": 5,
+    "fn": 0,
+    "precision": 0.0,
+    "recall": 0.0
+   },
    "tp": 7,
    "fp": 12,
    "fn": 4,
@@ -112,6 +130,15 @@
     "precision": 0.22413793103448276,
     "recall": 0.2
    },
+   "heldOutOneShot": {
+    "positives": 2,
+    "negatives": 210,
+    "tp": 1,
+    "fp": 5,
+    "fn": 1,
+    "precision": 0.16666666666666666,
+    "recall": 0.5
+   },
    "tp": 6,
    "fp": 28,
    "fn": 14,
@@ -138,6 +165,15 @@
     "precision": 0.5311572700296736,
     "recall": 0.5327380952380952
    },
+   "heldOutOneShot": {
+    "positives": 36,
+    "negatives": 205,
+    "tp": 18,
+    "fp": 11,
+    "fn": 18,
+    "precision": 0.6206896551724138,
+    "recall": 0.5
+   },
    "tp": 39,
    "fp": 59,
    "fn": 49,
@@ -160,12 +196,12 @@
     {
      "file": "learned.json",
      "maybe": true,
-     "threshold": 0.923,
-     "tp": 35,
-     "fp": 27,
-     "fn": 42,
-     "precision": 0.5645161290322581,
-     "recall": 0.45454545454545453
+     "threshold": 0.7198,
+     "tp": 42,
+     "fp": 44,
+     "fn": 35,
+     "precision": 0.4883720930232558,
+     "recall": 0.5454545454545454
     }
    ],
    "variant": "real",
@@ -175,6 +211,15 @@
    "trainOof": {
     "precision": 0.6190476190476191,
     "recall": 0.609375
+   },
+   "heldOutOneShot": {
+    "positives": 6,
+    "negatives": 183,
+    "tp": 3,
+    "fp": 5,
+    "fn": 3,
+    "precision": 0.375,
+    "recall": 0.5
    },
    "tp": 42,
    "fp": 44,
@@ -217,22 +262,23 @@
     {
      "file": "learned.json",
      "maybe": false,
-     "threshold": 0.978,
-     "tp": 19,
-     "fp": 8,
-     "fn": 46,
-     "precision": 0.7037037037037037,
-     "recall": 0.2923076923076923
+     "threshold": 0.7742,
+     "tp": 50,
+     "fp": 18,
+     "fn": 15,
+     "precision": 0.7352941176470589,
+     "recall": 0.7692307692307693
     },
     {
      "file": "short-clip.json",
+     "subset": "held-out clips <= 2.25 s",
      "maybe": false,
      "threshold": 0.8286,
-     "tp": 0,
-     "fp": 0,
-     "fn": 65,
-     "precision": 0.0,
-     "recall": 0.0
+     "tp": 12,
+     "fp": 3,
+     "fn": 11,
+     "precision": 0.8,
+     "recall": 0.5217391304347826
     }
    ],
    "variant": "real",
@@ -242,6 +288,15 @@
    "trainOof": {
     "precision": 0.6948051948051948,
     "recall": 0.6903225806451613
+   },
+   "heldOutOneShot": {
+    "positives": 23,
+    "negatives": 223,
+    "tp": 20,
+    "fp": 6,
+    "fn": 3,
+    "precision": 0.7692307692307693,
+    "recall": 0.8695652173913043
    },
    "tp": 50,
    "fp": 18,
@@ -265,12 +320,12 @@
     {
      "file": "learned.json",
      "maybe": true,
-     "threshold": 0.969,
-     "tp": 26,
-     "fp": 9,
-     "fn": 60,
-     "precision": 0.7428571428571429,
-     "recall": 0.3023255813953488
+     "threshold": 0.7631,
+     "tp": 63,
+     "fp": 41,
+     "fn": 23,
+     "precision": 0.6057692307692307,
+     "recall": 0.7325581395348837
     }
    ],
    "variant": "real",
@@ -280,6 +335,15 @@
    "trainOof": {
     "precision": 0.6610878661087866,
     "recall": 0.6694915254237288
+   },
+   "heldOutOneShot": {
+    "positives": 3,
+    "negatives": 208,
+    "tp": 2,
+    "fp": 1,
+    "fn": 1,
+    "precision": 0.6666666666666666,
+    "recall": 0.6666666666666666
    },
    "tp": 63,
    "fp": 41,
@@ -307,6 +371,15 @@
     "precision": 0.2222222222222222,
     "recall": 0.15384615384615385
    },
+   "heldOutOneShot": {
+    "positives": 0,
+    "negatives": 189,
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "precision": 0.0,
+    "recall": 0.0
+   },
    "tp": 1,
    "fp": 1,
    "fn": 14,
@@ -327,14 +400,25 @@
    "testUploaders": 54,
    "current": [
     {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.7664,
+     "tp": 66,
+     "fp": 40,
+     "fn": 32,
+     "precision": 0.6226415094339622,
+     "recall": 0.673469387755102
+    },
+    {
      "file": "short-clip.json",
+     "subset": "held-out clips <= 2.25 s",
      "maybe": false,
      "threshold": 0.8697,
-     "tp": 0,
-     "fp": 0,
-     "fn": 98,
-     "precision": 0.0,
-     "recall": 0.0
+     "tp": 8,
+     "fp": 14,
+     "fn": 19,
+     "precision": 0.36363636363636365,
+     "recall": 0.2962962962962963
     }
    ],
    "variant": "real",
@@ -344,6 +428,15 @@
    "trainOof": {
     "precision": 0.596,
     "recall": 0.596
+   },
+   "heldOutOneShot": {
+    "positives": 27,
+    "negatives": 226,
+    "tp": 23,
+    "fp": 16,
+    "fn": 4,
+    "precision": 0.5897435897435898,
+    "recall": 0.8518518518518519
    },
    "tp": 66,
    "fp": 40,
@@ -376,13 +469,14 @@
     },
     {
      "file": "short-clip.json",
+     "subset": "held-out clips <= 2.25 s",
      "maybe": false,
      "threshold": 0.8215,
-     "tp": 0,
-     "fp": 0,
-     "fn": 81,
-     "precision": 0.0,
-     "recall": 0.0
+     "tp": 17,
+     "fp": 3,
+     "fn": 9,
+     "precision": 0.85,
+     "recall": 0.6538461538461539
     }
    ],
    "variant": "real",
@@ -392,6 +486,15 @@
    "trainOof": {
     "precision": 0.7604166666666666,
     "recall": 0.7630662020905923
+   },
+   "heldOutOneShot": {
+    "positives": 26,
+    "negatives": 205,
+    "tp": 21,
+    "fp": 10,
+    "fn": 5,
+    "precision": 0.6774193548387096,
+    "recall": 0.8076923076923077
    },
    "tp": 63,
    "fp": 36,
@@ -411,6 +514,18 @@
    "testNegative": 914,
    "trainUploaders": 21,
    "testUploaders": 11,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.7627,
+     "tp": 11,
+     "fp": 5,
+     "fn": 2,
+     "precision": 0.6875,
+     "recall": 0.8461538461538461
+    }
+   ],
    "variant": "real",
    "C": 0.3,
    "threshold": 0.7627,
@@ -418,6 +533,15 @@
    "trainOof": {
     "precision": 0.7894736842105263,
     "recall": 0.7692307692307693
+   },
+   "heldOutOneShot": {
+    "positives": 1,
+    "negatives": 208,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0
    },
    "tp": 11,
    "fp": 5,
@@ -448,6 +572,18 @@
    "testNegative": 857,
    "trainUploaders": 56,
    "testUploaders": 19,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.7616,
+     "tp": 23,
+     "fp": 25,
+     "fn": 14,
+     "precision": 0.4791666666666667,
+     "recall": 0.6216216216216216
+    }
+   ],
    "variant": "real",
    "C": 0.3,
    "threshold": 0.7616,
@@ -455,6 +591,15 @@
    "trainOof": {
     "precision": 0.6111111111111112,
     "recall": 0.6111111111111112
+   },
+   "heldOutOneShot": {
+    "positives": 5,
+    "negatives": 205,
+    "tp": 3,
+    "fp": 2,
+    "fn": 2,
+    "precision": 0.6,
+    "recall": 0.6
    },
    "tp": 23,
    "fp": 25,
@@ -482,6 +627,15 @@
     "precision": 0.3548387096774194,
     "recall": 0.3793103448275862
    },
+   "heldOutOneShot": {
+    "positives": 1,
+    "negatives": 226,
+    "tp": 1,
+    "fp": 3,
+    "fn": 0,
+    "precision": 0.25,
+    "recall": 1.0
+   },
    "tp": 7,
    "fp": 9,
    "fn": 13,
@@ -500,6 +654,18 @@
    "testNegative": 1015,
    "trainUploaders": 128,
    "testUploaders": 46,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.8042,
+     "tp": 42,
+     "fp": 31,
+     "fn": 48,
+     "precision": 0.5753424657534246,
+     "recall": 0.4666666666666667
+    }
+   ],
    "variant": "real",
    "C": 1.0,
    "threshold": 0.8042,
@@ -507,6 +673,15 @@
    "trainOof": {
     "precision": 0.6307692307692307,
     "recall": 0.634020618556701
+   },
+   "heldOutOneShot": {
+    "positives": 31,
+    "negatives": 218,
+    "tp": 18,
+    "fp": 9,
+    "fn": 13,
+    "precision": 0.6666666666666666,
+    "recall": 0.5806451612903226
    },
    "tp": 42,
    "fp": 31,
@@ -526,6 +701,18 @@
    "testNegative": 1015,
    "trainUploaders": 155,
    "testUploaders": 56,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": false,
+     "threshold": 0.7545,
+     "tp": 57,
+     "fp": 24,
+     "fn": 20,
+     "precision": 0.7037037037037037,
+     "recall": 0.7402597402597403
+    }
+   ],
    "variant": "real",
    "C": 0.3,
    "threshold": 0.7545,
@@ -533,6 +720,15 @@
    "trainOof": {
     "precision": 0.641860465116279,
     "recall": 0.6359447004608295
+   },
+   "heldOutOneShot": {
+    "positives": 4,
+    "negatives": 218,
+    "tp": 1,
+    "fp": 4,
+    "fn": 3,
+    "precision": 0.2,
+    "recall": 0.25
    },
    "tp": 57,
    "fp": 24,
@@ -552,6 +748,18 @@
    "testNegative": 1015,
    "trainUploaders": 19,
    "testUploaders": 13,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.779,
+     "tp": 11,
+     "fp": 4,
+     "fn": 6,
+     "precision": 0.7333333333333333,
+     "recall": 0.6470588235294118
+    }
+   ],
    "variant": "real",
    "C": 0.3,
    "threshold": 0.779,
@@ -559,6 +767,15 @@
    "trainOof": {
     "precision": 0.6,
     "recall": 0.6206896551724138
+   },
+   "heldOutOneShot": {
+    "positives": 1,
+    "negatives": 218,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0
    },
    "tp": 11,
    "fp": 4,
@@ -586,6 +803,15 @@
     "precision": 0.2905027932960894,
     "recall": 0.2857142857142857
    },
+   "heldOutOneShot": {
+    "positives": 3,
+    "negatives": 213,
+    "tp": 2,
+    "fp": 4,
+    "fn": 1,
+    "precision": 0.3333333333333333,
+    "recall": 0.6666666666666666
+   },
    "tp": 19,
    "fp": 48,
    "fn": 27,
@@ -611,6 +837,15 @@
    "trainOof": {
     "precision": 0.373015873015873,
     "recall": 0.3790322580645161
+   },
+   "heldOutOneShot": {
+    "positives": 6,
+    "negatives": 213,
+    "tp": 3,
+    "fp": 2,
+    "fn": 3,
+    "precision": 0.6,
+    "recall": 0.5
    },
    "tp": 9,
    "fp": 25,
@@ -649,6 +884,18 @@
    "testNegative": 857,
    "trainUploaders": 41,
    "testUploaders": 18,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.8752,
+     "tp": 16,
+     "fp": 13,
+     "fn": 17,
+     "precision": 0.5517241379310345,
+     "recall": 0.48484848484848486
+    }
+   ],
    "variant": "real",
    "C": 10.0,
    "threshold": 0.8752,
@@ -656,6 +903,15 @@
    "trainOof": {
     "precision": 0.4625,
     "recall": 0.4805194805194805
+   },
+   "heldOutOneShot": {
+    "positives": 8,
+    "negatives": 205,
+    "tp": 0,
+    "fp": 1,
+    "fn": 8,
+    "precision": 0.0,
+    "recall": 0.0
    },
    "tp": 16,
    "fp": 13,
@@ -682,6 +938,15 @@
    "trainOof": {
     "precision": 0.30158730158730157,
     "recall": 0.2878787878787879
+   },
+   "heldOutOneShot": {
+    "positives": 6,
+    "negatives": 210,
+    "tp": 0,
+    "fp": 0,
+    "fn": 6,
+    "precision": 0.0,
+    "recall": 0.0
    },
    "tp": 6,
    "fp": 16,

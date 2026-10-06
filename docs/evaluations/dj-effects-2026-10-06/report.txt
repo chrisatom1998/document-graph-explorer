@@ -1,26 +1,26 @@
 label            train+ test+ test-  thresh      P      R   verdict          trained on    current head on same held-out
-chops               106    25  1042   0.793   0.14   0.28   below 70/70       real          learned maybe P0.25 R0.08
+chops               106    25  1042   0.793   0.14   0.28   below 70/70       real          learned maybe P0.25 R0.08   | new on <=2.25 s: P0.00 R0.00 (1+/210-)
 vocal chops          46    11  1042   0.837   0.37   0.64   below 70/70       real          learned maybe P0.45 R0.82
-stutter effect       65    20  1040   0.842   0.18   0.30   below 70/70       real          learned maybe P0.00 R0.00
-glitch effect       336    88  1015   0.717   0.40   0.44   below 70/70       real          -
-reverse effect      256    77   844   0.720   0.49   0.55   below 70/70       real          learned maybe P0.56 R0.45
+stutter effect       65    20  1040   0.842   0.18   0.30   below 70/70       real          learned maybe P0.00 R0.00   | new on <=2.25 s: P0.17 R0.50 (2+/210-)
+glitch effect       336    88  1015   0.717   0.40   0.44   below 70/70       real          -   | new on <=2.25 s: P0.62 R0.50 (36+/205-)
+reverse effect      256    77   844   0.720   0.49   0.55   below 70/70       real          learned maybe P0.49 R0.55   | new on <=2.25 s: P0.38 R0.50 (6+/183-)
 record stop          37     5  1046       -      -      -   fewer than 10 held-out positives; not tested real          -
-vinyl scratch       155    65  1046   0.774   0.74   0.77   PASS 70/70        real          learned P0.70 R0.29; short-clip P0.00 R0.00
-riser               236    86   914   0.763   0.61   0.73   below 70/70       real          learned maybe P0.74 R0.30
+vinyl scratch       155    65  1046   0.774   0.74   0.77   PASS 70/70        real          learned P0.74 R0.77; short-clip (<=2.25 s clips) P0.80 R0.52   | new on <=2.25 s: P0.77 R0.87 (23+/223-)
+riser               236    86   914   0.763   0.61   0.73   below 70/70       real          learned maybe P0.61 R0.73   | new on <=2.25 s: P0.67 R0.67 (3+/208-)
 downlifter           13    15   931   0.946   0.50   0.07   below 70/70       real+renders  -
-impact              250    98  1064   0.766   0.62   0.67   below 70/70       real          short-clip P0.00 R0.00
-whoosh              287    81   857   0.659   0.64   0.78   below 70/70       real          learned P0.85 R0.56; short-clip P0.00 R0.00
-reverse cymbal       39    13   914   0.763   0.69   0.85   below 70/70       real          -
+impact              250    98  1064   0.766   0.62   0.67   below 70/70       real          learned maybe P0.62 R0.67; short-clip (<=2.25 s clips) P0.36 R0.30   | new on <=2.25 s: P0.59 R0.85 (27+/226-)
+whoosh              287    81   857   0.659   0.64   0.78   below 70/70       real          learned P0.85 R0.56; short-clip (<=2.25 s clips) P0.85 R0.65   | new on <=2.25 s: P0.68 R0.81 (26+/205-)
+reverse cymbal       39    13   914   0.763   0.69   0.85   below 70/70       real          learned maybe P0.69 R0.85   | new on <=2.25 s: P1.00 R1.00 (1+/208-)
 reverse impact       15     1   801       -      -      -   too few training clips -             -
-noise sweep         126    37   857   0.762   0.48   0.62   below 70/70       real          -
-sub drop             29    20  1064   0.808   0.44   0.35   below 70/70       real+renders  -
-laser               194    90  1015   0.804   0.58   0.47   below 70/70       real          -
-siren               217    77  1015   0.754   0.70   0.74   PASS 70/70        real          -
-air horn             29    17  1015   0.779   0.73   0.65   below 70/70       real          -
-flanged             182    46  1002   0.780   0.28   0.41   below 70/70       real          -
-bitcrushed          124    30  1078   0.721   0.26   0.30   below 70/70       real+renders  -
+noise sweep         126    37   857   0.762   0.48   0.62   below 70/70       real          learned maybe P0.48 R0.62   | new on <=2.25 s: P0.60 R0.60 (5+/205-)
+sub drop             29    20  1064   0.808   0.44   0.35   below 70/70       real+renders  -   | new on <=2.25 s: P0.25 R1.00 (1+/226-)
+laser               194    90  1015   0.804   0.58   0.47   below 70/70       real          learned maybe P0.58 R0.47   | new on <=2.25 s: P0.67 R0.58 (31+/218-)
+siren               217    77  1015   0.754   0.70   0.74   PASS 70/70        real          learned P0.70 R0.74   | new on <=2.25 s: P0.20 R0.25 (4+/218-)
+air horn             29    17  1015   0.779   0.73   0.65   below 70/70       real          learned maybe P0.73 R0.65   | new on <=2.25 s: P1.00 R1.00 (1+/218-)
+flanged             182    46  1002   0.780   0.28   0.41   below 70/70       real          -   | new on <=2.25 s: P0.33 R0.67 (3+/213-)
+bitcrushed          124    30  1078   0.721   0.26   0.30   below 70/70       real+renders  -   | new on <=2.25 s: P0.60 R0.50 (6+/213-)
 beat repeat          26     2  1040       -      -      -   fewer than 10 held-out positives; not tested real          -
-filter sweep         77    33   857   0.875   0.55   0.48   below 70/70       real          -
-trance gate          66    18  1042   0.885   0.27   0.33   below 70/70       real          -
+filter sweep         77    33   857   0.875   0.55   0.48   below 70/70       real          learned maybe P0.55 R0.48   | new on <=2.25 s: P0.00 R0.00 (8+/205-)
+trance gate          66    18  1042   0.885   0.27   0.33   below 70/70       real          -   | new on <=2.25 s: P0.00 R0.00 (6+/210-)
 rewind                9     1  1046       -      -      -   fewer than 10 held-out positives; not tested real+renders  -
 delay throw          39     3  1168       -      -      -   fewer than 10 held-out positives; not tested real+renders  -
