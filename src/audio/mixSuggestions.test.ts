@@ -91,6 +91,7 @@ describe('mix suggestions', () => {
     const target = node('t', { tempo: tempo(120) });
     const many = Array.from({ length: 30 }, (_, i) => node(`n${i}`, { tempo: tempo(120) }));
     expect(mixSuggestions(target, many)).toHaveLength(10);
-    expect(mixSuggestions(target, many, { limit: 3 })).toHaveLength(3);
+    expect(mixSuggestions(target, many, { limit: 3 }).map(r => r.node.id)).toEqual(['n0', 'n1', 'n10']);
+    expect(mixSuggestions(target, many, { limit: 0 })).toEqual([]);
   });
 });
