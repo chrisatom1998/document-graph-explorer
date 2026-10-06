@@ -4,6 +4,7 @@
  * These are gold in internal docs.
  */
 
+import { entityKey } from './aliases';
 import { STOPWORDS } from './tokenize';
 
 const MAX_ENTITIES = 12;
@@ -68,6 +69,8 @@ function collect(
 /**
  * Heuristic: identifiers/acronyms count from a single occurrence; capitalized
  * phrases must appear ≥ 2 times (filters sentence-initial-only noise).
+ * Spellings of one name ('dependency_groups', 'Dependency Groups') pool their
+ * counts and take one slot, under the doc's most frequent spelling.
  * Returns the top ~12 by frequency, excluding pure stopwords.
  */
 export function extractEntities(text: string): string[] {
@@ -81,13 +84,24 @@ export function extractEntities(text: string): string[] {
   collect(acronymText, ACRONYM, false, stats);
   collect(text, PHRASE, true, stats);
 
-  const kept: [string, number][] = [];
+  const byKey = new Map<string, { entity: string; best: number; count: number }>();
   for (const [entity, stat] of stats) {
     if (stat.isPhrase && stat.count < 2) continue;
     if (isAllStopwords(entity)) continue;
     if (GENERIC_ACRONYMS.has(entity)) continue;
-    kept.push([entity, stat.count]);
+    const key = entityKey(entity);
+    const group = byKey.get(key);
+    if (!group) {
+      byKey.set(key, { entity, best: stat.count, count: stat.count });
+      continue;
+    }
+    group.count += stat.count;
+    if (stat.count > group.best || (stat.count === group.best && entity < group.entity)) {
+      group.entity = entity;
+      group.best = stat.count;
+    }
   }
+  const kept: [string, number][] = [...byKey.values()].map((g) => [g.entity, g.count]);
   kept.sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
   return kept.slice(0, MAX_ENTITIES).map((entry) => entry[0]);
 }

@@ -148,11 +148,13 @@ export async function hydrateFromRecord(
     return false; // malformed IndexedDB record — treat like "couldn't restore"
   }
 
+  let versionsPending = false;
   // Existing sessions also adopt explicit name tags without altering saved audio evidence.
   if (exportData.nodes.some(node => node.fileType === 'audio')) {
     const { refreshMusicEdges } = await import('../audio/musicLinks');
     exportData.edges = refreshMusicEdges(exportData.nodes, exportData.edges);
     exportData.edges = [...new Map(exportData.edges.map(edge => [edge.id, edge])).values()];
+    versionsPending = (await import('../audio/versionLinks')).versionWorkPending();
   }
 
   // --- bulk-read texts + vectors: one readonly tx, concurrent gets ---
@@ -242,6 +244,12 @@ export async function hydrateFromRecord(
     void import('../pipeline/coordinatorLazy')
       .then((m) => m.rebuildEmbeddings())
       .catch((err) => console.error('embedding rebuild after restore failed', err));
+  }
+  // Version matching left over from the restore refresh finishes in the background.
+  if (versionsPending) {
+    void import('../pipeline/coordinatorLazy')
+      .then((m) => m.scheduleVersionCatchUp())
+      .catch((err) => console.error('version links after restore failed', err));
   }
 
   return true;

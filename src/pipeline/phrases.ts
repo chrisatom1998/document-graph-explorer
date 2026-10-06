@@ -14,6 +14,7 @@ import {
   PHRASE_MIN_TF,
   PHRASE_TOP_PER_DOC,
 } from "../config";
+import { canonicalTerm } from "./aliases";
 import { STOPWORDS } from "./tokenize";
 
 // Must match tokenize.ts: length / numbers-only rules for a content token.
@@ -56,7 +57,7 @@ export function extractPhraseTf(text: string): Record<string, number> {
         flush();
         continue;
       }
-      segment.push(raw);
+      segment.push(canonicalTerm(raw));
     }
     flush();
   }

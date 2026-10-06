@@ -4,8 +4,9 @@ import { soundMatchLabels, MATCH_ORIGIN_TEXT, type MatchLabel, type MatchOrigin 
 import { confidentSoundSummary } from './confidentSoundSummary';
 import type { DocNode, Edge } from '../model/types';
 import { keyName, type MusicAnalysis } from './musicTypes';
-export const MUSIC_EDGE_KINDS = ['tempo', 'key', 'instrument', 'sound', 'similar'] as const;
-type MusicKind = typeof MUSIC_EDGE_KINDS[number];
+import { buildVersionEdges, versionRelation } from './versionLinks';
+export const MUSIC_EDGE_KINDS = ['tempo', 'key', 'instrument', 'sound', 'similar', 'version'] as const;
+type MusicKind = Exclude<typeof MUSIC_EDGE_KINDS[number], 'version'>;
 export const MUSIC_NEIGHBOR_LIMIT = 8;
 export const MUSIC_NEIGHBORS_PER_KIND = 4;
 const CANDIDATES_PER_BUCKET = 12;
@@ -217,10 +218,18 @@ function soundNeighbors(audio: Features[], keep: number): Map<number, { other: n
   });
   return result;
 }
+/** Version links (same recording, or another version of the same song) plus the musical links below.
+ * Two copies of one recording get only their version link: their matching tempo, key and sound say nothing new,
+ * and would use up neighbor slots that other tracks need. */
+export function buildMusicEdges(nodes: DocNode[], policy: SoundLinkPolicy = SOUND_LINK_POLICY): Edge[] {
+  const versions = buildVersionEdges(nodes);
+  const copies = new Set(versions.filter(e => versionRelation(e) === 'duplicate').map(e => `${e.source}|${e.target}`));
+  return [...versions, ...buildRelationEdges(nodes, policy, copies)];
+}
 /** Bounded candidate search, then strongest-first selection with hard bounds at
  * BOTH endpoints. Large identical packs use deterministic local neighborhoods,
  * not exhaustive all-pairs ranking; work/memory scale with the candidate budget. */
-export function buildMusicEdges(nodes: DocNode[], policy: SoundLinkPolicy = SOUND_LINK_POLICY): Edge[] {
+function buildRelationEdges(nodes: DocNode[], policy: SoundLinkPolicy, skip: Set<string>): Edge[] {
   const audio = nodes.filter(n => n.fileType === 'audio' && n.audio).sort((a,b) => a.id.localeCompare(b.id)).map(features);
   const nearest = soundNeighbors(audio, policy.neighbors);
   const buckets = new Map<string, number[]>();
@@ -240,7 +249,7 @@ export function buildMusicEdges(nodes: DocNode[], policy: SoundLinkPolicy = SOUN
     }
     for (const other of candidates) {
       const key = `${Math.min(index, other)}:${Math.max(index, other)}`;
-      if (!pairs.has(key)) pairs.set(key, pairEdges(f, audio[other], policy.floor));
+      if (!pairs.has(key)) pairs.set(key, skip.has([f.node.id, audio[other].node.id].sort().join('|')) ? [] : pairEdges(f, audio[other], policy.floor));
     }
   });
   const byId = new Map(audio.map(f => [f.node.id, new Set(tokens(f).filter(t => t.startsWith('i:') || t.startsWith('s:')))]));

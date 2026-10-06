@@ -3,6 +3,8 @@
  * Pure functions — used by the pipeline worker and by unit tests.
  */
 
+import { canonicalTerm } from './aliases';
+
 /** ~130 common English stopwords (also consumed by entities.ts). */
 export const STOPWORDS: ReadonlySet<string> = new Set([
   'a', 'about', 'above', 'after', 'again', 'against', 'all', 'also', 'am',
@@ -36,7 +38,8 @@ const WORD_SPLIT = /[^\p{L}\p{N}]+/u;
 
 /**
  * Lowercase, split on non-alphanumerics (Unicode-aware), drop very
- * short/long tokens, numbers-only tokens, and stopwords.
+ * short/long tokens, numbers-only tokens, and stopwords. Known spelling
+ * variants fold to one token ('postgresql' -> 'postgres', aliases.ts).
  */
 export function tokenize(text: string): string[] {
   const out: string[] = [];
@@ -44,7 +47,7 @@ export function tokenize(text: string): string[] {
     if (raw.length < MIN_TOKEN_LEN || raw.length > MAX_TOKEN_LEN) continue;
     if (NUMBERS_ONLY.test(raw)) continue;
     if (STOPWORDS.has(raw)) continue;
-    out.push(raw);
+    out.push(canonicalTerm(raw));
   }
   return out;
 }
