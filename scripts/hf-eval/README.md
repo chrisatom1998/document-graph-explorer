@@ -22,4 +22,8 @@ Tasks:
 - `genre-energy`: genre/energy features for one list (`task_args`: `beatport-judge`, `jamendo-fit`, ...) with the
   genre thread's `scripts/genre-energy` from `app_ref`; merged into `data/<list>.json.gz` on `claude/genre-energy-data`.
 
+- `holdout-r3`: the round 3 held-out check (`task_args`: `jamendo` or `mtgkey`, optionally `@<commit>` of the
+  test set's branch) in the real app; pushes only aggregate reports to the test set's branch, and the workflow deletes
+  the per-track exports from the HF dataset afterwards (`# HELD_OUT=1` in the task).
+
 A task script gets `APP`, `HARNESS`, `OUT`, `WORK`, `PART`, `PARTS`, `TASK_ARGS`, `CPUS` (the machine's CPU quota; `nproc` shows the whole host) and optional `PROCS`.

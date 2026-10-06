@@ -1,1 +1,1 @@
-{"task": "all-tags-jamendo", "app_ref": "main", "parts": "12", "flavor": "cpu-upgrade", "timeout": "2h", "max_cost": "1"}
+{"task": "holdout-r3", "app_ref": "main", "task_args": "jamendo", "parts": "10", "flavor": "cpu-upgrade", "timeout": "2h", "max_cost": "1"}

@@ -26,7 +26,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: hf-eval-${{ github.ref_name }}-${{ inputs.task || 'request' }}-${{ inputs.app_ref || '' }}
+  group: hf-eval-${{ github.ref_name }}-${{ inputs.task || github.sha }}-${{ inputs.app_ref || '' }}
   cancel-in-progress: false
 
 jobs:
@@ -74,6 +74,13 @@ jobs:
           git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           WORK=$RUNNER_TEMP HARNESS=$PWD APP=$PWD/app bash scripts/hf-eval/tasks/$TASK.sh collect "$RUNNER_TEMP/parts" "$PWD/$R"
           cp "$RUNNER_TEMP/parts/hf-cost.json" "$R/"
+      - name: Delete per-track exports of a held-out set from the HF dataset
+        if: ${{ always() && env.RUN_KEY != '' }}
+        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
+        run: |
+          grep -q '^# HELD_OUT=1' "scripts/hf-eval/tasks/$TASK.sh" || exit 0
+          python3 -c "import sys; from huggingface_hub import HfApi; a = HfApi(); a.delete_folder(f'runs/{sys.argv[1]}', repo_id=a.whoami()['name'] + '/dge-eval-runs', repo_type='dataset', commit_message='Delete held-out per-track exports')" "$RUN_KEY" || true
+          rm -rf "$RUNNER_TEMP/parts"/part-*
       - uses: actions/upload-artifact@v4
         if: always()
         with:
