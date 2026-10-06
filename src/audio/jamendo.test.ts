@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vitest';
-import { classifyJamendo, jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabels } from './jamendo';
+import { classifyJamendo, JamendoRecordingScores, jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabels } from './jamendo';
 import { jamendoPatches } from './jamendoFeatures';
 import { sanitizeMusicAnalysis } from './musicTypes';
 import type Essentia from 'essentia.js/dist/essentia.js-core.es.js';
@@ -65,4 +65,33 @@ it('keeps the Jamendo weights version within the persisted ledger bound as heads
   const job = createRecognition(10, 'full').jobs.find(j => j.modelId === 'jamendo')!;
   expect(job.weightsVersion.split(':')).toHaveLength(12);
   expect(job.weightsVersion.length).toBeLessThanOrEqual(512);
+});
+
+it('scores a recording by its two strongest windows, so a part-time instrument is not averaged away', () => {
+  const song = new JamendoRecordingScores();
+  for (let i = 0; i < 40; i++) song.add(i === 20 || i === 21 ? { saxophone: .8, drums: .6 } : { drums: .6 });
+  expect(song.scores()).toEqual({ saxophone: .8, drums: .6 });
+  expect(jamendoSuggestions(song.scores()).map(s => s.label)).toContain('saxophone');
+});
+
+it('needs a second window at the bar before one confident window can add a label', () => {
+  const song = new JamendoRecordingScores();
+  // One sax window at .8 and one voice window at 1 among 40: halving alone would still clear the .3 and .5 bars.
+  for (let i = 0; i < 40; i++) song.add(i === 7 ? { saxophone: .8, voice: 1 } : { saxophone: .1 });
+  expect(song.scores()).toEqual({ saxophone: 0, voice: 0 });
+  expect(jamendoSuggestions(song.scores())).toEqual([]);
+  expect(jamendoLabels(song.scores())).toEqual([]);
+  // A second window at the bar is enough, and the score is still the mean of the two strongest.
+  song.add({ saxophone: .3 });
+  expect(song.scores().saxophone).toBeCloseTo(.55);
+});
+
+it('keeps the plain average for one- and two-window recordings and ignores invalid scores', () => {
+  const one = new JamendoRecordingScores();
+  one.add({ piano: .4, organ: Number.NaN, flute: 1.5 });
+  expect(one.scores()).toEqual({ piano: .4 });
+  const two = new JamendoRecordingScores();
+  two.add({ piano: .4 }); two.add({ piano: .2, voice: .6 });
+  expect(two.scores().piano).toBeCloseTo(.3);
+  expect(two.scores().voice).toBeCloseTo(.3);
 });

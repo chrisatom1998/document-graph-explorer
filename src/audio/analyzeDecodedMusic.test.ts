@@ -320,6 +320,22 @@ describe('short one-shots', () => {
   });
 });
 
+it('suggests an instrument that plays in only part of a long song', async () => {
+  const duration = 240;
+  // Each window's samples carry its start time, so the mock model can answer per section.
+  const decoder: MusicDecoder = { durationSeconds: duration, close() {}, read: vi.fn(async (start, seconds, rate) =>
+    new Float32Array(Math.round(Math.max(0, Math.min(seconds, duration - start)) * rate)).fill(.01 + start / 1000)) };
+  const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
+    const start = Math.round(((message.samples as Float32Array)[0] - .01) * 1000);
+    if (message.kind === 'rhythm' || message.kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: 60, instruments: [], notes: [] } as T;
+    if (message.kind === 'instruments') return { scores: {}, musicScore: .9 } as T;
+    if (message.kind === 'jamendo') return (start >= 100 && start < 120 ? { saxophone: .7, drums: .6 } : { drums: .6 }) as T;
+    return [] as T;
+  };
+  const result = await analyzeDecodedMusic(decoder, request, { mode: 'full', audioFingerprint: 'part-time-sax' });
+  expect(result.instruments.find(i => i.label === 'saxophone')).toMatchObject({ status: 'possible', score: .7 });
+});
+
 describe('one-shot windows inside long recordings', { timeout: 60_000 }, () => {
   // A 32 s recording with a loud burst every 6 s; the one-shot heads call every event window a vinyl scratch.
   async function run(mode?: 'fast' | 'full', heads: DescriptionScore[] = [{ group: 'dj-learned', label: 'vinyl scratch', score: .9, learnedGroup: 'production', decision: 'include', basis: 'head' }]) {
