@@ -20,5 +20,5 @@
     "noImplicitOverride": true,
     "types": ["vite/client"]
   },
-  "include": ["src", "scripts/*.ts", "vite.config.ts", "playwright.config.ts"]
+  "include": ["src", "scripts/*.ts", "scripts/versions/*.ts", "vite.config.ts", "playwright.config.ts"]
 }

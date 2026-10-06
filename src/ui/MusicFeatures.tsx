@@ -17,6 +17,7 @@ import { filenameSoundFallback } from '../audio/filenameSoundFallback';
 import { RecognitionDiagnostics, type RecognitionEvidenceProps } from './RecognitionEvidence';
 import { clockTime as time } from './clockTime';
 import TrackStructure from './TrackStructure';
+import TrackVersions from './TrackVersions';
 import { camelotCode } from '../audio/mixSuggestions';
 import MusicNeighbours from './MusicNeighbours';
 export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?: (seconds: number) => void }) {
@@ -107,6 +108,7 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
           : <dd className="is-unknown" title={analysis.stage === 'preview' ? 'Not checked yet' : 'No stable key detected'}>{analysis.stage === 'preview' ? '…' : '—'}</dd>}</div>
       </dl>
       {analysis.structure && <TrackStructure structure={analysis.structure} duration={analysis.durationSeconds} onSeek={onSeek} />}
+      <TrackVersions node={node} />
       <ConfidentSoundSummary audio={analysis} node={node} />
       <OtherModelGuesses profile={displayProfile} confirmedDjTags={analysis.confirmedDjTags ? confirmedTags : undefined} reviewedLabels={reviewedLabels}
         skipSource={confirmed !== undefined || !!hints.instruments} exclude={shownSounds} />

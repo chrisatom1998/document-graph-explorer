@@ -6,8 +6,9 @@ import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
 import { sanitizeStructure, type TrackStructure } from './structure';
+import { sanitizeVersionPrint } from './versionPrint';
 export const MUSIC_ANALYSIS_VERSION = 2;
-export const KEY_ANALYSIS_REVISION = 2;
+export const KEY_ANALYSIS_REVISION = 3;
 export const TEMPO_ANALYSIS_REVISION = 2;
 // Enabling the built-in policy makes persisted native-only documents eligible for reanalysis.
 export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 69 : 68;
@@ -48,6 +49,8 @@ export interface MusicAnalysis {
   embedding?: number[];
   /** Intro, drops, breakdowns and outro of a full track (src/audio/structure.ts); absent for clips under a minute. */
   structure?: TrackStructure;
+  /** Compact pitch, band-balance and loudness series (versionPrint.ts) that finds other copies and versions of this recording. */
+  versionPrint?: string;
   instrumentScan?: { mode?: MusicAnalysisMode; revision?: number; complete: boolean; analyzedSeconds: number; windows: number };
   notes: string[];
 }
@@ -78,6 +81,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   const copilotProperties = sanitizeCopilotProperties(m.copilotProperties);
   if (copilotProperties) out.copilotProperties = copilotProperties;
   if (Array.isArray(m.embedding) && m.embedding.length === 512 && m.embedding.every(v => typeof v === 'number' && Number.isFinite(v)) && Math.hypot(...(m.embedding as number[])) > 1e-8) out.embedding = m.embedding as number[];
+  const versionPrint = sanitizeVersionPrint(m.versionPrint);
+  if (versionPrint) out.versionPrint = versionPrint;
   out.soundProfile = sanitizeSoundProfile(m.soundProfile);
   if (!out.soundProfile) delete out.soundProfile;
   const prediction = m.instrumentPrediction as Record<string, unknown> | undefined;

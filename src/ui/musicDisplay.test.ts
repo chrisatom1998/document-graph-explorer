@@ -50,6 +50,13 @@ describe('musicNeighbours', () => {
     expect(rows.map((r) => [r.id, r.mixable])).toEqual([['d', true], ['b', false]]);
     expect(rows[0].reasons.map((r) => r.text)).toEqual(['Adjacent key', '+2 BPM', 'Similar name']);
   });
+  it('names version links as the same recording or another version', () => {
+    const a = track('a', 'Night Drive'), b = track('b', 'Night Drive copy'), c = track('c', 'Night Drive (Club Remix)');
+    const edges = [edge('a', 'b', 'version', .95, 'Same recording (a copy or re-encode): 100% of the shorter file lines up with the other, and the mix matches.'),
+      edge('a', 'c', 'version', .7, 'Another version of the same song: the titles match, the name marks a remix or edit.')];
+    const rows = musicNeighbours(a, edges, [a, b, c], { a: 0, b: 1, c: 2 });
+    expect(Object.fromEntries(rows.map((r) => [r.id, r.reasons.map((x) => x.text)]))).toEqual({ b: ['Same recording'], c: ['Other version'] });
+  });
   it('shows the name tag tempo and key ahead of the audio estimate', () => {
     const shown = shownTempoKey(track('a', 'Pack Fight Gm 140', { tempo: { bpm: 70, confidence: .9 }, key: { tonic: 0, mode: 'minor', strength: .8 } }));
     expect(shown.bpm).toBe(140);

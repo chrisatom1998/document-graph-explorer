@@ -14,8 +14,32 @@ if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
   throw new Error('PLAYWRIGHT_PORT must be an integer between 1 and 65535.');
 }
 
+// CI runs the suite as parallel jobs, one per group, each on its own runner
+// (SwiftShader + the ingest workers saturate a runner, so more workers per
+// machine would only slow every test down). Playwright's --shard splits by
+// test count, which leaves one shard with most of the minutes; these groups
+// are balanced by measured CI duration instead (~37 min serial on 2026-10-06:
+// smoke 9.6, annotations 4.9, audio-graph 4.8, graph-resolution 6.7,
+// folder-theme 3.3, everything else ~8 combined). `rest` runs every spec not
+// named here, so a new spec file is never silently skipped. Unset = all specs.
+const E2E_GROUPS: Record<string, string[]> = {
+  smoke: ['smoke.spec.ts'],
+  collab: ['annotations.spec.ts', 'audio-graph.spec.ts'],
+  graph: ['graph-resolution.spec.ts', 'folder-theme.spec.ts'],
+};
+const GROUP = ENV?.E2E_GROUP;
+if (GROUP && GROUP !== 'rest' && !(GROUP in E2E_GROUPS)) {
+  throw new Error(`E2E_GROUP must be one of: ${[...Object.keys(E2E_GROUPS), 'rest'].join(', ')}.`);
+}
+const groupFilter = !GROUP
+  ? {}
+  : GROUP === 'rest'
+    ? { testIgnore: Object.values(E2E_GROUPS).flat() }
+    : { testMatch: E2E_GROUPS[GROUP] };
+
 export default defineConfig({
   testDir: 'e2e',
+  ...groupFilter,
   // The demo-corpus ingest (100 PDFs, parse + OCR-capable + local embeddings)
   // takes 20-60s on a dev machine and can be several times slower on shared
   // CI under SwiftShader, so per-test budgets are deliberately generous.

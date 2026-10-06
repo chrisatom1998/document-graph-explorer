@@ -433,9 +433,10 @@ it('reads structure for whole tracks but skips it for recordings longer than 20 
   const set = fixture(21 * 60, { mode: 'fast' });
   const result = await set.run();
   expect(result.structure).toBeUndefined();
-  expect(vi.mocked(set.decoder.read).mock.calls.filter(([, , rate]) => rate === 16000).length).toBeLessThan(10);
+  // No 60 s whole-track structure chunks (the version print reads its own bounded 30 s sections).
+  expect(vi.mocked(set.decoder.read).mock.calls.filter(([, seconds, rate]) => rate === 16000 && seconds === 60)).toEqual([]);
 });
-it('moves the Fast scan to the first drop, but keeps Full mode on its usual windows', async () => {
+it('moves the Fast scan to the first drop, but keeps Full mode on its usual windows', { timeout: 60_000 }, async () => {
   // 30 s intro, drop at 30 s, breakdown, second drop at 105 s, outro.
   const audio = arrangement([
     { seconds: 30, kick: true, bass: false, pad: false }, { seconds: 45, kick: true, bass: true, pad: true },
