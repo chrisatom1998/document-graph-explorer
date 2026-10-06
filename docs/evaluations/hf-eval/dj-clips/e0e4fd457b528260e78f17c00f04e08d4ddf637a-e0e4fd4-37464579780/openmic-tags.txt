@@ -1,0 +1,30 @@
+500/500 analysed; 0 clips showed no tag
+source:drums         P 0.911  R 0.981  (51 TP / 5 FP / 1 FN; 52 pos, 9 neg)
+source:voice         P 0.968  R 0.968  (30 TP / 1 FP / 1 FN; 31 pos, 17 neg)
+source:synthesizer   P 0.886  R 1  (39 TP / 5 FP / 0 FN; 39 pos, 8 neg)
+source:piano         P 0.882  R 1  (15 TP / 2 FP / 0 FN; 15 pos, 17 neg)
+source:guitar        P 0.95  R 0.95  (19 TP / 1 FP / 1 FN; 20 pos, 11 neg)
+source:bass          P 0.727  R 0.533  (8 TP / 3 FP / 7 FN; 15 pos, 35 neg)
+source:cymbals       P 0.919  R 1  (34 TP / 3 FP / 0 FN; 34 pos, 9 neg)
+source:organ         P 0.483  R 0.875  (14 TP / 15 FP / 2 FN; 16 pos, 37 neg)
+source:violin        P 0.714  R 1  (15 TP / 6 FP / 0 FN; 15 pos, 25 neg)
+source:trumpet       P 0.517  R 0.833  (15 TP / 14 FP / 3 FN; 18 pos, 63 neg)
+source:saxophone     P 0.895  R 0.68  (17 TP / 2 FP / 8 FN; 25 pos, 27 neg)
+missed positives, where the label was found: {"drums":{"nowhere":1},"bass":{"nowhere":7},"saxophone":{"nowhere":8},"organ":{"nowhere":2},"voice":{"nowhere":1},"guitar":{"profile tag (MTG-Jamendo)":1},"trumpet":{"nowhere":3}}
+Pass bar: precision AND recall >= 0.60 (60/60). Labels with fewer than 5 positives are marked "low".
+
+| Label | Positives | openmic-tags P / R | openmic-tags pass | Change |
+|---|---|---|---|---|
+| source:bass | 15 | 0.73 / 0.53 | no |  |
+| source:cymbals | 34 | 0.92 / 1.00 | yes |  |
+| source:drums | 52 | 0.91 / 0.98 | yes |  |
+| source:guitar | 20 | 0.95 / 0.95 | yes |  |
+| source:organ | 16 | 0.48 / 0.88 | no |  |
+| source:piano | 15 | 0.88 / 1.00 | yes |  |
+| source:saxophone | 25 | 0.90 / 0.68 | yes |  |
+| source:synthesizer | 39 | 0.89 / 1.00 | yes |  |
+| source:trumpet | 18 | 0.52 / 0.83 | no |  |
+| source:violin | 15 | 0.71 / 1.00 | yes |  |
+| source:voice | 31 | 0.97 / 0.97 | yes |  |
+
+openmic-tags: 8/11 measurable labels meet 60/60
