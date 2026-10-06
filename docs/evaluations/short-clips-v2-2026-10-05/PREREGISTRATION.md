@@ -52,3 +52,14 @@ hints is inflated for assisted clips, so a hint-assisted bass-hit "present" is w
 Review order changed so the unconfirmed bass-hint clips come first, then drum hints (the hardest bass negatives), then
 synth stabs, effects, vocals and the rest. Clip membership, audio and ids are unchanged. Consequence: a partial freeze
 is enriched for bass and drums, so its precision/recall are stated for that enriched mix, not for a random sample.
+
+## Protocol note (2026-10-05, before freeze, after 27 human clips): Gemini as stand-in listener
+The listener asked for the remaining clips to be labelled without listening. `scripts/gemini-label-short-clips.py`
+asks Gemini the same eleven questions on every clip (model recorded per answer; it is not a detector under test).
+Rule fixed before any answer was read: for each question, Gemini's yes/no answers may stand in for missing human
+labels only if, on at least 10 human-confirmed clips, they agree with the human at least 80% of the time
+(`GEMINI_MIN_AGREEMENT`). Otherwise that question stays unknown on Gemini-labelled clips. "unsure" is unknown.
+Human-confirmed clips always keep the human label. Every frozen item records `labelMode`: `blind`, `hint-assisted`
+or `gemini:<model>`, and `summary.json` records the agreement table, so the report can give numbers for human-labelled
+clips alone as well as for the whole set. Earlier yardstick: gemini-3.1-pro-preview 36/48 on expert-labelled clips,
+below the 40/48 labeller pass rule, which is why this per-question check exists.

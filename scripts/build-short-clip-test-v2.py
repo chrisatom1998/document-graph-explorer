@@ -164,6 +164,40 @@ def select():
     print(len(items), 'clips;', len({c['family'] for c in picked}), 'families; by hint:', dict(Counter(c['hint'] for c in picked)))
 
 
+GEMINI_MIN_AGREEMENT = 0.80   # fixed before any Gemini answer was read (PREREGISTRATION.md)
+
+
+def gemini_answers():
+    """{clip id: {'production:bass hit': 'yes'|'no'|'unsure', ...}} from GEMINI_LABELS=<path>, or {} when unset."""
+    path = os.environ.get('GEMINI_LABELS')
+    if not path: return {}, None
+    d = json.load(open(path)); model = next(iter(d.values()))['model'] if d else path
+    return {k: v['answers'] for k, v in d.items()}, model
+
+
+def agreement(gem, reviews, side):
+    """Per question: how often Gemini's yes/no matches a human-confirmed clip (unsure on either side is skipped)."""
+    out = {}
+    for d, l in [tuple(q) for q in side['questions']]:
+        key = f"{'source' if d == 'source' else 'production'}:{l}"; n = agree = 0
+        for cid, r in reviews.items():
+            if cid not in side['clips'] or not r.get('confirmed') or cid not in gem: continue
+            g = gem[cid].get(key)
+            if g not in ('yes', 'no') or (r.get('decisions') or {}).get(key) == 'unsure': continue
+            human_yes = l in r['labels'].get('source' if d == 'source' else 'production', [])
+            n += 1; agree += (g == 'yes') == human_yes
+        out[f'{d}:{l}'] = {'compared': n, 'agreement': round(agree / n, 3) if n else None, 'accepted': bool(n >= 10 and agree / n >= GEMINI_MIN_AGREEMENT)}
+    return out
+
+
+def agreement_report():
+    side = json.load(open(f'{REVIEW}/sidecar.json')); reviews = json.load(open(f'{REVIEW}/reviews.json'))
+    gem, model = gemini_answers()
+    if not gem: sys.exit('Set GEMINI_LABELS=<review dir>/gemini-<model>.json')
+    print(json.dumps({'model': model, 'humanConfirmed': sum(1 for k, v in reviews.items() if v.get('confirmed') and k in side['clips']),
+                      'geminiAnswered': len(gem), 'perQuestion': agreement(gem, reviews, side)}, indent=1))
+
+
 def freeze():
     os.makedirs(OUT, exist_ok=True)
     manifest_path = f'{OUT}/manifest.json'
@@ -173,21 +207,34 @@ def freeze():
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
     reviewer = 'explicit human confirmation (blind listening in Sound Label Studio, question set in sidecar.json)'
     items, meta, stats = [], {}, Counter()
+    gem, gem_model = gemini_answers(); accept = agreement(gem, reviews, side) if gem else {}
     for it in review_items:
         if it['id'] not in side['clips']: stats['not part of the blind set (left out)'] += 1; continue   # e.g. sounds added through the studio UI
         r = reviews.get(it['id']); c = side['clips'][it['id']]
-        if not r or not r.get('confirmed'): stats['not confirmed (left out)'] += 1; continue
-        truth = {}
-        for group, labels in r['labels'].items():
-            for l in labels:
-                truth[(dimension(group, l), l)] = 'present'
-        for key, decision in (r.get('decisions') or {}).items():
-            group, l = key.split(':', 1); d = dimension(group, l)
-            if decision == 'absent' and (d, l) not in truth: truth[(d, l)] = 'absent'
-        # "unsure" on a question label stays unknown; every other unmarked question label is absent (the listener was asked).
-        unsure = {(dimension(k.split(':', 1)[0], k.split(':', 1)[1]), k.split(':', 1)[1]) for k, v in (r.get('decisions') or {}).items() if v == 'unsure'}
-        for d, l in [tuple(q) for q in side['questions']]:
-            if (d, l) not in truth and (d, l) not in unsure and [d, l] not in c['unknownByDesign'] and (d, l) not in c['unknownByDesign']: truth[(d, l)] = 'absent'
+        truth = {}; mode = None
+        if not r or not r.get('confirmed'):
+            # No human label: Gemini may stand in, question by question, only where it agreed with the human clips (pre-set rule).
+            g = gem.get(it['id'])
+            if not g: stats['not confirmed (left out)'] += 1; continue
+            for d, l in [tuple(q) for q in side['questions']]:
+                key = f"{'source' if d == 'source' else 'production'}:{l}"
+                if [d, l] in c['unknownByDesign'] or (d, l) in c['unknownByDesign'] or not accept.get(f'{d}:{l}', {}).get('accepted'): continue
+                if g.get(key) == 'yes': truth[(d, l)] = 'present'
+                elif g.get(key) == 'no': truth[(d, l)] = 'absent'
+            if not truth: stats['gemini answers not accepted (left out)'] += 1; continue
+            mode = f'gemini:{gem_model}'; r = {'labels': {}, 'decisions': {}}
+        if mode is None:
+            for group, labels in r['labels'].items():
+                for l in labels:
+                    truth[(dimension(group, l), l)] = 'present'
+            for key, decision in (r.get('decisions') or {}).items():
+                group, l = key.split(':', 1); d = dimension(group, l)
+                if decision == 'absent' and (d, l) not in truth: truth[(d, l)] = 'absent'
+            # "unsure" on a question label stays unknown; every other unmarked question label is absent (the listener was asked).
+            unsure = {(dimension(k.split(':', 1)[0], k.split(':', 1)[1]), k.split(':', 1)[1]) for k, v in (r.get('decisions') or {}).items() if v == 'unsure'}
+            for d, l in [tuple(q) for q in side['questions']]:
+                if (d, l) not in truth and (d, l) not in unsure and [d, l] not in c['unknownByDesign'] and (d, l) not in c['unknownByDesign']: truth[(d, l)] = 'absent'
+            mode = 'hint-assisted' if r.get('assist') else 'blind'
         items.append({'id': it['id'], 'source': f"{c['source']}: {c['url']} ({c['licence']})",
                       'rights': {'evaluationAllowed': True, 'basis': f"per-clip licence {c['licence']}; evaluation only, audio not redistributed"},
                       'groups': {'original': f"{c['source'].split(' ')[0]}:{c['fid']}", 'artist': c['family'], 'pack': c['family'], 'sampleFamily': c['family']},
@@ -195,7 +242,6 @@ def freeze():
                       'start': 0, 'end': c['seconds'],
                       'reviews': [{'reviewer': f'{reviewer}; {mode}', 'at': now, 'dimension': d, 'label': l, 'state': s} for (d, l), s in sorted(truth.items())],
                       'split': 'test', 'tier': 'one-shot'})
-        mode = 'hint-assisted' if r.get('assist') else 'blind'
         meta[it['id']] = {'dataset': c['source'], 'durationSeconds': c['seconds'], 'selectionHint': c['hint'], 'family': c['family'], 'labelMode': mode, **({'assist': r['assist']} if r.get('assist') else {})}
         stats[f'labelMode:{mode}'] += 1
         stats['test'] += 1
@@ -209,10 +255,12 @@ def freeze():
                'producerSpacePacks': sorted(f.split(':', 1)[1] for f in fams if f.startswith('producer-space:'))},
               open(f'{OUT}/reserved-test-families.json', 'w'), indent=1)
     sha = hashlib.sha256(open(manifest_path, 'rb').read()).hexdigest()
-    json.dump({'frozenAt': now, 'manifestSha256': sha, 'counts': dict(stats), 'families': len(fams)}, open(f'{OUT}/summary.json', 'w'), indent=1)
+    json.dump({'frozenAt': now, 'manifestSha256': sha, 'counts': dict(stats), 'families': len(fams),
+               **({'geminiModel': gem_model, 'geminiAgreementWithHumans': accept, 'geminiMinAgreement': GEMINI_MIN_AGREEMENT} if gem else {})},
+              open(f'{OUT}/summary.json', 'w'), indent=1)
     print(json.dumps({'test': stats['test'], 'families': len(fams), 'manifestSha256': sha[:16]}), file=sys.stderr)
     print({k: v for k, v in stats.items() if k.startswith('role:bass hit')})
 
 
 if __name__ == '__main__':
-    {'select': select, 'freeze': freeze}[sys.argv[1]]()
+    {'select': select, 'freeze': freeze, 'agreement': agreement_report}[sys.argv[1]]()
