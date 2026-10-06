@@ -60,7 +60,7 @@ function tagTable(subset, withMaybe) {
     for (const r of subset) {
       const truth = r.truth.labels[label]; if (!truth) continue;
       const hit = withMaybe ? !!r.shown[label] : r.shown[label] === 'shown';
-      if (truth === 'present') { pos++; hit ? tp++ : fn++; } else { neg++; if (hit) fp++; }
+      if (truth === 'present') { pos++; if (hit) tp++; else fn++; } else { neg++; if (hit) fp++; }
     }
     if (!pos && !neg) continue;
     const P = tp + fp ? tp / (tp + fp) : null, R = pos ? tp / pos : null;
