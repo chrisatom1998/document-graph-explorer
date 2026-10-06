@@ -1,0 +1,151 @@
+name: DJ clip accuracy check, round 2
+
+# Round 2 of dj-clips-eval.yml on 1000 clips that round 1 did not use: 500 tag-labelled 10 s OpenMIC-2018 clips (no clip
+# or artist from round 1 or the 900-clip calibration set) plus 500 tempo- and key-labelled 10 s excerpts of Beatport EDM
+# from the GiantSteps MTG key dataset (no track shared with round 1's GiantSteps tempo set). Same app flow and scorers as
+# round 1. The first run freezes and commits both manifests; the score job commits its reports to
+# docs/evaluations/dj-clips-round2-2026-10-06/results. Audio is fetched at run time and never committed.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-unl6fy]
+    paths: [.github/workflows/dj-clips-eval-round2.yml]
+
+permissions:
+  contents: write
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
+  MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
+  MTGKEY_REF: fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b   # master on 2026-10-06
+  DOCS: docs/evaluations/dj-clips-round2-2026-10-06
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        set: [openmic, mtgkey]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select OpenMIC clips
+        if: matrix.set == 'openmic'
+        run: |
+          curl -fsSL --retry 6 -o "$RUNNER_TEMP/openmic.tgz" "$OPENMIC"
+          echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $RUNNER_TEMP/openmic.tgz" | md5sum -c -
+          python3 scripts/dj-clips/openmic-round2.py "$RUNNER_TEMP/openmic.tgz" audio
+      - name: Select GiantSteps MTG key excerpts
+        if: matrix.set == 'mtgkey'
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          git clone -q "$MTGKEY" "$RUNNER_TEMP/mk" && git -C "$RUNNER_TEMP/mk" checkout -q "$MTGKEY_REF"
+          python3 scripts/dj-clips/mtg-key.py "$RUNNER_TEMP/mk" audio
+      - name: Commit the frozen manifest
+        run: |
+          git add "$DOCS/${{ matrix.set == 'mtgkey' && 'mtg-key' || 'openmic' }}-manifest.json"
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m "Freeze the ${{ matrix.set }} DJ clip set"
+            for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+              && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dj2-${{ matrix.set }}-audio
+          path: |
+            audio
+            ${{ env.DOCS }}/${{ matrix.set == 'mtgkey' && 'mtg-key' || 'openmic' }}-manifest.json
+          retention-days: 7
+
+  eval:
+    needs: freeze
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        set: [openmic, mtgkey]
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: dj2-${{ matrix.set }}-audio
+          path: clips
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=clips/audio AUDIO_EXT=${{ matrix.set == 'openmic' && 'ogg' || 'wav' }} \
+            MANIFEST=clips/$DOCS/${{ matrix.set == 'mtgkey' && 'mtg-key' || 'openmic' }}-manifest.json SHARD=${{ matrix.shard }}/4 \
+            node scripts/short-clip-upload-eval.mjs out/run test 20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dj2-${{ matrix.set }}-export-${{ matrix.shard }}
+          path: out/run/graph-export.json
+          retention-days: 30
+
+  score:
+    needs: eval
+    # Every shard must succeed: a partial run would be scored and committed as if all 1000 clips were analysed.
+    if: ${{ !cancelled() && needs.eval.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dj2-*-export-*
+          path: exports
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dj2-*-audio
+          path: clips
+      - name: Score
+        run: |
+          set -o pipefail
+          mkdir -p "$DOCS/results"; R="$DOCS/results"
+          OM=clips/dj2-openmic-audio/$DOCS/openmic-manifest.json MK=clips/dj2-mtgkey-audio/$DOCS/mtg-key-manifest.json
+          node -e "const m=require('./'+process.argv[1]);m.items=m.items.filter(i=>i.djTier==='dj genre');require('fs').writeFileSync('dj-tier.json',JSON.stringify(m))" "$OM"
+          MANIFEST=$OM npx vite-node scripts/mixed-music/score.mjs "$R/openmic-tags.json" exports/dj2-openmic-export-*/graph-export.json | tee "$R/openmic-tags.txt"
+          MANIFEST=dj-tier.json npx vite-node scripts/mixed-music/score.mjs "$R/openmic-tags-dj-genres.json" exports/dj2-openmic-export-*/graph-export.json | tee "$R/openmic-tags-dj-genres.txt"
+          node scripts/compare-tag-reports.mjs --min-positives 5 "$R/openmic-tags.json" | tee -a "$R/openmic-tags.txt" || true
+          node scripts/compare-tag-reports.mjs --min-positives 5 "$R/openmic-tags-dj-genres.json" | tee -a "$R/openmic-tags-dj-genres.txt" || true
+          npx vite-node scripts/full-mix/extract.mjs "$R/openmic-clips.json" exports/dj2-openmic-export-*/graph-export.json
+          MANIFEST=$MK BENCHMARK=dj-clips-round2-2026-10-06/mtg-key npx vite-node scripts/dj-clips/score-giantsteps.mjs "$R/mtg-key.json" exports/dj2-mtgkey-export-*/graph-export.json | tee "$R/mtg-key.txt"
+          echo "tested $GITHUB_SHA (run $GITHUB_RUN_ID)" > "$R/tested-commit.txt"
+      - name: Commit the reports
+        run: |
+          git add "$DOCS/results"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record round 2 DJ clip accuracy results" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
