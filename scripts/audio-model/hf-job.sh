@@ -60,7 +60,7 @@ if [ -n "${INIT_FROM:-}" ]; then   # "<repo>[@<revision>[/<folder>]]"
   python3 -c "import sys; from huggingface_hub import hf_hub_download as d; r, _, rest = sys.argv[1].partition('@'); rev, _, f = rest.partition('/'); [d(r, (f + '/' if f else '') + n, revision=rev or None, local_dir='init') for n in ('model.pt', 'log.json')]" "$INIT_FROM"
   EXTRA+=(--init "$(dirname $(find init -name model.pt | head -1))/model.pt")
 fi
-python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --threads 8
+python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --threads 8 --hours "${TRAIN_HOURS:-0}"
 CAL=(openmic=prep jamendo=prepj); EVAL=(prep/eval-round1 prep/eval-round2 holdout/holdout-r3)
 [ -d scprep ] && CAL+=(soundcloud=scprep)
 if [ "${ALL_TAGS:-0}" = 1 ]; then CAL+=(fsd50k=fsdprep nsynth=nsprep freesound=fsprep); for x in $XS; do CAL+=($x=xprep); done; EVAL+=(fsdprep/eval-fsd50k nsprep/eval-nsynth-test nsprep/eval-nsynth-test-fx fsprep/eval-freesound); fi

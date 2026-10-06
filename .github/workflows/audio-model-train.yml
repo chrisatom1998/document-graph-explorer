@@ -1,6 +1,7 @@
 name: Train the audio tagger
 
-# Fine-tunes DGE's own sound tagger (OpenMIC 20 classes + MTG-Jamendo's 40 instrument tags) on a Hugging Face Jobs GPU, billed to the HF_TOKEN
+# Fine-tunes DGE's own sound tagger (OpenMIC 20 classes + MTG-Jamendo's 40 instrument tags, and with all_tags the app-named
+# head taught by FSD50K, NSynth, effect renders, Freesound, TinySOL, EGFxSet, FSLD, WaivOps and Surge) on a Hugging Face Jobs GPU, billed to the HF_TOKEN
 # account, and uploads the run to that account's private dge-instrument-tagger model repo. OpenMIC and MTG-Jamendo
 # audio is fetched inside the job. The SoundCloud set's audio only exists as Actions artifacts, so this workflow turns
 # its train fold into log-mel windows (no audio leaves GitHub) for the job, and scores its held-out fold here after.
@@ -10,11 +11,16 @@ on:
     inputs:
       flavor: { description: 'HF Jobs hardware', default: 'l4x1' }
       model: { description: 'EfficientAT backbone', default: 'mn10_as' }
-      epochs: { default: '30' }
+      epochs: { default: '15' }
       lr: { default: '1e-4' }
       batch: { default: '64' }
       weak: { description: 'weight of untagged (weak) absences', default: '0.2' }
       soundcloud: { description: 'add the SoundCloud train fold (artifacts of run 37413702012)', default: 'true' }
+      all_tags: { description: 'add the app-named head (FSD50K, NSynth, effect renders)', default: 'true' }
+      init_from: { description: 'start from an earlier run: <model repo>[@<revision>[/<folder>]], empty for AudioSet weights', default: '' }
+      out_dir: { description: 'folder of the model repo for this run (empty: the root)', default: 'all-tags' }
+      timeout: { description: 'HF job time limit', default: '7h' }
+      train_hours: { description: 'training time budget inside the job; epochs are cut to fit', default: '4.25' }
   push:
     branches: ['claude/train-audio-model-*']
     paths: ['.github/workflows/audio-model-train.yml']
@@ -31,7 +37,7 @@ env:
 jobs:
   train:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 480
     steps:
       - uses: actions/checkout@v4
       - name: Check the Hugging Face token
@@ -72,8 +78,11 @@ jobs:
       - name: Train on Hugging Face Jobs
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
         run: >
-          python3 scripts/audio-model/hf-launch.py "${{ inputs.flavor || 'l4x1' }}" 5h
-          REPO_SHA=${{ github.sha }} MODEL=${{ inputs.model || 'mn10_as' }} EPOCHS=${{ inputs.epochs || '30' }}
+          python3 scripts/audio-model/hf-launch.py "${{ inputs.flavor || 'l4x1' }}" "${{ inputs.timeout || '7h' }}"
+          REPO_SHA=${{ github.sha }} MODEL=${{ inputs.model || 'mn10_as' }} EPOCHS=${{ inputs.epochs || '15' }}
+          ALL_TAGS=${{ (inputs.all_tags || 'true') == 'true' && '1' || '0' }} INIT_FROM=${{ github.event_name != 'push' && inputs.init_from || '' }}
+          OUT_DIR=${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir }} JOB_NAME=dge-tagger-${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir || 'main' }}
+          TRAIN_HOURS=${{ inputs.train_hours || '4.25' }}
           LR=${{ inputs.lr || '1e-4' }} BATCH=${{ inputs.batch || '64' }} WEAK=${{ inputs.weak || '0.2' }}
           SOUNDCLOUD_DATA=${SOUNDCLOUD_DATA:-}
       - name: Stop the Hugging Face job if this workflow is cancelled
@@ -85,5 +94,6 @@ jobs:
         if: ${{ (inputs.soundcloud || 'true') == 'true' }}
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
         run: |
-          python3 -c "from huggingface_hub import snapshot_download as d, whoami; d(whoami()['name'] + '/dge-instrument-tagger', allow_patterns=['onnx/*', 'thresholds.json'], local_dir='tagger')"
-          python3 scripts/audio-model/evaluate.py tagger/onnx/model.onnx tagger/thresholds.json sc-eval.json sc-prep/soundcloud-heldout
+          D="${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir }}"; P=${D:+$D/}
+          python3 -c "import sys; from huggingface_hub import snapshot_download as d, whoami; d(whoami()['name'] + '/dge-instrument-tagger', allow_patterns=[sys.argv[1] + 'onnx/*', sys.argv[1] + 'thresholds.json'], local_dir='tagger')" "$P"
+          python3 scripts/audio-model/evaluate.py tagger/${P}onnx/model.onnx tagger/${P}thresholds.json sc-eval.json sc-prep/soundcloud-heldout

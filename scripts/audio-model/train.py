@@ -85,6 +85,7 @@ def main():
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
     ap.add_argument('--fsd50k'); ap.add_argument('--nsynth'); ap.add_argument('--freesound')
     ap.add_argument('--extra', action='append', default=[], help='<name>=<dir> holding <name>-mel.npy + <name>.json (prepare-extra.py, Slakh)')
+    ap.add_argument('--hours', type=float, default=0, help='training time budget: after epoch 1, cut the epoch count (and its cosine schedule) to fit')
     ap.add_argument('--init', help='start from this model.pt (an earlier run); classifier rows are matched by class name')
     args = ap.parse_args()
     dev = torch.device(args.device)
@@ -155,6 +156,7 @@ def main():
         return out
 
     for epoch in range(start, args.epochs):
+        if epoch >= args.epochs: break       # --hours cut the run short
         model.train(); order = rng.permutation(len(pool)); t0 = time.time(); losses = []
         for s in range(0, len(order), args.batch):
             picked = [pool[k] for k in order[s:s + args.batch]]
@@ -182,6 +184,9 @@ def main():
         all_ap = [v for a in aps.values() for v in a.values()]; mAP = float(np.mean(all_ap)) if all_ap else 0.0
         log.append({'epoch': epoch + 1, 'loss': float(np.mean(losses)), 'valMAP': mAP, 'valAP': aps, 'seconds': time.time() - t0})
         print(json.dumps(log[-1]), flush=True)
+        if epoch == start and args.hours and args.epochs * log[-1]['seconds'] > args.hours * 3600:
+            args.epochs = max(epoch + 1, int(args.hours * 3600 // log[-1]['seconds'])); total = steps_per_epoch * args.epochs
+            print(f'cut to {args.epochs} epochs to fit {args.hours} h', flush=True)
         if mAP > best:
             best = mAP; torch.save(model.state_dict(), os.path.join(args.run, 'model.pt'))
             for name, sc in scores.items(): np.save(os.path.join(args.run, f'val-{name}.npy'), sc)
