@@ -1,0 +1,209 @@
+name: SoundCloud labelled-track check
+
+# Creative Commons SoundCloud tracks whose own title/description/tags name their instruments
+# (scripts/soundcloud/collect.py + labels.py). The first run freezes and commits the labelled track list; later runs
+# re-download the same tracks. A 30 s excerpt of each is analysed by the real built app in headless Chromium:
+# "base" builds the app source at BASE_REF (main before this work), "branch" this commit. Records and scores are
+# committed to docs/evaluations/soundcloud-2026-10-06/<results_dir> (artifact downloads are blocked from the sandbox).
+# Audio is never committed.
+on:
+  push:
+    branches: [claude/soundcloud-training-j0wc3t]
+    paths: [scripts/soundcloud/**, .github/workflows/soundcloud-train.yml]
+  workflow_dispatch:
+    inputs:
+      builds:
+        description: JSON list of app builds to analyse (base and/or branch)
+        default: '["base","branch"]'
+      results_dir:
+        description: Folder under docs/evaluations/soundcloud-2026-10-06 for the results
+        default: results
+      audio_run:
+        description: Reuse the audio downloaded by this earlier run id (blank = download again)
+        default: ''
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  BASE_REF: ac4029e8cb9c7f11ffbb3c58b2fca9cc03fe4cad
+  DOCS: docs/evaluations/soundcloud-2026-10-06
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      builds: ${{ steps.config.outputs.builds }}
+      audio_run: ${{ steps.config.outputs.audio_run }}
+      results: ${{ steps.config.outputs.results }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run settings (dispatch inputs, else scripts/soundcloud/run.json, since pushes carry no inputs)
+        id: config
+        env:
+          IN_BUILDS: ${{ inputs.builds }}
+          IN_AUDIO: ${{ inputs.audio_run }}
+          IN_RESULTS: ${{ inputs.results_dir }}
+        run: |
+          node -e "
+            const c=require('./scripts/soundcloud/run.json'),e=process.env;
+            const builds=e.IN_BUILDS||JSON.stringify(c.builds),audio=e.IN_AUDIO||c.audioRun||'',results=e.IN_RESULTS||c.resultsDir;
+            if(!/^[a-z0-9-]+$/.test(results)||!/^[0-9]*$/.test(audio))throw new Error('bad settings');
+            require('fs').appendFileSync(e.GITHUB_OUTPUT,'builds='+builds+'\\naudio_run='+audio+'\\nresults='+results+'\\n');
+            console.log({builds,audio,results});"
+      - name: Label rule self-test
+        run: python3 scripts/soundcloud/labels.py --selftest
+      - name: Search SoundCloud and freeze the labelled track list (first run only)
+        run: |
+          if [ ! -f "$DOCS/manifest.json" ]; then
+            mkdir -p "$DOCS"
+            python3 scripts/soundcloud/collect.py search "$DOCS/manifest.json" 720
+            git add "$DOCS/manifest.json"
+            git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -qm "Freeze the labelled SoundCloud track list"
+            for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+              && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sc-manifest
+          path: ${{ env.DOCS }}/manifest.json
+          retention-days: 7
+
+  fetch:
+    needs: freeze
+    if: ${{ !needs.freeze.outputs.audio_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: sc-manifest
+          path: m
+      - name: Install ffmpeg + yt-dlp
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          python3 -m pip install --quiet --upgrade yt-dlp
+      - name: Download and cut excerpts
+        run: python3 scripts/soundcloud/collect.py fetch m/manifest.json audio ${{ matrix.shard }}/4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sc-audio-${{ matrix.shard }}
+          path: audio
+          retention-days: 14
+
+  eval:
+    needs: [freeze, fetch]
+    if: ${{ !cancelled() && needs.freeze.result == 'success' && (needs.fetch.result == 'success' || needs.freeze.outputs.audio_run) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        build: ${{ fromJSON(needs.freeze.outputs.builds) }}
+        shard: [0, 1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: sc-manifest
+          path: m
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sc-audio-*
+          merge-multiple: true
+          path: audio
+          run-id: ${{ needs.freeze.outputs.audio_run || github.run_id }}
+          github-token: ${{ github.token }}
+      - name: Keep only tracks whose audio arrived
+        run: |
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('m/manifest.json'));m.items=m.items.filter(i=>fs.existsSync('audio/'+i.id+'.mp3'));fs.writeFileSync('m/present.json',JSON.stringify(m));console.log(m.items.length+' tracks with audio')"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Use the base app source
+        if: matrix.build == 'base'
+        run: git checkout "$BASE_REF" -- src
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=audio AUDIO_EXT=mp3 MANIFEST=m/present.json SHARD=${{ matrix.shard }}/6 \
+            node scripts/short-clip-upload-eval.mjs out/run test 20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sc-export-${{ matrix.build }}-${{ matrix.shard }}
+          path: out/run/graph-export.json
+          retention-days: 30
+
+  score:
+    needs: [freeze, eval]
+    if: ${{ !cancelled() && needs.eval.result == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      RESULTS: ${{ needs.freeze.outputs.results }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sc-export-*
+          path: exports
+      - uses: actions/download-artifact@v4
+        with:
+          name: sc-manifest
+          path: m
+      - name: Score
+        run: |
+          set -o pipefail
+          [[ "$RESULTS" =~ ^[a-z0-9-]+$ ]] || { echo "bad results_dir"; exit 1; }
+          R="$DOCS/$RESULTS"; mkdir -p "$R"
+          for f in train held-out; do
+            node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('m/manifest.json'));m.items=m.items.filter(i=>i.fold===process.argv[1]);fs.writeFileSync('m/'+process.argv[1]+'.json',JSON.stringify(m))" $f
+          done
+          for b in base branch; do
+            ls exports | grep -q "^sc-export-$b-" || continue
+            npx vite-node scripts/full-mix/extract.mjs "$R/$b-records.json" exports/sc-export-$b-*/graph-export.json
+            for f in train held-out; do
+              MANIFEST=m/$f.json npx vite-node scripts/mixed-music/score.mjs "$R/$b-$f-tags.json" exports/sc-export-$b-*/graph-export.json | tee "$R/$b-$f-tags.txt"
+            done
+          done
+          echo "tested $GITHUB_SHA (run $GITHUB_RUN_ID), base $BASE_REF" > "$R/tested-commit.txt"
+      - name: Commit the results
+        run: |
+          git add "$DOCS/$RESULTS"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record SoundCloud labelled-track results" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
