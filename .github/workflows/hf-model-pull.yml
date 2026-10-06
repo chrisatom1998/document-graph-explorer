@@ -33,7 +33,7 @@ jobs:
           import os, sys, shutil
           from huggingface_hub import snapshot_download
           run = sys.argv[1]
-          p = snapshot_download('cmjatom/dge-key-tempo-train', repo_type='dataset', allow_patterns=[f'runs/{run}/*.json', f'runs/{run}/*.log', f'runs/{run}/*-cnn.pt', f'runs/{run}/*.onnx'])
+          p = snapshot_download('cmjatom/dge-key-tempo-train', repo_type='dataset', allow_patterns=[f'runs/{run}/*.json', f'runs/{run}/*.log', f'runs/{run}/*-cnn.pt', f'runs/{run}/fold*.pt', f'runs/{run}/*.onnx'])
           dst = f'docs/evaluations/hf-key-tempo-2026-10-06/runs/{run}'
           shutil.rmtree(dst, ignore_errors=True); shutil.copytree(f'{p}/runs/{run}', dst)
           print(os.listdir(dst))
