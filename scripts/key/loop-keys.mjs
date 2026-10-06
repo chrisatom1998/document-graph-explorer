@@ -19,7 +19,8 @@ for (const clip of clips) {
   try { raw = execFileSync('ffmpeg', ['-nostdin', '-v', 'error', '-i', clip.path, '-t', '60', '-map', '0:a:0', '-ac', '1', '-ar', '44100', '-f', 'f32le', '-'], { maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'ignore'] }); }
   catch { console.log(`${clip.id}: cannot decode, skipped`); continue; }
   const samples = new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength / 4).slice();
-  const { path, ...row } = clip;
+  const row = { ...clip };
+  delete row.path;
   try {
     let pitch;
     if (samples.length < 8 * 44100) { try { pitch = detectRepeatedPitch(engine, samples); } catch { /* as the worker */ } }
