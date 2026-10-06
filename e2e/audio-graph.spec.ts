@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { correctDjTags } from './sampleAssistant';
-import { advancedFilters, closeDetails, fitAll, startIn3D } from './resonance';
+import { advancedFilters, closeDetails, fitAll, openTab, startIn3D } from './resonance';
 
 const base = { kind:'document',fileType:'audio',topics:[],entities:[],keywords:[],wordCount:0,degree:0,cluster:0,status:'ok' };
 const analysis = {version:2,analyzedSeconds:8,durationSeconds:8,instruments:[],notes:[]};
@@ -38,7 +38,7 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
   await page.getByRole('button',{name:'Connections',exact:true}).click();
  };
  const exportGraph=async()=>{
-  await page.getByRole('button',{name:'Data options',exact:true}).click();
+  await openTab(page,'Export');
   const promise=page.waitForEvent('download');
   await page.getByRole('button',{name:'Export graph JSON',exact:true}).click();
   const download=await promise; const stream=await download.createReadStream();let text='';for await(const chunk of stream!)text+=chunk;

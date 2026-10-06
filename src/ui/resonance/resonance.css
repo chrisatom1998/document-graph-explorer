@@ -234,6 +234,7 @@
   backdrop-filter: blur(8px);
 }
 .rs-library .graph-navigator--embedded {
+  pointer-events: auto;
   position: static; width: min(720px, 100%); max-width: none; max-height: none; margin: 0 auto;
   padding: 0; background: transparent; border: 0; box-shadow: none; opacity: 1; transform: none;
 }

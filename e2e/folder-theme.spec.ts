@@ -89,12 +89,16 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     await page.getByRole('button', { name: 'Close sample assistant' }).click();
     // Exercise the workspace menu too, and ensure repeated folder selection is handled.
     await writeFile(join(folder, 'Third tone.wav'), tone(880));
-    await page.getByRole('button', { name: 'Add documents', exact: true }).click();
     const again = page.waitForEvent('filechooser');
-    await page.getByRole('button', { name: 'Add folder', exact: true }).click();
+    await page.locator('.rs-sidebar').getByRole('button', { name: /^Import sounds/ }).click();
     await (await again).setFiles(folder);
     await expect(corpusCount(page)).toContainText('4 clips',{ timeout: 120000 });
     await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
+    // A restored workspace with audio warms every audio model at open (#131).
+    // On a CPU-rendered CI runner those four model workers starve SwiftShader
+    // and the screenshots below time out waiting for a frame. This scenario
+    // checks the restored interface, not the warmup, so keep the models out.
+    await page.route(/\/(music-model|sound-model|jamendo-model)\/.*\.onnx/, route => route.abort('failed'));
     await page.reload();
     await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(11, 11, 17)');
     await expect(corpusCount(page)).toContainText('4 clips');

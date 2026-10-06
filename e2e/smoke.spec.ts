@@ -164,9 +164,8 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await expect(page.getByRole('button', { name: 'Remove tag regression' })).toBeVisible();
   await closeDetails(page);
 
-  await page.getByRole('button', { name: 'Add documents', exact: true }).click();
   const chooserPromise = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Add files', exact: true }).click();
+  await page.locator('.rs-sidebar').getByRole('button', { name: /^Import (clips|files)/ }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/persistence.txt');
   await expect(corpusCount(page)).toContainText('101 files');
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
