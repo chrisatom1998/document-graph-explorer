@@ -95,4 +95,4 @@ showed no tag.
 - `results/openmic-tags-dj-genres.json` / `.txt`: the 60-clip DJ-genre subset
 - `results/openmic-clips.json`: per-clip tags shown plus native model scores, for later calibration
 - `results/giantsteps.json` / `.txt`: per-clip tempo estimate versus truth, per-genre summary, and tags shown
-- Re-run: `.github/workflows/dj-clips-eval.yml`, via workflow_dispatch or a push to `scripts/dj-clips/`
+- Re-run: `.github/workflows/dj-clips-eval.yml` via workflow_dispatch on the branch that should be tested

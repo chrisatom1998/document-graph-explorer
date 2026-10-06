@@ -5,9 +5,6 @@ name: DJ clip accuracy check
 # and commits both manifests; the score job commits its reports to docs/evaluations/dj-clips-2026-10-06/results.
 # Audio is fetched at run time and never committed.
 on:
-  push:
-    branches: [claude/project-thread-if86oo]
-    paths: [scripts/dj-clips/**, .github/workflows/dj-clips-eval.yml]
   workflow_dispatch:
 
 permissions:
@@ -110,7 +107,8 @@ jobs:
 
   score:
     needs: eval
-    if: ${{ !cancelled() && needs.eval.result != 'skipped' }}
+    # Every shard must succeed: a partial run would be scored and committed as if all 1000 clips were analysed.
+    if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -129,6 +127,7 @@ jobs:
           path: clips
       - name: Score
         run: |
+          set -o pipefail
           mkdir -p "$DOCS/results"; R="$DOCS/results"
           OM=clips/dj-openmic-audio/$DOCS/openmic-manifest.json GS=clips/dj-giantsteps-audio/$DOCS/giantsteps-manifest.json
           node -e "const m=require('./'+process.argv[1]);m.items=m.items.filter(i=>i.djTier==='dj genre');require('fs').writeFileSync('dj-tier.json',JSON.stringify(m))" "$OM"
@@ -140,9 +139,9 @@ jobs:
           MANIFEST=$GS npx vite-node scripts/dj-clips/score-giantsteps.mjs "$R/giantsteps.json" exports/dj-giantsteps-export-*/graph-export.json | tee "$R/giantsteps.txt"
           echo "tested $GITHUB_SHA (run $GITHUB_RUN_ID)" > "$R/tested-commit.txt"
       - name: Commit the reports
-        if: always()
         run: |
           git add "$DOCS/results"
           git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -qm "Record DJ clip accuracy results" || exit 0
-          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" && break; sleep $((2**i)); done
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
