@@ -58,7 +58,7 @@ jobs:
           git add public/sound-model/prompts.json public/sound-model/manifest.json scripts/sound-profile-prompts.json
           git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -qm "Add CLAP text vectors for the new DJ effect labels" || exit 0
-          for i in 1 2 3 4 5; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+          for i in 1 2 3 4 5; do { git pull --rebase -X theirs -q origin "$GITHUB_REF_NAME" || { git rebase --abort; false; }; } && git push -q origin "HEAD:$GITHUB_REF_NAME" \
             && break; [ $i = 5 ] && exit 1; sleep $((2**i)); done
 
   train:
@@ -170,5 +170,5 @@ jobs:
           git add "$DOCS"
           git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -qm "Record DJ effect heads trained on tagged Freesound clips" || exit 0
-          for i in 1 2 3 4 5; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+          for i in 1 2 3 4 5; do { git pull --rebase -X theirs -q origin "$GITHUB_REF_NAME" || { git rebase --abort; false; }; } && git push -q origin "HEAD:$GITHUB_REF_NAME" \
             && break; [ $i = 5 ] && exit 1; sleep $((2**i)); done
