@@ -22,7 +22,7 @@ def main():
     th = json.load(open(os.path.join(run, 'thresholds.json'))); log = json.load(open(os.path.join(run, 'log.json')))
     pos = np.zeros(len(train.CLASSES), int)
     for name, d in preps.items():
-        mel, js = FILES[name]; items = json.load(open(os.path.join(d, js)))['items']
+        mel, js = FILES.get(name, (f'{name}-mel.npy', f'{name}.json')); items = json.load(open(os.path.join(d, js)))['items']
         val = set(log['val'].get(name, []))
         src = train.load_source(name, os.path.join(d, mel), [it for it in items if it['id'] not in val], 1.0)
         pos += ((src['y'] == 1) & (src['w'] > 0)).sum(0)

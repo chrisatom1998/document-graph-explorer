@@ -4,7 +4,8 @@ The third head's outputs are named 'cat:<catalog label>'. Each one is taught by 
   * FSD50K dev (human-labelled Freesound clips; a clip lists every class heard, so a missing class is an absence),
   * NSynth train (single notes with an instrument family, source and annotated sound qualities),
   * effect renders (NSynth notes re-rendered with one DSP effect; render.py),
-  * Freesound sounds named by their uploader tags (FREESOUND below).
+  * Freesound sounds named by their uploader tags (FREESOUND below),
+  * TinySOL, EGFxSet, WaivOps drum loops and Surge preset renders (prepare-extra.py).
 A tag none of them covers is not an output: the app keeps its CLAP zero-shot score for it.
 """
 
@@ -89,7 +90,43 @@ FREESOUND = [
     'woodblock', 'woody', 'xylophone',
 ]
 
+
+# prepare-extra.py sources. Each lists the catalog labels it knows for every one of its clips (present or absent).
+# TinySOL (Zenodo 3685367): recorded orchestral notes; 'Instrument (in full)' -> labels.
+TINYSOL = {'Accordion': ['accordion'], 'Alto Saxophone': ['saxophone'], 'Bass Tuba': ['tuba'], 'Bassoon': ['bassoon'], 'Violoncello': ['cello', 'strings'],
+           'Cello': ['cello', 'strings'], 'Clarinet in Bb': ['clarinet'], 'Contrabass': ['double bass', 'strings'], 'Flute': ['flute'], 'French Horn': ['horn'],
+           'Oboe': ['oboe'], 'Trombone': ['trombone'], 'Trumpet in C': ['trumpet'], 'Viola': ['viola', 'strings'], 'Violin': ['violin / fiddle', 'strings']}
+# EGFxSet (Zenodo 7044411): one electric-guitar note through a real pedal; zip name -> labels. Overdrive pedals are
+# saturated, the RAT distorted; each leaves the other one unknown. Phaser has no catalog twin and is left out.
+EGFX = {'Clean': ['dry'], 'Chorus': ['chorused'], 'Flanger': ['flanged'], 'Hall-Reverb': ['reverberant'], 'Plate-Reverb': ['reverberant'],
+        'Spring-Reverb': ['reverberant'], 'Digital-Delay': ['echoing'], 'TapeEcho': ['echoing'], 'Sweep-Echo': ['echoing'],
+        'TubeScreamer': ['saturated'], 'BluesDriver': ['saturated'], 'RAT': ['distorted']}
+EGFX_TAUGHT = ['dry', 'chorused', 'flanged', 'reverberant', 'echoing', 'saturated', 'distorted', 'guitar', 'electric guitar']
+# WaivOps EDM-HSE / EDM-TECH (Zenodo 13769544, 17584890): rendered drum loops whose MIDI notes are listed per loop, so a
+# drum sound is present exactly when its note is. Key-map label (lower case, substring) -> catalog labels.
+WAIVOPS = [('kick', ['kick']), ('rimshot', ['rimshot']), ('snare', ['snare']), ('clap', ['clap']), ('tom', ['tom']), ('drum synth', ['tom']),
+           ('closed hat', ['closed hi-hat', 'hi-hat']), ('accent hat', ['closed hi-hat', 'hi-hat']), ('open hat', ['open hi-hat', 'hi-hat']),
+           ('ride', ['ride cymbal', 'cymbal']), ('tambourine', ['tambourine', 'percussion']), ('conga', ['conga', 'percussion']),
+           ('cabasa', ['shaker', 'percussion']), ('maracas', ['shaker', 'percussion']), ('shaker', ['shaker', 'percussion']),
+           ('claves', ['clave', 'percussion']), ('wood block', ['woodblock', 'percussion']), ('percussion', ['percussion'])]
+WAIVOPS_TAUGHT = sorted({l for _, ls in WAIVOPS for l in ls} | {'drums', 'drum loop', 'cymbal'})
+# Surge synthesizer preset renders (Zenodo 4677097): the preset's category folder and name words -> labels.
+SURGE_CATEGORY = {'Leads': ['synth lead'], 'Lead': ['synth lead'], 'Basses': ['synth bass'], 'Bass': ['synth bass'], 'Plucks': ['synth pluck'],
+                  'Pads': ['atmospheric pad'], 'Atmospheres': ['atmospheric pad'], 'Ambiance': ['atmospheric pad'], 'Brass': ['brass synth'],
+                  'String': ['string synth'], 'Strings': ['string synth'], 'Organs': ['organ synth'], 'Bells': ['bell synth'], 'Vox': ['vocal-like synth'],
+                  'Arps': ['synth arpeggio'], 'Sequences': ['synth sequence'], 'Chords': ['synth chord'], 'Fifths': ['synth chord'], 'FM': ['fm synth']}
+SURGE_WORDS = [('supersaw', ['supersaw']), ('reese', ['reese bass']), ('acid', ['acid synth']), ('303', ['acid synth']), ('wobb', ['wobble bass']),
+               ('growl', ['bass growl']), ('808', ['808 bass']), ('chip', ['chiptune synth']), ('stab', ['synth stab']), ('drone', ['synth drone']),
+               ('choir', ['vocal-like synth']), ('vox', ['vocal-like synth']), ('vocal', ['vocal-like synth']), ('bell', ['bell synth']),
+               ('organ', ['organ synth']), ('string', ['string synth']), ('brass', ['brass synth']), ('horn', ['brass synth']), ('pluck', ['synth pluck']),
+               ('pad', ['atmospheric pad']), ('lead', ['synth lead']), ('arp', ['synth arpeggio'])]
+SURGE_ROLES = sorted({l for v in SURGE_CATEGORY.values() for l in v} | {l for _, v in SURGE_WORDS for l in v} | {'sub bass', 'acid bass', 'bass pluck'})
+# Freesound Loop Dataset (Zenodo 3967852) expert instrumentation ticks: kept as their own outputs ('fsld:<role>'), plus
+# the fx tick as the app's 'sound effect'.
+FSLD_ROLES = ['percussion', 'bass', 'chords', 'melody', 'fx', 'vocal']
+
 def cat_labels():
     s = {l for v in FSD50K.values() for l in v} | set(NSYNTH_TAUGHT) | set(NSYNTH_QUALITIES.values()) | set(EFFECTS) | set(FREESOUND)
+    s |= {l for v in TINYSOL.values() for l in v} | set(EGFX_TAUGHT) | set(WAIVOPS_TAUGHT) | set(SURGE_ROLES) | {'synthesizer', 'sound effect'}
     return sorted(s)
 CAT = cat_labels()

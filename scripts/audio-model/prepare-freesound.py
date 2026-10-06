@@ -7,7 +7,7 @@ Picks sounds from the public Freesound metadata dump (datasets/Chr0my/freesound.
 multi-word terms, title) name a target tag, using the catalog's aliases and the sample-library labeller's extra terms.
 At most --per-uploader sounds per uploader per tag, chosen by a fixed hash, so no prolific uploader defines a tag.
 A sound carries every target tag its text names; the other targets are weak absences (uploaders tag selectively).
-Never picks a sound or uploader the short-clip or synth-clip test sets reserve, or a sound in FSD50K eval (a judging
+Never picks a sound or uploader the short-clip or synth-clip test sets reserve (lists and the synth-clip uploader rule), or a sound in FSD50K eval (a judging
 set here). Audio is the public preview MP3 (first ~15 s), read via each uploader's numeric id from one sound page.
 One uploader in ten (by hash) is held out entirely as the test set:
   -> freesound-mel.npy + freesound.json   training windows (first 10 s as 1000 log-mel frames)
@@ -25,6 +25,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 UA = {'User-Agent': 'Mozilla/5.0 (DGE research; non-commercial tagger training)'}
 h = lambda *p: hashlib.sha256('|'.join(map(str, p)).encode()).hexdigest()
 norm = lambda s: re.sub(r'[\s_\-]+', ' ', s.lower()).strip()
+synth_held = lambda user: int(h('synth-fresh-up', f'freesound-user:{user}')[:8], 16) % 5 == 0   # the synth-clip test's uploader rule
 is_test = lambda user: int(h('dge-audio-model-freesound-test', user)[:8], 16) % 10 == 0
 
 def fetch(url, headers=None, tries=5):
@@ -65,7 +66,7 @@ def main():
         bad_users |= {u.removeprefix('freesound-user:') for k in ('freesoundUploaders', 'fsdUploaders') for u in d.get(k, [])}
     T = targets(); hits = {l: [] for l in T}; named = {}
     for sid, title, tags, user in zip(meta['id'], meta['title'], meta['tags:'], meta['username']):
-        if str(sid) in bad_ids or user in bad_users: continue
+        if str(sid) in bad_ids or user in bad_users or synth_held(user): continue
         ts = {norm(x) for x in (tags or '').split(',') if x.strip()}; ttl = ' ' + norm(title or '') + ' '
         ls = [l for l, terms in T.items() if any(t in ts or (' ' in t and f' {t} ' in ttl) for t in terms)]
         if ls: named[sid] = (user, ls)

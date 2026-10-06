@@ -37,10 +37,10 @@ JAMENDO_TAGS = ['accordion', 'acousticbassguitar', 'acousticguitar', 'bass', 'be
                 'synthesizer', 'trombone', 'trumpet', 'viola', 'violin', 'voice']
 OPENMIC = list(CLASSES)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from labelmap import CAT, FREESOUND  # noqa: E402
+from labelmap import CAT, FREESOUND, FSLD_ROLES  # noqa: E402
 # Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
 # sources' labels below wherever one names the same sound.
-CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS] + [f'cat:{l}' for l in CAT]
+CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS] + [f'cat:{l}' for l in CAT] + [f'fsld:{r}' for r in FSLD_ROLES]
 ALIAS = {'voice': 'voice', 'piano': 'piano', 'organ': 'organ', 'trumpet': 'trumpet', 'drums': 'drums', 'guitar': 'guitar', 'synthesizer': 'synthesizer',
          'mallet_percussion': 'mallet instrument', 'accordion': 'accordion', 'flute': 'flute', 'cymbals': 'cymbal',
          'jamendo:electricguitar': 'electric guitar', 'jamendo:acousticguitar': 'acoustic guitar', 'jamendo:electricpiano': 'electric piano',
@@ -84,6 +84,7 @@ def main():
     ap.add_argument('--limit', type=int, default=0, help='first N clips per source only (smoke test)')
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
     ap.add_argument('--fsd50k'); ap.add_argument('--nsynth'); ap.add_argument('--freesound')
+    ap.add_argument('--extra', action='append', default=[], help='<name>=<dir> holding <name>-mel.npy + <name>.json (prepare-extra.py, Slakh)')
     ap.add_argument('--init', help='start from this model.pt (an earlier run); classifier rows are matched by class name')
     args = ap.parse_args()
     dev = torch.device(args.device)
@@ -101,6 +102,9 @@ def main():
         sources.append(load_source('nsynth', os.path.join(args.nsynth, 'nsynth-mel.npy'), json.load(open(os.path.join(args.nsynth, 'nsynth.json')))['items'], args.weak))
     if args.freesound:
         sources.append(load_source('freesound', os.path.join(args.freesound, 'freesound-mel.npy'), json.load(open(os.path.join(args.freesound, 'freesound.json')))['items'], args.weak))
+    for pair in args.extra:
+        name, d = pair.split('=', 1)
+        sources.append(load_source(name, os.path.join(d, f'{name}-mel.npy'), json.load(open(os.path.join(d, f'{name}.json')))['items'], args.weak))
     pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]
             for _ in range(args.dj_repeat if src['dj'][i] else 1)]
     vals = {src['name']: np.flatnonzero(src['val'])[:(args.limit // 8 + 8) if args.limit else None] for src in sources}

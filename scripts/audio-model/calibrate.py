@@ -1,6 +1,6 @@
 """Per-tag thresholds for DGE's trained tagger, chosen on the validation artists only (train.py holds them out).
 
-Usage: python3 scripts/audio-model/calibrate.py <run-dir> openmic=<prep-dir> [jamendo=<prep-dir>] [soundcloud=<dir>] [fsd50k=<dir>] [nsynth=<dir>]
+Usage: python3 scripts/audio-model/calibrate.py <run-dir> openmic=<prep-dir> [jamendo=<prep-dir>] [soundcloud=<dir>] [fsd50k=<dir>] [nsynth=<dir>] [<extra source>=<dir>...]
 
 For each output, the threshold maximises min(precision, recall) on validation clips (ties: higher F1), because DGE's
 bar is precision AND recall >= 0.70:
@@ -26,7 +26,7 @@ assert classes == train.CLASSES, 'run was trained with a different class list'
 val = {}
 for name, ids in log['val'].items():
     if name not in preps: continue
-    mel, js = FILES[name]; items = {it['id']: it for it in json.load(open(os.path.join(preps[name], js)))['items']}
+    mel, js = FILES.get(name, (f'{name}-mel.npy', f'{name}.json')); items = {it['id']: it for it in json.load(open(os.path.join(preps[name], js)))['items']}
     src = train.load_source(name, os.path.join(preps[name], mel), [items[i] for i in ids], 1.0)
     val[name] = (src['y'], src['w'], np.load(os.path.join(run, f'val-{name}.npy')))
 
@@ -52,7 +52,7 @@ for j, c in enumerate(classes):
     if c.startswith('jamendo:'): fit = [('jamendo', True)] if 'jamendo' in val else []
     # Freesound-only tags have no outright absences (uploaders tag selectively): its untagged sounds count as absent,
     # so precision is a lower bound, as with Jamendo's tags.
-    elif c.startswith('cat:'): fit = [(n, n == 'freesound' and c[4:] in FREESOUND) for n in val]
+    elif c.startswith('cat:') or c.startswith('fsld:'): fit = [(n, n == 'freesound' and c[4:] in FREESOUND) for n in val]
     else: fit = [('openmic', False)]
     ys, ss = zip(*[view(n, j, kw) for n, kw in fit]) if fit else ((), ())
     y = np.concatenate(ys) if ys else np.zeros(0); s = np.concatenate(ss) if ss else np.zeros(0)
