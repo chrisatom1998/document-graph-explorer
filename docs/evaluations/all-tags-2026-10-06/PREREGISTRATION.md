@@ -49,6 +49,10 @@ model" thread was asked to keep it out. So it is the one clean set for these tag
   app tags: accordion, cello, violin / fiddle, horn, bassoon, clarinet, flute, trombone, oboe, saxophone and trumpet.
 - Every note is one named instrument, so absents are real and precision is exact. Within the string family the other
   tags are left unknown.
+- Correction (07:56, before any TinySOL result): round 23 trained on 60 TinySOL notes per instrument, and the notes
+  used were not recorded. Of those heads only bassoon shipped, so main's bassoon score on TinySOL is not held out. The
+  "Train an audio model" thread (PR #129) trains on folds 2-4. Comparisons with that model use folds 0-1 only, labelled
+  "same player and session, unseen notes": TinySOL has one player per instrument.
 - These are short notes, not songs. They show whether the app names a solo instrument, which is the short-clip side.
 
 ## Voice veto, added 2026-10-06 08:00, before any judge set was scored with it
