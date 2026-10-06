@@ -3,7 +3,8 @@
 Usage: python3 scripts/key/build-sets.py <giantsteps-mtg-key checkout> <giantsteps-key checkout> <gtzan_key checkout>
                                          <gtzan genres.tar.gz> <out-dir> <shard i/n>
 
-tune-mtg : GiantSteps MTG key tracks NOT among the 500 the round 2 DJ clip test uses (scripts/key/heldout-mtg-key.json),
+tune-mtg : GiantSteps MTG key tracks NOT among the 500 the round 2 DJ clip test uses (scripts/key/heldout-mtg-key.json)
+           and not in the half reserved for round 3 (sha256("dge-holdout-r3-2026-10-06|<name>") even),
            with a single manual key at the annotators' top confidence (2); 10 s at 25%, 50% and 75% of the preview.
 tune-gtzan / test-gtzan : GTZAN clips with one Lerch key annotation (not -1), split in half by a seeded hash; the whole
            30 s clip, as the app analyses a recording under 60 s. Blues, classical, country, jazz, metal, pop, reggae,
@@ -56,7 +57,8 @@ labelled = {}
 for n in names:
     a = manual.get(n.split('.')[0], {})
     k = key_of(a.get('MANUAL KEY', ''))
-    if k and a.get('C', '').strip() == '2': labelled[n] = k
+    r3 = n not in held and int(h('dge-holdout-r3-2026-10-06', n)[:8], 16) % 2 == 0   # round 3's reserved half
+    if k and a.get('C', '').strip() == '2' and not r3: labelled[n] = k
 with concurrent.futures.ThreadPoolExecutor(8) as pool:
     paths = dict(zip(labelled, pool.map(lambda n: fetch('https://www.cp.jku.at/datasets/giantsteps/mtg_key_backup/', f'{mk}/md5', n), labelled)))
 for n, p in paths.items():
