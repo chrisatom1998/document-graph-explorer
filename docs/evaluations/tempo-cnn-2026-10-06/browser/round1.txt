@@ -1,0 +1,26 @@
+475/500 analysed
+all                      n 475  tempo n 475  shown 1  acc1 0.823 (of shown 0.823)  acc2 0.92  half 13 double 33 other 38  confident 1 acc1 0.823  no tag 2
+drum-and-bass            n 101  tempo n 101  shown 1  acc1 0.752 (of shown 0.752)  acc2 0.901  half 5 double 10 other 10  confident 1 acc1 0.752  no tag 0
+dubstep                  n  54  tempo n 54  shown 1  acc1 0.759 (of shown 0.759)  acc2 0.907  half 4 double 4 other 5  confident 1 acc1 0.759  no tag 0
+trance                   n  53  tempo n 53  shown 1  acc1 0.962 (of shown 0.962)  acc2 0.962  half 0 double 0 other 2  confident 1 acc1 0.962  no tag 0
+techno                   n  42  tempo n 42  shown 1  acc1 0.929 (of shown 0.929)  acc2 0.929  half 0 double 0 other 3  confident 1 acc1 0.929  no tag 0
+electronica              n  36  tempo n 36  shown 1  acc1 0.75 (of shown 0.75)  acc2 0.944  half 0 double 7 other 2  confident 1 acc1 0.75  no tag 1
+psy-trance               n  22  tempo n 22  shown 1  acc1 0.955 (of shown 0.955)  acc2 0.955  half 0 double 0 other 1  confident 1 acc1 0.955  no tag 0
+deep-house               n  20  tempo n 20  shown 1  acc1 0.85 (of shown 0.85)  acc2 0.9  half 0 double 1 other 2  confident 1 acc1 0.85  no tag 0
+house                    n  20  tempo n 20  shown 1  acc1 0.85 (of shown 0.85)  acc2 0.9  half 0 double 1 other 2  confident 1 acc1 0.85  no tag 0
+electro-house            n  18  tempo n 18  shown 1  acc1 0.944 (of shown 0.944)  acc2 0.944  half 0 double 0 other 1  confident 1 acc1 0.944  no tag 0
+breaks                   n  18  tempo n 18  shown 1  acc1 0.889 (of shown 0.889)  acc2 0.889  half 0 double 0 other 2  confident 1 acc1 0.889  no tag 0
+glitch-hop               n  15  tempo n 15  shown 1  acc1 0.8 (of shown 0.8)  acc2 1  half 2 double 1 other 0  confident 1 acc1 0.8  no tag 0
+progressive-house        n  13  tempo n 13  shown 1  acc1 0.923 (of shown 0.923)  acc2 0.923  half 0 double 0 other 1  confident 1 acc1 0.923  no tag 0
+tech-house               n  12  tempo n 12  shown 1  acc1 1 (of shown 1)  acc2 1  half 0 double 0 other 0  confident 1 acc1 1  no tag 0
+chill-out                n  11  tempo n 11  shown 1  acc1 0.455 (of shown 0.455)  acc2 0.909  half 1 double 4 other 1  confident 1 acc1 0.455  no tag 1
+hardcore-hard-techno     n   7  tempo n 7  shown 1  acc1 0.857 (of shown 0.857)  acc2 1  half 1 double 0 other 0  confident 1 acc1 0.857  no tag 0
+minimal                  n   7  tempo n 7  shown 1  acc1 0.857 (of shown 0.857)  acc2 0.857  half 0 double 0 other 1  confident 1 acc1 0.857  no tag 0
+dj-tools                 n   7  tempo n 7  shown 1  acc1 0.714 (of shown 0.714)  acc2 0.714  half 0 double 0 other 2  confident 1 acc1 0.714  no tag 0
+indie-dance-nu-disco     n   7  tempo n 7  shown 1  acc1 0.429 (of shown 0.429)  acc2 0.857  half 0 double 3 other 1  confident 1 acc1 0.429  no tag 0
+hard-dance               n   6  tempo n 6  shown 1  acc1 0.833 (of shown 0.833)  acc2 0.833  half 0 double 0 other 1  confident 1 acc1 0.833  no tag 0
+reggae-dub               n   2  tempo n 2  shown 1  acc1 0 (of shown 0)  acc2 1  half 0 double 2 other 0  confident 1 acc1 0  no tag 0
+hip-hop                  n   2  tempo n 2  shown 1  acc1 0.5 (of shown 0.5)  acc2 0.5  half 0 double 0 other 1  confident 1 acc1 0.5  no tag 0
+pop-rock                 n   1  tempo n 1  shown 1  acc1 1 (of shown 1)  acc2 1  half 0 double 0 other 0  confident 1 acc1 1  no tag 0
+funk-r-and-b             n   1  tempo n 1  shown 1  acc1 1 (of shown 1)  acc2 1  half 0 double 0 other 0  confident 1 acc1 1  no tag 0
+tags shown (all): {"source:synthesizer":422,"character:sustained":310,"character:rhythmic":287,"source:drums":241,"character:pulsing":222,"character:wobbling":154,"character:airy":131,"source:voice":119,"effect:drum loop":57,"character:bright":39,"source:sound effect":25,"source:cymbals":24,"character:distorted":19,"effect:reverse effect":17,"effect:vocal phrase":17,"character:dark":16,"character:staccato":16,"character:warm":13,"effect:atmospheric pad":10,"source:cello":7,"character:swelling":7,"effect:texture":6,"source:banjo":6,"effect:synth arpeggio":6,"effect:chiptune synth":6,"source:mallet_percussion":5,"source:organ":5,"effect:crash cymbal":4,"source:piano":4,"source:mandolin":3,"source:trumpet":3,"source:clarinet":3,"effect:breakbeat":3,"source:flute":2,"effect:ambient drone":2,"character:nasal":2,"effect:ride cymbal":1,"source:guitar":1,"effect:cowbell":1,"effect:vocal chant":1,"effect:spoken phrase":1,"effect:whisper":1,"source:electric piano":1,"effect:synth lead":1,"source:bass":1,"effect:drum fill":1,"source:jaw harp":1}
