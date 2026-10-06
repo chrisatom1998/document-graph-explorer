@@ -48,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        set: [jamendo-fit, jamendo-judge, beatport-judge]
+        set: [beatport-tune, beatport-judge, jamendo-fit, jamendo-judge]
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
       - uses: actions/checkout@v4
@@ -96,7 +96,7 @@ jobs:
       - name: Commit the features to the data branch
         run: |
           mkdir -p data
-          for s in jamendo-fit jamendo-judge beatport-judge; do
+          for s in beatport-tune beatport-judge jamendo-fit jamendo-judge; do
             python3 -c "import json,glob,sys,gzip;s=sys.argv[1];rows=[r for p in sorted(glob.glob(f'parts/ge-f-{s}-*/f.json')) for r in json.load(open(p))];gzip.open(f'data/{s}.json.gz','wt').write(json.dumps(rows));print(s,len(rows),'of',len(json.load(open(f'lists/{s}.json'))))" $s
           done
           echo "features from $GITHUB_SHA (run $GITHUB_RUN_ID)" > data/README.txt

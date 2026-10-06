@@ -88,6 +88,8 @@ const FAMILIES: readonly Family[] = model.genre.families;
 /** Labels a track can show: Beatport genres, and families (house, techno, trance…) for tracks whose exact subgenre
  * is unclear. `tested` means precision and recall both reached 70% on tracks no tuning used. */
 export const GENRE_LABELS = [...GENRES, ...FAMILIES.map(f => f.label)].filter((label, i, all) => all.indexOf(label) === i);
+/** The family a Beatport genre belongs to ("house" for deep house), if any. */
+export const genreFamily = (label: string) => FAMILIES.find(f => f.members.includes(label))?.label;
 export const genreTested = (label: string) => !!(model.genre.tested[GENRES.indexOf(label)] ?? FAMILIES.find(f => f.label === label)?.tested);
 
 /** The most probable genre when it clears that genre's threshold, else the most probable family (summed member

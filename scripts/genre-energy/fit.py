@@ -53,6 +53,8 @@ tune_mass = gate_mass(tune)
 GATE = max(t for t in np.round(np.arange(0.05, 0.95, 0.05), 2) if np.mean(tune_mass >= t) >= 0.975)
 C = 0.01
 stable = lambda v: int(hashlib.sha256(str(v).encode()).hexdigest()[:8], 16)
+# MTG-key rows carry Beatport artists; GiantSteps tempo rows have no artist anywhere in that dataset, so they are
+# grouped per track. Judging uses other tracks entirely, so this only affects how thresholds are picked.
 groups = np.array([stable(r.get('artist') or r['name']) for r in tune])
 oof = np.zeros((len(tune), len(classes)))
 for tr, te in GroupKFold(5).split(X, y, groups):

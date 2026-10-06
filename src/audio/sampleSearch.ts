@@ -3,7 +3,7 @@ import type { DocNode } from '../model/types';
 import { DJ_CATALOG } from './djTags';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { keyName, type MusicAnalysis } from './musicTypes';
-import { energyFromScore, genreFromScores, genreText } from './genreEnergy';
+import { energyFromScore, genreFromScores, genreFamily, genreText } from './genreEnergy';
 import { confirmedInstrumentList, reliableInstruments, sourceReviewAllows } from './instrumentEvidence';
 
 import type { SampleQuery } from './sampleQuery';
@@ -23,7 +23,8 @@ export function genreEnergyEvidence(a: MusicAnalysis | undefined, term: string):
   if (!a || a.stage === 'preview') return;
   const wanted = normalize(term).replace(/ music$/, '');
   const genre = genreFromScores(a.genreScores?.scores);
-  if (genre && normalize(genreText(genre.label)) === wanted) return `Estimated genre${genre.tested ? '' : ' (maybe)'}: ${genreText(genre.label)}`;
+  const family = genre && genreFamily(genre.label);
+  if (genre && (normalize(genreText(genre.label)) === wanted || (family && normalize(genreText(family)) === wanted))) return `Estimated genre${genre.tested ? '' : ' (maybe)'}: ${genreText(genre.label)}`;
   const energy = energyFromScore(a.energyScore);
   if (energy && ENERGY_TERMS[wanted] === energy.level) return `Estimated energy${energy.tested ? '' : ' (maybe)'}: ${energy.level}`;
   return undefined;

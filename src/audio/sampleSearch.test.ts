@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { DocNode } from '../model/types';
 import { EMPTY_SAMPLE_QUERY as empty, parseSampleQuery, searchSamples, sampleLabels } from './sampleSearch';
+import model from './genreEnergyModel.json';
+import { GENRE_ENERGY_VERSION } from './genreEnergy';
 
 const clip = (id: string, overrides: Partial<NonNullable<DocNode['audio']>> = {}): DocNode => ({
   id, kind: 'document', title: id, fileType: 'audio', topics: [], keywords: [], entities: [],
@@ -81,4 +83,27 @@ it('retains explicit human confirmation of a broad instrument',()=>{
 it('does not revive a rejected source through an older AI suggestion',()=>{
  const node=clip('sample',{soundReviews:[{labelId:'piano',dimension:'source',decision:'rejected',scope:'track',at:'2026-10-03T00:00:00Z',evidenceRunId:'run'}],copilotProperties:{model:'test-model',tags:{source:['piano'],production:[],character:[]}}});
  expect(sampleLabels(node).some(t=>t.label==='piano')).toBe(false);
+});
+
+describe('recording-level genre and energy', () => {
+  const genreScores = (label: string) => ({ version: GENRE_ENERGY_VERSION, scores: Object.fromEntries(model.genre.classes.map(c => [c, c === label ? .95 : .05 / (model.genre.classes.length - 1)])) });
+  const tested = model.genre.classes.find((_, i) => model.genre.tested[i])!;
+  const familyMember = model.genre.families.flatMap(f => f.members.filter(m => model.genre.thresholds[model.genre.classes.indexOf(m)] <= 1).map(m => ({ family: f.label, member: m })))[0];
+  const track = (id: string, overrides: Partial<NonNullable<DocNode['audio']>>) => clip(id, { durationSeconds: 120, analyzedSeconds: 120, ...overrides });
+  it('finds tracks by estimated genre, marking untested labels as maybe', () => {
+    const result = searchSamples([track('a', { genreScores: genreScores(tested) }), track('b', { genreScores: genreScores(familyMember.member) })], { ...empty, terms: [tested.replaceAll('-', ' ').replace(' and ', ' & ')] });
+    expect(result.map(r => r.node.id)).toEqual(['a']);
+    expect(result[0].reasons[0]).toMatch(/^Estimated genre: /);
+    const family = searchSamples([track('b', { genreScores: genreScores(familyMember.member) })], { ...empty, terms: [familyMember.family] });
+    expect(family.map(r => r.node.id)).toEqual(['b']);
+  });
+  it('finds tracks by energy words', () => {
+    const high = track('high', { energyScore: .99 }), low = track('low', { energyScore: .01 });
+    expect(searchSamples([high, low], { ...empty, terms: ['high energy'] }).map(r => r.node.id)).toEqual(['high']);
+    expect(searchSamples([high, low], { ...empty, terms: ['chill'] }).map(r => r.node.id)).toEqual(['low']);
+  });
+  it('ignores previews and confirmed-only searches', () => {
+    expect(searchSamples([track('p', { stage: 'preview', energyScore: .99 })], { ...empty, terms: ['high energy'] })).toEqual([]);
+    expect(searchSamples([track('c', { energyScore: .99 })], { ...empty, terms: ['high energy'], confirmedOnly: true })).toEqual([]);
+  });
 });
