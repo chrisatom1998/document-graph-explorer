@@ -8,6 +8,7 @@ import { DimsToggleButton } from '../DimsToggleButton';
 import ResonanceFilters from './ResonanceFilters';
 import ConnectedClips from './ConnectedClips';
 import CollabMenuItems from './CollabMenuItems';
+import SnapshotDiffBanner from '../SnapshotDiffBanner';
 import './resonance.css';
 
 const GraphNavigator = lazy(() => import('../GraphNavigator'));
@@ -123,6 +124,8 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
 
       <main className="rs-stage" aria-label="Graph">
         {children}
+        {/* Snapshot compare summary + Clear overlay; kept on the stage, not inside the collapsible filters. */}
+        <div className="rs-stage__banner"><SnapshotDiffBanner /></div>
         {tab === 'library' && (
           <section className="rs-library" aria-label="Library">
             <Suspense fallback={null}><GraphNavigator embedded /></Suspense>

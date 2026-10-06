@@ -79,6 +79,10 @@ export async function closeDetails(page: Page): Promise<void> {
 
 /** Frame the whole graph (the old toolbar button; Home is the app-wide shortcut). */
 export async function fitAll(page: Page): Promise<void> {
+  // Fitting implies looking at the graph: leave the Library/Export overlay first,
+  // so following canvas drags and wheel events reach the scene.
+  const graphTab = page.getByRole('button', { name: 'Graph', exact: true });
+  if ((await graphTab.getAttribute('aria-current')) !== 'page') await graphTab.click();
   await page.locator('body').click({ position: { x: 2, y: 2 } }).catch(() => {});
   await page.keyboard.press('Home');
 }

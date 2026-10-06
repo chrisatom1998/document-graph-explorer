@@ -30,7 +30,8 @@ test('classic graph controls and music copilot work on desktop and mobile', asyn
   await expect(page.locator('.rs-top').getByRole('button', { name: /^Current corpus:/ })).toHaveCount(1);
   // Filters live in the left sidebar now, not behind a toolbar disclosure.
   await expect(page.getByRole('heading', { name: 'Filters', exact: true })).toBeVisible();
-  await similarityFilter(page, 'Tempo');
+  // The fixture only has key edges, and the sidebar lists kinds that exist.
+  await similarityFilter(page, 'Key');
   await expect(page.getByRole('button', { name: 'Clear all', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Clear all', exact: true }).click();
   await toolMenu(page, 'Insights');
