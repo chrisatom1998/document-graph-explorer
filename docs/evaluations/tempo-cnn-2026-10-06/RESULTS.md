@@ -74,5 +74,6 @@ On GTZAN, every genre is unchanged or better except pop: 84% to 80% on 10 s clip
 reads reliably.
 
 The held-out app and CNN readings come from the model thread's harness (`model/tempo-heldout.json.gz`).
-`.github/workflows/tempo-cnn-browser.yml` re-runs both 500-clip rounds through the built app, and its reports land in
-`browser/`.
+`.github/workflows/tempo-cnn-browser.yml` re-runs both 500-clip rounds through the built app. That run (37442285929) was
+stopped with 6 of its 8 shards done, and `browser/` holds the scores of what finished. The built app agrees with the
+harness: round 1 82.3% within 4% on 475 clips, and round 2 86.6% on 495 clips.
