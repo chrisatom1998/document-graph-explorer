@@ -1,0 +1,54 @@
+name: Track structure features
+
+# Fetches Raveform EDM tracks (hand-labelled intro / buildup / drop / breakdown / outro, CC BY 4.0 annotations, audio
+# from YouTube, else a SoundCloud upload of the same length, fetched at run time and never committed), computes the app's structure features with src/audio/structure.ts,
+# and commits them to the branch for offline tuning and scoring (scripts/structure-evaluate.ts).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  RAVEFORM: https://huggingface.co/datasets/taejunkim/raveform/resolve/main/raveform.zip
+  OUT: docs/evaluations/structure-2026-10-06/features
+
+jobs:
+  features:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+      - run: pip install -q -U yt-dlp
+      - name: Fetch annotations
+        run: |
+          curl -fsSL --retry 6 -o "$RUNNER_TEMP/rf.zip" "$RAVEFORM"
+          unzip -q -o "$RUNNER_TEMP/rf.zip" 'raveform/structures/segments.json' -d "$RUNNER_TEMP/rf"
+      - name: Download audio
+        run: python3 scripts/structure-fetch.py "$RUNNER_TEMP/rf/raveform/structures/segments.json" "$RUNNER_TEMP/audio" ${{ matrix.shard }}/4 150
+      - name: Compute features
+        run: |
+          mkdir -p "$OUT"
+          npx vite-node scripts/structure-features.ts "$RUNNER_TEMP/audio/manifest.json" "$RUNNER_TEMP/f.json"
+          gzip -c "$RUNNER_TEMP/f.json" > "$OUT/shard-${{ matrix.shard }}.json.gz"
+          # Labels for every annotated track (timings and section names only), for scoring offline.
+          python3 -c "import json,sys; d=json.load(open(sys.argv[1])); json.dump({t['key']: {k: t[k] for k in ('fold','genre','duration','average_bpm','sections')} for t in d}, open(sys.argv[2],'w'))" \
+            "$RUNNER_TEMP/rf/raveform/structures/segments.json" "$OUT/labels.json"
+      - name: Commit features
+        run: |
+          git add "$OUT"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Structure features, shard ${{ matrix.shard }}"
+          for i in 1 2 3 4 5 6; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 6 ] && exit 1; sleep $((2**i)); done

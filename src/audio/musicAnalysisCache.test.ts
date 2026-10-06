@@ -153,3 +153,11 @@ it('review: actual short analysis survives persistent cache with unsupported met
  db.values.set('music-analysis:v2:review-obsolete',{audio:obsolete});
  expect(await readMusicCache('music-analysis:v2:review-obsolete')).toBeUndefined();
 });
+
+it('does not reuse a key from an older method or the fallback profiles',async()=>{
+ const {KEY_ANALYSIS_REVISION}=await import('./musicTypes');
+ await writeMusicCache('music-analysis:v2:fallback-key',{...audio,keyRevision:KEY_ANALYSIS_REVISION-1});
+ expect(await readMusicCache('music-analysis:v2:fallback-key')).toBeUndefined();
+ await writeMusicCache('music-analysis:v2:current-key',{...audio,keyRevision:KEY_ANALYSIS_REVISION});
+ expect(await readMusicCache('music-analysis:v2:current-key')).toBeDefined();
+});

@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import Essentia from 'essentia.js/dist/essentia.js-core.es.js';
 import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
 import { estimateTempo } from '../../src/audio/tempo';
+import { bandTempograms } from '../../src/audio/tempoTriplet';
 
 const [clipsPath, outPath, shard] = process.argv.slice(2);
 let clips = JSON.parse(readFileSync(clipsPath, 'utf8'));
@@ -41,6 +42,7 @@ for (const [n, clip] of clips.entries()) {
       row.tempogram = grid.map(bpm => { const lag = 60 * FPS / bpm, l0 = Math.floor(lag), f = lag - l0; return +(((1 - f) * ac(l0) + f * ac(l0 + 1)) / zero).toFixed(4); });
     } catch { row.tempogram = null; }
   } finally { vector.delete(); }
+  try { row.bands = bandTempograms(samples); } catch { row.bands = null; }
   rows.push(row);
   if (n % 50 === 0) console.log(`${n + 1}/${clips.length} (${((Date.now() - t0) / 1000).toFixed(0)} s)`);
 }

@@ -1,0 +1,65 @@
+name: Full-mix head features (Jamendo tuning set)
+
+# Per-window model outputs (scripts/full-mix-heads/features.mjs) for 1500 MTG-Jamendo split-0 train/validation tracks in
+# DJ genres (scripts/full-mix-heads/jamendo-tune.py): the middle 30 s, as the round 3 held-out set cuts its split-0 test
+# tracks. Used to tune whole-song window voting and to check the heads in DJ genres. Audio is never committed.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/stronger-sound-models-*']
+    paths: ['.github/workflows/full-mix-jamendo-features.yml']
+
+permissions:
+  contents: read
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  JAMENDO_META: https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+
+jobs:
+  features:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select the tuning tracks and fetch this shard's archive folders
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          M="$RUNNER_TEMP/mj"
+          for f in data/splits/split-0/autotagging_instrument-train.tsv data/splits/split-0/autotagging_instrument-validation.tsv \
+                   data/splits/split-0/autotagging_instrument-test.tsv data/raw_30s_cleantags.tsv \
+                   derived/music-classification-annotations/music-classification-annotations-clean.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
+            mkdir -p "$M/$(dirname $f)"; curl -fsSL --retry 6 -o "$M/$f" "$JAMENDO_META/$f"
+          done
+          python3 scripts/full-mix-heads/jamendo-tune.py "$M" jamendo-tune.json
+          python3 scripts/full-mix-heads/fetch-jamendo.py jamendo-tune.json "$M/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ matrix.shard }}/10 audio
+          python3 -c "import json,os;json.dump([{'id':f[:-4],'path':'audio/'+f} for f in sorted(os.listdir('audio')) if f.endswith('.wav')],open('list.json','w'))"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - run: node scripts/download-music-model.mjs
+      - name: Compute features
+        run: npx vite-node scripts/full-mix-heads/features.mjs list.json fmj-${{ matrix.shard }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fm-jamendo-features-${{ matrix.shard }}
+          path: |
+            fmj-${{ matrix.shard }}.*
+            jamendo-tune.json
+          retention-days: 30

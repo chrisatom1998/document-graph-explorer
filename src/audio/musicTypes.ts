@@ -1,16 +1,18 @@
 import { installedFusionIdentity } from './fusionRelease';
 import { sanitizeFusion, type FusionAnalysis } from './fusion';
+import { sanitizeFullMixAnalysis, type FullMixAnalysis } from './fullMixHeads';
 import { sourceLabels, sanitizeRecognition, sanitizeSoundReviews, type Recognition, type SoundReview } from './recognition';
 import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
+import { sanitizeStructure, type TrackStructure } from './structure';
 import { sanitizeVersionPrint } from './versionPrint';
 export const MUSIC_ANALYSIS_VERSION = 2;
-export const KEY_ANALYSIS_REVISION = 3;
-export const TEMPO_ANALYSIS_REVISION = 2;
-// Enabling the built-in policy makes persisted native-only documents eligible for reanalysis.
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 69 : 68;
+export const KEY_ANALYSIS_REVISION = 4;
+export const TEMPO_ANALYSIS_REVISION = 3;
+// Enabling the built-in policy makes persisted native-only documents eligible for reanalysis. 70/71: full-mix heads.
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 72 : 71;
 export interface InstrumentEstimate {
   label: string;
   score: number;
@@ -24,6 +26,8 @@ export interface MusicAnalysis {
   classifierConfiguration?: string;
   /** Separate experimental window decisions; never merged into native evidence. */
   fusion?: FusionAnalysis;
+  /** Full-mix instrument heads over each whole 10 s window's native outputs: labels at or above their tested threshold. */
+  fullMix?: FullMixAnalysis;
   recognition?: Recognition;
   soundReviews?: SoundReview[];
   stage?: 'preview';
@@ -46,6 +50,8 @@ export interface MusicAnalysis {
   soundProfile?: SoundProfile;
   /** 512-d unit CLAP audio vector (mean of analyzed windows). Lives here, not in EmbeddingRecord, which is the text pipeline's table. Powers 'similar' edges. */
   embedding?: number[];
+  /** Intro, drops, breakdowns and outro of a full track (src/audio/structure.ts); absent for clips under a minute. */
+  structure?: TrackStructure;
   /** Compact pitch, band-balance and loudness series (versionPrint.ts) that finds other copies and versions of this recording. */
   versionPrint?: string;
   instrumentScan?: { mode?: MusicAnalysisMode; revision?: number; complete: boolean; analyzedSeconds: number; windows: number };
@@ -68,6 +74,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
     ? { ...storedFusion, validation: 'unvalidated', release: undefined, imported: true } : storedFusion;
   const fusion = sanitizeFusion(importedFusion, out.durationSeconds);
   if (fusion) out.fusion = fusion;
+  const fullMix = sanitizeFullMixAnalysis(m.fullMix, out.durationSeconds);
+  if (fullMix) out.fullMix = fullMix;
   out.recognition = sanitizeRecognition(m.recognition, out.durationSeconds);
   if (!out.recognition) delete out.recognition;
   if (Array.isArray(m.soundReviews)) out.soundReviews = sanitizeSoundReviews(m.soundReviews);
@@ -94,6 +102,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   if (out.tempo && Array.isArray(t?.alternatives)) out.tempo.alternatives = [...new Set(t.alternatives.filter((v): v is number => positive(v, 250) && v >= 40 && v !== out.tempo!.bpm))].slice(0, 2);
   const k = m.key as Record<string, unknown> | undefined;
   if (k && k.source !== 'filename' && positive(k.tonic, 11) && Number.isInteger(k.tonic) && (k.mode === 'major' || k.mode === 'minor') && positive(k.strength, 1)) out.key = { tonic: k.tonic, mode: k.mode, strength: k.strength };
+  const structure = sanitizeStructure(m.structure, out.durationSeconds);
+  if (structure) out.structure = structure;
   const pitch = m.detectedPitch as Record<string, unknown> | undefined;
   if (pitch && positive(pitch.pitchClass, 11) && Number.isInteger(pitch.pitchClass) && positive(pitch.confidence, 1)) out.detectedPitch = { pitchClass: pitch.pitchClass, confidence: pitch.confidence };
   if (Array.isArray(m.instruments)) out.instruments = m.instruments.slice(0, 100).flatMap((v: unknown) => {

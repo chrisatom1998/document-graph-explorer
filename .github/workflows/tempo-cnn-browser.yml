@@ -1,0 +1,129 @@
+name: Tempo model, browser check on both DJ clip sets
+
+# Runs round 1's 500 GiantSteps tempo excerpts and round 2's 500 GiantSteps MTG key excerpts through the built app from
+# this branch and scores tempo as those rounds did. The tempo model and its override rule were tuned without these
+# tracks (scripts/tempo/cnn-combine.py). Reports go to docs/evaluations/tempo-cnn-2026-10-06/browser/.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/fix-triplet-tempo-lkxolu]
+    paths: [.github/workflows/tempo-cnn-browser.yml]
+
+permissions:
+  contents: write
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  GIANTSTEPS: https://github.com/GiantSteps/giantsteps-tempo-dataset.git
+  GIANTSTEPS_REF: d51ab2422e76abacfaa86616a57054bc222ec9fd
+  MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
+  MTGKEY_REF: fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b
+  R1: docs/evaluations/dj-clips-2026-10-06/giantsteps-manifest.json
+  R2: docs/evaluations/dj-clips-round2-2026-10-06/mtg-key-manifest.json
+  OUT: docs/evaluations/tempo-cnn-2026-10-06/browser
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  clips:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        set: [round1, round2]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Re-cut the frozen excerpts
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          if [ "${{ matrix.set }}" = round1 ]; then
+            git clone -q "$GIANTSTEPS" "$RUNNER_TEMP/gs" && git -C "$RUNNER_TEMP/gs" checkout -q "$GIANTSTEPS_REF"
+            python3 scripts/dj-clips/giantsteps.py "$RUNNER_TEMP/gs" audio
+          else
+            git clone -q "$MTGKEY" "$RUNNER_TEMP/mk" && git -C "$RUNNER_TEMP/mk" checkout -q "$MTGKEY_REF"
+            python3 scripts/dj-clips/mtg-key.py "$RUNNER_TEMP/mk" audio
+          fi
+          git diff --exit-code -- "$R1" "$R2"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tempo-${{ matrix.set }}-audio
+          path: audio
+          retention-days: 3
+
+  eval:
+    needs: clips
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        set: [round1, round2]
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: tempo-${{ matrix.set }}-audio
+          path: audio
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=audio AUDIO_EXT=wav MANIFEST=${{ matrix.set == 'round1' && env.R1 || env.R2 }} SHARD=${{ matrix.shard }}/4 \
+            node scripts/short-clip-upload-eval.mjs out/run test 20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tempo-${{ matrix.set }}-export-${{ matrix.shard }}
+          path: out/run/graph-export.json
+          retention-days: 30
+
+  score:
+    needs: eval
+    if: ${{ !cancelled() && needs.eval.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: tempo-*-export-*
+          path: exports
+      - name: Score
+        run: |
+          set -o pipefail
+          mkdir -p "$OUT"
+          MANIFEST=$R1 BENCHMARK=dj-clips-2026-10-06/giantsteps@tempo-cnn \
+            npx vite-node scripts/dj-clips/score-giantsteps.mjs "$OUT/round1.json" exports/tempo-round1-export-*/graph-export.json | tee "$OUT/round1.txt"
+          MANIFEST=$R2 BENCHMARK=dj-clips-round2-2026-10-06/mtg-key@tempo-cnn \
+            npx vite-node scripts/dj-clips/score-giantsteps.mjs "$OUT/round2.json" exports/tempo-round2-export-*/graph-export.json | tee "$OUT/round2.txt"
+          echo "app $GITHUB_SHA (run $GITHUB_RUN_ID)" > "$OUT/tested-commit.txt"
+      - name: Commit the reports
+        run: |
+          git add "$OUT"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record the browser check of the tempo model" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done

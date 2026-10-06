@@ -16,6 +16,7 @@ import { confidentSoundSummary } from '../audio/confidentSoundSummary';
 import { filenameSoundFallback } from '../audio/filenameSoundFallback';
 import { RecognitionDiagnostics, type RecognitionEvidenceProps } from './RecognitionEvidence';
 import { clockTime as time } from './clockTime';
+import TrackStructure from './TrackStructure';
 import TrackVersions from './TrackVersions';
 import { camelotCode } from '../audio/mixSuggestions';
 import MusicNeighbours from './MusicNeighbours';
@@ -106,6 +107,7 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
           ? <dd>{hints.key ? hints.key.displayName : keyName(analysis.key!)} <span className="camelot" title="Camelot wheel code">{camelotCode(hints.key ? hints.key.value : analysis.key!)}</span>{!!hints.key && !!analysis.key && !sameNamedKey && <small className="music-stats__audio" title="The audio estimate differs from the file or folder name">audio {keyName(analysis.key)}</small>}</dd>
           : <dd className="is-unknown" title={analysis.stage === 'preview' ? 'Not checked yet' : 'No stable key detected'}>{analysis.stage === 'preview' ? '…' : '—'}</dd>}</div>
       </dl>
+      {analysis.structure && <TrackStructure structure={analysis.structure} duration={analysis.durationSeconds} onSeek={onSeek} />}
       <TrackVersions node={node} />
       <ConfidentSoundSummary audio={analysis} node={node} />
       <OtherModelGuesses profile={displayProfile} confirmedDjTags={analysis.confirmedDjTags ? confirmedTags : undefined} reviewedLabels={reviewedLabels}

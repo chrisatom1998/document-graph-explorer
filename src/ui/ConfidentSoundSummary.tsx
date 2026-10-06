@@ -6,6 +6,7 @@ import type { MusicAnalysis } from '../audio/musicTypes';
 import type { SoundProfile } from '../audio/soundProfile';
 import { soundLabelText } from '../audio/djTags';
 import { fusionPresentation, fusionLabelText } from '../audio/fusionPresentation';
+import { likelyExtraSounds } from './MainSoundAttributes';
 
 const ORDER = ['source', 'effect', 'character', 'vocal', 'role'] as const;
 const DIMENSION_NAME = { source: 'Sound source', effect: 'Sound type', character: 'Character', vocal: 'Vocal', role: 'Role' };
@@ -15,6 +16,8 @@ export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnal
   const scored=confidentSoundSummary(audio,mode);
   const labels=[...scored,...(node?filenameSoundFallback(audio,node,scored).map(item=>({...item,scores:undefined})):[])]
     .sort((a,b)=>ORDER.indexOf(a.dimension as typeof ORDER[number])-ORDER.indexOf(b.dimension as typeof ORDER[number]));
+  // Separate, dimmed group: untested but probability-like model scores >= 0.5. Only in the real music panel (node given).
+  const extras=node?likelyExtraSounds(audio,node,new Set(labels.map(l=>l.label))):[];
   return <section aria-label="Sound identification" data-display-policy={SOUND_DISPLAY_POLICY} data-filename-policy="missing-dimension-v1" className="sound-tags">
     <h4 className="sound-tags__title">Sounds</h4>
     {labels.length ? <ul className="sound-tags__list">{labels.map(l => {
@@ -32,7 +35,13 @@ export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnal
         {unverified ? <span className="sound-tag__note">unverified</span> : possible ? <span className="sound-tag__note">possible</span> : kind === 'maybe' && <span className="sound-tag__note">maybe</span>}
         <span className="sr-only"> — {hover}</span>
       </li>;
-    })}</ul> : <p className="sound-tags__empty">Nothing identified yet</p>}
+    })}</ul> : !extras.length && <p className="sound-tags__empty">Nothing identified yet</p>}
+    {extras.length>0&&<ul className="sound-tags__list sound-tags__list--likely" aria-label="Likely, not yet tested">{extras.map(row=>{
+      const hover=`${DIMENSION_NAME[row.dimension]} · likely: model score ${row.probabilityScore!.toFixed(2)}, not checked by a tested detector for this clip (not a chance) · display only, not used for links`;
+      return <li key={`${row.dimension}:${row.label}`} className="sound-tag sound-tag--likely-extra" title={hover}>
+        <span>{soundLabelText(row.label)}</span><span className="sound-tag__note">likely</span><span className="sr-only"> — {hover}</span>
+      </li>;
+    })}</ul>}
   </section>;
 }
 

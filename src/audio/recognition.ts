@@ -1,4 +1,5 @@
 import { FUSION_LABELS } from './fusion';
+import { KEY_CNN_FEATURES, KEY_CNN_WEIGHTS } from './keyCnn';
 import { musicRuntimeIdentity } from './musicRuntime';
 import ast from '../../public/music-model/manifest.json';
 import clap from '../../public/sound-model/manifest.json';
@@ -74,10 +75,10 @@ export const recognitionConfiguration = (mode: 'fast' | 'full', durationSeconds?
 export const astGpuAllowed = (duration: number, mode: 'fast' | 'full') => !supportsFusionInput(duration, mode);
 export function createRecognition(duration: number, mode: 'fast' | 'full', audioFingerprint?: string): Recognition {
   // Checksum prefixes keep the growing Jamendo asset list inside the 512-character ledger bound.
-  const versions = [ast.revision, Object.values(jamendo.sha256).map(hash => hash.slice(0, 16)).join(':'), clap.revision, 'essentia-0.1.3-tempo-1', 'essentia-0.1.3-key-2'];
+  const versions = [ast.revision, Object.values(jamendo.sha256).map(hash => hash.slice(0, 16)).join(':'), clap.revision, 'essentia-0.1.3-tempo-1', `${KEY_CNN_WEIGHTS}:essentia-0.1.3-key-4`];
   return { schemaVersion:1, runId:crypto.randomUUID(), audioFingerprint, configurationHash:recognitionConfiguration(mode,duration),
     startedAt:new Date().toISOString(),status:'running',mode,calibration:'unvalidated',evidence:[],observations:[],
-    jobs:MODEL_IDS.map((modelId,i)=>({modelId,weightsVersion:versions[i],preprocessingVersion:'decoder-mono-v3-short-pcm:'+(['ast','jamendo','clap'].includes(modelId)?musicRuntimeIdentity(modelId)+':':'')+(['ast','jamendo'].includes(modelId)?16000:modelId==='clap'?48000:44100)+':'+(modelId==='ast'?ast.sha256['preprocessor_config.json']+(astGpuAllowed(duration,mode)?':webgpu-fp32-allowed':''):modelId==='clap'?clap.sha256['preprocessor_config.json']:'features-v1'),
+    jobs:MODEL_IDS.map((modelId,i)=>({modelId,weightsVersion:versions[i],preprocessingVersion:'decoder-mono-v3-short-pcm:'+(['ast','jamendo','clap'].includes(modelId)?musicRuntimeIdentity(modelId)+':':'')+(['ast','jamendo'].includes(modelId)?16000:modelId==='clap'?48000:44100)+':'+(modelId==='ast'?ast.sha256['preprocessor_config.json']+(astGpuAllowed(duration,mode)?':webgpu-fp32-allowed':''):modelId==='clap'?clap.sha256['preprocessor_config.json']:modelId==='tonal'?`features-v1:${KEY_CNN_FEATURES}`:'features-v1'),
       ...(modelId==='clap'?{promptVersion:clap.sha256['prompts.json']}:{}),status:'pending',planned:[],attempted:[],successful:[],analyzedSeconds:0,gaps:duration>0?[{start:0,end:duration}]:[]})) };
 }
 /** A threaded-runtime stall switches this browser to one inference thread mid-run. Stamp the finished ledger

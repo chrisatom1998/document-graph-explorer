@@ -1,0 +1,16 @@
+{
+ "tracks": 134,
+ "withDrop": 134,
+ "firstDropWithin2s": 54.5,
+ "within4s": 56.7,
+ "within8s": 58.2,
+ "noDropFound": 3,
+ "medianFirstDropError": 0.4100000000000108,
+ "quickWindowInDrop": 76.9,
+ "middleWindowInDrop": 38.8,
+ "dropPrecision2s": 69.3,
+ "dropRecall2s": 71.1,
+ "noDropTracks": 0,
+ "dropsClaimedOnNoDropTracks": 0,
+ "featureMsPerMinute": 67
+}
