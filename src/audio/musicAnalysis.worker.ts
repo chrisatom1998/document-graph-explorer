@@ -11,6 +11,7 @@ import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_A
 import { classifyJamendo, preloadJamendo } from './jamendo';
 import { detectRepeatedPitch } from './detectedPitch';
 import { estimateTempo } from './tempo';
+import { combineKeys, excerptKey } from './key';
 import { soundSuggestions } from './soundSuggestions';
 import { descriptionScores, type DescriptionPrompt } from './profileDescriptions';
 import type { MusicExcerpts } from './decodeMusic';
@@ -127,23 +128,6 @@ function isInstrumentPredictions(value: unknown): value is InstrumentPredictions
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Partial<InstrumentPredictions>;
   return isScoreMap(candidate.scores) && typeof candidate.musicScore === 'number' && Number.isFinite(candidate.musicScore) && candidate.musicScore >= 0 && candidate.musicScore <= 1;
-}
-const TONICS: Record<string, number> = { C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11 };
-function hasPitchDiversity(engine: Essentia, samples: Float32Array): boolean {
-  const bins = new Float32Array(12);
-  for (let i = 0; i < 12 && samples.length >= 4096; i++) {
-    const start = Math.floor((samples.length - 4096) * i / 12);
-    const frame = engine.arrayToVector(samples.slice(start, start + 4096));
-    const windowed = engine.Windowing(frame).frame;
-    const spectrum = engine.Spectrum(windowed).spectrum;
-    const peaks = engine.SpectralPeaks(spectrum);
-    const hpcp = engine.HPCP(peaks.frequencies, peaks.magnitudes).hpcp;
-    const values = engine.vectorToArray(hpcp);
-    for (let j = 0; j < 12; j++) bins[j] += values[j];
-    for (const vector of [frame, windowed, spectrum, peaks.frequencies, peaks.magnitudes, hpcp]) vector.delete();
-  }
-  const ranked = [...bins].sort((a,b) => b-a);
-  return ranked[0] > 0 && ranked[2] > ranked[0] * 0.18;
 }
 async function disposeTensors(values: Record<string, unknown>): Promise<void> {
   for (const tensor of Object.values(values)) {
@@ -279,35 +263,25 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
     const audible = excerpts.samples.filter(s => s.reduce((sum,v)=>sum+v*v,0) / s.length > 1e-8);
     self.postMessage({ id, progress: 'Estimating tempo and key' });
     for (const samples of audible) {
-      const vector = engine.arrayToVector(samples);
-      try {
-        const tempo = data.kind === 'rhythm' ? estimateTempo(engine, samples) : undefined;
-        if (tempo) tempos.push(tempo);
-        if (data.kind === 'rhythm') continue;
-        let repeatedPitch: MusicAnalysis['detectedPitch'];
-        if (samples.length < 8 * 44100) {
-          try { repeatedPitch = detectRepeatedPitch(engine, samples); }
-          catch { /* A missing pitch hint must not prevent full-key estimation. */ }
-          if (repeatedPitch) pitches.push(repeatedPitch);
-        }
-        // Harmonics of a single short note can resemble a major/minor profile.
-        // Strong fundamental agreement is evidence for a pitch, not a mode.
-        const singlePitch = repeatedPitch && repeatedPitch.confidence >= 0.9;
-        if (!singlePitch && samples.length >= 3*44100 && hasPitchDiversity(engine, samples)) {
-          const key = engine.KeyExtractor(vector);
-          if (TONICS[key.key] !== undefined && (key.scale === 'major' || key.scale === 'minor') && key.strength >= 0.6) keys.push({ tonic: TONICS[key.key], mode: key.scale, strength: Math.min(1,key.strength) });
-        }
-      } finally { vector.delete(); }
+      const tempo = data.kind === 'rhythm' ? estimateTempo(engine, samples) : undefined;
+      if (tempo) tempos.push(tempo);
+      if (data.kind === 'rhythm') continue;
+      let repeatedPitch: MusicAnalysis['detectedPitch'];
+      if (samples.length < 8 * 44100) {
+        try { repeatedPitch = detectRepeatedPitch(engine, samples); }
+        catch { /* A missing pitch hint must not prevent full-key estimation. */ }
+        if (repeatedPitch) pitches.push(repeatedPitch);
+      }
+      const key = excerptKey(engine, samples, repeatedPitch);
+      if (key) keys.push(key);
     }
     if (tempos.length) {
       tempos.sort((a,b)=>a.bpm-b.bpm);const median = tempos[Math.floor(tempos.length/2)];
       const consistent = tempos.filter(t=>Math.abs(t.bpm-median.bpm)<=Math.max(3,median.bpm*0.04));
       if (consistent.length >= Math.ceil(excerpts.samples.length/2)) result.tempo = { ...median, bpm: Math.round(median.bpm*10)/10, confidence: Math.min(...consistent.map(t=>t.confidence)) };
     }
-    for (const key of keys) {
-      const same = keys.filter(k=>k.tonic===key.tonic&&k.mode===key.mode);
-      if (same.length >= Math.ceil(excerpts.samples.length/2)) { result.key = { ...key, strength: Math.min(...same.map(k=>k.strength)) }; break; }
-    }
+    const key = combineKeys(keys, excerpts.samples.length);
+    if (key) result.key = key;
     if (data.kind === 'rhythm' && !result.tempo) result.notes.push('No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).');
     if (data.kind === 'tonal' && !result.key) {
       for (const samples of audible.filter(s => s.length >= 8 * 44100)) {

@@ -1,0 +1,41 @@
+baselines on the tuning sets:
+  tune-mtg   app      n 1176  shown 0.935  exact 0.506  mirex 0.603  fifth 111 rel  65 par 194 (minor->major 141) other 134  major among shown 0.51
+  tune-mtg   edma     n 1176  shown 0.937  exact 0.463  mirex 0.571  fifth 115 rel  70 par 239 (minor->major 200) other 133  major among shown 0.55
+  tune-gtzan app      n  415  shown 0.949  exact 0.622  mirex 0.705  fifth  44 rel  14 par  42 (minor->major  34) other  36  major among shown 0.59
+  tune-gtzan edma     n  415  shown 0.947  exact 0.561  mirex 0.655  fifth  42 rel  20 par  59 (minor->major  54) other  39  major among shown 0.61
+gtzan x1 {'how': 'raw', 'bins': 12, 'bass': False, 'l2': 0.0001}: tune-mtg exact 0.552 mirex 0.646  tune-gtzan exact 0.653 mirex 0.726
+gtzan x1 {'how': 'raw', 'bins': 12, 'bass': False, 'l2': 0.001}: tune-mtg exact 0.546 mirex 0.642  tune-gtzan exact 0.653 mirex 0.725
+gtzan x1 {'how': 'raw', 'bins': 12, 'bass': False, 'l2': 0.01}: tune-mtg exact 0.530 mirex 0.630  tune-gtzan exact 0.605 mirex 0.684
+gtzan x1 {'how': 'raw', 'bins': 12, 'bass': True, 'l2': 0.0001}: tune-mtg exact 0.554 mirex 0.648  tune-gtzan exact 0.648 mirex 0.722
+gtzan x1 {'how': 'raw', 'bins': 12, 'bass': True, 'l2': 0.001}: tune-mtg exact 0.551 mirex 0.646  tune-gtzan exact 0.646 mirex 0.720
+gtzan x1 {'how': 'raw', 'bins': 12, 'bass': True, 'l2': 0.01}: tune-mtg exact 0.533 mirex 0.632  tune-gtzan exact 0.598 mirex 0.684
+gtzan x1 {'how': 'raw', 'bins': 36, 'bass': False, 'l2': 0.0001}: tune-mtg exact 0.578 mirex 0.667  tune-gtzan exact 0.667 mirex 0.740
+gtzan x1 {'how': 'raw', 'bins': 36, 'bass': False, 'l2': 0.001}: tune-mtg exact 0.572 mirex 0.662  tune-gtzan exact 0.670 mirex 0.737
+gtzan x1 {'how': 'raw', 'bins': 36, 'bass': False, 'l2': 0.01}: tune-mtg exact 0.538 mirex 0.636  tune-gtzan exact 0.598 mirex 0.682
+gtzan x1 {'how': 'raw', 'bins': 36, 'bass': True, 'l2': 0.0001}: tune-mtg exact 0.578 mirex 0.669  tune-gtzan exact 0.651 mirex 0.728
+gtzan x1 {'how': 'raw', 'bins': 36, 'bass': True, 'l2': 0.001}: tune-mtg exact 0.577 mirex 0.667  tune-gtzan exact 0.646 mirex 0.721
+gtzan x1 {'how': 'raw', 'bins': 36, 'bass': True, 'l2': 0.01}: tune-mtg exact 0.534 mirex 0.633  tune-gtzan exact 0.598 mirex 0.687
+gtzan x1 {'how': 'sqrt', 'bins': 12, 'bass': False, 'l2': 0.0001}: tune-mtg exact 0.560 mirex 0.652  tune-gtzan exact 0.660 mirex 0.729
+gtzan x1 {'how': 'sqrt', 'bins': 12, 'bass': False, 'l2': 0.001}: tune-mtg exact 0.558 mirex 0.653  tune-gtzan exact 0.660 mirex 0.733
+gtzan x1 {'how': 'sqrt', 'bins': 12, 'bass': False, 'l2': 0.01}: tune-mtg exact 0.547 mirex 0.644  tune-gtzan exact 0.629 mirex 0.707
+gtzan x1 {'how': 'sqrt', 'bins': 12, 'bass': True, 'l2': 0.0001}: tune-mtg exact 0.565 mirex 0.659  tune-gtzan exact 0.651 mirex 0.725
+gtzan x1 {'how': 'sqrt', 'bins': 12, 'bass': True, 'l2': 0.001}: tune-mtg exact 0.559 mirex 0.654  tune-gtzan exact 0.648 mirex 0.723
+gtzan x1 {'how': 'sqrt', 'bins': 12, 'bass': True, 'l2': 0.01}: tune-mtg exact 0.535 mirex 0.633  tune-gtzan exact 0.607 mirex 0.692
+gtzan x1 {'how': 'sqrt', 'bins': 36, 'bass': False, 'l2': 0.0001}: tune-mtg exact 0.588 mirex 0.679  tune-gtzan exact 0.677 mirex 0.750
+gtzan x1 {'how': 'sqrt', 'bins': 36, 'bass': False, 'l2': 0.001}: tune-mtg exact 0.588 mirex 0.677  tune-gtzan exact 0.677 mirex 0.746
+gtzan x1 {'how': 'sqrt', 'bins': 36, 'bass': False, 'l2': 0.01}: tune-mtg exact 0.555 mirex 0.651  tune-gtzan exact 0.624 mirex 0.708
+gtzan x1 {'how': 'sqrt', 'bins': 36, 'bass': True, 'l2': 0.0001}: tune-mtg exact 0.582 mirex 0.673  tune-gtzan exact 0.653 mirex 0.729
+gtzan x1 {'how': 'sqrt', 'bins': 36, 'bass': True, 'l2': 0.001}: tune-mtg exact 0.579 mirex 0.671  tune-gtzan exact 0.653 mirex 0.725
+gtzan x1 {'how': 'sqrt', 'bins': 36, 'bass': True, 'l2': 0.01}: tune-mtg exact 0.542 mirex 0.640  tune-gtzan exact 0.607 mirex 0.696
+gtzan x1 {'how': 'log', 'bins': 12, 'bass': False, 'l2': 0.0001}: tune-mtg exact 0.570 mirex 0.662  tune-gtzan exact 0.660 mirex 0.733
+gtzan x1 {'how': 'log', 'bins': 12, 'bass': False, 'l2': 0.001}: tune-mtg exact 0.568 mirex 0.661  tune-gtzan exact 0.667 mirex 0.737
+gtzan x1 {'how': 'log', 'bins': 12, 'bass': False, 'l2': 0.01}: tune-mtg exact 0.553 mirex 0.650  tune-gtzan exact 0.629 mirex 0.708
+gtzan x1 {'how': 'log', 'bins': 12, 'bass': True, 'l2': 0.0001}: tune-mtg exact 0.566 mirex 0.661  tune-gtzan exact 0.655 mirex 0.728
+gtzan x1 {'how': 'log', 'bins': 12, 'bass': True, 'l2': 0.001}: tune-mtg exact 0.564 mirex 0.660  tune-gtzan exact 0.653 mirex 0.725
+gtzan x1 {'how': 'log', 'bins': 12, 'bass': True, 'l2': 0.01}: tune-mtg exact 0.541 mirex 0.639  tune-gtzan exact 0.602 mirex 0.691
+gtzan x1 {'how': 'log', 'bins': 36, 'bass': False, 'l2': 0.0001}: tune-mtg exact 0.588 mirex 0.682  tune-gtzan exact 0.672 mirex 0.745
+gtzan x1 {'how': 'log', 'bins': 36, 'bass': False, 'l2': 0.001}: tune-mtg exact 0.588 mirex 0.681  tune-gtzan exact 0.677 mirex 0.747
+gtzan x1 {'how': 'log', 'bins': 36, 'bass': False, 'l2': 0.01}: tune-mtg exact 0.560 mirex 0.653  tune-gtzan exact 0.619 mirex 0.702
+gtzan x1 {'how': 'log', 'bins': 36, 'bass': True, 'l2': 0.0001}: tune-mtg exact 0.590 mirex 0.680  tune-gtzan exact 0.660 mirex 0.733
+gtzan x1 {'how': 'log', 'bins': 36, 'bass': True, 'l2': 0.001}: tune-mtg exact 0.580 mirex 0.672  tune-gtzan exact 0.658 mirex 0.729
+gtzan x1 {'how': 'log', 'bins': 36, 'bass': True, 'l2': 0.01}: tune-mtg exact 0.548 mirex 0.646  tune-gtzan exact 0.622 mirex 0.706

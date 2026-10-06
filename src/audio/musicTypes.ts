@@ -7,7 +7,7 @@ import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
 import { sanitizeVersionPrint } from './versionPrint';
 export const MUSIC_ANALYSIS_VERSION = 2;
-export const KEY_ANALYSIS_REVISION = 2;
+export const KEY_ANALYSIS_REVISION = 3;
 export const TEMPO_ANALYSIS_REVISION = 2;
 // Enabling the built-in policy makes persisted native-only documents eligible for reanalysis.
 export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 69 : 68;
