@@ -38,6 +38,8 @@ export default function ResonanceFilters() {
   const setFilter = useUiStore(s => s.setFilter);
   const [similarityOpen, setSimilarityOpen] = useState(true);
   const [collapsed, setCollapsed] = useState(loadCollapsed);
+  // Narrow screens show only an action row; this opens the full filter list over the graph.
+  const [narrowOpen, setNarrowOpen] = useState(false);
   useEffect(() => {
     try { localStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0'); } catch { /* The choice just won't persist. */ }
     // The column width lives on .app-root so fixed overlays outside the grid follow it too.
@@ -70,7 +72,10 @@ export default function ResonanceFilters() {
   };
 
   return (
-    <aside className={`rs-sidebar${collapsed ? ' is-collapsed' : ''}`} aria-label="Filters">
+    <aside className={`rs-sidebar${collapsed ? ' is-collapsed' : ''}${narrowOpen ? ' is-narrow-open' : ''}`} aria-label="Filters">
+      <button type="button" className="rs-narrow-filters" aria-expanded={narrowOpen} onClick={() => setNarrowOpen(v => !v)}>
+        <IconFunnel /><span>{narrowOpen ? 'Done' : 'Filters'}</span>{isFilterActive(filter) && <i aria-label="filters on" />}
+      </button>
       <button type="button" className="rs-collapse" aria-expanded={!collapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} onClick={() => setCollapsed(v => !v)}>
         <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2" /><path d="M6 2.5v11" /><path d={collapsed ? 'M9 6.5l1.8 1.5L9 9.5' : 'M11 6.5L9.2 8l1.8 1.5'} /></svg>
       </button>

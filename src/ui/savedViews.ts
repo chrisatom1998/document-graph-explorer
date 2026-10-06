@@ -10,7 +10,7 @@ import { cameraPose } from '../scene/cameraPose';
 import { getCorpusRecord, updateCorpusViews } from '../persistence/corpusRepository';
 import type { SavedViewRecord } from '../persistence/db';
 import { useCorpusStore } from '../store/corpusStore';
-import { useUiStore } from '../store/uiStore';
+import { sanitizeAudioFacets, useUiStore } from '../store/uiStore';
 
 const MAX_VIEWS_PER_CORPUS = 12;
 
@@ -50,6 +50,9 @@ export async function saveCurrentView(name: string): Promise<SavedViewRecord | n
       minEdgeWeight: ui.filter.minEdgeWeight,
       edgeKinds: ui.filter.edgeKinds ? [...ui.filter.edgeKinds] : null,
       modifiedWithinDays: ui.filter.modifiedWithinDays,
+      bpmRange: ui.filter.bpmRange ? [ui.filter.bpmRange[0], ui.filter.bpmRange[1]] : null,
+      musicKey: ui.filter.musicKey,
+      style: ui.filter.style,
     },
   };
   const existing = (await getCorpusRecord(corpusId))?.views ?? [];
@@ -74,10 +77,11 @@ export function applySavedView(view: SavedViewRecord): void {
     minEdgeWeight: view.filter.minEdgeWeight,
     edgeKinds: view.filter.edgeKinds ?? null,
     modifiedWithinDays: view.filter.modifiedWithinDays ?? null,
-    // Saved views predate the audio facets; restoring one clears them.
+    // Views saved before the audio facets existed restore them as cleared.
     bpmRange: null,
     musicKey: null,
     style: null,
+    ...sanitizeAudioFacets(view.filter as unknown as Record<string, unknown>),
   });
   ui.sendCameraPose(view.pose);
 }

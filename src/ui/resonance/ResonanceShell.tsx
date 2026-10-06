@@ -7,10 +7,12 @@ import { layoutSetDims } from '../../layout/layoutBridge';
 import { IconBulb, IconChat, IconCube, IconGear, IconHelp, IconHistory, IconPath, IconSearch } from '../icons';
 import ResonanceFilters from './ResonanceFilters';
 import ConnectedClips from './ConnectedClips';
+import CollabMenuItems from './CollabMenuItems';
 import './resonance.css';
 
 const GraphNavigator = lazy(() => import('../GraphNavigator'));
 const ExportImportMenu = lazy(() => import('../ExportImportMenu'));
+const CorpusSwitcher = lazy(() => import('../CorpusSwitcher'));
 
 type Tab = 'graph' | 'library' | 'export';
 
@@ -66,7 +68,10 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
         <div className="rs-brand">
           <LogoMark />
           <strong>Resonance</strong>
-          <span className="rs-tagline">{activeName ? activeName : 'Find what sounds alike.'}</span>
+          {/* Switch, create, rename or delete workspaces; the tagline shows until a graph exists. */}
+          {docCount > 0
+            ? <span className="rs-corpus"><Suspense fallback={<span className="rs-tagline">{activeName}</span>}><CorpusSwitcher /></Suspense></span>
+            : <span className="rs-tagline">Find what sounds alike.</span>}
         </div>
         <nav className="rs-tabs" aria-label="Views">
           {(['graph', 'library', 'export'] as Tab[]).map(key => (
@@ -93,6 +98,8 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
                   <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); toggleDims(); }}><IconCube twoD={dims === 2} />{dims === 2 ? 'Switch to 3D' : 'Switch to 2D'}</button>
                   <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); ui().setSettingsOpen(true); }}><IconGear />Settings</button>
                   <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); ui().setHelpOpen(true); }}><IconHelp />Help</button>
+                  <hr className="rs-menu__rule" />
+                  <CollabMenuItems onDone={() => setMoreOpen(false)} />
                 </div>
               </>
             )}

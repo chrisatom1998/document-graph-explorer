@@ -87,6 +87,14 @@
   padding: 8px 10px; border: 0; border-radius: 8px; background: none;
   color: var(--rs-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer;
 }
+.rs-menu__label { margin: 4px 10px 2px; color: var(--rs-faint); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.rs-menu__rule { margin: 4px 6px; border: 0; border-top: 1px solid var(--rs-line-strong); }
+.rs-menu button[aria-checked='true'] { color: var(--rs-lime); }
+.rs-corpus { margin-left: 12px; min-width: 0; }
+.rs-corpus .corpus-switcher__trigger { background: none; border: 1px solid var(--rs-line-strong); border-radius: 999px; color: var(--rs-muted); }
+.rs-corpus .corpus-switcher__trigger:hover { color: var(--rs-text); border-color: var(--rs-lime); }
+.rs-corpus .corpus-switcher__menu { background: var(--rs-raised); border-color: var(--rs-line-strong); z-index: var(--z-modal); }
+.rs-narrow-filters { display: none; }
 .rs-menu button svg { width: 16px; height: 16px; color: var(--rs-muted); }
 .rs-menu button:hover:not(:disabled) { background: var(--rs-line); }
 .rs-menu button:disabled { opacity: 0.4; cursor: default; }
@@ -99,7 +107,7 @@
   border-right: 1px solid var(--rs-line);
   background: var(--rs-panel);
   display: flex; flex-direction: column; gap: 0;
-  z-index: var(--z-overlay);
+  z-index: 2; /* above the canvas, below the top bar and its menus */
 }
 .rs-import {
   display: flex; align-items: center; gap: 14px;
@@ -215,7 +223,7 @@
   border-left: 1px solid var(--rs-line);
   background: var(--rs-panel);
   display: flex; flex-direction: column; gap: 14px;
-  z-index: var(--z-overlay);
+  z-index: 2;
 }
 .rs-inspector--empty { justify-content: center; align-items: center; text-align: center; color: var(--rs-muted); }
 .rs-inspector--empty h2 { margin: 8px 0 6px; font-size: 18px; color: var(--rs-text); }
@@ -349,7 +357,27 @@
   .rs-root { grid-template-columns: 1fr; grid-template-rows: var(--rs-top) auto 1fr auto; grid-template-areas: 'top' 'side' 'stage' 'inspect'; }
   /* Narrow screens keep the three actions as one row; filters need the room. */
   .rs-sidebar { flex-direction: row; gap: 8px; padding: 10px 16px; overflow: visible; border-right: 0; border-bottom: 1px solid var(--rs-line); }
-  .rs-sidebar > :not(.rs-import, .rs-assistant) { display: none; }
+  .rs-sidebar > :not(.rs-import, .rs-assistant, .rs-narrow-filters) { display: none; }
+  /* The wide-screen rail (collapse toggle, rail filter icon) does not apply here, collapsed or not. */
+  .rs-sidebar.rs-sidebar > .rs-collapse, .rs-sidebar.rs-sidebar > .rs-rail-filters { display: none; }
+  .rs-sidebar.rs-sidebar > .rs-narrow-filters { display: flex; }
+  .rs-narrow-filters {
+    position: relative; flex: none; display: flex; align-items: center; gap: 6px; order: 9; padding: 0 12px;
+    border: 1px solid var(--rs-line-strong); border-radius: 10px; background: none; color: var(--rs-text); font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .rs-narrow-filters svg { width: 16px; height: 16px; }
+  .rs-narrow-filters i { width: 7px; height: 7px; border-radius: 50%; background: var(--rs-lime); }
+  /* Opened, the full filter column drops over the graph. */
+  .rs-sidebar { min-width: 0; overflow: hidden; }
+  .rs-sidebar.is-collapsed .rs-import, .rs-sidebar.is-collapsed .rs-assistant { width: auto; height: auto; padding: 8px 10px; }
+  .rs-sidebar.rs-sidebar.is-narrow-open {
+    position: relative; z-index: var(--z-floating); flex-wrap: wrap; align-content: flex-start;
+    max-height: 60vh; overflow-y: auto;
+  }
+  .rs-sidebar.is-narrow-open > .rs-narrow-filters { order: -1; flex: 1 1 100%; justify-content: center; padding: 8px; border-color: var(--rs-lime); }
+  .rs-sidebar.rs-sidebar.is-narrow-open > .rs-filters-head, .rs-sidebar.rs-sidebar.is-narrow-open > .rs-group { display: flex; flex: 1 1 100%; }
+  .rs-sidebar.is-narrow-open > .rs-filters-head { margin: 8px 0 0; }
+  .rs-sidebar.is-narrow-open > .rs-group { flex-direction: column; }
   .app-root.rs-side-collapsed { --rs-left: 0px; }
   .rs-sidebar.is-collapsed { flex-direction: row; padding: 10px 16px; }
   .rs-sidebar .rs-import, .rs-sidebar .rs-assistant { flex: 1; min-width: 0; margin: 0; padding: 8px 10px; }
@@ -357,4 +385,19 @@
   .rs-sidebar .rs-import strong { font-size: 13px; }
   .rs-top { grid-template-columns: 1fr auto auto; }
   .rs-inspector { max-height: 45vh; border-left: 0; border-top: 1px solid var(--rs-line); }
+}
+/* Phones: brand + actions on one row, view tabs on a second row. */
+@media (max-width: 600px) {
+  :root { --rs-top: 96px; }
+  .rs-top { grid-template-columns: 1fr auto; grid-template-areas: 'brand actions' 'tabs tabs'; padding: 8px 12px 0; row-gap: 4px; }
+  .rs-brand { grid-area: brand; }
+  /* Keep the workspace switcher reachable; the wordmark gives way to it. */
+  .rs-brand strong, .rs-tagline, .rs-top__status, .rs-top__rule { display: none; }
+  .rs-logo { width: 30px; flex: none; }
+  .rs-corpus { margin-left: 4px; }
+  .rs-corpus .corpus-switcher__name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rs-top__actions { grid-area: actions; gap: 4px; }
+  .rs-tabs { grid-area: tabs; justify-content: flex-start; margin: 0; height: 40px; }
+  .rs-tabs button { padding: 0 12px; }
+  .rs-sidebar .rs-import strong, .rs-sidebar .rs-assistant__text strong { font-size: 12px; }
 }
