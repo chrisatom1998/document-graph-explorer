@@ -211,6 +211,8 @@
 .rs-library .graph-navigator--embedded {
   position: static; width: min(720px, 100%); max-width: none; max-height: none; margin: 0 auto;
   padding: 0; background: transparent; border: 0; box-shadow: none; opacity: 1; transform: none;
+  /* The floating navigator starts with pointer-events: none until it slides in; the list here is always live. */
+  pointer-events: auto;
 }
 .rs-library .graph-navigator__list { max-height: none; }
 .rs-export .toolbar__menu { position: static; width: min(420px, 100%); margin: 0 auto; max-height: none; }

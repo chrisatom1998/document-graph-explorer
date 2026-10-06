@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { countText, detailPanel, dismissGuide, projectCount } from './resonance';
 
 test('competing tabs retain committed notes and deletion versions when an older save retries', async ({ page, context }) => {
   // This checks persistence across two active tabs; software-rendering two
@@ -7,20 +8,18 @@ test('competing tabs retain committed notes and deletion versions when an older 
   await context.addInitScript(() => localStorage.setItem('knowledge-nebula-dims', '2'));
   await page.goto('/');
   await page.getByRole('button', { name: 'Load demo corpus' }).click();
-  await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents', { timeout: 270_000 });
+  await expect(projectCount(page)).toHaveText(countText(100), { timeout: 270_000 });
+  // Verify a restored workspace through its visible project count. Details
+  // start collapsed after a restore whether or not a selection survived.
   const restoredCount = async (tab: Page) => {
-    const back = tab.getByRole('button', { name: 'Back to graph', exact: true });
-    await expect(tab.locator('.graph-navigator__summary').or(back)).toBeVisible({ timeout: 150_000 });
-    if (await back.isVisible()) await back.click();
-    await expect(tab.locator('.graph-navigator__summary')).toContainText('100 documents', { timeout: 150_000 });
+    await expect(projectCount(tab)).toHaveText(countText(100), { timeout: 150_000 });
   };
   const openNote = async (tab: Page) => {
-    const tour = tab.getByRole('button', { name: 'Dismiss getting started' });
-    if (await tour.isVisible()) await tour.click();
+    await dismissGuide(tab);
     await tab.getByRole('button', { name: 'Search documents', exact: true }).click();
-    await tab.getByRole('combobox').fill('Postgres Performance Tuning Guide');
+    await tab.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('Postgres Performance Tuning Guide');
     await tab.getByRole('option', { name: /^Postgres Performance Tuning Guide/ }).click();
-    await expect(tab.locator('.side-panel[role="dialog"]')).toBeVisible({ timeout: 150_000 });
+    await expect(detailPanel(tab)).toBeVisible({ timeout: 150_000 });
     await tab.getByRole('button', { name: 'About', exact: true }).click();
     await expect(tab.getByRole('textbox', { name: 'Document note' })).toBeVisible();
   };
@@ -51,7 +50,6 @@ test('competing tabs retain committed notes and deletion versions when an older 
   })), { timeout: 150_000, message: 'Initial corpus snapshot committed before opening the competing tab' }).toBe(100);
   const other = await context.newPage();
   await other.goto('/');
-  // Verify the restored workspace through its visible library count.
   await restoredCount(other);
   await openNote(other);
   // Both edits have the SAME logical millisecond. The first committed value

@@ -61,11 +61,11 @@ test('local synthetic audio is analyzed, playable, and corrections survive reloa
   await expect(page.getByRole('region', { name: 'Musical features' })).toBeVisible();
   await page.getByText('Track actions', { exact: true }).click();
   await expect(page.getByRole('button', { name: 'Reanalyze musical features' })).toBeEnabled();
-  await expect(page.locator('audio')).toHaveAttribute('src', /^blob:/);
+  await expect(page.locator('.side-panel audio')).toHaveAttribute('src', /^blob:/);
   await page.locator('.audio-controls--preview').getByRole('button', { name: 'Play sample' }).click();
-  await expect.poll(() => page.locator('audio').evaluate(audio => (audio as HTMLAudioElement).currentTime)).toBeGreaterThan(0);
+  await expect.poll(() => page.locator('.side-panel audio').evaluate(audio => (audio as HTMLAudioElement).currentTime)).toBeGreaterThan(0);
   await page.locator('.audio-controls--preview').getByRole('button', { name: 'Pause sample' }).click();
-  await expect.poll(() => page.locator('audio').evaluate(audio => (audio as HTMLAudioElement).paused)).toBe(true);
+  await expect.poll(() => page.locator('.side-panel audio').evaluate(audio => (audio as HTMLAudioElement).paused)).toBe(true);
   await expect(page.locator('.audio-controls--preview').getByRole('button', { name: 'Play sample' })).toBeEnabled();
   await expect(page.locator('.audio-controls--preview .audio-waveform line')).toHaveCount(101);
   await correctDjTags(page, /Synthetic tone/i, card => card.getByRole('checkbox', { name: 'synthesizer', exact: true }).check(), 'Your DJ tags are saved.');
