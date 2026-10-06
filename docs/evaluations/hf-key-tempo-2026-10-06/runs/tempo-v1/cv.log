@@ -1,0 +1,11 @@
+fold 0 done
+fold 1 done
+fold 2 done
+fold 3 done
+fold 4 done
+gst whole: within4 0.907 octave-ok 0.969 n=161
+gst mid10: within4 0.851 octave-ok 0.919 n=161
+mtg whole: within4 0.908 octave-ok 0.966 n=293
+mtg mid10: within4 0.863 octave-ok 0.928 n=293
+gtzan whole: within4 0.677 octave-ok 0.940 n=499
+gtzan mid10: within4 0.663 octave-ok 0.922 n=499

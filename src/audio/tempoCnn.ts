@@ -85,12 +85,12 @@ export function tempoMel(samples: Float32Array): Float32Array[] {
   return frames;
 }
 
-/** 10 s model windows (215 frames, hop 107), zero-padded when the audio is shorter. */
+/** 10 s model windows (215 frames, hop 107). A shorter recording is repeated to fill the window, as a loop plays. */
 export function tempoWindows(frames: Float32Array[]): Float32Array[] {
-  const blank = new Float32Array(BANDS);
+  if (!frames.length) return [];
   const window = (o: number) => {
     const w = new Float32Array(FRAMES * BANDS);
-    for (let t = 0; t < FRAMES; t++) w.set(frames[o + t] ?? blank, t * BANDS);
+    for (let t = 0; t < FRAMES; t++) w.set(frames[(o + t) % frames.length], t * BANDS);
     return w;
   };
   if (frames.length <= FRAMES) return [window(0)];
@@ -123,6 +123,18 @@ function sameTempo(a: number, b: number) { return Math.abs(b / a - 1) <= 0.04; }
 export function combineTempo(app: { bpm: number; confidence: number }, cnn: { bpm: number; confidence: number }): { bpm: number; confidence: number } {
   const usable = cnn.bpm >= 40 && cnn.bpm <= 250 && cnn.confidence > CNN_OVERRIDE_CONFIDENCE;
   return usable && !sameTempo(app.bpm, cnn.bpm) ? { bpm: cnn.bpm, confidence: Math.min(1, cnn.confidence) } : app;
+}
+
+/** For a short loop: the combined tempo, or the CNN's alone when the loop estimator found none. Half and double time
+ * stay listed as alternatives, as the loop estimator lists them. */
+export function combineLoopTempo(app: { bpm: number; confidence: number; alternatives?: number[] } | undefined, cnn: { bpm: number; confidence: number }): { bpm: number; confidence: number; alternatives?: number[] } | undefined {
+  const usable = cnn.bpm >= 40 && cnn.bpm <= 250 && cnn.confidence > CNN_OVERRIDE_CONFIDENCE;
+  const base = app ?? (usable ? { bpm: cnn.bpm, confidence: 0 } : undefined);
+  if (!base) return undefined;
+  const tempo = combineTempo(base, cnn);
+  if (tempo === app) return app;
+  const alternatives = [tempo.bpm / 2, tempo.bpm * 2].filter(v => v >= 40 && v <= 250).map(v => Math.round(v * 10) / 10);
+  return { ...tempo, confidence: app ? tempo.confidence : Math.min(1, cnn.confidence), ...(alternatives.length ? { alternatives } : {}) };
 }
 
 let session: Promise<{ ort: typeof import('onnxruntime-web/webgpu'); model: import('onnxruntime-web/webgpu').InferenceSession }> | undefined;
