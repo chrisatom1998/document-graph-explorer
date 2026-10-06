@@ -88,8 +88,8 @@ export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicR
 }
 
 /** The fusion scorer's contract is the fixed prompt catalog it was trained on. Trained-head,
- * reviewed-example and one-shot scores ride along in the same output for tagging and are not part of it. */
-export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot' && d.group !== 'embedding');
+ * reviewed-example, one-shot and DJ-effect (dj-effect axis, added later) scores ride along in the same output for tagging and are not part of it. */
+export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot' && d.group !== 'dj-effect' && d.group !== 'embedding');
 /** Model jobs share a bounded timeline, but never each other's validity. Evidence is applied in one fixed order. */
 export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
   // The runtime each AST/CLAP output came from: a threaded stall can switch this browser to one thread mid-run.

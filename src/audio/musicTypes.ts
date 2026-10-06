@@ -12,7 +12,7 @@ export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 4;
 export const TEMPO_ANALYSIS_REVISION = 3;
 // Enabling the built-in policy makes persisted native-only documents eligible for reanalysis. 70/71: full-mix heads.
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 71 : 70;
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 72 : 71;
 export interface InstrumentEstimate {
   label: string;
   score: number;
