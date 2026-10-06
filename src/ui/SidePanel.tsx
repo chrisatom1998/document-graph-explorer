@@ -14,7 +14,6 @@ import SidePanelAbout from './SidePanelAbout';
 import SidePanelConnections from './SidePanelConnections';
 import SidePanelHeader from './SidePanelHeader';
 import SidePanelReader from './SidePanelReader';
-import { focusNode } from './focusNode';
 
 function Disclose({
   label,
@@ -163,6 +162,9 @@ export default function SidePanel() {
     return out;
   }, [node, nodes]);
 
+  // Audio nodes often carry several links (tempo, key, sound) to the same track; count tracks too.
+  const linkedTracks = useMemo(() => new Set(connections.filter((row) => row.neighbor?.fileType === 'audio').map((row) => row.neighborId)).size, [connections]);
+
   // Gates the Ask-AI section below; hydrates an evicted body on demand.
   const { text: fullText } = useDocText(node?.kind === 'document' ? node.id : undefined);
 
@@ -231,6 +233,7 @@ export default function SidePanel() {
               ) : (
                 <>
                   {node.fileType !== 'audio' && <span>{node.wordCount.toLocaleString()} words</span>}
+                  {node.fileType === 'audio' && <span>{linkedTracks} linked track{linkedTracks === 1 ? '' : 's'}</span>}
                   <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
                 </>
               )}
@@ -252,13 +255,6 @@ export default function SidePanel() {
             />
           )}
 
-          {node.fileType === 'audio' && <section className="audio-related" aria-label="Related samples">
-            <h3>Related samples</h3>
-            {Array.from(new Map(connections.filter(row => row.neighbor?.fileType === 'audio').map(row => [row.neighborId, row.neighbor!])).values()).slice(0, 3).map(related => <button key={related.id} type="button" onClick={() => focusNode(related.id)}>
-              <span className="audio-related-icon" aria-hidden="true">♫</span><span>{related.title}<small>View sample and connections</small></span><span aria-hidden="true">↗</span>
-            </button>)}
-            {!connections.some(row => row.neighbor?.fileType === 'audio') && <p>No related samples yet.</p>}
-          </section>}
           {isDocument && (
             <Disclose
               label="About"

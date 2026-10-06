@@ -123,3 +123,6 @@
 
 /* Possible = a tested detector scored 0.40–0.49 on a longer recording: dimmer, dashed. */
 .sound-tag--possible { opacity: .72; border-style: dashed; }
+/* When the name tag and the audio estimate disagree, the audio value sits under the shown one. */
+.music-features .music-stats__audio { display: block; margin-top: 3px; font-size: 11px; font-weight: 400; color: var(--warning); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music-features .music-stats .camelot { vertical-align: 2px; }
