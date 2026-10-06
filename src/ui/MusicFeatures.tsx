@@ -156,7 +156,11 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
         <p>Connections use tempo, compatible keys, instruments, and confirmed sound properties. Half/double-time matches and name hints are labeled with lower strength. Your reviews take priority; unknown evidence does not match. Up to 8 audio neighbors, with 4 per relationship type.</p>
       </section>
       </details>
-    </> : <p>Analyze this track to find its tempo, key, and instruments.</p>}
+    </> : <>
+      <p>Analyze this track to find its tempo, key, and instruments.</p>
+      {/* Title and your own links exist before analysis, so the list still shows them. */}
+      <MusicNeighbours node={node} nodes={nodes} nodeIndex={nodeIndex} edges={edges} />
+    </>}
     <details className="music-track-actions"><summary>Track actions</summary>
     <MusicAnalysisMode compact />
     <button type="button" aria-label={analysis ? 'Reanalyze musical features' : 'Analyze musical features'} disabled={phase !== 'ready' || !!controller} onClick={() => void run()}>{controller ? 'Analyzing…' : analysis ? 'Reanalyze' : 'Analyze track'}</button>

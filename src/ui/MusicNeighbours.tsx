@@ -3,7 +3,7 @@ import type { DocNode, Edge } from '../model/types';
 import { EDGE_KIND_HEX } from '../scene/palette';
 import { camelotCode } from '../audio/mixSuggestions';
 import { focusNode } from './focusNode';
-import { musicNeighbours, sharedTitlePrefix, shortKey, shownTempoKey, type NeighbourReason } from './musicDisplay';
+import { musicNeighbours, sharedTitlePrefix, stripTitlePrefix, shortKey, shownTempoKey, type NeighbourReason } from './musicDisplay';
 import './MusicNeighbours.css';
 
 const COLLAPSED = 5;
@@ -23,7 +23,7 @@ export default function MusicNeighbours({ node, nodes, nodeIndex, edges }: { nod
     {rows.length === 0 ? <p className="music-neighbours__empty">{shownTempoKey(node).bpm !== undefined || shownTempoKey(node).key ? 'No tracks in this library are in a compatible key and tempo yet.' : 'Tempo and key are not known for this track yet.'}</p> : <ol>
       {shown.map(({ id, node: other, reasons, mixable: fits }, index) => {
         const { bpm, key } = shownTempoKey(other);
-        const title = prefix && other.title.startsWith(prefix) ? other.title.slice(prefix.length) : other.title;
+        const title = stripTitlePrefix(other.title, prefix);
         return <li key={id} className={fits ? undefined : 'is-linked-only'}>
           {!fits && (index === 0 || shown[index - 1].mixable) && <p className="music-neighbours__divider">Linked, but key or tempo may not mix</p>}
           <button type="button" className="music-neighbours__title" title={other.title} onClick={() => focusNode(id)}>{title}</button>

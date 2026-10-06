@@ -34,7 +34,7 @@ import { prefersReducedMotion } from '../util/motion';
 import { slotHasMaterialized, writeSlotTravelPosition } from './ingestBirth';
 import { computeEmphasis } from './emphasis';
 import { sceneLabelText, setSceneLabelOpacity, syncSceneLabel } from './systemLabel';
-import { sharedTitlePrefix } from '../ui/musicDisplay';
+import { sharedTitlePrefix, stripTitlePrefix } from '../ui/musicDisplay';
 
 const REFRESH_MS = 120;
 const TRUNCATE_AT = 34;
@@ -165,7 +165,7 @@ export default function Labels() {
     for (const n of nodes) {
       const slot = slotOfId.get(n.id);
       if (slot !== undefined) {
-        titleOfSlot.current[slot] = audioPrefix && n.fileType === 'audio' && n.title.startsWith(audioPrefix) ? n.title.slice(audioPrefix.length) : n.title;
+        titleOfSlot.current[slot] = audioPrefix && n.fileType === 'audio' ? stripTitlePrefix(n.title, audioPrefix) : n.title;
         fullTitleOfSlot.current[slot] = n.title;
         displayTitleOfSlot.current[slot] = selectedDocumentTitle(n);
         degreeOfSlot.current[slot] = n.degree;

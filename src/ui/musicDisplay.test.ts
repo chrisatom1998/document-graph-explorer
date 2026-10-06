@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DocNode, Edge } from '../model/types';
-import { musicNeighbours, sharedTitlePrefix, shownTempoKey } from './musicDisplay';
+import { musicNeighbours, sharedTitlePrefix, shownTempoKey, stripTitlePrefix } from './musicDisplay';
 
 const track = (id: string, title: string, audio: Partial<NonNullable<DocNode['audio']>> = {}): DocNode => ({
   id, title, path: `${title}.wav`, kind: 'document', fileType: 'audio', topics: [], entities: [], keywords: [], wordCount: 0, degree: 0, cluster: 0, status: 'ok',
@@ -15,6 +15,13 @@ describe('sharedTitlePrefix', () => {
     expect(sharedTitlePrefix(['Pack Loop', 'Pack Loop Two'])).toBe('Pack ');
     expect(sharedTitlePrefix(['Alpha', 'Beta'])).toBe('');
     expect(sharedTitlePrefix(['Only one title'])).toBe('');
+  });
+  it('strips the prefix from every title that shares it, whatever its case or spacing', () => {
+    const prefix = sharedTitlePrefix(['PACK Loop One', 'pack loop Two']);
+    expect(stripTitlePrefix('PACK Loop One', prefix)).toBe('One');
+    expect(stripTitlePrefix('pack  loop Two', prefix)).toBe('Two');
+    expect(stripTitlePrefix('Other Loop Three', prefix)).toBe('Other Loop Three');
+    expect(stripTitlePrefix('Pack Loop', prefix)).toBe('Pack Loop');
   });
 });
 

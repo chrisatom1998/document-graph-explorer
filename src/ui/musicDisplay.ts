@@ -30,6 +30,17 @@ export function sharedTitlePrefix(titles: string[]): string {
   return words ? `${split[0].slice(0, words).join(' ')} ` : '';
 }
 
+/** `title` without the words `sharedTitlePrefix` found, compared the same way (case-insensitive, any whitespace). */
+export function stripTitlePrefix(title: string, prefix: string): string {
+  const words = prefix.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return title;
+  const match = title.match(new RegExp(`^\\s*((?:\\S+\\s+){${words.length}})`));
+  if (!match) return title;
+  const head = match[1].trim().split(/\s+/);
+  const rest = title.slice(match[0].length);
+  return rest && head.every((w, i) => w.toLowerCase() === words[i].toLowerCase()) ? rest : title;
+}
+
 export interface NeighbourReason { kind: Edge['kind'] | 'clash'; text: string; detail: string }
 export interface MusicNeighbour {
   id: string; node: DocNode; reasons: NeighbourReason[]; score: number;
