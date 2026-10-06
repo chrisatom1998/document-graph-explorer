@@ -1,0 +1,15 @@
+gs-key      app    n  860  shown 0.907  exact 0.485  mirex 0.574  fifth  76 rel  76 par  80 (minor->major  60) other 131  major among shown 0.35
+gs-key      edma   n  860  shown 0.905  exact 0.472  mirex 0.564  fifth  85 rel  52 par 105 (minor->major  85) other 130  major among shown 0.34
+gs-key      model  n  860  shown 0.921  exact 0.581  mirex 0.649  fifth  60 rel  68 par  37 (minor->major  11) other 127  major among shown 0.23
+mtg-500     app    n  395  shown 0.937  exact 0.461  mirex 0.564  fifth  33 rel  32 par  74 (minor->major  59) other  49  major among shown 0.53
+mtg-500     edma   n  395  shown 0.949  exact 0.408  mirex 0.521  fifth  32 rel  34 par  93 (minor->major  84) other  55  major among shown 0.57
+mtg-500     model  n  395  shown 0.952  exact 0.544  mirex 0.640  fifth  44 rel  23 par  45 (minor->major  11) other  49  major among shown 0.27
+test-gtzan  app    n  422  shown 0.945  exact 0.616  mirex 0.687  fifth  35 rel  16 par  39 (minor->major  32) other  49  major among shown 0.55
+test-gtzan  edma   n  422  shown 0.953  exact 0.571  mirex 0.657  fifth  42 rel  11 par  60 (minor->major  56) other  48  major among shown 0.58
+test-gtzan  model  n  422  shown 0.948  exact 0.654  mirex 0.723  fifth  39 rel  13 par  29 (minor->major  13) other  43  major among shown 0.40
+tune-gtzan  app    n  415  shown 0.949  exact 0.622  mirex 0.705  fifth  44 rel  14 par  42 (minor->major  34) other  36  major among shown 0.59
+tune-gtzan  edma   n  415  shown 0.947  exact 0.561  mirex 0.655  fifth  42 rel  20 par  59 (minor->major  54) other  39  major among shown 0.61
+tune-gtzan  model  n  415  shown 0.945  exact 0.667  mirex 0.728  fifth  31 rel  13 par  29 (minor->major  13) other  42  major among shown 0.43
+tune-mtg    app    n 1176  shown 0.935  exact 0.506  mirex 0.603  fifth 111 rel  65 par 194 (minor->major 141) other 134  major among shown 0.51
+tune-mtg    edma   n 1176  shown 0.937  exact 0.463  mirex 0.571  fifth 115 rel  70 par 239 (minor->major 200) other 133  major among shown 0.55
+tune-mtg    model  n 1176  shown 0.957  exact 0.589  mirex 0.675  fifth 111 rel  58 par 138 (minor->major  20) other 126  major among shown 0.26

@@ -15,3 +15,14 @@ export function stopSpeculativeAudioPreload(): void {
   stop = null;
   current?.();
 }
+
+const AUDIO_USED_KEY = 'dge-audio-analysis-used';
+
+/** Audio has been analysed in this browser before, so the app-open warmup is likely to pay off. */
+export function rememberAudioAnalysisUsed(): void {
+  try { localStorage.setItem(AUDIO_USED_KEY, '1'); } catch { /* storage unavailable: no warmup next time */ }
+}
+
+export function audioAnalysisUsedBefore(): boolean {
+  try { return localStorage.getItem(AUDIO_USED_KEY) === '1'; } catch { return false; }
+}
