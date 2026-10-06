@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
-import {afterEach,expect,it} from 'vitest';
+import {afterEach,beforeEach,expect,it} from 'vitest';
 import {cleanup,fireEvent,render,screen,within} from '@testing-library/react';
-import MainSoundAttributes, {setShowUnconfirmedSetting,soundAttributeRows} from './MainSoundAttributes';
+import MainSoundAttributes, {setAttributesOpenSetting,setShowUnconfirmedSetting,soundAttributeRows} from './MainSoundAttributes';
 import MusicFeatures from './MusicFeatures';
 import type {MusicAnalysis} from '../audio/musicTypes';
 import type {DocNode} from '../model/types';
 import {createRecognition,recordEvidence} from '../audio/recognition';
 import {FUSION_LABELS} from '../audio/fusion';
-afterEach(()=>{cleanup();setShowUnconfirmedSetting(false);});
+// Most tests inspect the expanded contents; the collapse itself has its own test below.
+beforeEach(()=>{setAttributesOpenSetting(true);});
+afterEach(()=>{cleanup();setShowUnconfirmedSetting(false);setAttributesOpenSetting(false);});
 const audio=():MusicAnalysis=>({version:2,durationSeconds:8,analyzedSeconds:8,instruments:[],notes:[]});
 it('makes weak native labels, roles, voice styles, and all candidates visible without changing tags or data',()=>{
  const a=audio();a.recognition=createRecognition(8,'full');recordEvidence(a.recognition,'ast',{start:0,end:8},[{dimension:'source',labelId:'piano',score:.23}]);
@@ -77,4 +79,14 @@ it('keeps the show-unconfirmed choice when the panel remounts',()=>{
  render(<MainSoundAttributes audio={a} node={{title:'other.wav'}}/>);
  expect(screen.getByText('warm')).toBeVisible();
  fireEvent.click(screen.getByRole('button',{name:/Hide unconfirmed/}));
+});
+it('starts collapsed and keeps the open choice when another sound is shown',()=>{
+ setAttributesOpenSetting(false);
+ const a=audio();a.instruments=[{label:'piano',score:.9}];
+ const view=render(<MainSoundAttributes audio={a} node={{title:'one.wav'}}/>);
+ const toggle=screen.getByRole('button',{name:'All sound attributes'});
+ expect(toggle).toHaveAttribute('aria-expanded','false');expect(screen.getByText('piano')).not.toBeVisible();
+ fireEvent.click(toggle);expect(toggle).toHaveAttribute('aria-expanded','true');expect(screen.getByText('piano')).toBeVisible();
+ view.unmount();render(<MainSoundAttributes audio={a} node={{title:'two.wav'}}/>);
+ expect(screen.getByRole('button',{name:'All sound attributes'})).toHaveAttribute('aria-expanded','true');
 });
