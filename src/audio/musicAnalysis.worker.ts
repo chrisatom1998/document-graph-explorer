@@ -11,7 +11,7 @@ import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_A
 import { classifyJamendo, preloadJamendo } from './jamendo';
 import { detectRepeatedPitch } from './detectedPitch';
 import { estimateTempo } from './tempo';
-import { excerptChroma, recordingKey } from './key';
+import { essentiaKey, excerptChroma, recordingKey } from './key';
 import { keyProbabilities, recordingKeyFromProbabilities } from './keyCnn';
 import { soundSuggestions } from './soundSuggestions';
 import { descriptionScores, type DescriptionPrompt } from './profileDescriptions';
@@ -286,9 +286,12 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
     let key: MusicAnalysis['key'];
     if (data.kind === 'tonal' && tonal.length) {
       try {
-        const probabilities: number[][] = [];
-        for (const samples of tonal) probabilities.push(await keyProbabilities(engine, samples));
-        key = recordingKeyFromProbabilities(probabilities, excerpts.samples.length);
+        const probabilities: number[][] = [], profileKeys: MusicAnalysis['key'][] = [];
+        for (const samples of tonal) {
+          probabilities.push(await keyProbabilities(engine, samples));
+          try { profileKeys.push(essentiaKey(engine, samples)); } catch { profileKeys.push(undefined); }
+        }
+        key = recordingKeyFromProbabilities(probabilities, excerpts.samples.length, profileKeys);
       } catch { key = recordingKey(chromas, excerpts.samples.length); }
     }
     if (key) result.key = key;

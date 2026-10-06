@@ -65,14 +65,21 @@ export function keySoftmax(logits: ArrayLike<number>): number[] {
   return e.map(v => v / total);
 }
 
+/** Weight of Essentia's stock key profile against the network (scripts/key/blend.py). */
+export const PROFILE_WEIGHT = 0;
+
 /** A recording's key from the mean probabilities of its tonal excerpts, which must be at least half of all
- * excerpts (the same rule as before). Strength maps probability p to 0.6 + 0.4 p, so 0.6 still marks the weakest
- * key the app shows. */
-export function recordingKeyFromProbabilities(probabilities: number[][], excerptCount: number): Key | undefined {
+ * excerpts (the same rule as before). Each excerpt's Essentia key (stock profile), when given, adds
+ * PROFILE_WEIGHT x its strength to that key's log probability, averaged over excerpts: the stock profile reads
+ * clean loops better than the network, which reads songs better. Strength maps the network's probability p of the
+ * chosen key to 0.6 + 0.4 p, so 0.6 still marks the weakest key the app shows. */
+export function recordingKeyFromProbabilities(probabilities: number[][], excerptCount: number, profileKeys: (Key | undefined)[] = [], weight = PROFILE_WEIGHT): Key | undefined {
   if (!probabilities.length || probabilities.length < Math.ceil(excerptCount / 2)) return;
   const mean = Array.from({ length: 24 }, (_, i) => probabilities.reduce((a, p) => a + p[i], 0) / probabilities.length);
   if (mean.some(v => !Number.isFinite(v))) return;
-  const best = mean.indexOf(Math.max(...mean));
+  const score = mean.map(v => Math.log(Math.max(v, 1e-9)));
+  for (const key of profileKeys) if (key) score[key.tonic + (key.mode === 'minor' ? 12 : 0)] += weight * Math.min(1, key.strength) / probabilities.length;
+  const best = score.indexOf(Math.max(...score));
   return { tonic: best % 12, mode: best < 12 ? 'major' : 'minor', strength: Math.min(1, 0.6 + 0.4 * mean[best]) };
 }
 

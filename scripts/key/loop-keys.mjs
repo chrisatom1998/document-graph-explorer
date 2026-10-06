@@ -15,7 +15,9 @@ const engine = new Essentia(EssentiaWASM);
 await loadKeyCnn(readFileSync('public/key-model/key-cnn.onnx'));
 const rows = [];
 for (const clip of clips) {
-  const raw = execFileSync('ffmpeg', ['-nostdin', '-v', 'error', '-i', clip.path, '-t', '60', '-map', '0:a:0', '-ac', '1', '-ar', '44100', '-f', 'f32le', '-'], { maxBuffer: 1 << 28 });
+  let raw;
+  try { raw = execFileSync('ffmpeg', ['-nostdin', '-v', 'error', '-i', clip.path, '-t', '60', '-map', '0:a:0', '-ac', '1', '-ar', '44100', '-f', 'f32le', '-'], { maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'ignore'] }); }
+  catch { console.log(`${clip.id}: cannot decode, skipped`); continue; }
   const samples = new Float32Array(raw.buffer, raw.byteOffset, raw.byteLength / 4).slice();
   const { path, ...row } = clip;
   try {
@@ -26,7 +28,9 @@ for (const clip of clips) {
     const old = chroma ? essentiaKey(engine, samples) : undefined;
     row.bgate = old && old.strength >= 0.6 ? old : null;
     row.profiles = chroma ? recordingKey([chroma], 1) ?? null : null;
-    row.cnn = chroma ? recordingKeyFromProbabilities([await keyProbabilities(engine, samples)], 1) ?? null : null;
+    row.bgateRaw = old ?? null;
+    row.probabilities = chroma ? (await keyProbabilities(engine, samples)).map(v => +v.toFixed(5)) : null;
+    row.cnn = row.probabilities ? recordingKeyFromProbabilities([row.probabilities], 1) ?? null : null;
   } catch (error) { row.error = String(error); }
   rows.push(row);
 }
