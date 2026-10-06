@@ -37,8 +37,8 @@ JAMENDO_TAGS = ['accordion', 'acousticbassguitar', 'acousticguitar', 'bass', 'be
                 'synthesizer', 'trombone', 'trumpet', 'viola', 'violin', 'voice']
 OPENMIC = list(CLASSES)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from labelmap import CAT  # noqa: E402
-# Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth and the effect renders, plus the music
+from labelmap import CAT, FREESOUND  # noqa: E402
+# Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
 # sources' labels below wherever one names the same sound.
 CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS] + [f'cat:{l}' for l in CAT]
 ALIAS = {'voice': 'voice', 'piano': 'piano', 'organ': 'organ', 'trumpet': 'trumpet', 'drums': 'drums', 'guitar': 'guitar', 'synthesizer': 'synthesizer',
@@ -69,7 +69,7 @@ def masked_ap(scores, y, w):
     from sklearn.metrics import average_precision_score
     aps = {}
     for j, c in enumerate(CLASSES):
-        k = w[:, j] > 0 if c.startswith('jamendo:') else w[:, j] >= 1   # strong labels only, except Jamendo's own tags
+        k = w[:, j] > 0 if c.startswith('jamendo:') or c[4:] in FREESOUND else w[:, j] >= 1   # strong labels only, except tags with no outright absences
         if y[k, j].sum() >= 3 and (1 - y[k, j]).sum() >= 3: aps[c] = float(average_precision_score(y[k, j], scores[k, j]))
     return aps
 
@@ -83,7 +83,7 @@ def main():
     ap.add_argument('--threads', type=int, default=os.cpu_count()); ap.add_argument('--resume', action='store_true')
     ap.add_argument('--limit', type=int, default=0, help='first N clips per source only (smoke test)')
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
-    ap.add_argument('--fsd50k'); ap.add_argument('--nsynth')
+    ap.add_argument('--fsd50k'); ap.add_argument('--nsynth'); ap.add_argument('--freesound')
     ap.add_argument('--init', help='start from this model.pt (an earlier run); classifier rows are matched by class name')
     args = ap.parse_args()
     dev = torch.device(args.device)
@@ -99,6 +99,8 @@ def main():
         sources.append(load_source('fsd50k', os.path.join(args.fsd50k, 'fsd50k-mel.npy'), json.load(open(os.path.join(args.fsd50k, 'fsd50k.json')))['items'], args.weak))
     if args.nsynth:
         sources.append(load_source('nsynth', os.path.join(args.nsynth, 'nsynth-mel.npy'), json.load(open(os.path.join(args.nsynth, 'nsynth.json')))['items'], args.weak))
+    if args.freesound:
+        sources.append(load_source('freesound', os.path.join(args.freesound, 'freesound-mel.npy'), json.load(open(os.path.join(args.freesound, 'freesound.json')))['items'], args.weak))
     pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]
             for _ in range(args.dj_repeat if src['dj'][i] else 1)]
     vals = {src['name']: np.flatnonzero(src['val'])[:(args.limit // 8 + 8) if args.limit else None] for src in sources}

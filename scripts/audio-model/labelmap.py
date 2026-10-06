@@ -3,7 +3,8 @@
 The third head's outputs are named 'cat:<catalog label>'. Each one is taught by one or more of:
   * FSD50K dev (human-labelled Freesound clips; a clip lists every class heard, so a missing class is an absence),
   * NSynth train (single notes with an instrument family, source and annotated sound qualities),
-  * effect renders (NSynth notes re-rendered with one DSP effect; render.py).
+  * effect renders (NSynth notes re-rendered with one DSP effect; render.py),
+  * Freesound sounds named by their uploader tags (FREESOUND below).
 A tag none of them covers is not an output: the app keeps its CLAP zero-shot score for it.
 """
 
@@ -59,7 +60,36 @@ NSYNTH_QUALITIES = {'bright': 'bright', 'dark': 'dark', 'distortion': 'distorted
 EFFECTS = ['distorted', 'reverberant', 'echoing', 'filtered', 'chorused', 'flanged', 'bitcrushed', 'saturated', 'wobbling', 'swelling',
            'pulsing', 'gliding', 'rising', 'falling', 'bright', 'dark', 'reverse effect', 'stutter effect', 'record stop', 'vinyl crackle', 'static noise']
 
+# OpenMIC / Jamendo outputs that name an app tag (the 'cat:' outputs name theirs directly).
+SAME = {'accordion': 'accordion', 'banjo': 'banjo', 'cello': 'cello', 'clarinet': 'clarinet', 'cymbals': 'cymbal', 'drums': 'drums', 'flute': 'flute',
+        'guitar': 'guitar', 'mallet_percussion': 'mallet instrument', 'mandolin': 'mandolin', 'organ': 'organ', 'piano': 'piano', 'saxophone': 'saxophone',
+        'synthesizer': 'synthesizer', 'trombone': 'trombone', 'trumpet': 'trumpet', 'ukulele': 'ukulele', 'violin': 'violin / fiddle', 'voice': 'voice',
+        'bass': 'bass guitar',
+        'jamendo:accordion': 'accordion', 'jamendo:acousticguitar': 'acoustic guitar', 'jamendo:classicalguitar': 'acoustic guitar',
+        'jamendo:acousticbassguitar': 'bass guitar', 'jamendo:bell': 'bell', 'jamendo:bongo': 'bongo', 'jamendo:cello': 'cello', 'jamendo:clarinet': 'clarinet',
+        'jamendo:doublebass': 'double bass', 'jamendo:drums': 'drums', 'jamendo:electricguitar': 'electric guitar', 'jamendo:electricpiano': 'electric piano',
+        'jamendo:rhodes': 'electric piano', 'jamendo:flute': 'flute', 'jamendo:guitar': 'guitar', 'jamendo:harmonica': 'harmonica', 'jamendo:harp': 'harp',
+        'jamendo:horn': 'horn', 'jamendo:oboe': 'oboe', 'jamendo:organ': 'organ', 'jamendo:pipeorgan': 'organ', 'jamendo:pad': 'atmospheric pad',
+        'jamendo:percussion': 'percussion', 'jamendo:piano': 'piano', 'jamendo:saxophone': 'saxophone', 'jamendo:strings': 'strings',
+        'jamendo:synthesizer': 'synthesizer', 'jamendo:trombone': 'trombone', 'jamendo:trumpet': 'trumpet', 'jamendo:viola': 'viola',
+        'jamendo:violin': 'violin / fiddle', 'jamendo:voice': 'voice'}
+
+# Tags nothing above teaches, taught by Freesound sounds whose uploader tags or title name them (prepare-freesound.py):
+# every catalog tag outside the lists above with at least 25 tagged sounds from 8 or more uploaders in the Freesound
+# metadata dump (2026-10-06). Uploader tags are noisy and a missing tag is no evidence of absence.
+FREESOUND = [
+    '808 bass', 'acid bass', 'acid synth', 'air horn', 'airy', 'bass growl', 'bass hit', 'bassoon', 'beatbox', 'breakbeat', 'cajon',
+    'chiptune synth', 'choir', 'chops', 'clave', 'closed hi-hat', 'conga', 'djembe', 'downlifter', 'drum fill', 'drum loop', 'dry',
+    'fm synth', 'foghorn bass', 'foley hit', 'glassy', 'glitch effect', 'gritty', 'hand percussion', 'hi-hat loop', 'hollow', 'impact',
+    'jaw harp', 'kalimba', 'laser', 'marimba', 'metallic', 'nasal', 'noise', 'noise sweep', 'open hi-hat', 'percussion hit',
+    'percussion loop', 'plucked', 'reese bass', 'rhythmic', 'ride cymbal', 'rimshot', 'riser', 'rolling', 'shaker', 'singing bowl', 'sitar',
+    'smooth', 'snare roll', 'sound effect', 'staccato', 'steel drum', 'sub bass', 'sub drop', 'sustained', 'syncopated', 'synth arpeggio',
+    'synth chord', 'synth drone', 'synth pluck', 'synth sequence', 'synth stab', 'texture', 'tom', 'top loop', 'triangle', 'tuba',
+    'vibraphone', 'vocal chant', 'vocal chops', 'vocal hum', 'vocal vowel', 'vocoder vocal', 'warm', 'waterphone', 'whistle', 'wobble bass',
+    'woodblock', 'woody', 'xylophone',
+]
+
 def cat_labels():
-    s = {l for v in FSD50K.values() for l in v} | set(NSYNTH_TAUGHT) | set(NSYNTH_QUALITIES.values()) | set(EFFECTS)
+    s = {l for v in FSD50K.values() for l in v} | set(NSYNTH_TAUGHT) | set(NSYNTH_QUALITIES.values()) | set(EFFECTS) | set(FREESOUND)
     return sorted(s)
 CAT = cat_labels()

@@ -7,18 +7,20 @@ bar is precision AND recall >= 0.70:
   * OpenMIC's 20 classes: OpenMIC validation clips with explicit labels; Jamendo validation is reported at that threshold.
   * Jamendo's own 40 tags: Jamendo validation, where untagged counts as absent, so precision is a lower bound.
   * the app-named outputs ('cat:<label>'): every source's validation clips that label it outright (FSD50K, NSynth and
-    its effect renders, and the music sources where they name the same sound); weak absences are left out.
+    its effect renders, and the music sources where they name the same sound); weak absences are left out, except for
+    the tags only Freesound teaches, where untagged sounds count as absent (precision is then a lower bound).
 An output with fewer than 10 validation positives or negatives is marked untested and left off. Writes <run-dir>/thresholds.json.
 """
 import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import train  # noqa: E402
+from labelmap import FREESOUND  # noqa: E402
 
 run, *pairs = sys.argv[1:]
 preps = dict(p.split('=', 1) for p in pairs)
 FILES = {'openmic': ('train-mel.npy', 'train.json'), 'jamendo': ('jamendo-mel.npy', 'jamendo.json'), 'soundcloud': ('soundcloud-mel.npy', 'soundcloud.json'),
-         'fsd50k': ('fsd50k-mel.npy', 'fsd50k.json'), 'nsynth': ('nsynth-mel.npy', 'nsynth.json')}
+         'fsd50k': ('fsd50k-mel.npy', 'fsd50k.json'), 'nsynth': ('nsynth-mel.npy', 'nsynth.json'), 'freesound': ('freesound-mel.npy', 'freesound.json')}
 log = json.load(open(os.path.join(run, 'log.json'))); classes = log['classes']
 assert classes == train.CLASSES, 'run was trained with a different class list'
 val = {}
@@ -48,7 +50,9 @@ def view(name, j, keep_weak):
 out = {}
 for j, c in enumerate(classes):
     if c.startswith('jamendo:'): fit = [('jamendo', True)] if 'jamendo' in val else []
-    elif c.startswith('cat:'): fit = [(n, False) for n in val]
+    # Freesound-only tags have no outright absences (uploaders tag selectively): its untagged sounds count as absent,
+    # so precision is a lower bound, as with Jamendo's tags.
+    elif c.startswith('cat:'): fit = [(n, n == 'freesound' and c[4:] in FREESOUND) for n in val]
     else: fit = [('openmic', False)]
     ys, ss = zip(*[view(n, j, kw) for n, kw in fit]) if fit else ((), ())
     y = np.concatenate(ys) if ys else np.zeros(0); s = np.concatenate(ss) if ss else np.zeros(0)
@@ -56,9 +60,9 @@ for j, c in enumerate(classes):
     if pos < 10 or neg < 10: out[c] = {'enabled': False, 'reason': f'{pos} validation positives, {neg} negatives'}; continue
     t, p, r = pick(y, s)
     row = {'enabled': True, 'threshold': round(t, 4), 'fitOn': [n for n, _ in fit], 'val': {'precision': round(p, 3), 'recall': round(r, 3), 'positives': pos, 'negatives': neg}}
-    if c.startswith('jamendo:'): row['precisionIsLowerBound'] = True
+    if any(kw for _, kw in fit): row['precisionIsLowerBound'] = True
     for n in val:   # each source's own view at the chosen threshold
-        yn, sn = view(n, j, n == 'jamendo')
+        yn, sn = view(n, j, n == 'jamendo' or (n == 'freesound' and c[4:] in FREESOUND))
         if (yn == 1).sum() or (yn == 0).sum():
             pn, rn, posn, negn = pr(yn, sn, t)
             row[f'{n}Val'] = {'precision': None if pn is None or negn == 0 else round(pn, 3), 'recall': None if rn is None else round(rn, 3), 'positives': posn, 'negatives': negn}

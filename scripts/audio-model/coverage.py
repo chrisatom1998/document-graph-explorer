@@ -8,22 +8,9 @@ import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import train  # noqa: E402
+from labelmap import SAME  # noqa: E402
 FILES = {'openmic': ('train-mel.npy', 'train.json'), 'jamendo': ('jamendo-mel.npy', 'jamendo.json'), 'soundcloud': ('soundcloud-mel.npy', 'soundcloud.json'),
-         'fsd50k': ('fsd50k-mel.npy', 'fsd50k.json'), 'nsynth': ('nsynth-mel.npy', 'nsynth.json')}
-
-# OpenMIC / Jamendo outputs that name an app tag (the 'cat:' outputs name theirs directly).
-SAME = {'accordion': 'accordion', 'banjo': 'banjo', 'cello': 'cello', 'clarinet': 'clarinet', 'cymbals': 'cymbal', 'drums': 'drums', 'flute': 'flute',
-        'guitar': 'guitar', 'mallet_percussion': 'mallet instrument', 'mandolin': 'mandolin', 'organ': 'organ', 'piano': 'piano', 'saxophone': 'saxophone',
-        'synthesizer': 'synthesizer', 'trombone': 'trombone', 'trumpet': 'trumpet', 'ukulele': 'ukulele', 'violin': 'violin / fiddle', 'voice': 'voice',
-        'bass': 'bass guitar',
-        'jamendo:accordion': 'accordion', 'jamendo:acousticguitar': 'acoustic guitar', 'jamendo:classicalguitar': 'acoustic guitar',
-        'jamendo:acousticbassguitar': 'bass guitar', 'jamendo:bell': 'bell', 'jamendo:bongo': 'bongo', 'jamendo:cello': 'cello', 'jamendo:clarinet': 'clarinet',
-        'jamendo:doublebass': 'double bass', 'jamendo:drums': 'drums', 'jamendo:electricguitar': 'electric guitar', 'jamendo:electricpiano': 'electric piano',
-        'jamendo:rhodes': 'electric piano', 'jamendo:flute': 'flute', 'jamendo:guitar': 'guitar', 'jamendo:harmonica': 'harmonica', 'jamendo:harp': 'harp',
-        'jamendo:horn': 'horn', 'jamendo:oboe': 'oboe', 'jamendo:organ': 'organ', 'jamendo:pipeorgan': 'organ', 'jamendo:pad': 'atmospheric pad',
-        'jamendo:percussion': 'percussion', 'jamendo:piano': 'piano', 'jamendo:saxophone': 'saxophone', 'jamendo:strings': 'strings',
-        'jamendo:synthesizer': 'synthesizer', 'jamendo:trombone': 'trombone', 'jamendo:trumpet': 'trumpet', 'jamendo:viola': 'viola',
-        'jamendo:violin': 'violin / fiddle', 'jamendo:voice': 'voice'}
+         'fsd50k': ('fsd50k-mel.npy', 'fsd50k.json'), 'nsynth': ('nsynth-mel.npy', 'nsynth.json'), 'freesound': ('freesound-mel.npy', 'freesound.json')}
 
 def tag_of(c): return c[4:] if c.startswith('cat:') else SAME.get(c)
 
