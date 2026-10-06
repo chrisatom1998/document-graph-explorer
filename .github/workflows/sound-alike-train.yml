@@ -1,0 +1,122 @@
+name: Sound-alike projection
+
+# Trains the small projection the app applies to CLAP sound fingerprints before "sounds alike" links
+# (scripts/sound-alike/). Fingerprints come from scripts/embed-clap.mjs, the app's own CLAP setup, on CPU runners:
+# MTG-Jamendo split-0 train + validation only (select-jamendo.py lists what is held out). Audio is never committed.
+on:
+  push:
+    branches: [claude/train-audio-model-043wd9]
+    paths: [.github/workflows/sound-alike-train.yml, scripts/sound-alike/**]
+  workflow_dispatch:
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  JAMENDO: https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f
+  HOLDOUT: https://raw.githubusercontent.com/chrisatom1998/document-graph-explorer/f0f4de73246bd731435cc1f830f91d8b3145e893/docs/evaluations/holdout-r3-2026-10-06/jamendo-manifest.json
+  SHARDS: 25
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select tracks
+        run: |
+          for s in autotagging autotagging_genre autotagging_instrument autotagging_moodtheme autotagging_top50tags; do
+            for p in train validation test; do
+              f=data/splits/split-0/$s-$p.tsv; mkdir -p mj/$(dirname $f); curl -fsSL --retry 6 -o mj/$f $JAMENDO/$f
+            done
+          done
+          for f in data/raw_30s_cleantags.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
+            mkdir -p mj/$(dirname $f); curl -fsSL --retry 6 -o mj/$f $JAMENDO/$f
+          done
+          curl -fsSL --retry 6 -o holdout.json "$HOLDOUT"
+          mkdir -p sel && python3 scripts/sound-alike/select-jamendo.py mj holdout.json sel/tracks.json --windows 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sound-alike-tracks
+          path: sel
+          retention-days: 30
+
+  embed:
+    needs: select
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Fetch any model weights the cache lacks
+        run: npm run setup:music
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - uses: actions/download-artifact@v4
+        with:
+          name: sound-alike-tracks
+          path: sel
+      - name: Embed this shard's folders
+        run: |
+          mkdir -p emb
+          for f in $(seq ${{ matrix.shard }} $SHARDS 99); do
+            python3 scripts/sound-alike/fetch-folder.py sel/tracks.json $f "$RUNNER_TEMP/a$f"
+            # Two embedders with two threads each fill the runner's four cores.
+            for k in 0 1; do THREADS=2 node scripts/embed-clap.mjs "$RUNNER_TEMP/a$f/manifest.json" emb/f$f-$k.jsonl $k 2 & done
+            wait
+            rm -rf "$RUNNER_TEMP/a$f"
+          done
+          wc -l emb/*.jsonl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sound-alike-emb-${{ matrix.shard }}
+          path: emb
+          retention-days: 30
+
+  train:
+    needs: embed
+    if: always() && needs.select.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: sound-alike-tracks
+          path: sel
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sound-alike-emb-*
+          path: emb
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q numpy && pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Train (linear and two-layer)
+        run: |
+          python3 scripts/sound-alike/train.py sel/tracks.json emb --out out/linear-128 --dim 128 | tee out-linear-128.log
+          python3 scripts/sound-alike/train.py sel/tracks.json emb --out out/linear-64 --dim 64 | tee out-linear-64.log
+          python3 scripts/sound-alike/train.py sel/tracks.json emb --out out/mlp-256-128 --hidden 256 --dim 128 | tee out-mlp.log
+          mv out-*.log out/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sound-alike-projection
+          path: out
+          retention-days: 30

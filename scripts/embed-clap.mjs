@@ -1,7 +1,8 @@
 /* Computes the same 512-number CLAP sound fingerprint the app computes in the browser,
  * for every clip in a manifest, so heads trained on them read the app's own features.
  * Mirrors musicAnalysis.worker.ts: sound-model weights, q8, mono 48 kHz, first 10 s
- * (the processor otherwise picks a random 10 s window, which would not be repeatable).
+ * (the processor otherwise picks a random 10 s window, which would not be repeatable), or the 10 s from a clip's
+ * optional `start` (seconds).
  * Usage: embed-clap.mjs <manifest.json> <out.jsonl> [shardIndex shardCount] */
 import { spawn } from 'node:child_process';
 import { readFileSync, existsSync, appendFileSync } from 'node:fs';
@@ -11,8 +12,8 @@ const [MANIFEST, OUT, SHARD = '0', SHARDS = '1'] = process.argv.slice(2);
 env.localModelPath = new URL('../public/', import.meta.url).pathname;
 env.allowRemoteModels = false;
 
-const decode = path => new Promise((resolve, reject) => {
-  const ff = spawn('ffmpeg', ['-nostdin', '-loglevel', 'error', '-i', path, '-t', '10', '-ac', '1', '-ar', '48000', '-f', 'f32le', '-']);
+const decode = (path, start) => new Promise((resolve, reject) => {
+  const ff = spawn('ffmpeg', ['-nostdin', '-loglevel', 'error', ...(start ? ['-ss', String(start)] : []), '-i', path, '-t', '10', '-ac', '1', '-ar', '48000', '-f', 'f32le', '-']);
   const chunks = []; let err = '';
   ff.stdout.on('data', c => chunks.push(c));
   ff.stderr.on('data', d => { err += d; });
@@ -37,7 +38,7 @@ const processor = await AutoProcessor.from_pretrained('sound-model', { local_fil
 const started = Date.now(); let n = 0, failed = 0;
 for (const clip of todo) {
   try {
-    const samples = await decode(clip.path);
+    const samples = await decode(clip.path, clip.start);
     // The app skips near-silent input; a silent clip would teach nothing.
     if (samples.length < 4800 || samples.reduce((s, v) => s + v * v, 0) / samples.length < 1e-8) { failed++; continue; }
     const inputs = await processor(samples);
