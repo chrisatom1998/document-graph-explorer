@@ -15,8 +15,8 @@ if STAGE == 'train':
         print(r.stdout[-4000:], r.stderr[-4000:], flush=True); open(f'out/{mode}.log', 'w').write(r.stdout + r.stderr)
         print(mode, 'done', f'{time.time()-t0:.0f}s', flush=True)
     api.upload_folder(folder_path='out', path_in_repo=f'runs/{RUN}', repo_id=REPO, repo_type='dataset'); print('uploaded', flush=True); sys.exit(0)
-# FSL10K: start the 8.8 GB download in the background while songs download
-dl = subprocess.Popen(['curl', '-sSL', '--retry', '5', '-o', 'fsl.zip', 'https://zenodo.org/api/records/3967852/files/FSL10K.zip/content'])
+# FSL10K: start the 8.8 GB download (aria2c, 16 connections) in the background while songs download
+dl = subprocess.Popen(['aria2c', '-q', '-x', '16', '-s', '16', '-k', '20M', '--max-tries=10', '--retry-wait=5', '-o', 'fsl.zip', 'https://zenodo.org/api/records/3967852/files/FSL10K.zip/content'])  # parallel ranges: one connection to Zenodo is throttled
 subprocess.run([sys.executable, 'build_labels.py', 'tempo-labels.json'], check=True)
 labels = json.load(open('tempo-labels.json'))
 def get(d):
