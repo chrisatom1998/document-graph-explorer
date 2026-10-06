@@ -6,6 +6,8 @@ test('persistent performance toast leaves the toolbar usable at compact sizes', 
   // Exercise the real performance warning and ToastHost. Slow frame delivery
   // deterministically instead of depending on the CI machine's GPU speed.
   await page.addInitScript(() => {
+    // Resonance starts a fresh profile in 2D; the performance toast only suggests 2D from 3D.
+    localStorage.setItem('knowledge-nebula-dims', '3');
     const requestFrame = window.requestAnimationFrame.bind(window);
     window.requestAnimationFrame = callback => requestFrame(() => {
       window.setTimeout(() => callback(performance.now()), 65);
@@ -38,13 +40,13 @@ test('persistent performance toast leaves the toolbar usable at compact sizes', 
     expect(toastBox).not.toBeNull();
     expect(toastBox!.y).toBeGreaterThan(toolbarBox!.y + toolbarBox!.height);
     expect(toastBox!.y + toastBox!.height).toBeLessThanOrEqual(viewport.height);
-    await page.getByRole('button', { name: 'Add documents', exact: true }).click({ timeout: 5000 });
-    await expect(page.getByRole('button', { name: 'Add files', exact: true })).toBeVisible();
-    // Close through the same toggle before resizing. Frame throttling can
-    // postpone the menu's Escape-listener effect after its first paint.
-    await page.getByRole('button', { name: 'Add documents', exact: true }).click({ timeout: 5000 });
-    await expect(page.getByRole('button', { name: 'Add documents', exact: true })).toHaveAttribute('aria-expanded', 'false');
-    await expect(page.getByRole('button', { name: 'Add files', exact: true })).toHaveCount(0);
+    // The top bar's menu must open and close over the toast without either hiding the other.
+    const more = page.getByRole('button', { name: 'More tools', exact: true });
+    await more.click({ timeout: 5000 });
+    await expect(page.getByRole('menuitem', { name: 'Settings', exact: true })).toBeVisible();
+    await more.click({ timeout: 5000 });
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByRole('menuitem', { name: 'Settings', exact: true })).toHaveCount(0);
     await expect(action).toBeVisible();
   }
   // The action remains interactive as well as visible; no force clicks or
