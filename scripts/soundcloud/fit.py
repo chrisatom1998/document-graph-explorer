@@ -14,7 +14,7 @@ plays an instrument its text does not list.
 """
 import json, sys
 
-TARGET_PRECISION = 0.70   # margin over the 60/60 pass bar, as in scripts/calibrate-full-mix-jamendo.py
+TARGET_PRECISION = 0.80   # margin over the 70/70 pass bar Chris set on 2026-10-06
 MIN_GAIN, MIN_NEGATIVES = 3, 8
 THRESHOLDS = [round(0.40 + 0.05 * i, 2) for i in range(12)]
 MAP = {  # scripts/mixed-music/score.mjs
@@ -63,7 +63,7 @@ def score(rows, label, rules):
     p = tp / (tp + fp) if tp + fp else None
     r = tp / (tp + fn) if tp + fn else None
     return {'precision': None if p is None else round(p, 3), 'recall': None if r is None else round(r, 3), 'tp': tp, 'fp': fp, 'fn': fn,
-            'pass': p is not None and r is not None and p >= .6 and r >= .6}
+            'pass': p is not None and r is not None and p >= .7 and r >= .7}
 
 def main():
     sc_records, sc_manifest, dj_records, dj_manifest = sys.argv[1:5]

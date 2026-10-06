@@ -28,7 +28,7 @@ permissions:
 
 env:
   ONNXRUNTIME_NODE_INSTALL: skip
-  BASE_REF: ac4029e8cb9c7f11ffbb3c58b2fca9cc03fe4cad
+  BASE_REF: 245c428d82fe0283f4d15ceb57bdd5ef4f90afda   # main when the SoundCloud fit was run
   DOCS: docs/evaluations/soundcloud-2026-10-06
   MUSIC_MODEL_PATHS: |
     public/music-model/**/*.onnx
