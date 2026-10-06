@@ -58,12 +58,13 @@ it('can display every catalog label once a trained head reports it',async()=>{
  }).map(c=>c.label);
  expect(missing).toEqual([]);
 });
-it('shows full-mix-tested Jamendo synthesizer and drums on recordings of at least ten seconds only',async()=>{
+it('shows full-mix-tested Jamendo synthesizer, drums and piano on recordings of at least ten seconds only',async()=>{
  const {FULL_MIX_JAMENDO,FULL_MIX_JAMENDO_SCORE}=await import('./confidentSoundSummary');
- const synth=FULL_MIX_JAMENDO.synthesizer.threshold,drums=FULL_MIX_JAMENDO['drum kit'].threshold;
+ const synth=FULL_MIX_JAMENDO.synthesizer.threshold,drums=FULL_MIX_JAMENDO['drum kit'].threshold,piano=FULL_MIX_JAMENDO['electric piano'].threshold;
  const song=(duration:number)=>{const a:MusicAnalysis={version:2,durationSeconds:duration,analyzedSeconds:duration,instruments:[],notes:[]};a.recognition=createRecognition(duration,'full');
-  recordEvidence(a.recognition,'jamendo',{start:0,end:Math.min(10,duration)},[{dimension:'source',labelId:'synthesizer',score:synth},{dimension:'source',labelId:'drum kit',score:drums},{dimension:'source',labelId:'piano',score:.95}]);return a;};
- expect(confidentSoundSummary(song(15)).map(s=>[s.label,s.scores?.find(x=>x.model===FULL_MIX_JAMENDO_SCORE)?.score])).toEqual([['synthesizer',synth],['drums',drums]]);
+  recordEvidence(a.recognition,'jamendo',{start:0,end:Math.min(10,duration)},[{dimension:'source',labelId:'synthesizer',score:synth},{dimension:'source',labelId:'drum kit',score:drums},{dimension:'source',labelId:'electric piano',score:piano},{dimension:'source',labelId:'saxophone',score:.95}]);return a;};
+ // Saxophone has no full-mix Jamendo rule, so it stays an untested model score.
+ expect(confidentSoundSummary(song(15)).map(s=>[s.label,s.scores?.find(x=>x.model===FULL_MIX_JAMENDO_SCORE)?.score])).toEqual([['synthesizer',synth],['drums',drums],['piano',piano]]);
  // Shorter loops were never measured: Jamendo stays an untested model score there.
  expect(confidentSoundSummary(song(8))).toEqual([]);
  // A row shorter than the calibrated 10 s window is not promoted, even on a long recording.

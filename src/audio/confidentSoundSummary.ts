@@ -45,6 +45,10 @@ export const FULL_MIX_JAMENDO:Record<string,{label:string;threshold:number}>={
   synthesizer:{label:'synthesizer',threshold:.4},
   'drum kit':{label:'drums',threshold:.4},
   'drum machine':{label:'drums',threshold:.4},
+  // Fitted on the train split of Creative Commons SoundCloud tracks that name their instruments
+  // (scripts/soundcloud/fit.py, docs/evaluations/soundcloud-2026-10-06).
+  piano:{label:'piano',threshold:.4},
+  'electric piano':{label:'piano',threshold:.4},
 };
 TESTED_SCORES.add(FULL_MIX_JAMENDO_SCORE);
 /** OpenMIC fusion heads that the accepted release keeps on its Jamendo baseline (no decision probability, so never
