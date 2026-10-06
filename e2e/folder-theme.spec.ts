@@ -71,7 +71,11 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     releaseEmbedding();
     await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
     const minimizeAnalysis = page.getByRole('button', { name: 'Minimize audio analysis' });
-    if (await minimizeAnalysis.isVisible()) await minimizeAnalysis.click();
+    // The analysis card unmounts by itself when analysis finishes, which can happen
+    // between the visibility check and the click; either way it must end up gone.
+    if (await minimizeAnalysis.isVisible()) {
+      await minimizeAnalysis.click({ timeout: 5_000 }).catch(() => expect(minimizeAnalysis).toBeHidden());
+    }
     const guide = page.getByRole('button', { name: 'Dismiss getting started' });
     if (await guide.isVisible()) await guide.click();
     await openFiles(page);
