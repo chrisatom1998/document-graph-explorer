@@ -70,14 +70,17 @@ jobs:
         run: |
           [ -f hf-job-ids ] && python3 -c "from huggingface_hub import cancel_job; [cancel_job(job_id=j) for j in open('hf-job-ids').read().split()]" || true
       - name: Collect
+        id: collect
         run: |
           R=docs/evaluations/hf-eval/$TASK/$(echo "$APP_REF" | tr -c 'A-Za-z0-9._\n-' '-' | cut -c1-40)-${APP_SHA::7}-$GITHUB_RUN_ID
           echo "R=$R" >> "$GITHUB_ENV"; mkdir -p "$R"
           git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           WORK=$RUNNER_TEMP HARNESS=$PWD APP=$PWD/app bash scripts/hf-eval/tasks/$TASK.sh collect "$RUNNER_TEMP/parts" "$PWD/$R"
           cp "$RUNNER_TEMP/parts/hf-cost.json" "$R/"
+      # Only once collect succeeded: after a failed collect the exports stay in the private dataset so the run can be
+      # re-scored (rescore: <run key>) instead of re-analysed; re-run with a fix and they are deleted then.
       - name: Delete per-track exports of a held-out set from the HF dataset
-        if: ${{ always() && env.RUN_KEY != '' }}
+        if: ${{ always() && env.RUN_KEY != '' && steps.collect.outcome == 'success' }}
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
         run: |
           grep -q '^# HELD_OUT=1' "scripts/hf-eval/tasks/$TASK.sh" || exit 0
