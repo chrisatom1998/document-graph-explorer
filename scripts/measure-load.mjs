@@ -37,9 +37,10 @@ function startProxy() {
       res.writeHead(up.statusCode ?? 502, up.headers);
       let bytes = 0;
       let logged = false;
-      // Count cancelled responses too: bytes the browser fetched and threw away still cost bandwidth.
-      const record = () => { if (!logged) { logged = true; served.push({ at: Date.now() - t0, path: new URL(req.url, BASE).pathname, status: up.statusCode, bytes }); } };
-      up.on('data', chunk => { bytes += chunk.length; });
+      // Cancelled responses count too: bytes the browser fetched and threw away still cost bandwidth.
+      const record = () => { if (!logged) { logged = true; if (!bytes) served.push({ at: Date.now() - t0, path: new URL(req.url, BASE).pathname, status: up.statusCode, bytes: 0 }); } };
+      // Log every chunk with its time, so a download that spans two phases is split between them.
+      up.on('data', chunk => { bytes += chunk.length; served.push({ at: Date.now() - t0, path: new URL(req.url, BASE).pathname, status: up.statusCode, bytes: chunk.length }); });
       up.on('end', record);
       res.on('close', record);
       up.pipe(res);
@@ -76,6 +77,22 @@ async function audioFiles() {
   if (!AUDIO_DIR) return [];
   const dir = resolve(AUDIO_DIR);
   return (await readdir(dir)).filter(f => /\.(wav|mp3|flac|ogg|m4a|aiff?)$/i.test(f)).sort().map(f => join(dir, f));
+}
+
+async function documentCount(page) {
+  const text = await page.locator('.graph-navigator__summary').textContent({ timeout: 1000 }).catch(() => null);
+  return Number(text?.match(/(\d+) documents?/)?.[1] ?? 0);
+}
+
+/** Drop files and wait until they are all in the graph and every background audio job is done. */
+async function dropAndWait(page, files, timeout) {
+  const target = await documentCount(page) + files.length;
+  await dropFiles(page, files);
+  await page.waitForFunction(n => {
+    const text = document.querySelector('.graph-navigator__summary')?.textContent ?? '';
+    return Number(text.match(/(\d+) documents?/)?.[1] ?? 0) >= n;
+  }, target, { timeout, polling: 250 });
+  await waitIdle(page, timeout);
 }
 
 async function dropFiles(page, files) {
@@ -153,17 +170,13 @@ async function run(label, userDataDir, files, { freshWorkspace = false } = {}) {
   if (files.length) {
     const before = Date.now() - t0;
     let t = Date.now();
-    await dropFiles(page, files.slice(0, 1));
-    await page.waitForTimeout(500);
-    await waitIdle(page, 900_000);
+    await dropAndWait(page, files.slice(0, 1), 900_000);
     result.oneTrackMs = Date.now() - t;
     result.oneTrackBytesMB = mb(sum(all().filter(r => r.at >= before)));
     console.error(label, JSON.stringify(result));
     if (files.length > 1) {
       t = Date.now();
-      await dropFiles(page, files.slice(1));
-      await page.waitForTimeout(500);
-      await waitIdle(page, 1_800_000);
+      await dropAndWait(page, files.slice(1), 1_800_000);
       result.libraryTracks = files.length - 1;
       result.libraryMs = Date.now() - t;
     }

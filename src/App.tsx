@@ -28,10 +28,12 @@ import './styles.css';
  * waits for the pipeline to return to idle rather than competing with it, and a
  * document-only ingest that starts later stops it (speculativePreload.ts). */
 function preloadAudioModelsWhenIdle(): void {
+  // A restored workspace settles in 'ready', an empty one in 'idle'.
+  const settled = (phase: string) => phase === 'idle' || phase === 'ready';
   const start = () => {
-    if (useGraphStore.getState().phase !== 'idle') {
+    if (!settled(useGraphStore.getState().phase)) {
       const unsubscribe = useGraphStore.subscribe(s => {
-        if (s.phase !== 'idle') return;
+        if (!settled(s.phase)) return;
         unsubscribe();
         preloadAudioModelsWhenIdle();
       });
