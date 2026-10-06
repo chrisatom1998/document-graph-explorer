@@ -389,17 +389,25 @@ function documentNodes(): DocNode[] {
 
 /** Music edges for the current tracks. Version matching works to a time budget per rebuild, so a large library
  * gets its remaining duplicate and remix checks from follow-up rebuilds, queued behind other graph work. */
-let versionCatchUp: ReturnType<typeof setTimeout> | undefined;
 function refreshMusicEdges(nodes: DocNode[], edges: Edge[]): Edge[] {
   const next = refreshMusicEdgesNow(nodes, edges);
-  if (versionWorkPending() && !versionCatchUp) versionCatchUp = setTimeout(() => void enqueueRun(async () => {
+  if (versionWorkPending()) scheduleVersionCatchUp();
+  return next;
+}
+let versionCatchUp: ReturnType<typeof setTimeout> | undefined;
+/** Finishes pending version matching; once done, reclusters and saves so the new links survive a reload. */
+export function scheduleVersionCatchUp(): void {
+  if (versionCatchUp) return;
+  versionCatchUp = setTimeout(() => void enqueueRun(async () => {
     versionCatchUp = undefined;
     const current = useGraphStore.getState();
     if (!current.nodes.length) return;
     const updated = refreshMusicEdges(documentNodes(), current.edges);
     current.setEdges(updated); layoutSetLinks(toLinkInput(updated));
+    if (versionWorkPending()) return;
+    await clusterAudioGraph();
+    await saveSession();
   }).catch(error => console.error('Version link update failed', error)), 300);
-  return next;
 }
 
 function toLinkInput(edges: Edge[]): { source: string; target: string; weight: number }[] {

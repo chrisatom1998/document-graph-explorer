@@ -24,7 +24,11 @@ export function versionTitle(node: Pick<DocNode, 'path' | 'title'>): VersionTitl
   });
   const parts = text.split(/\s+[-–—]\s+|\s*\|\s*/).map(part => {
     let words = part.replace(/['’]/g, '').split(/[^a-z0-9#]+/).filter(Boolean);
-    const cut = words.findIndex((w, i) => i > 0 && MARKERS.has(w));
+    // Featured artists are not part of the song name.
+    const feat = words.findIndex((w, i) => i > 0 && (w === 'feat' || w === 'ft' || w === 'featuring'));
+    if (feat > 0) words = words.slice(0, feat);
+    // A version note ends the name ("Dirtbag 2021 Remix"); a marker word followed by other words is part of it ("Dub Skank").
+    const cut = words.findIndex((w, i) => i > 0 && MARKERS.has(w) && words.slice(i + 1).every(x => MARKERS.has(x) || /^\d+$/.test(x)));
     if (cut > 0) { marked = true; words = words.slice(0, cut); }
     if (words.length && MARKERS.has(words[0])) { marked = true; words = words.slice(1); }
     const tagged = words.some(w => KEY.test(w) && w.length <= 5 && /[a-g]m|maj|min|#|b$/.test(w)) || words.some(w => /bpm$/.test(w)) || words.includes('loop');
@@ -124,40 +128,79 @@ function cachedEvidence(a: Side, b: Side): VersionEvidence | undefined {
 
 /** Candidate pairs: each track's closest harmonic fingerprints (which pitch classes sound together, at any
  * transposition, ignoring time) and every title match. Only candidates get the frame-by-frame alignment. */
-export const VERSION_CANDIDATES = { byHarmony: 8, shortlist: 24, byTitle: 12, scanLimit: 3000 };
+export const VERSION_CANDIDATES = { byHarmony: 8, shortlist: 24, byTitle: 12 };
 export const VERSION_LINKS_PER_TRACK = 12;
-/** Alignment time per graph rebuild. Pairs left over are aligned by the next rebuild (results are cached);
- * versionWorkPending() tells the caller to schedule one. */
+/** Work per graph rebuild (shortlisting new tracks, then aligning pairs). What is left over is done by the next
+ * rebuild (results are cached); versionWorkPending() tells the caller to schedule one. */
 export const VERSION_BUDGET_MS = 150;
 let pending = false;
 export const versionWorkPending = () => pending;
 
+/** Each track's closest harmonic fingerprints. Tracks are shortlisted against the library once, in arrival order,
+ * so a rebuild only scans tracks added since the last one. */
+interface Shortlist { scanned: number; top: { side: Side; invariant: number; exact?: number }[] }
+let arrivals: Side[] = [];
+let shortlists = new WeakMap<Side, Shortlist>();
+function harmonyNeighbors(prints: Side[], started: number, budgetMs: number): Map<Side, Side[]> {
+  // Removed or reanalysed tracks stay in the arrival list (and can fill shortlist places) until more than a
+  // tenth of it is stale; then everything is rescanned.
+  const current = new Set(prints), out = new Map<Side, Side[]>();
+  const stale = arrivals.reduce((n, x) => n + +!current.has(x), 0);
+  if (stale > Math.max(16, prints.length / 10)) { arrivals = []; shortlists = new WeakMap(); }
+  const known = new Set(arrivals);
+  for (const x of prints) if (!known.has(x)) arrivals.push(x);
+  for (const x of prints) {
+    let list = shortlists.get(x);
+    if (!list) shortlists.set(x, list = { scanned: 0, top: [] });
+    for (; list.scanned < arrivals.length; list.scanned++) {
+      if ((list.scanned & 63) === 0 && performance.now() - started > budgetMs) { pending = true; break; }
+      const other = arrivals[list.scanned];
+      if (other === x) continue;
+      const invariant = dot(x.harmony!.invariant, other.harmony!.invariant), top = list.top;
+      if (top.length >= VERSION_CANDIDATES.shortlist && invariant <= top[top.length - 1].invariant) continue;
+      top.push({ side: other, invariant });
+      top.sort((p, q) => q.invariant - p.invariant);
+      top.length = Math.min(top.length, VERSION_CANDIDATES.shortlist);
+    }
+    const live = list.top.filter(t => current.has(t.side));
+    for (const t of live) t.exact ??= harmonySimilarity(x.harmony!.matrix, t.side.harmony!.matrix);
+    out.set(x, live.sort((p, q) => q.exact! - p.exact!).slice(0, VERSION_CANDIDATES.byHarmony).map(t => t.side));
+  }
+  return out;
+}
+
 /** 'version' edges between tracks that are the same recording or another version of the same song. */
 export function buildVersionEdges(nodes: DocNode[], budgetMs = VERSION_BUDGET_MS): Edge[] {
   const audio = nodes.filter(n => n.fileType === 'audio' && n.audio).sort((a, b) => a.id.localeCompare(b.id));
-  const all = audio.map(side);
+  const all = audio.map(side), index = new Map(all.map((x, i) => [x, i]));
+  const started = performance.now();
+  pending = false;
   const priority = new Map<string, number>();
   const add = (i: number, j: number, score: number) => {
     if (i === j) return;
     const key = i < j ? `${i}:${j}` : `${j}:${i}`;
     priority.set(key, Math.max(priority.get(key) ?? -Infinity, score));
   };
-  if (all.length <= VERSION_CANDIDATES.scanLimit) {
-    const withPrint = all.flatMap((x, i) => x.harmony ? [i] : []);
-    for (const i of withPrint) {
-      const shortlist = withPrint.filter(j => j !== i).map(j => ({ j, s: dot(all[i].harmony!.invariant, all[j].harmony!.invariant) }))
-        .sort((x, y) => y.s - x.s || x.j - y.j).slice(0, VERSION_CANDIDATES.shortlist);
-      shortlist.map(({ j }) => ({ j, s: harmonySimilarity(all[i].harmony!.matrix, all[j].harmony!.matrix) }))
-        .sort((x, y) => y.s - x.s || x.j - y.j).slice(0, VERSION_CANDIDATES.byHarmony).forEach(({ j, s }) => add(i, j, s));
+  for (const [x, near] of harmonyNeighbors(all.filter(x => x.harmony), started, budgetMs))
+    near.forEach((y, rank) => add(index.get(x)!, index.get(y)!, 1 - rank / 100));
+  // Title matches: the same song name, or one name inside another ("Dirtbag" in "Dirtbag I am gone").
+  const byTitle = new Map<string, number[]>(), byPart = new Map<string, number[]>();
+  const put = (map: Map<string, number[]>, key: string, i: number) => { const list = map.get(key) ?? []; if (list[list.length - 1] !== i) list.push(i); map.set(key, list); };
+  all.forEach((x, i) => x.title.names.forEach(name => {
+    put(byTitle, name, i);
+    const words = name.split(' ').slice(0, 12);
+    for (let from = 0; from < words.length; from++) for (let to = from + 1; to <= words.length; to++) {
+      const part = words.slice(from, to).join(' ');
+      if (part !== name && part.length >= 5) put(byPart, part, i);
     }
+  }));
+  const cap = VERSION_CANDIDATES.byTitle;
+  // Title pairs go first: they are the only route to other versions, and cheap when no alignment is needed.
+  for (const [name, members] of byTitle) {
+    members.slice(0, cap).forEach((i, k, list) => list.slice(k + 1).forEach(j => add(i, j, 2)));
+    for (const i of members.slice(0, cap)) for (const j of (byPart.get(name) ?? []).slice(0, cap)) add(i, j, 2);
   }
-  const byTitle = new Map<string, number[]>();
-  all.forEach((s, i) => s.title.names.forEach(name => byTitle.set(name, [...(byTitle.get(name) ?? []), i])));
-  // Title matches go first: they are the only route to other versions, and cheap when no alignment is needed.
-  for (const members of byTitle.values()) members.slice(0, VERSION_CANDIDATES.byTitle).forEach((i, k, list) => list.slice(k + 1).forEach(j => add(i, j, 2)));
   const ordered = [...priority].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]));
-  const started = performance.now();
-  pending = false;
   const found: { a: DocNode; b: DocNode; evidence: VersionEvidence }[] = [];
   for (const [key] of ordered) {
     const [i, j] = key.split(':').map(Number);

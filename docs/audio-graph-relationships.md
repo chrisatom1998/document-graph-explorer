@@ -38,7 +38,7 @@ A **versions** link (lime, its own filter) joins two tracks that are the same re
 
 - **Same recording** (`src/audio/versionPrint.ts`): analysis stores a small version print (`versionPrint`, about 20 bytes per second, up to 8 minutes): pitch-class strength, the balance of 7 frequency bands, and loudness, twice a second. Two prints are aligned frame by frame across pitch shifts (any of 12 semitones) and speed changes from 0.86x to 1.18x, including trims and edits. A pair is the same recording when a 20 s stretch lines up at least 0.85, at least 60% of the shorter file lines up, and the band balance matches at least 0.7 (`VERSION_RULES` in `src/audio/versionLinks.ts`). The reason says what changed: pitched up or down, sped up or slowed down, trimmed or edited. Clips under 4 s get no print. Saved analyses from before prints existed get one the next time the track is analysed (decoding only, no models).
 - **Another version** (remix, edit, cover): the file names must name the same song once the artist, the bracketed version note, key, BPM, year and track number are removed. When neither name is marked as a version and the artists differ, the pair also needs some material that lines up (0.55) or a CLAP similarity of at least 0.6. Audio alone is not used: on the test set, remixes of one song lined up no better than unrelated songs, and CLAP fingerprints of re-encoded copies of one file ranged from 0.65 to 0.99.
-- **Speed**: each track's 8 closest harmonic fingerprints (which pitch classes sound together, at any transposition) and every title match are aligned, title matches first. Each graph rebuild aligns for at most 150 ms; the app schedules follow-up rebuilds until every candidate pair is done, and results are cached per pair.
+- **Speed**: each track's 8 closest harmonic fingerprints (which pitch classes sound together, at any transposition) and every title match, including one name inside another, are aligned, title matches first. A track is shortlisted against the library once, so a rebuild only scans tracks added since the last one. Each graph rebuild shortlists and aligns for at most 150 ms; the app schedules follow-up rebuilds until every candidate pair is done (also after a restore or import), then reclusters and saves. Results are cached per pair.
 
 ### Measured accuracy (2026-10-06)
 
@@ -46,8 +46,8 @@ A **versions** link (lime, its own filter) joins two tracks that are the same re
 
 | Files named as uploaded | Duplicates P / R | Other versions P / R |
 |---|---|---|
-| Half A (tuning) | 1.00 / 0.91 | 1.00 / 0.58 |
-| Half B (held out) | 1.00 / 0.84 | 1.00 / 0.20 |
-| All | 1.00 / 0.88 | 1.00 / 0.41 |
+| Half A (tuning) | 1.00 / 0.91 | 1.00 / 0.59 |
+| Half B (held out) | 1.00 / 0.84 | 1.00 / 0.25 |
+| All | 1.00 / 0.88 | 1.00 / 0.44 |
 
-With names hidden, duplicates are unchanged and no other versions are found. Without prints (older analyses) only title matches remain: 2% of other versions. Copies found by transform, songs then loops: MP3 18/18 and 14/16, AAC 18/18 and 13/16, trim 18/18 and 13/16, edit 18/18 and 13/16, pitch +2 16/18 and 14/16, tempo +5% 18/18 and 13/16, varispeed 14/18 and 14/16, DJ pitch/tempo 17/18 and 14/16. Most missed loops are under 4 s. Other-version recall depends on how files are named: half B's remixers often renamed the song.
+With names hidden, duplicates are unchanged and no other versions are found. Without prints (older analyses) only title matches remain: 3% of other versions. Copies found by transform, songs then loops: MP3 18/18 and 14/16, AAC 18/18 and 13/16, trim 18/18 and 13/16, edit 18/18 and 13/16, pitch +2 16/18 and 14/16, tempo +5% 18/18 and 13/16, varispeed 14/18 and 14/16, DJ pitch/tempo 17/18 and 14/16. Most missed loops are under 4 s. Other-version recall depends on how files are named: half B's remixers often renamed the song. Two title-parsing fixes (featured artists dropped, a version word only ends a name when nothing but version words or numbers follow it) came from reviewing errors on both halves, so half B is not fully untouched for titles.

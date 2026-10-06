@@ -26,6 +26,8 @@ describe('version titles', () => {
     expect(titleRelation(title('williamberry_-_Dirtbag_(I_am_gone).mp3'), title('Robbero_-_Dirtbag.mp3'))).toBe('contained');
     expect(titleRelation(title('Artist - Love.mp3'), title('Artist - Lovesick.mp3'))).toBeUndefined();
     expect(title('untitled.wav').names).toEqual([]);
+    expect(title('Reiswerk_-_Making_me_nervous_feat._brad_sucks.mp3').names).toEqual(['making me nervous']);
+    expect(title('SHADOW_UK1_Melodic_Loop_DubSkank_Dm.wav')).toMatchObject({ names: ['shadow uk1 melodic loop dub skank'], marked: false });
   });
 });
 
@@ -75,5 +77,12 @@ describe('version links', () => {
     const edges = [...buildVersionEdges(nodes), { id: 'b->c:version', source: 'b', target: 'c', kind: 'version' as const, weight: .7, evidence: ['Another version of the same song: the titles match.'] }];
     const c = { ...nodes[1], id: 'c', title: 'c.wav' };
     expect(versionGroup('a', [...nodes, c], edges)).toMatchObject([{ node: { id: 'b' }, relation: 'duplicate' }, { node: { id: 'c' }, relation: 'remix', via: { id: 'b' } }]);
+  });
+
+  it('checks a title inside a longer title even without version prints', () => {
+    const plain = (id: string, name: string): DocNode => ({ id, kind: 'document', title: name, path: name, fileType: 'audio', topics: [], entities: [], keywords: [], wordCount: 0, cluster: -1, degree: 0, status: 'ok',
+      audio: { version: 2, analyzedSeconds: 10, durationSeconds: 10, instruments: [], notes: [] } });
+    const edges = buildVersionEdges([plain('a', 'williamberry_-_Dirtbag_(I_am_gone).mp3'), plain('b', 'Robbero_-_Dirtbag_(Robbero_Remix).mp3'), plain('c', 'Robbero_-_Sunrise.mp3')]);
+    expect(edges.map(e => [e.id, versionRelation(e)])).toEqual([['a->b:version', 'remix']]);
   });
 });
