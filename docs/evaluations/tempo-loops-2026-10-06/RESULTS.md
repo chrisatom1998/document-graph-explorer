@@ -15,3 +15,18 @@ Within 4% of the listeners' BPM:
 
 App + CNN rule: wrong tempo 65 (app 78), no tempo 56 (app 78). On the 30 loops with no defined tempo the CNN alone gives a
 tempo to 2. Per-loop rows: `loops330-v1.json`.
+
+## Loop-trained model (v2), tried and not shipped
+
+Same network retrained with 2,171 FSL10K loops (uploader BPMs, 168 uploaders) added to the songs. Every listener-annotated loop and all 231 judge-set uploaders were excluded from training. Scored once (`loops330-v2.json`).
+
+| Within 4% | v1 (shipped in #147) | v2 |
+|---|---|---|
+| 330 loops, app + CNN rule | 63.3% | 64.8% |
+| 330 loops, CNN alone (tiled) | 66.4% | 71.8% |
+| Round 1 DJ clips (10 s) | 85.6% | 84.8% |
+| Round 2 DJ clips (10 s) | 84.9% | 82.7% |
+| GTZAN test half, middle 10 s | 68.7% | 59.8% |
+| GTZAN test half, full 30 s | 70.5% | 62.0% |
+
+v2 also gives a tempo to 5 of the 30 loops listeners marked as having no tempo (v1: 2). The loop gain under the app's rule is 1.5 points while songs lose up to 9, so v1 stays. Training cost about $0.07 on HF Jobs.
