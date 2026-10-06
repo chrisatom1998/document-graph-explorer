@@ -55,7 +55,7 @@ for (const item of manifest.items) for (const r of item.reviews) {
   const key = inTags.length ? `profile tag (${inTags.join('/')})` : inAst ? 'instrument estimate only' : 'nowhere';
   (why[r.label] ??= {})[key] = (why[r.label]?.[key] ?? 0) + 1;
 }
-const report = { benchmark: 'mixed-music-2026-10-05', items: manifest.items.length, analysed: manifest.items.length - missing.length,
+const report = { benchmark: process.env.BENCHMARK ?? 'mixed-music-2026-10-05', items: manifest.items.length, analysed: manifest.items.length - missing.length,
   clipsWithNoScoredTag: noTag.length, missing, missedPositivesFoundIn: why, displayedIncludingMaybe: table };
 writeFileSync(outPath, JSON.stringify(report, null, 1));
 console.log(`${report.analysed}/${report.items} analysed; ${noTag.length} clips showed no tag`);

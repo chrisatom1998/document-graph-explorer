@@ -10,6 +10,7 @@ declare module 'essentia.js/dist/essentia.js-core.es.js' {
     RhythmExtractor2013(data: Vector): { bpm: number; confidence: number; ticks: Vector; estimates: Vector; bpmIntervals: Vector };
     PitchYin(data: Vector, frameSize?: number, interpolate?: boolean, maxFrequency?: number, minFrequency?: number): { pitch: number; pitchConfidence: number };
     OnsetRate(data: Vector): { onsets: Vector; onsetRate: number };
+    OnsetDetectionGlobal(data: Vector, frameSize?: number, hopSize?: number, method?: string, sampleRate?: number): { onsetDetections: Vector };
     LoopBpmEstimator(data: Vector, confidenceThreshold?: number): { bpm: number };
     TensorflowInputMusiCNN(data: Vector): { bands: Vector };
     KeyExtractor(data: Vector): { key: string; scale: string; strength: number };
