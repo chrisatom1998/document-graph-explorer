@@ -36,21 +36,33 @@ JAMENDO_TAGS = ['accordion', 'acousticbassguitar', 'acousticguitar', 'bass', 'be
                 'keyboard', 'oboe', 'orchestra', 'organ', 'pad', 'percussion', 'piano', 'pipeorgan', 'rhodes', 'sampler', 'saxophone', 'strings',
                 'synthesizer', 'trombone', 'trumpet', 'viola', 'violin', 'voice']
 OPENMIC = list(CLASSES)
-CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS]
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from labelmap import CAT  # noqa: E402
+# Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth and the effect renders, plus the music
+# sources' labels below wherever one names the same sound.
+CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS] + [f'cat:{l}' for l in CAT]
+ALIAS = {'voice': 'voice', 'piano': 'piano', 'organ': 'organ', 'trumpet': 'trumpet', 'drums': 'drums', 'guitar': 'guitar', 'synthesizer': 'synthesizer',
+         'mallet_percussion': 'mallet instrument', 'accordion': 'accordion', 'flute': 'flute', 'cymbals': 'cymbal',
+         'jamendo:electricguitar': 'electric guitar', 'jamendo:acousticguitar': 'acoustic guitar', 'jamendo:electricpiano': 'electric piano',
+         'jamendo:bell': 'bell', 'jamendo:harp': 'harp', 'jamendo:harmonica': 'harmonica', 'jamendo:percussion': 'percussion', 'jamendo:strings': 'strings'}
+SILENCE = -1.4025   # the stored log-mel value of digital silence: (log(1e-5) + 4.5) / 5
 WIDTH = {'mn04_as': 0.4, 'mn05_as': 0.5, 'mn10_as': 1.0, 'mn20_as': 2.0, 'mn30_as': 3.0}
 FRAMES = 1000
 
 def is_val(artist): return int(hashlib.sha256(f'dge-audio-model|{artist}'.encode()).hexdigest()[:8], 16) % 10 == 0
 
 def load_source(name, mel_path, items, weak):
-    y = np.zeros((len(items), len(CLASSES)), np.float32); w = np.zeros_like(y)
+    y = np.zeros((len(items), len(CLASSES)), np.float32); w = np.zeros_like(y); col = {c: j for j, c in enumerate(CLASSES)}
     for i, it in enumerate(items):
         weak_set = set(it.get('weakAbsent', []))
-        for c, r in it['labels'].items():
-            j = CLASSES.index(c); y[i, j] = float(r >= 0.5); w[i, j] = weak if c in weak_set else 1.0
+        labels = dict(it['labels'])
+        for c, l in ALIAS.items():   # the same sound under the app's name, unless the source labels that name itself
+            if c in labels and f'cat:{l}' not in labels: labels[f'cat:{l}'] = labels[c]; weak_set |= {f'cat:{l}'} if c in weak_set else set()
+        for c, r in labels.items():
+            j = col[c]; y[i, j] = float(r >= 0.5); w[i, j] = weak if c in weak_set else 1.0
     rows = np.array([it.get('row', i) for i, it in enumerate(items)])
     return {'name': name, 'mel': np.load(mel_path, mmap_mode='r'), 'rows': rows, 'y': y, 'w': w,
-            'val': np.array([is_val(it['artist']) for it in items]), 'ids': [it['id'] for it in items],
+            'val': np.array([bool(it['val']) if 'val' in it else is_val(it['artist']) for it in items]), 'ids': [it['id'] for it in items],
             'dj': np.array([bool(it.get('dj')) for it in items])}
 
 def masked_ap(scores, y, w):
@@ -71,6 +83,8 @@ def main():
     ap.add_argument('--threads', type=int, default=os.cpu_count()); ap.add_argument('--resume', action='store_true')
     ap.add_argument('--limit', type=int, default=0, help='first N clips per source only (smoke test)')
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
+    ap.add_argument('--fsd50k'); ap.add_argument('--nsynth')
+    ap.add_argument('--init', help='start from this model.pt (an earlier run); classifier rows are matched by class name')
     args = ap.parse_args()
     dev = torch.device(args.device)
     torch.set_num_threads(args.threads); torch.manual_seed(0); rng = np.random.default_rng(0)
@@ -81,6 +95,10 @@ def main():
         sources.append(load_source('jamendo', os.path.join(args.jamendo, 'jamendo-mel.npy'), json.load(open(os.path.join(args.jamendo, 'jamendo.json')))['items'], args.weak))
     if args.soundcloud:
         sources.append(load_source('soundcloud', os.path.join(args.soundcloud, 'soundcloud-mel.npy'), json.load(open(os.path.join(args.soundcloud, 'soundcloud.json')))['items'], args.weak))
+    if args.fsd50k:
+        sources.append(load_source('fsd50k', os.path.join(args.fsd50k, 'fsd50k-mel.npy'), json.load(open(os.path.join(args.fsd50k, 'fsd50k.json')))['items'], args.weak))
+    if args.nsynth:
+        sources.append(load_source('nsynth', os.path.join(args.nsynth, 'nsynth-mel.npy'), json.load(open(os.path.join(args.nsynth, 'nsynth.json')))['items'], args.weak))
     pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]
             for _ in range(args.dj_repeat if src['dj'][i] else 1)]
     vals = {src['name']: np.flatnonzero(src['val'])[:(args.limit // 8 + 8) if args.limit else None] for src in sources}
@@ -88,6 +106,14 @@ def main():
           '; validation ' + ', '.join(f'{k} {len(v)}' for k, v in vals.items()), flush=True)
 
     model = get_model(width_mult=WIDTH[args.model], pretrained_name=args.model, num_classes=len(CLASSES)).to(dev)
+    if args.init and not args.resume:
+        old = torch.load(args.init, map_location=dev); old_classes = json.load(open(os.path.join(os.path.dirname(args.init), 'log.json')))['classes']
+        new = model.state_dict(); rows = [(CLASSES.index(c), k) for k, c in enumerate(old_classes) if c in CLASSES]
+        for key, v in old.items():
+            if key in ('classifier.5.weight', 'classifier.5.bias'):
+                for j, k in rows: new[key][j] = v[k]
+            elif new[key].shape == v.shape: new[key] = v
+        model.load_state_dict(new); print(f'started from {args.init} ({len(rows)} of {len(CLASSES)} outputs carried over)', flush=True)
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
     steps_per_epoch = math.ceil(len(pool) / args.batch); total = steps_per_epoch * args.epochs
     sched = torch.optim.lr_scheduler.LambdaLR(opt, lambda s: min(1, (s + 1) / steps_per_epoch) * 0.5 * (1 + math.cos(math.pi * min(1, s / total))))
@@ -100,8 +126,8 @@ def main():
 
     def mels(src, idx):
         rows = src['rows'][idx]; order = np.argsort(rows)
-        x = np.empty((len(rows), 128, FRAMES), np.float32)
-        x[order] = src['mel'][rows[order]][:, :, :FRAMES]              # memmap reads want sorted rows
+        x = np.full((len(rows), 128, FRAMES), SILENCE, np.float32); f = min(FRAMES, src['mel'].shape[2])
+        x[order, :, :f] = src['mel'][rows[order]][:, :, :f]           # memmap reads want sorted rows; short clips end in silence
         return torch.from_numpy(x)
 
     def augment(x):
@@ -126,13 +152,15 @@ def main():
         model.train(); order = rng.permutation(len(pool)); t0 = time.time(); losses = []
         for s in range(0, len(order), args.batch):
             picked = [pool[k] for k in order[s:s + args.batch]]
-            xs, ys, ws = [], [], []
+            xs, ys, ws, part = [], [], [], []
             for si, src in enumerate(sources):
                 idx = np.array([i for sj, i in picked if sj == si], int)
-                if len(idx): xs.append(mels(src, idx)); ys.append(src['y'][idx]); ws.append(src['w'][idx])
+                if len(idx): xs.append(mels(src, idx)); ys.append(src['y'][idx]); ws.append(src['w'][idx]); part.append(len(idx))
             x = augment(torch.cat(xs)).unsqueeze(1).to(dev); yt = torch.from_numpy(np.concatenate(ys)).to(dev); wt = torch.from_numpy(np.concatenate(ws)).to(dev)
             if args.mixup:
-                p2 = torch.randperm(len(x), device=dev); l = rng.beta(args.mixup, args.mixup, len(x))
+                # Mix within a source only: sources label different tags, and a pair is scored only where both clips label it.
+                starts = np.cumsum([0] + part[:-1]); p2 = torch.from_numpy(np.concatenate([st + rng.permutation(n) for st, n in zip(starts, part)])).to(dev)
+                l = rng.beta(args.mixup, args.mixup, len(x))
                 lam = torch.from_numpy(np.maximum(l, 1 - l).astype(np.float32)).to(dev)
                 x = x * lam.view(-1, 1, 1, 1) + x[p2] * (1 - lam.view(-1, 1, 1, 1))
                 yt = yt * lam.view(-1, 1) + yt[p2] * (1 - lam.view(-1, 1))
@@ -145,7 +173,7 @@ def main():
                       f'{(time.time() - t0) / len(losses):.2f}s/step', flush=True)
         scores = evaluate()
         aps = {name: masked_ap(sc, src['y'][vals[name]], src['w'][vals[name]]) for (name, sc), src in zip(scores.items(), sources)}
-        mAP = float(np.mean([v for a in aps.values() for v in a.values()]))
+        all_ap = [v for a in aps.values() for v in a.values()]; mAP = float(np.mean(all_ap)) if all_ap else 0.0
         log.append({'epoch': epoch + 1, 'loss': float(np.mean(losses)), 'valMAP': mAP, 'valAP': aps, 'seconds': time.time() - t0})
         print(json.dumps(log[-1]), flush=True)
         if mAP > best:

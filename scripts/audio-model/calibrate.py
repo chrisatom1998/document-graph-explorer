@@ -1,64 +1,69 @@
 """Per-tag thresholds for DGE's trained tagger, chosen on the validation artists only (train.py holds them out).
 
-Usage: python3 scripts/audio-model/calibrate.py <run-dir> <openmic-prep-dir> [<jamendo-prep-dir>]
+Usage: python3 scripts/audio-model/calibrate.py <run-dir> openmic=<prep-dir> [jamendo=<prep-dir>] [soundcloud=<dir>] [fsd50k=<dir>] [nsynth=<dir>]
 
-For each class, the threshold maximises min(precision, recall) on OpenMIC validation clips with explicit labels (ties:
-higher F1), because DGE's bar is precision AND recall >= 0.70. Jamendo validation windows add recall checks (uploader
-tags are positives only) and voice precision (three-annotator agreement). A class with fewer than 10 validation
-positives is marked untested and left off. Writes <run-dir>/thresholds.json.
+For each output, the threshold maximises min(precision, recall) on validation clips (ties: higher F1), because DGE's
+bar is precision AND recall >= 0.70:
+  * OpenMIC's 20 classes: OpenMIC validation clips with explicit labels; Jamendo validation is reported at that threshold.
+  * Jamendo's own 40 tags: Jamendo validation, where untagged counts as absent, so precision is a lower bound.
+  * the app-named outputs ('cat:<label>'): every source's validation clips that label it outright (FSD50K, NSynth and
+    its effect renders, and the music sources where they name the same sound); weak absences are left out.
+An output with fewer than 10 validation positives or negatives is marked untested and left off. Writes <run-dir>/thresholds.json.
 """
 import json, os, sys
 import numpy as np
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import train  # noqa: E402
 
-run, openmic, *rest = sys.argv[1:]
+run, *pairs = sys.argv[1:]
+preps = dict(p.split('=', 1) for p in pairs)
+FILES = {'openmic': ('train-mel.npy', 'train.json'), 'jamendo': ('jamendo-mel.npy', 'jamendo.json'), 'soundcloud': ('soundcloud-mel.npy', 'soundcloud.json'),
+         'fsd50k': ('fsd50k-mel.npy', 'fsd50k.json'), 'nsynth': ('nsynth-mel.npy', 'nsynth.json')}
 log = json.load(open(os.path.join(run, 'log.json'))); classes = log['classes']
-
-def labels(prep, name, ids, keep_weak=False):
-    items = {it['id']: it for it in json.load(open(os.path.join(prep, name)))['items']}
-    y = np.full((len(ids), len(classes)), np.nan, np.float32)
-    for i, k in enumerate(ids):
-        it = items[k]; weak = set(it.get('weakAbsent', []))
-        for c, r in it['labels'].items():
-            if c in classes and (keep_weak or c not in weak): y[i, classes.index(c)] = float(r >= 0.5)
-    return y
-
-y_om = labels(openmic, 'train.json', log['val']['openmic']); s_om = np.load(os.path.join(run, 'val-openmic.npy'))
-y_mj = s_mj = None
-if rest and 'jamendo' in log['val']:
-    y_mj = labels(rest[0], 'jamendo.json', log['val']['jamendo']); s_mj = np.load(os.path.join(run, 'val-jamendo.npy'))
-    y_mjw = labels(rest[0], 'jamendo.json', log['val']['jamendo'], keep_weak=True)
+assert classes == train.CLASSES, 'run was trained with a different class list'
+val = {}
+for name, ids in log['val'].items():
+    if name not in preps: continue
+    mel, js = FILES[name]; items = {it['id']: it for it in json.load(open(os.path.join(preps[name], js)))['items']}
+    src = train.load_source(name, os.path.join(preps[name], mel), [items[i] for i in ids], 1.0)
+    val[name] = (src['y'], src['w'], np.load(os.path.join(run, f'val-{name}.npy')))
 
 def pr(y, s, t):
-    k = ~np.isnan(y); y, s = y[k], s[k]; hit = s >= t
-    tp = int((hit & (y == 1)).sum()); fp = int((hit & (y == 0)).sum()); pos = int((y == 1).sum())
+    hit = s >= t; tp = int((hit & (y == 1)).sum()); fp = int((hit & (y == 0)).sum()); pos = int((y == 1).sum())
     return (tp / (tp + fp) if tp + fp else None), (tp / pos if pos else None), pos, int((y == 0).sum())
 
-out = {}
-for j, c in enumerate(classes):
-    jam = c.startswith('jamendo:')
-    if jam and y_mj is None: out[c] = {'enabled': False, 'reason': 'no Jamendo validation data'}; continue
-    # Jamendo's own tags have only uploader positives; untagged counts as absent, so precision is a lower bound.
-    y, s = (y_mjw[:, j], s_mj[:, j]) if jam else (y_om[:, j], s_om[:, j]); k = ~np.isnan(y)
-    pos = int((y[k] == 1).sum())
-    if pos < 10 or (y[k] == 0).sum() < 10:
-        out[c] = {'enabled': False, 'reason': f'{pos} validation positives, {int((y[k] == 0).sum())} negatives'}; continue
+def pick(y, s):
     best = None
-    for t in np.unique(np.round(s[k], 4)):
+    for t in np.unique(np.round(s, 4)):
         p, r, _, _ = pr(y, s, t)
         if p is None: continue
         key = (min(p, r), 2 * p * r / (p + r) if p + r else 0)
         if best is None or key > best[0]: best = (key, float(t), p, r)
-    _, t, p, r = best
-    if jam:
-        out[c] = {'enabled': True, 'threshold': round(t, 4), 'precisionIsLowerBound': True,
-                  'jamendoVal': {'precision': round(p, 3), 'recall': round(r, 3), 'positives': pos, 'negatives': int((y[k] == 0).sum())}}; continue
-    row = {'enabled': True, 'threshold': round(t, 4), 'openmicVal': {'precision': round(p, 3), 'recall': round(r, 3), 'positives': pos, 'negatives': int((y[k] == 0).sum())}}
-    if y_mj is not None and (~np.isnan(y_mj[:, j])).any():
-        pj, rj, posj, negj = pr(y_mj[:, j], s_mj[:, j], t)
-        row['jamendoVal'] = {'precision': None if pj is None or negj == 0 else round(pj, 3), 'recall': None if rj is None else round(rj, 3), 'positives': posj, 'negatives': negj}
+    return best[1:]
+
+def view(name, j, keep_weak):
+    y, w, s = val[name]; k = w[:, j] > 0 if keep_weak else w[:, j] >= 1
+    return y[k, j], s[k, j]
+
+out = {}
+for j, c in enumerate(classes):
+    if c.startswith('jamendo:'): fit = [('jamendo', True)] if 'jamendo' in val else []
+    elif c.startswith('cat:'): fit = [(n, False) for n in val]
+    else: fit = [('openmic', False)]
+    ys, ss = zip(*[view(n, j, kw) for n, kw in fit]) if fit else ((), ())
+    y = np.concatenate(ys) if ys else np.zeros(0); s = np.concatenate(ss) if ss else np.zeros(0)
+    pos, neg = int((y == 1).sum()), int((y == 0).sum())
+    if pos < 10 or neg < 10: out[c] = {'enabled': False, 'reason': f'{pos} validation positives, {neg} negatives'}; continue
+    t, p, r = pick(y, s)
+    row = {'enabled': True, 'threshold': round(t, 4), 'fitOn': [n for n, _ in fit], 'val': {'precision': round(p, 3), 'recall': round(r, 3), 'positives': pos, 'negatives': neg}}
+    if c.startswith('jamendo:'): row['precisionIsLowerBound'] = True
+    for n in val:   # each source's own view at the chosen threshold
+        yn, sn = view(n, j, n == 'jamendo')
+        if (yn == 1).sum() or (yn == 0).sum():
+            pn, rn, posn, negn = pr(yn, sn, t)
+            row[f'{n}Val'] = {'precision': None if pn is None or negn == 0 else round(pn, 3), 'recall': None if rn is None else round(rn, 3), 'positives': posn, 'negatives': negn}
     out[c] = row
 json.dump(out, open(os.path.join(run, 'thresholds.json'), 'w'), indent=1)
 for c, r in out.items():
-    print(f'{c:18s}', 'off: ' + r['reason'] if not r['enabled'] else f"t={r['threshold']:.3f}  " + ' '.join(f"{k[:-3]} val P {v['precision']} R {v['recall']} ({v['positives']} pos)" for k, v in r.items() if k.endswith('Val'))
-)
+    print(f'{c:26s}', 'off: ' + r['reason'] if not r['enabled'] else f"t={r['threshold']:.3f}  val P {r['val']['precision']} R {r['val']['recall']} ({r['val']['positives']} pos)  " +
+          ' '.join(f"{k[:-3]} P {v['precision']} R {v['recall']} ({v['positives']})" for k, v in r.items() if k.endswith('Val')))
