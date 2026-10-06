@@ -110,6 +110,10 @@
 .rs-import strong { display: block; font-size: 17px; font-weight: 600; }
 .rs-import small { display: block; font-size: 10px; margin-top: 2px; opacity: 0.8; }
 .rs-import:hover { filter: brightness(1.05); }
+.rs-import--secondary { margin-top: 10px; background: var(--rs-raised); color: var(--rs-text); border: 1px solid var(--rs-line-strong); }
+.rs-import--secondary .rs-import__plus { font-size: 22px; color: var(--rs-lime); }
+.rs-import--secondary small { color: var(--rs-muted); opacity: 1; }
+.rs-import--secondary:hover { filter: none; border-color: var(--rs-lime); }
 .rs-count { margin: 16px 0 0; padding-bottom: 18px; border-bottom: 1px solid var(--rs-line); color: var(--rs-muted); font-size: 13px; }
 .rs-filters-head { display: flex; align-items: baseline; justify-content: space-between; margin: 20px 0 14px; }
 .rs-filters-head h2 { margin: 0; font-size: 17px; font-weight: 600; }

@@ -6,6 +6,7 @@ import { isFilterActive } from '../../scene/emphasis';
 import { keyName } from '../../audio/musicTypes';
 import { styleTags } from '../../audio/styleTags';
 import { openFilePicker } from '../../ingest/DropZone';
+import { openFolderPicker } from '../../ingest/folderPicker';
 
 const SIMILARITY: { kind: EdgeKind; label: string }[] = [
   { kind: 'instrument', label: 'Instruments' },
@@ -58,6 +59,10 @@ export default function ResonanceFilters() {
       <button type="button" className="rs-import" onClick={openFilePicker}>
         <span className="rs-import__plus" aria-hidden="true">+</span>
         <span><strong>{audio || docs.length === 0 ? 'Import clips' : 'Import files'}</strong><small>Audio files, drag and drop, or browse</small></span>
+      </button>
+      <button type="button" className="rs-import rs-import--secondary" onClick={openFolderPicker}>
+        <span className="rs-import__plus" aria-hidden="true">♫</span>
+        <span><strong>Import sounds</strong><small>Pick a whole folder of samples</small></span>
       </button>
       <p className="rs-count">{docs.length} {audio || docs.length === 0 ? 'clips' : 'files'} in project</p>
 
