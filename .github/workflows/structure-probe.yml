@@ -25,7 +25,7 @@ jobs:
       - name: Try audio
         run: |
           pip install -q yt-dlp
-          for id in $(find rf -name '*.beat.csv' | head -4 | xargs -n1 basename | sed 's/.beat.csv//'); do
-            echo "== $id"; timeout 120 yt-dlp -q -x --audio-format mp3 -o "a/$id.%(ext)s" "https://www.youtube.com/watch?v=$id" 2>&1 | tail -3 || true
+          for id in $(find rf -name '*.beat.csv' | head -4 | xargs -n1 basename | sed 's/.beat.csv//; s/^[0-9]*\.//'); do
+            echo "== $id"; timeout 120 yt-dlp -x -v --audio-format mp3 -o "a/$id.%(ext)s" "https://www.youtube.com/watch?v=$id" 2>&1 | tail -3 || true
           done
           ls -la a || true
