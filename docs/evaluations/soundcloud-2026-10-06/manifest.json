@@ -1,5 +1,5 @@
 {
- "note": "Frozen SoundCloud set: Creative Commons tracks labelled from their own title/description/tags by scripts/soundcloud/labels.py. Audio is fetched at run time and never committed.",
+ "note": "Frozen SoundCloud set: Creative Commons tracks labelled from their own title/description/tags by scripts/soundcloud/labels.py. Audio is fetched at run time and never committed. Labels were re-derived from the frozen text (collect.py relabel) after fixing two rules seen in the label list (the \"Hip-hop & Rap\" genre and bare \"rap\" tags on instrumental beats no longer mean vocals; \"Rhodes University\" is not a piano), before any audio had been analysed.",
  "seed": "dge-soundcloud-train-2026-10-06",
  "clipSeconds": 30,
  "labelCounts": {
@@ -9,23 +9,23 @@
     "absent": 0
    },
    "voice": {
-    "present": 69,
-    "absent": 22
+    "present": 39,
+    "absent": 35
    },
    "synthesizer": {
-    "present": 17,
+    "present": 16,
     "absent": 0
    },
    "piano": {
     "present": 28,
-    "absent": 11
+    "absent": 10
    },
    "guitar": {
     "present": 25,
-    "absent": 7
+    "absent": 6
    },
    "bass": {
-    "present": 42,
+    "present": 41,
     "absent": 0
    },
    "cymbals": {
@@ -34,44 +34,44 @@
    },
    "organ": {
     "present": 5,
-    "absent": 16
+    "absent": 15
    },
    "violin": {
-    "present": 9,
+    "present": 8,
     "absent": 14
    },
    "trumpet": {
-    "present": 12,
+    "present": 11,
     "absent": 13
    },
    "saxophone": {
     "present": 8,
-    "absent": 15
+    "absent": 14
    }
   },
   "held-out": {
    "drums": {
-    "present": 18,
+    "present": 17,
     "absent": 1
    },
    "voice": {
-    "present": 28,
-    "absent": 12
+    "present": 20,
+    "absent": 13
    },
    "synthesizer": {
-    "present": 8,
+    "present": 7,
     "absent": 0
    },
    "piano": {
-    "present": 13,
-    "absent": 1
+    "present": 12,
+    "absent": 0
    },
    "guitar": {
     "present": 9,
-    "absent": 1
+    "absent": 0
    },
    "bass": {
-    "present": 9,
+    "present": 7,
     "absent": 0
    },
    "cymbals": {
@@ -80,18 +80,18 @@
    },
    "organ": {
     "present": 8,
-    "absent": 1
+    "absent": 0
    },
    "violin": {
     "present": 9,
-    "absent": 1
+    "absent": 0
    },
    "trumpet": {
     "present": 9,
-    "absent": 1
+    "absent": 0
    },
    "saxophone": {
-    "present": 10,
+    "present": 9,
     "absent": 0
    }
   }
@@ -189,11 +189,6 @@
    "listing": true,
    "reviews": [
     {
-     "label": "bass",
-     "state": "present",
-     "evidence": "Electric Bass"
-    },
-    {
      "label": "drums",
      "state": "present",
      "evidence": "drums"
@@ -225,13 +220,13 @@
     },
     {
      "label": "trumpet",
-     "state": "present",
-     "evidence": "Trumpet"
+     "state": "absent",
+     "evidence": "left out of instrument list"
     },
     {
      "label": "violin",
-     "state": "present",
-     "evidence": "Violins"
+     "state": "absent",
+     "evidence": "left out of instrument list"
     },
     {
      "label": "voice",
@@ -260,7 +255,7 @@
    "groups": {
     "artist": "zmy_dabeat"
    },
-   "listing": true,
+   "listing": false,
    "reviews": [
     {
      "label": "bass",
@@ -273,39 +268,9 @@
      "evidence": "Drums"
     },
     {
-     "label": "guitar",
-     "state": "absent",
-     "evidence": "left out of instrument list"
-    },
-    {
-     "label": "organ",
-     "state": "absent",
-     "evidence": "left out of instrument list"
-    },
-    {
-     "label": "piano",
-     "state": "absent",
-     "evidence": "left out of instrument list"
-    },
-    {
-     "label": "saxophone",
-     "state": "absent",
-     "evidence": "left out of instrument list"
-    },
-    {
-     "label": "trumpet",
-     "state": "absent",
-     "evidence": "left out of instrument list"
-    },
-    {
-     "label": "violin",
-     "state": "absent",
-     "evidence": "left out of instrument list"
-    },
-    {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -495,11 +460,6 @@
      "evidence": "left out of instrument list"
     },
     {
-     "label": "synthesizer",
-     "state": "present",
-     "evidence": "massive"
-    },
-    {
      "label": "trumpet",
      "state": "present",
      "evidence": "Trumpet"
@@ -605,52 +565,12 @@
    "groups": {
     "artist": "deephousemsk"
    },
-   "listing": true,
+   "listing": false,
    "reviews": [
-    {
-     "label": "drums",
-     "state": "present",
-     "evidence": "drums"
-    },
-    {
-     "label": "guitar",
-     "state": "absent",
-     "evidence": "left out of instrument list"
-    },
-    {
-     "label": "organ",
-     "state": "absent",
-     "evidence": "left out of instrument list"
-    },
-    {
-     "label": "piano",
-     "state": "absent",
-     "evidence": "left out of instrument list"
-    },
     {
      "label": "saxophone",
      "state": "present",
      "evidence": "sax"
-    },
-    {
-     "label": "synthesizer",
-     "state": "present",
-     "evidence": "synths"
-    },
-    {
-     "label": "trumpet",
-     "state": "absent",
-     "evidence": "left out of instrument list"
-    },
-    {
-     "label": "violin",
-     "state": "absent",
-     "evidence": "left out of instrument list"
-    },
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "vocals"
     }
    ],
    "excerpt": {
@@ -1266,11 +1186,6 @@
    },
    "listing": false,
    "reviews": [
-    {
-     "label": "bass",
-     "state": "present",
-     "evidence": "Bass"
-    },
     {
      "label": "organ",
      "state": "present",
@@ -2360,7 +2275,7 @@
     {
      "label": "voice",
      "state": "present",
-     "evidence": "Rap"
+     "evidence": "Singer"
     }
    ],
    "excerpt": {
@@ -2521,18 +2436,7 @@
     "artist": "otherlyrecords"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "bass",
-     "state": "present",
-     "evidence": "bass"
-    },
-    {
-     "label": "saxophone",
-     "state": "present",
-     "evidence": "Saxophones"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 167,
     "durationSeconds": 30,
@@ -2598,7 +2502,7 @@
     {
      "label": "voice",
      "state": "present",
-     "evidence": "Rap"
+     "evidence": "Rapper"
     }
    ],
    "excerpt": {
@@ -2662,11 +2566,6 @@
      "label": "organ",
      "state": "present",
      "evidence": "Organ"
-    },
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
     }
    ],
    "excerpt": {
@@ -2869,8 +2768,8 @@
     },
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -2903,8 +2802,8 @@
     },
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -3005,8 +2904,8 @@
     },
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -3070,11 +2969,6 @@
      "label": "drums",
      "state": "present",
      "evidence": "Breakbeat"
-    },
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
     }
    ],
    "excerpt": {
@@ -3376,11 +3270,6 @@
      "label": "drums",
      "state": "present",
      "evidence": "Drums"
-    },
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
     }
    ],
    "excerpt": {
@@ -3410,11 +3299,6 @@
      "label": "drums",
      "state": "present",
      "evidence": "Drums"
-    },
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
     }
    ],
    "excerpt": {
@@ -3481,8 +3365,8 @@
     },
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -4001,13 +3885,7 @@
     "artist": "organcis"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 29,
     "durationSeconds": 30,
@@ -4059,13 +3937,7 @@
     "artist": "kavvofficial"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 73,
     "durationSeconds": 30,
@@ -4323,8 +4195,8 @@
    "reviews": [
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -4581,13 +4453,7 @@
     "artist": "ronny-matthes"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "piano",
-     "state": "present",
-     "evidence": "Pianist"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 108,
     "durationSeconds": 30,
@@ -4845,8 +4711,8 @@
    "reviews": [
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -4875,7 +4741,7 @@
     {
      "label": "voice",
      "state": "present",
-     "evidence": "Rap"
+     "evidence": "Vocals"
     }
    ],
    "excerpt": {
@@ -4900,13 +4766,7 @@
     "artist": "slammermedia"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 36,
     "durationSeconds": 30,
@@ -5161,13 +5021,7 @@
     "artist": "deephousemsk"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "voices"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 125,
     "durationSeconds": 30,
@@ -5277,13 +5131,7 @@
     "artist": "albymusic"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 83,
     "durationSeconds": 30,
@@ -5364,13 +5212,7 @@
     "artist": "soegaardofficial"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 59,
     "durationSeconds": 30,
@@ -5480,13 +5322,7 @@
     "artist": "hurbay"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 67,
     "durationSeconds": 30,
@@ -6060,13 +5896,7 @@
     "artist": "realdjgren8deradio3"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 34,
     "durationSeconds": 30,
@@ -6350,13 +6180,7 @@
     "artist": "osttofficial"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 94,
     "durationSeconds": 30,
@@ -6901,13 +6725,7 @@
     "artist": "paracek"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 61,
     "durationSeconds": 30,
@@ -6933,8 +6751,8 @@
    "reviews": [
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -7021,7 +6839,7 @@
     {
      "label": "voice",
      "state": "present",
-     "evidence": "Rap"
+     "evidence": "Acapella"
     }
    ],
    "excerpt": {
@@ -7107,8 +6925,8 @@
    "reviews": [
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -7600,8 +7418,8 @@
    "reviews": [
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -7684,13 +7502,7 @@
     "artist": "hiphoptrapbackgroundmusic"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 85,
     "durationSeconds": 30,
@@ -7717,7 +7529,7 @@
     {
      "label": "piano",
      "state": "present",
-     "evidence": "pianist"
+     "evidence": "piano"
     }
    ],
    "excerpt": {
@@ -7832,8 +7644,8 @@
    "reviews": [
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -7945,13 +7757,7 @@
     "artist": "trapbrasileiroriginal"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 53,
     "durationSeconds": 30,
@@ -8090,13 +7896,7 @@
     "artist": "realdjgren8deradio3"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 44,
     "durationSeconds": 30,
@@ -8123,7 +7923,7 @@
     {
      "label": "piano",
      "state": "present",
-     "evidence": "pianist"
+     "evidence": "piano"
     }
    ],
    "excerpt": {
@@ -8177,13 +7977,7 @@
     "artist": "gnumadayo"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 80,
     "durationSeconds": 30,
@@ -8380,13 +8174,7 @@
     "artist": "traphouselatino"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 72,
     "durationSeconds": 30,
@@ -8615,8 +8403,8 @@
    "reviews": [
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -8905,8 +8693,8 @@
    "reviews": [
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -8963,8 +8751,8 @@
    "reviews": [
     {
      "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
+     "state": "absent",
+     "evidence": "instrumental"
     }
    ],
    "excerpt": {
@@ -8989,13 +8777,7 @@
     "artist": "oxytronix"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 51,
     "durationSeconds": 30,
@@ -9395,13 +9177,7 @@
     "artist": "hiphoptrapbackgroundmusic"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 71,
     "durationSeconds": 30,
@@ -9511,13 +9287,7 @@
     "artist": "felipeschaeffer"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 80,
     "durationSeconds": 30,
@@ -9627,13 +9397,7 @@
     "artist": "crashgocrazy"
    },
    "listing": false,
-   "reviews": [
-    {
-     "label": "voice",
-     "state": "present",
-     "evidence": "Rap"
-    }
-   ],
+   "reviews": [],
    "excerpt": {
     "startSeconds": 53,
     "durationSeconds": 30,

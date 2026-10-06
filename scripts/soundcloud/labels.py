@@ -21,12 +21,13 @@ GENRE_PHRASES = [
     r"drum\s*(?:and|&|n|'n'|’n’|\+)\s*bass", r'drum\s*n\s*bass', r'\bdnb\b', r'\bd&b\b', r'drumstep', r'drum\s*core',
     r'future\s*bass', r'bass\s*house', r'bass\s*music', r'\bubass\b', r'synth\s*-?\s*wave', r'synth\s*-?\s*pop',
     r'synth\s*-?\s*punk', r'dark\s*synth', r'guitar\s*hero', r'air\s*guitar', r'organic', r'piano\s*man\b',
-    r'beat\s*tape', r'bass\s*boost(?:ed)?',
+    r'beat\s*tape', r'bass\s*boost(?:ed)?', r'hip\s*-?\s*hop\s*(?:&|and)\s*rap', r'rap\s*(?:instrumentals?|beats?)',
+    r'beats?\s*for\s*rap(?:pers)?', r'rhodes\s*university',
 ]
 TERMS = {
     'drums': [r'drums?', r'drum\s*kits?', r'drum\s*machines?', r'drummer', r'drumming', r'breakbeats?', r'\btr-?(?:808|909)\b'],
-    'voice': [r'vocals?', r'vocalist', r'voices?', r'vox', r'singing', r'singer', r'sung', r'lyrics?', r'rapp?(?:er|ing)?', r'a\s*cappella', r'acapella', r'choir'],
-    'synthesizer': [r'synths?', r'synthesi[sz]ers?', r'moog', r'arp\s*odyssey', r'juno-?\d*', r'prophet-?\d+', r'serum', r'sylenth1?', r'massive\s*x?', r'modular'],
+    'voice': [r'vocals?', r'vocalist', r'voices?', r'vox', r'singing', r'singer', r'sung', r'lyrics?', r'rapp(?:ers?|ing)', r'a\s*cappella', r'acapella', r'choir'],
+    'synthesizer': [r'synths?', r'synthesi[sz]ers?', r'moog', r'arp\s*odyssey', r'juno-?\d*', r'prophet-?\d+', r'serum', r'sylenth1?', r'modular'],
     'piano': [r'pianos?', r'pianist', r'rhodes', r'electric\s*piano', r'wurlitzer', r'grand\s*piano'],
     'guitar': [r'guitars?', r'guitarist', r'stratocaster', r'telecaster', r'les\s*paul'],
     'bass': [r'bass\s*guitar', r'bassist', r'double\s*bass', r'upright\s*bass', r'electric\s*bass', r'slap\s*bass', r'bass\s*lines?', r'basslines?', r'sub\s*-?\s*bass', r'basses', r'bass'],
@@ -75,7 +76,7 @@ def labels_from_text(raw):
     out = {c: 'present' for c in present}
     for c in negated - present:
         out[c] = 'absent'; evidence[c] = 'negated'
-    if 'voice' not in present and INSTRUMENTAL.search(text):
+    if 'voice' not in present and INSTRUMENTAL.search(raw):
         out['voice'] = 'absent'; evidence['voice'] = 'instrumental'
     listing = len(present) >= 3 or bool(LIST_LINE.search(raw))
     if listing:
@@ -98,6 +99,8 @@ def _selftest():
         ('A hi-hat heavy trap beat', {'cymbals': 'present'}),
         ('Free download, no copyright piano music', {'piano': 'present'}),
         ('Ambient pads with no real drums', {'drums': 'absent'}),
+        ('Hard trap beat (rap instrumental)\nHip-hop & Rap', {'voice': 'absent'}),
+        ('Massive drop', {}),
     ]
     bad = 0
     for text, want in cases:

@@ -2,6 +2,7 @@
 
 Usage:
   python3 scripts/soundcloud/collect.py search <manifest.json> [max-tracks=720]
+  python3 scripts/soundcloud/collect.py relabel <manifest.json>
   python3 scripts/soundcloud/collect.py fetch <manifest.json> <audio-dir> [shard=i/n]
 
 search: queries SoundCloud's public web API (the same one soundcloud.com uses) for instrument and DJ-genre terms,
@@ -147,6 +148,20 @@ def cmd_search(manifest_path, max_tracks):
     if len(items) < 100:
         sys.exit(1)
 
+def cmd_relabel(manifest_path):
+    """Re-derive every track's labels from its frozen text with the current labels.py (ids, folds and audio unchanged)."""
+    manifest = json.load(open(manifest_path))
+    for item in manifest['items']:
+        text = track_text({'title': item['title'], 'description': item['description'], 'genre': item['genre'], 'tag_list': item['sourceTags']})
+        labels, evidence, listing = labels_from_text(text)
+        item['listing'] = listing
+        item['reviews'] = [{'label': k, 'state': v, 'evidence': evidence[k]} for k, v in sorted(labels.items())]
+    manifest['labelCounts'] = {f: {cls: {s: sum(1 for i in manifest['items'] if i['fold'] == f for r in i['reviews'] if r['label'] == cls and r['state'] == s)
+                                          for s in ('present', 'absent')} for cls in CLASSES} for f in ('train', 'held-out')}
+    with open(manifest_path, 'w') as f:
+        json.dump(manifest, f, indent=1, ensure_ascii=False)
+    print(json.dumps(manifest['labelCounts']))
+
 def cmd_fetch(manifest_path, audio_dir, shard='0/1'):
     manifest = json.load(open(manifest_path))
     i, n = map(int, shard.split('/'))
@@ -178,6 +193,8 @@ def cmd_fetch(manifest_path, audio_dir, shard='0/1'):
 if __name__ == '__main__':
     if sys.argv[1:2] == ['search']:
         cmd_search(sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 720)
+    elif sys.argv[1:2] == ['relabel']:
+        cmd_relabel(sys.argv[2])
     elif sys.argv[1:2] == ['fetch']:
         cmd_fetch(sys.argv[2], sys.argv[3], *sys.argv[4:5])
     else:
