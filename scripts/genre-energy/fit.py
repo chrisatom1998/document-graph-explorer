@@ -117,7 +117,10 @@ def pick(scores, truth, high):
         m = prf(scores >= t, truth) if high else prf(scores <= t, truth)
         p, rc = m['precision'] or 0, m['recall'] or 0
         f1 = 2 * p * rc / max(1e-9, p + rc)
-        key = (min(p, rc) >= BAR, f1)
+        # Among thresholds that pass the bar with recall to spare (>= 0.75), take the most precise one, so unsure
+        # tracks fall in the medium band instead of being forced to high or low; otherwise the best F1.
+        ok = min(p, rc) >= BAR and rc >= 0.75
+        key = (ok, p if ok else f1)
         if best is None or key > best[0]: best = (key, round(float(t), 2), m)
     return best[1], best[2]
 hi_t, hi_m = pick(eoof, ye, True); lo_t, lo_m = pick(eoof, ~ye, False)

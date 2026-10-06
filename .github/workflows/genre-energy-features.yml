@@ -5,9 +5,6 @@ name: Genre and energy features
 # branch claude/genre-energy-data for offline fitting and judging. See scripts/genre-energy/build-sets.py for the splits.
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/genre-energy-tags-nqxjo8]
-    paths: [.github/workflows/genre-energy-features.yml, scripts/genre-energy/build-sets.py, scripts/genre-energy/fetch.py, scripts/genre-energy/features.mjs]
 
 permissions:
   contents: write
