@@ -2,6 +2,7 @@
 import json, re, hashlib, subprocess, tarfile, zipfile, io, csv, os, shutil, wave
 R='/home/user/document-graph-explorer/docs/evaluations/short-clips-2026-10-04'
 A='/home/user/media/dj-training-fingerprints/short-clips/bench-audio'
+os.makedirs(A, exist_ok=True)
 m=json.load(open(f'{R}/manifest.json')); meta=json.load(open(f'{R}/item-meta.json'))
 h=lambda *p: hashlib.sha256('|'.join(map(str,p)).encode()).hexdigest()
 def crop(b, start, dur, fade=0.01):

@@ -60,9 +60,11 @@ if WANTED == '-':
     import json; json.dump({k: v[3] for k, v in members.items()}, sys.stdout); sys.exit()
 wanted = [l.strip() for l in open(WANTED) if l.strip()]
 
+FAILED = []
+
 def fetch(name):
     try: return fetch1(name)
-    except Exception as e: print('FAIL', name, e, file=sys.stderr); return 0
+    except Exception as e: print('FAIL', name, e, file=sys.stderr); FAILED.append(name); return 0
 
 def fetch1(name):
     dest = f'{OUT}/{name}'
@@ -91,3 +93,4 @@ with ThreadPoolExecutor(int(os.environ.get('THREADS', 8))) as ex:
         n += 1
         if n % 500 == 0: print(n, file=sys.stderr)
 print('done', n, file=sys.stderr)
+if FAILED: sys.exit(f'{len(FAILED)} members failed to download; re-run to resume (finished files are skipped)')

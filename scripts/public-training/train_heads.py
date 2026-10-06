@@ -27,7 +27,7 @@ DEV = [i for i in train + cal if i['id'] in feats]
 LAB = [{f"{r['dimension']}:{r['label']}": r['state'] for r in i['reviews']} for i in DEV]
 G = np.array([i['groups']['artist'] for i in DEV]); DS = np.array([i['meta']['dataset'] for i in DEV])
 X = np.stack([feats[i['id']] for i in DEV]); X /= np.linalg.norm(X, axis=1, keepdims=True) + 1e-9
-MEAN, STD = X.mean(0), X.std(0) + 1e-6; Xs = (X - MEAN) / STD
+MEAN, STD = X.mean(0), X.std(0) + 1e-6; Xs = (X - MEAN) / STD   # final export only; CV folds standardise on their own training rows
 print('dev items', len(DEV), collections.Counter(DS), file=sys.stderr)
 
 EMIT = {'role:kick': ('production', 'kick'), 'role:snare': ('production', 'snare'), 'role:clap': ('production', 'clap'),
@@ -53,11 +53,14 @@ def pick(p, y):
 def one(cat, Cs=(0.03, 0.3)):
     m = np.array([cat in l for l in LAB]); y = np.array([l.get(cat) == 'present' for l in LAB])[m]
     if y.sum() < 10 or (~y).sum() < 10: return cat, None
-    Xm, gm, dm = Xs[m], G[m], DS[m]; best = None
+    Xr, gm, dm = X[m], G[m], DS[m]; Xm = Xs[m]; best = None
     for C in Cs:
         p = np.zeros(len(y))
-        for a, b in GroupKFold(5).split(Xm, y, gm):
-            p[b] = fit(Xm[a], y[a], C).predict_proba(Xm[b])[:, 1] if 2 <= y[a].sum() < len(a) - 1 else 0
+        for a, b in GroupKFold(5).split(Xr, y, gm):
+            if not 2 <= y[a].sum() < len(a) - 1: continue
+            # LEGACY_GLOBAL_NORM=1 reproduces the shipped 2026-10-05 heads, selected with all-development statistics.
+            mu, sd = (MEAN, STD) if os.environ.get('LEGACY_GLOBAL_NORM') else (Xr[a].mean(0), Xr[a].std(0) + 1e-6)
+            p[b] = fit((Xr[a] - mu) / sd, y[a], C).predict_proba((Xr[b] - mu) / sd)[:, 1]
         t, P, R, f1 = pick(p, y)
         if best is None or (P >= TARGET and R >= TARGET, f1) > (best[2] >= TARGET and best[3] >= TARGET, best[4]): best = (C, t, P, R, f1, p)
     C, t, P, R, f1, p = best

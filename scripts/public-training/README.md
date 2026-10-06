@@ -15,4 +15,8 @@ Run from the work dir, in order:
 5. `python nsynth_stream.py`: streams `nsynth-train.jsonwav.tar.gz`, keeping notes with pitch 36–84, velocity ≥ 50, `sha256("nsynth-train|<name>") % 25 == 0`, ≤ 8 per instrument, plus `examples.json` (this run kept 5,459 notes / 923 instruments).
 6. `python materialize.py` (benchmark test + calibration audio), `python build_train.py` (training pool + `train-items.json`).
 7. `node scripts/public-training/clap-feat.mjs <list.json> <features-*.jsonl>` for calibration and training clips (never test).
-8. `python train_heads.py export short-clip-candidate.json`.
+8. `LEGACY_GLOBAL_NORM=1 python train_heads.py export short-clip-candidate.json` reproduces the shipped candidate (selection standardised on all development rows).
+   Without the flag each CV fold standardises on its own training rows; all four shipped categories still pass that way
+   (distorted 0.79 / 0.83, reverberant 0.93 / 0.89, beatbox 1.00 / 0.98, brass 0.92 / 0.94), with slightly different thresholds and, for distorted, a different C.
+9. On a checkout of the base model: `python merge_new_heads.py short-clip-candidate.json character:distorted character:reverberant production:beatbox source:horn`
+   (appends the four heads in the shipped standardisation and updates the manifest hash and `calibratedLabels.json`).

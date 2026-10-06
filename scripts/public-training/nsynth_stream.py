@@ -1,5 +1,6 @@
 import tarfile, hashlib, re, sys, os, collections, urllib.request
 OUT='/home/user/data/nsynth-train'
+os.makedirs(OUT, exist_ok=True)
 h=lambda *p: hashlib.sha256('|'.join(map(str,p)).encode()).hexdigest()
 per=collections.Counter(); kept=0
 req=urllib.request.urlopen('http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-train.jsonwav.tar.gz')
