@@ -4,6 +4,7 @@ import { loadBuiltInFusion, supportsFusionInput, fusionConfiguration } from './f
 import {musicCacheKey,musicWorkerFingerprint,readMusicCache,writeMusicCache} from './musicAnalysisCache';
 import { openMusicDecoder } from './decodeMusic';
 import { analyzeDecodedMusic, previewDecodedMusic, type AnalysisOptions } from './analyzeDecodedMusic';
+import { loadFullMixHeads } from './fullMixHeads';
 import type { MusicAnalysis } from './musicTypes';
 import { ResultCache } from './recognition';
 import { setSpeculativePreloadStop } from './speculativePreload';
@@ -213,9 +214,10 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
         const prepared = experimentalPaSST && fusion
           ? (await import('./passtCandidate')).prepareExperimentalPaSST({ enabled: true, baseline: fusion, decoder }) : undefined;
         if (prepared) fusion = prepared.scorer;
+        const fullMix = options.fullMix ?? (mode === 'full' ? await loadFullMixHeads() : undefined);
         options.signal?.throwIfAborted();
         const result = await analyzeDecodedMusic(decoder, (message, transfer) => request(message, transfer, options, 'analysis', first.fingerprint),
-          { ...options, fusion, sourceMime: blob.type, mode, initialPreview: first.preview, audioFingerprint: first.audioFingerprint, cache, concurrentModels: concurrentModels() });
+          { ...options, fusion, fullMix, sourceMime: blob.type, mode, initialPreview: first.preview, audioFingerprint: first.audioFingerprint, cache, concurrentModels: concurrentModels() });
         if (prepared) {
           result.fusion = prepared.restore(result.fusion);
           result.notes.push(prepared.usedFallback() ? 'Experimental source model unavailable; installed detector retained.' : 'Experimental PaSST source diagnostics; calibration only, no validation receipt.');

@@ -123,6 +123,31 @@ def main():
         report['sets'][sname]['_meanAP'] = round(float(np.mean(aps)), 4)
         print(f'{sname}: mean AP {np.mean(aps):.4f}', flush=True)
     json.dump(report, open(report_path, 'w'), indent=1)
+    if model_path: export(model_path, metas, items, blocks, classes, report)
+
+EXPORT_SET = 'clap+astmap+jam'   # the inputs the app already has per window, with no worker change
+def export(model_path, metas, items, blocks, classes, report):
+    """Refit EXPORT_SET on every observed row of each shipped class; standardization is folded into the weights."""
+    sets, astnames = feature_sets(blocks)
+    X = sets[EXPORT_SET]
+    jam_classes = json.load(open(os.path.join(ROOT, 'public', 'jamendo-model', 'mtg_jamendo_instrument-discogs-effnet-1.json')))['classes']
+    ship = [c for c in os.environ.get('SHIP', ','.join(classes)).split(',') if c]
+    heads = []
+    for c in ship:
+        r = report['sets'][EXPORT_SET][c]
+        if r['threshold'] is None: continue
+        rows = np.array([k for k, m in enumerate(metas) if c in items[m['id']]['labels']])
+        y = np.array([items[metas[k]['id']]['labels'][c] >= .5 for k in rows], dtype=int)
+        clf, mu, sd = fit(X[rows], y, r['C'])
+        w = clf.coef_[0] / sd; b = float(clf.intercept_[0] - (clf.coef_[0] * mu / sd).sum())
+        heads.append({'label': c, 'weights': [float(f'{v:.5g}') for v in w], 'bias': float(f'{b:.6g}'), 'threshold': r['threshold'],
+                      'checked': {k: r[k] for k in ('positives', 'negatives', 'ap', 'precision', 'recall')}})
+    model = {'version': 1, 'revision': os.environ.get('REVISION', 'openmic-train-2026-10-06'),
+             'source': 'OpenMIC-2018 split01_train, benchmark artists removed; logistic heads (scripts/full-mix-heads/train.py)',
+             'inputs': {'clap': 512, 'ast': astnames, 'jamendo': jam_classes},
+             'aggregation': {'top': int(os.environ.get('TOP', '2'))}, 'heads': heads}
+    json.dump(model, open(model_path, 'w'), separators=(',', ':'))
+    print(f'wrote {len(heads)} heads to {model_path}')
 
 if __name__ == '__main__':
     main()

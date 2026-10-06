@@ -7,6 +7,7 @@ import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import calibratedLabelList from './calibratedLabels.json';
 import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
+import { FULL_MIX_REVISION } from './fullMixHeads';
 
 /** Presentation only: does not change stored evidence, acceptance, cache identity or graph links. */
 export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v3';
@@ -46,6 +47,10 @@ export const FULL_MIX_JAMENDO:Record<string,{label:string;threshold:number}>={
   'drum machine':{label:'drums',threshold:.4},
 };
 TESTED_SCORES.add(FULL_MIX_JAMENDO_SCORE);
+/** Full-mix instrument heads (src/audio/fullMixHeads.ts), fitted on 10 s OpenMIC train windows and thresholded on
+ * artist-held-out folds. Their stored score maps each head's own threshold to the likely cutoff (0.5). */
+export const FULL_MIX_HEAD_SCORE='Full-mix head score';
+TESTED_SCORES.add(FULL_MIX_HEAD_SCORE);
 const nativeNames={ast:'AST score',jamendo:'Jamendo score',clap:'CLAP similarity',rhythm:'Tempo score',tonal:'Key score'};
 export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):DisplaySound[] {
   const result=new Map<string,DisplaySound>();
@@ -88,6 +93,7 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     if(audio.instrumentPrediction)estimate('source',audio.instrumentPrediction.label,audio.instrumentPrediction.score,audio.instrumentPrediction.model??'Instrument model');
     for(const model of audio.soundProfile?.models??[])for(const candidate of model.candidates)if(dimensionLabels.source.includes(candidate.label))estimate('source',candidate.label,candidate.score,model.model);
   }
+  if(fullMix&&FULL_MIX_REVISION&&audio.fullMix?.revision===FULL_MIX_REVISION)for(const l of audio.fullMix.labels)estimate('source',l.label,l.score,FULL_MIX_HEAD_SCORE);
   // Profile tags carry their own source-specific display score. Bare character/source strings and AI drafts do not.
   const catalogClap=new Set<string>();
   for(const tag of audio.soundProfile?.djTags??[]){const dim:Dimension=tag.group==='source'?'source':tag.group==='character'?'character':'effect';if(tag.model==='Music CLAP')catalogClap.add(`${dim}:${canonical(dim,tag.label)}`);}

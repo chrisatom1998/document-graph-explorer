@@ -1,5 +1,6 @@
 import { installedFusionIdentity } from './fusionRelease';
 import { sanitizeFusion, type FusionAnalysis } from './fusion';
+import { sanitizeFullMixAnalysis, type FullMixAnalysis } from './fullMixHeads';
 import { sourceLabels, sanitizeRecognition, sanitizeSoundReviews, type Recognition, type SoundReview } from './recognition';
 import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
@@ -23,6 +24,8 @@ export interface MusicAnalysis {
   classifierConfiguration?: string;
   /** Separate experimental window decisions; never merged into native evidence. */
   fusion?: FusionAnalysis;
+  /** Full-mix instrument heads over each whole 10 s window's native outputs: labels at or above their tested threshold. */
+  fullMix?: FullMixAnalysis;
   recognition?: Recognition;
   soundReviews?: SoundReview[];
   stage?: 'preview';
@@ -65,6 +68,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
     ? { ...storedFusion, validation: 'unvalidated', release: undefined, imported: true } : storedFusion;
   const fusion = sanitizeFusion(importedFusion, out.durationSeconds);
   if (fusion) out.fusion = fusion;
+  const fullMix = sanitizeFullMixAnalysis(m.fullMix, out.durationSeconds);
+  if (fullMix) out.fullMix = fullMix;
   out.recognition = sanitizeRecognition(m.recognition, out.durationSeconds);
   if (!out.recognition) delete out.recognition;
   if (Array.isArray(m.soundReviews)) out.soundReviews = sanitizeSoundReviews(m.soundReviews);
