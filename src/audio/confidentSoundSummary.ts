@@ -103,7 +103,8 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     if(audio.instrumentPrediction)estimate('source',audio.instrumentPrediction.label,audio.instrumentPrediction.score,audio.instrumentPrediction.model??'Instrument model');
     for(const model of audio.soundProfile?.models??[])for(const candidate of model.candidates)if(dimensionLabels.source.includes(candidate.label))estimate('source',candidate.label,candidate.score,model.model);
   }
-  const heads=fullMix&&FULL_MIX_REVISION&&audio.fullMix?.revision===FULL_MIX_REVISION?audio.fullMix:undefined;
+  // Only a complete sound scan: a partial one could hide (bass) evidence from windows the heads never scored.
+  const heads=fullMix&&FULL_MIX_REVISION&&audio.instrumentScan?.complete&&audio.fullMix?.revision===FULL_MIX_REVISION?audio.fullMix:undefined;
   if(heads)for(const l of heads.labels)estimate('source',l.label,l.score,OPENMIC_HEAD_SCORE);
   // Profile tags carry their own source-specific display score. Bare character/source strings and AI drafts do not.
   const catalogClap=new Set<string>();

@@ -100,7 +100,7 @@ it('never shows fallback tags for labels measured as almost always wrong',()=>{
  expect(confidentSoundSummary(clapOnly('dry','character',.7))).toEqual([]);
 });
 it('shows full-mix head labels as tested on recordings of at least one full window, and lets the bass head decide bass',()=>{
- const a:MusicAnalysis={version:2,durationSeconds:30,analyzedSeconds:30,instruments:[],notes:[],
+ const a:MusicAnalysis={version:2,durationSeconds:30,analyzedSeconds:30,instruments:[],notes:[],instrumentScan:{complete:true,analyzedSeconds:30,windows:5},
   soundProfile:{version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'source',label:'bass guitar',score:.9,model:'Trained head'},{group:'source',label:'organ',score:.9,model:'Trained head'}]},
   fullMix:{revision:FULL_MIX_REVISION!,windows:5,labels:[{label:'guitar',score:.62,segments:[]}],decides:['bass']}};
  const shown=confidentSoundSummary(a);
@@ -108,4 +108,5 @@ it('shows full-mix head labels as tested on recordings of at least one full wind
  expect(shown.find(s=>s.label==='guitar')).toMatchObject({tier:'likely',scores:[{model:'Full-mix head score',score:.62}]});
  expect(confidentSoundSummary({...a,fullMix:{...a.fullMix!,revision:'old'}}).map(s=>s.label).sort()).toEqual(['bass guitar','organ']);
  expect(confidentSoundSummary({...a,durationSeconds:8,analyzedSeconds:8}).map(s=>s.label).sort()).toEqual(['bass guitar','organ']);
+ expect(confidentSoundSummary({...a,instrumentScan:{complete:false,analyzedSeconds:10,windows:1}}).map(s=>s.label).sort()).toEqual(['bass guitar','organ']);
 });

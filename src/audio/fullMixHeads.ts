@@ -129,7 +129,7 @@ let loading: Promise<FullMixModel | undefined> | undefined;
 export function loadFullMixHeads(): Promise<FullMixModel | undefined> {
   const pinned = (soundManifest.sha256 as Record<string, string>)[FULL_MIX_FILE];
   if (!pinned || typeof fetch === 'undefined') return Promise.resolve(undefined);
-  return loading ??= (async () => {
+  const attempt = loading ??= (async () => {
     try {
       const response = await fetch(`${import.meta.env.BASE_URL}sound-model/${FULL_MIX_FILE}?v=${pinned.slice(0, 12)}`);
       if (!response.ok) return;
@@ -138,4 +138,7 @@ export function loadFullMixHeads(): Promise<FullMixModel | undefined> {
       return hash === pinned ? sanitizeFullMixModel(JSON.parse(new TextDecoder().decode(bytes))) : undefined;
     } catch { return undefined; }
   })();
+  // Only a successful load is kept: a failed one is retried by the next analysis.
+  void attempt.then(model => { if (!model && loading === attempt) loading = undefined; });
+  return attempt;
 }

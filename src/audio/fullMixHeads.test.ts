@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FullMixEvidence, fullMixFeatures, sanitizeFullMixAnalysis, sanitizeFullMixModel, type FullMixModel } from './fullMixHeads';
 
 const clap = (i: number) => Array.from({ length: 512 }, (_, k) => (k === i ? 3 : 0));
@@ -76,5 +76,25 @@ describe('pinned full-mix heads', () => {
     expect(model.revision).toBe(FULL_MIX_REVISION);
     expect(model.heads.map(h => h.label).sort()).toEqual(['bass', 'cymbals', 'drums', 'guitar', 'organ', 'piano', 'saxophone', 'synthesizer', 'trumpet', 'voice']);
     expect(model.heads.filter(h => h.replaces).map(h => h.label)).toEqual(['bass']);
+  });
+});
+
+describe('loading the full-mix heads', () => {
+  it('retries after a failed fetch instead of keeping the failure', async () => {
+    const { readFileSync } = await import('node:fs');
+    const bytes = readFileSync(new URL('../../public/sound-model/full-mix.json', import.meta.url));
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(new Response(new Uint8Array(bytes)));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      vi.resetModules();
+      const { loadFullMixHeads } = await import('./fullMixHeads');
+      expect(await loadFullMixHeads()).toBeUndefined();
+      await Promise.resolve();
+      expect((await loadFullMixHeads())?.heads.length).toBe(10);
+      expect(await loadFullMixHeads()).toBeDefined();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally { vi.unstubAllGlobals(); }
   });
 });
