@@ -21,7 +21,7 @@ cp $W/dge/docs/evaluations/dj-clips-2026-10-06/openmic-manifest.json manifests/r
 nvidia-smi --query-gpu=name,memory.total --format=csv || true
 
 JM=https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f
-for f in data/splits/split-0/autotagging_instrument-train.tsv data/splits/split-0/autotagging_instrument-validation.tsv \
+for f in data/raw_30s_cleantags.tsv data/splits/split-0/autotagging_instrument-train.tsv data/splits/split-0/autotagging_instrument-validation.tsv \
          data/splits/split-0/autotagging_instrument-test.tsv \
          derived/music-classification-annotations/music-classification-annotations-clean.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
   mkdir -p mj/$(dirname $f); curl -fsSL --retry 6 -o mj/$f $JM/$f

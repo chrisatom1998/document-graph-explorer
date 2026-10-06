@@ -42,7 +42,8 @@ def load_source(name, mel_path, items, weak):
             j = CLASSES.index(c); y[i, j] = float(r >= 0.5); w[i, j] = weak if c in weak_set else 1.0
     rows = np.array([it.get('row', i) for i, it in enumerate(items)])
     return {'name': name, 'mel': np.load(mel_path, mmap_mode='r'), 'rows': rows, 'y': y, 'w': w,
-            'val': np.array([is_val(it['artist']) for it in items]), 'ids': [it['id'] for it in items]}
+            'val': np.array([is_val(it['artist']) for it in items]), 'ids': [it['id'] for it in items],
+            'dj': np.array([bool(it.get('dj')) for it in items])}
 
 def masked_ap(scores, y, w):
     from sklearn.metrics import average_precision_score
@@ -58,6 +59,7 @@ def main():
     ap.add_argument('--model', default='mn10_as'); ap.add_argument('--epochs', type=int, default=8)
     ap.add_argument('--lr', type=float, default=1e-4); ap.add_argument('--batch', type=int, default=32)
     ap.add_argument('--mixup', type=float, default=0.3); ap.add_argument('--weak', type=float, default=0.2)
+    ap.add_argument('--dj-repeat', type=int, default=2, help='times each DJ/electronic-genre Jamendo window is seen per epoch')
     ap.add_argument('--threads', type=int, default=os.cpu_count()); ap.add_argument('--resume', action='store_true')
     ap.add_argument('--limit', type=int, default=0, help='first N clips per source only (smoke test)')
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -69,9 +71,10 @@ def main():
     sources = [load_source('openmic', os.path.join(args.openmic, 'train-mel.npy'), json.load(open(os.path.join(args.openmic, 'train.json')))['items'], 1.0)]
     if args.jamendo:
         sources.append(load_source('jamendo', os.path.join(args.jamendo, 'jamendo-mel.npy'), json.load(open(os.path.join(args.jamendo, 'jamendo.json')))['items'], args.weak))
-    pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]]
+    pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]
+            for _ in range(args.dj_repeat if src['dj'][i] else 1)]
     vals = {src['name']: np.flatnonzero(src['val'])[:(args.limit // 8 + 8) if args.limit else None] for src in sources}
-    print(f'{len(pool)} train windows ' + ', '.join(f'{s["name"]} {int((~s["val"]).sum())}' for s in sources) +
+    print(f'{len(pool)} train windows per epoch ({sum(int((s["dj"] & ~s["val"]).sum()) for s in sources)} DJ/electronic windows, seen {args.dj_repeat}x) ' + ', '.join(f'{s["name"]} {int((~s["val"]).sum())}' for s in sources) +
           '; validation ' + ', '.join(f'{k} {len(v)}' for k, v in vals.items()), flush=True)
 
     model = get_model(width_mult=WIDTH[args.model], pretrained_name=args.model, num_classes=len(CLASSES)).to(dev)

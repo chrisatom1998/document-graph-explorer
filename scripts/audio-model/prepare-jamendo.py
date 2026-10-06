@@ -3,7 +3,7 @@
 Usage: python3 scripts/audio-model/prepare-jamendo.py <mtg-jamendo metadata dir> <holdout-manifest.json> <out-dir>
        [--windows 2] [--parallel 3]
 
-<metadata dir> holds data/splits/split-0/autotagging_instrument-{train,validation,test}.tsv,
+<metadata dir> holds data/raw_30s_cleantags.tsv, data/splits/split-0/autotagging_instrument-{train,validation,test}.tsv,
 derived/music-classification-annotations/music-classification-annotations-clean.tsv and
 data/download/raw_30s_audio-low_sha256_tracks.txt from MTG/mtg-jamendo-dataset.
 
@@ -58,6 +58,12 @@ for line in open(os.path.join(args.meta, 'derived', 'music-classification-annota
         if a.startswith('voice_instrumental---'):
             votes = a.split('---')[1].split(',')
             if len(set(votes)) == 1: voice[f[0]] = votes[0] == 'voice'
+# DJ and electronic genres, as the round 3 set ranks them (scripts/holdout-r3/select-jamendo.py): oversampled in training.
+DJ_GENRES = {'house', 'techno', 'trance', 'dance', 'drumnbass', 'dubstep', 'electronica', 'hiphop', 'chillout', 'downtempo', 'idm',
+             'breakbeat', 'deephouse', 'minimal', 'electropop', 'edm', 'triphop', 'rap', 'electro', 'club', 'garage', 'synthpop', 'dub', 'electronic'}
+genres = {}
+for line in open(os.path.join(args.meta, 'data', 'raw_30s_cleantags.tsv')).read().splitlines()[1:]:
+    f = line.rstrip().split('\t'); genres[f[0]] = sorted(t.split('---')[1] for t in f[5:] if t.startswith('genre---'))
 sha = {}
 for line in open(os.path.join(args.meta, 'data', 'download', 'raw_30s_audio-low_sha256_tracks.txt')):
     h, p = line.split(); sha[p] = h
@@ -71,7 +77,8 @@ for t in tracks:
     starts = [round(max(0, d * (k + 1) / (args.windows + 1) - length / 2), 2) for k in range(args.windows)]
     for k, s in enumerate(starts):
         items.append({'id': f'{t["track"]}@{s}', 'track': t['track'], 'artist': t['artist'], 'archivePath': t['path'].replace('.mp3', '.low.mp3'),
-                      'start': s, 'labels': labels, 'weakAbsent': weak, 'row': rows}); rows += 1
+                      'start': s, 'labels': labels, 'weakAbsent': weak, 'row': rows,
+                      'genres': genres.get(t['track'], []), 'dj': bool(DJ_GENRES & set(genres.get(t['track'], [])))}); rows += 1
 mel_out = np.lib.format.open_memmap(os.path.join(args.out, 'jamendo-mel.npy'), mode='w+', dtype=np.float16, shape=(rows, 128, 1000))
 done = np.zeros(rows, bool)
 
