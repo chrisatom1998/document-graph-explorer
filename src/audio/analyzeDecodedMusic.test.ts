@@ -426,3 +426,11 @@ describe('AST device choice', { timeout: 60_000 }, () => {
     expect(run.jobs.find(j => j.modelId === 'ast')!.preprocessingVersion).toContain(':webgpu-fp32-allowed');
   });
 });
+it('reads structure for whole tracks but skips it for recordings longer than 20 minutes', async () => {
+  const track = await fixture(120, { mode: 'fast' }).run();
+  expect(track.structure).toEqual({ revision: 1, sections: [], drops: [] });
+  const set = fixture(21 * 60, { mode: 'fast' });
+  const result = await set.run();
+  expect(result.structure).toBeUndefined();
+  expect(vi.mocked(set.decoder.read).mock.calls.filter(([, , rate]) => rate === 16000).length).toBeLessThan(10);
+});

@@ -7,6 +7,9 @@ export const STRUCTURE_RATE = 16000;
 export const STRUCTURE_REVISION = 1;
 /** Shorter recordings (loops, one-shots, previews of a single section) get no structure. */
 export const STRUCTURE_MIN_SECONDS = 60;
+/** Longer recordings (DJ sets, radio shows) are not one track's structure, and the whole-track pass would no longer
+ * be a small cost on top of a quick scan. */
+export const STRUCTURE_MAX_SECONDS = 20 * 60;
 const FRAME = 1024, HOP = 512, BLOCK_FRAMES = 8; // 32 ms hops, 0.256 s blocks
 export const STRUCTURE_BLOCK_SECONDS = HOP * BLOCK_FRAMES / STRUCTURE_RATE;
 /** Band edges in Hz: sub, bass, low-mid, mid, high. */

@@ -10,7 +10,7 @@ import type { InstrumentPredictions } from './instrumentLabels';
 import { DescriptionAccumulator, meanEmbedding, selectDescriptions, splitEmbedding, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
-import { detectStructure, representativeStart, StructureFeatures, STRUCTURE_MIN_SECONDS, STRUCTURE_RATE } from './structure';
+import { detectStructure, representativeStart, StructureFeatures, STRUCTURE_MAX_SECONDS, STRUCTURE_MIN_SECONDS, STRUCTURE_RATE } from './structure';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { musicRuntimeIdentity } from './musicRuntime';
@@ -115,7 +115,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const result: MusicAnalysis = { version: 2, durationSeconds: duration, analyzedSeconds: 0, instruments: [], notes: [], recognition,
     tempoRevision: TEMPO_ANALYSIS_REVISION, keyRevision: KEY_ANALYSIS_REVISION };
   // Mix points: one pass over the whole recording at 16 kHz, 60 s of PCM at a time (src/audio/structure.ts).
-  if (duration >= STRUCTURE_MIN_SECONDS) {
+  if (duration >= STRUCTURE_MIN_SECONDS && duration <= STRUCTURE_MAX_SECONDS) {
     try {
       options.onProgress?.('Finding the intro, drops and breakdowns');
       const features = new StructureFeatures();
