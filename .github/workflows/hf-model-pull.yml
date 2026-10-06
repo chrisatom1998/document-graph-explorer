@@ -44,4 +44,4 @@ jobs:
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git add docs/evaluations/hf-key-tempo-2026-10-06/runs
           git commit -m "Pull HF training run outputs" || exit 0
-          git push
+          git pull --rebase origin "${GITHUB_REF_NAME}" && git push
