@@ -15,7 +15,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 ROOT = os.path.join(os.path.dirname(__file__), '..', '..')
-FEATURES = os.path.join(ROOT, 'docs/evaluations/key-2026-10-06/features')
+FEATURES = os.path.join(ROOT, os.environ.get('KEY_FEATURES', 'docs/evaluations/key-2026-10-06/features'))
 MODEL = os.path.join(ROOT, 'src/audio/keyModel.json')
 NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
@@ -134,18 +134,27 @@ def fmt(s):
             f"major among shown {s['majorShown']:.2f}")
 
 def estimate(rows, method, model=None, threshold=0.0, strength=0.6):
+    """'app' as recorded; 'bgate'/'edma' Essentia per excerpt with the half-of-excerpts vote; 'vote' the model per
+    excerpt with that vote; 'model' the model on the mean chroma of the gated excerpts (what the app ships)."""
     out = []
     for r in rows:
-        if method == 'app': out.append(r['appKey']); continue
+        if method == 'app': out.append(r.get('appKey', r.get('chromaKey'))); continue   # v2 tuning rows hold no network output
         keys = []
         for e in r['excerpts']:
             if not gate(e): continue
+            if method == 'model':   # src/audio/key.ts recordingKey: mean chroma of the gated excerpts
+                continue
             if method in ('bgate', 'edma'):
                 k = e.get(method)
                 if k and k['strength'] >= strength: keys.append(k)
             else:
                 k = model.predict(e)
                 if k['p'] >= threshold: keys.append(k)
+        if method == 'model':
+            es = [e for e in r['excerpts'] if gate(e)]
+            k = model.predict({'full': list(np.mean([e['full'] for e in es], 0)), 'bass': es[0]['bass']}) \
+                if es and len(es) >= math.ceil(r['excerptCount'] / 2) else None
+            out.append(k if k and k['p'] >= threshold else None); continue
         out.append(combine(keys, r['excerptCount']))
     return out
 
@@ -206,5 +215,5 @@ if __name__ == '__main__':
     elif cmd == 'score':
         model, threshold = saved_model()
         for s, rows in sets.items():
-            for m in ('app', 'edma', 'model'):
+            for m in ('app', 'edma', 'vote', 'model'):
                 print(f'{s:11s} {m:6s}', fmt(summary(rows, estimate(rows, m, model, threshold))))

@@ -10,10 +10,10 @@ import { sanitizeStructure, type TrackStructure } from './structure';
 import { sanitizeVersionPrint } from './versionPrint';
 import { sanitizeGenreScores, sanitizeStyles, type TrackStyle } from './genreEnergy';
 export const MUSIC_ANALYSIS_VERSION = 2;
-export const KEY_ANALYSIS_REVISION = 3;
-export const TEMPO_ANALYSIS_REVISION = 2;
-// Enabling the built-in policy makes persisted native-only documents eligible for reanalysis. 70/71: full-mix heads. 72/73: genre and energy.
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 73 : 72;
+export const KEY_ANALYSIS_REVISION = 4;
+export const TEMPO_ANALYSIS_REVISION = 4;
+// Enabling the built-in policy makes persisted native-only documents eligible for reanalysis. 70/71: full-mix heads. 73/74: genre and energy.
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 74 : 73;
 export interface InstrumentEstimate {
   label: string;
   score: number;

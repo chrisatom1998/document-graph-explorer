@@ -1,7 +1,7 @@
 /**
  * IndexedDB schema + memoized connection (idb v8).
  *
- * DB 'knowledge-nebula', version 5, eight stores:
+ * DB 'knowledge-nebula', version 6, nine stores:
  * - documents:  contentHash -> parsed doc (DocNode snapshot, full text, chunk texts)
  * - embeddings: contentHash -> Float32Array vectors, stored natively (no base64
  *   round-trip — this is what makes the <3s session restore possible)
@@ -12,13 +12,15 @@
  *   "Open" can hand back the byte-identical original (never leaves the browser)
  * - chats:      stable corpus id -> local transcript (v4)
  * - corpora:    stable corpus id -> named, independently restorable workspace (v5)
+ * - library:    path + size + modified time -> document id (v6), so re-reading a
+ *   folder skips reading and hashing files that have not changed
  */
 
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { DocNode, GraphExport, IngestReport, LinkRef } from '../model/types';
 
 export const DB_NAME = 'knowledge-nebula';
-export const DB_VERSION = 5;
+export const DB_VERSION = 6;
 
 export interface DocumentRecord {
   hash: string;
@@ -154,6 +156,15 @@ export interface CorpusRecord {
   ingestReport?: IngestReport;
 }
 
+/** One remembered file on disk (see persistence/library.ts). */
+export interface LibraryFileRecord {
+  /** `${relative path}\0${size}\0${lastModified}` */
+  key: string;
+  docId: string;
+  fileType: import('../model/types').FileType;
+  savedAt: number;
+}
+
 export interface NebulaDB extends DBSchema {
   documents: { key: string; value: DocumentRecord };
   embeddings: { key: string; value: EmbeddingRecord };
@@ -167,6 +178,7 @@ export interface NebulaDB extends DBSchema {
     value: CorpusRecord;
     indexes: { 'by-updatedAt': number };
   };
+  library: { key: string; value: LibraryFileRecord };
 }
 
 let dbPromise: Promise<IDBPDatabase<NebulaDB>> | null = null;
@@ -219,6 +231,9 @@ export function getDb(): Promise<IDBPDatabase<NebulaDB>> {
         const corpusStore = db.createObjectStore('corpora', { keyPath: 'id' });
         corpusStore.createIndex('by-updatedAt', 'updatedAt');
       }
+      if (oldVersion < 6) {
+        db.createObjectStore('library', { keyPath: 'key' });
+      }
     },
     blocked() {
       // An older connection (e.g. from a pre-HMR module) is still open.
@@ -246,7 +261,7 @@ export function getDb(): Promise<IDBPDatabase<NebulaDB>> {
   //
   // A *blocked* upgrade never completes on its own, so it gets the short fuse —
   // but only once blocked() actually fires. A merely slow open (cold profile,
-  // contended disk, a first v1→v5 upgrade over a large database) does finish,
+  // contended disk, a first v1→v6 upgrade over a large database) does finish,
   // and the old unconditional 2s race declared "persistence unavailable" for
   // the whole visit while the open was still healthy and in progress. The long
   // fuse only guards against a pathological hang.

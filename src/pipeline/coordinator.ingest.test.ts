@@ -109,6 +109,11 @@ vi.mock('../persistence/quota', () => ({
   formatStorageSummary: persistence.formatStorageSummary,
   storagePressure: persistence.storagePressure,
 }));
+const library = vi.hoisted(() => ({
+  hasDocumentRecord: vi.fn(async () => true),
+  rememberLibraryFiles: vi.fn(async () => {}),
+}));
+vi.mock('../persistence/library', () => library);
 vi.mock('./parsers/pdf', () => ({ parsePdf: vi.fn() }));
 vi.mock('../workers/pool', () => ({
   getPool: () => ({
@@ -363,6 +368,8 @@ beforeEach(() => {
     if (typeof value === 'function' && 'mockClear' in value) value.mockClear();
   }
   persistence.lookupDocCache.mockResolvedValue(undefined);
+  library.hasDocumentRecord.mockReset().mockResolvedValue(true);
+  library.rememberLibraryFiles.mockClear();
   persistence.unreferencedDocumentIds.mockImplementation(async (ids: string[]) => ids);
   persistence.estimateStorage.mockResolvedValue(null);
   useUiStore.setState({
@@ -1273,5 +1280,70 @@ describe('WAV music ingestion', () => {
     await vi.waitFor(()=>expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.instrumentScan?.mode).toBe('full'));
     await vi.waitFor(()=>expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.stage).toBeUndefined());
     expect(useGraphStore.getState().nodes.find(n=>n.id===node.id)?.audio?.confirmedDjTags?.source).toEqual(['piano']);
+  });
+});
+
+describe('remembered library', () => {
+  const wavBytes = () => new TextEncoder().encode('RIFF library audio bytes').buffer;
+  const known = (name: string, knownId: string, readBytes = vi.fn(async () => wavBytes())): IngestFile => ({
+    fileId: `known-${name}`, name, path: `Crate/${name}`, fileType: 'audio', bytes: new ArrayBuffer(0),
+    lastModified: 1_700_000_000_000, knownId, readBytes,
+  });
+  /** Ingest a track once, then forget the live corpus so only the stored record remains. */
+  async function storedTrack(name: string) {
+    await ingestFiles([{ fileId: `first-${name}`, name, path: `Crate/${name}`, fileType: 'audio', bytes: wavBytes(), lastModified: 1_700_000_000_000 }]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    resetCorpus();
+    persistence.lookupDocCache.mockImplementation(async (id: string) => id === node.id
+      ? { node, text: '', chunkTexts: [], chunkVectors: null, docVector: null, mdLinkTargets: [], docLinks: [] }
+      : undefined);
+    music.analyzeMusic.mockClear();
+    persistence.putOriginalIfMissing.mockClear();
+    return node;
+  }
+
+  it('remembers the path, size and date of each file it reads', async () => {
+    await ingestFiles([{ fileId: 'f', name: 'a.wav', path: 'Crate/a.wav', fileType: 'audio', bytes: wavBytes(), lastModified: 42 }]);
+    const id = documentIds()[0];
+    expect(library.rememberLibraryFiles).toHaveBeenCalledWith([
+      { path: 'Crate/a.wav', size: wavBytes().byteLength, lastModified: 42, docId: id, fileType: 'audio' },
+    ]);
+  });
+
+  it('restores an unchanged track from storage without reading or re-analyzing it', async () => {
+    const node = await storedTrack('kept.wav');
+    const readBytes = vi.fn(async () => wavBytes());
+    await ingestFiles([known('kept.wav', node.id, readBytes)]);
+    expect(readBytes).not.toHaveBeenCalled();
+    expect(music.analyzeMusic).not.toHaveBeenCalled();
+    expect(persistence.putOriginalIfMissing).not.toHaveBeenCalled();
+    expect(documentIds()).toEqual([node.id]);
+    expect(fileStatus('known-kept.wav')?.stage).toBe('cached');
+    expect(library.rememberLibraryFiles).toHaveBeenCalledWith([]);
+    expect(useUiStore.getState().toasts.map(t => t.message)).toContain('All 1 track came from your saved library; nothing needed re-analyzing.');
+  });
+
+  it('re-analyzes a remembered track whose saved analysis is out of date, from the stored original', async () => {
+    const node = await storedTrack('stale.wav');
+    persistence.lookupDocCache.mockResolvedValue({ node: { ...node, audio: undefined }, text: '', chunkTexts: [], chunkVectors: null, docVector: null, mdLinkTargets: [], docLinks: [] });
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob([wavBytes()], { type: 'audio/wav' }), name: 'stale.wav' });
+    const readBytes = vi.fn(async () => wavBytes());
+    await ingestFiles([known('stale.wav', node.id, readBytes)]);
+    expect(readBytes).not.toHaveBeenCalled();
+    expect(persistence.getOriginal).toHaveBeenCalledWith(node.id);
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+    expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.instrumentScan?.complete).toBe(true);
+  });
+
+  it('reads the file after all when its stored record has gone', async () => {
+    library.hasDocumentRecord.mockResolvedValue(false);
+    const readBytes = vi.fn(async () => wavBytes());
+    await ingestFiles([known('gone.wav', 'stale-id', readBytes)]);
+    expect(readBytes).toHaveBeenCalledTimes(1);
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+    const id = documentIds()[0];
+    expect(id).not.toBe('stale-id');
+    expect(id).toBe(await documentContentId('Crate/gone.wav', wavBytes()));
+    expect(library.rememberLibraryFiles).toHaveBeenCalledWith([expect.objectContaining({ docId: id, path: 'Crate/gone.wav' })]);
   });
 });

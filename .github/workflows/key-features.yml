@@ -20,7 +20,7 @@ env:
   GTZANKEY: https://github.com/alexanderlerch/gtzan_key.git
   GTZANKEY_REF: c6dc7fe8d6949ff29b8b9fc33cd4fdd18be5b6b7
   GTZAN: https://huggingface.co/datasets/marsyas/gtzan/resolve/main/data/genres.tar.gz
-  OUT: docs/evaluations/key-2026-10-06/features
+  OUT: docs/evaluations/key-2026-10-06/features-v2
 
 jobs:
   features:

@@ -36,9 +36,11 @@ export function essentiaKey(engine: KeyEngine, samples: Float32Array, profile?: 
 }
 
 /** Mean pitch-class profiles of a mono 44.1 kHz excerpt: 36 bins (a third of a semitone each, bin 0 = A) over
- * 25-3500 Hz and, when asked for (tuning only), 12 bass bins over 30-250 Hz from longer frames; each scaled to a maximum of 1. */
-export function chromaFeatures(engine: KeyEngine, samples: Float32Array, withBass = false): { full: number[]; bass: number[] } | undefined {
-  const band = (frameSize: number, hop: number, size: number, minFrequency: number, maxFrequency: number) => {
+ * 25-3500 Hz and, when asked for (tuning only), 12 bass bins over 30-250 Hz from longer frames and the 36-bin mean
+ * of each whole second; full and bass are scaled to a maximum of 1. */
+export function chromaFeatures(engine: KeyEngine, samples: Float32Array, withBass = false, withSeconds = false): { full: number[]; bass: number[]; seconds?: number[][] } | undefined {
+  const seconds: { sum: Float64Array; frames: number }[] = [];
+  const band = (frameSize: number, hop: number, size: number, minFrequency: number, maxFrequency: number, perSecond = false) => {
     const sum = new Float64Array(size);
     let frames = 0;
     for (let start = 0; start + frameSize <= samples.length; start += hop) {
@@ -49,26 +51,48 @@ export function chromaFeatures(engine: KeyEngine, samples: Float32Array, withBas
       const white = engine.SpectralWhitening(spectrum, peaks.frequencies, peaks.magnitudes, maxFrequency, RATE).magnitudes;
       const hpcp = engine.HPCP(peaks.frequencies, white, false, 500, 0, maxFrequency, false, minFrequency, false, 'unitMax', 440, RATE, size, 'cosine', 1).hpcp;
       const values = engine.vectorToArray(hpcp);
-      if (values.some(v => v > 0)) { for (let j = 0; j < size; j++) sum[j] += values[j]; frames++; }
+      if (values.some(v => v > 0)) {
+        for (let j = 0; j < size; j++) sum[j] += values[j];
+        frames++;
+        if (perSecond) {
+          const s = seconds[Math.floor(start / RATE)] ??= { sum: new Float64Array(size), frames: 0 };
+          for (let j = 0; j < size; j++) s.sum[j] += values[j];
+          s.frames++;
+        }
+      }
       for (const vector of [frame, windowed, spectrum, peaks.frequencies, peaks.magnitudes, white, hpcp]) vector.delete();
     }
     const max = Math.max(...sum);
     return frames && max > 0 ? Array.from(sum, v => v / max) : undefined;
   };
-  const full = band(4096, 2048, 36, 25, 3500);
+  const full = band(4096, 2048, 36, 25, 3500, withSeconds);
   const bass = withBass ? band(16384, 4096, 12, 30, 250) : undefined;
-  return full ? { full, bass: bass ?? new Array<number>(12).fill(0) } : undefined;
+  if (!full) return;
+  return { full, bass: bass ?? new Array<number>(12).fill(0),
+    ...(withSeconds ? { seconds: Array.from(seconds, s => s ? Array.from(s.sum, v => v / s.frames) : new Array<number>(36).fill(0)) } : {}) };
 }
 
-/** One excerpt's key, or nothing when the excerpt is too short, holds one repeated pitch, or is not confidently tonal.
- * Essentia's stock profile called most minor EDM tracks major; the learned profiles replace it. */
-export function excerptKey(engine: KeyEngine, samples: Float32Array, repeatedPitch?: MusicAnalysis['detectedPitch']): Key | undefined {
+/** One excerpt's 36-bin chroma, or nothing when the excerpt is too short, holds one repeated pitch, or has too few
+ * pitch classes to carry a key. */
+export function excerptChroma(engine: KeyEngine, samples: Float32Array, repeatedPitch?: MusicAnalysis['detectedPitch']): number[] | undefined {
   // Harmonics of a single short note can resemble a major/minor profile.
   // Strong fundamental agreement is evidence for a pitch, not a mode.
   if (repeatedPitch && repeatedPitch.confidence >= 0.9) return;
   if (samples.length < 3 * RATE || !hasPitchDiversity(engine, samples)) return;
-  const chroma = chromaFeatures(engine, samples);
-  return chroma ? learnedKey(chroma.full) : undefined;
+  return chromaFeatures(engine, samples)?.full;
+}
+
+/** A recording's key from the mean chroma of its tonal excerpts, which must be at least half of all excerpts.
+ * Pooling beats a per-excerpt vote: 61% -> 66% exact over three 10 s cuts of each tuning track (scripts/key/tune.py). */
+export function recordingKey(chromas: number[][], excerptCount: number): Key | undefined {
+  if (!chromas.length || chromas.length < Math.ceil(excerptCount / 2)) return;
+  return learnedKey(Array.from({ length: 36 }, (_, i) => chromas.reduce((a, c) => a + c[i], 0) / chromas.length));
+}
+
+/** One excerpt's key (Essentia's stock profile called most minor EDM tracks major; learned profiles replace it). */
+export function excerptKey(engine: KeyEngine, samples: Float32Array, repeatedPitch?: MusicAnalysis['detectedPitch']): Key | undefined {
+  const chroma = excerptChroma(engine, samples, repeatedPitch);
+  return chroma ? learnedKey(chroma) : undefined;
 }
 
 /** Key from a 36-bin mean chroma with profiles learned on Beatport EDM and GTZAN (scripts/key/tune.py). Each key's
@@ -98,13 +122,4 @@ export function learnedKey(full36: number[]): Key | undefined {
   const p = 1 / total;
   if (p < keyModel.threshold) return;
   return { tonic: best.tonic, mode: best.mode, strength: Math.min(1, 0.6 + 0.4 * (p - keyModel.threshold) / (1 - keyModel.threshold)) };
-}
-
-/** A recording's key is shown only when at least half of its excerpts agree on it. */
-export function combineKeys(keys: Key[], excerptCount: number): Key | undefined {
-  for (const key of keys) {
-    const same = keys.filter(k => k.tonic === key.tonic && k.mode === key.mode);
-    if (same.length >= Math.ceil(excerptCount / 2)) return { ...key, strength: Math.min(...same.map(k => k.strength)) };
-  }
-  return undefined;
 }

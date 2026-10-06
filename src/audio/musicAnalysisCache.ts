@@ -4,7 +4,10 @@ import {getDb} from '../persistence/db';
 import {sanitizeMusicAnalysis,INSTRUMENT_ANALYSIS_REVISION,TEMPO_ANALYSIS_REVISION,KEY_ANALYSIS_REVISION,type MusicAnalysis,type MusicAnalysisMode} from './musicTypes';
 import { MODEL_IDS,recognitionConfiguration,type ModelJob } from './recognition';
 const PREFIX='music-analysis:v2:';
-const LIMIT=100;
+// About 30 KB per track. Parsed documents already keep each track's analysis;
+// these copies serve tracks that were removed, renamed or moved and come back.
+export const MUSIC_CACHE_LIMIT=1000;
+const LIMIT=MUSIC_CACHE_LIMIT;
 export async function musicCacheKey(blob:Blob,mode:MusicAnalysisMode):Promise<string|undefined>{
  try {
   const manifests=await Promise.all(['music-model','jamendo-model','sound-model'].map(async directory=>{
@@ -43,6 +46,8 @@ function completeCurrent(audio:MusicAnalysis|undefined,mime?:string):boolean {
  if(release && audio.classifierConfiguration!==fusionConfiguration())return false;
  if(needsFusion && !fusionPresentation(audio.fusion,audio.durationSeconds,recognition.mode,release)?.qualified)return false;
  if(!needsFusion && audio.fusion)return false;
+ // A key from an older method (or the fallback when the key network could not load) is re-estimated.
+ if(audio.keyRevision!==undefined&&audio.keyRevision<KEY_ANALYSIS_REVISION)return false;
  if(recognition.jobs.length!==MODEL_IDS.length||new Set(recognition.jobs.map(job=>job.modelId)).size!==MODEL_IDS.length)return false;
  return recognition.jobs.every(job=>closedJob(job)||shortClipJamendoUnsupported(job,audio.durationSeconds));
 }
@@ -62,9 +67,10 @@ export async function writeMusicCache(key:string,audio:MusicAnalysis,mime?:strin
   await tx.store.put({audio:automatic,savedAt:Date.now()},key);
   const keys=(await tx.store.getAllKeys()).filter(k=>k.startsWith(PREFIX));
   if(keys.length>LIMIT){
+   // Reading every entry's date is costly at this size, so trim to 90% and let the next pass wait a while.
    const entries=await Promise.all(keys.map(async k=>({key:k,savedAt:((await tx.store.get(k)) as {savedAt?:number})?.savedAt??0})));
    entries.sort((a,b)=>a.savedAt-b.savedAt);
-   for(const entry of entries.slice(0,entries.length-LIMIT))await tx.store.delete(entry.key);
+   for(const entry of entries.slice(0,entries.length-Math.floor(LIMIT*.9)))await tx.store.delete(entry.key);
   }
   await tx.done;
  }catch{/* Cache failures never prevent analysis. */}

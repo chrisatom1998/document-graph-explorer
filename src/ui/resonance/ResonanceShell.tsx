@@ -3,16 +3,18 @@ import { useGraphStore } from '../../store/graphStore';
 import { useUiStore } from '../../store/uiStore';
 import { useChatStore } from '../../store/chatStore';
 import { useCorpusStore } from '../../store/corpusStore';
-import { layoutSetDims } from '../../layout/layoutBridge';
-import { IconBulb, IconChat, IconCube, IconGear, IconHelp, IconHistory, IconPath, IconSearch } from '../icons';
+import { IconBulb, IconChat, IconGear, IconHelp, IconHistory, IconPath, IconSearch } from '../icons';
+import { DimsToggleButton } from '../DimsToggleButton';
 import ResonanceFilters from './ResonanceFilters';
 import ConnectedClips from './ConnectedClips';
 import CollabMenuItems from './CollabMenuItems';
+import SnapshotDiffBanner from '../SnapshotDiffBanner';
 import './resonance.css';
 
 const GraphNavigator = lazy(() => import('../GraphNavigator'));
 const ExportImportMenu = lazy(() => import('../ExportImportMenu'));
 const CorpusSwitcher = lazy(() => import('../CorpusSwitcher'));
+const SavedViewsSection = lazy(() => import('../SavedViewsSection'));
 
 type Tab = 'graph' | 'library' | 'export';
 
@@ -37,10 +39,22 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
   const docCount = useGraphStore(s => s.nodes.filter(n => n.kind === 'document').length);
   const edgeCount = useGraphStore(s => s.edges.length);
   const activeName = useCorpusStore(s => s.activeName);
-  const dims = useUiStore(s => s.dims);
   const [tab, setTab] = useState<Tab>('graph');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  // Escape closes the tool menu first (capture phase, ahead of App's global
+  // Escape chain) and returns focus to its trigger.
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      setMoreOpen(false);
+      document.querySelector<HTMLElement>('.rs-more > .rs-icon')?.focus();
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [moreOpen]);
   const ready = phase === 'ready';
 
   // Full details follow how a clip was selected. Search, chat citations,
@@ -56,11 +70,6 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
   useEffect(() => { if (tab === 'export' && !ready && phase !== 'idle') setTab('graph'); }, [tab, ready, phase]);
 
   const ui = () => useUiStore.getState();
-  const toggleDims = () => {
-    const next = dims === 2 ? 3 : 2;
-    ui().setDims(next);
-    layoutSetDims(next);
-  };
 
   return (
     <div className="rs-root">
@@ -85,6 +94,7 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
           <span className="rs-top__status" aria-live="polite">{ready ? `${docCount} nodes · ${edgeCount} links` : docCount ? 'Building your graph…' : ''}</span>
           <span className="rs-top__rule" />
           <button type="button" className="rs-icon" aria-label="Search documents" disabled={!ready} onClick={() => { ui().setSearchResults(null); ui().setSearchOpen(true); }}><IconSearch /></button>
+          <DimsToggleButton />
           <button type="button" className="rs-icon" aria-label="Ask about your library" disabled={docCount === 0} onClick={() => useChatStore.getState().setIsOpen(true)}><IconChat /></button>
           <div className="rs-more">
             <button type="button" className="rs-icon rs-icon--round" aria-label="More tools" aria-expanded={moreOpen} onClick={() => setMoreOpen(v => !v)}><IconGear /></button>
@@ -95,9 +105,12 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
                   <button type="button" role="menuitem" disabled={!ready} onClick={() => { setMoreOpen(false); ui().setInsightsOpen(true); }}><IconBulb />Insights</button>
                   <button type="button" role="menuitem" disabled={!ready} onClick={() => { setMoreOpen(false); ui().setPathMode(true); }}><IconPath />Find a path</button>
                   <button type="button" role="menuitem" disabled={!ready} onClick={() => { setMoreOpen(false); ui().setSnapshotsOpen(true); }}><IconHistory />Snapshots</button>
-                  <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); toggleDims(); }}><IconCube twoD={dims === 2} />{dims === 2 ? 'Switch to 3D' : 'Switch to 2D'}</button>
                   <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); ui().setSettingsOpen(true); }}><IconGear />Settings</button>
                   <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); ui().setHelpOpen(true); }}><IconHelp />Help</button>
+                  <hr className="rs-menu__rule" />
+                  {/* Camera + filter bookmarks; the classic toolbar's View menu held these. */}
+                  <p className="rs-menu__label">Saved views</p>
+                  <Suspense fallback={null}><SavedViewsSection onApplied={() => setMoreOpen(false)} /></Suspense>
                   <hr className="rs-menu__rule" />
                   <CollabMenuItems onDone={() => setMoreOpen(false)} />
                 </div>
@@ -111,6 +124,8 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
 
       <main className="rs-stage" aria-label="Graph">
         {children}
+        {/* Snapshot compare summary + Clear overlay; kept on the stage, not inside the collapsible filters. */}
+        <div className="rs-stage__banner"><SnapshotDiffBanner /></div>
         {tab === 'library' && (
           <section className="rs-library" aria-label="Library">
             <Suspense fallback={null}><GraphNavigator embedded /></Suspense>

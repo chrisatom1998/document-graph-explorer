@@ -5,14 +5,15 @@ Usage: python3 scripts/key/build-sets.py <giantsteps-mtg-key checkout> <giantste
 
 tune-mtg : GiantSteps MTG key tracks NOT among the 500 the round 2 DJ clip test uses (scripts/key/heldout-mtg-key.json)
            and not in the half reserved for round 3 (sha256("dge-holdout-r3-2026-10-06|<name>") even),
-           with a single manual key at the annotators' top confidence (2); 10 s at 25%, 50% and 75% of the preview.
+           with a single manual key at the annotators' top confidence (2); the whole preview as consecutive 10 s blocks.
+tune-mtg-c1 : the same, for tracks whose single key has annotator confidence 1 (noisier labels).
 tune-gtzan / test-gtzan : GTZAN clips with one Lerch key annotation (not -1), split in half by a seeded hash; the whole
            30 s clip, as the app analyses a recording under 60 s. Blues, classical, country, jazz, metal, pop, reggae,
            rock, disco and hip-hop, so a profile tuned for EDM cannot silently break other music.
 mtg-500  : the round 2 test's 500 tracks with a single confidence-2 key, middle 10 s exactly as that test cuts them.
            Used only to judge before/after, never to tune.
-gs-key   : the original GiantSteps key dataset (604 Beatport tracks, no track shared with the MTG key set), middle 10 s
-           and the whole two-minute preview (the app's three 20 s excerpts). Checked once after tuning.
+gs-key   : the original GiantSteps key dataset (604 Beatport tracks, no track shared with the MTG key set), middle 10 s,
+           the whole two-minute preview (the app's three 20 s excerpts) and the preview as 10 s blocks. Judging only.
 Rows hold the path of the source audio plus start/seconds; scripts/key/features.mjs cuts and decodes them.
 Audio is never committed.
 """
@@ -61,18 +62,19 @@ for n in names:
     a = manual.get(n.split('.')[0], {})
     k = key_of(a.get('MANUAL KEY', ''))
     r3 = n not in held and int(h('dge-holdout-r3-2026-10-06', n)[:8], 16) % 2 == 0   # round 3's reserved half
-    if k and a.get('C', '').strip() == '2' and not r3: labelled[n] = k
+    if k and a.get('C', '').strip() in ('1', '2') and not r3 and (n not in held or a['C'].strip() == '2'):
+        labelled[n] = {**k, 'c': int(a['C'].strip())}
 with concurrent.futures.ThreadPoolExecutor(8) as pool:
     paths = dict(zip(labelled, pool.map(lambda n: fetch('https://www.cp.jku.at/datasets/giantsteps/mtg_key_backup/', f'{mk}/md5', n), labelled)))
 for n, p in paths.items():
     if not p: failed.append(f'mtg:{n}'); continue
+    c = labelled[n].pop('c')
     d = dur(p); base = {'track': f'mtg:{n}', 'path': p, 'truth': labelled[n], 'duration': round(d, 2),
                         'genre': slug(meta.get(n.split('.')[0], {}).get('BP GENRE', ''))}
     if n in held:
         rows.append({**base, 'set': 'mtg-500', 'id': f'mtg-{n}-mid10', 'plan': 'excerpt', 'start': round(max(0.0, d / 2 - 5), 3), 'seconds': 10})
     else:
-        for tag, start in [('q1', d * .25 - 5), ('mid', d / 2 - 5), ('q3', d * .75 - 5)]:
-            rows.append({**base, 'set': 'tune-mtg', 'id': f'mtg-{n}-{tag}10', 'plan': 'excerpt', 'start': round(max(0.0, start), 3), 'seconds': 10})
+        rows.append({**base, 'set': 'tune-mtg' if c == 2 else 'tune-mtg-c1', 'id': f'mtg-{n}-blocks', 'plan': 'blocks', 'start': 0, 'seconds': d})
 
 # Original GiantSteps key dataset
 names = [n for n in sorted(f[:-4] for f in os.listdir(f'{gk}/md5')) if mine(n)]
@@ -87,6 +89,7 @@ for n, p in paths.items():
                         'genre': slug(open(g).read()) if os.path.exists(g) else ''}
     rows.append({**base, 'id': f'gs-{n}-mid10', 'plan': 'excerpt', 'start': round(max(0.0, d / 2 - 5), 3), 'seconds': 10})
     rows.append({**base, 'id': f'gs-{n}-song', 'plan': 'song', 'start': 0, 'seconds': d})
+    rows.append({**base, 'id': f'gs-{n}-blocks', 'plan': 'blocks', 'start': 0, 'seconds': d})
 
 # GTZAN with Lerch's key annotations
 with tarfile.open(gtzan_tgz, 'r|gz') as tf:

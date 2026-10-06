@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { combineKeys, learnedKey } from './key';
+import { learnedKey, recordingKey } from './key';
 
 /** 36-bin chroma (bin 0 = A, three bins per semitone) with energy on the given C-indexed pitch classes. */
 function chroma(pitchClasses: number[], weights = pitchClasses.map(() => 1)): number[] {
@@ -30,10 +30,13 @@ describe('learnedKey', () => {
   });
 });
 
-describe('combineKeys', () => {
-  it('needs half of the excerpts to agree and reports the weakest agreeing strength', () => {
-    const a = { tonic: 9, mode: 'minor' as const, strength: 0.9 }, b = { tonic: 0, mode: 'major' as const, strength: 0.8 };
-    expect(combineKeys([a, b, { ...a, strength: 0.7 }], 3)).toEqual({ ...a, strength: 0.7 });
-    expect(combineKeys([a, b], 3)).toBeUndefined();
+describe('recordingKey', () => {
+  it('reads the mean chroma of the tonal excerpts, if at least half of the excerpts are tonal', () => {
+    const minor = chroma([9, 11, 0, 2, 4, 5, 7], [1, .4, .8, .4, .8, .4, .4]);
+    const weak = chroma([9, 0, 4, 7]);
+    expect(recordingKey([minor, weak], 3)).toMatchObject({ tonic: 9, mode: 'minor' });
+    expect(recordingKey([minor], 3)).toBeUndefined();
+    expect(recordingKey([minor], 1)).toEqual(learnedKey(minor));
+    expect(recordingKey([], 0)).toBeUndefined();
   });
 });

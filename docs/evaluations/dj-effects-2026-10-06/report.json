@@ -1,0 +1,999 @@
+{
+ "kind": "dj-effect-heads-report-v1",
+ "trainedAt": "2026-10-06T10:04:55.227612+00:00",
+ "clips": 8068,
+ "trainClips": 6875,
+ "heldOutClips": 1193,
+ "heldOutUploaders": 577,
+ "thresholdTarget": 0.7,
+ "labels": {
+  "chops": {
+   "group": "production",
+   "trainPositive": 106,
+   "trainNegative": 3024,
+   "trainRenders": 219,
+   "testPositive": 25,
+   "testNegative": 1042,
+   "trainUploaders": 47,
+   "testUploaders": 14,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.919,
+     "tp": 2,
+     "fp": 6,
+     "fn": 23,
+     "precision": 0.25,
+     "recall": 0.08
+    }
+   ],
+   "variant": "real",
+   "C": 0.3,
+   "threshold": 0.7934,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.2702702702702703,
+    "recall": 0.2830188679245283
+   },
+   "heldOutOneShot": {
+    "positives": 1,
+    "negatives": 210,
+    "tp": 0,
+    "fp": 7,
+    "fn": 1,
+    "precision": 0.0,
+    "recall": 0.0
+   },
+   "tp": 7,
+   "fp": 43,
+   "fn": 18,
+   "precision": 0.14,
+   "recall": 0.28,
+   "f1": 0.18666666666666668,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "vocal chops": {
+   "group": "production",
+   "trainPositive": 46,
+   "trainNegative": 3024,
+   "trainRenders": 0,
+   "testPositive": 11,
+   "testNegative": 1042,
+   "trainUploaders": 20,
+   "testUploaders": 5,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.904,
+     "tp": 9,
+     "fp": 11,
+     "fn": 2,
+     "precision": 0.45,
+     "recall": 0.8181818181818182
+    }
+   ],
+   "variant": "real",
+   "C": 0.3,
+   "threshold": 0.8367,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.3673469387755102,
+    "recall": 0.391304347826087
+   },
+   "heldOutOneShot": {
+    "positives": 0,
+    "negatives": 210,
+    "tp": 0,
+    "fp": 5,
+    "fn": 0,
+    "precision": 0.0,
+    "recall": 0.0
+   },
+   "tp": 7,
+   "fp": 12,
+   "fn": 4,
+   "precision": 0.3684210526315789,
+   "recall": 0.6363636363636364,
+   "f1": 0.4666666666666667,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "stutter effect": {
+   "group": "production",
+   "trainPositive": 65,
+   "trainNegative": 2986,
+   "trainRenders": 220,
+   "testPositive": 20,
+   "testNegative": 1040,
+   "trainUploaders": 30,
+   "testUploaders": 11,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.984,
+     "tp": 0,
+     "fp": 5,
+     "fn": 20,
+     "precision": 0.0,
+     "recall": 0.0
+    }
+   ],
+   "variant": "real",
+   "C": 0.3,
+   "threshold": 0.8421,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.22413793103448276,
+    "recall": 0.2
+   },
+   "heldOutOneShot": {
+    "positives": 2,
+    "negatives": 210,
+    "tp": 1,
+    "fp": 5,
+    "fn": 1,
+    "precision": 0.16666666666666666,
+    "recall": 0.5
+   },
+   "tp": 6,
+   "fp": 28,
+   "fn": 14,
+   "precision": 0.17647058823529413,
+   "recall": 0.3,
+   "f1": 0.22222222222222224,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "glitch effect": {
+   "group": "production",
+   "trainPositive": 336,
+   "trainNegative": 2936,
+   "trainRenders": 0,
+   "testPositive": 88,
+   "testNegative": 1015,
+   "trainUploaders": 160,
+   "testUploaders": 47,
+   "variant": "real",
+   "C": 0.3,
+   "threshold": 0.7171,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.5311572700296736,
+    "recall": 0.5327380952380952
+   },
+   "heldOutOneShot": {
+    "positives": 36,
+    "negatives": 205,
+    "tp": 18,
+    "fp": 11,
+    "fn": 18,
+    "precision": 0.6206896551724138,
+    "recall": 0.5
+   },
+   "tp": 39,
+   "fp": 59,
+   "fn": 49,
+   "precision": 0.3979591836734694,
+   "recall": 0.4431818181818182,
+   "f1": 0.4193548387096774,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "reverse effect": {
+   "group": "production",
+   "trainPositive": 256,
+   "trainNegative": 2526,
+   "trainRenders": 220,
+   "testPositive": 77,
+   "testNegative": 844,
+   "trainUploaders": 167,
+   "testUploaders": 55,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.7198,
+     "tp": 42,
+     "fp": 44,
+     "fn": 35,
+     "precision": 0.4883720930232558,
+     "recall": 0.5454545454545454
+    }
+   ],
+   "variant": "real",
+   "C": 1.0,
+   "threshold": 0.7198,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.6190476190476191,
+    "recall": 0.609375
+   },
+   "heldOutOneShot": {
+    "positives": 6,
+    "negatives": 183,
+    "tp": 3,
+    "fp": 5,
+    "fn": 3,
+    "precision": 0.375,
+    "recall": 0.5
+   },
+   "tp": 42,
+   "fp": 44,
+   "fn": 35,
+   "precision": 0.4883720930232558,
+   "recall": 0.5454545454545454,
+   "f1": 0.5153374233128833,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "record stop": {
+   "group": "production",
+   "trainPositive": 37,
+   "trainNegative": 3133,
+   "trainRenders": 220,
+   "testPositive": 5,
+   "testNegative": 1046,
+   "trainUploaders": 14,
+   "testUploaders": 4,
+   "variant": "real",
+   "C": 0.3,
+   "threshold": 0.7917,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.375,
+    "recall": 0.40540540540540543
+   },
+   "verdict": "fewer than 10 held-out positives; not tested"
+  },
+  "vinyl scratch": {
+   "group": "production",
+   "trainPositive": 155,
+   "trainNegative": 3133,
+   "trainRenders": 0,
+   "testPositive": 65,
+   "testNegative": 1046,
+   "trainUploaders": 77,
+   "testUploaders": 35,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": false,
+     "threshold": 0.7742,
+     "tp": 50,
+     "fp": 18,
+     "fn": 15,
+     "precision": 0.7352941176470589,
+     "recall": 0.7692307692307693
+    },
+    {
+     "file": "short-clip.json",
+     "subset": "held-out clips <= 2.25 s",
+     "maybe": false,
+     "threshold": 0.8286,
+     "tp": 12,
+     "fp": 3,
+     "fn": 11,
+     "precision": 0.8,
+     "recall": 0.5217391304347826
+    }
+   ],
+   "variant": "real",
+   "C": 1.0,
+   "threshold": 0.7742,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.6948051948051948,
+    "recall": 0.6903225806451613
+   },
+   "heldOutOneShot": {
+    "positives": 23,
+    "negatives": 223,
+    "tp": 20,
+    "fp": 6,
+    "fn": 3,
+    "precision": 0.7692307692307693,
+    "recall": 0.8695652173913043
+   },
+   "tp": 50,
+   "fp": 18,
+   "fn": 15,
+   "precision": 0.7352941176470589,
+   "recall": 0.7692307692307693,
+   "f1": 0.7518796992481205,
+   "passes70": true,
+   "verdict": "PASS 70/70"
+  },
+  "riser": {
+   "group": "production",
+   "trainPositive": 236,
+   "trainNegative": 2711,
+   "trainRenders": 220,
+   "testPositive": 86,
+   "testNegative": 914,
+   "trainUploaders": 100,
+   "testUploaders": 39,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.7631,
+     "tp": 63,
+     "fp": 41,
+     "fn": 23,
+     "precision": 0.6057692307692307,
+     "recall": 0.7325581395348837
+    }
+   ],
+   "variant": "real",
+   "C": 1.0,
+   "threshold": 0.7631,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.6610878661087866,
+    "recall": 0.6694915254237288
+   },
+   "heldOutOneShot": {
+    "positives": 3,
+    "negatives": 208,
+    "tp": 2,
+    "fp": 1,
+    "fn": 1,
+    "precision": 0.6666666666666666,
+    "recall": 0.6666666666666666
+   },
+   "tp": 63,
+   "fp": 41,
+   "fn": 23,
+   "precision": 0.6057692307692307,
+   "recall": 0.7325581395348837,
+   "f1": 0.663157894736842,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "downlifter": {
+   "group": "production",
+   "trainPositive": 13,
+   "trainNegative": 2863,
+   "trainRenders": 220,
+   "testPositive": 15,
+   "testNegative": 931,
+   "trainUploaders": 8,
+   "testUploaders": 7,
+   "variant": "real+renders",
+   "C": 10.0,
+   "threshold": 0.9463,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.2222222222222222,
+    "recall": 0.15384615384615385
+   },
+   "heldOutOneShot": {
+    "positives": 0,
+    "negatives": 189,
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "precision": 0.0,
+    "recall": 0.0
+   },
+   "tp": 1,
+   "fp": 1,
+   "fn": 14,
+   "precision": 0.5,
+   "recall": 0.06666666666666667,
+   "f1": 0.11764705882352941,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "impact": {
+   "group": "production",
+   "trainPositive": 250,
+   "trainNegative": 3282,
+   "trainRenders": 0,
+   "testPositive": 98,
+   "testNegative": 1064,
+   "trainUploaders": 144,
+   "testUploaders": 54,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.7664,
+     "tp": 66,
+     "fp": 40,
+     "fn": 32,
+     "precision": 0.6226415094339622,
+     "recall": 0.673469387755102
+    },
+    {
+     "file": "short-clip.json",
+     "subset": "held-out clips <= 2.25 s",
+     "maybe": false,
+     "threshold": 0.8697,
+     "tp": 8,
+     "fp": 14,
+     "fn": 19,
+     "precision": 0.36363636363636365,
+     "recall": 0.2962962962962963
+    }
+   ],
+   "variant": "real",
+   "C": 0.3,
+   "threshold": 0.7664,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.596,
+    "recall": 0.596
+   },
+   "heldOutOneShot": {
+    "positives": 27,
+    "negatives": 226,
+    "tp": 23,
+    "fp": 16,
+    "fn": 4,
+    "precision": 0.5897435897435898,
+    "recall": 0.8518518518518519
+   },
+   "tp": 66,
+   "fp": 40,
+   "fn": 32,
+   "precision": 0.6226415094339622,
+   "recall": 0.673469387755102,
+   "f1": 0.6470588235294118,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "whoosh": {
+   "group": "production",
+   "trainPositive": 287,
+   "trainNegative": 2528,
+   "trainRenders": 0,
+   "testPositive": 81,
+   "testNegative": 857,
+   "trainUploaders": 140,
+   "testUploaders": 49,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": false,
+     "threshold": 0.941,
+     "tp": 45,
+     "fp": 8,
+     "fn": 36,
+     "precision": 0.8490566037735849,
+     "recall": 0.5555555555555556
+    },
+    {
+     "file": "short-clip.json",
+     "subset": "held-out clips <= 2.25 s",
+     "maybe": false,
+     "threshold": 0.8215,
+     "tp": 17,
+     "fp": 3,
+     "fn": 9,
+     "precision": 0.85,
+     "recall": 0.6538461538461539
+    }
+   ],
+   "variant": "real",
+   "C": 0.3,
+   "threshold": 0.6588,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.7604166666666666,
+    "recall": 0.7630662020905923
+   },
+   "heldOutOneShot": {
+    "positives": 26,
+    "negatives": 205,
+    "tp": 21,
+    "fp": 10,
+    "fn": 5,
+    "precision": 0.6774193548387096,
+    "recall": 0.8076923076923077
+   },
+   "tp": 63,
+   "fp": 36,
+   "fn": 18,
+   "precision": 0.6363636363636364,
+   "recall": 0.7777777777777778,
+   "f1": 0.7000000000000001,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "reverse cymbal": {
+   "group": "production",
+   "trainPositive": 39,
+   "trainNegative": 2711,
+   "trainRenders": 0,
+   "testPositive": 13,
+   "testNegative": 914,
+   "trainUploaders": 21,
+   "testUploaders": 11,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.7627,
+     "tp": 11,
+     "fp": 5,
+     "fn": 2,
+     "precision": 0.6875,
+     "recall": 0.8461538461538461
+    }
+   ],
+   "variant": "real",
+   "C": 0.3,
+   "threshold": 0.7627,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.7894736842105263,
+    "recall": 0.7692307692307693
+   },
+   "heldOutOneShot": {
+    "positives": 1,
+    "negatives": 208,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "tp": 11,
+   "fp": 5,
+   "fn": 2,
+   "precision": 0.6875,
+   "recall": 0.8461538461538461,
+   "f1": 0.7586206896551724,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "reverse impact": {
+   "group": "production",
+   "trainPositive": 15,
+   "trainNegative": 2479,
+   "trainRenders": 0,
+   "testPositive": 1,
+   "testNegative": 801,
+   "trainUploaders": 13,
+   "testUploaders": 1,
+   "verdict": "too few training clips"
+  },
+  "noise sweep": {
+   "group": "production",
+   "trainPositive": 126,
+   "trainNegative": 2528,
+   "trainRenders": 220,
+   "testPositive": 37,
+   "testNegative": 857,
+   "trainUploaders": 56,
+   "testUploaders": 19,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.7616,
+     "tp": 23,
+     "fp": 25,
+     "fn": 14,
+     "precision": 0.4791666666666667,
+     "recall": 0.6216216216216216
+    }
+   ],
+   "variant": "real",
+   "C": 0.3,
+   "threshold": 0.7616,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.6111111111111112,
+    "recall": 0.6111111111111112
+   },
+   "heldOutOneShot": {
+    "positives": 5,
+    "negatives": 205,
+    "tp": 3,
+    "fp": 2,
+    "fn": 2,
+    "precision": 0.6,
+    "recall": 0.6
+   },
+   "tp": 23,
+   "fp": 25,
+   "fn": 14,
+   "precision": 0.4791666666666667,
+   "recall": 0.6216216216216216,
+   "f1": 0.5411764705882353,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "sub drop": {
+   "group": "production",
+   "trainPositive": 29,
+   "trainNegative": 3282,
+   "trainRenders": 220,
+   "testPositive": 20,
+   "testNegative": 1064,
+   "trainUploaders": 19,
+   "testUploaders": 13,
+   "variant": "real+renders",
+   "C": 1.0,
+   "threshold": 0.8082,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.3548387096774194,
+    "recall": 0.3793103448275862
+   },
+   "heldOutOneShot": {
+    "positives": 1,
+    "negatives": 226,
+    "tp": 1,
+    "fp": 3,
+    "fn": 0,
+    "precision": 0.25,
+    "recall": 1.0
+   },
+   "tp": 7,
+   "fp": 9,
+   "fn": 13,
+   "precision": 0.4375,
+   "recall": 0.35,
+   "f1": 0.38888888888888884,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "laser": {
+   "group": "production",
+   "trainPositive": 194,
+   "trainNegative": 3143,
+   "trainRenders": 0,
+   "testPositive": 90,
+   "testNegative": 1015,
+   "trainUploaders": 128,
+   "testUploaders": 46,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.8042,
+     "tp": 42,
+     "fp": 31,
+     "fn": 48,
+     "precision": 0.5753424657534246,
+     "recall": 0.4666666666666667
+    }
+   ],
+   "variant": "real",
+   "C": 1.0,
+   "threshold": 0.8042,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.6307692307692307,
+    "recall": 0.634020618556701
+   },
+   "heldOutOneShot": {
+    "positives": 31,
+    "negatives": 218,
+    "tp": 18,
+    "fp": 9,
+    "fn": 13,
+    "precision": 0.6666666666666666,
+    "recall": 0.5806451612903226
+   },
+   "tp": 42,
+   "fp": 31,
+   "fn": 48,
+   "precision": 0.5753424657534246,
+   "recall": 0.4666666666666667,
+   "f1": 0.5153374233128835,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "siren": {
+   "group": "production",
+   "trainPositive": 217,
+   "trainNegative": 3143,
+   "trainRenders": 0,
+   "testPositive": 77,
+   "testNegative": 1015,
+   "trainUploaders": 155,
+   "testUploaders": 56,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": false,
+     "threshold": 0.7545,
+     "tp": 57,
+     "fp": 24,
+     "fn": 20,
+     "precision": 0.7037037037037037,
+     "recall": 0.7402597402597403
+    }
+   ],
+   "variant": "real",
+   "C": 0.3,
+   "threshold": 0.7545,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.641860465116279,
+    "recall": 0.6359447004608295
+   },
+   "heldOutOneShot": {
+    "positives": 4,
+    "negatives": 218,
+    "tp": 1,
+    "fp": 4,
+    "fn": 3,
+    "precision": 0.2,
+    "recall": 0.25
+   },
+   "tp": 57,
+   "fp": 24,
+   "fn": 20,
+   "precision": 0.7037037037037037,
+   "recall": 0.7402597402597403,
+   "f1": 0.7215189873417721,
+   "passes70": true,
+   "verdict": "PASS 70/70"
+  },
+  "air horn": {
+   "group": "production",
+   "trainPositive": 29,
+   "trainNegative": 3143,
+   "trainRenders": 0,
+   "testPositive": 17,
+   "testNegative": 1015,
+   "trainUploaders": 19,
+   "testUploaders": 13,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.779,
+     "tp": 11,
+     "fp": 4,
+     "fn": 6,
+     "precision": 0.7333333333333333,
+     "recall": 0.6470588235294118
+    }
+   ],
+   "variant": "real",
+   "C": 0.3,
+   "threshold": 0.779,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.6,
+    "recall": 0.6206896551724138
+   },
+   "heldOutOneShot": {
+    "positives": 1,
+    "negatives": 218,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "tp": 11,
+   "fp": 4,
+   "fn": 6,
+   "precision": 0.7333333333333333,
+   "recall": 0.6470588235294118,
+   "f1": 0.6875,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "flanged": {
+   "group": "character",
+   "trainPositive": 182,
+   "trainNegative": 2946,
+   "trainRenders": 220,
+   "testPositive": 46,
+   "testNegative": 1002,
+   "trainUploaders": 105,
+   "testUploaders": 28,
+   "variant": "real",
+   "C": 1.0,
+   "threshold": 0.7802,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.2905027932960894,
+    "recall": 0.2857142857142857
+   },
+   "heldOutOneShot": {
+    "positives": 3,
+    "negatives": 213,
+    "tp": 2,
+    "fp": 4,
+    "fn": 1,
+    "precision": 0.3333333333333333,
+    "recall": 0.6666666666666666
+   },
+   "tp": 19,
+   "fp": 48,
+   "fn": 27,
+   "precision": 0.2835820895522388,
+   "recall": 0.41304347826086957,
+   "f1": 0.336283185840708,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "bitcrushed": {
+   "group": "character",
+   "trainPositive": 124,
+   "trainNegative": 3145,
+   "trainRenders": 220,
+   "testPositive": 30,
+   "testNegative": 1078,
+   "trainUploaders": 52,
+   "testUploaders": 17,
+   "variant": "real+renders",
+   "C": 0.3,
+   "threshold": 0.7212,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.373015873015873,
+    "recall": 0.3790322580645161
+   },
+   "heldOutOneShot": {
+    "positives": 6,
+    "negatives": 213,
+    "tp": 3,
+    "fp": 2,
+    "fn": 3,
+    "precision": 0.6,
+    "recall": 0.5
+   },
+   "tp": 9,
+   "fp": 25,
+   "fn": 21,
+   "precision": 0.2647058823529412,
+   "recall": 0.3,
+   "f1": 0.28125,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "beat repeat": {
+   "group": "production",
+   "trainPositive": 26,
+   "trainNegative": 2986,
+   "trainRenders": 220,
+   "testPositive": 2,
+   "testNegative": 1040,
+   "trainUploaders": 13,
+   "testUploaders": 2,
+   "variant": "real",
+   "C": 10.0,
+   "threshold": 0.9317,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.35714285714285715,
+    "recall": 0.19230769230769232
+   },
+   "verdict": "fewer than 10 held-out positives; not tested"
+  },
+  "filter sweep": {
+   "group": "production",
+   "trainPositive": 77,
+   "trainNegative": 2528,
+   "trainRenders": 220,
+   "testPositive": 33,
+   "testNegative": 857,
+   "trainUploaders": 41,
+   "testUploaders": 18,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.8752,
+     "tp": 16,
+     "fp": 13,
+     "fn": 17,
+     "precision": 0.5517241379310345,
+     "recall": 0.48484848484848486
+    }
+   ],
+   "variant": "real",
+   "C": 10.0,
+   "threshold": 0.8752,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.4625,
+    "recall": 0.4805194805194805
+   },
+   "heldOutOneShot": {
+    "positives": 8,
+    "negatives": 205,
+    "tp": 0,
+    "fp": 1,
+    "fn": 8,
+    "precision": 0.0,
+    "recall": 0.0
+   },
+   "tp": 16,
+   "fp": 13,
+   "fn": 17,
+   "precision": 0.5517241379310345,
+   "recall": 0.48484848484848486,
+   "f1": 0.5161290322580646,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "trance gate": {
+   "group": "production",
+   "trainPositive": 66,
+   "trainNegative": 3024,
+   "trainRenders": 219,
+   "testPositive": 18,
+   "testNegative": 1042,
+   "trainUploaders": 27,
+   "testUploaders": 10,
+   "variant": "real",
+   "C": 1.0,
+   "threshold": 0.8848,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.30158730158730157,
+    "recall": 0.2878787878787879
+   },
+   "heldOutOneShot": {
+    "positives": 6,
+    "negatives": 210,
+    "tp": 0,
+    "fp": 0,
+    "fn": 6,
+    "precision": 0.0,
+    "recall": 0.0
+   },
+   "tp": 6,
+   "fp": 16,
+   "fn": 12,
+   "precision": 0.2727272727272727,
+   "recall": 0.3333333333333333,
+   "f1": 0.3,
+   "passes70": false,
+   "verdict": "below 70/70"
+  },
+  "rewind": {
+   "group": "production",
+   "trainPositive": 9,
+   "trainNegative": 3133,
+   "trainRenders": 220,
+   "testPositive": 1,
+   "testNegative": 1046,
+   "trainUploaders": 7,
+   "testUploaders": 1,
+   "variant": "real+renders",
+   "C": 0.3,
+   "threshold": 0.8959,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.14285714285714285,
+    "recall": 0.2222222222222222
+   },
+   "verdict": "fewer than 10 held-out positives; not tested"
+  },
+  "delay throw": {
+   "group": "production",
+   "trainPositive": 39,
+   "trainNegative": 3447,
+   "trainRenders": 220,
+   "testPositive": 3,
+   "testNegative": 1168,
+   "trainUploaders": 21,
+   "testUploaders": 3,
+   "variant": "real+renders",
+   "C": 10.0,
+   "threshold": 0.9131,
+   "thresholdRule": "max min(P,R) (on real training clips)",
+   "trainOof": {
+    "precision": 0.11428571428571428,
+    "recall": 0.10256410256410256
+   },
+   "verdict": "fewer than 10 held-out positives; not tested"
+  }
+ }
+}

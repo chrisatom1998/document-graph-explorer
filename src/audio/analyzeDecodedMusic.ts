@@ -96,8 +96,8 @@ function genreEnergyFields(acc: GenreEnergyScores): Pick<MusicAnalysis, 'styles'
     ...(energyScore !== undefined ? { energyScore } : {}) };
 }
 /** The fusion scorer's contract is the fixed prompt catalog it was trained on. Trained-head,
- * reviewed-example and one-shot scores ride along in the same output for tagging and are not part of it. */
-export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot' && d.group !== 'embedding');
+ * reviewed-example, one-shot and DJ-effect (dj-effect axis, added later) scores ride along in the same output for tagging and are not part of it. */
+export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot' && d.group !== 'dj-effect' && d.group !== 'embedding');
 /** Model jobs share a bounded timeline, but never each other's validity. Evidence is applied in one fixed order. */
 export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
   // The runtime each AST/CLAP output came from: a threaded stall can switch this browser to one thread mid-run.
@@ -398,7 +398,11 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
         const partial = await request<MusicAnalysis>({ kind: id, excerpts: { durationSeconds: duration, samples } }, samples.map(s => s.buffer));
         check();
         if (id === 'rhythm') result.tempo = partial.tempo;
-        else { result.key = partial.key; result.detectedPitch = partial.detectedPitch; }
+        else {
+          result.key = partial.key; result.detectedPitch = partial.detectedPitch;
+          // A key from the fallback profiles (network unavailable) carries an older revision, so it is retried later.
+          if (partial.keyRevision !== undefined && partial.keyRevision < KEY_ANALYSIS_REVISION) result.keyRevision = partial.keyRevision;
+        }
         result.notes.push(...(partial.notes ?? []));
         result.analyzedSeconds = Math.max(result.analyzedSeconds, j.planned.reduce((n,i) => n + i.end - i.start, 0));
         j.successful = [...j.planned];
