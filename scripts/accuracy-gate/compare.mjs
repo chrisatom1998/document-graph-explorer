@@ -4,7 +4,7 @@
 // jamendo-tags-strict.json: strict view) and score-tempo-key.mjs (mtgkey.json). With "-" as base, only the head's
 // numbers are written. Exit code 1 when any gated number regressed (unless REPORT_ONLY=1).
 //
-// Gated numbers, each compared with the base branch rather than the fixed 0.60 bar, so a failing tag can't get worse:
+// Gated numbers, each compared with the base branch rather than a fixed bar, so a failing tag can't get worse:
 //   sound tags: recall of every class with >= 10 labelled positives; precision of every class the base showed
 //     >= 10 times (weak view: untagged counts as absent, so it is a floor, but the same floor on both sides);
 //     voice precision on the strict view (three annotators agreed on instrumental);
@@ -18,7 +18,9 @@ import { join } from 'node:path';
 
 const [baseDir, headDir, summaryPath] = process.argv.slice(2);
 if (!headDir || !summaryPath) throw new Error('Usage: node scripts/accuracy-gate/compare.mjs <base-dir|-> <head-dir> <summary.md>');
-export const MIN_N = 10, ABS_TOL = 0.02, FLIP_TOL = 1.5, BAR = 0.6;
+// TARGET is Chris's 70% goal: reported per number (and per tag: precision and recall both), never failed on,
+// since main doesn't meet it yet.
+export const MIN_N = 10, ABS_TOL = 0.02, FLIP_TOL = 1.5, TARGET = 0.7;
 const load = dir => {
   const read = f => JSON.parse(readFileSync(join(dir, f), 'utf8'));
   return { weak: read('jamendo-tags.json'), strict: read('jamendo-tags-strict.json'), key: read('mtgkey.json') };
@@ -46,8 +48,9 @@ function metrics(s) {
 }
 const fmt = v => (v == null ? '—' : v.toFixed(3));
 const h = metrics(head), b = base ? new Map(metrics(base).map(m => [m.name, m])) : null;
-// A tag passes when the base shows it with precision and recall both at or above the 0.60 bar.
-const passing = cls => b && ['recall', 'precision'].every(k => b.get(`${cls} ${k}`)?.value >= BAR);
+// A tag meets the target when this change shows it with precision and recall both at or above 70%.
+const hm = new Map(h.map(m => [m.name, m]));
+const meetsTag = cls => ['recall', 'precision'].every(k => hm.get(`${cls} ${k}`)?.value >= TARGET);
 const rows = [], failures = [];
 for (const m of h) {
   const bm = b?.get(m.name);
@@ -60,13 +63,18 @@ for (const m of h) {
   const lostTag = gated && m.value == null;
   const status = !b ? '' : !gated ? 'not gated (too few)' : regressed ? '❌ dropped' : lostTag ? 'ℹ️ no longer shown' : delta > tol ? '✅ improved' : 'ok';
   if (regressed) failures.push(m.name);
-  rows.push(`| ${m.name} | ${bm ? fmt(bm.value) : ''} | ${fmt(m.value)} | ${delta == null ? '' : (delta >= 0 ? '+' : '') + delta.toFixed(3)} | ${gated ? '±' + tol.toFixed(3) : ''} | ${bm?.n ?? m.n} | ${status}${m.cls && passing(m.cls) ? ' (passing tag)' : ''} |`);
+  const target = m.group === 'coverage' || m.value == null ? '' : m.value >= TARGET ? '✓' : '✗';
+  rows.push(`| ${m.name} | ${bm ? fmt(bm.value) : ''} | ${fmt(m.value)} | ${delta == null ? '' : (delta >= 0 ? '+' : '') + delta.toFixed(3)} | ${gated ? '±' + tol.toFixed(3) : ''} | ${bm?.n ?? m.n} | ${target} | ${status} |`);
 }
 const verdict = !base ? 'No base numbers to compare with; recorded these as a baseline only.'
   : failures.length ? `**Accuracy dropped** on ${failures.length} number${failures.length > 1 ? 's' : ''}: ${failures.join(', ')}.`
   : 'No held-out number dropped beyond noise.';
-const md = [`### Accuracy gate (${head.weak.items} Jamendo tracks, ${head.key.items} MTG key tracks)`, '', verdict, '',
-  '| Number | Base | This change | Change | Allowed drop | n | |', '|---|---|---|---|---|---|---|', ...rows, '',
+const classes = [...new Set(h.filter(m => m.cls && m.n >= MIN_N && m.name.endsWith('recall')).map(m => m.cls))];
+const met = classes.filter(meetsTag);
+const targetLine = `**70% target** (report only): ${met.length}/${classes.length} tags meet it on both precision and recall`
+  + `${met.length ? ` (${met.join(', ')})` : ''}; tempo ${hm.get('tempo within 4%').value >= TARGET ? 'meets' : 'misses'} it, key exact ${hm.get('key exact').value >= TARGET ? 'meets' : 'misses'} it.`;
+const md = [`### Accuracy gate (${head.weak.items} Jamendo tracks, ${head.key.items} MTG key tracks)`, '', verdict, '', targetLine, '',
+  '| Number | Base | This change | Change | Allowed drop | n | ≥ 70% | |', '|---|---|---|---|---|---|---|---|', ...rows, '',
   'Round 3 held-out set (docs/evaluations/holdout-r3-2026-10-06): judge with it, never tune on it. Only these aggregates are reported.'].join('\n');
 writeFileSync(summaryPath, md + '\n');
 console.log(md);

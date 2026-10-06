@@ -28,6 +28,10 @@ A number fails when it drops by more than max(0.02, 1.5 / n), n being what the r
 never fails a change; two lost tracks on a 30-positive class (0.067) do. On the full set that is about 0.02 for most
 numbers. Pushes to main only report.
 
+**The 70% target.** The summary also marks every number at or above 0.70, and counts the tags that meet it on both
+precision and recall, plus tempo (within 4%) and exact key. That line is report only: main doesn't meet it yet, so
+failing on it would block every PR. The no-regression rule above is what fails a PR.
+
 **Reading the result.** The job summary of "Accuracy gate / held-out / verdict" has the table (base, change, allowed
 drop). Only aggregate numbers are shown, and the same rule as the held-out set applies: judge with it, don't tune on
 it. A change that trades one number for another on purpose (say precision for recall) fails the gate; merge it anyway
