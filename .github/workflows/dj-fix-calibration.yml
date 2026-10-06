@@ -1,14 +1,12 @@
 name: DJ fix calibration data
 
 # Collects calibration data for the DJ clip fixes on clips the DJ clip tests did not use: the 900 OpenMIC clips of
-# docs/evaluations/mixed-music-2026-10-05 (PR #113 calibrated on them; no clip or artist overlaps either DJ test) and
-# 400 GiantSteps MTG key tracks outside round 2's 500 (key tuning, plus raw tag scores on EDM). The app is built from
-# this commit and run on every clip; results are committed to docs/evaluations/dj-fix-2026-10-06/calibration.
+# docs/evaluations/mixed-music-2026-10-05 (PR #113 calibrated on them; no clip or artist overlaps either DJ test).
+# The app is built from this commit and run on every clip; records go to docs/evaluations/dj-fix-2026-10-06/calibration.
+# (The first run, 37412171657, also analysed 400 Beatport key tracks; key moved to another thread and 198 of those
+# tracks are in PR #121's held-out set, so their outputs were deleted unread and the set was dropped.)
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/fix-failing-sound-tags-nc73z1]
-    paths: [.github/workflows/dj-fix-calibration.yml]
 
 permissions:
   contents: write
@@ -16,8 +14,6 @@ permissions:
 env:
   ONNXRUNTIME_NODE_INSTALL: skip
   OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
-  MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
-  MTGKEY_REF: fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b
   DOCS: docs/evaluations/dj-fix-2026-10-06
   MUSIC_MODEL_PATHS: |
     public/music-model/**/*.onnx
@@ -32,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        set: [cal900, keytune]
+        set: [cal900]
     steps:
       - uses: actions/checkout@v4
       - name: Extract the 900 OpenMIC calibration clips
@@ -42,20 +38,6 @@ jobs:
           echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $RUNNER_TEMP/openmic.tgz" | md5sum -c -
           python3 scripts/mixed-music/build.py "$RUNNER_TEMP/openmic.tgz" audio
           mkdir -p set && cp docs/evaluations/mixed-music-2026-10-05/manifest.json set/manifest.json
-      - name: Select the key tuning tracks
-        if: matrix.set == 'keytune'
-        run: |
-          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
-          git clone -q "$MTGKEY" "$RUNNER_TEMP/mk" && git -C "$RUNNER_TEMP/mk" checkout -q "$MTGKEY_REF"
-          python3 scripts/dj-fix/mtg-key-tune.py "$RUNNER_TEMP/mk" audio
-          mkdir -p set && cp "$DOCS/mtg-key-tune-manifest.json" set/manifest.json
-          git add "$DOCS/mtg-key-tune-manifest.json"
-          if ! git diff --cached --quiet; then
-            git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m "Freeze the key tuning set"
-            for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
-              && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
-          fi
       - uses: actions/upload-artifact@v4
         with:
           name: fix-${{ matrix.set }}-audio
@@ -63,29 +45,6 @@ jobs:
             audio
             set
           retention-days: 7
-
-  key-profiles:
-    needs: freeze
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: fix-keytune-audio
-          path: kt
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
-      - run: npx vite-node scripts/dj-fix/key-profiles.mjs key-profiles.json kt/set/manifest.json kt/audio
-      - uses: actions/upload-artifact@v4
-        with:
-          name: fix-key-profiles
-          path: key-profiles.json
-          retention-days: 30
 
   eval:
     needs: freeze
@@ -101,9 +60,6 @@ jobs:
           - { set: cal900, shard: 2, of: 5 }
           - { set: cal900, shard: 3, of: 5 }
           - { set: cal900, shard: 4, of: 5 }
-          - { set: keytune, shard: 0, of: 3 }
-          - { set: keytune, shard: 1, of: 3 }
-          - { set: keytune, shard: 2, of: 3 }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -128,7 +84,7 @@ jobs:
       - name: Analyse in the real app
         run: |
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
-          AUDIO_DIR=clips/audio AUDIO_EXT=${{ matrix.set == 'cal900' && 'ogg' || 'wav' }} MANIFEST=clips/set/manifest.json \
+          AUDIO_DIR=clips/audio AUDIO_EXT=ogg MANIFEST=clips/set/manifest.json \
             SHARD=${{ matrix.shard }}/${{ matrix.of }} node scripts/short-clip-upload-eval.mjs out/run test 20
       - uses: actions/upload-artifact@v4
         if: always()
@@ -138,7 +94,7 @@ jobs:
           retention-days: 30
 
   collect:
-    needs: [eval, key-profiles]
+    needs: eval
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -152,17 +108,10 @@ jobs:
         with:
           pattern: fix-*-export-*
           path: exports
-      - uses: actions/download-artifact@v4
-        with:
-          name: fix-key-profiles
-          path: kp
-        continue-on-error: true
       - name: Extract records
         run: |
           C="$DOCS/calibration"; mkdir -p "$C"
           npx vite-node scripts/dj-fix/extract.mjs "$C/cal900-records.json" exports/fix-cal900-export-*/graph-export.json
-          npx vite-node scripts/dj-fix/extract.mjs "$C/keytune-records.json" exports/fix-keytune-export-*/graph-export.json
-          [ -f kp/key-profiles.json ] && cp kp/key-profiles.json "$C/keytune-key-profiles.json" || true
           echo "built from $GITHUB_SHA (run $GITHUB_RUN_ID)" > "$C/tested-commit.txt"
       - name: Commit
         run: |
