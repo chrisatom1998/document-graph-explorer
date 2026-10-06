@@ -135,8 +135,8 @@ jobs:
           mkdir -p "$DOCS/results"; R="$DOCS/results"
           OM=clips/dj2-openmic-audio/$DOCS/openmic-manifest.json MK=clips/dj2-mtgkey-audio/$DOCS/mtg-key-manifest.json
           node -e "const m=require('./'+process.argv[1]);m.items=m.items.filter(i=>i.djTier==='dj genre');require('fs').writeFileSync('dj-tier.json',JSON.stringify(m))" "$OM"
-          MANIFEST=$OM npx vite-node scripts/mixed-music/score.mjs "$R/openmic-tags.json" exports/dj2-openmic-export-*/graph-export.json | tee "$R/openmic-tags.txt"
-          MANIFEST=dj-tier.json npx vite-node scripts/mixed-music/score.mjs "$R/openmic-tags-dj-genres.json" exports/dj2-openmic-export-*/graph-export.json | tee "$R/openmic-tags-dj-genres.txt"
+          MANIFEST=$OM BENCHMARK=dj-clips-round2-2026-10-06/openmic npx vite-node scripts/mixed-music/score.mjs "$R/openmic-tags.json" exports/dj2-openmic-export-*/graph-export.json | tee "$R/openmic-tags.txt"
+          MANIFEST=dj-tier.json BENCHMARK=dj-clips-round2-2026-10-06/openmic-dj-genres npx vite-node scripts/mixed-music/score.mjs "$R/openmic-tags-dj-genres.json" exports/dj2-openmic-export-*/graph-export.json | tee "$R/openmic-tags-dj-genres.txt"
           node scripts/compare-tag-reports.mjs --min-positives 5 "$R/openmic-tags.json" | tee -a "$R/openmic-tags.txt" || true
           node scripts/compare-tag-reports.mjs --min-positives 5 "$R/openmic-tags-dj-genres.json" | tee -a "$R/openmic-tags-dj-genres.txt" || true
           npx vite-node scripts/full-mix/extract.mjs "$R/openmic-clips.json" exports/dj2-openmic-export-*/graph-export.json
