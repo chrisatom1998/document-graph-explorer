@@ -3,10 +3,8 @@ name: Sound-alike projection
 # Trains the small projection the app applies to CLAP sound fingerprints before "sounds alike" links
 # (scripts/sound-alike/). Fingerprints come from scripts/embed-clap.mjs, the app's own CLAP setup, on CPU runners:
 # MTG-Jamendo split-0 train + validation only (select-jamendo.py lists what is held out). Audio is never committed.
+# Run by hand (workflow_dispatch): a full run embeds 100 archive folders, six jobs at a time (about 3 h).
 on:
-  push:
-    branches: [claude/train-audio-model-043wd9]
-    paths: [.github/workflows/sound-alike-train.yml]
   workflow_dispatch:
     inputs:
       embeddings_run:
@@ -125,6 +123,16 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -q numpy && pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Pack fingerprints into one file
+        run: python3 -c "import glob,gzip,shutil; out=gzip.open('fingerprints.jsonl.gz','wb'); [shutil.copyfileobj(open(f,'rb'),out) for f in sorted(glob.glob('emb/**/*.jsonl',recursive=True))]; out.close()"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sound-alike-fingerprints
+          path: |
+            fingerprints.jsonl.gz
+            sel/tracks.json
+          compression-level: 0
+          retention-days: 30
       - name: Train (linear and two-layer)
         run: |
           python3 scripts/sound-alike/train.py sel/tracks.json emb --out out/linear-128 --dim 128 | tee out-linear-128.log
