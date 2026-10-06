@@ -1,0 +1,39 @@
+name: Train the audio tagger
+
+# Fine-tunes DGE's own instrument tagger (scripts/audio-model/) on a Hugging Face Jobs GPU, billed to the HF_TOKEN
+# account, and uploads the run to that account's private dge-instrument-tagger model repo. All audio is fetched inside
+# the job; nothing is uploaded from GitHub. Scores on the benchmark sets are printed here as aggregates only.
+on:
+  workflow_dispatch:
+    inputs:
+      flavor: { description: 'HF Jobs hardware', default: 'l4x1' }
+      model: { description: 'EfficientAT backbone', default: 'mn10_as' }
+      epochs: { default: '30' }
+      lr: { default: '1e-4' }
+      batch: { default: '64' }
+      weak: { description: 'weight of Jamendo untagged absences', default: '0.2' }
+  push:
+    branches: ['claude/train-audio-model-*']
+    paths: ['.github/workflows/audio-model-train.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the Hugging Face token
+        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
+        run: |
+          [ -n "$HF_TOKEN" ] || { echo "::error::Add a Hugging Face token as the repository secret HF_TOKEN"; exit 1; }
+          pip install -q huggingface_hub
+          python3 -c "from huggingface_hub import whoami; w = whoami(); print('HF account:', w['name'], '| PRO:', w.get('isPro'))"
+      - name: Train on Hugging Face Jobs
+        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
+        run: >
+          python3 scripts/audio-model/hf-launch.py "${{ inputs.flavor || 'l4x1' }}" 5h
+          REPO_SHA=${{ github.sha }} MODEL=${{ inputs.model || 'mn10_as' }} EPOCHS=${{ inputs.epochs || '30' }}
+          LR=${{ inputs.lr || '1e-4' }} BATCH=${{ inputs.batch || '64' }} WEAK=${{ inputs.weak || '0.2' }}
