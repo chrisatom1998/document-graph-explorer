@@ -74,7 +74,7 @@ describe('pinned full-mix heads', () => {
     expect(createHash('sha256').update(bytes).digest('hex')).toBe(manifest.sha256[FULL_MIX_FILE]);
     const model = sanitizeFullMixModel(JSON.parse(bytes.toString('utf8')))!;
     expect(model.revision).toBe(FULL_MIX_REVISION);
-    expect(model.heads.map(h => h.label).sort()).toEqual(['bass', 'cymbals', 'drums', 'guitar', 'organ', 'piano', 'saxophone', 'synthesizer', 'trumpet', 'violin', 'voice']);
+    expect(model.heads.map(h => h.label).sort()).toEqual(['bass', 'cymbals', 'drums', 'guitar', 'organ', 'piano', 'saxophone', 'synthesizer', 'trumpet', 'voice']);
     expect(model.heads.filter(h => h.replaces).map(h => h.label)).toEqual(['bass']);
   });
 });

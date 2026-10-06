@@ -5,8 +5,10 @@ import soundManifest from '../../public/sound-model/manifest.json';
  * Fitted on OpenMIC-2018's train partition with every DGE benchmark artist removed (scripts/full-mix-heads/train.py),
  * so they add no model download and no inference: about a thousand multiply-adds per head per window. */
 export const FULL_MIX_FILE = 'full-mix.json';
-/** The installed heads' revision (checked against the pinned file by a test). Display trusts only results from it. */
-export const FULL_MIX_REVISION: string | undefined = 'openmic-train-2026-10-06-r1';
+/** The installed heads' revision (checked against the pinned file by a test). Display trusts only results from it.
+ * r2 drops the violin head: the fusion violin rule (FULL_MIX_HEADS in confidentSoundSummary.ts) already passes on full
+ * mixes, and adding this head on top of it cost precision. */
+export const FULL_MIX_REVISION: string | undefined = 'openmic-train-2026-10-06-r2';
 /** Heads were fitted on whole ten-second windows; shorter windows (loops, one-shots) are never scored. */
 export const FULL_MIX_WINDOW_SECONDS = 10;
 /** `replaces`: on full mixes this head alone decides its label; other models' scores for it (and FULL_MIX_FAMILY

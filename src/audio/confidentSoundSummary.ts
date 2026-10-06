@@ -9,7 +9,8 @@ import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 import { FULL_MIX_FAMILY, FULL_MIX_REVISION } from './fullMixHeads';
 
-/** Presentation only: does not change stored evidence, acceptance, cache identity or graph links. */
+/** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
+ * musicLinks), so a display change also changes which instrument links a track can form, by design. */
 export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v3';
 /** A detector score at or above this shows as "likely" (and is the only floor for short clips). */
 export const LIKELY_SOUND_CUTOFF = .5;
@@ -47,10 +48,19 @@ export const FULL_MIX_JAMENDO:Record<string,{label:string;threshold:number}>={
   'drum machine':{label:'drums',threshold:.4},
 };
 TESTED_SCORES.add(FULL_MIX_JAMENDO_SCORE);
+/** OpenMIC fusion heads that the accepted release keeps on its Jamendo baseline (no decision probability, so never
+ * shown) but whose own head probability passed a held-out full-mix check: thresholds picked on half of the 900 OpenMIC
+ * calibration clips and checked on the other half (scripts/dj-fix/calibrate.py). Whole ten-second windows only. */
+export const FULL_MIX_HEAD_SCORE='Trained head score (tested on full mixes)';
+export const FULL_MIX_HEADS:Record<string,number>={guitar:.4,violin:.4};
+TESTED_SCORES.add(FULL_MIX_HEAD_SCORE);
+/** On recordings of at least one full window, these labels need a higher tested score than the track floor: their
+ * false alarms on full mixes were measured the same way (scripts/dj-fix/calibrate.py). */
+export const FULL_MIX_MIN_TESTED_SCORE:Record<string,number>={trumpet:.5,cello:.55};
 /** Full-mix instrument heads (src/audio/fullMixHeads.ts), fitted on 10 s OpenMIC train windows and thresholded on
  * artist-held-out folds. Their stored score maps each head's own threshold to the likely cutoff (0.5). */
-export const FULL_MIX_HEAD_SCORE='Full-mix head score';
-TESTED_SCORES.add(FULL_MIX_HEAD_SCORE);
+export const OPENMIC_HEAD_SCORE='Full-mix head score';
+TESTED_SCORES.add(OPENMIC_HEAD_SCORE);
 const nativeNames={ast:'AST score',jamendo:'Jamendo score',clap:'CLAP similarity',rhythm:'Tempo score',tonal:'Key score'};
 export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):DisplaySound[] {
   const result=new Map<string,DisplaySound>();
@@ -94,21 +104,27 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     for(const model of audio.soundProfile?.models??[])for(const candidate of model.candidates)if(dimensionLabels.source.includes(candidate.label))estimate('source',candidate.label,candidate.score,model.model);
   }
   const heads=fullMix&&FULL_MIX_REVISION&&audio.fullMix?.revision===FULL_MIX_REVISION?audio.fullMix:undefined;
-  if(heads)for(const l of heads.labels)estimate('source',l.label,l.score,FULL_MIX_HEAD_SCORE);
+  if(heads)for(const l of heads.labels)estimate('source',l.label,l.score,OPENMIC_HEAD_SCORE);
   // Profile tags carry their own source-specific display score. Bare character/source strings and AI drafts do not.
   const catalogClap=new Set<string>();
   for(const tag of audio.soundProfile?.djTags??[]){const dim:Dimension=tag.group==='source'?'source':tag.group==='character'?'character':'effect';if(tag.model==='Music CLAP')catalogClap.add(`${dim}:${canonical(dim,tag.label)}`);}
   for(const tag of audio.soundProfile?.djTags??[])estimate(tag.group==='source'?'source':tag.group==='character'?'character':'effect',tag.label,tag.score,tag.model??'Sound tag model');
   const fusion=fusionPresentation(audio.fusion,audio.durationSeconds,fusionMode??audio.recognition?.mode??'full');
-  if(fusion?.qualified)for(const w of fusion.windows)for(const d of w.decisions)if(d.state!=='unavailable')estimate('source',d.label,d.decisionProbability,`${d.source==='learned-head'?'Trained head':'Baseline fallback'} score${d.state==='positive'?'':' (below policy acceptance)'}`);
+  if(fusion?.qualified)for(const w of fusion.windows)for(const d of w.decisions){
+    if(d.state!=='unavailable')estimate('source',d.label,d.decisionProbability,`${d.source==='learned-head'?'Trained head':'Baseline fallback'} score${d.state==='positive'?'':' (below policy acceptance)'}`);
+    const head=FULL_MIX_HEADS[d.label];
+    if(fullMix&&head!==undefined&&w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6&&d.source!=='learned-head'&&typeof d.headProbability==='number'&&d.headProbability>=head)estimate('source',d.label,d.headProbability,FULL_MIX_HEAD_SCORE);
+  }
   // A head that replaces the other models for its instrument: only its own score stands for that instrument.
   if(heads)for(const label of heads.decides)for(const name of FULL_MIX_FAMILY[label]??[label]){
     const key=`source:${name}`,item=result.get(key);if(item?.origin!=='model estimate')continue;
-    const own=item.scores!.filter(x=>x.model===FULL_MIX_HEAD_SCORE);if(own.length)item.scores=own;else result.delete(key);}
+    const own=item.scores!.filter(x=>x.model===OPENMIC_HEAD_SCORE);if(own.length)item.scores=own;else result.delete(key);}
   const tiered=(s:DisplaySound,models:(m:string)=>boolean):DisplaySound=>({...s,tier:soundTier(Math.max(...s.scores!.filter(x=>models(x.model)).map(x=>x.score)))});
   const long=floor===TRACK_SOUND_FLOOR;
+  const testedBest=(s:DisplaySound)=>Math.max(...s.scores!.filter(x=>TESTED_SCORES.has(x.model)).map(x=>x.score));
+  const raised=(s:DisplaySound)=>fullMix&&s.dimension==='source'&&FULL_MIX_MIN_TESTED_SCORE[s.label]!==undefined&&testedBest(s)<FULL_MIX_MIN_TESTED_SCORE[s.label];
   return [...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
-    :s.scores?.some(x=>TESTED_SCORES.has(x.model))?[tiered(s,m=>TESTED_SCORES.has(m))]
+    :s.scores?.some(x=>TESTED_SCORES.has(x.model))?raised(s)?[]:[tiered(s,m=>TESTED_SCORES.has(m))]
     :s.scores?.some(x=>x.model===MAYBE_SCORE)?[{...tiered(s,m=>m===MAYBE_SCORE),maybe:true}]
     :long&&!CALIBRATED_LABELS.has(s.label)&&!UNVERIFIED_BLOCKED.has(s.label)&&catalogClap.has(`${s.dimension}:${s.label}`)&&s.scores?.some(x=>x.model==='CLAP similarity'&&x.score>=UNVERIFIED_SOUND_FLOOR)?[{...s,tier:'possible' as const,uncalibrated:true}]:[]);
 }
