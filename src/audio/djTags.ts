@@ -14,6 +14,9 @@ export interface DjTag { group: DjGroup; label: string; score: number; model?: '
 export const DJ_TYPE_SOURCE: Record<string, string> = Object.fromEntries(
   DJ_CATALOG.filter(c => c.group === 'production' && c.source).map(c => [c.label, c.source!]),
 );
+/** On-screen name for a label. The stored label stays the same so trained heads and saved corrections keep working. */
+const DISPLAY_NAMES: Record<string, string> = { plucked: 'one shot' };
+export function soundLabelText(label: string): string { return DISPLAY_NAMES[label] ?? label.replaceAll('_', ' '); }
 export function canonicalDjLabel(group: DjGroup, raw: unknown): string | undefined {
   if (typeof raw !== 'string') return;
   const label = raw.trim().toLowerCase();
@@ -86,6 +89,28 @@ export class DjTagEvidence {
   results() { return [...this.tags.values()].sort((a,b)=>b.score-a.score); }
 }
 
+/** How much a tag's model has been checked: the user's own examples, then held-out-tested heads, then untested
+ * resemblance scores. Scores from different models are on different scales, so a tag is replaced by
+ * better-checked evidence, never by a bigger number from a less-checked model. */
+export const djEvidenceRank = (model: DjTag['model']): number =>
+  model === 'Reviewed examples' ? 3 : model === 'Trained head' ? 2 : model === 'Trained head (maybe)' ? 1 : 0;
+/** Whether `tag` should replace `existing` for the same group and label. */
+export const outranksDjTag = (tag: DjTag, existing: DjTag | undefined): boolean => {
+  if (!existing) return true;
+  const a = djEvidenceRank(tag.model), b = djEvidenceRank(existing.model);
+  return a > b || (a === b && tag.score > existing.score);
+};
+/** A shown trained-head type (kick, synth hit…) also stands for its catalog source (drums, synthesizer…), with the
+ * head's own model so the source shows exactly when the type does. Untested source guesses never block it. */
+export function deriveTestedSources(tags: Map<string, DjTag>): void {
+  for (const tag of [...tags.values()]) {
+    const source = tag.group === 'production' && djEvidenceRank(tag.model) && tag.model !== 'Reviewed examples' ? DJ_TYPE_SOURCE[tag.label] : undefined;
+    if (!source || !(DJ_LABELS.source as readonly string[]).includes(source)) continue;
+    const key = `source:${source}`, derived: DjTag = { ...tag, group: 'source', label: source };
+    if (outranksDjTag(derived, tags.get(key))) tags.set(key, derived);
+  }
+}
+
 /** Apply only labels known to this app; reviewed examples may add or reject a tag. */
 export function applyReviewedDecisions(tags: DjTag[], scores: DescriptionScore[]): DjTag[] {
   const result = new Map(tags.map(t => [`${t.group}:${t.label}`, t]));
@@ -93,11 +118,10 @@ export function applyReviewedDecisions(tags: DjTag[], scores: DescriptionScore[]
     if (score.group !== 'dj-learned' || !score.learnedGroup || !score.label || !allowed(score.learnedGroup,score.label)) continue;
     const key = `${score.learnedGroup}:${score.label}`;
     if (score.basis === 'head') {
-      // A trained head already cleared its own measured threshold. It adds a tag under its
-      // own name and never overrides a user-reviewed example or a stronger existing tag.
-      const existing = result.get(key);
-      if (score.decision === 'include' && existing?.model !== 'Reviewed examples' && (existing?.score ?? 0) < score.score)
-        result.set(key,{group:score.learnedGroup,label:score.label,score:score.score,model:score.maybe?'Trained head (maybe)':'Trained head'});
+      // A trained head already cleared its own measured threshold. It adds a tag under its own name and
+      // replaces untested guesses for the same label, but never a user-reviewed example or a stronger tested tag.
+      const tag: DjTag = {group:score.learnedGroup,label:score.label,score:score.score,model:score.maybe?'Trained head (maybe)':'Trained head'};
+      if (score.decision === 'include' && outranksDjTag(tag, result.get(key))) result.set(key,tag);
       continue;
     }
     if (score.decision === 'exclude' && score.score >= .94) result.delete(key);

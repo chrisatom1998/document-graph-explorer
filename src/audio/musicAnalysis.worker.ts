@@ -45,6 +45,25 @@ function getClassifier() {
     return { model, processor };
   })().catch(error => { classifier = null; throw error; });
 }
+/** Full-precision AST on the graphics card: 0.4 s a window against 2-3 s for q8 WASM (measured 2026-10-05), with
+ * every AudioSet probability within 0.023 of q8 and the same top five. Only requested where no validated scorer
+ * reads AST scores (analyzeDecodedMusic astOnGpu); any failure falls back to q8 WASM for the rest of the session. */
+let gpuClassifier: ReturnType<typeof getClassifier> | null = null;
+let gpuUnavailable = false;
+function getGpuClassifier() {
+  return gpuClassifier ??= (async () => {
+    const gpu = (navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown> } }).gpu;
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+    if (memory !== undefined && memory < 4) throw new Error('Too little memory for a second AST model');
+    if (!gpu || !await gpu.requestAdapter().catch(() => null)) throw new Error('No WebGPU adapter');
+    const { env, AutoProcessor, AutoModelForAudioClassification } = await import('@huggingface/transformers');
+    env.allowRemoteModels = false; env.allowLocalModels = true;
+    env.localModelPath = import.meta.env.BASE_URL;
+    const model = await AutoModelForAudioClassification.from_pretrained('music-model', { dtype: 'fp32', device: 'webgpu', local_files_only: true });
+    const processor = await AutoProcessor.from_pretrained('music-model', { local_files_only: true });
+    return { model, processor };
+  })();
+}
 const CLAP_ENCODER = 'Xenova/larger_clap_music_and_speech@e9fd5ac1dbf3280936a7fc3ec8a020453ff184db';
 let soundClassifier: Promise<{
   model: Awaited<ReturnType<typeof import('@huggingface/transformers')['ClapAudioModelWithProjection']['from_pretrained']>>;
@@ -158,8 +177,10 @@ async function shortClipProfile(model: ShortClipModel, samples48: Float32Array, 
   return shortClipScores(model, inputs).scores;
 }
 /** Load one family's weights ahead of its first clip. Scores are unaffected: the same memoized sessions serve later requests. */
-async function warmFamily(family: string): Promise<void> {
-  if (family === 'instruments') await getClassifier();
+async function warmFamily(family: string, mode?: string): Promise<void> {
+  // Quick analyses use the GPU model, so warming it keeps its ~6 s load off the first file. Full analyses only use it
+  // for clips up to 2.048 s; there it loads on the first such clip instead of holding 347 MB for long recordings.
+  if (family === 'instruments') { await getClassifier(); if (mode !== 'full') await getGpuClassifier().catch(() => { gpuUnavailable = true; }); }
   else if (family === 'profile' || family === 'sound') await Promise.all([getSoundDescriptions(), getSoundClassifier()]);
   else if (family === 'jamendo') await Promise.all([ready, preloadJamendo()]);
   else await ready;
@@ -169,7 +190,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
   // The main thread decided this browser needs the single-thread runtime (see THREADED_RUNTIME_STALLED).
   if ((data as { singleThread?: boolean }).singleThread) switchToSingleThreadRuntime(false);
   if (data.kind === 'warm') {
-    try { await warmFamily(data.family); self.postMessage({ id, warmed: true }); }
+    try { await warmFamily(data.family, (data as { mode?: string }).mode); self.postMessage({ id, warmed: true }); }
     catch (error) { self.postMessage({ id, error: error instanceof Error ? error.message : String(error) }); }
     return;
   }
@@ -214,12 +235,15 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
         // only the one-shot heads tag these clips. The user's own reviewed examples still apply.
         learnedScores = learnedScores.filter(s => s.basis !== 'head');
       }
-      await postResult([...descriptionScores(embedding, prompts), ...learnedScores, ...oneShot]);
+      await postResult([...descriptionScores(embedding, prompts), ...learnedScores, ...oneShot, { group: 'embedding', label: null, score: 0, embedding: embedding.map(v => Math.round(v * 1e4) / 1e4) }]);
       return;
     }
     if (data.kind === 'instruments') {
-      const result = await cachedAudioInference('music-model', `ast-16khz:${musicRuntimeIdentity('ast')}`, data.samples, isInstrumentPredictions, async () => {
-        const { model, processor } = await getClassifier();
+      // Settle the device before choosing the cache identity, so a WASM result is never saved as a GPU result.
+      let gpuModel: Awaited<ReturnType<typeof getClassifier>> | undefined;
+      if ((data as { gpu?: boolean }).gpu === true && !gpuUnavailable) try { gpuModel = await getGpuClassifier(); } catch { gpuUnavailable = true; }
+      const infer = (load: () => ReturnType<typeof getClassifier>) => async () => {
+        const { model, processor } = await load();
         const inputs = await processor(data.samples);
         try {
           const output = await model(inputs); inferenceExecuted = true;
@@ -228,7 +252,20 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
             return { scores: instrumentScores(output.logits.data, labels), musicScore: musicScore(output.logits.data, labels) };
           } finally { await disposeTensors(output); }
         } finally { await disposeTensors(inputs); }
-      }, () => self.postMessage({ id, progress: 'Reusing saved instrument features' }));
+      };
+      const reuse = () => self.postMessage({ id, progress: 'Reusing saved instrument features' });
+      let result: InstrumentPredictions | undefined;
+      if (gpuModel) {
+        const loaded = gpuModel;
+        try {
+          result = await cachedAudioInference('music-model', 'ast-16khz:webgpu-fp32-v1', data.samples, isInstrumentPredictions, infer(async () => loaded), reuse);
+          Object.assign(runtime, { backend: 'webgpu', identity: 'webgpu-fp32-v1' });
+        } catch {
+          // A session that loaded can still fail at run time (device loss, out of memory): drop it and redo this window on WASM.
+          gpuUnavailable = true; gpuClassifier = null;
+        }
+      }
+      result ??= await cachedAudioInference('music-model', `ast-16khz:${musicRuntimeIdentity('ast')}`, data.samples, isInstrumentPredictions, infer(getClassifier), reuse);
       await postResult(result);
       return;
     }

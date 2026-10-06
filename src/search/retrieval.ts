@@ -65,6 +65,7 @@ interface Candidate {
   lexicalScore?: number;
   semanticRank?: number;
   lexicalRank?: number;
+  identifierHits?: number;
 }
 
 const DEFAULT_LIMIT = 12;
@@ -86,6 +87,40 @@ export function retrievalTerms(value: string): string[] {
     (value.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{M}\p{N}+#._-]*/gu) ?? [])
       .filter((term) => term.length > 1 && !STOP_WORDS.has(term)),
   )];
+}
+
+/**
+ * Query tokens that look like codes: letters and digits joined by "-", "_" or "."
+ * (PT-01, SEARCH-2214, MC-27001-88412). A passage that contains one is very likely
+ * the document the user means, however the rank fusion scores it.
+ */
+export function identifierTerms(query: string): string[] {
+  return [...new Set(
+    (query.toLowerCase().match(/[\p{L}\p{N}]+(?:[-_.][\p{L}\p{N}]+)+/gu) ?? [])
+      .filter((term) => /\p{L}/u.test(term) && /\p{N}/u.test(term)),
+  )];
+}
+
+const IDENTIFIER_CHAR = /[\p{L}\p{N}]/u;
+const IDENTIFIER_JOINER = /[-_.]/;
+
+/**
+ * How many identifiers appear in the text as whole tokens: "PT-01" does not match
+ * "PT-010", "XPT-01", "PT-01-A" or "PT-01.2", but does match "PT-01." at a sentence end.
+ */
+export function identifierHits(identifiers: readonly string[], text: string): number {
+  if (identifiers.length === 0) return 0;
+  const body = text.toLowerCase();
+  const continues = (joinerOrChar: string | undefined, next: string | undefined) =>
+    !!joinerOrChar && (IDENTIFIER_CHAR.test(joinerOrChar)
+      || (IDENTIFIER_JOINER.test(joinerOrChar) && !!next && IDENTIFIER_CHAR.test(next)));
+  return identifiers.filter((id) => {
+    for (let at = body.indexOf(id); at >= 0; at = body.indexOf(id, at + 1)) {
+      const end = at + id.length;
+      if (!continues(body[at - 1], body[at - 2]) && !continues(body[end], body[end + 1])) return true;
+    }
+    return false;
+  }).length;
 }
 
 function normalized(value: string): string {
@@ -302,6 +337,7 @@ export async function retrieveCorpus(
   const maxPassageChars = options.maxPassageChars ?? DEFAULT_MAX_PASSAGE_CHARS;
   const includeSearchMetadata = options.includeSearchMetadata !== false;
   const candidates = new Map<string, Candidate>();
+  const identifiers = identifierTerms(q);
 
   // Full text is evictable (store/textHydration): the loops below fall back
   // to it only for docs with no indexed chunk texts, so rehydrate those few
@@ -335,7 +371,7 @@ export async function retrieveCorpus(
       const lexical = lexicalRelevance(q, text, node.title);
       if (lexical.score <= 0) continue;
       matchedBody = true;
-      upsertCandidate(candidates, {
+      const candidate = upsertCandidate(candidates, {
         docId: node.id,
         docTitle: node.title,
         passageIndex,
@@ -343,6 +379,7 @@ export async function retrieveCorpus(
         lexicalScore: lexical.score + extraLex.score,
         titleMatch: lexical.titleMatch,
       });
+      candidate.identifierHits = identifierHits(identifiers, `${node.title}\n${text}`);
     }
     // A title remains searchable even when an import or unreadable file has
     // no source passages. It is metadata, so do not invent a chunk index.
@@ -397,13 +434,16 @@ export async function retrieveCorpus(
       for (let passageIndex = 0; passageIndex < chunkCount; passageIndex++) {
         const semanticScore = dotProduct(vectors, queryVector, passageIndex * dims, dims);
         if (semanticScore < minSemanticScore) continue;
-        upsertCandidate(candidates, {
+        const passageText = chunkData.texts[passageIndex] ?? '';
+        const candidate = upsertCandidate(candidates, {
           docId,
           docTitle: titleById.get(docId) ?? docId.slice(0, 8),
           passageIndex,
-          text: (chunkData.texts[passageIndex] ?? '').slice(0, maxPassageChars),
+          text: passageText.slice(0, maxPassageChars),
           semanticScore,
         });
+        // A passage can carry the exact code yet miss the lexical coverage gate on a long query.
+        candidate.identifierHits ??= identifierHits(identifiers, `${candidate.docTitle}\n${passageText}`);
       }
     }
 
@@ -414,13 +454,14 @@ export async function retrieveCorpus(
       if (semanticScore < minSemanticScore) continue;
       // Snippet only — an evicted/absent full text must not drop the hit.
       const text = deps.texts.get(docId) ?? deps.chunks.get(docId)?.texts[0] ?? '';
-      upsertCandidate(candidates, {
+      const candidate = upsertCandidate(candidates, {
         docId,
         docTitle: titleById.get(docId) ?? docId.slice(0, 8),
         passageIndex: 0,
         text: text.slice(0, maxPassageChars),
         semanticScore,
       });
+      candidate.identifierHits ??= identifierHits(identifiers, `${candidate.docTitle}\n${text}`);
     }
   } catch (error) {
     console.warn('[knowledge-nebula] semantic retrieval unavailable - lexical results only', error);

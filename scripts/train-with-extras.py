@@ -107,7 +107,7 @@ def held_out(name, groups, pos):
 # EXPORT=0.5 also refits and saves weights for results at or above that bar; ONLY=kind:name,... limits the run.
 EXPORT = float(os.environ['EXPORT']) if os.environ.get('EXPORT') else None
 ONLY = set(filter(None, os.environ.get('ONLY', '').split(',')))
-fit = lambda A, y: LogisticRegression(C=1.0, class_weight='balanced', max_iter=600, tol=1e-3).fit(A, y)
+fit = lambda A, y, C=1.0: LogisticRegression(C=C, class_weight='balanced', max_iter=600, tol=1e-3).fit(A, y)
 def threshold(t, p):
     best = None
     for th in np.unique(np.round(p, 3)):
@@ -143,13 +143,18 @@ def run(kind, name):
             real_test = held_out(f'{kind}:{name}:real', G[real_pool & use], pos[real_pool & use])
             t2 = use & real_pool & np.isin(G, sorted(real_test))
             if pos[t2].sum() >= MIN_TEST: test, where = t2, 'real recordings'
+    if os.environ.get('PREFER_LARGER_TEST') == '1' and kind == 'label' and where == 'library brands' and REAL_LABEL:
+        # Use the larger of the two honest yardsticks (library brands vs held-out real recordings).
+        real = np.isin([i.split(':')[0] + ':' for i in IDS], REAL_LABEL); real_pool = ~IS_VAULT & real
+        t2 = use & real_pool & np.isin(G, sorted(held_out(f'{kind}:{name}:real', G[real_pool & use], pos[real_pool & use])))
+        if pos[t2].sum() > pos[test].sum() and pos[t2].sum() >= MIN_TEST: test, where = t2, 'real recordings'
     train = use & ~test & (IS_VAULT | (pos | ~IS_VAULT))
     r = {'kind': kind, 'name': name, 'testedOn': where, 'trainPositive': int(pos[train].sum()), 'testPositive': int(pos[test].sum())}
     if pos[test].sum() < MIN_TEST or pos[train].sum() < 30 or len(set(G[train & pos])) < 3: return {**r, 'verdict': 'not enough data'}
-    def oof_for(rows):
+    def oof_for(rows, C=1.0):
         oof = np.full(len(rows), np.nan)
         for x, y in GroupKFold(n_splits=5).split(X[rows], pos[rows], G[rows]):
-            if pos[rows][x].any() and (~pos[rows][x]).any(): oof[y] = fit(X[rows][x], pos[rows][x]).predict_proba(X[rows][y])[:, 1]
+            if pos[rows][x].any() and (~pos[rows][x]).any(): oof[y] = fit(X[rows][x], pos[rows][x], C).predict_proba(X[rows][y])[:, 1]
         return oof
     # Each sound picks the extra datasets that help IT, judged only on its training-side library
     # brands (5-fold, by brand). The held-out test brands play no part in the choice.
@@ -168,15 +173,33 @@ def run(kind, name):
             v = score(cur + [i])
             if v > best + 0.005: cur, best = cur + [i], v
         chosen = cur
-    a = np.where(train & (IS_VAULT | np.isin(SRC, chosen)))[0]; oof = oof_for(a); ok = ~np.isnan(oof)
+    a = np.where(train & (IS_VAULT | np.isin(SRC, chosen)))[0]
+    C = 1.0; oof = oof_for(a); ok = ~np.isnan(oof)
+    if os.environ.get('C_GRID'):
+        # Model strength per label, chosen ONLY on training-side out-of-fold rows that look like the test
+        # (library or real recordings); the held-out test plays no part.
+        like = IS_VAULT[a] | np.isin([i.split(':')[0] + ':' for i in np.array(IDS, dtype=object)[a]], REAL_LABEL or ('',))
+        def oof_score(o):
+            k = ~np.isnan(o) & like
+            if (pos[a] & k).sum() < 10: k = ~np.isnan(o)
+            t_ = threshold(pos[a][k], o[k])
+            if t_ is None: return -1.0
+            pr_ = o[k] >= t_; tp_ = (pr_ & pos[a][k]).sum()
+            return min(tp_ / max(pr_.sum(), 1), tp_ / pos[a][k].sum())
+        best = (oof_score(oof), 1.0, oof)
+        for c in map(float, os.environ['C_GRID'].split(',')):
+            if c == 1.0: continue
+            o = oof_for(a, c); v = oof_score(o)
+            if v > best[0] + 0.01: best = (v, c, o)
+        _, C, oof = best; ok = ~np.isnan(oof); r['C'] = C
     th = threshold(pos[a][ok], oof[ok])
     if th is None: return {**r, 'verdict': 'no usable threshold'}
-    model = fit(X[a], pos[a])
+    model = fit(X[a], pos[a], C)
     b = np.where(test)[0]; pr = model.predict_proba(X[b])[:, 1] >= th; t = pos[b]
     tp, fp, fn = int((pr & t).sum()), int((pr & ~t).sum()), int((~pr & t).sum())
     P = tp / (tp + fp) if tp + fp else 0.0; R = tp / (tp + fn)
     if EXPORT is not None and min(P, R) >= EXPORT:      # refit on every row it may use, same threshold
-        m = fit(X[np.where(use & (IS_VAULT | np.isin(SRC, chosen)))[0]], pos[np.where(use & (IS_VAULT | np.isin(SRC, chosen)))[0]])
+        m = fit(X[np.where(use & (IS_VAULT | np.isin(SRC, chosen)))[0]], pos[np.where(use & (IS_VAULT | np.isin(SRC, chosen)))[0]], C)
         r['head'] = {'weights': [round(float(w), 6) for w in m.coef_[0]], 'bias': round(float(m.intercept_[0]), 6)}
     if kind == 'label' and os.environ.get('MIXTEST'):
         # Same head and threshold, scored on sounds layered under held-out drum kits.

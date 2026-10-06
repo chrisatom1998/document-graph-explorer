@@ -43,6 +43,8 @@ export interface MusicAnalysis {
   /** Accepted AI suggestions, not human-confirmed labels or audio measurements. */
   copilotProperties?: CopilotProperties;
   soundProfile?: SoundProfile;
+  /** 512-d unit CLAP audio vector (mean of analyzed windows). Lives here, not in EmbeddingRecord, which is the text pipeline's table. Powers 'similar' edges. */
+  embedding?: number[];
   instrumentScan?: { mode?: MusicAnalysisMode; revision?: number; complete: boolean; analyzedSeconds: number; windows: number };
   notes: string[];
 }
@@ -72,6 +74,7 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   if (confirmedDjTags) out.confirmedDjTags = confirmedDjTags;
   const copilotProperties = sanitizeCopilotProperties(m.copilotProperties);
   if (copilotProperties) out.copilotProperties = copilotProperties;
+  if (Array.isArray(m.embedding) && m.embedding.length === 512 && m.embedding.every(v => typeof v === 'number' && Number.isFinite(v)) && Math.hypot(...(m.embedding as number[])) > 1e-8) out.embedding = m.embedding as number[];
   out.soundProfile = sanitizeSoundProfile(m.soundProfile);
   if (!out.soundProfile) delete out.soundProfile;
   const prediction = m.instrumentPrediction as Record<string, unknown> | undefined;

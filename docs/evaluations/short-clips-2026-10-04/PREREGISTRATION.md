@@ -20,3 +20,19 @@ A final policy `v2` was decided without looking at after-v1 outcomes, for design
    bump is reverted: those short clips re-run anyway.
 v2 will be measured with one more real-upload pass on the same frozen test split (third and final use). No thresholds,
 heads or features are changed; after-v1 is still reported alongside it.
+
+## Addendum 2026-10-05 (before any run of this change): tested-tag display fix
+
+Diagnosis from code, not from test results: a tag from a tested one-shot head (e.g. `kick`, `voice`, `synth hit`) was
+replaced by an untested model's tag for the same label whenever that model's score was higher (AST, Jamendo or CLAP
+scores are on other scales), and a source copied from a tested type (kick → drums) was skipped whenever any untested
+source tag already existed. The panel then hid the label, because only tested scores are shown on short clips.
+Change: tags are ranked by how they were checked (reviewed examples > trained head > maybe head > untested), never by
+raw score across models; a shown trained-head type always stands for its catalog source. No heads, thresholds or the
+category map change.
+
+Measurement plan, fixed now: `.github/workflows/short-clip-eval.yml` runs the base build (main `d1b7b05`) and this
+build on the **calibration** split and on the **test** split, from audio refetched from public mirrors. The test split
+was declared used up after v2, so its numbers from this run are reported as "measured after seeing test results".
+The calibration split decides: the change ships only if no label that passes 60/60 on calibration with the base build
+drops below it with this build.

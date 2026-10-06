@@ -2,8 +2,8 @@ import ConfidentSoundSummary from './ConfidentSoundSummary';
 import type { FusionAnalysis } from '../audio/fusion';
 import { FusionDiagnostics } from './FusionEvidence';
 import { DIMENSIONS, type Recognition, type Dimension, type SoundReview } from '../audio/recognition';
+import { clockTime as time } from './clockTime';
 const titles: Record<Dimension,string> = {source:'Sources',vocal:'Vocal form',role:'Musical role',character:'Audible character',effect:'Effect or event'};
-const time=(seconds:number)=>`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
 const models={ast:'AST',jamendo:'Jamendo',clap:'CLAP',rhythm:'Tempo',tonal:'Key'};
 export interface RecognitionEvidenceProps {
   recognition: Recognition; fusion?: FusionAnalysis; duration: number; onSeek?: (seconds:number)=>void;

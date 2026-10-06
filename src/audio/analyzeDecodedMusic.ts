@@ -7,13 +7,13 @@ import { jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabel
 import { InstrumentEvidence, instrumentWindowStarts } from './instrumentEvidence';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, type MusicAnalysis, type MusicAnalysisMode } from './musicTypes';
 import type { InstrumentPredictions } from './instrumentLabels';
-import { DescriptionAccumulator, selectDescriptions, type DescriptionScore } from './profileDescriptions';
+import { DescriptionAccumulator, meanEmbedding, selectDescriptions, splitEmbedding, type DescriptionScore } from './profileDescriptions';
 import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { musicRuntimeIdentity } from './musicRuntime';
-import { createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
+import { astGpuAllowed, createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
   /** Qualification-only opt-in; callers must bind and validate the scorer. */
@@ -77,7 +77,7 @@ export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicR
 
 /** The fusion scorer's contract is the fixed prompt catalog it was trained on. Trained-head,
  * reviewed-example and one-shot scores ride along in the same output for tagging and are not part of it. */
-export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot');
+export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot' && d.group !== 'embedding');
 /** Model jobs share a bounded timeline, but never each other's validity. Evidence is applied in one fixed order. */
 export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequest, options: AnalysisOptions): Promise<MusicAnalysis> {
   // The runtime each AST/CLAP output came from: a threaded stall can switch this browser to one thread mid-run.
@@ -130,6 +130,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const astEvidence = new InstrumentEvidence();
   const musicScores = new JamendoRecordingScores();
   const descriptions = new DescriptionAccumulator();
+  const embeddings: number[][] = [];
   const djEvidence = new DjTagEvidence();
   const eventEvidence = new EventWindowEvidence();
   const completed = new Set<string>();
@@ -154,6 +155,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     const windowTags = djEvidence.results(), found = new Set(windowTags.map(t => `${t.group}:${t.label}`));
     const eventTags = eventEvidence.results().filter(h => !found.has(`${h.tag.group}:${h.tag.label}`)).map(h => ({ ...h.tag, segments: h.segments.slice(0, 3) }));
     mergeDjTags(result.soundProfile, [...windowTags, ...eventTags], descriptions.average());
+    const audioVector = meanEmbedding(embeddings);
+    if (audioVector) result.embedding = audioVector; else delete result.embedding;
     for (const suggestion of jamendoSuggestions(music)) {
       if (!result.instruments.some(i => i.label === suggestion.label)) result.instruments.push({ label: suggestion.label, score: suggestion.score, status: 'possible' });
     }
@@ -200,7 +203,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       const hasAudio = audible(samples);
       // A whole short clip also goes to the one-shot heads, which read the unchanged 16 kHz audio.
       const samples16 = id === 'clap' && interval.start === 0 && interval.end >= duration && duration <= SHORT_CLIP_MAX_SECONDS ? await read(0, duration, 16000) : undefined;
-      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
+      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}), ...(id === 'ast' && astOnGpu ? { gpu: true } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
       if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
       check(); cache.set(key, output);
     }
@@ -214,12 +217,17 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const applied: Record<SoundId, number> = { ast: 0, jamendo: 0, clap: 0 };
   const wake: Partial<Record<SoundId, () => void>> = {};
   let ended = false;
+  // AST runs on the graphics card (full-precision weights, about 8x faster) only where no validated scorer reads
+  // its scores (recognition astGpuAllowed). The AST job's preprocessing version records it, so cache keys and
+  // saved ledgers both tell GPU-allowed runs apart from q8 WASM ones.
+  const astOnGpu = astGpuAllowed(duration, mode);
+  const windowKey = (id: SoundId, interval: Interval) => modelCacheKey(fingerprint, job(id), interval);
   async function scoreAhead(id: SoundId): Promise<void> {
     const j = job(id);
     for (let i = 0; i < j.planned.length; i++) {
       while (!ended && i - applied[id] >= MAX_AHEAD) await new Promise<void>(resolve => { wake[id] = resolve; });
       if (ended || stopped.has(id) || j.unsupportedReason || options.signal?.aborted) return;
-      const key = modelCacheKey(fingerprint, j, j.planned[i]);
+      const key = windowKey(id, j.planned[i]);
       if (started.has(key)) continue;
       started.add(key);
       const pending = fetchRaw(id, j.planned[i], key);
@@ -232,7 +240,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   async function sound(id: SoundId, interval: Interval): Promise<{ output: Raw; cacheKey: string; cacheHit: boolean } | undefined> {
     check();
     if (stopped.has(id) || job(id).unsupportedReason) return;
-    const j = job(id); const key = modelCacheKey(fingerprint, j, interval);
+    const j = job(id); const key = windowKey(id, interval);
     if (completed.has(key)) return;
     j.status = 'running'; j.attempted.push(interval);
     options.onProgress?.(`${id}: ${j.successful.length}/${j.planned.length} windows; ${Math.floor(interval.start)}–${Math.ceil(interval.end)}s of ${Math.ceil(duration)}s`);
@@ -253,7 +261,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
         musicScores.add(scores);
         recordEvidence(recognition, id, interval, [...jamendoLabels(scores), ...nsynthLabels(scores)]);
       } else {
-        const scores = output as DescriptionScore[];
+        const { scores, embedding } = splitEmbedding(output as DescriptionScore[]);
+        if (embedding) embeddings.push(embedding);
         descriptions.add(scores);
         djEvidence.add(selectDjTags(scores), interval.start, interval.end);
         const selected = selectDescriptions(scores);
@@ -300,6 +309,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
           output = await request<DescriptionScore[]>({ kind: 'profile', samples, samples16 }, [samples.buffer, samples16.buffer]);
           check(); cache.set(key, output);
         }
+        output = splitEmbedding(output).scores;
         eventEvidence.add(output, interval.start, interval.end);
         recordEvidence(recognition, 'clap', interval, output.flatMap(s => {
           if (s.group !== 'dj-learned' || s.basis !== 'head' || s.decision !== 'include' || !s.learnedGroup || !s.label || !EVENT_WINDOW_LABELS.has(s.label)) return [];

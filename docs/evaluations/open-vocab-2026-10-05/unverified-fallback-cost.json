@@ -1,0 +1,1101 @@
+{
+ "kind": "unverified-fallback-cost-v1",
+ "clips": {
+  "real": 6000,
+  "library": 3000
+ },
+ "labels": [
+  {
+   "label": "siren",
+   "real": {
+    "fired": 53,
+    "agree": 27,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 22,
+    "agree": 5,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "vocal scream",
+   "real": {
+    "fired": 72,
+    "agree": 69,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "synth lead",
+   "real": {
+    "fired": 19,
+    "agree": 6,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 45,
+    "agree": 13,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "synth bass",
+   "real": {
+    "fired": 20,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 38,
+    "agree": 3,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "hand percussion",
+   "real": {
+    "fired": 48,
+    "agree": 42,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 7,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "shaker loop",
+   "real": {
+    "fired": 28,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 21,
+    "agree": 2,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "filtered",
+   "real": {
+    "fired": 15,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 30,
+    "agree": 1,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "wind ambience",
+   "real": {
+    "fired": 45,
+    "agree": 41,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "rising",
+   "real": {
+    "fired": 4,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 36,
+    "agree": 3,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "bass pluck",
+   "real": {
+    "fired": 5,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 27,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "static noise",
+   "real": {
+    "fired": 25,
+    "agree": 18,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 3,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "dry",
+   "real": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 26,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "breath",
+   "real": {
+    "fired": 26,
+    "agree": 18,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "laser",
+   "real": {
+    "fired": 14,
+    "agree": 10,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 11,
+    "agree": 5,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "vocal shout",
+   "real": {
+    "fired": 12,
+    "agree": 7,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 10,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "noise sweep",
+   "real": {
+    "fired": 10,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 10,
+    "agree": 4,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "turntable",
+   "real": {
+    "fired": 20,
+    "agree": 20,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "vinyl crackle",
+   "real": {
+    "fired": 11,
+    "agree": 2,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 8,
+    "agree": 7,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "reverse cymbal",
+   "real": {
+    "fired": 11,
+    "agree": 2,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 7,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "echoing",
+   "real": {
+    "fired": 13,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 4,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "supersaw",
+   "real": {
+    "fired": 11,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 5,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "syncopated",
+   "real": {
+    "fired": 14,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "reverberant",
+   "real": {
+    "fired": 4,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 11,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "reverse impact",
+   "real": {
+    "fired": 6,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 9,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "synth stab",
+   "real": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 13,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "synth hit",
+   "real": {
+    "fired": 4,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 10,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "rolling",
+   "real": {
+    "fired": 13,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "wobble bass",
+   "real": {
+    "fired": 3,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 11,
+    "agree": 1,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "animal sound",
+   "real": {
+    "fired": 13,
+    "agree": 2,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "air horn",
+   "real": {
+    "fired": 8,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 4,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "bitcrushed",
+   "real": {
+    "fired": 9,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 3,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "flanged",
+   "real": {
+    "fired": 9,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 3,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "chorused",
+   "real": {
+    "fired": 9,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 3,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "conga",
+   "real": {
+    "fired": 4,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 8,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "rimshot",
+   "real": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 0
+   },
+   "library": {
+    "fired": 12,
+    "agree": 3,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "synth pluck",
+   "real": {
+    "fired": 6,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 5,
+    "agree": 1,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "sub drop",
+   "real": {
+    "fired": 6,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 5,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "gliding",
+   "real": {
+    "fired": 10,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "downlifter",
+   "real": {
+    "fired": 3,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 8,
+    "agree": 3,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "vocal shush",
+   "real": {
+    "fired": 10,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "synth chord",
+   "real": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 7,
+    "agree": 1,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "record stop",
+   "real": {
+    "fired": 8,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "waterphone",
+   "real": {
+    "fired": 7,
+    "agree": 2,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "fm synth",
+   "real": {
+    "fired": 5,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 3,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "glockenspiel",
+   "real": {
+    "fired": 8,
+    "agree": 8,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "glitch effect",
+   "real": {
+    "fired": 7,
+    "agree": 6,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "foley hit",
+   "real": {
+    "fired": 7,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "gritty",
+   "real": {
+    "fired": 5,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "viola",
+   "real": {
+    "fired": 7,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "double bass",
+   "real": {
+    "fired": 7,
+    "agree": 2,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "bell",
+   "real": {
+    "fired": 6,
+    "agree": 3,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "tuned percussion",
+   "real": {
+    "fired": 6,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "saturated",
+   "real": {
+    "fired": 4,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "woody",
+   "real": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 4,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "reese bass",
+   "real": {
+    "fired": 5,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "vocoder vocal",
+   "real": {
+    "fired": 5,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "vocal-like synth",
+   "real": {
+    "fired": 4,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "metallic",
+   "real": {
+    "fired": 3,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "synth drone",
+   "real": {
+    "fired": 3,
+    "agree": 2,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "hollow",
+   "real": {
+    "fired": 4,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "acid bass",
+   "real": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "organ synth",
+   "real": {
+    "fired": 4,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "brass synth",
+   "real": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 3,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "sitar",
+   "real": {
+    "fired": 3,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "rubbery bass",
+   "real": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "environmental sound",
+   "real": {
+    "fired": 3,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "plucked",
+   "real": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "string synth",
+   "real": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "bell synth",
+   "real": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "vocal harmony",
+   "real": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "foley",
+   "real": {
+    "fired": 3,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "vocal vowel",
+   "real": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "cajon",
+   "real": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "percussion",
+   "real": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "vocal pad",
+   "real": {
+    "fired": 2,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "smooth",
+   "real": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "steel guitar",
+   "real": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "tuba",
+   "real": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "banjo",
+   "real": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "machine ambience",
+   "real": {
+    "fired": 1,
+    "agree": 1,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "steel drum",
+   "real": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "bongo",
+   "real": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "vocal hum",
+   "real": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 6000
+   },
+   "library": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 3000
+   }
+  },
+  {
+   "label": "woodblock",
+   "real": {
+    "fired": 0,
+    "agree": 0,
+    "clips": 0
+   },
+   "library": {
+    "fired": 1,
+    "agree": 0,
+    "clips": 3000
+   }
+  }
+ ]
+}

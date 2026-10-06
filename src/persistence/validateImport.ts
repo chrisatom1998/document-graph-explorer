@@ -60,6 +60,7 @@ const EDGE_KINDS: ReadonlySet<string> = new Set([
   'key',
   'instrument',
   'sound',
+  'similar',
   'reference',
   'semantic',
   'keyword',

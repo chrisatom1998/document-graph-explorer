@@ -1,0 +1,311 @@
+# Open-vocabulary sound ID: coverage push (2026-10-05)
+
+Branch `open-vocab-all-labels`. This note follows `dge-open-vocabulary-sound-id-instructions.md`. Raw numbers are in
+`docs/evaluations/open-vocab-2026-10-05/`. `scorecard.json` lists every label; `round19-results.json` holds the
+latest held-out measurements (rounds 16 and 18 are kept for comparison).
+
+## Result
+
+**111 of the 198 catalog labels can now appear as Sounds tags, up from 51.** A label is "active" when a trained head
+ships in `learned.json` or `short-clip.json`. All 60 new labels come from this branch. Another session swapped the
+existing distorted head for a different version and promoted five existing heads to full tags.
+
+| Bucket (45/45 bar, measured on held-out sources, round 19) | Labels |
+|---|---|
+| Active, full tag (precision and recall ≥ 0.60) | 42 |
+| Active, "maybe" tag (0.45–0.60) | 41 |
+| Near: one of precision/recall ≥ 0.45 | 41 |
+| Failing: both < 0.45 | 36 |
+| Untestable: under 15 held-out positives | 10 |
+| Measured on made-up clips only (not shipped) | 4 |
+| Owned by the other session (not shipped here) | 24 |
+
+All 198 labels can be displayed: a unit test checks that each catalog label shows once a head reports it.
+Labels with no head simply never fire.
+
+New active labels on this branch (★ = full):
+- Round 14: acoustic guitar★, whisper★, synthesizer, vocal chops, chops, synth sequence, stutter effect, bird ambience.
+- Round 16: saxophone★, snare roll★, ukulele★, kalimba★, jaw harp★, singing bowl★, clarinet, vocal phrase,
+  vocal breath, foghorn bass, riser, texture, triangle.
+- Round 18: spoken phrase★, breakbeat, cello, electric piano, flute.
+- Round 19: chiptune synth, falling, glassy, horn, whistle.
+- Measured character labels (all maybe): bright, dark, sustained, percussive, rhythmic, pulsing, swelling, staccato,
+  wobbling, airy, warm, nasal.
+- Round 20 (model strength per label, chosen on training rows only): acid synth.
+- Round 21 (larger test pool; all maybe): 808 bass, atmospheric pad, bass growl, closed hi-hat, rain ambience,
+  water ambience. These were judged on small library tests before. Each label is now tested on whichever pool has more
+  positives: the library or held-out real recordings. A label ships only if it passes there AND is at least "near"
+  on the library (one number ≥ 0.45, the other ≥ 0.10). That rule was set after seeing round 19, so these six are
+  weaker evidence. laser, siren and vocal scream pass on real recordings but fail on the library, so they are held
+  back. Results: `round21-largertest-results.json`. Over 78 near or failing labels this
+  was neutral (10 better, 10 worse).
+- AMARI new-brand round (`round24-amari`; 2,261 clips from the user's AMARI drive as training-only data: Serato
+  Packs, ADSR Label Sampler, Tamber, Komorebi, RETRODISE and small free packs; brands already in the library and
+  near-copies of library clips removed): replaces three shipped heads, all now maybe. reverse effect 0.58/0.24 →
+  0.63/0.46, snare 0.73/0.39 → 0.71/0.53, tom 0.59/0.36 → 0.57/0.47, same held-out library brands as round 19.
+  Overall neutral (22 better, 21 worse; 74 → 77 passing). No other head changed. Results:
+  `dj-labels-2026-10-04/added-heads-round24.json`.
+
+### More real data is what helped
+
+| Round | Tag-mined Freesound clips | Labels newly passing |
+|---|---|---|
+| 16 | 12.7k (≤150 per label, ≤4 per uploader) | 13 |
+| 18 | +16.8k (≤400 per label, ≤8 per uploader) | 5 |
+| 19 | +23.4k (≤1,000 per label, ≤15 per uploader) | 5 |
+
+Each round re-draws its held-out uploaders, so some labels also moved down between rounds. In round 19, about as many
+near labels lost ground as gained it. The returns from tag-mined data are flattening.
+
+## Pass bar: conflicting rulings
+
+The user told this session **45/45**. Another session relayed **60/60** the same night. **The user then confirmed
+45/45.** Heads at 60/60 or better ship as full tags. Heads between 45 and 60 ship with `maybe: true`, so the panel
+shows them faded with "maybe". The maybe tier stays as a display hint.
+
+## What was built
+
+1. **Tiers for long recordings (Step 7).** Constants live in `confidentSoundSummary.ts`: `TRACK_SOUND_FLOOR = 0.40`
+   and `LIKELY_SOUND_CUTOFF = 0.50`. Recordings over 2.25 s show 0.40–0.49 as "possible" (dashed tag; hover text
+   says "not calibrated, not a 40% chance"). Scores of 0.50 and up show as "likely". One-shots keep the 0.50 floor.
+   Tests cover 0.39 (hidden), 0.40 (possible) and 0.50 (likely). The summary is presentation only, so possible tags
+   never create graph links.
+   - **Known gap:** trained heads only report a score once it clears their own threshold, which is 0.50 or higher.
+     So "possible" appears only for the fusion detector's decisions, not for head tags. Calibrated probabilities
+     (Platt or isotonic) need a hand-checked full-track test set, which does not exist yet.
+2. **Tag-mined Freesound audio.**
+   - `freesound-mine-manifest.py` picks clips from the public metadata dump (554,850 sounds). It takes at most
+     120–150 clips per label and 4 per uploader, and skips every reserved test id and uploader. Extra search words
+     are in `freesound-extra-terms.json`.
+   - `fetch-freesound-previews.mjs` downloads the first ~15 s of each public preview (no API token) and records the
+     clip's own licence.
+   - `freesound-mined-merge.py` merges both passes into one row per sound.
+   - Result after the first pass: 12,684 clips for 140+ labels; after three passes, 52,976 clips. Licences: CC0 25,723; CC-BY 19,579;
+     CC-BY-NC 6,643; Sampling+ 1,026; other 5.
+     Non-commercial clips are allowed because the app is not commercial.
+   - Labels come from uploader tags, so they are noisy. A missing tag counts as unknown, not as absent.
+3. **Synth types from Surge preset names** (`surge-name-manifest.py`): FM, acid, organ, string, brass, vocal-like,
+   supersaw, rubbery, bass pluck, stab and bell. These are merged into the Surge rows, so no clip appears twice with
+   disagreeing labels.
+4. **Character renders** (`build-character-renders.py`): chorus, flanger, bitcrush, saturation, wobble, swell,
+   pulse, glide, rise, fall, bright and dark on Surge, Slakh and WaivOps sources. Dry versions are kept and
+   loudness is matched.
+5. **Trainer changes** (`train-with-extras.py`):
+   - The bar is configurable.
+   - Reserved test recordings and families are dropped automatically.
+   - Character labels get their own jobs, and near-synonym words (saturated/distorted, chorus/flanger…) are never
+     negatives for each other.
+   - **Labels without a library test are tested on held-out real recordings first.** These are FSD50K, FSL10K,
+     mined Freesound, Epidemic and hip-hop one-shots. Renders are used for training only.
+6. **Real-upload check** (`ui-upload-check.mjs`, `ui-export-tags.mjs`): uploads files into the built app in headless
+   Chromium, then reads the Sounds panel and the app's own export.
+
+## Upload check in the real app (final build, 104 learned heads + unverified fallback)
+
+| File | Shown |
+|---|---|
+| Electro track, 3:46 | 120.1 BPM, A minor; piano, electric piano, voice, sound effect, texture, dark, warm, pulsing, rhythmic, wobbling, sustained (all maybe). None of the zero-shot instrument heads fired falsely. Screenshot: `upload-electro-track.png` |
+| Same electro track, final build | adds bassoon (maybe, head 0.98): a false tag from one of ~45 windows. A tag shows if any window fires, so rare one-window errors pass through. On 40 windows cut from 14 real DJ tracks no new instrument head fired; on the 17,891-clip library bassoon fires on 0%. No "unverified" fallback tags appeared on these files. |
+| House track, 5:21 | 126 BPM; drums, drum loop; maybe: synthesizer, sound effect, rhythmic, pulsing, wobbling, sustained, airy. Analysis "partial" (machine at load ~400) |
+| 0.36 s kick one-shot (the source clip's length) | kick, drums, impact |
+| 5 s silence | nothing |
+| Random-bytes .wav | not added to the graph; no page errors |
+
+## Unverified fallback for labels with no tested detector
+
+Step 7 of the instructions allows a label with too little data to fall back to the raw model score with a
+"not calibrated" marker. The Sounds panel now does that for every catalog label without a tested detector:
+- the raw CLAP catalog similarity must pass the catalog's own winner-and-margin check;
+- recordings over 2.25 s only;
+- shown as "unverified" (dashed, possible tier), with hover text saying it is raw, uncalibrated CLAP;
+- never for a label that has a tested detector (`calibratedLabels.json`, kept in sync by a test);
+- presentation only, so never graph evidence.
+
+The cost was measured with the app's own `selectDjTags` on 6,000 real recordings and 3,000 library clips
+(`unverified-fallback-cost.json`, `scripts/unverified-fallback-cost.mjs`). Agreement with the clips' own labels is a
+lower bound on precision, because tags and file names are incomplete.
+
+| Fallback floor | Real: tags shown / agreeing | Library: tags shown / agreeing |
+|---|---|---|
+| 0.40 (the plain 40% rule) | 2,405 / 23% | 1,402 / 7% |
+| 0.50 (shipped) | 740 / 41% | 459 / 11% |
+
+Because 0.40 was mostly wrong, the fallback floor is 0.50, the instructions' "raise that category's threshold" option.
+12 labels were measured as almost always wrong (≥ 15 firings, < 10% agreement) and are blocked from the fallback
+(`unverifiedBlocked.json`): synth bass, shaker loop, filtered, rising, bass pluck, dry, echoing, supersaw,
+syncopated, reverberant, reverse impact, synth stab.
+
+Per-label higher cut-offs were also checked for the 12 blocked labels (0.55–0.70). None became accurate: each one
+either stays mostly wrong (best: shaker loop 3 of 29, rising 3 of 22, filtered 1 of 23 at 0.55) or stops firing
+altogether. A label switched on at a cut-off where it never fires would be "active" in name only, so all 12 stay
+blocked.
+
+**Ready-to-label queue.** `build-review-queue.py` wrote `artifacts/review-blocked/` with 194 clips for the 7 blocked
+labels this branch owns (synth bass, synth stab, supersaw, bass pluck, shaker loop, rising, syncopated). For each
+label it holds up to 15 clips whose Freesound tags name it and 15 untagged clips that raw CLAP ranks highest, which are
+the answers a detector needs most. Open it with
+`DJ_REVIEW_DATA=artifacts/review-blocked DJ_REVIEW_NO_APPLY=1 python3 scripts/dj-review-server.py`.
+`NO_APPLY` keeps the review tool from rebuilding the shipped model; the confirmed labels feed the next training round.
+
+**Title judgements (user request).** `title-labels.py` labelled the 194 queued clips yes / no / unsure from their
+titles only (provenance "assistant title judgement", never a human confirmation): 85 yes, 61 no, 48 unsure. Applied
+to training, this corrected 31 clips. Round 24 shows no new pass: synth bass 0.23 / 0.33, synth stab 0.09 / 0.03,
+supersaw 1.00 / 0.03, rising 0.50 / 0.06, syncopated 0.09 / 0.04. Bass pluck and shaker loop had too few test clips.
+Titles repeat what the uploader tags already said, so they add little; listening is still needed.
+
+**This makes 186 of 198 labels able to appear:** 111 from tested detectors and 75 as "unverified". The other 12 are
+blocked because measurement says they would mostly be wrong. "Unverified" tags are honest about being untested.
+They are not accurate detection.
+
+## TinySOL orchestral notes (round 23)
+
+TinySOL is 2,913 real recorded notes from 14 orchestral instruments (Zenodo 3685367, CC BY 4.0); 60 notes per
+instrument were added to training. Tests stay on held-out real recordings. Bassoon passes (0.91 / 0.47 on 45 test
+clips) and ships as maybe. Double bass (0.70 / 0.29), horn (0.84 / 0.42), viola (0.58 / 0.40) and tuba (0 / 0) still
+fail.
+
+## Zero-shot CLAP detectors
+
+Labels that trained heads could not learn were also tried zero-shot (`zero-shot-heads.py`). The score is the cosine
+between a clip's CLAP fingerprint and the mean of that label's own text-prompt vectors (already in `prompts.json`).
+One cut-off per label is chosen on calibration groups and then scored on held-out groups.
+
+7 of 73 pass 45/45 on held-out real recordings (none of them has library test clips):
+
+| Label | Precision / recall | Test positives |
+|---|---|---|
+| djembe | 0.96 / 0.91 | 58 |
+| oboe | 1.00 / 0.80 | 69 |
+| xylophone | 0.96 / 0.62 | 86 |
+| marimba | 0.93 / 0.62 | 63 |
+| mandolin | 0.89 / 0.55 | 29 |
+| trombone | 0.83 / 0.57 | 35 |
+| violin / fiddle | 0.81 / 0.47 | 307 |
+
+They ship as maybe heads in the existing format: weights = 60 × text vector and bias = −60 × cut-off, so a score of
+0.5 or more means exactly "cosine ≥ cut-off". No app code changed.
+
+A second pass added 519 new prompts for 66 labels (`extra-prompts.json`), encoded one at a time with
+`encode-prompts.mjs`. Each label picks a prompt subset greedily on calibration groups only. Two more labels pass:
+clave (0.90 / 0.50, 18 test positives) and vibraphone (1.00 / 0.50, 26 test positives).
+
+Held back because they fail on the library: vocal scream (0.94 / 0.49 on real recordings), synth bass (1.00 / 0.53)
+and siren (0.87 / 0.48). Full results are in
+`zero-shot-results.json`.
+
+## Measured character labels
+
+Uploader tags for words like "bright" are unreliable (round 19: bright 0/36, sustained 0/19). So
+`dsp-character-labels.py` defines five character words by measurement on 14,415 real Freesound previews:
+
+| Label | Measured as |
+|---|---|
+| bright / dark | energy-weighted spectral centroid in the top / bottom 20% |
+| sustained / percussive | share of frames within 10 dB of the loudest frame, top / bottom 25% |
+| rhythmic | onset autocorrelation peak ≥ 0.45 at 0.25–1.5 s |
+| pulsing | autocorrelation peak of the volume envelope at 2–12 Hz, top 15% by prominence |
+| swelling | loudness rises ≥ 10 dB across the clip |
+| staccato | ≥ 3 onsets per second and sustain share at or below the median |
+| wobbling | brightness swings periodically at 1–8 Hz (top 15% by peak prominence × swing depth) |
+| airy | share of energy above 5 kHz × its flatness, top 15% |
+| warm | 150–800 Hz energy share minus 4–8 kHz share, top 15% |
+| nasal | 800–2,500 Hz energy against the bands either side, top 15% |
+
+CLAP heads trained to predict these are scored on held-out uploaders. The scores below are strict: clips between the
+cut-offs count as negatives.
+
+| Label | Precision / recall | Test positives |
+|---|---|---|
+| bright | 0.79 / 0.77 | 721 |
+| dark | 0.80 / 0.81 | 722 |
+| sustained | 0.78 / 0.75 | 903 |
+| percussive | 0.77 / 0.77 | 903 |
+| rhythmic | 0.64 / 0.66 | 552 |
+| pulsing | 0.66 / 0.65 | 541 |
+| swelling | 0.71 / 0.53 | 387 |
+| staccato | 0.52 / 0.54 | 308 |
+| wobbling | 0.70 / 0.66 | 541 |
+| airy | 0.73 / 0.79 | 541 |
+| warm | 0.62 / 0.62 | 545 |
+| nasal | 0.59 / 0.53 | 541 |
+
+They ship as "maybe", following the user's earlier rule for character tags.
+
+These numbers measure agreement with the definitions, not with listeners. On the user's 17,891-clip sample library
+the heads fire on bright 42%, rhythmic 35%, pulsing 33%, percussive 29%, staccato 23%, dark 19%,
+sustained 18%, swelling 5%, airy 39%, wobbling 38%, warm 16% and nasal 17% of
+clips (warm and bright fire together on only 0.2%). "smooth" (low spectral change) passed (0.73 / 0.80)
+but was held back: on the library it fires together with "percussive" on 14% of clips, which contradicts its own
+definition. Producer samples are
+brighter than the average Freesound clip, so "bright" is common there.
+
+The first "pulsing" measure fired on 63% of clips, which means it captured "smooth volume envelope", not pulsing. It
+was replaced by the peak-prominence measure above. "rising" (spectral centroid climbing ≥ 0.7 octave) failed at
+0.45 / 0.26. "syncopated" (onsets off the fitted beat grid) failed at 0.19 / 0.57. "rolling" (≥ 6 even onsets per
+second) had only 6 test positives, too few to judge. Results are in `dsp-character-results.json`.
+
+## Rejected experiments
+
+- **Round 15 (renders tested on renders):** the character heads looked strong (bitcrushed 1.00/0.85). Another
+  session showed that render-trained effect heads fail on real recordings (reverberant 8%/3%). Those heads were
+  withdrawn, and the test pool was switched to real recordings.
+- **Round-14 edited-clip heads** (record stop, sub drop, reverse impact/cymbal, pitched/reversed vocal,
+  vinyl crackle): they passed held-out synthetic edits but failed on real library files (e.g. sub drop found
+  0 of 36). Removed. These labels belong to the other session.
+- **Round 17 (thresholds picked on real training rows only):** 12 labels better, 22 worse, same 78 passing.
+  Rejected. This change was chosen after seeing round 16, so its numbers are not clean.
+- **Text prior (round 22):** the label's text direction was added as an extra input to the trained head. Over 54
+  labels it hurt more than it helped (10 better, 21 worse). The one pass, static noise at 0.50 / 0.48 on 27 clips,
+  was not shipped: picking the single winner from a method that mostly hurts would be cherry-picking.
+- **Smaller test minimum (10) for banjo, cajon, mandolin, oboe, air horn, vocal shush, woodblock, organ synth,
+  vocal harmony:** none passed.
+- **A "precise but rarely fires" tier** (e.g. electric piano 0.88/0.44, clave 1.00/0.37 on 7 hits) was considered
+  and not shipped. It would change what "maybe" means and lower the bar.
+
+## Known gaps and next steps
+
+- **Near labels usually have high precision and low recall.** Their thresholds are 0.92–0.99 because they are picked
+  on training rows the head separates easily. More real positives per label is the fix, not a lower threshold.
+  Best candidates:
+
+  | Label | Precision / recall (round 19) | Test positives |
+  |---|---|---|
+  | bass growl | 0.45 / 0.72 (precision just under the bar) | 137 |
+  | percussion | 0.78 / 0.45 (recall just under the bar) | 1,014 |
+  | violin / fiddle | 0.84 / 0.44 | 307 |
+  | woody | 0.68 / 0.43 | 566 |
+  | viola | 0.52 / 0.42 | 65 |
+  | acid synth | 1.00 / 0.40 | 40 |
+  | glitch effect | 0.66 / 0.40 | 115 |
+  | closed hi-hat | 0.41 / 0.86 | 44 |
+
+- **Failing labels are mostly character words and synth subtypes.** Examples: bright, warm, metallic, airy, nasal,
+  sustained, syncopated, saturated, fm synth, synth stab, synth chord. Uploader tags for these words are unreliable,
+  and CLAP fingerprints don't separate synth subtypes. Next steps: signal-processing detectors (spectral centroid
+  for bright/dark, envelope for percussive/sustained, onset statistics for syncopated) and a hand-checked set.
+- **Untestable (15 labels)** need real clips from more uploaders: vocal harmony, organ synth, rubbery bass,
+  woodblock, shaker loop, air horn, oboe, banjo, mandolin, steel guitar, steel drum, cajon, waterphone, vocal shush,
+  synth hit.
+- **Made-up only (4 labels):** bell synth, brass synth, string synth and bass pluck have no real test clips.
+- **For the other session:** on held-out real recordings, several of its labels already pass 45/45:
+  - hand percussion 0.98/0.80
+  - turntable 0.98/0.62
+  - tuned percussion 0.92/0.61
+  - vocal shout 0.92/0.59
+  - bell 0.85/0.61
+  - breath 0.85/0.51
+  - environmental sound 0.75/0.54
+  - animal sound 0.71/0.55
+
+  The round-16 export in `~/Documents/Media/dj-training-fingerprints/rounds/round16.json` holds their weights.
+- Per-label baseline numbers (before this branch) are in `~/Documents/Media/dj-training-fingerprints/rounds/round13-export.json`.
+- The held-out groups are re-drawn each round, so these are development numbers, not frozen-test numbers. A new,
+  dated, frozen, hand-checked test set (one-shots, loops and a few full tracks with time ranges) is still the main
+  missing asset.
+
+## Licences
+
+- Models are unchanged: CLAP, AST, and the MTG-Jamendo model (non-commercial, allowed because the app is not
+  commercial).
+- The shipped heads are weight vectors trained partly on CC-BY and CC-BY-NC Freesound clips. The audio itself is
+  never redistributed. Per-clip licence and author are stored in `fsm-clap/manifest.json`.
