@@ -8,7 +8,8 @@ import calibratedLabelList from './calibratedLabels.json';
 import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 
-/** Presentation only: does not change stored evidence, acceptance, cache identity or graph links. */
+/** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
+ * musicLinks), so a display change also changes which instrument links a track can form, by design. */
 export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v3';
 /** A detector score at or above this shows as "likely" (and is the only floor for short clips). */
 export const LIKELY_SOUND_CUTOFF = .5;

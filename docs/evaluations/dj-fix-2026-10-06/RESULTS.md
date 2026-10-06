@@ -3,7 +3,7 @@
 **Pass bar:** precision and recall both at least 0.70 (Chris raised it from 0.60 on 2026-10-06). Tags below the bar are
 still shown; the bar is a target, not a display gate.
 
-## What changed (presentation only, `src/audio/confidentSoundSummary.ts`)
+## What changed (display policy, `src/audio/confidentSoundSummary.ts`)
 
 | Tag | Change | Why |
 |---|---|---|
@@ -12,7 +12,9 @@ still shown; the bar is a target, not a display gate.
 | cello | Needs **0.55** on recordings of at least 10 s | False cello tags on about 5% of EDM tracks |
 | saxophone, bass, organ | No change | No rule held up on the held-out calibration half (below) |
 
-Stored evidence, graph links and cache identity are unchanged. Sound tags still flow into graph links as before.
+Stored evidence and cache identity are unchanged. Graph links read the shown tags (`soundMatchLabels`, `musicLinks`), as
+they have since #113, so tracks that now show guitar or violin can link on them, and trumpet or cello tags below the new
+floors no longer link. The sound-links benchmark was not re-run for this change.
 
 ## How the thresholds were picked
 
