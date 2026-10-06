@@ -90,6 +90,8 @@ function reasonFor(edge: Edge, self: DocNode, other: DocNode): NeighbourReason {
     }
     case 'title':
       return { kind: edge.kind, text: 'Similar name', detail };
+    case 'version':
+      return { kind: edge.kind, text: evidence.startsWith('Same recording') ? 'Same recording' : 'Other version', detail };
     case 'reference':
       return { kind: edge.kind, text: edge.authored ? 'Your link' : 'Reference', detail: evidence.replace(/^Your relationship: /, '') };
     default:
