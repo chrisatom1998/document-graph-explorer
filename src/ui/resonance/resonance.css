@@ -395,6 +395,7 @@
   }
   .rs-sidebar.is-narrow-open > .rs-narrow-filters { order: -1; flex: 1 1 100%; justify-content: center; padding: 8px; border-color: var(--rs-lime); }
   .rs-sidebar.rs-sidebar.is-narrow-open > .rs-filters-head, .rs-sidebar.rs-sidebar.is-narrow-open > .rs-group { display: flex; flex: 1 1 100%; }
+  .rs-sidebar.rs-sidebar.is-narrow-open > .rs-advanced { display: block; flex: 1 1 100%; }
   .rs-sidebar.is-narrow-open > .rs-filters-head { margin: 8px 0 0; }
   .rs-sidebar.is-narrow-open > .rs-group { flex-direction: column; }
   .app-root.rs-side-collapsed { --rs-left: 0px; }

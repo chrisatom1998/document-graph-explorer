@@ -1,16 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
-import { advancedFilters, closeDetails, corpusCount, details, fitAll } from './resonance';
+import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles } from './resonance';
 
 test.beforeEach(async ({ page }) => { page.setDefaultTimeout(30_000); });
 
 async function openLibrary(page: Page) {
   const guide = page.getByRole('button', { name: 'Dismiss getting started' });
   if (await guide.isVisible()) await guide.click();
-}
-
-async function openFiles(page: Page) {
-  await openLibrary(page);
-  await openFiles(page);
 }
 
 // Console/page-error hygiene: the app funnels failures into toasts, so a
