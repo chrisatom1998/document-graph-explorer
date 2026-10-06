@@ -1,0 +1,703 @@
+{
+ "at": "2026-10-05T12:23:04.665392+00:00",
+ "target": 0.7,
+ "devItems": {
+  "fsd50k": 6218,
+  "nsynth-train": 5459,
+  "avp": 281,
+  "egfxset": 1680,
+  "nsynth": 96
+ },
+ "selection": "group 5-fold OOF over train+calibration; test never read",
+ "categories": {
+  "effect:distorted": {
+   "C": 0.3,
+   "threshold": 0.6184,
+   "precision": 0.801,
+   "recall": 0.815,
+   "f1": 0.808,
+   "pos": 1892,
+   "neg": 5343,
+   "posFamilies": 361,
+   "byDataset": {
+    "egfxset": {
+     "pos": 720,
+     "neg": 960,
+     "fired": 719,
+     "P": 1.0,
+     "R": 0.999
+    },
+    "nsynth": {
+     "pos": 14,
+     "neg": 82,
+     "fired": 11,
+     "P": 0.636,
+     "R": 0.5
+    },
+    "nsynth-train": {
+     "pos": 1158,
+     "neg": 4301,
+     "fired": 1195,
+     "P": 0.683,
+     "R": 0.705
+    }
+   },
+   "ships": true
+  },
+  "effect:reverberant": {
+   "C": 0.03,
+   "threshold": 0.7103,
+   "precision": 0.926,
+   "recall": 0.89,
+   "f1": 0.908,
+   "pos": 2182,
+   "neg": 5053,
+   "posFamilies": 408,
+   "byDataset": {
+    "egfxset": {
+     "pos": 720,
+     "neg": 960,
+     "fired": 716,
+     "P": 0.999,
+     "R": 0.993
+    },
+    "nsynth": {
+     "pos": 18,
+     "neg": 78,
+     "fired": 18,
+     "P": 1.0,
+     "R": 1.0
+    },
+    "nsynth-train": {
+     "pos": 1444,
+     "neg": 4015,
+     "fired": 1363,
+     "P": 0.887,
+     "R": 0.837
+    }
+   },
+   "ships": true
+  },
+  "role:bass hit": {
+   "C": 0.03,
+   "threshold": 0.6995,
+   "precision": 0.797,
+   "recall": 0.874,
+   "f1": 0.834,
+   "pos": 1130,
+   "neg": 8648,
+   "posFamilies": 190,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 13,
+     "neg": 5480,
+     "fired": 23,
+     "P": 0.478,
+     "R": 0.846
+    },
+    "nsynth": {
+     "pos": 18,
+     "neg": 54,
+     "fired": 22,
+     "P": 0.818,
+     "R": 1.0
+    },
+    "nsynth-train": {
+     "pos": 1099,
+     "neg": 2833,
+     "fired": 1195,
+     "P": 0.803,
+     "R": 0.873
+    }
+   },
+   "ships": true
+  },
+  "role:beatbox": {
+   "C": 0.03,
+   "threshold": 0.5,
+   "precision": 0.996,
+   "recall": 0.986,
+   "f1": 0.991,
+   "pos": 281,
+   "neg": 5547,
+   "posFamilies": 13,
+   "byDataset": {
+    "avp": {
+     "pos": 281,
+     "neg": 0,
+     "fired": 277,
+     "P": 1.0,
+     "R": 0.986
+    },
+    "fsd50k": {
+     "pos": 0,
+     "neg": 5547,
+     "fired": 1,
+     "P": 0.0,
+     "R": 0.0
+    }
+   },
+   "ships": true
+  },
+  "role:clap": {
+   "C": 0.03,
+   "threshold": 0.8254,
+   "precision": 0.929,
+   "recall": 0.935,
+   "f1": 0.932,
+   "pos": 155,
+   "neg": 13010,
+   "posFamilies": 63,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 155,
+     "neg": 5494,
+     "fired": 156,
+     "P": 0.929,
+     "R": 0.935
+    }
+   },
+   "ships": true
+  },
+  "role:cowbell": {
+   "C": 0.03,
+   "threshold": 0.5,
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0,
+   "pos": 16,
+   "neg": 13315,
+   "posFamilies": 1,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 16,
+     "neg": 5799,
+     "fired": 0,
+     "P": 0.0,
+     "R": 0.0
+    },
+    "nsynth-train": {
+     "pos": 0,
+     "neg": 5459,
+     "fired": 1,
+     "P": 0.0,
+     "R": 0.0
+    }
+   },
+   "ships": false
+  },
+  "role:cymbal": {
+   "C": 0.03,
+   "threshold": 0.9832,
+   "precision": 0.733,
+   "recall": 0.55,
+   "f1": 0.629,
+   "pos": 20,
+   "neg": 13032,
+   "posFamilies": 7,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 20,
+     "neg": 5797,
+     "fired": 15,
+     "P": 0.733,
+     "R": 0.55
+    }
+   },
+   "ships": false
+  },
+  "role:finger snap": {
+   "C": 0.03,
+   "threshold": 0.9454,
+   "precision": 1.0,
+   "recall": 0.972,
+   "f1": 0.986,
+   "pos": 72,
+   "neg": 13265,
+   "posFamilies": 12,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 72,
+     "neg": 5749,
+     "fired": 70,
+     "P": 1.0,
+     "R": 0.972
+    }
+   },
+   "ships": true
+  },
+  "role:hi-hat": {
+   "C": 0.3,
+   "threshold": 0.9689,
+   "precision": 0.985,
+   "recall": 0.95,
+   "f1": 0.968,
+   "pos": 141,
+   "neg": 12894,
+   "posFamilies": 27,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 141,
+     "neg": 5659,
+     "fired": 136,
+     "P": 0.985,
+     "R": 0.95
+    }
+   },
+   "ships": true
+  },
+  "role:impact": {
+   "C": 0.03,
+   "threshold": 0.8369,
+   "precision": 0.905,
+   "recall": 0.89,
+   "f1": 0.898,
+   "pos": 365,
+   "neg": 11921,
+   "posFamilies": 152,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 365,
+     "neg": 4405,
+     "fired": 357,
+     "P": 0.91,
+     "R": 0.89
+    },
+    "nsynth-train": {
+     "pos": 0,
+     "neg": 5459,
+     "fired": 2,
+     "P": 0.0,
+     "R": 0.0
+    }
+   },
+   "ships": true
+  },
+  "role:kick": {
+   "C": 0.03,
+   "threshold": 0.9275,
+   "precision": 0.964,
+   "recall": 0.844,
+   "f1": 0.9,
+   "pos": 96,
+   "neg": 12725,
+   "posFamilies": 50,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 96,
+     "neg": 5490,
+     "fired": 84,
+     "P": 0.964,
+     "R": 0.844
+    }
+   },
+   "ships": true
+  },
+  "role:percussion hit": {
+   "C": 0.3,
+   "threshold": 0.6767,
+   "precision": 0.933,
+   "recall": 0.901,
+   "f1": 0.917,
+   "pos": 634,
+   "neg": 10499,
+   "posFamilies": 122,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 634,
+     "neg": 3859,
+     "fired": 605,
+     "P": 0.944,
+     "R": 0.901
+    },
+    "nsynth-train": {
+     "pos": 0,
+     "neg": 4870,
+     "fired": 7,
+     "P": 0.0,
+     "R": 0.0
+    }
+   },
+   "ships": true
+  },
+  "role:shaker": {
+   "C": 0.03,
+   "threshold": 0.9164,
+   "precision": 0.968,
+   "recall": 0.938,
+   "f1": 0.953,
+   "pos": 65,
+   "neg": 13213,
+   "posFamilies": 19,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 65,
+     "neg": 5697,
+     "fired": 63,
+     "P": 0.968,
+     "R": 0.938
+    }
+   },
+   "ships": true
+  },
+  "role:snare": {
+   "C": 0.3,
+   "threshold": 0.6719,
+   "precision": 0.986,
+   "recall": 0.986,
+   "f1": 0.986,
+   "pos": 144,
+   "neg": 12719,
+   "posFamilies": 43,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 144,
+     "neg": 5484,
+     "fired": 144,
+     "P": 0.986,
+     "R": 0.986
+    }
+   },
+   "ships": true
+  },
+  "role:synth hit": {
+   "C": 0.3,
+   "threshold": 0.524,
+   "precision": 0.824,
+   "recall": 0.902,
+   "f1": 0.861,
+   "pos": 1079,
+   "neg": 4154,
+   "posFamilies": 171,
+   "byDataset": {
+    "nsynth": {
+     "pos": 12,
+     "neg": 48,
+     "fired": 17,
+     "P": 0.647,
+     "R": 0.917
+    },
+    "nsynth-train": {
+     "pos": 1067,
+     "neg": 2145,
+     "fired": 1164,
+     "P": 0.826,
+     "R": 0.902
+    }
+   },
+   "ships": true
+  },
+  "role:tambourine": {
+   "C": 0.3,
+   "threshold": 0.7166,
+   "precision": 1.0,
+   "recall": 0.952,
+   "f1": 0.976,
+   "pos": 42,
+   "neg": 13178,
+   "posFamilies": 12,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 42,
+     "neg": 5662,
+     "fired": 40,
+     "P": 1.0,
+     "R": 0.952
+    }
+   },
+   "ships": true
+  },
+  "role:vinyl scratch": {
+   "C": 0.03,
+   "threshold": 0.5,
+   "precision": 0.957,
+   "recall": 1.0,
+   "f1": 0.978,
+   "pos": 44,
+   "neg": 13247,
+   "posFamilies": 10,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 44,
+     "neg": 5731,
+     "fired": 45,
+     "P": 0.978,
+     "R": 1.0
+    },
+    "nsynth-train": {
+     "pos": 0,
+     "neg": 5459,
+     "fired": 1,
+     "P": 0.0,
+     "R": 0.0
+    }
+   },
+   "ships": true
+  },
+  "role:whoosh": {
+   "C": 0.03,
+   "threshold": 0.9249,
+   "precision": 0.985,
+   "recall": 0.949,
+   "f1": 0.967,
+   "pos": 137,
+   "neg": 13222,
+   "posFamilies": 35,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 137,
+     "neg": 5706,
+     "fired": 132,
+     "P": 0.985,
+     "R": 0.949
+    }
+   },
+   "ships": true
+  },
+  "source:bass guitar": {
+   "C": 0.3,
+   "threshold": 0.9189,
+   "precision": 0.6,
+   "recall": 0.333,
+   "f1": 0.429,
+   "pos": 18,
+   "neg": 9940,
+   "posFamilies": 6,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 13,
+     "neg": 5791,
+     "fired": 9,
+     "P": 0.667,
+     "R": 0.462
+    },
+    "nsynth-train": {
+     "pos": 5,
+     "neg": 2140,
+     "fired": 1,
+     "P": 0.0,
+     "R": 0.0
+    }
+   },
+   "ships": false
+  },
+  "source:brass": {
+   "C": 0.03,
+   "threshold": 0.8505,
+   "precision": 0.921,
+   "recall": 0.946,
+   "f1": 0.934,
+   "pos": 372,
+   "neg": 9710,
+   "posFamilies": 70,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 12,
+     "neg": 5916,
+     "fired": 9,
+     "P": 1.0,
+     "R": 0.75
+    },
+    "nsynth": {
+     "pos": 12,
+     "neg": 36,
+     "fired": 12,
+     "P": 1.0,
+     "R": 1.0
+    },
+    "nsynth-train": {
+     "pos": 348,
+     "neg": 1797,
+     "fired": 361,
+     "P": 0.917,
+     "R": 0.951
+    }
+   },
+   "ships": true
+  },
+  "source:drums": {
+   "C": 0.3,
+   "threshold": 0.8613,
+   "precision": 0.969,
+   "recall": 0.906,
+   "f1": 0.936,
+   "pos": 585,
+   "neg": 10820,
+   "posFamilies": 128,
+   "byDataset": {
+    "avp": {
+     "pos": 0,
+     "neg": 281,
+     "fired": 1,
+     "P": 0.0,
+     "R": 0.0
+    },
+    "fsd50k": {
+     "pos": 585,
+     "neg": 3899,
+     "fired": 544,
+     "P": 0.974,
+     "R": 0.906
+    },
+    "nsynth-train": {
+     "pos": 0,
+     "neg": 4870,
+     "fired": 2,
+     "P": 0.0,
+     "R": 0.0
+    }
+   },
+   "ships": true
+  },
+  "source:guitar": {
+   "C": 0.3,
+   "threshold": 0.8373,
+   "precision": 0.952,
+   "recall": 0.927,
+   "f1": 0.939,
+   "pos": 2083,
+   "neg": 11073,
+   "posFamilies": 216,
+   "byDataset": {
+    "egfxset": {
+     "pos": 1680,
+     "neg": 0,
+     "fired": 1673,
+     "P": 1.0,
+     "R": 0.996
+    },
+    "fsd50k": {
+     "pos": 219,
+     "neg": 5791,
+     "fired": 223,
+     "P": 0.812,
+     "R": 0.826
+    },
+    "nsynth": {
+     "pos": 12,
+     "neg": 78,
+     "fired": 10,
+     "P": 1.0,
+     "R": 0.833
+    },
+    "nsynth-train": {
+     "pos": 172,
+     "neg": 4923,
+     "fired": 122,
+     "P": 0.549,
+     "R": 0.39
+    }
+   },
+   "ships": true
+  },
+  "source:piano": {
+   "C": 0.03,
+   "threshold": 0.8495,
+   "precision": 0.778,
+   "recall": 0.801,
+   "f1": 0.79,
+   "pos": 267,
+   "neg": 9824,
+   "posFamilies": 44,
+   "byDataset": {
+    "egfxset": {
+     "pos": 0,
+     "neg": 1680,
+     "fired": 2,
+     "P": 0.0,
+     "R": 0.0
+    },
+    "fsd50k": {
+     "pos": 126,
+     "neg": 5811,
+     "fired": 130,
+     "P": 0.838,
+     "R": 0.865
+    },
+    "nsynth-train": {
+     "pos": 141,
+     "neg": 2004,
+     "fired": 143,
+     "P": 0.734,
+     "R": 0.745
+    }
+   },
+   "ships": true
+  },
+  "source:synthesizer": {
+   "C": 0.03,
+   "threshold": 0.7223,
+   "precision": 0.813,
+   "recall": 0.901,
+   "f1": 0.855,
+   "pos": 1349,
+   "neg": 9749,
+   "posFamilies": 213,
+   "byDataset": {
+    "fsd50k": {
+     "pos": 0,
+     "neg": 5595,
+     "fired": 10,
+     "P": 0.0,
+     "R": 0.0
+    },
+    "nsynth": {
+     "pos": 18,
+     "neg": 48,
+     "fired": 26,
+     "P": 0.692,
+     "R": 1.0
+    },
+    "nsynth-train": {
+     "pos": 1331,
+     "neg": 2145,
+     "fired": 1459,
+     "P": 0.821,
+     "R": 0.9
+    }
+   },
+   "ships": true
+  },
+  "source:voice": {
+   "C": 0.03,
+   "threshold": 0.6656,
+   "precision": 0.976,
+   "recall": 0.98,
+   "f1": 0.978,
+   "pos": 1228,
+   "neg": 11609,
+   "posFamilies": 264,
+   "byDataset": {
+    "avp": {
+     "pos": 281,
+     "neg": 0,
+     "fired": 279,
+     "P": 1.0,
+     "R": 0.993
+    },
+    "fsd50k": {
+     "pos": 829,
+     "neg": 4609,
+     "fired": 835,
+     "P": 0.971,
+     "R": 0.978
+    },
+    "nsynth": {
+     "pos": 0,
+     "neg": 90,
+     "fired": 2,
+     "P": 0.0,
+     "R": 0.0
+    },
+    "nsynth-train": {
+     "pos": 118,
+     "neg": 5230,
+     "fired": 116,
+     "P": 0.974,
+     "R": 0.958
+    }
+   },
+   "ships": true
+  }
+ }
+}
