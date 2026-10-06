@@ -8,6 +8,7 @@
 # and Slakh stems when scripts/audio-model/prepare-slakh.py exists.
 # INIT_FROM=<model repo>[@<revision>[/<folder>]] starts from an earlier run's model.pt. OUT_DIR puts this run under a folder of $HF_REPO.
 set -euo pipefail
+START=$(date +%s)
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q && apt-get install -yq --no-install-recommends ffmpeg git ca-certificates curl > /dev/null
 pip install -q scikit-learn scipy pyarrow onnx onnxruntime huggingface_hub
@@ -44,8 +45,8 @@ if [ "${ALL_TAGS:-0}" = 1 ]; then
   if [ -f $S/prepare-slakh.py ]; then python3 $S/prepare-slakh.py xprep > slakh.log 2>&1 & fi
 fi
 LOGS=$(ls *.log)
-for job in $(jobs -p); do wait $job || { tail -20 $LOGS; exit 1; }; done
-tail -3 $LOGS; df -h $W | tail -1
+for job in $(jobs -p); do wait $job || { tail -n 20 $LOGS; exit 1; }; done
+tail -n 3 $LOGS; echo "data prep took $(( ($(date +%s) - START) / 60 )) min"; df -h $W | tail -1
 
 EXTRA=()
 if [ -n "${SOUNDCLOUD_DATA:-}" ]; then   # "<dataset repo>:<folder>", uploaded by the workflow from its SoundCloud artifacts
@@ -60,7 +61,11 @@ if [ -n "${INIT_FROM:-}" ]; then   # "<repo>[@<revision>[/<folder>]]"
   python3 -c "import sys; from huggingface_hub import hf_hub_download as d; r, _, rest = sys.argv[1].partition('@'); rev, _, f = rest.partition('/'); [d(r, (f + '/' if f else '') + n, revision=rev or None, local_dir='init') for n in ('model.pt', 'log.json')]" "$INIT_FROM"
   EXTRA+=(--init "$(dirname $(find init -name model.pt | head -1))/model.pt")
 fi
-python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --threads 8 --hours "${TRAIN_HOURS:-0}"
+# Training gets what is left of the job's time limit (JOB_HOURS) after data prep, keeping 45 min for calibration, export,
+# evaluation and upload, and never more than TRAIN_HOURS.
+HOURS=$(python3 -c "import sys; t, j, e = map(float, sys.argv[1:]); left = j - e / 3600 - 0.75; print(round(max(0.5, min(t, left) if t else left), 2))" "${TRAIN_HOURS:-0}" "${JOB_HOURS:-7}" "$(( $(date +%s) - START ))")
+echo "training budget ${HOURS} h"
+python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --threads 8 --hours "$HOURS"
 CAL=(openmic=prep jamendo=prepj); EVAL=(prep/eval-round1 prep/eval-round2 holdout/holdout-r3)
 [ -d scprep ] && CAL+=(soundcloud=scprep)
 if [ "${ALL_TAGS:-0}" = 1 ]; then CAL+=(fsd50k=fsdprep nsynth=nsprep freesound=fsprep); for x in $XS; do CAL+=($x=xprep); done; EVAL+=(fsdprep/eval-fsd50k nsprep/eval-nsynth-test nsprep/eval-nsynth-test-fx fsprep/eval-freesound); fi

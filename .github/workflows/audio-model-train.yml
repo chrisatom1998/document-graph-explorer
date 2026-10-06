@@ -91,7 +91,7 @@ jobs:
         run: |
           if [ -f hf-job-id ]; then python3 -c "from huggingface_hub import cancel_job; cancel_job(job_id=open('hf-job-id').read())"; fi
       - name: Score the SoundCloud held-out fold
-        if: ${{ (inputs.soundcloud || 'true') == 'true' }}
+        if: ${{ (inputs.soundcloud || 'true') == 'true' && hashFiles('hf-job-detached') == '' }}
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
         run: |
           D="${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir }}"; P=${D:+$D/}

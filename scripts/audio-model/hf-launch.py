@@ -1,4 +1,6 @@
 """Start scripts/audio-model/hf-job.sh on Hugging Face Jobs, stream its log into this one, and fail if the job fails.
+A GitHub-hosted runner is stopped after 6 h (which would cancel the job), so after FOLLOW_HOURS (default 5.25) this stops
+following, writes hf-job-detached and exits 0; the job keeps going and uploads its own results.
 
 Usage: HF_TOKEN=... python3 scripts/audio-model/hf-launch.py <flavor> <timeout> KEY=VALUE...   (env passed to the job)
 """
@@ -19,14 +21,21 @@ job = run_job(image='pytorch/pytorch:2.7.1-cuda12.8-cudnn9-runtime', command=['b
               secrets={'HF_TOKEN': os.environ['HF_TOKEN']}, flavor=flavor, timeout=timeout, name=name,
               labels={'app': 'dge-tagger', 'lane': name})
 open('hf-job-id', 'w').write(job.id)
+deadline = time.time() + float(os.environ.get('FOLLOW_HOURS', '5.25')) * 3600
 print(f'job {job.id} on {flavor}: https://huggingface.co/jobs/{user}/{job.id}', flush=True)
 while True:
     try:
-        for line in fetch_job_logs(job_id=job.id, follow=True): print(line, flush=True)
+        for line in fetch_job_logs(job_id=job.id, follow=True):
+            print(line, flush=True)
+            if time.time() > deadline: break
     except Exception as e:
         print(f'(log stream interrupted: {e})', flush=True)
     stage = inspect_job(job_id=job.id).status.stage
     if stage not in ('RUNNING', 'SCHEDULING'): break
+    if time.time() > deadline:
+        open('hf-job-detached', 'w').write(job.id)
+        print(f'job {job.id} still {stage}; no longer following it here (runner time limit). It uploads its own results.')
+        sys.exit(0)
     time.sleep(30)
 print(f'job {job.id} finished: {stage}')
 sys.exit(0 if stage == 'COMPLETED' else 1)
