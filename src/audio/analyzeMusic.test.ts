@@ -423,3 +423,41 @@ it('retries an in-flight analysis request when a concurrent warmup hits the thre
   expect(sent.filter(m => m.kind === 'instruments').map(m => !!m.singleThread)).toEqual([false, true]);
   expect(sent.filter(m => m.kind === 'profile').some(m => m.singleThread)).toBe(true);
 });
+
+class SilentWarmWorker {
+  onmessage: ((event: { data: unknown }) => void) | null = null;
+  onerror: ((event: { message: string }) => void) | null = null;
+  constructor() { state.created++; }
+  terminate() { state.terminated++; }
+  addEventListener() {}
+  removeEventListener() {}
+  postMessage() { /* Warms never finish: the weights are still downloading. */ }
+}
+
+it('stops a speculative warmup for a document-only ingest and settles it without waiting for the timeout', async () => {
+  vi.stubGlobal('navigator', { deviceMemory: 16, hardwareConcurrency: 18 });
+  vi.stubGlobal('Worker', SilentWarmWorker);
+  vi.resetModules();
+  const isolated = await import('./analyzeMusic');
+  const { stopSpeculativeAudioPreload } = await import('./speculativePreload');
+  const created = state.created; const terminated = state.terminated;
+  const warmup = isolated.preloadMusicModels('full', { speculative: true });
+  await vi.waitFor(() => expect(state.created - created).toBe(4));
+  stopSpeculativeAudioPreload();
+  expect(state.terminated - terminated).toBe(4);
+  await expect(warmup).resolves.toBeUndefined();
+});
+
+it('keeps a warmup that audio claimed when a document ingest starts', async () => {
+  vi.stubGlobal('navigator', { deviceMemory: 16, hardwareConcurrency: 18 });
+  vi.stubGlobal('Worker', SilentWarmWorker);
+  vi.resetModules();
+  const isolated = await import('./analyzeMusic');
+  const { stopSpeculativeAudioPreload } = await import('./speculativePreload');
+  const created = state.created; const terminated = state.terminated;
+  void isolated.preloadMusicModels('full', { speculative: true });
+  await vi.waitFor(() => expect(state.created - created).toBe(4));
+  void isolated.preloadMusicModels('full');
+  stopSpeculativeAudioPreload();
+  expect(state.terminated - terminated).toBe(0);
+});
