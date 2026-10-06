@@ -50,4 +50,9 @@ parallel errors are mostly major tracks called minor.
 
 Errors that remain are mostly tonic errors (fifths and unrelated keys), which a profile alone cannot fix.
 
-Browser check on round 2's 500: `browser/` (`.github/workflows/key-fix-browser.yml`).
+## Browser check on round 2's 500
+
+The built app in headless Chromium (`.github/workflows/key-fix-browser.yml`, run 37415134127; `browser/mtg-key.txt`):
+key exact **54.4%** (was 46.1%), MIREX 0.64 (was 0.56), shown 376 of 395, matching the offline numbers exactly. Tempo
+(84.2% within 4%) and every tag count are identical to main with #116. Chris's 16 SHADOW_UK1 melodic loops: 5/16
+exact before and after (the same five loops).
