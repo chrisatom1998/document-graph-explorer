@@ -42,14 +42,13 @@ jobs:
         run: |
           if [ "$EVENT" = push ]; then cp scripts/hf-eval/request.json req.json; else echo "$IN" > req.json; fi
           python3 - <<'PY' >> "$GITHUB_ENV"
-          import json, re
+          import json, os, re
           r = json.load(open('req.json'))
           d = {'task': '', 'app_ref': 'main', 'task_args': '', 'parts': '8', 'flavor': 'cpu-upgrade', 'timeout': '2h', 'max_cost': '1', 'results_branch': ''}
           d.update({k: str(v) for k, v in r.items() if v not in (None, '')})
-          assert re.fullmatch(r'[a-z0-9-]+', d['task']), 'task must be a name under scripts/hf-eval/tasks'
+          assert re.fullmatch(r'[a-z0-9-]+', d['task']) and os.path.isfile(f"scripts/hf-eval/tasks/{d['task']}.sh"), 'task must be a name under scripts/hf-eval/tasks'
           for k, v in d.items(): assert '\n' not in v; print(f'{k.upper()}={v}')
           PY
-          test -f "scripts/hf-eval/tasks/$TASK.sh" || { echo "::error::no scripts/hf-eval/tasks/$TASK.sh"; exit 1; }
       - name: Resolve the app under test
         run: |
           git fetch -q origin "$APP_REF" 2>/dev/null && SHA=$(git rev-parse FETCH_HEAD) || SHA=$(git rev-parse "$APP_REF")
