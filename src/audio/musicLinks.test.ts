@@ -259,3 +259,64 @@ describe('links follow the Sounds and Other model guesses lists', () => {
     expect(musicPairEdges(guessed('a'), other).filter(e => e.kind === 'sound' || e.kind === 'instrument')).toEqual([]);
   });
 });
+
+/** Unit vectors around a few distinct directions, with small deterministic noise. */
+function fingerprint(group: number, member: number): number[] {
+  let seed = group * 7919 + member * 104729 + 1;
+  const noise = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648 - .5; };
+  const v = Array.from({ length: 512 }, (_, i) => (Math.floor(i / 64) === group ? 1 : 0) + .6 * noise());
+  const n = Math.hypot(...v);
+  return v.map(x => x / n);
+}
+const sounding = (id: string, group: number, member: number, extra: Partial<MusicAnalysis> = {}) => node(id, { embedding: fingerprint(group, member), ...extra });
+describe('sound-alike links: reasons and scale', () => {
+  it('links tracks that sound alike, explains why, and leaves different sounds apart', () => {
+    const nodes = [0, 1, 2].flatMap(g => [0, 1, 2].map(m => sounding(`g${g}m${m}`, g, m)));
+    const edges = buildMusicEdges(nodes);
+    const similar = edges.filter(e => e.kind === 'similar');
+    expect(similar.length).toBeGreaterThan(0);
+    for (const e of similar) expect(e.source.slice(0, 2)).toBe(e.target.slice(0, 2));
+    expect(similar[0].evidence[0]).toMatch(/^Nearby audio fingerprints \(cosine similarity \d\.\d{2}\)\./);
+    expect(buildMusicEdges([...nodes].reverse())).toEqual(edges);
+  });
+  it('names the tested tags and confirmations both tracks share', () => {
+    const tags = { confirmedDjTags: { source: [], production: ['riser'], character: ['metallic'] } };
+    const edge = buildMusicEdges([sounding('a', 0, 0, tags), sounding('b', 0, 1, tags), sounding('c', 3, 0)]).find(e => e.kind === 'similar')!;
+    expect([edge.source, edge.target]).toEqual(['a', 'b']);
+    expect(edge.evidence[0]).toContain('Both also have: riser (production / effect), metallic (character), confirmed by you on both tracks.');
+  });
+  it('says "some confirmed by you" when a shared tag is confirmed on one track only', () => {
+    const tags = { confirmedDjTags: { source: [], production: ['riser'], character: [] } };
+    const edge = buildMusicEdges([sounding('a', 0, 0, tags), sounding('b', 0, 1, { soundProfile: { version: 1, character: [], roles: [], disagreement: false, models: [], djTags: [{ group: 'production', label: 'riser', score: .9, model: 'Trained head' }] } })]).find(e => e.kind === 'similar');
+    expect(edge!.evidence[0]).toContain('riser (production / effect), some confirmed by you.');
+  });
+  it('keeps tempo and file-name links between tracks that sound different', () => {
+    const beat = { tempo: tempo(120), key: key(0) };
+    const nodes = [sounding('a0', 0, 0, beat), sounding('a1', 0, 1), sounding('a2', 0, 2), sounding('b0', 1, 0, beat), sounding('b1', 1, 1), sounding('b2', 1, 2)];
+    expect(buildMusicEdges(nodes).filter(e => e.source === 'a0' && e.target === 'b0').map(e => e.kind)).toEqual(['tempo', 'key']);
+    const named = buildMusicEdges([{ ...sounding('x', 0, 0), path: 'Drums/Kick 140bpm.wav' }, { ...sounding('y', 1, 0), path: 'Drums/Snare 140bpm.wav' }]);
+    expect(named.map(e => e.kind)).toEqual(['tempo']);
+  });
+  it('keeps each track within its sound-alike budget', () => {
+    const nodes = Array.from({ length: 60 }, (_, i) => sounding(String(i).padStart(2, '0'), i % 4, i));
+    const edges = buildMusicEdges(nodes);
+    for (const n of nodes) expect(edges.filter(e => e.kind === 'similar' && (e.source === n.id || e.target === n.id)).length).toBeLessThanOrEqual(MUSIC_NEIGHBORS_PER_KIND);
+  });
+  it('stays bounded and deterministic for libraries too large to compare every pair', () => {
+    const nodes = Array.from({ length: 1200 }, (_, i) => sounding(String(i).padStart(4, '0'), i % 8, i));
+    const started = performance.now();
+    const edges = buildMusicEdges(nodes);
+    expect(performance.now() - started).toBeLessThan(20000);
+    const similar = edges.filter(e => e.kind === 'similar');
+    expect(similar.length).toBeGreaterThan(nodes.length / 2);
+    for (const e of similar) expect(Number(e.source) % 8).toBe(Number(e.target) % 8);
+  });
+  it('stays fast when many tracks share one fingerprint', () => {
+    const same = fingerprint(0, 0);
+    const nodes = Array.from({ length: 3000 }, (_, i) => node(String(i).padStart(4, '0'), { embedding: same }));
+    const started = performance.now();
+    const similar = buildMusicEdges(nodes).filter(e => e.kind === 'similar');
+    expect(performance.now() - started).toBeLessThan(20000);
+    expect(similar.length).toBeGreaterThan(0);
+  });
+});
