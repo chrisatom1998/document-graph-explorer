@@ -1,6 +1,7 @@
 import { EMBED_DIMS, QUERY_MIN_SEMANTIC_SCORE } from '../config';
 import type { DocNode } from '../model/types';
 import { embedQuery as defaultEmbedQuery } from '../pipeline/coordinator';
+import { termVariants } from '../pipeline/aliases';
 import {
   chunkStore as defaultChunkStore,
   docVectorStore as defaultDocVectorStore,
@@ -168,8 +169,11 @@ export function lexicalRelevance(
   if (terms.length === 0) {
     return { score: (titleMatch ? 0.7 : 0) + (exactPhrase ? 1.2 : 0), titleMatch };
   }
-  const bodyHits = terms.filter((term) => containsTerm(body, term)).length;
-  const titleHits = terms.filter((term) => containsTerm(normalizedTitle, term)).length;
+  // A term also hits on another spelling of the same name: 'postgresql' finds 'Postgres'.
+  const hits = (haystack: string, term: string): boolean =>
+    termVariants(term).some((variant) => containsTerm(haystack, variant));
+  const bodyHits = terms.filter((term) => hits(body, term)).length;
+  const titleHits = terms.filter((term) => hits(normalizedTitle, term)).length;
   const coverage = bodyHits / terms.length;
   const titleCoverage = titleHits / terms.length;
 
