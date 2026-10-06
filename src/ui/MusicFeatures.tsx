@@ -16,9 +16,14 @@ import { confidentSoundSummary } from '../audio/confidentSoundSummary';
 import { filenameSoundFallback } from '../audio/filenameSoundFallback';
 import { RecognitionDiagnostics, type RecognitionEvidenceProps } from './RecognitionEvidence';
 import { clockTime as time } from './clockTime';
+import { camelotCode } from './musicDisplay';
+import MusicNeighbours from './MusicNeighbours';
 export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?: (seconds: number) => void }) {
   const job = useMusicJobs(s => s.jobs[node.id]);
   const phase = useGraphStore(s => s.phase);
+  const nodes = useGraphStore(s => s.nodes);
+  const nodeIndex = useGraphStore(s => s.nodeIndex);
+  const edges = useGraphStore(s => s.edges);
   const [controller, setController] = useState<AbortController | null>(null);
   const [message, setMessage] = useState('');
   const analysis = node.audio;
@@ -49,6 +54,7 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
   const audioPitchLabel = analysis?.detectedPitch
     ? hints.key?.value.tonic === analysis.detectedPitch.pitchClass ? hints.key.displayName.split(' ')[0] : KEY_NAMES[analysis.detectedPitch.pitchClass]
     : undefined;
+  const tempoDiffers = !!hints.tempo && !!analysis?.tempo && Math.abs(hints.tempo.value - analysis.tempo.bpm) > 0.5;
   const nameDisagrees = (!!hints.key && !!analysis?.key && !sameNamedKey)
     || (!!hints.tempo && !!analysis?.tempo && Math.abs(hints.tempo.value - analysis.tempo.bpm) > 0.01);
   const nameSources = new Map<string, { source: string; name: string; values: string[] }>();
@@ -92,15 +98,16 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
       <dl className="music-stats">
         <div><dt>Length</dt><dd>{time(analysis.durationSeconds)}</dd></div>
         <div><dt>Tempo{hints.tempo && <small>from name</small>}</dt>{hints.tempo || analysis.tempo
-          ? <dd>{Number((hints.tempo ? hints.tempo.value : analysis.tempo!.bpm).toFixed(1))} BPM</dd>
+          ? <dd>{Number((hints.tempo ? hints.tempo.value : analysis.tempo!.bpm).toFixed(1))} BPM{tempoDiffers && <small className="music-stats__audio" title="The audio estimate differs from the file or folder name">audio {Number(analysis.tempo!.bpm.toFixed(1))}</small>}</dd>
           : <dd className="is-unknown" title={analysis.stage === 'preview' ? 'Not checked yet' : 'No steady beat detected'}>{analysis.stage === 'preview' ? '…' : '—'}</dd>}</div>
         <div><dt>Key{hints.key && <small>from name</small>}</dt>{hints.key || analysis.key
-          ? <dd>{hints.key ? hints.key.displayName : keyName(analysis.key!)}</dd>
+          ? <dd>{hints.key ? hints.key.displayName : keyName(analysis.key!)} <span className="camelot" title="Camelot wheel code">{camelotCode(hints.key ? hints.key.value : analysis.key!)}</span>{!!hints.key && !!analysis.key && !sameNamedKey && <small className="music-stats__audio" title="The audio estimate differs from the file or folder name">audio {keyName(analysis.key)}</small>}</dd>
           : <dd className="is-unknown" title={analysis.stage === 'preview' ? 'Not checked yet' : 'No stable key detected'}>{analysis.stage === 'preview' ? '…' : '—'}</dd>}</div>
       </dl>
       <ConfidentSoundSummary audio={analysis} node={node} />
       <OtherModelGuesses profile={displayProfile} confirmedDjTags={analysis.confirmedDjTags ? confirmedTags : undefined} reviewedLabels={reviewedLabels}
         skipSource={confirmed !== undefined || !!hints.instruments} exclude={shownSounds} />
+      <MusicNeighbours node={node} nodes={nodes} nodeIndex={nodeIndex} edges={edges} />
       <ModelScores profile={displayProfile} audio={analysis} />
       <MainSoundAttributes audio={analysis} node={node} />
       <details className="music-analysis-details">
