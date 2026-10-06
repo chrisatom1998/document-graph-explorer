@@ -27,6 +27,9 @@ QUESTIONS = [('production', 'bass hit'), ('production', 'kick'), ('production', 
 catalog = {(c['group'], c['label']): c for c in json.load(open(f'{ROOT}/src/audio/djCatalog.json'))['categories']}
 side = json.load(open(os.path.join(REVIEW, 'sidecar.json')))['clips']
 items = [i for i in json.load(open(os.path.join(REVIEW, 'manifest.json')))['items'] if i['id'] in side]
+# Human-confirmed clips first: they are the free check of this model against a person (build-short-clip-test-v2.py agreement).
+_rev_path = os.path.join(REVIEW, 'reviews.json'); _rev = json.load(open(_rev_path)) if os.path.exists(_rev_path) else {}
+items.sort(key=lambda i: 0 if _rev.get(i['id'], {}).get('confirmed') else 1)
 done = json.load(open(OUT)) if os.path.exists(OUT) else {}
 lock = threading.Lock()
 FIELD = {l: re.sub(r'[^a-z0-9]+', '_', l) for _, l in QUESTIONS}
@@ -42,7 +45,11 @@ PROMPT = ('You are listening to one short clip (under 2.3 seconds) from a music 
           'Also give "other": any other clearly audible sound in a few words (or "none"), and "reason": one short sentence.')
 
 
+QUOTA = threading.Event()
+
+
 def ask(item):
+    if QUOTA.is_set(): return
     audio = base64.b64encode(open(os.path.join(REVIEW, item['preview']), 'rb').read()).decode()
     body = {'contents': [{'parts': [{'text': PROMPT}, {'inline_data': {'mime_type': 'audio/wav', 'data': audio}}]}],
             'generationConfig': {'responseMimeType': 'application/json', 'responseSchema': SCHEMA, 'temperature': 0}}
@@ -59,7 +66,9 @@ def ask(item):
                 json.dump(done, open(OUT, 'w'), indent=1)
             return
         except urllib.error.HTTPError as e:
-            msg = e.read().decode()[:200]
+            msg = e.read().decode()[:300]
+            if e.code == 429 and 'exceeded your current quota' in msg:
+                QUOTA.set(); print(f'  quota exhausted for {MODEL} (HTTP 429); stopping. Re-run later or with another model: answers so far are kept.', flush=True); return
             if e.code in (429, 500, 502, 503) and attempt < 5: time.sleep(10 * (attempt + 1)); continue
             print(f'  {item["title"]}: HTTP {e.code} {msg}', flush=True); return
         except Exception as e:   # network blip or an answer that did not match the schema
@@ -73,4 +82,5 @@ t0 = time.time()
 with ThreadPoolExecutor(WORKERS) as pool:
     for n, _ in enumerate(pool.map(ask, todo), 1):
         if n % 25 == 0: print(f'  {n}/{len(todo)} in {(time.time() - t0) / 60:.1f} min', flush=True)
-print(f'done: {len(done)} of {len(items)} answered -> {OUT}', flush=True)
+print(f'{"stopped on quota" if QUOTA.is_set() else "done"}: {len(done)} of {len(items)} answered -> {OUT}', flush=True)
+sys.exit(3 if QUOTA.is_set() else 0)
