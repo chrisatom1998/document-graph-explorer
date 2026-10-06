@@ -1,0 +1,139 @@
+name: Sample pack check
+
+# Free archive.org sample packs (scripts/sample-packs/build.py) uploaded into this commit's built app in headless Chromium,
+# once under opaque ids (audio only) and once under the packs' real file names (name parsing, odd characters). Scores
+# tags, tempo and key against the packs' own names and lists files that failed to load. The build job freezes the manifest;
+# the score job commits its reports to docs/evaluations/sample-packs-2026-10-06/<results_dir>. Audio is never committed.
+on:
+  workflow_dispatch:
+    inputs:
+      results_dir:
+        description: Folder under the docs directory for the reports (keeps earlier runs intact)
+        default: results
+  push:
+    branches: [claude/sample-pack-testing-46gvan]
+    paths: [.github/workflows/sample-packs-eval.yml, scripts/sample-packs/**]
+
+permissions:
+  contents: write
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  DOCS: docs/evaluations/sample-packs-2026-10-06
+  RESULTS: ${{ inputs.results_dir || 'results' }}
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the packs
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          python3 -I scripts/sample-packs/build.py "$RUNNER_TEMP/packs/audio" "$RUNNER_TEMP/cache"
+          mv "$RUNNER_TEMP/packs" packs
+      - name: Commit the frozen manifest
+        run: |
+          git add "$DOCS/manifest.json"
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m "Freeze the sample pack set"
+            for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+              && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sample-pack-audio
+          path: |
+            packs
+            ${{ env.DOCS }}/manifest.json
+          retention-days: 7
+
+  eval:
+    needs: freeze
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        names: [file, originalName]
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: sample-pack-audio
+          path: clips
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=clips/packs/audio${{ matrix.names == 'originalName' && '-named' || '' }} FILE_FIELD=${{ matrix.names }} \
+            MANIFEST=clips/$DOCS/manifest.json SHARD=${{ matrix.shard }}/4 node scripts/short-clip-upload-eval.mjs out/run test 20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sample-pack-export-${{ matrix.names }}-${{ matrix.shard }}
+          path: |
+            out/run/graph-export.json
+            out/run/run.json
+          retention-days: 30
+
+  score:
+    needs: eval
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sample-pack-export-*
+          path: exports
+      - uses: actions/download-artifact@v4
+        with:
+          name: sample-pack-audio
+          path: clips
+      - name: Score
+        run: |
+          set -o pipefail
+          [[ "$RESULTS" =~ ^[a-z0-9-]+$ ]] || { echo "bad results_dir"; exit 1; }
+          R="$DOCS/$RESULTS"; mkdir -p "$R"
+          git pull -q origin "$GITHUB_REF_NAME" || true
+          for f in file originalName; do
+            ls exports/sample-pack-export-$f-*/graph-export.json || continue
+            MANIFEST=clips/$DOCS/manifest.json FILE_FIELD=$f npx vite-node scripts/sample-packs/score.mjs "$R/$f.json" exports/sample-pack-export-$f-*/graph-export.json | tee "$R/$f.txt"
+          done
+          node -e "const fs=require('fs');const r=[];for(const d of fs.readdirSync('exports'))try{r.push({shard:d,...JSON.parse(fs.readFileSync('exports/'+d+'/run.json','utf8'))})}catch{r.push({shard:d,missing:true})}fs.writeFileSync(process.argv[1],JSON.stringify(r,null,1))" "$R/runs.json"
+          echo "tested $GITHUB_SHA (run $GITHUB_RUN_ID)" > "$R/tested-commit.txt"
+      - name: Commit the reports
+        run: |
+          git add "$DOCS/$RESULTS"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record sample pack results" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done

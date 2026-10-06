@@ -13,6 +13,9 @@ const EXT = process.env.AUDIO_EXT ?? 'wav';
 const AUDIO = process.env.AUDIO_DIR ?? '/Users/chrisjohnson/Documents/Media/dj-training-fingerprints/short-clips/bench-audio';
 const manifest = JSON.parse(readFileSync(process.env.MANIFEST ?? 'docs/evaluations/short-clips-2026-10-04/manifest.json', 'utf8'));
 let ids = manifest.items.filter(i => i.split === split).map(i => i.id);
+// FILE_FIELD names a manifest field holding each item's file name (e.g. "file", or "originalName" to upload real
+// pack names); without it every clip is <id>.<AUDIO_EXT>.
+const fileName = Object.fromEntries(manifest.items.map(i => [i.id, process.env.FILE_FIELD ? i[process.env.FILE_FIELD] : `${i.id}.${EXT}`]));
 if (limitArg) ids = ids.slice(0, Number(limitArg));
 // SHARD=i/n keeps every n-th clip starting at i, so one benchmark can run on several machines.
 if (process.env.SHARD) {
@@ -54,7 +57,7 @@ for (let start = 0; start < ids.length; start += Number(batchArg)) {
     page.once('filechooser', () => {});
     await page.getByRole('button', { name: 'Add files', exact: true }).click({ timeout: 180_000 });
   }
-  await picker.setInputFiles(batch.map(id => join(AUDIO, `${id}.${EXT}`)));
+  await picker.setInputFiles(batch.map(id => join(AUDIO, fileName[id])));
   // 2D view: same analysis, far less software rendering competing with the models.
   if (start === 0) await page.getByRole('button', { name: 'Switch to 2D view' }).click({ timeout: 120_000 }).catch(() => {});
   let done = 0;
@@ -66,7 +69,7 @@ for (let start = 0; start < ids.length; start += Number(batchArg)) {
     }
     const graph = await exportGraph().catch(e => { if (process.env.DEBUG) console.log('\nexport failed', e.message); });
     if (!graph) continue;
-    const want = new Set(batch.map(id => `${id}.${EXT}`));
+    const want = new Set(batch.map(id => fileName[id]));
     const nodes = graph.nodes.filter(n => want.has(n.path ?? n.title));
     done = nodes.filter(n => finished(n.audio)).length;
     process.stdout.write(`\r${start + done}/${ids.length} analysed`);
