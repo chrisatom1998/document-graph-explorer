@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import model from './genreEnergyModel.json';
 import fixture from './genreEnergy.fixture.json';
-import { ENERGY_KEY, GENRE_ENERGY_VERSION, GENRE_LABELS, GenreEnergyScores, STYLE_PREFIX, energyFromScore, genreFromScores, genreProbabilities, genreText, sanitizeGenreScores } from './genreEnergy';
+import { ENERGY_KEY, GENRE_ENERGY_VERSION, electronicShare, GENRE_LABELS, GenreEnergyScores, STYLE_PREFIX, energyFromScore, genreFromScores, genreProbabilities, genreText, sanitizeGenreScores } from './genreEnergy';
 import { jamendoInstrumentScores } from './jamendo';
 import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
 import { musicPairEdges } from './musicLinks';
@@ -31,6 +31,14 @@ describe('genre and energy', () => {
       expect(Object.values(p).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 3);
       expect(Object.entries(p).sort((a, b) => b[1] - a[1])[0][0]).toBe(track.genre);
     }
+  });
+
+  it('gives no genre to music outside electronic and hip hop', () => {
+    const rock = new Map(model.genre.styles.map(label => [label, label.startsWith('Rock---') ? .3 : .001]));
+    expect(electronicShare(rock)).toBeLessThan(model.genre.gate.threshold);
+    expect(genreProbabilities(rock)).toEqual({});
+    const track = fixture[0];
+    expect(electronicShare(new Map(model.genre.styles.map((label, i) => [label, track.styles[i]])))).toBeGreaterThanOrEqual(model.genre.gate.threshold);
   });
 
   it('shows a genre over its threshold, a family when only the family is clear, and nothing otherwise', () => {

@@ -29,10 +29,23 @@ const GENRES: readonly string[] = model.genre.classes;
 const STYLE_INDEX = new Map(model.genre.styles.map((label, i) => [label, i]));
 const GENRE_WEIGHTS = model.genre.weights.map(row => Float64Array.from(row));
 
+const GATE_PARENTS = new Set(model.genre.gate.parents);
+/** Share of a track's Discogs style mass under Electronic or Hip Hop. The head only knows Beatport genres, so other
+ * music (rock, classical, soundtrack…) below the fitted cut gets no genre rather than a wrong electronic one. */
+export function electronicShare(styles: ReadonlyMap<string, number>): number {
+  let inside = 0, total = 0;
+  for (const [label, score] of styles) {
+    if (!Number.isFinite(score) || score <= 0) continue;
+    total += score;
+    if (GATE_PARENTS.has(label.split('---')[0])) inside += score;
+  }
+  return total > 0 ? inside / total : 0;
+}
+
 /** Genre probabilities from mean Discogs style scores: a softmax head fitted on Beatport genres
- * (scripts/genre-energy/fit.py, on GiantSteps tracks no test round uses). */
+ * (scripts/genre-energy/fit.py, on GiantSteps tracks no test round uses). Empty for tracks outside electronic music. */
 export function genreProbabilities(styles: ReadonlyMap<string, number>): Record<string, number> {
-  if (!GENRES.length || !styles.size) return {};
+  if (!GENRES.length || !styles.size || electronicShare(styles) < model.genre.gate.threshold) return {};
   const x = new Float64Array(STYLE_INDEX.size).fill(Math.log(1e-4));
   for (const [label, score] of styles) { const i = STYLE_INDEX.get(label); if (i !== undefined) x[i] = Math.log(Math.min(1, Math.max(1e-4, score))); }
   const z = GENRE_WEIGHTS.map((w, g) => { let s = model.genre.bias[g]; for (let i = 0; i < w.length; i++) s += w[i] * x[i]; return s; });

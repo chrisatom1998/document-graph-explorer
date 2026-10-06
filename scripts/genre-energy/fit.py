@@ -39,6 +39,18 @@ classes = sorted(g for g, c in counts.items() if c >= MIN_TUNE)
 tune = [r for r in tune if r['genre'] in classes]
 y = np.array([classes.index(r['genre']) for r in tune])
 X = style_matrix(tune, 'styles')
+# Out-of-domain gate: the head only knows Beatport genres, so a track is given one only when most of its Discogs style
+# mass is Electronic or Hip Hop. The cut is the highest that keeps 97.5% of the tuning tracks; non-electronic
+# MTG-Jamendo tuning tracks (by their genre tags) show how many other tracks it stops.
+GATE_PARENTS = ['Electronic', 'Hip Hop']
+PARENT = np.array([s_.split('---')[0] in GATE_PARENTS for s_ in STYLES])
+def gate_mass(rows, key='styles'):
+    A = np.array([r[key] for r in rows], dtype=np.float64); return A[:, PARENT].sum(1) / np.maximum(1e-9, A.sum(1))
+ELECTRONIC_TAGS = {'electronic', 'techno', 'house', 'trance', 'drumnbass', 'dubstep', 'hiphop', 'rap', 'chillout', 'ambient', 'downtempo',
+                   'breakbeat', 'dance', 'electronica', 'idm', 'minimal', 'deephouse', 'triphop', 'edm', 'club', 'eurodance', 'electropop',
+                   'synthpop', 'industrial', 'hardcore'}
+tune_mass = gate_mass(tune)
+GATE = max(t for t in np.round(np.arange(0.05, 0.95, 0.05), 2) if np.mean(tune_mass >= t) >= 0.975)
 C = 0.01
 stable = lambda v: int(hashlib.sha256(str(v).encode()).hexdigest()[:8], 16)
 groups = np.array([stable(r.get('artist') or r['name']) for r in tune])
@@ -55,10 +67,11 @@ FAMILIES = {f: ms for f, ms in FAMILIES.items() if len(ms) > 1}
 family_of = {m: f for f, ms in FAMILIES.items() for m in ms}
 fam_names = sorted(FAMILIES)
 def family_probs(P): return np.stack([P[:, [classes.index(m) for m in FAMILIES[f]]].sum(1) for f in fam_names], 1) if fam_names else np.zeros((len(P), 0))
-def decide(P, th, fth):
+def decide(P, th, fth, mass):
     win = P.argmax(1); conf = P.max(1); F = family_probs(P)
     out = []
     for i in range(len(P)):
+        if mass[i] < GATE: out.append(None); continue
         g = classes[win[i]]
         if conf[i] >= th[g]: out.append(g); continue
         if fam_names:
@@ -82,7 +95,7 @@ thresholds = {g: NEVER for g in classes}; fam_thresholds = {f: NEVER for f in fa
 for g in classes:
     stats = []
     for t in grid:
-        th = {**thresholds, g: t}; stats.append((t, label_stats(decide(oof, th, fam_thresholds), truth_tune, g)))
+        th = {**thresholds, g: t}; stats.append((t, label_stats(decide(oof, th, fam_thresholds, tune_mass), truth_tune, g)))
     ok = [(t, m) for t, m in stats if (m['precision'] or 0) >= BAR]
     # A family member is named on its own only when that reaches the bar with useful recall; otherwise its tracks
     # fall through to the family label instead of a rarely shown, noisy subgenre.
@@ -91,13 +104,18 @@ for g in classes:
 for f in fam_names:
     stats = []
     for t in grid:
-        fth = {**fam_thresholds, f: t}; stats.append((t, label_stats(decide(oof, thresholds, fth), truth_tune, f)))
+        fth = {**fam_thresholds, f: t}; stats.append((t, label_stats(decide(oof, thresholds, fth, tune_mass), truth_tune, f)))
     ok = [t for t, m in stats if (m['precision'] or 0) >= BAR]
     fam_thresholds[f] = ok[0] if ok else max(stats, key=lambda tm: f1(tm[1]))[0]
-shown_cv = decide(oof, thresholds, fam_thresholds)
+shown_cv = decide(oof, thresholds, fam_thresholds, tune_mass)
 cv = {l: label_stats(shown_cv, truth_tune, l) for l in classes + fam_names}
 report['genre_cv'] = {'classes': classes, 'families': FAMILIES, 'C': C, 'per_label': cv, 'accuracy_top1': round(float(np.mean(oof.argmax(1) == y)), 3),
                       'thresholds': thresholds, 'family_thresholds': fam_thresholds}
+jf_rows = [r for r in load('jamendo-fit') if 'genres' in r]
+jf_other = np.array([not set(r['genres']) & ELECTRONIC_TAGS for r in jf_rows])
+jf_mass = gate_mass(jf_rows)
+report['genre_gate'] = {'parents': GATE_PARENTS, 'threshold': float(GATE), 'beatport_tune_kept': round(float(np.mean(tune_mass >= GATE)), 3),
+                        'jamendo_fit_non_electronic_kept': round(float(np.mean(jf_mass[jf_other] >= GATE)), 3), 'jamendo_fit_non_electronic_tracks': int(jf_other.sum())}
 genre = LogisticRegression(C=C, max_iter=5000).fit(X, y)
 
 # ---------- energy ----------
@@ -148,7 +166,7 @@ model = {
     'genre': {'feature': 'log-clip-1e-4', 'styles': STYLES, 'classes': classes, 'bias': [round(float(v), 5) for v in genre.intercept_],
               'weights': [[round(float(v), 5) for v in row] for row in genre.coef_], 'thresholds': [thresholds[g] for g in classes],
               'tested': [False] * len(classes), 'families': [{'label': f, 'members': FAMILIES[f], 'threshold': fam_thresholds[f], 'tested': False} for f in fam_names],
-              'keptStyles': 8},
+              'keptStyles': 8, 'gate': {'parents': GATE_PARENTS, 'threshold': float(GATE)}},
     'energy': {'weights': [round(float(v), 6) for v in w], 'bias': round(b, 6), 'low': lo_t, 'high': hi_t, 'tested': {'low': False, 'high': False}},
 }
 
@@ -158,12 +176,19 @@ if JUDGE:
     judge = load('beatport-judge')
     truth = [r['genre'] for r in judge]
     for key, label in (('styles', 'full'), ('stylesFast', 'fast')):
-        shown = decide(genre.predict_proba(style_matrix(judge, key)), thresholds, fam_thresholds)
+        shown = decide(genre.predict_proba(style_matrix(judge, key)), thresholds, fam_thresholds, gate_mass(judge, key))
         per = {l: label_stats(shown, truth, l) for l in classes + fam_names}
         exact = sum(1 for s_, t in zip(shown, truth) if s_ == t); right_family = sum(1 for s_, t in zip(shown, truth) if s_ and s_ in FAMILIES and t in FAMILIES[s_])
         out[f'genre_{label}'] = {'tracks': len(judge), 'shown': sum(1 for s_ in shown if s_), 'shown_exact': exact, 'shown_family_correct': right_family,
                                  'per_label': per, 'unknown_genre_tracks': int(sum(t not in classes for t in truth))}
     jj = load('jamendo-judge')
+    # Out of domain: how often a non-electronic Jamendo track (by its genre tags) is given a Beatport genre at all.
+    other = [r for r in jj if not set(r['genres']) & ELECTRONIC_TAGS]
+    shown_other = decide(genre.predict_proba(style_matrix(other, 'styles')), thresholds, fam_thresholds, gate_mass(other))
+    labels = {}
+    for x in shown_other:
+        if x: labels[x] = labels.get(x, 0) + 1
+    out['genre_non_electronic_jamendo'] = {'tracks': len(other), 'shown_any_genre': sum(1 for x in shown_other if x), 'labels': labels}
     for key, label in (('embedding', 'full'), ('embeddingFast', 'fast')):
         s = 1 / (1 + np.exp(-(np.array([bf16(r[key]) for r in jj], dtype=np.float64) @ w + b)))
         t = np.array([r['energy'] == 'high' for r in jj])
