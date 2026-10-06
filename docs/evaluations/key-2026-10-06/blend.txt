@@ -1,0 +1,34 @@
+weight 1.5  under 6     s 0.575  0.548  0.675
+weight 3    under 6     s 0.584  0.548  0.675
+weight 10   under 6     s 0.584  0.548  0.675
+weight 1.5  under 8     s 0.601  0.548  0.675
+weight 3    under 8     s 0.627  0.548  0.675
+weight 10   under 8     s 0.631  0.548  0.675
+weight 1.5  under 10    s 0.614  0.548  0.675
+weight 3    under 10    s 0.644  0.548  0.675
+weight 10   under 10    s 0.648  0.548  0.675
+weight 1.5  under 12    s 0.631  0.513  0.675
+weight 3    under 12    s 0.661  0.487  0.675
+weight 10   under 12    s 0.665  0.465  0.675
+weight 1.5  under 20    s 0.670  0.513  0.675
+weight 3    under 20    s 0.704  0.487  0.675
+weight 10   under 20    s 0.708  0.465  0.675
+weight 1.5  under 30    s 0.674  0.513  0.675
+weight 3    under 30    s 0.712  0.487  0.675
+weight 10   under 30    s 0.717  0.465  0.675
+weight 1.5  under 1e+09 s 0.687  0.513  0.662
+weight 3    under 1e+09 s 0.725  0.487  0.645
+weight 10   under 1e+09 s 0.730  0.465  0.557
+chosen: weight 10 under 10 s
+FSL10K loops, judging half               n= 240  network 56.7%  with the rule 60.4%
+GiantSteps key 10 s, judging half        n= 202  network 60.9%  with the rule 60.9%
+GiantSteps key preview, judging half     n= 202  network 66.3%  with the rule 66.3%
+Round 2's 500 (confident key)            n= 395  network 55.2%  with the rule 55.2%
+GTZAN test half                          n= 422  network 73.9%  with the rule 73.9%
+
+Shipped (9.5 s keeps 10 s song clips that decode a little short with the network):
+FSL10K loops, judging half               n= 240  network 56.7%  with the rule 60.4%
+GiantSteps key 10 s, judging half        n= 202  network 60.9%  with the rule 60.9%
+GiantSteps key preview, judging half     n= 202  network 66.3%  with the rule 66.3%
+Round 2's 500 (confident key)            n= 395  network 55.2%  with the rule 55.2%
+GTZAN test half                          n= 422  network 73.9%  with the rule 73.9%

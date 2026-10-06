@@ -58,3 +58,37 @@ The built app in headless Chromium (`.github/workflows/key-fix-browser.yml`, run
 key exact **54.4%** (was 46.1%), MIREX 0.64 (was 0.56), shown 376 of 395, matching the offline numbers exactly. Tempo
 (84.2% within 4%) and every tag count are identical to main with #116. Chris's 16 SHADOW_UK1 melodic loops: 5/16
 exact before and after (the same five loops).
+
+## Round 2: the learned key network (PR #140)
+
+**Change.** Songs now get their key from the small key network the "More models to train on Hugging Face" thread
+trained (236 KB ONNX, all-convolutional after Korzeniowski & Widmer 2018; trained on the same tuning tracks as above,
+GiantSteps MTG key at annotator confidence 1-2 and the GTZAN tuning half, with pitch-shift augmentation; never on any
+set below). `src/audio/keyCnn.ts` computes its input at 44.1 kHz on the same time/frequency grid as its 22.05 kHz
+training features (max difference 2e-5 against the trainer's `feats.py`), runs it on each excerpt that passes the
+existing tonal gates, and averages the probabilities over the recording. For files shorter than 9.5 s Essentia's
+stock key profile decides when it gives a key, because it reads short loops better (below). If the network cannot
+load, the profiles from round 1 are used. `KEY_ANALYSIS_REVISION` is 4.
+
+| Held-out set | n | Before #123 | #123 (main) | **This PR** |
+|---|---|---|---|---|
+| Round 2's 500 (confident key), 10 s | 395 | 46.1% | 54.4% | **55.2%** |
+| GiantSteps key, 10 s | 430 | 46.7% | 56.0% | **57.7%** |
+| GiantSteps key, whole preview (app plan) | 430 | 50.2% | 60.2% | **67.0%** |
+| GTZAN test half, 30 s | 422 | 61.6% | 65.4% | **73.9%** |
+| 473 drumless FSL10K loops (listener keys) | 473 | 67.9% | 61.1% | **62.4%** |
+| Chris's 16 SHADOW_UK1 loops | 16 | 5 | 5 | **5** |
+
+Exact key, offline harness (`features-v2/`, `loops/fsl10k-473.json`). Browser check of the built app on round 2's 500
+(`browser-cnn/mtg-key.txt`, run on the network without the loop rule, which does not touch 10 s clips): **54.9%**
+exact, MIREX 0.65, 392 of 395 shown, one track off the offline number; tempo 84.2% and every tag count identical.
+
+**Loops.** On short drumless loops the network alone is the worst of the three (55.8%); Essentia's stock profile is
+best (67.9%). A blend for every recording cost songs about 3 points, and neither the profile's strength nor the
+network's certainty separates loops from songs, so the stock profile only decides files under 9.5 s. Weight and
+cut-off were chosen on one half of the loops and one half of GiantSteps key (`scripts/key/blend.py`, `blend.txt`);
+on the other half of the loops it gives 60.4% (network 56.7%, #123 62.1%, stock profile 65.8%). Loops of 10-30 s
+stay with the network, so loops remain about a point below #123 and six below the stock profile.
+
+The FSL10K loops are 473 sounds from FSL10K (Zenodo 3967852) where every listener agreed on key and mode and nobody
+ticked percussion; `scripts/key/loop-keys.mjs` reads each as the app does (one excerpt, whole file up to 60 s).
