@@ -15,6 +15,7 @@ import SidePanelConnections from './SidePanelConnections';
 import SidePanelHeader from './SidePanelHeader';
 import SidePanelReader from './SidePanelReader';
 import { focusNode } from './focusNode';
+import MixSuggestions from './MixSuggestions';
 
 function Disclose({
   label,
@@ -252,6 +253,7 @@ export default function SidePanel() {
             />
           )}
 
+          {node.fileType === 'audio' && <MixSuggestions node={node} nodes={nodes} />}
           {node.fileType === 'audio' && <section className="audio-related" aria-label="Related samples">
             <h3>Related samples</h3>
             {Array.from(new Map(connections.filter(row => row.neighbor?.fileType === 'audio').map(row => [row.neighborId, row.neighbor!])).values()).slice(0, 3).map(related => <button key={related.id} type="button" onClick={() => focusNode(related.id)}>

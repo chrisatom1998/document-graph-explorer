@@ -324,6 +324,8 @@ html[data-workspace-theme="dark"] {
 .audio-related-icon { width: 36px; height: 36px; display: grid; place-items: center; background: #222d26; color: #d9c0a5; border-radius: 5px; font-size: 17px; }
 .audio-related small { display: block; color: var(--text-secondary); font-size: 9px; margin-top: 4px; }
 .audio-related p { font-size: 11px; color: var(--text-secondary); }
+.audio-related h3 small { display: inline; margin-left: 8px; font-weight: 400; color: var(--text-secondary); font-size: 10px; }
+.mix-suggestions .audio-related-icon { font-size: 11px; font-weight: 600; }
 .workspace.app-root .graph-navigator.graph-navigator--embedded { display: block; }
 .workspace-graph-tools > .workspace-dims { display: flex; flex: 0 0 80px; padding: 2px; gap: 0; width: 80px; border: 1px solid #424a43; border-radius: 5px; }
 .workspace-dims span { padding: 6px 9px; border-radius: 3px; font-size: 11px; line-height: 16px; color: #8e9f93; }
