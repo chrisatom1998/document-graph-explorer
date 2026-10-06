@@ -76,6 +76,11 @@ jobs:
           REPO_SHA=${{ github.sha }} MODEL=${{ inputs.model || 'mn10_as' }} EPOCHS=${{ inputs.epochs || '30' }}
           LR=${{ inputs.lr || '1e-4' }} BATCH=${{ inputs.batch || '64' }} WEAK=${{ inputs.weak || '0.2' }}
           SOUNDCLOUD_DATA=${SOUNDCLOUD_DATA:-}
+      - name: Stop the Hugging Face job if this workflow is cancelled
+        if: ${{ cancelled() }}
+        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
+        run: |
+          if [ -f hf-job-id ]; then python3 -c "from huggingface_hub import cancel_job; cancel_job(job_id=open('hf-job-id').read())"; fi
       - name: Score the SoundCloud held-out fold
         if: ${{ (inputs.soundcloud || 'true') == 'true' }}
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
