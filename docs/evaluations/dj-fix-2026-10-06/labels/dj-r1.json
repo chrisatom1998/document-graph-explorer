@@ -1,0 +1,2005 @@
+{
+"dj-0070e6bc10f3a59e": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-00b75a24b4a75da7": {
+"piano": "present"
+},
+"dj-019a7675fb37c393": {
+"banjo": "absent",
+"mallet_percussion": "absent"
+},
+"dj-02693fc54b215a9b": {
+"flute": "absent",
+"mallet_percussion": "absent",
+"synthesizer": "present",
+"voice": "absent"
+},
+"dj-03a4293d59ff927d": {
+"synthesizer": "present"
+},
+"dj-03ef8405112a8f1d": {
+"cymbals": "present",
+"drums": "present"
+},
+"dj-05ed743ba1743852": {
+"flute": "present",
+"guitar": "present",
+"trombone": "absent"
+},
+"dj-06585ab7f2373ffc": {
+"trombone": "absent"
+},
+"dj-07d32ed57660be28": {
+"bass": "absent",
+"voice": "present"
+},
+"dj-07d7ab98a4daabe1": {
+"clarinet": "absent",
+"flute": "absent",
+"saxophone": "present",
+"violin": "absent"
+},
+"dj-08082d095ecfe934": {
+"flute": "absent",
+"trumpet": "absent"
+},
+"dj-0876a67c30ff1e60": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-0888b1f93a16eb3b": {
+"organ": "absent",
+"trombone": "absent",
+"trumpet": "absent",
+"ukulele": "absent"
+},
+"dj-096d8addafb94f3b": {
+"banjo": "absent",
+"synthesizer": "present",
+"trumpet": "absent"
+},
+"dj-09969b9c20a3472a": {
+"banjo": "present",
+"mandolin": "absent",
+"ukulele": "absent",
+"violin": "present"
+},
+"dj-0a981196441974cb": {
+"cymbals": "present"
+},
+"dj-0bba83e1590b648e": {
+"flute": "absent"
+},
+"dj-0c48b28e3cf59d21": {
+"cello": "absent",
+"cymbals": "present",
+"drums": "present",
+"guitar": "present",
+"synthesizer": "absent"
+},
+"dj-0cff35952d9d2d1a": {
+"accordion": "absent",
+"cymbals": "present"
+},
+"dj-0d0c646ea385be79": {
+"clarinet": "absent",
+"saxophone": "absent"
+},
+"dj-0dd030635505719e": {
+"drums": "present"
+},
+"dj-0e1b2f47e9887235": {
+"organ": "absent",
+"synthesizer": "present",
+"voice": "absent"
+},
+"dj-0e1be43917f3016d": {
+"flute": "present",
+"guitar": "present"
+},
+"dj-0e2227077d4dac99": {
+"banjo": "absent",
+"mandolin": "absent"
+},
+"dj-0ef4891efd7678a3": {
+"accordion": "absent",
+"saxophone": "present"
+},
+"dj-0f0fca7c76d84a71": {
+"flute": "absent",
+"organ": "absent",
+"piano": "absent",
+"voice": "present"
+},
+"dj-0f538e73f35a4eed": {
+"trombone": "absent"
+},
+"dj-0fdbdb784f6274fa": {
+"banjo": "present",
+"flute": "absent",
+"mandolin": "absent"
+},
+"dj-10ed57b8ebf51c94": {
+"mallet_percussion": "present"
+},
+"dj-11ec83bbce99cd72": {
+"guitar": "absent",
+"trombone": "present",
+"trumpet": "present"
+},
+"dj-1236ec8de209d866": {
+"guitar": "present"
+},
+"dj-129d60caae6f9d36": {
+"banjo": "absent",
+"clarinet": "absent",
+"cymbals": "present",
+"drums": "present",
+"guitar": "present"
+},
+"dj-1338c9bba1da6f44": {
+"clarinet": "absent",
+"flute": "present",
+"saxophone": "absent",
+"violin": "present"
+},
+"dj-137b4a3ee83a0c5e": {
+"mandolin": "absent",
+"ukulele": "absent"
+},
+"dj-13bf6fce76189c29": {
+"cymbals": "present",
+"saxophone": "absent",
+"trumpet": "absent"
+},
+"dj-140b0d5cd1e086a5": {
+"trombone": "present",
+"trumpet": "present"
+},
+"dj-140dec1b44ecafe0": {
+"cymbals": "absent"
+},
+"dj-141c0ebe3dfe8299": {
+"mallet_percussion": "present",
+"piano": "present"
+},
+"dj-1469b8a763f85781": {
+"piano": "present"
+},
+"dj-14c8f87bf2d14702": {
+"saxophone": "absent"
+},
+"dj-15331cafdf36674d": {
+"guitar": "present"
+},
+"dj-154bb45d566753df": {
+"synthesizer": "present"
+},
+"dj-158b8dc38f9bad31": {
+"banjo": "present"
+},
+"dj-169ec3245feea875": {
+"cymbals": "present",
+"saxophone": "present"
+},
+"dj-16beeb83216821f6": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-170247977bfd786a": {
+"mandolin": "present",
+"synthesizer": "present",
+"trombone": "absent",
+"ukulele": "present"
+},
+"dj-171b6c0b79dde4d6": {
+"banjo": "absent",
+"mandolin": "present"
+},
+"dj-172b35ec459f95e5": {
+"mallet_percussion": "absent",
+"synthesizer": "present",
+"trombone": "absent"
+},
+"dj-177e484d2c1df501": {
+"voice": "present"
+},
+"dj-17d9389c0016e54b": {
+"cymbals": "absent",
+"guitar": "present",
+"mallet_percussion": "absent",
+"synthesizer": "absent"
+},
+"dj-17e2818e12c74ef2": {
+"organ": "present"
+},
+"dj-1842ab6f33816f41": {
+"flute": "absent",
+"saxophone": "absent",
+"synthesizer": "present",
+"violin": "absent"
+},
+"dj-187d3d08bdc387ff": {
+"organ": "present"
+},
+"dj-18b5e57cb36980c4": {
+"bass": "absent",
+"ukulele": "present"
+},
+"dj-19cb4c5dde0a0db3": {
+"cymbals": "absent",
+"synthesizer": "present"
+},
+"dj-1a798ea0004e526e": {
+"ukulele": "absent"
+},
+"dj-1a7ff658df7f10bb": {
+"saxophone": "present",
+"synthesizer": "absent"
+},
+"dj-1acb7c96214e4ea5": {
+"trombone": "absent",
+"trumpet": "present"
+},
+"dj-1c36cca88018b249": {
+"accordion": "absent",
+"guitar": "present",
+"organ": "absent"
+},
+"dj-1ca7749294490156": {
+"bass": "absent",
+"flute": "absent",
+"mallet_percussion": "absent"
+},
+"dj-1cbacfdf116c52d7": {
+"cello": "absent",
+"cymbals": "present"
+},
+"dj-1d004369e20e2cb6": {
+"piano": "present",
+"saxophone": "absent",
+"trumpet": "absent",
+"voice": "present"
+},
+"dj-1d13b5ed517ed362": {
+"clarinet": "present",
+"saxophone": "present",
+"trombone": "absent"
+},
+"dj-1d89388acd6a0bb3": {
+"banjo": "present",
+"mandolin": "absent",
+"ukulele": "present"
+},
+"dj-1ddafb64a829130a": {
+"accordion": "absent"
+},
+"dj-1e12a44eccf04f37": {
+"bass": "absent"
+},
+"dj-1e1e6d04911b57af": {
+"voice": "present"
+},
+"dj-1fdca8ecc43e3f43": {
+"bass": "absent"
+},
+"dj-200354ce293991e3": {
+"drums": "absent",
+"ukulele": "absent",
+"violin": "present"
+},
+"dj-2063b211aa805dd5": {
+"banjo": "present",
+"mandolin": "absent",
+"ukulele": "absent"
+},
+"dj-20f1f7ed88f0eaa5": {
+"banjo": "absent",
+"mandolin": "absent"
+},
+"dj-2142a41ad0855514": {
+"drums": "present",
+"organ": "absent",
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-216ec643b6ee8f20": {
+"accordion": "present"
+},
+"dj-225ba1c327e63f21": {
+"synthesizer": "present"
+},
+"dj-23f540012404cc0d": {
+"banjo": "absent",
+"saxophone": "present",
+"trombone": "absent",
+"ukulele": "absent"
+},
+"dj-25e2eac603f0402e": {
+"banjo": "absent",
+"bass": "absent",
+"mandolin": "absent"
+},
+"dj-25e7ea4e7d93d3db": {
+"drums": "absent"
+},
+"dj-26080fe7250964c5": {
+"clarinet": "absent",
+"guitar": "present",
+"organ": "absent",
+"saxophone": "absent"
+},
+"dj-2686088ba2e80d66": {
+"cymbals": "present",
+"drums": "present",
+"mandolin": "absent",
+"trumpet": "absent",
+"ukulele": "absent"
+},
+"dj-28829dbcdddb45d2": {
+"organ": "absent"
+},
+"dj-28965bcc52d7ef68": {
+"flute": "present",
+"organ": "absent"
+},
+"dj-28f766dd5c21e082": {
+"mandolin": "present",
+"ukulele": "present"
+},
+"dj-294b40f4a0366c3e": {
+"saxophone": "present"
+},
+"dj-299c3141d46655f4": {
+"saxophone": "absent",
+"trombone": "absent"
+},
+"dj-29e3ac89623cf10d": {
+"flute": "absent"
+},
+"dj-29f88230c1e9be4a": {
+"drums": "absent",
+"piano": "present"
+},
+"dj-2a0c8da7986e3200": {
+"saxophone": "present"
+},
+"dj-2add5d0d9010cc33": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-2aebd4531c301426": {
+"mallet_percussion": "present"
+},
+"dj-2af8c70cd0b55ea5": {
+"accordion": "absent",
+"cymbals": "present",
+"drums": "present",
+"trombone": "absent",
+"ukulele": "absent"
+},
+"dj-2b3a8e23ba1e4b7a": {
+"mallet_percussion": "absent",
+"mandolin": "absent",
+"synthesizer": "present",
+"voice": "absent"
+},
+"dj-2c34ad33d8e70214": {
+"banjo": "absent"
+},
+"dj-2c9767cfcaee3e52": {
+"banjo": "absent",
+"mandolin": "absent"
+},
+"dj-2d854b409607bb83": {
+"flute": "absent"
+},
+"dj-2de70c58c59a6632": {
+"banjo": "absent",
+"mandolin": "absent"
+},
+"dj-2ea3aed76322c295": {
+"banjo": "absent"
+},
+"dj-2f1ffcc60ef156ab": {
+"drums": "present",
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-2fdb31e8a6b99ef5": {
+"flute": "present"
+},
+"dj-306268b3da17275e": {
+"mandolin": "absent",
+"voice": "present"
+},
+"dj-31f25b266782b52c": {
+"synthesizer": "present"
+},
+"dj-33645c5c3d1f941b": {
+"accordion": "absent",
+"guitar": "absent"
+},
+"dj-33974d49f2d782b3": {
+"flute": "absent"
+},
+"dj-345cafe378c108f1": {
+"saxophone": "absent"
+},
+"dj-3476a6b32b0ddd4c": {
+"flute": "absent",
+"guitar": "absent"
+},
+"dj-34e7b37d1417fbb5": {
+"drums": "present",
+"violin": "absent"
+},
+"dj-355e0ff62c89dae4": {
+"accordion": "absent",
+"organ": "absent"
+},
+"dj-3873dc1152e1b089": {
+"saxophone": "present",
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-39ca1ec3a6cd3c9f": {
+"clarinet": "absent",
+"organ": "present"
+},
+"dj-3a3bf5a38ff57c1a": {
+"banjo": "absent",
+"mandolin": "present",
+"ukulele": "absent"
+},
+"dj-3cb71858bed3819d": {
+"banjo": "absent",
+"organ": "present"
+},
+"dj-3d58a1f8a680a1c0": {
+"organ": "absent"
+},
+"dj-3e1ed028e41c1869": {
+"flute": "absent",
+"mallet_percussion": "absent"
+},
+"dj-3e3d72e4aa3f5513": {
+"saxophone": "present",
+"trombone": "present",
+"trumpet": "present"
+},
+"dj-3e6ccf17136494c4": {
+"accordion": "absent",
+"clarinet": "present",
+"saxophone": "present",
+"trumpet": "present"
+},
+"dj-3e840a7803d09d64": {
+"accordion": "present"
+},
+"dj-3eda1565f8543ca0": {
+"banjo": "absent"
+},
+"dj-3f43c834ffd1a556": {
+"cello": "absent",
+"cymbals": "present",
+"piano": "absent"
+},
+"dj-3fc663c6295d79ef": {
+"cymbals": "present",
+"drums": "present",
+"trombone": "absent",
+"trumpet": "absent",
+"violin": "absent"
+},
+"dj-3fe88c97c6e4819e": {
+"organ": "present"
+},
+"dj-401025a3c254432a": {
+"guitar": "present",
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-40467286108ad1dc": {
+"organ": "absent"
+},
+"dj-404c21998aaefd39": {
+"trombone": "absent",
+"trumpet": "present"
+},
+"dj-4083feea7f7072c3": {
+"mallet_percussion": "absent"
+},
+"dj-4156ebb4e5a71e3f": {
+"accordion": "absent",
+"violin": "absent"
+},
+"dj-4171d07f02b77f84": {
+"accordion": "absent",
+"guitar": "present",
+"trombone": "absent",
+"voice": "absent"
+},
+"dj-43308fd6345b0fcd": {
+"accordion": "absent"
+},
+"dj-43f42e133d3595b8": {
+"cello": "absent",
+"guitar": "present",
+"trumpet": "absent"
+},
+"dj-451f37e250fad861": {
+"accordion": "present",
+"bass": "absent"
+},
+"dj-45d2f9d929591ad6": {
+"trombone": "absent"
+},
+"dj-46134346e28ea63b": {
+"accordion": "absent",
+"bass": "absent"
+},
+"dj-46f09a2f9c54969e": {
+"cymbals": "present"
+},
+"dj-470f3479defe0037": {
+"cello": "present"
+},
+"dj-475da06e63da84b3": {
+"cymbals": "present"
+},
+"dj-4769686f3baf44bc": {
+"cymbals": "present",
+"flute": "present",
+"violin": "absent"
+},
+"dj-47ab12f1b60303c4": {
+"banjo": "present",
+"mandolin": "present",
+"ukulele": "absent"
+},
+"dj-48ae4f3d2b51ff9d": {
+"cello": "present"
+},
+"dj-48f6eafb9a99b8d6": {
+"mallet_percussion": "present"
+},
+"dj-492f2ea9dabc5970": {
+"bass": "present"
+},
+"dj-497b66806d2c0160": {
+"mallet_percussion": "absent",
+"trombone": "absent",
+"trumpet": "absent",
+"voice": "absent"
+},
+"dj-4a1b44694e2057b3": {
+"accordion": "absent",
+"banjo": "absent",
+"synthesizer": "present"
+},
+"dj-4a25a2a2c0a28835": {
+"banjo": "present",
+"mandolin": "present",
+"ukulele": "absent"
+},
+"dj-4b51229520995be4": {
+"bass": "absent",
+"clarinet": "absent",
+"flute": "absent",
+"trumpet": "absent"
+},
+"dj-4bba5de4703f1c5d": {
+"synthesizer": "absent",
+"voice": "present"
+},
+"dj-4c7b8cdb9b8be284": {
+"bass": "absent",
+"cello": "absent"
+},
+"dj-4cba0d7ebc3dbeca": {
+"guitar": "absent",
+"violin": "present"
+},
+"dj-4cd582703e98196a": {
+"mallet_percussion": "present",
+"saxophone": "present"
+},
+"dj-4ce6f4dc436633f5": {
+"flute": "present",
+"mallet_percussion": "present"
+},
+"dj-4e5019e20fcd9344": {
+"cello": "present",
+"organ": "present"
+},
+"dj-4e975d8ed6f2e5dd": {
+"accordion": "absent"
+},
+"dj-4f1be4af6b75b510": {
+"ukulele": "present"
+},
+"dj-4fbc73a475e309b9": {
+"drums": "present",
+"organ": "absent",
+"saxophone": "absent"
+},
+"dj-5042ec944cbf0dbf": {
+"cymbals": "present"
+},
+"dj-509de0f811e970a9": {
+"piano": "present"
+},
+"dj-50d24f7ff23193b2": {
+"mallet_percussion": "present",
+"piano": "present"
+},
+"dj-5172492c2cec9bd1": {
+"cymbals": "present",
+"drums": "present"
+},
+"dj-519c3af558778ba6": {
+"flute": "absent"
+},
+"dj-51ce46722b2270f6": {
+"voice": "absent"
+},
+"dj-52ec5a2e316938c1": {
+"accordion": "present",
+"mallet_percussion": "absent"
+},
+"dj-533f78528f714d0a": {
+"cymbals": "present",
+"mallet_percussion": "absent",
+"mandolin": "absent",
+"trombone": "absent"
+},
+"dj-535a3975ee1051ec": {
+"mandolin": "absent",
+"ukulele": "absent"
+},
+"dj-54013ba37777b640": {
+"saxophone": "absent"
+},
+"dj-54becc4cf3fb81d0": {
+"flute": "absent"
+},
+"dj-54e7c48f44f613fd": {
+"bass": "present",
+"mandolin": "absent",
+"saxophone": "absent"
+},
+"dj-54fbf9ef7685f955": {
+"saxophone": "present"
+},
+"dj-57036ef4dc9add1a": {
+"mallet_percussion": "present"
+},
+"dj-572abeb26a1329e0": {
+"piano": "present"
+},
+"dj-5812fe26e143cc7f": {
+"bass": "absent"
+},
+"dj-58d2d6ccaef194e8": {
+"clarinet": "absent",
+"drums": "present",
+"mallet_percussion": "absent",
+"piano": "absent"
+},
+"dj-59ab72abcb57c49c": {
+"cymbals": "present"
+},
+"dj-59b3e9da5fbd4ed4": {
+"bass": "absent"
+},
+"dj-5a3e75c64e904521": {
+"flute": "absent"
+},
+"dj-5a4a797e5ec9e3f0": {
+"accordion": "absent",
+"cello": "absent",
+"cymbals": "present"
+},
+"dj-5ab3514171f69f9b": {
+"cello": "present",
+"drums": "absent",
+"violin": "absent"
+},
+"dj-5c7cdd8479b2e490": {
+"trombone": "absent",
+"trumpet": "absent",
+"violin": "present"
+},
+"dj-5ccde5cc94042a99": {
+"cello": "absent",
+"drums": "present"
+},
+"dj-5cfd34af06795217": {
+"trombone": "present",
+"trumpet": "present"
+},
+"dj-5d244f3ce8258918": {
+"trombone": "absent",
+"voice": "absent"
+},
+"dj-5ddc13731bd5cbbc": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-5e8f835c6d20ca9b": {
+"bass": "absent"
+},
+"dj-5eba7af3c3a0a211": {
+"organ": "absent"
+},
+"dj-61427d4820393812": {
+"bass": "absent",
+"trumpet": "present"
+},
+"dj-616035d0a642c730": {
+"drums": "absent",
+"voice": "present"
+},
+"dj-619d69c52f2dd934": {
+"clarinet": "present",
+"flute": "absent",
+"saxophone": "present",
+"trombone": "present",
+"trumpet": "present"
+},
+"dj-61a38fe53a947d0d": {
+"mandolin": "absent",
+"ukulele": "present"
+},
+"dj-624d0e72d3f2a716": {
+"cello": "present",
+"clarinet": "absent"
+},
+"dj-63f9b3abe6cefd38": {
+"banjo": "present",
+"mandolin": "absent"
+},
+"dj-642f6195ae3c580e": {
+"accordion": "absent",
+"cymbals": "present",
+"drums": "present",
+"mandolin": "absent"
+},
+"dj-66aa73421e4cf32a": {
+"banjo": "absent"
+},
+"dj-673538167d66c8ca": {
+"mallet_percussion": "absent"
+},
+"dj-67988feaa482a597": {
+"clarinet": "absent",
+"cymbals": "present",
+"flute": "absent"
+},
+"dj-6900eabec654700d": {
+"ukulele": "absent"
+},
+"dj-693eb21bc57a8de1": {
+"cymbals": "absent",
+"piano": "present",
+"violin": "absent"
+},
+"dj-6a8263d3c301cbc9": {
+"saxophone": "absent",
+"synthesizer": "absent"
+},
+"dj-6b97929e946b320b": {
+"cello": "present"
+},
+"dj-6bd7bc665078b308": {
+"clarinet": "absent",
+"flute": "present",
+"trumpet": "absent"
+},
+"dj-6bf5709e5ca779b7": {
+"banjo": "present",
+"ukulele": "present"
+},
+"dj-6c9e6cf819174ee1": {
+"clarinet": "absent",
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-6cf02b9051057f06": {
+"synthesizer": "present"
+},
+"dj-6ec9376b4b66cd77": {
+"synthesizer": "absent",
+"trumpet": "present"
+},
+"dj-6ed14904b3004841": {
+"drums": "absent",
+"organ": "absent",
+"saxophone": "absent",
+"violin": "absent"
+},
+"dj-6ee7a11d81338963": {
+"ukulele": "absent"
+},
+"dj-6f11ee2cbfdcd536": {
+"piano": "present"
+},
+"dj-707ff28d19a02e2b": {
+"bass": "absent",
+"violin": "present"
+},
+"dj-70a180187dc11f04": {
+"clarinet": "absent",
+"cymbals": "present",
+"piano": "absent"
+},
+"dj-70ab3d07910fe835": {
+"bass": "absent",
+"flute": "absent",
+"synthesizer": "present",
+"ukulele": "absent"
+},
+"dj-716a1e08a887b90f": {
+"clarinet": "absent",
+"saxophone": "absent"
+},
+"dj-725ccb0722c89bd5": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-741a8e54280e7f53": {
+"cello": "absent"
+},
+"dj-742188ca4f9b415e": {
+"clarinet": "absent",
+"saxophone": "present"
+},
+"dj-74fcfed6b1a23b69": {
+"bass": "absent",
+"mallet_percussion": "absent",
+"mandolin": "absent",
+"saxophone": "absent"
+},
+"dj-755bfc1b4e4c1ec9": {
+"banjo": "present"
+},
+"dj-756249602c0bb27f": {
+"cymbals": "present"
+},
+"dj-75ea0f92b6c6ee80": {
+"guitar": "absent",
+"synthesizer": "present"
+},
+"dj-762408f3d6892018": {
+"clarinet": "absent",
+"cymbals": "present"
+},
+"dj-765dc73c190e00b0": {
+"cello": "absent",
+"saxophone": "absent",
+"synthesizer": "present",
+"violin": "absent"
+},
+"dj-7759f3e48274c695": {
+"drums": "absent",
+"piano": "present"
+},
+"dj-77e04f600fc7e95a": {
+"mallet_percussion": "absent",
+"ukulele": "present"
+},
+"dj-78613a0af34a5ccc": {
+"guitar": "present",
+"trombone": "absent",
+"ukulele": "absent",
+"violin": "absent"
+},
+"dj-78bdbba847311a28": {
+"bass": "absent",
+"guitar": "present",
+"mandolin": "absent",
+"ukulele": "present"
+},
+"dj-78e372b7a7346f76": {
+"bass": "absent",
+"flute": "present"
+},
+"dj-793266738b492142": {
+"accordion": "absent"
+},
+"dj-79ff5b5e5bee7a30": {
+"bass": "present"
+},
+"dj-7a050f25b521097e": {
+"guitar": "present"
+},
+"dj-7a2a1faf91430a73": {
+"guitar": "present",
+"trombone": "absent"
+},
+"dj-7ae3cc2f3a57cdfe": {
+"guitar": "present"
+},
+"dj-7b3946e33a126ac2": {
+"drums": "present"
+},
+"dj-7b720456e0b7e52f": {
+"synthesizer": "present"
+},
+"dj-7bdb8d33a34140ae": {
+"trombone": "absent",
+"ukulele": "present"
+},
+"dj-7be5a49648fe4d5c": {
+"bass": "absent",
+"flute": "present"
+},
+"dj-7bf731bec3e20a57": {
+"mallet_percussion": "absent"
+},
+"dj-7c140e04042770b1": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-7d35a352fb21aa58": {
+"voice": "present"
+},
+"dj-7d8280bc22de9365": {
+"cello": "present"
+},
+"dj-7dab6b73328c6b9e": {
+"drums": "absent"
+},
+"dj-7ee8537fbb095483": {
+"banjo": "present",
+"mandolin": "absent"
+},
+"dj-7f2a20aea3b8b054": {
+"cello": "absent",
+"drums": "present",
+"mallet_percussion": "absent",
+"piano": "absent"
+},
+"dj-7fd100fc53aa0019": {
+"synthesizer": "present"
+},
+"dj-8088636250437cc5": {
+"ukulele": "absent"
+},
+"dj-80e658b21be5629c": {
+"guitar": "present"
+},
+"dj-811b41a510dc5ce1": {
+"cello": "absent"
+},
+"dj-82037282ee61bdc3": {
+"clarinet": "absent",
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-8247bf2f7bf08967": {
+"guitar": "absent",
+"mallet_percussion": "present"
+},
+"dj-824a040a17de33dc": {
+"trombone": "absent"
+},
+"dj-8395eb5a207fd1e8": {
+"cymbals": "present",
+"drums": "present",
+"mallet_percussion": "absent",
+"organ": "absent",
+"piano": "absent"
+},
+"dj-83b6fcdbf4df550f": {
+"bass": "absent"
+},
+"dj-848bbff445018b25": {
+"organ": "absent"
+},
+"dj-84b6cef9f7e8faea": {
+"banjo": "absent",
+"bass": "absent"
+},
+"dj-84ec5036e13baaeb": {
+"flute": "absent"
+},
+"dj-84edabe584a36513": {
+"organ": "present",
+"trumpet": "absent"
+},
+"dj-8621ae9fb80e1f27": {
+"clarinet": "absent",
+"cymbals": "present",
+"mandolin": "absent",
+"organ": "absent"
+},
+"dj-8721064e42882a04": {
+"drums": "present",
+"organ": "absent",
+"saxophone": "absent",
+"synthesizer": "present"
+},
+"dj-875ab8675217a0c8": {
+"clarinet": "absent",
+"saxophone": "present",
+"trombone": "present",
+"trumpet": "present"
+},
+"dj-875c8e2772e66543": {
+"clarinet": "absent",
+"trumpet": "absent"
+},
+"dj-885e2cb3f4868329": {
+"organ": "absent"
+},
+"dj-88bd5269232a6d71": {
+"cymbals": "present"
+},
+"dj-88fa43cc340a3c20": {
+"guitar": "present"
+},
+"dj-89f66fdba0577c8d": {
+"banjo": "absent",
+"mallet_percussion": "absent",
+"mandolin": "present"
+},
+"dj-8a0baec7775bb7b8": {
+"cello": "absent"
+},
+"dj-8a4d8782ab72668d": {
+"organ": "present",
+"violin": "absent"
+},
+"dj-8acb9a5e0e7d4555": {
+"accordion": "present",
+"guitar": "absent"
+},
+"dj-8bbb29869afb75ad": {
+"bass": "absent",
+"mallet_percussion": "absent",
+"violin": "absent",
+"voice": "absent"
+},
+"dj-8c0e66489421aa68": {
+"mandolin": "present",
+"synthesizer": "absent",
+"ukulele": "present"
+},
+"dj-8d215d4e0c0e98b1": {
+"bass": "absent",
+"cymbals": "absent"
+},
+"dj-8d41ce138a170b9f": {
+"voice": "present"
+},
+"dj-8de44e2d7b640797": {
+"drums": "absent",
+"piano": "present"
+},
+"dj-8df43d954bb30522": {
+"trombone": "present"
+},
+"dj-8ead16df869c0341": {
+"organ": "absent"
+},
+"dj-8ee3fb555d5d6d4e": {
+"flute": "absent"
+},
+"dj-8f148bba457ec132": {
+"banjo": "absent",
+"organ": "absent",
+"trombone": "absent",
+"trumpet": "absent",
+"voice": "absent"
+},
+"dj-8f364a11b00b41fe": {
+"accordion": "absent",
+"clarinet": "absent",
+"saxophone": "present"
+},
+"dj-8f97987c905e1071": {
+"violin": "present"
+},
+"dj-8fd9b20e4faf2e34": {
+"drums": "present"
+},
+"dj-8fdc1072a6ed6116": {
+"trumpet": "absent"
+},
+"dj-8ff3f66aef03c810": {
+"banjo": "absent",
+"bass": "absent",
+"violin": "absent"
+},
+"dj-8ffbcdd1a149c29e": {
+"clarinet": "absent",
+"synthesizer": "present"
+},
+"dj-91b2c0ff149bbd84": {
+"cymbals": "present"
+},
+"dj-92004cf2c8aafc48": {
+"bass": "absent",
+"ukulele": "absent"
+},
+"dj-92c40f319cd159b4": {
+"accordion": "absent",
+"clarinet": "absent",
+"cymbals": "present",
+"synthesizer": "absent"
+},
+"dj-932d2abe88b28e57": {
+"clarinet": "absent",
+"cymbals": "present",
+"mandolin": "absent",
+"violin": "absent"
+},
+"dj-9375eb590dacf874": {
+"drums": "absent",
+"trumpet": "absent"
+},
+"dj-93ce75e0c1bcd04f": {
+"organ": "absent"
+},
+"dj-955994812317404c": {
+"banjo": "absent"
+},
+"dj-969da04facfd368b": {
+"synthesizer": "absent",
+"voice": "present"
+},
+"dj-975c3f1a0cd15435": {
+"accordion": "absent",
+"violin": "present"
+},
+"dj-976b117f64342dfd": {
+"cello": "absent",
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-9770081a1a69dc8d": {
+"guitar": "absent",
+"trumpet": "absent"
+},
+"dj-977bec143573ffe7": {
+"cello": "absent",
+"clarinet": "absent",
+"flute": "absent",
+"saxophone": "absent"
+},
+"dj-990391497767712d": {
+"cello": "absent"
+},
+"dj-99dfe233b01bf0ce": {
+"clarinet": "present",
+"saxophone": "present"
+},
+"dj-9a5307a892507abf": {
+"voice": "present"
+},
+"dj-9a606c2c15392bd2": {
+"bass": "absent",
+"trumpet": "absent"
+},
+"dj-9ab61eb978aec9d3": {
+"accordion": "absent"
+},
+"dj-9b960b62f8f6902e": {
+"voice": "present"
+},
+"dj-9bd42340faed2631": {
+"mallet_percussion": "absent"
+},
+"dj-9bedb9094b408519": {
+"trumpet": "absent"
+},
+"dj-9bf0a2d4caf0d90a": {
+"cymbals": "present"
+},
+"dj-9c570dd7023e8475": {
+"accordion": "absent",
+"cymbals": "absent",
+"guitar": "present",
+"synthesizer": "absent"
+},
+"dj-9df01f8748b2db3c": {
+"bass": "absent"
+},
+"dj-9ea1de0c8aba5d6c": {
+"saxophone": "absent"
+},
+"dj-9ec3282e67e3f46b": {
+"organ": "absent"
+},
+"dj-9ee03de1b7462b93": {
+"organ": "present"
+},
+"dj-9eeb6001871ccb9b": {
+"cymbals": "present",
+"drums": "present"
+},
+"dj-a1c1fbfc16b7f9ad": {
+"accordion": "absent"
+},
+"dj-a1c61b4b7ad434a8": {
+"organ": "absent"
+},
+"dj-a29a88e0040eca1f": {
+"synthesizer": "present"
+},
+"dj-a2b3e9fa7c5f6ecc": {
+"cello": "absent"
+},
+"dj-a344756000a7980f": {
+"flute": "absent"
+},
+"dj-a4bac95ec0a9ac54": {
+"banjo": "present",
+"mandolin": "present",
+"ukulele": "present"
+},
+"dj-a4ed0461911ed7f5": {
+"saxophone": "present"
+},
+"dj-a55836c27434762c": {
+"voice": "present"
+},
+"dj-a560b641d4ecd3b9": {
+"piano": "present"
+},
+"dj-a59afe634bea2ee9": {
+"cello": "present"
+},
+"dj-a5f5127ef41dce71": {
+"flute": "absent"
+},
+"dj-a7156d56d238a07b": {
+"drums": "absent",
+"piano": "present"
+},
+"dj-a73d8869f15c516d": {
+"cymbals": "present",
+"voice": "present"
+},
+"dj-a7993ceb6f331663": {
+"drums": "present",
+"organ": "absent",
+"trumpet": "absent",
+"violin": "absent"
+},
+"dj-a7994a2930e5af50": {
+"synthesizer": "absent",
+"ukulele": "absent"
+},
+"dj-a8385b8dcdd257c8": {
+"ukulele": "absent",
+"violin": "absent"
+},
+"dj-a83f943a8b5e8b0d": {
+"bass": "absent",
+"clarinet": "absent",
+"organ": "absent",
+"trumpet": "present",
+"violin": "absent"
+},
+"dj-a88d5e454128c86f": {
+"guitar": "present",
+"saxophone": "absent",
+"synthesizer": "absent"
+},
+"dj-a9648069435fdd5c": {
+"guitar": "present"
+},
+"dj-a97ef91cc9a5369d": {
+"clarinet": "absent",
+"flute": "absent",
+"saxophone": "present",
+"trumpet": "present"
+},
+"dj-aa7150e702f5eafc": {
+"cello": "absent",
+"clarinet": "present",
+"saxophone": "absent"
+},
+"dj-ab0b5b99664b4c4a": {
+"accordion": "absent",
+"synthesizer": "present"
+},
+"dj-ab364a328830fd4b": {
+"guitar": "absent",
+"synthesizer": "present"
+},
+"dj-ab545017e33efb34": {
+"drums": "present"
+},
+"dj-ac1a8d9fec7f7208": {
+"flute": "present"
+},
+"dj-ac49f85ee72f5bb5": {
+"synthesizer": "present"
+},
+"dj-ac82c131c2ac9586": {
+"banjo": "absent",
+"voice": "present"
+},
+"dj-ad414382a0277192": {
+"organ": "present"
+},
+"dj-ad76e9466e110918": {
+"cello": "absent",
+"cymbals": "present"
+},
+"dj-ad8e9cb67439cd62": {
+"violin": "present"
+},
+"dj-ae6eb74149ea42f6": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-ae74b8b828a8f78d": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-af36fa0acdeec873": {
+"saxophone": "present"
+},
+"dj-af4c070821734da7": {
+"bass": "absent"
+},
+"dj-af8ecf3988fcc444": {
+"banjo": "absent",
+"mandolin": "absent"
+},
+"dj-b147dc79349a163c": {
+"cymbals": "present"
+},
+"dj-b17831281bff4ab4": {
+"trombone": "present",
+"trumpet": "present"
+},
+"dj-b18fca14c412ea3e": {
+"guitar": "present"
+},
+"dj-b2868d5b01ce083b": {
+"piano": "absent",
+"trombone": "absent",
+"trumpet": "absent",
+"voice": "present"
+},
+"dj-b2c27ae9b40770aa": {
+"clarinet": "absent",
+"mallet_percussion": "present",
+"saxophone": "absent"
+},
+"dj-b2f93976180c95a1": {
+"organ": "absent"
+},
+"dj-b35275cf38e4e39a": {
+"ukulele": "present"
+},
+"dj-b3b4b44f7315b368": {
+"drums": "present"
+},
+"dj-b45c438580c55c14": {
+"clarinet": "absent",
+"cymbals": "present",
+"mandolin": "absent",
+"violin": "absent"
+},
+"dj-b4851752d02d65d3": {
+"cello": "present",
+"violin": "present"
+},
+"dj-b4b952ccf8e1048f": {
+"banjo": "absent",
+"flute": "absent"
+},
+"dj-b4bfc5136c4c7aad": {
+"guitar": "present",
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-b5687cee3af1f4fd": {
+"drums": "absent"
+},
+"dj-b5a07c8804ab710c": {
+"piano": "present"
+},
+"dj-b679099bbfcfe4d1": {
+"mandolin": "absent",
+"synthesizer": "present"
+},
+"dj-b6c96d9a3d7c1cdd": {
+"mandolin": "present",
+"ukulele": "present"
+},
+"dj-b759f97205513459": {
+"saxophone": "absent"
+},
+"dj-b7a4cc6bf9de7274": {
+"piano": "present"
+},
+"dj-b7e673db0679fafb": {
+"bass": "present",
+"organ": "absent",
+"saxophone": "absent"
+},
+"dj-b835ec85534b91a3": {
+"organ": "present",
+"ukulele": "absent",
+"violin": "absent"
+},
+"dj-b841fe8e672c2a71": {
+"bass": "absent"
+},
+"dj-b8914d053fdc4b1b": {
+"drums": "present",
+"mallet_percussion": "absent",
+"synthesizer": "absent",
+"violin": "absent"
+},
+"dj-b8e42b32340a0cf0": {
+"bass": "present"
+},
+"dj-b97e4c56cb17591c": {
+"voice": "present"
+},
+"dj-b995f5bf8897f74e": {
+"voice": "present"
+},
+"dj-b9a7aac5213c9d1f": {
+"bass": "absent",
+"clarinet": "absent",
+"flute": "absent",
+"guitar": "absent",
+"trumpet": "absent"
+},
+"dj-b9aad63a76662aaa": {
+"piano": "present"
+},
+"dj-b9fe62c8f6991abe": {
+"accordion": "absent",
+"guitar": "present"
+},
+"dj-ba1081b150c59028": {
+"cello": "present",
+"saxophone": "present",
+"violin": "present"
+},
+"dj-ba11966241e23423": {
+"accordion": "absent",
+"organ": "present",
+"ukulele": "absent"
+},
+"dj-ba4067612964a3dc": {
+"accordion": "absent",
+"bass": "absent",
+"cello": "absent",
+"clarinet": "absent"
+},
+"dj-ba9343d2f17d84c9": {
+"accordion": "absent"
+},
+"dj-bb0edb43bde07c21": {
+"bass": "absent",
+"cello": "present"
+},
+"dj-bb105f616d241105": {
+"mandolin": "present",
+"ukulele": "present"
+},
+"dj-bb176e4247c44adc": {
+"banjo": "absent",
+"flute": "absent"
+},
+"dj-bb9af5e340e81a4f": {
+"organ": "present",
+"trombone": "absent",
+"ukulele": "absent"
+},
+"dj-bbbb7180e6449dd9": {
+"cymbals": "present"
+},
+"dj-bc84d68e4f0f1f28": {
+"accordion": "absent"
+},
+"dj-bccd4ad8f8daa5d2": {
+"clarinet": "absent",
+"flute": "absent"
+},
+"dj-bd8c13bb62939efd": {
+"cymbals": "present"
+},
+"dj-bebb7878dfd89c2e": {
+"cello": "absent",
+"drums": "absent",
+"piano": "absent"
+},
+"dj-bef5065938ecd596": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-bf8d53b55ab4d8e8": {
+"mallet_percussion": "present",
+"mandolin": "absent",
+"ukulele": "present"
+},
+"dj-c05c921696b4c447": {
+"banjo": "absent"
+},
+"dj-c1bd6e8ffa13a781": {
+"banjo": "present",
+"drums": "absent",
+"mandolin": "present"
+},
+"dj-c1ceac143da01c8f": {
+"flute": "present"
+},
+"dj-c1d979a3729458f6": {
+"flute": "present"
+},
+"dj-c1e01a3d3a1e53a4": {
+"saxophone": "absent"
+},
+"dj-c257318759b50b4f": {
+"piano": "present"
+},
+"dj-c26a67fe38a6c754": {
+"banjo": "present",
+"mandolin": "absent"
+},
+"dj-c293275627286f7b": {
+"clarinet": "absent",
+"cymbals": "present",
+"drums": "present",
+"ukulele": "absent"
+},
+"dj-c369f8b41b209e74": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-c41c3b8a109b33c7": {
+"bass": "absent",
+"flute": "absent"
+},
+"dj-c42826ef1057e213": {
+"mandolin": "absent",
+"ukulele": "absent"
+},
+"dj-c43294147cb496f2": {
+"flute": "present"
+},
+"dj-c44ba16aa3c09014": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-c4961e8a12286634": {
+"organ": "present"
+},
+"dj-c5df7bad69c6d7eb": {
+"drums": "absent",
+"mandolin": "present",
+"trombone": "absent"
+},
+"dj-c61c0d1c33a44d38": {
+"drums": "absent"
+},
+"dj-c6b2ffafcdedda0f": {
+"saxophone": "absent"
+},
+"dj-c6f26f219e536fa1": {
+"cymbals": "absent"
+},
+"dj-c71680759eb96fab": {
+"drums": "absent",
+"guitar": "present",
+"piano": "absent",
+"voice": "absent"
+},
+"dj-c74ca44d0de5a35a": {
+"banjo": "absent",
+"clarinet": "absent",
+"cymbals": "present",
+"synthesizer": "absent"
+},
+"dj-c7ba099dea5ed0d6": {
+"trombone": "absent",
+"trumpet": "present"
+},
+"dj-c7e963fc858d17fc": {
+"drums": "absent"
+},
+"dj-c909ed31db3b185a": {
+"voice": "present"
+},
+"dj-c943a5c82716ada1": {
+"drums": "absent"
+},
+"dj-c977d3d51dbc6e75": {
+"banjo": "absent",
+"synthesizer": "present"
+},
+"dj-c9bae7f6b9c8f03a": {
+"voice": "present"
+},
+"dj-c9cc48f789c30542": {
+"synthesizer": "present"
+},
+"dj-cd44df85c38f9b8c": {
+"bass": "present"
+},
+"dj-cdfe28f1546e4a92": {
+"flute": "absent"
+},
+"dj-ce4d00ddda634908": {
+"cello": "absent",
+"guitar": "absent",
+"synthesizer": "present",
+"voice": "present"
+},
+"dj-cf484504a69d39b3": {
+"violin": "present"
+},
+"dj-cfced64e3f601f90": {
+"cymbals": "present"
+},
+"dj-d02a6c4284ecab84": {
+"drums": "absent",
+"guitar": "present",
+"mallet_percussion": "absent",
+"trumpet": "absent"
+},
+"dj-d07f528bcc8abaca": {
+"banjo": "absent",
+"cello": "absent"
+},
+"dj-d0a72005e0cb7881": {
+"cymbals": "present",
+"drums": "present",
+"guitar": "present",
+"organ": "absent",
+"piano": "absent"
+},
+"dj-d1274d637cd8b65c": {
+"cymbals": "present"
+},
+"dj-d1360bacdbda9184": {
+"flute": "absent"
+},
+"dj-d157ea6737b8f0c8": {
+"organ": "present"
+},
+"dj-d1c61f5efef7cc67": {
+"saxophone": "absent"
+},
+"dj-d28455d4e9b47864": {
+"flute": "absent"
+},
+"dj-d2aa9cf566b63d2c": {
+"banjo": "present",
+"mandolin": "present",
+"ukulele": "present"
+},
+"dj-d4103dff2d16a716": {
+"trombone": "absent"
+},
+"dj-d4e4ff8775056a11": {
+"banjo": "absent"
+},
+"dj-d567d697044d648e": {
+"banjo": "absent"
+},
+"dj-d64e96d86307a5e0": {
+"banjo": "absent",
+"synthesizer": "present",
+"trombone": "absent",
+"ukulele": "absent"
+},
+"dj-d65bd38a1844b454": {
+"saxophone": "absent",
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-d6f95f69e65a60e9": {
+"accordion": "absent",
+"banjo": "present",
+"mandolin": "present",
+"ukulele": "absent"
+},
+"dj-d72c2023ce8eba53": {
+"accordion": "present",
+"organ": "absent",
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-d87a3d434d99a9f8": {
+"bass": "present",
+"cello": "absent"
+},
+"dj-d8f410918ca38dde": {
+"saxophone": "absent"
+},
+"dj-d92ba71f568a7315": {
+"mallet_percussion": "absent"
+},
+"dj-da29ff0cac7fc691": {
+"drums": "present",
+"guitar": "absent",
+"saxophone": "absent",
+"violin": "absent"
+},
+"dj-dcf0c935df0ff3e4": {
+"accordion": "absent",
+"banjo": "absent",
+"clarinet": "absent",
+"flute": "absent"
+},
+"dj-ddb7cd321262bdca": {
+"clarinet": "present",
+"flute": "absent",
+"saxophone": "present"
+},
+"dj-ddee1312d1b772d9": {
+"mallet_percussion": "absent",
+"piano": "present"
+},
+"dj-de393937e0a53a62": {
+"cello": "absent"
+},
+"dj-de9853ad2c92bb95": {
+"accordion": "absent"
+},
+"dj-de9ea906c5ed0e9c": {
+"guitar": "present",
+"synthesizer": "absent"
+},
+"dj-debe0c4684ace08c": {
+"organ": "present"
+},
+"dj-defc0eb680f40ebb": {
+"accordion": "absent"
+},
+"dj-df14be49d7eb8b5b": {
+"piano": "present"
+},
+"dj-e0b57d36412e1ee0": {
+"cello": "present",
+"clarinet": "absent",
+"saxophone": "present"
+},
+"dj-e137f007356ab5cb": {
+"cymbals": "present"
+},
+"dj-e19da5258312ac42": {
+"synthesizer": "absent"
+},
+"dj-e1dd9cea497df275": {
+"organ": "absent",
+"synthesizer": "present"
+},
+"dj-e3e6fd43ee83e138": {
+"mandolin": "present",
+"ukulele": "present"
+},
+"dj-e400d25b3074c296": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-e478486a9253ea41": {
+"bass": "absent",
+"cello": "absent",
+"clarinet": "present"
+},
+"dj-e51cb0443a4ce1ab": {
+"mandolin": "present",
+"ukulele": "present"
+},
+"dj-e5f34970591265a6": {
+"trombone": "absent",
+"trumpet": "absent"
+},
+"dj-e647f9183cc544a2": {
+"cello": "absent",
+"piano": "present"
+},
+"dj-e6784e44a0e370a0": {
+"accordion": "present",
+"mandolin": "absent"
+},
+"dj-e6a243467ce46cfd": {
+"banjo": "present",
+"mandolin": "present",
+"ukulele": "absent"
+},
+"dj-e81d6592801cc2eb": {
+"organ": "absent"
+},
+"dj-e8778ea7973e0f92": {
+"banjo": "absent"
+},
+"dj-e89bc678dc43d96d": {
+"accordion": "absent"
+},
+"dj-e8bdda9376e7175f": {
+"accordion": "absent",
+"cello": "absent",
+"cymbals": "absent",
+"ukulele": "absent"
+},
+"dj-e982f785171c2798": {
+"cymbals": "present"
+},
+"dj-e985db36f23090aa": {
+"mandolin": "absent",
+"ukulele": "absent"
+},
+"dj-e9e3c07f578442ed": {
+"banjo": "absent"
+},
+"dj-eac77a9ba561afe5": {
+"voice": "present"
+},
+"dj-eb1307d1c314c737": {
+"clarinet": "absent",
+"cymbals": "present",
+"trumpet": "absent"
+},
+"dj-ec69afba7fb138c7": {
+"mandolin": "present",
+"ukulele": "present"
+},
+"dj-ecdc09ce9a96dbec": {
+"organ": "present",
+"trombone": "present",
+"trumpet": "present"
+},
+"dj-ecdd39451c26dbaf": {
+"piano": "present"
+},
+"dj-ed94e02d0a4920b4": {
+"mandolin": "absent",
+"synthesizer": "present"
+},
+"dj-edc51a7286a7fafc": {
+"mallet_percussion": "present"
+},
+"dj-ee80ddbdcea94716": {
+"bass": "present"
+},
+"dj-ee9fa39f7eb4d468": {
+"clarinet": "absent",
+"guitar": "present",
+"piano": "absent",
+"violin": "absent"
+},
+"dj-ef1706eb6bce0562": {
+"bass": "absent",
+"cello": "absent",
+"cymbals": "present",
+"drums": "present",
+"ukulele": "absent"
+},
+"dj-ef2aea05952dda1e": {
+"cymbals": "present"
+},
+"dj-f0e0edf9c6dd34d1": {
+"cymbals": "present"
+},
+"dj-f1193d6dfcea4210": {
+"bass": "absent",
+"flute": "absent",
+"trumpet": "absent"
+},
+"dj-f19d9f86a1890dbc": {
+"cello": "absent",
+"trombone": "absent"
+},
+"dj-f1abdbfc9c768b0f": {
+"accordion": "absent",
+"bass": "present",
+"saxophone": "absent"
+},
+"dj-f1bfb704a0216a28": {
+"trombone": "absent",
+"trumpet": "present"
+},
+"dj-f28aa310a956cf0e": {
+"flute": "present"
+},
+"dj-f33d6075e68b738c": {
+"banjo": "absent",
+"piano": "present"
+},
+"dj-f36d5b919fef2a27": {
+"cello": "absent"
+},
+"dj-f39acd3174017bf6": {
+"organ": "absent",
+"synthesizer": "present",
+"voice": "present"
+},
+"dj-f503e0a9cfa0eec0": {
+"drums": "present",
+"flute": "absent",
+"guitar": "absent",
+"piano": "absent"
+},
+"dj-f551311aa272180b": {
+"accordion": "absent",
+"clarinet": "absent"
+},
+"dj-f77803dc68929b1f": {
+"accordion": "absent",
+"clarinet": "absent",
+"drums": "present"
+},
+"dj-f788e4e1365e62c1": {
+"ukulele": "present"
+},
+"dj-f806397a044564ec": {
+"clarinet": "absent",
+"flute": "present"
+},
+"dj-f85b3f7795744858": {
+"flute": "present",
+"mandolin": "absent"
+},
+"dj-f939abe93775665d": {
+"trumpet": "absent"
+},
+"dj-f98ec2b4b3b9158e": {
+"synthesizer": "present"
+},
+"dj-f9d7f8ebcfb0e7f2": {
+"organ": "present"
+},
+"dj-f9da86f46dc69672": {
+"organ": "absent"
+},
+"dj-faa7fb3f8852d667": {
+"banjo": "present",
+"flute": "present",
+"mandolin": "absent"
+},
+"dj-fb40b8d084903f9e": {
+"banjo": "absent",
+"cello": "absent",
+"ukulele": "absent"
+},
+"dj-fbd7ca970b2f557b": {
+"banjo": "absent",
+"flute": "present"
+},
+"dj-fd7ec14c5a7859fb": {
+"flute": "absent"
+},
+"dj-fd994603890c5a0f": {
+"cello": "present",
+"clarinet": "present",
+"saxophone": "absent",
+"trombone": "absent"
+},
+"dj-ff0b46261965e5d1": {
+"trumpet": "absent",
+"violin": "absent"
+},
+"dj-ff2c58114589743f": {
+"organ": "present"
+},
+"dj-ffc6126df2a92051": {
+"mandolin": "present",
+"ukulele": "present"
+},
+"dj-ffdbc90dec85993d": {
+"mandolin": "present",
+"trombone": "absent",
+"ukulele": "present"
+},
+"dj-ffddb50bc4373937": {
+"cymbals": "present"
+}
+}
