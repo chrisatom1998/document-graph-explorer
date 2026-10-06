@@ -2,8 +2,8 @@
   * held-out precision AND recall >= 0.70 (the project target) -> normal head;
   * below that -> "maybe" head (still shown, faded), unless it is clearly not useful:
     held-out precision < 0.45 or recall < 0.30 -> left out;
-A label that already ships a normal head in learned.json is left alone. A label with a maybe head gets the new head
-only if it beats the current one on the SAME held-out clips (higher min(P, R), then higher F1).
+A label that already ships a head in learned.json gets the new one only if it beats the current head on the SAME
+held-out clips (higher min(P, R), then higher F1); a normal head is only ever replaced by one that reaches 70/70.
 New labels (labels.json "new") get a catalog entry on their own axis (dj-effect), so they do not change which
 existing label wins the dj-transition axis; add-prompts.mjs then gives them CLAP text vectors (on Actions).
 Re-pins learned.json in manifest.json, bumps the learned.json revision and the catalog version, and rewrites
@@ -28,14 +28,15 @@ for label, e in report.items():
     if P < 0.45 or R < 0.30: out.append({**row, 'shipped': False, 'why': 'held-out precision < 0.45 or recall < 0.30'}); continue
     full = min(P, R) >= 0.70
     current = [x for x in model['heads'] if x['label'] == label]
-    if any(not x.get('maybe') for x in current): out.append({**row, 'shipped': False, 'why': 'a normal head already ships'}); continue
+    if any(not x.get('maybe') for x in current) and not full:
+        out.append({**row, 'shipped': False, 'why': 'a normal head already ships and the new one is below 70/70'}); continue
     if current:
         cur = next((c for c in e.get('current', []) if c['file'] == 'learned.json'), None)
-        if not cur: out.append({**row, 'shipped': False, 'why': 'current maybe head was not scored on the same clips'}); continue
+        if not cur: out.append({**row, 'shipped': False, 'why': 'current head was not scored on the same clips'}); continue
         if key(P, R) <= key(cur['precision'], cur['recall']):
-            out.append({**row, 'shipped': False, 'why': f"current maybe head is as good on the same held-out clips (P {cur['precision']:.2f} R {cur['recall']:.2f})"}); continue
+            out.append({**row, 'shipped': False, 'why': f"current head is as good on the same held-out clips (P {cur['precision']:.2f} R {cur['recall']:.2f})"}); continue
         model['heads'] = [x for x in model['heads'] if x['label'] != label]
-        row['replaced'] = {'precision': cur['precision'], 'recall': cur['recall']}
+        row['replaced'] = {'tier': 'maybe' if cur['maybe'] else 'full', 'precision': cur['precision'], 'recall': cur['recall']}
     if (h['group'], label) not in cats:
         new = spec[label].get('new')
         if not new: out.append({**row, 'shipped': False, 'why': 'not in the catalog'}); continue
@@ -59,5 +60,5 @@ labels = sorted({x['label'] for f in (LEARNED, 'public/sound-model/short-clip.js
 open('src/audio/calibratedLabels.json', 'w').write(json.dumps(labels, indent=0) + '\n')
 json.dump({'kind': 'dj-effect-heads-shipped-v1', 'learnedRevision': model['revision'], 'learnedSha256': man['sha256']['learned.json'],
            'newCatalogLabels': added_cats, 'heads': out}, open(f'{D}/shipped.json', 'w'), indent=1)
-for r in out: print(f"{r['label']:<16}" + (f"{r['precision']:.2f}/{r['recall']:.2f} " if r.get('precision') is not None else '          ') + (f"SHIPPED {r['tier']}" + (' (replaces maybe head)' if r.get('replaced') else '') if r['shipped'] else f"no - {r['why']}"))
+for r in out: print(f"{r['label']:<16}" + (f"{r['precision']:.2f}/{r['recall']:.2f} " if r.get('precision') is not None else '          ') + (f"SHIPPED {r['tier']}" + (f" (replaces {r['replaced']['tier']} head: P {r['replaced']['precision']:.2f} R {r['replaced']['recall']:.2f})" if r.get('replaced') else '') if r['shipped'] else f"no - {r['why']}"))
 print(f"new catalog labels: {added_cats or 'none'}; learned.json now {len(model['heads'])} heads")
