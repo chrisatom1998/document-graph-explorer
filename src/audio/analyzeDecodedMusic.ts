@@ -119,7 +119,13 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     try {
       options.onProgress?.('Finding the intro, drops and breakdowns');
       const features = new StructureFeatures();
-      for (let start = 0; start < duration; start += 60) { check(); features.add(await decoder.read(start, Math.min(60, duration - start), STRUCTURE_RATE)); }
+      for (let start = 0; start < duration; start += 60) {
+        check();
+        const seconds = Math.min(60, duration - start), samples = await decoder.read(start, seconds, STRUCTURE_RATE);
+        // A short chunk would shift every later mix point earlier; drop the structure instead.
+        if (samples.length < Math.round(seconds * STRUCTURE_RATE) - 1) throw new Error('Audio could not be fully decoded');
+        features.add(samples);
+      }
       result.structure = detectStructure(features.blocks);
     } catch (error) {
       if (options.signal?.aborted) throw error;

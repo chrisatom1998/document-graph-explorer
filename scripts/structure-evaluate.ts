@@ -38,8 +38,9 @@ export function score(tracks: ReturnType<typeof loadSet>, params: StructureParam
   for (const t of tracks) {
     // Audio and labels can be offset by a different upload; a duration mismatch over 3 s is skipped.
     const s = detectStructure(t.blocks, params), gt = dropEntries(t.label);
+    predicted += s.drops.length;
     if (!gt.length) { noDropTracks++; if (s.drops.length) falseOnNoDrop++; continue; }
-    withDrop++; truth += gt.length; predicted += s.drops.length;
+    withDrop++; truth += gt.length;
     for (const d of gt) if (s.drops.some(p => Math.abs(p - d) <= 2)) tp++;
     const first = s.drops[0], middle = Math.max(0, t.duration / 2 - 5);
     if (inDrop(t.label, first !== undefined && first + 10 <= t.duration ? first : middle)) windowInDrop++;
