@@ -201,7 +201,7 @@ test('normal-motion navigation and title-only Unicode search work after import',
   await expect(panel).toContainText('Boundary node 0001', { timeout: 150_000 });
   await closeDetails(page);
   await page.getByRole('button', { name: 'Search documents' }).click();
-  await page.getByRole('combobox').fill('東京');
+  await page.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('東京');
   await page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /東京 計画/ }).click();
   await expect(panel).toContainText('東京 計画', { timeout: 150_000 });
   await closeDetails(page);
@@ -223,7 +223,8 @@ test('search ranks within file filters before applying its result limit', async 
   await advancedFilters(page);
   await page.getByRole('button', { name: 'md · 1', exact: true }).click();
   await page.getByRole('button', { name: 'Search documents' }).click();
-  await page.getByRole('combobox').fill('Architecture');
+  // The sidebar's Key, Genre and File type selects are comboboxes too; type into the search box.
+  await page.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('Architecture');
   await expect(page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /Architecture 13/ })).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Search documents' }).getByRole('option')).toHaveCount(1);
 });

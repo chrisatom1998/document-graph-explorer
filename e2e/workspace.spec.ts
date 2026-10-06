@@ -79,6 +79,11 @@ test('classic graph controls and music copilot work on desktop and mobile', asyn
   await page.screenshot({ path: testInfo.outputPath('workspace-copilot.png') });
   await page.getByRole('button', { name: 'Close chat', exact: true }).click();
 
+  // "Show samples in graph" leaves the Library tab up; look at the graph before
+  // switching views so the checks run against the visible canvas, not one under
+  // the Library overlay.
+  await openTab(page, 'Graph');
+  await expect(page.getByRole('button', { name: 'Graph', exact: true })).toHaveAttribute('aria-current', 'page');
   await page.getByRole('button', { name: 'Switch to 2D view', exact: true }).click();
   await expect(page.getByRole('application', { name: /Interactive 2D/ })).toBeVisible();
   await page.getByRole('button', { name: 'Switch to 3D view', exact: true }).click();
