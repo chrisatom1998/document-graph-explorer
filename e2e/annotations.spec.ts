@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { closeDetails, corpusCount, details } from './resonance';
 
 test('competing tabs retain committed notes and deletion versions when an older save retries', async ({ page, context }) => {
   // This checks persistence across two active tabs; software-rendering two
@@ -7,12 +8,10 @@ test('competing tabs retain committed notes and deletion versions when an older 
   await context.addInitScript(() => localStorage.setItem('knowledge-nebula-dims', '2'));
   await page.goto('/');
   await page.getByRole('button', { name: 'Load demo corpus' }).click();
-  await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents', { timeout: 270_000 });
+  await expect(corpusCount(page)).toContainText('100 files', { timeout: 270_000 });
   const restoredCount = async (tab: Page) => {
-    const back = tab.getByRole('button', { name: 'Back to graph', exact: true });
-    await expect(tab.locator('.graph-navigator__summary').or(back)).toBeVisible({ timeout: 150_000 });
-    if (await back.isVisible()) await back.click();
-    await expect(tab.locator('.graph-navigator__summary')).toContainText('100 documents', { timeout: 150_000 });
+    await expect(corpusCount(tab)).toContainText('100 files', { timeout: 150_000 });
+    await closeDetails(tab);
   };
   const openNote = async (tab: Page) => {
     const tour = tab.getByRole('button', { name: 'Dismiss getting started' });
@@ -20,7 +19,7 @@ test('competing tabs retain committed notes and deletion versions when an older 
     await tab.getByRole('button', { name: 'Search documents', exact: true }).click();
     await tab.getByRole('combobox').fill('Postgres Performance Tuning Guide');
     await tab.getByRole('option', { name: /^Postgres Performance Tuning Guide/ }).click();
-    await expect(tab.locator('.side-panel[role="dialog"]')).toBeVisible({ timeout: 150_000 });
+    await expect(details(tab)).toBeVisible({ timeout: 150_000 });
     await tab.getByRole('button', { name: 'About', exact: true }).click();
     await expect(tab.getByRole('textbox', { name: 'Document note' })).toBeVisible();
   };
