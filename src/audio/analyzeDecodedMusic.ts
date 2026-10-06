@@ -14,12 +14,15 @@ import { detectStructure, representativeStart, StructureFeatures, STRUCTURE_MAX_
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { musicRuntimeIdentity } from './musicRuntime';
+import { FullMixEvidence, type FullMixModel } from './fullMixHeads';
 import { computeVersionPrint, VERSION_PRINT_SAMPLE_RATE } from './versionPrint';
 import { astGpuAllowed, createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
   /** Qualification-only opt-in; callers must bind and validate the scorer. */
   fusion?: FusionScorer;
+  /** Pinned full-mix instrument heads (src/audio/fullMixHeads.ts); scored from the windows' existing model outputs. */
+  fullMix?: FullMixModel;
   /** Original input MIME, used only by an installed qualified-tier scorer. */
   sourceMime?: string;
   signal?: AbortSignal;
@@ -164,6 +167,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const embeddings: number[][] = [];
   const djEvidence = new DjTagEvidence();
   const eventEvidence = new EventWindowEvidence();
+  const fullMixEvidence = options.fullMix && mode === 'full' ? new FullMixEvidence(options.fullMix) : undefined;
   const completed = new Set<string>();
   const stopped = new Set<ModelId>();
   let eventPassFailed = false;
@@ -186,6 +190,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     const windowTags = djEvidence.results(), found = new Set(windowTags.map(t => `${t.group}:${t.label}`));
     const eventTags = eventEvidence.results().filter(h => !found.has(`${h.tag.group}:${h.tag.label}`)).map(h => ({ ...h.tag, segments: h.segments.slice(0, 3) }));
     mergeDjTags(result.soundProfile, [...windowTags, ...eventTags], descriptions.average());
+    const fullMix = fullMixEvidence?.results();
+    if (fullMix) result.fullMix = fullMix; else delete result.fullMix;
     const audioVector = meanEmbedding(embeddings);
     if (audioVector) result.embedding = audioVector; else delete result.embedding;
     for (const suggestion of jamendoSuggestions(music)) {
@@ -285,15 +291,17 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       if (id === 'ast') {
         const predictions = output as InstrumentPredictions;
         astEvidence.add(predictions.scores, interval.start, interval.end, predictions.musicScore);
+        fullMixEvidence?.add(interval.start, interval.end, { ast: predictions.scores });
         recordEvidence(recognition, id, interval, Object.entries(predictions.scores).filter(([,score]) => score >= .35)
           .map(([labelId,score]) => ({ dimension: 'source', labelId, score })));
       } else if (id === 'jamendo') {
         const scores = output as Record<string, number>;
         musicScores.add(scores);
+        fullMixEvidence?.add(interval.start, interval.end, { jamendo: scores });
         recordEvidence(recognition, id, interval, [...jamendoLabels(scores), ...nsynthLabels(scores)]);
       } else {
         const { scores, embedding } = splitEmbedding(output as DescriptionScore[]);
-        if (embedding) embeddings.push(embedding);
+        if (embedding) { embeddings.push(embedding); fullMixEvidence?.add(interval.start, interval.end, { clap: embedding }); }
         descriptions.add(scores);
         djEvidence.add(selectDjTags(scores), interval.start, interval.end);
         const selected = selectDescriptions(scores);

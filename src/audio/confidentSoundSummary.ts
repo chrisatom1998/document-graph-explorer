@@ -7,6 +7,7 @@ import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import calibratedLabelList from './calibratedLabels.json';
 import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
+import { FULL_MIX_FAMILY, FULL_MIX_REVISION } from './fullMixHeads';
 
 /** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
  * musicLinks), so a display change also changes which instrument links a track can form, by design. */
@@ -59,6 +60,10 @@ export const FULL_MIX_VOICE_VETO=.1;
 /** On recordings of at least one full window, these labels need a higher tested score than the track floor: their
  * false alarms on full mixes were measured the same way (scripts/dj-fix/calibrate.py). */
 export const FULL_MIX_MIN_TESTED_SCORE:Record<string,number>={trumpet:.5,cello:.55};
+/** Full-mix instrument heads (src/audio/fullMixHeads.ts), fitted on 10 s OpenMIC train windows and thresholded on
+ * artist-held-out folds. Their stored score maps each head's own threshold to the likely cutoff (0.5). */
+export const OPENMIC_HEAD_SCORE='Full-mix head score';
+TESTED_SCORES.add(OPENMIC_HEAD_SCORE);
 const nativeNames={ast:'AST score',jamendo:'Jamendo score',clap:'CLAP similarity',rhythm:'Tempo score',tonal:'Key score'};
 export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):DisplaySound[] {
   const result=new Map<string,DisplaySound>();
@@ -101,6 +106,9 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     if(audio.instrumentPrediction)estimate('source',audio.instrumentPrediction.label,audio.instrumentPrediction.score,audio.instrumentPrediction.model??'Instrument model');
     for(const model of audio.soundProfile?.models??[])for(const candidate of model.candidates)if(dimensionLabels.source.includes(candidate.label))estimate('source',candidate.label,candidate.score,model.model);
   }
+  // Only a complete sound scan: a partial one could hide (bass) evidence from windows the heads never scored.
+  const heads=fullMix&&FULL_MIX_REVISION&&audio.instrumentScan?.complete&&audio.fullMix?.revision===FULL_MIX_REVISION?audio.fullMix:undefined;
+  if(heads)for(const l of heads.labels)estimate('source',l.label,l.score,OPENMIC_HEAD_SCORE);
   // Profile tags carry their own source-specific display score. Bare character/source strings and AI drafts do not.
   const catalogClap=new Set<string>();
   for(const tag of audio.soundProfile?.djTags??[]){const dim:Dimension=tag.group==='source'?'source':tag.group==='character'?'character':'effect';if(tag.model==='Music CLAP')catalogClap.add(`${dim}:${canonical(dim,tag.label)}`);}
@@ -111,6 +119,10 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     const head=FULL_MIX_HEADS[d.label];
     if(fullMix&&head!==undefined&&w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6&&d.source!=='learned-head'&&typeof d.headProbability==='number'&&d.headProbability>=head)estimate('source',d.label,d.headProbability,FULL_MIX_HEAD_SCORE);
   }
+  // A head that replaces the other models for its instrument: only its own score stands for that instrument.
+  if(heads)for(const label of heads.decides)for(const name of FULL_MIX_FAMILY[label]??[label]){
+    const key=`source:${name}`,item=result.get(key);if(item?.origin!=='model estimate')continue;
+    const own=item.scores!.filter(x=>x.model===OPENMIC_HEAD_SCORE);if(own.length)item.scores=own;else result.delete(key);}
   const tiered=(s:DisplaySound,models:(m:string)=>boolean):DisplaySound=>({...s,tier:soundTier(Math.max(...s.scores!.filter(x=>models(x.model)).map(x=>x.score)))});
   const long=floor===TRACK_SOUND_FLOOR;
   const voiceHeads=fullMix&&fusion?.qualified?fusion.windows.filter(w=>w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6)
