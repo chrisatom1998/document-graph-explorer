@@ -51,7 +51,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        set: [beatport-tune, beatport-judge, jamendo-fit, jamendo-judge]
+        set: [jamendo-fit, jamendo-judge, beatport-judge]
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
       - uses: actions/checkout@v4

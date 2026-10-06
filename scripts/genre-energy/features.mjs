@@ -54,9 +54,11 @@ for (const [n, clip] of clips.entries()) {
   const duration = samples.length / 16000;
   row.seconds = +duration.toFixed(2);
   const at = start => samples.subarray(Math.round(start * 16000), Math.min(samples.length, Math.round((start + 10) * 16000)));
-  const full = [];
-  for (const start of instrumentWindowStarts(duration)) { const w = await window(at(start)); if (w) full.push(w); }
   const fast = await window(at(descriptionStarts(duration, 'fast')[0]));
+  // FAST_ONLY=1 skips the full-mode windows (quick local runs); the full fields then repeat the fast window.
+  const full = [];
+  if (process.env.FAST_ONLY === '1') { if (fast) full.push(fast); }
+  else for (const start of instrumentWindowStarts(duration)) { const w = await window(at(start)); if (w) full.push(w); }
   if (!full.length || !fast) { row.error = 'too short'; rows.push(row); continue; }
   row.windows = full.length;
   row.styles = round(average(full, w => w.styles));
