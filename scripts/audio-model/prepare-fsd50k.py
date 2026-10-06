@@ -35,11 +35,19 @@ def get(path):
             print(f'{path}: {type(e).__name__}, retry {attempt + 1}', flush=True); time.sleep(min(300, 15 * 2 ** attempt))
 
 def decode(split, fname, seconds):
-    p = get(f'clips/{split}/{fname}.wav')
-    pcm = subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', p, '-t', str(seconds), '-ac', '1', '-ar', '32000', '-f', 's16le', 'pipe:1'],
-                         capture_output=True, check=True).stdout
-    os.remove(os.path.realpath(p))   # keep the disk for the log-mels, not the 44.1 kHz originals
-    return np.frombuffer(pcm, np.int16)
+    # Identical clips share one Hub cache blob, so a sibling may have just deleted it, and a download can arrive damaged:
+    # fetch again once, then skip the clip (None) rather than lose hours of prep to one file.
+    for attempt in range(2):
+        try:
+            p = get(f'clips/{split}/{fname}.wav') if attempt == 0 else hf_hub_download(REPO, f'clips/{split}/{fname}.wav', repo_type='dataset', revision=REV, force_download=True)
+            pcm = subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', p, '-t', str(seconds), '-ac', '1', '-ar', '32000', '-f', 's16le', 'pipe:1'],
+                                 capture_output=True, check=True).stdout
+        except Exception as e:
+            print(f'{split}/{fname}: {type(e).__name__}' + (', fetching again' if attempt == 0 else ', skipped'), flush=True)
+            continue
+        try: os.remove(os.path.realpath(p))   # keep the disk for the log-mels, not the 44.1 kHz originals
+        except OSError: pass
+        return np.frombuffer(pcm, np.int16)
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--workers', type=int, default=32); ap.add_argument('--limit', type=int, default=0)
@@ -69,7 +77,10 @@ def main():
                     with torch.no_grad(): m = mel(torch.from_numpy(np.stack([x for _, x in batch]).astype(np.float32) / 32768))[:, :, :1000].numpy()
                     for (i, _), v in zip(batch, m): out[i] = v
                     batch.clear()
-                for i, (r, x) in enumerate(zip(kept, wavs)):
+                i = -1
+                for r, x in zip(kept, wavs):
+                    if x is None: continue
+                    i += 1
                     batch.append((i, np.pad(x[:320000], (0, 320000 - min(len(x), 320000)))))
                     up = info.get(r['fname'], {}).get('uploader', r['fname'])
                     items.append({'id': f"fsd50k:{r['fname']}", 'artist': f'freesound-user:{up}', 'row': i, 'val': r['split'] == 'val',
@@ -83,7 +94,7 @@ def main():
                 print(f'dev: {len(items)} windows; positives ' + ', '.join(f'{k[4:]} {int(v)}' for k, v in sorted(pos.items(), key=lambda kv: kv[1])), flush=True)
             else:
                 chunks, offsets, items, n = [], [0], [], 0
-                for i, (r, x) in enumerate(zip(kept, wavs)):
+                for i, (r, x) in enumerate((r, x) for r, x in zip(kept, wavs) if x is not None):
                     chunks.append(x); n += len(x); offsets.append(n)
                     items.append({'id': f"fsd50k:{r['fname']}", 'artist': info.get(r['fname'], {}).get('uploader', ''),
                                   'labels': {k: 'present' if v else 'absent' for k, v in labels(r).items()}})
