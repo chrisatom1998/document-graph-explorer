@@ -15,7 +15,8 @@ keeps the raw fingerprint's say on sounds Jamendo never covers (e.g. single note
 Selection uses validation tracks only (split-0 validation, no artist shared with training): random libraries of
 --library genre-tagged tracks, linked by the app's rule (each track's `neighbors` closest at cosine >= `floor`). The
 shipped (mix, neighbors, floor) has the highest same-genre link rate among those that make at least as many links as
-today's rule (raw CLAP, 3 closest, 0.7) does on the same libraries. Writes <out>/sound-projection.json (int8 weights,
+today's rule (raw CLAP, 3 closest, 0.7) does on the same libraries, both for one 10 s window per track (as the
+benchmark clips are) and for whole-track means (as longer files are). Writes <out>/sound-projection.json (int8 weights,
 the layout src/audio/soundProjection.ts reads) and <out>/report.json.
 """
 import argparse, base64, glob, json, math, os, time
@@ -145,7 +146,6 @@ NEIGHBORS = [1, 2, 3, 4]  # the app keeps at most 4 links of one kind per track
 FLOORS = np.round(np.arange(.2, .975, .025), 3)
 pool = va[tags['genre'][va].sum(1) > 0]
 libraries = [rng.choice(pool, args.library, replace=False) for _ in range(args.draws)]
-raw_v, proj_v = mean_vec, project_q(mean_vec)
 def shares(g, a, b): return (tags[g][a] * tags[g][b]).sum(1) > 0
 def links(sim, k, floor):
     """The app's rule: each track's k closest are candidates; a pair links at cosine >= floor."""
@@ -153,37 +153,49 @@ def links(sim, k, floor):
     top = np.argsort(-s, 1)[:, :k]
     pairs = {(min(i, j), max(i, j)) for i in range(n) for j in top[i] if s[i, j] >= floor}
     return np.array(sorted(pairs), int).reshape(-1, 2)
-rows = []
-for mix in MIXES:
-    stats = {(k, f): np.zeros(5) for k in NEIGHBORS for f in FLOORS}  # links, genre, mood, instrument, linked tracks
-    for lib in libraries:
-        sim = (1 - mix) * raw_v[lib] @ raw_v[lib].T + mix * proj_v[lib] @ proj_v[lib].T
-        for k in NEIGHBORS:
-            base = links(sim, k, -2)
-            for f in FLOORS:
-                p = base[sim[base[:, 0], base[:, 1]] >= f] if len(base) else base
-                if not len(p): continue
-                a, b = lib[p[:, 0]], lib[p[:, 1]]
-                stats[(k, f)] += [len(p), shares('genre', a, b).sum(), shares('mood', a, b).sum(), shares('instrument', a, b).sum(), len(np.unique(p))]
-    for (k, f), s in stats.items():
-        n = max(s[0], 1)
-        rows.append({'mix': mix, 'neighbors': k, 'floor': float(f), 'links': s[0] / args.draws, 'sameGenre': s[1] / n, 'sameMood': s[2] / n,
-                     'sameInstrument': s[3] / n, 'linkedTracks': s[4] / args.draws / args.library})
-current = next(r for r in rows if r['mix'] == 0 and r['neighbors'] == 3 and abs(r['floor'] - .7) < 1e-9)
-eligible = [r for r in rows if r['links'] >= current['links']]
-chosen = max(eligible, key=lambda r: (round(r['sameGenre'], 4), r['links']))
-raw_best = max((r for r in eligible if r['mix'] == 0), key=lambda r: (round(r['sameGenre'], 4), r['links']))
+def grid(raw_v):
+    proj_v, rows = project_q(raw_v), []
+    for mix in MIXES:
+        stats = {(k, f): np.zeros(5) for k in NEIGHBORS for f in FLOORS}  # links, genre, mood, instrument, linked tracks
+        for lib in libraries:
+            sim = (1 - mix) * raw_v[lib] @ raw_v[lib].T + mix * proj_v[lib] @ proj_v[lib].T
+            for k in NEIGHBORS:
+                base = links(sim, k, -2)
+                for f in FLOORS:
+                    p = base[sim[base[:, 0], base[:, 1]] >= f] if len(base) else base
+                    if not len(p): continue
+                    a, b = lib[p[:, 0]], lib[p[:, 1]]
+                    stats[(k, f)] += [len(p), shares('genre', a, b).sum(), shares('mood', a, b).sum(), shares('instrument', a, b).sum(), len(np.unique(p))]
+        for (k, f), st in stats.items():
+            n = max(st[0], 1)
+            rows.append({'mix': mix, 'neighbors': k, 'floor': float(f), 'links': st[0] / args.draws, 'sameGenre': st[1] / n, 'sameMood': st[2] / n,
+                         'sameInstrument': st[3] / n, 'linkedTracks': st[4] / args.draws / args.library})
+    return rows
+# The benchmark and many uploads are single 10 s clips, while longer files store a mean over windows (cosines run
+# higher), so the policy is scored on both: one window per track (the middle one) and the whole-track mean.
+middle = unit(X[np.arange(len(ids)), np.minimum(M.sum(1) - 1, 1)]).astype(np.float32)
+rows, mean_rows = grid(middle), grid(mean_vec)
+find = lambda table, r: next(x for x in table if x['mix'] == r['mix'] and x['neighbors'] == r['neighbors'] and abs(x['floor'] - r['floor']) < 1e-9)
+current = find(rows, {'mix': 0, 'neighbors': 3, 'floor': .7}); current_mean = find(mean_rows, current)
+# At least today's link count on both inputs; then the best same-genre rate averaged over the two.
+eligible = [r for r in rows if r['links'] >= current['links'] and find(mean_rows, r)['links'] >= current_mean['links']]
+score = lambda r: (round((r['sameGenre'] + find(mean_rows, r)['sameGenre']) / 2, 4), r['links'])
+chosen = max(eligible, key=score)
+raw_best = max((r for r in eligible if r['mix'] == 0), key=score)
 pct = lambda x: f'{100 * x:.1f}%'
 show = lambda name, r: print(f'{name}: mix {r["mix"]}, {r["neighbors"]} closest, floor {r["floor"]}: {r["links"]:.1f} links per {args.library} tracks, '
                              f'{pct(r["linkedTracks"])} linked, same genre {pct(r["sameGenre"])}, mood {pct(r["sameMood"])}, instrument {pct(r["sameInstrument"])}')
 print(f'\nValidation libraries: {args.draws} x {args.library} genre-tagged tracks (random pair shares a genre '
       f'{pct(np.mean([shares("genre", *rng.choice(pool, (2, 2000), replace=True)).mean()]))})')
-show('today (raw CLAP)', current); show('best raw-CLAP policy', raw_best); show('chosen', chosen)
+print('One 10 s window per track:')
+show('  today (raw CLAP)', current); show('  best raw-CLAP policy', raw_best); show('  chosen', chosen)
+print('Whole-track mean of windows, same policies:')
+show('  today (raw CLAP)', find(mean_rows, current)); show('  best raw-CLAP policy', find(mean_rows, raw_best)); show('  chosen', find(mean_rows, chosen))
 
 projection = {'version': 1, 'inputDim': D, 'outputDim': args.dim, 'activation': 'gelu' if args.hidden else None,
               'mix': chosen['mix'], 'neighbors': chosen['neighbors'], 'floor': chosen['floor'], 'layers': exported,
               'trainedOn': f'MTG-Jamendo split-0 train ({len(tr)} tracks); policy chosen on split-0 validation ({len(va)} tracks, no shared artist)'}
 json.dump(projection, open(os.path.join(args.out, 'sound-projection.json'), 'w'), separators=(',', ':'))
 json.dump({'args': vars(args), 'tracks': {'train': len(tr), 'validation': len(va)}, 'inputDim': D, 'history': history,
-           'current': current, 'bestRaw': raw_best, 'chosen': chosen, 'grid': rows}, open(os.path.join(args.out, 'report.json'), 'w'), indent=1)
+           'current': current, 'bestRaw': raw_best, 'chosen': chosen, 'grid': rows, 'meanGrid': mean_rows}, open(os.path.join(args.out, 'report.json'), 'w'), indent=1)
 print(f'wrote {args.out}/sound-projection.json ({os.path.getsize(os.path.join(args.out, "sound-projection.json")) / 1024:.0f} KB)')
