@@ -1,7 +1,7 @@
 name: Track structure features
 
 # Fetches Raveform EDM tracks (hand-labelled intro / buildup / drop / breakdown / outro, CC BY 4.0 annotations, audio
-# from YouTube at run time and never committed), computes the app's structure features with src/audio/structure.ts,
+# from YouTube, else a SoundCloud upload of the same length, fetched at run time and never committed), computes the app's structure features with src/audio/structure.ts,
 # and commits them to the branch for offline tuning and scoring (scripts/structure/evaluate.ts).
 on:
   workflow_dispatch:
