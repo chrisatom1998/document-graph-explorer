@@ -17,8 +17,15 @@ fi
 case "$1" in
 run)
   cd "$APP"
-  curl -fsSL --retry 6 -o $WORK/openmic.tgz "$OPENMIC" && echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $WORK/openmic.tgz" | md5sum -c -
-  python3 scripts/dj-clips/$PICK $WORK/openmic.tgz $WORK/audio-openmic && rm $WORK/openmic.tgz
+  # Zenodo sometimes closes the 2.6 GB transfer early: resume until the checksum matches (an `a && b` list would not
+  # stop the script under set -e, so a cut-off archive used to reach the picker).
+  for try in 1 2 3 4 5 6; do
+    ok=1; curl -fsSL --retry 6 -C - -o $WORK/openmic.tgz "$OPENMIC" || ok=0
+    echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $WORK/openmic.tgz" | md5sum -c --quiet - && break
+    [ $ok = 1 ] && rm -f $WORK/openmic.tgz  # complete but wrong: start over
+    [ $try = 6 ] && { echo "OpenMIC download failed"; exit 1; }; sleep $((try * 10))
+  done
+  python3 scripts/dj-clips/$PICK $WORK/openmic.tgz $WORK/audio-openmic; rm $WORK/openmic.tgz
   git clone -q $KREPO $WORK/k && git -C $WORK/k checkout -q $KREF
   python3 scripts/dj-clips/$KPICK $WORK/k $WORK/audio-$K
   git diff --quiet -- $DOCS || { echo "a frozen manifest changed:"; git diff --stat -- $DOCS; exit 1; }
