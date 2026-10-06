@@ -1,0 +1,26 @@
+label            train+ test+ test-  thresh      P      R   verdict          current head on same held-out
+chops                93    21   991   0.965   1.00   0.05   fails            learned maybe P0.25 R0.10
+vocal chops          41     9   991       -      -      -   fewer than 10 held-out positives; not tested learned maybe P0.41 R0.78
+stutter effect       55    17   989   0.834   0.20   0.41   fails            learned maybe P0.00 R0.00
+glitch effect       313    88   970   0.938   0.60   0.20   fails            -
+reverse effect      251    76   806   0.736   0.52   0.43   fails            learned maybe P0.53 R0.41
+record stop          11     3   997       -      -      -   too few training clips -
+vinyl scratch       129    54   997   0.775   0.75   0.67   PASS 60/60       learned P0.67 R0.30; short-clip P0.00 R0.00
+riser               208    75   863   0.887   0.62   0.52   maybe-level 45/45 learned maybe P0.72 R0.28
+downlifter           11    14   890       -      -      -   too few training clips -
+impact              241    96  1017   0.841   0.67   0.54   maybe-level 45/45 short-clip P0.00 R0.00
+whoosh              278    82   812   0.653   0.63   0.78   PASS 60/60       learned P0.83 R0.55; short-clip P0.00 R0.00
+reverse cymbal       34    13   863   0.938   0.80   0.62   PASS 60/60       -
+reverse impact       15     1   763       -      -      -   too few training clips -
+noise sweep         108    33   812   0.845   0.65   0.45   maybe-level 45/45 -
+sub drop              6     4  1017       -      -      -   too few training clips -
+laser               205    83   960   0.879   0.63   0.39   fails            -
+siren               216    77   960   0.788   0.77   0.74   PASS 60/60       -
+air horn             27    16   960   0.799   0.83   0.62   PASS 60/60       -
+flanged             158    41   952   0.783   0.24   0.44   fails            -
+bitcrushed          100    24  1021   0.988   0.00   0.00   fails            -
+beat repeat          22     2   989       -      -      -   too few training clips -
+filter sweep         70    28   812   0.926   0.92   0.39   fails            -
+trance gate          54    14   991   0.965   1.00   0.07   fails            -
+rewind                9     1   997       -      -      -   too few training clips -
+delay throw          32     3  1108       -      -      -   fewer than 10 held-out positives; not tested -

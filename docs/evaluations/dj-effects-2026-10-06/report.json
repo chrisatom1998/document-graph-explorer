@@ -1,0 +1,646 @@
+{
+ "kind": "dj-effect-heads-report-v1",
+ "trainedAt": "2026-10-06T05:41:08.638942+00:00",
+ "clips": 4499,
+ "trainClips": 3369,
+ "heldOutClips": 1130,
+ "heldOutUploaders": 587,
+ "thresholdTarget": 0.7,
+ "labels": {
+  "chops": {
+   "group": "production",
+   "trainPositive": 93,
+   "trainNegative": 2873,
+   "testPositive": 21,
+   "testNegative": 991,
+   "trainUploaders": 47,
+   "testUploaders": 14,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.919,
+     "tp": 2,
+     "fp": 6,
+     "fn": 19,
+     "precision": 0.25,
+     "recall": 0.09523809523809523
+    }
+   ],
+   "C": 0.3,
+   "threshold": 0.9652,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 1.0,
+    "recall": 0.010752688172043012
+   },
+   "tp": 1,
+   "fp": 0,
+   "fn": 20,
+   "precision": 1.0,
+   "recall": 0.047619047619047616,
+   "f1": 0.0909090909090909,
+   "passes60": false,
+   "passes45": false,
+   "verdict": "fails"
+  },
+  "vocal chops": {
+   "group": "production",
+   "trainPositive": 41,
+   "trainNegative": 2873,
+   "testPositive": 9,
+   "testNegative": 991,
+   "trainUploaders": 20,
+   "testUploaders": 5,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.904,
+     "tp": 7,
+     "fp": 10,
+     "fn": 2,
+     "precision": 0.4117647058823529,
+     "recall": 0.7777777777777778
+    }
+   ],
+   "C": 0.3,
+   "threshold": 0.9704,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 1.0,
+    "recall": 0.024390243902439025
+   },
+   "verdict": "fewer than 10 held-out positives; not tested"
+  },
+  "stutter effect": {
+   "group": "production",
+   "trainPositive": 55,
+   "trainNegative": 2842,
+   "testPositive": 17,
+   "testNegative": 989,
+   "trainUploaders": 30,
+   "testUploaders": 11,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.984,
+     "tp": 0,
+     "fp": 5,
+     "fn": 17,
+     "precision": 0.0,
+     "recall": 0.0
+    }
+   ],
+   "C": 0.3,
+   "threshold": 0.8342,
+   "thresholdRule": "max min(P,R); 0.70 precision not reached",
+   "trainOof": {
+    "precision": 0.125,
+    "recall": 0.12727272727272726
+   },
+   "tp": 7,
+   "fp": 28,
+   "fn": 10,
+   "precision": 0.2,
+   "recall": 0.4117647058823529,
+   "f1": 0.2692307692307692,
+   "passes60": false,
+   "passes45": false,
+   "verdict": "fails"
+  },
+  "glitch effect": {
+   "group": "production",
+   "trainPositive": 313,
+   "trainNegative": 2800,
+   "testPositive": 88,
+   "testNegative": 970,
+   "trainUploaders": 175,
+   "testUploaders": 47,
+   "C": 10.0,
+   "threshold": 0.9382,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.7,
+    "recall": 0.29073482428115016
+   },
+   "tp": 18,
+   "fp": 12,
+   "fn": 70,
+   "precision": 0.6,
+   "recall": 0.20454545454545456,
+   "f1": 0.30508474576271183,
+   "passes60": false,
+   "passes45": false,
+   "verdict": "fails"
+  },
+  "reverse effect": {
+   "group": "production",
+   "trainPositive": 251,
+   "trainNegative": 2419,
+   "testPositive": 76,
+   "testNegative": 806,
+   "trainUploaders": 177,
+   "testUploaders": 58,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.923,
+     "tp": 31,
+     "fp": 27,
+     "fn": 45,
+     "precision": 0.5344827586206896,
+     "recall": 0.40789473684210525
+    }
+   ],
+   "C": 0.3,
+   "threshold": 0.7357,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.703125,
+    "recall": 0.5378486055776892
+   },
+   "tp": 33,
+   "fp": 30,
+   "fn": 43,
+   "precision": 0.5238095238095238,
+   "recall": 0.4342105263157895,
+   "f1": 0.47482014388489213,
+   "passes60": false,
+   "passes45": false,
+   "verdict": "fails"
+  },
+  "record stop": {
+   "group": "production",
+   "trainPositive": 11,
+   "trainNegative": 2978,
+   "testPositive": 3,
+   "testNegative": 997,
+   "trainUploaders": 5,
+   "testUploaders": 3,
+   "verdict": "too few training clips"
+  },
+  "vinyl scratch": {
+   "group": "production",
+   "trainPositive": 129,
+   "trainNegative": 2978,
+   "testPositive": 54,
+   "testNegative": 997,
+   "trainUploaders": 77,
+   "testUploaders": 35,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": false,
+     "threshold": 0.978,
+     "tp": 16,
+     "fp": 8,
+     "fn": 38,
+     "precision": 0.6666666666666666,
+     "recall": 0.2962962962962963
+    },
+    {
+     "file": "short-clip.json",
+     "maybe": false,
+     "threshold": 0.8286,
+     "tp": 0,
+     "fp": 0,
+     "fn": 54,
+     "precision": 0.0,
+     "recall": 0.0
+    }
+   ],
+   "C": 0.3,
+   "threshold": 0.7751,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.7232142857142857,
+    "recall": 0.627906976744186
+   },
+   "tp": 36,
+   "fp": 12,
+   "fn": 18,
+   "precision": 0.75,
+   "recall": 0.6666666666666666,
+   "f1": 0.7058823529411765,
+   "passes60": true,
+   "passes45": true,
+   "verdict": "PASS 60/60"
+  },
+  "riser": {
+   "group": "production",
+   "trainPositive": 208,
+   "trainNegative": 2556,
+   "testPositive": 75,
+   "testNegative": 863,
+   "trainUploaders": 109,
+   "testUploaders": 41,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": true,
+     "threshold": 0.969,
+     "tp": 21,
+     "fp": 8,
+     "fn": 54,
+     "precision": 0.7241379310344828,
+     "recall": 0.28
+    }
+   ],
+   "C": 3.0,
+   "threshold": 0.887,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.7048192771084337,
+    "recall": 0.5625
+   },
+   "tp": 39,
+   "fp": 24,
+   "fn": 36,
+   "precision": 0.6190476190476191,
+   "recall": 0.52,
+   "f1": 0.5652173913043478,
+   "passes60": false,
+   "passes45": true,
+   "verdict": "maybe-level 45/45"
+  },
+  "downlifter": {
+   "group": "production",
+   "trainPositive": 11,
+   "trainNegative": 2712,
+   "testPositive": 14,
+   "testNegative": 890,
+   "trainUploaders": 8,
+   "testUploaders": 7,
+   "verdict": "too few training clips"
+  },
+  "impact": {
+   "group": "production",
+   "trainPositive": 241,
+   "trainNegative": 3108,
+   "testPositive": 96,
+   "testNegative": 1017,
+   "trainUploaders": 156,
+   "testUploaders": 59,
+   "current": [
+    {
+     "file": "short-clip.json",
+     "maybe": false,
+     "threshold": 0.8697,
+     "tp": 0,
+     "fp": 0,
+     "fn": 96,
+     "precision": 0.0,
+     "recall": 0.0
+    }
+   ],
+   "C": 0.3,
+   "threshold": 0.8408,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.75,
+    "recall": 0.4854771784232365
+   },
+   "tp": 52,
+   "fp": 26,
+   "fn": 44,
+   "precision": 0.6666666666666666,
+   "recall": 0.5416666666666666,
+   "f1": 0.5977011494252873,
+   "passes60": false,
+   "passes45": true,
+   "verdict": "maybe-level 45/45"
+  },
+  "whoosh": {
+   "group": "production",
+   "trainPositive": 278,
+   "trainNegative": 2397,
+   "testPositive": 82,
+   "testNegative": 812,
+   "trainUploaders": 160,
+   "testUploaders": 51,
+   "current": [
+    {
+     "file": "learned.json",
+     "maybe": false,
+     "threshold": 0.941,
+     "tp": 45,
+     "fp": 9,
+     "fn": 37,
+     "precision": 0.8333333333333334,
+     "recall": 0.5487804878048781
+    },
+    {
+     "file": "short-clip.json",
+     "maybe": false,
+     "threshold": 0.8215,
+     "tp": 0,
+     "fp": 0,
+     "fn": 82,
+     "precision": 0.0,
+     "recall": 0.0
+    }
+   ],
+   "C": 0.3,
+   "threshold": 0.6529,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.7328767123287672,
+    "recall": 0.7697841726618705
+   },
+   "tp": 64,
+   "fp": 38,
+   "fn": 18,
+   "precision": 0.6274509803921569,
+   "recall": 0.7804878048780488,
+   "f1": 0.6956521739130435,
+   "passes60": true,
+   "passes45": true,
+   "verdict": "PASS 60/60"
+  },
+  "reverse cymbal": {
+   "group": "production",
+   "trainPositive": 34,
+   "trainNegative": 2556,
+   "testPositive": 13,
+   "testNegative": 863,
+   "trainUploaders": 21,
+   "testUploaders": 11,
+   "C": 3.0,
+   "threshold": 0.9381,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.92,
+    "recall": 0.6764705882352942
+   },
+   "tp": 8,
+   "fp": 2,
+   "fn": 5,
+   "precision": 0.8,
+   "recall": 0.6153846153846154,
+   "f1": 0.6956521739130435,
+   "passes60": true,
+   "passes45": true,
+   "verdict": "PASS 60/60"
+  },
+  "reverse impact": {
+   "group": "production",
+   "trainPositive": 15,
+   "trainNegative": 2350,
+   "testPositive": 1,
+   "testNegative": 763,
+   "trainUploaders": 13,
+   "testUploaders": 1,
+   "verdict": "too few training clips"
+  },
+  "noise sweep": {
+   "group": "production",
+   "trainPositive": 108,
+   "trainNegative": 2397,
+   "testPositive": 33,
+   "testNegative": 812,
+   "trainUploaders": 56,
+   "testUploaders": 19,
+   "C": 0.3,
+   "threshold": 0.8448,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.7285714285714285,
+    "recall": 0.4722222222222222
+   },
+   "tp": 15,
+   "fp": 8,
+   "fn": 18,
+   "precision": 0.6521739130434783,
+   "recall": 0.45454545454545453,
+   "f1": 0.5357142857142857,
+   "passes60": false,
+   "passes45": true,
+   "verdict": "maybe-level 45/45"
+  },
+  "sub drop": {
+   "group": "production",
+   "trainPositive": 6,
+   "trainNegative": 3108,
+   "testPositive": 4,
+   "testNegative": 1017,
+   "trainUploaders": 6,
+   "testUploaders": 3,
+   "verdict": "too few training clips"
+  },
+  "laser": {
+   "group": "production",
+   "trainPositive": 205,
+   "trainNegative": 2927,
+   "testPositive": 83,
+   "testNegative": 960,
+   "trainUploaders": 145,
+   "testUploaders": 49,
+   "C": 1.0,
+   "threshold": 0.8789,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.8,
+    "recall": 0.5463414634146342
+   },
+   "tp": 32,
+   "fp": 19,
+   "fn": 51,
+   "precision": 0.6274509803921569,
+   "recall": 0.3855421686746988,
+   "f1": 0.4776119402985075,
+   "passes60": false,
+   "passes45": false,
+   "verdict": "fails"
+  },
+  "siren": {
+   "group": "production",
+   "trainPositive": 216,
+   "trainNegative": 2927,
+   "testPositive": 77,
+   "testNegative": 960,
+   "trainUploaders": 161,
+   "testUploaders": 57,
+   "C": 0.3,
+   "threshold": 0.7884,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.7175141242937854,
+    "recall": 0.5879629629629629
+   },
+   "tp": 57,
+   "fp": 17,
+   "fn": 20,
+   "precision": 0.7702702702702703,
+   "recall": 0.7402597402597403,
+   "f1": 0.7549668874172186,
+   "passes60": true,
+   "passes45": true,
+   "verdict": "PASS 60/60"
+  },
+  "air horn": {
+   "group": "production",
+   "trainPositive": 27,
+   "trainNegative": 2927,
+   "testPositive": 16,
+   "testNegative": 960,
+   "trainUploaders": 19,
+   "testUploaders": 13,
+   "C": 0.3,
+   "threshold": 0.7989,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.7083333333333334,
+    "recall": 0.6296296296296297
+   },
+   "tp": 10,
+   "fp": 2,
+   "fn": 6,
+   "precision": 0.8333333333333334,
+   "recall": 0.625,
+   "f1": 0.7142857142857143,
+   "passes60": true,
+   "passes45": true,
+   "verdict": "PASS 60/60"
+  },
+  "flanged": {
+   "group": "character",
+   "trainPositive": 158,
+   "trainNegative": 2790,
+   "testPositive": 41,
+   "testNegative": 952,
+   "trainUploaders": 105,
+   "testUploaders": 28,
+   "C": 3.0,
+   "threshold": 0.7832,
+   "thresholdRule": "max min(P,R); 0.70 precision not reached",
+   "trainOof": {
+    "precision": 0.27932960893854747,
+    "recall": 0.31645569620253167
+   },
+   "tp": 18,
+   "fp": 56,
+   "fn": 23,
+   "precision": 0.24324324324324326,
+   "recall": 0.43902439024390244,
+   "f1": 0.3130434782608696,
+   "passes60": false,
+   "passes45": false,
+   "verdict": "fails"
+  },
+  "bitcrushed": {
+   "group": "character",
+   "trainPositive": 100,
+   "trainNegative": 2977,
+   "testPositive": 24,
+   "testNegative": 1021,
+   "trainUploaders": 52,
+   "testUploaders": 17,
+   "C": 3.0,
+   "threshold": 0.9877,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.75,
+    "recall": 0.09
+   },
+   "tp": 0,
+   "fp": 0,
+   "fn": 24,
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1": 0.0,
+   "passes60": false,
+   "passes45": false,
+   "verdict": "fails"
+  },
+  "beat repeat": {
+   "group": "production",
+   "trainPositive": 22,
+   "trainNegative": 2842,
+   "testPositive": 2,
+   "testNegative": 989,
+   "trainUploaders": 13,
+   "testUploaders": 2,
+   "verdict": "too few training clips"
+  },
+  "filter sweep": {
+   "group": "production",
+   "trainPositive": 70,
+   "trainNegative": 2397,
+   "testPositive": 28,
+   "testNegative": 812,
+   "trainUploaders": 41,
+   "testUploaders": 18,
+   "C": 0.3,
+   "threshold": 0.9262,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 0.8,
+    "recall": 0.11428571428571428
+   },
+   "tp": 11,
+   "fp": 1,
+   "fn": 17,
+   "precision": 0.9166666666666666,
+   "recall": 0.39285714285714285,
+   "f1": 0.55,
+   "passes60": false,
+   "passes45": false,
+   "verdict": "fails"
+  },
+  "trance gate": {
+   "group": "production",
+   "trainPositive": 54,
+   "trainNegative": 2873,
+   "testPositive": 14,
+   "testNegative": 991,
+   "trainUploaders": 27,
+   "testUploaders": 10,
+   "C": 0.3,
+   "threshold": 0.9653,
+   "thresholdRule": "f1 at precision>=0.70",
+   "trainOof": {
+    "precision": 1.0,
+    "recall": 0.037037037037037035
+   },
+   "tp": 1,
+   "fp": 0,
+   "fn": 13,
+   "precision": 1.0,
+   "recall": 0.07142857142857142,
+   "f1": 0.13333333333333333,
+   "passes60": false,
+   "passes45": false,
+   "verdict": "fails"
+  },
+  "rewind": {
+   "group": "production",
+   "trainPositive": 9,
+   "trainNegative": 2978,
+   "testPositive": 1,
+   "testNegative": 997,
+   "trainUploaders": 7,
+   "testUploaders": 1,
+   "verdict": "too few training clips"
+  },
+  "delay throw": {
+   "group": "production",
+   "trainPositive": 32,
+   "trainNegative": 3260,
+   "testPositive": 3,
+   "testNegative": 1108,
+   "trainUploaders": 21,
+   "testUploaders": 3,
+   "C": 0.3,
+   "threshold": 0.7306,
+   "thresholdRule": "max min(P,R); 0.70 precision not reached",
+   "trainOof": {
+    "precision": 0.0958904109589041,
+    "recall": 0.21875
+   },
+   "verdict": "fewer than 10 held-out positives; not tested"
+  }
+ }
+}
