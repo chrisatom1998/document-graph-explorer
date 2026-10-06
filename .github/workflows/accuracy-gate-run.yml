@@ -1,0 +1,356 @@
+name: Accuracy gate (shared steps)
+
+# Analyses an app build on the round 3 held-out audio set (docs/evaluations/holdout-r3-2026-10-06) in headless
+# Chromium, scores sound tags, tempo and key, and compares every number with the base branch's
+# (scripts/accuracy-gate/compare.mjs). Called by accuracy-gate.yml (fast slice on every PR, full set on main) and
+# accuracy-gate-full.yml (full set on a labelled PR); see docs/evaluations/accuracy-gate.md.
+#
+# Base numbers come from the graph exports main's own run cached for that commit; when they're missing (main's run
+# hasn't finished, or the cache expired) the base commit is analysed in this run too. Scorers, manifests and the
+# subset rule come from the base commit, so a change can't edit how it's judged (the change's own copy is used only
+# until the gate is on the base branch). Audio is fetched from the datasets on a cache miss and cached; never committed.
+# Only aggregate numbers are reported.
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: fast (150 Jamendo + 318 MTG key tracks) or full (500 + 318)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  DOCS: docs/evaluations/holdout-r3-2026-10-06
+  JAMENDO_META: https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f
+  MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
+  MTGKEY_REF: fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b
+  # The held-out manifests are frozen, so the audio caches never need a content hash.
+  AUDIO_CACHE: accuracy-gate-audio-v1-holdout-r3-2026-10-06
+  EXPORTS_CACHE: accuracy-gate-exports-v1
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.p.outputs.run }}
+      base: ${{ steps.p.outputs.base }}
+      harness: ${{ steps.p.outputs.harness }}
+      base_cached: ${{ steps.m.outputs.base_cached }}
+      jamendo_cached: ${{ steps.jamendo-cache.outputs.cache-hit }}
+      mtgkey_cached: ${{ steps.mtgkey-cache.outputs.cache-hit }}
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Decide what to analyse
+        id: p
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          BEFORE: ${{ github.event.before }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          # A PR is compared with its base branch tip (the merge commit's first parent); a push to main with the
+          # previous main commit, when that one's numbers are cached (report only).
+          if [ "$EVENT" = pull_request ]; then BASE=$PR_BASE; else BASE=${BEFORE#0000000000000000000000000000000000000000}; fi
+          [ "$EVENT" = pull_request ] && [ "$(git rev-parse HEAD^1)" != "$BASE" ] && echo "::warning::merge parent $(git rev-parse HEAD^1) is not the event's base $BASE"
+          # Only changes that can move the numbers need the (slow) analysis.
+          RUN=true
+          if [ "$EVENT" = pull_request ]; then
+            git diff --name-only HEAD^1 HEAD > changed.txt
+            grep -qE '^(src/|public/|package(-lock)?\.json$|vite\.config\.|index\.html$|scripts/(accuracy-gate|holdout-r3)/|scripts/short-clip-upload-eval\.mjs$|docs/evaluations/holdout-r3-2026-10-06/|\.github/workflows/accuracy-gate)' changed.txt || RUN=false
+          fi
+          # Judge with the base commit's harness once it has one.
+          HARNESS=$(git rev-parse HEAD)
+          if [ -n "$BASE" ] && git fetch -q --depth=1 origin "$BASE" && git cat-file -e "$BASE:scripts/accuracy-gate/compare.mjs" 2>/dev/null; then HARNESS=$BASE; fi
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"; echo "base=$BASE" >> "$GITHUB_OUTPUT"; echo "harness=$HARNESS" >> "$GITHUB_OUTPUT"
+          echo "mode $MODE, run $RUN, base ${BASE:-none}, harness $HARNESS"
+      - name: Look for main's numbers for the base commit
+        id: base-cache
+        if: steps.p.outputs.base != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: baseline
+          key: ${{ env.EXPORTS_CACHE }}-${{ inputs.mode }}-${{ steps.p.outputs.base }}
+          # Main records the full set; its exports also cover the fast slice.
+          restore-keys: ${{ env.EXPORTS_CACHE }}-full-${{ steps.p.outputs.base }}
+          lookup-only: true
+      - name: Look for cached audio
+        id: jamendo-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo
+          lookup-only: true
+      - id: mtgkey-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: gate-audio/mtgkey
+          key: ${{ env.AUDIO_CACHE }}-mtgkey
+          lookup-only: true
+      - name: Build the job list
+        id: m
+        env:
+          MODE: ${{ inputs.mode }}
+          HEAD_SHA: ${{ github.sha }}
+          BASE: ${{ steps.p.outputs.base }}
+          # Exports cached under the base's own key, or under its full-set key.
+          BASE_CACHED: ${{ steps.base-cache.outputs.cache-matched-key != '' }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          # Jamendo tracks are 30 s (three analysis windows), about 30 s each to analyse; MTG key excerpts are 10 s.
+          node -e '
+            const { MODE, HEAD_SHA, BASE, BASE_CACHED, EVENT } = process.env;
+            const sides = [["head", HEAD_SHA]];
+            // On a PR without cached base numbers, analyse the base too. A push to main is report-only, so it never does.
+            if (EVENT === "pull_request" && BASE && BASE_CACHED !== "true") sides.push(["base", BASE]);
+            const sets = [["jamendo", MODE === "full" ? 10 : 5], ["mtgkey", 4]];
+            const jobs = sides.flatMap(([side, sha]) => sets.flatMap(([set, of]) => Array.from({ length: of }, (_, shard) => ({ side, sha, set, shard, of }))));
+            require("fs").appendFileSync(process.env.GITHUB_OUTPUT, `matrix=${JSON.stringify(jobs)}\nbase_cached=${BASE_CACHED}\n`);
+            console.log(jobs.length, "analysis jobs:", JSON.stringify(jobs.map(j => `${j.side}/${j.set}/${j.shard}`)));'
+
+  fetch-jamendo:
+    needs: plan
+    if: needs.plan.outputs.run == 'true' && needs.plan.outputs.jamendo_cached != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: true
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.harness }}
+      - name: Check the frozen selection against the pinned dataset metadata
+        run: |
+          M="$RUNNER_TEMP/mj"
+          for f in data/splits/split-0/autotagging_instrument-test.tsv data/raw_30s_cleantags.tsv \
+                   derived/music-classification-annotations/music-classification-annotations-clean.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
+            mkdir -p "$M/$(dirname $f)"; curl -fsSL --retry 6 -o "$M/$f" "$JAMENDO_META/$f"
+          done
+          python3 scripts/holdout-r3/select-jamendo.py "$M"
+      - name: Fetch and cut this shard's tracks
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          python3 scripts/holdout-r3/fetch-jamendo.py "$DOCS/jamendo-manifest.json" \
+            "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ matrix.shard }}/10 gate-audio/jamendo
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gate-audio-jamendo-${{ inputs.mode }}-${{ matrix.shard }}
+          path: gate-audio/jamendo
+          retention-days: 3
+
+  fetch-mtgkey:
+    needs: plan
+    if: needs.plan.outputs.run == 'true' && needs.plan.outputs.mtgkey_cached != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.harness }}
+      - name: Fetch and cut the held-out MTG key excerpts
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          git clone -q "$MTGKEY" "$RUNNER_TEMP/mk" && git -C "$RUNNER_TEMP/mk" checkout -q "$MTGKEY_REF"
+          # Refuses to continue if the frozen manifest can't be rebuilt exactly.
+          python3 scripts/holdout-r3/select-mtg-key.py "$RUNNER_TEMP/mk" "$DOCS/round2-mtg-key-tracks.txt" gate-audio/mtgkey
+          git diff --exit-code "$DOCS/mtg-key-manifest.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gate-audio-mtgkey-${{ inputs.mode }}
+          path: gate-audio/mtgkey
+          retention-days: 3
+
+  cache-audio:
+    # Caches written on main are shared with every PR; a PR's own caches only help its re-runs.
+    needs: [fetch-jamendo, fetch-mtgkey]
+    if: ${{ !cancelled() && (needs.fetch-jamendo.result == 'success' || needs.fetch-mtgkey.result == 'success') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        if: needs.fetch-jamendo.result == 'success'
+        with:
+          pattern: gate-audio-jamendo-${{ inputs.mode }}-*
+          path: gate-audio/jamendo
+          merge-multiple: true
+      - uses: actions/cache/save@v4
+        if: needs.fetch-jamendo.result == 'success'
+        with:
+          path: gate-audio/jamendo
+          key: ${{ env.AUDIO_CACHE }}-jamendo
+      - uses: actions/download-artifact@v4
+        if: needs.fetch-mtgkey.result == 'success'
+        with:
+          name: gate-audio-mtgkey-${{ inputs.mode }}
+          path: gate-audio/mtgkey
+      - uses: actions/cache/save@v4
+        if: needs.fetch-mtgkey.result == 'success'
+        with:
+          path: gate-audio/mtgkey
+          key: ${{ env.AUDIO_CACHE }}-mtgkey
+
+  analyse:
+    needs: [plan, fetch-jamendo, fetch-mtgkey]
+    if: >-
+      ${{ !cancelled() && needs.plan.outputs.run == 'true'
+      && needs.fetch-jamendo.result != 'failure' && needs.fetch-mtgkey.result != 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    name: analyse (${{ matrix.side }} ${{ matrix.set }} ${{ matrix.shard }})
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.sha }}
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.harness }}
+          path: harness
+      - name: Restore the audio
+        id: audio
+        uses: actions/cache/restore@v4
+        with:
+          path: gate-audio/${{ matrix.set }}
+          key: ${{ env.AUDIO_CACHE }}-${{ matrix.set }}
+      - name: Use the audio fetched in this run
+        if: steps.audio.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: gate-audio-${{ matrix.set }}-${{ inputs.mode }}*
+          path: gate-audio/${{ matrix.set }}
+          merge-multiple: true
+      - name: Write the manifests
+        run: |
+          node harness/scripts/accuracy-gate/subset.mjs ${{ inputs.mode }} gate-manifests
+          # The app's own driver if it has one (it knows the app's UI), else the harness's.
+          cp -n harness/scripts/short-clip-upload-eval.mjs scripts/ || true
+          git log -1 --format='app under test: %H %s'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=gate-audio/${{ matrix.set }} AUDIO_EXT=wav MANIFEST=gate-manifests/${{ matrix.set }}.json \
+            SHARD=${{ matrix.shard }}/${{ matrix.of }} node scripts/short-clip-upload-eval.mjs out/run test 20
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gate-${{ inputs.mode }}-${{ matrix.side }}-${{ matrix.set }}-${{ matrix.shard }}
+          path: out/run/graph-export.json
+          retention-days: 14
+
+  verdict:
+    needs: [plan, analyse]
+    if: ${{ !cancelled() && needs.plan.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip when nothing that affects accuracy changed
+        if: needs.plan.outputs.run != 'true'
+        run: echo "No app, model or gate files changed; nothing to judge." | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Require every analysis job
+        if: needs.plan.outputs.run == 'true' && needs.analyse.result != 'success'
+        run: |
+          echo "::error::An analysis job failed or was skipped, so the gate can't judge this change. Re-run the failed jobs."
+          exit 1
+      - uses: actions/checkout@v4
+        if: needs.plan.outputs.run == 'true'
+        with:
+          ref: ${{ needs.plan.outputs.harness }}
+          path: harness
+      - uses: actions/checkout@v4
+        if: needs.plan.outputs.run == 'true'
+        with:
+          path: app-head
+      - uses: actions/checkout@v4
+        if: needs.plan.outputs.run == 'true' && needs.plan.outputs.base != ''
+        with:
+          ref: ${{ needs.plan.outputs.base }}
+          path: app-base
+      - uses: actions/setup-node@v4
+        if: needs.plan.outputs.run == 'true'
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app-head/package-lock.json
+      - uses: actions/download-artifact@v4
+        if: needs.plan.outputs.run == 'true'
+        with:
+          pattern: gate-${{ inputs.mode }}-*
+          path: exports
+      - name: Restore main's numbers for the base commit
+        if: needs.plan.outputs.run == 'true' && needs.plan.outputs.base_cached == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: baseline
+          key: ${{ env.EXPORTS_CACHE }}-${{ inputs.mode }}-${{ needs.plan.outputs.base }}
+          restore-keys: ${{ env.EXPORTS_CACHE }}-full-${{ needs.plan.outputs.base }}
+      - name: Score both sides and compare
+        if: needs.plan.outputs.run == 'true'
+        env:
+          MODE: ${{ inputs.mode }}
+          REPORT_ONLY: ${{ github.event_name == 'pull_request' && '0' || '1' }}
+        run: |
+          set -o pipefail
+          node harness/scripts/accuracy-gate/subset.mjs "$MODE" gate-manifests
+          mkdir -p exports-by-side/head exports-by-side/base
+          for d in exports/gate-$MODE-head-*; do cp "$d/graph-export.json" "exports-by-side/head/${d##*/}.json"; done
+          if [ -d baseline ]; then cp baseline/*.json exports-by-side/base/; fi
+          for d in exports/gate-$MODE-base-*; do [ -d "$d" ] && cp "$d/graph-export.json" "exports-by-side/base/${d##*/}.json"; done
+          score() {   # <side>: score with that side's own display code, the harness's scorers and manifests
+            local app=app-$1 out=reports/$1; mkdir -p "$out"
+            ( cd "$app" && npm ci --no-audit --no-fund >/dev/null && mkdir -p scripts/holdout-r3 && cp ../harness/scripts/holdout-r3/*.mjs scripts/holdout-r3/ )
+            local ex=$(ls "$PWD"/exports-by-side/$1/*.json)
+            ( cd "$app" && MANIFEST=../gate-manifests/jamendo.json npx vite-node scripts/holdout-r3/score-tags.mjs "../$out/jamendo-tags.json" $ex \
+              && MANIFEST=../gate-manifests/jamendo-strict.json npx vite-node scripts/holdout-r3/score-tags.mjs "../$out/jamendo-tags-strict.json" $ex \
+              && MANIFEST=../gate-manifests/mtgkey.json npx vite-node scripts/holdout-r3/score-tempo-key.mjs "../$out/mtgkey.json" $ex >/dev/null )
+            node -e "const f=process.argv[1],r=JSON.parse(require('fs').readFileSync(f));delete r.rows;require('fs').writeFileSync(f,JSON.stringify(r,null,1))" "$out/mtgkey.json"
+          }
+          score head
+          BASE_DIR=-
+          if ls exports-by-side/base/*.json >/dev/null 2>&1; then score base; BASE_DIR=reports/base; fi
+          node harness/scripts/accuracy-gate/compare.mjs "$BASE_DIR" reports/head summary.md
+      - name: Show the verdict
+        if: always() && needs.plan.outputs.run == 'true'
+        run: '[ -f summary.md ] && cat summary.md >> "$GITHUB_STEP_SUMMARY" || true'
+      - uses: actions/upload-artifact@v4
+        if: always() && needs.plan.outputs.run == 'true'
+        with:
+          name: gate-${{ inputs.mode }}-reports
+          path: |
+            summary.md
+            reports
+          retention-days: 30
+      - name: Keep main's exports as the baseline for later PRs
+        if: github.event_name == 'push' && needs.plan.outputs.run == 'true'
+        run: rm -rf baseline && mkdir baseline && cp exports-by-side/head/*.json baseline/
+      - uses: actions/cache/save@v4
+        if: github.event_name == 'push' && needs.plan.outputs.run == 'true'
+        with:
+          path: baseline
+          key: ${{ env.EXPORTS_CACHE }}-${{ inputs.mode }}-${{ github.sha }}
