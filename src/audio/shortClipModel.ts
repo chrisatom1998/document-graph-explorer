@@ -57,6 +57,13 @@ function vector(model: ShortClipModel, inputs: ShortClipInputs): number[] | unde
   return out.map((v, i) => (v - model.mean[i]) / model.std[i]);
 }
 
+/** A one-shot tag implied by another head's tag: any voice that is the whole clip (≤ 2.25 s) is a vocal one-shot.
+ * The derived tag reuses the voice head's own score and threshold, so it shows exactly when "voice" does, and steps
+ * aside if a head trained for the role itself ever ships. The one-shot benchmark's vocal one-shot answers are the
+ * same clips as its voice answers (scripts/build-short-clip-bench.py), so this inherits the voice head's test result. */
+export const SHORT_CLIP_DERIVED: readonly { from: string; group: ShortClipHead['group']; label: string }[] = [
+  { from: 'source:voice', group: 'production', label: 'vocal one-shot' },
+];
 /** Head probabilities for one short clip; only heads at or above their measured threshold become tags. */
 export function shortClipScores(model: ShortClipModel, inputs: ShortClipInputs): { scores: DescriptionScore[]; raw: Record<string, number> } {
   const x = vector(model, inputs);
@@ -68,6 +75,11 @@ export function shortClipScores(model: ShortClipModel, inputs: ShortClipInputs):
     const score = 1 / (1 + Math.exp(-Math.max(-35, Math.min(35, logit))));
     raw[`${head.group}:${head.label}`] = Math.round(score * 1e4) / 1e4;
     if (score >= head.threshold) scores.push({ group: 'dj-learned', label: head.label, score, learnedGroup: head.group, decision: 'include', basis: 'head', ...(head.maybe ? { maybe: true } : {}) });
+  }
+  for (const rule of SHORT_CLIP_DERIVED) {
+    if (model.heads.some(h => h.group === rule.group && h.label === rule.label)) continue;
+    const parent = scores.find(s => `${s.learnedGroup}:${s.label}` === rule.from);
+    if (parent) scores.push({ ...parent, label: rule.label, learnedGroup: rule.group });
   }
   return { scores, raw };
 }

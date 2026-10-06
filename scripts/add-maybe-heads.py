@@ -31,7 +31,9 @@ open(LEARNED, 'w').write(body)
 digest = hashlib.sha256(body.encode()).hexdigest()
 man = json.load(open(MANIFEST)); man['sha256']['learned.json'] = digest
 # Labels with a tested detector; the Sounds panel only falls back to raw CLAP for labels NOT in this list.
-json.dump(sorted({h['label'] for f in (LEARNED, 'public/sound-model/short-clip.json') for h in json.load(open(f))['heads']}), open('src/audio/calibratedLabels.json', 'w'), indent=0)
+# Plus tags derived from a tested head (SHORT_CLIP_DERIVED in src/audio/shortClipModel.ts).
+DERIVED = {'vocal one-shot'}
+json.dump(sorted({h['label'] for f in (LEARNED, 'public/sound-model/short-clip.json') for h in json.load(open(f))['heads']} | DERIVED), open('src/audio/calibratedLabels.json', 'w'), indent=0)
 open(MANIFEST, 'w').write(json.dumps(man, indent=2) + '\n')
 json.dump({'kind': 'added-maybe-heads-v1', 'builtAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
            'learnedSha256': digest, 'heads': report}, open(REPORT, 'w'), indent=1)

@@ -2251,6 +2251,21 @@
       ],
       "recognition": "experimental",
       "axis": "dj-one-shot"
+    },
+    {
+      "group": "production",
+      "family": "vocal",
+      "label": "vocal one-shot",
+      "source": "voice",
+      "description": "A single short vocal sound used as a one-shot, such as a word, shout, sung note or beatbox hit.",
+      "aliases": [
+        "vocal shot",
+        "vox shot",
+        "vocal one shot"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-one-shot",
+      "derivedFrom": "source:voice"
     }
   ]
 }

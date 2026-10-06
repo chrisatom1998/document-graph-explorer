@@ -21,6 +21,8 @@ it('ships matching finite CLAP vectors for every catalog category and competing 
   expect(DJ_CATALOG.length).toBeGreaterThanOrEqual(190);
   expect(new Set(DJ_CATALOG.map(c => `${c.group}:${c.label}`)).size).toBe(DJ_CATALOG.length);
   for (const category of DJ_CATALOG) {
+    // A derived tag (e.g. vocal one-shot from the one-shot voice head) is never chosen by CLAP similarity, so it has no prompt.
+    if ('derivedFrom' in category) { expect(prompts.some((p: {label: string}) => p.label === category.label)).toBe(false); continue; }
     const match = prompts.find((p: {group: string; label: string}) => p.group === category.axis && p.label === category.label);
     expect(match, category.label).toBeDefined();
     expect(match.vector).toHaveLength(512);

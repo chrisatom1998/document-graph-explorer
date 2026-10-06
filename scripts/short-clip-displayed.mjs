@@ -10,7 +10,7 @@ import { DJ_TYPE_SOURCE } from '../src/audio/djTags';
 const [exportPath, outPrefix] = process.argv.slice(2);
 const graph = JSON.parse(readFileSync(exportPath, 'utf8'));
 
-const VOCAL = ['vocal chops', 'chops', 'vocal phrase', 'spoken phrase', 'whisper', 'vocal shout', 'vocal chant', 'vocal ad-lib', 'vocal hum', 'vocal vowel', 'choir',
+const VOCAL = ['vocal one-shot', 'vocal chops', 'chops', 'vocal phrase', 'spoken phrase', 'whisper', 'vocal shout', 'vocal chant', 'vocal ad-lib', 'vocal hum', 'vocal vowel', 'choir',
   'vocal harmony', 'vocal scream', 'vocal laugh', 'vocal gasp', 'beatbox', 'vocoder vocal', 'pitched vocal', 'reversed vocal', 'vocal pad', 'vocal breath', 'vocal shush'];
 const HITS = ['kick', 'snare', 'clap', 'closed hi-hat', 'open hi-hat', 'ride cymbal', 'crash cymbal', 'rimshot', 'tom', 'shaker', 'tambourine', 'conga', 'bongo',
   'cowbell', 'clave', 'woodblock', 'finger snap', 'percussion hit', 'hi-hat', 'cymbal'];

@@ -31,6 +31,18 @@ describe('short-clip heads', () => {
     expect(shortClipScores(m, { clapRepeat: [3, ...new Array(511).fill(0)] }).scores).toMatchObject([{ label: 'hi-hat' }]);
     expect(shortClipScores(m, { clapZero: [3, ...new Array(511).fill(0)] }).scores).toEqual([]);
   });
+  it('tags a one-shot voice as a vocal one-shot too, with the voice head\'s own score', () => {
+    const voice = (label = 'voice', group = 'source') => ({ group, label, weights: [4, ...new Array(511).fill(0)], bias: 0, threshold: .9 });
+    const m = sanitizeShortClipModel(model({ blocks: ['clapRepeat'], mean: new Array(512).fill(0), std: new Array(512).fill(1), heads: [voice()] }))!;
+    const loud = shortClipScores(m, { clapRepeat: [3, ...new Array(511).fill(0)] }).scores;
+    expect(loud.map(s => `${s.learnedGroup}:${s.label}`)).toEqual(['source:voice', 'production:vocal one-shot']);
+    expect(loud[1]).toMatchObject({ score: loud[0].score, basis: 'head', decision: 'include' });
+    expect(shortClipScores(m, { clapRepeat: [-3, ...new Array(511).fill(0)] }).scores).toEqual([]);
+    // A head trained for the role itself wins over the derived tag.
+    const own = sanitizeShortClipModel(model({ blocks: ['clapRepeat'], mean: new Array(512).fill(0), std: new Array(512).fill(1),
+      heads: [voice(), { ...voice('vocal one-shot', 'production'), weights: [-4, ...new Array(511).fill(0)] }] }))!;
+    expect(shortClipScores(own, { clapRepeat: [3, ...new Array(511).fill(0)] }).scores.map(s => s.label)).toEqual(['voice']);
+  });
 });
 
 describe('event features', () => {

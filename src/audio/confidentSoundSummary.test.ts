@@ -81,7 +81,8 @@ it('keeps full-mix Jamendo scores below their measured threshold hidden, and hon
 });
 it('keeps the calibrated-label list in sync with the shipped detectors',async()=>{
  const {readFileSync}=await import('node:fs');const {CALIBRATED_LABELS}=await import('./confidentSoundSummary');
- const shipped=new Set(['learned.json','short-clip.json'].flatMap(f=>JSON.parse(readFileSync(`public/sound-model/${f}`,'utf8')).heads.map((h:{label:string})=>h.label)));
+ const {SHORT_CLIP_DERIVED}=await import('./shortClipModel');
+ const shipped=new Set([...['learned.json','short-clip.json'].flatMap(f=>JSON.parse(readFileSync(`public/sound-model/${f}`,'utf8')).heads.map((h:{label:string})=>h.label)),...SHORT_CLIP_DERIVED.map(d=>d.label)]);
  expect([...CALIBRATED_LABELS].sort()).toEqual([...shipped].sort());
 });
 const clapOnly=(label:string,group:'source'|'production'|'character',score:number,durationSeconds=8):MusicAnalysis=>({...audio(),durationSeconds,analyzedSeconds:durationSeconds,instruments:[],soundProfile:{version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group,label,score,model:'Music CLAP'}]}});
@@ -97,4 +98,13 @@ it('never falls back to raw CLAP for a label that has a tested detector',()=>{
 });
 it('never shows fallback tags for labels measured as almost always wrong',()=>{
  expect(confidentSoundSummary(clapOnly('dry','character',.7))).toEqual([]);
+});
+it('shows a one-shot voice as both "voice" and "vocal one-shot" on the Sounds panel',async()=>{
+ const {applyDjClassification}=await import('./djClassification');const {sanitizeShortClipModel,shortClipScores}=await import('./shortClipModel');
+ const m=sanitizeShortClipModel({version:1,kind:'short-clip-heads',revision:'t',clapEncoder:'c',eventFeatures:'event-shape-v1',blocks:['clapRepeat'],maxSeconds:2.25,
+  mean:new Array(512).fill(0),std:new Array(512).fill(1),heads:[{group:'source',label:'voice',weights:[4,...new Array(511).fill(0)],bias:0,threshold:.75}]})!;
+ const profile=applyDjClassification({version:1,character:[],roles:[],models:[],disagreement:false},[],shortClipScores(m,{clapRepeat:[3,...new Array(511).fill(0)]}).scores);
+ const shown=confidentSoundSummary({...audio(),instruments:[],durationSeconds:1.2,analyzedSeconds:1.2,soundProfile:profile});
+ expect(shown.map(s=>`${s.dimension}:${s.label}`).sort()).toEqual(['effect:vocal one-shot','source:voice']);
+ expect(shown.every(s=>s.tier==='likely'&&!s.maybe)).toBe(true);
 });
