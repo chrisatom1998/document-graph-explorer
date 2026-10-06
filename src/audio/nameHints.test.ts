@@ -73,5 +73,11 @@ describe('musical name tags', () => {
     expect(hints('Old man in trance I 10_D#.wav').pitch).toBeUndefined();
     expect(hints('TEXTURE/TXT_INTERRUPTED_AM.wav')).toEqual({});
     expect(hints('Bloc Party.wav')).toEqual({});
+    expect(hints('TEXTURE/TXT_INTERRUPTED_A♭M.wav').key).toBeUndefined();
+  });
+  it('reads a tempo-free modal tag as a root and checks two-token tempos on both sides', () => {
+    expect(hints('Cphr/clip.wav').pitch).toMatchObject({ value: 0, source: 'folder name' });
+    expect(hints('Loops/texture_Cphr.wav').pitch?.value).toBe(0);
+    expect(hints('Bassline 145 bpm A.wav')).toMatchObject({ tempo: { value: 145 }, pitch: { value: 9 } });
   });
 });

@@ -13,6 +13,7 @@ const pitchClass = (note: string, accidental = '') =>
 const clean = (name: string) => name.replace(/[♯]/g, '#').replace(/[♭]/g, 'b').replace(/[_()[\]{}-]+/g, ' ').replace(/\s+/g, ' ').trim();
 // Packs that tag church modes ("Cphr", "A#lyd") name the root; it is a pitch, not a major/minor key.
 const MODAL = /(?:^|\s)([A-G])([#b]?)(?:dor|dorian|phr|phrygian|lyd|lydian|mix|mixolydian|loc|locrian)(?=\s|$)/gi;
+const MUSICAL = /\b(?:vocal|vocals|synth|synthesizer|loops?|samples?|pitch|note|oneshot|arp|pad|pads|chord|chords|chd|gtr|guitar|keys|piano|bass|lead|pluck|melody|melodic|riff|stab)\b/i;
 const isTempoToken = (token = '') => /^\d{2,3}(?:\.\d+)?(?:\s*bpm)?$/i.test(token) && parseFloat(token) >= 40 && parseFloat(token) <= 250;
 const unique = <T,>(values: T[]): T | undefined => {
   const found = [...new Map(values.map(v => [JSON.stringify(v), v])).values()];
@@ -26,13 +27,14 @@ export function musicNameHints(node: Pick<DocNode, 'path' | 'title'>): MusicName
   const hints: MusicNameHints = {};
   // A "Loops" folder makes a bare number in the file name a tempo ("Drum Loops/DL_Breaker_130.wav").
   const inLoopFolder = parts.some(part => /\bloops?\b/i.test(clean(part)));
+  const musicalPath = [file, ...parts].some(part => MUSICAL.test(clean(part)));
   // Per-field precedence: file, closest folder, then its parents.
   for (const [index, name] of [file, ...parts.reverse()].entries()) {
     const source = index === 0 ? 'file name' as const : 'folder name' as const;
     const hint = <T,>(value: T): NamedHint<T> => ({ value, source, name });
     const text = clean(name);
     // In an all-caps name "AM" could be A minor, A major or amplitude modulation, so a lone "M" is not a mode there.
-    const caseless = !/[a-z]/.test(text);
+    const caseless = !/[a-z]/.test(name.replace(/♭/g, ''));
     const keyTags = [...text.matchAll(/(?:^|\s)([A-G])([#b]?)(?:\s*)(major|minor|maj|min|m)(?=\s|$)/gi)]
       .filter(m => !(caseless && m[3] === 'M'));
     const keys = keyTags.map(m => ({ tonic: pitchClass(m[1], m[2]), mode: m[3] !== 'M' && /^m(?:in|inor)?$/.test(m[3].toLowerCase()) ? 'minor' as const : 'major' as const }));
@@ -48,13 +50,14 @@ export function musicNameHints(node: Pick<DocNode, 'path' | 'title'>): MusicName
     // Sample packs often tag vocals as "AY_D_140", without a major/minor mode.
     // Require musical context or an adjacent tempo to avoid ordinary title letters.
     // A tempo right before or after the note also counts ("Arp_137_D", "AY_D_140").
-    const musical = /\b(?:vocal|vocals|synth|synthesizer|loops?|samples?|pitch|note|oneshot|arp|pad|pads|chord|chords|chd|gtr|guitar|keys|piano|bass|lead|pluck|melody|melodic|riff|stab)\b/i.test(text);
+    const musical = MUSICAL.test(text);
     const nextToTempo = (m: RegExpMatchArray) => {
       const before = text.slice(0, m.index!).trim().split(' '), after = text.slice(m.index! + m[0].length).trim().split(' ');
-      return [before.at(-1), after[0], after.slice(0, 2).join(' ')].some(isTempoToken);
+      return [before.at(-1), before.slice(-2).join(' '), after[0], after.slice(0, 2).join(' ')].some(isTempoToken);
     };
-    const bareNotes = [...text.matchAll(/(?:^|\s)([A-G])([#b]?)(?=\s|$)/g), ...text.matchAll(MODAL)]
-      .filter(m => musical || nextToTempo(m))
+    // A modal tag ("Cphr") is specific enough on its own as a whole name or anywhere in a musical path; "Bloc Party" is not.
+    const bareNotes = [...[...text.matchAll(/(?:^|\s)([A-G])([#b]?)(?=\s|$)/g)].filter(m => musical || nextToTempo(m)),
+      ...[...text.matchAll(MODAL)].filter(m => musicalPath || nextToTempo(m) || m[0].trim() === text)]
       .map(m => pitchClass(m[1], m[2]));
     const pitch = unique([...notes, ...taggedNotes, ...bareNotes, ...(key ? [key.tonic] : [])]);
     if (!hints.pitch && pitch !== undefined) hints.pitch = hint(pitch);
