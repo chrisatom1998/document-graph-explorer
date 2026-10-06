@@ -158,6 +158,21 @@ described below. Re-scoring the v2 run with those tags dropped (offline, exact f
 70/70; synthesizer and synth hit now abstain (0 false tags, all 42 / 36 positives missed); clips with no scored tag
 490 → 665. A retrained synth detector must be measured on a new frozen test set. **Update:** retrained on NSynth-train notes and measured on the fresh synth test set (`../synth-clips-2026-10-05/README.md`): synth hit ships (0.84 / 0.87); synthesizer stays hidden (0.80 / 0.48). Pass bar is now 60/60 (user, 2026-10-05).
 
+### Vocal one-shot tag (2026-10-06)
+
+The app had no vocal-one-shot tag, so that row (369 test clips) scored 0. On clips of 2.25 s or less, a shown `voice`
+tag from the one-shot voice head now also adds `vocal one-shot` (same score and threshold; `SHORT_CLIP_DERIVED` in
+`src/audio/shortClipModel.ts`), and `scripts/short-clip-displayed.mjs` maps that label to `role:vocal one-shot`.
+Re-scored offline from the same test exports (exact: the tag is a pure function of the stored voice tag):
+
+| Build | role:vocal one-shot P / R | TP / FP / FN |
+|---|---|---|
+| v2 (13/27 build) | — / 0.00 → 0.99 / 0.64 | 236 / 2 / 133 |
+| v2 + five new heads (16/27 build, other session) | 0.89 / 0.02 → 0.99 / 0.65 | 238 / 3 / 131 |
+
+Passes 60/60, not 70/70. The misses are almost all AVP beatbox clips (104 of 111 missed); Freesound voices are found
+231 of 252 times. Beatbox recall is the remaining gap, for the voice and beatbox heads.
+
 ## 6. Below target, unsupported, or open
 
 - **Below 70/70:** see the table. Biggest problem: `source:synthesizer` shows on 174 non-synth clips (about 12% of

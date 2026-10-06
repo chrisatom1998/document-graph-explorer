@@ -10,7 +10,9 @@ const [split, ...runs] = process.argv.slice(2);
 const DOCS = new URL('../docs/evaluations/openmic-exam-2026-10-06/', import.meta.url);
 const manifest = JSON.parse(readFileSync(new URL('manifest.json', DOCS), 'utf8'));
 const { runtimeLabelMapping } = JSON.parse(readFileSync(new URL('selection.json', DOCS), 'utf8'));
-const toClasses = labels => Object.entries(runtimeLabelMapping).filter(([, aliases]) => labels.some(l => aliases.includes(l))).map(([c]) => c);
+// The pilot's frozen aliases predate the trained instrument detector, whose own labels ARE the OpenMIC classes
+// ("cymbals", "bass", "mallet_percussion"): the panel shows them under those names, so each class also matches itself.
+const toClasses = labels => Object.entries(runtimeLabelMapping).filter(([c, aliases]) => labels.some(l => l === c || aliases.includes(l))).map(([c]) => c);
 const ids = new Set(manifest.items.filter(i => i.split === split).map(i => i.id));
 export const OUTPUTS = {
   'Sounds panel': a => confidentSoundSummary(a).filter(s => s.dimension === 'source').map(s => s.label),

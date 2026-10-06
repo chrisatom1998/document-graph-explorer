@@ -23,8 +23,8 @@ export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnal
       const unverified = 'uncalibrated' in l && !!l.uncalibrated;
       const hover = [DIMENSION_NAME[l.dimension as keyof typeof DIMENSION_NAME] ?? l.dimension,
         l.origin === 'From filename' ? 'from the file name, not the audio' : l.origin,
-        ...(unverified ? ['unverified: no tested detector for this sound yet; raw CLAP similarity, not calibrated'] : possible ? ['possible: detector score 0.40–0.49, not calibrated (not a 40% chance)'] : []),
-        ...(l.scores ?? []).map(s => `${s.model} ${s.score.toFixed(2)}`)].join(' · ');
+        ...(unverified ? ['unverified: no tested detector for this sound yet; raw CLAP similarity, not calibrated'] : possible ? ['possible: detector score 0.40–0.49 or a tested yes/no rule, not calibrated (not a 40% chance)'] : []),
+        ...(l.scores ?? []).map(s => s.rule ? `${s.model}: yes` : `${s.model} ${s.score.toFixed(2)}`)].join(' · ');
       return <li key={`${l.dimension}:${l.label}`} className={`sound-tag sound-tag--${kind}${possible ? ' sound-tag--possible' : ''}`} data-tier={'tier' in l ? l.tier : undefined} title={hover}>
         {kind === 'confirmed' && <span className="sound-tag__mark" aria-hidden="true">✓</span>}
         <span>{soundLabelText(l.label)}</span>

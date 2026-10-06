@@ -34,6 +34,8 @@ it.each([.399999,.4])('uses valid qualified decision scores at the inclusive tra
  vi.mocked(installedFusionIdentity).mockReturnValue(release);const fusion=fixture();fusion.windows[0].decisions[0].decisionProbability=score;fusion.windows[0].decisions[0].headProbability=score;render(<FusionEvidence fusion={fusion} duration={10} mode="full"/>);expect(screen.queryByText('accordion',{selector:'.sound-tag span'})!==null).toBe(score>=.4);
 });
 
-it('does not substitute an inapplicable head score for a binary fallback with no numeric decision confidence',()=>{
- vi.mocked(installedFusionIdentity).mockReturnValue(release);const fusion=fixture();Object.assign(fusion.windows[0].decisions[0],{source:'guarded-binary-baseline',headProbability:.99,decisionProbability:null,state:'positive'});render(<FusionEvidence fusion={fusion} duration={10} mode="full"/>);expect(screen.queryByText('accordion',{selector:'.sound-tag span'})).toBeNull();
+it('shows a binary fallback positive as a possible yes/no decision, never with the inapplicable head score',()=>{
+ vi.mocked(installedFusionIdentity).mockReturnValue(release);const fusion=fixture();Object.assign(fusion.windows[0].decisions[0],{source:'guarded-binary-baseline',headProbability:.99,decisionProbability:null,state:'positive'});render(<FusionEvidence fusion={fusion} duration={10} mode="full"/>);
+ const tag=screen.getByText('accordion',{selector:'.sound-tag span'}).closest('li')!;
+ expect(tag.getAttribute('data-tier')).toBe('possible');expect(tag.getAttribute('title')).toContain('Baseline fallback score: yes');expect(tag.getAttribute('title')).not.toContain('0.99');
 });

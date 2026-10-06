@@ -9,7 +9,7 @@ This exam reuses the pilot's rights filter, annotation policy and identity-only 
   * test (locked): official-test artists. Never used to choose a rule, threshold or alias.
 
 Every pilot clip, artist, album and recording is excluded, so the pilot stays a separate check.
-No artist is in both splits and no recording is used twice; at most --test-per-artist / --train-per-artist clips per artist
+No artist or album is in both splits and no recording is used twice; at most --test-per-artist / --train-per-artist clips per artist
 (only ~120 official-test artists have CC BY/CC0 clips). Selection never reads labels or predictions.
 Audio is written as 16-bit mono 44.1 kHz WAV (decoded by ffmpeg) under opaque ids so the upload
 harness (scripts/stitched-song-eval.mjs) can read it; the original OGG hash is recorded too.
@@ -33,7 +33,7 @@ OUT_DOCS = ROOT / 'docs' / 'evaluations' / 'openmic-exam-2026-10-06'
 PILOT_MANIFEST = ROOT / 'docs' / 'evaluations' / 'openmic-2026-10-03' / 'manifest.json'
 
 
-def choose(candidates, counts, per_artist, seed, used_artists, used_tracks):
+def choose(candidates, counts, per_artist, seed, used_artists, used_albums, used_tracks):
     """Locked test first (so it gets the widest artist pool), then development from artists the test does not use.
     Up to `per_artist` different recordings per artist: only ~120 official-test artists have CC BY/CC0 clips."""
     by = {'train': {}, 'test': {}}
@@ -44,20 +44,21 @@ def choose(candidates, counts, per_artist, seed, used_artists, used_tracks):
             values.sort(key=lambda item: pilot.stable_key(seed, 'recording', item.sample_key))
     selected = {split: [] for split in counts}
     for split in ('test', 'train'):   # split name == official partition it draws from
-        taken = set()
+        taken, albums = set(), set()
         artists = [a for a in sorted(by[split], key=lambda a: pilot.stable_key(seed, 'artist', split, a)) if a not in used_artists]
         for rnd in range(per_artist[split]):   # round-robin: every artist's first clip before anyone's second
             for artist in artists:
                 if len(selected[split]) == counts[split]:
                     break
                 for c in by[split][artist]:
-                    if c.track_id in used_tracks or c.sample_key in taken:
+                    # Albums (including various-artist compilations) never cross splits either.
+                    if c.track_id in used_tracks or c.album_id in used_albums or c.sample_key in taken:
                         continue
                     if sum(1 for x in selected[split] if x.artist_id == artist) > rnd:
                         break
-                    selected[split].append(c); taken.add(c.sample_key); used_tracks.add(c.track_id)
+                    selected[split].append(c); taken.add(c.sample_key); used_tracks.add(c.track_id); albums.add(c.album_id)
                     break
-        used_artists |= {c.artist_id for c in selected[split]}
+        used_artists |= {c.artist_id for c in selected[split]}; used_albums |= albums
         if len(selected[split]) != counts[split]:
             raise pilot.PilotError(f'only {len(selected[split])} eligible {split} clips, wanted {counts[split]}')
     return selected
@@ -66,8 +67,8 @@ def choose(candidates, counts, per_artist, seed, used_artists, used_tracks):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('archive', type=Path); ap.add_argument('out', type=Path)
-    # Defaults take every eligible official-test clip up to 10 per artist (58 artists after the pilot's are removed).
-    ap.add_argument('--train', type=int, default=200); ap.add_argument('--test', type=int, default=176)
+    # Defaults take every eligible official-test clip up to 10 per artist (after the pilot's artists and albums are removed).
+    ap.add_argument('--train', type=int, default=200); ap.add_argument('--test', type=int, default=169)
     ap.add_argument('--train-per-artist', type=int, default=4); ap.add_argument('--test-per-artist', type=int, default=10)
     args = ap.parse_args()
     if (OUT_DOCS / 'manifest.json').exists():
@@ -77,6 +78,7 @@ def main():
         raise pilot.PilotError(f'archive MD5 mismatch: {md5}')
     old = json.loads(PILOT_MANIFEST.read_text())['items']
     used_artists = {i['groups']['artist'].split(':', 1)[1] for i in old}
+    used_albums = {i['groups']['pack'].split(':', 1)[1] for i in old}
     used_tracks = {i['groups']['sampleFamily'].split(':', 1)[1] for i in old}
     pilot_ids = {i['id'] for i in old}
     with tarfile.open(args.archive, 'r:gz') as archive:
@@ -89,7 +91,7 @@ def main():
         candidates = [c for c in pilot.candidates_from_metadata(pilot.read_csv(meta, 'metadata'),
                       pilot.partition_keys(train_data, 'train'), pilot.partition_keys(test_data, 'test'))
                       if c.sample_key not in pilot_ids]
-        selected = choose(candidates, {'train': args.train, 'test': args.test}, {'train': args.train_per_artist, 'test': args.test_per_artist}, SEED, used_artists, used_tracks)
+        selected = choose(candidates, {'train': args.train, 'test': args.test}, {'train': args.train_per_artist, 'test': args.test_per_artist}, SEED, used_artists, used_albums, used_tracks)
         audio_dir = args.out / 'audio'; audio_dir.mkdir(parents=True, exist_ok=True)
         hashes = {}
         wanted = {c.sample_key for split in selected.values() for c in split}
@@ -112,7 +114,7 @@ def main():
         'version': 1, 'dataset': 'OpenMIC-2018', 'officialRecord': pilot.OFFICIAL_RECORD_URL, 'archiveMd5': md5,
         'frozenAt': FROZEN_AT, 'seed': SEED,
         'perArtistCap': {'train': args.train_per_artist, 'test': args.test_per_artist},
-        'selectionRule': 'hash-ranked identity/provenance only; test chosen first; at most N recordings per artist (round-robin), no recording twice, no artist in both splits; labels and predictions are excluded from selection',
+        'selectionRule': 'hash-ranked identity/provenance only; test chosen first; at most N recordings per artist (round-robin), no recording twice, no artist or album in both splits; labels and predictions are excluded from selection',
         'exclusions': 'every clip, artist, album and recording of the 2026-10-03 pilot (docs/evaluations/openmic-2026-10-03/manifest.json)',
         'splits': {'train': 'development: official-train artists; ideas may be tuned here',
                    'test': 'locked: official-test artists; never used to choose a rule, threshold or alias'},

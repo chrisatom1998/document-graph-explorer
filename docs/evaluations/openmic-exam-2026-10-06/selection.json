@@ -104,20 +104,6 @@
       "track": "51112"
     },
     {
-      "album": "18152.0",
-      "artist": "20032",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/118/118480_103680.ogg",
-        "oggSha256": "f662a4a7a0d4e9acb104fe3e3269b61ea907c724f66c800fe03422277735979f",
-        "path": "audio/118480_103680.wav",
-        "wavSha256": "f47a4891c0431d8c220c3d8aa2aeb1b656dbe1e59df84e3f26ddf7e2648ea20f"
-      },
-      "id": "118480_103680",
-      "license": "http://creativecommons.org/licenses/by/4.0/",
-      "split": "train",
-      "track": "118480"
-    },
-    {
       "album": "17801.0",
       "artist": "19691",
       "audio": {
@@ -312,20 +298,6 @@
       "license": "http://creativecommons.org/licenses/by/4.0/",
       "split": "train",
       "track": "149864"
-    },
-    {
-      "album": "4553.0",
-      "artist": "5341",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/020/020093_3840.ogg",
-        "oggSha256": "a9125379477eb5bae3dea0728eb887832c5e670a5034d8354061f1930107a443",
-        "path": "audio/020093_3840.wav",
-        "wavSha256": "6d04d10af37ad8e08032a6dc6bf58374a32f73aaa89e6d7e568b577978aaa97b"
-      },
-      "id": "020093_3840",
-      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-      "split": "train",
-      "track": "20093"
     },
     {
       "album": "19786.0",
@@ -594,20 +566,6 @@
       "track": "148471"
     },
     {
-      "album": "17850.0",
-      "artist": "19878",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/117/117296_69120.ogg",
-        "oggSha256": "7cee325930f139b4b084bca505eb2c49a7a5a001a669aee814596c65794ffa76",
-        "path": "audio/117296_69120.wav",
-        "wavSha256": "61cee18a88af497963d56346f4873e5e00ac8804b13da4668aabe8c762f0557f"
-      },
-      "id": "117296_69120",
-      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-      "split": "train",
-      "track": "117296"
-    },
-    {
       "album": "22342.0",
       "artist": "23714",
       "audio": {
@@ -788,34 +746,6 @@
       "license": "http://creativecommons.org/licenses/by/4.0/",
       "split": "train",
       "track": "145529"
-    },
-    {
-      "album": "18153.0",
-      "artist": "20037",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/118/118497_65280.ogg",
-        "oggSha256": "32e7074671d06675bc85dd03ef5490970f18f0f8e31cdce66242a4db1d691b39",
-        "path": "audio/118497_65280.wav",
-        "wavSha256": "351eaa15008e783cb768f0f9e2e5bd78ef3b55794b5c44f42ddb6a7d7f538839"
-      },
-      "id": "118497_65280",
-      "license": "http://creativecommons.org/licenses/by/4.0/",
-      "split": "train",
-      "track": "118497"
-    },
-    {
-      "album": "12672.0",
-      "artist": "15494",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/071/071516_65280.ogg",
-        "oggSha256": "66ef745385d7ee7a370ef8e95a22379b0d1905af6c3dbf78c3be370f178e392b",
-        "path": "audio/071516_65280.wav",
-        "wavSha256": "915953b21dea9d4d09b75577164c6808f038587826c124982f82216629450c05"
-      },
-      "id": "071516_65280",
-      "license": "http://creativecommons.org/licenses/by/3.0/",
-      "split": "train",
-      "track": "71516"
     },
     {
       "album": "22780.0",
@@ -1056,20 +986,6 @@
       "track": "141876"
     },
     {
-      "album": "13010.0",
-      "artist": "15351",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/075/075978_30720.ogg",
-        "oggSha256": "d57d2a3b867ceb85baed78e17b37ab149ae61b4495408a5364fa8fefe648e351",
-        "path": "audio/075978_30720.wav",
-        "wavSha256": "867921b7fcb9e901fa20585a3b153bf14ecf952d8490646991a57acaf80d1a88"
-      },
-      "id": "075978_30720",
-      "license": "http://creativecommons.org/licenses/by/3.0/",
-      "split": "train",
-      "track": "75978"
-    },
-    {
       "album": "19331.0",
       "artist": "19816",
       "audio": {
@@ -1208,20 +1124,6 @@
       "license": "http://creativecommons.org/licenses/by/4.0/",
       "split": "train",
       "track": "125712"
-    },
-    {
-      "album": "17850.0",
-      "artist": "19419",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/116/116059_11520.ogg",
-        "oggSha256": "172406ca53cbf3357fdba3560c5594245f6a58d16df15503e806824df5469df3",
-        "path": "audio/116059_11520.wav",
-        "wavSha256": "3e29af020b86a5e699e2421c15acc763c97d3bb191b21f00a8e2aedadd156f58"
-      },
-      "id": "116059_11520",
-      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-      "split": "train",
-      "track": "116059"
     },
     {
       "album": "22055.0",
@@ -1490,20 +1392,6 @@
       "track": "145865"
     },
     {
-      "album": "17850.0",
-      "artist": "9289",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/116/116154_372480.ogg",
-        "oggSha256": "66098a76109705f024397286b38da23a0aa8c3e21111915e2e0fdc23e783058f",
-        "path": "audio/116154_372480.wav",
-        "wavSha256": "de2260bc483e6d58badee71ceb7f4843c916560d589230765c47092003cf0997"
-      },
-      "id": "116154_372480",
-      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-      "split": "train",
-      "track": "116154"
-    },
-    {
       "album": "17377.0",
       "artist": "19283",
       "audio": {
@@ -1530,20 +1418,6 @@
       "license": "http://creativecommons.org/licenses/by/4.0/",
       "split": "train",
       "track": "149646"
-    },
-    {
-      "album": "17850.0",
-      "artist": "19855",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/117/117260_142080.ogg",
-        "oggSha256": "7c3fb753ad774baf69ef455c0d64e205a282ef54fc1e685dc151d994dbddde9f",
-        "path": "audio/117260_142080.wav",
-        "wavSha256": "1f40352b3ddf6088d485fc675abf2eba15b61e72244679c1a3e7dcda6de839f6"
-      },
-      "id": "117260_142080",
-      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-      "split": "train",
-      "track": "117260"
     },
     {
       "album": "12727.0",
@@ -1586,20 +1460,6 @@
       "license": "http://creativecommons.org/licenses/by/4.0/",
       "split": "train",
       "track": "135716"
-    },
-    {
-      "album": "4553.0",
-      "artist": "5350",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/020/020094_80640.ogg",
-        "oggSha256": "30663e349a2abc9231be4a062d0bd7db6186955d0bb031e6009f3b018f460329",
-        "path": "audio/020094_80640.wav",
-        "wavSha256": "cc28315615ac47bbe15a74f3148fda52fb2b3878267b3fbd1e5c16913dc64857"
-      },
-      "id": "020094_80640",
-      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-      "split": "train",
-      "track": "20094"
     },
     {
       "album": "17494.0",
@@ -1686,20 +1546,6 @@
       "track": "110260"
     },
     {
-      "album": "5466.0",
-      "artist": "6401",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/024/024927_168960.ogg",
-        "oggSha256": "c33d9e26e587f97c6e45fe5813156d4693e2e61276c4fdebba8d2bf614049e24",
-        "path": "audio/024927_168960.wav",
-        "wavSha256": "0257fcfb26aad5c108376ef3ebc058f65609cb0176d5a4be3a6282e989b3a6c9"
-      },
-      "id": "024927_168960",
-      "license": "http://creativecommons.org/licenses/by/3.0/us/",
-      "split": "train",
-      "track": "24927"
-    },
-    {
       "album": "22022.0",
       "artist": "23485",
       "audio": {
@@ -1768,34 +1614,6 @@
       "license": "http://creativecommons.org/licenses/by/3.0/",
       "split": "train",
       "track": "36460"
-    },
-    {
-      "album": "5466.0",
-      "artist": "3307",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/024/024926_3840.ogg",
-        "oggSha256": "20da925e8e1d64194a9cdc515adf8bd06dd204a6df65d65cde617f62be66281e",
-        "path": "audio/024926_3840.wav",
-        "wavSha256": "d4d245ba42d2d6c7363fca283e1f570b9e79b2f8bff645c969a7fda5c157a1c5"
-      },
-      "id": "024926_3840",
-      "license": "http://creativecommons.org/licenses/by/3.0/us/",
-      "split": "train",
-      "track": "24926"
-    },
-    {
-      "album": "10490.0",
-      "artist": "6222",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/057/057139_7680.ogg",
-        "oggSha256": "fcc76e2a5ec767a669523cdb3266b9986a664c3dc446bac2120f67bc08faaa5b",
-        "path": "audio/057139_7680.wav",
-        "wavSha256": "45d91182af7ce7fd79ae648460bfb8fa3abb67ad8c0658d85e64ac111f5f5187"
-      },
-      "id": "057139_7680",
-      "license": "http://creativecommons.org/licenses/by/3.0/",
-      "split": "train",
-      "track": "57139"
     },
     {
       "album": "15949.0",
@@ -2232,20 +2050,6 @@
       "track": "9846"
     },
     {
-      "album": "18153.0",
-      "artist": "20019",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/118/118502_0.ogg",
-        "oggSha256": "05ed1bfae684beefcc63a804146a733f8d5f1fac8ddaa58271433fd82229616f",
-        "path": "audio/118502_0.wav",
-        "wavSha256": "51fc00ea8568cb954c79a118d9368cac3833bee18212bcfed06af60cba51cdb9"
-      },
-      "id": "118502_0",
-      "license": "http://creativecommons.org/licenses/by/4.0/",
-      "split": "train",
-      "track": "118502"
-    },
-    {
       "album": "22004.0",
       "artist": "23463",
       "audio": {
@@ -2456,20 +2260,6 @@
       "track": "114386"
     },
     {
-      "album": "18152.0",
-      "artist": "20031",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/118/118479_107520.ogg",
-        "oggSha256": "372d4771c3240d33d72ee028822cd75b4a46444c5064c270f001c59d40295411",
-        "path": "audio/118479_107520.wav",
-        "wavSha256": "d5ccd6d876565d35a83fba544a5ed9c9c995c0075c37106ae57cac24932aa7c2"
-      },
-      "id": "118479_107520",
-      "license": "http://creativecommons.org/licenses/by/4.0/",
-      "split": "train",
-      "track": "118479"
-    },
-    {
       "album": "17338.0",
       "artist": "11018",
       "audio": {
@@ -2538,20 +2328,6 @@
       "license": "http://creativecommons.org/licenses/by/3.0/",
       "split": "train",
       "track": "74977"
-    },
-    {
-      "album": "17850.0",
-      "artist": "19817",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/116/116537_142080.ogg",
-        "oggSha256": "5527eeec8639f438edb88261a16e7bf70641813d65b1fa0013d09d46612f8e35",
-        "path": "audio/116537_142080.wav",
-        "wavSha256": "c7eb18c67209490cdefeff72a526636398b1c73ea487f1e9cad1e7a68483c9aa"
-      },
-      "id": "116537_142080",
-      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-      "split": "train",
-      "track": "116537"
     },
     {
       "album": "18399.0",
@@ -2806,6 +2582,230 @@
       "track": "138055"
     },
     {
+      "album": "19974.0",
+      "artist": "21734",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/132/132649_165120.ogg",
+        "oggSha256": "805f502ef3261acf12d4cb4f6defa625df1677ea2004dd1e6d020e3289926286",
+        "path": "audio/132649_165120.wav",
+        "wavSha256": "9817865546a26b39ff22174aa6670320c405288811cf6b9283d50ba104ba5b8a"
+      },
+      "id": "132649_165120",
+      "license": "http://creativecommons.org/licenses/by/4.0/",
+      "split": "train",
+      "track": "132649"
+    },
+    {
+      "album": "20057.0",
+      "artist": "21803",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/133/133459_99840.ogg",
+        "oggSha256": "de1ca9bcc4b9bc3d79dfc7c3b8b283c6077b5158ad09071f23bb468646c0ac10",
+        "path": "audio/133459_99840.wav",
+        "wavSha256": "a0e1c06939ee2cfaae21eae518273438b77d2d8e87e59c9fe514e9964ed2dd5e"
+      },
+      "id": "133459_99840",
+      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
+      "split": "train",
+      "track": "133459"
+    },
+    {
+      "album": "22690.0",
+      "artist": "24185",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/153/153168_23040.ogg",
+        "oggSha256": "a5323b4ea9908de640c0361084d44ea5b6e36e8fcd81af945f2298122c4e2c91",
+        "path": "audio/153168_23040.wav",
+        "wavSha256": "95c249aba2636ce78bb3864bcbf217b2b0da3c5592e8ebc0952387b1c7a42a7b"
+      },
+      "id": "153168_23040",
+      "license": "http://creativecommons.org/licenses/by/4.0/",
+      "split": "train",
+      "track": "153168"
+    },
+    {
+      "album": "19958.0",
+      "artist": "20519",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/133/133653_291840.ogg",
+        "oggSha256": "9a2669b35fe28972ac6a4cd690d59f8541656920d5c79c9e1b9ae0d80c65ad96",
+        "path": "audio/133653_291840.wav",
+        "wavSha256": "67d5c3fb1cf6b67da773c53976a527b60cdf9e8607b3b252267a279d0ab7f5ba"
+      },
+      "id": "133653_291840",
+      "license": "http://creativecommons.org/licenses/by/4.0/",
+      "split": "train",
+      "track": "133653"
+    },
+    {
+      "album": "17630.0",
+      "artist": "19498",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/114/114396_15360.ogg",
+        "oggSha256": "f6e24b3893f6787e76d021327795575c55411fd67b8bc725d22d697a1f79fd0d",
+        "path": "audio/114396_15360.wav",
+        "wavSha256": "92bb9a4b93e96fd878faae03b3b34dab3abae48b00c5868d81b2c4ef6a84f57b"
+      },
+      "id": "114396_15360",
+      "license": "http://creativecommons.org/licenses/by/4.0/",
+      "split": "train",
+      "track": "114396"
+    },
+    {
+      "album": "19995.0",
+      "artist": "21750",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/132/132850_261120.ogg",
+        "oggSha256": "6add0d6eeaa03e5315011d03b0d30a97b54d889bf8f72527496ff1bc18af0951",
+        "path": "audio/132850_261120.wav",
+        "wavSha256": "d7f72446dd5393d23c7be38dcef3caeb97eb52458c3ed4eb1e26f41505aa9e21"
+      },
+      "id": "132850_261120",
+      "license": "http://creativecommons.org/licenses/by/4.0/",
+      "split": "train",
+      "track": "132850"
+    },
+    {
+      "album": "17806.0",
+      "artist": "19696",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/115/115814_38400.ogg",
+        "oggSha256": "028937fb2419a5213eedb5ae53e71514a11990526e17caaef3c031dbad27c388",
+        "path": "audio/115814_38400.wav",
+        "wavSha256": "8f701fb877919e29b1b7450c7e92158ca483767455a2ba765c0c107cd44bda1e"
+      },
+      "id": "115814_38400",
+      "license": "http://creativecommons.org/licenses/by/4.0/",
+      "split": "train",
+      "track": "115814"
+    },
+    {
+      "album": "22075.0",
+      "artist": "22645",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/148/148039_168960.ogg",
+        "oggSha256": "91920f9d4911766e0fa2e71bef12fecf37a1f6f0147665a76ab4ce35695d25d8",
+        "path": "audio/148039_168960.wav",
+        "wavSha256": "bc380f8b8c630515c7bab0784038db28c52fe2aef0e781c5d255ccf5b0bee586"
+      },
+      "id": "148039_168960",
+      "license": "http://creativecommons.org/licenses/by/4.0/",
+      "split": "train",
+      "track": "148039"
+    },
+    {
+      "album": "22691.0",
+      "artist": "24186",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/153/153188_30720.ogg",
+        "oggSha256": "cc633f8b0ab7e5924c7958100d5e28b9dc83deb01c75630d31ca57de8885bccc",
+        "path": "audio/153188_30720.wav",
+        "wavSha256": "79799dac2950d095d3ff67b9825106a9fa831c9947f27467742c5bd3099b299c"
+      },
+      "id": "153188_30720",
+      "license": "http://creativecommons.org/licenses/by/4.0/",
+      "split": "train",
+      "track": "153188"
+    },
+    {
+      "album": "9870.0",
+      "artist": "11679",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/052/052656_11520.ogg",
+        "oggSha256": "9d383b06db75ce36ce2421e41275d6987278ffc85aa2e33058deec874e241ba4",
+        "path": "audio/052656_11520.wav",
+        "wavSha256": "56954117941f3c9ce79716c6750359fd0db8085aa1fbab6b457baf98ba0c33b5"
+      },
+      "id": "052656_11520",
+      "license": "http://creativecommons.org/licenses/by/3.0/us/",
+      "split": "train",
+      "track": "52656"
+    },
+    {
+      "album": "4951.0",
+      "artist": "129",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/022/022480_192000.ogg",
+        "oggSha256": "88a624bcc005a280a0ea031fabb75307c36781fe4c762b29139154593adc8002",
+        "path": "audio/022480_192000.wav",
+        "wavSha256": "8bc295e6a77c060e3e0182c6a26922a05a4f434a61a1f18c0e6b7ad3127c19f3"
+      },
+      "id": "022480_192000",
+      "license": "http://creativecommons.org/licenses/by/3.0/us/",
+      "split": "train",
+      "track": "22480"
+    },
+    {
+      "album": "22905.0",
+      "artist": "16852",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/155/155113_180480.ogg",
+        "oggSha256": "221f8ebf2791e3cbfda1d8391a25701a705d5dd2896271272df3709ddcb788e5",
+        "path": "audio/155113_180480.wav",
+        "wavSha256": "6e6ebe1e4b222f920de3edb8f9179b8891e2f46614a247b36dcd6c0803e46735"
+      },
+      "id": "155113_180480",
+      "license": "http://creativecommons.org/licenses/by/4.0/",
+      "split": "train",
+      "track": "155113"
+    },
+    {
+      "album": "17772.0",
+      "artist": "19671",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/115/115592_180480.ogg",
+        "oggSha256": "0bad9f8e3c64d5c46806fb6e30e5ed1732c4a131e9d8441af200e1e7fcd80c2a",
+        "path": "audio/115592_180480.wav",
+        "wavSha256": "fdbcab02e0c079bedf6a4f95cf1660ec6af0e881a0f702506d28b941a6fb0bfe"
+      },
+      "id": "115592_180480",
+      "license": "http://creativecommons.org/licenses/by/4.0/",
+      "split": "train",
+      "track": "115592"
+    },
+    {
+      "album": "17649.0",
+      "artist": "6550",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/114/114544_11520.ogg",
+        "oggSha256": "d68858e2fe1a6043a96005d01ea3368b2250be6bcffb265fa8dc3c2b7a737ec7",
+        "path": "audio/114544_11520.wav",
+        "wavSha256": "c78d924137323c7670c56bce6e6217eba574da3b14cf516eacaefe0738823aef"
+      },
+      "id": "114544_11520",
+      "license": "http://creativecommons.org/licenses/by/4.0/",
+      "split": "train",
+      "track": "114544"
+    },
+    {
+      "album": "13248.0",
+      "artist": "12271",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/075/075383_241920.ogg",
+        "oggSha256": "b7d60a4259a4ee926888a6189c1b4f295609b1c4361b16cc3fdb353fb67957e1",
+        "path": "audio/075383_241920.wav",
+        "wavSha256": "35414b11bf9038ff7a8e4f00e053a8852b59c32881913dab2ea7645776841a00"
+      },
+      "id": "075383_241920",
+      "license": "http://creativecommons.org/licenses/by/3.0/",
+      "split": "train",
+      "track": "75383"
+    },
+    {
+      "album": "18145.0",
+      "artist": "13966",
+      "audio": {
+        "archiveMember": "openmic-2018/audio/118/118393_0.ogg",
+        "oggSha256": "d19a7b44fb28b151ef3f7f7893cf93e8456265d7923819cfaa83c717b7497b64",
+        "path": "audio/118393_0.wav",
+        "wavSha256": "7ea310af7cc0377c438226c1f5428824e35650c8480857acfede6daa7288b58f"
+      },
+      "id": "118393_0",
+      "license": "http://creativecommons.org/licenses/by/4.0/",
+      "split": "train",
+      "track": "118393"
+    },
+    {
       "album": "13010.0",
       "artist": "15066",
       "audio": {
@@ -2958,34 +2958,6 @@
       "license": "http://creativecommons.org/licenses/by/4.0/",
       "split": "test",
       "track": "129099"
-    },
-    {
-      "album": "18152.0",
-      "artist": "20039",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/118/118488_203520.ogg",
-        "oggSha256": "5c1ea1c738dad147e629600a2e9b5c190d7e11083b8a3423b33c557c7615deee",
-        "path": "audio/118488_203520.wav",
-        "wavSha256": "bc970061771feab0190dbd8e03bf6fc9e085c694f49530d5c980f10516ea11f3"
-      },
-      "id": "118488_203520",
-      "license": "http://creativecommons.org/licenses/by/4.0/",
-      "split": "test",
-      "track": "118488"
-    },
-    {
-      "album": "17850.0",
-      "artist": "19864",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/117/117217_76800.ogg",
-        "oggSha256": "693cdfceef6efde7364d7b95150ca863f016d66bd210000be755561f3c380bd5",
-        "path": "audio/117217_76800.wav",
-        "wavSha256": "bcf714c71911d515eabc5de3de75fce55c8d4160ac2b2d2269965592efc15065"
-      },
-      "id": "117217_76800",
-      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-      "split": "test",
-      "track": "117217"
     },
     {
       "album": "8365.0",
@@ -3170,20 +3142,6 @@
       "track": "107493"
     },
     {
-      "album": "17850.0",
-      "artist": "2474",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/116/116346_199680.ogg",
-        "oggSha256": "6dc68ea9e716fa6f05fb25c1d4296e2a20b5dd23c712cb32f0de6261c1c13809",
-        "path": "audio/116346_199680.wav",
-        "wavSha256": "c8eae3be105e3d68d28b2b6d58ab511ce2ea08686235913ad3290219e51940a7"
-      },
-      "id": "116346_199680",
-      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-      "split": "test",
-      "track": "116346"
-    },
-    {
       "album": "13010.0",
       "artist": "15374",
       "audio": {
@@ -3364,20 +3322,6 @@
       "license": "http://creativecommons.org/licenses/by/3.0/",
       "split": "test",
       "track": "57090"
-    },
-    {
-      "album": "13964.0",
-      "artist": "16189",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/083/083619_65280.ogg",
-        "oggSha256": "623cc98bbca2f1f2e2443824dd82680cf845d817bf69eb93f3a297ea6bdfcfa9",
-        "path": "audio/083619_65280.wav",
-        "wavSha256": "8752463f309302c8a4e70fcd4f017fc9bc69dc946301edb129f8034303b91f94"
-      },
-      "id": "083619_65280",
-      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-      "split": "test",
-      "track": "83619"
     },
     {
       "album": "18948.0",
@@ -3562,20 +3506,6 @@
       "track": "75560"
     },
     {
-      "album": "13964.0",
-      "artist": "15038",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/083/083564_157440.ogg",
-        "oggSha256": "fad7b9c833b960c166d6694904e31bef9ca5811970ecabca6f8093c1dbd490db",
-        "path": "audio/083564_157440.wav",
-        "wavSha256": "aa50b7f44b77bcb46b11efe5e81cb456231cb1d623a92e34f33a80862ab948aa"
-      },
-      "id": "083564_157440",
-      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-      "split": "test",
-      "track": "83564"
-    },
-    {
       "album": "19620.0",
       "artist": "21488",
       "audio": {
@@ -3588,20 +3518,6 @@
       "license": "http://creativecommons.org/licenses/by/4.0/",
       "split": "test",
       "track": "130287"
-    },
-    {
-      "album": "18152.0",
-      "artist": "20036",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/118/118487_11520.ogg",
-        "oggSha256": "029bba6d6a93796da455f9fb6b45efd522b7bba3bb7a9d4b4e6f44562c35e897",
-        "path": "audio/118487_11520.wav",
-        "wavSha256": "59d558f0a4d6f7e5ec24798323d4d5f572e2f03b56939cb6ee23285c8ef0a316"
-      },
-      "id": "118487_11520",
-      "license": "http://creativecommons.org/licenses/by/4.0/",
-      "split": "test",
-      "track": "118487"
     },
     {
       "album": "22838.0",
@@ -3924,20 +3840,6 @@
       "license": "http://creativecommons.org/licenses/by/4.0/",
       "split": "test",
       "track": "118223"
-    },
-    {
-      "album": "13964.0",
-      "artist": "16189",
-      "audio": {
-        "archiveMember": "openmic-2018/audio/083/083621_418560.ogg",
-        "oggSha256": "3b8524ad28d7d15f08b199a08c000b093f7d53c9185f2952fbf660441c85b62c",
-        "path": "audio/083621_418560.wav",
-        "wavSha256": "69deadd02e2ad655644e18ce43e538e3a82c1e2e3048544e630f30eb2fc16fa6"
-      },
-      "id": "083621_418560",
-      "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-      "split": "test",
-      "track": "83621"
     },
     {
       "album": "18948.0",
@@ -5356,8 +5258,8 @@
     ]
   },
   "seed": "openmic-2018-exam-v1",
-  "selectionRule": "hash-ranked identity/provenance only; test chosen first; at most N recordings per artist (round-robin), no recording twice, no artist in both splits; labels and predictions are excluded from selection",
-  "selectionSha256": "30de7f21712fa7199e7cbd44a795d592afbc1a36704bc2075c64a3228d949252",
+  "selectionRule": "hash-ranked identity/provenance only; test chosen first; at most N recordings per artist (round-robin), no recording twice, no artist or album in both splits; labels and predictions are excluded from selection",
+  "selectionSha256": "b0184b81e967c986fc442e3aba7941188f343a5b406b2e8b9d1e78d6b1050cff",
   "splits": {
     "test": "locked: official-test artists; never used to choose a rule, threshold or alias",
     "train": "development: official-train artists; ideas may be tuned here"
