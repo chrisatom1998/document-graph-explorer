@@ -7,6 +7,7 @@
 
 import type { Edge } from '../model/types';
 import { posixBasename, posixDirname, posixJoin, posixNormalize, posixResolveFrom, stripKnownExtension } from '../util/posixPath';
+import { phraseRespellings } from './aliases';
 import { isExternalUrl, normalizeLinkTarget } from './urlUtils';
 
 export interface ReferenceDocInput {
@@ -167,7 +168,11 @@ function buildMentionPatterns(
   const forEachNeedle = (visit: (targetId: string, raw: string, kind: MentionKind) => void): void => {
     for (const target of docs) {
       const title = target.title.trim();
-      if (title.length >= minTitleLen) visit(target.id, title, 0);
+      if (title.length >= minTitleLen) {
+        visit(target.id, title, 0);
+        // "PostgreSQL Upgrade Plan" in prose still names "Postgres Upgrade Plan".
+        for (const respelled of phraseRespellings(title)) visit(target.id, respelled, 0);
+      }
       const fileName = target.fileName.trim();
       if (fileName.length >= minTitleLen && fileName.toLowerCase() !== title.toLowerCase()) {
         visit(target.id, fileName, 1);

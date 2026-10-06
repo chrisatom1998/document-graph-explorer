@@ -8,13 +8,15 @@
  *
  * Structurally a sibling of keywordEdges (tfidf.ts): an inverted index,
  * IDF-weighted pair scores, a per-doc fan-out cap against hairballs, and
- * min-max normalized weights. Entities are matched case-sensitively — they are
- * identifiers, so 'IT' (acronym) must not fold into 'it'.
+ * min-max normalized weights. Entities match by entityKey (aliases.ts): the
+ * same name in camelCase, snake_case or prose, singular or plural, is one
+ * entity, while acronyms stay case-sensitive so 'IT' never folds into 'it'.
  *
  * PURE — runs in the aggregator worker and is unit-tested directly.
  */
 
 import type { Edge } from '../model/types';
+import { entityKey } from './aliases';
 
 // Entities are rarer and higher-precision than keywords, so their edges sit a
 // notch higher in the weight band.
@@ -68,17 +70,25 @@ export function entityEdges(
   docs: { id: string; entities: string[] }[],
   params: { minShared: number; edgesPerDoc: number },
 ): Edge[] {
-  // inverted index: entity -> doc ids that mention it (deduped per doc)
+  // inverted index: entity key -> doc ids that mention it (deduped per doc),
+  // shown under the first spelling seen; identifiers win over phrases for
+  // the df cap, since a name written as code is not a person's name
   const docsByEntity = new Map<string, string[]>();
+  const shownAs = new Map<string, string>();
   for (const doc of docs) {
     const seen = new Set<string>();
     for (const entity of doc.entities ?? []) {
-      if (!entity || seen.has(entity)) continue;
-      seen.add(entity);
-      let list = docsByEntity.get(entity);
+      if (!entity) continue;
+      const key = entityKey(entity);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      let list = docsByEntity.get(key);
       if (!list) {
         list = [];
-        docsByEntity.set(entity, list);
+        docsByEntity.set(key, list);
+        shownAs.set(key, entity);
+      } else if (CAPITALIZED_PHRASE.test(shownAs.get(key)!) && !CAPITALIZED_PHRASE.test(entity)) {
+        shownAs.set(key, entity);
       }
       list.push(doc.id);
     }
@@ -97,7 +107,7 @@ export function entityEdges(
   // accumulate pair scores from co-occurring entities
   const pairs = new Map<string, PairAcc>();
   for (const [entity, ids] of docsByEntity) {
-    const maxDf = CAPITALIZED_PHRASE.test(entity) ? phraseMaxDf : identifierMaxDf;
+    const maxDf = CAPITALIZED_PHRASE.test(shownAs.get(entity)!) ? phraseMaxDf : identifierMaxDf;
     if (ids.length < 2 || ids.length > maxDf) continue;
     const weight = idf.get(entity) ?? 0;
     for (let i = 0; i < ids.length; i += 1) {
@@ -167,7 +177,7 @@ export function entityEdges(
     const shared = [...pair.shared]
       .sort((x, y) => (idf.get(y) ?? 0) - (idf.get(x) ?? 0) || (x < y ? -1 : 1))
       .slice(0, MAX_EVIDENCE_ENTITIES)
-      .map((e) => `'${e}'`)
+      .map((e) => `'${shownAs.get(e)}'`)
       .join(', ');
     return {
       id: `${pair.a}->${pair.b}:entity`,
