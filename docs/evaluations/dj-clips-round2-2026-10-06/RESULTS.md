@@ -16,7 +16,9 @@ Two caveats:
 - **The OpenMIC share-alike reserve is now used.** Round 1 left only 2 clean non-share-alike test clips, so all 500 here
   are share-alike clips. The clean OpenMIC test pool is now used up, so a round 3 needs a different labelled source.
 - **Tempo truth is weaker than in round 1.** It is Beatport's listed BPM, not crowd-corrected. Beatport lists 25 of 41
-  drum & bass tracks at half tempo (about 87), and 3 tracks list 0 BPM (left out, so n = 497). Round 1's GiantSteps tempo
+  drum & bass tracks at half tempo (about 87), and 3 tracks list 0 BPM (left out, so n = 497). The committed
+  `mtg-key.txt` files were scored before the scorer skipped those 3, so their tempo rates use 500 as the denominator
+  (0.856 / 0.906 on main); the numbers below exclude them. Round 1's GiantSteps tempo
   tracks were picked from tracks whose Beatport BPM users had disputed. They are probably harder than a typical
   Beatport track (inferred from how that dataset was built, not measured).
 
