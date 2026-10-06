@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "scope": "Music-production sound sources, techniques, roles and audible attributes. Not an exhaustive list of every proprietary pack tag.",
   "sources": [
     {
@@ -2251,6 +2251,21 @@
       ],
       "recognition": "experimental",
       "axis": "dj-one-shot"
+    },
+    {
+      "group": "production",
+      "family": "transition",
+      "label": "filter sweep",
+      "source": "sound effect",
+      "description": "Music or noise swept through a resonant low-pass or high-pass filter.",
+      "aliases": [
+        "filter fx",
+        "lowpass sweep",
+        "highpass sweep",
+        "filtersweep"
+      ],
+      "recognition": "experimental",
+      "axis": "dj-effect"
     }
   ]
 }

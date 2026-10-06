@@ -133,7 +133,7 @@ export default function FilterBar({ embedded = false }: { embedded?: boolean }) 
 
   return (
     <>
-      <SnapshotDiffBanner />
+      {!embedded && <SnapshotDiffBanner />}
     <div className={`filter-bar-layer${embedded ? " filter-bar-layer--embedded" : ""}`} ref={rootRef} onKeyDown={(event) => {
       if (event.key === 'Escape' && !collapsed && !embedded) {
         event.preventDefault();

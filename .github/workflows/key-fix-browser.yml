@@ -16,7 +16,7 @@ env:
   MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
   MTGKEY_REF: fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b
   DOCS: docs/evaluations/dj-clips-round2-2026-10-06
-  OUT: docs/evaluations/key-2026-10-06/browser
+  OUT: docs/evaluations/key-2026-10-06/browser-cnn   # browser/ holds the #123 (chroma profile) run
   MUSIC_MODEL_PATHS: |
     public/music-model/**/*.onnx
     public/sound-model/**/*.onnx

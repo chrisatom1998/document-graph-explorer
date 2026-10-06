@@ -3,12 +3,13 @@ name: Held-out audio check, round 3
 # Judges sound-tag, tempo and key changes on two sets that no tuning has used (docs/evaluations/holdout-r3-2026-10-06):
 #   jamendo: 500 MTG-Jamendo split-0 test tracks (424 in DJ genres), middle 30 s, uploader instrument tags plus
 #            three-annotator voice/instrumental answers;
-#   mtgkey:  ~490 GiantSteps MTG key Beatport tracks that round 2 did not use and the hash rule holds out, middle 10 s,
+#   mtgkey:  318 GiantSteps MTG key Beatport tracks that round 2 did not use and the hash rule holds out, middle 10 s,
 #            Beatport BPM and manual key.
 # The app under test is APP_REF: the "app_ref" input on a manual run, this commit on a push to a holdout-r3/** branch
-# (merge your branch into one to test it), or main on a push to this set's own branch. Scripts and manifests always
-# come from this commit. Audio is fetched at run time and never committed. Only aggregate reports are committed (to the
-# triggering branch, never to the default branch), so per-track results don't leak into tuning.
+# (merge your branch into one to test it). Scripts, manifests and the analysis driver always come from this commit, so
+# older apps are driven with a driver that knows the current UI. Audio is fetched at run time and never committed. Only
+# aggregate reports are committed (to the triggering branch, never to the default branch), so per-track results don't
+# leak into tuning.
 on:
   workflow_dispatch:
     inputs:
@@ -16,7 +17,7 @@ on:
         description: Branch, tag or commit whose app to test
         default: main
   push:
-    branches: [claude/fresh-audio-test-set-9fz3nu, 'holdout-r3/**']
+    branches: ['holdout-r3/**']
     paths: [.github/workflows/holdout-r3-eval.yml, scripts/holdout-r3/**, src/**]
 
 permissions:
@@ -134,7 +135,8 @@ jobs:
       - name: Pick the manifest
         run: |
           if [ ${{ matrix.set }} = jamendo ]; then cp harness/$DOCS/jamendo-manifest.json manifest.json; else cp clips/$DOCS/mtg-key-manifest.json manifest.json; fi
-          cp -n harness/scripts/short-clip-upload-eval.mjs scripts/ || true
+          # The harness's driver handles both the old toolbar and the #137 layout; an app's own copy may not.
+          cp harness/scripts/short-clip-upload-eval.mjs scripts/
           git log -1 --format='app under test: %H %s'
       - uses: actions/setup-node@v4
         with:

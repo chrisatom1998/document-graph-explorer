@@ -335,7 +335,7 @@ export async function clearAllCaches(): Promise<boolean> {
   try {
     const db = await getDb();
     const tx = db.transaction(
-      ['documents', 'embeddings', 'graphs', 'settings', 'snapshots', 'originals', 'chats', 'corpora'],
+      ['documents', 'embeddings', 'graphs', 'settings', 'snapshots', 'originals', 'chats', 'corpora', 'library'],
       'readwrite',
     );
     await Promise.all([
@@ -347,6 +347,7 @@ export async function clearAllCaches(): Promise<boolean> {
       tx.objectStore('originals').clear(),
       tx.objectStore('chats').clear(),
       tx.objectStore('corpora').clear(),
+      tx.objectStore('library').clear(),
       tx.done,
     ]);
     return true;
