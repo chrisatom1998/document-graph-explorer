@@ -4,7 +4,7 @@ Frozen before any model was scored on it. Manifest SHA-256 `6e6ad4e8994e7f6aeff9
 
 - 141 Freesound CC0 clips of 0.15-2 s, 86 bass hit, 55 not bass, 101 uploaders. Audio is not in the repo; each clip's SHA-256 is in the manifest, previews are re-fetchable by id.
 - Excluded before fetching: every Freesound id and uploader in the earlier reserved splits or any training manifest. Ids and uploaders here are listed in `reserved-test-families.json`; never train on them.
-- Labels: owner listened to every clip. A prefilled guess (from the search term that found the clip, not a model score) was shown; the owner overrode it on 29 of 141 clips. Guesses can anchor labelling, so treat labels as human-reviewed, not independently audited. 3 clips marked unsure or skipped are excluded.
+- Labels: owner listened to every clip. A prefilled guess (from the search term that found the clip, not a model score) was shown; the owner overrode it on 29 of 141 clips. Guesses can anchor labelling, so treat labels as human-reviewed, not independently audited. 3 clips were not reviewed and are excluded.
 - Hard negatives: kick, impact, drum, synth stab, low strings. Not-bass clips include some from bass searches that the owner rejected.
 
 ## Rules for use

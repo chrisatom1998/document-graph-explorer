@@ -74,6 +74,31 @@
       ],
       "port": 8766,
       "url": "http://127.0.0.1:8766"
+    },
+    {
+      "name": "short-clip-test-v2-review",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DJ_REVIEW_DATA=artifacts/music-evaluation/short-clip-test-v2-review",
+        "DJ_REVIEW_PORT=8768",
+        "DJ_REVIEW_NO_APPLY=1",
+        "python3",
+        "scripts/dj-review-server.py"
+      ],
+      "port": 8768,
+      "url": "http://127.0.0.1:8768"
+    },
+    {
+      "name": "short-clip-review",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DJ_REVIEW_DATA=artifacts/music-evaluation/short-clip-test-v2-review",
+        "DJ_REVIEW_PORT=8769",
+        "python3",
+        "scripts/short-clip-review-server.py"
+      ],
+      "port": 8769,
+      "url": "http://127.0.0.1:8769"
     }
   ]
 }
