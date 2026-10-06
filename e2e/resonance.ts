@@ -107,6 +107,15 @@ export async function openSampleAssistant(page: Page): Promise<void> {
  * Make the filter column reachable. Below 860px (including the suite's
  * default 800x500 window) it hides behind a "Filters" button.
  */
+const tourHandled = new WeakSet<Page>();
+/** Dismiss the first-run tour whenever it appears in the way of an action. */
+export async function autoDismissTour(page: Page): Promise<void> {
+  if (tourHandled.has(page)) return;
+  tourHandled.add(page);
+  const tour = page.getByRole('button', { name: 'Dismiss getting started' });
+  await page.addLocatorHandler(tour, async () => { await tour.click(); });
+}
+
 export async function showFilters(page: Page): Promise<void> {
   const toggle = page.locator('.rs-narrow-filters');
   if (await toggle.isVisible() && (await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
@@ -114,6 +123,8 @@ export async function showFilters(page: Page): Promise<void> {
 
 /** Expand (or collapse) the sidebar's classic filter panel: clusters, connection counts, recency. */
 export async function advancedFilters(page: Page, open = true): Promise<void> {
+  // The first-run tour can open over the sidebar on compact windows at any point.
+  await autoDismissTour(page);
   await showFilters(page);
   const panel = page.locator('.rs-advanced');
   if ((await panel.evaluate(el => (el as HTMLDetailsElement).open)) !== open) {
