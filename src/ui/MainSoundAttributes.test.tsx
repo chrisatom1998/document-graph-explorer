@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import {afterEach,beforeEach,expect,it} from 'vitest';
 import {cleanup,fireEvent,render,screen,within} from '@testing-library/react';
-import MainSoundAttributes, {setAttributesOpenSetting,setShowUnconfirmedSetting,soundAttributeRows} from './MainSoundAttributes';
+import MainSoundAttributes, {likelyExtraSounds,setAttributesOpenSetting,setShowUnconfirmedSetting,soundAttributeRows} from './MainSoundAttributes';
 import MusicFeatures from './MusicFeatures';
 import type {MusicAnalysis} from '../audio/musicTypes';
 import type {DocNode} from '../model/types';
@@ -89,4 +89,14 @@ it('starts collapsed and keeps the open choice when another sound is shown',()=>
  fireEvent.click(toggle);expect(toggle).toHaveAttribute('aria-expanded','true');expect(screen.getByText('piano')).toBeVisible();
  view.unmount();render(<MainSoundAttributes audio={a} node={{title:'two.wav'}}/>);
  expect(screen.getByRole('button',{name:'All sound attributes'})).toHaveAttribute('aria-expanded','true');
+});
+it('offers only probability-like, unreviewed scores of 0.5+ as likely extras',()=>{
+ const a=audio();a.recognition=createRecognition(8,'full');
+ recordEvidence(a.recognition,'jamendo',{start:0,end:8},[{dimension:'source',labelId:'oboe',score:.8}]);
+ recordEvidence(a.recognition,'clap',{start:0,end:8},[{dimension:'source',labelId:'flute',score:.9}]);
+ recordEvidence(a.recognition,'ast',{start:0,end:8},[{dimension:'source',labelId:'piano',score:.7},{dimension:'source',labelId:'cello',score:.3}]);
+ a.soundReviews=[{dimension:'source',labelId:'piano',decision:'rejected',scope:'track',at:'now',evidenceRunId:'qa'}];
+ const labels=likelyExtraSounds(a,{title:'neutral.wav'},new Set()).map(r=>r.label);
+ expect(labels).toEqual(['oboe']); // CLAP similarity, reviewed labels and weak scores never count
+ expect(likelyExtraSounds(a,{title:'neutral.wav'},new Set(['oboe']))).toEqual([]);
 });
