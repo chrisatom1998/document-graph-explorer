@@ -1,0 +1,30 @@
+161/161 analysed; 0 clips showed no tag
+source:drums         P 0.846  R 0.88  (22 TP / 4 FP / 3 FN; 25 pos, 6 neg)
+source:voice         P 1  R 1  (5 TP / 0 FP / 0 FN; 5 pos, 6 neg)
+source:synthesizer   P 1  R 1  (26 TP / 0 FP / 0 FN; 26 pos, 0 neg)
+source:piano         P 1  R 0.75  (3 TP / 0 FP / 1 FN; 4 pos, 3 neg)
+source:guitar        P 1  R 0.333  (1 TP / 0 FP / 2 FN; 3 pos, 7 neg)
+source:bass          P 0.375  R 0.5  (3 TP / 5 FP / 3 FN; 6 pos, 13 neg)
+source:cymbals       P 0.938  R 0.938  (15 TP / 1 FP / 1 FN; 16 pos, 3 neg)
+source:organ         P 0.625  R 1  (5 TP / 3 FP / 0 FN; 5 pos, 11 neg)
+source:violin        P —  R 0  (0 TP / 0 FP / 3 FN; 3 pos, 8 neg)
+source:trumpet       P 0.25  R 1  (2 TP / 6 FP / 0 FN; 2 pos, 19 neg)
+source:saxophone     P 1  R 0.5  (2 TP / 0 FP / 2 FN; 4 pos, 6 neg)
+missed positives, where the label was found: {"guitar":{"instrument estimate only":2},"violin":{"nowhere":3},"drums":{"nowhere":3},"saxophone":{"profile tag (AudioSet AST)":1,"nowhere":1},"bass":{"nowhere":3},"piano":{"nowhere":1},"cymbals":{"nowhere":1}}
+Pass bar: precision AND recall >= 0.60 (60/60). Labels with fewer than 5 positives are marked "low".
+
+| Label | Positives | openmic-tags-dj-genres P / R | openmic-tags-dj-genres pass | Change |
+|---|---|---|---|---|
+| source:bass | 6 | 0.38 / 0.50 | no |  |
+| source:cymbals | 16 | 0.94 / 0.94 | yes |  |
+| source:drums | 25 | 0.85 / 0.88 | yes |  |
+| source:guitar | 3 (low) | 1.00 / 0.33 | no |  |
+| source:organ | 5 | 0.63 / 1.00 | yes |  |
+| source:piano | 4 (low) | 1.00 / 0.75 | yes |  |
+| source:saxophone | 4 (low) | 1.00 / 0.50 | no |  |
+| source:synthesizer | 26 | 1.00 / 1.00 | yes |  |
+| source:trumpet | 2 (low) | 0.25 / 1.00 | no |  |
+| source:violin | 3 (low) | — / 0.00 | no |  |
+| source:voice | 5 | 1.00 / 1.00 | yes |  |
+
+openmic-tags-dj-genres: 6/11 measurable labels meet 60/60
