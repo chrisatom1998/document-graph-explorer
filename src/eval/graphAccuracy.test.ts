@@ -22,7 +22,10 @@
  * second test guards against overfitting them: it builds the full 100-doc
  * demo graph from the real PDFs, as the app does, and checks the 36
  * hand-written PDFs against topic groups labelled by hand (HELD_OUT_GROUPS)
- * that played no part in the tuning.
+ * that played no part in the tuning. A third test does the same on 61 real
+ * Python Enhancement Proposals (corpus/python-peps), written by people who
+ * never saw this app, and a fourth checks that respelling Postgres as
+ * PostgreSQL in half the demo PDFs leaves their lexical links unchanged.
  */
 
 import { readFileSync } from 'node:fs';
@@ -59,6 +62,7 @@ import { stripBoilerplate } from '../pipeline/boilerplate';
 import { chunkText } from '../pipeline/chunker';
 import { extractEntities } from '../pipeline/entities';
 import { parsePdfEngine } from '../pipeline/parsers/pdfEngine';
+import { cleanFilename } from '../pipeline/parsers/txt';
 import { extractPhraseTf } from '../pipeline/phrases';
 import { termFreq, tokenize } from '../pipeline/tokenize';
 import { handleLexical, handleSemantic } from '../workers/aggregatorHandlers';
@@ -67,6 +71,7 @@ import { pairKey, scoreClusters, scorePairs, type PRScore } from './graphAccurac
 const COUNT = GENERATED_DEMO_DOCUMENT_COUNT;
 const MODEL_ROOT = fileURLToPath(new URL('../../public/models/', import.meta.url));
 const DEMO_DIR = fileURLToPath(new URL('../../public/demo/', import.meta.url));
+const PEP_DIR = fileURLToPath(new URL('./corpus/python-peps/', import.meta.url));
 
 interface CorpusDoc {
   id: string;
@@ -199,6 +204,66 @@ async function runPipeline(docs: CorpusDoc[]): Promise<{ edges: Edge[]; clusters
   return { edges: [...lexEdges, ...semantic.edges], clusters: semantic.clusters };
 }
 
+interface HeldOutStats {
+  togetherPairs: number;
+  apartPairs: number;
+  linkedTogether: number;
+  clusteredTogether: number;
+  linkedApart: number;
+  clusteredApart: number;
+  isolated: string[];
+}
+
+/**
+ * Scores a graph against hand-labelled topic groups: same-group pairs should
+ * be linked or share a cluster, pairs across `unrelated` groups should not.
+ * Unlabelled pairs are ignored. `idOf` maps a group member to its doc id.
+ */
+function scoreHeldOut(
+  docs: CorpusDoc[],
+  edges: Edge[],
+  clusters: Record<string, number>,
+  groups: Record<string, string[]>,
+  unrelated: [string, string][],
+  idOf: (name: string) => string,
+): HeldOutStats {
+  const together = new Set<string>();
+  for (const group of Object.values(groups)) {
+    for (const a of group) for (const b of group) if (a < b) together.add(pairKey(idOf(a), idOf(b)));
+  }
+  const apart = new Set<string>();
+  for (const [x, y] of unrelated) {
+    for (const a of groups[x]!) {
+      for (const b of groups[y]!) {
+        const key = pairKey(idOf(a), idOf(b));
+        if (a !== b && !together.has(key)) apart.add(key);
+      }
+    }
+  }
+  const linked = new Set(edges.map((e) => pairKey(e.source, e.target)));
+  const coClustered = (key: string): boolean => {
+    const [a, b] = key.split('|');
+    return clusters[a!] === clusters[b!];
+  };
+  const count = (keys: Set<string>, test: (key: string) => boolean): number => [...keys].filter(test).length;
+  const degree = new Map<string, number>();
+  for (const key of linked) for (const id of key.split('|')) degree.set(id, (degree.get(id) ?? 0) + 1);
+  return {
+    togetherPairs: together.size,
+    apartPairs: apart.size,
+    linkedTogether: count(together, (k) => linked.has(k)),
+    clusteredTogether: count(together, coClustered),
+    linkedApart: count(apart, (k) => linked.has(k)),
+    clusteredApart: count(apart, coClustered),
+    isolated: docs.filter((d) => !degree.has(d.id)).map((d) => d.id),
+  };
+}
+
+const formatHeldOut = (s: HeldOutStats): string =>
+  `${s.togetherPairs} same-topic pairs: ${s.linkedTogether} linked, ${s.clusteredTogether} co-clustered; ` +
+  `${s.apartPairs} unrelated pairs: ${s.linkedApart} linked, ${s.clusteredApart} co-clustered; ` +
+  `isolated docs: ${s.isolated.length}`;
+
 const pct = (x: number): string => `${(x * 100).toFixed(1)}%`;
 const row = (name: string, s: PRScore): string =>
   `  ${name.padEnd(10)} edges=${String(s.predicted).padStart(4)}  precision=${pct(s.precision).padStart(6)}  recall=${pct(s.recall).padStart(6)}  f1=${pct(s.f1).padStart(6)}`;
@@ -267,51 +332,82 @@ describe('graph accuracy on the generated demo corpus', () => {
     expect(docs).toHaveLength(36 + COUNT);
     const { edges, clusters } = await runPipeline(docs);
 
-    const pdf = (name: string): string => `${name}.pdf`;
-    const together = new Set<string>();
-    for (const group of Object.values(HELD_OUT_GROUPS)) {
-      for (const a of group) for (const b of group) if (a < b) together.add(pairKey(pdf(a), pdf(b)));
-    }
-    const apart = new Set<string>();
-    for (const [x, y] of HELD_OUT_UNRELATED) {
-      for (const a of HELD_OUT_GROUPS[x]!) {
-        for (const b of HELD_OUT_GROUPS[y]!) {
-          const key = pairKey(pdf(a), pdf(b));
-          if (a !== b && !together.has(key)) apart.add(key);
-        }
-      }
-    }
-    const linked = new Set(edges.map((e) => pairKey(e.source, e.target)));
-    const coClustered = (key: string): boolean => {
-      const [a, b] = key.split('|');
-      return clusters[a!] === clusters[b!];
-    };
-    const count = (keys: Set<string>, test: (key: string) => boolean): number => [...keys].filter(test).length;
-    const degree = new Map<string, number>();
-    for (const key of linked) for (const id of key.split('|')) degree.set(id, (degree.get(id) ?? 0) + 1);
-    const isolated = docs.filter((d) => !degree.has(d.id)).map((d) => d.id);
-
-    const stats = {
-      linkedTogether: count(together, (k) => linked.has(k)),
-      clusteredTogether: count(together, coClustered),
-      linkedApart: count(apart, (k) => linked.has(k)),
-      clusteredApart: count(apart, coClustered),
-    };
+    const stats = scoreHeldOut(docs, edges, clusters, HELD_OUT_GROUPS, HELD_OUT_UNRELATED, (name) => `${name}.pdf`);
     process.stdout.write(
-      `Held-out topics — ${together.size} same-topic pairs: ${stats.linkedTogether} linked, ` +
-        `${stats.clusteredTogether} co-clustered; ${apart.size} unrelated pairs: ` +
-        `${stats.linkedApart} linked, ${stats.clusteredApart} co-clustered; isolated docs: ${isolated.length}\n`,
+      `Held-out topics — ${formatHeldOut(stats)}\n`,
     );
 
     // Before the link thresholds were tuned on the generated records, this
     // scored 17 linked and 24 co-clustered same-topic pairs, 1 linked and 4
     // co-clustered unrelated ones. The floors hold that line, with a pair or
     // two of slack for ONNX runtime drift.
-    expect(isolated).toEqual([]);
+    expect(stats.isolated).toEqual([]);
     expect(stats.linkedTogether).toBeGreaterThanOrEqual(16);
     expect(stats.clusteredTogether).toBeGreaterThanOrEqual(22);
     expect(stats.linkedApart).toBeLessThanOrEqual(1);
     expect(stats.clusteredApart).toBeLessThanOrEqual(4);
+  });
+
+  it('links the same docs when half of them spell Postgres as PostgreSQL', { timeout: 180_000 }, async () => {
+    const docs = await loadDemoPdfs();
+    // Every other PDF that names Postgres switches to the long spelling, as a
+    // corpus written by different teams would (file names like
+    // postgres-upgrade-plan.pdf stay as they are).
+    let mentions = 0;
+    const respelled = docs.map((d) => {
+      if (!/\bpostgres\b/i.test(d.text) || (mentions += 1) % 2 === 0) return d;
+      return { ...d, text: d.text.replace(/\bPostgres\b/g, 'PostgreSQL').replace(/\bpostgres\b(?!-)/g, 'postgresql') };
+    });
+    const switched = respelled.filter((d, i) => d !== docs[i]).length;
+    const original = await runPipeline(docs);
+    const variant = await runPipeline(respelled);
+    const pdf = (name: string): string => `${name}.pdf`;
+    const before = scoreHeldOut(docs, original.edges, original.clusters, HELD_OUT_GROUPS, HELD_OUT_UNRELATED, pdf);
+    const after = scoreHeldOut(respelled, variant.edges, variant.clusters, HELD_OUT_GROUPS, HELD_OUT_UNRELATED, pdf);
+    // Lexical edges (keyword, entity, title, citation) must not depend on the
+    // spelling; semantic edges and clusters shift a little with the text.
+    const lexical = (edges: Edge[]): string[] =>
+      edges.filter((e) => e.kind !== 'semantic').map((e) => `${pairKey(e.source, e.target)}:${e.kind}`).sort();
+    const kept = new Set(lexical(variant.edges));
+    const lost = lexical(original.edges).filter((k) => !kept.has(k));
+    process.stdout.write(
+      `Spelling variants — ${switched} PDFs respelled Postgres -> PostgreSQL; lexical edges lost: ${lost.length}\n` +
+        `  one spelling   ${formatHeldOut(before)}\n  two spellings  ${formatHeldOut(after)}\n`,
+    );
+
+    expect(switched).toBeGreaterThanOrEqual(5);
+    // Before aliases.ts, the citation of "Postgres Upgrade Plan" by its long
+    // spelling was lost, and 'postgres'/'postgresql' were unrelated keywords.
+    expect(lost).toEqual([]);
+    expect(after.linkedTogether).toBeGreaterThanOrEqual(before.linkedTogether);
+    expect(after.clusteredTogether).toBeGreaterThanOrEqual(before.clusteredTogether);
+    expect(after.linkedApart).toBeLessThanOrEqual(before.linkedApart);
+  });
+
+  it('keeps the hand-labelled topics of 61 real Python PEPs together', { timeout: 600_000 }, async () => {
+    const docs = loadPepCorpus();
+    expect(docs).toHaveLength(Object.values(PEP_GROUPS).flat().length);
+    const { edges, clusters } = await runPipeline(docs);
+    const stats = scoreHeldOut(docs, edges, clusters, PEP_GROUPS, PEP_UNRELATED, (n) => `pep-${n.padStart(4, '0')}.rst`);
+    const clusterScore = scoreClusters(clusters, PEP_TOPIC_OF);
+    process.stdout.write(
+      `Python PEPs — ${formatHeldOut(stats)}\n` +
+        `  clusters   ${clusterScore.clusters} found for ${clusterScore.classes} topics  ` +
+        `purity=${pct(clusterScore.purity)}  inverse purity=${pct(clusterScore.inversePurity)}  NMI=${clusterScore.nmi.toFixed(3)}\n`,
+    );
+
+    // First run, before any tuning looked at these docs: 96 linked and 205
+    // co-clustered same-topic pairs, 10 linked and 30 co-clustered unrelated
+    // ones, 2 isolated (PEP 673 and 681, typing PEPs full of example code).
+    // Most wrong links are entity edges on Python built-ins every PEP names
+    // (KeyError, ValueError, SyntaxError). These docs stay held out: tune on
+    // them and they stop measuring anything. Floors leave room for ONNX drift.
+    expect(stats.isolated.length).toBeLessThanOrEqual(2);
+    expect(stats.linkedTogether).toBeGreaterThanOrEqual(94);
+    expect(stats.clusteredTogether).toBeGreaterThanOrEqual(198);
+    expect(stats.linkedApart).toBeLessThanOrEqual(12);
+    expect(stats.clusteredApart).toBeLessThanOrEqual(36);
+    expect(clusterScore.nmi).toBeGreaterThanOrEqual(0.84);
   });
 });
 
@@ -352,6 +448,67 @@ const HELD_OUT_UNRELATED: [string, string][] = [
   ['spend', 'postgres'],
   ['performance', 'security'],
 ];
+
+/**
+ * A second held-out corpus written by people who never saw this app: 61
+ * Python Enhancement Proposals, as published (public domain / CC0; see
+ * corpus/python-peps/README.md). Unlike the demo PDFs these are long, written
+ * by many authors, and full of code, so they test the thresholds on text they
+ * were not tuned for. Grouped by the feature each PEP specifies; file names
+ * carry no topic words, so only content can link them.
+ */
+const PEP_GROUPS: Record<string, string[]> = {
+  typing: [
+    '484', '526', '544', '585', '586', '589', '591', '593', '604',
+    '612', '613', '646', '647', '673', '675', '681', '695', '698',
+  ],
+  packaging: ['427', '440', '508', '517', '518', '621', '625', '643', '660', '668', '723', '735'],
+  async: ['492', '525', '530', '567', '3156', '789'],
+  patternMatching: ['622', '634', '635', '636'],
+  interpreters: ['554', '684', '703', '734', '779'],
+  strings: ['461', '498', '701', '750', '3101'],
+  imports: ['302', '420', '451', '562', '690'],
+  exceptions: ['409', '415', '654', '678', '3134', '3151'],
+};
+/**
+ * Group pairs with nothing in common. Left out on purpose: typing with
+ * strings (LiteralString), async (coroutine types) and pattern matching;
+ * imports with packaging (namespace packages); exceptions with async
+ * (ExceptionGroup came from asyncio task groups); interpreters with async and
+ * imports.
+ */
+const PEP_UNRELATED: [string, string][] = [
+  ['typing', 'packaging'],
+  ['typing', 'interpreters'],
+  ['typing', 'exceptions'],
+  ['packaging', 'async'],
+  ['packaging', 'patternMatching'],
+  ['packaging', 'interpreters'],
+  ['packaging', 'strings'],
+  ['packaging', 'exceptions'],
+  ['patternMatching', 'async'],
+  ['patternMatching', 'interpreters'],
+  ['patternMatching', 'imports'],
+  ['patternMatching', 'exceptions'],
+  ['strings', 'async'],
+  ['strings', 'interpreters'],
+  ['strings', 'imports'],
+  ['strings', 'exceptions'],
+  ['imports', 'exceptions'],
+  ['interpreters', 'exceptions'],
+];
+const PEP_TOPIC_OF = new Map(
+  Object.entries(PEP_GROUPS).flatMap(([topic, peps]) => peps.map((n) => [`pep-${n.padStart(4, '0')}.rst`, topic] as const)),
+);
+
+/** The PEP corpus as the app sees a dropped .rst file: raw text, file-name title. */
+function loadPepCorpus(): CorpusDoc[] {
+  return [...PEP_TOPIC_OF.keys()].sort().map((name) => ({
+    id: name,
+    title: cleanFilename(name),
+    text: readFileSync(join(PEP_DIR, name), 'utf-8'),
+  }));
+}
 
 /** The 100 demo PDFs (committed + generated), parsed with the app's pdf engine. */
 async function loadDemoPdfs(): Promise<CorpusDoc[]> {
