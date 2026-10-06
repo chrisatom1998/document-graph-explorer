@@ -1,0 +1,668 @@
+{
+ "drums": {
+  "main": {
+   "pick": {
+    "recall": 0.772,
+    "precisionFloor": 0.244,
+    "positives": 57
+   },
+   "check": {
+    "recall": 0.844,
+    "precisionFloor": 0.351,
+    "positives": 77
+   },
+   "all": {
+    "recall": 0.813,
+    "precisionFloor": 0.299,
+    "positives": 134
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "recall already at 0.70 on pick"
+ },
+ "voice": {
+  "main": {
+   "pick": {
+    "recall": 0.742,
+    "precisionFloor": 0.168,
+    "positives": 31
+   },
+   "check": {
+    "recall": 0.81,
+    "precisionFloor": 0.126,
+    "positives": 21
+   },
+   "all": {
+    "recall": 0.769,
+    "precisionFloor": 0.147,
+    "positives": 52
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "recall already at 0.70 on pick"
+ },
+ "synthesizer": {
+  "main": {
+   "pick": {
+    "recall": 0.888,
+    "precisionFloor": 0.403,
+    "positives": 98
+   },
+   "check": {
+    "recall": 0.884,
+    "precisionFloor": 0.344,
+    "positives": 86
+   },
+   "all": {
+    "recall": 0.886,
+    "precisionFloor": 0.373,
+    "positives": 184
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "recall already at 0.70 on pick"
+ },
+ "piano": {
+  "main": {
+   "pick": {
+    "recall": 0.813,
+    "precisionFloor": 0.363,
+    "positives": 75
+   },
+   "check": {
+    "recall": 0.753,
+    "precisionFloor": 0.389,
+    "positives": 81
+   },
+   "all": {
+    "recall": 0.782,
+    "precisionFloor": 0.375,
+    "positives": 156
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "recall already at 0.70 on pick"
+ },
+ "electric piano": {
+  "main": {
+   "pick": {
+    "recall": 0.208,
+    "precisionFloor": 0.192,
+    "positives": 24
+   },
+   "check": {
+    "recall": 0.105,
+    "precisionFloor": 0.077,
+    "positives": 19
+   },
+   "all": {
+    "recall": 0.163,
+    "precisionFloor": 0.135,
+    "positives": 43
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "no source and threshold keeps the precision floor at 0.70 on pick"
+ },
+ "guitar": {
+  "main": {
+   "pick": {
+    "recall": 0.779,
+    "precisionFloor": 0.503,
+    "positives": 95
+   },
+   "check": {
+    "recall": 0.819,
+    "precisionFloor": 0.421,
+    "positives": 72
+   },
+   "all": {
+    "recall": 0.796,
+    "precisionFloor": 0.463,
+    "positives": 167
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "recall already at 0.70 on pick"
+ },
+ "acoustic guitar": {
+  "main": {
+   "pick": {
+    "recall": 0.027,
+    "precisionFloor": 1.0,
+    "positives": 37
+   },
+   "check": {
+    "recall": 0.038,
+    "precisionFloor": 0.333,
+    "positives": 26
+   },
+   "all": {
+    "recall": 0.032,
+    "precisionFloor": 0.5,
+    "positives": 63
+   }
+  },
+  "rule": {
+   "source": "jamendo native",
+   "threshold": 0.4,
+   "pick": {
+    "recall": 0.162,
+    "precisionFloor": 0.75,
+    "positives": 37
+   },
+   "check": {
+    "recall": 0.308,
+    "precisionFloor": 0.571,
+    "positives": 26
+   },
+   "all": {
+    "recall": 0.222,
+    "precisionFloor": 0.636,
+    "positives": 63
+   }
+  },
+  "adopted": false,
+  "why": "check half: recall +0.27, precision floor 0.571"
+ },
+ "electric guitar": {
+  "main": {
+   "pick": {
+    "recall": 0.0,
+    "precisionFloor": null,
+    "positives": 40
+   },
+   "check": {
+    "recall": 0.0,
+    "precisionFloor": null,
+    "positives": 37
+   },
+   "all": {
+    "recall": 0.0,
+    "precisionFloor": null,
+    "positives": 77
+   }
+  },
+  "rule": {
+   "source": "ast native",
+   "threshold": 0.05,
+   "pick": {
+    "recall": 0.025,
+    "precisionFloor": 1.0,
+    "positives": 40
+   },
+   "check": {
+    "recall": 0.0,
+    "precisionFloor": null,
+    "positives": 37
+   },
+   "all": {
+    "recall": 0.013,
+    "precisionFloor": 1.0,
+    "positives": 77
+   }
+  },
+  "adopted": false,
+  "why": "check half: recall +0.00, precision floor None"
+ },
+ "bass guitar": {
+  "main": {
+   "pick": {
+    "recall": 0.452,
+    "precisionFloor": 0.55,
+    "positives": 73
+   },
+   "check": {
+    "recall": 0.319,
+    "precisionFloor": 0.451,
+    "positives": 72
+   },
+   "all": {
+    "recall": 0.386,
+    "precisionFloor": 0.505,
+    "positives": 145
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "no source and threshold keeps the precision floor at 0.70 on pick"
+ },
+ "organ": {
+  "main": {
+   "pick": {
+    "recall": 0.222,
+    "precisionFloor": 0.049,
+    "positives": 9
+   },
+   "check": {
+    "recall": 0.111,
+    "precisionFloor": 0.088,
+    "positives": 27
+   },
+   "all": {
+    "recall": 0.139,
+    "precisionFloor": 0.067,
+    "positives": 36
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "no source and threshold keeps the precision floor at 0.70 on pick"
+ },
+ "violin / fiddle": {
+  "main": {
+   "pick": {
+    "recall": 0.32,
+    "precisionFloor": 0.195,
+    "positives": 25
+   },
+   "check": {
+    "recall": 0.484,
+    "precisionFloor": 0.25,
+    "positives": 31
+   },
+   "all": {
+    "recall": 0.411,
+    "precisionFloor": 0.228,
+    "positives": 56
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "no source and threshold keeps the precision floor at 0.70 on pick"
+ },
+ "cello": {
+  "main": {
+   "pick": {
+    "recall": 0.471,
+    "precisionFloor": 0.195,
+    "positives": 17
+   },
+   "check": {
+    "recall": 0.667,
+    "precisionFloor": 0.34,
+    "positives": 24
+   },
+   "all": {
+    "recall": 0.585,
+    "precisionFloor": 0.273,
+    "positives": 41
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "no source and threshold keeps the precision floor at 0.70 on pick"
+ },
+ "strings": {
+  "main": {
+   "pick": {
+    "recall": 0.208,
+    "precisionFloor": 0.278,
+    "positives": 24
+   },
+   "check": {
+    "recall": 0.217,
+    "precisionFloor": 0.172,
+    "positives": 23
+   },
+   "all": {
+    "recall": 0.213,
+    "precisionFloor": 0.213,
+    "positives": 47
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "no source and threshold keeps the precision floor at 0.70 on pick"
+ },
+ "trumpet": {
+  "main": {
+   "pick": {
+    "recall": 0.222,
+    "precisionFloor": 0.171,
+    "positives": 27
+   },
+   "check": {
+    "recall": 0.5,
+    "precisionFloor": 0.212,
+    "positives": 14
+   },
+   "all": {
+    "recall": 0.317,
+    "precisionFloor": 0.191,
+    "positives": 41
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "no source and threshold keeps the precision floor at 0.70 on pick"
+ },
+ "trombone": {
+  "main": {
+   "pick": {
+    "recall": 0.0,
+    "precisionFloor": 0.0,
+    "positives": 5
+   },
+   "check": {
+    "recall": 0.0,
+    "precisionFloor": null,
+    "positives": 9
+   },
+   "all": {
+    "recall": 0.0,
+    "precisionFloor": 0.0,
+    "positives": 14
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "too few to judge"
+ },
+ "horn": {
+  "main": {
+   "pick": {
+    "recall": 0.0,
+    "precisionFloor": 0.0,
+    "positives": 11
+   },
+   "check": {
+    "recall": 0.0,
+    "precisionFloor": null,
+    "positives": 10
+   },
+   "all": {
+    "recall": 0.0,
+    "precisionFloor": 0.0,
+    "positives": 21
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "no source and threshold keeps the precision floor at 0.70 on pick"
+ },
+ "saxophone": {
+  "main": {
+   "pick": {
+    "recall": 0.464,
+    "precisionFloor": 0.52,
+    "positives": 28
+   },
+   "check": {
+    "recall": 0.667,
+    "precisionFloor": 0.667,
+    "positives": 18
+   },
+   "all": {
+    "recall": 0.543,
+    "precisionFloor": 0.581,
+    "positives": 46
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "no source and threshold keeps the precision floor at 0.70 on pick"
+ },
+ "clarinet": {
+  "main": {
+   "pick": {
+    "recall": 0.636,
+    "precisionFloor": 0.104,
+    "positives": 11
+   },
+   "check": {
+    "recall": 0.696,
+    "precisionFloor": 0.211,
+    "positives": 23
+   },
+   "all": {
+    "recall": 0.676,
+    "precisionFloor": 0.161,
+    "positives": 34
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "no source and threshold keeps the precision floor at 0.70 on pick"
+ },
+ "oboe": {
+  "main": {
+   "pick": {
+    "recall": 0.0,
+    "precisionFloor": null,
+    "positives": 6
+   },
+   "check": {
+    "recall": 0.0,
+    "precisionFloor": null,
+    "positives": 14
+   },
+   "all": {
+    "recall": 0.0,
+    "precisionFloor": null,
+    "positives": 20
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "no source and threshold keeps the precision floor at 0.70 on pick"
+ },
+ "flute": {
+  "main": {
+   "pick": {
+    "recall": 0.722,
+    "precisionFloor": 0.16,
+    "positives": 18
+   },
+   "check": {
+    "recall": 0.76,
+    "precisionFloor": 0.209,
+    "positives": 25
+   },
+   "all": {
+    "recall": 0.744,
+    "precisionFloor": 0.186,
+    "positives": 43
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "recall already at 0.70 on pick"
+ },
+ "bassoon": {
+  "main": {
+   "pick": {
+    "recall": null,
+    "precisionFloor": null,
+    "positives": 0
+   },
+   "check": {
+    "recall": null,
+    "precisionFloor": null,
+    "positives": 0
+   },
+   "all": {
+    "recall": null,
+    "precisionFloor": null,
+    "positives": 0
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "too few to judge"
+ },
+ "harp": {
+  "main": {
+   "pick": {
+    "recall": 0.4,
+    "precisionFloor": 0.286,
+    "positives": 5
+   },
+   "check": {
+    "recall": 0.333,
+    "precisionFloor": 0.571,
+    "positives": 12
+   },
+   "all": {
+    "recall": 0.353,
+    "precisionFloor": 0.429,
+    "positives": 17
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "too few to judge"
+ },
+ "accordion": {
+  "main": {
+   "pick": {
+    "recall": 0.12,
+    "precisionFloor": 0.75,
+    "positives": 25
+   },
+   "check": {
+    "recall": 0.571,
+    "precisionFloor": 1.0,
+    "positives": 7
+   },
+   "all": {
+    "recall": 0.219,
+    "precisionFloor": 0.875,
+    "positives": 32
+   }
+  },
+  "rule": {
+   "source": "jamendo native",
+   "threshold": 0.05,
+   "pick": {
+    "recall": 0.24,
+    "precisionFloor": 0.857,
+    "positives": 25
+   },
+   "check": {
+    "recall": 0.571,
+    "precisionFloor": 1.0,
+    "positives": 7
+   },
+   "all": {
+    "recall": 0.312,
+    "precisionFloor": 0.909,
+    "positives": 32
+   }
+  },
+  "adopted": false,
+  "why": "check half: recall +0.00, precision floor 1.0"
+ },
+ "harmonica": {
+  "main": {
+   "pick": {
+    "recall": 0.0,
+    "precisionFloor": null,
+    "positives": 4
+   },
+   "check": {
+    "recall": 0.0,
+    "precisionFloor": null,
+    "positives": 16
+   },
+   "all": {
+    "recall": 0.0,
+    "precisionFloor": null,
+    "positives": 20
+   }
+  },
+  "rule": {
+   "source": "ast native",
+   "threshold": 0.05,
+   "pick": {
+    "recall": 0.25,
+    "precisionFloor": 1.0,
+    "positives": 4
+   },
+   "check": {
+    "recall": 0.125,
+    "precisionFloor": 0.4,
+    "positives": 16
+   },
+   "all": {
+    "recall": 0.15,
+    "precisionFloor": 0.5,
+    "positives": 20
+   }
+  },
+  "adopted": false,
+  "why": "check half: recall +0.12, precision floor 0.4"
+ },
+ "atmospheric pad": {
+  "main": {
+   "pick": {
+    "recall": 0.3,
+    "precisionFloor": 0.143,
+    "positives": 10
+   },
+   "check": {
+    "recall": 0.0,
+    "precisionFloor": 0.0,
+    "positives": 9
+   },
+   "all": {
+    "recall": 0.158,
+    "precisionFloor": 0.097,
+    "positives": 19
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "too few to judge"
+ },
+ "chiptune synth": {
+  "main": {
+   "pick": {
+    "recall": 0.333,
+    "precisionFloor": 0.125,
+    "positives": 3
+   },
+   "check": {
+    "recall": 0.75,
+    "precisionFloor": 0.6,
+    "positives": 8
+   },
+   "all": {
+    "recall": 0.636,
+    "precisionFloor": 0.389,
+    "positives": 11
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "too few to judge"
+ },
+ "choir": {
+  "main": {
+   "pick": {
+    "recall": 0.143,
+    "precisionFloor": 0.667,
+    "positives": 14
+   },
+   "check": {
+    "recall": 0.2,
+    "precisionFloor": 0.5,
+    "positives": 5
+   },
+   "all": {
+    "recall": 0.158,
+    "precisionFloor": 0.6,
+    "positives": 19
+   }
+  },
+  "rule": null,
+  "adopted": false,
+  "why": "too few to judge"
+ }
+}
