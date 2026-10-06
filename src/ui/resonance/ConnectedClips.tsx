@@ -5,6 +5,7 @@ import { useUiStore } from '../../store/uiStore';
 import { EDGE_KIND_LABEL } from '../../scene/palette';
 import { keyName } from '../../audio/musicTypes';
 import { musicNameHints } from '../../audio/nameHints';
+import { briefEvidence } from './briefEvidence';
 import { ClipPlayer, ClipThumb, formatClock, useClipAudio } from './ClipWave';
 
 const ACCENT = '#c8f55a';
@@ -41,25 +42,26 @@ function keyOf(n: DocNode): string | null {
 const bpmText = (n: DocNode) => { const t = tempoOf(n); return t === null ? '?' : `${Math.round(t)}`; };
 
 /** One "why they're connected" row: what is shared, the measured values where they exist, and how strongly. */
-function reason(edge: Edge, a: DocNode, b: DocNode): { label: string; detail: string; fill: number } {
+function reason(edge: Edge, a: DocNode, b: DocNode): { label: string; detail: string; fill: number; note: string; full: string } {
+  const extra = { note: briefEvidence(edge), full: edge.evidence.join(' ') };
   const pct = `${Math.round(edge.weight * 100)}%`;
   // Measured values only when both clips have them; a link from file names alone falls back to its strength.
   if (edge.kind === 'tempo') {
     const ta = bpmText(a), tb = bpmText(b);
     const detail = ta === '?' || tb === '?' ? pct : ta === tb ? `both ${ta} BPM` : `${ta} vs ${tb} BPM`;
-    return { label: 'Similar tempo', detail, fill: edge.weight };
+    return { label: 'Similar tempo', detail, fill: edge.weight, ...extra };
   }
   if (edge.kind === 'key') {
     const ka = keyOf(a), kb = keyOf(b);
     const detail = !ka || !kb ? pct : ka === kb ? `both ${ka}` : `${ka} vs ${kb}`;
-    return { label: 'Compatible key', detail, fill: edge.weight };
+    return { label: 'Compatible key', detail, fill: edge.weight, ...extra };
   }
   const labels: Partial<Record<Edge['kind'], string>> = {
     similar: 'Sounds alike', instrument: 'Same instruments', sound: 'Similar sound character', title: 'Similar names',
     semantic: 'Similar meaning', keyword: 'Shared keywords', entity: 'Shared names', reference: 'Linked', topic: 'Shared topic',
   };
   const label = labels[edge.kind] ?? EDGE_KIND_LABEL[edge.kind];
-  return { label, detail: pct, fill: edge.weight };
+  return { label, detail: pct, fill: edge.weight, ...extra };
 }
 
 function ClipCard({ node, accent, active, action }: { node: DocNode; accent: string; active?: boolean; action?: { label: string; run: () => void } }) {
@@ -118,7 +120,6 @@ export default function ConnectedClips({ detailsOpen, onToggleDetails }: { detai
   const audio = selected.fileType === 'audio';
   const noun = audio ? 'clip' : 'document';
   const rows = current ? current.edges.map(e => reason(e, selected, current.node)).sort((a, b) => b.fill - a.fill) : [];
-  const evidence = current ? [...new Set(current.edges.flatMap(e => e.evidence))] : [];
   const select = (id: string) => { const ui = useUiStore.getState(); ui.setSelected(id); ui.sendCamera('frameNode', [id]); };
 
   return (
@@ -148,20 +149,16 @@ export default function ConnectedClips({ detailsOpen, onToggleDetails }: { detai
           <h3>Why they’re connected</h3>
           <ul>
             {rows.map((row, i) => (
-              <li key={`${row.label}-${i}`}>
+              <li key={`${row.label}-${i}`} title={row.full}>
                 <span className="rs-shared__label">{row.label}</span>
                 <span className="rs-shared__value">{row.detail}</span>
                 <span className="rs-shared__bar" aria-hidden="true"><i style={{ width: `${Math.round(row.fill * 100)}%` }} /></span>
                 <span className="rs-shared__strength">{strength(row.fill)}</span>
+                {row.note && <span className="rs-shared__note">{row.note}</span>}
               </li>
             ))}
           </ul>
-          {evidence.length > 0 && (
-            <details className="rs-shared__evidence">
-              <summary>Show the evidence</summary>
-              <ul>{evidence.map(e => <li key={e}>{e}</li>)}</ul>
-            </details>
-          )}
+          <p className="rs-shared__foot">Strength shows how much the evidence agrees, not a probability. Hover a row for the full reasoning.</p>
         </section>
       )}
 
