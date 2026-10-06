@@ -15,6 +15,7 @@ const EDGE_KIND_ORDER: { kind: EdgeKind; label: string }[] = [
   { kind: 'sound', label: 'sound properties' },
   { kind: 'similar', label: 'sounds alike' },
   { kind: 'version', label: 'versions' },
+  { kind: 'genre', label: 'same genre' },
   { kind: 'reference', label: 'links' },
   { kind: 'semantic', label: 'similar' },
   { kind: 'keyword', label: 'keywords' },

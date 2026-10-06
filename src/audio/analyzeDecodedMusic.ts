@@ -3,6 +3,7 @@ import { MAX_FUSION_WINDOWS, sanitizeFusionIdentity, sanitizeFusionDecisions, un
 import { DjTagEvidence, selectDjTags } from './djTags';
 import { mergeDjTags } from './djClassification';
 import type { MusicDecoder } from './decodeMusic';
+import { GENRE_ENERGY_VERSION, GenreEnergyScores, isGenreEnergyScore } from './genreEnergy';
 import { jamendoSuggestions, jamendoLabels, jamendoInstrumentScores, nsynthLabels, JamendoRecordingScores } from './jamendo';
 import { InstrumentEvidence, instrumentWindowStarts } from './instrumentEvidence';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, type MusicAnalysis, type MusicAnalysisMode } from './musicTypes';
@@ -76,6 +77,7 @@ export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicR
       version: 2, stage: 'preview', durationSeconds: duration, analyzedSeconds: 0, notes: [],
       instruments: jamendoSuggestions(scores).map(i => ({ label: i.label, score: i.score, status: 'possible' })),
       soundProfile: combineSoundModels([], scores, [], { ast: false, jamendo: true, clap: false }),
+      ...genreEnergyFields(new GenreEnergyScores().add(scores)),
       instrumentScan: { revision: INSTRUMENT_ANALYSIS_REVISION, mode, complete: false, analyzedSeconds: 0, windows: 0 },
     };
     options.onPreview?.(analysis);
@@ -87,6 +89,12 @@ export async function previewDecodedMusic(decoder: MusicDecoder, request: MusicR
   }
 }
 
+/** Recording-level style list and energy score from Jamendo window maps (empty fields are left off). */
+function genreEnergyFields(acc: GenreEnergyScores): Pick<MusicAnalysis, 'styles' | 'genreScores' | 'energyScore'> {
+  const styles = acc.styleList(), scores = acc.genreScores(), energyScore = acc.energyScore();
+  return { ...(styles.length ? { styles } : {}), ...(Object.keys(scores).length ? { genreScores: { version: GENRE_ENERGY_VERSION, scores } } : {}),
+    ...(energyScore !== undefined ? { energyScore } : {}) };
+}
 /** The fusion scorer's contract is the fixed prompt catalog it was trained on. Trained-head,
  * reviewed-example, one-shot and DJ-effect (dj-effect axis, added later) scores ride along in the same output for tagging and are not part of it. */
 export const fusionClapDescriptions = (scores: DescriptionScore[]) => scores.filter(d => d.group !== 'dj-learned' && d.group !== 'dj-one-shot' && d.group !== 'dj-effect' && d.group !== 'embedding');
@@ -163,6 +171,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const fingerprint = options.audioFingerprint ?? recognition.runId;
   const astEvidence = new InstrumentEvidence();
   const musicScores = new JamendoRecordingScores();
+  const genreEnergy = new GenreEnergyScores();
   const descriptions = new DescriptionAccumulator();
   const embeddings: number[][] = [];
   const djEvidence = new DjTagEvidence();
@@ -184,6 +193,9 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     const soundComplete = ['ast','jamendo','clap'].every(id => ['complete','unsupported'].includes(job(id as ModelId).status));
     result.instruments = astEvidence.results();
     const music = musicScores.scores();
+    const ge = genreEnergyFields(genreEnergy);
+    delete result.styles; delete result.genreScores; delete result.energyScore;
+    Object.assign(result, ge);
     result.soundProfile = combineSoundModels(result.instruments, music, descriptions.average(),
       { ast: job('ast').status === 'complete', jamendo: job('jamendo').status === 'complete', clap: job('clap').status === 'complete' });
     // Event-window tags only fill gaps: a tag the 10 s windows already found keeps its own (stronger) evidence.
@@ -296,8 +308,11 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
           .map(([labelId,score]) => ({ dimension: 'source', labelId, score })));
       } else if (id === 'jamendo') {
         const scores = output as Record<string, number>;
-        musicScores.add(scores);
-        fullMixEvidence?.add(interval.start, interval.end, { jamendo: scores });
+        // Style and energy keys are recording-level facts, not instrument evidence.
+        const instrumentScores = Object.fromEntries(Object.entries(scores).filter(([key]) => !isGenreEnergyScore(key)));
+        musicScores.add(instrumentScores);
+        fullMixEvidence?.add(interval.start, interval.end, { jamendo: instrumentScores });
+        genreEnergy.add(scores);
         recordEvidence(recognition, id, interval, [...jamendoLabels(scores), ...nsynthLabels(scores)]);
       } else {
         const { scores, embedding } = splitEmbedding(output as DescriptionScore[]);

@@ -1,0 +1,629 @@
+{
+ "bar": 0.7,
+ "genre_cv": {
+  "classes": [
+   "breaks",
+   "chill-out",
+   "deep-house",
+   "drum-and-bass",
+   "dubstep",
+   "electro-house",
+   "electronica",
+   "hard-dance",
+   "hip-hop",
+   "house",
+   "minimal",
+   "progressive-house",
+   "psy-trance",
+   "tech-house",
+   "techno",
+   "trance"
+  ],
+  "families": {
+   "house": [
+    "house",
+    "deep-house",
+    "tech-house",
+    "progressive-house",
+    "electro-house"
+   ],
+   "techno": [
+    "techno",
+    "minimal"
+   ],
+   "trance": [
+    "trance",
+    "psy-trance"
+   ],
+   "downtempo": [
+    "chill-out",
+    "electronica"
+   ]
+  },
+  "C": 0.01,
+  "per_label": {
+   "breaks": {
+    "precision": 0.722,
+    "recall": 0.325,
+    "shown": 18,
+    "tracks": 40
+   },
+   "chill-out": {
+    "precision": 0.707,
+    "recall": 0.644,
+    "shown": 41,
+    "tracks": 45
+   },
+   "deep-house": {
+    "precision": 0.7,
+    "recall": 0.304,
+    "shown": 10,
+    "tracks": 23
+   },
+   "drum-and-bass": {
+    "precision": 0.833,
+    "recall": 0.917,
+    "shown": 66,
+    "tracks": 60
+   },
+   "dubstep": {
+    "precision": 0.75,
+    "recall": 0.769,
+    "shown": 40,
+    "tracks": 39
+   },
+   "electro-house": {
+    "precision": null,
+    "recall": 0.0,
+    "shown": 0,
+    "tracks": 41
+   },
+   "electronica": {
+    "precision": null,
+    "recall": 0.0,
+    "shown": 0,
+    "tracks": 43
+   },
+   "hard-dance": {
+    "precision": 0.8,
+    "recall": 0.8,
+    "shown": 35,
+    "tracks": 35
+   },
+   "hip-hop": {
+    "precision": 0.882,
+    "recall": 0.6,
+    "shown": 17,
+    "tracks": 25
+   },
+   "house": {
+    "precision": 0.729,
+    "recall": 0.862,
+    "shown": 203,
+    "tracks": 181
+   },
+   "minimal": {
+    "precision": null,
+    "recall": 0.0,
+    "shown": 0,
+    "tracks": 28
+   },
+   "progressive-house": {
+    "precision": null,
+    "recall": 0.0,
+    "shown": 0,
+    "tracks": 40
+   },
+   "psy-trance": {
+    "precision": 0.943,
+    "recall": 0.846,
+    "shown": 35,
+    "tracks": 39
+   },
+   "tech-house": {
+    "precision": null,
+    "recall": 0.0,
+    "shown": 0,
+    "tracks": 38
+   },
+   "techno": {
+    "precision": 0.701,
+    "recall": 0.553,
+    "shown": 67,
+    "tracks": 85
+   },
+   "trance": {
+    "precision": 0.709,
+    "recall": 0.831,
+    "shown": 55,
+    "tracks": 89
+   },
+   "downtempo": {
+    "precision": 1.0,
+    "recall": 0.42,
+    "shown": 1,
+    "tracks": 88
+   }
+  },
+  "accuracy_top1": 0.593,
+  "thresholds": {
+   "breaks": 0.4,
+   "chill-out": 0.24,
+   "deep-house": 0.38,
+   "drum-and-bass": 0.2,
+   "dubstep": 0.2,
+   "electro-house": 2.0,
+   "electronica": 2.0,
+   "hard-dance": 0.2,
+   "hip-hop": 0.2,
+   "house": 2.0,
+   "minimal": 2.0,
+   "progressive-house": 2.0,
+   "psy-trance": 0.2,
+   "tech-house": 2.0,
+   "techno": 2.0,
+   "trance": 0.26
+  },
+  "family_thresholds": {
+   "downtempo": 0.74,
+   "house": 0.2,
+   "techno": 0.44,
+   "trance": 0.2
+  }
+ },
+ "genre_gate": {
+  "parents": [
+   "Electronic",
+   "Hip Hop"
+  ],
+  "threshold": 0.5,
+  "beatport_tune_kept": 0.98,
+  "jamendo_fit_non_electronic_kept": 0.168,
+  "jamendo_fit_non_electronic_tracks": 518
+ },
+ "energy_cv": {
+  "C": 0.01,
+  "high": {
+   "threshold": 0.62,
+   "precision": 0.85,
+   "recall": 0.75,
+   "tp": 414,
+   "fp": 73,
+   "fn": 138
+  },
+  "low": {
+   "threshold": 0.37,
+   "precision": 0.839,
+   "recall": 0.751,
+   "tp": 422,
+   "fp": 81,
+   "fn": 140
+  }
+ },
+ "energy_cv_loudness_only": {
+  "high": {
+   "precision": 0.629,
+   "recall": 0.828,
+   "tp": 457,
+   "fp": 269,
+   "fn": 95
+  },
+  "low": {
+   "precision": 0.616,
+   "recall": 0.858,
+   "tp": 482,
+   "fp": 300,
+   "fn": 80
+  }
+ },
+ "energy_cv_official_mood_head": {
+  "high": {
+   "precision": 0.876,
+   "recall": 0.764,
+   "tp": 422,
+   "fp": 60,
+   "fn": 130
+  },
+  "low": {
+   "precision": 0.856,
+   "recall": 0.783,
+   "tp": 440,
+   "fp": 74,
+   "fn": 122
+  },
+  "note": "in-sample thresholds; the head was trained on split-0 train"
+ },
+ "judge": {
+  "genre_full": {
+   "tracks": 1000,
+   "shown": 923,
+   "shown_exact": 488,
+   "shown_family_correct": 289,
+   "per_label": {
+    "breaks": {
+     "precision": 0.593,
+     "recall": 0.291,
+     "shown": 27,
+     "tracks": 55
+    },
+    "chill-out": {
+     "precision": 0.361,
+     "recall": 0.5,
+     "shown": 36,
+     "tracks": 26
+    },
+    "deep-house": {
+     "precision": 0.733,
+     "recall": 0.208,
+     "shown": 15,
+     "tracks": 53
+    },
+    "drum-and-bass": {
+     "precision": 0.81,
+     "recall": 0.91,
+     "shown": 163,
+     "tracks": 145
+    },
+    "dubstep": {
+     "precision": 0.667,
+     "recall": 0.722,
+     "shown": 117,
+     "tracks": 108
+    },
+    "electro-house": {
+     "precision": null,
+     "recall": 0.0,
+     "shown": 0,
+     "tracks": 47
+    },
+    "electronica": {
+     "precision": null,
+     "recall": 0.0,
+     "shown": 0,
+     "tracks": 72
+    },
+    "hard-dance": {
+     "precision": 0.667,
+     "recall": 0.757,
+     "shown": 42,
+     "tracks": 37
+    },
+    "hip-hop": {
+     "precision": 0.683,
+     "recall": 0.718,
+     "shown": 41,
+     "tracks": 39
+    },
+    "house": {
+     "precision": 0.626,
+     "recall": 0.711,
+     "shown": 227,
+     "tracks": 218
+    },
+    "minimal": {
+     "precision": null,
+     "recall": 0.0,
+     "shown": 0,
+     "tracks": 38
+    },
+    "progressive-house": {
+     "precision": null,
+     "recall": 0.0,
+     "shown": 0,
+     "tracks": 37
+    },
+    "psy-trance": {
+     "precision": 0.9,
+     "recall": 0.789,
+     "shown": 50,
+     "tracks": 57
+    },
+    "tech-house": {
+     "precision": null,
+     "recall": 0.0,
+     "shown": 0,
+     "tracks": 39
+    },
+    "techno": {
+     "precision": 0.659,
+     "recall": 0.537,
+     "shown": 88,
+     "tracks": 108
+    },
+    "trance": {
+     "precision": 0.757,
+     "recall": 0.897,
+     "shown": 107,
+     "tracks": 145
+    },
+    "downtempo": {
+     "precision": 0.8,
+     "recall": 0.296,
+     "shown": 10,
+     "tracks": 98
+    }
+   },
+   "unknown_genre_tracks": 47
+  },
+  "genre_fast": {
+   "tracks": 1000,
+   "shown": 913,
+   "shown_exact": 436,
+   "shown_family_correct": 286,
+   "per_label": {
+    "breaks": {
+     "precision": 0.565,
+     "recall": 0.236,
+     "shown": 23,
+     "tracks": 55
+    },
+    "chill-out": {
+     "precision": 0.279,
+     "recall": 0.462,
+     "shown": 43,
+     "tracks": 26
+    },
+    "deep-house": {
+     "precision": 0.789,
+     "recall": 0.283,
+     "shown": 19,
+     "tracks": 53
+    },
+    "drum-and-bass": {
+     "precision": 0.761,
+     "recall": 0.745,
+     "shown": 142,
+     "tracks": 145
+    },
+    "dubstep": {
+     "precision": 0.617,
+     "recall": 0.537,
+     "shown": 94,
+     "tracks": 108
+    },
+    "electro-house": {
+     "precision": null,
+     "recall": 0.0,
+     "shown": 0,
+     "tracks": 47
+    },
+    "electronica": {
+     "precision": null,
+     "recall": 0.0,
+     "shown": 0,
+     "tracks": 72
+    },
+    "hard-dance": {
+     "precision": 0.519,
+     "recall": 0.757,
+     "shown": 54,
+     "tracks": 37
+    },
+    "hip-hop": {
+     "precision": 0.5,
+     "recall": 0.615,
+     "shown": 48,
+     "tracks": 39
+    },
+    "house": {
+     "precision": 0.63,
+     "recall": 0.674,
+     "shown": 208,
+     "tracks": 218
+    },
+    "minimal": {
+     "precision": null,
+     "recall": 0.0,
+     "shown": 0,
+     "tracks": 38
+    },
+    "progressive-house": {
+     "precision": null,
+     "recall": 0.0,
+     "shown": 0,
+     "tracks": 37
+    },
+    "psy-trance": {
+     "precision": 0.854,
+     "recall": 0.719,
+     "shown": 48,
+     "tracks": 57
+    },
+    "tech-house": {
+     "precision": null,
+     "recall": 0.0,
+     "shown": 0,
+     "tracks": 39
+    },
+    "techno": {
+     "precision": 0.6,
+     "recall": 0.611,
+     "shown": 110,
+     "tracks": 108
+    },
+    "trance": {
+     "precision": 0.712,
+     "recall": 0.848,
+     "shown": 111,
+     "tracks": 145
+    },
+    "downtempo": {
+     "precision": 0.769,
+     "recall": 0.327,
+     "shown": 13,
+     "tracks": 98
+    }
+   },
+   "unknown_genre_tracks": 47
+  },
+  "genre_non_electronic_jamendo": {
+   "tracks": 191,
+   "shown_any_genre": 22,
+   "labels": {
+    "chill-out": 11,
+    "house": 1,
+    "hip-hop": 1,
+    "downtempo": 8,
+    "dubstep": 1
+   }
+  },
+  "energy_full": {
+   "tracks": 395,
+   "high": {
+    "precision": 0.913,
+    "recall": 0.76,
+    "tp": 158,
+    "fp": 15,
+    "fn": 50
+   },
+   "low": {
+    "precision": 0.836,
+    "recall": 0.818,
+    "tp": 153,
+    "fp": 30,
+    "fn": 34
+   },
+   "medium": 39
+  },
+  "energy_fast": {
+   "tracks": 395,
+   "high": {
+    "precision": 0.884,
+    "recall": 0.731,
+    "tp": 152,
+    "fp": 20,
+    "fn": 56
+   },
+   "low": {
+    "precision": 0.794,
+    "recall": 0.802,
+    "tp": 150,
+    "fp": 39,
+    "fn": 37
+   },
+   "medium": 34
+  },
+  "energy_beatport_by_genre": {
+   "breaks": {
+    "n": 55,
+    "mean": 0.865,
+    "high": 0.873,
+    "low": 0.0
+   },
+   "chill-out": {
+    "n": 26,
+    "mean": 0.407,
+    "high": 0.231,
+    "low": 0.5
+   },
+   "deep-house": {
+    "n": 53,
+    "mean": 0.589,
+    "high": 0.509,
+    "low": 0.302
+   },
+   "dj-tools": {
+    "n": 8,
+    "mean": 0.755,
+    "high": 0.75,
+    "low": 0.0
+   },
+   "drum-and-bass": {
+    "n": 145,
+    "mean": 0.871,
+    "high": 0.876,
+    "low": 0.048
+   },
+   "dubstep": {
+    "n": 108,
+    "mean": 0.865,
+    "high": 0.907,
+    "low": 0.037
+   },
+   "electro-house": {
+    "n": 47,
+    "mean": 0.924,
+    "high": 0.957,
+    "low": 0.021
+   },
+   "electronica": {
+    "n": 72,
+    "mean": 0.655,
+    "high": 0.611,
+    "low": 0.25
+   },
+   "glitch-hop": {
+    "n": 15,
+    "mean": 0.92,
+    "high": 1.0,
+    "low": 0.0
+   },
+   "hard-dance": {
+    "n": 37,
+    "mean": 0.995,
+    "high": 1.0,
+    "low": 0.0
+   },
+   "hardcore-hard-techno": {
+    "n": 11,
+    "mean": 0.987,
+    "high": 1.0,
+    "low": 0.0
+   },
+   "hip-hop": {
+    "n": 39,
+    "mean": 0.721,
+    "high": 0.718,
+    "low": 0.128
+   },
+   "house": {
+    "n": 42,
+    "mean": 0.827,
+    "high": 0.81,
+    "low": 0.095
+   },
+   "indie-dance-nu-disco": {
+    "n": 9,
+    "mean": 0.816,
+    "high": 0.778,
+    "low": 0.111
+   },
+   "minimal": {
+    "n": 38,
+    "mean": 0.659,
+    "high": 0.605,
+    "low": 0.237
+   },
+   "progressive-house": {
+    "n": 37,
+    "mean": 0.87,
+    "high": 0.892,
+    "low": 0.027
+   },
+   "psy-trance": {
+    "n": 57,
+    "mean": 0.943,
+    "high": 0.982,
+    "low": 0.018
+   },
+   "tech-house": {
+    "n": 39,
+    "mean": 0.802,
+    "high": 0.821,
+    "low": 0.026
+   },
+   "techno": {
+    "n": 70,
+    "mean": 0.784,
+    "high": 0.771,
+    "low": 0.1
+   },
+   "trance": {
+    "n": 88,
+    "mean": 0.939,
+    "high": 0.955,
+    "low": 0.023
+   }
+  }
+ }
+}

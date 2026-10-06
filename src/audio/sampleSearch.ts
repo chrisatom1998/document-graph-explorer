@@ -2,7 +2,8 @@ import { djReviewAllows, resolvedNonSourceLabels } from './soundReviewPolicy';
 import type { DocNode } from '../model/types';
 import { DJ_CATALOG } from './djTags';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
-import { keyName } from './musicTypes';
+import { keyName, type MusicAnalysis } from './musicTypes';
+import { energyFromScore, genreFromScores, genreFamily, genreText } from './genreEnergy';
 import { confirmedInstrumentList, reliableInstruments, sourceReviewAllows } from './instrumentEvidence';
 
 import type { SampleQuery } from './sampleQuery';
@@ -14,6 +15,19 @@ function normalize(s: string): string {
 function canonical(s: string): string {
   const v = normalize(s);
   return normalize(DJ_CATALOG.find(c => [c.label, ...c.aliases].some(a => normalize(a) === v))?.label ?? v);
+}
+const ENERGY_TERMS: Record<string, 'low' | 'medium' | 'high'> = { 'high energy': 'high', energetic: 'high', 'peak time': 'high', 'banger': 'high',
+  'medium energy': 'medium', 'mid energy': 'medium', 'low energy': 'low', chill: 'low', calm: 'low', mellow: 'low' };
+/** Genre and energy are recording-level estimates; a term names them by genre ("deep house") or energy ("high energy"). */
+export function genreEnergyEvidence(a: MusicAnalysis | undefined, term: string): string | undefined {
+  if (!a || a.stage === 'preview') return;
+  const wanted = normalize(term).replace(/ music$/, '');
+  const genre = genreFromScores(a.genreScores?.scores);
+  const family = genre && genreFamily(genre.label);
+  if (genre && (normalize(genreText(genre.label)) === wanted || (family && normalize(genreText(family)) === wanted))) return `Estimated genre${genre.tested ? '' : ' (maybe)'}: ${genreText(genre.label)}`;
+  const energy = energyFromScore(a.energyScore);
+  if (energy && ENERGY_TERMS[wanted] === energy.level) return `Estimated energy${energy.tested ? '' : ' (maybe)'}: ${energy.level}`;
+  return undefined;
 }
 type Evidence = { label: string; source: 'confirmed' | 'estimated' | 'suggested' };
 export function sampleLabels(node: DocNode): Evidence[] {
@@ -50,6 +64,8 @@ export function searchSamples(nodes: DocNode[], query: SampleQuery, referenceId?
       const wanted = canonical(term);
       const label = labels.find(t => canonical(t.label) === wanted && (!query.confirmedOnly || t.source === 'confirmed'));
       if (label) return `${label.source === 'confirmed' ? 'Confirmed by you' : label.source === 'suggested' ? 'AI-suggested property' : 'Estimated from audio'}: ${label.label}`;
+      const recording = query.confirmedOnly ? undefined : genreEnergyEvidence(a, term);
+      if (recording) return recording;
       const isCategory = DJ_CATALOG.some(c => canonical(c.label) === wanted);
       const isSource = INSTRUMENT_LABELS.some(label=>canonical(label)===wanted)||DJ_CATALOG.some(c=>c.group==='source'&&canonical(c.label)===wanted);
       const latest=a?.soundReviews?.filter(r=>r.dimension==='source'&&canonical(r.labelId)===wanted).at(-1);

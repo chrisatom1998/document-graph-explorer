@@ -5,7 +5,8 @@ import { confidentSoundSummary } from './confidentSoundSummary';
 import type { DocNode, Edge } from '../model/types';
 import { keyName, type MusicAnalysis } from './musicTypes';
 import { buildVersionEdges, versionRelation } from './versionLinks';
-export const MUSIC_EDGE_KINDS = ['tempo', 'key', 'instrument', 'sound', 'similar', 'version'] as const;
+import { energyFromScore, genreFromScores, genreText } from './genreEnergy';
+export const MUSIC_EDGE_KINDS = ['tempo', 'key', 'instrument', 'sound', 'similar', 'genre', 'version'] as const;
 type MusicKind = Exclude<typeof MUSIC_EDGE_KINDS[number], 'version'>;
 export const MUSIC_NEIGHBOR_LIMIT = 8;
 export const MUSIC_NEIGHBORS_PER_KIND = 4;
@@ -51,8 +52,11 @@ function features(node: DocNode) {
   const matches = soundMatchLabels(node);
   const shownSources = matches.filter(m => m.group === 'source' && !(human && m.origin !== 'confirmed'));
   const instruments = [...base, ...shownSources.filter(m => !base.some(i => i.label === m.label)).map(m => ({ label: m.label, score: m.weight, origin: m.origin }))];
+  const settled = audio.stage !== 'preview';
   return {
     node, hints, human, vector: unitVector(audio.embedding),
+    genre: settled ? genreFromScores(audio.genreScores?.scores) : undefined,
+    energy: settled ? energyFromScore(audio.energyScore) : undefined,
      named: !!named, instruments: instruments.filter(i => validScore(i.score)),
     tempo: tempo && Number.isFinite(tempo.bpm) && tempo.bpm >= 40 && tempo.bpm <= 250 && validScore(tempo.confidence) && tempo.confidence >= .5 ? tempo : undefined,
     key: key && Number.isInteger(key.tonic) && key.tonic >= 0 && key.tonic < 12 && ['major','minor'].includes(key.mode) && validScore(key.strength) && key.strength >= .6 ? key : undefined,
@@ -126,6 +130,12 @@ function pairEdges(a: Features, b: Features, floor = SOUND_LINK_POLICY.floor): E
     const detail = both.length ? ` Both also have: ${both.map(t => `${t.label.replaceAll('_', ' ')} (${t.dimension === 'effect' ? 'production / effect' : t.dimension})`).join(', ')}${source}.` : '';
     add('similar', Math.min(1, similarity), `Sounds alike: the two recordings' sound fingerprints are ${Math.floor(similarity * 100)}% similar.${detail} Similar sound is not proof of an exact duplicate, sampling, a shared source or influence.`);
   }
+  if (a.genre && b.genre && a.genre.label === b.genre.label) {
+    const maybe = !a.genre.tested || !b.genre.tested;
+    const energy = a.energy && b.energy && a.energy.level === b.energy.level ? ` Both are estimated ${a.energy.level} energy.` : '';
+    // A tested genre on both sides links at the strength of the weaker estimate; an untested one is weighted lower.
+    add('genre', Math.min(a.genre.score, b.genre.score) * (maybe ? .6 : 1), `Same estimated genre: ${genreText(a.genre.label)}.${energy} Estimated from the audio by a music style model${maybe ? '; this genre has not reached 70% precision and recall in testing, so treat it as a maybe' : ''}. Not a confirmed label.`);
+  }
   const labels = [...shared.map(i => ({ label: i.label, weight: Math.min(i.score, b.instruments.find(j => j.label === i.label)!.score) })),
     ...sound.map(i => ({ label: i.label, weight: Math.min(i.weight, find(b.sound, i)!.weight) }))];
   const informative = labels.some(i => !GENERIC_LABELS.has(i.label) || i.weight >= .7);
@@ -139,6 +149,7 @@ export function musicPairEdges(a: DocNode, b: DocNode): Edge[] {
 const keyToken = (k: NonNullable<Features['key']>) => `k:${k.tonic}:${k.mode}`;
 function tokens(f: Features, query = false): string[] {
   const result = [...f.instruments.map(i => `i:${i.label}`), ...f.sound.map(i => `s:${i.group === 'production' ? 'effect' : 'character'}:${i.label}`)];
+  if (f.genre) result.push(`g:${f.genre.label}`);
   if (f.key) {
     result.push(keyToken(f.key));
     if (query) {

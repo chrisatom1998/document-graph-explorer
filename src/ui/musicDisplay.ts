@@ -48,7 +48,7 @@ export interface MusicNeighbour {
   mixable: boolean;
 }
 
-const REASON_ORDER: Edge['kind'][] = ['similar', 'key', 'tempo', 'instrument', 'sound', 'reference', 'title', 'semantic', 'keyword', 'entity', 'topic'];
+const REASON_ORDER: Edge['kind'][] = ['similar', 'key', 'tempo', 'instrument', 'sound', 'genre', 'reference', 'title', 'semantic', 'keyword', 'entity', 'topic'];
 /** A shared title phrase is a weak hint next to sound, key and tempo, so it ranks lower. */
 const KIND_RANK_WEIGHT: Partial<Record<Edge['kind'], number>> = { title: 0.5 };
 const KEY_CHIP: Record<KeyRelation, string> = {
@@ -87,6 +87,10 @@ function reasonFor(edge: Edge, self: DocNode, other: DocNode): NeighbourReason {
     case 'sound': {
       const list = evidence.match(/^Shared sound properties: ([^.]+)\./)?.[1]?.replace(/ \([^)]*\)/g, '');
       return { kind: edge.kind, text: list ? `Both: ${shortList(list)}` : 'Shared sound', detail };
+    }
+    case 'genre': {
+      const genre = evidence.match(/^Same estimated genre: ([^.]+)\./)?.[1];
+      return { kind: edge.kind, text: genre ? `Both ${genre}` : 'Same genre', detail };
     }
     case 'title':
       return { kind: edge.kind, text: 'Similar name', detail };
