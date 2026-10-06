@@ -2,7 +2,7 @@ name: Track structure features
 
 # Fetches Raveform EDM tracks (hand-labelled intro / buildup / drop / breakdown / outro, CC BY 4.0 annotations, audio
 # from YouTube, else a SoundCloud upload of the same length, fetched at run time and never committed), computes the app's structure features with src/audio/structure.ts,
-# and commits them to the branch for offline tuning and scoring (scripts/structure/evaluate.ts).
+# and commits them to the branch for offline tuning and scoring (scripts/structure-evaluate.ts).
 on:
   workflow_dispatch:
   push:
@@ -39,11 +39,11 @@ jobs:
           curl -fsSL --retry 6 -o "$RUNNER_TEMP/rf.zip" "$RAVEFORM"
           unzip -q -o "$RUNNER_TEMP/rf.zip" 'raveform/structures/segments.json' -d "$RUNNER_TEMP/rf"
       - name: Download audio
-        run: python3 scripts/structure/fetch.py "$RUNNER_TEMP/rf/raveform/structures/segments.json" "$RUNNER_TEMP/audio" ${{ matrix.shard }}/4 ${{ github.event_name == 'push' && 150 || 400 }}
+        run: python3 scripts/structure-fetch.py "$RUNNER_TEMP/rf/raveform/structures/segments.json" "$RUNNER_TEMP/audio" ${{ matrix.shard }}/4 ${{ github.event_name == 'push' && 150 || 400 }}
       - name: Compute features
         run: |
           mkdir -p "$OUT"
-          npx vite-node scripts/structure/features.ts "$RUNNER_TEMP/audio/manifest.json" "$RUNNER_TEMP/f.json"
+          npx vite-node scripts/structure-features.ts "$RUNNER_TEMP/audio/manifest.json" "$RUNNER_TEMP/f.json"
           gzip -c "$RUNNER_TEMP/f.json" > "$OUT/shard-${{ matrix.shard }}.json.gz"
           # Labels for every annotated track (timings and section names only), for scoring offline.
           python3 -c "import json,sys; d=json.load(open(sys.argv[1])); json.dump({t['key']: {k: t[k] for k in ('fold','genre','duration','average_bpm','sections')} for t in d}, open(sys.argv[2],'w'))" \

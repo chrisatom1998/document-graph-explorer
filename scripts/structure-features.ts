@@ -1,9 +1,9 @@
 /** Computes the app's structure features (src/audio/structure.ts) for downloaded tracks with native FFmpeg decoding.
- * usage: vite-node scripts/structure/features.ts MANIFEST_JSON OUT_JSON
+ * usage: vite-node scripts/structure-features.ts MANIFEST_JSON OUT_JSON
  * Output: { [key]: { duration, ms, blocks } }, blocks as base64 little-endian int16 of value*10, 8 values per block. */
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { StructureFeatures, STRUCTURE_RATE, STRUCTURE_FEATURES } from '../../src/audio/structure';
+import { StructureFeatures, STRUCTURE_RATE, STRUCTURE_FEATURES } from '../src/audio/structure';
 
 const [manifestPath, outPath] = process.argv.slice(2);
 const manifest: { key: string; file: string }[] = JSON.parse(readFileSync(manifestPath, 'utf8'));

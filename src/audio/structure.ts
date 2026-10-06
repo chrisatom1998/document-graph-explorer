@@ -1,6 +1,6 @@
 /** Track structure for DJ mix points: intro, buildups, drops, breakdowns and outro, from signal processing only.
  * The whole recording is read once at 16 kHz in bounded chunks and reduced to a few band energies per quarter
- * second; the decision below works on those numbers alone, so the offline evaluation (scripts/structure) runs the
+ * second; the decision below works on those numbers alone, so the offline evaluation (scripts/structure-evaluate.ts) runs the
  * same code on the same features. A drop is the loud, full-bass part of an EDM track; the detector looks for long
  * runs of high "intensity" (bass + loudness + kick density) separated by quieter runs. */
 export const STRUCTURE_RATE = 16000;

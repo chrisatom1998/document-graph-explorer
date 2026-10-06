@@ -1,9 +1,9 @@
 /** Scores src/audio/structure.ts against the Raveform labels using the features the Actions workflow committed.
- * usage: vite-node scripts/structure/evaluate.ts [tune|test|all] [params-json]
+ * usage: vite-node scripts/structure-evaluate.ts [tune|test|all] [params-json]
  * Folds 1-3 are for tuning, folds 4-5 are held out. Prints JSON metrics. */
 import { readFileSync, readdirSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { detectStructure, DEFAULT_STRUCTURE_PARAMS, STRUCTURE_FEATURES, type StructureParams } from '../../src/audio/structure';
+import { detectStructure, DEFAULT_STRUCTURE_PARAMS, STRUCTURE_FEATURES, type StructureParams } from '../src/audio/structure';
 
 const DIR = 'docs/evaluations/structure-2026-10-06/features';
 type Label = { fold: number; genre: string; duration: number; average_bpm: number; sections: { name: string; start: number; end: number }[] };
@@ -55,7 +55,7 @@ export function score(tracks: ReturnType<typeof loadSet>, params: StructureParam
   };
 }
 
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('evaluate.ts')) {
+if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('structure-evaluate.ts')) {
   const [split = 'tune', params] = process.argv.slice(2);
   const { rows, ...metrics } = score(loadSet(split), params ? { ...DEFAULT_STRUCTURE_PARAMS, ...JSON.parse(params) } : undefined);
   console.log(JSON.stringify(metrics, null, 1));
