@@ -9,7 +9,7 @@ def mod(path, argv):
 ck = torch.load(model_path, map_location='cpu')
 res = {}
 if what == 'key':
-    src = open('/tmp/claude-0/scripts/train_key.py').read().split("if mode == 'cv':")[0]
+    src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'train_key.py')).read().split("if mode == 'cv':")[0]
     src = src.replace("rows = json.load(open(labels))['key']", "rows = []").replace("MU = np.mean([x.mean() for x in X.values()]); SD = np.mean([x.std() for x in X.values()])", f"MU = {ck['mu']}; SD = {ck['sd']}")
     sys.argv = ['x', 'final', '/dev/null', '/tmp/claude-0/models/tmp']; ns = {}; exec(src, ns)
     net = ns['Net'](); net.load_state_dict(ck['state']); net.eval(); predict, mirex = ns['predict'], ns['mirex']
@@ -50,7 +50,7 @@ if what == 'key':
             if v >= 0: gz.append((name, f'/tmp/claude-0/feats/train/gtzan_{name}.npz', TON[ORDER[v % 12]], int(v >= 12), 'whole'))
     run('gtzan test half (30 s)', gz)
 else:
-    src = open('/tmp/claude-0/scripts/train_tempo.py').read().split("ok = lambda")[0]
+    src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'train_tempo.py')).read().split("ok = lambda")[0]
     src = src.replace("rows = [r for r in json.load(open(labels))['tempo'] if 30 <= r['bpm'] <= 285]", "rows = []").replace("MU = float(np.mean([x.mean() for x in X.values()])); SD = float(np.mean([x.std() for x in X.values()]))", f"MU = {ck['mu']}; SD = {ck['sd']}")
     sys.argv = ['x', 'final', '/dev/null', '/tmp/claude-0/models/tmp']; ns = {}; exec(src, ns)
     net = ns['Net'](); net.load_state_dict(ck['state']); net.eval(); predict = ns['predict']

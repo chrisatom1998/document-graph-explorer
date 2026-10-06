@@ -2,7 +2,7 @@
 Clips are cut from whole-track features by frame offset (21.533 fps), matching build-sets.py / build-mtg.py starts."""
 import gzip, hashlib, json, os, sys, numpy as np, torch
 R = '/home/user/document-graph-explorer'; RUN = f'{R}/docs/evaluations/hf-key-tempo-2026-10-06/runs/tempo-v1'; FPS = 11025 / 512
-src = open('/tmp/claude-0/scripts/train_tempo.py').read().split("ok = lambda")[0]
+src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'train_tempo.py')).read().split("ok = lambda")[0]
 def load(pt):
     ck = torch.load(pt, map_location='cpu')
     s = src.replace("rows = [r for r in json.load(open(labels))['tempo'] if 30 <= r['bpm'] <= 285]", "rows = []").replace("MU = float(np.mean([x.mean() for x in X.values()])); SD = float(np.mean([x.std() for x in X.values()]))", f"MU = {ck['mu']}; SD = {ck['sd']}")

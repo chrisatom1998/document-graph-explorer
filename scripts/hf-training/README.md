@@ -11,3 +11,6 @@ HF dataset `cmjatom/dge-key-tempo-train` (pulled into `docs/evaluations/hf-key-t
 - `export_key.py`, `export_tempo.py`: ONNX export for onnxruntime-web.
 
 Held-out sets (never trained on): GiantSteps key, round 1 and round 2 DJ clips, round 3, GTZAN test half, FSL10K annotated loops.
+
+The scoring scripts (`eval_heldout.py`, `eval_loops_tempo.py`, `tempo_oof.py`) read features from the working
+directory they were run in (`/tmp/claude-0/feats`, built with `feats.py`); change those paths to rerun them elsewhere.

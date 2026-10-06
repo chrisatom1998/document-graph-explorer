@@ -1,2 +1,1 @@
-tempo-v1
-# re-pull 2026-10-06 with fold models for out-of-fold tuning predictions
+tempo-loops-v1
