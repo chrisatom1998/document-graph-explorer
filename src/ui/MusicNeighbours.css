@@ -1,0 +1,27 @@
+/* Closest tracks: one row per linked track, with what a DJ checks first. */
+.music-neighbours { margin: 4px 0 8px; padding: 16px 0 4px; border-top: 1px solid var(--border-glass); }
+.music-neighbours h3 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); }
+.music-neighbours h3 small { font-size: 11px; letter-spacing: 0; color: var(--text-secondary); font-weight: 500; }
+.music-neighbours ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.music-neighbours ol > li {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: baseline;
+  padding: 9px 12px; border-radius: var(--radius-md); background: var(--surface-inset); border: 1px solid var(--border-glass);
+}
+.music-neighbours .music-neighbours__title {
+  min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; color: var(--text-primary); font: inherit; font-size: 13px; font-weight: 500;
+  text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.music-neighbours .music-neighbours__title:hover, .music-neighbours .music-neighbours__title:focus-visible { color: var(--accent-strong); text-decoration: underline; }
+.music-neighbours__meta { display: flex; gap: 10px; font-size: 12px; color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.camelot { display: inline-block; padding: 0 5px; border-radius: 4px; font-size: 11px; font-weight: 600; color: var(--accent-strong); background: var(--accent-soft); }
+.music-neighbours__reasons { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 0; padding: 0; list-style: none; }
+.music-neighbours__reasons li {
+  display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; font-size: 11px; color: var(--text-secondary);
+  border: 1px solid color-mix(in srgb, var(--reason-kind) 45%, transparent); cursor: help;
+}
+.music-neighbours__reasons li::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--reason-kind); }
+.music-neighbours__empty { margin: 0; font-size: 12px; color: var(--text-faint); }
+.music-neighbours .music-neighbours__more { margin: 8px 0 0; padding: 4px 10px; border: 1px solid var(--border-glass); border-radius: 999px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 12px; cursor: pointer; }
+.music-neighbours .music-neighbours__more:hover { color: var(--text-primary); }
+.music-neighbours__divider { grid-column: 1 / -1; margin: 0 0 4px; font-size: 11px; color: var(--text-faint); }
+.music-neighbours ol > li.is-linked-only { background: transparent; }
