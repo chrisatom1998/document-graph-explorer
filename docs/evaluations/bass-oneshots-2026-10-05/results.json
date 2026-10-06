@@ -4,7 +4,7 @@
  "path": "real built app upload, Sounds-panel tags >= 0.50 (no tag was shown as maybe)",
  "input": "Freesound preview ogg converted to 48 kHz mono wav",
  "recall": {
-  "found": 0,
+  "found": 26,
   "of": 86,
   "wilson95": [
    0.22,
@@ -12,7 +12,7 @@
   ]
  },
  "falseTags": {
-  "tagged": 0,
+  "tagged": 4,
   "of": 55,
   "wilson95": [
    0.03,
@@ -33,12 +33,12 @@
   {
    "freesoundId": "18098",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "18099",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "18140",
@@ -48,12 +48,12 @@
   {
    "freesoundId": "18141",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "18190",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "19392",
@@ -118,12 +118,12 @@
   {
    "freesoundId": "207808",
    "bassHit": false,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "233764",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "260001",
@@ -143,7 +143,7 @@
   {
    "freesoundId": "332430",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "340467",
@@ -178,17 +178,17 @@
   {
    "freesoundId": "400485",
    "bassHit": false,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "400486",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "415549",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "418194",
@@ -268,12 +268,12 @@
   {
    "freesoundId": "518557",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "523088",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "528816",
@@ -293,12 +293,12 @@
   {
    "freesoundId": "542818",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "542823",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "546784",
@@ -363,7 +363,7 @@
   {
    "freesoundId": "590095",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "593886",
@@ -388,7 +388,7 @@
   {
    "freesoundId": "611690",
    "bassHit": false,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "611691",
@@ -523,7 +523,7 @@
   {
    "freesoundId": "695919",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "704264",
@@ -533,7 +533,7 @@
   {
    "freesoundId": "707198",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "707199",
@@ -543,7 +543,7 @@
   {
    "freesoundId": "711476",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "711478",
@@ -558,7 +558,7 @@
   {
    "freesoundId": "717962",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "724940",
@@ -578,17 +578,17 @@
   {
    "freesoundId": "729515",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "729519",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "732223",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "733887",
@@ -608,12 +608,12 @@
   {
    "freesoundId": "750354",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "759275",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "761190",
@@ -628,7 +628,7 @@
   {
    "freesoundId": "770904",
    "bassHit": false,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "770936",
@@ -658,7 +658,7 @@
   {
    "freesoundId": "802130",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "826145",
@@ -678,7 +678,7 @@
   {
    "freesoundId": "827871",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "841274",
@@ -708,7 +708,7 @@
   {
    "freesoundId": "859980",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "860524",
@@ -718,7 +718,7 @@
   {
    "freesoundId": "864206",
    "bassHit": true,
-   "taggedBassHit": false
+   "taggedBassHit": true
   },
   {
    "freesoundId": "864754",
