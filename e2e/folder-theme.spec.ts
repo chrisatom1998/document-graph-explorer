@@ -57,7 +57,7 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     await page.getByRole('button', { name: 'Show processing details' }).click(sceneBuild);
     await expect(page.getByRole('button', { name: 'Minimize processing details' })).toBeVisible(sceneBuild);
     await page.getByRole('button', { name: 'Minimize processing details' }).click(sceneBuild);
-    await expect(page.getByRole('button', { name: 'Search documents' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Search documents' })).toBeDisabled();
     releaseEmbedding();
     await expect(corpusCount(page)).toContainText('3 clips', { timeout: 120000 });
     await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();

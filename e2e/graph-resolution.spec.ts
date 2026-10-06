@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { closeDetails, details, fitAll, openFiles, toolMenu } from './resonance';
+import { closeDetails, details, fitAll, openFiles, startIn3D, toolMenu } from './resonance';
 
 const graph = JSON.stringify({
   version: 1, generator: 'knowledge-nebula', createdAt: '2026-10-02T00:00:00.000Z', includeEmbeddings: false,
@@ -16,7 +16,10 @@ const graph = JSON.stringify({
 });
 
 async function loadGraph(page: Page, firstVisit = true) {
-  if (firstVisit) await page.goto('/');
+  if (firstVisit) {
+    await startIn3D(page);
+    await page.goto('/');
+  }
   await page.getByRole('button', { name: 'Import a graph', exact: true }).click();
   await page.locator('input[type="file"][accept*=".json"]').evaluate((element, contents) => {
     const transfer = new DataTransfer();

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openFiles, openTab } from './resonance';
+import { openTab } from './resonance';
 
 test('file browsing is visible and mobile guidance clears the controls', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -21,13 +21,14 @@ test('file browsing is visible and mobile guidance clears the controls', async (
   // The library list lives in its own view tab now, at both sizes.
   const library = page.getByRole('button', { name: 'Library', exact: true });
   await expect(library).toBeInViewport();
-  await openFiles(page);
+  // Open the Library directly: the getting-started guide checked below must stay up.
+  await openTab(page, 'Library');
   await expect(page.getByRole('option', { name: /Layout note/ })).toBeVisible();
   await openTab(page, 'Graph');
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(library).toBeInViewport();
-  await openFiles(page);
+  await openTab(page, 'Library');
   await expect(page.getByRole('option', { name: /Layout note/ })).toBeInViewport();
   await openTab(page, 'Graph');
   const guide = page.locator('.first-run-guide');

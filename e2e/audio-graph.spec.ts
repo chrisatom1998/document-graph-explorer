@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { correctDjTags } from './sampleAssistant';
-import { advancedFilters, closeDetails, fitAll } from './resonance';
+import { advancedFilters, closeDetails, fitAll, startIn3D } from './resonance';
 
 const base = { kind:'document',fileType:'audio',topics:[],entities:[],keywords:[],wordCount:0,degree:0,cluster:0,status:'ok' };
 const analysis = {version:2,analyzedSeconds:8,durationSeconds:8,instruments:[],notes:[]};
@@ -20,6 +20,7 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  const errors:string[]=[]; page.on('pageerror',error=>errors.push(error.message));
  await page.addInitScript(()=>localStorage.setItem('knowledge-nebula-theme','dark'));
  await page.setViewportSize({width:1440,height:1000});
+ await startIn3D(page);
  await page.goto('/');
  const importFixture=async(contents:string)=>{
   await page.getByRole('button',{name:'Import a graph',exact:true}).click();

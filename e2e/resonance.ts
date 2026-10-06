@@ -7,6 +7,19 @@
  */
 import { expect, type Locator, type Page } from '@playwright/test';
 
+/**
+ * Start a fresh profile in 3D. Resonance opens in 2D by default; specs that
+ * cover 3D rendering first opt back in. Written once, so a later 2D choice
+ * still survives reloads.
+ */
+export async function startIn3D(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    try {
+      if (localStorage.getItem('knowledge-nebula-dims') === null) localStorage.setItem('knowledge-nebula-dims', '3');
+    } catch { /* storage unavailable: the app default applies */ }
+  });
+}
+
 /** Dismiss the first-run tour when it is up; it swallows keyboard input. */
 export async function dismissTour(page: Page): Promise<void> {
   const tour = page.getByRole('button', { name: 'Dismiss getting started' });

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { closeDetails, details, fitAll, openChat, openFiles, openTab, similarityFilter, toolMenu } from './resonance';
+import { closeDetails, details, fitAll, openChat, openFiles, openTab, similarityFilter, startIn3D, toolMenu } from './resonance';
 
 // Small explicit fixture: visual checks need no external models or private samples.
 const fixture = JSON.stringify({
@@ -17,6 +17,7 @@ test('classic graph controls and music copilot work on desktop and mobile', asyn
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.setViewportSize({ width: 1440, height: 900 });
+  await startIn3D(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Import a graph', exact: true }).click();
   await page.locator('input[type="file"][accept*=".json"]').evaluate((element, contents) => {

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles } from './resonance';
+import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles, startIn3D } from './resonance';
 
 test.beforeEach(async ({ page }) => { page.setDefaultTimeout(30_000); });
 
@@ -308,6 +308,7 @@ test('renderer grows past 4,096 nodes and can frame the first node beyond the ol
 
 test('switching graph views does not leak WebGL contexts', async ({ page }) => {
   const errors = collectErrors(page);
+  await startIn3D(page);
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext;
     const canvases = new WeakSet<HTMLCanvasElement>();
