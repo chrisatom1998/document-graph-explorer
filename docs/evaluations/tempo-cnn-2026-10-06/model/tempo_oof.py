@@ -1,22 +1,25 @@
 """Out-of-fold tempo CNN predictions on the tempo thread's tuning clips, plus top-3 on held-out clips.
 Clips are cut from whole-track features by frame offset (21.533 fps), matching build-sets.py / build-mtg.py starts."""
 import gzip, hashlib, json, os, sys, numpy as np, torch
-R = '/home/user/document-graph-explorer'; RUN = f'{R}/docs/evaluations/hf-key-tempo-2026-10-06/runs/tempo-v1'; FPS = 11025 / 512
-src = open('/tmp/claude-0/scripts/train_tempo.py').read().split("ok = lambda")[0]
+HERE = os.path.dirname(os.path.abspath(__file__)); R = os.path.abspath(os.path.join(HERE, '../../../..'))
+# Downloads, features and checkpoints live under a work root (the model thread used /tmp/claude-0).
+W = os.environ.get('DGE_WORK', '/tmp/claude-0')
+RUN = os.environ.get('DGE_TEMPO_RUN', f'{R}/docs/evaluations/hf-key-tempo-2026-10-06/runs/tempo-v1'); FPS = 11025 / 512
+src = open(os.path.join(HERE, 'train_tempo.py')).read().split("ok = lambda")[0]
 def load(pt):
     ck = torch.load(pt, map_location='cpu')
     s = src.replace("rows = [r for r in json.load(open(labels))['tempo'] if 30 <= r['bpm'] <= 285]", "rows = []").replace("MU = float(np.mean([x.mean() for x in X.values()])); SD = float(np.mean([x.std() for x in X.values()]))", f"MU = {ck['mu']}; SD = {ck['sd']}")
-    sys.argv = ['x', 'final', '/dev/null', '/tmp/claude-0/models/tmp']; ns = {}; exec(s, ns)
+    sys.argv = ['x', 'final', '/dev/null', f'{W}/models/tmp']; ns = {}; exec(s, ns)
     net = ns['Net'](); net.load_state_dict(ck['state']); net.eval(); return net, ns['predict']
 folds = [load(f'{RUN}/fold{k}.pt') for k in range(5)]; final = load(f'{RUN}/tempo-cnn.pt')
 fold = lambda g: int(hashlib.sha256(g.encode()).hexdigest()[:8], 16) % 5
-groups = {os.path.basename(r['f'])[:-4]: r['group'] for r in json.load(open('/tmp/claude-0/feats/labels.json'))['tempo']}
+groups = {os.path.basename(r['f'])[:-4]: r['group'] for r in json.load(open(f'{W}/feats/labels.json'))['tempo']}
 def top3(p): i = np.argsort(p)[::-1][:3]; return [[30 + int(j), round(float(p[j]), 4)] for j in i]
 def cut(x, start, secs):
     a = int(round(max(0, start) * FPS)); return x[a: a + int(round(secs * FPS))]
 out = {'tune': [], 'heldout': []}
 def add(split, cid, feat_key, start, secs, k):
-    f = f'/tmp/claude-0/feats/train/{feat_key}.npz'
+    f = f'{W}/feats/train/{feat_key}.npz'
     if not os.path.exists(f): return
     x = np.load(f)['tempo'].astype(np.float32); d = len(x) / FPS
     if callable(start): start = start(d)
@@ -39,7 +42,7 @@ for fk, g in groups.items():
     for tag, st in (('q1-10', lambda d: d * .25 - 5), ('q3-10', lambda d: d * .75 - 5)):
         add('tune', f'mk-{n}-{tag}', fk, st, 10, fold(g))
 # Held-out top-3 with the final model (already-cut clip features)
-H = '/tmp/claude-0/feats/held'
+H = f'{W}/feats/held'
 for it in json.load(open(f'{R}/docs/evaluations/dj-clips-2026-10-06/giantsteps-manifest.json'))['items'] + json.load(open(f'{R}/docs/evaluations/dj-clips-round2-2026-10-06/mtg-key-manifest.json'))['items']:
     pre = 'r1clip' if it['id'].startswith('gs-') else 'r2clip'; f = f"{H}/{pre}_{it['id']}.npz"
     if os.path.exists(f):

@@ -27,7 +27,8 @@ confidence. Recordings shorter than 8 s keep the loop estimator's tempo and alte
 
 The threshold was chosen on tuning clips only, with out-of-fold readings from both methods
 (`scripts/tempo/cnn-combine.py`, output in `combine-output.txt`). 0.4 scored slightly higher overall, but it lost 1 point
-on full-length GTZAN songs. 0.5 was the lowest threshold that left non-dance music unchanged:
+on full-length GTZAN songs. 0.5 was the lowest threshold that kept that loss to 0.2 points (one song fixed, two broken),
+which we accept for the gain on dance music:
 
 | Tuning clips (out of fold) | n | App | App + CNN at 0.5 |
 |---|---|---|---|

@@ -129,6 +129,7 @@ let session: Promise<{ ort: typeof import('onnxruntime-web/webgpu'); model: impo
 async function loadModel() {
   // Same ORT entry as the Jamendo models; 1.4 MB, single-thread WASM.
   const ort = await import('onnxruntime-web/webgpu');
+  ort.env.wasm.numThreads = 1;
   const model = await ort.InferenceSession.create(`${import.meta.env.BASE_URL}tempo-model/tempo-cnn.onnx`, { executionProviders: ['wasm'] });
   return { ort, model };
 }
