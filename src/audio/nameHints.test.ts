@@ -53,4 +53,25 @@ describe('musical name tags', () => {
     expect(hints('Library\\Electric piano\\D♭minor\\clip.wav')).toMatchObject({ key: { value: { tonic: 1, mode: 'minor' } }, instruments: { value: ['electric piano'] } });
     expect(hints('synthesizer_trumpet.wav').instruments?.value).toEqual(expect.arrayContaining(['synthesizer', 'trumpet']));
   });
+  // Naming conventions from free packs: Transmutation (CC0) and the Zenhiser-style "145bpm A" pack layout.
+  it.each([
+    ['ARP/ARP_MACHINEGIRL_137_D.wav', 137, 2],
+    ['BASS/BASS_CRYPTOSCION_130_Cphr.wav', 130, 0],
+    ['CHORD/CHD_BEDSHAPED_80_A#lyd.wav', 80, 10],
+    ['Loops/160_F#_BassLoop_01_SP.wav', 160, 6],
+    ['Bassline 145bpm A.wav', 145, 9],
+  ])('reads tempo and root from %s without inventing a major/minor key', (path, bpm, pitch) => {
+    expect(hints(path)).toMatchObject({ tempo: { value: bpm }, pitch: { value: pitch } });
+    expect(hints(path).key).toBeUndefined();
+  });
+  it('treats a bare number as a tempo only inside a loops folder', () => {
+    expect(hints('DRUM/LOOPS/DL_BREAKER_130.wav').tempo).toMatchObject({ value: 130, source: 'file name' });
+    expect(hints('DRUM/ONESHOT/DO_BD_130.wav').tempo).toBeUndefined();
+    expect(hints('Loops/Track 01.wav').tempo).toBeUndefined();
+  });
+  it('does not read a root from a non-tempo number or an all-caps "AM"', () => {
+    expect(hints('Old man in trance I 10_D#.wav').pitch).toBeUndefined();
+    expect(hints('TEXTURE/TXT_INTERRUPTED_AM.wav')).toEqual({});
+    expect(hints('Bloc Party.wav')).toEqual({});
+  });
 });
