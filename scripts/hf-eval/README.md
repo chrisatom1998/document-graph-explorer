@@ -12,6 +12,8 @@ doesn't sit in the Actions queue in front of PR CI. Each task is split into `par
 - `tasks/<task>.sh collect <parts dir> <results dir>` runs back in Actions to merge and score the parts.
   Results are committed to `docs/evaluations/hf-eval/<task>/...` on `results_branch` when one is given, and always
   kept as the `hf-eval-<task>` artifact.
+- `fetch-jamendo-ranges.py` gets MTG-Jamendo tracks for the Jamendo tasks with byte ranges of the archive folders
+  (only the needed members, several folders at once) instead of streaming each 1.8 GB folder at ~2.5 MB/s.
 
 Run it: Actions → "Accuracy test on Hugging Face Jobs" → task, app ref, parts. Or, on a `claude/hf-eval-*`
 branch, change `request.json` and push. Add every run to the HF credit ledger before starting it.

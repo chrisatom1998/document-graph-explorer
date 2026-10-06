@@ -21,7 +21,7 @@ run)
       mkdir -p "$WORK/mj/$(dirname $f)"; curl -fsSL --retry 6 -o "$WORK/mj/$f" "$JM/$f"
     done
     python3 $R3/scripts/holdout-r3/select-jamendo.py $WORK/mj
-    python3 $R3/scripts/holdout-r3/fetch-jamendo.py $R3/$DOCS/jamendo-manifest.json $WORK/mj/data/download/raw_30s_audio-low_sha256_tracks.txt $PART/$PARTS $WORK/audio
+    python3 $HARNESS/scripts/hf-eval/fetch-jamendo-ranges.py $R3/$DOCS/jamendo-manifest.json $WORK/mj/data/download/raw_30s_audio-low_sha256_tracks.txt $PART/$PARTS $WORK/audio
     MANIFEST=$R3/$DOCS/jamendo-manifest.json
   else
     git clone -q https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git $WORK/mk && git -C $WORK/mk checkout -q fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b
