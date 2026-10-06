@@ -725,5 +725,42 @@
    "bassHit": true,
    "taggedBassHit": false
   }
- ]
+ ],
+ "adjustedAfterSeeingResults": {
+  "note": "Post-hoc. After the result was read, the owner re-listened to the 23 bass-labelled clips the app tagged as kick and judged 16 to be kick drums, not bass. Reported ALONGSIDE the original, never instead of it; labels in manifest.json are unchanged.",
+  "kickClipIds": [
+   "614398",
+   "642476",
+   "517523",
+   "488459",
+   "860524",
+   "110550",
+   "32594",
+   "614392",
+   "557133",
+   "685865",
+   "178767",
+   "843024",
+   "841274",
+   "441055",
+   "581458",
+   "724940"
+  ],
+  "recall": {
+   "found": 26,
+   "of": 70,
+   "wilson95": [
+    0.27,
+    0.49
+   ]
+  },
+  "falseTags": {
+   "tagged": 4,
+   "of": 71,
+   "wilson95": [
+    0.02,
+    0.14
+   ]
+  }
+ }
 }
