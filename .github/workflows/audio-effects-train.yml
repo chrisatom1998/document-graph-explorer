@@ -1,0 +1,34 @@
+name: Train the DJ effect tagger
+
+# Trains the tagger's DJ effect outputs alone (scripts/audio-model/hf-effects-job.sh) on a Hugging Face Jobs GPU billed to
+# the HF_TOKEN account: the DJ effect clips' train uploaders (PR #141's list, CC0 and CC BY only), judged on its held-out
+# uploaders. Uploads to the private dge-instrument-tagger repo under effects/. Scores are printed as aggregates only.
+on:
+  workflow_dispatch:
+    inputs:
+      epochs: { default: '30' }
+      timeout: { description: 'HF job time limit', default: '90m' }
+  push:
+    branches: ['claude/train-audio-model-*']
+    paths: ['.github/workflows/audio-effects-train.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Train on Hugging Face Jobs
+        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
+        run: |
+          pip install -q huggingface_hub
+          python3 scripts/audio-model/hf-launch.py l4x1 "${{ inputs.timeout || '90m' }}" JOB_SCRIPT=hf-effects-job.sh JOB_NAME=dge-tagger-effects \
+            REPO_SHA=${{ github.sha }} MODEL=mn10_as EPOCHS=${{ inputs.epochs || '30' }} LR=1e-4 BATCH=64 OUT_DIR=effects
+      - name: Stop the Hugging Face job if this workflow is cancelled
+        if: ${{ cancelled() }}
+        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
+        run: |
+          if [ -f hf-job-id ]; then python3 -c "from huggingface_hub import cancel_job; cancel_job(job_id=open('hf-job-id').read())"; fi
