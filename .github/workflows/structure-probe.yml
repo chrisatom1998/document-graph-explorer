@@ -1,0 +1,31 @@
+name: Structure dataset probe
+
+# Temporary: checks what the Raveform EDM structure dataset ships and whether its audio is reachable from Actions.
+on:
+  push:
+    branches: [claude/track-structure-5lo7eb]
+    paths: [.github/workflows/structure-probe.yml]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Fetch Raveform
+        run: |
+          curl -fsSL --retry 6 -o rf.zip https://huggingface.co/datasets/taejunkim/raveform/resolve/main/raveform.zip
+          unzip -l rf.zip | awk '{print $4}' | sed 's#/[^/]*$##' | sort | uniq -c | sort -rn | head -40
+          unzip -l rf.zip | head -30
+          unzip -q rf.zip -d rf
+          find rf -maxdepth 3 | head -40
+          f=$(find rf -name 'segments*.json' | head -1); echo "== $f"; head -c 3000 "$f"; echo
+          b=$(find rf -name '*.beat.csv' | head -1); echo "== $b"; head -40 "$b"
+          t=$(find rf -name 'tracks.jsonl' | head -1); echo "== $t"; head -c 2000 "$t"; echo
+          find rf -name '*.beat.csv' | wc -l
+      - name: Try audio
+        run: |
+          pip install -q yt-dlp
+          for id in $(find rf -name '*.beat.csv' | head -4 | xargs -n1 basename | sed 's/.beat.csv//'); do
+            echo "== $id"; timeout 120 yt-dlp -q -x --audio-format mp3 -o "a/$id.%(ext)s" "https://www.youtube.com/watch?v=$id" 2>&1 | tail -3 || true
+          done
+          ls -la a || true
