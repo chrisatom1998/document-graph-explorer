@@ -93,80 +93,86 @@ const movingMean = (v: number[], radius: number) => {
   const prefix = [0]; for (const x of v) prefix.push(prefix[prefix.length - 1] + x);
   return v.map((_, i) => { const a = Math.max(0, i - radius), b = Math.min(v.length, i + radius + 1); return (prefix[b] - prefix[a]) / (b - a); });
 };
-const movingMedian = (v: number[], radius: number) => v.map((_, i) => percentile(v.slice(Math.max(0, i - radius), i + radius + 1), 0.5));
-/** Otsu's threshold: the split that best separates the two groups of values. */
-function otsu(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b), n = sorted.length;
-  const prefix = [0]; for (const x of sorted) prefix.push(prefix[prefix.length - 1] + x);
-  let best = sorted[Math.floor(n / 2)], bestScore = -Infinity;
-  for (let i = Math.floor(n * 0.1); i < Math.ceil(n * 0.9); i++) {
-    const w0 = i / n, w1 = 1 - w0, m0 = prefix[i] / Math.max(1, i), m1 = (prefix[n] - prefix[i]) / Math.max(1, n - i);
-    const score = w0 * w1 * (m0 - m1) ** 2;
-    if (score > bestScore) { bestScore = score; best = (sorted[Math.max(0, i - 1)] + sorted[i]) / 2; }
-  }
-  return best;
-}
-
 export interface StructureParams {
-  /** Feature weights for intensity: sub, bass, loudness, kick density. */
-  weights: [number, number, number, number];
-  smoothSeconds: number;
-  minDropSeconds: number;
+  /** Weight of each feature (STRUCTURE_FEATURES order) in the intensity curve. */
+  weights: number[];
+  /** Seconds of intensity compared before and after a candidate boundary. */
+  stepSeconds: number;
+  /** Minimum rise in intensity (0..1 scale) for a drop to start, and fall for it to end. */
+  minRise: number;
+  /** Intensity the part after a drop entry must reach, as a quantile of the track's intensity. */
+  dropLevel: number;
   minGapSeconds: number;
+  /** A rise followed within this many seconds by a rise to a clearly higher level is a buildup, not a drop. */
+  buildupSeconds: number;
+  /** How much higher (0..1 scale) the later level must be for the earlier rise to count as a buildup. */
+  buildupMargin: number;
+  /** The first drop never comes before this fraction of the track (DJ intros; 5% of the labelled first drops come earlier). */
+  firstDropMinFraction: number;
   /** Seconds either side of a coarse drop start searched for the bass entry. */
   refineSeconds: number;
-  /** Below this separation between loud and quiet parts, the track has no clear drop. */
-  minContrast: number;
 }
+/** Tuned on Raveform folds 0-3 (153 tracks), docs/evaluations/structure-2026-10-06. */
 export const DEFAULT_STRUCTURE_PARAMS: StructureParams = {
-  weights: [1, 1, 1, 1], smoothSeconds: 4, minDropSeconds: 15, minGapSeconds: 8, refineSeconds: 4, minContrast: 0.2,
+  weights: [1, 1, 0, 0, 0, 1, 1, 0], stepSeconds: 12, minRise: 0.12, dropLevel: 0.3, minGapSeconds: 16,
+  buildupSeconds: 64, buildupMargin: 0.03, firstDropMinFraction: 0.12, refineSeconds: 4,
 };
 
-/** Per-block intensity on a 0..1 scale for this track (5th to 95th percentile). */
+/** Per-block intensity on a 0..1 scale for this track (each feature scaled from its 5th to 95th percentile). */
 export function intensityCurve(blocks: number[][], params = DEFAULT_STRUCTURE_PARAMS): number[] {
-  const columns = [0, 1, 5, 6].map(c => blocks.map(b => b[c]));
-  const scaled = columns.map(col => { const lo = percentile(col, 0.05), hi = percentile(col, 0.95); return col.map(v => Math.min(1, Math.max(0, (v - lo) / Math.max(1e-6, hi - lo)))); });
-  const total = params.weights.reduce((a, b) => a + b, 0) || 1;
-  return blocks.map((_, i) => scaled.reduce((sum, col, c) => sum + col[i] * params.weights[c], 0) / total);
+  const used = params.weights.map((w, c) => [w, c] as const).filter(([w]) => w > 0);
+  const total = used.reduce((a, [w]) => a + w, 0) || 1;
+  const scaled = used.map(([, c]) => {
+    const col = blocks.map(b => b[c]), lo = percentile(col, 0.05), hi = percentile(col, 0.95);
+    return col.map(v => Math.min(1, Math.max(0, (v - lo) / Math.max(1e-6, hi - lo))));
+  });
+  return blocks.map((_, i) => scaled.reduce((sum, col, k) => sum + col[i] * used[k][0], 0) / total);
 }
 
+/** Drops start where intensity steps up to a high level and end where it steps back down; what lies between is
+ * the intro, breakdowns and outro. Every drop start is then moved to the strongest bass entry nearby. */
 export function detectStructure(blocks: number[][], params = DEFAULT_STRUCTURE_PARAMS): TrackStructure {
-  const step = STRUCTURE_BLOCK_SECONDS, n = blocks.length, duration = n * step;
+  const step = STRUCTURE_BLOCK_SECONDS, n = blocks.length;
   const empty: TrackStructure = { revision: STRUCTURE_REVISION, sections: [], drops: [] };
-  if (duration < STRUCTURE_MIN_SECONDS) return empty;
-  const raw = intensityCurve(blocks, params);
-  const radius = Math.max(1, Math.round(params.smoothSeconds / step / 2));
-  const smooth = movingMean(movingMedian(raw, radius), Math.max(1, Math.round(radius / 2)));
-  const threshold = otsu(smooth);
-  const high = smooth.filter(v => v > threshold), low = smooth.filter(v => v <= threshold);
-  if (!high.length || !low.length) return empty;
-  const contrast = high.reduce((a, b) => a + b, 0) / high.length - low.reduce((a, b) => a + b, 0) / low.length;
-  if (contrast < params.minContrast) return empty;
-  // Runs of high blocks; short quiet gaps inside a drop are fills, short loud runs are hits, not drops.
-  let runs: [number, number][] = [];
-  for (let i = 0; i < n;) {
-    if (smooth[i] <= threshold) { i++; continue; }
-    let j = i; while (j < n && smooth[j] > threshold) j++;
-    runs.push([i, j]); i = j;
+  if (n * step < STRUCTURE_MIN_SECONDS) return empty;
+  const curve = movingMean(intensityCurve(blocks, params), Math.round(0.5 / step));
+  const prefix = [0]; for (const v of curve) prefix.push(prefix[prefix.length - 1] + v);
+  const mean = (a: number, b: number) => { a = Math.max(0, a); b = Math.min(n, b); return b > a ? (prefix[b] - prefix[a]) / (b - a) : 0; };
+  const w = Math.max(1, Math.round(params.stepSeconds / step)), gap = Math.round(params.minGapSeconds / step);
+  const level = percentile(curve, params.dropLevel);
+  const rise = curve.map((_, i) => i < w || i > n - w ? 0 : mean(i, i + w) - mean(i - w, i));
+  // Local maxima of the rise that reach a high level, strongest first, at least minGap apart.
+  const candidates: number[] = [];
+  for (let i = w; i <= n - w; i++) {
+    if (rise[i] < params.minRise || mean(i, i + w) < level) continue;
+    let peak = true;
+    for (let k = Math.max(0, i - w); k <= Math.min(n - 1, i + w) && peak; k++) if (rise[k] > rise[i] || (rise[k] === rise[i] && k < i)) peak = false;
+    if (peak) candidates.push(i);
   }
-  const merged: [number, number][] = [];
-  for (const r of runs) {
-    const last = merged[merged.length - 1];
-    if (last && (r[0] - last[1]) * step < params.minGapSeconds) last[1] = r[1]; else merged.push([...r]);
-  }
-  runs = merged.filter(([a, b]) => (b - a) * step >= params.minDropSeconds);
-  if (!runs.length) return empty;
-  // Snap each drop start to where the bass comes in: the largest rise in sub+bass energy near the coarse boundary.
+  const starts: number[] = [];
+  for (const c of candidates.sort((a, b) => rise[b] - rise[a])) if (starts.every(s => Math.abs(s - c) >= gap)) starts.push(c);
+  starts.sort((a, b) => a - b);
+  const post = (i: number) => mean(i, i + w);
+  const reachBuildup = Math.round(params.buildupSeconds / step);
+  const buildups = new Set(starts.filter(a => starts.some(b => b > a && b - a <= reachBuildup && post(b) > post(a) + params.buildupMargin)));
+  starts.splice(0, starts.length, ...starts.filter(a => !buildups.has(a) && a >= params.firstDropMinFraction * n));
+  if (!starts.length) return empty;
+  // Each drop runs until intensity falls back by minRise (or the next drop starts).
+  const runs: [number, number][] = starts.map((a, k) => {
+    const limit = k + 1 < starts.length ? starts[k + 1] : n;
+    let b = limit;
+    for (let i = a + w; i < limit; i++) if (-rise[i] >= params.minRise) { b = i; break; }
+    return [a, b];
+  });
   const bass = blocks.map(b => (b[0] + b[1]) / 2);
-  const reach = Math.round(params.refineSeconds / step), gap = Math.max(1, Math.round(1 / step));
+  const reach = Math.round(params.refineSeconds / step), half = Math.max(1, Math.round(1 / step));
   const drops = runs.map(([a, b], index) => {
-    const lo = Math.max(index ? runs[index - 1][1] : 0, a - reach) + gap, hi = Math.min(b - gap, a + reach);
+    const lo = Math.max(index ? runs[index - 1][1] : 0, a - reach) + half, hi = Math.min(b - half, a + reach);
     let best = a, bestRise = -Infinity;
     for (let i = lo; i <= hi; i++) {
       let before = 0, after = 0;
-      for (let k = 1; k <= gap; k++) { before += bass[i - k] ?? bass[0]; after += bass[i + k - 1] ?? bass[n - 1]; }
-      const rise = (after - before) / gap;
-      if (rise > bestRise) { bestRise = rise; best = i; }
+      for (let k = 1; k <= half; k++) { before += bass[i - k] ?? bass[0]; after += bass[i + k - 1] ?? bass[n - 1]; }
+      if (after - before > bestRise) { bestRise = after - before; best = i; }
     }
     return [best, b] as [number, number];
   });
@@ -179,7 +185,7 @@ export function detectStructure(blocks: number[][], params = DEFAULT_STRUCTURE_P
     cursor = b;
   });
   if (cursor < n) sections.push({ start: at(cursor), end: at(n), label: 'outro' });
-  return { revision: STRUCTURE_REVISION, sections: sections.filter(s => s.end - s.start >= step), drops: drops.map(([a]) => at(a)) };
+  return { revision: STRUCTURE_REVISION, sections: sections.filter(x => x.end - x.start >= step), drops: drops.map(([a]) => at(a)) };
 }
 
 const LABELS: readonly SectionLabel[] = ['intro', 'buildup', 'drop', 'breakdown', 'outro'];

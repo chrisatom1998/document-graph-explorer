@@ -5,9 +5,6 @@ name: Track structure features
 # and commits them to the branch for offline tuning and scoring (scripts/structure-evaluate.ts).
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/track-structure-5lo7eb]
-    paths: [.github/workflows/structure-eval.yml]
 
 permissions:
   contents: write
@@ -39,7 +36,7 @@ jobs:
           curl -fsSL --retry 6 -o "$RUNNER_TEMP/rf.zip" "$RAVEFORM"
           unzip -q -o "$RUNNER_TEMP/rf.zip" 'raveform/structures/segments.json' -d "$RUNNER_TEMP/rf"
       - name: Download audio
-        run: python3 scripts/structure-fetch.py "$RUNNER_TEMP/rf/raveform/structures/segments.json" "$RUNNER_TEMP/audio" ${{ matrix.shard }}/4 ${{ github.event_name == 'push' && 150 || 400 }}
+        run: python3 scripts/structure-fetch.py "$RUNNER_TEMP/rf/raveform/structures/segments.json" "$RUNNER_TEMP/audio" ${{ matrix.shard }}/4 150
       - name: Compute features
         run: |
           mkdir -p "$OUT"
