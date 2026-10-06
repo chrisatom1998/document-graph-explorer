@@ -34,8 +34,11 @@ user = whoami()['name']
 run_key = env.setdefault('RUN_KEY', f'{task}-{int(time.time())}')
 env.update(TASK=task, PARTS=str(parts), HF_DATASET=f'{user}/dge-eval-runs', JOB_CPUS=hw[flavor]['cpu'].split()[0])
 script = open(os.path.join(os.path.dirname(__file__), 'job.sh')).read()
+# RESCORE=<run key>: start nothing; download that earlier run's parts so collect can score them again.
+rescore = env.pop('RESCORE', '')
+if rescore: run_key = env['RUN_KEY'] = rescore
 jobs = []
-for i in range(parts):
+for i in range(0 if rescore else parts):
     job = run_job(image=IMAGE, command=['bash', '-c', script], env={**env, 'PART': str(i)},
                   secrets={'HF_TOKEN': os.environ['HF_TOKEN']}, flavor=flavor, timeout=timeout,
                   name=f'dge-eval-{task}-{i}', labels={'app': 'dge-eval', 'run': run_key[:100]})
@@ -45,7 +48,7 @@ open('hf-job-ids', 'w').write('\n'.join(jobs))
 t0 = time.time()
 deadline = t0 + float(os.environ.get('FOLLOW_HOURS', '5.5')) * 3600
 seen_end = {}
-while True:
+while jobs:
     stages = [inspect_job(job_id=j).status.stage for j in jobs]
     for j, s in zip(jobs, stages):
         if s not in ('RUNNING', 'SCHEDULING') and j not in seen_end: seen_end[j] = time.time()
@@ -55,7 +58,7 @@ while True:
         for j in jobs: cancel_job(job_id=j)
         sys.exit('::error::jobs still running at the follow limit; cancelled')
     time.sleep(60)
-wall = (max(seen_end.values()) - t0) / 60
+wall = (max(seen_end.values()) - t0) / 60 if jobs else 0
 
 os.makedirs(f'{out}/logs', exist_ok=True)
 rows, failed = [], []

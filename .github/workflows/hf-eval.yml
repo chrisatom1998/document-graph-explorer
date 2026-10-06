@@ -18,6 +18,7 @@ on:
       timeout: { description: 'time limit per job', default: '2h' }
       max_cost: { description: 'refuse to start if the worst case could pass this many USD', default: '1' }
       results_branch: { description: 'branch to commit results to (empty: artifact only)', default: '' }
+      rescore: { description: 'run key of an earlier run to score again without starting jobs (e.g. loops-37457305060-1)', default: '' }
   push:
     branches: ['claude/hf-eval-*']
     paths: ['scripts/hf-eval/request.json']
@@ -44,16 +45,17 @@ jobs:
           python3 - <<'PY' >> "$GITHUB_ENV"
           import json, os, re
           r = json.load(open('req.json'))
-          d = {'task': '', 'app_ref': 'main', 'task_args': '', 'parts': '8', 'flavor': 'cpu-upgrade', 'timeout': '2h', 'max_cost': '1', 'results_branch': ''}
+          d = {'task': '', 'app_ref': 'main', 'task_args': '', 'parts': '8', 'flavor': 'cpu-upgrade', 'timeout': '2h', 'max_cost': '1', 'results_branch': '', 'rescore': ''}
           d.update({k: str(v) for k, v in r.items() if v not in (None, '')})
           assert re.fullmatch(r'[a-z0-9-]+', d['task']) and os.path.isfile(f"scripts/hf-eval/tasks/{d['task']}.sh"), 'task must be a name under scripts/hf-eval/tasks'
+          assert re.fullmatch(r'[a-z0-9-]*', d['rescore']), 'rescore must be a run key such as loops-37457305060-1'
           for k, v in d.items(): assert '\n' not in v; print(f'{k.upper()}={v}')
           PY
       - name: Resolve the app under test
         run: |
           git fetch -q origin "$APP_REF" 2>/dev/null && SHA=$(git rev-parse FETCH_HEAD) || SHA=$(git rev-parse "$APP_REF")
           echo "APP_SHA=$SHA" >> "$GITHUB_ENV"
-          echo "RUN_KEY=$TASK-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+          echo "RUN_KEY=${RESCORE:-$TASK-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT}" >> "$GITHUB_ENV"
           git worktree add -q --detach app "$SHA" && git -C app log -1 --format='app under test: %H %s'
       - name: Run on Hugging Face Jobs
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
@@ -61,7 +63,7 @@ jobs:
           [ -n "$HF_TOKEN" ] || { echo "::error::Add a Hugging Face token as the repository secret HF_TOKEN"; exit 1; }
           pip install -q huggingface_hub==2.1.1
           python3 scripts/hf-eval/launch.py "$TASK" "$PARTS" "$FLAVOR" "$TIMEOUT" "$MAX_COST" "$RUNNER_TEMP/parts" \
-            APP_SHA=$APP_SHA HARNESS_SHA=$GITHUB_SHA RUN_KEY=$RUN_KEY TASK_ARGS="$TASK_ARGS"
+            APP_SHA=$APP_SHA HARNESS_SHA=$GITHUB_SHA RUN_KEY=$RUN_KEY TASK_ARGS="$TASK_ARGS" RESCORE="$RESCORE"
       - name: Stop the Hugging Face jobs if this workflow is cancelled
         if: ${{ cancelled() }}
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
