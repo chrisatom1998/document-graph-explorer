@@ -84,6 +84,7 @@ if mode == 'cv':
     res = []
     for k in range(5):
         tr = [r for r in rows if fold(r['group']) != k]; te = [r for r in rows if fold(r['group']) == k]
+        MU = float(np.mean([X[r['f']].mean() for r in tr])); SD = float(np.mean([X[r['f']].std() for r in tr]))   # fit on this fold's training rows only
         net = train(tr)
         for r in te:
             x = X[r['f']]

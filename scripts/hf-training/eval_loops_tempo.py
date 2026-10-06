@@ -1,8 +1,8 @@
 """Score a tempo CNN once on the 330 listener-labelled FSL10K loops (+30 no-defined-tempo), next to the app on main.
 Usage: eval_loops_tempo.py <model.pt> <out.json>"""
-import json, sys, numpy as np, torch
+import json, os, sys, numpy as np, torch
 PT, OUT = sys.argv[1:3]
-src = open('/tmp/claude-0/hfjob/train_tempo.py').read().split("ok = lambda")[0]
+src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'train_tempo.py')).read().split("ok = lambda")[0]
 ck = torch.load(PT, map_location='cpu')
 src = src.replace("rows = [r for r in json.load(open(labels))['tempo'] if 30 <= r['bpm'] <= 285]", "rows = []").replace("MU = float(np.mean([x.mean() for x in X.values()])); SD = float(np.mean([x.std() for x in X.values()]))", f"MU = {ck['mu']}; SD = {ck['sd']}")
 sys.argv = ['x', 'final', '/dev/null', '/tmp/claude-0/models/tmp']; ns = {}; exec(src, ns)

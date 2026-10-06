@@ -13,6 +13,7 @@ if STAGE == 'train':
     for mode in os.environ.get('MODES', 'final').split():
         r = subprocess.run([sys.executable, 'train_tempo.py', mode, 'labels.json', 'out'], env={**os.environ, 'WORKERS': str(max(2, os.cpu_count() - 1))}, capture_output=True, text=True)
         print(r.stdout[-4000:], r.stderr[-4000:], flush=True); open(f'out/{mode}.log', 'w').write(r.stdout + r.stderr)
+        if r.returncode: sys.exit(f'{mode} failed with exit code {r.returncode}; nothing uploaded')
         print(mode, 'done', f'{time.time()-t0:.0f}s', flush=True)
     api.upload_folder(folder_path='out', path_in_repo=f'runs/{RUN}', repo_id=REPO, repo_type='dataset'); print('uploaded', flush=True); sys.exit(0)
 # FSL10K: start the 8.8 GB download (aria2c, 16 connections) in the background while songs download
@@ -76,6 +77,7 @@ env = {**os.environ, 'WORKERS': str(max(2, os.cpu_count() - 1))}
 for mode in os.environ.get('MODES', 'final').split():
     r = subprocess.run([sys.executable, 'train_tempo.py', mode, 'labels.json', 'out'], env=env, capture_output=True, text=True)
     print(r.stdout[-4000:], r.stderr[-4000:], flush=True); open(f'out/{mode}.log', 'w').write(r.stdout + r.stderr)
+    if r.returncode: sys.exit(f'{mode} failed with exit code {r.returncode}; nothing uploaded')
     print(mode, 'done', f'{time.time()-t0:.0f}s', flush=True)
     api.upload_folder(folder_path='out', path_in_repo=f'runs/{RUN}', repo_id=REPO, repo_type='dataset')
 print('uploaded', flush=True)

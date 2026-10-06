@@ -1,5 +1,5 @@
-import sys, torch
-src = open('/tmp/claude-0/scripts/train_key.py').read().split("if mode == 'cv':")[0]
+import os, sys, torch
+src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'train_key.py')).read().split("if mode == 'cv':")[0]
 OUT = sys.argv[2]; ck = torch.load(sys.argv[1], map_location='cpu')
 src = src.replace("rows = json.load(open(labels))['key']", "rows = []").replace("MU = np.mean([x.mean() for x in X.values()]); SD = np.mean([x.std() for x in X.values()])", f"MU = {ck['mu']}; SD = {ck['sd']}")
 sys.argv = ['x', 'final', '/dev/null', '/tmp/claude-0/models/tmp']; ns = {}; exec(src, ns)
