@@ -45,6 +45,9 @@ const NO_FILTER: GraphFilter = {
   minEdgeWeight: 0,
   edgeKinds: null,
   modifiedWithinDays: null,
+  bpmRange: null,
+  musicKey: null,
+  style: null,
 };
 
 describe('adjacencyFor', () => {

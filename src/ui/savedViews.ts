@@ -74,6 +74,10 @@ export function applySavedView(view: SavedViewRecord): void {
     minEdgeWeight: view.filter.minEdgeWeight,
     edgeKinds: view.filter.edgeKinds ?? null,
     modifiedWithinDays: view.filter.modifiedWithinDays ?? null,
+    // Saved views predate the audio facets; restoring one clears them.
+    bpmRange: null,
+    musicKey: null,
+    style: null,
   });
   ui.sendCameraPose(view.pose);
 }

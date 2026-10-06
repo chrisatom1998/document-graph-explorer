@@ -124,9 +124,9 @@ export const EDGE_TINTS: Record<EdgeKind, THREE.Color> = {
  * token: backdrop LINES read as edges and backdrop CIRCLES read as node rings,
  * so the 2D map gets its depth cue from tone alone, never from marks.
  */
-export const FLAT_BG = '#08131f';
-export const FLAT_GRID_FADE = '#102234';
-export const FLAT_PANEL = '#112435';
+export const FLAT_BG = '#0b0b11';
+export const FLAT_GRID_FADE = '#15151f';
+export const FLAT_PANEL = '#121219';
 export const FLAT_NODE = new THREE.Color('#f5fbff');
 export const FLAT_NODE_CLUSTER_BLEND = 0.46;
 export const FLAT_NODE_OUTER = new THREE.Color('#426b87');

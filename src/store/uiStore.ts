@@ -66,6 +66,12 @@ export interface GraphFilter {
   edgeKinds: EdgeKind[] | null;
   /** Keep documents modified within this many days; null = any age. */
   modifiedWithinDays: number | null;
+  /** Clips whose detected tempo falls inside [min, max] BPM; null = any tempo. */
+  bpmRange: [number, number] | null;
+  /** Clips in this musical key (see keyName); null = any key. */
+  musicKey: string | null;
+  /** Clips tagged with this character/style label; null = any style. */
+  style: string | null;
 }
 
 export const DEFAULT_FILTER: GraphFilter = {
@@ -75,6 +81,9 @@ export const DEFAULT_FILTER: GraphFilter = {
   minEdgeWeight: 0,
   edgeKinds: null,
   modifiedWithinDays: null,
+  bpmRange: null,
+  musicKey: null,
+  style: null,
 };
 
 export interface SnapshotOverlay {

@@ -101,6 +101,9 @@ function cloneFilter(filter: GraphFilter): GraphFilter {
     minEdgeWeight: filter.minEdgeWeight,
     edgeKinds: filter.edgeKinds ? [...filter.edgeKinds] : null,
     modifiedWithinDays: filter.modifiedWithinDays,
+    bpmRange: filter.bpmRange ? [filter.bpmRange[0], filter.bpmRange[1]] : null,
+    musicKey: filter.musicKey,
+    style: filter.style,
   };
 }
 

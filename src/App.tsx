@@ -51,17 +51,12 @@ const DropZone = lazy(() => import('./ingest/DropZone'));
 // to delay the interactive shell or graph bundle on a restored workspace.
 const EmptyState = lazy(() => import('./ui/EmptyState'));
 const ProgressStrip = lazy(() => import('./ui/ProgressStrip'));
-const Toolbar = lazy(() => import('./ui/Toolbar'));
-const IngestDimsToggle = lazy(() => import('./ui/DimsToggleButton'));
-const GraphNavigator = lazy(() => import('./ui/GraphNavigator'));
-const FilterBar = lazy(() => import('./ui/FilterBar'));
-const Minimap = lazy(() => import('./ui/Minimap'));
-const ChatLauncher = lazy(() => import('./ui/ChatLauncher'));
+// The Resonance shell owns the toolbar, filters and inspector around the graph.
+const ResonanceShell = lazy(() => import('./ui/resonance/ResonanceShell'));
 const InsightsDigest = lazy(() => import('./ui/InsightsDigest'));
 const FirstRunGuide = lazy(() => import('./ui/FirstRunGuide'));
 const InsightsPanel = lazy(() => import('./ui/InsightsPanel'));
 const PathPanel = lazy(() => import('./ui/PathPanel'));
-const SidePanel = lazy(() => import('./ui/SidePanel'));
 const ComparePanel = lazy(() => import('./ui/ComparePanel'));
 const SnapshotDrawer = lazy(() => import('./ui/SnapshotDrawer'));
 const SearchOverlay = lazy(() => import('./ui/SearchOverlay'));
@@ -71,6 +66,10 @@ const DjAssistant = lazy(() => import('./ui/DjAssistant'));
 const MusicBackgroundStatus = lazy(() => import('./ui/MusicBackgroundStatus'));
 const ChatPanel = lazy(() => import('./ui/ChatPanel'));
 const HelpPopover = lazy(() => import('./ui/HelpPopover'));
+
+function hasSavedDims(): boolean {
+  try { return localStorage.getItem('knowledge-nebula-dims') !== null; } catch { return true; }
+}
 
 const RetrievalBenchmarkPanel = import.meta.env.DEV
   ? lazy(() => import('./dev/RetrievalBenchmarkPanel'))
@@ -101,7 +100,6 @@ declare global {
 export default function App() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const phase = useGraphStore((s) => s.phase);
-  const selectedId = useUiStore((s) => s.selectedId);
   const searchOpen = useUiStore((s) => s.searchOpen);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
   const insightsOpen = useUiStore((s) => s.insightsOpen);
@@ -117,6 +115,9 @@ export default function App() {
     // worker still defaults to 3D. Re-post it here, ahead of every hydration
     // path below, so restored nodes are added to an already-flat simulation
     // (no visible collapse) and a worker respawn replays the right dims.
+    // Resonance is a flat map first: a fresh profile starts in 2D, while a
+    // saved 2D/3D choice is kept.
+    if (!hasSavedDims()) useUiStore.getState().setDims(2);
     if (useUiStore.getState().dims === 2) layoutSetDims(2);
     initPersistence();
     void (async () => {
@@ -368,10 +369,12 @@ export default function App() {
       <Suspense fallback={null}><CollabAppBridge /></Suspense>
       <Suspense fallback={null}><TitleRelationships /><DjAssistant /><MusicBackgroundStatus /><UploadInsightsAgent /></Suspense>
       <Suspense fallback={<div className="scene-loading" role="status" aria-label="Loading interactive graph" />}>
-        <NebulaCanvas />
+        <ResonanceShell>
+          <Suspense fallback={<div className="scene-loading" role="status" aria-label="Loading interactive graph" />}>
+            <NebulaCanvas />
+          </Suspense>
+        </ResonanceShell>
       </Suspense>
-      {phase === 'ready' && <Suspense fallback={null}><Toolbar /><GraphNavigator /><FilterBar /><Minimap /><ChatLauncher /></Suspense>}
-      {hasNodes && phase !== 'ready' && <Suspense fallback={null}><IngestDimsToggle /></Suspense>}
       <Suspense fallback={null}><InsightsDigest /><FirstRunGuide /></Suspense>
       <Suspense fallback={null}><DropZone /></Suspense>
       {!hasNodes && phase === 'idle' && (
@@ -388,9 +391,6 @@ export default function App() {
       )}
       {pathMode && (
         <Suspense fallback={null}><PathPanel /></Suspense>
-      )}
-      {selectedId && (
-        <Suspense fallback={null}><SidePanel /></Suspense>
       )}
       <Tooltip />
       {phase === 'ready' && searchOpen && (
