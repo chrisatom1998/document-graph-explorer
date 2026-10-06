@@ -367,7 +367,7 @@ export default function App() {
   return (
     <div className="app-root">
       <Suspense fallback={null}><CollabAppBridge /></Suspense>
-      <Suspense fallback={null}><TitleRelationships /><DjAssistant /><MusicBackgroundStatus /><UploadInsightsAgent /></Suspense>
+      <Suspense fallback={null}><TitleRelationships /><DjAssistant showLauncher={false} /><MusicBackgroundStatus /><UploadInsightsAgent /></Suspense>
       <Suspense fallback={<div className="scene-loading" role="status" aria-label="Loading interactive graph" />}>
         <ResonanceShell>
           <Suspense fallback={<div className="scene-loading" role="status" aria-label="Loading interactive graph" />}>

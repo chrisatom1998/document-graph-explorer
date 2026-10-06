@@ -7,6 +7,7 @@ import { keyName } from '../../audio/musicTypes';
 import { styleTags } from '../../audio/styleTags';
 import { openFilePicker } from '../../ingest/DropZone';
 import { openFolderPicker } from '../../ingest/folderPicker';
+import { openSampleAssistant } from '../../store/sampleAssistantStore';
 
 const SIMILARITY: { kind: EdgeKind; label: string }[] = [
   { kind: 'instrument', label: 'Instruments' },
@@ -32,7 +33,8 @@ export default function ResonanceFilters() {
   const [similarityOpen, setSimilarityOpen] = useState(true);
 
   const docs = useMemo(() => nodes.filter(n => n.kind === 'document'), [nodes]);
-  const audio = docs.some(n => n.fileType === 'audio');
+  const audioCount = docs.filter(n => n.fileType === 'audio').length;
+  const audio = audioCount > 0;
   const kindsPresent = useMemo(() => new Set(edges.map(e => e.kind)), [edges]);
   const similarity = SIMILARITY.filter(s => kindsPresent.has(s.kind));
   const bpms = useMemo(() => docs.flatMap(n => (n.audio?.tempo ? [Math.round(n.audio.tempo.bpm)] : [])), [docs]);
@@ -63,6 +65,11 @@ export default function ResonanceFilters() {
       <button type="button" className="rs-import rs-import--secondary" onClick={openFolderPicker}>
         <span className="rs-import__plus" aria-hidden="true">♫</span>
         <span><strong>Import sounds</strong><small>Pick a whole folder of samples</small></span>
+      </button>
+      <button type="button" className="rs-assistant" aria-haspopup="dialog" onClick={() => openSampleAssistant()}>
+        <span className="rs-assistant__icon" aria-hidden="true">♫</span>
+        <span className="rs-assistant__text"><strong>Sample assistant</strong><small>Search, tag and build crates</small></span>
+        <span className="rs-assistant__count" aria-label={`${audioCount} clips`}>{audioCount}</span>
       </button>
       <p className="rs-count">{docs.length} {audio || docs.length === 0 ? 'clips' : 'files'} in project</p>
 
