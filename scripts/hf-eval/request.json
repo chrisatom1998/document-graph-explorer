@@ -1,1 +1,1 @@
-{"task": "genre-energy", "app_ref": "claude/genre-energy-tags-nqxjo8", "task_args": "beatport-judge", "parts": "8", "flavor": "cpu-upgrade", "timeout": "90m", "max_cost": "1"}
+{"task": "all-tags-jamendo", "app_ref": "main", "parts": "12", "flavor": "cpu-upgrade", "timeout": "2h", "max_cost": "1"}
