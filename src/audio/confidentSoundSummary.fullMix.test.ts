@@ -5,7 +5,7 @@ import type {MusicAnalysis} from './musicTypes';
 // The fusion release check is covered in fusionPresentation.test.ts; here every window counts as qualified.
 const windows:{start:number;end:number;status:'complete';decisions:FusionDecision[]}[]=[];
 vi.mock('./fusionPresentation',()=>({fusionPresentation:()=>({qualified:true,windows})}));
-const {confidentSoundSummary,FULL_MIX_HEADS,FULL_MIX_HEAD_SCORE,FULL_MIX_MIN_TESTED_SCORE}=await import('./confidentSoundSummary');
+const {confidentSoundSummary,FULL_MIX_HEADS,FULL_MIX_HEAD_SCORE,FULL_MIX_MIN_TESTED_SCORE,FULL_MIX_VOICE_VETO}=await import('./confidentSoundSummary');
 
 const decide=(label:string,head:number,source:FusionDecision['source']):FusionDecision=>source==='learned-head'
   ?{label:label as FusionDecision['label'],state:head>=.5?'positive':'uncertain',source,headProbability:head,decisionProbability:head,eligible:true,positiveGroups:3,negativeGroups:4}
@@ -37,4 +37,15 @@ it('needs a higher tested score for trumpet and cello on full mixes only',()=>{
  // Below one full window the track floor still applies.
  expect(shown(song(6,{cello:[.52,'learned-head']}))).toEqual(['cello']);
  expect(shown(song(10,{cello:[.52,'learned-head']}))).toEqual([]);
+});
+it('lets the fusion voice head veto other voice estimates on full mixes',()=>{
+ const sung=(duration:number,head:number):MusicAnalysis=>({...song(duration,{voice:[head,'learned-head']}),
+   soundProfile:{djTags:[{group:'source',label:'voice',model:'Trained head',score:.95}]}} as unknown as MusicAnalysis);
+ expect(shown(sung(30,FULL_MIX_VOICE_VETO-.01))).toEqual([]);
+ expect(shown(sung(30,FULL_MIX_VOICE_VETO))).toEqual(['voice']);
+ // Short clips have no whole window to veto with.
+ expect(shown(sung(8,.01))).toEqual(['voice']);
+ // A voice the user confirmed is never hidden.
+ const confirmed={...sung(30,.01),soundReviews:[{dimension:'source',labelId:'voice',decision:'confirmed'}]} as unknown as MusicAnalysis;
+ expect(shown(confirmed)).toEqual(['voice']);
 });
