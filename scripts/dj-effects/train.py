@@ -2,8 +2,8 @@
 
 Train / held-out split is by Freesound uploader (mine.py). Held-out clips are never used to fit a head or to
 choose its threshold: the regularisation strength and the threshold come from 5-fold out-of-fold scores on
-the training uploaders only (GroupKFold by uploader). Threshold: highest F1 with out-of-fold precision >= 70%;
-if none reaches 70%, the threshold that maximises min(precision, recall). The app refuses thresholds below 0.5.
+the training uploaders only (GroupKFold by uploader). Threshold: the one that maximises min(precision, recall)
+on those out-of-fold scores (the target is P and R >= 0.70). The app refuses thresholds below 0.5.
 Negatives for a label: every other clip (other effects + clips that name no effect) except clips tagged with
 the label itself or a related effect (labels.json "overlap"), since uploader tags are incomplete.
 The heads that ship are the ones fitted on the training split, so the held-out numbers describe exactly them.
@@ -46,15 +46,16 @@ def prf(t, pred):
     tp = int((pred & t).sum()); fp = int((pred & ~t).sum()); fn = int((~pred & t).sum())
     return {'tp': tp, 'fp': fp, 'fn': fn, 'precision': tp / (tp + fp) if tp + fp else 0.0, 'recall': tp / (tp + fn) if tp + fn else 0.0}
 def choose_threshold(t, p):
-    best, fallback = None, None
+    """The project target is precision AND recall >= 0.70, so pick the threshold that maximises min(P, R)
+    (ties: higher F1). Round 2 used "highest F1 with precision >= 0.70", which bought precision with recall."""
+    best = None
     for th in np.unique(np.round(p, 4)):
         if th < 0.5: continue
         pred = p >= th; tp = int((pred & t).sum())
         if not tp: continue
-        P, R = tp / pred.sum(), tp / t.sum(); F = 2 * P * R / (P + R)
-        if P >= TARGET and (best is None or F > best[0]): best = (F, float(th))
-        if fallback is None or min(P, R) > fallback[0]: fallback = (min(P, R), float(th))
-    return (best[1], 'f1 at precision>=0.70') if best else ((fallback[1], 'max min(P,R); 0.70 precision not reached') if fallback else (None, None))
+        P, R = tp / pred.sum(), tp / t.sum(); key = (min(P, R), 2 * P * R / (P + R))
+        if best is None or key > best[0]: best = (key, float(th))
+    return (best[1], 'max min(P,R)') if best else (None, None)
 fit = lambda A, y, C: LogisticRegression(C=C, class_weight='balanced', max_iter=1000, tol=1e-4).fit(A, y)
 
 shipped = {}
@@ -90,7 +91,7 @@ for label in [L['label'] for L in spec['labels']]:
             th, rule = choose_threshold(pos[a][judge], o[judge])
             if th is None: continue
             sc = prf(pos[a][judge], o[judge] >= th); F = 2 * sc['precision'] * sc['recall'] / (sc['precision'] + sc['recall']) if sc['tp'] else 0
-            score = (rule.startswith('f1'), F if rule.startswith('f1') else min(sc['precision'], sc['recall']))
+            score = (min(sc['precision'], sc['recall']), F)
             if best is None or score > best[0]:
                 best = (score, name, a, C, th, rule, sc, bool(judge.all() and not real.all()))
     if best is None:
