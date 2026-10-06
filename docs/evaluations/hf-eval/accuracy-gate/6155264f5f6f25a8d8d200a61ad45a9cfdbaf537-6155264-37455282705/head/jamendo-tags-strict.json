@@ -1,0 +1,247 @@
+{
+ "benchmark": "holdout-r3-2026-10-06/jamendo",
+ "items": 150,
+ "analysed": 150,
+ "clipsWithNoScoredTag": 1,
+ "missing": [],
+ "missedPositivesFoundIn": {
+  "violin": {
+   "profile tag (MTG-Jamendo)": 2,
+   "nowhere": 18
+  },
+  "drums": {
+   "profile tag (MTG-Jamendo)": 1,
+   "instrument estimate only": 2,
+   "profile tag (Music CLAP)": 1,
+   "nowhere": 6
+  },
+  "guitar": {
+   "nowhere": 12,
+   "instrument estimate only": 1
+  },
+  "bass": {
+   "nowhere": 35
+  },
+  "organ": {
+   "nowhere": 5
+  },
+  "voice": {
+   "nowhere": 3
+  },
+  "piano": {
+   "nowhere": 8,
+   "instrument estimate only": 2
+  },
+  "saxophone": {
+   "nowhere": 7
+  },
+  "synthesizer": {
+   "nowhere": 4,
+   "instrument estimate only": 1,
+   "profile tag (MTG-Jamendo)": 2
+  },
+  "trumpet": {
+   "nowhere": 7
+  },
+  "cello": {
+   "nowhere": 8
+  }
+ },
+ "displayedIncludingMaybe": {
+  "source:drums": {
+   "precision": 1,
+   "recall": 0.825,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.698,
+    0.917
+   ],
+   "truePositives": 47,
+   "falseDetections": 0,
+   "misses": 10,
+   "positives": 57,
+   "negatives": 0
+  },
+  "source:voice": {
+   "precision": 0.482,
+   "recall": 0.9,
+   "precisionCI95": [
+    0.321,
+    0.618
+   ],
+   "recallCI95": [
+    0.778,
+    1
+   ],
+   "truePositives": 27,
+   "falseDetections": 29,
+   "misses": 3,
+   "positives": 30,
+   "negatives": 80
+  },
+  "source:synthesizer": {
+   "precision": 1,
+   "recall": 0.883,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.8,
+    0.965
+   ],
+   "truePositives": 53,
+   "falseDetections": 0,
+   "misses": 7,
+   "positives": 60,
+   "negatives": 0
+  },
+  "source:piano": {
+   "precision": 1,
+   "recall": 0.796,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.688,
+    0.894
+   ],
+   "truePositives": 39,
+   "falseDetections": 0,
+   "misses": 10,
+   "positives": 49,
+   "negatives": 0
+  },
+  "source:guitar": {
+   "precision": 1,
+   "recall": 0.567,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.4,
+    0.76
+   ],
+   "truePositives": 17,
+   "falseDetections": 0,
+   "misses": 13,
+   "positives": 30,
+   "negatives": 0
+  },
+  "source:bass": {
+   "precision": 1,
+   "recall": 0.186,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.082,
+    0.333
+   ],
+   "truePositives": 8,
+   "falseDetections": 0,
+   "misses": 35,
+   "positives": 43,
+   "negatives": 0
+  },
+  "source:cymbals": {
+   "precision": null,
+   "recall": null,
+   "precisionCI95": null,
+   "recallCI95": null,
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 0,
+   "positives": 0,
+   "negatives": 0
+  },
+  "source:organ": {
+   "precision": null,
+   "recall": 0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0,
+    0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 5,
+   "positives": 5,
+   "negatives": 0
+  },
+  "source:violin": {
+   "precision": 1,
+   "recall": 0.31,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.16,
+    0.481
+   ],
+   "truePositives": 9,
+   "falseDetections": 0,
+   "misses": 20,
+   "positives": 29,
+   "negatives": 0
+  },
+  "source:trumpet": {
+   "precision": 1,
+   "recall": 0.3,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0,
+    0.625
+   ],
+   "truePositives": 3,
+   "falseDetections": 0,
+   "misses": 7,
+   "positives": 10,
+   "negatives": 0
+  },
+  "source:saxophone": {
+   "precision": 1,
+   "recall": 0.533,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.091,
+    0.833
+   ],
+   "truePositives": 8,
+   "falseDetections": 0,
+   "misses": 7,
+   "positives": 15,
+   "negatives": 0
+  },
+  "source:cello": {
+   "precision": 1,
+   "recall": 0.333,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.111,
+    0.75
+   ],
+   "truePositives": 4,
+   "falseDetections": 0,
+   "misses": 8,
+   "positives": 12,
+   "negatives": 0
+  }
+ }
+}

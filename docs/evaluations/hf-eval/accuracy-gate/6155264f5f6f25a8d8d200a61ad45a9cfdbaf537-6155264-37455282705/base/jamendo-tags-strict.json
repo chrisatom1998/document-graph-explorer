@@ -1,0 +1,246 @@
+{
+ "benchmark": "holdout-r3-2026-10-06/jamendo",
+ "items": 150,
+ "analysed": 150,
+ "clipsWithNoScoredTag": 1,
+ "missing": [],
+ "missedPositivesFoundIn": {
+  "violin": {
+   "profile tag (MTG-Jamendo)": 2,
+   "nowhere": 17
+  },
+  "drums": {
+   "profile tag (MTG-Jamendo)": 1,
+   "nowhere": 9,
+   "instrument estimate only": 3
+  },
+  "guitar": {
+   "nowhere": 12,
+   "profile tag (MTG-Jamendo)": 1
+  },
+  "bass": {
+   "nowhere": 33
+  },
+  "organ": {
+   "nowhere": 5
+  },
+  "saxophone": {
+   "nowhere": 7
+  },
+  "piano": {
+   "nowhere": 7,
+   "instrument estimate only": 1
+  },
+  "synthesizer": {
+   "nowhere": 4,
+   "instrument estimate only": 1,
+   "profile tag (MTG-Jamendo)": 1
+  },
+  "trumpet": {
+   "nowhere": 7
+  },
+  "cello": {
+   "nowhere": 8
+  },
+  "voice": {
+   "nowhere": 1
+  }
+ },
+ "displayedIncludingMaybe": {
+  "source:drums": {
+   "precision": 1,
+   "recall": 0.772,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.645,
+    0.885
+   ],
+   "truePositives": 44,
+   "falseDetections": 0,
+   "misses": 13,
+   "positives": 57,
+   "negatives": 0
+  },
+  "source:voice": {
+   "precision": 0.5,
+   "recall": 0.967,
+   "precisionCI95": [
+    0.344,
+    0.636
+   ],
+   "recallCI95": [
+    0.897,
+    1
+   ],
+   "truePositives": 29,
+   "falseDetections": 29,
+   "misses": 1,
+   "positives": 30,
+   "negatives": 80
+  },
+  "source:synthesizer": {
+   "precision": 1,
+   "recall": 0.9,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.828,
+    0.965
+   ],
+   "truePositives": 54,
+   "falseDetections": 0,
+   "misses": 6,
+   "positives": 60,
+   "negatives": 0
+  },
+  "source:piano": {
+   "precision": 1,
+   "recall": 0.837,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.745,
+    0.918
+   ],
+   "truePositives": 41,
+   "falseDetections": 0,
+   "misses": 8,
+   "positives": 49,
+   "negatives": 0
+  },
+  "source:guitar": {
+   "precision": 1,
+   "recall": 0.567,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.387,
+    0.769
+   ],
+   "truePositives": 17,
+   "falseDetections": 0,
+   "misses": 13,
+   "positives": 30,
+   "negatives": 0
+  },
+  "source:bass": {
+   "precision": 1,
+   "recall": 0.233,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.125,
+    0.389
+   ],
+   "truePositives": 10,
+   "falseDetections": 0,
+   "misses": 33,
+   "positives": 43,
+   "negatives": 0
+  },
+  "source:cymbals": {
+   "precision": null,
+   "recall": null,
+   "precisionCI95": null,
+   "recallCI95": null,
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 0,
+   "positives": 0,
+   "negatives": 0
+  },
+  "source:organ": {
+   "precision": null,
+   "recall": 0,
+   "precisionCI95": null,
+   "recallCI95": [
+    0,
+    0
+   ],
+   "truePositives": 0,
+   "falseDetections": 0,
+   "misses": 5,
+   "positives": 5,
+   "negatives": 0
+  },
+  "source:violin": {
+   "precision": 1,
+   "recall": 0.345,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.174,
+    0.517
+   ],
+   "truePositives": 10,
+   "falseDetections": 0,
+   "misses": 19,
+   "positives": 29,
+   "negatives": 0
+  },
+  "source:trumpet": {
+   "precision": 1,
+   "recall": 0.3,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0,
+    0.625
+   ],
+   "truePositives": 3,
+   "falseDetections": 0,
+   "misses": 7,
+   "positives": 10,
+   "negatives": 0
+  },
+  "source:saxophone": {
+   "precision": 1,
+   "recall": 0.533,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.091,
+    0.833
+   ],
+   "truePositives": 8,
+   "falseDetections": 0,
+   "misses": 7,
+   "positives": 15,
+   "negatives": 0
+  },
+  "source:cello": {
+   "precision": 1,
+   "recall": 0.333,
+   "precisionCI95": [
+    1,
+    1
+   ],
+   "recallCI95": [
+    0.111,
+    0.75
+   ],
+   "truePositives": 4,
+   "falseDetections": 0,
+   "misses": 8,
+   "positives": 12,
+   "negatives": 0
+  }
+ }
+}

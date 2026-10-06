@@ -1,0 +1,63 @@
+{
+ "task": "accuracy-gate",
+ "run_key": "accuracy-gate-37455282705-1",
+ "flavor": "cpu-upgrade",
+ "parts": 8,
+ "usd_per_hour": 0.03,
+ "wall_clock_min": 95.6,
+ "job_minutes": 583.1,
+ "cost_usd": 0.292,
+ "worst_case_usd": 0.48,
+ "failed_parts": [],
+ "jobs": [
+  {
+   "part": 0,
+   "job": "6ac4d8a0fbc85ba6823b3e05",
+   "stage": "COMPLETED",
+   "minutes": 62.1
+  },
+  {
+   "part": 1,
+   "job": "6ac4d8a0fbc85ba6823b3e07",
+   "stage": "COMPLETED",
+   "minutes": 94.8
+  },
+  {
+   "part": 2,
+   "job": "6ac4d8a0fbc85ba6823b3e09",
+   "stage": "COMPLETED",
+   "minutes": 58.0
+  },
+  {
+   "part": 3,
+   "job": "6ac4d8a0fbc85ba6823b3e0b",
+   "stage": "COMPLETED",
+   "minutes": 60.2
+  },
+  {
+   "part": 4,
+   "job": "6ac4d8a0404719ba3765e789",
+   "stage": "COMPLETED",
+   "minutes": 90.9
+  },
+  {
+   "part": 5,
+   "job": "6ac4d8a0fbc85ba6823b3e0d",
+   "stage": "COMPLETED",
+   "minutes": 60.9
+  },
+  {
+   "part": 6,
+   "job": "6ac4d8a0fbc85ba6823b3e0f",
+   "stage": "COMPLETED",
+   "minutes": 62.9
+  },
+  {
+   "part": 7,
+   "job": "6ac4d8a0fbc85ba6823b3e11",
+   "stage": "COMPLETED",
+   "minutes": 93.3
+  }
+ ],
+ "finished": "2026-10-06T12:52:26+00:00"
+}
