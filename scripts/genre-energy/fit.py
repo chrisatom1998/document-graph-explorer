@@ -28,7 +28,7 @@ def style_matrix(rows, key): return np.log(np.clip(np.array([r[key] for r in row
 def prf(pred, truth):
     tp = int(np.sum(pred & truth)); fp = int(np.sum(pred & ~truth)); fn = int(np.sum(~pred & truth))
     return {'precision': round(tp / (tp + fp), 3) if tp + fp else None, 'recall': round(tp / (tp + fn), 3) if tp + fn else None, 'tp': tp, 'fp': fp, 'fn': fn}
-passes = lambda m: m['precision'] is not None and m['recall'] is not None and m['precision'] >= BAR and m['recall'] >= BAR
+passes = lambda m: bool(m['precision'] is not None and m['recall'] is not None and m['precision'] >= BAR and m['recall'] >= BAR)
 
 report = {'bar': BAR}
 # ---------- genre ----------
