@@ -40,3 +40,13 @@ Weak absents can't justify hiding a tag, so this set can only make a tag show mo
    above 0.70.
 5. An adopted rule must also not make any tag that passes 70/70 on either DJ clip test fall below that bar. This is
    checked by re-scoring the saved exports (`dj-fix-judge.yml`). The DJ tests only judge; nothing is tuned on them.
+
+## Second set: TinySOL (judge-only), added 2026-10-06 07:45, before any result
+
+Chris's 198-tag source list names TinySOL v6 for orchestral tags. No DGE script has used it, and the "Train an audio
+model" thread was asked to keep it out. So it is the one clean set for these tags, and nothing is tuned on it.
+- 840 isolated notes, 60 per instrument (`scripts/all-tags/select-tinysol.py`, `tinysol-manifest.json`). They cover 11
+  app tags: accordion, cello, violin / fiddle, horn, bassoon, clarinet, flute, trombone, oboe, saxophone and trumpet.
+- Every note is one named instrument, so absents are real and precision is exact. Within the string family the other
+  tags are left unknown.
+- These are short notes, not songs. They show whether the app names a solo instrument, which is the short-clip side.

@@ -1,0 +1,140 @@
+name: All tags on isolated orchestral notes (TinySOL)
+
+# Judge-only test for 11 app tags on 840 TinySOL v6 notes (scripts/all-tags/select-tinysol.py). Never tuned on. Every
+# note is one named instrument, so precision here is exact, not a floor. The app under test is APP_REF (main unless
+# given). Audio is fetched at run time and never committed; reports go to docs/evaluations/all-tags-2026-10-06/results.
+on:
+  workflow_dispatch:
+    inputs:
+      app_ref:
+        description: Branch, tag or commit whose app to test
+        default: main
+  push:
+    branches: [claude/fix-failing-sound-tags-nc73z1]
+    paths: [.github/workflows/all-tags-tinysol.yml]
+
+permissions:
+  contents: write
+
+env:
+  APP_REF: ${{ inputs.app_ref || 'main' }}
+  ONNXRUNTIME_NODE_INSTALL: skip
+  DOCS: docs/evaluations/all-tags-2026-10-06
+  TINYSOL: https://zenodo.org/records/3685367/files
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+concurrency:
+  group: all-tags-tinysol-${{ github.ref_name }}-${{ inputs.app_ref || 'main' }}
+  cancel-in-progress: true
+
+jobs:
+  audio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch TinySOL and cut the frozen selection
+        run: |
+          curl -fsSL --retry 6 -o meta.csv "$TINYSOL/TinySOL_metadata.csv?download=1"
+          echo "a86c9bb115f69e61f2f25872e397fc4a  meta.csv" | md5sum -c -
+          curl -fsSL --retry 6 -o "$RUNNER_TEMP/tinysol.tgz" "$TINYSOL/TinySOL.tar.gz?download=1"
+          echo "36030a7fe389da86c3419e5ee48e3b7f  $RUNNER_TEMP/tinysol.tgz" | md5sum -c -
+          mkdir -p "$RUNNER_TEMP/ts" && tar xzf "$RUNNER_TEMP/tinysol.tgz" -C "$RUNNER_TEMP/ts"
+          python3 scripts/all-tags/select-tinysol.py meta.csv "$RUNNER_TEMP/ts" audio
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ts-audio
+          path: audio
+          retention-days: 7
+
+  eval:
+    needs: audio
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.APP_REF }}
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/download-artifact@v4
+        with:
+          name: ts-audio
+          path: clips/audio
+      - name: Pick the manifest
+        run: |
+          cp harness/$DOCS/tinysol-manifest.json manifest.json
+          git log -1 --format='app under test: %H %s'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=clips/audio AUDIO_EXT=wav MANIFEST=manifest.json SHARD=${{ matrix.shard }}/4 \
+            node scripts/short-clip-upload-eval.mjs out/run test 30
+          git rev-parse HEAD > out/run/app-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ts-export-${{ matrix.shard }}
+          path: out/run/
+          retention-days: 30
+
+  score:
+    needs: eval
+    if: ${{ !cancelled() && needs.eval.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.APP_REF }}
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ts-export-*
+          path: exports
+      - name: Score with the app's own display code
+        run: |
+          set -o pipefail
+          mkdir -p scripts/all-tags scripts/dj-fix && cp harness/scripts/all-tags/score.mjs scripts/all-tags/ && cp harness/scripts/dj-fix/extract.mjs scripts/dj-fix/
+          APP=$(git rev-parse HEAD); LABEL=$(echo "$APP_REF" | tr -c 'A-Za-z0-9._-\n' '-' | cut -c1-40)-${APP::7}
+          R="harness/$DOCS/results/tinysol-$LABEL"; mkdir -p "$R"; echo "R=$R" >> "$GITHUB_ENV"
+          MANIFEST=harness/$DOCS/tinysol-manifest.json BENCHMARK=all-tags-2026-10-06/tinysol npx vite-node scripts/all-tags/score.mjs "$R/tags.json" exports/ts-export-*/graph-export.json | tee "$R/tags.txt"
+          npx vite-node scripts/dj-fix/extract.mjs "$R/records.json" exports/ts-export-*/graph-export.json
+          echo "app $APP_REF at $APP; harness $GITHUB_SHA; run $GITHUB_RUN_ID" > "$R/tested-commit.txt"
+      - name: Commit the reports
+        if: github.ref_name != github.event.repository.default_branch
+        working-directory: harness
+        run: |
+          git add "${R#harness/}"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record TinySOL results for $APP_REF" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done

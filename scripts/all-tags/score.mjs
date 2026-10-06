@@ -1,7 +1,7 @@
 // Score every app tag the all-tags MTG-Jamendo set labels, using the app's own display function.
 // Usage: MANIFEST=<manifest> HALF=pick|check|all npx vite-node scripts/all-tags/score.mjs <report.json> <graph-export.json>...
-// Recall counts uploader-tagged tracks the app missed. Precision counts untagged tracks as absent, and uploaders
-// under-tag, so it is a floor: the true precision is at least this. Only explicit labels count; nothing is inferred.
+// Recall counts labelled-present items the app missed. On Jamendo, precision counts untagged tracks as absent, and
+// uploaders under-tag, so it is a floor. On TinySOL every absent is real (precisionIsExact). Only explicit labels count; nothing is inferred.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { confidentSoundSummary } from '../../src/audio/confidentSoundSummary';
 
@@ -16,7 +16,7 @@ const MAP = {
   'acoustic guitar': ['acoustic guitar', 'steel guitar'], 'electric guitar': ['electric guitar'], 'bass guitar': ['bass guitar', 'bass', 'double bass'],
   organ: ['organ'], 'violin / fiddle': ['violin / fiddle', 'violin', 'fiddle'], cello: ['cello'], strings: ['strings', 'string section'],
   trumpet: ['trumpet'], trombone: ['trombone'], horn: ['horn', 'french horn'], saxophone: ['saxophone'], clarinet: ['clarinet'], oboe: ['oboe'],
-  flute: ['flute'], harp: ['harp'], accordion: ['accordion'], harmonica: ['harmonica'], 'atmospheric pad': ['atmospheric pad'],
+  flute: ['flute'], bassoon: ['bassoon'], harp: ['harp'], accordion: ['accordion'], harmonica: ['harmonica'], 'atmospheric pad': ['atmospheric pad'],
   'chiptune synth': ['chiptune synth'], choir: ['choir'],
 };
 const nodes = new Map(exportPaths.flatMap(p => JSON.parse(readFileSync(p, 'utf8')).nodes).filter(n => n.audio)
@@ -49,9 +49,9 @@ for (const tag of Object.keys(MAP)) {
   const ci = v => v.length >= 1000 ? (v.sort((x, y) => x - y), [v[Math.floor(v.length * .025)], v[Math.min(v.length - 1, Math.floor(v.length * .975))]].map(x => +x.toFixed(3))) : null;
   const P = tp + fp ? tp / (tp + fp) : null, R = pos ? tp / pos : null;
   table[tag] = { recall: R === null ? null : +R.toFixed(3), recallCI95: ci(rs), precisionFloor: P === null ? null : +P.toFixed(3), precisionFloorCI95: ci(ps),
-    truePositives: tp, untaggedButShown: fp, misses: fn, positives: pos, untagged: neg, strongAbsents: strongNeg };
+    precisionIsExact: neg > 0 && strongNeg === neg, truePositives: tp, untaggedButShown: fp, misses: fn, positives: pos, untagged: neg, strongAbsents: strongNeg };
 }
-const report = { benchmark: 'all-tags-2026-10-06/jamendo-val', half, items: items.length, analysed: items.length - missing.length, missing, tags: table };
+const report = { benchmark: process.env.BENCHMARK ?? 'all-tags-2026-10-06/jamendo-val', half, items: items.length, analysed: items.length - missing.length, missing, tags: table };
 writeFileSync(outPath, JSON.stringify(report, null, 1));
 console.log(`${half}: ${report.analysed}/${report.items} analysed`);
 for (const [k, v] of Object.entries(table)) console.log(`${k.padEnd(18)} R ${v.recall ?? '—'}  P>= ${v.precisionFloor ?? '—'}  (${v.truePositives} TP / ${v.untaggedButShown} shown untagged / ${v.misses} missed; ${v.positives} tagged)`);

@@ -14,7 +14,7 @@ MAP = {
     'acoustic guitar': ['acoustic guitar', 'steel guitar'], 'electric guitar': ['electric guitar'], 'bass guitar': ['bass guitar', 'bass', 'double bass'],
     'organ': ['organ'], 'violin / fiddle': ['violin / fiddle', 'violin', 'fiddle'], 'cello': ['cello'], 'strings': ['strings', 'string section'],
     'trumpet': ['trumpet'], 'trombone': ['trombone'], 'horn': ['horn', 'french horn'], 'saxophone': ['saxophone'], 'clarinet': ['clarinet'], 'oboe': ['oboe'],
-    'flute': ['flute'], 'harp': ['harp'], 'accordion': ['accordion'], 'harmonica': ['harmonica'], 'atmospheric pad': ['atmospheric pad'],
+    'flute': ['flute'], 'bassoon': ['bassoon'], 'harp': ['harp'], 'accordion': ['accordion'], 'harmonica': ['harmonica'], 'atmospheric pad': ['atmospheric pad'],
     'chiptune synth': ['chiptune synth'], 'choir': ['choir'],
 }
 BAR, MIN_POS, MIN_GAIN, GRID = .70, 20, .10, [round(.05 * i, 2) for i in range(1, 20)]
