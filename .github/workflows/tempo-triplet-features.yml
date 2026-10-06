@@ -2,7 +2,7 @@ name: Tempo triplet features
 
 # Tempo features (the app's tempo, raw Essentia estimates, the onset tempogram and the kick- and hi-hat-band tempograms)
 # for tuning the triplet-feel tempo check: the tempo tuning set and both held-out sets from tempo-features.yml, plus
-# GiantSteps MTG key tracks outside the round 2 DJ test (tuning) and the round 2 excerpts themselves (held out).
+# GiantSteps MTG key tracks outside the round 2 DJ test and the round 3 reserve (tuning) and the round 2 excerpts themselves (held out).
 # Commits gzipped features to docs/evaluations/tempo-triplet-2026-10-06/features. Audio is never committed.
 on:
   workflow_dispatch:

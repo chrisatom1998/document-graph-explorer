@@ -2,7 +2,7 @@
 
 Usage: python3 scripts/tempo/build-mtg.py <giantsteps-mtg-key-dataset checkout> <out-dir>
 
-mtg-tune: every track NOT in the round 2 DJ test (docs/evaluations/dj-clips-round2-2026-10-06/mtg-key-manifest.json),
+mtg-tune: tracks NOT in the round 2 DJ test and not reserved for round 3 (docs/evaluations/dj-clips-round2-2026-10-06/mtg-key-manifest.json),
           10 s at 25% and 75% of the preview. Used to tune the triplet-feel tempo check.
 round2  : the 500 frozen round 2 excerpts (same start, 10 s), checked once after tuning.
 Truth is Beatport's BPM, which often lists drum & bass at half tempo, so tuning uses it only up to a factor of two.
@@ -18,6 +18,9 @@ frozen = {it['sampleKey']: it for it in json.load(open(os.path.join(ROOT, 'docs/
 names = sorted(f[:-len('.md5')] for f in os.listdir(os.path.join(repo, 'md5')))
 bpm_of = lambda n: float((meta.get(n.split('.')[0], {}).get('BP BPM') or '0').strip() or 0)
 names = [n for n in names if bpm_of(n) > 0]
+# Half of the unused tracks are reserved as a round 3 held-out set (docs/evaluations/holdout-r3-2026-10-06).
+r3 = lambda n: int(hashlib.sha256(f'dge-holdout-r3-2026-10-06|{n}'.encode()).hexdigest()[:8], 16) % 2 == 0
+names = [n for n in names if n in frozen or not r3(n)]
 
 def cut(src, dst, start, secs):
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{start:.3f}', '-t', str(secs), '-i', src, '-ac', '1', '-ar', '44100',
@@ -25,7 +28,7 @@ def cut(src, dst, start, secs):
 
 def job(n):
     want = open(os.path.join(repo, 'md5', n + '.md5')).read().split()[0]
-    for attempt in range(4):
+    for attempt in range(6):
         try:
             data = urllib.request.urlopen(BASE + n + '.mp3', timeout=60).read()
             if hashlib.md5(data).hexdigest() == want: break
@@ -54,6 +57,7 @@ sets = {'mtg-tune': [], 'round2': []}
 with concurrent.futures.ThreadPoolExecutor(6) as pool:
     for rows in pool.map(job, names):
         for k, r in rows: sets[k].append(r)
-if len(sets['round2']) != len(frozen): sys.exit(f"only {len(sets['round2'])} of {len(frozen)} round 2 excerpts fetched")
+# The backup drops a few downloads per run; the report gives each set's clip count.
+if len(sets['round2']) < len(frozen) - 10: sys.exit(f"only {len(sets['round2'])} of {len(frozen)} round 2 excerpts fetched")
 for k, v in sets.items():
     json.dump(v, open(f'{out}/clips-{k}.json', 'w')); print(k, len(v))

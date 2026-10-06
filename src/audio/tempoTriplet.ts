@@ -1,6 +1,15 @@
+import model from './tempoTriplet.json';
+import { levelProbabilities, peak, tempogramOf } from './tempoCorrection';
+
+type Node = [feature: number, threshold: number, left: number, right: number, leaf: number];
+const CLASS_TREES = model.trees as Node[][][];
 const RATE = 44100, HOP = 512, FRAME = 1024;
-const FPS = RATE / HOP;
 const GRID_MIN = 40, GRID_MAX = 250;
+// Tempogram strength at these multiples of the current tempo, in the full-band, kick and hi-hat tempograms.
+const RATIOS = [1 / 4, 1 / 3, 3 / 8, 1 / 2, 2 / 3, 3 / 4, 1, 4 / 3, 3 / 2, 2, 8 / 3, 3];
+// The two triplet-feel families: a tempo read at two-thirds of the truth needs x3/2 (or x3/4), one read at 3/2 or 3/4
+// of the truth needs x2/3 (or x4/3).
+const FAMILIES: Record<1 | 2, number[]> = { 1: [3 / 2, 3 / 4], 2: [2 / 3, 4 / 3] };
 
 type Biquad = [b0: number, b1: number, b2: number, a1: number, a2: number];
 
@@ -45,25 +54,6 @@ function energyFlux(band: Float64Array): number[] {
   return out;
 }
 
-/** Autocorrelation of an onset function (512-sample hops) at every whole BPM from 40 to 250, relative to lag zero. */
-export function tempogramOf(odf: ArrayLike<number>): number[] {
-  const n = odf.length;
-  let mean = 0;
-  for (let i = 0; i < n; i++) mean += odf[i];
-  mean /= n || 1;
-  const x = Array.from(odf, v => v - mean);
-  const ac = (lag: number) => { let s = 0; for (let i = 0; i + lag < n; i++) s += x[i] * x[i + lag]; return s / (n - lag); };
-  const zero = ac(0) || 1;
-  const out: number[] = [];
-  for (let bpm = GRID_MIN; bpm <= GRID_MAX; bpm++) {
-    const lag = 60 * FPS / bpm, l0 = Math.floor(lag), f = lag - l0;
-    // Rounded like the offline features the corrections were trained on.
-    const v = ((1 - f) * ac(l0) + f * ac(l0 + 1)) / zero;
-    out.push(Number.isFinite(v) ? +v.toFixed(4) : 0);
-  }
-  return out;
-}
-
 /**
  * Tempograms of the kick band (below 150 Hz) and the hi-hat band (above 5 kHz). On dance music both usually tick on
  * the beat grid, while a dotted bassline or synth riff, which fools the full-band onset function into two-thirds
@@ -74,4 +64,40 @@ export function bandTempograms(samples: Float32Array): { low: number[]; high: nu
     low: tempogramOf(energyFlux(filtered(samples, biquad('low', 150)))),
     high: tempogramOf(energyFlux(filtered(samples, biquad('high', 5000)))),
   };
+}
+
+/** Softmax over stay / x3/2 family / x4/3 family / other. */
+function familyProbabilities(features: number[]): number[] {
+  const raw = CLASS_TREES.map((trees, k) => {
+    let s = model.baseline[k];
+    for (const tree of trees) {
+      let n = 0;
+      while (tree[n][0] >= 0) n = features[tree[n][0]] <= tree[n][1] ? tree[n][2] : tree[n][3];
+      s += tree[n][4];
+    }
+    return s;
+  });
+  const top = Math.max(...raw), e = raw.map(v => Math.exp(v - top)), sum = e.reduce((a, b) => a + b, 0);
+  return e.map(v => v / sum);
+}
+
+/**
+ * Checks a tempo for triplet-feel errors (93 for a 140 track, or 172 for a 129 track): dotted riffs make a beat
+ * tracker lock onto two-thirds or four-thirds time. Switches to the other family only when the full-band, kick and
+ * hi-hat periodicities clearly favour it, then lets the half-time correction pick the octave. Tuned on clips held
+ * apart from both DJ tests; see docs/evaluations/tempo-triplet-2026-10-06.
+ */
+export function correctTriplet(tg: number[], bands: { low: number[]; high: number[] }, bpm: number): number {
+  if (!(Math.max(...tg) > 0)) return bpm;
+  const features: number[] = [];
+  for (const t of [tg, bands.low, bands.high]) {
+    const top = Math.max(...t) > 0 ? Math.max(...t) : 1;
+    for (const r of RATIOS) features.push(bpm * r >= GRID_MIN && bpm * r <= GRID_MAX ? peak(t, bpm * r) / top : 0);
+  }
+  features.push(Math.log2(bpm / 120));
+  const p = familyProbabilities(features);
+  const k = p[1] >= p[2] ? 1 : 2;
+  if (!(p[k] - p[0] > model.margin)) return bpm;
+  const options = levelProbabilities(tg, bpm).filter(o => FAMILIES[k].some(m => Math.abs(o.multiplier - m) < 1e-9));
+  return options.length ? options.reduce((a, b) => b.p > a.p ? b : a).bpm : bpm;
 }
