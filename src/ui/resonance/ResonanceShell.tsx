@@ -46,6 +46,12 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
   // The full side panel is opt-in here (the inspector covers the common case);
   // it closes with the selection so a stale panel never outlives its node.
   useEffect(() => { if (selectedId === null) setDetailsOpen(false); }, [selectedId]);
+  // A canvas click only fills the inspector. Search, chat citations, insights,
+  // paths and the library go through focusNode → commitPendingFocus, and those
+  // callers expect the reader: open the full panel when a pending focus commits.
+  useEffect(() => useUiStore.subscribe((state, prev) => {
+    if (prev.pendingFocus && !state.pendingFocus && state.selectedId === prev.pendingFocus.id) setDetailsOpen(true);
+  }), []);
   useEffect(() => { if (tab === 'export' && !ready && phase !== 'idle') setTab('graph'); }, [tab, ready, phase]);
 
   const ui = () => useUiStore.getState();
@@ -65,7 +71,7 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
         </div>
         <nav className="rs-tabs" aria-label="Views">
           {(['graph', 'library', 'export'] as Tab[]).map(key => (
-            <button key={key} type="button" aria-current={tab === key ? 'page' : undefined} onClick={() => setTab(key)} disabled={key !== 'graph' && docCount === 0}>
+            <button key={key} type="button" aria-current={tab === key ? 'page' : undefined} onClick={() => setTab(key)} disabled={key === 'library' ? docCount === 0 : key === 'export' ? !(ready || phase === 'idle') : false}>
               {tab === key && <i aria-hidden="true" />}
               {key === 'graph' ? 'Graph' : key === 'library' ? 'Library' : 'Export'}
             </button>

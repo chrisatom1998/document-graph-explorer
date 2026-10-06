@@ -124,6 +124,8 @@ export function formatClock(seconds: number | undefined): string {
 /** "Solar Drift" from "solar-drift_vocal-loop.wav"-style names; the raw file name stays as the second line. */
 export function displayName(node: DocNode): { name: string; file: string } {
   const file = node.path?.split('/').pop() ?? node.title;
+  // Parsed documents already carry a real title; only audio needs one derived from the file name.
+  if (node.fileType !== 'audio') return { name: node.title, file: file === node.title ? node.fileType.toUpperCase() : file };
   const stem = file.replace(/\.[a-z0-9]{1,5}$/i, '');
   const words = stem.split(/[\s_\-.]+/).filter(Boolean);
   const name = words.slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || node.title;

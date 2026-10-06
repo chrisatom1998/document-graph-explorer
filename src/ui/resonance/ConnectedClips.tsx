@@ -4,7 +4,6 @@ import { useGraphStore } from '../../store/graphStore';
 import { useUiStore } from '../../store/uiStore';
 import { EDGE_KIND_LABEL, hexFor } from '../../scene/palette';
 import { keyName } from '../../audio/musicTypes';
-import { focusNode } from '../focusNode';
 import { ClipPlayer, ClipThumb, displayName, formatClock, useClipAudio } from './ClipWave';
 
 const ACCENT = '#c8f55a';
@@ -43,7 +42,7 @@ function characteristic(edge: Edge, a: DocNode, b: DocNode): { label: string; va
   return { label: edge.kind === 'similar' ? 'Sounds alike' : titled, value: `${pct}%`, fill: edge.weight };
 }
 
-function ClipCard({ node, accent, active }: { node: DocNode; accent: string; active?: boolean }) {
+function ClipCard({ node, accent, active, onOpen, title }: { node: DocNode; accent: string; active?: boolean; onOpen: () => void; title: string }) {
   const { url, peaks } = useClipAudio(node);
   const { name, file } = displayName(node);
   const meta = node.fileType === 'audio'
@@ -51,7 +50,7 @@ function ClipCard({ node, accent, active }: { node: DocNode; accent: string; act
     : [node.fileType.toUpperCase(), `${node.wordCount.toLocaleString()} words`];
   return (
     <article className="rs-clip">
-      <button type="button" className="rs-clip__head" onClick={() => focusNode(node.id)} title="Frame in graph">
+      <button type="button" className="rs-clip__head" onClick={onOpen} title={title}>
         <ClipThumb node={node} peaks={peaks} active={active} />
         <span className="rs-clip__titles">
           <strong>{name}</strong>
@@ -103,7 +102,7 @@ export default function ConnectedClips({ onOpenDetails }: { onOpenDetails: () =>
         </span>
       </header>
 
-      <ClipCard node={selected} accent="#a89bff" />
+      <ClipCard node={selected} accent="#a89bff" title="Frame in graph" onOpen={() => useUiStore.getState().sendCamera('frameNode', [selected.id])} />
 
       {current && (
         <>
@@ -114,7 +113,7 @@ export default function ConnectedClips({ onOpenDetails }: { onOpenDetails: () =>
             <span className="rs-related__line" />
             <button type="button" className="rs-related__more" aria-label="Open full details" title="Open full details" onClick={onOpenDetails}>⋮</button>
           </div>
-          <ClipCard node={current.node} accent={ACCENT} active />
+          <ClipCard node={current.node} accent={ACCENT} active title="Select this clip" onOpen={() => { const ui = useUiStore.getState(); ui.setSelected(current.node.id); ui.sendCamera('frameNode', [current.node.id]); }} />
 
           <section className="rs-shared" aria-label="Shared characteristics">
             <h3>Shared characteristics</h3>
