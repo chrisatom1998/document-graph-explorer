@@ -1,8 +1,10 @@
 name: Train the audio tagger
 
 # Fine-tunes DGE's own instrument tagger (scripts/audio-model/) on a Hugging Face Jobs GPU, billed to the HF_TOKEN
-# account, and uploads the run to that account's private dge-instrument-tagger model repo. All audio is fetched inside
-# the job; nothing is uploaded from GitHub. Scores on the benchmark sets are printed here as aggregates only.
+# account, and uploads the run to that account's private dge-instrument-tagger model repo. OpenMIC and MTG-Jamendo
+# audio is fetched inside the job. The SoundCloud set's audio only exists as Actions artifacts, so this workflow turns
+# its train fold into log-mel windows (no audio leaves GitHub) for the job, and scores its held-out fold here after.
+# Scores are printed as aggregates only.
 on:
   workflow_dispatch:
     inputs:
@@ -11,13 +13,20 @@ on:
       epochs: { default: '30' }
       lr: { default: '1e-4' }
       batch: { default: '64' }
-      weak: { description: 'weight of Jamendo untagged absences', default: '0.2' }
+      weak: { description: 'weight of untagged (weak) absences', default: '0.2' }
+      soundcloud: { description: 'add the SoundCloud train fold (artifacts of run 37413702012)', default: 'true' }
   push:
     branches: ['claude/train-audio-model-*']
     paths: ['.github/workflows/audio-model-train.yml']
 
 permissions:
   contents: read
+  actions: read
+
+env:
+  SC_RUN: '37413702012'
+  SC_MANIFEST: https://raw.githubusercontent.com/chrisatom1998/document-graph-explorer/61b32521e82f53c1f16d409bb9585120cec96804/docs/evaluations/soundcloud-2026-10-06/manifest.json
+  EFFICIENTAT_SHA: a425fdce92572e602a1d5634799bd9f1f2efa806
 
 jobs:
   train:
@@ -31,9 +40,45 @@ jobs:
           [ -n "$HF_TOKEN" ] || { echo "::error::Add a Hugging Face token as the repository secret HF_TOKEN"; exit 1; }
           pip install -q huggingface_hub
           python3 -c "from huggingface_hub import whoami; w = whoami(); print('HF account:', w['name'], '| PRO:', w.get('isPro'))"
+      - name: Fetch the SoundCloud excerpts
+        if: ${{ (inputs.soundcloud || 'true') == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          pattern: sc-audio-*
+          merge-multiple: true
+          path: sc-audio
+          run-id: ${{ env.SC_RUN }}
+          github-token: ${{ github.token }}
+      - name: Prepare the SoundCloud windows and upload the train fold's log-mels
+        if: ${{ (inputs.soundcloud || 'true') == 'true' }}
+        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          pip install -q torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install -q numpy onnxruntime
+          git clone -q https://github.com/fschmid56/EfficientAT.git && git -C EfficientAT checkout -q $EFFICIENTAT_SHA
+          find sc-audio -name '*.mp3' -exec mv -n {} sc-audio/ \;
+          curl -fsSL --retry 6 -o sc-manifest.json "$SC_MANIFEST"
+          EFFICIENTAT=EfficientAT python3 scripts/audio-model/prepare-soundcloud.py sc-manifest.json sc-audio sc-prep
+          python3 - <<'EOF' >> "$GITHUB_ENV"
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(); repo = api.whoami()['name'] + '/dge-tagger-data'; folder = 'soundcloud-' + os.environ['GITHUB_SHA'][:7]
+          api.create_repo(repo, repo_type='dataset', private=True, exist_ok=True)
+          api.upload_folder(repo_id=repo, repo_type='dataset', folder_path='sc-prep', path_in_repo=folder,
+                            allow_patterns=['soundcloud-mel.npy', 'soundcloud.json'], commit_message='SoundCloud train-fold log-mels')
+          print(f'SOUNDCLOUD_DATA={repo}:{folder}')
+          EOF
       - name: Train on Hugging Face Jobs
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
         run: >
           python3 scripts/audio-model/hf-launch.py "${{ inputs.flavor || 'l4x1' }}" 5h
           REPO_SHA=${{ github.sha }} MODEL=${{ inputs.model || 'mn10_as' }} EPOCHS=${{ inputs.epochs || '30' }}
           LR=${{ inputs.lr || '1e-4' }} BATCH=${{ inputs.batch || '64' }} WEAK=${{ inputs.weak || '0.2' }}
+          SOUNDCLOUD_DATA=${SOUNDCLOUD_DATA:-}
+      - name: Score the SoundCloud held-out fold
+        if: ${{ (inputs.soundcloud || 'true') == 'true' }}
+        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
+        run: |
+          python3 -c "from huggingface_hub import snapshot_download as d, whoami; d(whoami()['name'] + '/dge-instrument-tagger', allow_patterns=['onnx/*', 'thresholds.json'], local_dir='tagger')"
+          python3 scripts/audio-model/evaluate.py tagger/onnx/model.onnx tagger/thresholds.json sc-eval.json sc-prep/soundcloud-heldout

@@ -1,10 +1,11 @@
 """Fine-tune an AudioSet-pretrained EfficientAT MobileNet as DGE's own instrument tagger.
 
-Usage: python3 scripts/audio-model/train.py <run-dir> --openmic <prep-dir> [--jamendo <prep-dir>]
+Usage: python3 scripts/audio-model/train.py <run-dir> --openmic <prep-dir> [--jamendo <prep-dir>] [--soundcloud <prep-dir>]
        [--model mn10_as] [--epochs 8] [--lr 1e-4] [--weak 0.2] [--resume]
 
 Inputs are the log-mel windows written by prepare.py (OpenMIC-2018 train, benchmark artists removed) and
-prepare-jamendo.py (MTG-Jamendo split-0 train/validation, round 3 held-out artists removed).
+prepare-jamendo.py (MTG-Jamendo split-0 train/validation, round 3 held-out artists removed) and prepare-soundcloud.py
+(the SoundCloud set's train fold; its held-out uploaders are never read here).
 Needs a checkout of https://github.com/fschmid56/EfficientAT (MIT) at EFFICIENTAT (default ./EfficientAT).
 
 Recipe follows EfficientAT's ex_openmic.py: BCE over labelled pairs only, log-mel mixup, plus gain, time-roll and
@@ -55,7 +56,7 @@ def masked_ap(scores, y, w):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('run'); ap.add_argument('--openmic', required=True); ap.add_argument('--jamendo')
+    ap.add_argument('run'); ap.add_argument('--openmic', required=True); ap.add_argument('--jamendo'); ap.add_argument('--soundcloud')
     ap.add_argument('--model', default='mn10_as'); ap.add_argument('--epochs', type=int, default=8)
     ap.add_argument('--lr', type=float, default=1e-4); ap.add_argument('--batch', type=int, default=32)
     ap.add_argument('--mixup', type=float, default=0.3); ap.add_argument('--weak', type=float, default=0.2)
@@ -71,6 +72,8 @@ def main():
     sources = [load_source('openmic', os.path.join(args.openmic, 'train-mel.npy'), json.load(open(os.path.join(args.openmic, 'train.json')))['items'], 1.0)]
     if args.jamendo:
         sources.append(load_source('jamendo', os.path.join(args.jamendo, 'jamendo-mel.npy'), json.load(open(os.path.join(args.jamendo, 'jamendo.json')))['items'], args.weak))
+    if args.soundcloud:
+        sources.append(load_source('soundcloud', os.path.join(args.soundcloud, 'soundcloud-mel.npy'), json.load(open(os.path.join(args.soundcloud, 'soundcloud.json')))['items'], args.weak))
     pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]
             for _ in range(args.dj_repeat if src['dj'][i] else 1)]
     vals = {src['name']: np.flatnonzero(src['val'])[:(args.limit // 8 + 8) if args.limit else None] for src in sources}

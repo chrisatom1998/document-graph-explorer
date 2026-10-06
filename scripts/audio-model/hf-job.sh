@@ -2,7 +2,7 @@
 # Train DGE's own instrument tagger on a Hugging Face Jobs GPU (launched by .github/workflows/audio-model-train.yml).
 # Fetches every dataset itself (nothing is uploaded from GitHub), trains, calibrates on validation artists, exports the
 # browser model, scores DJ clip rounds 1 and 2 and the round 3 held-out Jamendo set (aggregates only), and uploads the
-# run to the private model repo $HF_REPO. Env: REPO_SHA, HF_REPO, MODEL, EPOCHS, LR, BATCH, WEAK, HF_TOKEN (secret).
+# run to the private model repo $HF_REPO. Env: REPO_SHA, HF_REPO, MODEL, EPOCHS, LR, BATCH, WEAK, optional SOUNDCLOUD_DATA, HF_TOKEN (secret).
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q && apt-get install -yq --no-install-recommends ffmpeg git ca-certificates curl > /dev/null
@@ -34,7 +34,12 @@ python3 $S/prepare-holdout.py manifests/holdout-r3-jamendo.json mj/data/download
 for job in $(jobs -p); do wait $job || { tail -20 openmic.log jamendo.log holdout.log; exit 1; }; done
 tail -3 openmic.log jamendo.log holdout.log
 
-python3 $S/train.py run --openmic prep --jamendo prepj --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --threads 8
+EXTRA=()
+if [ -n "${SOUNDCLOUD_DATA:-}" ]; then   # "<dataset repo>:<folder>", uploaded by the workflow from its SoundCloud artifacts
+  python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='scdl')" "$SOUNDCLOUD_DATA"
+  mv "scdl/${SOUNDCLOUD_DATA#*:}" scprep && EXTRA=(--soundcloud scprep)
+fi
+python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --threads 8
 python3 $S/calibrate.py run prep prepj | tee run/calibrate.txt
 python3 $S/export.py run/model.pt run/onnx --model "$MODEL"
 python3 $S/evaluate.py run/onnx/model.onnx run/thresholds.json run/eval.json prep/eval-round1 prep/eval-round2 holdout/holdout-r3 | tee run/eval.txt
