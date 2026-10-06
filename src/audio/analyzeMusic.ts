@@ -3,10 +3,12 @@ import { DecodedMusicCache, musicDecoderFromSnapshot } from './musicDecodedCache
 import { loadBuiltInFusion, supportsFusionInput, fusionConfiguration } from './fusionRelease';
 import {musicCacheKey,musicWorkerFingerprint,readMusicCache,writeMusicCache} from './musicAnalysisCache';
 import { openMusicDecoder } from './decodeMusic';
-import { analyzeDecodedMusic, previewDecodedMusic, type AnalysisOptions } from './analyzeDecodedMusic';
+import { FULL_MIX_PINNED, loadFullMixHeads } from './fullMixHeads';
+import { addVersionPrint, analyzeDecodedMusic, previewDecodedMusic, type AnalysisOptions } from './analyzeDecodedMusic';
+import { VERSION_PRINT_MIN_SECONDS, VERSION_PRINT_SAMPLE_RATE } from './versionPrint';
 import type { MusicAnalysis } from './musicTypes';
 import { ResultCache } from './recognition';
-import { setSpeculativePreloadStop } from './speculativePreload';
+import { rememberAudioAnalysisUsed, setSpeculativePreloadStop } from './speculativePreload';
 const cache = new ResultCache(128);
 const decodedCache = new DecodedMusicCache();
 import { MusicTaskQueue } from './musicTaskQueue';
@@ -89,7 +91,7 @@ function stopSpeculativePreload(): void {
  * actually needs the models; a non-speculative call claims the workers for real use. */
 export function preloadMusicModels(mode: AnalysisOptions['mode'] = 'fast', options: { speculative?: boolean } = {}): Promise<void> {
   if (typeof Worker === 'undefined' || workerCapacity() < PRELOAD_FAMILIES.length) return Promise.resolve();
-  if (!options.speculative) setSpeculativePreloadStop(null);
+  if (!options.speculative) { setSpeculativePreloadStop(null); rememberAudioAnalysisUsed(); }
   else if (!preloading) setSpeculativePreloadStop(stopSpeculativePreload);
   return preloading ??= (async () => {
     const key = await musicCacheKey(new Blob([]), mode ?? 'fast');
@@ -183,7 +185,11 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
     const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
     const audioFingerprint = Array.from(new Uint8Array(digest), n => n.toString(16).padStart(2, '0')).join('');
     const key=await musicCacheKey(blob, mode);
-    if(key&&!options.force&&!injectedFusion&&!experimentalPaSST){const cached=await readMusicCache(key, blob.type);if(cached){options.signal?.throwIfAborted();options.onProgress?.('Reusing saved audio analysis');parkWorker();return { cached };}}
+    if(key&&!options.force&&!injectedFusion&&!experimentalPaSST){const cached=await readMusicCache(key, blob.type);if(cached){options.signal?.throwIfAborted();options.onProgress?.('Reusing saved audio analysis');parkWorker();
+      // Analyses saved before version prints existed get one now: decoding only, no models.
+      if(!cached.versionPrint&&cached.durationSeconds>=VERSION_PRINT_MIN_SECONDS)try{const decoder=await openMusicDecoder(blob, name, options.signal);try{await addVersionPrint(cached,(start,seconds)=>decoder.read(start,seconds,VERSION_PRINT_SAMPLE_RATE),options.signal);}finally{decoder.close();}
+        if(cached.versionPrint)await writeMusicCache(key,cached,blob.type);}catch(error){if(options.signal?.aborted)throw error;}// optional: the saved analysis stands without a print
+      return { cached };}}
     options.signal?.throwIfAborted();
     const fingerprint = key ? musicWorkerFingerprint(key) : undefined;
     options.onProgress?.('Preparing folder preview');
@@ -213,9 +219,12 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
         const prepared = experimentalPaSST && fusion
           ? (await import('./passtCandidate')).prepareExperimentalPaSST({ enabled: true, baseline: fusion, decoder }) : undefined;
         if (prepared) fusion = prepared.scorer;
+        const fullMix = options.fullMix ?? (mode === 'full' ? await loadFullMixHeads() : undefined);
+        // A pinned head file that failed to load: keep the result out of the persistent cache so a later run retries it.
+        const fullMixFailed = mode === 'full' && FULL_MIX_PINNED && !fullMix;
         options.signal?.throwIfAborted();
         const result = await analyzeDecodedMusic(decoder, (message, transfer) => request(message, transfer, options, 'analysis', first.fingerprint),
-          { ...options, fusion, sourceMime: blob.type, mode, initialPreview: first.preview, audioFingerprint: first.audioFingerprint, cache, concurrentModels: concurrentModels() });
+          { ...options, fusion, fullMix, sourceMime: blob.type, mode, initialPreview: first.preview, audioFingerprint: first.audioFingerprint, cache, concurrentModels: concurrentModels() });
         if (prepared) {
           result.fusion = prepared.restore(result.fusion);
           result.notes.push(prepared.usedFallback() ? 'Experimental source model unavailable; installed detector retained.' : 'Experimental PaSST source diagnostics; calibration only, no validation receipt.');
@@ -225,7 +234,7 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
         else if (!injectedFusion && (!prepared || prepared.usedFallback()) && !result.fusion?.counts.failed) result.classifierConfiguration = fusionConfiguration();
         // The key names the runtime; after a single-thread fallback, save under the key the next lookup will use.
         const key = first.key && first.runtime !== musicRuntimeIdentity() ? await musicCacheKey(blob, mode) : first.key;
-        if (key && !injectedFusion && !fusionFailed && !experimentalPaSST) await writeMusicCache(key, result, blob.type);
+        if (key && !injectedFusion && !fusionFailed && !fullMixFailed && !experimentalPaSST) await writeMusicCache(key, result, blob.type);
         options.signal?.throwIfAborted();
         return result;
       } finally { decoder.close(); parkWorker(); }

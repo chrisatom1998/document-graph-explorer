@@ -90,6 +90,7 @@ export const EDGE_KIND_HEX: Record<EdgeKind, string> = {
   instrument: '#4ed9b3',
   sound: '#b9a1ff',
   similar: '#ff7ad9',
+  version: '#b8f05a',
   reference: '#ffb36b',
   semantic: '#7fb4ff',
   keyword: '#6f86e8',
@@ -104,6 +105,7 @@ export const EDGE_TINTS: Record<EdgeKind, THREE.Color> = {
   instrument: new THREE.Color(EDGE_KIND_HEX.instrument),
   sound: new THREE.Color(EDGE_KIND_HEX.sound),
   similar: new THREE.Color(EDGE_KIND_HEX.similar),
+  version: new THREE.Color(EDGE_KIND_HEX.version),
   reference: new THREE.Color(EDGE_KIND_HEX.reference),
   semantic: new THREE.Color(EDGE_KIND_HEX.semantic),
   keyword: new THREE.Color(EDGE_KIND_HEX.keyword),
@@ -124,9 +126,9 @@ export const EDGE_TINTS: Record<EdgeKind, THREE.Color> = {
  * token: backdrop LINES read as edges and backdrop CIRCLES read as node rings,
  * so the 2D map gets its depth cue from tone alone, never from marks.
  */
-export const FLAT_BG = '#08131f';
-export const FLAT_GRID_FADE = '#102234';
-export const FLAT_PANEL = '#112435';
+export const FLAT_BG = '#0b0b11';
+export const FLAT_GRID_FADE = '#15151f';
+export const FLAT_PANEL = '#121219';
 export const FLAT_NODE = new THREE.Color('#f5fbff');
 export const FLAT_NODE_CLUSTER_BLEND = 0.46;
 export const FLAT_NODE_OUTER = new THREE.Color('#426b87');
@@ -146,6 +148,7 @@ export const EDGE_KIND_LABEL: Record<EdgeKind, string> = {
   instrument: 'instruments',
   sound: 'sound properties',
   similar: 'sounds alike',
+  version: 'versions',
   reference: 'reference',
   semantic: 'similar',
   keyword: 'keyword',
