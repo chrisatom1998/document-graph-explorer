@@ -34,6 +34,7 @@ import { prefersReducedMotion } from '../util/motion';
 import { slotHasMaterialized, writeSlotTravelPosition } from './ingestBirth';
 import { computeEmphasis } from './emphasis';
 import { sceneLabelText, setSceneLabelOpacity, syncSceneLabel } from './systemLabel';
+import { sharedTitlePrefix, stripTitlePrefix } from '../ui/musicDisplay';
 
 const REFRESH_MS = 120;
 const TRUNCATE_AT = 34;
@@ -116,6 +117,7 @@ export default function Labels() {
   const selectedSlot = useRef(-1);
   const titleOfSlot = useRef<string[]>([]);
   const displayTitleOfSlot = useRef<string[]>([]);
+  const fullTitleOfSlot = useRef<string[]>([]);
   const degreeOfSlot = useRef<number[]>([]);
   const titlesDirty = useRef(true);
   const labelsDirty = useRef(true);
@@ -155,11 +157,16 @@ export default function Labels() {
     // titles, or the pool renders phantom labels at their old positions.
     titleOfSlot.current = [];
     displayTitleOfSlot.current = [];
+    fullTitleOfSlot.current = [];
     degreeOfSlot.current = [];
+    // Sample packs name every file "<Pack> <Type> Loop …", so truncated labels all read the same.
+    // Audio labels drop the words every track shares; the selected label still shows the full title.
+    const audioPrefix = sharedTitlePrefix(nodes.filter((n) => n.fileType === 'audio').map((n) => n.title));
     for (const n of nodes) {
       const slot = slotOfId.get(n.id);
       if (slot !== undefined) {
-        titleOfSlot.current[slot] = n.title;
+        titleOfSlot.current[slot] = audioPrefix && n.fileType === 'audio' ? stripTitlePrefix(n.title, audioPrefix) : n.title;
+        fullTitleOfSlot.current[slot] = n.title;
         displayTitleOfSlot.current[slot] = selectedDocumentTitle(n);
         degreeOfSlot.current[slot] = n.degree;
       }
@@ -252,7 +259,7 @@ export default function Labels() {
         const hoverText =
           slot === selectedSlot.current
             ? (displayTitleOfSlot.current[slot] ?? titles[slot])
-            : titles[slot];
+            : (fullTitleOfSlot.current[slot] ?? titles[slot]);
         applyText(hover, hoverText, 1);
       } else hover.visible = false;
     }
