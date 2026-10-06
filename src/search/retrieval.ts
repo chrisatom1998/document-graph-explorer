@@ -1,7 +1,7 @@
 import { EMBED_DIMS, QUERY_MIN_SEMANTIC_SCORE } from '../config';
 import type { DocNode } from '../model/types';
 import { embedQuery as defaultEmbedQuery } from '../pipeline/coordinator';
-import { termVariants } from '../pipeline/aliases';
+import { phraseRespellings, termVariants } from '../pipeline/aliases';
 import {
   chunkStore as defaultChunkStore,
   docVectorStore as defaultDocVectorStore,
@@ -163,8 +163,11 @@ export function lexicalRelevance(
   if (!queryText) return { score: 0, titleMatch: false };
   const body = normalized(text);
   const normalizedTitle = normalized(title);
-  const titleMatch = normalizedTitle.length > 0 && containsTerm(normalizedTitle, queryText);
-  const exactPhrase = queryText.length > 1 && containsTerm(body, queryText);
+  // The whole query also matches as another spelling: 'PostgreSQL' finds 'Postgres Upgrade Plan'.
+  const queryForms = [queryText, ...phraseRespellings(queryText)];
+  const containsQuery = (haystack: string): boolean => queryForms.some((form) => containsTerm(haystack, form));
+  const titleMatch = normalizedTitle.length > 0 && containsQuery(normalizedTitle);
+  const exactPhrase = queryText.length > 1 && containsQuery(body);
   const terms = retrievalTerms(query);
   if (terms.length === 0) {
     return { score: (titleMatch ? 0.7 : 0) + (exactPhrase ? 1.2 : 0), titleMatch };

@@ -74,5 +74,8 @@ describe('spelling variants', () => {
     expect(lexicalRelevance('postgres', 'Tune PostgreSQL autovacuum.').score).toBeGreaterThan(0);
     expect(lexicalRelevance('k8s', 'Kubernetes ingress rules').score).toBeGreaterThan(0);
     expect(lexicalRelevance('PostgreSQL', 'Tune MySQL autovacuum.').score).toBe(0);
+    // A doc known only by its title (an import with no readable text).
+    expect(lexicalRelevance('PostgreSQL', '', 'Postgres Upgrade Plan')).toMatchObject({ titleMatch: true });
+    expect(lexicalRelevance('PostgreSQL', '', 'Postgres Upgrade Plan').score).toBeGreaterThan(0);
   });
 });
