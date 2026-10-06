@@ -41,6 +41,19 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<Tab>('graph');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  // Escape closes the tool menu first (capture phase, ahead of App's global
+  // Escape chain) and returns focus to its trigger.
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      setMoreOpen(false);
+      document.querySelector<HTMLElement>('.rs-more > .rs-icon')?.focus();
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [moreOpen]);
   const ready = phase === 'ready';
 
   // Full details follow how a clip was selected. Search, chat citations,

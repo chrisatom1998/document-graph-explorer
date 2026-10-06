@@ -115,7 +115,10 @@ export async function advancedFilters(page: Page, open = true): Promise<void> {
   if ((await panel.evaluate(el => (el as HTMLDetailsElement).open)) !== open) {
     await panel.locator('summary').click();
   }
-  await expect(page.locator('.rs-advanced .filter-bar')).toHaveCount(open ? 1 : 0);
+  // A closed <details> keeps its children mounted, so check visibility, not count.
+  const filterPanel = page.locator('.rs-advanced .filter-bar');
+  if (open) await expect(filterPanel).toBeVisible();
+  else await expect(filterPanel).toBeHidden();
 }
 
 /** Toggle one similarity-type filter checkbox in the left sidebar. */

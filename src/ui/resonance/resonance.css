@@ -83,10 +83,14 @@
 .rs-top__actions .workspace-dims span.is-current { background: var(--rs-raised); color: var(--rs-lime); }
 .rs-top__actions .workspace-dims:hover { border-color: var(--rs-lime); }
 .rs-more { position: relative; }
+/* The trigger sits above the click-away scrim so a second click closes the menu. */
+.rs-more > .rs-icon { position: relative; z-index: 2; }
 .rs-scrim { position: fixed; inset: 0; background: transparent; border: 0; z-index: 1; cursor: default; }
 .rs-menu {
-  position: absolute; right: 0; top: calc(100% + 8px); z-index: 2;
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 3;
   min-width: 190px; padding: 6px;
+  /* Up to 12 saved views plus collaboration: stay inside the viewport and scroll. */
+  max-height: calc(100dvh - var(--rs-top) - 16px); overflow-y: auto;
   background: var(--rs-raised); border: 1px solid var(--rs-line-strong); border-radius: 12px;
   box-shadow: 0 16px 40px #0009;
   display: flex; flex-direction: column; gap: 2px;
