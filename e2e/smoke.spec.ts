@@ -90,7 +90,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
 
   // Pin the full demo count, then require the ready-only search action to
   // be enabled before testing navigation and persistence.
-  await expect(corpusCount(page)).toContainText('100 documents', {
+  await expect(corpusCount(page)).toContainText('100 files', {
     timeout: 270_000,
   });
   // Parsed nodes appear before embedding finishes. Apply the existing ingest
@@ -151,7 +151,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await page.getByRole('textbox', { name: 'Add a tag' }).press('Enter');
   await closeDetails(page);
   await page.reload();
-  await expect(corpusCount(page)).toContainText('100 documents');
+  await expect(corpusCount(page)).toContainText('100 files');
   await openPostgres();
   await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('Persistence regression note');
   await expect(page.getByRole('button', { name: 'Remove tag regression' })).toBeVisible();
@@ -173,10 +173,10 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   const chooserPromise = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Add files', exact: true }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/persistence.txt');
-  await expect(corpusCount(page)).toContainText('101 documents');
+  await expect(corpusCount(page)).toContainText('101 files');
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
   await page.reload();
-  await expect(corpusCount(page)).toContainText('101 documents');
+  await expect(corpusCount(page)).toContainText('101 files');
 
   // Hygiene: no console errors, no uncaught page errors, no error toasts.
   await expect(page.locator('.toast--error')).toHaveCount(0);
@@ -285,7 +285,7 @@ test('renderer grows past 4,096 nodes and can frame the first node beyond the ol
 
   // 4,097 is deliberate: it forces the slot allocator to grow past the old
   // InstancedMesh capacity and makes Nodes remount its core/halo meshes.
-  await expect(corpusCount(page)).toContainText('4097 documents', {
+  await expect(corpusCount(page)).toContainText('4097 files', {
     timeout: 120_000,
   });
   await expect(page.locator('.nebula-canvas canvas')).toBeVisible();
