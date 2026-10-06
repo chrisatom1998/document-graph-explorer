@@ -35,7 +35,7 @@ for (const [n, clip] of clips.entries()) {
       if (e.app) keys.push(e.app);
       e.diverse = samples.length >= 4096 && hasPitchDiversity(engine, samples);
       for (const profile of ['bgate', 'edma']) { try { e[profile] = essentiaKey(engine, samples, profile) ?? null; } catch { e[profile] = null; } }
-      const chroma = chromaFeatures(engine, samples);
+      const chroma = chromaFeatures(engine, samples, true);
       e.full = chroma ? round(chroma.full) : null;
       e.bass = chroma ? round(chroma.bass) : null;
       row.excerpts.push(e);

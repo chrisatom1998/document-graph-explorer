@@ -4,10 +4,8 @@ name: Key features
 # key tuning sets (unused GiantSteps MTG key tracks, half of GTZAN) and the held-out sets (the round 2 test's 500
 # tracks, the original GiantSteps key dataset, the other half of GTZAN), then commits them to the branch for offline
 # tuning (artifact downloads are blocked from the sandbox). Audio is never committed.
+# The recorded features came from run 37413211729 on 562593b; re-run by hand after changing the sets or features.
 on:
-  push:
-    branches: [claude/fix-key-detection-cqon56]
-    paths: [scripts/key/**, src/audio/key.ts, .github/workflows/key-features.yml]
   workflow_dispatch:
 
 permissions:

@@ -3,11 +3,12 @@
 Usage: python3 scripts/key/tune.py [cv | fit | score]
 Round 3's reserved MTG key tracks (r3_held) are dropped from tune-mtg on load; the 500 round 2 tracks are mtg-500.
   cv    : track-grouped 5-fold cross-validation of model variants on the tuning sets only (tune-mtg, tune-gtzan).
-  fit   : fit the chosen variant on all tuning rows and write src/audio/keyModel.json.
+  fit   : fit the chosen variant on all tuning rows and write src/audio/keyModel.json
+          (args: transform bins bass|nobass l2 gtzan-weight show-threshold).
   score : score the app, Essentia's edma profile and the fitted model on every set (held-out sets included).
 
-The model scores each of the 24 keys as w_mode . [chroma, bass chroma] rotated to that tonic (+ a per-mode bias), a
-transposition-invariant softmax over the 24 keys with 2 x 25 weights. Pitch classes are C-indexed here and in the app.
+The model scores each of the 24 keys as w_mode . (chroma rotated to that tonic) + a per-mode bias: a
+transposition-invariant softmax over the 24 keys (2 x 36 weights + 2 biases for the shipped variant). Pitch classes are C-indexed here and in the app.
 """
 import glob, gzip, hashlib, json, math, os, sys
 import numpy as np
@@ -49,20 +50,25 @@ def norm(v, how):
     n = np.linalg.norm(v)
     return v / n if n > 0 else v
 
-def features(e, how, bass=True):
-    c = norm(fold(e['full']), how)
-    b = norm(np.roll(np.asarray(e['bass'], float), 9), how) if bass else np.zeros(0)   # bass is 12 bins from A too
-    return c, b
-
-def rotations(c, b):
-    """X[t] = features rotated so that tonic t sits at index 0; shape (12, d)."""
-    return np.stack([np.concatenate([np.roll(c, -t), np.roll(b, -t)]) for t in range(12)])
+def design(e, how, bins, bass):
+    """X[t] = features rotated so that tonic t sits at index 0; shape (12, d). bins 36 keeps the third-of-a-semitone
+    resolution (index 0 = the bin centred on C) and rotates by whole semitones."""
+    if bins == 36:
+        c = norm(np.roll(np.asarray(e['full'], float), 27), how)   # bin 9 (C, from A) -> index 0
+        X = np.stack([np.roll(c, -3 * t) for t in range(12)])
+    else:
+        c = norm(fold(e['full']), how)
+        X = np.stack([np.roll(c, -t) for t in range(12)])
+    if bass:
+        b = norm(np.roll(np.asarray(e['bass'], float), 9), how)    # bass is 12 bins from A too
+        X = np.concatenate([X, np.stack([np.roll(b, -t) for t in range(12)])], 1)
+    return X
 
 class Model:
-    def __init__(self, how='raw', bass=True, l2=1e-2, weights=None):
-        self.how, self.bass, self.l2, self.w = how, bass, l2, weights
+    def __init__(self, how='log', bins=36, bass=False, l2=1e-3, weights=None):
+        self.how, self.bins, self.bass, self.l2, self.w = how, bins, bass, l2, weights
     def design(self, e):
-        return rotations(*features(e, self.how, self.bass))
+        return design(e, self.how, self.bins, self.bass)
     def logits(self, X, w):
         d = X.shape[1]
         wm, bm, wn, bn = w[:d], w[d], w[d + 1:2 * d + 1], w[2 * d + 1]
@@ -153,7 +159,7 @@ def tuning_data(sets, gtzan_weight):
                     wt.append(gtzan_weight if s == 'tune-gtzan' else 1.0); grp.append(r['track'])
     return ex, lab, wt, grp
 
-VARIANTS = [dict(how=h, bass=b, l2=l2) for h in ('raw', 'sqrt', 'log') for b in (False, True) for l2 in (1e-5, 1e-4, 1e-3)]
+VARIANTS = [dict(how=h, bins=n, bass=b, l2=l2) for h in ('raw', 'sqrt', 'log') for n in (12, 36) for b in (False, True) for l2 in (1e-4, 1e-3, 1e-2)]
 
 def cv(sets):
     tune = sets['tune-mtg'] + sets['tune-gtzan']
@@ -162,7 +168,7 @@ def cv(sets):
     print('baselines on the tuning sets:')
     for s in ('tune-mtg', 'tune-gtzan'):
         for m in ('app', 'edma'): print(f'  {s:10s} {m:8s}', fmt(summary(sets[s], estimate(sets[s], m))))
-    for gw in (1.0, 3.0):
+    for gw in (1.0,):
         for v in VARIANTS:
             res = {s: ([], []) for s in ('tune-mtg', 'tune-gtzan')}
             for f in range(5):
@@ -174,12 +180,13 @@ def cv(sets):
             line = '  '.join(f"{s} exact {summary(*res[s])['exact']:.3f} mirex {summary(*res[s])['mirex']:.3f}" for s in res)
             print(f'gtzan x{gw:.0f} {v}: {line}')
 
-def fit(sets, how, bass, l2, gtzan_weight):
+def fit(sets, how, bins, bass, l2, gtzan_weight, threshold):
     ex, lab, wt, _ = tuning_data(sets, gtzan_weight)
-    model = Model(how, bass, l2).fit(ex, lab, wt)
+    model = Model(how, bins, bass, l2).fit(ex, lab, wt)
     d = len(model.w) // 2 - 1
     json.dump({'version': 1, 'trainedOn': 'scripts/key/tune.py fit: GiantSteps MTG key tracks outside the round 2 test, and half of GTZAN',
-               'transform': how, 'bass': bass, 'l2': l2, 'gtzanWeight': gtzan_weight, 'excerpts': len(ex),
+               'transform': how, 'bins': bins, 'bass': bass, 'l2': l2, 'gtzanWeight': gtzan_weight, 'excerpts': len(ex),
+               'threshold': threshold,
                'major': {'weights': [round(x, 5) for x in model.w[:d]], 'bias': round(model.w[d], 5)},
                'minor': {'weights': [round(x, 5) for x in model.w[d + 1:2 * d + 1]], 'bias': round(model.w[2 * d + 1], 5)}},
               open(MODEL, 'w'), indent=1)
@@ -188,15 +195,16 @@ def fit(sets, how, bass, l2, gtzan_weight):
 def saved_model():
     m = json.load(open(MODEL))
     w = np.array(m['major']['weights'] + [m['major']['bias']] + m['minor']['weights'] + [m['minor']['bias']])
-    return Model(m['transform'], m['bass'], m['l2'], w)
+    return Model(m['transform'], m['bins'], m['bass'], m['l2'], w), m['threshold']
 
 if __name__ == '__main__':
     sets = load()
     cmd = sys.argv[1] if len(sys.argv) > 1 else 'cv'
     if cmd == 'cv': cv(sets)
-    elif cmd == 'fit': fit(sets, sys.argv[2], sys.argv[3] == 'bass', float(sys.argv[4]), float(sys.argv[5]))
+    elif cmd == 'fit':   # e.g. fit log 36 nobass 1e-3 1 0.25
+        fit(sets, sys.argv[2], int(sys.argv[3]), sys.argv[4] == 'bass', float(sys.argv[5]), float(sys.argv[6]), float(sys.argv[7]))
     elif cmd == 'score':
-        model = saved_model(); threshold = float(sys.argv[2]) if len(sys.argv) > 2 else 0.0
+        model, threshold = saved_model()
         for s, rows in sets.items():
             for m in ('app', 'edma', 'model'):
                 print(f'{s:11s} {m:6s}', fmt(summary(rows, estimate(rows, m, model, threshold))))
