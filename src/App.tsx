@@ -16,7 +16,21 @@ import { initPersistence, restoreSession } from './persistence/session';
 import { initializeCorpusRepository } from './persistence/corpusRepository';
 import { reportPersistenceUnavailable } from './persistence/cache';
 import { initChatHistorySync } from './persistence/chatHistorySync';
+import { useSettingsStore } from './store/settingsStore';
 import './styles.css';
+
+/** Fetch and warm the audio models once the restored graph has settled, so the
+ * first sound dropped skips the model download. Dynamic import keeps analyzeMusic
+ * out of the main chunk; preloadMusicModels skips hosts too small to hold them,
+ * and the drop-time preload in coordinator.ts stays as the fallback. */
+function preloadAudioModelsWhenIdle(): void {
+  const start = () => {
+    const mode = useSettingsStore.getState().musicAnalysisMode;
+    void import('./audio/analyzeMusic').then(m => m.preloadMusicModels(mode)).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
+  };
+  if (typeof globalThis.requestIdleCallback === 'function') globalThis.requestIdleCallback(start, { timeout: 3000 });
+  else setTimeout(start, 1500);
+}
 
 const TitleRelationships = lazy(() => import('./graph/TitleRelationships'));
 const CollabAppBridge = lazy(() => import('./collab/AppBridge'));
@@ -138,6 +152,7 @@ export default function App() {
       } catch (error) {
         console.warn('session restore failed', error);
       }
+      preloadAudioModelsWhenIdle();
     })();
   }, []);
 
