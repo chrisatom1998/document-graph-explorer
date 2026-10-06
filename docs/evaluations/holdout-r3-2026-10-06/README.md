@@ -7,7 +7,7 @@ anything listed here.** If a fix needs data, use the "free for tuning" pools bel
 | Set | Tracks | Audio | Truth | Scores |
 |---|---|---|---|---|
 | `jamendo-manifest.json` | 500 MTG-Jamendo split-0 **test** tracks, 232 artists (at most 3 each); 424 in DJ genres (house, techno, trance, dance, drum & bass, dubstep, hip-hop, chill-out, downtempo...), 76 general electronic | Middle 30 s of the dataset's low-quality MP3 | Uploader instrument tags (present); voice/instrumental where three annotators agreed (present and absent); untagged = weak absent | Sound tags: 11 OpenMIC classes plus cello |
-| `mtg-key-manifest.json` (frozen by the first run) | ~490 GiantSteps MTG key Beatport tracks not used by round 2 and held out by the hash rule | Middle 10 s of the Beatport preview | Beatport BPM, manual key with confidence | Tempo, key |
+| `mtg-key-manifest.json` | 318 GiantSteps MTG key Beatport tracks not used by round 2, held out by the hash rule, with a Beatport BPM (244 have a confident single key; the other 180 held-out tracks have no BPM and are left out) | Middle 10 s of the Beatport preview | Beatport BPM, manual key with confidence | Tempo, key |
 
 Labelled positives in the Jamendo set: synthesizer 209, drums 141, piano 140, bass 113, guitar 110, voice 76 (plus 302
 agreed instrumental), violin 29, saxophone 15, cello 12, trumpet 10, organ 5. Organ and trumpet are too thin to pass or
@@ -18,7 +18,7 @@ fail on.
   Free for tuning: split-0 train and validation.
 - GiantSteps MTG key tracks not in `round2-mtg-key-tracks.txt` whose
   `int(sha256("dge-holdout-r3-2026-10-06|" + name)[:8], 16)` is even (`name` like `100066.LOFI`). Free for tuning: the
-  odd ones (about 490 tracks).
+  odd ones (488 tracks).
 
 **How to read the numbers.** The strict view (`jamendo-tags-strict*`) only uses labels that are real: recall for every
 class, plus voice precision. Uploader tags are incomplete, so precision in the weak view (`jamendo-tags-weak`) is a
