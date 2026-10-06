@@ -17,6 +17,7 @@
   --rs-violet: #a89bff;
   --rs-top: 76px;
   --rs-left: 266px;
+  --rs-brand: 266px;
   --rs-right: 372px;
   --bg-void: var(--rs-bg);
 }
@@ -38,7 +39,7 @@
 .rs-top {
   grid-area: top;
   display: grid;
-  grid-template-columns: var(--rs-left) 1fr auto;
+  grid-template-columns: var(--rs-brand) 1fr auto;
   align-items: center;
   padding: 0 24px 0 20px;
   border-bottom: 1px solid var(--rs-line);
@@ -112,6 +113,8 @@
 .rs-import:hover { filter: brightness(1.05); }
 .rs-import--secondary { margin-top: 10px; background: var(--rs-raised); color: var(--rs-text); border: 1px solid var(--rs-line-strong); }
 .rs-import--secondary .rs-import__plus { font-size: 22px; color: var(--rs-lime); }
+.rs-import__icon { display: grid; place-items: center; }
+.rs-import__icon svg { width: 20px; height: 20px; }
 .rs-import--secondary small { color: var(--rs-muted); opacity: 1; }
 .rs-import--secondary:hover { filter: none; border-color: var(--rs-lime); }
 .rs-assistant {
@@ -158,6 +161,34 @@
   color: var(--rs-text); font: inherit; font-size: 13px; cursor: pointer;
 }
 .rs-select:disabled { opacity: 0.45; cursor: default; }
+
+/* Collapse: the column shrinks to an icon rail and the graph takes the space. */
+.app-root.rs-side-collapsed { --rs-left: 64px; }
+.rs-root { transition: grid-template-columns 200ms var(--ease-out); }
+.rs-collapse {
+  align-self: flex-end; width: 30px; height: 30px; margin: -8px -8px 8px 0; flex: none;
+  display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--rs-muted); cursor: pointer;
+}
+.rs-collapse svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.rs-collapse:hover { background: var(--rs-raised); color: var(--rs-text); }
+.rs-sidebar.is-collapsed { padding: 16px 10px; align-items: center; gap: 10px; overflow-x: hidden; }
+.rs-sidebar.is-collapsed .rs-collapse { align-self: center; margin: 0 0 4px; }
+.rs-sidebar.is-collapsed > :not(.rs-collapse, .rs-import, .rs-assistant, .rs-rail-filters) { display: none; }
+.rs-sidebar.is-collapsed .rs-import, .rs-sidebar.is-collapsed .rs-assistant {
+  width: 44px; height: 44px; margin: 0; padding: 0; justify-content: center; gap: 0; position: relative;
+}
+.rs-sidebar.is-collapsed .rs-import > span:not(.rs-import__plus),
+.rs-sidebar.is-collapsed .rs-assistant__text { display: none; }
+.rs-sidebar.is-collapsed .rs-import__plus { font-size: 22px; }
+.rs-sidebar.is-collapsed .rs-assistant__icon { background: none; }
+.rs-sidebar.is-collapsed .rs-assistant__count { position: absolute; top: -6px; right: -8px; padding: 1px 6px; font-size: 10px; }
+.rs-rail-filters {
+  position: relative; width: 44px; height: 44px; display: grid; place-items: center;
+  border: 1px solid var(--rs-line-strong); border-radius: 10px; background: none; color: var(--rs-text); cursor: pointer;
+}
+.rs-rail-filters svg { width: 18px; height: 18px; }
+.rs-rail-filters:hover { background: var(--rs-raised); }
+.rs-rail-filters i { position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--rs-lime); }
 
 /* ---- Stage -------------------------------------------------------------- */
 .rs-stage { grid-area: stage; position: relative; min-width: 0; min-height: 0; overflow: hidden; background: var(--rs-bg); }
@@ -315,7 +346,7 @@
 .app-root:has(.rs-root) .first-run-guide { right: calc(var(--rs-right) + 18px); }
 
 @media (max-width: 1100px) {
-  :root { --rs-left: 230px; --rs-right: 320px; }
+  :root { --rs-left: 230px; --rs-brand: 230px; --rs-right: 320px; }
   .rs-tagline { display: none; }
 }
 @media (max-width: 860px) {
@@ -323,6 +354,8 @@
   /* Narrow screens keep the three actions as one row; filters need the room. */
   .rs-sidebar { flex-direction: row; gap: 8px; padding: 10px 16px; overflow: visible; border-right: 0; border-bottom: 1px solid var(--rs-line); }
   .rs-sidebar > :not(.rs-import, .rs-assistant) { display: none; }
+  .app-root.rs-side-collapsed { --rs-left: 0px; }
+  .rs-sidebar.is-collapsed { flex-direction: row; padding: 10px 16px; }
   .rs-sidebar .rs-import, .rs-sidebar .rs-assistant { flex: 1; min-width: 0; margin: 0; padding: 8px 10px; }
   .rs-sidebar small { display: none !important; }
   .rs-sidebar .rs-import strong { font-size: 13px; }

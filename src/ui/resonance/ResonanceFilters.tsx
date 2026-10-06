@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { EdgeKind, FileType } from '../../model/types';
 import { useGraphStore } from '../../store/graphStore';
 import { DEFAULT_FILTER, useUiStore } from '../../store/uiStore';
@@ -8,6 +8,12 @@ import { styleTags } from '../../audio/styleTags';
 import { openFilePicker } from '../../ingest/DropZone';
 import { openFolderPicker } from '../../ingest/folderPicker';
 import { openSampleAssistant } from '../../store/sampleAssistantStore';
+import { IconFolderPlus, IconFunnel } from '../icons';
+
+const COLLAPSED_KEY = 'resonance-sidebar-collapsed';
+function loadCollapsed(): boolean {
+  try { return localStorage.getItem(COLLAPSED_KEY) === '1'; } catch { return false; }
+}
 
 const SIMILARITY: { kind: EdgeKind; label: string }[] = [
   { kind: 'instrument', label: 'Instruments' },
@@ -31,6 +37,13 @@ export default function ResonanceFilters() {
   const filter = useUiStore(s => s.filter);
   const setFilter = useUiStore(s => s.setFilter);
   const [similarityOpen, setSimilarityOpen] = useState(true);
+  const [collapsed, setCollapsed] = useState(loadCollapsed);
+  useEffect(() => {
+    try { localStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0'); } catch { /* The choice just won't persist. */ }
+    // The column width lives on .app-root so fixed overlays outside the grid follow it too.
+    document.querySelector('.app-root')?.classList.toggle('rs-side-collapsed', collapsed);
+    return () => document.querySelector('.app-root')?.classList.remove('rs-side-collapsed');
+  }, [collapsed]);
 
   const docs = useMemo(() => nodes.filter(n => n.kind === 'document'), [nodes]);
   const audioCount = docs.filter(n => n.fileType === 'audio').length;
@@ -57,20 +70,28 @@ export default function ResonanceFilters() {
   };
 
   return (
-    <aside className="rs-sidebar" aria-label="Filters">
-      <button type="button" className="rs-import" onClick={openFilePicker}>
+    <aside className={`rs-sidebar${collapsed ? ' is-collapsed' : ''}`} aria-label="Filters">
+      <button type="button" className="rs-collapse" aria-expanded={!collapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} onClick={() => setCollapsed(v => !v)}>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2" /><path d="M6 2.5v11" /><path d={collapsed ? 'M9 6.5l1.8 1.5L9 9.5' : 'M11 6.5L9.2 8l1.8 1.5'} /></svg>
+      </button>
+      <button type="button" className="rs-import" onClick={openFilePicker} title={collapsed ? 'Import clips' : undefined}>
         <span className="rs-import__plus" aria-hidden="true">+</span>
         <span><strong>{audio || docs.length === 0 ? 'Import clips' : 'Import files'}</strong><small>Audio files, drag and drop, or browse</small></span>
       </button>
-      <button type="button" className="rs-import rs-import--secondary" onClick={openFolderPicker}>
-        <span className="rs-import__plus" aria-hidden="true">♫</span>
+      <button type="button" className="rs-import rs-import--secondary" onClick={openFolderPicker} title={collapsed ? 'Import sounds' : undefined}>
+        <span className="rs-import__plus rs-import__icon" aria-hidden="true"><IconFolderPlus /></span>
         <span><strong>Import sounds</strong><small>Pick a whole folder of samples</small></span>
       </button>
-      <button type="button" className="rs-assistant" aria-haspopup="dialog" onClick={() => openSampleAssistant()}>
+      <button type="button" className="rs-assistant" aria-haspopup="dialog" onClick={() => openSampleAssistant()} title={collapsed ? 'Sample assistant' : undefined}>
         <span className="rs-assistant__icon" aria-hidden="true">♫</span>
         <span className="rs-assistant__text"><strong>Sample assistant</strong><small>Search, tag and build crates</small></span>
         <span className="rs-assistant__count" aria-label={`${audioCount} clips`}>{audioCount}</span>
       </button>
+      {collapsed && (
+        <button type="button" className="rs-rail-filters" aria-label={`Show filters${isFilterActive(filter) ? ' (filters on)' : ''}`} title="Filters" onClick={() => setCollapsed(false)}>
+          <IconFunnel />{isFilterActive(filter) && <i aria-hidden="true" />}
+        </button>
+      )}
       <p className="rs-count">{docs.length} {audio || docs.length === 0 ? 'clips' : 'files'} in project</p>
 
       <div className="rs-filters-head">
