@@ -252,8 +252,10 @@ jobs:
       - name: Write the manifests
         run: |
           node harness/scripts/accuracy-gate/subset.mjs ${{ inputs.mode }} gate-manifests
-          # The app's own driver if it has one (it knows the app's UI), else the harness's.
-          cp -n harness/scripts/short-clip-upload-eval.mjs scripts/ || true
+          # The app's own driver if it has one (it knows the app's UI), else the harness's. While the base has no gate
+          # yet, the harness is this change itself and its driver is the newest, so it drives both sides.
+          if [ "${{ needs.plan.outputs.harness }}" = "${{ github.sha }}" ]; then cp harness/scripts/short-clip-upload-eval.mjs scripts/
+          else cp -n harness/scripts/short-clip-upload-eval.mjs scripts/ || true; fi
           git log -1 --format='app under test: %H %s'
           # Every track of the set must be here, or the run would quietly score fewer tracks.
           node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync(process.argv[1])),gone=m.items.filter(i=>!fs.existsSync(`${process.argv[2]}/${i.id}.wav`));
