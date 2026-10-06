@@ -95,6 +95,9 @@ async function waitIdle(page, timeout) {
     const b = [...document.querySelectorAll('button')].find(el => el.getAttribute('aria-label') === 'Search documents' || el.textContent?.trim() === 'Search documents');
     return b && !b.disabled && b.getAttribute('aria-disabled') !== 'true';
   }, null, { timeout, polling: 250 });
+  // Fast mode returns after the quick pass and keeps deeper checks running as
+  // background jobs; the run is only finished when that status is gone.
+  await page.waitForFunction(() => !document.querySelector('.music-background-status'), null, { timeout, polling: 250 });
 }
 
 async function run(label, userDataDir, files, { freshWorkspace = false } = {}) {
