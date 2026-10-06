@@ -84,7 +84,7 @@ def main():
             t = fmh.pick_threshold(y, oof)
             model = fmh.fit(X[rows], y, C)
             res = {'oofAp': round(ap, 4), 'C': C, 'threshold': t}
-            for name in JUDGE:
+            for name in ([] if os.environ.get('NO_JUDGE') else JUDGE):   # NO_JUDGE=1: train-side numbers only
                 jr = [k for k, i in enumerate(ids) if i.startswith(name + ':')]
                 p = fmh.predict(model, X[jr]) if jr else np.zeros(0)
                 tp = fp = fn = 0
@@ -98,6 +98,7 @@ def main():
                 res[name] = {'P': round(tp / (tp + fp), 3) if tp + fp else None, 'R': round(tp / (tp + fn), 3) if tp + fn else None,
                              'pos': tp + fn, 'tp': tp, 'fp': fp, 'fn': fn}
             report['sets'][sname][c] = res
+            if 'r1' not in res: print(f"{sname:10s} {c:12s} OOF AP {ap:.3f}", flush=True); report['sets'][sname][c] = res; continue
             print(f"{sname:10s} {c:12s} OOF AP {ap:.3f}  r1 P/R {res['r1']['P']}/{res['r1']['R']} (n+ {res['r1']['pos']})  "
                   f"r2 P/R {res['r2']['P']}/{res['r2']['R']} (n+ {res['r2']['pos']})", flush=True)
         report['sets'][sname]['_meanOofAp'] = round(float(np.mean([v['oofAp'] for v in report['sets'][sname].values()])), 4)
