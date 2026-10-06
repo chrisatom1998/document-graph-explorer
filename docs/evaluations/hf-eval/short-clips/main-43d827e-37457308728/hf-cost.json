@@ -1,0 +1,39 @@
+{
+ "task": "short-clips",
+ "run_key": "short-clips-37457308728-1",
+ "flavor": "cpu-upgrade",
+ "parts": 4,
+ "usd_per_hour": 0.03,
+ "wall_clock_min": 86.9,
+ "job_minutes": 267.0,
+ "cost_usd": 0.134,
+ "worst_case_usd": 0.24,
+ "failed_parts": [],
+ "jobs": [
+  {
+   "part": 0,
+   "job": "6ac4dcdb404719ba3765e9af",
+   "stage": "COMPLETED",
+   "minutes": 83.8
+  },
+  {
+   "part": 1,
+   "job": "6ac4dcdbfbc85ba6823b40cb",
+   "stage": "COMPLETED",
+   "minutes": 44.9
+  },
+  {
+   "part": 2,
+   "job": "6ac4dcdbfbc85ba6823b40cd",
+   "stage": "COMPLETED",
+   "minutes": 85.8
+  },
+  {
+   "part": 3,
+   "job": "6ac4dcdc404719ba3765e9b1",
+   "stage": "COMPLETED",
+   "minutes": 52.5
+  }
+ ],
+ "finished": "2026-10-06T13:01:48+00:00"
+}

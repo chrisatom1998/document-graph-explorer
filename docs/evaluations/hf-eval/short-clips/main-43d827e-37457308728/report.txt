@@ -1,0 +1,35 @@
+Pass bar: precision AND recall >= 0.60 (60/60). Labels with fewer than 10 positives are marked "low".
+
+| Label | Positives | report P / R | report pass | Change |
+|---|---|---|---|---|
+| effect:distorted | 49 | — / 0.00 | no |  |
+| effect:reverberant | 78 | — / 0.00 | no |  |
+| musical:key | 0 (low) | — / — | no |  |
+| musical:tempo | 0 (low) | 0.00 / — | no |  |
+| role:bass hit | 54 | 0.86 / 0.44 | no |  |
+| role:beatbox | 111 | — / 0.00 | no |  |
+| role:clap | 15 | 0.81 / 0.87 | yes |  |
+| role:cowbell | 21 | 1.00 / 0.57 | no |  |
+| role:cymbal | 11 | 1.00 / 0.73 | yes |  |
+| role:finger snap | 17 | 1.00 / 0.71 | yes |  |
+| role:hi-hat | 60 | 1.00 / 0.87 | yes |  |
+| role:impact | 113 | 0.74 / 0.87 | yes |  |
+| role:kick | 33 | 0.97 / 0.91 | yes |  |
+| role:loop | 0 (low) | — / — | no |  |
+| role:percussion hit | 231 | 0.97 / 0.91 | yes |  |
+| role:shaker | 8 (low) | 0.89 / 1.00 | yes |  |
+| role:snare | 43 | 0.97 / 0.88 | yes |  |
+| role:synth hit | 36 | 0.73 / 0.89 | yes |  |
+| role:tambourine | 23 | 1.00 / 0.74 | yes |  |
+| role:vinyl scratch | 29 | 0.79 / 0.90 | yes |  |
+| role:vocal one-shot | 369 | — / 0.00 | no |  |
+| role:whoosh | 54 | 1.00 / 0.78 | yes |  |
+| source:bass guitar | 12 | 1.00 / 0.50 | no |  |
+| source:brass | 41 | — / 0.00 | no |  |
+| source:drums | 212 | 0.97 / 0.93 | yes |  |
+| source:guitar | 70 | 0.70 / 0.70 | yes |  |
+| source:piano | 18 | 0.83 / 0.83 | yes |  |
+| source:synthesizer | 42 | 0.67 / 0.86 | yes |  |
+| source:voice | 369 | 0.96 / 0.64 | yes |  |
+
+report: 18/26 measurable labels meet 60/60
