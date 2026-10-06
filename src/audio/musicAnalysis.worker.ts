@@ -294,7 +294,11 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
           if (weight > 0) { try { profileKeys.push(essentiaKey(engine, samples)); } catch { profileKeys.push(undefined); } }
         }
         key = recordingKeyFromProbabilities(probabilities, excerpts.samples.length, profileKeys, weight);
-      } catch { key = recordingKey(chromas, excerpts.samples.length); }
+      } catch {
+        key = recordingKey(chromas, excerpts.samples.length);
+        // Marked one revision behind so the coordinator and the analysis cache retry with the network later.
+        result.keyRevision = KEY_ANALYSIS_REVISION - 1;
+      }
     }
     if (key) result.key = key;
     if (data.kind === 'rhythm' && !result.tempo) result.notes.push('No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).');

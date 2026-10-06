@@ -383,7 +383,11 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
         const partial = await request<MusicAnalysis>({ kind: id, excerpts: { durationSeconds: duration, samples } }, samples.map(s => s.buffer));
         check();
         if (id === 'rhythm') result.tempo = partial.tempo;
-        else { result.key = partial.key; result.detectedPitch = partial.detectedPitch; }
+        else {
+          result.key = partial.key; result.detectedPitch = partial.detectedPitch;
+          // A key from the fallback profiles (network unavailable) carries an older revision, so it is retried later.
+          if (partial.keyRevision !== undefined && partial.keyRevision < KEY_ANALYSIS_REVISION) result.keyRevision = partial.keyRevision;
+        }
         result.notes.push(...(partial.notes ?? []));
         result.analyzedSeconds = Math.max(result.analyzedSeconds, j.planned.reduce((n,i) => n + i.end - i.start, 0));
         j.successful = [...j.planned];

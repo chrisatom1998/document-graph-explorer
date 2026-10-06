@@ -138,7 +138,7 @@ def estimate(rows, method, model=None, threshold=0.0, strength=0.6):
     excerpt with that vote; 'model' the model on the mean chroma of the gated excerpts (what the app ships)."""
     out = []
     for r in rows:
-        if method == 'app': out.append(r['appKey']); continue
+        if method == 'app': out.append(r.get('appKey', r.get('chromaKey'))); continue   # v2 tuning rows hold no network output
         keys = []
         for e in r['excerpts']:
             if not gate(e): continue

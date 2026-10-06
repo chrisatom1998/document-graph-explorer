@@ -43,6 +43,8 @@ function completeCurrent(audio:MusicAnalysis|undefined,mime?:string):boolean {
  if(release && audio.classifierConfiguration!==fusionConfiguration())return false;
  if(needsFusion && !fusionPresentation(audio.fusion,audio.durationSeconds,recognition.mode,release)?.qualified)return false;
  if(!needsFusion && audio.fusion)return false;
+ // A key from an older method (or the fallback when the key network could not load) is re-estimated.
+ if(audio.keyRevision!==undefined&&audio.keyRevision<KEY_ANALYSIS_REVISION)return false;
  if(recognition.jobs.length!==MODEL_IDS.length||new Set(recognition.jobs.map(job=>job.modelId)).size!==MODEL_IDS.length)return false;
  return recognition.jobs.every(job=>closedJob(job)||shortClipJamendoUnsupported(job,audio.durationSeconds));
 }
