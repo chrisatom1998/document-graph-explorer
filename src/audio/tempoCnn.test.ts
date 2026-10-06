@@ -31,9 +31,12 @@ describe('tempo CNN input and output', () => {
     const split = cnnTempo(logitsFor([[93], [140]]), 2);
     expect(split.confidence).toBeLessThan(0.5);
   });
-  it('keeps the beat tracker unless the model confidently reads another tempo', () => {
-    expect(combineTempo(93.3, { bpm: 140, confidence: 0.8 })).toBe(140);
-    expect(combineTempo(93.3, { bpm: 140, confidence: 0.3 })).toBe(93.3);
-    expect(combineTempo(139.2, { bpm: 140, confidence: 0.9 })).toBe(139.2);
+  it('keeps the beat tracker unless the model confidently reads another tempo in range', () => {
+    const app = { bpm: 93.3, confidence: 1 };
+    expect(combineTempo(app, { bpm: 140, confidence: 0.8 })).toEqual({ bpm: 140, confidence: 0.8 });
+    expect(combineTempo(app, { bpm: 140, confidence: 0.3 })).toBe(app);
+    expect(combineTempo({ bpm: 139.2, confidence: 1 }, { bpm: 140, confidence: 0.9 })).toEqual({ bpm: 139.2, confidence: 1 });
+    expect(combineTempo(app, { bpm: 270, confidence: 0.9 })).toBe(app);
+    expect(combineTempo(app, { bpm: 35, confidence: 0.9 })).toBe(app);
   });
 });

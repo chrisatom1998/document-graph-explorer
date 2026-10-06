@@ -286,7 +286,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
     if (result.tempo && !result.tempo.alternatives) {
       try {
         const cnn = await predictCnnTempo(audible);
-        if (cnn) { const bpm = combineTempo(result.tempo.bpm, cnn); if (bpm !== result.tempo.bpm) result.tempo = { ...result.tempo, bpm }; }
+        if (cnn) result.tempo = { ...result.tempo, ...combineTempo(result.tempo, cnn) };
       } catch { /* Keep the beat tracker's tempo if the model is unavailable. */ }
     }
     const key = combineKeys(keys, excerpts.samples.length);

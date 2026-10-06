@@ -21,7 +21,8 @@ def confidence(o):
 
 
 def combine(app, o, threshold=RULE):
-    return o['cnn_bpm'] if abs(o['cnn_bpm'] / app - 1) > 0.04 and confidence(o) > threshold else app
+    usable = 40 <= o['cnn_bpm'] <= 250 and confidence(o) > threshold
+    return o['cnn_bpm'] if usable and abs(o['cnn_bpm'] / app - 1) > 0.04 else app
 
 
 def oof_app():

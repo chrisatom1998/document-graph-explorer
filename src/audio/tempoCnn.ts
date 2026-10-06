@@ -116,11 +116,14 @@ export function cnnTempo(logits: Float32Array, windows: number): { bpm: number; 
 /** Within 4%, as the accuracy scores count it. */
 function sameTempo(a: number, b: number) { return Math.abs(b / a - 1) <= 0.04; }
 
-/** The app's tempo unless the CNN confidently reads a different one. */
-export function combineTempo(app: number, cnn: { bpm: number; confidence: number }): number {
-  return !sameTempo(app, cnn.bpm) && cnn.confidence > CNN_OVERRIDE_CONFIDENCE ? cnn.bpm : app;
+/**
+ * The app's tempo unless the CNN confidently reads a different one within the app's 40-250 BPM range. An overriding
+ * reading carries the CNN's own confidence, not the beat tracker's.
+ */
+export function combineTempo(app: { bpm: number; confidence: number }, cnn: { bpm: number; confidence: number }): { bpm: number; confidence: number } {
+  const usable = cnn.bpm >= 40 && cnn.bpm <= 250 && cnn.confidence > CNN_OVERRIDE_CONFIDENCE;
+  return usable && !sameTempo(app.bpm, cnn.bpm) ? { bpm: cnn.bpm, confidence: Math.min(1, cnn.confidence) } : app;
 }
-
 
 let session: Promise<{ ort: typeof import('onnxruntime-web/webgpu'); model: import('onnxruntime-web/webgpu').InferenceSession }> | undefined;
 async function loadModel() {
@@ -137,6 +140,10 @@ export async function predictCnnTempo(excerpts: Float32Array[]): Promise<{ bpm: 
   const { ort, model } = await (session ??= loadModel().catch(error => { session = undefined; throw error; }));
   const input = new Float32Array(windows.length * FRAMES * BANDS);
   windows.forEach((w, i) => input.set(w, i * FRAMES * BANDS));
-  const output = await model.run({ mel: new ort.Tensor('float32', input, [windows.length, FRAMES, BANDS]) });
-  return cnnTempo(output.logits.data as Float32Array, windows.length);
+  const tensor = new ort.Tensor('float32', input, [windows.length, FRAMES, BANDS]);
+  try {
+    const output = await model.run({ mel: tensor });
+    try { return cnnTempo(output.logits.data as Float32Array, windows.length); }
+    finally { for (const t of Object.values(output)) t.dispose(); }
+  } finally { tensor.dispose(); }
 }

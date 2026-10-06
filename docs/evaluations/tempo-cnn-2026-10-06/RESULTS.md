@@ -22,7 +22,8 @@ over a minute, otherwise the first 60 s).
 
 The app keeps its beat-tracker tempo (after #116's half-time correction) unless the CNN's tempo differs by more than 4%
 **and** the CNN's confidence is above 0.5. Confidence is the softmax mass of its top three classes that lie within 4% of
-its tempo. Recordings shorter than 8 s keep the loop estimator's tempo and alternatives.
+its tempo. The CNN's tempo must also lie in the app's 40-250 BPM range, and an overriding tempo carries the CNN's
+confidence. Recordings shorter than 8 s keep the loop estimator's tempo and alternatives.
 
 The threshold was chosen on tuning clips only, with out-of-fold readings from both methods
 (`scripts/tempo/cnn-combine.py`, output in `combine-output.txt`). 0.4 scored slightly higher overall, but it lost 1 point
