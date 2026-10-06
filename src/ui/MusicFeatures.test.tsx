@@ -159,8 +159,9 @@ it('keeps duration, sound possibilities and corrections visible while diagnostic
   recordEvidence(recognition, 'jamendo', { start: 10, end: 20 }, [{ dimension: 'source', labelId: 'oboe', score: .8 }]);
   render(<MusicFeatures node={{ ...node, audio: { ...node.audio!, recognition } }} />);
   expect(screen.getByText('3:00', { selector: 'dd' })).toBeVisible();
-  expect(screen.queryByText('oboe', { selector: '.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)' })).toBeNull();
-  expect(screen.getByRole('region',{name:'Sound identification'})).toHaveTextContent('Nothing identified yet');
+  // An untested model score never becomes a tested tag; it only appears in the separate, display-only "likely" group.
+  expect(screen.queryByText('oboe', { selector: '.sound-tag:not(.sound-tag--likely-extra) > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)' })).toBeNull();
+  expect(within(screen.getByRole('list',{name:'Likely, not yet tested'})).getByText('oboe')).toBeVisible();
   expect(screen.queryByText('Correct the instrument')).toBeNull();
   expect(screen.queryByText('Correct DJ tags')).toBeNull();
   expect(screen.getByText('Coverage by component')).not.toBeVisible();

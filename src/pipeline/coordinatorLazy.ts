@@ -14,4 +14,5 @@ export {
   rebuildEmbeddings,
   reconcileWatchedFiles,
   resetCorpus,
+  scheduleVersionCatchUp,
 } from './coordinator';

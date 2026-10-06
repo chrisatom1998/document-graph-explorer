@@ -1,0 +1,123 @@
+name: DJ fix calibration data
+
+# Collects calibration data for the DJ clip fixes on clips the DJ clip tests did not use: the 900 OpenMIC clips of
+# docs/evaluations/mixed-music-2026-10-05 (PR #113 calibrated on them; no clip or artist overlaps either DJ test).
+# The app is built from this commit and run on every clip; records go to docs/evaluations/dj-fix-2026-10-06/calibration.
+# (The first run, 37412171657, also analysed 400 Beatport key tracks; key moved to another thread and 198 of those
+# tracks are in PR #121's held-out set, so their outputs were deleted unread and the set was dropped.)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
+  DOCS: docs/evaluations/dj-fix-2026-10-06
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        set: [cal900]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract the 900 OpenMIC calibration clips
+        if: matrix.set == 'cal900'
+        run: |
+          curl -fsSL --retry 6 -o "$RUNNER_TEMP/openmic.tgz" "$OPENMIC"
+          echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $RUNNER_TEMP/openmic.tgz" | md5sum -c -
+          python3 scripts/mixed-music/build.py "$RUNNER_TEMP/openmic.tgz" audio
+          mkdir -p set && cp docs/evaluations/mixed-music-2026-10-05/manifest.json set/manifest.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fix-${{ matrix.set }}-audio
+          path: |
+            audio
+            set
+          retention-days: 7
+
+  eval:
+    needs: freeze
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { set: cal900, shard: 0, of: 5 }
+          - { set: cal900, shard: 1, of: 5 }
+          - { set: cal900, shard: 2, of: 5 }
+          - { set: cal900, shard: 3, of: 5 }
+          - { set: cal900, shard: 4, of: 5 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: fix-${{ matrix.set }}-audio
+          path: clips
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=clips/audio AUDIO_EXT=ogg MANIFEST=clips/set/manifest.json \
+            SHARD=${{ matrix.shard }}/${{ matrix.of }} node scripts/short-clip-upload-eval.mjs out/run test 20
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fix-${{ matrix.set }}-export-${{ matrix.shard }}
+          path: out/run/graph-export.json
+          retention-days: 30
+
+  collect:
+    needs: eval
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: fix-*-export-*
+          path: exports
+      - name: Extract records
+        run: |
+          C="$DOCS/calibration"; mkdir -p "$C"
+          npx vite-node scripts/dj-fix/extract.mjs "$C/cal900-records.json" exports/fix-cal900-export-*/graph-export.json
+          echo "built from $GITHUB_SHA (run $GITHUB_RUN_ID)" > "$C/tested-commit.txt"
+      - name: Commit
+        run: |
+          git pull -q origin "$GITHUB_REF_NAME"
+          git add "$DOCS/calibration"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record DJ fix calibration data" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done

@@ -76,6 +76,11 @@ describe('sanitizeSharedFilter', () => {
     expect(Object.prototype).not.toHaveProperty('polluted');
   });
 
+  it('accepts valid audio facets and drops malformed ones', () => {
+    expect(sanitizeSharedFilter({ bpmRange: [90, 128], musicKey: 'D minor', style: null })).toEqual({ bpmRange: [90, 128], musicKey: 'D minor', style: null });
+    expect(sanitizeSharedFilter({ bpmRange: [140, 90], musicKey: 7, style: '' })).toBeUndefined();
+  });
+
   it('omits malformed remote values instead of merging them into UI state', () => {
     expect(sanitizeSharedFilter({
       fileTypes: ['exe'],

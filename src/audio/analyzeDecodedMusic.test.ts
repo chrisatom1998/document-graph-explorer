@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { analyzeDecodedMusic, type AnalysisOptions, type MusicRequest } from './analyzeDecodedMusic';
 import { fastInstrumentStarts } from './analysisPlan';
+import { arrangement } from './structureArrangement.testutil';
 import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
 import type { MusicDecoder } from './decodeMusic';
-import { reliableInstruments } from './instrumentEvidence';
+import { instrumentWindowStarts, reliableInstruments } from './instrumentEvidence';
 import { ResultCache } from './recognition';
 import type { DescriptionScore } from './profileDescriptions';
 import { confidentSoundSummary } from './confidentSoundSummary';
@@ -425,4 +426,52 @@ describe('AST device choice', { timeout: 60_000 }, () => {
     const run = createRecognition(1.5, 'full'); refreshRuntimeIdentity(run, 1.5);
     expect(run.jobs.find(j => j.modelId === 'ast')!.preprocessingVersion).toContain(':webgpu-fp32-allowed');
   });
+});
+it('reads structure for whole tracks but skips it for recordings longer than 20 minutes', async () => {
+  const track = await fixture(120, { mode: 'fast' }).run();
+  expect(track.structure).toEqual({ revision: 1, sections: [], drops: [] });
+  const set = fixture(21 * 60, { mode: 'fast' });
+  const result = await set.run();
+  expect(result.structure).toBeUndefined();
+  // No 60 s whole-track structure chunks (the version print reads its own bounded 30 s sections).
+  expect(vi.mocked(set.decoder.read).mock.calls.filter(([, seconds, rate]) => rate === 16000 && seconds === 60)).toEqual([]);
+});
+it('moves the Fast scan to the first drop, but keeps Full mode on its usual windows', { timeout: 60_000 }, async () => {
+  // 30 s intro, drop at 30 s, breakdown, second drop at 105 s, outro.
+  const audio = arrangement([
+    { seconds: 30, kick: true, bass: false, pad: false }, { seconds: 45, kick: true, bass: true, pad: true },
+    { seconds: 30, kick: false, bass: false, pad: true }, { seconds: 45, kick: true, bass: true, pad: true },
+    { seconds: 20, kick: true, bass: false, pad: false },
+  ]);
+  const duration = audio.length / 16000;
+  const run = (mode: 'fast' | 'full') => {
+    const f = fixture(duration, { mode });
+    vi.mocked(f.decoder.read).mockImplementation(async (start, seconds, rate) => rate === 16000
+      ? audio.slice(Math.round(start * rate), Math.round(Math.min(duration, start + seconds) * rate))
+      : new Float32Array(Math.round(Math.max(0, Math.min(seconds, duration - start)) * rate)).fill(.1));
+    return f;
+  };
+  const fast = run('fast'), result = await fast.run(), drop = result.structure!.drops[0];
+  expect(Math.abs(drop - 30)).toBeLessThan(1);
+  const planned = (r: MusicAnalysis, id: string) => r.recognition!.jobs.find(j => j.modelId === id)!.planned.map(i => i.start);
+  const starts = fastInstrumentStarts(duration);
+  expect(planned(result, 'ast')).toEqual([starts[0], drop, starts[2]]);
+  expect(planned(result, 'jamendo')).toEqual([drop]);
+  expect(planned(result, 'clap')).toEqual([drop]);
+  // The models actually listen there: 10 s at 16 kHz (AST, Jamendo) and at 48 kHz (CLAP).
+  const reads = vi.mocked(fast.decoder.read).mock.calls;
+  expect(reads.some(([start, seconds, rate]) => start === drop && Math.abs(seconds - 10) < 1e-6 && rate === 48000)).toBe(true);
+  expect(reads.some(([start, seconds, rate]) => start === drop && Math.abs(seconds - 10) < 1e-6 && rate === 16000)).toBe(true);
+  const full = await run('full').run();
+  expect(planned(full, 'ast')).toEqual(instrumentWindowStarts(duration));
+  expect(planned(full, 'jamendo')).toEqual(instrumentWindowStarts(duration));
+  expect(planned(full, 'ast')).not.toContain(full.structure!.drops[0]);
+});
+it('drops the structure when a chunk decodes short, so mix points never shift', async () => {
+  const f = fixture(150, { mode: 'fast' });
+  const read = vi.mocked(f.decoder.read).getMockImplementation()!;
+  vi.mocked(f.decoder.read).mockImplementation(async (start, seconds, rate) => start === 0 && seconds === 60 ? new Float32Array(30 * rate) : read(start, seconds, rate));
+  const result = await f.run();
+  expect(result.structure).toBeUndefined();
+  expect(result.notes).toContain('Track structure was unavailable. Reanalyze to retry.');
 });
