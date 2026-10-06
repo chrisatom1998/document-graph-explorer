@@ -44,11 +44,12 @@ async function exportGraph() {
   // Older layout: a "Data options" toolbar menu; the Resonance layout (#137): an Export tab.
   const dataOptions = page.getByRole('button', { name: 'Data options' });
   if (await dataOptions.count()) await dataOptions.click();
-  else await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Export', exact: true }).click();
+  else await page.getByRole('navigation', { name: 'Views' }).getByRole('button', { name: 'Export', exact: true }).evaluate(b => b.click());
   const download = page.waitForEvent('download', { timeout: 60_000 });
   // If the click below fails, this promise still rejects later; keep that from crashing the whole run.
   download.catch(() => {});
-  await page.getByRole('button', { name: /Export graph JSON/ }).click();
+  // A DOM click: floating cards (e.g. the "What we found" digest) can cover the button.
+  await page.getByRole('button', { name: /Export graph JSON/ }).evaluate(b => b.click());
   const file = join(outDir, 'graph-export.json');
   await (await download).saveAs(file);
   return JSON.parse(readFileSync(file, 'utf8'));
