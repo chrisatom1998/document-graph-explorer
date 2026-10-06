@@ -1,0 +1,82 @@
+name: Full-mix head features
+
+# Per-window CLAP / AST / Discogs-EffNet / MTG-Jamendo outputs (scripts/full-mix-heads/features.mjs) for training the
+# full-mix instrument heads on OpenMIC-2018's train partition (benchmark artists removed). Features are uploaded as
+# artifacts for offline training; audio is fetched at run time and never committed.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/stronger-sound-models-*']
+    paths: ['.github/workflows/full-mix-features.yml']
+
+permissions:
+  contents: read
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+
+jobs:
+  audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select OpenMIC train clips
+        run: |
+          curl -fsSL --retry 6 -o "$RUNNER_TEMP/openmic.tgz" "$OPENMIC"
+          echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $RUNNER_TEMP/openmic.tgz" | md5sum -c -
+          python3 scripts/full-mix-heads/openmic-train.py "$RUNNER_TEMP/openmic.tgz" audio openmic-train-labels.json
+          python3 -c "import json,os;json.dump([{'id':i['id'],'path':'clips/audio/'+i['id']+'.ogg'} for i in json.load(open('openmic-train-labels.json'))['items']],open('openmic-train-list.json','w'))"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fm-openmic-labels
+          path: openmic-train-labels.json
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fm-openmic-audio
+          path: |
+            audio
+            openmic-train-list.json
+          retention-days: 3
+          compression-level: 0
+
+  features:
+    needs: audio
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: fm-openmic-audio
+          path: clips
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - run: node scripts/download-music-model.mjs
+      - name: Compute features
+        run: npx vite-node scripts/full-mix-heads/features.mjs clips/openmic-train-list.json fm-${{ matrix.shard }} ${{ matrix.shard }}/16
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fm-openmic-features-${{ matrix.shard }}
+          path: fm-${{ matrix.shard }}.*
+          retention-days: 30
