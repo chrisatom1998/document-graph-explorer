@@ -34,7 +34,11 @@ The pre-merge v2 build re-measured in a Linux headless Chromium: **13/27** meet 
 Measured on a build of the pre-merge v2 model plus these heads (`results/public-new-coverage-report.json`): **16/27** categories meet 70/70 vs **13/27**, every previously measured row unchanged except voice (+2 found) and vocal one-shot (+8 found via beatbox). Clips with no scored tag: 488 → 158.
 Under the current 60/60 bar, distorted (0.73 / 0.65) also passes.
 
-`main` has since gained its own retrained bass-hit and synth-hit heads; this change keeps those and adds only the four heads above. A confirming test run of the merged build is reported in the PR.
+`main` has since gained its own retrained bass-hit and synth-hit heads; this change keeps those and adds only the four heads above (the bass-hit row above is this run's head, which is **not** shipped).
+
+**Merged build (main `dfacb71` + these four heads), full test run** (`results/public-new-coverage-merged-report.json`): the four new rows are identical, clip for clip, to the run above. **17/27** categories meet 70/70 and **21/27** meet 60/60. Clips with no scored tag: 192. Rows that differ from the pre-merge run come from main's own changes: bass hit (main's head) 0.86 / 0.44, synth hit 0.73 / 0.89, synthesizer 0.67 / 0.86, drums 0.97 / 0.93, voice 0.96 / 0.65. No run of main without these heads was made, so those rows are main's, not this change's.
+
+Observation, not acted on: this run's bass-hit head scored 0.89 / 0.89 on the same test where main's scores 0.86 / 0.44. Swapping on that basis would be selecting on the test split, so it is left for a fresh frozen set.
 
 ### Full retrain (not shipped)
 
