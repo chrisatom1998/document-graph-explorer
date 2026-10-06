@@ -35,6 +35,7 @@ describe('RekordboxExportDialog', () => {
     expect(screen.getByText('Use the full path, ending in /Crate.')).toBeInTheDocument();
     expect(exportButton).toBeDisabled();
     fireEvent.change(input, { target: { value: '/Users/chris/Music/Crate' } });
+    expect(exportButton).toBeEnabled();
     fireEvent.click(exportButton);
     expect(downloadBlob).toHaveBeenCalledTimes(1);
     const [blob, name] = vi.mocked(downloadBlob).mock.calls[0];
