@@ -23,6 +23,8 @@ concurrency:
 env:
   ONNXRUNTIME_NODE_INSTALL: skip
   META_URL: https://huggingface.co/datasets/Chr0my/freesound.org/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet
+  # The dump is third-party data: pin it so a changed file cannot reach the scripts below.
+  META_SHA256: fdc81269e2ddcf0bffffc05f01c55509d9c772f43b90f6d96fac325f9facdc8d
   DOCS: docs/evaluations/dj-effects-2026-10-06
   MUSIC_MODEL_PATHS: |
     public/music-model/**/*.onnx
@@ -74,14 +76,22 @@ jobs:
       - name: Fetch the Freesound metadata dump
         run: |
           curl -fsSL --retry 6 -o "$RUNNER_TEMP/meta.parquet" "$META_URL"
+          echo "$META_SHA256  $RUNNER_TEMP/meta.parquet" | sha256sum -c -
           mkdir -p "$DOCS"; sha256sum "$RUNNER_TEMP/meta.parquet" | tee "$RUNNER_TEMP/meta.sha256"
       - name: Pick clips
         run: python3 scripts/dj-effects/mine.py "$RUNNER_TEMP/meta.parquet" "$DOCS/candidates.json"
       - name: Check Freesound is reachable from this runner
+        # Usernames come from the third-party dump: build the URL in Python (percent-encoded), never in the shell.
         run: |
-          read -r user id < <(python3 -c "import json;c=json.load(open('$DOCS/candidates.json'))['clips'][0];print(c['username'],c['freesoundId'])")
-          code=$(curl -s -o /dev/null -w '%{http_code}' -A 'Mozilla/5.0 (DGE research; non-commercial label training)' "https://freesound.org/people/$user/sounds/$id/")
-          echo "freesound page status: $code"; [ "$code" = 200 ] || [ "$code" = 404 ]
+          python3 - "$DOCS/candidates.json" <<'PY'
+          import json, sys, urllib.error, urllib.parse, urllib.request
+          c = json.load(open(sys.argv[1]))['clips'][0]
+          url = f"https://freesound.org/people/{urllib.parse.quote(str(c['username']), safe='')}/sounds/{int(c['freesoundId'])}/"
+          req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (DGE research; non-commercial label training)'})
+          try: code = urllib.request.urlopen(req, timeout=30).status
+          except urllib.error.HTTPError as e: code = e.code
+          print('freesound page status:', code); sys.exit(0 if code in (200, 404) else 1)
+          PY
       - uses: actions/setup-node@v4
         with:
           node-version: 24
