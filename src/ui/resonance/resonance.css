@@ -198,8 +198,73 @@
 .rs-inspector__nav button + button { border-left: 1px solid var(--rs-line-strong); }
 .rs-inspector__nav button:disabled { opacity: 0.3; cursor: default; }
 .rs-inspector__none { margin: 8px 0; color: var(--rs-muted); font-size: 13px; line-height: 1.5; }
-.rs-inspector__details { margin-top: auto; padding: 10px; border: 1px solid var(--rs-line-strong); border-radius: 10px; background: none; color: var(--rs-text); font: inherit; cursor: pointer; }
-.rs-inspector__details:hover { background: var(--rs-raised); }
+.rs-inspector__details {
+  margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 8px; flex: none;
+  padding: 10px; border: 1px solid var(--rs-line-strong); border-radius: 10px;
+  scroll-margin-top: 12px; background: none; color: var(--rs-text); font: inherit; cursor: pointer;
+}
+.rs-inspector__details span { color: var(--rs-muted); }
+.rs-inspector__details:hover, .rs-inspector__details[aria-expanded='true'] { background: var(--rs-raised); border-color: var(--rs-lime); }
+
+/* ---- Full details, expanded inline under the button --------------------- */
+.rs-details {
+  flex: none;
+  margin: -6px 0 0;
+  scroll-margin-top: 12px;
+  border: 1px solid var(--rs-line-strong);
+  border-radius: 12px;
+  overflow: hidden;
+  animation: rs-expand 220ms var(--ease-out) both;
+  /* Re-point the legacy panel's theme variables at the Resonance palette. */
+  --bg-glass: var(--rs-raised);
+  --bg-glass-strong: var(--rs-raised);
+  --bg-glass-soft: var(--rs-panel);
+  --panel-bg: var(--rs-raised);
+  --surface: var(--rs-raised);
+  --surface-raised: var(--rs-raised);
+  --surface-inset: var(--rs-bg);
+  --border-glass: var(--rs-line);
+  --border-glass-strong: var(--rs-line-strong);
+  --text-primary: var(--rs-text);
+  --text-secondary: var(--rs-muted);
+  --text-faint: var(--rs-faint);
+  --text: var(--rs-text);
+  --text-muted: var(--rs-muted);
+  --accent: var(--rs-lime);
+  --accent-strong: var(--rs-lime);
+  --accent-soft: color-mix(in srgb, var(--rs-lime) 14%, transparent);
+  --accent-fill: var(--rs-lime);
+  --accent-fill-hover: #d6ff7a;
+  --accent-foreground: var(--rs-lime-ink);
+  --control-hover: var(--rs-line);
+  --focus: var(--rs-lime);
+}
+@keyframes rs-expand { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.rs-details .side-panel-inline { display: block; }
+.rs-details .side-panel--inline {
+  position: static; width: 100%; height: auto;
+  background: var(--rs-raised); backdrop-filter: none; -webkit-backdrop-filter: none;
+  border: 0; box-shadow: none; animation: none; overflow: visible;
+}
+.rs-details .side-panel--inline::before { display: none; }
+.rs-details .side-panel__header { position: static; padding: 14px 16px 12px; background: var(--rs-raised); border-bottom: 1px solid var(--rs-line); }
+.rs-details .side-panel__title { font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
+.rs-details .side-panel__scroll { overflow: visible; padding: 0 16px 18px; }
+.rs-details .side-panel__header-actions button,
+.rs-details .side-panel__open-btn {
+  border: 1px solid var(--rs-line-strong); border-radius: 999px; background: none; color: var(--rs-text);
+}
+.rs-details .side-panel__open-btn:hover { background: var(--rs-line); border-color: var(--rs-lime); }
+.rs-details .chip { background: var(--rs-bg); border-color: var(--rs-line-strong); color: var(--rs-text); }
+.rs-details .connection-row { background: var(--rs-bg); border-color: var(--rs-line); }
+.rs-details .connection-row:hover { background: var(--rs-line); }
+.rs-details .connection-row__weight-track { background: var(--rs-line-strong); }
+.rs-details .side-panel__reader, .rs-details .side-panel__reader-lang { background: var(--rs-bg); }
+.rs-details .side-panel__note-input { background: var(--rs-bg); border-color: var(--rs-line-strong); }
+.rs-details .side-panel__disclose { color: var(--rs-text); border-color: var(--rs-line); }
+.rs-details .audio-controls .audio-play { background: var(--rs-lime); color: var(--rs-lime-ink); }
+.rs-details .audio-preview select, .rs-details .audio-preview input { background: var(--rs-bg); }
+.rs-details .workspace-file-path { color: var(--rs-faint); font-size: 11px; overflow-wrap: anywhere; margin: 0; }
 
 .rs-clip { display: flex; flex-direction: column; gap: 10px; }
 .rs-clip__head { display: flex; align-items: center; gap: 14px; width: 100%; padding: 0; border: 0; background: none; color: inherit; text-align: left; font: inherit; cursor: pointer; }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { DocNode, Edge } from '../../model/types';
 import { useGraphStore } from '../../store/graphStore';
 import { useUiStore } from '../../store/uiStore';
@@ -7,6 +7,7 @@ import { keyName } from '../../audio/musicTypes';
 import { ClipPlayer, ClipThumb, displayName, formatClock, useClipAudio } from './ClipWave';
 
 const ACCENT = '#c8f55a';
+const SidePanel = lazy(() => import('../SidePanel'));
 
 interface Neighbor { node: DocNode; edges: Edge[]; strength: number }
 
@@ -64,7 +65,7 @@ function ClipCard({ node, accent, active, onOpen, title }: { node: DocNode; acce
 }
 
 /** Right-hand inspector: the selected clip, one connected clip at a time, and what they share. */
-export default function ConnectedClips({ onOpenDetails }: { onOpenDetails: () => void }) {
+export default function ConnectedClips({ detailsOpen, onToggleDetails }: { detailsOpen: boolean; onToggleDetails: () => void }) {
   const nodes = useGraphStore(s => s.nodes);
   const nodeIndex = useGraphStore(s => s.nodeIndex);
   const edges = useGraphStore(s => s.edges);
@@ -72,6 +73,14 @@ export default function ConnectedClips({ onOpenDetails }: { onOpenDetails: () =>
   const selected = selectedId !== null ? nodes[nodeIndex[selectedId]] : undefined;
   const neighbors = useMemo(() => (selected ? neighborsOf(selected.id, nodes, nodeIndex, edges) : []), [selected, nodes, nodeIndex, edges]);
   const [index, setIndex] = useState(0);
+  const detailsButton = useRef<HTMLButtonElement>(null);
+  // Bring the expanded panel into view: pin its toggle to the top of the
+  // inspector (the lazily loaded panel itself may not exist yet).
+  useEffect(() => {
+    if (!detailsOpen) return;
+    const id = requestAnimationFrame(() => detailsButton.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    return () => cancelAnimationFrame(id);
+  }, [detailsOpen, selectedId]);
   useEffect(() => { setIndex(0); }, [selectedId]);
   const current = neighbors[Math.min(index, Math.max(0, neighbors.length - 1))];
 
@@ -111,7 +120,7 @@ export default function ConnectedClips({ onOpenDetails }: { onOpenDetails: () =>
             <span className="rs-related__line" />
             <span className="rs-related__label"><i /> Related</span>
             <span className="rs-related__line" />
-            <button type="button" className="rs-related__more" aria-label="Open full details" title="Open full details" onClick={onOpenDetails}>⋮</button>
+            <button type="button" className="rs-related__more" aria-label={detailsOpen ? "Hide full details" : "Show full details"} title={detailsOpen ? "Hide full details" : "Show full details"} onClick={onToggleDetails}>⋮</button>
           </div>
           <ClipCard node={current.node} accent={ACCENT} active title="Select this clip" onOpen={() => { const ui = useUiStore.getState(); ui.setSelected(current.node.id); ui.sendCamera('frameNode', [current.node.id]); }} />
 
@@ -137,7 +146,15 @@ export default function ConnectedClips({ onOpenDetails }: { onOpenDetails: () =>
         </>
       )}
       {!current && <p className="rs-inspector__none">This {audio ? 'clip' : 'document'} has no connections yet. Lower the similarity filters or import more {audio ? 'clips' : 'files'}.</p>}
-      <button type="button" className="rs-inspector__details" onClick={onOpenDetails}>Full details</button>
+      <button type="button" ref={detailsButton} className="rs-inspector__details" aria-expanded={detailsOpen} aria-controls="rs-details" onClick={onToggleDetails}>
+        {detailsOpen ? 'Hide full details' : 'Full details'}
+        <span aria-hidden="true">{detailsOpen ? '⌃' : '⌄'}</span>
+      </button>
+      {detailsOpen && (
+        <div id="rs-details" className="rs-details">
+          <Suspense fallback={<p className="rs-inspector__none">Loading details…</p>}><SidePanel inline onClose={onToggleDetails} /></Suspense>
+        </div>
+      )}
     </aside>
   );
 }

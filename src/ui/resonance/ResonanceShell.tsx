@@ -11,7 +11,6 @@ import './resonance.css';
 
 const GraphNavigator = lazy(() => import('../GraphNavigator'));
 const ExportImportMenu = lazy(() => import('../ExportImportMenu'));
-const SidePanel = lazy(() => import('../SidePanel'));
 
 type Tab = 'graph' | 'library' | 'export';
 
@@ -117,8 +116,7 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
         )}
       </main>
 
-      <ConnectedClips onOpenDetails={() => setDetailsOpen(true)} />
-      {detailsOpen && selectedId && <Suspense fallback={null}><SidePanel /></Suspense>}
+      <ConnectedClips detailsOpen={detailsOpen} onToggleDetails={() => setDetailsOpen(v => !v)} />
     </div>
   );
 }

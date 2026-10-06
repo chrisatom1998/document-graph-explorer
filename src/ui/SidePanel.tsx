@@ -49,7 +49,13 @@ function Disclose({
   );
 }
 
-export default function SidePanel() {
+/**
+ * `inline` renders the panel in normal flow (the Resonance inspector expands it
+ * under "Full details"): no fixed overlay, no dialog semantics, no focus grab,
+ * and the header's close button collapses it via `onClose` instead of
+ * clearing the selection.
+ */
+export default function SidePanel({ inline = false, onClose }: { inline?: boolean; onClose?: () => void } = {}) {
   const selectedId = useUiStore((s) => s.selectedId);
   const readerHighlight = useUiStore((s) => s.readerHighlight);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
@@ -65,7 +71,7 @@ export default function SidePanel() {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!nodeId) return;
+    if (!nodeId || inline) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
     closeButtonRef.current?.focus();
     return () => {
@@ -82,7 +88,7 @@ export default function SidePanel() {
         else document.querySelector<HTMLElement>('.graph-navigator__list')?.focus();
       }
     };
-  }, [nodeId]);
+  }, [nodeId, inline]);
 
   // Two-step inline confirm for the destructive Remove action. Reset whenever
   // the selection changes so an armed confirm never lingers onto a different
@@ -183,9 +189,10 @@ export default function SidePanel() {
       : node.title;
 
   return (
-    <div className="side-panel-layer">
-      <div className="side-panel glass-panel" role="dialog" aria-label={dialogLabel}>
+    <div className={inline ? 'side-panel-inline' : 'side-panel-layer'}>
+      <div className={`side-panel glass-panel${inline ? ' side-panel--inline' : ''}`} role={inline ? 'region' : 'dialog'} aria-label={dialogLabel}>
         <SidePanelHeader
+          onClose={onClose}
           node={node}
           codeLang={codeLang}
           confirmRemove={confirmRemove}
