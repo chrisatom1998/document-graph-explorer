@@ -9,6 +9,9 @@ export type KeyCnnEngine = Pick<Essentia, 'arrayToVector' | 'vectorToArray' | 'S
  * audio: Hann 8192, hop 4410 (5 frames per second), 144 quarter-tone triangular bins from MIDI 36 to 107.5,
  * log1p(1000 * magnitude / sqrt(8192)), bins 12-131 fed to the network. At 44.1 kHz a 16384-sample frame with an
  * 8820 hop covers the same time with the same frequency spacing, and its magnitudes are twice as large. */
+/** Weights (first 16 hex of public/key-model/key-cnn.onnx's SHA-256) and input features, for analysis provenance. */
+export const KEY_CNN_WEIGHTS = 'key-cnn-2ce6c3f6c0158d3b';
+export const KEY_CNN_FEATURES = 'q120-hann16384-hop8820-log1p1000-v1';
 const FRAME = 16384;
 const HOP = 8820;
 const BINS = 120;

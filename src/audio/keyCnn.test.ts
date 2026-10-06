@@ -1,6 +1,7 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { keyFilterbank, keySoftmax, profileWeight, keySpectrogram, loadKeyCnn, recordingKeyFromProbabilities, type KeyCnnEngine } from './keyCnn';
+import { KEY_CNN_WEIGHTS, keyFilterbank, keySoftmax, profileWeight, keySpectrogram, loadKeyCnn, recordingKeyFromProbabilities, type KeyCnnEngine } from './keyCnn';
 
 /** Stands in for Essentia's Spectrum: an exact DFT magnitude of the bins the key filters read (up to ~4.4 kHz). */
 const fakeEngine: KeyCnnEngine = {
@@ -70,6 +71,11 @@ describe('recordingKeyFromProbabilities', () => {
 });
 
 describe('key network', () => {
+  it('names the committed weights in its provenance identity', () => {
+    const hash = createHash('sha256').update(readFileSync('public/key-model/key-cnn.onnx')).digest('hex');
+    expect(KEY_CNN_WEIGHTS).toBe(`key-cnn-${hash.slice(0, 16)}`);
+  });
+
   it('loads the committed model and returns 24 key scores for any length', async () => {
     const { ort, session } = await loadKeyCnn(readFileSync('public/key-model/key-cnn.onnx'));
     for (const frames of [3, 100]) {

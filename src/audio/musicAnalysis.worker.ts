@@ -287,11 +287,13 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
     if (data.kind === 'tonal' && tonal.length) {
       try {
         const probabilities: number[][] = [], profileKeys: MusicAnalysis['key'][] = [];
+        const weight = profileWeight(excerpts.durationSeconds);
         for (const samples of tonal) {
           probabilities.push(await keyProbabilities(engine, samples));
-          try { profileKeys.push(essentiaKey(engine, samples)); } catch { profileKeys.push(undefined); }
+          // The stock profile only counts for short files; songs skip its extra pass.
+          if (weight > 0) { try { profileKeys.push(essentiaKey(engine, samples)); } catch { profileKeys.push(undefined); } }
         }
-        key = recordingKeyFromProbabilities(probabilities, excerpts.samples.length, profileKeys, profileWeight(excerpts.durationSeconds));
+        key = recordingKeyFromProbabilities(probabilities, excerpts.samples.length, profileKeys, weight);
       } catch { key = recordingKey(chromas, excerpts.samples.length); }
     }
     if (key) result.key = key;
