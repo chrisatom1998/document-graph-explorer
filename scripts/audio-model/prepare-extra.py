@@ -1,6 +1,7 @@
 """More labelled audio for the tagger's app-named head, one source per call (labels in labelmap.py):
 
-  tinysol   TinySOL recorded orchestral notes (Zenodo 3685367, CC BY 4.0); TinySOL's fold 0 is validation
+  tinysol   TinySOL recorded orchestral notes (Zenodo 3685367, CC BY 4.0); folds 0-1 are left for the short-clip
+            test of the "Fix failing sound tags" work, fold 2 is validation, folds 3-4 train
   egfx      EGFxSet electric-guitar notes through 12 real pedals (Zenodo 7044411, CC BY 4.0); every pedal version of
             a note stays on one side of the split
   fsld      Freesound Loop Dataset loops with expert instrumentation ticks (Zenodo 3967852; per-loop CC licences),
@@ -119,10 +120,12 @@ def tinysol(args, w):
             if args.limit and len(w.items) + len(w.batch) >= args.limit: break
             key = m.name.split('TinySOL/', 1)[-1].removeprefix('./')
             if not m.isfile() or key not in by_path: continue
-            r = by_path[key]; x = decode(tar.extractfile(m).read())
+            r = by_path[key]
+            if r['Fold'] in ('0', '1'): continue                     # reserved: "Fix failing sound tags" tests on folds 0-1
+            x = decode(tar.extractfile(m).read())
             if x is None: continue
             lab, weak = labelled(set(L.TINYSOL[r['Instrument (in full)']]), taught)
-            w.add({'id': f'tinysol:{key}', 'artist': f'tinysol:{r["Instrument (in full)"]}', 'val': r['Fold'] == '0', 'labels': lab, 'weakAbsent': weak}, x)
+            w.add({'id': f'tinysol:{key}', 'artist': f'tinysol:{r["Instrument (in full)"]}', 'val': r['Fold'] == '2', 'labels': lab, 'weakAbsent': weak}, x)
     return 'TinySOL, Zenodo 3685367 (CC BY 4.0)'
 
 def egfx(args, w):
