@@ -28,9 +28,11 @@ published metrics are measured on (assumed to be outside its training data; the 
 Tags describe whole tracks, so an instrument may be missing from the 30 s excerpt; recall is a lower bound too.
 
 **Running it.** `.github/workflows/holdout-r3-eval.yml` tests an app build against both sets:
-- once this workflow is on main: Actions → "Held-out audio check, round 3" → Run workflow with `app_ref` = your branch;
-- before that: merge `claude/fresh-audio-test-set-9fz3nu` into your branch and push it as `holdout-r3/<name>`.
+- Actions → "Held-out audio check, round 3" → Run workflow from your own branch (not main), with `app_ref` = the
+  branch or commit to test;
+- or push a branch that contains your change as `holdout-r3/<name>`.
 Only aggregate reports are committed, under `results/<app ref>-<commit>/`, on the branch the run was triggered from
-(never on main). Audio is fetched at run time and never committed.
+(never on main, so a run started from main keeps its reports only as artifacts). The run always drives the app with
+its own copy of `scripts/short-clip-upload-eval.mjs`, which handles the UI before and after #137. Audio is fetched at run time and never committed.
 
 Chris's own labelled tracks can be added as a further set later; they'd be the closest match to real DJ use.

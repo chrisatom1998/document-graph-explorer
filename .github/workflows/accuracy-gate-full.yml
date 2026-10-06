@@ -1,0 +1,25 @@
+name: Accuracy gate (full set)
+
+# The full round 3 held-out set (500 Jamendo + 318 MTG key tracks) on a PR labelled "full-accuracy-check", for
+# changes whose effect the fast slice may be too small to show. Advisory: the required check is accuracy-gate.yml.
+on:
+  pull_request:
+    branches: [main]
+    types: [labeled, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  # Other labels mustn't cancel a running full check, so their (skipped) runs get a group of their own.
+  group: accuracy-gate-full-${{ github.event.pull_request.number }}-${{ (github.event.action != 'labeled' || github.event.label.name == 'full-accuracy-check') && 'run' || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  held-out:
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'full-accuracy-check')
+      && (github.event.action != 'labeled' || github.event.label.name == 'full-accuracy-check')
+    uses: ./.github/workflows/accuracy-gate-run.yml
+    with:
+      mode: full

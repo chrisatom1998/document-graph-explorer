@@ -35,11 +35,14 @@ test('classic graph controls and music copilot work on desktop and mobile', asyn
   await expect(page.getByRole('button', { name: 'Clear all', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Clear all', exact: true }).click();
   await toolMenu(page, 'Insights');
-  await expect(page.getByRole('button', { name: 'Corpus insights', exact: true })).toBeVisible();
-  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Corpus insights', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Close insights', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Corpus insights', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'More tools' }).click();
   await expect(page.getByRole('button', { name: 'Save current view', exact: true })).toBeVisible();
-  await page.keyboard.press('Escape');
+  // Close through the trigger, which sits above the menu's click-away scrim.
+  await page.getByRole('button', { name: 'More tools' }).click();
+  await expect(page.getByRole('button', { name: 'Save current view', exact: true })).toHaveCount(0);
   await toolMenu(page, 'Settings');
   await expect(page.getByLabel('Graph clarity', { exact: true })).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Chat provider', exact: true })).toBeHidden();
@@ -49,7 +52,7 @@ test('classic graph controls and music copilot work on desktop and mobile', asyn
   await openFiles(page);
   await page.getByRole('option', { name: /Melodic 01/ }).click();
   await expect(details(page)).toContainText('Melodic 01');
-  await expect(page.getByText('Tempo', { exact: true })).toBeVisible();
+  await expect(details(page).getByText('Tempo', { exact: true })).toBeVisible();
   await expect(page.locator('.audio-controls--preview')).toBeVisible();
   await expect(page.locator('.audio-controls--preview').getByRole('button', { name: 'Play sample' })).toBeDisabled();
   await expect(page.getByText('Audio is not saved here. Add the original file again to play it.')).toBeVisible();
@@ -76,6 +79,11 @@ test('classic graph controls and music copilot work on desktop and mobile', asyn
   await page.screenshot({ path: testInfo.outputPath('workspace-copilot.png') });
   await page.getByRole('button', { name: 'Close chat', exact: true }).click();
 
+  // "Show samples in graph" leaves the Library tab up; look at the graph before
+  // switching views so the checks run against the visible canvas, not one under
+  // the Library overlay.
+  await openTab(page, 'Graph');
+  await expect(page.getByRole('button', { name: 'Graph', exact: true })).toHaveAttribute('aria-current', 'page');
   await page.getByRole('button', { name: 'Switch to 2D view', exact: true }).click();
   await expect(page.getByRole('application', { name: /Interactive 2D/ })).toBeVisible();
   await page.getByRole('button', { name: 'Switch to 3D view', exact: true }).click();

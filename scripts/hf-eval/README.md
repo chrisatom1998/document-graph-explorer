@@ -21,11 +21,19 @@ branch, change `request.json` and push. Add every run to the HF credit ledger be
 Tasks:
 - `all-tags-jamendo`: the all-tags full-song test (600 MTG-Jamendo validation songs) in the real built app in
   headless Chromium, several browsers per machine, scored like `all-tags-eval.yml`.
+- `dj-clips`: DJ clip rounds 1 and 2 (`task_args`: `r1` = OpenMIC tags + GiantSteps tempo, `r2` = OpenMIC + MTG key),
+  scored with the rounds' own scorers.
 - `genre-energy`: genre/energy features for one list (`task_args`: `beatport-judge`, `jamendo-fit`, ...) with the
   genre thread's `scripts/genre-energy` from `app_ref`; merged into `data/<list>.json.gz` on `claude/genre-energy-data`.
 
+- `accuracy-gate`: the accuracy gate (PR #124) for one change: `app_ref` is the head, `task_args` is
+  `<fast|full> [base commit]` (default base: main's tip). Builds and analyses both sides, scores each with its own
+  display code and writes `summary.md` plus both sides' aggregate reports (held-out: exports are deleted).
+- `loops`: tempo and key on the 330 listener-checked FSL10K loops (`data/fsl10k-loops-manifest.json`), in the app.
 - `holdout-r3`: the round 3 held-out check (`task_args`: `jamendo` or `mtgkey`, optionally `@<commit>` of the
   test set's branch) in the real app; pushes only aggregate reports to the test set's branch, and the workflow deletes
-  the per-track exports from the HF dataset afterwards (`# HELD_OUT=1` in the task).
+  the per-track exports from the HF dataset once collect succeeds (`# HELD_OUT=1` in the task; after a failed collect
+  they stay so `rescore` can score them again). Pin `@<commit>` so every part uses the same test set.
+- `short-clips`: the short-clip tag test (`task_args`: `test` or `calibration`).
 
 A task script gets `APP`, `HARNESS`, `OUT`, `WORK`, `PART`, `PARTS`, `TASK_ARGS`, `CPUS` (the machine's CPU quota; `nproc` shows the whole host) and optional `PROCS`.
