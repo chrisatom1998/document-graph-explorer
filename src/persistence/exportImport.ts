@@ -11,6 +11,7 @@
  */
 
 import { refreshMusicEdges } from '../audio/musicLinks';
+import { versionWorkPending } from '../audio/versionLinks';
 import { EMBED_DIMS } from '../config';
 import {
   layoutAddNodes,
@@ -164,6 +165,7 @@ async function doImportGraphExportData(
 ): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
   let nodes = data.nodes;
   let edges = refreshMusicEdges(nodes, data.edges);
+  const versionsPending = versionWorkPending();
 
   // Clean slate first (pipeline owns worker/store/layout teardown).
   const { resetCorpus } = await import('../pipeline/coordinatorLazy');
@@ -217,5 +219,10 @@ async function doImportGraphExportData(
   layoutReheat(0.6); // no saved positions — run the layout hot
 
   g.setPhase('ready');
+  // Version matching left over from the import refresh finishes in the background.
+  if (versionsPending) {
+    const { scheduleVersionCatchUp } = await import('../pipeline/coordinatorLazy');
+    scheduleVersionCatchUp();
+  }
   return { nodes, edges };
 }

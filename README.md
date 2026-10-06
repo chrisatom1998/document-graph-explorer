@@ -54,7 +54,7 @@ These numbers are one calibrated data point from an Apple M5 Max with 36 GB RAM�
 | **Live workspaces** | Create multiple named corpora, persist them in IndexedDB, and connect a watched folder so additions, edits, and deletions stay synchronized while the app is open. |
 | **Notes and change tracking** | Add notes, tags, and pins; save named snapshots; compare graph versions; report added, removed, and updated documents plus connection churn; and paint changed current documents on the live graph. |
 | **Optional AI** | Use OpenRouter with your own key or a local Ollama server for summaries, topics, cluster names, chat, and per-document questions. Core ingestion and graph intelligence require neither. |
-| **Share and interchange** | Export sanitized share URLs, JSON, PNG, and composed OpenUSD stages. Share URLs exclude original bytes, full text, paths, embeddings, handles, and settings. |
+| **Share and interchange** | Export sanitized share URLs, JSON, PNG, composed OpenUSD stages, and (for audio) a Rekordbox collection XML with detected BPM, key and sound tags. Share URLs exclude original bytes, full text, paths, embeddings, handles, and settings. |
 | **Flexible distribution** | Run as a static web app, local browser app, Electron desktop app, Windows portable app, Linux AppImage, runtime offline mode, or sealed air-gapped build. |
 
 ## Quick start
@@ -95,6 +95,12 @@ Document Graph Explorer treats a document collection the way digital-twin toolin
 - **Interchange:** the OpenUSD export carries geometry, the `docGraph:` attribute schema, connection evidence, cluster hulls, and composition variants into downstream USD toolchains.
 - **Agency:** [usd-agent](tools/usd_pipeline/usd_agent.py) answers natural-language questions by tool-calling over an exported USD scene graph via OpenRouter, local Ollama, or an offline mock provider.
 - **Measurement:** [docs/benchmarks.md](docs/benchmarks.md) documents ingest throughput, layout convergence, render frame rate, and export cost with methodology and caveats.
+
+## Rekordbox export
+
+With audio loaded, **Data → Export for Rekordbox (XML)** writes a Rekordbox collection XML (`DJ_PLAYLISTS` format) with each track's BPM (`AverageBpm`), key (`Tonality`, e.g. `Am`), and the Camelot key plus sound tags in `Comments`, all in one playlist named "Document Graph Explorer". Values match the track panel: a BPM or key written in the file or folder name wins, otherwise the detected one is used. Two folders with the same name added from different places can't be told apart by the browser, so files whose paths collide are left out rather than given a guessed location. The browser only knows folder names, so the dialog asks where each loaded folder is on disk and builds `file://localhost/...` locations from the original file names. No `TEMPO` beat-grid markers are written because the app doesn't detect the first downbeat; Rekordbox draws its own grid. In Rekordbox, set Preferences → Advanced → Database → "rekordbox xml" to the file and import the playlist from the "rekordbox xml" tree.
+
+Serato has no import file for BPM or key: it reads them from tags inside the audio files (or its own analysis), and a browser can't rewrite files in place, so there is no Serato export.
 
 ## OpenUSD interoperability
 

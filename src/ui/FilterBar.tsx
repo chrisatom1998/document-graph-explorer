@@ -14,6 +14,7 @@ const EDGE_KIND_ORDER: { kind: EdgeKind; label: string }[] = [
   { kind: 'instrument', label: 'instruments' },
   { kind: 'sound', label: 'sound properties' },
   { kind: 'similar', label: 'sounds alike' },
+  { kind: 'version', label: 'versions' },
   { kind: 'reference', label: 'links' },
   { kind: 'semantic', label: 'similar' },
   { kind: 'keyword', label: 'keywords' },

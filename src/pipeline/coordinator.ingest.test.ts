@@ -1,5 +1,5 @@
 import { cancelMusicJob, cancelAllMusicJobs, useMusicJobs } from '../store/musicJobs';
-import { INSTRUMENT_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, sanitizeMusicAnalysis } from '../audio/musicTypes';
+import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, sanitizeMusicAnalysis } from '../audio/musicTypes';
 /**
  * Coordinator ingest/remove integration — mocked workers, layout, and
  * persistence. Exercises the real runIngest / runRemove spine without
@@ -342,7 +342,7 @@ beforeEach(() => {
   aggState.failType = null;
   useSettingsStore.getState().setMusicAnalysisMode('full');
   music.analyzeMusic.mockReset().mockResolvedValue({
-    version: 2, tempoRevision: TEMPO_ANALYSIS_REVISION, keyRevision: 2, analyzedSeconds: 10, durationSeconds: 10,
+    version: 2, tempoRevision: TEMPO_ANALYSIS_REVISION, keyRevision: KEY_ANALYSIS_REVISION, analyzedSeconds: 10, durationSeconds: 10,
     classifierConfiguration: fusionConfiguration(),
     tempo: { bpm: 140, confidence: 0.9 },
     key: { tonic: 2, mode: 'minor', strength: 0.9 },
