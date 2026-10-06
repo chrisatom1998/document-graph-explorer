@@ -1,0 +1,30 @@
+name: DJ fix OpenMIC labels
+
+# Writes OpenMIC's labels for all 20 instruments (the frozen manifests keep 11) for the 900 calibration clips and both
+# DJ clip test sets, so labels such as cello can be calibrated and judged.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/fix-failing-sound-tags-nc73z1]
+    paths: [.github/workflows/dj-fix-labels.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  labels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          curl -fsSL --retry 6 -o "$RUNNER_TEMP/openmic.tgz" 'https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1'
+          echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $RUNNER_TEMP/openmic.tgz" | md5sum -c -
+          D=docs/evaluations/dj-fix-2026-10-06/labels; mkdir -p $D
+          python3 scripts/dj-fix/openmic-all-labels.py "$RUNNER_TEMP/openmic.tgz" $D/cal900.json docs/evaluations/mixed-music-2026-10-05/manifest.json
+          python3 scripts/dj-fix/openmic-all-labels.py "$RUNNER_TEMP/openmic.tgz" $D/dj-r1.json docs/evaluations/dj-clips-2026-10-06/openmic-manifest.json
+          python3 scripts/dj-fix/openmic-all-labels.py "$RUNNER_TEMP/openmic.tgz" $D/dj-r2.json docs/evaluations/dj-clips-round2-2026-10-06/openmic-manifest.json
+          git add $D
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record all OpenMIC labels for the DJ fix sets" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
