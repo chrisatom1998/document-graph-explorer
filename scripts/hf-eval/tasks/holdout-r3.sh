@@ -30,7 +30,8 @@ run)
     MANIFEST=$R3/$DOCS/mtg-key-manifest.json
   fi
   cd "$APP"
-  cp -n $R3/scripts/short-clip-upload-eval.mjs scripts/ || true
+  # The harness's driver: it handles both the old toolbar and the Resonance layout (#137).
+  cp $HARNESS/scripts/short-clip-upload-eval.mjs scripts/
   npx playwright install --with-deps chromium > /dev/null
   npm run build > $WORK/build.log 2>&1 || { tail -40 $WORK/build.log; exit 1; }
   export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
