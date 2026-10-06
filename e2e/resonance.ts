@@ -108,7 +108,9 @@ export async function advancedFilters(page: Page, open = true): Promise<void> {
 /** Toggle one similarity-type filter checkbox in the left sidebar. */
 export async function similarityFilter(page: Page, label: string, on = true): Promise<void> {
   await showFilters(page);
+  // The native input is visually hidden behind a styled box, so drive the label.
   const box = page.getByRole('checkbox', { name: label, exact: true });
-  if (on) await box.check();
-  else await box.uncheck();
+  if ((await box.isChecked()) !== on) await page.locator('.rs-checks label', { hasText: label }).click();
+  if (on) await expect(box).toBeChecked();
+  else await expect(box).not.toBeChecked();
 }
