@@ -1,0 +1,47 @@
+name: Pull HF training run
+
+# Copies one run's outputs (model weights, cross-validation rows, logs) from the private Hugging Face dataset repo
+# cmjatom/dge-key-tempo-train into docs/evaluations/hf-key-tempo-2026-10-06/runs/<run> on the triggering branch,
+# so threads without an HF token can read them. Audio is never stored there.
+on:
+  workflow_dispatch:
+    inputs:
+      run:
+        description: run folder under runs/ in the HF repo
+        required: true
+  push:
+    branches: [claude/more-hf-training-a4kg21]
+    paths: [docs/evaluations/hf-key-tempo-2026-10-06/pull-request.txt]
+
+permissions:
+  contents: write
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download run from Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          RUN: ${{ inputs.run }}
+        run: |
+          RUN="${RUN:-$(head -1 docs/evaluations/hf-key-tempo-2026-10-06/pull-request.txt)}"
+          pip install -q huggingface_hub
+          python3 - "$RUN" <<'PY'
+          import os, sys, shutil
+          from huggingface_hub import snapshot_download
+          run = sys.argv[1]
+          p = snapshot_download('cmjatom/dge-key-tempo-train', repo_type='dataset', allow_patterns=[f'runs/{run}/*.json', f'runs/{run}/*.log', f'runs/{run}/*-cnn.pt', f'runs/{run}/*.onnx'])
+          dst = f'docs/evaluations/hf-key-tempo-2026-10-06/runs/{run}'
+          shutil.rmtree(dst, ignore_errors=True); shutil.copytree(f'{p}/runs/{run}', dst)
+          print(os.listdir(dst))
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add docs/evaluations/hf-key-tempo-2026-10-06/runs
+          git commit -m "Pull HF training run outputs" || exit 0
+          git push
