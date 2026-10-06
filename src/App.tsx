@@ -22,9 +22,19 @@ import './styles.css';
 /** Fetch and warm the audio models once the restored graph has settled, so the
  * first sound dropped skips the model download. Dynamic import keeps analyzeMusic
  * out of the main chunk; preloadMusicModels skips hosts too small to hold them,
- * and the drop-time preload in coordinator.ts stays as the fallback. */
+ * and the drop-time preload in coordinator.ts stays as the fallback. A run that is
+ * already parsing or embedding (demo corpus, an early drop) goes first: the warmup
+ * waits for the pipeline to return to idle rather than competing with it. */
 function preloadAudioModelsWhenIdle(): void {
   const start = () => {
+    if (useGraphStore.getState().phase !== 'idle') {
+      const unsubscribe = useGraphStore.subscribe(s => {
+        if (s.phase !== 'idle') return;
+        unsubscribe();
+        preloadAudioModelsWhenIdle();
+      });
+      return;
+    }
     const mode = useSettingsStore.getState().musicAnalysisMode;
     void import('./audio/analyzeMusic').then(m => m.preloadMusicModels(mode)).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
   };
