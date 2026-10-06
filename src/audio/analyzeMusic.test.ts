@@ -86,6 +86,13 @@ it('reuses a finished analysis without opening audio decoders', async () => {
   expect(state.opened).toEqual([]);
 });
 
+it('opens a cached track once more only to add its missing version print', async () => {
+  state.cache = { version: 2, durationSeconds: 30, analyzedSeconds: 30, instruments: [], notes: [],
+    instrumentScan: { complete: true, analyzedSeconds: 30, windows: 3 } };
+  expect(await analyzeMusic(new Blob(['audio']), 'older.wav')).toBe(state.cache);
+  expect(state.opened).toEqual(['older.wav']);
+});
+
 it('cancels a queued upload before its decoder is opened', async () => {
   const controller = new AbortController();
   const active = ['a.wav', 'b.wav'].map(name => analyzeMusic(new Blob(['audio']), name));

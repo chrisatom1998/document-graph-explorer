@@ -13,6 +13,7 @@ import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { musicRuntimeIdentity } from './musicRuntime';
+import { computeVersionPrint, VERSION_PRINT_SAMPLE_RATE } from './versionPrint';
 import { astGpuAllowed, createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
@@ -37,6 +38,13 @@ export interface AnalysisOptions {
   concurrentModels?: boolean;
   /** Cancellation-only consumers avoid copying the growing ledger after every window. */
   partialUpdates?: 'all' | 'cancelled';
+}
+/** Local DSP only. A failure leaves version links to titles and sound fingerprints; it never fails the analysis. */
+export async function addVersionPrint(result: MusicAnalysis, read: (start: number, seconds: number) => Promise<Float32Array>, signal?: AbortSignal): Promise<void> {
+  try {
+    const print = await computeVersionPrint(read, result.durationSeconds, signal);
+    if (print) result.versionPrint = print;
+  } catch (error) { if (signal?.aborted) throw error; }
 }
 export interface MusicPreview {
   start: number;
@@ -406,6 +414,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     // A stopped family may still hold one window in flight; let it settle before the decoder closes.
     stopAhead(); await Promise.all(leads);
     if (mode === 'full' && duration > SHORT_CLIP_MAX_SECONDS && !stopped.has('clap') && !job('clap').unsupportedReason) await eventPass();
+    await addVersionPrint(result, (start, seconds) => read(start, seconds, VERSION_PRINT_SAMPLE_RATE), options.signal);
     refresh(false, true);
     return result;
   } catch (error) {

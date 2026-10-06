@@ -22,7 +22,7 @@ export type FileType =
   | 'code'
   | 'other';
 export type NodeStatus = 'ok' | 'partial' | 'unreadable';
-export type EdgeKind = 'reference' | 'semantic' | 'keyword' | 'entity' | 'topic' | 'tempo' | 'key' | 'instrument' | 'sound' | 'similar' | 'title';
+export type EdgeKind = 'reference' | 'semantic' | 'keyword' | 'entity' | 'topic' | 'tempo' | 'key' | 'instrument' | 'sound' | 'similar' | 'version' | 'title';
 
 export interface DocNode {
   id: string; // SHA-256 of path + content

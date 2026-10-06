@@ -31,3 +31,23 @@ The existing connection panel exposes reasons, provenance, and strength; Filters
 | Mutual top-3, similarity ≥ 0.5 (tried, not adopted) | 130, 89%, 45% | 152, 94%, **94%** |
 
 Mutual matching links more songs but less accurately, and fewer notes more accurately; the overall graph scored lower on both sets (songs 17% vs 19%, notes 54% vs 73% of all links), so the current rule stays. Tempo and key links join same-genre songs only 11-14% of the time, close to random; they are kept because they describe the music, not because they predict genre. File-name and title links are not exercised by this benchmark.
+
+## Versions: duplicates and remixes
+
+A **versions** link (lime, its own filter) joins two tracks that are the same recording or another version of the same song. It is separate from sounds-alike links, and a pair of copies gets only the versions link: no extra tempo, key, tag or sound links between two copies of one file. The track card lists the group under **Versions**: copies of this recording first (chained through copies of copies), then other versions of the song and their copies. The group follows at most one other-version link, so one wrong title match cannot pull in a whole second song.
+
+- **Same recording** (`src/audio/versionPrint.ts`): analysis stores a small version print (`versionPrint`, about 20 bytes per second, up to 8 minutes): pitch-class strength, the balance of 7 frequency bands, and loudness, twice a second. Two prints are aligned frame by frame across pitch shifts (any of 12 semitones) and speed changes from 0.86x to 1.18x, including trims and edits. A pair is the same recording when a 20 s stretch lines up at least 0.85, at least 60% of the shorter file lines up, and the band balance matches at least 0.7 (`VERSION_RULES` in `src/audio/versionLinks.ts`). The reason says what changed: pitched up or down, sped up or slowed down, trimmed or edited. Clips under 4 s get no print. Saved analyses from before prints existed get one the next time the track is analysed (decoding only, no models).
+- **Another version** (remix, edit, cover): the file names must name the same song once the artist, the bracketed version note, key, BPM, year and track number are removed. When neither name is marked as a version and the artists differ, the pair also needs some material that lines up (0.55) or a CLAP similarity of at least 0.6. Audio alone is not used: on the test set, remixes of one song lined up no better than unrelated songs, and CLAP fingerprints of re-encoded copies of one file ranged from 0.65 to 0.99.
+- **Speed**: each track's 8 closest harmonic fingerprints (which pitch classes sound together, at any transposition) and every title match are aligned, title matches first. Each graph rebuild aligns for at most 150 ms; the app schedules follow-up rebuilds until every candidate pair is done, and results are cached per pair.
+
+### Measured accuracy (2026-10-06)
+
+`scripts/versions/` builds the test set and scores it. 333 files: 45 ccMixter remixes of 9 a cappellas (other versions of one song, under Creative Commons), 16 melodic loops, and 8 copies of 34 of them made with ffmpeg: 128 kbps MP3, quieter AAC, trimmed, edited (a section cut out), pitched +2 semitones, sped up 5%, varispeed (really 14% slower and 2.5 semitones down on 48 kHz sources) and a DJ-style pitch 1 / tempo 3% change. Thresholds were chosen on half A of the songs; half B is held out. A pair counts as found when the track card's Versions group shows it with the right relation.
+
+| Files named as uploaded | Duplicates P / R | Other versions P / R |
+|---|---|---|
+| Half A (tuning) | 1.00 / 0.91 | 1.00 / 0.58 |
+| Half B (held out) | 1.00 / 0.84 | 1.00 / 0.20 |
+| All | 1.00 / 0.88 | 1.00 / 0.41 |
+
+With names hidden, duplicates are unchanged and no other versions are found. Without prints (older analyses) only title matches remain: 2% of other versions. Copies found by transform, songs then loops: MP3 18/18 and 14/16, AAC 18/18 and 13/16, trim 18/18 and 13/16, edit 18/18 and 13/16, pitch +2 16/18 and 14/16, tempo +5% 18/18 and 13/16, varispeed 14/18 and 14/16, DJ pitch/tempo 17/18 and 14/16. Most missed loops are under 4 s. Other-version recall depends on how files are named: half B's remixers often renamed the song.

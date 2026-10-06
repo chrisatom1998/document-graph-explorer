@@ -22,7 +22,8 @@ import { assertAudioContent } from '../audio/parseAudio';
  * (or a removal) while a run is in flight queues behind it (promise chain).
  */
 
-import { refreshMusicEdges } from '../audio/musicLinks';
+import { refreshMusicEdges as refreshMusicEdgesNow } from '../audio/musicLinks';
+import { versionWorkPending } from '../audio/versionLinks';
 import { INSTRUMENT_LABELS } from '../audio/instrumentLabels';
 import { sanitizeSoundReviews, type SoundReview } from '../audio/recognition';
 import { getOriginal } from '../persistence/originals';
@@ -384,6 +385,21 @@ function makeSummary(text: string): string {
 
 function documentNodes(): DocNode[] {
   return useGraphStore.getState().nodes.filter((n) => n.kind === 'document');
+}
+
+/** Music edges for the current tracks. Version matching works to a time budget per rebuild, so a large library
+ * gets its remaining duplicate and remix checks from follow-up rebuilds, queued behind other graph work. */
+let versionCatchUp: ReturnType<typeof setTimeout> | undefined;
+function refreshMusicEdges(nodes: DocNode[], edges: Edge[]): Edge[] {
+  const next = refreshMusicEdgesNow(nodes, edges);
+  if (versionWorkPending() && !versionCatchUp) versionCatchUp = setTimeout(() => void enqueueRun(async () => {
+    versionCatchUp = undefined;
+    const current = useGraphStore.getState();
+    if (!current.nodes.length) return;
+    const updated = refreshMusicEdges(documentNodes(), current.edges);
+    current.setEdges(updated); layoutSetLinks(toLinkInput(updated));
+  }).catch(error => console.error('Version link update failed', error)), 300);
+  return next;
 }
 
 function toLinkInput(edges: Edge[]): { source: string; target: string; weight: number }[] {

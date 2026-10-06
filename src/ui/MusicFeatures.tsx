@@ -16,6 +16,7 @@ import { confidentSoundSummary } from '../audio/confidentSoundSummary';
 import { filenameSoundFallback } from '../audio/filenameSoundFallback';
 import { RecognitionDiagnostics, type RecognitionEvidenceProps } from './RecognitionEvidence';
 import { clockTime as time } from './clockTime';
+import TrackVersions from './TrackVersions';
 export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?: (seconds: number) => void }) {
   const job = useMusicJobs(s => s.jobs[node.id]);
   const phase = useGraphStore(s => s.phase);
@@ -98,6 +99,7 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
           ? <dd>{hints.key ? hints.key.displayName : keyName(analysis.key!)}</dd>
           : <dd className="is-unknown" title={analysis.stage === 'preview' ? 'Not checked yet' : 'No stable key detected'}>{analysis.stage === 'preview' ? '…' : '—'}</dd>}</div>
       </dl>
+      <TrackVersions node={node} />
       <ConfidentSoundSummary audio={analysis} node={node} />
       <OtherModelGuesses profile={displayProfile} confirmedDjTags={analysis.confirmedDjTags ? confirmedTags : undefined} reviewedLabels={reviewedLabels}
         skipSource={confirmed !== undefined || !!hints.instruments} exclude={shownSounds} />

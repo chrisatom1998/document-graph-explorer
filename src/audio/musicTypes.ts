@@ -5,6 +5,7 @@ import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
+import { sanitizeVersionPrint } from './versionPrint';
 export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 2;
 export const TEMPO_ANALYSIS_REVISION = 2;
@@ -45,6 +46,8 @@ export interface MusicAnalysis {
   soundProfile?: SoundProfile;
   /** 512-d unit CLAP audio vector (mean of analyzed windows). Lives here, not in EmbeddingRecord, which is the text pipeline's table. Powers 'similar' edges. */
   embedding?: number[];
+  /** Compact pitch, band-balance and loudness series (versionPrint.ts) that finds other copies and versions of this recording. */
+  versionPrint?: string;
   instrumentScan?: { mode?: MusicAnalysisMode; revision?: number; complete: boolean; analyzedSeconds: number; windows: number };
   notes: string[];
 }
@@ -75,6 +78,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   const copilotProperties = sanitizeCopilotProperties(m.copilotProperties);
   if (copilotProperties) out.copilotProperties = copilotProperties;
   if (Array.isArray(m.embedding) && m.embedding.length === 512 && m.embedding.every(v => typeof v === 'number' && Number.isFinite(v)) && Math.hypot(...(m.embedding as number[])) > 1e-8) out.embedding = m.embedding as number[];
+  const versionPrint = sanitizeVersionPrint(m.versionPrint);
+  if (versionPrint) out.versionPrint = versionPrint;
   out.soundProfile = sanitizeSoundProfile(m.soundProfile);
   if (!out.soundProfile) delete out.soundProfile;
   const prediction = m.instrumentPrediction as Record<string, unknown> | undefined;
