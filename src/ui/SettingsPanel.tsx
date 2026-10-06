@@ -1,4 +1,5 @@
 import MusicAnalysisMode from './MusicAnalysisMode';
+import LibrarySettings from './LibrarySettings';
 /**
  * Settings modal: AI provider config (OpenRouter / Ollama), export options,
  * cache management. Visibility is owned by uiStore.settingsOpen; Esc handling
@@ -627,6 +628,7 @@ export default function SettingsPanel() {
 
         <details className="settings-section">
           <summary className="settings-section__heading">Data</summary>
+          <LibrarySettings />
           <label
             className="settings-check"
             title="Store document vectors in IndexedDB so the next visit skips re-embedding. Turn off to free space; the next reload re-embeds from cached text."
