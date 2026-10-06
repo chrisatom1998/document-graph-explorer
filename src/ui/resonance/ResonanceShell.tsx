@@ -13,6 +13,7 @@ import './resonance.css';
 const GraphNavigator = lazy(() => import('../GraphNavigator'));
 const ExportImportMenu = lazy(() => import('../ExportImportMenu'));
 const CorpusSwitcher = lazy(() => import('../CorpusSwitcher'));
+const SavedViewsSection = lazy(() => import('../SavedViewsSection'));
 
 type Tab = 'graph' | 'library' | 'export';
 
@@ -98,6 +99,10 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
                   <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); toggleDims(); }}><IconCube twoD={dims === 2} />{dims === 2 ? 'Switch to 3D' : 'Switch to 2D'}</button>
                   <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); ui().setSettingsOpen(true); }}><IconGear />Settings</button>
                   <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); ui().setHelpOpen(true); }}><IconHelp />Help</button>
+                  <hr className="rs-menu__rule" />
+                  {/* Camera + filter bookmarks; the classic toolbar's View menu held these. */}
+                  <p className="rs-menu__label">Saved views</p>
+                  <Suspense fallback={null}><SavedViewsSection onApplied={() => setMoreOpen(false)} /></Suspense>
                   <hr className="rs-menu__rule" />
                   <CollabMenuItems onDone={() => setMoreOpen(false)} />
                 </div>

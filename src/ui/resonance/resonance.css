@@ -90,6 +90,9 @@
 .rs-menu__label { margin: 4px 10px 2px; color: var(--rs-faint); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
 .rs-menu__rule { margin: 4px 6px; border: 0; border-top: 1px solid var(--rs-line-strong); }
 .rs-menu button[aria-checked='true'] { color: var(--rs-lime); }
+.rs-menu .saved-views, .rs-menu .saved-views__list { display: flex; flex-direction: column; gap: 2px; }
+.rs-menu .saved-views button, .rs-menu .toolbar__menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--rs-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.rs-menu .saved-views button:hover, .rs-menu .toolbar__menu-item:hover { background: var(--rs-line); }
 .rs-corpus { margin-left: 12px; min-width: 0; }
 .rs-corpus .corpus-switcher__trigger { background: none; border: 1px solid var(--rs-line-strong); border-radius: 999px; color: var(--rs-muted); }
 .rs-corpus .corpus-switcher__trigger:hover { color: var(--rs-text); border-color: var(--rs-lime); }
@@ -169,6 +172,11 @@
   color: var(--rs-text); font: inherit; font-size: 13px; cursor: pointer;
 }
 .rs-select:disabled { opacity: 0.45; cursor: default; }
+.rs-advanced { padding: 8px 0 14px; border-top: 1px solid var(--rs-line); }
+.rs-advanced summary { cursor: pointer; font-size: 13px; padding: 6px 0; }
+.rs-advanced .filter-bar-layer--embedded { position: static; inset: auto; padding: 0; pointer-events: auto; }
+.rs-advanced .filter-bar { background: none; border: 0; box-shadow: none; padding: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.rs-advanced .filter-bar::before { display: none; }
 
 /* Collapse: the column shrinks to an icon rail and the graph takes the space. */
 .app-root.rs-side-collapsed { --rs-left: 64px; }
@@ -241,7 +249,7 @@
 }
 .rs-inspector__details > span:last-child { color: var(--rs-muted); }
 .rs-inspector__details-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rs-inspector__details-text strong { font-weight: 600; }
+.rs-inspector__details-text strong { font-weight: 400; color: var(--rs-muted); }
 .rs-inspector__details:hover, .rs-inspector__details[aria-expanded='true'] { background: var(--rs-raised); border-color: var(--rs-lime); }
 
 /* ---- Full details, expanded inline under the button --------------------- */

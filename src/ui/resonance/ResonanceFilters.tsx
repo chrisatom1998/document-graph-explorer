@@ -8,6 +8,11 @@ import { styleTags } from '../../audio/styleTags';
 import { openFilePicker } from '../../ingest/DropZone';
 import { openFolderPicker } from '../../ingest/folderPicker';
 import { openSampleAssistant } from '../../store/sampleAssistantStore';
+import { lazy, Suspense } from 'react';
+
+// The classic panel still owns cluster, connection-count, edge-weight and
+// recency filtering, which the Resonance facets above do not cover.
+const FilterBar = lazy(() => import('../FilterBar'));
 import { IconFolderPlus, IconFunnel } from '../icons';
 
 const COLLAPSED_KEY = 'resonance-sidebar-collapsed';
@@ -148,6 +153,11 @@ export default function ResonanceFilters() {
           {styles.map(s => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}
         </select>
       </section>
+
+      <details className="rs-advanced">
+        <summary>Advanced filters</summary>
+        <Suspense fallback={null}><FilterBar embedded /></Suspense>
+      </details>
 
       <section className="rs-group">
         <h3>File type</h3>

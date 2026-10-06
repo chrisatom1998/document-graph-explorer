@@ -29,7 +29,7 @@ test('persistent performance toast leaves the toolbar usable at compact sizes', 
   await expect(action).toBeVisible({ timeout: 60_000 });
   for (const viewport of [{ width: 800, height: 500 }, { width: 390, height: 500 }]) {
     await page.setViewportSize(viewport);
-    const toolbar = page.locator('.toolbar');
+    const toolbar = page.locator('.rs-top');
     const toast = page.locator('.toast-host');
     await expect(action).toBeInViewport();
     const toolbarBox = await toolbar.boundingBox();

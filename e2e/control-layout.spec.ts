@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openFiles, openTab } from './resonance';
 
 test('file browsing is visible and mobile guidance clears the controls', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -17,18 +18,18 @@ test('file browsing is visible and mobile guidance clears the controls', async (
     Object.defineProperty(element, 'files', { configurable: true, value: transfer.files });
     element.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  const browse = page.getByRole('button', { name: 'Browse documents', exact: true });
-  await expect(browse).toBeInViewport();
-  await expect(page.locator('.graph-navigator')).toHaveCSS('opacity', '1');
-  await browse.click();
+  // The library list lives in its own view tab now, at both sizes.
+  const library = page.getByRole('button', { name: 'Library', exact: true });
+  await expect(library).toBeInViewport();
+  await openFiles(page);
   await expect(page.getByRole('option', { name: /Layout note/ })).toBeVisible();
-  await browse.click();
+  await openTab(page, 'Graph');
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(browse).toBeInViewport();
-  await browse.click();
+  await expect(library).toBeInViewport();
+  await openFiles(page);
   await expect(page.getByRole('option', { name: /Layout note/ })).toBeInViewport();
-  await browse.click();
+  await openTab(page, 'Graph');
   const guide = page.locator('.first-run-guide');
   await expect(guide).toBeVisible();
   const box = await guide.boundingBox();
@@ -36,10 +37,11 @@ test('file browsing is visible and mobile guidance clears the controls', async (
   expect(box!.x + box!.width).toBeLessThanOrEqual(390);
   expect(box!.y + box!.height).toBeLessThanOrEqual(744);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-  const chat = page.getByRole('button', { name: 'Chat with your documents', exact: true });
-  const assistantBox = await page.locator('.dj-launch').boundingBox();
+  // Chat and the sample assistant both stay reachable and must not overlap.
+  const chat = page.getByRole('button', { name: 'Ask about your library', exact: true });
+  const assistantBox = await page.locator('.rs-assistant').boundingBox();
   const chatBox = await chat.boundingBox();
-  expect(chatBox!.x).toBeGreaterThan(assistantBox!.x + assistantBox!.width);
+  expect(chatBox!.y + chatBox!.height).toBeLessThanOrEqual(assistantBox!.y);
   await chat.click();
   await expect(page.getByRole('button', { name: 'Close chat', exact: true })).toBeVisible();
 });
