@@ -1,8 +1,9 @@
 import type Essentia from 'essentia.js/dist/essentia.js-core.es.js';
 import type { MusicAnalysis } from './musicTypes';
+import { beatTempogram, correctTempo } from './tempoCorrection';
 
 type Tempo = NonNullable<MusicAnalysis['tempo']>;
-export type TempoEngine = Pick<Essentia, 'arrayToVector' | 'OnsetRate' | 'LoopBpmEstimator' | 'RhythmExtractor2013'>;
+export type TempoEngine = Pick<Essentia, 'arrayToVector' | 'vectorToArray' | 'OnsetRate' | 'OnsetDetectionGlobal' | 'LoopBpmEstimator' | 'RhythmExtractor2013'>;
 const RATE = 44100;
 const validBpm = (bpm: number) => Number.isFinite(bpm) && bpm >= 40 && bpm <= 250;
 
@@ -39,7 +40,11 @@ export function estimateTempo(engine: TempoEngine, samples: Float32Array): Tempo
     try {
       if (rhythm.confidence >= 1.5 && rhythm.ticks.size() >= (short ? 4 : 6) && validBpm(rhythm.bpm)) {
         const confidence = Math.min(short ? 0.75 : 1, rhythm.confidence / 3);
-        return short ? shortEstimate(rhythm.bpm, confidence) : { bpm: rhythm.bpm, confidence };
+        if (short) return shortEstimate(rhythm.bpm, confidence);
+        let bpm = rhythm.bpm;
+        try { bpm = correctTempo(beatTempogram(engine, vector), bpm); }
+        catch { /* Keep the beat tracker's tempo if the periodicity check fails. */ }
+        return { bpm, confidence };
       }
     } finally {
       rhythm.ticks.delete(); rhythm.estimates.delete(); rhythm.bpmIntervals.delete();
