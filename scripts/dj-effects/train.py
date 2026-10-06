@@ -91,8 +91,8 @@ for label in [L['label'] for L in spec['labels']]:
         report[label] = {**e, 'verdict': f'fewer than {MIN_TEST} held-out positives; not tested'}; continue
     res = prf(pos[te], model.predict_proba(X[te])[:, 1] >= th)
     e.update(**res, f1=2 * res['precision'] * res['recall'] / (res['precision'] + res['recall']) if res['tp'] else 0.0,
-             passes60=bool(res['precision'] >= .6 and res['recall'] >= .6), passes45=bool(res['precision'] >= .45 and res['recall'] >= .45))
-    e['verdict'] = 'PASS 60/60' if e['passes60'] else 'maybe-level 45/45' if e['passes45'] else 'fails'
+             passes70=bool(res['precision'] >= .7 and res['recall'] >= .7))
+    e['verdict'] = 'PASS 70/70' if e['passes70'] else 'below 70/70'
     heads.append({'group': GROUP[label], 'label': label, 'weights': [round(float(w), 6) for w in model.coef_[0]],
                   'bias': round(float(model.intercept_[0]), 6), 'threshold': round(th, 4)})
     report[label] = e

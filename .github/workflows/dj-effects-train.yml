@@ -135,8 +135,9 @@ jobs:
           d = os.environ['DOCS']
           m = json.load(open('work/fs/manifest.json'))
           emb = {json.loads(l)['id'] for f in os.listdir('work/emb') for l in open(f'work/emb/{f}') if l.strip()}
-          keep = ('id', 'freesoundId', 'username', 'split', 'labels', 'kind', 'title', 'licence', 'url')
-          clips = [{k: c.get(k) for k in keep} for c in m['clips'] if c['id'] in emb]
+          state = json.load(open('work/fs/state.json'))
+          keep = ('id', 'freesoundId', 'username', 'split', 'labels', 'kind', 'title', 'tags', 'licence', 'url')
+          clips = [{**{k: c.get(k) for k in keep}, 'preview': state.get(str(c['freesoundId']), {}).get('preview')} for c in m['clips'] if c['id'] in emb]
           json.dump({'kind': 'dj-effects-clips-v1', 'note': 'Clips with audio and a fingerprint, as used for training (split=train) and testing (split=heldout). '
                      'Audio: public Freesound previews (first ~15 s); each clip keeps its own Creative Commons licence and page URL for attribution.',
                      'clips': clips}, open(f'{d}/clips.json', 'w'), indent=0)
