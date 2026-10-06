@@ -16,7 +16,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score
 
 BLOCKS = [('clap', 512), ('ast', 527), ('jamendo', 40), ('effnet', 1280)]
-FOLDS, SEED, TARGET_PRECISION = 5, 'dge-full-mix-heads-2026-10-06', 0.75
+FOLDS, SEED, TARGET_PRECISION = 5, 'dge-full-mix-heads-2026-10-06', 0.80   # margin over Chris's 70/70 bar (2026-10-06)
 ROOT = os.path.join(os.path.dirname(__file__), '..', '..')
 
 def load(features_dir):
@@ -61,18 +61,24 @@ def feature_sets(b):
 
 def fold_of(artist): return int(hashlib.sha256(f'{SEED}|{artist}'.encode()).hexdigest(), 16) % FOLDS
 
+# OpenMIC's labelled pairs are mostly positives for common classes (guitar 852 present / 362 absent), so raw precision
+# says little about music where an instrument is rarer. Precision is computed at a fixed prevalence instead:
+# P = pi*TPR / (pi*TPR + (1-pi)*FPR), the precision the head would have where PREVALENCE of windows contain it.
+PREVALENCE = float(os.environ.get('PREVALENCE', '0.25'))
+def prevalence_precision(tpr, fpr, pi=PREVALENCE):
+    return np.where(pi * tpr + (1 - pi) * fpr > 0, pi * tpr / np.maximum(pi * tpr + (1 - pi) * fpr, 1e-12), 1.0)
+
 def pick_threshold(y, p, target=TARGET_PRECISION):
     order = np.argsort(-p); ys = y[order]; ps = p[order]
-    tp = np.cumsum(ys); prec = tp / np.arange(1, len(ys) + 1)
-    ok = np.where(prec >= target)[0]
+    tpr = np.cumsum(ys) / max(1, ys.sum()); fpr = np.cumsum(1 - ys) / max(1, (1 - ys).sum())
+    ok = np.where(prevalence_precision(tpr, fpr) >= target)[0]
     if not len(ok): return None
-    k = ok[-1]  # deepest cut that still meets the target
-    return float(ps[k])
+    return float(ps[ok[-1]])  # deepest cut that still meets the target
 
 def pr_at(y, p, t):
     if t is None: return None, 0.0
-    hit = p >= t; tp = int((hit & (y == 1)).sum()); fp = int((hit & (y == 0)).sum())
-    return (tp / (tp + fp) if tp + fp else None), tp / max(1, int(y.sum()))
+    hit = p >= t; tpr = (hit & (y == 1)).sum() / max(1, y.sum()); fpr = (hit & (y == 0)).sum() / max(1, (y == 0).sum())
+    return float(prevalence_precision(tpr, fpr)), float(tpr)
 
 def standardize(X):
     mu = X.mean(0); sd = X.std(0) + 1e-6
