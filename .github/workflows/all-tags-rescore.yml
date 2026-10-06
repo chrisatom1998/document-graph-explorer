@@ -18,6 +18,10 @@ env:
   DOCS: docs/evaluations/all-tags-2026-10-06
   SET: tinysol            # tinysol | jamendo
   RUN_ID: '37430919164'
+  # Run 37430919164 started before the app commit was pinned per run: main moved from c222052 to b232c07 (#131) between
+  # shards. #131 only changes model preloading and HTTP cache headers, not analysis or display, so both are accepted and
+  # the newer one's display code scores them.
+  ACCEPT_COMMITS: c22205207c9cc46f4d4587fbb9ddc81073619d6f b232c07ea9d970eaf1ecca4f9855bfd10fa019d4
 
 jobs:
   score:
@@ -34,8 +38,12 @@ jobs:
           github-token: ${{ github.token }}
       - name: Check out the analysed app commit beside the harness
         run: |
-          APP=$(cat exports/*/app-commit.txt | sort -u)
-          [ "$(echo "$APP" | wc -l)" = 1 ] || { echo "exports come from several commits: $APP"; exit 1; }
+          ALL=$(cat exports/*/app-commit.txt | sort -u)
+          if [ "$(echo "$ALL" | wc -l)" != 1 ]; then
+            for c in $ALL; do echo " $ACCEPT_COMMITS " | grep -q " $c " || { echo "exports come from several commits: $ALL"; exit 1; }; done
+          fi
+          APP=$(for c in $ALL; do n=0; for d in $ALL; do git merge-base --is-ancestor "$d" "$c" && n=$((n+1)); done; echo "$n $c"; done | sort -n | tail -1 | cut -d' ' -f2)
+          echo "exports from: $ALL; scoring with $APP" 
           echo "APP=$APP" >> "$GITHUB_ENV"
           git worktree add -q app "$APP"
       - uses: actions/setup-node@v4
@@ -57,7 +65,7 @@ jobs:
             done
           fi
           npx vite-node scripts/dj-fix/extract.mjs "$R/records.json" ../exports/*/graph-export.json
-          echo "app $APP; harness $GITHUB_SHA; exports from run $RUN_ID; re-scored in run $GITHUB_RUN_ID" > "$R/tested-commit.txt"
+          echo "app $APP (exports from: $(cat ../exports/*/app-commit.txt | sort -u | tr '\n' ' ')); harness $GITHUB_SHA; exports from run $RUN_ID; re-scored in run $GITHUB_RUN_ID" > "$R/tested-commit.txt"
       - uses: actions/upload-artifact@v4
         with:
           name: rescore-${{ env.SET }}
