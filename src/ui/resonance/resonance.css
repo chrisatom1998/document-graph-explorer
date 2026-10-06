@@ -73,6 +73,15 @@
 .rs-icon:hover:not(:disabled) { background: var(--rs-raised); }
 .rs-icon:disabled { opacity: 0.35; cursor: default; }
 .rs-icon--round { border-radius: 50%; border: 1px solid var(--rs-line-strong); }
+/* 2D/3D switch: a two-segment pill in the action row. */
+.rs-top__actions .workspace-dims {
+  display: inline-flex; align-items: center; gap: 2px; height: 32px; padding: 2px;
+  border: 1px solid var(--rs-line-strong); border-radius: 999px; background: none; color: var(--rs-muted);
+  font: inherit; font-size: 11px; font-weight: 600; letter-spacing: .04em; cursor: pointer;
+}
+.rs-top__actions .workspace-dims span { padding: 4px 8px; border-radius: 999px; }
+.rs-top__actions .workspace-dims span.is-current { background: var(--rs-raised); color: var(--rs-lime); }
+.rs-top__actions .workspace-dims:hover { border-color: var(--rs-lime); }
 .rs-more { position: relative; }
 .rs-scrim { position: fixed; inset: 0; background: transparent; border: 0; z-index: 1; cursor: default; }
 .rs-menu {

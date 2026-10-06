@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { corpusCount, openChat, openFiles, openTab, toolMenu } from './resonance';
+import { corpusCount, details, openChat, openFiles, openTab, toolMenu } from './resonance';
 
 function tone(frequency: number) {
   const wav = Buffer.alloc(44 + 16000 * 2);
@@ -42,7 +42,7 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     });
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(5, 5, 16)');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(11, 11, 17)');
     const chooserPromise = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: /^Add a folder/ }).click();
     await (await chooserPromise).setFiles(folder);
@@ -77,7 +77,7 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     await openFiles(page);
     await page.getByRole('option', { name: /Second tone/i }).click();
     await expect(page.locator('.audio-preview')).toBeVisible();
-    await expect(page.locator('audio')).toHaveAttribute('src', /^blob:/);
+    await expect(details(page).locator('audio')).toHaveAttribute('src', /^blob:/);
     await expect(page.locator('.rs-top')).toHaveCSS('background-color', 'rgb(14, 14, 21)');
     await expect(page.locator('.side-panel')).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('dark-workspace.png') });
@@ -96,7 +96,7 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     await expect(corpusCount(page)).toContainText('4 clips',{ timeout: 120000 });
     await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
     await page.reload();
-    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(5, 5, 16)');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(11, 11, 17)');
     await expect(corpusCount(page)).toContainText('4 clips');
     await page.setViewportSize({ width: 390, height: 844 });
     await openFiles(page);
