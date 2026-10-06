@@ -186,8 +186,8 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
     const key=await musicCacheKey(blob, mode);
     if(key&&!options.force&&!injectedFusion&&!experimentalPaSST){const cached=await readMusicCache(key, blob.type);if(cached){options.signal?.throwIfAborted();options.onProgress?.('Reusing saved audio analysis');parkWorker();
       // Analyses saved before version prints existed get one now: decoding only, no models.
-      if(!cached.versionPrint&&cached.durationSeconds>=VERSION_PRINT_MIN_SECONDS){const decoder=await openMusicDecoder(blob, name, options.signal);try{await addVersionPrint(cached,(start,seconds)=>decoder.read(start,seconds,VERSION_PRINT_SAMPLE_RATE),options.signal);}finally{decoder.close();}
-        if(cached.versionPrint)await writeMusicCache(key,cached,blob.type);}
+      if(!cached.versionPrint&&cached.durationSeconds>=VERSION_PRINT_MIN_SECONDS)try{const decoder=await openMusicDecoder(blob, name, options.signal);try{await addVersionPrint(cached,(start,seconds)=>decoder.read(start,seconds,VERSION_PRINT_SAMPLE_RATE),options.signal);}finally{decoder.close();}
+        if(cached.versionPrint)await writeMusicCache(key,cached,blob.type);}catch(error){if(options.signal?.aborted)throw error;}// optional: the saved analysis stands without a print
       return { cached };}}
     options.signal?.throwIfAborted();
     const fingerprint = key ? musicWorkerFingerprint(key) : undefined;

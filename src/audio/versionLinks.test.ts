@@ -85,4 +85,11 @@ describe('version links', () => {
     const edges = buildVersionEdges([plain('a', 'williamberry_-_Dirtbag_(I_am_gone).mp3'), plain('b', 'Robbero_-_Dirtbag_(Robbero_Remix).mp3'), plain('c', 'Robbero_-_Sunrise.mp3')]);
     expect(edges.map(e => [e.id, versionRelation(e)])).toEqual([['a->b:version', 'remix']]);
   });
+
+  it('forgets tracks that leave the graph', async () => {
+    const a = await track('a', 'a.wav', tune(A)), b = await track('b', 'b.wav', tune(A, 0, .1));
+    expect(buildVersionEdges([a, b])).toHaveLength(1);
+    expect(buildVersionEdges([a])).toEqual([]);
+    expect(buildVersionEdges([a, { ...b, id: 'c' }]).map(e => e.id)).toEqual(['a->c:version']);
+  });
 });

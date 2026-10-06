@@ -114,6 +114,12 @@ function side(node: DocNode): Side {
   return fresh;
 }
 const pairCache = new Map<string, { a: Side; b: Side; evidence: VersionEvidence | undefined }>();
+/** Drops cached tracks (and their pairs) that are no longer in the graph, e.g. after a removal or corpus switch. */
+function forgetOthers(ids: Set<string>) {
+  if ([...sides.keys()].every(id => ids.has(id))) return;
+  for (const id of [...sides.keys()]) if (!ids.has(id)) sides.delete(id);
+  for (const [key, hit] of pairCache) if (!ids.has(hit.a.node.id) || !ids.has(hit.b.node.id)) pairCache.delete(key);
+}
 /** The cached result for this pair of inputs, or null when it has not been aligned yet. */
 function cached(a: Side, b: Side): VersionEvidence | undefined | null {
   const hit = pairCache.get(`${a.node.id}|${b.node.id}`);
@@ -173,6 +179,7 @@ function harmonyNeighbors(prints: Side[], started: number, budgetMs: number): Ma
 export function buildVersionEdges(nodes: DocNode[], budgetMs = VERSION_BUDGET_MS): Edge[] {
   const audio = nodes.filter(n => n.fileType === 'audio' && n.audio).sort((a, b) => a.id.localeCompare(b.id));
   const all = audio.map(side), index = new Map(all.map((x, i) => [x, i]));
+  forgetOthers(new Set(audio.map(n => n.id)));
   const started = performance.now();
   pending = false;
   const priority = new Map<string, number>();
