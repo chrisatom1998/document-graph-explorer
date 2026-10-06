@@ -50,3 +50,24 @@ model" thread was asked to keep it out. So it is the one clean set for these tag
 - Every note is one named instrument, so absents are real and precision is exact. Within the string family the other
   tags are left unknown.
 - These are short notes, not songs. They show whether the app names a solo instrument, which is the short-clip side.
+
+## Voice veto, added 2026-10-06 08:00, before any judge set was scored with it
+
+The "Test free sample packs" thread found "voice" shown on 26 of 150 instrumental Transmutation loops (main 245c428).
+It shared its exports for diagnosis only; that set stays judge-only. On 18 loops that are at least 10 s long (mostly
+chord pads), the window fusion voice head says no voice (0.001 to 0.12). The tag comes from the CLAP trained-head
+profile tag instead, at 0.84 to 0.99. The other 8 are drum, bass and arp loops under 17 s, where the fusion head itself
+says voice (0.45 to 0.90). This rule does not address those 8.
+
+On the 900 OpenMIC calibration clips, every one of the 40 voice-present clips has a fusion voice head of at least 0.33.
+The 4 voice-absent clips that showed voice had a fusion head of at most 0.028.
+
+**Rule:** on recordings at least 10 s long with a policy-qualified fusion result, hide a model-estimated "voice" when the
+best fusion voice head probability over complete 10 s windows is below 0.10. A voice tag the user confirmed is never
+hidden. The threshold of 0.10 was chosen from the OpenMIC calibration clips only: it sits below every voice-present
+clip there (0.33 and up).
+
+**Judged on**, without changing the rule:
+- voice recall on the Jamendo validation songs (52 tagged);
+- both DJ clip tests, by re-scoring their exports (no 70/70 tag may drop);
+- the Transmutation loops (voice false positives, and recall on any loops with vocals).

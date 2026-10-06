@@ -56,6 +56,9 @@ TESTED_SCORES.add(FULL_MIX_HEAD_SCORE);
 /** On recordings of at least one full window, these labels need a higher tested score than the track floor: their
  * false alarms on full mixes were measured the same way (scripts/dj-fix/calibrate.py). */
 export const FULL_MIX_MIN_TESTED_SCORE:Record<string,number>={trumpet:.5,cello:.55};
+/** On full mixes, the window fusion voice head vetoes other voice estimates when every complete 10 s window is below
+ *  this (OpenMIC calibration: voice-present clips all >= 0.33; CLAP head showed voice on instrumental pads at < 0.12). */
+export const FULL_MIX_VOICE_VETO=.1;
 const nativeNames={ast:'AST score',jamendo:'Jamendo score',clap:'CLAP similarity',rhythm:'Tempo score',tonal:'Key score'};
 export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):DisplaySound[] {
   const result=new Map<string,DisplaySound>();
@@ -108,6 +111,9 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     const head=FULL_MIX_HEADS[d.label];
     if(fullMix&&head!==undefined&&w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6&&d.source!=='learned-head'&&typeof d.headProbability==='number'&&d.headProbability>=head)estimate('source',d.label,d.headProbability,FULL_MIX_HEAD_SCORE);
   }
+  const voiceHeads=fullMix&&fusion?.qualified?fusion.windows.filter(w=>w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6)
+    .flatMap(w=>w.decisions.filter(d=>d.label==='voice'&&typeof d.headProbability==='number').map(d=>d.headProbability as number)):[];
+  if(voiceHeads.length&&Math.max(...voiceHeads)<FULL_MIX_VOICE_VETO&&result.get('source:voice')?.origin==='model estimate')result.delete('source:voice');
   const tiered=(s:DisplaySound,models:(m:string)=>boolean):DisplaySound=>({...s,tier:soundTier(Math.max(...s.scores!.filter(x=>models(x.model)).map(x=>x.score)))});
   const long=floor===TRACK_SOUND_FLOOR;
   const testedBest=(s:DisplaySound)=>Math.max(...s.scores!.filter(x=>TESTED_SCORES.has(x.model)).map(x=>x.score));
