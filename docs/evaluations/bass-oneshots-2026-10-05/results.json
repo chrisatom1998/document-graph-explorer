@@ -1,0 +1,729 @@
+{
+ "scored": "2026-10-05, once",
+ "head": "shipped short-clip bass-hit head (public/sound-model/short-clip.json at commit d2f4da3)",
+ "path": "real built app upload, Sounds-panel tags >= 0.50 (no tag was shown as maybe)",
+ "input": "Freesound preview ogg converted to 48 kHz mono wav",
+ "recall": {
+  "found": 0,
+  "of": 86,
+  "wilson95": [
+   0.22,
+   0.41
+  ]
+ },
+ "falseTags": {
+  "tagged": 0,
+  "of": 55,
+  "wilson95": [
+   0.03,
+   0.17
+  ]
+ },
+ "clips": [
+  {
+   "freesoundId": "13663",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "16328",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "18098",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "18099",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "18140",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "18141",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "18190",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "19392",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "32594",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "70929",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "110550",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "126355",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "164565",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "164566",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "178765",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "178767",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "201451",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "201452",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "204772",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "207808",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "233764",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "260001",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "264779",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "271252",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "332430",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "340467",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "360545",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "375273",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "375274",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "384911",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "384914",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "400485",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "400486",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "415549",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "418194",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "423680",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "424424",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "432912",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "441055",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "468949",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "471444",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "471445",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "488000",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "488256",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "488459",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "503854",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "509527",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "517523",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "517782",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "518557",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "523088",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "528816",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "536872",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "542346",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "542818",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "542823",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "546784",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "546785",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "551400",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "551401",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "555527",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "555528",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "557133",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "564683",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "566899",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "581458",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "581460",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "581751",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "590095",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "593886",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "610727",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "610728",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "611504",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "611690",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "611691",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "613290",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "614392",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "614398",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "620077",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "629976",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "629977",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "634917",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "634918",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "639745",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "640204",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "642476",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "650700",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "650701",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "659911",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "661854",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "668993",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "669459",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "672576",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "672578",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "676335",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "676337",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "676461",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "676462",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "685865",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "689246",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "695919",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "704264",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "707198",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "707199",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "711476",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "711478",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "717961",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "717962",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "724940",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "724942",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "728515",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "729515",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "729519",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "732223",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "733887",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "738477",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "738478",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "750354",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "759275",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "761190",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "761192",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "770904",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "770936",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "782289",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "789388",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "789881",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "789884",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "802130",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "826145",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "826146",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "826758",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "827871",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "841274",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "841893",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "842139",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "843024",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "844254",
+   "bassHit": false,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "859980",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "860524",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "864206",
+   "bassHit": true,
+   "taggedBassHit": false
+  },
+  {
+   "freesoundId": "864754",
+   "bassHit": true,
+   "taggedBassHit": false
+  }
+ ]
+}
