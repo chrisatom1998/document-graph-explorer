@@ -51,8 +51,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        set: [jamendo-fit, jamendo-judge]
-        shard: [0, 1, 2, 3, 4]
+        set: [jamendo-fit, jamendo-judge, beatport-judge]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -73,7 +73,7 @@ jobs:
       - name: Fetch audio
         run: |
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
-          python3 scripts/genre-energy/fetch.py lists/${{ matrix.set }}.json ${{ matrix.shard }}/5 audio clips.json lists/jamendo-sha256.txt
+          python3 scripts/genre-energy/fetch.py lists/${{ matrix.set }}.json ${{ matrix.shard }}/10 audio clips.json lists/jamendo-sha256.txt
       - name: Compute features
         run: npx vite-node scripts/genre-energy/features.mjs clips.json f.json public/jamendo-model heads
       - uses: actions/upload-artifact@v4
@@ -99,7 +99,7 @@ jobs:
       - name: Commit the features to the data branch
         run: |
           mkdir -p data
-          for s in jamendo-fit jamendo-judge; do
+          for s in jamendo-fit jamendo-judge beatport-judge; do
             python3 -c "import json,glob,sys,gzip;s=sys.argv[1];rows=[r for p in sorted(glob.glob(f'parts/ge-f-{s}-*/f.json')) for r in json.load(open(p))];gzip.open(f'data/{s}.json.gz','wt').write(json.dumps(rows));print(s,len(rows),'of',len(json.load(open(f'lists/{s}.json'))))" $s
           done
           echo "features from $GITHUB_SHA (run $GITHUB_RUN_ID)" > data/README.txt
