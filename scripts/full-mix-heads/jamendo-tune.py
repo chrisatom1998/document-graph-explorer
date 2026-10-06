@@ -10,8 +10,7 @@ never instrument tags or model output:
   * at most three tracks per artist; DJ genres first (same DJ_GENRES as the round 3 set), then "electronic", then the rest,
     each tier ranked by hash; first MAX_ITEMS kept.
 Excerpt: the middle 30 s (the round 3 set's excerpt), so window voting is tuned on the shape it will be judged on.
-Labels: the uploader's raw instrument tags (present; untagged is only a weak absent) and the three-annotator
-voice/instrumental answer when all three agreed.
+Labels: the uploader's raw instrument tags (present; untagged is only a weak absent).
 """
 import hashlib, json, os, sys
 
@@ -33,12 +32,6 @@ pool_rows = {**tsv('data/splits/split-0/autotagging_instrument-train.tsv'), **ts
 held = tsv('data/splits/split-0/autotagging_instrument-test.tsv')
 assert not {r['artist'] for r in pool_rows.values()} & {r['artist'] for r in held.values()}
 alltags = tsv('data/raw_30s_cleantags.tsv')
-voice_ann = {}
-for k, r in tsv('derived/music-classification-annotations/music-classification-annotations-clean.tsv').items():
-    for t in r['tags']:
-        if t.startswith('voice_instrumental---'):
-            answers = set(t.split('---')[1].split(','))
-            if len(answers) == 1: voice_ann[k] = answers.pop()
 archived = {line.split()[1].split('/')[-1].split('.')[0] for line in open(os.path.join(src, 'data/download/raw_30s_audio-low_sha256_tracks.txt'))}
 genres = lambda k: sorted({t.split('---')[1] for t in alltags[k]['tags'] if t.startswith('genre---')})
 tier = lambda k: 0 if set(genres(k)) & DJ_GENRES else 1 if 'electronic' in genres(k) else 2
@@ -53,7 +46,7 @@ items = []
 for k in chosen:
     r = pool_rows[k]; start = round(max(0.0, r['duration'] / 2 - CLIP / 2), 3)
     items.append({'id': 'fmj-' + h(SEED, k)[:16], 'sampleKey': k, 'artist': r['artist'], 'genres': genres(k), 'djTier': ['dj genre', 'electronic', 'other'][tier(k)],
-                  'instruments': sorted(t.split('---')[1] for t in r['tags'] if t.startswith('instrument---')), 'voiceAnnotation': voice_ann.get(k),
+                  'instruments': sorted(t.split('---')[1] for t in r['tags'] if t.startswith('instrument---')),
                   'archivePath': r['path'].replace('.mp3', '.low.mp3'), 'start': start, 'end': round(start + CLIP, 3)})
 json.dump({'version': 1, 'seed': SEED, 'selection': __doc__.strip(), 'items': items}, open(out, 'w'), indent=1)
 tiers = {}

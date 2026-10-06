@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { MusicAnalysis } from './musicTypes';
 import { loadBuiltInFusion } from './fusionRelease';
+import { loadFullMixHeads } from './fullMixHeads';
 import { analyzeMusic } from './analyzeMusic';
 
 const state = vi.hoisted(() => ({
@@ -9,6 +10,12 @@ const state = vi.hoisted(() => ({
   failFirst: false, failOpen: false, created: 0, terminated: 0, fingerprint: 'same-model' as string | undefined, abortNext: undefined as AbortController | undefined,
 }));
 vi.mock('./fusionRelease', async importOriginal => ({ ...(await importOriginal<typeof import('./fusionRelease')>()), loadBuiltInFusion: vi.fn(async () => undefined) }));
+vi.mock('./fullMixHeads', async importOriginal => {
+  const original = await importOriginal<typeof import('./fullMixHeads')>();
+  const { readFileSync } = await import('node:fs');
+  const model = original.sanitizeFullMixModel(JSON.parse(readFileSync(new URL('../../public/sound-model/full-mix.json', import.meta.url), 'utf8')));
+  return { ...original, loadFullMixHeads: vi.fn(async () => model) };
+});
 vi.mock('./musicAnalysisCache', () => ({
   musicCacheKey: vi.fn(async () => 'key'),
   musicCacheFingerprint: () => state.fingerprint,
@@ -239,6 +246,17 @@ it('bypasses whole-analysis cache reads and writes for an optional fusion scorer
   expect(readMusicCache).not.toHaveBeenCalled(); expect(writeMusicCache).not.toHaveBeenCalled();
   expect(state.opened.length).toBe(2); expect(score).toHaveBeenCalledOnce();
   expect(result.fusion?.counts.failed).toBe(1); // Invalid synthetic scorer does not fake a successful decision.
+});
+
+it('keeps a full analysis out of the persistent cache when the pinned full-mix heads fail to load', async () => {
+  const { writeMusicCache } = await import('./musicAnalysisCache');
+  state.cache = undefined; state.duration = 10;
+  vi.mocked(writeMusicCache).mockClear();
+  vi.mocked(loadFullMixHeads).mockResolvedValueOnce(undefined);
+  await analyzeMusic(new Blob(['heads-missing']), 'heads-missing.wav', { mode: 'full' });
+  expect(writeMusicCache).not.toHaveBeenCalled();
+  await analyzeMusic(new Blob(['heads-loaded']), 'heads-loaded.wav', { mode: 'full' });
+  expect(writeMusicCache).toHaveBeenCalledOnce();
 });
 
 it('does not load the trained head outside the qualified input tier', async () => {

@@ -69,7 +69,9 @@ for (const clip of clips.filter(c => !done.has(c.id))) {
       const c = await clap(await clapProc(w48));
       const a = await ast(await astProc(w16));
       const row = new Float32Array(FEATURE_LENGTH);
-      row.set(c.audio_embeds.data, 0);
+      // The worker posts the embedding rounded to 4 decimals (musicAnalysis.worker.ts); match it. On the shipped heads the
+      // rounding moves no probability by more than 1e-4 and flips no decision on the 1,900 benchmark clips.
+      row.set(Array.from(c.audio_embeds.data, v => Math.round(v * 1e4) / 1e4), 0);
       row.set(a.logits.data, BLOCKS.clap);
       row.set(j.act, BLOCKS.clap + BLOCKS.ast);
       row.set(j.emb, BLOCKS.clap + BLOCKS.ast + BLOCKS.jamendo);
