@@ -1,0 +1,27 @@
+drums              main R 0.813 P>= 0.299 (134) | recall already at 0.70 on pick
+voice              main R 0.769 P>= 0.147 (52) | recall already at 0.70 on pick
+synthesizer        main R 0.886 P>= 0.373 (184) | recall already at 0.70 on pick
+piano              main R 0.782 P>= 0.375 (156) | recall already at 0.70 on pick
+electric piano     main R 0.163 P>= 0.135 (43) | no source and threshold keeps the precision floor at 0.70 on pick
+guitar             main R 0.796 P>= 0.463 (167) | recall already at 0.70 on pick
+acoustic guitar    main R 0.032 P>= 0.5 (63) | jamendo native >= 0.4: check R 0.308 P>= 0.571 | check half: recall +0.27, precision floor 0.571
+electric guitar    main R 0.0 P>= None (77) | ast native >= 0.05: check R 0.0 P>= None | check half: recall +0.00, precision floor None
+bass guitar        main R 0.386 P>= 0.505 (145) | no source and threshold keeps the precision floor at 0.70 on pick
+organ              main R 0.139 P>= 0.067 (36) | no source and threshold keeps the precision floor at 0.70 on pick
+violin / fiddle    main R 0.411 P>= 0.228 (56) | no source and threshold keeps the precision floor at 0.70 on pick
+cello              main R 0.585 P>= 0.273 (41) | no source and threshold keeps the precision floor at 0.70 on pick
+strings            main R 0.213 P>= 0.213 (47) | no source and threshold keeps the precision floor at 0.70 on pick
+trumpet            main R 0.317 P>= 0.191 (41) | no source and threshold keeps the precision floor at 0.70 on pick
+trombone           main R 0.0 P>= 0.0 (14) | too few to judge
+horn               main R 0.0 P>= 0.0 (21) | no source and threshold keeps the precision floor at 0.70 on pick
+saxophone          main R 0.543 P>= 0.581 (46) | no source and threshold keeps the precision floor at 0.70 on pick
+clarinet           main R 0.676 P>= 0.161 (34) | no source and threshold keeps the precision floor at 0.70 on pick
+oboe               main R 0.0 P>= None (20) | no source and threshold keeps the precision floor at 0.70 on pick
+flute              main R 0.744 P>= 0.186 (43) | recall already at 0.70 on pick
+bassoon            main R None P>= None (0) | too few to judge
+harp               main R 0.353 P>= 0.429 (17) | too few to judge
+accordion          main R 0.219 P>= 0.875 (32) | jamendo native >= 0.05: check R 0.571 P>= 1.0 | check half: recall +0.00, precision floor 1.0
+harmonica          main R 0.0 P>= None (20) | ast native >= 0.05: check R 0.125 P>= 0.4 | check half: recall +0.12, precision floor 0.4
+atmospheric pad    main R 0.158 P>= 0.097 (19) | too few to judge
+chiptune synth     main R 0.636 P>= 0.389 (11) | too few to judge
+choir              main R 0.158 P>= 0.6 (19) | too few to judge
