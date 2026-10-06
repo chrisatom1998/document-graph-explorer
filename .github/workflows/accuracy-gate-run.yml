@@ -127,6 +127,7 @@ jobs:
     timeout-minutes: 240
     strategy:
       fail-fast: false
+      max-parallel: 6   # leave most of the account's runners to everything else
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
@@ -225,6 +226,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
+      max-parallel: 6   # leave most of the account's runners to everything else
       matrix:
         include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     name: analyse (${{ matrix.side }} ${{ matrix.set }} ${{ matrix.shard }})
