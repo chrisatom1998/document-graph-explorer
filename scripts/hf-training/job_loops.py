@@ -6,7 +6,15 @@ REPO = 'cmjatom/dge-key-tempo-train'; RUN = os.environ.get('RUN', 'tempo-loops-v
 W = '/work'; os.makedirs(f'{W}/audio', exist_ok=True); os.makedirs(f'{W}/out', exist_ok=True); os.chdir(W)
 HERE = os.path.dirname(os.path.abspath(__file__))
 for f in ('feats.py', 'train_tempo.py', 'build_labels.py'): os.system(f'cp {HERE}/{f} {W}/{f}')
-t0 = time.time()
+t0 = time.time(); STAGE = os.environ.get('STAGE', 'all')
+if STAGE == 'train':
+    tgz = hf_hub_download(REPO, f'runs/{RUN}/prep/feats.tar', repo_type='dataset')
+    subprocess.run(['tar', 'xf', tgz], check=True)
+    for mode in os.environ.get('MODES', 'final').split():
+        r = subprocess.run([sys.executable, 'train_tempo.py', mode, 'labels.json', 'out'], env={**os.environ, 'WORKERS': str(max(2, os.cpu_count() - 1))}, capture_output=True, text=True)
+        print(r.stdout[-4000:], r.stderr[-4000:], flush=True); open(f'out/{mode}.log', 'w').write(r.stdout + r.stderr)
+        print(mode, 'done', f'{time.time()-t0:.0f}s', flush=True)
+    api.upload_folder(folder_path='out', path_in_repo=f'runs/{RUN}', repo_id=REPO, repo_type='dataset'); print('uploaded', flush=True); sys.exit(0)
 # FSL10K: start the 8.8 GB download in the background while songs download
 dl = subprocess.Popen(['curl', '-sSL', '--retry', '5', '-o', 'fsl.zip', 'https://zenodo.org/api/records/3967852/files/FSL10K.zip/content'])
 subprocess.run([sys.executable, 'build_labels.py', 'tempo-labels.json'], check=True)
@@ -61,6 +69,9 @@ rows = [{'f': f"{W}/feats/{d['stem']}.npz", 'bpm': d['bpm'], 'group': d['group']
 rows += [{'f': f"{W}/feats/fsl_{r['id']}.npz", 'bpm': r['bpm'], 'group': r['group'], 'src': 'fsl', 'loop': True} for r in keep if os.path.exists(f"feats/fsl_{r['id']}.npz")]
 json.dump({'tempo': rows}, open('labels.json', 'w')); print('features', len(rows), collections.Counter(r['src'] for r in rows), f'{time.time()-t0:.0f}s', flush=True)
 json.dump([r['id'] for r in keep], open('out/train-loop-ids.json', 'w'))
+if STAGE == 'prep':
+    subprocess.run(['tar', 'cf', 'out/feats.tar', 'labels.json', 'feats'], check=True)
+    api.upload_folder(folder_path='out', path_in_repo=f'runs/{RUN}/prep', repo_id=REPO, repo_type='dataset'); print('prep uploaded', f'{time.time()-t0:.0f}s', flush=True); sys.exit(0)
 env = {**os.environ, 'WORKERS': str(max(2, os.cpu_count() - 1))}
 for mode in os.environ.get('MODES', 'final').split():
     r = subprocess.run([sys.executable, 'train_tempo.py', mode, 'labels.json', 'out'], env=env, capture_output=True, text=True)
