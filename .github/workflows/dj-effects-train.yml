@@ -1,0 +1,152 @@
+name: DJ effect heads
+
+# Trains one logistic head per DJ effect (chops, stutter, tape stop, backspin, filter sweep, ...) on short Freesound
+# clips whose uploader tags name the effect, using the app's own CLAP fingerprint, and scores each head on clips
+# from uploaders it never saw. Commits the clip list (with each clip's licence), the heads and the held-out report to
+# docs/evaluations/dj-effects-2026-10-06. Audio is fetched at run time and never committed.
+# A push whose head commit message contains [no-train] only runs the prompts job (CLAP text vectors for new catalog labels).
+on:
+  push:
+    branches: [claude/soundcloud-training-j0wc3t]
+    paths:
+      - scripts/dj-effects/**
+      - .github/workflows/dj-effects-train.yml
+      - src/audio/djCatalog.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dj-effects-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  META_URL: https://huggingface.co/datasets/Chr0my/freesound.org/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet
+  DOCS: docs/evaluations/dj-effects-2026-10-06
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  prompts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Check for catalog labels without a CLAP text vector
+        id: need
+        run: |
+          node -e "
+          const fs=require('fs');const p=JSON.parse(fs.readFileSync('public/sound-model/prompts.json'));
+          const c=JSON.parse(fs.readFileSync('src/audio/djCatalog.json')).categories;
+          const miss=c.filter(x=>!p.some(q=>q.group===x.axis&&q.label===x.label));
+          console.log('missing:',miss.map(x=>x.label).join(', ')||'none');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'missing='+(miss.length?'yes':'no')+'\n');"
+      - if: steps.need.outputs.missing == 'yes'
+        run: npm ci
+      - name: Encode and commit the new prompts
+        if: steps.need.outputs.missing == 'yes'
+        run: |
+          node scripts/dj-effects/add-prompts.mjs
+          git add public/sound-model/prompts.json public/sound-model/manifest.json scripts/sound-profile-prompts.json
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Add CLAP text vectors for the new DJ effect labels" || exit 0
+          for i in 1 2 3 4 5; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 5 ] && exit 1; sleep $((2**i)); done
+
+  train:
+    if: ${{ !contains(github.event.head_commit.message, '[no-train]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q pyarrow numpy scikit-learn
+      - name: Fetch the Freesound metadata dump
+        run: |
+          curl -fsSL --retry 6 -o "$RUNNER_TEMP/meta.parquet" "$META_URL"
+          mkdir -p "$DOCS"; sha256sum "$RUNNER_TEMP/meta.parquet" | tee "$RUNNER_TEMP/meta.sha256"
+      - name: Pick clips
+        run: python3 scripts/dj-effects/mine.py "$RUNNER_TEMP/meta.parquet" "$DOCS/candidates.json"
+      - name: Check Freesound is reachable from this runner
+        run: |
+          read -r user id < <(python3 -c "import json;c=json.load(open('$DOCS/candidates.json'))['clips'][0];print(c['username'],c['freesoundId'])")
+          code=$(curl -s -o /dev/null -w '%{http_code}' -A 'Mozilla/5.0 (DGE research; non-commercial label training)' "https://freesound.org/people/$user/sounds/$id/")
+          echo "freesound page status: $code"; [ "$code" = 200 ] || [ "$code" = 404 ]
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+      - name: Restore downloaded previews
+        uses: actions/cache/restore@v4
+        with:
+          path: work/fs
+          key: dj-effects-audio-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json') }}
+          restore-keys: dj-effects-audio-
+      - name: Download previews (first ~15 s, with each clip's licence)
+        run: CONCURRENCY=4 node scripts/fetch-freesound-previews.mjs "$DOCS/candidates.json" work/fs
+      - name: Save downloaded previews
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: work/fs
+          key: dj-effects-audio-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json') }}-${{ github.run_id }}
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - run: npm run setup:music
+      - name: Restore fingerprints
+        uses: actions/cache/restore@v4
+        with:
+          path: work/emb
+          key: dj-effects-emb-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json', 'scripts/embed-clap.mjs') }}
+          restore-keys: dj-effects-emb-
+      - name: Compute the app's CLAP fingerprints
+        run: |
+          mkdir -p work/emb
+          pids=(); for s in 0 1 2 3; do THREADS=1 node scripts/embed-clap.mjs work/fs/manifest.json work/emb/emb-$s.jsonl $s 4 > work/emb-$s.log 2>&1 & pids+=($!); done
+          rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/emb-*.log; exit $rc
+      - name: Save fingerprints
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: work/emb
+          key: dj-effects-emb-${{ hashFiles('docs/evaluations/dj-effects-2026-10-06/candidates.json', 'scripts/embed-clap.mjs') }}-${{ github.run_id }}
+      - name: Train and score on held-out uploaders
+        run: python3 scripts/dj-effects/train.py work/fs/manifest.json work/emb "$DOCS"
+      - name: Record the clip list with licences
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          d = os.environ['DOCS']
+          m = json.load(open('work/fs/manifest.json'))
+          emb = {json.loads(l)['id'] for f in os.listdir('work/emb') for l in open(f'work/emb/{f}') if l.strip()}
+          keep = ('id', 'freesoundId', 'username', 'split', 'labels', 'kind', 'title', 'licence', 'url')
+          clips = [{k: c.get(k) for k in keep} for c in m['clips'] if c['id'] in emb]
+          json.dump({'kind': 'dj-effects-clips-v1', 'note': 'Clips with audio and a fingerprint, as used for training (split=train) and testing (split=heldout). '
+                     'Audio: public Freesound previews (first ~15 s); each clip keeps its own Creative Commons licence and page URL for attribution.',
+                     'clips': clips}, open(f'{d}/clips.json', 'w'), indent=0)
+          print(len(clips), 'clips recorded')
+          EOF
+          { echo "tested $GITHUB_SHA (run $GITHUB_RUN_ID)"; echo "metadata: $(cat "$RUNNER_TEMP/meta.sha256" | cut -d' ' -f1) $META_URL"; } > "$DOCS/run-info.txt"
+      - name: Commit the results
+        run: |
+          git add "$DOCS"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record DJ effect heads trained on tagged Freesound clips" || exit 0
+          for i in 1 2 3 4 5; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 5 ] && exit 1; sleep $((2**i)); done
