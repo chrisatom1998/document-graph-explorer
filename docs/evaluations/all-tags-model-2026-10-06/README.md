@@ -13,7 +13,7 @@ version and sounds-alike links are unchanged (they do not read sound tags). Inst
 | Download | +22.6 MB for `npm run setup:music` / first build (total about 563 MB). Pinned by revision and SHA-256 in `public/tagger-model/manifest.json`; the `.onnx` is gitignored like the other weights |
 | Runtime | onnxruntime-web (wasm), the runtime the Jamendo models already use, in the Jamendo worker on its single thread. No new dependency |
 | Input | 10 s of 32 kHz mono in [-1, 1]; the log-mel front end (EfficientAT `AugmentMelSTFT` in eval mode: pre-emphasis, 800-sample Hann window, hop 320, 1024-point FFT, 128 kaldi mel bands, `(log(x + 1e-5) + 4.5) / 5`) is inside the ONNX graph, checked against PyTorch at export (max difference 9.5e-7) |
-| Cost per track | At most 3 windows. onnxruntime-web wasm on one thread, Xeon 2.1 GHz: headless Chromium 0.14–0.20 s per window after a 0.48 s first run, 1.2 s to open the session once per worker; Node 0.18 s per window. So about 0.5–0.9 s of inference per track, plus three 10 s FFmpeg section reads at 32 kHz |
+| Cost per track | At most 3 windows. onnxruntime-web wasm on one thread, Xeon 2.1 GHz: headless Chromium 0.14–0.20 s per window after a 0.48 s first run, 1.2 s to open the session once per worker; Node 0.18 s per window. In the built app (headless Chromium, 45 s track, full analysis) the three tagger requests took 1.70 s (first, includes loading the session), 0.26 s and 0.23 s: about 2.2 s for the first track of a session and 0.5–0.7 s per later track, plus three 10 s FFmpeg section reads at 32 kHz |
 | Policy | `src/audio/taggerPolicy.json` (outputs, validation thresholds, labels each output decides); display in `src/audio/confidentSoundSummary.ts` |
 
 ### Licences
