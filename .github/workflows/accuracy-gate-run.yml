@@ -48,7 +48,7 @@ jobs:
       mtgkey_cached: ${{ steps.mtgkey-cache.outputs.cache-hit }}
       matrix: ${{ steps.m.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
       - name: Decide what to analyse
@@ -77,7 +77,7 @@ jobs:
       - name: Look for main's numbers for the base commit
         id: base-cache
         if: steps.p.outputs.base != ''
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: baseline
           key: ${{ env.EXPORTS_CACHE }}-${{ inputs.mode }}-${{ steps.p.outputs.base }}
@@ -86,13 +86,13 @@ jobs:
           lookup-only: true
       - name: Look for cached audio
         id: jamendo-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo
           lookup-only: true
       - id: mtgkey-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: gate-audio/mtgkey
           key: ${{ env.AUDIO_CACHE }}-mtgkey
@@ -131,12 +131,12 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.plan.outputs.harness }}
       - name: Restore this shard's tracks from an earlier run
         id: part
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-${{ matrix.shard }}-of-20
@@ -155,12 +155,12 @@ jobs:
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
           python3 scripts/holdout-r3/fetch-jamendo.py "$DOCS/jamendo-manifest.json" \
             "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ matrix.shard }}/20 gate-audio/jamendo
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: steps.part.outputs.cache-hit != 'true'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo-part-${{ matrix.shard }}-of-20
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: gate-audio-jamendo-${{ inputs.mode }}-${{ matrix.shard }}
           path: gate-audio/jamendo
@@ -172,7 +172,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.plan.outputs.harness }}
       - name: Fetch and cut the held-out MTG key excerpts
@@ -182,7 +182,7 @@ jobs:
           # Refuses to continue if the frozen manifest can't be rebuilt exactly.
           python3 scripts/holdout-r3/select-mtg-key.py "$RUNNER_TEMP/mk" "$DOCS/round2-mtg-key-tracks.txt" gate-audio/mtgkey
           git diff --exit-code "$DOCS/mtg-key-manifest.json"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: gate-audio-mtgkey-${{ inputs.mode }}
           path: gate-audio/mtgkey
@@ -194,23 +194,23 @@ jobs:
     if: ${{ !cancelled() && (needs.fetch-jamendo.result == 'success' || needs.fetch-mtgkey.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: needs.fetch-jamendo.result == 'success'
         with:
           pattern: gate-audio-jamendo-${{ inputs.mode }}-*
           path: gate-audio/jamendo
           merge-multiple: true
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: needs.fetch-jamendo.result == 'success'
         with:
           path: gate-audio/jamendo
           key: ${{ env.AUDIO_CACHE }}-jamendo
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: needs.fetch-mtgkey.result == 'success'
         with:
           name: gate-audio-mtgkey-${{ inputs.mode }}
           path: gate-audio/mtgkey
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: needs.fetch-mtgkey.result == 'success'
         with:
           path: gate-audio/mtgkey
@@ -231,22 +231,22 @@ jobs:
         include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     name: analyse (${{ matrix.side }} ${{ matrix.set }} ${{ matrix.shard }})
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ matrix.sha }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.plan.outputs.harness }}
           path: harness
       - name: Restore the audio
         id: audio
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: gate-audio/${{ matrix.set }}
           key: ${{ env.AUDIO_CACHE }}-${{ matrix.set }}
       - name: Use the audio fetched in this run
         if: steps.audio.outputs.cache-hit != 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: gate-audio-${{ matrix.set }}-${{ inputs.mode }}*
           path: gate-audio/${{ matrix.set }}
@@ -263,13 +263,13 @@ jobs:
           node -e 'const fs=require("fs"),m=JSON.parse(fs.readFileSync(process.argv[1])),gone=m.items.filter(i=>!fs.existsSync(`${process.argv[2]}/${i.id}.wav`));
             if(gone.length){console.error(`${gone.length} of ${m.items.length} tracks have no audio, e.g. ${gone[0].id}`);process.exit(1)}' \
             gate-manifests/${{ matrix.set }}.json gate-audio/${{ matrix.set }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
@@ -283,7 +283,7 @@ jobs:
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
           AUDIO_DIR=gate-audio/${{ matrix.set }} AUDIO_EXT=wav MANIFEST=gate-manifests/${{ matrix.set }}.json \
             SHARD=${{ matrix.shard }}/${{ matrix.of }} node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: gate-${{ inputs.mode }}-${{ matrix.side }}-${{ matrix.set }}-${{ matrix.shard }}
           path: out/run/graph-export.json
@@ -302,34 +302,34 @@ jobs:
         run: |
           echo "::error::An analysis job failed or was skipped, so the gate can't judge this change. Re-run the failed jobs."
           exit 1
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: needs.plan.outputs.run == 'true'
         with:
           ref: ${{ needs.plan.outputs.harness }}
           path: harness
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: needs.plan.outputs.run == 'true'
         with:
           path: app-head
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: needs.plan.outputs.run == 'true' && needs.plan.outputs.base != ''
         with:
           ref: ${{ needs.plan.outputs.base }}
           path: app-base
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: needs.plan.outputs.run == 'true'
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: app-head/package-lock.json
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: needs.plan.outputs.run == 'true'
         with:
           pattern: gate-${{ inputs.mode }}-*
           path: exports
       - name: Restore main's numbers for the base commit
         if: needs.plan.outputs.run == 'true' && needs.plan.outputs.base_cached == 'true'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: baseline
           key: ${{ env.EXPORTS_CACHE }}-${{ inputs.mode }}-${{ needs.plan.outputs.base }}
@@ -362,7 +362,7 @@ jobs:
       - name: Show the verdict
         if: always() && needs.plan.outputs.run == 'true'
         run: '[ -f summary.md ] && cat summary.md >> "$GITHUB_STEP_SUMMARY" || true'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always() && needs.plan.outputs.run == 'true'
         with:
           name: gate-${{ inputs.mode }}-reports
@@ -373,7 +373,7 @@ jobs:
       - name: Keep main's exports as the baseline for later PRs
         if: github.event_name == 'push' && needs.plan.outputs.run == 'true'
         run: rm -rf baseline && mkdir baseline && cp exports-by-side/head/*.json baseline/
-      - uses: actions/cache/save@v4
+      - uses: actions/cache/save@v6
         if: github.event_name == 'push' && needs.plan.outputs.run == 'true'
         with:
           path: baseline

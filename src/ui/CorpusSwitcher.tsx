@@ -14,14 +14,10 @@ import {
   renameCorpusById,
   restoreCorpusById,
 } from '../persistence/corpusActions';
+import { stripShareFromLocation } from '../persistence/shareUrl';
 import { useCorpusStore } from '../store/corpusStore';
 import { useFolderWatchStore } from '../store/folderWatchStore';
 import { useUiStore } from '../store/uiStore';
-
-function clearPortableShareHash(): void {
-  if (!window.location.hash.startsWith('#graph=')) return;
-  window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-}
 
 function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -154,7 +150,7 @@ export default function CorpusSwitcher({ variant = 'toolbar' }: { variant?: 'too
   const create = async () => {
     const name = newName.trim() || `Corpus ${corpora.length + 1}`;
     await createAndSwitchCorpus(name);
-    clearPortableShareHash();
+    stripShareFromLocation();
     setNewName('');
   };
 
@@ -203,7 +199,7 @@ export default function CorpusSwitcher({ variant = 'toolbar' }: { variant?: 'too
                   onClick={() => {
                     void run(async () => {
                       await restoreCorpusById(corpus.id);
-                      clearPortableShareHash();
+                      stripShareFromLocation();
                     }, true);
                   }}
                 >

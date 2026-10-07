@@ -9,10 +9,6 @@ on:
       run:
         description: run folder under runs/ in the HF repo
         required: true
-  push:
-    branches: [claude/more-hf-training-a4kg21]
-    paths: [docs/evaluations/hf-key-tempo-2026-10-06/pull-request.txt]
-
 permissions:
   contents: write
 
@@ -21,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download run from Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}

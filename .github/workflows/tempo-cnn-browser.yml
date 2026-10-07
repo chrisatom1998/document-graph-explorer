@@ -5,10 +5,6 @@ name: Tempo model, browser check on both DJ clip sets
 # tracks (scripts/tempo/cnn-combine.py). Reports go to docs/evaluations/tempo-cnn-2026-10-06/browser/.
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/fix-triplet-tempo-lkxolu]
-    paths: [.github/workflows/tempo-cnn-browser.yml]
-
 permissions:
   contents: write
 
@@ -36,7 +32,7 @@ jobs:
       matrix:
         set: [round1, round2]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Re-cut the frozen excerpts
         run: |
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
@@ -48,7 +44,7 @@ jobs:
             python3 scripts/dj-clips/mtg-key.py "$RUNNER_TEMP/mk" audio
           fi
           git diff --exit-code -- "$R1" "$R2"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tempo-${{ matrix.set }}-audio
           path: audio
@@ -64,18 +60,18 @@ jobs:
         set: [round1, round2]
         shard: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: tempo-${{ matrix.set }}-audio
           path: audio
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
@@ -89,7 +85,7 @@ jobs:
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
           AUDIO_DIR=audio AUDIO_EXT=wav MANIFEST=${{ matrix.set == 'round1' && env.R1 || env.R2 }} SHARD=${{ matrix.shard }}/4 \
             node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: tempo-${{ matrix.set }}-export-${{ matrix.shard }}
@@ -101,13 +97,13 @@ jobs:
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: tempo-*-export-*
           path: exports

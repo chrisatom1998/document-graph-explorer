@@ -30,7 +30,7 @@ jobs:
       matrix:
         set: [cal900]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Extract the 900 OpenMIC calibration clips
         if: matrix.set == 'cal900'
         run: |
@@ -38,7 +38,7 @@ jobs:
           echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $RUNNER_TEMP/openmic.tgz" | md5sum -c -
           python3 scripts/mixed-music/build.py "$RUNNER_TEMP/openmic.tgz" audio
           mkdir -p set && cp docs/evaluations/mixed-music-2026-10-05/manifest.json set/manifest.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: fix-${{ matrix.set }}-audio
           path: |
@@ -61,18 +61,18 @@ jobs:
           - { set: cal900, shard: 3, of: 5 }
           - { set: cal900, shard: 4, of: 5 }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: fix-${{ matrix.set }}-audio
           path: clips
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
@@ -86,7 +86,7 @@ jobs:
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
           AUDIO_DIR=clips/audio AUDIO_EXT=ogg MANIFEST=clips/set/manifest.json \
             SHARD=${{ matrix.shard }}/${{ matrix.of }} node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: fix-${{ matrix.set }}-export-${{ matrix.shard }}
@@ -98,13 +98,13 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: fix-*-export-*
           path: exports

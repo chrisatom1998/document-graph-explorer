@@ -5,10 +5,6 @@ name: DJ clip round 2, tempo fix from PR 116
 # clean check of the fix. Reports go to docs/evaluations/dj-clips-round2-2026-10-06/results/tempo-fix-116/.
 on:
   workflow_dispatch:
-  push:
-    branches: [claude/project-thread-unl6fy]
-    paths: [.github/workflows/dj-clips-round2-tempo-fix.yml]
-
 permissions:
   contents: write
 
@@ -29,14 +25,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Re-cut the frozen MTG key excerpts
         run: |
           test -f "$DOCS/mtg-key-manifest.json"
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
           git clone -q "$MTGKEY" "$RUNNER_TEMP/mk" && git -C "$RUNNER_TEMP/mk" checkout -q "$MTGKEY_REF"
           python3 scripts/dj-clips/mtg-key.py "$RUNNER_TEMP/mk" audio
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: fix-mtgkey-audio
           path: audio
@@ -51,22 +47,22 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Use PR 116's app source
         run: git checkout "$FIX_SHA" -- src
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: fix-mtgkey-audio
           path: audio
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
@@ -80,7 +76,7 @@ jobs:
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
           AUDIO_DIR=audio AUDIO_EXT=wav MANIFEST=$DOCS/mtg-key-manifest.json SHARD=${{ matrix.shard }}/4 \
             node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: fix-mtgkey-export-${{ matrix.shard }}
@@ -92,13 +88,13 @@ jobs:
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: fix-mtgkey-export-*
           path: exports

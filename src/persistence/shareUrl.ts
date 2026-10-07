@@ -1,14 +1,21 @@
 import type { DocNode, Edge, GraphExport } from '../model/types';
 import { sanitizeGraphExport } from './validateImport';
 
-/** Portable, backend-free graph links. URL fragments are never sent to the host. */
+/** Portable, backend-free graph links. Compact shares may also use `?graph=`. */
 export const SHARE_FRAGMENT_PREFIX = '#graph=v1.';
 export const SHARE_RAW_TAG = 'raw.';
+/** Used when the current page cannot be opened by a recipient (localhost, file, app). */
+export const CANONICAL_SHARE_ORIGIN = 'https://document-graph-explorer.vercel.app';
 
 /** 48 KiB becomes roughly 64 KiB after base64url encoding. */
 export const MAX_SHARE_COMPRESSED_BYTES = 48 * 1024;
 /** Prefix/tag slack above the approximately 64 KiB encoded payload. */
 export const MAX_SHARE_FRAGMENT_CHARS = 64 * 1024 + 64;
+/**
+ * Dual hash+query URLs longer than this are hash-only. Chat apps that strip
+ * `#...` still get a working `?graph=` copy for typical compact graphs.
+ */
+export const MAX_MESSENGER_SHARE_URL_CHARS = 4000;
 /** Hard post-decompression ceiling, enforced while the stream is read. */
 export const MAX_SHARE_DECODED_BYTES = 2 * 1024 * 1024;
 /** Share-link summaries match the import sanitizer and confirm copy (2000). */
@@ -262,16 +269,94 @@ export async function encodeShareFragment(input: unknown): Promise<string> {
   return fragment;
 }
 
-/** Return the explicit #graph fragment from either a hash or a full URL. */
+function decodeShareCandidate(raw: string): string {
+  let current = raw;
+  for (let i = 0; i < 3; i++) {
+    if (current.startsWith('#graph=')) return current;
+    try {
+      const decoded = decodeURIComponent(current);
+      if (decoded === current) break;
+      current = decoded;
+    } catch {
+      break;
+    }
+  }
+  return current;
+}
+
+function fragmentFromRaw(raw: string): string | null {
+  const normalized = raw.startsWith('#') || raw.startsWith('%') ? raw : `#${raw}`;
+  const decoded = decodeShareCandidate(normalized);
+  return decoded.startsWith('#graph=') ? decoded : null;
+}
+
+/**
+ * Return the explicit #graph fragment from a hash, a full URL, or the
+ * encodings messengers often apply (`%23graph=`, `#graph%3Dv1.`).
+ */
 export function extractShareFragment(value: string): string | null {
+  if (!value) return null;
+
   const hashIndex = value.indexOf('#');
-  if (hashIndex < 0) return null;
-  const hash = value.slice(hashIndex);
-  return hash.startsWith('#graph=') ? hash : null;
+  if (hashIndex >= 0) {
+    const fromHash = fragmentFromRaw(value.slice(hashIndex));
+    if (fromHash) return fromHash;
+  }
+
+  const encodedHash = value.search(/%23graph(?:=|%3D)/iu);
+  if (encodedHash >= 0) {
+    const fromEncoded = fragmentFromRaw(value.slice(encodedHash));
+    if (fromEncoded) return fromEncoded;
+  }
+
+  try {
+    const url = new URL(value);
+    const fromQuery = url.searchParams.get('graph');
+    if (fromQuery) return fragmentFromRaw(fromQuery.startsWith('graph=') ? fromQuery : `graph=${fromQuery}`);
+  } catch {
+    /* not an absolute URL — keep scanning the raw string */
+  }
+
+  if (/^(?:#)?graph=/iu.test(value)) return fragmentFromRaw(value);
+  return null;
+}
+
+/** Prefer location.hash (often already decoded) and fall back to href. */
+export function extractShareFragmentFromLocation(loc: { href: string; hash: string }): string | null {
+  return extractShareFragment(loc.hash) ?? extractShareFragment(loc.href);
 }
 
 export function hasShareFragment(value: string): boolean {
   return extractShareFragment(value) !== null;
+}
+
+function isNonPublicHostname(hostname: string): boolean {
+  const host = hostname.replace(/^\[|\]$/gu, '').toLowerCase();
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '::1' ||
+    host.endsWith('.localhost') ||
+    host.endsWith('.local')
+  );
+}
+
+/**
+ * Recipients cannot open localhost / file / Electron URLs. Those builds still
+ * produce a portable fragment, so point the link at the public web app.
+ */
+export function resolveShareBaseHref(href?: string): string {
+  const fallback = `${CANONICAL_SHARE_ORIGIN}/`;
+  const raw = href ?? (typeof window !== 'undefined' ? window.location.href : undefined);
+  if (!raw) return fallback;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return fallback;
+    if (isNonPublicHostname(url.hostname)) return fallback;
+    return raw;
+  } catch {
+    return fallback;
+  }
 }
 
 /**
@@ -330,14 +415,40 @@ export async function decodeShareFragment(value: string): Promise<GraphExport | 
   }
 }
 
+/**
+ * Copy the `#graph=` token into `?graph=` when the full URL still fits a
+ * chat-app budget. Recipients whose messenger dropped the fragment can open
+ * the query copy; the app then rewrites the address to a hash-only URL.
+ */
+export function attachMessengerSafeShareQuery(url: URL, fragment: string): URL {
+  const token = fragment.startsWith('#graph=') ? fragment.slice('#graph='.length) : '';
+  if (!token) return url;
+  const withQuery = new URL(url.toString());
+  withQuery.searchParams.set('graph', token);
+  return withQuery.toString().length <= MAX_MESSENGER_SHARE_URL_CHARS ? withQuery : url;
+}
+
+/** Drop `#graph=` / `?graph=` when the user leaves a portable shared view. */
+export function stripShareFromLocation(
+  loc: Pick<Location, 'pathname' | 'search' | 'hash'> = window.location,
+  historyLike: Pick<History, 'replaceState'> = window.history,
+): void {
+  const params = new URLSearchParams(loc.search.startsWith('?') ? loc.search.slice(1) : loc.search);
+  const hadQuery = params.has('graph');
+  const hash = loc.hash;
+  const hadHash = hash.startsWith('#graph=') || hash.startsWith('#graph%3D');
+  if (!hadQuery && !hadHash) return;
+  params.delete('graph');
+  const search = params.toString();
+  const next = `${loc.pathname || '/'}${search ? `?${search}` : ''}`;
+  const state =
+    typeof window !== 'undefined' && historyLike === window.history ? window.history.state : null;
+  historyLike.replaceState(state, '', next);
+}
+
 /** Build a copyable URL, deliberately dropping all query state/corpus ids. */
 export async function createShareUrl(input: unknown, baseHref?: string): Promise<string> {
-  const href =
-    baseHref ??
-    (typeof window !== 'undefined' ? window.location.href : undefined);
-  if (!href) {
-    throw new ShareUrlError('unsupported', 'A public app URL is required to create a link.');
-  }
+  const href = resolveShareBaseHref(baseHref);
 
   let url: URL;
   try {
@@ -354,5 +465,5 @@ export async function createShareUrl(input: unknown, baseHref?: string): Promise
   url.password = '';
   url.search = '';
   url.hash = fragment.slice(1);
-  return url.toString();
+  return attachMessengerSafeShareQuery(url, fragment).toString();
 }

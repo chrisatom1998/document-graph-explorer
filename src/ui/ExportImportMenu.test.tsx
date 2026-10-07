@@ -7,6 +7,30 @@ import type { DocNode, Edge } from '../model/types';
 vi.mock('../persistence/exportImport', () => ({
   exportGraphJSON: vi.fn(() => Promise.resolve()),
   exportScenePNG: vi.fn(() => Promise.resolve(true)),
+  toGraphExport: vi.fn(() => ({
+    version: 1,
+    createdAt: '2026-08-17T00:00:00.000Z',
+    generator: 'knowledge-nebula',
+    includeEmbeddings: false,
+    clusterNames: {},
+    nodes: [
+      {
+        id: 'a',
+        kind: 'document',
+        title: 'Doc a',
+        fileType: 'md',
+        topics: [],
+        entities: [],
+        keywords: [],
+        wordCount: 20,
+        cluster: 0,
+        degree: 0,
+        status: 'ok',
+        summary: 'Shared summary',
+      },
+    ],
+    edges: [] as Edge[],
+  })),
   importGraphJSONFile: vi.fn(() =>
     Promise.resolve({
       nodes: [
@@ -29,12 +53,18 @@ vi.mock('../persistence/exportImport', () => ({
   ),
 }));
 
+vi.mock('../persistence/shareUrl', () => ({
+  createShareUrl: vi.fn(async () => 'https://document-graph-explorer.vercel.app/#graph=v1.abc'),
+}));
+
 import ExportImportMenu from './ExportImportMenu';
 import { importGraphJSONFile } from '../persistence/exportImport';
+import { createShareUrl } from '../persistence/shareUrl';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 
 const mockImportGraphJSONFile = vi.mocked(importGraphJSONFile);
+const mockCreateShareUrl = vi.mocked(createShareUrl);
 
 function docNode(id: string): DocNode {
   return {
@@ -92,8 +122,12 @@ function pickJsonFile(name = 'graph.json'): File {
 describe('ExportImportMenu', () => {
   beforeEach(() => {
     mockImportGraphJSONFile.mockResolvedValue({ nodes: [docNode('imported')], edges: [] });
+    mockCreateShareUrl.mockResolvedValue('https://document-graph-explorer.vercel.app/#graph=v1.abc');
     useGraphStore.getState().reset();
     useUiStore.setState({ toasts: [] });
+    Object.assign(navigator, {
+      clipboard: { writeText: vi.fn(async () => undefined) },
+    });
   });
 
   afterEach(() => {
@@ -167,6 +201,29 @@ describe('ExportImportMenu', () => {
     render(<ExportImportMenu />);
 
     expect(screen.getByRole('button', { name: /import graph json/i })).toBeDisabled();
+  });
+
+  it('builds the share URL in the confirm dialog so copy keeps the user gesture', async () => {
+    setGraph([docNode('a'), docNode('b')], 'ready');
+    render(<ExportImportMenu />);
+
+    fireEvent.click(screen.getByRole('button', { name: /copy shareable url/i }));
+    const dialog = await screen.findByRole('dialog', { name: /copy shareable graph url/i });
+    expect(dialog).toBeVisible();
+
+    const field = await screen.findByRole('textbox', { name: /shareable graph url/i });
+    await waitFor(() =>
+      expect(field).toHaveValue('https://document-graph-explorer.vercel.app/#graph=v1.abc'),
+    );
+    expect(mockCreateShareUrl).toHaveBeenCalledOnce();
+
+    fireEvent.click(screen.getByRole('button', { name: /^copy link$/i }));
+    await waitFor(() =>
+      expect(useUiStore.getState().toasts.at(-1)?.message).toMatch(/shareable graph link copied/i),
+    );
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      'https://document-graph-explorer.vercel.app/#graph=v1.abc',
+    );
   });
 
   it('surfaces import failures as toasts', async () => {

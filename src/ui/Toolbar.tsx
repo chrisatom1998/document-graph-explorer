@@ -459,7 +459,7 @@ export default function Toolbar(_props: { graphToolsTarget?: HTMLElement | null;
         >
           <IconData />
         </button>
-        {openMenu === 'data' && (
+        {(openMenu === 'data' || dataDialogOpen) && (
           <Suspense fallback={null}>
             <ExportImportMenu
               onClose={() => setOpenMenu(null)}

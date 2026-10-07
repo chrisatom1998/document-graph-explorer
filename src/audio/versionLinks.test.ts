@@ -53,7 +53,7 @@ const vector = (seed: number) => Array.from({ length: 512 }, (_, i) => Math.sin(
 describe('version links', () => {
   it('links copies of one recording as the same recording and leaves other songs alone', async () => {
     const nodes = [await track('a', 'track-a.wav', tune(A)), await track('b', 'export-final.mp3', tune(A, 0, .1)), await track('c', 'up two.mp3', tune(A, 2)), await track('d', 'other.wav', tune(B))];
-    const edges = buildVersionEdges(nodes, 10_000);
+    const edges = buildVersionEdges(nodes, Infinity);
     expect(edges.map(e => e.id).sort()).toEqual(['a->b:version', 'a->c:version', 'b->c:version']);
     expect(edges.every(e => versionRelation(e) === 'duplicate')).toBe(true);
     expect(edges.find(e => e.id === 'a->c:version')!.evidence[0]).toMatch(/pitched up about 2 semitones/);
@@ -66,7 +66,7 @@ describe('version links', () => {
     const v = vector(3), w = v.map((x, i) => x + .25 * Math.cos(i));
     const nodes = [await track('a', 'DJ One - Night Drive (Original Mix).mp3', tune(A), v), await track('b', 'DJ Two - Night Drive (Club Remix).mp3', tune(B), w),
       await track('c', 'DJ Two - Sunrise.mp3', tune(C), w)];
-    const edges = buildVersionEdges(nodes, 10_000);
+    const edges = buildVersionEdges(nodes, Infinity);
     expect(edges.map(e => [e.id, versionRelation(e)])).toEqual([['a->b:version', 'remix']]);
     expect(edges[0].evidence[0]).toMatch(/titles match/);
     expect(versionGroup('b', nodes, edges)).toMatchObject([{ node: { id: 'a' }, relation: 'remix' }]);

@@ -42,7 +42,7 @@ A full-spectrum, line-level technical audit of the Document Graph Explorer clien
 | 11 | Vitest Suite & Gaps | Unit/integration test coverage, mock realism | R4 | ORIGINAL_REQUEST §R4 | DONE |
 | 12 | CI/CD, Airgap & Security | CSP, external fetch leak audit, build verification | R4 | ORIGINAL_REQUEST §R4 | DONE |
 | 13 | Baseline Verification | Executing lint, typecheck, test, build | R4 / Baseline | Acceptance Criteria | DONE |
-| 14 | Master Audit Report Synthesis | Producing comprehensive AUDIT_REPORT.md | Synthesis | Acceptance Criteria | DONE |
+| 14 | Master Audit Report Synthesis | Producing comprehensive audit report (now docs/audit-report-2026-08-21.md) | Synthesis | Acceptance Criteria | DONE |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status | Output Artifact |
@@ -51,8 +51,8 @@ A full-spectrum, line-level technical audit of the Document Graph Explorer clien
 | M2 | R2 Investigation | Deep dive into ingestion pipeline, workers, ONNX, force layout | none | DONE | `.agents/explorer_r2/handoff.md` |
 | M3 | R3 Investigation | Deep dive into 3D scene graph, Three.js/R3F, a11y | none | DONE | `.agents/explorer_r3/handoff.md` |
 | M4 | R4 & Baseline Checks | Deep dive into test coverage, airgap security + run baseline commands | none | DONE | `.agents/explorer_r4/handoff.md`, `.agents/worker_baseline/handoff.md` |
-| M5 | Master Audit Report Synthesis | Synthesize findings into AUDIT_REPORT.md with scorecard, line-level diffs, roadmap | M1, M2, M3, M4 | DONE | `AUDIT_REPORT.md` |
-| M6 | Final Verification & Delivery | Review AUDIT_REPORT.md against all criteria and deliver to parent | M5 | DONE | Master Audit Handoff |
+| M5 | Master Audit Report Synthesis | Synthesize findings into docs/audit-report-2026-08-21.md with scorecard, line-level diffs, roadmap | M1, M2, M3, M4 | DONE | `docs/audit-report-2026-08-21.md` |
+| M6 | Final Verification & Delivery | Review docs/audit-report-2026-08-21.md against all criteria and deliver to parent | M5 | DONE | Master Audit Handoff |
 
 ## Code Layout
 - `src/`

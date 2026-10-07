@@ -5,9 +5,6 @@ name: Mixed-music tag check
 # this commit; both use this commit's scripts. The first run freezes and commits the manifest; audio is fetched at run
 # time and never committed.
 on:
-  push:
-    branches: [claude/weak-sound-labels-2phv35]
-    paths: [scripts/mixed-music/build.py]
   workflow_dispatch:
 
 permissions:
@@ -28,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download OpenMIC-2018
         run: |
           curl -fsSL --retry 6 -o "$RUNNER_TEMP/openmic.tgz" "$OPENMIC"
@@ -43,7 +40,7 @@ jobs:
               commit -m "Freeze the mixed-music tag benchmark (OpenMIC test clips)"
             for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" && break; sleep $((2**i)); done
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mixed-music-audio
           path: |
@@ -61,20 +58,20 @@ jobs:
         build: [base, branch]
         shard: [0, 1, 2]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: mixed-music-audio
           path: mm
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
@@ -91,7 +88,7 @@ jobs:
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
           AUDIO_DIR=mm/mixed-audio AUDIO_EXT=ogg MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json SHARD=${{ matrix.shard }}/3 \
             node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: mixed-music-${{ matrix.build }}-${{ matrix.shard }}
@@ -108,17 +105,17 @@ jobs:
       matrix:
         build: [base, branch]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: mixed-music-${{ matrix.build }}-*
           path: exports
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: mixed-music-audio
           path: mm
@@ -126,7 +123,7 @@ jobs:
         run: |
           MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json npx vite-node scripts/mixed-music/score.mjs report.json exports/*/graph-export.json
           set -o pipefail; node scripts/compare-tag-reports.mjs --min-positives 5 report.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mixed-music-report-${{ matrix.build }}
           path: report.json
@@ -138,8 +135,8 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: mixed-music-report-*
           path: reports

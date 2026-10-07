@@ -7,9 +7,6 @@ name: SoundCloud labelled-track check
 # committed to docs/evaluations/soundcloud-2026-10-06/<results_dir> (artifact downloads are blocked from the sandbox).
 # Audio is never committed.
 on:
-  push:
-    branches: [claude/soundcloud-training-j0wc3t]
-    paths: [scripts/soundcloud/**, .github/workflows/soundcloud-train.yml]
   workflow_dispatch:
     inputs:
       builds:
@@ -45,7 +42,7 @@ jobs:
       audio_run: ${{ steps.config.outputs.audio_run }}
       results: ${{ steps.config.outputs.results }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run settings (dispatch inputs, else scripts/soundcloud/run.json, since pushes carry no inputs)
         id: config
         env:
@@ -72,7 +69,7 @@ jobs:
             for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
               && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sc-manifest
           path: ${{ env.DOCS }}/manifest.json
@@ -88,8 +85,8 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: sc-manifest
           path: m
@@ -99,7 +96,7 @@ jobs:
           python3 -m pip install --quiet --upgrade yt-dlp
       - name: Download and cut excerpts
         run: python3 scripts/soundcloud/collect.py fetch m/manifest.json audio ${{ matrix.shard }}/4
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sc-audio-${{ matrix.shard }}
           path: audio
@@ -116,14 +113,14 @@ jobs:
         build: ${{ fromJSON(needs.freeze.outputs.builds) }}
         shard: [0, 1, 2, 3, 4, 5]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sc-manifest
           path: m
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: sc-audio-*
           merge-multiple: true
@@ -133,13 +130,13 @@ jobs:
       - name: Keep only tracks whose audio arrived
         run: |
           node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('m/manifest.json'));m.items=m.items.filter(i=>fs.existsSync('audio/'+i.id+'.mp3'));fs.writeFileSync('m/present.json',JSON.stringify(m));console.log(m.items.length+' tracks with audio')"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
@@ -156,7 +153,7 @@ jobs:
           export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
           AUDIO_DIR=audio AUDIO_EXT=mp3 MANIFEST=m/present.json SHARD=${{ matrix.shard }}/6 \
             node scripts/short-clip-upload-eval.mjs out/run test 20
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sc-export-${{ matrix.build }}-${{ matrix.shard }}
@@ -170,17 +167,17 @@ jobs:
     env:
       RESULTS: ${{ needs.freeze.outputs.results }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: sc-export-*
           path: exports
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sc-manifest
           path: m

@@ -24,7 +24,7 @@ Audit test suites in Vitest, identify critical coverage blind spots across worke
 ## Acceptance Criteria
 
 ### Comprehensive Master Audit Report
-- [ ] Deliver a structured Master Audit Report (AUDIT_REPORT.md) containing an executive health scorecard, subsystem-by-subsystem breakdown with line-level references, impact vs. effort prioritization matrix, and phased remediation roadmap.
+- [ ] Deliver a structured Master Audit Report (docs/audit-report-2026-08-21.md) containing an executive health scorecard, subsystem-by-subsystem breakdown with line-level references, impact vs. effort prioritization matrix, and phased remediation roadmap.
 - [ ] All proposed remediations must prefer optimizing existing dependencies and patterns rather than introducing heavy new libraries.
 - [ ] Every identified issue includes exact file paths, root cause diagnosis, severity rating (Critical, High, Medium, Low), and concrete remediation diffs or actionable steps.
 - [ ] Baseline verification checks pass cleanly without regressions (npm run lint, npm run typecheck, npm test, npm run build).

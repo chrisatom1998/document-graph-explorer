@@ -35,7 +35,7 @@ jobs:
     outputs:
       sha: ${{ steps.r.outputs.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.APP_REF }}
       - id: r
@@ -44,7 +44,7 @@ jobs:
   audio:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Fetch TinySOL and cut the frozen selection
         run: |
           curl -fsSL --retry 6 -o meta.csv "$TINYSOL/TinySOL_metadata.csv?download=1"
@@ -53,7 +53,7 @@ jobs:
           echo "36030a7fe389da86c3419e5ee48e3b7f  $RUNNER_TEMP/tinysol.tgz" | md5sum -c -
           mkdir -p "$RUNNER_TEMP/ts" && tar xzf "$RUNNER_TEMP/tinysol.tgz" -C "$RUNNER_TEMP/ts"
           python3 scripts/all-tags/select-tinysol.py meta.csv "$RUNNER_TEMP/ts" audio
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ts-audio
           path: audio
@@ -68,13 +68,13 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.ref.outputs.sha }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: harness
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ts-audio
           path: clips/audio
@@ -82,13 +82,13 @@ jobs:
         run: |
           cp harness/$DOCS/tinysol-manifest.json manifest.json
           git log -1 --format='app under test: %H %s'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
@@ -102,7 +102,7 @@ jobs:
           AUDIO_DIR=clips/audio AUDIO_EXT=wav MANIFEST=manifest.json SHARD=${{ matrix.shard }}/4 \
             node scripts/short-clip-upload-eval.mjs out/run test 30
           git rev-parse HEAD > out/run/app-commit.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ts-export-${{ matrix.shard }}
@@ -114,18 +114,18 @@ jobs:
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.ref.outputs.sha }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: harness
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: ts-export-*
           path: exports
@@ -140,7 +140,7 @@ jobs:
           npx vite-node scripts/dj-fix/extract.mjs "$R/records.json" exports/ts-export-*/graph-export.json
           echo "app $APP_REF at $APP; harness $GITHUB_SHA; run $GITHUB_RUN_ID" > "$R/tested-commit.txt"
       # Kept on every run; on the default branch (no commit) this is the only copy.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ts-reports
           path: ${{ env.R }}

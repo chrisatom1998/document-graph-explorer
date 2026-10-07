@@ -1,5 +1,14 @@
 # Master Technical Audit Report: Document Graph Explorer (Knowledge Nebula)
 
+> **Historical document (August 2026).** This report is kept for the record and is
+> not a live task list. The September 2026 remediation
+> ([audit-remediation-plan.md](audit-remediation-plan.md)) addressed its findings,
+> and the test counts, line numbers and local paths below no longer match the
+> code. Its R1-1 finding (the `saveActiveCorpusPositions` hash mismatch) describes
+> the normal first save after an ingest changes the corpus hash, not a bug; the
+> proposed patch would break single-tab saves. New work is tracked in issues and
+> pull requests.
+
 **Target Repository**: Document Graph Explorer (`document-graph-explorer`)  
 **Auditor**: Project Technical Audit Orchestration Team  
 **Date**: August 21, 2026  
@@ -626,4 +635,4 @@ node scripts/check-bundle.mjs dist-airgap
 ### Audit Sign-off
 - **Baseline Integrity**: Confirmed 100% clean passes across all standard build and test targets.
 - **Airgap Compliance**: Verified zero remote network leaks; local models, WASM runtimes, OCR, and fonts are strictly self-hosted.
-- **Master Report Location**: `/Users/chrisjohnson/Projects/document-graph-explorer/AUDIT_REPORT.md`
+- **Master Report Location**: `docs/audit-report-2026-08-21.md`

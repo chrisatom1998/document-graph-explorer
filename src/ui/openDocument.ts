@@ -71,6 +71,8 @@ export async function openDocument(docId: string): Promise<OpenDocumentResult> {
   } catch {
     text = undefined;
   }
+  // Shared and imported graphs carry no document text, only the summary.
+  text ??= node?.summary;
   if (!node || node.kind !== 'document' || !text) {
     useUiStore
       .getState()
