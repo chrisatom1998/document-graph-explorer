@@ -25,6 +25,7 @@ import { enqueueRun } from '../pipeline/runQueue';
 import { randomSpherePoint } from '../pipeline/spawnPosition';
 import { useGraphStore } from '../store/graphStore';
 import { useCorpusStore } from '../store/corpusStore';
+import { useFolderWatchStore } from '../store/folderWatchStore';
 import { docVectorStore } from '../store/runtimeStores';
 import { useSettingsStore } from '../store/settingsStore';
 import { captureSceneCanvas } from '../scene/sceneCapture';
@@ -236,6 +237,11 @@ async function doImportGraphExportData(
     useCorpusStore
       .getState()
       .setEphemeral(mode === 'shared' ? 'Shared graph' : 'Imported graph', mode);
+    // The watcher was drained before enqueueing. Its saved configuration still
+    // belongs to the local corpus, but this portable view has no watched folder.
+    useFolderWatchStore.getState().setState({
+      status: 'idle', folderName: null, lastSyncAt: null, lastChangeCount: 0, error: null,
+    });
   } finally {
     useCorpusStore.getState().setSwitching(false);
   }

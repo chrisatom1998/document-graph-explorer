@@ -5,6 +5,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useCorpusStore } from '../store/corpusStore';
 import { useChatStore } from '../store/chatStore';
 import { useUiStore } from '../store/uiStore';
+import { useFolderWatchStore } from '../store/folderWatchStore';
 import { clearRuntimeStores, textStore } from '../store/runtimeStores';
 import { enqueueRun } from '../pipeline/runQueue';
 
@@ -129,6 +130,9 @@ beforeEach(() => {
   useCorpusStore.getState().reset();
   useGraphStore.getState().reset();
   useUiStore.setState({ toasts: [] });
+  useFolderWatchStore.getState().setState({
+    status: 'idle', folderName: null, lastSyncAt: null, lastChangeCount: 0, error: null,
+  });
   clearRuntimeStores();
 });
 afterEach(async () => {
@@ -325,6 +329,28 @@ describe('incoming share navigation', () => {
 });
 
 describe('share import lifecycle', () => {
+  it.each(['shared', 'imported'] as const)(
+    'clears stale folder controls after %s import while retaining the saved watch configuration', async mode => {
+      privateWorkspace();
+      const saved = (await getCorpusRecord('private'))!;
+      const watch = { handle: { name: 'Private folder' }, rootName: 'Private folder', files: {}, paused: false };
+      storage.get('corpora')!.set('private', { ...saved, watch });
+      useFolderWatchStore.getState().setState({
+        status: mode === 'shared' ? 'watching' : 'checking', folderName: 'Private folder',
+        lastSyncAt: 123, lastChangeCount: 2, error: 'Old folder warning',
+      });
+
+      await importGraphExportData(graph('Portable document'), mode);
+
+      expect(useCorpusStore.getState()).toMatchObject({ mode, activeCorpusId: null });
+      expect(useFolderWatchStore.getState()).toMatchObject({
+        status: 'idle', folderName: null, lastSyncAt: null, lastChangeCount: 0, error: null,
+      });
+      expect(watcher.suspended).toBe(true);
+      expect((await getCorpusRecord('private'))?.watch).toEqual(watch);
+    },
+  );
+
   it('saves outgoing local edits before opening a shared graph without overwriting the private corpus', async () => {
     privateWorkspace();
     await importGraphExportData(graph('Shared document'), 'shared');
@@ -338,6 +364,7 @@ describe('share import lifecycle', () => {
 
   it('skips an obsolete share that was waiting behind an ingest', async () => {
     privateWorkspace();
+    useFolderWatchStore.getState().setState({ status: 'watching', folderName: 'Private folder' });
     let release!: () => void;
     const blocker = enqueueRun(() => new Promise<void>(resolve => { release = resolve; }));
     const controller = new AbortController();
@@ -351,6 +378,7 @@ describe('share import lifecycle', () => {
     expect(useGraphStore.getState().nodes.map(n => n.title)).toEqual(['Edited private document']);
     expect(useCorpusStore.getState()).toMatchObject({ mode: 'local', activeCorpusId: 'private' });
     expect(watcher.suspended).toBe(false);
+    expect(useFolderWatchStore.getState()).toMatchObject({ status: 'watching', folderName: 'Private folder' });
   });
 
   it('loads the local workspace list on a shared startup without hydrating its private documents', async () => {

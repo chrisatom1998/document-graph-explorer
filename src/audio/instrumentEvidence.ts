@@ -81,7 +81,8 @@ export function confirmedInstrumentList(analysis: MusicAnalysis): string[] | und
 
 export function sourceReviewAllows(analysis: MusicAnalysis, label: string): boolean {
   const latest = latestSoundReview(analysis.soundReviews, 'source', label);
-  return !latest || latest.decision === 'confirmed';
+  // A shared effect confirmation keeps its saved dimension; it must not restore a duplicate instrument or filename source.
+  return !latest || latest.decision === 'confirmed' && latest.dimension === 'source';
 }
 
 export function reliableInstruments(analysis: MusicAnalysis): InstrumentEstimate[] {
