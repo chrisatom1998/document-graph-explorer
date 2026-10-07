@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import { prepareIngestFiles } from './localFiles';
+import { libraryKey } from '../persistence/library';
+
+const library = vi.hoisted(() => ({ lookupLibraryFiles: vi.fn() }));
+vi.mock('../persistence/library', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../persistence/library')>()),
+  lookupLibraryFiles: library.lookupLibraryFiles,
+}));
 import { useUiStore } from '../store/uiStore';
 
 describe('prepareIngestFiles', () => {
@@ -37,5 +44,48 @@ describe('prepareIngestFiles', () => {
     expect(files).toHaveLength(1);
     expect(files[0].fileType).toBe('other');
     expect(files[0].bytes.byteLength).toBe(0);
+  });
+});
+
+describe('prepareIngestFiles with the remembered library', () => {
+  const track = (name: string, body = 'RIFF....WAVE') => new File([body], name, { type: 'audio/wav', lastModified: 1_700_000_000_000 });
+
+  it('skips reading unchanged files and keeps them out of the size cap', async () => {
+    const kept = track('kept.wav');
+    const fresh = track('fresh.wav');
+    const read = vi.spyOn(kept, 'arrayBuffer');
+    library.lookupLibraryFiles.mockResolvedValue(new Map([
+      [libraryKey({ path: 'Crate/kept.wav', size: kept.size, lastModified: kept.lastModified }), { docId: 'doc-kept', fileType: 'audio' }],
+    ]));
+    const { files } = await prepareIngestFiles(
+      [{ file: kept, path: 'Crate/kept.wav' }, { file: fresh, path: 'Crate/fresh.wav' }],
+      { reuseLibrary: true },
+    );
+    expect(library.lookupLibraryFiles).toHaveBeenCalledWith([
+      { path: 'Crate/kept.wav', size: kept.size, lastModified: kept.lastModified },
+      { path: 'Crate/fresh.wav', size: fresh.size, lastModified: fresh.lastModified },
+    ]);
+    expect(read).not.toHaveBeenCalled();
+    expect(files[0]).toMatchObject({ name: 'kept.wav', knownId: 'doc-kept', fileType: 'audio', lastModified: kept.lastModified });
+    expect(files[0].bytes.byteLength).toBe(0);
+    expect(new TextDecoder().decode(await files[0].readBytes!())).toBe('RIFF....WAVE');
+    expect(files[1].knownId).toBeUndefined();
+    expect(files[1].bytes.byteLength).toBe(fresh.size);
+  });
+
+  it('treats a changed size or date as a new file', async () => {
+    const edited = track('edited.wav', 'RIFF....WAVE plus more');
+    library.lookupLibraryFiles.mockResolvedValue(new Map([
+      [libraryKey({ path: 'edited.wav', size: 12, lastModified: edited.lastModified }), { docId: 'old', fileType: 'audio' }],
+    ]));
+    const { files } = await prepareIngestFiles([{ file: edited }], { reuseLibrary: true });
+    expect(files[0].knownId).toBeUndefined();
+    expect(files[0].bytes.byteLength).toBe(edited.size);
+  });
+
+  it('does not consult the library unless asked', async () => {
+    library.lookupLibraryFiles.mockClear();
+    await prepareIngestFiles([{ file: track('watched.wav') }]);
+    expect(library.lookupLibraryFiles).not.toHaveBeenCalled();
   });
 });

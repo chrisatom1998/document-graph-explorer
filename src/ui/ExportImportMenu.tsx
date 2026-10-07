@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import {
   exportGraphJSON,
@@ -11,6 +11,8 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
 import { useFocusTrap } from './useFocusTrap';
 import { IconImage, IconImport, IconJson, IconLink, IconUsd } from './icons';
+
+const RekordboxExportDialog = lazy(() => import('./RekordboxExportDialog'));
 
 let graphJsonInput: HTMLInputElement | null = null;
 
@@ -119,20 +121,23 @@ export default function ExportImportMenu({
 }: ExportImportMenuProps) {
   const phase = useGraphStore((s) => s.phase);
   const nodeCount = useGraphStore((s) => s.nodes.length);
+  const hasAudio = useGraphStore((s) => s.nodes.some((n) => n.kind === 'document' && n.fileType === 'audio'));
+  const [rekordboxOpen, setRekordboxOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [shareConfirmOpen, setShareConfirmOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const confirmOpen = pendingFile !== null || shareConfirmOpen;
+  const dialogOpen = confirmOpen || rekordboxOpen;
   useFocusTrap(dialogRef, confirmOpen);
 
   useEffect(() => {
-    onDialogOpenChange?.(confirmOpen);
+    onDialogOpenChange?.(dialogOpen);
     return () => {
-      if (confirmOpen) onDialogOpenChange?.(false);
+      if (dialogOpen) onDialogOpenChange?.(false);
     };
-  }, [confirmOpen, onDialogOpenChange]);
+  }, [dialogOpen, onDialogOpenChange]);
 
   const canImport = phase === 'idle' || phase === 'ready';
   const canExportGraph = phase === 'ready';
@@ -244,6 +249,18 @@ export default function ExportImportMenu({
           <IconUsd />
           <span>Export OpenUSD scene</span>
         </button>
+        {hasAudio && (
+          <button
+            type="button"
+            className="toolbar__menu-item"
+            title="Export BPM, key and sound tags as a Rekordbox collection XML"
+            disabled={!canExportGraph}
+            onClick={() => setRekordboxOpen(true)}
+          >
+            <IconJson />
+            <span>Export for Rekordbox (XML)</span>
+          </button>
+        )}
         <button
           type="button"
           className="toolbar__menu-item"
@@ -275,6 +292,18 @@ export default function ExportImportMenu({
           <span>Import graph JSON</span>
         </button>
       </div>
+
+      {rekordboxOpen && (
+        <Suspense fallback={null}>
+          <RekordboxExportDialog
+            nodes={useGraphStore.getState().nodes}
+            onClose={() => {
+              setRekordboxOpen(false);
+              onClose?.();
+            }}
+          />
+        </Suspense>
+      )}
 
       {pendingFile &&
         createPortal(

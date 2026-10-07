@@ -1,0 +1,93 @@
+name: Key features
+
+# Computes the app's key estimate plus raw key features (Essentia's extractor with two profiles, mean chroma) for the
+# key tuning sets (unused GiantSteps MTG key tracks, half of GTZAN) and the held-out sets (the round 2 test's 500
+# tracks, the original GiantSteps key dataset, the other half of GTZAN), then commits them to the branch for offline
+# tuning (artifact downloads are blocked from the sandbox). Audio is never committed.
+# The recorded features came from run 37413211729 on 562593b; re-run by hand after changing the sets or features.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
+  MTGKEY_REF: fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b
+  GSKEY: https://github.com/GiantSteps/giantsteps-key-dataset.git
+  GSKEY_REF: 6bcd492c825ac9b8597bc650a5f6fd18b6c43d2b
+  GTZANKEY: https://github.com/alexanderlerch/gtzan_key.git
+  GTZANKEY_REF: c6dc7fe8d6949ff29b8b9fc33cd4fdd18be5b6b7
+  GTZAN: https://huggingface.co/datasets/marsyas/gtzan/resolve/main/data/genres.tar.gz
+  OUT: docs/evaluations/key-2026-10-06/features-v2
+
+jobs:
+  features:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Fetch datasets and list clips
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          for r in MTGKEY GSKEY GTZANKEY; do
+            git clone -q "${!r}" "$RUNNER_TEMP/$r"; ref="${r}_REF"; git -C "$RUNNER_TEMP/$r" checkout -q "${!ref}"
+          done
+          curl -fsSL --retry 6 -o "$RUNNER_TEMP/gtzan.tgz" "$GTZAN"
+          python3 scripts/key/build-sets.py "$RUNNER_TEMP/MTGKEY" "$RUNNER_TEMP/GSKEY" "$RUNNER_TEMP/GTZANKEY" "$RUNNER_TEMP/gtzan.tgz" \
+            "$RUNNER_TEMP/kclips" ${{ matrix.shard }}/8
+      - name: Compute features
+        run: |
+          npx vite-node scripts/key/features.mjs "$RUNNER_TEMP/kclips/clips.json" f.json
+          cp "$RUNNER_TEMP/kclips/unavailable.json" unavailable.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: key-f-${{ matrix.shard }}
+          path: |
+            f.json
+            unavailable.json
+          retention-days: 7
+
+  collect:
+    needs: features
+    # Every shard must succeed: a partial set would silently change what the model is fitted and judged on.
+    if: ${{ !cancelled() && needs.features.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: key-f-*
+          path: parts
+      - name: Merge and commit
+        run: |
+          mkdir -p "$OUT"
+          python3 - <<'EOF'
+          import glob, gzip, json, os
+          rows = [r for p in sorted(glob.glob('parts/key-f-*/f.json')) for r in json.load(open(p))]
+          sets = sorted({r['set'] for r in rows})
+          for s in sets:
+              part = sorted((r for r in rows if r['set'] == s), key=lambda r: r['id'])
+              gzip.open(f"{os.environ['OUT']}/{s}.json.gz", 'wt').write(json.dumps(part))
+              print(s, len(part), 'errors', sum(1 for r in part if r.get('error')))
+          shards = len(glob.glob('parts/key-f-*/f.json'))
+          assert shards == 8, f'{shards} of 8 shards'
+          missing = sorted(t for p in glob.glob('parts/key-f-*/unavailable.json') for t in json.load(open(p)))
+          json.dump(missing, open(f"{os.environ['OUT']}/unavailable.json", 'w'), indent=0)
+          print(len(missing), 'tracks unavailable from every source')
+          EOF
+          git add "$OUT"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record key features" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done

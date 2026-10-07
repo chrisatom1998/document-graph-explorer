@@ -1,0 +1,507 @@
+{
+ "benchmark": "all-tags-2026-10-06/jamendo-val",
+ "half": "all",
+ "items": 600,
+ "analysed": 600,
+ "missing": [],
+ "tags": {
+  "drums": {
+   "recall": 0.813,
+   "recallCI95": [
+    0.756,
+    0.874
+   ],
+   "precisionFloor": 0.299,
+   "precisionFloorCI95": [
+    0.223,
+    0.349
+   ],
+   "precisionIsExact": false,
+   "truePositives": 109,
+   "untaggedButShown": 256,
+   "misses": 25,
+   "positives": 134,
+   "untagged": 466,
+   "strongAbsents": 0
+  },
+  "voice": {
+   "recall": 0.769,
+   "recallCI95": [
+    0.632,
+    0.905
+   ],
+   "precisionFloor": 0.147,
+   "precisionFloorCI95": [
+    0.098,
+    0.197
+   ],
+   "precisionIsExact": false,
+   "truePositives": 40,
+   "untaggedButShown": 232,
+   "misses": 12,
+   "positives": 52,
+   "untagged": 548,
+   "strongAbsents": 0
+  },
+  "synthesizer": {
+   "recall": 0.886,
+   "recallCI95": [
+    0.828,
+    0.942
+   ],
+   "precisionFloor": 0.373,
+   "precisionFloorCI95": [
+    0.303,
+    0.424
+   ],
+   "precisionIsExact": false,
+   "truePositives": 163,
+   "untaggedButShown": 274,
+   "misses": 21,
+   "positives": 184,
+   "untagged": 416,
+   "strongAbsents": 0
+  },
+  "piano": {
+   "recall": 0.782,
+   "recallCI95": [
+    0.699,
+    0.847
+   ],
+   "precisionFloor": 0.375,
+   "precisionFloorCI95": [
+    0.317,
+    0.426
+   ],
+   "precisionIsExact": false,
+   "truePositives": 122,
+   "untaggedButShown": 203,
+   "misses": 34,
+   "positives": 156,
+   "untagged": 444,
+   "strongAbsents": 0
+  },
+  "electric piano": {
+   "recall": 0.163,
+   "recallCI95": [
+    0.063,
+    0.34
+   ],
+   "precisionFloor": 0.135,
+   "precisionFloorCI95": [
+    0.035,
+    0.283
+   ],
+   "precisionIsExact": false,
+   "truePositives": 7,
+   "untaggedButShown": 45,
+   "misses": 36,
+   "positives": 43,
+   "untagged": 557,
+   "strongAbsents": 0
+  },
+  "guitar": {
+   "recall": 0.796,
+   "recallCI95": [
+    0.727,
+    0.867
+   ],
+   "precisionFloor": 0.463,
+   "precisionFloorCI95": [
+    0.391,
+    0.535
+   ],
+   "precisionIsExact": false,
+   "truePositives": 133,
+   "untaggedButShown": 154,
+   "misses": 34,
+   "positives": 167,
+   "untagged": 433,
+   "strongAbsents": 0
+  },
+  "acoustic guitar": {
+   "recall": 0.032,
+   "recallCI95": [
+    0,
+    0.078
+   ],
+   "precisionFloor": 0.5,
+   "precisionFloorCI95": [
+    0,
+    1
+   ],
+   "precisionIsExact": false,
+   "truePositives": 2,
+   "untaggedButShown": 2,
+   "misses": 61,
+   "positives": 63,
+   "untagged": 537,
+   "strongAbsents": 0
+  },
+  "electric guitar": {
+   "recall": 0,
+   "recallCI95": [
+    0,
+    0
+   ],
+   "precisionFloor": null,
+   "precisionFloorCI95": null,
+   "precisionIsExact": false,
+   "truePositives": 0,
+   "untaggedButShown": 0,
+   "misses": 77,
+   "positives": 77,
+   "untagged": 523,
+   "strongAbsents": 0
+  },
+  "bass guitar": {
+   "recall": 0.386,
+   "recallCI95": [
+    0.282,
+    0.477
+   ],
+   "precisionFloor": 0.505,
+   "precisionFloorCI95": [
+    0.398,
+    0.598
+   ],
+   "precisionIsExact": false,
+   "truePositives": 56,
+   "untaggedButShown": 55,
+   "misses": 89,
+   "positives": 145,
+   "untagged": 455,
+   "strongAbsents": 0
+  },
+  "organ": {
+   "recall": 0.139,
+   "recallCI95": [
+    0.032,
+    0.286
+   ],
+   "precisionFloor": 0.067,
+   "precisionFloorCI95": [
+    0.014,
+    0.121
+   ],
+   "precisionIsExact": false,
+   "truePositives": 5,
+   "untaggedButShown": 70,
+   "misses": 31,
+   "positives": 36,
+   "untagged": 564,
+   "strongAbsents": 0
+  },
+  "violin / fiddle": {
+   "recall": 0.411,
+   "recallCI95": [
+    0.24,
+    0.556
+   ],
+   "precisionFloor": 0.228,
+   "precisionFloorCI95": [
+    0.125,
+    0.365
+   ],
+   "precisionIsExact": false,
+   "truePositives": 23,
+   "untaggedButShown": 78,
+   "misses": 33,
+   "positives": 56,
+   "untagged": 544,
+   "strongAbsents": 0
+  },
+  "cello": {
+   "recall": 0.585,
+   "recallCI95": [
+    0.406,
+    0.788
+   ],
+   "precisionFloor": 0.273,
+   "precisionFloorCI95": [
+    0.169,
+    0.398
+   ],
+   "precisionIsExact": false,
+   "truePositives": 24,
+   "untaggedButShown": 64,
+   "misses": 17,
+   "positives": 41,
+   "untagged": 559,
+   "strongAbsents": 0
+  },
+  "strings": {
+   "recall": 0.213,
+   "recallCI95": [
+    0.12,
+    0.342
+   ],
+   "precisionFloor": 0.213,
+   "precisionFloorCI95": [
+    0.102,
+    0.368
+   ],
+   "precisionIsExact": false,
+   "truePositives": 10,
+   "untaggedButShown": 37,
+   "misses": 37,
+   "positives": 47,
+   "untagged": 553,
+   "strongAbsents": 0
+  },
+  "trumpet": {
+   "recall": 0.317,
+   "recallCI95": [
+    0.194,
+    0.469
+   ],
+   "precisionFloor": 0.191,
+   "precisionFloorCI95": [
+    0.107,
+    0.308
+   ],
+   "precisionIsExact": false,
+   "truePositives": 13,
+   "untaggedButShown": 55,
+   "misses": 28,
+   "positives": 41,
+   "untagged": 559,
+   "strongAbsents": 0
+  },
+  "trombone": {
+   "recall": 0,
+   "recallCI95": [
+    0,
+    0
+   ],
+   "precisionFloor": 0,
+   "precisionFloorCI95": [
+    0,
+    0
+   ],
+   "precisionIsExact": false,
+   "truePositives": 0,
+   "untaggedButShown": 3,
+   "misses": 14,
+   "positives": 14,
+   "untagged": 586,
+   "strongAbsents": 0
+  },
+  "horn": {
+   "recall": 0,
+   "recallCI95": [
+    0,
+    0
+   ],
+   "precisionFloor": 0,
+   "precisionFloorCI95": [
+    0,
+    0
+   ],
+   "precisionIsExact": false,
+   "truePositives": 0,
+   "untaggedButShown": 2,
+   "misses": 21,
+   "positives": 21,
+   "untagged": 579,
+   "strongAbsents": 0
+  },
+  "saxophone": {
+   "recall": 0.543,
+   "recallCI95": [
+    0.395,
+    0.681
+   ],
+   "precisionFloor": 0.581,
+   "precisionFloorCI95": [
+    0.382,
+    0.714
+   ],
+   "precisionIsExact": false,
+   "truePositives": 25,
+   "untaggedButShown": 18,
+   "misses": 21,
+   "positives": 46,
+   "untagged": 554,
+   "strongAbsents": 0
+  },
+  "clarinet": {
+   "recall": 0.676,
+   "recallCI95": [
+    0.543,
+    0.864
+   ],
+   "precisionFloor": 0.161,
+   "precisionFloorCI95": [
+    0.102,
+    0.25
+   ],
+   "precisionIsExact": false,
+   "truePositives": 23,
+   "untaggedButShown": 120,
+   "misses": 11,
+   "positives": 34,
+   "untagged": 566,
+   "strongAbsents": 0
+  },
+  "oboe": {
+   "recall": 0,
+   "recallCI95": [
+    0,
+    0
+   ],
+   "precisionFloor": null,
+   "precisionFloorCI95": null,
+   "precisionIsExact": false,
+   "truePositives": 0,
+   "untaggedButShown": 0,
+   "misses": 20,
+   "positives": 20,
+   "untagged": 580,
+   "strongAbsents": 0
+  },
+  "flute": {
+   "recall": 0.744,
+   "recallCI95": [
+    0.581,
+    0.855
+   ],
+   "precisionFloor": 0.186,
+   "precisionFloorCI95": [
+    0.103,
+    0.28
+   ],
+   "precisionIsExact": false,
+   "truePositives": 32,
+   "untaggedButShown": 140,
+   "misses": 11,
+   "positives": 43,
+   "untagged": 557,
+   "strongAbsents": 0
+  },
+  "bassoon": {
+   "recall": null,
+   "recallCI95": null,
+   "precisionFloor": null,
+   "precisionFloorCI95": null,
+   "precisionIsExact": false,
+   "truePositives": 0,
+   "untaggedButShown": 0,
+   "misses": 0,
+   "positives": 0,
+   "untagged": 0,
+   "strongAbsents": 0
+  },
+  "harp": {
+   "recall": 0.353,
+   "recallCI95": [
+    0.167,
+    0.6
+   ],
+   "precisionFloor": 0.429,
+   "precisionFloorCI95": [
+    0.1,
+    0.786
+   ],
+   "precisionIsExact": false,
+   "truePositives": 6,
+   "untaggedButShown": 8,
+   "misses": 11,
+   "positives": 17,
+   "untagged": 583,
+   "strongAbsents": 0
+  },
+  "accordion": {
+   "recall": 0.219,
+   "recallCI95": [
+    0.04,
+    0.488
+   ],
+   "precisionFloor": 0.875,
+   "precisionFloorCI95": [
+    0.5,
+    1
+   ],
+   "precisionIsExact": false,
+   "truePositives": 7,
+   "untaggedButShown": 1,
+   "misses": 25,
+   "positives": 32,
+   "untagged": 568,
+   "strongAbsents": 0
+  },
+  "harmonica": {
+   "recall": 0,
+   "recallCI95": [
+    0,
+    0
+   ],
+   "precisionFloor": null,
+   "precisionFloorCI95": null,
+   "precisionIsExact": false,
+   "truePositives": 0,
+   "untaggedButShown": 0,
+   "misses": 20,
+   "positives": 20,
+   "untagged": 580,
+   "strongAbsents": 0
+  },
+  "atmospheric pad": {
+   "recall": 0.158,
+   "recallCI95": [
+    0,
+    0.409
+   ],
+   "precisionFloor": 0.097,
+   "precisionFloorCI95": [
+    0,
+    0.222
+   ],
+   "precisionIsExact": false,
+   "truePositives": 3,
+   "untaggedButShown": 28,
+   "misses": 16,
+   "positives": 19,
+   "untagged": 581,
+   "strongAbsents": 0
+  },
+  "chiptune synth": {
+   "recall": 0.636,
+   "recallCI95": [
+    0.333,
+    1
+   ],
+   "precisionFloor": 0.389,
+   "precisionFloorCI95": [
+    0.1,
+    0.688
+   ],
+   "precisionIsExact": false,
+   "truePositives": 7,
+   "untaggedButShown": 11,
+   "misses": 4,
+   "positives": 11,
+   "untagged": 589,
+   "strongAbsents": 0
+  },
+  "choir": {
+   "recall": 0.158,
+   "recallCI95": [
+    0,
+    0.357
+   ],
+   "precisionFloor": 0.6,
+   "precisionFloorCI95": [
+    0,
+    1
+   ],
+   "precisionIsExact": false,
+   "truePositives": 3,
+   "untaggedButShown": 2,
+   "misses": 16,
+   "positives": 19,
+   "untagged": 581,
+   "strongAbsents": 0
+  }
+ }
+}

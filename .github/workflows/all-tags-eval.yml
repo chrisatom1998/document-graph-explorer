@@ -1,0 +1,173 @@
+name: All tags on full songs (MTG-Jamendo validation)
+
+# Measures every app tag that MTG-Jamendo labels (26 of them) on 600 full-mix songs from split-0 VALIDATION, which no
+# DGE model was trained on and which is not a held-out judge set (round 3 uses split-0 test). The manifest's artist-hash
+# halves let thresholds be picked on "pick" and checked on "check" (scripts/all-tags/select-jamendo-val.py).
+# The app under test is APP_REF (main unless given). Audio is fetched at run time and never committed; reports and
+# per-track score records (for offline calibration) are committed to docs/evaluations/all-tags-2026-10-06/results.
+on:
+  workflow_dispatch:
+    inputs:
+      app_ref:
+        description: Branch, tag or commit whose app to test
+        default: main
+
+permissions:
+  contents: write
+
+env:
+  APP_REF: ${{ inputs.app_ref || 'main' }}
+  ONNXRUNTIME_NODE_INSTALL: skip
+  DOCS: docs/evaluations/all-tags-2026-10-06
+  JAMENDO_META: https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+concurrency:
+  group: all-tags-${{ github.ref_name }}-${{ inputs.app_ref || 'main' }}
+  cancel-in-progress: true
+
+jobs:
+  # Resolve APP_REF once, so every shard and the scorer test the same commit even if the branch moves mid-run.
+  ref:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.r.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.APP_REF }}
+      - id: r
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the frozen selection against the pinned dataset metadata
+        run: |
+          M="$RUNNER_TEMP/mj"
+          for f in data/splits/split-0/autotagging_instrument-validation.tsv data/raw_30s_cleantags.tsv \
+                   derived/music-classification-annotations/music-classification-annotations-clean.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
+            mkdir -p "$M/$(dirname $f)"; curl -fsSL --retry 6 -o "$M/$f" "$JAMENDO_META/$f"
+          done
+          python3 scripts/all-tags/select-jamendo-val.py "$M"
+      - name: Fetch and cut the tracks in this shard's archive folders
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          python3 scripts/all-tags/fetch-jamendo.py "$DOCS/jamendo-val-manifest.json" \
+            "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ matrix.shard }}/10 audio
+      - uses: actions/upload-artifact@v4
+        with:
+          name: at-audio-${{ matrix.shard }}
+          path: audio
+          retention-days: 7
+
+  eval:
+    needs: [ref, audio]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.ref.outputs.sha }}
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: at-audio-*
+          path: clips/audio
+          merge-multiple: true
+      - name: Pick the manifest
+        run: |
+          cp harness/$DOCS/jamendo-val-manifest.json manifest.json
+          git log -1 --format='app under test: %H %s'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=clips/audio AUDIO_EXT=wav MANIFEST=manifest.json SHARD=${{ matrix.shard }}/10 \
+            node scripts/short-clip-upload-eval.mjs out/run validation 20
+          git rev-parse HEAD > out/run/app-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: at-export-${{ matrix.shard }}
+          path: out/run/
+          retention-days: 30
+
+  score:
+    needs: [ref, eval]
+    # Every shard must succeed: a partial run would be scored as if every track were analysed.
+    if: ${{ !cancelled() && needs.eval.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.ref.outputs.sha }}
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: at-export-*
+          path: exports
+      - name: Score and extract records with the app's own display code
+        run: |
+          set -o pipefail
+          for f in exports/at-export-*/app-commit.txt; do [ "$(cat "$f")" = "${{ needs.ref.outputs.sha }}" ] || { echo "$f is not ${{ needs.ref.outputs.sha }}"; exit 1; }; done
+          mkdir -p scripts/all-tags scripts/dj-fix && cp harness/scripts/all-tags/score.mjs scripts/all-tags/ && cp harness/scripts/dj-fix/extract.mjs scripts/dj-fix/
+          APP=$(git rev-parse HEAD); LABEL=$(echo "$APP_REF" | tr -c 'A-Za-z0-9._\n-' '-' | cut -c1-40)-${APP::7}
+          R="harness/$DOCS/results/$LABEL"; mkdir -p "$R"; echo "R=$R" >> "$GITHUB_ENV"
+          for h in all pick check; do
+            MANIFEST=harness/$DOCS/jamendo-val-manifest.json HALF=$h npx vite-node scripts/all-tags/score.mjs "$R/tags-$h.json" exports/at-export-*/graph-export.json | tee "$R/tags-$h.txt"
+          done
+          npx vite-node scripts/dj-fix/extract.mjs "$R/records.json" exports/at-export-*/graph-export.json
+          echo "app $APP_REF at $APP; harness $GITHUB_SHA; run $GITHUB_RUN_ID" > "$R/tested-commit.txt"
+      # Kept on every run; on the default branch (no commit) this is the only copy.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: at-reports
+          path: ${{ env.R }}
+          retention-days: 90
+      - name: Commit the reports
+        if: github.ref_name != github.event.repository.default_branch
+        working-directory: harness
+        run: |
+          git add "${R#harness/}"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record all-tags full-song results for $APP_REF" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done

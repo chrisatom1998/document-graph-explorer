@@ -1,0 +1,17 @@
+/* Mix points: where the intro, drops and breakdowns start. */
+.track-structure { margin: 14px 0 0; }
+.track-structure__title { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); }
+.track-structure__strip { position: relative; height: 10px; border-radius: 999px; overflow: hidden; background: var(--surface-inset); border: 1px solid var(--border-glass); }
+.track-structure__part { position: absolute; top: 0; bottom: 0; }
+.track-structure__part--intro, .track-structure__part--outro { background: color-mix(in srgb, var(--text-faint) 35%, transparent); }
+.track-structure__part--breakdown, .track-structure__part--buildup { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+.track-structure__part--drop { background: var(--accent); }
+.track-structure__points { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.track-structure__point {
+  display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; line-height: 1.2;
+  border: 1px solid var(--border-glass); background: var(--surface-inset); color: var(--text-primary); cursor: pointer;
+}
+.track-structure__point:disabled { cursor: default; opacity: .8; }
+.track-structure__point--drop { border-color: transparent; background: var(--accent-soft); color: var(--accent-strong); font-weight: 500; }
+.track-structure__point time { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.track-structure__note { margin: 6px 0 0; font-size: 11px; color: var(--text-faint); }

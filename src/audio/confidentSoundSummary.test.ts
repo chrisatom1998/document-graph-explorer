@@ -2,6 +2,7 @@ import {expect,it} from 'vitest';
 import {confidentSoundSummary,LIKELY_SOUND_CUTOFF,TRACK_SOUND_FLOOR} from './confidentSoundSummary';
 import {createRecognition,recordEvidence} from './recognition';
 import type {MusicAnalysis} from './musicTypes';
+import {FULL_MIX_REVISION} from './fullMixHeads';
 const audio=():MusicAnalysis=>({version:2,durationSeconds:8,analyzedSeconds:8,instruments:[{label:'piano',score:.99,status:'likely'}],notes:[]});
 const head=(score:number):MusicAnalysis=>({...audio(),instruments:[],soundProfile:{version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'production',label:'kick',score,model:'Trained head'}]}});
 it.each([.39,.399999,NaN,Infinity,-1,1.01])('excludes invalid or below-floor scores %s',score=>{expect(confidentSoundSummary(head(score))).toEqual([])});
@@ -58,12 +59,13 @@ it('can display every catalog label once a trained head reports it',async()=>{
  }).map(c=>c.label);
  expect(missing).toEqual([]);
 });
-it('shows full-mix-tested Jamendo synthesizer and drums on recordings of at least ten seconds only',async()=>{
+it('shows full-mix-tested Jamendo synthesizer, drums and piano on recordings of at least ten seconds only',async()=>{
  const {FULL_MIX_JAMENDO,FULL_MIX_JAMENDO_SCORE}=await import('./confidentSoundSummary');
- const synth=FULL_MIX_JAMENDO.synthesizer.threshold,drums=FULL_MIX_JAMENDO['drum kit'].threshold;
+ const synth=FULL_MIX_JAMENDO.synthesizer.threshold,drums=FULL_MIX_JAMENDO['drum kit'].threshold,piano=FULL_MIX_JAMENDO['electric piano'].threshold;
  const song=(duration:number)=>{const a:MusicAnalysis={version:2,durationSeconds:duration,analyzedSeconds:duration,instruments:[],notes:[]};a.recognition=createRecognition(duration,'full');
-  recordEvidence(a.recognition,'jamendo',{start:0,end:Math.min(10,duration)},[{dimension:'source',labelId:'synthesizer',score:synth},{dimension:'source',labelId:'drum kit',score:drums},{dimension:'source',labelId:'piano',score:.95}]);return a;};
- expect(confidentSoundSummary(song(15)).map(s=>[s.label,s.scores?.find(x=>x.model===FULL_MIX_JAMENDO_SCORE)?.score])).toEqual([['synthesizer',synth],['drums',drums]]);
+  recordEvidence(a.recognition,'jamendo',{start:0,end:Math.min(10,duration)},[{dimension:'source',labelId:'synthesizer',score:synth},{dimension:'source',labelId:'drum kit',score:drums},{dimension:'source',labelId:'electric piano',score:piano},{dimension:'source',labelId:'saxophone',score:.95}]);return a;};
+ // Saxophone has no full-mix Jamendo rule, so it stays an untested model score.
+ expect(confidentSoundSummary(song(15)).map(s=>[s.label,s.scores?.find(x=>x.model===FULL_MIX_JAMENDO_SCORE)?.score])).toEqual([['synthesizer',synth],['drums',drums],['piano',piano]]);
  // Shorter loops were never measured: Jamendo stays an untested model score there.
  expect(confidentSoundSummary(song(8))).toEqual([]);
  // A row shorter than the calibrated 10 s window is not promoted, even on a long recording.
@@ -87,7 +89,7 @@ it('keeps the calibrated-label list in sync with the shipped detectors',async()=
 const clapOnly=(label:string,group:'source'|'production'|'character',score:number,durationSeconds=8):MusicAnalysis=>({...audio(),durationSeconds,analyzedSeconds:durationSeconds,instruments:[],soundProfile:{version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group,label,score,model:'Music CLAP'}]}});
 it('shows an untested label from raw CLAP only as unverified/possible on long recordings',()=>{
  expect(confidentSoundSummary(clapOnly('banjo','source',.5))[0]).toMatchObject({label:'banjo',tier:'possible',uncalibrated:true});
- expect(confidentSoundSummary(clapOnly('air horn','production',.62))[0]).toMatchObject({label:'air horn',tier:'possible',uncalibrated:true});
+ expect(confidentSoundSummary(clapOnly('downlifter','production',.62))[0]).toMatchObject({label:'downlifter',tier:'possible',uncalibrated:true});
 });
 it.each([[.49,8],[.6,1.5]] as const)('does not fall back below the 0.50 fallback floor or on one-shots (score %s, %s s)',(score,seconds)=>{
  expect(confidentSoundSummary(clapOnly('banjo','source',score,seconds))).toEqual([]);
@@ -97,4 +99,15 @@ it('never falls back to raw CLAP for a label that has a tested detector',()=>{
 });
 it('never shows fallback tags for labels measured as almost always wrong',()=>{
  expect(confidentSoundSummary(clapOnly('dry','character',.7))).toEqual([]);
+});
+it('shows full-mix head labels as tested on recordings of at least one full window, and lets the bass head decide bass',()=>{
+ const a:MusicAnalysis={version:2,durationSeconds:30,analyzedSeconds:30,instruments:[],notes:[],instrumentScan:{complete:true,analyzedSeconds:30,windows:5},
+  soundProfile:{version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'source',label:'bass guitar',score:.9,model:'Trained head'},{group:'source',label:'organ',score:.9,model:'Trained head'}]},
+  fullMix:{revision:FULL_MIX_REVISION!,windows:5,labels:[{label:'guitar',score:.62,segments:[]}],decides:['bass']}};
+ const shown=confidentSoundSummary(a);
+ expect(shown.map(s=>s.label).sort()).toEqual(['guitar','organ']);
+ expect(shown.find(s=>s.label==='guitar')).toMatchObject({tier:'likely',scores:[{model:'Full-mix head score',score:.62}]});
+ expect(confidentSoundSummary({...a,fullMix:{...a.fullMix!,revision:'old'}}).map(s=>s.label).sort()).toEqual(['bass guitar','organ']);
+ expect(confidentSoundSummary({...a,durationSeconds:8,analyzedSeconds:8}).map(s=>s.label).sort()).toEqual(['bass guitar','organ']);
+ expect(confidentSoundSummary({...a,instrumentScan:{complete:false,analyzedSeconds:10,windows:1}}).map(s=>s.label).sort()).toEqual(['bass guitar','organ']);
 });

@@ -1,0 +1,841 @@
+{
+ "clips": 900,
+ "halves": {
+  "calibration": 471,
+  "held-out": 429
+ },
+ "add": {
+  "guitar": {
+   "calibrationSweepRuleAlone": {
+    "0.4": {
+     "precision": 0.97,
+     "recall": 1.0,
+     "tp": 32,
+     "fp": 1,
+     "fn": 0
+    },
+    "0.45": {
+     "precision": 0.97,
+     "recall": 1.0,
+     "tp": 32,
+     "fp": 1,
+     "fn": 0
+    },
+    "0.5": {
+     "precision": 0.97,
+     "recall": 1.0,
+     "tp": 32,
+     "fp": 1,
+     "fn": 0
+    },
+    "0.55": {
+     "precision": 0.969,
+     "recall": 0.969,
+     "tp": 31,
+     "fp": 1,
+     "fn": 1
+    },
+    "0.6": {
+     "precision": 0.968,
+     "recall": 0.938,
+     "tp": 30,
+     "fp": 1,
+     "fn": 2
+    },
+    "0.65": {
+     "precision": 0.968,
+     "recall": 0.938,
+     "tp": 30,
+     "fp": 1,
+     "fn": 2
+    },
+    "0.7": {
+     "precision": 0.968,
+     "recall": 0.938,
+     "tp": 30,
+     "fp": 1,
+     "fn": 2
+    },
+    "0.75": {
+     "precision": 0.968,
+     "recall": 0.938,
+     "tp": 30,
+     "fp": 1,
+     "fn": 2
+    },
+    "0.8": {
+     "precision": 0.966,
+     "recall": 0.875,
+     "tp": 28,
+     "fp": 1,
+     "fn": 4
+    },
+    "0.85": {
+     "precision": 0.966,
+     "recall": 0.875,
+     "tp": 28,
+     "fp": 1,
+     "fn": 4
+    },
+    "0.9": {
+     "precision": 1.0,
+     "recall": 0.875,
+     "tp": 28,
+     "fp": 0,
+     "fn": 4
+    },
+    "0.95": {
+     "precision": 1.0,
+     "recall": 0.844,
+     "tp": 27,
+     "fp": 0,
+     "fn": 5
+    }
+   },
+   "chosen": 0.4,
+   "main": {
+    "calibration": {
+     "precision": 1.0,
+     "recall": 0.25,
+     "tp": 8,
+     "fp": 0,
+     "fn": 24
+    },
+    "held-out": {
+     "precision": 1.0,
+     "recall": 0.212,
+     "tp": 7,
+     "fp": 0,
+     "fn": 26
+    }
+   },
+   "withRule": {
+    "calibration": {
+     "precision": 0.97,
+     "recall": 1.0,
+     "tp": 32,
+     "fp": 1,
+     "fn": 0
+    },
+    "held-out": {
+     "precision": 1.0,
+     "recall": 0.97,
+     "tp": 32,
+     "fp": 0,
+     "fn": 1
+    }
+   },
+   "adopted": true
+  },
+  "saxophone": {
+   "calibrationSweepRuleAlone": {
+    "0.4": {
+     "precision": 0.81,
+     "recall": 1.0,
+     "tp": 34,
+     "fp": 8,
+     "fn": 0
+    },
+    "0.45": {
+     "precision": 0.829,
+     "recall": 1.0,
+     "tp": 34,
+     "fp": 7,
+     "fn": 0
+    },
+    "0.5": {
+     "precision": 0.829,
+     "recall": 1.0,
+     "tp": 34,
+     "fp": 7,
+     "fn": 0
+    },
+    "0.55": {
+     "precision": 0.829,
+     "recall": 1.0,
+     "tp": 34,
+     "fp": 7,
+     "fn": 0
+    },
+    "0.6": {
+     "precision": 0.829,
+     "recall": 1.0,
+     "tp": 34,
+     "fp": 7,
+     "fn": 0
+    },
+    "0.65": {
+     "precision": 0.829,
+     "recall": 1.0,
+     "tp": 34,
+     "fp": 7,
+     "fn": 0
+    },
+    "0.7": {
+     "precision": 0.829,
+     "recall": 1.0,
+     "tp": 34,
+     "fp": 7,
+     "fn": 0
+    },
+    "0.75": {
+     "precision": 0.868,
+     "recall": 0.971,
+     "tp": 33,
+     "fp": 5,
+     "fn": 1
+    },
+    "0.8": {
+     "precision": 0.868,
+     "recall": 0.971,
+     "tp": 33,
+     "fp": 5,
+     "fn": 1
+    },
+    "0.85": {
+     "precision": 0.861,
+     "recall": 0.912,
+     "tp": 31,
+     "fp": 5,
+     "fn": 3
+    },
+    "0.9": {
+     "precision": 0.903,
+     "recall": 0.824,
+     "tp": 28,
+     "fp": 3,
+     "fn": 6
+    },
+    "0.95": {
+     "precision": 0.885,
+     "recall": 0.676,
+     "tp": 23,
+     "fp": 3,
+     "fn": 11
+    }
+   },
+   "chosen": 0.4,
+   "main": {
+    "calibration": {
+     "precision": 1.0,
+     "recall": 0.147,
+     "tp": 5,
+     "fp": 0,
+     "fn": 29
+    },
+    "held-out": {
+     "precision": 0.818,
+     "recall": 0.429,
+     "tp": 9,
+     "fp": 2,
+     "fn": 12
+    }
+   },
+   "withRule": {
+    "calibration": {
+     "precision": 0.81,
+     "recall": 1.0,
+     "tp": 34,
+     "fp": 8,
+     "fn": 0
+    },
+    "held-out": {
+     "precision": 0.583,
+     "recall": 1.0,
+     "tp": 21,
+     "fp": 15,
+     "fn": 0
+    }
+   },
+   "adopted": false
+  },
+  "violin": {
+   "calibrationSweepRuleAlone": {
+    "0.4": {
+     "precision": 0.8,
+     "recall": 0.941,
+     "tp": 32,
+     "fp": 8,
+     "fn": 2
+    },
+    "0.45": {
+     "precision": 0.816,
+     "recall": 0.912,
+     "tp": 31,
+     "fp": 7,
+     "fn": 3
+    },
+    "0.5": {
+     "precision": 0.816,
+     "recall": 0.912,
+     "tp": 31,
+     "fp": 7,
+     "fn": 3
+    },
+    "0.55": {
+     "precision": 0.811,
+     "recall": 0.882,
+     "tp": 30,
+     "fp": 7,
+     "fn": 4
+    },
+    "0.6": {
+     "precision": 0.811,
+     "recall": 0.882,
+     "tp": 30,
+     "fp": 7,
+     "fn": 4
+    },
+    "0.65": {
+     "precision": 0.811,
+     "recall": 0.882,
+     "tp": 30,
+     "fp": 7,
+     "fn": 4
+    },
+    "0.7": {
+     "precision": 0.811,
+     "recall": 0.882,
+     "tp": 30,
+     "fp": 7,
+     "fn": 4
+    },
+    "0.75": {
+     "precision": 0.857,
+     "recall": 0.882,
+     "tp": 30,
+     "fp": 5,
+     "fn": 4
+    },
+    "0.8": {
+     "precision": 0.857,
+     "recall": 0.882,
+     "tp": 30,
+     "fp": 5,
+     "fn": 4
+    },
+    "0.85": {
+     "precision": 0.857,
+     "recall": 0.882,
+     "tp": 30,
+     "fp": 5,
+     "fn": 4
+    },
+    "0.9": {
+     "precision": 0.853,
+     "recall": 0.853,
+     "tp": 29,
+     "fp": 5,
+     "fn": 5
+    },
+    "0.95": {
+     "precision": 0.871,
+     "recall": 0.794,
+     "tp": 27,
+     "fp": 4,
+     "fn": 7
+    }
+   },
+   "chosen": 0.4,
+   "main": {
+    "calibration": {
+     "precision": 0.778,
+     "recall": 0.412,
+     "tp": 14,
+     "fp": 4,
+     "fn": 20
+    },
+    "held-out": {
+     "precision": 1.0,
+     "recall": 0.381,
+     "tp": 8,
+     "fp": 0,
+     "fn": 13
+    }
+   },
+   "withRule": {
+    "calibration": {
+     "precision": 0.8,
+     "recall": 0.941,
+     "tp": 32,
+     "fp": 8,
+     "fn": 2
+    },
+    "held-out": {
+     "precision": 0.875,
+     "recall": 1.0,
+     "tp": 21,
+     "fp": 3,
+     "fn": 0
+    }
+   },
+   "adopted": true
+  }
+ },
+ "raise": {
+  "bass": {
+   "calibrationSweep": {
+    "0.4": {
+     "precision": 0.679,
+     "recall": 1.0,
+     "tp": 19,
+     "fp": 9,
+     "fn": 0
+    },
+    "0.45": {
+     "precision": 0.692,
+     "recall": 0.947,
+     "tp": 18,
+     "fp": 8,
+     "fn": 1
+    },
+    "0.5": {
+     "precision": 0.667,
+     "recall": 0.842,
+     "tp": 16,
+     "fp": 8,
+     "fn": 3
+    },
+    "0.55": {
+     "precision": 0.682,
+     "recall": 0.789,
+     "tp": 15,
+     "fp": 7,
+     "fn": 4
+    },
+    "0.6": {
+     "precision": 0.722,
+     "recall": 0.684,
+     "tp": 13,
+     "fp": 5,
+     "fn": 6
+    },
+    "0.65": {
+     "precision": 0.733,
+     "recall": 0.579,
+     "tp": 11,
+     "fp": 4,
+     "fn": 8
+    },
+    "0.7": {
+     "precision": 0.778,
+     "recall": 0.368,
+     "tp": 7,
+     "fp": 2,
+     "fn": 12
+    },
+    "0.75": {
+     "precision": 0.714,
+     "recall": 0.263,
+     "tp": 5,
+     "fp": 2,
+     "fn": 14
+    },
+    "0.8": {
+     "precision": 0.667,
+     "recall": 0.211,
+     "tp": 4,
+     "fp": 2,
+     "fn": 15
+    },
+    "0.85": {
+     "precision": 0.5,
+     "recall": 0.053,
+     "tp": 1,
+     "fp": 1,
+     "fn": 18
+    },
+    "0.9": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 19
+    },
+    "0.95": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 19
+    }
+   },
+   "chosen": null,
+   "main": {
+    "calibration": {
+     "precision": 0.679,
+     "recall": 1.0,
+     "tp": 19,
+     "fp": 9,
+     "fn": 0
+    },
+    "held-out": {
+     "precision": 0.433,
+     "recall": 0.684,
+     "tp": 13,
+     "fp": 17,
+     "fn": 6
+    }
+   }
+  },
+  "organ": {
+   "calibrationSweep": {
+    "0.4": {
+     "precision": 0.222,
+     "recall": 0.8,
+     "tp": 4,
+     "fp": 14,
+     "fn": 1
+    },
+    "0.45": {
+     "precision": 0.25,
+     "recall": 0.6,
+     "tp": 3,
+     "fp": 9,
+     "fn": 2
+    },
+    "0.5": {
+     "precision": 0.3,
+     "recall": 0.6,
+     "tp": 3,
+     "fp": 7,
+     "fn": 2
+    },
+    "0.55": {
+     "precision": 0.429,
+     "recall": 0.6,
+     "tp": 3,
+     "fp": 4,
+     "fn": 2
+    },
+    "0.6": {
+     "precision": 0.5,
+     "recall": 0.4,
+     "tp": 2,
+     "fp": 2,
+     "fn": 3
+    },
+    "0.65": {
+     "precision": 0.5,
+     "recall": 0.4,
+     "tp": 2,
+     "fp": 2,
+     "fn": 3
+    },
+    "0.7": {
+     "precision": 0.667,
+     "recall": 0.4,
+     "tp": 2,
+     "fp": 1,
+     "fn": 3
+    },
+    "0.75": {
+     "precision": 0.5,
+     "recall": 0.2,
+     "tp": 1,
+     "fp": 1,
+     "fn": 4
+    },
+    "0.8": {
+     "precision": 0.5,
+     "recall": 0.2,
+     "tp": 1,
+     "fp": 1,
+     "fn": 4
+    },
+    "0.85": {
+     "precision": 1.0,
+     "recall": 0.2,
+     "tp": 1,
+     "fp": 0,
+     "fn": 4
+    },
+    "0.9": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 5
+    },
+    "0.95": {
+     "precision": null,
+     "recall": 0.0,
+     "tp": 0,
+     "fp": 0,
+     "fn": 5
+    }
+   },
+   "chosen": null,
+   "main": {
+    "calibration": {
+     "precision": 0.222,
+     "recall": 0.8,
+     "tp": 4,
+     "fp": 14,
+     "fn": 1
+    },
+    "held-out": {
+     "precision": 0.5,
+     "recall": 0.9,
+     "tp": 9,
+     "fp": 9,
+     "fn": 1
+    }
+   }
+  },
+  "trumpet": {
+   "calibrationSweep": {
+    "0.4": {
+     "precision": 0.788,
+     "recall": 0.929,
+     "tp": 26,
+     "fp": 7,
+     "fn": 2
+    },
+    "0.45": {
+     "precision": 0.781,
+     "recall": 0.893,
+     "tp": 25,
+     "fp": 7,
+     "fn": 3
+    },
+    "0.5": {
+     "precision": 0.8,
+     "recall": 0.857,
+     "tp": 24,
+     "fp": 6,
+     "fn": 4
+    },
+    "0.55": {
+     "precision": 0.821,
+     "recall": 0.821,
+     "tp": 23,
+     "fp": 5,
+     "fn": 5
+    },
+    "0.6": {
+     "precision": 0.846,
+     "recall": 0.786,
+     "tp": 22,
+     "fp": 4,
+     "fn": 6
+    },
+    "0.65": {
+     "precision": 0.88,
+     "recall": 0.786,
+     "tp": 22,
+     "fp": 3,
+     "fn": 6
+    },
+    "0.7": {
+     "precision": 0.875,
+     "recall": 0.75,
+     "tp": 21,
+     "fp": 3,
+     "fn": 7
+    },
+    "0.75": {
+     "precision": 0.87,
+     "recall": 0.714,
+     "tp": 20,
+     "fp": 3,
+     "fn": 8
+    },
+    "0.8": {
+     "precision": 0.87,
+     "recall": 0.714,
+     "tp": 20,
+     "fp": 3,
+     "fn": 8
+    },
+    "0.85": {
+     "precision": 0.905,
+     "recall": 0.679,
+     "tp": 19,
+     "fp": 2,
+     "fn": 9
+    },
+    "0.9": {
+     "precision": 0.947,
+     "recall": 0.643,
+     "tp": 18,
+     "fp": 1,
+     "fn": 10
+    },
+    "0.95": {
+     "precision": 1.0,
+     "recall": 0.643,
+     "tp": 18,
+     "fp": 0,
+     "fn": 10
+    }
+   },
+   "chosen": 0.5,
+   "main": {
+    "calibration": {
+     "precision": 0.788,
+     "recall": 0.929,
+     "tp": 26,
+     "fp": 7,
+     "fn": 2
+    },
+    "held-out": {
+     "precision": 0.737,
+     "recall": 1.0,
+     "tp": 28,
+     "fp": 10,
+     "fn": 0
+    }
+   },
+   "withRule": {
+    "calibration": {
+     "precision": 0.8,
+     "recall": 0.857,
+     "tp": 24,
+     "fp": 6,
+     "fn": 4
+    },
+    "held-out": {
+     "precision": 0.757,
+     "recall": 1.0,
+     "tp": 28,
+     "fp": 9,
+     "fn": 0
+    }
+   },
+   "adopted": true
+  },
+  "cello": {
+   "calibrationSweep": {
+    "0.4": {
+     "precision": 0.741,
+     "recall": 0.952,
+     "tp": 20,
+     "fp": 7,
+     "fn": 1
+    },
+    "0.45": {
+     "precision": 0.72,
+     "recall": 0.857,
+     "tp": 18,
+     "fp": 7,
+     "fn": 3
+    },
+    "0.5": {
+     "precision": 0.708,
+     "recall": 0.81,
+     "tp": 17,
+     "fp": 7,
+     "fn": 4
+    },
+    "0.55": {
+     "precision": 0.81,
+     "recall": 0.81,
+     "tp": 17,
+     "fp": 4,
+     "fn": 4
+    },
+    "0.6": {
+     "precision": 0.875,
+     "recall": 0.667,
+     "tp": 14,
+     "fp": 2,
+     "fn": 7
+    },
+    "0.65": {
+     "precision": 0.857,
+     "recall": 0.571,
+     "tp": 12,
+     "fp": 2,
+     "fn": 9
+    },
+    "0.7": {
+     "precision": 0.857,
+     "recall": 0.571,
+     "tp": 12,
+     "fp": 2,
+     "fn": 9
+    },
+    "0.75": {
+     "precision": 0.857,
+     "recall": 0.571,
+     "tp": 12,
+     "fp": 2,
+     "fn": 9
+    },
+    "0.8": {
+     "precision": 1.0,
+     "recall": 0.571,
+     "tp": 12,
+     "fp": 0,
+     "fn": 9
+    },
+    "0.85": {
+     "precision": 1.0,
+     "recall": 0.476,
+     "tp": 10,
+     "fp": 0,
+     "fn": 11
+    },
+    "0.9": {
+     "precision": 1.0,
+     "recall": 0.429,
+     "tp": 9,
+     "fp": 0,
+     "fn": 12
+    },
+    "0.95": {
+     "precision": 1.0,
+     "recall": 0.238,
+     "tp": 5,
+     "fp": 0,
+     "fn": 16
+    }
+   },
+   "chosen": 0.55,
+   "main": {
+    "calibration": {
+     "precision": 0.741,
+     "recall": 0.952,
+     "tp": 20,
+     "fp": 7,
+     "fn": 1
+    },
+    "held-out": {
+     "precision": 0.708,
+     "recall": 0.895,
+     "tp": 17,
+     "fp": 7,
+     "fn": 2
+    }
+   },
+   "withRule": {
+    "calibration": {
+     "precision": 0.81,
+     "recall": 0.81,
+     "tp": 17,
+     "fp": 4,
+     "fn": 4
+    },
+    "held-out": {
+     "precision": 0.739,
+     "recall": 0.895,
+     "tp": 17,
+     "fp": 6,
+     "fn": 2
+    }
+   },
+   "adopted": true
+  }
+ },
+ "adopted": {
+  "add": {
+   "guitar": 0.4,
+   "violin": 0.4
+  },
+  "raise": {
+   "trumpet": 0.5,
+   "cello": 0.55
+  }
+ }
+}

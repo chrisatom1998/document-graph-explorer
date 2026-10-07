@@ -14,7 +14,6 @@ import SidePanelAbout from './SidePanelAbout';
 import SidePanelConnections from './SidePanelConnections';
 import SidePanelHeader from './SidePanelHeader';
 import SidePanelReader from './SidePanelReader';
-import { focusNode } from './focusNode';
 
 function Disclose({
   label,
@@ -49,7 +48,13 @@ function Disclose({
   );
 }
 
-export default function SidePanel() {
+/**
+ * `inline` renders the panel in normal flow (the Resonance inspector expands it
+ * under "Full details"): no fixed overlay, no dialog semantics, no focus grab,
+ * and the header's close button collapses it via `onClose` instead of
+ * clearing the selection.
+ */
+export default function SidePanel({ inline = false, onClose }: { inline?: boolean; onClose?: () => void } = {}) {
   const selectedId = useUiStore((s) => s.selectedId);
   const readerHighlight = useUiStore((s) => s.readerHighlight);
   const offlineMode = useSettingsStore((s) => s.offlineMode);
@@ -65,7 +70,7 @@ export default function SidePanel() {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!nodeId) return;
+    if (!nodeId || inline) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
     closeButtonRef.current?.focus();
     return () => {
@@ -82,7 +87,7 @@ export default function SidePanel() {
         else document.querySelector<HTMLElement>('.graph-navigator__list')?.focus();
       }
     };
-  }, [nodeId]);
+  }, [nodeId, inline]);
 
   // Two-step inline confirm for the destructive Remove action. Reset whenever
   // the selection changes so an armed confirm never lingers onto a different
@@ -163,6 +168,9 @@ export default function SidePanel() {
     return out;
   }, [node, nodes]);
 
+  // Audio nodes often carry several links (tempo, key, sound) to the same track; count tracks too.
+  const linkedTracks = useMemo(() => new Set(connections.filter((row) => row.neighbor?.fileType === 'audio').map((row) => row.neighborId)).size, [connections]);
+
   // Gates the Ask-AI section below; hydrates an evicted body on demand.
   const { text: fullText } = useDocText(node?.kind === 'document' ? node.id : undefined);
 
@@ -183,9 +191,10 @@ export default function SidePanel() {
       : node.title;
 
   return (
-    <div className="side-panel-layer">
-      <div className="side-panel glass-panel" role="dialog" aria-label={dialogLabel}>
+    <div className={inline ? 'side-panel-inline' : 'side-panel-layer'}>
+      <div className={`side-panel glass-panel${inline ? ' side-panel--inline' : ''}`} role={inline ? 'region' : 'dialog'} aria-label={dialogLabel}>
         <SidePanelHeader
+          onClose={onClose}
           node={node}
           codeLang={codeLang}
           confirmRemove={confirmRemove}
@@ -231,6 +240,7 @@ export default function SidePanel() {
               ) : (
                 <>
                   {node.fileType !== 'audio' && <span>{node.wordCount.toLocaleString()} words</span>}
+                  {node.fileType === 'audio' && <span>{linkedTracks} linked track{linkedTracks === 1 ? '' : 's'}</span>}
                   <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
                 </>
               )}
@@ -252,13 +262,6 @@ export default function SidePanel() {
             />
           )}
 
-          {node.fileType === 'audio' && <section className="audio-related" aria-label="Related samples">
-            <h3>Related samples</h3>
-            {Array.from(new Map(connections.filter(row => row.neighbor?.fileType === 'audio').map(row => [row.neighborId, row.neighbor!])).values()).slice(0, 3).map(related => <button key={related.id} type="button" onClick={() => focusNode(related.id)}>
-              <span className="audio-related-icon" aria-hidden="true">♫</span><span>{related.title}<small>View sample and connections</small></span><span aria-hidden="true">↗</span>
-            </button>)}
-            {!connections.some(row => row.neighbor?.fileType === 'audio') && <p>No related samples yet.</p>}
-          </section>}
           {isDocument && (
             <Disclose
               label="About"

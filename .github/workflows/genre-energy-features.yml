@@ -1,0 +1,105 @@
+name: Genre and energy features
+
+# Runs the app's EffnetDiscogs pass (the model the app already loads for instruments) over Beatport tracks with a
+# genre (GiantSteps) and MTG-Jamendo tracks with energy mood tags, and commits the per-track features (no audio) to the
+# branch claude/genre-energy-data for offline fitting and judging. See scripts/genre-energy/build-sets.py for the splits.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  GIANTSTEPS: https://github.com/GiantSteps/giantsteps-tempo-dataset.git
+  GIANTSTEPS_REF: d51ab2422e76abacfaa86616a57054bc222ec9fd
+  MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
+  MTGKEY_REF: fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b
+  JAMENDO_META: https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f
+  ESSENTIA: https://essentia.upf.edu/models
+
+jobs:
+  lists:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the lists
+        run: |
+          git clone -q "$GIANTSTEPS" "$RUNNER_TEMP/gs" && git -C "$RUNNER_TEMP/gs" checkout -q "$GIANTSTEPS_REF"
+          git clone -q "$MTGKEY" "$RUNNER_TEMP/mk" && git -C "$RUNNER_TEMP/mk" checkout -q "$MTGKEY_REF"
+          M="$RUNNER_TEMP/mj"
+          for f in data/splits/split-0/autotagging_moodtheme-train.tsv data/splits/split-0/autotagging_moodtheme-validation.tsv \
+                   data/splits/split-0/autotagging_moodtheme-test.tsv data/raw_30s_cleantags.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
+            mkdir -p "$M/$(dirname $f)"; curl -fsSL --retry 6 -o "$M/$f" "$JAMENDO_META/$f"
+          done
+          cp "$M/data/download/raw_30s_audio-low_sha256_tracks.txt" "$RUNNER_TEMP/"
+          python3 scripts/genre-energy/build-sets.py "$RUNNER_TEMP/gs" "$RUNNER_TEMP/mk" "$M" lists
+          cp "$M/data/download/raw_30s_audio-low_sha256_tracks.txt" lists/jamendo-sha256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ge-lists
+          path: lists
+          retention-days: 3
+
+  features:
+    needs: lists
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        set: [beatport-tune, beatport-judge, jamendo-fit, jamendo-judge]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ge-lists
+          path: lists
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Fetch the EffnetDiscogs model and the comparison mood head
+        run: |
+          mkdir -p heads
+          curl -fsSL --retry 6 -o public/jamendo-model/discogs-effnet-bsdynamic-1.onnx "$ESSENTIA/feature-extractors/discogs-effnet/discogs-effnet-bsdynamic-1.onnx"
+          echo "$(node -p "require('./public/jamendo-model/manifest.json').sha256['discogs-effnet-bsdynamic-1.onnx']")  public/jamendo-model/discogs-effnet-bsdynamic-1.onnx" | sha256sum -c -
+          for e in onnx json; do curl -fsSL --retry 6 -o heads/mtg_jamendo_moodtheme-discogs-effnet-1.$e "$ESSENTIA/classification-heads/mtg_jamendo_moodtheme/mtg_jamendo_moodtheme-discogs-effnet-1.$e"; done
+      - name: Fetch audio
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          python3 scripts/genre-energy/fetch.py lists/${{ matrix.set }}.json ${{ matrix.shard }}/10 audio clips.json lists/jamendo-sha256.txt
+      - name: Compute features
+        run: npx vite-node scripts/genre-energy/features.mjs clips.json f.json public/jamendo-model heads
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ge-f-${{ matrix.set }}-${{ matrix.shard }}
+          path: f.json
+          retention-days: 7
+
+  collect:
+    needs: features
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ge-f-*
+          path: parts
+      - uses: actions/download-artifact@v4
+        with:
+          name: ge-lists
+          path: lists
+      - name: Commit the features to the data branch
+        run: |
+          mkdir -p data
+          for s in beatport-tune beatport-judge jamendo-fit jamendo-judge; do
+            python3 -c "import json,glob,sys,gzip;s=sys.argv[1];rows=[r for p in sorted(glob.glob(f'parts/ge-f-{s}-*/f.json')) for r in json.load(open(p))];gzip.open(f'data/{s}.json.gz','wt').write(json.dumps(rows));print(s,len(rows),'of',len(json.load(open(f'lists/{s}.json'))))" $s
+          done
+          echo "features from $GITHUB_SHA (run $GITHUB_RUN_ID)" > data/README.txt
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -q --orphan genre-energy-data && git rm -rqf --cached . && git add data && git commit -qm "Genre and energy features ($GITHUB_SHA)"
+          git push -fq origin HEAD:refs/heads/claude/genre-energy-data

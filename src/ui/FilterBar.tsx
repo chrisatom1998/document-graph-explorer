@@ -14,6 +14,8 @@ const EDGE_KIND_ORDER: { kind: EdgeKind; label: string }[] = [
   { kind: 'instrument', label: 'instruments' },
   { kind: 'sound', label: 'sound properties' },
   { kind: 'similar', label: 'sounds alike' },
+  { kind: 'version', label: 'versions' },
+  { kind: 'genre', label: 'same genre' },
   { kind: 'reference', label: 'links' },
   { kind: 'semantic', label: 'similar' },
   { kind: 'keyword', label: 'keywords' },
@@ -132,7 +134,7 @@ export default function FilterBar({ embedded = false }: { embedded?: boolean }) 
 
   return (
     <>
-      <SnapshotDiffBanner />
+      {!embedded && <SnapshotDiffBanner />}
     <div className={`filter-bar-layer${embedded ? " filter-bar-layer--embedded" : ""}`} ref={rootRef} onKeyDown={(event) => {
       if (event.key === 'Escape' && !collapsed && !embedded) {
         event.preventDefault();

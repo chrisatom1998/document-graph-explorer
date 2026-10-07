@@ -3,6 +3,7 @@ import { jamendoPatches } from './jamendoFeatures';
 import { INSTRUMENT_LABELS, isBroadInstrument } from './instrumentLabels';
 import type { SoundSuggestion } from './soundSuggestions';
 import { sourceLabels, type Dimension } from './recognition';
+import { ENERGY_KEY, STYLE_PREFIX, energyLogit, isGenreEnergyScore } from './genreEnergy';
 /** The score a Jamendo label needs before it counts; voice is noisier, so it needs more. */
 export const jamendoBar = (label: string) => label === 'voice' ? .5 : .3;
 export function jamendoLabels(scores: Record<string, number>): { dimension: Dimension; labelId: string; score: number }[] {
@@ -57,7 +58,7 @@ const NSYNTH_PREFIX = 'nsynth:';
 export const isNsynthScore = (key: string) => key.startsWith(NSYNTH_PREFIX);
 /** The MTG-Jamendo instrument scores alone, as the fusion schema expects them. */
 export function jamendoInstrumentScores(scores: Record<string, number>): Record<string, number> {
-  return Object.fromEntries(Object.entries(scores).filter(([key]) => !isNsynthScore(key)));
+  return Object.fromEntries(Object.entries(scores).filter(([key]) => !isNsynthScore(key) && !isGenreEnergyScore(key)));
 }
 // Softmax pairs; a high bar keeps a coin-flip clip from claiming either side. Uncalibrated.
 const NSYNTH_CHARACTER: Record<string, string> = { 'bright_dark:bright': 'bright', 'bright_dark:dark': 'dark', 'reverb:wet': 'reverberant', 'reverb:dry': 'dry' };
@@ -80,6 +81,9 @@ async function loadModels() {
   const metadata = await fetch(`${root}mtg_jamendo_instrument-discogs-effnet-1.json`);
   if (!metadata.ok) throw new Error('Music instrument labels are unavailable.');
   const { classes } = await metadata.json() as { classes: string[] };
+  const styleMetadata = await fetch(`${root}discogs-effnet-bsdynamic-1.json`);
+  if (!styleMetadata.ok) throw new Error('Music style labels are unavailable.');
+  const styles = (await styleMetadata.json() as { classes: string[] }).classes;
   const embed = await ort.InferenceSession.create(`${root}discogs-effnet-bsdynamic-1.onnx`, { executionProviders: ['wasm'] });
   const opened: { release(): Promise<void> }[] = [embed];
   try {
@@ -93,7 +97,7 @@ async function loadModels() {
       opened.push(session);
       nsynth.push({ name, session, classes: (await meta.json() as { classes: string[] }).classes });
     }
-    return { ort, embed, head, classes, nsynth };
+    return { ort, embed, head, classes, nsynth, styles };
   } catch (error) { for (const session of opened) await session.release(); throw error; }
 }
 /** Open the sessions before the first clip arrives; later calls share the same load. */
@@ -103,13 +107,17 @@ export function preloadJamendo(): ReturnType<typeof loadModels> {
 export async function classifyJamendo(engine: Essentia, samples: Float32Array): Promise<Record<string, number>> {
   const patches = jamendoPatches(engine, samples);
   if (!patches.length) throw new Error('Unsupported Jamendo input: at least 2.048 seconds required.');
-  const { ort, embed, head, classes, nsynth } = await preloadJamendo();
+  const { ort, embed, head, classes, nsynth, styles } = await preloadJamendo();
   const sums = new Float64Array(classes.length);
+  // The embedding model's own output is a Discogs style classifier; it and the energy head cost no extra audio pass.
+  const styleSums = new Float64Array(styles.length), embeddingSum = new Float64Array(1280);
   const nsynthSums = nsynth.map(h => new Float64Array(h.classes.length));
   for (const patch of patches) {
     const input = new ort.Tensor('float32', patch, [1, 128, 96]);
     const embedding = await embed.run({ melspectrogram: input });
     try {
+      for (let i = 0; i < styleSums.length; i++) styleSums[i] += Number(embedding.activations.data[i]) / patches.length;
+      for (let i = 0; i < embeddingSum.length; i++) embeddingSum[i] += Number(embedding.embeddings.data[i]) / patches.length;
       // Every head reads the same EffNet embedding, so the extra heads add no audio pass.
       for (const [session, target] of [[head, sums], ...nsynth.map((h, i) => [h.session, nsynthSums[i]] as const)] as const) {
         const outputs = await session.run({ embeddings: embedding.embeddings });
@@ -121,5 +129,8 @@ export async function classifyJamendo(engine: Essentia, samples: Float32Array): 
   return Object.fromEntries([
     ...classes.map((label, i) => [label, sums[i]] as const),
     ...nsynth.flatMap((h, j) => h.classes.map((label, i) => [`${NSYNTH_PREFIX}${h.name}:${label}`, nsynthSums[j][i]] as const)),
+    ...styles.map((label, i) => [`${STYLE_PREFIX}${label}`, Math.min(1, Math.max(0, styleSums[i]))] as const),
+    // Stored as a probability so the window still passes the score-map check; GenreEnergyScores averages logits.
+    [ENERGY_KEY, 1 / (1 + Math.exp(-energyLogit(embeddingSum)))],
   ]);
 }

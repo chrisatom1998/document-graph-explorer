@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { details as detailsPanel } from './resonance';
 import { correctDjTags } from './sampleAssistant';
 
 test('unavailable models stay explicit through correction, cancellation and restart', async ({ page }) => {
@@ -51,7 +52,7 @@ test('unavailable models stay explicit through correction, cancellation and rest
   await expect(page.getByRole('region', { name: 'Musical features' })).toBeVisible();
   await page.getByText('Track actions', { exact: true }).click();
   await expect(page.getByRole('button', { name: 'Reanalyze musical features' })).toBeEnabled();
-  await expect(page.locator('audio')).toHaveAttribute('src', /^blob:/);
+  await expect(detailsPanel(page).locator('audio')).toHaveAttribute('src', /^blob:/);
   await correctDjTags(page, /Synthetic tone/i, card => card.getByRole('checkbox', { name: 'synthesizer', exact: true }).check(), 'Your DJ tags are saved.');
   await page.reload();
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeVisible();

@@ -1,15 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
+import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles, startIn3D } from './resonance';
 
 test.beforeEach(async ({ page }) => { page.setDefaultTimeout(30_000); });
 
 async function openLibrary(page: Page) {
   const guide = page.getByRole('button', { name: 'Dismiss getting started' });
   if (await guide.isVisible()) await guide.click();
-}
-
-async function openFiles(page: Page) {
-  await openLibrary(page);
-  await page.getByRole('button', { name: 'Browse documents' }).press('Space');
 }
 
 // Console/page-error hygiene: the app funnels failures into toasts, so a
@@ -89,7 +85,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
 
   // Pin the full demo count, then require the ready-only search action to
   // be enabled before testing navigation and persistence.
-  await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents', {
+  await expect(corpusCount(page)).toContainText('100 files', {
     timeout: 270_000,
   });
   // Parsed nodes appear before embedding finishes. Apply the existing ingest
@@ -116,9 +112,9 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   // Selection commits inside the WebGL frame loop; SwiftShader frames can
   // take seconds each, so these two waits get their own generous budget.
   const frameBudget = { timeout: 150_000 };
-  const sidePanel = page.locator('.side-panel[role="dialog"]');
+  const sidePanel = details(page);
   await expect(sidePanel).toBeVisible(frameBudget);
-  await page.getByRole('button', { name: 'Back to graph' }).click();
+  await closeDetails(page);
   await expect(sidePanel).toHaveCount(0);
 
   // Selection path 2: search overlay in browse mode (empty query lists all
@@ -130,7 +126,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await expect(searchDialog.getByRole('option').first()).toBeVisible();
   await page.keyboard.press('Enter');
   await expect(sidePanel).toBeVisible(frameBudget);
-  await page.getByRole('button', { name: 'Back to graph' }).click();
+  await closeDetails(page);
 
   // Search passages in PDFs must be readable/selectable as actual text. The
   // same annotated demo must survive reload, including without a user file.
@@ -148,9 +144,9 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await page.getByRole('textbox', { name: 'Document note' }).fill('Persistence regression note');
   await page.getByRole('textbox', { name: 'Add a tag' }).fill('regression');
   await page.getByRole('textbox', { name: 'Add a tag' }).press('Enter');
-  await page.getByRole('button', { name: 'Back to graph' }).click();
+  await closeDetails(page);
   await page.reload();
-  await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents');
+  await expect(corpusCount(page)).toContainText('100 files');
   await openPostgres();
   await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('Persistence regression note');
   await expect(page.getByRole('button', { name: 'Remove tag regression' })).toBeVisible();
@@ -160,23 +156,21 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await page.reload();
   // Restoration may return to the graph or retain selection. Reopen the same
   // document in either case and verify the edit made immediately before reload.
-  await expect(page.locator('.graph-navigator__summary').or(page.getByRole('button', { name: 'Back to graph', exact: true }))).toBeVisible();
-  const restoredPanel = page.getByRole('button', { name: 'Back to graph', exact: true });
-  if (await restoredPanel.isVisible()) await restoredPanel.click();
-  await expect(page.locator('.graph-navigator__summary')).toContainText('100 documents');
+  await expect(corpusCount(page)).toContainText('100 files', { timeout: 150_000 });
+  await closeDetails(page);
+  await expect(corpusCount(page)).toContainText('100 files');
   await openPostgres();
   await expect(page.getByRole('textbox', { name: 'Document note' })).toHaveValue('Immediate reload note');
   await expect(page.getByRole('button', { name: 'Remove tag regression' })).toBeVisible();
-  await page.getByRole('button', { name: 'Back to graph' }).click();
+  await closeDetails(page);
 
-  await page.getByRole('button', { name: 'Add documents', exact: true }).click();
   const chooserPromise = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Add files', exact: true }).click();
+  await page.locator('.rs-sidebar').getByRole('button', { name: /^Import (clips|files)/ }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/persistence.txt');
-  await expect(page.locator('.graph-navigator__summary')).toContainText('101 documents');
+  await expect(corpusCount(page)).toContainText('101 files');
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
   await page.reload();
-  await expect(page.locator('.graph-navigator__summary')).toContainText('101 documents');
+  await expect(corpusCount(page)).toContainText('101 files');
 
   // Hygiene: no console errors, no uncaught page errors, no error toasts.
   await expect(page.locator('.toast--error')).toHaveCount(0);
@@ -203,15 +197,15 @@ test('normal-motion navigation and title-only Unicode search work after import',
   await list.focus();
   await page.keyboard.press('Home');
   await page.keyboard.press('Enter');
-  const panel = page.locator('.side-panel[role="dialog"]');
+  const panel = details(page);
   await expect(panel).toContainText('Boundary node 0001', { timeout: 150_000 });
-  await page.getByRole('button', { name: 'Back to graph' }).click();
+  await closeDetails(page);
   await page.getByRole('button', { name: 'Search documents' }).click();
-  await page.getByRole('combobox').fill('東京');
+  await page.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('東京');
   await page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /東京 計画/ }).click();
   await expect(panel).toContainText('東京 計画', { timeout: 150_000 });
-  await page.getByRole('button', { name: 'Back to graph' }).click();
-  await page.getByRole('button', { name: 'Fit the whole graph in view' }).click();
+  await closeDetails(page);
+  await fitAll(page);
   await page.screenshot({ path: testInfo.outputPath('unicode-graph.png') });
   expect(errors).toEqual([]);
   expect(externalRequests).toEqual([]);
@@ -226,10 +220,11 @@ test('search ranks within file filters before applying its result limit', async 
   });
   await importGraphJson(page, JSON.stringify(graph));
   await openLibrary(page);
-  await page.getByRole('button', { name: 'Show graph filters', exact: true }).click();
+  await advancedFilters(page);
   await page.getByRole('button', { name: 'md · 1', exact: true }).click();
   await page.getByRole('button', { name: 'Search documents' }).click();
-  await page.getByRole('combobox').fill('Architecture');
+  // The sidebar's Key, Genre and File type selects are comboboxes too; type into the search box.
+  await page.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('Architecture');
   await expect(page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /Architecture 13/ })).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Search documents' }).getByRole('option')).toHaveCount(1);
 });
@@ -248,11 +243,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     });
     await importGraphJson(page, JSON.stringify(graph));
     await openFiles(page);
-    const browse = page.getByRole('button', { name: 'Browse documents' });
-    await expect(browse).toBeVisible();
-    await expect(page.locator('.toolbar')).toBeVisible();
-    const list = page.getByRole('listbox', { name: 'Graph nodes' });
-    await expect(list).toBeVisible();
+    await expect(page.locator('.rs-top')).toBeVisible();
     await page.getByRole('button', { name: 'Search documents' }).click();
     const search = page.getByRole('dialog', { name: 'Search documents' });
     await expect(search).toBeVisible();
@@ -261,7 +252,7 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await searchInput.press('Escape');
     await expect(search).toBeHidden();
     await openLibrary(page);
-    await page.getByRole('button', { name: 'Show graph filters', exact: true }).click();
+    await advancedFilters(page);
     await page.getByRole('button', { name: 'More filters' }).click();
     const minimum = page.getByRole('slider', { name: 'Minimum document connections' });
     await minimum.focus();
@@ -271,10 +262,11 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 
     await page.screenshot({ path: testInfo.outputPath('filters.png') });
     await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
     await expect(page.locator('#graph-filter-status')).toHaveText('3 documents match');
-    // Clear filters also closes advanced controls; Escape from the retained
-    // filter toggle must still restore focus and dismiss the filter panel.
-    await page.getByRole('button', { name: 'Hide graph filters', exact: true }).press('Escape');
-    await expect(page.getByRole('button', { name: 'Show graph filters' })).toBeFocused();
+    // Clear filters also closes the advanced controls; the sidebar disclosure
+    // keeps them reachable afterwards at both viewport sizes.
+    await advancedFilters(page, false);
+    await advancedFilters(page);
+    await expect(page.getByRole('button', { name: 'More filters' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
   });
 }
@@ -288,7 +280,7 @@ test('renderer grows past 4,096 nodes and can frame the first node beyond the ol
 
   // 4,097 is deliberate: it forces the slot allocator to grow past the old
   // InstancedMesh capacity and makes Nodes remount its core/halo meshes.
-  await expect(page.locator('.graph-navigator__summary')).toContainText('4097 documents', {
+  await expect(corpusCount(page)).toContainText('4097 files', {
     timeout: 120_000,
   });
   await expect(page.locator('.nebula-canvas canvas')).toBeVisible();
@@ -305,7 +297,7 @@ test('renderer grows past 4,096 nodes and can frame the first node beyond the ol
   await expect(listbox).toHaveAttribute('aria-activedescendant', 'graph-navigator-option-4096');
   await page.keyboard.press('Enter');
 
-  const sidePanel = page.locator('.side-panel[role="dialog"]');
+  const sidePanel = details(page);
   await expect(sidePanel).toBeVisible({ timeout: 180_000 });
   await expect(sidePanel).toContainText('Boundary node 4097');
 
@@ -316,6 +308,7 @@ test('renderer grows past 4,096 nodes and can frame the first node beyond the ol
 
 test('switching graph views does not leak WebGL contexts', async ({ page }) => {
   const errors = collectErrors(page);
+  await startIn3D(page);
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext;
     const canvases = new WeakSet<HTMLCanvasElement>();
