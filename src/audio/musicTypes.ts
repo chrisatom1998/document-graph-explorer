@@ -14,8 +14,8 @@ export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 4;
 export const TEMPO_ANALYSIS_REVISION = 4;
 // Enabling the built-in policy makes persisted native-only documents eligible for reanalysis. 70/71: full-mix heads. 73/74: genre and energy.
-// 75/76: the trained tagger.
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 76 : 75;
+// 75/76: the trained tagger. 77/78: its per-window scores (long-recording rules).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 78 : 77;
 export interface InstrumentEstimate {
   label: string;
   score: number;

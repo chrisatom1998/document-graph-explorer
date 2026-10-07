@@ -24,6 +24,18 @@ export interface TaggerTag {
   tested: boolean;
   /** Recordings shorter than this keep the existing detectors for this tag (the held-out sets had no shorter audio). */
   minSeconds?: number;
+  /** How a recording scored on more than one window decides this tag; without it, the best window decides (as on a
+   * single-window clip). Picked on the full-song tuning set (docs/evaluations/all-tags-model-2026-10-06). */
+  long?: TaggerLongRule;
+}
+/** Long-recording rules. 'max': the best window passes `threshold`. 'windows': at least `windows` windows pass it.
+ * 'mean': the windows' mean passes it. 'agree': the best window passes it and the existing detectors show the tag too.
+ * 'detectors': the existing detectors decide the tag, as if the tagger did not cover it. `threshold` defaults to the
+ * tag's own. */
+export interface TaggerLongRule {
+  rule: 'max' | 'windows' | 'mean' | 'agree' | 'detectors';
+  threshold?: number;
+  windows?: number;
 }
 export interface TaggerPolicy {
   version: 1;
@@ -63,23 +75,29 @@ export function taggerWindow(samples: Float32Array): Float32Array {
   return out;
 }
 
-/** What a finished analysis stores: the recording's score per policy output (the maximum over its windows, the rule
- * evaluate.py scored: a tag counts when any window passes). Thresholds are applied when the tags are shown. */
-export interface TaggerAnalysis { revision: string; windows: number; scores: Record<string, number> }
+/** What a finished analysis stores: the recording's score per policy output (`scores`, the maximum over its windows, the
+ * rule evaluate.py scored: a tag counts when any window passes) and each output's score per window (`windowScores`, in
+ * window order), which the long-recording rules read. Thresholds are applied when the tags are shown. */
+export interface TaggerAnalysis { revision: string; windows: number; scores: Record<string, number>; windowScores?: Record<string, number[]> }
 
+const round4 = (v: number) => Math.round(v * 1e4) / 1e4;
 export class TaggerEvidence {
-  private best = new Map<string, number>();
+  private perWindow = new Map<string, number[]>();
   private count = 0;
   add(scores: Record<string, number>): void {
-    this.count++;
+    const k = this.count++;
     for (const tag of TAGGER_POLICY.tags) {
       const s = scores[tag.output];
-      if (typeof s === 'number' && Number.isFinite(s) && s >= 0 && s <= 1) this.best.set(tag.output, Math.max(this.best.get(tag.output) ?? 0, s));
+      if (typeof s !== 'number' || !Number.isFinite(s) || s < 0 || s > 1) continue;
+      const list = this.perWindow.get(tag.output) ?? [];
+      while (list.length < k) list.push(0);
+      list[k] = s; this.perWindow.set(tag.output, list);
     }
   }
   results(): TaggerAnalysis | undefined {
     if (!this.count) return;
-    return { revision: TAGGER_REVISION, windows: this.count, scores: Object.fromEntries([...this.best].map(([k, v]) => [k, Math.round(v * 1e4) / 1e4])) };
+    const windowScores = Object.fromEntries([...this.perWindow].map(([k, v]) => [k, Array.from({ length: this.count }, (_, i) => round4(v[i] ?? 0))]));
+    return { revision: TAGGER_REVISION, windows: this.count, scores: Object.fromEntries(Object.entries(windowScores).map(([k, v]) => [k, Math.max(...v)])), windowScores };
   }
 }
 
@@ -91,19 +109,49 @@ export function sanitizeTaggerAnalysis(raw: unknown): TaggerAnalysis | undefined
   if (!t.scores || typeof t.scores !== 'object' || Array.isArray(t.scores)) return;
   const outputs = new Set(TAGGER_POLICY.tags.map(tag => tag.output));
   const scores = Object.fromEntries(Object.entries(t.scores).filter(([k, v]) => outputs.has(k) && finite(v) && v >= 0 && v <= 1));
-  return { revision: t.revision, windows: t.windows, scores };
+  const out: TaggerAnalysis = { revision: t.revision, windows: t.windows, scores };
+  const perWindow = t.windowScores && typeof t.windowScores === 'object' && !Array.isArray(t.windowScores) ? t.windowScores : undefined;
+  if (perWindow) {
+    const windowScores = Object.fromEntries(Object.entries(perWindow).filter(([k, v]) => outputs.has(k) && k in scores && Array.isArray(v)
+      && v.length === t.windows && v.every(x => finite(x) && x >= 0 && x <= 1)));
+    if (Object.keys(windowScores).length) out.windowScores = windowScores;
+  }
+  return out;
 }
 
-export interface TaggerDisplay { tag: TaggerTag; shown: boolean; score: number }
+export interface TaggerDisplay {
+  tag: TaggerTag; shown: boolean; score: number;
+  /** Set by the 'agree' rule: the tag shows only if the existing detectors show it as well (checked by the display). */
+  needsAgreement?: boolean;
+}
+/** The recording-level score a tag's rule reads, and the threshold it is compared with. Undefined when the tagger does
+ * not decide the tag on this recording (the 'detectors' rule, or per-window scores missing for a rule that needs them). */
+function ruleScore(tag: TaggerTag, tagger: TaggerAnalysis): { raw: number; threshold: number; agree: boolean } | undefined {
+  const best = tagger.scores[tag.output] ?? 0;
+  const long = tagger.windows > 1 ? tag.long : undefined;
+  if (!long || long.rule === 'max') return { raw: best, threshold: long?.threshold ?? tag.threshold, agree: false };
+  const threshold = long.threshold ?? tag.threshold;
+  if (long.rule === 'detectors') return;
+  if (long.rule === 'agree') return { raw: best, threshold, agree: true };
+  const windows = tagger.windowScores?.[tag.output];
+  if (!windows || windows.length !== tagger.windows) return;
+  if (long.rule === 'mean') return { raw: windows.reduce((a, b) => a + b, 0) / windows.length, threshold, agree: false };
+  // 'windows': the k-th best window is the score that has to pass, so k windows pass exactly when it does.
+  const k = Math.min(windows.length, Math.max(1, long.windows ?? 2));
+  return { raw: [...windows].sort((a, b) => b - a)[k - 1], threshold, agree: false };
+}
 /** The installed policy applied to a stored result: every tag the tagger decides for this recording, whether it is
  * shown, and its display score (the threshold reads as the app's 0.5 likely cutoff, 1 stays 1). Undefined when the
  * stored result came from another tagger revision. */
 export function taggerDecisions(tagger: TaggerAnalysis | undefined, durationSeconds: number): TaggerDisplay[] | undefined {
   if (!tagger || tagger.revision !== TAGGER_REVISION) return;
-  return TAGGER_POLICY.tags.filter(tag => !tag.minSeconds || (Number.isFinite(durationSeconds) && durationSeconds >= tag.minSeconds - 1e-6)).map(tag => {
-    const raw = tagger.scores[tag.output] ?? 0;
-    const shown = raw >= tag.threshold;
-    return { tag, shown, score: shown ? Math.min(1, Math.round((0.5 + 0.5 * (raw - tag.threshold) / (1 - tag.threshold)) * 1e4) / 1e4) : 0 };
+  return TAGGER_POLICY.tags.filter(tag => !tag.minSeconds || (Number.isFinite(durationSeconds) && durationSeconds >= tag.minSeconds - 1e-6)).flatMap(tag => {
+    const rule = ruleScore(tag, tagger);
+    if (!rule) return [];
+    const { raw, threshold } = rule;
+    const shown = raw >= threshold;
+    const score = shown ? Math.min(1, Math.round((0.5 + 0.5 * (raw - threshold) / (1 - threshold)) * 1e4) / 1e4) : 0;
+    return [rule.agree ? { tag, shown, score, needsAgreement: true } : { tag, shown, score }];
   });
 }
 

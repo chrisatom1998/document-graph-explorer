@@ -33,10 +33,13 @@ version and sounds-alike links are unchanged (they do not read sound tags). Inst
   same FFmpeg resampler the training preparation used.
 - **Aggregation**: a recording's score per output is its maximum over windows, and the tag shows when that passes the
   output's threshold. That is `evaluate.py`'s rule (any window passes). Thresholds were picked on validation artists only
-  (`calibrate.py`). The shown score maps the threshold to the app's 0.5 likely cutoff.
+  (`calibrate.py`). The shown score maps the threshold to the app's 0.5 likely cutoff. Each window's score is stored too
+  (`windowScores`), and recordings scored on more than one window (20 s and longer) follow the per-instrument
+  long-recording rule below; 10 s clips (one window) keep exactly this behaviour.
 - **Deciding a tag**: for each tag below, the tagger alone decides. Other models' estimates for that tag (and the labels in
   its `decides` list) are dropped. Listener confirmations and rejections still win. Instruments are decided only on
-  recordings of at least 10 s (the held-out instrument sets had no shorter audio); shorter clips keep the existing
+  recordings of at least 10 s (the held-out instrument sets had no shorter audio), and on recordings of more than one
+  window only as the long-recording rules below allow; shorter clips keep the existing
   detectors for them. Sound-type and effect tags are decided at any length (their held-out clips were 0.3–30 s).
 - **Provenance**: tags that reached 0.70 precision and recall on every complete-label held-out set show with
   "Trained tagger score"; the rest still show, marked "maybe" with "Trained tagger score (maybe)". 70/70 is a target,
@@ -72,8 +75,56 @@ were approved on the overall picture. Kept on main's detectors because the tagge
 .97/.85 vs .94/.94; full-song recall .87 vs .92), **voice** (R1 .96/.92 vs main after the voice veto .92/.96; full songs .80 vs .83), **organ** (R1 .64/.37 vs .62/.95) and **cello**
 (full songs .25 vs .33).
 
-Round 3 counts only recall: its uploader tags leave most absences unknown, and precision on full songs is still low for
+The round 3 column is the tagger's best-window rule; on long recordings the app now applies the long-recording rules
+below, which leave most instruments to main's detectors there. Round 3 counts only recall: its uploader tags leave most absences unknown, and precision on full songs is still low for
 every detector (tagger weak-label precision: drums .30, voice .37, synthesizer .48, piano .37).
+
+### Long recordings (more than one window)
+
+On full songs, taking each instrument's best window over-fired: the accuracy gate's 150-track round 3 slice showed
+precision falling beyond the allowed drop for drums (.425 to .403), piano (.547 to .414), guitar (.317 to .240) and
+saxophone (.727 to .500), even though recall rose. So each instrument now has a rule for recordings scored on more than one window
+(`long` in `taggerPolicy.json`). The rule was picked on a tuning set of our own, never on a held-out set.
+
+**Tuning set** (`fullsong-tuning-manifest.json`, `scripts/audio-model/select-fullsong-tuning.py`): 300 MTG-Jamendo
+tracks from split-0 train (215) and validation (85). There are 133 artists, at most four tracks each, and every artist
+is one of the tagger's validation artists (`train.py` holds them out, so the tagger never trained on them). No artist
+is in split-0 test or round 3, and no track is in split-0 test. Excerpts and labels are made exactly as round 3: the
+middle 30 s of the low-quality MP3, uploader instrument tags as present, untagged as weak absent (weak view, as the
+gate scores). Classes were filled rarest first to 30 positives where available. Positives: drums 78, piano 100,
+guitar 120, bass 79, violin 28, trumpet 12, saxophone 11. The audio is fetched at run time
+(`scripts/holdout-r3/fetch-jamendo.py`) and never committed.
+The app's Jamendo instrument model was trained on split-0 train, so main's numbers here are if anything optimistic,
+which makes "at or above main's precision" a stricter bar.
+
+**Method**: the built app analysed all 300 tracks (`scripts/short-clip-upload-eval.mjs`, full mode, headless Chromium).
+Main's display was scored from the same exports with the tagger removed. On 34 tracks that main's own build also
+analysed, main's displayed source tags matched that exactly on every track. `scripts/audio-model/tune-fullsong-rule.mjs`
+scored every candidate per instrument with the app's display code and the gate's label map:
+- best window at the clip threshold (the previous behaviour);
+- at least 2 or all 3 windows passing;
+- the mean of the windows;
+- best window plus agreement with main's detectors;
+- best window, at least 2 windows, or the mean, each against a raised threshold t + (1 − t)·f, f = 0.2/0.4/0.6/0.8;
+- main's detectors.
+
+For each instrument it chose the candidate with the highest recall whose precision is at or above main's.
+
+| Instrument | Main P / R | Best window (before) P / R | Rule on long recordings | After P / R |
+|---|---|---|---|---|
+| drums | .351 / .782 | .313 / 1.00 | best window at 0.5757 (clip threshold 0.2928) | .359 / .897 |
+| piano | .494 / .790 | .433 / .910 | main's detectors (no rule kept main's precision with more recall) | .494 / .790 |
+| guitar | .644 / .933 | .525 / .975 | main's detectors (agreement: .667 / .917) | .644 / .933 |
+| violin | .400 / .571 | .250 / .679 | main's detectors (best: best window at 0.62, .389 / .500) | .400 / .571 |
+| trumpet | .136 / .250 | .238 / .417 | best window (unchanged) | .238 / .417 |
+| saxophone | .625 / .455 | .357 / .455 | main's detectors (all 3 windows: .667 / .364) | .625 / .455 |
+| bass | .541 / .506 | .415 / .747 | main's detectors (agreement: .574 / .494) | .541 / .506 |
+| cymbals | no Jamendo label | — | main's detectors (untested on full songs; every other instrument over-fired there) | — |
+
+Voice, synthesizer, organ and cello were unchanged (main's detectors on both sides). So on full songs the tagger keeps
+its drums and trumpet gains and leaves the other instruments to main. On 10 s clips (DJ rounds 1–2, the short-clip
+sets) every instrument behaves exactly as before. Sound-type and effect tags are unchanged at every length. Tuning
+aggregates: `/mnt/project-files/reports/all-tags-model/fullsong-tuning/`.
 
 ### Sound types and effects (decided at any length)
 
@@ -112,9 +163,12 @@ trained on) keep main's behaviour.
 Never trained or tuned on: DJ clip rounds 1–3, the round 3 Jamendo set, FSD50K eval, NSynth test, OpenMIC tuning clips,
 TinySOL folds 0–1 and the sounds-alike benchmark. Thresholds come from validation artists of the training sources only.
 The policy above was chosen from the existing reports; no threshold was changed after reading held-out results.
+The long-recording rules were picked on the full-song tuning set above only; the round 3 accuracy-gate result was
+used to learn that a rule was needed, never to pick one.
 
 ## Files
 
 - `heldout-scores.txt`: the run's held-out scores as written by `evaluate.py` (aggregates only).
 - `src/audio/taggerPolicy.json`, `src/audio/tagger.ts`, `src/audio/taggerInference.ts`: policy, windows and display helpers, worker inference.
+- `fullsong-tuning-manifest.json`, `scripts/audio-model/select-fullsong-tuning.py`, `scripts/audio-model/tune-fullsong-rule.mjs`: the full-song tuning set and the rule search.
 - `src/audio/tagger.test.ts`, `src/audio/tagger.parity.test.ts`, `src/audio/taggerParity.fixture.json`, `scripts/audio-model/parity.py`.

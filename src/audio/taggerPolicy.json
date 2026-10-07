@@ -20,7 +20,11 @@
     "drum kit"
    ],
    "tested": true,
-   "minSeconds": 10
+   "minSeconds": 10,
+   "long": {
+    "rule": "max",
+    "threshold": 0.5757
+   }
   },
   {
    "output": "piano",
@@ -31,7 +35,10 @@
     "piano"
    ],
    "tested": true,
-   "minSeconds": 10
+   "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   }
   },
   {
    "output": "guitar",
@@ -42,7 +49,10 @@
     "guitar"
    ],
    "tested": true,
-   "minSeconds": 10
+   "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   }
   },
   {
    "output": "cymbals",
@@ -54,7 +64,10 @@
     "cymbal"
    ],
    "tested": true,
-   "minSeconds": 10
+   "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   }
   },
   {
    "output": "violin",
@@ -66,7 +79,10 @@
     "violin / fiddle"
    ],
    "tested": true,
-   "minSeconds": 10
+   "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   }
   },
   {
    "output": "trumpet",
@@ -77,7 +93,10 @@
     "trumpet"
    ],
    "tested": false,
-   "minSeconds": 10
+   "minSeconds": 10,
+   "long": {
+    "rule": "max"
+   }
   },
   {
    "output": "saxophone",
@@ -88,7 +107,10 @@
     "saxophone"
    ],
    "tested": true,
-   "minSeconds": 10
+   "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   }
   },
   {
    "output": "bass",
@@ -101,7 +123,10 @@
     "double bass"
    ],
    "tested": false,
-   "minSeconds": 10
+   "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   }
   },
   {
    "output": "cat:percussive",

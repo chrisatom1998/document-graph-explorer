@@ -4,7 +4,7 @@ import { confidentSoundSummary } from './confidentSoundSummary';
 import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
 import { dimensionLabels } from './recognition';
 import { canonicalDjLabel } from './djTags';
-import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, TAGGER_UNAVAILABLE, TaggerEvidence, sanitizeTaggerAnalysis, taggerDecisions, taggerWindowStarts } from './tagger';
+import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, TAGGER_UNAVAILABLE, TaggerEvidence, sanitizeTaggerAnalysis, taggerDecisions, taggerWindowStarts, type TaggerTag } from './tagger';
 
 const threshold = (output: string) => TAGGER_POLICY.tags.find(t => t.output === output)!.threshold;
 const track = (seconds: number, scores: Record<string, number>, djTags: NonNullable<MusicAnalysis['soundProfile']>['djTags'] = []): MusicAnalysis => ({
@@ -42,12 +42,14 @@ describe('trained tagger windows and storage', () => {
     const e = new TaggerEvidence();
     expect(e.results()).toBeUndefined();
     e.add({ drums: .2, piano: .9, 'cat:dog': .9 }); e.add({ drums: .7, piano: .1 });
-    expect(e.results()).toEqual({ revision: TAGGER_REVISION, windows: 2, scores: { drums: .7, piano: .9 } });
+    expect(e.results()).toEqual({ revision: TAGGER_REVISION, windows: 2, scores: { drums: .7, piano: .9 }, windowScores: { drums: [.2, .7], piano: [.9, .1] } });
   });
   it('sanitizes stored results', () => {
     expect(sanitizeTaggerAnalysis({ revision: 'x', windows: 2, scores: { drums: .5, 'cat:dog': .5, piano: 2, guitar: NaN } })).toEqual({ revision: 'x', windows: 2, scores: { drums: .5 } });
     for (const bad of [undefined, null, 'x', { revision: '', windows: 1, scores: {} }, { revision: 'x', windows: 0, scores: {} }, { revision: 'x', windows: 4, scores: {} }, { revision: 'x', windows: 1, scores: [] }])
       expect(sanitizeTaggerAnalysis(bad)).toBeUndefined();
+    expect(sanitizeTaggerAnalysis({ revision: 'x', windows: 2, scores: { drums: .5, piano: .4 }, windowScores: { drums: [.5, .1], piano: [.4], guitar: [.1, .1] } }))
+      .toEqual({ revision: 'x', windows: 2, scores: { drums: .5, piano: .4 }, windowScores: { drums: [.5, .1] } });
     const saved = sanitizeMusicAnalysis({ ...track(30, { drums: .9 }), tagger: { revision: TAGGER_REVISION, windows: 3, scores: { drums: .9 } } });
     expect(saved?.tagger).toEqual({ revision: TAGGER_REVISION, windows: 3, scores: { drums: .9 } });
   });
@@ -101,6 +103,61 @@ describe('trained tagger display', () => {
   });
 });
 
+describe('trained tagger long-recording rules', () => {
+  const tagOf = (output: string) => TAGGER_POLICY.tags.find(t => t.output === output)!;
+  /** A 30 s recording scored on three windows; per-window scores given, the stored best is their maximum. */
+  const long = (perWindow: Record<string, number[]>, djTags: NonNullable<MusicAnalysis['soundProfile']>['djTags'] = []): MusicAnalysis => ({
+    ...track(30, Object.fromEntries(Object.entries(perWindow).map(([k, v]) => [k, Math.max(...v)])), djTags),
+    tagger: { revision: TAGGER_REVISION, windows: 3, scores: Object.fromEntries(Object.entries(perWindow).map(([k, v]) => [k, Math.max(...v)])), windowScores: perWindow },
+  });
+  const sources = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'source').map(s => s.label).sort();
+  const withRule = <T,>(output: string, rule: TaggerTag['long'], run: () => T): T => {
+    const tag = tagOf(output), saved = tag.long;
+    tag.long = rule;
+    try { return run(); } finally { tag.long = saved; }
+  };
+  it('installs the rules picked on the full-song tuning set', () => {
+    expect(Object.fromEntries(TAGGER_POLICY.tags.filter(t => t.long).map(t => [t.output, t.long]))).toEqual({
+      drums: { rule: 'max', threshold: .5757 }, trumpet: { rule: 'max' }, piano: { rule: 'detectors' }, guitar: { rule: 'detectors' },
+      cymbals: { rule: 'detectors' }, violin: { rule: 'detectors' }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' } });
+    for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
+  });
+  it('needs the higher full-song drums threshold on long recordings only', () => {
+    const between = (threshold('drums') + .5757) / 2;
+    expect(sources(long({ drums: [between, .1, .1] }))).toEqual([]);
+    expect(sources(long({ drums: [.6, .1, .1] }))).toEqual(['drums']);
+    expect(taggerDecisions(long({ drums: [.5757, .1, .1] }).tagger, 30)!.find(d => d.tag.output === 'drums')).toMatchObject({ shown: true, score: .5 });
+    // A single 10 s window keeps the clip threshold.
+    expect(sources(track(10, { drums: between }))).toEqual(['drums']);
+  });
+  it('leaves fallback instruments to the existing detectors on long recordings, and keeps the tagger on 10 s clips', () => {
+    const others = [{ group: 'source' as const, label: 'piano', score: .9, model: 'Trained head' as const }];
+    expect(sources(long({ piano: [.01, .01, .01], guitar: [.99, .99, .99] }, others))).toEqual(['piano']);
+    expect(taggerDecisions(long({ piano: [.99, .99, .99] }).tagger, 30)!.map(d => d.tag.output)).not.toContain('piano');
+    expect(sources(track(10, { piano: .01, guitar: .99 }, others))).toEqual(['guitar']);
+  });
+  it('can require several windows, the mean, or agreement with the existing detectors', () => {
+    const t = threshold('drums');
+    const oneWindow = long({ drums: [.99, t - .01, 0] }), twoWindows = long({ drums: [.99, t + .01, 0] });
+    withRule('drums', { rule: 'windows', windows: 2 }, () => {
+      expect(sources(oneWindow)).toEqual([]); expect(sources(twoWindows)).toEqual(['drums']);
+      // Without per-window scores the existing detectors decide.
+      const bare = long({ drums: [.99, .99, .99] }); delete bare.tagger!.windowScores;
+      expect(taggerDecisions(bare.tagger, 30)!.map(d => d.tag.output)).not.toContain('drums');
+    });
+    withRule('drums', { rule: 'mean', threshold: .5 }, () => {
+      expect(sources(long({ drums: [.99, .3, .3] }))).toEqual(['drums']);
+      expect(sources(long({ drums: [.99, .2, .2] }))).toEqual([]);
+    });
+    withRule('drums', { rule: 'agree' }, () => {
+      expect(sources(long({ drums: [.99, .1, .1] }))).toEqual([]);
+      expect(confidentSoundSummary(long({ drums: [.99, .1, .1] }, [{ group: 'source', label: 'drums', score: .9, model: 'Trained head' }]))
+        .find(s => s.label === 'drums')).toMatchObject({ scores: [{ model: TAGGER_SCORE }] });
+      expect(sources(long({ drums: [.1, .1, .1] }, [{ group: 'source', label: 'drums', score: .9, model: 'Trained head' }]))).toEqual([]);
+    });
+  });
+});
+
 describe('trained tagger pass', () => {
   async function run(duration: number, failTagger = false, tagger = true) {
     const { analyzeDecodedMusic } = await import('./analyzeDecodedMusic');
@@ -127,7 +184,8 @@ describe('trained tagger pass', () => {
     const { result, reads, taggerInputs } = await run(65);
     expect(reads.map(r => r[0])).toEqual([17.5, 27.5, 37.5]);
     expect(taggerInputs).toEqual([320000, 320000, 320000]);
-    expect(result.tagger).toEqual({ revision: TAGGER_REVISION, windows: 3, scores: { drums: .5, 'cat:percussive': .1 } });
+    expect(result.tagger).toEqual({ revision: TAGGER_REVISION, windows: 3, scores: { drums: .5, 'cat:percussive': .1 },
+      windowScores: { drums: [.3, .4, .5], 'cat:percussive': [.1, .1, .1] } });
   });
   it('pads a short clip to one 10 s window', async () => {
     const { result, reads, taggerInputs } = await run(4);

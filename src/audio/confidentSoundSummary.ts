@@ -8,7 +8,7 @@ import calibratedLabelList from './calibratedLabels.json';
 import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 import { FULL_MIX_FAMILY, FULL_MIX_REVISION } from './fullMixHeads';
-import { TAGGER_MAYBE_SCORE, TAGGER_SCORE, taggerDecisions } from './tagger';
+import { TAGGER_MAYBE_SCORE, TAGGER_SCORE, taggerDecisions, type TaggerTag } from './tagger';
 
 /** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
  * musicLinks), so a display change also changes which instrument links a track can form, by design. */
@@ -134,9 +134,15 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     const own=item.scores!.filter(x=>x.model===OPENMIC_HEAD_SCORE);if(own.length)item.scores=own;else result.delete(key);}
   // The trained tagger decides its tags alone: other models' estimates for them are dropped, then its own score is
   // added when it passed the tag's threshold. Reviews and confirmations still apply (estimate checks them).
-  if(tagger)for(const{tag,shown,score}of tagger){
+  // An 'agree' rule (long recordings) also needs the existing detectors to show the tag: they are asked without the tagger.
+  let detectors:Set<string>|undefined;
+  const detectorsShow=(tag:TaggerTag)=>{
+    detectors??=new Set(confidentSoundSummary({...audio,tagger:undefined},fusionMode).map(s=>`${s.dimension}:${s.label}`));
+    return tag.decides.some(name=>detectors!.has(`${tag.dimension}:${canonical(tag.dimension,name)}`));};
+  if(tagger)for(const{tag,shown,score,needsAgreement}of tagger){
+    const agreed=shown&&(!needsAgreement||detectorsShow(tag));
     for(const name of tag.decides){const key=`${tag.dimension}:${canonical(tag.dimension,name)}`;if(result.get(key)?.origin==='model estimate')result.delete(key);}
-    if(shown)estimate(tag.dimension,tag.label,score,tag.tested?TAGGER_SCORE:TAGGER_MAYBE_SCORE);}
+    if(agreed)estimate(tag.dimension,tag.label,score,tag.tested?TAGGER_SCORE:TAGGER_MAYBE_SCORE);}
   const tiered=(s:DisplaySound,models:(m:string)=>boolean):DisplaySound=>({...s,tier:soundTier(Math.max(...s.scores!.filter(x=>models(x.model)).map(x=>x.score)))});
   const long=floor===TRACK_SOUND_FLOOR;
   const voiceHeads=fullMix&&fusion?.qualified?fusion.windows.filter(w=>w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6)
