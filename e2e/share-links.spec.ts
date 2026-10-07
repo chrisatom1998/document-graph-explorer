@@ -1,6 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 import { autoDismissTour, openFiles } from './resonance';
 
+// These tiny metadata fixtures run no inference. Report blocked controls
+// promptly instead of inheriting the multi-minute OCR/embedding budgets.
+test.use({ actionTimeout: 30_000 });
+test.setTimeout(120_000);
+
 // ASCII-only, sanitized graph metadata: these fixtures need no document
 // parsing, embeddings, audio models, or access to the owner's source files.
 function graph(...titles: string[]) {
@@ -74,7 +79,17 @@ test('opens a shared graph on startup and replaces it on live hash navigation wi
 
   // Restore through the real workspace picker: opening either portable view
   // must leave the saved private graph available and unchanged.
-  await page.getByRole('button', { name: 'Current corpus: Shared graph', exact: true }).click();
+  const picker = page.getByRole('button', { name: 'Current corpus: Shared graph', exact: true });
+  // A visible picker can still be covered by the view tabs. Exercise actual
+  // pointer clicks across compact layouts before restoring at the CI width.
+  for (const width of [1024, 390, 800]) {
+    await page.setViewportSize({ width, height: 500 });
+    await picker.click();
+    await expect(page.getByRole('dialog', { name: 'Manage corpora', exact: true })).toBeVisible();
+    await picker.click();
+    await expect(page.getByRole('dialog', { name: 'Manage corpora', exact: true })).toHaveCount(0);
+  }
+  await picker.click();
   await page.getByRole('list', { name: 'Saved corpora' }).getByRole('button', { name: /^Private workspace/ }).click();
   await expect(page.getByRole('button', { name: 'Current corpus: Private workspace', exact: true })).toBeVisible();
   const localFiles = await openFiles(page);
