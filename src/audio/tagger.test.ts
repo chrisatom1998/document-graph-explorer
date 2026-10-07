@@ -1,0 +1,148 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { confidentSoundSummary } from './confidentSoundSummary';
+import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
+import { dimensionLabels } from './recognition';
+import { canonicalDjLabel } from './djTags';
+import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, TAGGER_UNAVAILABLE, TaggerEvidence, sanitizeTaggerAnalysis, taggerDecisions, taggerWindowStarts } from './tagger';
+
+const threshold = (output: string) => TAGGER_POLICY.tags.find(t => t.output === output)!.threshold;
+const track = (seconds: number, scores: Record<string, number>, djTags: NonNullable<MusicAnalysis['soundProfile']>['djTags'] = []): MusicAnalysis => ({
+  version: 2, durationSeconds: seconds, analyzedSeconds: Math.min(seconds, 60), instruments: [], notes: [],
+  soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false, djTags },
+  tagger: { revision: TAGGER_REVISION, windows: 1, scores },
+});
+
+describe('trained tagger policy', () => {
+  it('names outputs of the pinned model and labels the app can show', () => {
+    const model = JSON.parse(readFileSync('public/tagger-model/model.json', 'utf8')) as { classes: string[]; sha256: Record<string, string> };
+    const manifest = JSON.parse(readFileSync('public/tagger-model/manifest.json', 'utf8')) as { sha256: Record<string, string> };
+    expect(model.sha256['model.onnx']).toBe(TAGGER_POLICY.modelSha256);
+    expect(manifest.sha256['model.onnx']).toBe(TAGGER_POLICY.modelSha256);
+    for (const tag of TAGGER_POLICY.tags) {
+      expect(model.classes).toContain(tag.output);
+      expect(tag.threshold).toBeGreaterThan(0); expect(tag.threshold).toBeLessThan(1);
+      expect(tag.decides[0]).toBe(tag.label);
+      const supported = dimensionLabels[tag.dimension].includes(tag.label) || (tag.dimension === 'effect' && !!canonicalDjLabel('production', tag.label));
+      expect(supported, tag.label).toBe(true);
+    }
+  });
+  it('keeps the existing detectors for synthesizer, voice, organ and cello', () => {
+    const decided = new Set(TAGGER_POLICY.tags.flatMap(t => t.decides));
+    for (const label of ['synthesizer', 'voice', 'organ', 'cello']) expect(decided.has(label)).toBe(false);
+    expect(TAGGER_POLICY.tags.filter(t => t.dimension === 'source').map(t => t.output).sort())
+      .toEqual(['bass', 'cymbals', 'drums', 'guitar', 'piano', 'saxophone', 'trumpet', 'violin']);
+  });
+});
+
+describe('trained tagger windows and storage', () => {
+  it.each([[0, []], [3, [0]], [10, [0]], [19.9, [0]], [20, [0, 10]], [35, [0, 10, 20]], [40, [5, 15, 25]], [200, [85, 95, 105]]] as const)(
+    'cuts a %s s recording at %j', (seconds, starts) => { expect(taggerWindowStarts(seconds)).toEqual(starts); });
+  it('keeps each output\'s best window and only policy outputs', () => {
+    const e = new TaggerEvidence();
+    expect(e.results()).toBeUndefined();
+    e.add({ drums: .2, piano: .9, 'cat:dog': .9 }); e.add({ drums: .7, piano: .1 });
+    expect(e.results()).toEqual({ revision: TAGGER_REVISION, windows: 2, scores: { drums: .7, piano: .9 } });
+  });
+  it('sanitizes stored results', () => {
+    expect(sanitizeTaggerAnalysis({ revision: 'x', windows: 2, scores: { drums: .5, 'cat:dog': .5, piano: 2, guitar: NaN } })).toEqual({ revision: 'x', windows: 2, scores: { drums: .5 } });
+    for (const bad of [undefined, null, 'x', { revision: '', windows: 1, scores: {} }, { revision: 'x', windows: 0, scores: {} }, { revision: 'x', windows: 4, scores: {} }, { revision: 'x', windows: 1, scores: [] }])
+      expect(sanitizeTaggerAnalysis(bad)).toBeUndefined();
+    const saved = sanitizeMusicAnalysis({ ...track(30, { drums: .9 }), tagger: { revision: TAGGER_REVISION, windows: 3, scores: { drums: .9 } } });
+    expect(saved?.tagger).toEqual({ revision: TAGGER_REVISION, windows: 3, scores: { drums: .9 } });
+  });
+  it('maps each threshold to the 0.5 likely cutoff and ignores other revisions', () => {
+    const t = threshold('drums');
+    const at = taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { drums: t } }, 30)!.find(d => d.tag.output === 'drums')!;
+    expect(at).toMatchObject({ shown: true, score: .5 });
+    expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { drums: 1 } }, 30)!.find(d => d.tag.output === 'drums')!.score).toBe(1);
+    expect(taggerDecisions({ revision: TAGGER_REVISION, windows: 1, scores: { drums: t - 1e-3 } }, 30)!.find(d => d.tag.output === 'drums')!.shown).toBe(false);
+    expect(taggerDecisions({ revision: 'older', windows: 1, scores: { drums: 1 } }, 30)).toBeUndefined();
+  });
+});
+
+describe('trained tagger display', () => {
+  const sources = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'source').map(s => s.label).sort();
+  it('decides its instruments on recordings of at least 10 s, replacing other models', () => {
+    // CLAP-head drums and piano, Jamendo-style guitar: the tagger keeps drums (its own score) and drops piano and guitar.
+    const a = track(30, { drums: .99, piano: .01, guitar: .01, bass: threshold('bass') + .01 }, [
+      { group: 'source', label: 'drums', score: .9, model: 'Trained head' }, { group: 'source', label: 'piano', score: .9, model: 'Trained head' },
+      { group: 'source', label: 'guitar', score: .9, model: 'Trained head' }, { group: 'source', label: 'synthesizer', score: .9, model: 'Trained head' }]);
+    const shown = confidentSoundSummary(a);
+    expect(sources(a)).toEqual(['bass', 'drums', 'synthesizer']);
+    expect(shown.find(s => s.label === 'drums')).toMatchObject({ scores: [{ model: TAGGER_SCORE }], tier: 'likely' });
+    expect(shown.find(s => s.label === 'synthesizer')!.scores).toEqual([{ model: 'Trained head score', score: .9 }]);
+    // Bass is below 0.70 held out: still shown, marked as a maybe tag with its provenance.
+    expect(shown.find(s => s.label === 'bass')).toMatchObject({ maybe: true, scores: [{ model: TAGGER_MAYBE_SCORE }] });
+  });
+  it('leaves instruments to the other detectors on clips shorter than 10 s', () => {
+    expect(sources(track(8, { drums: .01, piano: .99 }, [{ group: 'source', label: 'drums', score: .9, model: 'Trained head' }]))).toEqual(['drums']);
+  });
+  it('decides its sound-type and effect tags at any length, and leaves other tags alone', () => {
+    const a = track(4, { 'cat:percussive': .99, 'cat:dark': .01 }, [
+      { group: 'character', label: 'dark', score: .9, model: 'Trained head' }, { group: 'character', label: 'warm', score: .9, model: 'Trained head' },
+      { group: 'production', label: 'riser', score: .9, model: 'Trained head' }]);
+    expect(confidentSoundSummary(a).map(s => `${s.dimension}:${s.label}`).sort()).toEqual(['character:percussive', 'character:warm', 'effect:riser']);
+  });
+  it('never overrides what the listener confirmed or rejected', () => {
+    const a = track(30, { drums: .01, piano: .99 });
+    a.confirmedInstruments = ['drums'];
+    expect(sources(a)).toEqual(['drums']);
+    const b = track(30, { piano: .99 });
+    b.soundReviews = [{ dimension: 'source', labelId: 'piano', decision: 'rejected', scope: 'track', at: 'now', evidenceRunId: 'r' }];
+    expect(sources(b)).toEqual([]);
+  });
+  it('changes nothing for analyses without a current tagger result', () => {
+    const a = track(30, {}, [{ group: 'source', label: 'piano', score: .9, model: 'Trained head' }]);
+    delete a.tagger;
+    expect(sources(a)).toEqual(['piano']);
+    a.tagger = { revision: 'older', windows: 1, scores: { piano: 0 } };
+    expect(sources(a)).toEqual(['piano']);
+  });
+});
+
+describe('trained tagger pass', () => {
+  async function run(duration: number, failTagger = false, tagger = true) {
+    const { analyzeDecodedMusic } = await import('./analyzeDecodedMusic');
+    const reads: [number, number, number][] = [], taggerInputs: number[] = [];
+    const decoder = { durationSeconds: duration, close() {}, read: async (start: number, seconds: number, rate: number) => {
+      reads.push([start, seconds, rate]);
+      return new Float32Array(Math.round(Math.max(0, Math.min(seconds, duration - start)) * rate)).fill(.1);
+    } };
+    const request = async <T,>(message: Record<string, unknown>): Promise<T> => {
+      if (message.kind === 'tagger') {
+        taggerInputs.push((message.samples as Float32Array).length);
+        if (failTagger) throw new Error('Model unavailable');
+        return { drums: .2 + .1 * taggerInputs.length, 'cat:percussive': .1 } as T;
+      }
+      if (message.kind === 'rhythm' || message.kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: Math.min(60, duration), instruments: [], notes: [] } as T;
+      if (message.kind === 'instruments') return { scores: { piano: .95 }, musicScore: .9 } as T;
+      if (message.kind === 'jamendo') return { synthesizer: .7 } as T;
+      return [{ group: 'source', label: 'piano', score: .6 }] as T;
+    };
+    const result = await analyzeDecodedMusic(decoder, request, { mode: 'full', tagger });
+    return { result, reads: reads.filter(r => r[2] === 32000), taggerInputs };
+  }
+  it('scores the middle 30 s of a song as three padded 32 kHz windows and keeps the best', async () => {
+    const { result, reads, taggerInputs } = await run(65);
+    expect(reads.map(r => r[0])).toEqual([17.5, 27.5, 37.5]);
+    expect(taggerInputs).toEqual([320000, 320000, 320000]);
+    expect(result.tagger).toEqual({ revision: TAGGER_REVISION, windows: 3, scores: { drums: .5, 'cat:percussive': .1 } });
+  });
+  it('pads a short clip to one 10 s window', async () => {
+    const { result, reads, taggerInputs } = await run(4);
+    expect(reads).toEqual([[0, 4, 32000]]);
+    expect(taggerInputs).toEqual([320000]);
+    expect(result.tagger?.windows).toBe(1);
+  });
+  it('leaves every tag to the other detectors when the tagger fails', async () => {
+    const { result } = await run(30, true);
+    expect(result.tagger).toBeUndefined();
+    expect(result.notes).toContain(TAGGER_UNAVAILABLE);
+  });
+  it('does not run unless asked', async () => {
+    const { result, taggerInputs } = await run(30, false, false);
+    expect(taggerInputs).toEqual([]);
+    expect(result.tagger).toBeUndefined();
+  });
+});

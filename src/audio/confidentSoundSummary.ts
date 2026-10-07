@@ -8,6 +8,7 @@ import calibratedLabelList from './calibratedLabels.json';
 import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 import { FULL_MIX_FAMILY, FULL_MIX_REVISION } from './fullMixHeads';
+import { TAGGER_MAYBE_SCORE, TAGGER_SCORE, taggerDecisions } from './tagger';
 
 /** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
  * musicLinks), so a display change also changes which instrument links a track can form, by design. */
@@ -36,7 +37,9 @@ export const soundTier=(score:number):SoundTier=>score>=LIKELY_SOUND_CUTOFF?'lik
 const profileNames:Record<string,string>={'AudioSet AST':'AST score','MTG-Jamendo':'Jamendo score','Music CLAP':'CLAP similarity','Reviewed examples':'Reviewed-example similarity','Trained head':'Trained head score','Trained head (maybe)':'Trained head score (maybe)'};
 /** Only these scores come from detectors that passed held-out testing; other models still show under Model scores. */
 export const TESTED_SCORES=new Set(['Trained head score','Baseline fallback score']);
-const MAYBE_SCORE='Trained head score (maybe)';
+const MAYBE_SCORES=new Set(['Trained head score (maybe)',TAGGER_MAYBE_SCORE]);
+/** The trained tagger (src/audio/tagger.ts) passed held-out testing on the tags it decides; below 0.70 it shows as "maybe". */
+TESTED_SCORES.add(TAGGER_SCORE);
 /** Jamendo (music-trained) window scores that passed a held-out full-mix check: thresholds were picked on half the
  * frozen OpenMIC test selection and checked on the other half (scripts/calibrate-full-mix-jamendo.py). Only recordings of at
  * least one full ten-second window qualify; shorter loops and one-shots were never measured. */
@@ -113,6 +116,7 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   // Only a complete sound scan: a partial one could hide (bass) evidence from windows the heads never scored.
   const heads=fullMix&&FULL_MIX_REVISION&&audio.instrumentScan?.complete&&audio.fullMix?.revision===FULL_MIX_REVISION?audio.fullMix:undefined;
   if(heads)for(const l of heads.labels)estimate('source',l.label,l.score,OPENMIC_HEAD_SCORE);
+  const tagger=taggerDecisions(audio.tagger,audio.durationSeconds);
   // Profile tags carry their own source-specific display score. Bare character/source strings and AI drafts do not.
   const catalogClap=new Set<string>();
   for(const tag of audio.soundProfile?.djTags??[]){const dim:Dimension=tag.group==='source'?'source':tag.group==='character'?'character':'effect';if(tag.model==='Music CLAP')catalogClap.add(`${dim}:${canonical(dim,tag.label)}`);}
@@ -124,9 +128,15 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     if(fullMix&&head!==undefined&&w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6&&d.source!=='learned-head'&&typeof d.headProbability==='number'&&d.headProbability>=head)estimate('source',d.label,d.headProbability,FULL_MIX_HEAD_SCORE);
   }
   // A head that replaces the other models for its instrument: only its own score stands for that instrument.
+  // The trained tagger decides after it, so a label both claim follows the tagger.
   if(heads)for(const label of heads.decides)for(const name of FULL_MIX_FAMILY[label]??[label]){
     const key=`source:${name}`,item=result.get(key);if(item?.origin!=='model estimate')continue;
     const own=item.scores!.filter(x=>x.model===OPENMIC_HEAD_SCORE);if(own.length)item.scores=own;else result.delete(key);}
+  // The trained tagger decides its tags alone: other models' estimates for them are dropped, then its own score is
+  // added when it passed the tag's threshold. Reviews and confirmations still apply (estimate checks them).
+  if(tagger)for(const{tag,shown,score}of tagger){
+    for(const name of tag.decides){const key=`${tag.dimension}:${canonical(tag.dimension,name)}`;if(result.get(key)?.origin==='model estimate')result.delete(key);}
+    if(shown)estimate(tag.dimension,tag.label,score,tag.tested?TAGGER_SCORE:TAGGER_MAYBE_SCORE);}
   const tiered=(s:DisplaySound,models:(m:string)=>boolean):DisplaySound=>({...s,tier:soundTier(Math.max(...s.scores!.filter(x=>models(x.model)).map(x=>x.score)))});
   const long=floor===TRACK_SOUND_FLOOR;
   const voiceHeads=fullMix&&fusion?.qualified?fusion.windows.filter(w=>w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6)
@@ -136,6 +146,6 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   const raised=(s:DisplaySound)=>fullMix&&s.dimension==='source'&&FULL_MIX_MIN_TESTED_SCORE[s.label]!==undefined&&testedBest(s)<FULL_MIX_MIN_TESTED_SCORE[s.label];
   return [...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
     :s.scores?.some(x=>TESTED_SCORES.has(x.model))?raised(s)?[]:[tiered(s,m=>TESTED_SCORES.has(m))]
-    :s.scores?.some(x=>x.model===MAYBE_SCORE)?[{...tiered(s,m=>m===MAYBE_SCORE),maybe:true}]
+    :s.scores?.some(x=>MAYBE_SCORES.has(x.model))?[{...tiered(s,m=>MAYBE_SCORES.has(m)),maybe:true}]
     :long&&!CALIBRATED_LABELS.has(s.label)&&!UNVERIFIED_BLOCKED.has(s.label)&&catalogClap.has(`${s.dimension}:${s.label}`)&&s.scores?.some(x=>x.model==='CLAP similarity'&&x.score>=UNVERIFIED_SOUND_FLOOR)?[{...s,tier:'possible' as const,uncalibrated:true}]:[]);
 }

@@ -13,7 +13,10 @@ graph) that onnxruntime-web can run on 10 s windows of 32 kHz audio.
 | Thresholds | `calibrate.py` | Validation artists only: per tag, maximise min(precision, recall) |
 | Export | `export.py` | Checks the ONNX output against PyTorch before writing |
 | Score | `evaluate.py` | DJ clip rounds 1 and 2 and the round 3 set, aggregates only, counted like the app's scorers |
+| Browser parity | `parity.py` | A fixed synthetic signal cut and scored as the held-out scorers did; `src/audio/tagger.parity.test.ts` checks the app's front end against it |
 
 `.github/workflows/audio-model-train.yml` runs the whole chain on a Hugging Face Jobs GPU (`hf-job.sh`, launched by
 `hf-launch.py`) with the `HF_TOKEN` repository secret, and uploads the run to that account's private
 `dge-instrument-tagger` model repo.
+
+The app runs run 3's model for the tags in `src/audio/taggerPolicy.json`; see docs/evaluations/all-tags-model-2026-10-06.

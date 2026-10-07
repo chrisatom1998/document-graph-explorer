@@ -9,6 +9,8 @@ import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
 import { instrumentScores, musicScore, type InstrumentPredictions } from './instrumentLabels';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_ANALYSIS_REVISION, type MusicAnalysis } from './musicTypes';
 import { classifyJamendo, preloadJamendo } from './jamendo';
+import { classifyTagger } from './taggerInference';
+import { isTaggerScores } from './tagger';
 import { GENRE_ENERGY_VERSION } from './genreEnergy';
 import { detectRepeatedPitch } from './detectedPitch';
 import { estimateTempo } from './tempo';
@@ -172,7 +174,7 @@ async function warmFamily(family: string, mode?: string): Promise<void> {
   else if (family === 'jamendo') await Promise.all([ready, preloadJamendo()]);
   else await ready;
 }
-self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array; samples16?: Float32Array }>) => {
+self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'tagger'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array; samples16?: Float32Array }>) => {
   const { id } = data;
   // The main thread decided this browser needs the single-thread runtime (see THREADED_RUNTIME_STALLED).
   if ((data as { singleThread?: boolean }).singleThread) switchToSingleThreadRuntime(false);
@@ -183,11 +185,11 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
   }
   const runtime = data.kind === 'rhythm' || data.kind === 'tonal'
     ? { backend: 'essentia-wasm', configuredInferenceThreads: 1, identity: 'essentia-wasm-v1' }
-    : musicRuntimeDiagnostics(data.kind);
+    : musicRuntimeDiagnostics(data.kind === 'tagger' ? 'jamendo' : data.kind);
   let inferenceExecuted = false;
   const postResult = async (result: unknown) => {
     const effectiveInferenceThreads = inferenceExecuted
-      ? data.kind === 'jamendo' ? 1 : (await import('@huggingface/transformers')).env.backends.onnx.wasm?.numThreads
+      ? data.kind === 'jamendo' || data.kind === 'tagger' ? 1 : (await import('@huggingface/transformers')).env.backends.onnx.wasm?.numThreads
       : undefined;
     self.postMessage({ id, runtime: { ...runtime, inferenceExecuted, ...(effectiveInferenceThreads ? { effectiveInferenceThreads } : {}) }, result });
   };
@@ -198,6 +200,14 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
         await ready; engine = new Essentia(EssentiaWASM);
         const result = await classifyJamendo(engine, data.samples); inferenceExecuted = true; return result;
       }, () => self.postMessage({ id, progress: 'Reusing saved instrument features' }));
+      await postResult(result);
+      return;
+    }
+    if (data.kind === 'tagger') {
+      // Runs in the Jamendo family's worker (analyzeMusic familyOf), on its single-thread runtime.
+      const result = await cachedAudioInference('tagger-model', `tagger-32khz:${musicRuntimeIdentity('jamendo')}`, data.samples, isTaggerScores, async () => {
+        const scores = await classifyTagger(data.samples); inferenceExecuted = true; return scores;
+      });
       await postResult(result);
       return;
     }

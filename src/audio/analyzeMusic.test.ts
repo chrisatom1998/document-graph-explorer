@@ -174,7 +174,7 @@ it('does not reuse family sessions when manifest fingerprints are unavailable', 
   state.fingerprint = undefined;
   try {
     await isolated.analyzeMusic(new Blob(['missing-pins']), 'two.wav', { mode: 'full', force: true });
-    expect(state.terminated - terminated).toBe(8); // Four known sessions plus each preceding unverified request.
+    expect(state.terminated - terminated).toBe(9); // Four known sessions plus each preceding unverified request (the tagger's included).
   } finally { state.fingerprint = 'same-model'; }
 });
 
@@ -198,7 +198,8 @@ it.each([2, 4, undefined])('preserves single-session memory bounds when availabl
   const created = state.created;
   await isolated.analyzeMusic(new Blob(['low-memory-one']), 'one.wav', { mode: 'full', force: true });
   await isolated.analyzeMusic(new Blob(['low-memory-two']), 'two.wav', { mode: 'full', force: true });
-  expect(state.created - created).toBe(8);
+  // The tagger ends each analysis in the Jamendo session, which the next file's preview then reuses.
+  expect(state.created - created).toBe(9);
 });
 
 
