@@ -34,4 +34,14 @@ describe('Sounds filter', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: /synth/ }));
     expect(useUiStore.getState().filter.sounds).toBeNull();
   });
+
+  it('keeps a picked sound listed after its last clip loses it, so it can be unticked', () => {
+    useGraphStore.setState({ nodes: [clip('a', ['drums'])], edges: [] });
+    useUiStore.setState({ filter: { ...DEFAULT_FILTER, sounds: ['voice'] } });
+    render(<ResonanceFilters />);
+    const voice = screen.getByRole('checkbox', { name: /voice/ });
+    expect(voice).toBeChecked();
+    fireEvent.click(voice);
+    expect(useUiStore.getState().filter.sounds).toBeNull();
+  });
 });

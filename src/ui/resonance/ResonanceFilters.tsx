@@ -76,8 +76,10 @@ export default function ResonanceFilters() {
     return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [docs]);
   const pickedSounds = filter.sounds ?? [];
-  // Picked sounds stay visible even when they fall outside the short list.
-  const listedSounds = allSounds ? soundCounts : soundCounts.filter(([tag], i) => i < SOUNDS_SHOWN || pickedSounds.includes(tag));
+  // Picked sounds stay visible even outside the short list, or at zero clips after a
+  // rejection or removal, so they can always be unticked.
+  const soundRows = [...soundCounts, ...pickedSounds.filter(tag => !soundCounts.some(([t]) => t === tag)).map(tag => [tag, 0] as [string, number])];
+  const listedSounds = allSounds ? soundRows : soundRows.filter(([tag], i) => i < SOUNDS_SHOWN || pickedSounds.includes(tag));
   const toggleSound = (tag: string) => {
     const next = pickedSounds.includes(tag) ? pickedSounds.filter(t => t !== tag) : [...pickedSounds, tag];
     setFilter({ sounds: next.length ? next : null });
@@ -175,7 +177,7 @@ export default function ResonanceFilters() {
 
       <section className="rs-group" aria-label="Sounds">
         <h3 title="Show clips with any of the picked sounds. Includes maybe and possible tags.">Sounds{pickedSounds.length > 1 ? ' (any of)' : ''}</h3>
-        {soundCounts.length ? (
+        {soundRows.length ? (
           <ul className="rs-checks">
             {listedSounds.map(([tag, count]) => (
               <li key={tag}>
