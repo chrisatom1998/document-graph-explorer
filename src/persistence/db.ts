@@ -130,6 +130,7 @@ export interface SavedViewRecord {
     bpmRange?: [number, number] | null;
     musicKey?: string | null;
     style?: string | null;
+    sounds?: string[] | null;
   };
 }
 

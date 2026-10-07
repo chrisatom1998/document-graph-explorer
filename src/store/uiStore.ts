@@ -72,6 +72,8 @@ export interface GraphFilter {
   musicKey: string | null;
   /** Clips tagged with this character/style label; null = any style. */
   style: string | null;
+  /** Clips whose Sounds tags include any of these labels (voice OR synth); null = any sound. */
+  sounds: string[] | null;
 }
 
 /**
@@ -79,8 +81,8 @@ export interface GraphFilter {
  * snapshots). Only keys that are present and valid are returned, so callers
  * can tell "absent" from "explicitly cleared" (null).
  */
-export function sanitizeAudioFacets(source: Record<string, unknown>): Partial<Pick<GraphFilter, 'bpmRange' | 'musicKey' | 'style'>> {
-  const out: Partial<Pick<GraphFilter, 'bpmRange' | 'musicKey' | 'style'>> = {};
+export function sanitizeAudioFacets(source: Record<string, unknown>): Partial<Pick<GraphFilter, 'bpmRange' | 'musicKey' | 'style' | 'sounds'>> {
+  const out: Partial<Pick<GraphFilter, 'bpmRange' | 'musicKey' | 'style' | 'sounds'>> = {};
   if (Object.hasOwn(source, 'bpmRange')) {
     const r = source.bpmRange;
     if (r === null) out.bpmRange = null;
@@ -91,6 +93,11 @@ export function sanitizeAudioFacets(source: Record<string, unknown>): Partial<Pi
     const v = source[key];
     if (v === null) out[key] = null;
     else if (typeof v === 'string' && v.length > 0 && v.length <= 64) out[key] = v;
+  }
+  if (Object.hasOwn(source, 'sounds')) {
+    const v = source.sounds;
+    if (v === null) out.sounds = null;
+    else if (Array.isArray(v) && v.length > 0 && v.length <= 64 && v.every(x => typeof x === 'string' && x.length > 0 && x.length <= 64)) out.sounds = [...new Set(v as string[])];
   }
   return out;
 }
@@ -105,6 +112,7 @@ export const DEFAULT_FILTER: GraphFilter = {
   bpmRange: null,
   musicKey: null,
   style: null,
+  sounds: null,
 };
 
 export interface SnapshotOverlay {

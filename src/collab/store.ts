@@ -104,6 +104,7 @@ function cloneFilter(filter: GraphFilter): GraphFilter {
     bpmRange: filter.bpmRange ? [filter.bpmRange[0], filter.bpmRange[1]] : null,
     musicKey: filter.musicKey,
     style: filter.style,
+    sounds: filter.sounds ? [...filter.sounds] : null,
   };
 }
 

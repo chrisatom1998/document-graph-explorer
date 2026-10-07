@@ -5,6 +5,8 @@ import { DEFAULT_FILTER, useUiStore } from '../../store/uiStore';
 import { isFilterActive } from '../../scene/emphasis';
 import { keyName } from '../../audio/musicTypes';
 import { styleTags } from '../../audio/styleTags';
+import { nodeSoundTags } from '../../audio/soundFilterTags';
+import { soundLabelText } from '../../audio/djTags';
 import { openFilePicker } from '../../ingest/DropZone';
 import { openFolderPicker } from '../../ingest/folderPicker';
 import { openSampleAssistant } from '../../store/sampleAssistantStore';
@@ -33,6 +35,9 @@ const SIMILARITY: { kind: EdgeKind; label: string }[] = [
   { kind: 'reference', label: 'Links' },
 ];
 
+/** Sounds listed before "Show all". */
+const SOUNDS_SHOWN = 8;
+
 const TYPE_LABEL: Partial<Record<FileType, string>> = { audio: 'Audio', pdf: 'PDF', md: 'Markdown', txt: 'Text', html: 'HTML', docx: 'Word', pptx: 'Slides', xlsx: 'Sheets', code: 'Code' };
 
 /** Left column: import, project count and the Resonance filter stack. */
@@ -42,6 +47,7 @@ export default function ResonanceFilters() {
   const filter = useUiStore(s => s.filter);
   const setFilter = useUiStore(s => s.setFilter);
   const [similarityOpen, setSimilarityOpen] = useState(true);
+  const [allSounds, setAllSounds] = useState(false);
   const [collapsed, setCollapsed] = useState(loadCollapsed);
   // Narrow screens show only an action row; this opens the full filter list over the graph.
   const [narrowOpen, setNarrowOpen] = useState(false);
@@ -63,6 +69,19 @@ export default function ResonanceFilters() {
   const keys = useMemo(() => [...new Set(docs.flatMap(n => (n.audio?.key ? [keyName(n.audio.key)] : [])))].sort(), [docs]);
   const styles = useMemo(() => [...new Set(docs.flatMap(n => styleTags(n.audio)))].sort(), [docs]);
   const types = useMemo(() => [...new Set(docs.map(n => n.fileType))], [docs]);
+  // Every label shown in a clip's Sounds row, most common first.
+  const soundCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const n of docs) for (const tag of nodeSoundTags(n)) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [docs]);
+  const pickedSounds = filter.sounds ?? [];
+  // Picked sounds stay visible even when they fall outside the short list.
+  const listedSounds = allSounds ? soundCounts : soundCounts.filter(([tag], i) => i < SOUNDS_SHOWN || pickedSounds.includes(tag));
+  const toggleSound = (tag: string) => {
+    const next = pickedSounds.includes(tag) ? pickedSounds.filter(t => t !== tag) : [...pickedSounds, tag];
+    setFilter({ sounds: next.length ? next : null });
+  };
 
   const checked = (kind: EdgeKind) => filter.edgeKinds !== null && filter.edgeKinds.includes(kind);
   const toggleKind = (kind: EdgeKind) => {
@@ -152,6 +171,28 @@ export default function ResonanceFilters() {
           <option value="">Any style</option>
           {styles.map(s => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}
         </select>
+      </section>
+
+      <section className="rs-group" aria-label="Sounds">
+        <h3 title="Show clips with any of the picked sounds. Includes maybe and possible tags.">Sounds{pickedSounds.length > 1 ? ' (any of)' : ''}</h3>
+        {soundCounts.length ? (
+          <ul className="rs-checks">
+            {listedSounds.map(([tag, count]) => (
+              <li key={tag}>
+                <label>
+                  <input type="checkbox" checked={pickedSounds.includes(tag)} onChange={() => toggleSound(tag)} />
+                  <span className="rs-check" aria-hidden="true" />
+                  {soundLabelText(tag)} <span className="rs-checks__count">{count}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        ) : <p className="rs-empty">No sounds identified yet</p>}
+        {soundCounts.length > SOUNDS_SHOWN && (
+          <button type="button" className="rs-show-more" aria-expanded={allSounds} onClick={() => setAllSounds(v => !v)}>
+            {allSounds ? 'Show fewer' : `Show all ${soundCounts.length}`}
+          </button>
+        )}
       </section>
 
       <section className="rs-group">

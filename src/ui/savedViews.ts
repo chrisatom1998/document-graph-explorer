@@ -53,6 +53,7 @@ export async function saveCurrentView(name: string): Promise<SavedViewRecord | n
       bpmRange: ui.filter.bpmRange ? [ui.filter.bpmRange[0], ui.filter.bpmRange[1]] : null,
       musicKey: ui.filter.musicKey,
       style: ui.filter.style,
+      sounds: ui.filter.sounds ? [...ui.filter.sounds] : null,
     },
   };
   const existing = (await getCorpusRecord(corpusId))?.views ?? [];
@@ -81,6 +82,7 @@ export function applySavedView(view: SavedViewRecord): void {
     bpmRange: null,
     musicKey: null,
     style: null,
+    sounds: null,
     ...sanitizeAudioFacets(view.filter as unknown as Record<string, unknown>),
   });
   ui.sendCameraPose(view.pose);

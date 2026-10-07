@@ -9,6 +9,7 @@
 import type { DocNode, Edge } from '../model/types';
 import { keyName } from '../audio/musicTypes';
 import { styleTags } from '../audio/styleTags';
+import { nodeSoundTags } from '../audio/soundFilterTags';
 import { buildAdjacency } from '../store/graphStore';
 import type { GraphFilter } from '../store/uiStore';
 
@@ -34,13 +35,15 @@ export function isFilterActive(filter: GraphFilter): boolean {
     (filter.modifiedWithinDays !== null && filter.modifiedWithinDays > 0) ||
     filter.bpmRange !== null ||
     filter.musicKey !== null ||
-    filter.style !== null
+    filter.style !== null ||
+    (filter.sounds !== null && filter.sounds.length > 0)
   );
 }
 
 /** Audio facets the Resonance filters match against; documents without analysis fail every audio filter. */
 function audioOk(node: DocNode, filter: GraphFilter): boolean {
-  if (filter.bpmRange === null && filter.musicKey === null && filter.style === null) return true;
+  const sounds = filter.sounds?.length ? filter.sounds : null;
+  if (filter.bpmRange === null && filter.musicKey === null && filter.style === null && sounds === null) return true;
   const audio = node.audio;
   if (!audio) return false;
   if (filter.bpmRange) {
@@ -49,6 +52,11 @@ function audioOk(node: DocNode, filter: GraphFilter): boolean {
   }
   if (filter.musicKey !== null && (!audio.key || keyName(audio.key) !== filter.musicKey)) return false;
   if (filter.style !== null && !styleTags(audio).includes(filter.style)) return false;
+  // Any of the picked sounds is enough: "voice or synth".
+  if (sounds !== null) {
+    const tags = nodeSoundTags(node);
+    if (!sounds.some((s) => tags.includes(s))) return false;
+  }
   return true;
 }
 
