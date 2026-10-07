@@ -26,6 +26,21 @@ function fixture(duration: number, options: AnalysisOptions = {}, fail?: string)
   };
   return { calls, decoder, run: () => analyzeDecodedMusic(decoder, request, options) };
 }
+it('keeps native head windows localized through the full refresh pipeline so a covered false alarm stays suppressed', async () => {
+  const duration = 40, { decoder } = fixture(duration);
+  let profileWindow = 0;
+  const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
+    if (message.kind === 'tagger') return { 'cat:reverse effect': 0 } as T;
+    if (message.kind === 'rhythm' || message.kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: duration, instruments: [], notes: [] } as T;
+    if (message.kind === 'instruments') return { scores: {}, musicScore: 0 } as T;
+    if (message.kind === 'jamendo') return {} as T;
+    if (message.kind === 'profile' && !message.samples16 && profileWindow++ === 2) return [{ group: 'dj-learned', learnedGroup: 'production', label: 'reverse effect', score: .99, basis: 'head', decision: 'include' }] as T;
+    return [] as T;
+  };
+  const result = await analyzeDecodedMusic(decoder, request, { mode: 'full', tagger: true });
+  expect(result.soundProfile!.djTags!.find(t => t.label === 'reverse effect')!.windowEvidence).toEqual({ windows: [{ start: 10, end: 20, score: .99 }], complete: true });
+  expect(confidentSoundSummary(result).find(t => t.label === 'reverse effect')).toBeUndefined();
+});
 describe('side-by-side model families', () => {
   /** Varying, out-of-order completion: results must not depend on which family answers first. */
   function timed(duration: number, options: AnalysisOptions, fail?: string) {

@@ -191,6 +191,37 @@ it('latest rejected and unsure reviews invalidate links and confirmation restore
     expect(refreshMusicEdges([{...changed,audio:{...changed.audio,soundReviews:[review,{...review,decision:'confirmed'}]}},b],initial)).toHaveLength(1);
   }
 });
+it.each(['rejected', 'uncertain'] as const)('removes cymbal sound edges after a source-alias %s review', decision => {
+  const cymbal = (id: string) => node(id, { soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false,
+    djTags: [{ group: 'production', label: 'cymbal', score: .9, model: 'Trained head' }] } });
+  const a = cymbal('a'), b = cymbal('b');
+  const initial = musicPairEdges(a, b);
+  expect(initial).toMatchObject([{ kind: 'sound', weight: .7 }]);
+  const blocked = { ...a, audio: { ...a.audio!, soundReviews: [{ dimension: 'source' as const, labelId: 'cymbals', decision,
+    scope: 'track' as const, at: '2026-10-07T12:00:00Z', evidenceRunId: 'old' }] } };
+  expect(musicPairEdges(blocked, b)).toEqual([]);
+  expect(refreshMusicEdges([blocked, b], initial)).toEqual([]);
+  const confirmed = { ...blocked, audio: { ...blocked.audio, soundReviews: [...blocked.audio.soundReviews,
+    { ...blocked.audio.soundReviews[0], dimension: 'effect' as const, labelId: 'cymbal', decision: 'confirmed' as const }] } };
+  expect(musicPairEdges(confirmed, b)).toMatchObject([{ kind: 'sound', weight: .7 }]);
+});
+it.each(['rejected', 'uncertain', 'confirmed'] as const)('preserves the latest %s cymbal review through analysis and graph round trips', decision => {
+  const first = { dimension: 'source' as const, labelId: 'cymbals', decision: 'confirmed' as const,
+    scope: 'track' as const, at: '2026-10-07T12:00:00Z', evidenceRunId: 'same-run' };
+  const latest = { ...first, dimension: 'effect' as const, labelId: 'cymbal hit', decision };
+  const cymbal = (id: string) => node(id, { soundReviews: [first, latest],
+    soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false,
+      djTags: [{ group: 'production', label: 'cymbal', score: .9, model: 'Trained head' }] } });
+  const a = cymbal('a'), b = cymbal('b');
+  const expectedReviews = [first, { ...latest, labelId: 'cymbal' }];
+  const restoredAudio = sanitizeMusicAnalysis(JSON.parse(JSON.stringify(a.audio)))!;
+  expect(restoredAudio.soundReviews).toEqual(expectedReviews);
+  const imported = sanitizeGraphExport(JSON.parse(JSON.stringify({ version: 1, nodes: [a, b], edges: musicPairEdges(a, b) })));
+  expect(imported.nodes.map(n => n.audio?.soundReviews)).toEqual([expectedReviews, expectedReviews]);
+  const edges = musicPairEdges(imported.nodes[0], imported.nodes[1]);
+  if (decision === 'confirmed') expect(edges).toMatchObject([{ kind: 'sound', weight: .85 }]);
+  else expect(edges).toEqual([]);
+});
 it('preserves document and authored edges and de-duplicates refreshes', () => {
   const a=node('a',{tempo:tempo(120)}); const b=node('b',{tempo:tempo(120)});
   const doc={...node('doc'),fileType:'txt' as const,audio:undefined};

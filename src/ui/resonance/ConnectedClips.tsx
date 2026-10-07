@@ -4,7 +4,7 @@ import { useGraphStore } from '../../store/graphStore';
 import { useUiStore } from '../../store/uiStore';
 import { EDGE_KIND_LABEL } from '../../scene/palette';
 import { keyName } from '../../audio/musicTypes';
-import { musicNameHints } from '../../audio/nameHints';
+import { resolveTempoKey } from '../../audio/resolvedTempoKey';
 import { briefEvidence } from './briefEvidence';
 import { ClipPlayer, ClipThumb, formatClock, useClipAudio } from './ClipWave';
 
@@ -32,12 +32,10 @@ function neighborsOf(id: string, nodes: DocNode[], nodeIndex: Record<string, num
 const strength = (w: number) => (w >= 0.75 ? 'Strong' : w >= 0.5 ? 'Medium' : 'Weak');
 /** Tempo and key as the detail panel shows them: a value in the file/folder name wins over the audio estimate. */
 function tempoOf(n: DocNode): number | null {
-  const hint = n.fileType === 'audio' ? musicNameHints(n).tempo : undefined;
-  return hint ? hint.value : n.audio?.tempo ? n.audio.tempo.bpm : null;
+  return (n.fileType === 'audio' ? resolveTempoKey(n).tempo?.bpm : n.audio?.tempo?.bpm) ?? null;
 }
 function keyOf(n: DocNode): string | null {
-  const hint = n.fileType === 'audio' ? musicNameHints(n).key : undefined;
-  return hint ? hint.displayName : n.audio?.key ? keyName(n.audio.key) : null;
+  return n.fileType === 'audio' ? resolveTempoKey(n).keyLabel ?? null : n.audio?.key ? keyName(n.audio.key) : null;
 }
 const bpmText = (n: DocNode) => { const t = tempoOf(n); return t === null ? '?' : `${Math.round(t)}`; };
 

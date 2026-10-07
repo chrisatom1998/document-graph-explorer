@@ -1,4 +1,4 @@
-import { musicNameHints } from './nameHints';
+import { resolveTempoKey } from './resolvedTempoKey';
 import { confirmedInstrumentList, reliableInstruments, sourceReviewAllows } from './instrumentEvidence';
 import { soundMatchLabels, MATCH_ORIGIN_TEXT, type MatchLabel, type MatchOrigin } from './soundMatchLabels';
 import { confidentSoundSummary } from './confidentSoundSummary';
@@ -38,9 +38,7 @@ function keyRelation(a: NonNullable<MusicAnalysis['key']>, b: NonNullable<MusicA
 /** Project evidence once per rebuild; never mutate saved estimates or corrections. */
 function features(node: DocNode) {
   const audio = node.audio!;
-  const hints = musicNameHints(node);
-  const tempo = hints.tempo ? { bpm: hints.tempo.value, confidence: .65 } : audio.tempo;
-  const key = hints.key ? { ...hints.key.value, strength: .65 } : audio.key;
+  const { hints, tempo, key } = resolveTempoKey(node);
   const human = confirmedInstrumentList(audio) !== undefined;
   // Names are useful search clues, but cannot replace stronger audio evidence.
   const reliable = reliableInstruments(audio);

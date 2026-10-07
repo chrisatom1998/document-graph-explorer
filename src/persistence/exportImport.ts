@@ -123,6 +123,7 @@ function randomShellPoint(): [number, number, number] {
  * produce while still bounding what an untrusted file can make us buffer.
  */
 const MAX_IMPORT_GRAPH_FILE_BYTES = 256 * 1024 * 1024;
+let graphImportGeneration = 0;
 
 export async function importGraphJSONFile(file: File): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
   if (file.size > MAX_IMPORT_GRAPH_FILE_BYTES) {
@@ -144,6 +145,7 @@ export async function importGraphJSONFile(file: File): Promise<{ nodes: DocNode[
   // this inside the queued import could deadlock with a scan whose reconcile
   // job is already waiting behind the import.
   const { suspendFolderWatcher } = await import('../ingest/folderWatcher');
+  graphImportGeneration += 1;
   await suspendFolderWatcher();
   return enqueueRun(() => doImportGraphExportData(data, 'imported'));
 }
@@ -152,30 +154,91 @@ export async function importGraphJSONFile(file: File): Promise<{ nodes: DocNode[
 export async function importGraphExportData(
   input: unknown,
   mode: 'shared' | 'imported' = 'shared',
+  options: { signal?: AbortSignal } = {},
 ): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
+  options.signal?.throwIfAborted();
   const data = sanitizeGraphExport(input);
   const { suspendFolderWatcher } = await import('../ingest/folderWatcher');
+  options.signal?.throwIfAborted();
+  const generation = ++graphImportGeneration;
   await suspendFolderWatcher();
-  return enqueueRun(() => doImportGraphExportData(data, mode));
+  try {
+    return await enqueueRun(() => doImportGraphExportData(data, mode, options.signal), options);
+  } catch (error) {
+    if (options.signal?.aborted) {
+      const isCurrent = () => graphImportGeneration === generation && useCorpusStore.getState().mode === 'local';
+      try {
+        const { tryResumeFolderWatcher } = await import('../ingest/folderWatcher');
+        while (isCurrent()) {
+          // A preceding queued restore can re-arm a scan after this drain.
+          // Recovery yields the queue and retries if that happened, so its
+          // bind never waits for a reconcile queued behind itself.
+          await suspendFolderWatcher();
+          if (!isCurrent()) break;
+          if (await enqueueRun(() => tryResumeFolderWatcher(isCurrent))) break;
+        }
+      } catch { /* Keep the original cancellation if watching cannot resume. */ }
+    }
+    throw error;
+  }
 }
 
 async function doImportGraphExportData(
   data: GraphExport,
   mode: 'shared' | 'imported',
+  signal?: AbortSignal,
 ): Promise<{ nodes: DocNode[]; edges: Edge[] }> {
+  const [{ resetCorpus }, { useCollabStore }] = await Promise.all([
+    import('../pipeline/coordinatorLazy'), import('../collab/store'),
+  ]);
+  signal?.throwIfAborted();
+  if (mode === 'shared') {
+    // Populate the switcher's local list on a shared startup without loading
+    // private graph contents. Registry writes belong inside the mutation queue.
+    if (!useCorpusStore.getState().initialized) {
+      const { initializeCorpusRepository } = await import('./corpusRepository');
+      try {
+        await initializeCorpusRepository();
+      } catch (error) {
+        const { reportPersistenceUnavailable } = await import('./cache');
+        reportPersistenceUnavailable(error);
+      } finally {
+        // Registry initialization selects the last saved corpus. Its graph
+        // has not been hydrated on this path: clear that ownership before an
+        // abort releases the queue to a waiting drop or replacement link.
+        if (useGraphStore.getState().nodes.length === 0) {
+          useCorpusStore.getState().setEphemeral('Shared graph', 'shared');
+        }
+      }
+      signal?.throwIfAborted();
+    }
+    // A link can now arrive while a local workspace is open. Preserve edits
+    // and its debounced transcript before reset clears their in-memory state.
+    const [{ saveSession }, { flushPendingChatSave }] = await Promise.all([
+      import('./sessionSave'), import('./chatHistorySync'),
+    ]);
+    if (useGraphStore.getState().phase === 'ready') await saveSession();
+    await flushPendingChatSave();
+  }
+  // A newer URL or component cleanup can cancel while imports/saves awaited.
+  // From here through the store replacement there is no asynchronous gap.
+  signal?.throwIfAborted();
   let nodes = data.nodes;
   let edges = refreshMusicEdges(nodes, data.edges);
   const versionsPending = versionWorkPending();
 
   // Clean slate first (pipeline owns worker/store/layout teardown).
-  const { resetCorpus } = await import('../pipeline/coordinatorLazy');
   // Replacing one ephemeral graph with another does not change corpus id/mode.
-  const { useCollabStore } = await import('../collab/store');
-  useCollabStore.getState().leaveSession();
-  resetCorpus();
-  useCorpusStore
-    .getState()
-    .setEphemeral(mode === 'shared' ? 'Shared graph' : 'Imported graph', mode);
+  useCorpusStore.getState().setSwitching(true);
+  try {
+    useCollabStore.getState().leaveSession();
+    resetCorpus();
+    useCorpusStore
+      .getState()
+      .setEphemeral(mode === 'shared' ? 'Shared graph' : 'Imported graph', mode);
+  } finally {
+    useCorpusStore.getState().setSwitching(false);
+  }
 
   const g = useGraphStore.getState();
   g.addNodes(nodes);

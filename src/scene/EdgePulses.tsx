@@ -17,6 +17,7 @@ import { positionBuffer, slotOfId } from './positionBuffer';
 import { EDGE_TINTS } from './palette';
 import { edgeControlPoint, evalEdgePoint } from './edgeCurve';
 import { prefersReducedMotion } from '../util/motion';
+import { edgeMatchesFilter } from './emphasis';
 
 const PULSE_CAPACITY = 220;
 const MAX_PULSE_EDGES = 70; // 2 pulses each -> 140 instances, headroom below capacity
@@ -80,23 +81,14 @@ export default function EdgePulses() {
     if (clusterCollapsed || prefersReducedMotion()) { activeEdges.current = 0; return; }
     // degraded tiers: pulses only for the explicit selection, not hover
     const focus = qualityTier >= 3 ? selectedId : (hoveredId ?? selectedId);
-    const minW = filter.minEdgeWeight;
     let k = 0;
     if (focus) {
       for (let i = 0; i < edges.length && k < MAX_PULSE_EDGES; i++) {
         const e = edges[i];
         if (e.source !== focus && e.target !== focus) continue;
-        if (e.weight < minW) continue; // respect edge-density slider
+        if (!edgeMatchesFilter(e, filter)) continue;
         // no pulses along edges the scene isn't drawing (hidden topic hubs)
         if (e.kind === 'topic' && !topicNodesEnabled) continue;
-        if (
-          e.kind !== 'topic' &&
-          filter.edgeKinds !== null &&
-          filter.edgeKinds.length > 0 &&
-          !filter.edgeKinds.includes(e.kind)
-        ) {
-          continue;
-        }
         const from = slotOfId.get(focus);
         const to = slotOfId.get(e.source === focus ? e.target : e.source);
         if (from === undefined || to === undefined) continue;

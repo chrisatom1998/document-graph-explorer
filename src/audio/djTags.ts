@@ -1,4 +1,5 @@
 import type { DescriptionScore } from './profileDescriptions';
+import { appendNativeWindow, sanitizeNativeWindowEvidence, type NativeWindowEvidence } from './nativeWindowEvidence';
 
 import catalog from './djCatalog.json';
 
@@ -10,7 +11,7 @@ export const DJ_LABELS: Record<DjGroup, readonly string[]> = {
   character: DJ_CATALOG.filter(c => c.group === 'character').map(c => c.label),
 };
 export type ConfirmedDjTags = Record<DjGroup, string[]>;
-export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples' | 'Trained head' | 'Trained head (maybe)'; segments?: { start: number; end: number }[] }
+export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples' | 'Trained head' | 'Trained head (maybe)'; segments?: { start: number; end: number }[]; windowEvidence?: NativeWindowEvidence }
 export const DJ_TYPE_SOURCE: Record<string, string> = Object.fromEntries(
   DJ_CATALOG.filter(c => c.group === 'production' && c.source).map(c => [c.label, c.source!]),
 );
@@ -31,7 +32,7 @@ export function sanitizeConfirmedDjTags(raw: unknown): ConfirmedDjTags | undefin
   if (!['source','production','character'].every(g => Array.isArray(input[g]))) return;
   return Object.fromEntries(Object.keys(DJ_LABELS).map(group => [group, [...new Set((input[group] as unknown[]).slice(0, DJ_LABELS[group as DjGroup].length * 2).map(v => canonicalDjLabel(group as DjGroup, v)).filter((v): v is string => !!v))].slice(0, DJ_LABELS[group as DjGroup].length)])) as ConfirmedDjTags;
 }
-export function sanitizeDjTags(raw: unknown): DjTag[] {
+export function sanitizeDjTags(raw: unknown, durationSeconds = 86400): DjTag[] {
   if (!Array.isArray(raw)) return [];
   const tags = new Map<string,DjTag>();
   for (const v of raw.slice(0,DJ_CATALOG.length * 2)) {
@@ -41,6 +42,8 @@ export function sanitizeDjTags(raw: unknown): DjTag[] {
     const tag: DjTag = {group,label:v.label,score:v.score};
     if (['AudioSet AST','MTG-Jamendo','Music CLAP','Reviewed examples','Trained head','Trained head (maybe)'].includes(v.model)) tag.model=v.model;
     if (Array.isArray(v.segments)) tag.segments = v.segments.slice(0,3).filter((s: {start:number;end:number}) => s && Number.isFinite(s.start) && Number.isFinite(s.end) && s.start >= 0 && s.end > s.start && s.end <= 86400).map((s: {start:number;end:number})=>({start:s.start,end:s.end}));
+    const windowEvidence = sanitizeNativeWindowEvidence(v.windowEvidence, durationSeconds);
+    if (windowEvidence) tag.windowEvidence = windowEvidence;
     tags.set(`${group}:${tag.label}`,tag);
   }
   return [...tags.values()];
@@ -79,9 +82,12 @@ export class DjTagEvidence {
   add(tags: DjTag[], start: number, end: number) {
     for (const tag of tags) {
       const key=`${tag.group}:${tag.label}`; const existing=this.tags.get(key);
-      if (!existing) this.tags.set(key,{...tag,segments:[{start,end}]});
+      if (!existing) this.tags.set(key,{...tag,segments:[{start,end}],windowEvidence:{windows:[{start,end,score:tag.score}],complete:true}});
       else {
         existing.score=Math.max(existing.score,tag.score);
+        // A changed detector is not interchangeable score provenance. Keep only this retained detector's windows.
+        if (existing.model === tag.model) appendNativeWindow(existing.windowEvidence!, { start, end, score: tag.score });
+        else existing.windowEvidence!.complete = false;
         if (existing.segments && existing.segments.length<3 && !existing.segments.some(s=>s.start===start)) existing.segments.push({start,end});
       }
     }
@@ -120,7 +126,8 @@ export function applyReviewedDecisions(tags: DjTag[], scores: DescriptionScore[]
     if (score.basis === 'head') {
       // A trained head already cleared its own measured threshold. It adds a tag under its own name and
       // replaces untested guesses for the same label, but never a user-reviewed example or a stronger tested tag.
-      const tag: DjTag = {group:score.learnedGroup,label:score.label,score:score.score,model:score.maybe?'Trained head (maybe)':'Trained head'};
+      const tag: DjTag = {group:score.learnedGroup,label:score.label,score:score.score,model:score.maybe?'Trained head (maybe)':'Trained head',
+        ...(score.windowEvidence ? { windowEvidence: score.windowEvidence } : {})};
       if (score.decision === 'include' && outranksDjTag(tag, result.get(key))) result.set(key,tag);
       continue;
     }

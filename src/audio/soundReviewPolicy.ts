@@ -2,25 +2,15 @@ import { confirmedInstrumentList } from './instrumentEvidence';
 import { CHARACTER_LABELS } from './soundProfile';
 import { canonicalDjLabel, DJ_CATALOG, type DjGroup } from './djTags';
 import type { MusicAnalysis } from './musicTypes';
-import type { Dimension, SoundReview } from './recognition';
+import type { Dimension } from './recognition';
+import { canonicalReviewLabel, latestSoundReview, sharedSoundReviewIdentity } from './soundReviewIdentity';
+export { latestSoundReview } from './soundReviewIdentity';
 
 export const EFFECT_EVENT_LABELS = DJ_CATALOG.filter(c => c.group === 'production' && c.source === 'sound effect').map(c => c.label);
-const canonicalReviewLabel = (dimension: Dimension, label: string) => dimension === 'character'
-  ? canonicalDjLabel('character', label) ?? label
-  : dimension === 'effect' ? canonicalDjLabel('production', label) ?? label : label;
-
-/** Append order is authoritative, even when timestamps tie or evidence changes. */
-export function latestSoundReview(reviews: readonly SoundReview[] | undefined, dimension: Dimension, label: string): SoundReview | undefined {
-  const key = canonicalReviewLabel(dimension, label);
-  for (let i = (reviews?.length ?? 0) - 1; i >= 0; i--) {
-    const review = reviews![i];
-    if (review.dimension === dimension && canonicalReviewLabel(dimension, review.labelId) === key) return review;
-  }
-  return undefined;
-}
 export function djReviewDimension(group: DjGroup, label: string): Dimension | undefined {
   return group === 'source' ? 'source' : group === 'character' ? 'character'
-    : label === 'atmosphere' || EFFECT_EVENT_LABELS.includes(canonicalDjLabel('production', label) ?? label) ? 'effect' : undefined;
+    : label === 'atmosphere' || EFFECT_EVENT_LABELS.includes(canonicalDjLabel('production', label) ?? label)
+      || sharedSoundReviewIdentity('effect', label) ? 'effect' : undefined;
 }
 export function djReviewAllows(analysis: Pick<MusicAnalysis,'soundReviews'>, group: DjGroup, label: string): boolean {
   const dimension = djReviewDimension(group, label);
@@ -40,6 +30,8 @@ export function resolvedNonSourceLabels(analysis: MusicAnalysis, includeSuggesti
     const dimension = djReviewDimension(group, label);
     const review = dimension && latestSoundReview(analysis.soundReviews, dimension, label);
     if (review && review.decision !== 'confirmed') return;
+    // A source confirmation is shown under its saved source name, not repeated as an effect.
+    if (review && dimension && review.dimension !== dimension && sharedSoundReviewIdentity(dimension, label)) return;
     const origin = review ? 'confirmed' : source;
     const key = `${group}:${label}`;
     const previous = labels.get(key);

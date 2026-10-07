@@ -40,7 +40,9 @@ describe('event window evidence', () => {
     e.add([head('vinyl scratch', .8), head('impact'), { group: 'source', label: 'piano', score: .9 }, { ...head('vinyl scratch'), basis: undefined }], 10, 12);
     expect(e.results()).toEqual([]);
     e.add([head('vinyl scratch', .95), head('synthesizer', .7, 'source')], 40, 42);
-    expect(e.results()).toEqual([{ tag: { group: 'production', label: 'vinyl scratch', score: .95, model: 'Trained head (maybe)' }, segments: [{ start: 10, end: 12 }, { start: 40, end: 42 }] }]);
+    expect(e.results()).toEqual([{ tag: { group: 'production', label: 'vinyl scratch', score: .95, model: 'Trained head (maybe)',
+      windowEvidence: { windows: [{ start: 10, end: 12, score: .8 }, { start: 40, end: 42, score: .95 }], complete: true } },
+      segments: [{ start: 10, end: 12 }, { start: 40, end: 42 }] }]);
   });
   it('only advertises labels the shipped one-shot model has a head for', () => {
     const shipped = new Set(shortClip.heads.map(h => h.label));

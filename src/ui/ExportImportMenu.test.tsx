@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { DocNode, Edge } from '../model/types';
 
-vi.mock('../persistence/exportImport', () => ({
+vi.mock('../persistence/exportImport', async () => ({
+  toGraphExport: (await import('../persistence/graphExport')).toGraphExport,
   exportGraphJSON: vi.fn(() => Promise.resolve()),
   exportScenePNG: vi.fn(() => Promise.resolve(true)),
   importGraphJSONFile: vi.fn(() =>
@@ -33,6 +34,7 @@ import ExportImportMenu from './ExportImportMenu';
 import { importGraphJSONFile } from '../persistence/exportImport';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
+import { decodeShareFragment } from '../persistence/shareUrl';
 
 const mockImportGraphJSONFile = vi.mocked(importGraphJSONFile);
 
@@ -99,6 +101,7 @@ describe('ExportImportMenu', () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it('confirms before importing over an existing graph', async () => {
@@ -184,5 +187,45 @@ describe('ExportImportMenu', () => {
         'Import failed: file is not valid JSON.',
       ),
     );
+  });
+
+  it('prepares the URL before confirmation so the clipboard write starts in the click', async () => {
+    vi.stubGlobal('CompressionStream', undefined);
+    vi.stubGlobal('DecompressionStream', undefined);
+    let copied = '';
+    vi.stubGlobal('navigator', { clipboard: { writeText: async (text: string) => { copied = text; } } });
+    setGraph([docNode('a')]);
+    render(<ExportImportMenu />);
+    fireEvent.click(screen.getByRole('button', { name: /copy shareable url/i }));
+    const button = await screen.findByRole('button', { name: /^copy link$/i });
+    await waitFor(() => expect(button).toBeEnabled());
+
+    fireEvent.click(button);
+    // This must already have happened, before awaiting even one microtask.
+    expect(copied).toContain('#graph=v1.');
+    expect((await decodeShareFragment(copied))?.nodes.map(n => n.title)).toEqual(['Doc a']);
+  });
+
+  it('shows a preparation error instead of enabling copy for an invalid graph', async () => {
+    setGraph([]);
+    render(<ExportImportMenu />);
+    fireEvent.click(screen.getByRole('button', { name: /copy shareable url/i }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('This graph cannot be shared.');
+    expect(screen.getByRole('button', { name: /^copy link$/i })).toBeDisabled();
+  });
+
+  it('replaces a prepared link when the graph changes before confirmation', async () => {
+    vi.stubGlobal('CompressionStream', undefined);
+    vi.stubGlobal('DecompressionStream', undefined);
+    let copied = '';
+    vi.stubGlobal('navigator', { clipboard: { writeText: async (text: string) => { copied = text; } } });
+    setGraph([docNode('old')]);
+    render(<ExportImportMenu />);
+    fireEvent.click(screen.getByRole('button', { name: /copy shareable url/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /^copy link$/i })).toBeEnabled());
+    act(() => { setGraph([docNode('new')]); });
+    await waitFor(() => expect(screen.getByRole('button', { name: /^copy link$/i })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /^copy link$/i }));
+    expect((await decodeShareFragment(copied))?.nodes.map(n => n.title)).toEqual(['Doc new']);
   });
 });

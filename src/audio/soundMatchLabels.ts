@@ -6,8 +6,11 @@ import { filenameSoundFallback } from './filenameSoundFallback';
 import { confirmedInstrumentList, sourceReviewAllows } from './instrumentEvidence';
 import { musicNameHints } from './nameHints';
 import { resolvedNonSourceLabels, reviewedSoundProfile, type ResolvedDjLabel } from './soundReviewPolicy';
+import { sharedSoundReviewIdentity } from './soundReviewIdentity';
 
 export const labelKey = (label: string) => label.replaceAll('_', ' ').toLowerCase();
+const displayedLabelKey = (label: string) => sharedSoundReviewIdentity('source', labelKey(label))
+  ?? sharedSoundReviewIdentity('effect', labelKey(label)) ?? labelKey(label);
 export type MatchOrigin = 'confirmed' | 'sounds' | 'maybe' | 'filename' | 'guess' | 'unverified';
 export interface MatchLabel { group: DjGroup; label: string; origin: MatchOrigin; weight: number }
 /** How strongly each origin counts toward a link. None of these are probabilities. */
@@ -19,13 +22,13 @@ export function otherModelGuessGroups({ profile, confirmedDjTags, reviewedLabels
   profile?: Pick<SoundProfile, 'djTags'>; confirmedDjTags?: ConfirmedDjTags | object; reviewedLabels?: ResolvedDjLabel[];
   exclude: Iterable<string>; skipSource?: boolean;
 }): { group: DjGroup; values: string[] }[] {
-  const shown = new Set([...exclude].map(labelKey));
+  const shown = new Set([...exclude].map(displayedLabelKey));
   return (['source', 'production', 'character'] as DjGroup[]).flatMap(group => {
     if (group === 'source' ? skipSource || confirmedDjTags : confirmedDjTags) return [];
     const raw = group !== 'source' && reviewedLabels?.length
       ? reviewedLabels.filter(t => t.group === group && t.source !== 'confirmed').map(t => t.label)
       : profile?.djTags?.filter(t => t.group === group).map(t => t.label) ?? [];
-    const values = [...new Set(raw)].filter(label => !shown.has(labelKey(label)));
+    const values = [...new Set(raw)].filter(label => !shown.has(displayedLabelKey(label)));
     return values.length ? [{ group, values }] : [];
   });
 }

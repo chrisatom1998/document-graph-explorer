@@ -1,4 +1,5 @@
 import soundManifest from '../../public/sound-model/manifest.json';
+import { NATIVE_WINDOW_EVIDENCE_LIMIT, sanitizeNativeWindowEvidence, type NativeWindowEvidence } from './nativeWindowEvidence';
 
 /** Full-mix instrument heads: one logistic head per instrument over the three models every full analysis already runs
  * on each 10 s window (CLAP sound embedding, AudioSet AST instrument scores, MTG-Jamendo instrument activations).
@@ -28,7 +29,7 @@ export interface FullMixModel {
 export interface FullMixWindowInput { ast?: Record<string, number>; jamendo?: Record<string, number>; clap?: number[] }
 /** `score` is the recording's head probability rescaled so the head's threshold reads 0.5 (the app's likely cutoff)
  * and 1 stays 1; only labels at or above their threshold are kept. */
-export interface FullMixLabel { label: string; score: number; segments: { start: number; end: number }[] }
+export interface FullMixLabel { label: string; score: number; segments: { start: number; end: number }[]; windowEvidence?: NativeWindowEvidence }
 /** `decides`: head labels that replace other models' evidence on this recording (see FullMixHead.replaces). */
 export interface FullMixAnalysis { revision: string; windows: number; labels: FullMixLabel[]; decides: string[] }
 
@@ -101,7 +102,9 @@ export class FullMixEvidence {
       const top = ranked.slice(0, Math.min(this.model.aggregation.top, ranked.length));
       const score = top.reduce((s, w) => s + w.p, 0) / top.length;
       if (score >= head.threshold) labels.push({ label: head.label, score: Math.round((0.5 + 0.5 * (score - head.threshold) / (1 - head.threshold)) * 1e4) / 1e4,
-        segments: ranked.filter(w => w.p >= head.threshold).slice(0, 3).map(w => ({ start: w.start, end: w.end })) });
+        segments: ranked.filter(w => w.p >= head.threshold).slice(0, 3).map(w => ({ start: w.start, end: w.end })),
+        windowEvidence: { windows: windows.slice(0, NATIVE_WINDOW_EVIDENCE_LIMIT).map(w => ({ start: w.start, end: w.end, score: w.p[h] })),
+          complete: windows.length <= NATIVE_WINDOW_EVIDENCE_LIMIT, aggregation: { top: this.model.aggregation.top, threshold: head.threshold } } });
     });
     return { revision: this.model.revision, windows: windows.length, labels: labels.sort((a, b) => b.score - a.score),
       decides: this.model.heads.filter(h => h.replaces).map(h => h.label) };
@@ -114,8 +117,12 @@ export function sanitizeFullMixAnalysis(raw: unknown, durationSeconds: number): 
   const labels: FullMixLabel[] = [];
   for (const l of f.labels.slice(0, 50)) {
     if (!l || typeof l.label !== 'string' || !l.label || l.label.length > 80 || !finite(l.score) || l.score < 0 || l.score > 1 || !Array.isArray(l.segments)) continue;
+    let windowEvidence = sanitizeNativeWindowEvidence(l.windowEvidence, durationSeconds);
+    // These are raw head probabilities: without the original aggregation rule they cannot stand for display scores.
+    if (!windowEvidence?.aggregation) windowEvidence = undefined;
+    else if (windowEvidence.windows.length !== f.windows) windowEvidence.complete = false;
     labels.push({ label: l.label, score: l.score, segments: l.segments.slice(0, 3).filter(s => s && finite(s.start) && finite(s.end) && s.start >= 0 && s.end > s.start && s.end <= durationSeconds + 1e-6)
-      .map(s => ({ start: s.start, end: s.end })) });
+      .map(s => ({ start: s.start, end: s.end })), ...(windowEvidence ? { windowEvidence } : {}) });
   }
   const decides = Array.isArray(f.decides) ? f.decides.filter((l): l is string => typeof l === 'string' && l.length > 0 && l.length <= 80).slice(0, 50) : [];
   return { revision: f.revision, windows: f.windows, labels, decides };
