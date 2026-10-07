@@ -1,0 +1,13 @@
+{
+  "repository": "cmjatom/dge-all-tags-tagger",
+  "revision": "2e3617f11b1016a92d387d6b1529c45b210315aa",
+  "license": "MIT",
+  "sources": {
+    "model.onnx": "https://huggingface.co/cmjatom/dge-all-tags-tagger/resolve/2e3617f11b1016a92d387d6b1529c45b210315aa/onnx/model.onnx",
+    "model.json": "https://huggingface.co/cmjatom/dge-all-tags-tagger/resolve/2e3617f11b1016a92d387d6b1529c45b210315aa/onnx/model.json"
+  },
+  "sha256": {
+    "model.onnx": "4839854fa429c8c1ed6835a82a4b6c5c1ea490b2a5ecffe0fcf0303f964f9ca6",
+    "model.json": "a752600d6f9f4e110d5dbaaffeb3ec1185be881d2d9255c8374dd39de8b34658"
+  }
+}
