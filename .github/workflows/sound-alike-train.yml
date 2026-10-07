@@ -1,0 +1,145 @@
+name: Sound-alike projection
+
+# Trains the small projection the app applies to CLAP sound fingerprints before "sounds alike" links
+# (scripts/sound-alike/). Fingerprints come from scripts/embed-clap.mjs, the app's own CLAP setup, on CPU runners:
+# MTG-Jamendo split-0 train + validation only (select-jamendo.py lists what is held out). Audio is never committed.
+# Run by hand (workflow_dispatch): a full run embeds 100 archive folders, six jobs at a time (about 3 h).
+on:
+  workflow_dispatch:
+    inputs:
+      embeddings_run:
+        description: Retrain only, on the tracks and fingerprints of this earlier run id
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  JAMENDO: https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/cafd8e20c265ed84f1e61f1c875327971f43a62f
+  HOLDOUT: https://raw.githubusercontent.com/chrisatom1998/document-graph-explorer/f0f4de73246bd731435cc1f830f91d8b3145e893/docs/evaluations/holdout-r3-2026-10-06/jamendo-manifest.json
+  # Tracks per archive folder (a fixed sample): about 20,000 tracks, 60,000 windows in all.
+  PER_FOLDER: 200
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  select:
+    if: ${{ !inputs.embeddings_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select tracks
+        run: |
+          for s in autotagging autotagging_genre autotagging_instrument autotagging_moodtheme autotagging_top50tags; do
+            for p in train validation test; do
+              f=data/splits/split-0/$s-$p.tsv; mkdir -p mj/$(dirname $f); curl -fsSL --retry 6 -o mj/$f $JAMENDO/$f
+            done
+          done
+          for f in data/raw_30s_cleantags.tsv data/download/raw_30s_audio-low_sha256_tracks.txt; do
+            mkdir -p mj/$(dirname $f); curl -fsSL --retry 6 -o mj/$f $JAMENDO/$f
+          done
+          curl -fsSL --retry 6 -o holdout.json "$HOLDOUT"
+          mkdir -p sel && python3 scripts/sound-alike/select-jamendo.py mj holdout.json sel/tracks.json --windows 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sound-alike-tracks
+          path: sel
+          retention-days: 30
+
+  embed:
+    needs: select
+    if: ${{ !inputs.embeddings_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      # Share the account's runners with other work: at most 6 at a time.
+      max-parallel: 6
+      matrix:
+        folder: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+                 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+                 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Fetch any model weights the cache lacks
+        run: npm run setup:music
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - uses: actions/download-artifact@v4
+        with:
+          name: sound-alike-tracks
+          path: sel
+      - name: Embed this archive folder
+        run: |
+          f=${{ matrix.folder }}; mkdir -p emb
+          time python3 scripts/sound-alike/fetch-folder.py sel/tracks.json $f "$RUNNER_TEMP/a" $PER_FOLDER
+          # Two embedders with two threads each fill the runner's four cores.
+          for k in 0 1; do THREADS=2 node scripts/embed-clap.mjs "$RUNNER_TEMP/a/manifest.json" emb/f$f-$k.jsonl $k 2 & done
+          wait
+          wc -l emb/*.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sound-alike-emb-${{ matrix.folder }}
+          path: emb
+          retention-days: 30
+
+  train:
+    needs: [select, embed]
+    if: always() && (needs.select.result == 'success' || inputs.embeddings_run)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: sound-alike-tracks
+          path: sel
+          run-id: ${{ inputs.embeddings_run || github.run_id }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sound-alike-emb-*
+          path: emb
+          run-id: ${{ inputs.embeddings_run || github.run_id }}
+          github-token: ${{ github.token }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q numpy && pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Pack fingerprints into one file
+        run: python3 -c "import glob,gzip,shutil; out=gzip.open('fingerprints.jsonl.gz','wb'); [shutil.copyfileobj(open(f,'rb'),out) for f in sorted(glob.glob('emb/**/*.jsonl',recursive=True))]; out.close()"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sound-alike-fingerprints
+          path: |
+            fingerprints.jsonl.gz
+            sel/tracks.json
+          compression-level: 0
+          retention-days: 30
+      - name: Train (the defaults are what ships in src/audio/soundProjection.json)
+        run: |
+          python3 scripts/sound-alike/train.py sel/tracks.json emb --out out | tee out.log
+          mv out.log out/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sound-alike-projection
+          path: out
+          retention-days: 30

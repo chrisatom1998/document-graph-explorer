@@ -19,6 +19,7 @@ env:
     public/music-model/**/*.onnx
     public/sound-model/**/*.onnx
     public/jamendo-model/*.onnx
+    public/tagger-model/*.onnx
     !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
 
 jobs:

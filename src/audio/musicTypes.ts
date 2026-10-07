@@ -1,6 +1,7 @@
 import { installedFusionIdentity } from './fusionRelease';
 import { sanitizeFusion, type FusionAnalysis } from './fusion';
 import { sanitizeFullMixAnalysis, type FullMixAnalysis } from './fullMixHeads';
+import { sanitizeTaggerAnalysis, type TaggerAnalysis } from './tagger';
 import { sourceLabels, sanitizeRecognition, sanitizeSoundReviews, type Recognition, type SoundReview } from './recognition';
 import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
@@ -13,7 +14,8 @@ export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 4;
 export const TEMPO_ANALYSIS_REVISION = 4;
 // Enabling the built-in policy makes persisted native-only documents eligible for reanalysis. 70/71: full-mix heads. 73/74: genre and energy.
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 74 : 73;
+// 75/76: the trained tagger. 77/78: its per-window scores (long-recording rules).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 78 : 77;
 export interface InstrumentEstimate {
   label: string;
   score: number;
@@ -29,6 +31,8 @@ export interface MusicAnalysis {
   fusion?: FusionAnalysis;
   /** Full-mix instrument heads over each whole 10 s window's native outputs: labels at or above their tested threshold. */
   fullMix?: FullMixAnalysis;
+  /** The trained tagger's recording scores for the tags it decides (src/audio/tagger.ts); thresholds apply at display. */
+  tagger?: TaggerAnalysis;
   recognition?: Recognition;
   soundReviews?: SoundReview[];
   stage?: 'preview';
@@ -83,6 +87,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   if (fusion) out.fusion = fusion;
   const fullMix = sanitizeFullMixAnalysis(m.fullMix, out.durationSeconds);
   if (fullMix) out.fullMix = fullMix;
+  const tagger = sanitizeTaggerAnalysis(m.tagger);
+  if (tagger) out.tagger = tagger;
   out.recognition = sanitizeRecognition(m.recognition, out.durationSeconds);
   if (!out.recognition) delete out.recognition;
   if (Array.isArray(m.soundReviews)) out.soundReviews = sanitizeSoundReviews(m.soundReviews);

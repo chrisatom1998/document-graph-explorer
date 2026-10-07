@@ -7,6 +7,7 @@ import { FULL_MIX_PINNED, loadFullMixHeads } from './fullMixHeads';
 import { addVersionPrint, analyzeDecodedMusic, previewDecodedMusic, type AnalysisOptions } from './analyzeDecodedMusic';
 import { VERSION_PRINT_MIN_SECONDS, VERSION_PRINT_SAMPLE_RATE } from './versionPrint';
 import type { MusicAnalysis } from './musicTypes';
+import { TAGGER_UNAVAILABLE } from './tagger';
 import { ResultCache } from './recognition';
 import { rememberAudioAnalysisUsed, setSpeculativePreloadStop } from './speculativePreload';
 const cache = new ResultCache(128);
@@ -29,7 +30,8 @@ const modelQueue = new MusicTaskQueue(1);
 // AST and CLAP use four threads each; smaller hosts keep one serialized queue.
 const familyQueues = new Map<string, MusicTaskQueue>();
 const concurrentModels = () => workerCapacity() >= 4 && typeof navigator !== 'undefined' && navigator.hardwareConcurrency >= 8;
-const familyOf = (kind: unknown) => kind === 'rhythm' || kind === 'tonal' ? 'essentia' : String(kind);
+// The trained tagger shares the Jamendo worker: both are small single-thread onnxruntime sessions.
+const familyOf = (kind: unknown) => kind === 'rhythm' || kind === 'tonal' ? 'essentia' : kind === 'tagger' ? 'jamendo' : String(kind);
 function queueFor(family: string): MusicTaskQueue {
   if (!concurrentModels()) return modelQueue;
   let queue = familyQueues.get(family);
@@ -224,7 +226,7 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
         const fullMixFailed = mode === 'full' && FULL_MIX_PINNED && !fullMix;
         options.signal?.throwIfAborted();
         const result = await analyzeDecodedMusic(decoder, (message, transfer) => request(message, transfer, options, 'analysis', first.fingerprint),
-          { ...options, fusion, fullMix, sourceMime: blob.type, mode, initialPreview: first.preview, audioFingerprint: first.audioFingerprint, cache, concurrentModels: concurrentModels() });
+          { ...options, fusion, fullMix, tagger: options.tagger ?? true, sourceMime: blob.type, mode, initialPreview: first.preview, audioFingerprint: first.audioFingerprint, cache, concurrentModels: concurrentModels() });
         if (prepared) {
           result.fusion = prepared.restore(result.fusion);
           result.notes.push(prepared.usedFallback() ? 'Experimental source model unavailable; installed detector retained.' : 'Experimental PaSST source diagnostics; calibration only, no validation receipt.');
@@ -234,7 +236,9 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
         else if (!injectedFusion && (!prepared || prepared.usedFallback()) && !result.fusion?.counts.failed) result.classifierConfiguration = fusionConfiguration();
         // The key names the runtime; after a single-thread fallback, save under the key the next lookup will use.
         const key = first.key && first.runtime !== musicRuntimeIdentity() ? await musicCacheKey(blob, mode) : first.key;
-        if (key && !injectedFusion && !fusionFailed && !fullMixFailed && !experimentalPaSST) await writeMusicCache(key, result, blob.type);
+        // A tagger that failed to run is retried by the next analysis, so its result is not saved.
+        const taggerFailed = result.notes.includes(TAGGER_UNAVAILABLE);
+        if (key && !injectedFusion && !fusionFailed && !fullMixFailed && !taggerFailed && !experimentalPaSST) await writeMusicCache(key, result, blob.type);
         options.signal?.throwIfAborted();
         return result;
       } finally { decoder.close(); parkWorker(); }

@@ -10,7 +10,7 @@ export const MUSIC_CACHE_LIMIT=1000;
 const LIMIT=MUSIC_CACHE_LIMIT;
 export async function musicCacheKey(blob:Blob,mode:MusicAnalysisMode):Promise<string|undefined>{
  try {
-  const manifests=await Promise.all(['music-model','jamendo-model','sound-model'].map(async directory=>{
+  const manifests=await Promise.all(['music-model','jamendo-model','sound-model','tagger-model'].map(async directory=>{
    const response=await fetch(`${import.meta.env.BASE_URL}${directory}/manifest.json`,{cache:'no-cache',signal:AbortSignal.timeout(2000)});
    if(!response.ok)throw new Error('Model manifest unavailable');
    const manifest=await response.json();

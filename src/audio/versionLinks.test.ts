@@ -53,7 +53,7 @@ const vector = (seed: number) => Array.from({ length: 512 }, (_, i) => Math.sin(
 describe('version links', () => {
   it('links copies of one recording as the same recording and leaves other songs alone', async () => {
     const nodes = [await track('a', 'track-a.wav', tune(A)), await track('b', 'export-final.mp3', tune(A, 0, .1)), await track('c', 'up two.mp3', tune(A, 2)), await track('d', 'other.wav', tune(B))];
-    const edges = buildVersionEdges(nodes);
+    const edges = buildVersionEdges(nodes, 10_000);
     expect(edges.map(e => e.id).sort()).toEqual(['a->b:version', 'a->c:version', 'b->c:version']);
     expect(edges.every(e => versionRelation(e) === 'duplicate')).toBe(true);
     expect(edges.find(e => e.id === 'a->c:version')!.evidence[0]).toMatch(/pitched up about 2 semitones/);
@@ -66,7 +66,7 @@ describe('version links', () => {
     const v = vector(3), w = v.map((x, i) => x + .25 * Math.cos(i));
     const nodes = [await track('a', 'DJ One - Night Drive (Original Mix).mp3', tune(A), v), await track('b', 'DJ Two - Night Drive (Club Remix).mp3', tune(B), w),
       await track('c', 'DJ Two - Sunrise.mp3', tune(C), w)];
-    const edges = buildVersionEdges(nodes);
+    const edges = buildVersionEdges(nodes, 10_000);
     expect(edges.map(e => [e.id, versionRelation(e)])).toEqual([['a->b:version', 'remix']]);
     expect(edges[0].evidence[0]).toMatch(/titles match/);
     expect(versionGroup('b', nodes, edges)).toMatchObject([{ node: { id: 'a' }, relation: 'remix' }]);
@@ -74,7 +74,7 @@ describe('version links', () => {
 
   it('chains a remix of a copy through the group as another version', async () => {
     const nodes = [await track('a', 'a.wav', tune(A)), await track('b', 'b.wav', tune(A, 0, .1))];
-    const edges = [...buildVersionEdges(nodes), { id: 'b->c:version', source: 'b', target: 'c', kind: 'version' as const, weight: .7, evidence: ['Another version of the same song: the titles match.'] }];
+    const edges = [...buildVersionEdges(nodes, 10_000), { id: 'b->c:version', source: 'b', target: 'c', kind: 'version' as const, weight: .7, evidence: ['Another version of the same song: the titles match.'] }];
     const c = { ...nodes[1], id: 'c', title: 'c.wav' };
     expect(versionGroup('a', [...nodes, c], edges)).toMatchObject([{ node: { id: 'b' }, relation: 'duplicate' }, { node: { id: 'c' }, relation: 'remix', via: { id: 'b' } }]);
   });
@@ -82,14 +82,14 @@ describe('version links', () => {
   it('checks a title inside a longer title even without version prints', () => {
     const plain = (id: string, name: string): DocNode => ({ id, kind: 'document', title: name, path: name, fileType: 'audio', topics: [], entities: [], keywords: [], wordCount: 0, cluster: -1, degree: 0, status: 'ok',
       audio: { version: 2, analyzedSeconds: 10, durationSeconds: 10, instruments: [], notes: [] } });
-    const edges = buildVersionEdges([plain('a', 'williamberry_-_Dirtbag_(I_am_gone).mp3'), plain('b', 'Robbero_-_Dirtbag_(Robbero_Remix).mp3'), plain('c', 'Robbero_-_Sunrise.mp3')]);
+    const edges = buildVersionEdges([plain('a', 'williamberry_-_Dirtbag_(I_am_gone).mp3'), plain('b', 'Robbero_-_Dirtbag_(Robbero_Remix).mp3'), plain('c', 'Robbero_-_Sunrise.mp3')], 10_000);
     expect(edges.map(e => [e.id, versionRelation(e)])).toEqual([['a->b:version', 'remix']]);
   });
 
   it('forgets tracks that leave the graph', async () => {
     const a = await track('a', 'a.wav', tune(A)), b = await track('b', 'b.wav', tune(A, 0, .1));
-    expect(buildVersionEdges([a, b])).toHaveLength(1);
+    expect(buildVersionEdges([a, b], 10_000)).toHaveLength(1);
     expect(buildVersionEdges([a])).toEqual([]);
-    expect(buildVersionEdges([a, { ...b, id: 'c' }]).map(e => e.id)).toEqual(['a->c:version']);
+    expect(buildVersionEdges([a, { ...b, id: 'c' }], 10_000).map(e => e.id)).toEqual(['a->c:version']);
   });
 });

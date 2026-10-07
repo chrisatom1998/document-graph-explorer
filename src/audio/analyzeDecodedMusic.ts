@@ -17,6 +17,7 @@ import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWind
 import { musicRuntimeIdentity } from './musicRuntime';
 import { FullMixEvidence, type FullMixModel } from './fullMixHeads';
 import { computeVersionPrint, VERSION_PRINT_SAMPLE_RATE } from './versionPrint';
+import { TAGGER_REVISION, TAGGER_SAMPLE_RATE, TAGGER_UNAVAILABLE, TAGGER_WINDOW_SECONDS, TaggerEvidence, taggerWindow, taggerWindowStarts } from './tagger';
 import { astGpuAllowed, createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
@@ -24,6 +25,8 @@ export interface AnalysisOptions {
   fusion?: FusionScorer;
   /** Pinned full-mix instrument heads (src/audio/fullMixHeads.ts); scored from the windows' existing model outputs. */
   fullMix?: FullMixModel;
+  /** Run the trained tagger (src/audio/tagger.ts) on up to three 10 s windows of 32 kHz audio. */
+  tagger?: boolean;
   /** Original input MIME, used only by an installed qualified-tier scorer. */
   sourceMime?: string;
   signal?: AbortSignal;
@@ -340,6 +343,35 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       return undefined;
     }
   }
+  /** The trained tagger (src/audio/tagger.ts): whole 10 s windows at 32 kHz, cut as its held-out scorer cut them.
+   * All windows or nothing: a failure leaves every tag to the other detectors and keeps the result out of the cache. */
+  async function taggerPass(): Promise<void> {
+    try {
+      const evidence = new TaggerEvidence();
+      for (const start of taggerWindowStarts(duration)) {
+        check();
+        const seconds = Math.min(TAGGER_WINDOW_SECONDS, duration - start);
+        options.onProgress?.(`trained tagger: ${Math.floor(start)}–${Math.ceil(start + seconds)}s of ${Math.ceil(duration)}s`);
+        const key = JSON.stringify([fingerprint, 'tagger', TAGGER_REVISION, start, seconds]);
+        let scores = cache.get<Record<string, number>>(key);
+        if (!scores) {
+          const samples = await read(start, seconds, TAGGER_SAMPLE_RATE);
+          check();
+          if (!samples.length || samples.length < Math.round(seconds * TAGGER_SAMPLE_RATE) - 1) throw new Error('Audio window could not be fully decoded');
+          const input = taggerWindow(samples);
+          scores = await request<Record<string, number>>({ kind: 'tagger', samples: input }, [input.buffer]);
+          check(); cache.set(key, scores);
+        }
+        evidence.add(scores);
+      }
+      const tagger = evidence.results();
+      if (tagger) result.tagger = tagger;
+    } catch (error) {
+      if (options.signal?.aborted) throw error;
+      delete result.tagger;
+      result.notes.push(TAGGER_UNAVAILABLE);
+    }
+  }
   /** One-shot heads on short windows where new sounds start (src/audio/eventWindows.ts). Optional: a failure
    * leaves the 10 s results as they are. */
   async function eventPass(): Promise<void> {
@@ -464,6 +496,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     // A stopped family may still hold one window in flight; let it settle before the decoder closes.
     stopAhead(); await Promise.all(leads);
     if (mode === 'full' && duration > SHORT_CLIP_MAX_SECONDS && !stopped.has('clap') && !job('clap').unsupportedReason) await eventPass();
+    if (options.tagger) await taggerPass();
     await addVersionPrint(result, (start, seconds) => read(start, seconds, VERSION_PRINT_SAMPLE_RATE), options.signal);
     refresh(false, true);
     return result;

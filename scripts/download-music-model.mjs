@@ -29,7 +29,7 @@ async function download(url, expectedHash) {
   }
 }
 
-for (const root of ['public/music-model', 'public/sound-model', 'public/jamendo-model']) {
+for (const root of ['public/music-model', 'public/sound-model', 'public/jamendo-model', 'public/tagger-model']) {
   const manifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
   for (const name of Object.keys(manifest.sha256).filter(name => name !== 'prompts.json')) {
     const path = join(root, name);

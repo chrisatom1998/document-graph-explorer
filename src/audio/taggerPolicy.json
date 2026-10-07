@@ -1,0 +1,252 @@
+{
+ "version": 1,
+ "revision": "all-tags-2026-10-06-r1",
+ "modelSha256": "4839854fa429c8c1ed6835a82a4b6c5c1ea490b2a5ecffe0fcf0303f964f9ca6",
+ "input": {
+  "name": "samples32k",
+  "output": "scores",
+  "sampleRate": 32000,
+  "windowSamples": 320000,
+  "maxWindows": 3
+ },
+ "tags": [
+  {
+   "output": "drums",
+   "label": "drums",
+   "dimension": "source",
+   "threshold": 0.2928,
+   "decides": [
+    "drums",
+    "drum kit"
+   ],
+   "tested": true,
+   "minSeconds": 10,
+   "long": {
+    "rule": "max",
+    "threshold": 0.5757
+   }
+  },
+  {
+   "output": "piano",
+   "label": "piano",
+   "dimension": "source",
+   "threshold": 0.5337,
+   "decides": [
+    "piano"
+   ],
+   "tested": true,
+   "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "guitar",
+   "label": "guitar",
+   "dimension": "source",
+   "threshold": 0.4886,
+   "decides": [
+    "guitar"
+   ],
+   "tested": true,
+   "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cymbals",
+   "label": "cymbals",
+   "dimension": "source",
+   "threshold": 0.6699,
+   "decides": [
+    "cymbals",
+    "cymbal"
+   ],
+   "tested": true,
+   "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "violin",
+   "label": "violin",
+   "dimension": "source",
+   "threshold": 0.3732,
+   "decides": [
+    "violin",
+    "violin / fiddle"
+   ],
+   "tested": true,
+   "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "trumpet",
+   "label": "trumpet",
+   "dimension": "source",
+   "threshold": 0.4961,
+   "decides": [
+    "trumpet"
+   ],
+   "tested": false,
+   "minSeconds": 10,
+   "long": {
+    "rule": "max"
+   }
+  },
+  {
+   "output": "saxophone",
+   "label": "saxophone",
+   "dimension": "source",
+   "threshold": 0.5096,
+   "decides": [
+    "saxophone"
+   ],
+   "tested": true,
+   "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "bass",
+   "label": "bass",
+   "dimension": "source",
+   "threshold": 0.6704,
+   "decides": [
+    "bass",
+    "bass guitar",
+    "double bass"
+   ],
+   "tested": false,
+   "minSeconds": 10,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:percussive",
+   "label": "percussive",
+   "dimension": "character",
+   "threshold": 0.646,
+   "decides": [
+    "percussive"
+   ],
+   "tested": true
+  },
+  {
+   "output": "cat:swelling",
+   "label": "swelling",
+   "dimension": "character",
+   "threshold": 0.4624,
+   "decides": [
+    "swelling"
+   ],
+   "tested": true
+  },
+  {
+   "output": "cat:wobbling",
+   "label": "wobbling",
+   "dimension": "character",
+   "threshold": 0.5718,
+   "decides": [
+    "wobbling"
+   ],
+   "tested": true
+  },
+  {
+   "output": "cat:falling",
+   "label": "falling",
+   "dimension": "character",
+   "threshold": 0.8024,
+   "decides": [
+    "falling"
+   ],
+   "tested": false
+  },
+  {
+   "output": "cat:pulsing",
+   "label": "pulsing",
+   "dimension": "character",
+   "threshold": 0.5645,
+   "decides": [
+    "pulsing"
+   ],
+   "tested": false
+  },
+  {
+   "output": "cat:bright",
+   "label": "bright",
+   "dimension": "character",
+   "threshold": 0.4432,
+   "decides": [
+    "bright"
+   ],
+   "tested": false
+  },
+  {
+   "output": "cat:dark",
+   "label": "dark",
+   "dimension": "character",
+   "threshold": 0.6312,
+   "decides": [
+    "dark"
+   ],
+   "tested": false
+  },
+  {
+   "output": "cat:distorted",
+   "label": "distorted",
+   "dimension": "character",
+   "threshold": 0.3459,
+   "decides": [
+    "distorted"
+   ],
+   "tested": false
+  },
+  {
+   "output": "cat:reverse effect",
+   "label": "reverse effect",
+   "dimension": "effect",
+   "threshold": 0.7061,
+   "decides": [
+    "reverse effect"
+   ],
+   "tested": false
+  },
+  {
+   "output": "cat:bird ambience",
+   "label": "bird ambience",
+   "dimension": "effect",
+   "threshold": 0.1277,
+   "decides": [
+    "bird ambience"
+   ],
+   "tested": false
+  },
+  {
+   "output": "cat:rain ambience",
+   "label": "rain ambience",
+   "dimension": "effect",
+   "threshold": 0.7011,
+   "decides": [
+    "rain ambience"
+   ],
+   "tested": false
+  },
+  {
+   "output": "cat:vocal breath",
+   "label": "vocal breath",
+   "dimension": "effect",
+   "threshold": 0.2375,
+   "decides": [
+    "vocal breath"
+   ],
+   "tested": false
+  }
+ ]
+}

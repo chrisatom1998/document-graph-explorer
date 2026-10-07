@@ -1,5 +1,5 @@
 // Scores "sounds alike" links built from CLAP fingerprints alone, over a grid of link policies.
-// Usage: npx vite-node scripts/sound-links/tune.mjs <manifest.json> <embeddings.jsonl> [out.json] [policy-json]
+// Usage: npx vite-node scripts/sound-links/tune.mjs <manifest.json> <embeddings.jsonl> [out.json] [policy-json | shipped]
 // Each clip becomes an audio node whose only evidence is its fingerprint (as the app stores it), so this measures the
 // sound-similarity part of src/audio/musicLinks.ts. Precision = share of links whose two clips share the label.
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -34,7 +34,7 @@ function score(edges) {
   for (const r of relations) row[r] = sound.length ? sound.filter(e => label[e.source][r] === label[e.target][r]).length / sound.length : NaN;
   return row;
 }
-const grid = policyArg ? [JSON.parse(policyArg)] : [1, 2, 3, 5].flatMap(neighbors => [0, .3, .5, .6, .7, .8].map(floor => ({ ...SOUND_LINK_POLICY, neighbors, floor })));
+const grid = policyArg === 'shipped' ? [SOUND_LINK_POLICY] : policyArg ? [JSON.parse(policyArg)] : [1, 2, 3, 5].flatMap(neighbors => [0, .3, .5, .6, .7, .8].map(floor => ({ ...SOUND_LINK_POLICY, neighbors, floor })));
 const rows = [];
 for (const center of [false, true]) for (const policy of grid) rows.push({ center, ...policy, ...score(buildMusicEdges(nodes(center), policy)) });
 // Nearest-neighbour precision ignores any threshold: how often a clip's single closest clip shares the label.

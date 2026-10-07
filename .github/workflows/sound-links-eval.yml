@@ -12,7 +12,7 @@ on:
 
 env:
   ONNXRUNTIME_NODE_INSTALL: skip
-  BASE_REF: 56733268e9ac7f16ad63ad5caf1ac7da464c464a
+  BASE_REF: c28add778a8aba58df662ff1a6cf629453a825c6  # raw CLAP sound-alike links, before the learned projection
   OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
   FMA_METADATA: https://os.unil.cloud.switch.ch/fma/fma_metadata.zip
   NSYNTH: http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-test.jsonwav.tar.gz
@@ -56,6 +56,8 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -82,8 +84,12 @@ jobs:
         run: |
           mkdir -p out
           for set in songs-tune notes-tune; do npx vite-node scripts/sound-links/tune.mjs data/$set.json data/$set.jsonl out/$set.json; done
-      - name: Held-out check of the shipped policy
-        run: for set in songs-test notes-test; do npx vite-node scripts/sound-links/tune.mjs data/$set.json data/$set.jsonl out/$set.json '{"neighbors":3,"floor":0.7}'; done
+      - name: Held-out check of the shipped policy, before and after
+        run: |
+          for set in songs-test notes-test; do npx vite-node scripts/sound-links/tune.mjs data/$set.json data/$set.jsonl out/$set.json shipped; done
+          git checkout "$BASE_REF" -- src
+          for set in songs-test notes-test; do npx vite-node scripts/sound-links/tune.mjs data/$set.json data/$set.jsonl out/$set-base.json '{"neighbors":3,"floor":0.7}'; done
+          git checkout HEAD -- src
       - uses: actions/upload-artifact@v4
         if: always()
         with:

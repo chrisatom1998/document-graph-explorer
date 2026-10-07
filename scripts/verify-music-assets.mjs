@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
-for (const directory of ['music-model', 'sound-model', 'jamendo-model', 'tempo-model']) {
+for (const directory of ['music-model', 'sound-model', 'jamendo-model', 'tagger-model', 'tempo-model']) {
 const root = join(process.argv[2] ?? 'public', directory);
 const manifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
 for (const name of Object.keys(manifest.sha256)) {
