@@ -142,22 +142,33 @@ async function embedDocs(chunksPerDoc: string[][]): Promise<Float32Array> {
   env.allowLocalModels = true;
   env.allowRemoteModels = false;
   env.localModelPath = MODEL_ROOT;
-  const extractor = await pipeline('feature-extraction', EMBED_MODEL_ID, { dtype: 'q8', device: 'cpu' });
+  const extractor = await pipeline('feature-extraction', EMBED_MODEL_ID, {
+    dtype: 'q8', device: 'cpu',
+    // Leave CPU time for the other test workers instead of creating a native
+    // inference thread for every host core on shared runners.
+    session_options: {
+      intraOpNumThreads: 4, interOpNumThreads: 1,
+      // The evaluation changes batch shape for every document. Release its
+      // native workspace after each run instead of retaining every peak.
+      enableCpuMemArena: false, enableMemPattern: false,
+    },
+  });
   const out = new Float32Array(chunksPerDoc.length * EMBED_DIMS);
   try {
     for (let d = 0; d < chunksPerDoc.length; d += 1) {
       const chunks = chunksPerDoc[d]!;
       const tensor = await extractor(chunks, { pooling: 'mean', normalize: true });
-      const data = tensor.data as Float32Array;
       const docVector = out.subarray(d * EMBED_DIMS, (d + 1) * EMBED_DIMS);
-      for (let c = 0; c < chunks.length; c += 1) {
-        for (let k = 0; k < EMBED_DIMS; k += 1) docVector[k] += data[c * EMBED_DIMS + k]!;
-      }
+      try {
+        const data = tensor.data as Float32Array;
+        for (let c = 0; c < chunks.length; c += 1) {
+          for (let k = 0; k < EMBED_DIMS; k += 1) docVector[k] += data[c * EMBED_DIMS + k]!;
+        }
+      } finally { tensor.dispose(); }
       let norm = 0;
       for (let k = 0; k < EMBED_DIMS; k += 1) norm += docVector[k]! * docVector[k]!;
       norm = Math.sqrt(norm);
       if (norm > 1e-12) for (let k = 0; k < EMBED_DIMS; k += 1) docVector[k]! /= norm;
-      tensor.dispose();
     }
   } finally {
     await extractor.dispose();

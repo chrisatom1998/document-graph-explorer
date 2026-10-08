@@ -1,0 +1,39 @@
+import { canonicalDjLabel } from './djTags';
+import type { Dimension, SoundReview } from './recognition';
+import type { TaggerTag } from './tagger';
+import policy from './taggerPolicy.json';
+
+export const canonicalReviewLabel = (dimension: Dimension, label: string): string => dimension === 'character'
+  ? canonicalDjLabel('character', label) ?? label
+  : dimension === 'effect' ? canonicalDjLabel('production', label) ?? label : label;
+const labelKey = (dimension: Dimension, label: string) => `${dimension}:${canonicalReviewLabel(dimension, label)}`;
+
+// Only explicit cross-dimension equivalents share listener decisions. A tagger's broader
+// replacement families (e.g. bass / bass guitar) must not merge distinct sound reviews.
+const sharedIdentities = new Map<string, string>();
+for (const tag of policy.tags as TaggerTag[]) {
+  if (!tag.alsoDecides?.length) continue;
+  const identity = labelKey(tag.dimension, tag.label);
+  for (const { dimension, label } of [
+    ...tag.decides.map(label => ({ dimension: tag.dimension, label })), ...tag.alsoDecides,
+  ]) sharedIdentities.set(labelKey(dimension, label), identity);
+}
+
+/** Identity exists independently of tagger availability or whether it scored this recording. */
+export function sharedSoundReviewIdentity(dimension: Dimension, label: string): string | undefined {
+  return sharedIdentities.get(labelKey(dimension, label));
+}
+export function soundReviewKey(dimension: Dimension, label: string): string {
+  const key = labelKey(dimension, label);
+  return sharedIdentities.get(key) ?? key;
+}
+
+/** Append order is authoritative, even across aliases, tied timestamps, and evidence runs. */
+export function latestSoundReview(reviews: readonly SoundReview[] | undefined, dimension: Dimension, label: string): SoundReview | undefined {
+  const key = soundReviewKey(dimension, label);
+  for (let i = (reviews?.length ?? 0) - 1; i >= 0; i--) {
+    const review = reviews![i];
+    if (soundReviewKey(review.dimension, review.labelId) === key) return review;
+  }
+  return undefined;
+}

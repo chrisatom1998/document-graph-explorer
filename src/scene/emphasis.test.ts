@@ -218,6 +218,69 @@ describe('computeEmphasis', () => {
     expect(set).toEqual(new Set(['a', 'b']));
   });
 
+  it('filter: one relationship must satisfy both kind and minimum strength', () => {
+    const set = computeEmphasis(
+      ['a', 'b', 'c', 'd'].map(id => mkNode({ id })),
+      [
+        mkEdge('a', 'b', 0.5, 'instrument'),
+        mkEdge('a', 'b', 0.9, 'tempo'),
+        mkEdge('c', 'd', 0.8, 'instrument'),
+      ],
+      null,
+      null,
+      null,
+      { ...NO_FILTER, edgeKinds: ['instrument'], minEdgeWeight: 0.8 },
+    );
+    expect(set).toEqual(new Set(['c', 'd']));
+  });
+
+  it.each([
+    { facet: 'tempo', filter: { bpmRange: [127, 129] as [number, number] } },
+    { facet: 'key', filter: { musicKey: 'D minor' } },
+  ])('filter: $facet follows filename and folder tags before detector estimates', ({ filter }) => {
+    const conflictingAudio: DocNode['audio'] = {
+      version: 2, durationSeconds: 4, analyzedSeconds: 4, instruments: [], notes: [],
+      tempo: { bpm: 96, confidence: 0.9 }, key: { tonic: 0, mode: 'major', strength: 0.9 },
+    };
+    const mixed = [
+      mkNode({ id: 'file', fileType: 'audio', path: '140bpm_Gmajor/Piano_128bpm_Dm.wav', audio: conflictingAudio }),
+      mkNode({ id: 'folder', fileType: 'audio', path: '128bpm_Dm/clip.wav', audio: conflictingAudio }),
+      mkNode({ id: 'estimated', fileType: 'audio', audio: { ...conflictingAudio, tempo: { bpm: 128, confidence: 0.9 }, key: { tonic: 2, mode: 'minor', strength: 0.9 } } }),
+      mkNode({ id: 'different', fileType: 'audio', audio: conflictingAudio }),
+    ];
+    expect(computeEmphasis(mixed, [], null, null, null, { ...NO_FILTER, ...filter }))
+      .toEqual(new Set(['file', 'folder', 'estimated']));
+    expect(conflictingAudio.tempo?.bpm).toBe(96);
+    expect(conflictingAudio.key?.tonic).toBe(0);
+  });
+
+  it('filter: explicit tempo and key tags work before estimates are available', () => {
+    const mixed = [
+      mkNode({ id: 'pending', fileType: 'audio', path: 'Piano_128bpm_Dm.wav' }),
+      mkNode({ id: 'no-estimates', fileType: 'audio', path: '128bpm_Dm/clip.wav', audio: { version: 2, durationSeconds: 4, analyzedSeconds: 4, instruments: [], notes: [] } }),
+      mkNode({ id: 'unknown', fileType: 'audio' }),
+      mkNode({ id: 'document', fileType: 'md', path: 'Piano_128bpm_Dm.md' }),
+    ];
+    expect(computeEmphasis(mixed, [], null, null, null, {
+      ...NO_FILTER, bpmRange: [127, 129], musicKey: 'D minor',
+    })).toEqual(new Set(['pending', 'no-estimates']));
+  });
+
+  it.each(['D♯ minor', 'D# minor', 'E♭ minor', 'Eb minor'])(
+    'filter: %s matches enharmonic keys while keeping major and minor distinct', musicKey => {
+      const analysis: DocNode['audio'] = { version: 2, durationSeconds: 4, analyzedSeconds: 4, instruments: [], notes: [] };
+      const mixed = [
+        mkNode({ id: 'sharp', fileType: 'audio', path: 'Pad_D#m.wav', audio: analysis }),
+        mkNode({ id: 'flat', fileType: 'audio', path: 'Pad_Ebm.wav', audio: analysis }),
+        mkNode({ id: 'estimated', fileType: 'audio', audio: { ...analysis, key: { tonic: 3, mode: 'minor', strength: 0.9 } } }),
+        mkNode({ id: 'major', fileType: 'audio', path: 'Pad_Ebmajor.wav', audio: analysis }),
+        mkNode({ id: 'other', fileType: 'audio', path: 'Pad_Em.wav', audio: analysis }),
+      ];
+      expect(computeEmphasis(mixed, [], null, null, null, { ...NO_FILTER, musicKey }))
+        .toEqual(new Set(['sharp', 'flat', 'estimated']));
+    },
+  );
+
   it('filter: modifiedWithinDays drops old and undated docs', () => {
     const now = 1_000_000_000_000;
     const set = computeEmphasis(

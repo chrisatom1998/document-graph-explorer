@@ -320,7 +320,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       } else {
         const { scores, embedding } = splitEmbedding(output as DescriptionScore[]);
         if (embedding) { embeddings.push(embedding); fullMixEvidence?.add(interval.start, interval.end, { clap: embedding }); }
-        descriptions.add(scores);
+        descriptions.add(scores, interval);
         djEvidence.add(selectDjTags(scores), interval.start, interval.end);
         const selected = selectDescriptions(scores);
         const candidates: EvidenceCandidate[] = selected.sources.map(s => ({ dimension: 'source', labelId: s.label, score: s.score }));
@@ -362,7 +362,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
           scores = await request<Record<string, number>>({ kind: 'tagger', samples: input }, [input.buffer]);
           check(); cache.set(key, scores);
         }
-        evidence.add(scores);
+        evidence.add(scores, { start, end: start + seconds });
       }
       const tagger = evidence.results();
       if (tagger) result.tagger = tagger;

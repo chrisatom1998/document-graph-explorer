@@ -7,7 +7,7 @@
  */
 
 import type { DocNode, Edge } from '../model/types';
-import { keyName } from '../audio/musicTypes';
+import { matchesKeyName, resolveTempoKey } from '../audio/resolvedTempoKey';
 import { styleTags } from '../audio/styleTags';
 import { nodeSoundTags } from '../audio/soundFilterTags';
 import { buildAdjacency } from '../store/graphStore';
@@ -40,17 +40,20 @@ export function isFilterActive(filter: GraphFilter): boolean {
   );
 }
 
-/** Audio facets the Resonance filters match against; documents without analysis fail every audio filter. */
+/** Match the same name-first tempo/key values shown in the track panel. */
 function audioOk(node: DocNode, filter: GraphFilter): boolean {
   const sounds = filter.sounds?.length ? filter.sounds : null;
   if (filter.bpmRange === null && filter.musicKey === null && filter.style === null && sounds === null) return true;
+  if (node.fileType !== 'audio') return false;
   const audio = node.audio;
-  if (!audio) return false;
-  if (filter.bpmRange) {
-    const bpm = audio.tempo?.bpm;
-    if (bpm === undefined || bpm < filter.bpmRange[0] || bpm > filter.bpmRange[1]) return false;
+  if (filter.bpmRange !== null || filter.musicKey !== null) {
+    const { tempo, key } = resolveTempoKey(node);
+    if (filter.bpmRange) {
+      const bpm = tempo?.bpm;
+      if (bpm === undefined || bpm < filter.bpmRange[0] || bpm > filter.bpmRange[1]) return false;
+    }
+    if (filter.musicKey !== null && !matchesKeyName(key, filter.musicKey)) return false;
   }
-  if (filter.musicKey !== null && (!audio.key || keyName(audio.key) !== filter.musicKey)) return false;
   if (filter.style !== null && !styleTags(audio).includes(filter.style)) return false;
   // Any of the picked sounds is enough: "voice or synth".
   if (sounds !== null) {
@@ -60,14 +63,21 @@ function audioOk(node: DocNode, filter: GraphFilter): boolean {
   return true;
 }
 
+/** Edge facets must hold on the same link for matching, drawing and pulses.
+ * Topic links keep their separate visibility toggle instead of a kind filter. */
+export function edgeMatchesFilter(edge: Pick<Edge, 'kind' | 'weight'>, filter: Pick<GraphFilter, 'edgeKinds' | 'minEdgeWeight'>): boolean {
+  const kinds = filter.edgeKinds;
+  return edge.weight >= filter.minEdgeWeight &&
+    (edge.kind === 'topic' || !kinds || kinds.length === 0 || kinds.includes(edge.kind));
+}
+
 function kindOk(edges: Edge[], filter: GraphFilter): Set<string> | null {
   const kinds = filter.edgeKinds;
   if (!kinds || kinds.length === 0) return null;
-  const allowed = new Set(kinds);
   const ok = new Set<string>();
   for (const e of edges) {
     if (e.kind === 'topic') continue;
-    if (!allowed.has(e.kind)) continue;
+    if (!edgeMatchesFilter(e, filter)) continue;
     ok.add(e.source);
     ok.add(e.target);
   }

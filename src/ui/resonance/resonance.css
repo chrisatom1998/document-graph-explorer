@@ -413,11 +413,12 @@
   .rs-sidebar .rs-import, .rs-sidebar .rs-assistant { flex: 1; min-width: 0; margin: 0; padding: 8px 10px; }
   .rs-sidebar small { display: none !important; }
   .rs-sidebar .rs-import strong { font-size: 13px; }
-  .rs-top { grid-template-columns: 1fr auto auto; }
   .rs-inspector { max-height: 45vh; border-left: 0; border-top: 1px solid var(--rs-line); }
 }
-/* Phones: brand + actions on one row, view tabs on a second row. */
-@media (max-width: 600px) {
+/* Compact headers: the workspace picker and view tabs need separate rows.
+   At tablet widths a one-row header lets the tabs cover the picker even
+   though both controls remain visibly rendered. */
+@media (max-width: 1100px) {
   :root { --rs-top: 96px; }
   .rs-top { grid-template-columns: 1fr auto; grid-template-areas: 'brand actions' 'tabs tabs'; padding: 8px 12px 0; row-gap: 4px; }
   .rs-brand { grid-area: brand; }
@@ -429,5 +430,7 @@
   .rs-top__actions { grid-area: actions; gap: 4px; }
   .rs-tabs { grid-area: tabs; justify-content: flex-start; margin: 0; height: 40px; }
   .rs-tabs button { padding: 0 12px; }
+}
+@media (max-width: 600px) {
   .rs-sidebar .rs-import strong, .rs-sidebar .rs-assistant__text strong { font-size: 12px; }
 }

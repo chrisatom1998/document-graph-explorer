@@ -67,7 +67,7 @@ describe('trained tagger display', () => {
   const sources = (a: MusicAnalysis) => confidentSoundSummary(a).filter(s => s.dimension === 'source').map(s => s.label).sort();
   it('decides its instruments on recordings of at least 10 s, replacing other models', () => {
     // CLAP-head drums and piano, Jamendo-style guitar: the tagger keeps drums (its own score) and drops piano and guitar.
-    const a = track(30, { drums: .99, piano: .01, guitar: .01, bass: threshold('bass') + .01 }, [
+    const a = track(10, { drums: .99, piano: .01, guitar: .01, bass: threshold('bass') + .01 }, [
       { group: 'source', label: 'drums', score: .9, model: 'Trained head' }, { group: 'source', label: 'piano', score: .9, model: 'Trained head' },
       { group: 'source', label: 'guitar', score: .9, model: 'Trained head' }, { group: 'source', label: 'synthesizer', score: .9, model: 'Trained head' }]);
     const shown = confidentSoundSummary(a);
@@ -185,13 +185,15 @@ describe('trained tagger pass', () => {
     expect(reads.map(r => r[0])).toEqual([17.5, 27.5, 37.5]);
     expect(taggerInputs).toEqual([320000, 320000, 320000]);
     expect(result.tagger).toEqual({ revision: TAGGER_REVISION, windows: 3, scores: { drums: .5, 'cat:percussive': .1 },
-      windowScores: { drums: [.3, .4, .5], 'cat:percussive': [.1, .1, .1] } });
+      windowScores: { drums: [.3, .4, .5], 'cat:percussive': [.1, .1, .1] },
+      intervals: [{ start: 17.5, end: 27.5 }, { start: 27.5, end: 37.5 }, { start: 37.5, end: 47.5 }] });
   });
   it('pads a short clip to one 10 s window', async () => {
     const { result, reads, taggerInputs } = await run(4);
     expect(reads).toEqual([[0, 4, 32000]]);
     expect(taggerInputs).toEqual([320000]);
     expect(result.tagger?.windows).toBe(1);
+    expect(result.tagger).toMatchObject({ intervals: [{ start: 0, end: 4 }] });
   });
   it('leaves every tag to the other detectors when the tagger fails', async () => {
     const { result } = await run(30, true);

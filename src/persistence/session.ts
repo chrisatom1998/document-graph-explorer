@@ -136,15 +136,20 @@ export async function hydrateFromRecord(
   rawExportData: GraphExport,
   positions: Record<string, [number, number, number]>,
   corpusHash: string | null,
+  options: { signal?: AbortSignal } = {},
 ): Promise<boolean> {
+  const { signal } = options;
+  signal?.throwIfAborted();
   let exportData: GraphExport;
   try {
     // sanitizeGraphExport throws on a structurally unusable record (wrong
     // version, malformed node/edge arrays, or no valid nodes at all) —
     // exactly the cases the old manual check here used to catch by hand.
     const { sanitizeGraphExport } = await import('./validateImport');
+    signal?.throwIfAborted();
     exportData = sanitizeGraphExport(rawExportData, { trustedCache: true });
   } catch {
+    signal?.throwIfAborted();
     return false; // malformed IndexedDB record — treat like "couldn't restore"
   }
 
@@ -152,6 +157,7 @@ export async function hydrateFromRecord(
   // Existing sessions also adopt explicit name tags without altering saved audio evidence.
   if (exportData.nodes.some(node => node.fileType === 'audio')) {
     const { refreshMusicEdges } = await import('../audio/musicLinks');
+    signal?.throwIfAborted();
     exportData.edges = refreshMusicEdges(exportData.nodes, exportData.edges);
     exportData.edges = [...new Map(exportData.edges.map(edge => [edge.id, edge])).values()];
     versionsPending = (await import('../audio/versionLinks')).versionWorkPending();
@@ -162,6 +168,7 @@ export async function hydrateFromRecord(
     .filter((n) => n.kind === 'document')
     .map((n) => n.id);
   const db = await getDb();
+  signal?.throwIfAborted();
   const tx = db.transaction(['documents', 'embeddings']);
   const docStore = tx.objectStore('documents');
   const embStore = tx.objectStore('embeddings');
@@ -169,6 +176,11 @@ export async function hydrateFromRecord(
     Promise.all(docIds.map((id) => docStore.get(id))),
     Promise.all(docIds.map((id) => embStore.get(id))),
   ]);
+  signal?.throwIfAborted();
+  const { evictDocTexts, markDocsPersisted } = await import('../store/textHydration');
+  // Resolve every async dependency before publishing either private runtime
+  // data or graph nodes. A superseded startup must leave neither behind.
+  signal?.throwIfAborted();
   let needsEmbeddingRebuild = false;
   const nodesById = new Map(exportData.nodes.map((node) => [node.id, node]));
   const persistedIds: string[] = [];
@@ -199,7 +211,6 @@ export async function hydrateFromRecord(
     }
     if (docVectorValid) docVectorStore.set(id, emb!.docVector);
   }
-  const { evictDocTexts, markDocsPersisted } = await import('../store/textHydration');
   markDocsPersisted(persistedIds);
 
   // --- hydrate graph store ---
@@ -260,10 +271,14 @@ export async function hydrateFromRecord(
  * Reads are bulk (single transaction, all gets issued up front) — no
  * per-record awaits — to hit the <3s acceptance target.
  */
-export async function restoreSession(): Promise<boolean> {
+export async function restoreSession(options: { signal?: AbortSignal } = {}): Promise<boolean> {
+  const { signal } = options;
+  signal?.throwIfAborted();
   try {
     const activeId = await initializeCorpusRepository();
+    signal?.throwIfAborted();
     const activeCorpus = await getCorpusRecord(activeId);
+    signal?.throwIfAborted();
     // Restore the persisted ingest report up front: it exists even for a
     // corpus that never reached 'ready' (e.g. a first ingest that failed in
     // full), which is exactly when the report matters most.
@@ -280,7 +295,8 @@ export async function restoreSession(): Promise<boolean> {
         .pushToast("Your last session couldn't be found — starting fresh.", 'warning');
       return false;
     }
-    const restored = await hydrateFromRecord(cached.exportData, cached.positions, lastCorpusHash);
+    const restored = await hydrateFromRecord(cached.exportData, cached.positions, lastCorpusHash, options);
+    signal?.throwIfAborted();
     if (!restored) {
       useUiStore
         .getState()
@@ -288,6 +304,15 @@ export async function restoreSession(): Promise<boolean> {
     }
     return restored;
   } catch (err) {
+    if (signal?.aborted) {
+      // The registry may have selected a private corpus before hydration was
+      // cancelled. An empty view must not inherit that saved corpus's id.
+      if (useGraphStore.getState().nodes.length === 0) {
+        useGraphStore.getState().setIngestReport(null);
+        useCorpusStore.getState().setEphemeral('Shared graph', 'shared');
+      }
+      signal.throwIfAborted();
+    }
     console.warn('[knowledge-nebula] session restore failed', err);
     reportPersistenceUnavailable(err);
     useCorpusStore.getState().setLocalState([], null);

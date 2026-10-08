@@ -270,14 +270,21 @@ export function folderWatchingSupported(): boolean {
  * (every current caller does), so the `suspendFolderWatcher` drain below can
  * never await a sync that is itself waiting on the queue.
  */
-export async function bindFolderWatcherToActiveCorpus(): Promise<void> {
+export async function bindFolderWatcherToActiveCorpus(
+  options: { isCurrent?: () => boolean } = {},
+): Promise<void> {
+  if (options.isCurrent && !options.isCurrent()) return;
   await suspendFolderWatcher();
+  if (options.isCurrent && !options.isCurrent()) return;
   const corpusId = useCorpusStore.getState().activeCorpusId;
-  if (!corpusId) {
+  if (!corpusId || useCorpusStore.getState().mode !== 'local') {
     setWatchState({ status: 'idle', folderName: null, error: null });
     return;
   }
+  const stillCurrent = () => (!options.isCurrent || options.isCurrent()) &&
+    useCorpusStore.getState().mode === 'local' && useCorpusStore.getState().activeCorpusId === corpusId;
   const record = await getCorpusRecord(corpusId);
+  if (!stillCurrent()) return;
   const watch = record?.watch;
   if (!watch) {
     setWatchState({ status: folderWatchingSupported() ? 'idle' : 'unsupported', folderName: null });
@@ -290,12 +297,25 @@ export async function bindFolderWatcherToActiveCorpus(): Promise<void> {
   const permission = watch.handle.queryPermission
     ? await watch.handle.queryPermission({ mode: 'read' })
     : 'prompt';
+  if (!stillCurrent()) return;
   if (permission !== 'granted') {
     setWatchState({ status: 'reconnect', folderName: watch.rootName, error: null });
     return;
   }
   beginMonitoring(corpusId, watch.rootName);
   void requestFolderSync().catch(() => undefined);
+}
+
+/**
+ * Queued cancellation recovery must not await a scan queued behind itself.
+ * Return false so the caller can release the queue, drain outside, and retry.
+ * The caller still checks its import generation before every external drain.
+ */
+export async function tryResumeFolderWatcher(isCurrent: () => boolean): Promise<boolean> {
+  if (!isCurrent()) return true;
+  if (activeSync) return false;
+  await bindFolderWatcherToActiveCorpus({ isCurrent });
+  return true;
 }
 
 export async function chooseFolderToWatch(): Promise<void> {

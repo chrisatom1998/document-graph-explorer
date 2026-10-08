@@ -9,6 +9,8 @@ export const SHARE_RAW_TAG = 'raw.';
 export const MAX_SHARE_COMPRESSED_BYTES = 48 * 1024;
 /** Prefix/tag slack above the approximately 64 KiB encoded payload. */
 export const MAX_SHARE_FRAGMENT_CHARS = 64 * 1024 + 64;
+/** Bound work before URL/percent decoding, including escaped delimiters and URL overhead. */
+const MAX_SHARE_INPUT_CHARS = MAX_SHARE_FRAGMENT_CHARS * 6 + 8192;
 /** Hard post-decompression ceiling, enforced while the stream is read. */
 export const MAX_SHARE_DECODED_BYTES = 2 * 1024 * 1024;
 /** Share-link summaries match the import sanitizer and confirm copy (2000). */
@@ -262,12 +264,50 @@ export async function encodeShareFragment(input: unknown): Promise<string> {
   return fragment;
 }
 
-/** Return the explicit #graph fragment from either a hash or a full URL. */
+function decodeShareEscapes(value: string): string {
+  // Some messengers escape the delimiters twice. Never recurse without a bound.
+  for (let i = 0; i < 2 && value.includes('%'); i++) {
+    try {
+      value = decodeURIComponent(value);
+    } catch (error) {
+      throw new ShareUrlError('malformed', 'The shared graph link is malformed.', { cause: error });
+    }
+  }
+  return value;
+}
+
+function boundedShareFragment(value: string): string | null {
+  if (!value.startsWith('#graph=')) return null;
+  if (value.length > MAX_SHARE_FRAGMENT_CHARS) {
+    throw new ShareUrlError('too_large', 'The shared graph link exceeds the safe size limit.');
+  }
+  return value;
+}
+
+/** Read direct fragments, escaped messenger delimiters, or an explicit query fallback. */
 export function extractShareFragment(value: string): string | null {
-  const hashIndex = value.indexOf('#');
-  if (hashIndex < 0) return null;
-  const hash = value.slice(hashIndex);
-  return hash.startsWith('#graph=') ? hash : null;
+  if (value.length > MAX_SHARE_INPUT_CHARS) {
+    throw new ShareUrlError('too_large', 'The shared graph link exceeds the safe size limit.');
+  }
+  let url: URL;
+  try {
+    url = new URL(value, 'https://share.invalid/');
+  } catch {
+    return null;
+  }
+  // A direct fragment wins over a query copy, even when its version/payload is invalid.
+  if (/^#graph(?:=|%(?:25)?3d)/iu.test(url.hash)) {
+    return boundedShareFragment(decodeShareEscapes(url.hash));
+  }
+  // Only inspect the path for an escaped hash: an encoded redirect URL in an
+  // unrelated query parameter is not a request to import a graph.
+  const encodedHash = url.pathname.search(/%(?:25)?23graph(?:=|%(?:25)?3d)/iu);
+  if (encodedHash >= 0) {
+    const fragment = boundedShareFragment(decodeShareEscapes(url.pathname.slice(encodedHash)));
+    if (fragment) return fragment;
+  }
+  const query = url.searchParams.get('graph');
+  return query === null ? null : boundedShareFragment(`#graph=${decodeShareEscapes(query)}`);
 }
 
 export function hasShareFragment(value: string): boolean {
@@ -330,7 +370,7 @@ export async function decodeShareFragment(value: string): Promise<GraphExport | 
   }
 }
 
-/** Build a copyable URL, deliberately dropping all query state/corpus ids. */
+/** Build a copyable URL, dropping private query state and replacing device-local origins. */
 export async function createShareUrl(input: unknown, baseHref?: string): Promise<string> {
   const href =
     baseHref ??
@@ -344,6 +384,12 @@ export async function createShareUrl(input: unknown, baseHref?: string): Promise
     url = new URL(href);
   } catch (error) {
     throw new ShareUrlError('malformed', 'The share-link base URL is invalid.', { cause: error });
+  }
+  const host = url.hostname.toLowerCase();
+  const localHttp = ['http:', 'https:'].includes(url.protocol) && (host === 'localhost' || host.endsWith('.localhost') ||
+    /^127(?:\.\d+){3}$/u.test(host) || ['0.0.0.0', '[::1]', '[::]'].includes(host));
+  if (url.protocol === 'file:' || localHttp) {
+    url = new URL('https://document-graph-explorer.vercel.app/');
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new ShareUrlError('malformed', 'Share links require an HTTP or HTTPS app URL.');

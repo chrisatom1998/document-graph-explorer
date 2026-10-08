@@ -1,6 +1,8 @@
 import { CHARACTER_LABELS, RESEMBLANCE_LABELS, ROLE_LABELS, VOCAL_LABELS } from './soundProfile';
+import { appendNativeWindow, type NativeWindowEvidence } from './nativeWindowEvidence';
+import type { Interval } from './recognition';
 export type DescriptionGroup = 'embedding' | 'source' | 'articulation' | 'tone' | 'space' | 'role' | 'vocal' | 'sample' | 'dj-type' | 'breath' | 'dj-tone' | 'dj-rhythm' | `dj-${string}`;
-export interface DescriptionScore { group: DescriptionGroup; label: string | null; score: number; alternative?: string; learnedGroup?: 'source' | 'production' | 'character'; decision?: 'include' | 'exclude'; /** Set when a trained head, not a reviewed example, produced this score. */ basis?: 'head'; /** The head passed at 50% but not 65% on unseen brands: show it as a maybe. */ maybe?: boolean; /** Only on group 'embedding': the window's 512-d CLAP audio vector. */ embedding?: number[]; }
+export interface DescriptionScore { group: DescriptionGroup; label: string | null; score: number; alternative?: string; learnedGroup?: 'source' | 'production' | 'character'; decision?: 'include' | 'exclude'; /** Set when a trained head, not a reviewed example, produced this score. */ basis?: 'head'; /** The head passed at 50% but not 65% on unseen brands: show it as a maybe. */ maybe?: boolean; /** Only on group 'embedding': the window's 512-d CLAP audio vector. */ embedding?: number[]; /** Scored head intervals supplied by the recording accumulator, never inferred from its aggregate peak. */ windowEvidence?: NativeWindowEvidence; }
 /** The worker appends the window's audio vector to its scores; peel it off before scoring. */
 export function splitEmbedding(output: DescriptionScore[]): { scores: DescriptionScore[]; embedding?: number[] } {
   const entry = output.find(s => s.group === 'embedding');
@@ -71,13 +73,25 @@ export class DescriptionAccumulator {
   private sums = new Map<string,DescriptionScore>();
   private count = 0;
   private reviewed = new Map<string, DescriptionScore>();
-  add(scores: DescriptionScore[]) {
+  private headWindows = new Map<string, NativeWindowEvidence>();
+  add(scores: DescriptionScore[], interval?: Interval) {
     this.count++;
     const seen = new Set<string>();
     for (const score of scores) {
       if(score.group === 'dj-learned' && score.learnedGroup && score.label && score.decision && Number.isFinite(score.score)) {
         const key=`${score.learnedGroup}:${score.label}:${score.decision}`;
-        if(score.score > (this.reviewed.get(key)?.score ?? -1))this.reviewed.set(key,{...score});
+        let windowEvidence: NativeWindowEvidence | undefined;
+        if (score.basis === 'head') {
+          // A peak can stay unchanged while later, weaker windows add useful outside evidence. Keep all bounded
+          // observations for that detector, independently of which score wins the recording aggregate.
+          const detectorKey = `${key}:${score.maybe ? 'maybe' : 'tested'}`;
+          windowEvidence = this.headWindows.get(detectorKey) ?? { windows: [], complete: true };
+          if (interval && Number.isFinite(interval.start) && Number.isFinite(interval.end) && interval.start >= 0
+            && interval.end > interval.start && score.score >= 0 && score.score <= 1) appendNativeWindow(windowEvidence, { ...interval, score: score.score });
+          else windowEvidence.complete = false;
+          this.headWindows.set(detectorKey, windowEvidence);
+        }
+        if(score.score > (this.reviewed.get(key)?.score ?? -1))this.reviewed.set(key,{...score,...(windowEvidence ? { windowEvidence } : {})});
         continue;
       }
       const key=`${score.group}:${score.label}:${score.alternative ?? ""}:${score.learnedGroup ?? ""}:${score.decision ?? ""}`;

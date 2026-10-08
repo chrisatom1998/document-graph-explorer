@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { FullMixEvidence, fullMixFeatures, sanitizeFullMixAnalysis, sanitizeFullMixModel, type FullMixModel } from './fullMixHeads';
+import { NATIVE_WINDOW_EVIDENCE_LIMIT } from './nativeWindowEvidence';
 
 const clap = (i: number) => Array.from({ length: 512 }, (_, k) => (k === i ? 3 : 0));
 /** One head reading only CLAP dimension 0 (guitar), one reading only the AST score (voice). */
@@ -44,6 +45,11 @@ describe('full-mix heads', () => {
     expect(result.labels.map(l => l.label)).toEqual(['guitar']);
     expect(result.labels[0].score).toBeGreaterThanOrEqual(.5);
     expect(result.labels[0].segments).toEqual([{ start: 0, end: 10 }, { start: 5, end: 15 }]);
+    expect(result.labels[0].windowEvidence).toMatchObject({ complete: true, aggregation: { top: 2, threshold: .8 } });
+    expect(result.labels[0].windowEvidence!.windows).toHaveLength(3);
+    expect(result.labels[0].windowEvidence!.windows[2]).toMatchObject({ start: 10, end: 20, score: expect.any(Number) });
+    expect(result.labels[0].windowEvidence!.windows[2].score).toBeLessThan(.8);
+    expect(sanitizeFullMixAnalysis(result, 20)).toEqual(result);
   });
 
   it('needs more than one confident window when voting over two', () => {
@@ -61,6 +67,21 @@ describe('full-mix heads', () => {
     expect(sanitizeFullMixAnalysis({ revision: 'r', windows: 2, labels: [{ label: 'guitar', score: .7, segments: [{ start: 0, end: 10 }, { start: 5, end: 99 }] }, { label: 'x', score: 2, segments: [] }] }, 20))
       .toEqual({ revision: 'r', windows: 2, labels: [{ label: 'guitar', score: .7, segments: [{ start: 0, end: 10 }] }], decides: [] });
     expect(sanitizeFullMixAnalysis({ revision: 'r', windows: 0, labels: [] }, 20)).toBeUndefined();
+  });
+  it('bounds saved window probabilities and records that the remaining windows were omitted', () => {
+    const evidence = new FullMixEvidence(model());
+    for (let i = 0; i <= NATIVE_WINDOW_EVIDENCE_LIMIT; i++) evidence.add(i * 5, i * 5 + 10, { clap: clap(0), jamendo: {}, ast: {} });
+    const result = evidence.results()!;
+    expect(result.labels[0].windowEvidence!.windows).toHaveLength(NATIVE_WINDOW_EVIDENCE_LIMIT);
+    expect(result.labels[0].windowEvidence!.complete).toBe(false);
+    expect(sanitizeFullMixAnalysis(result, 1000)).toEqual(result);
+  });
+  it('does not trust incomplete or untyped probability provenance as a complete head score', () => {
+    const label = { label: 'guitar', score: .9, segments: [], windowEvidence: { windows: [{ start: 0, end: 10, score: .9 }], complete: true, aggregation: { top: 2, threshold: .8 } } };
+    const result = sanitizeFullMixAnalysis({ revision: 'r', windows: 2, labels: [label] }, 20)!;
+    expect(result.labels[0].windowEvidence!.complete).toBe(false);
+    const untyped = sanitizeFullMixAnalysis({ revision: 'r', windows: 1, labels: [{ ...label, windowEvidence: { windows: label.windowEvidence.windows, complete: true } }] }, 20)!;
+    expect(untyped.labels[0].windowEvidence).toBeUndefined();
   });
 });
 

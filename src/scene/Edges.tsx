@@ -37,7 +37,7 @@ import { useUiStore } from '../store/uiStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { positionBuffer, slotOfId, spawnAtOfSlot } from './positionBuffer';
 import { clusterColor, EDGE_TINTS, FLAT_EDGE, FLAT_EDGE_FOCUS } from './palette';
-import { computeEmphasis } from './emphasis';
+import { computeEmphasis, edgeMatchesFilter } from './emphasis';
 import { prefersReducedMotion } from '../util/motion';
 import {
   edgeKey,
@@ -328,12 +328,8 @@ export default function Edges() {
     ui: ReturnType<typeof useUiStore.getState>,
   ): boolean =>
     ui.clusterCollapsed ||
-    e.weight < ui.filter.minEdgeWeight ||
-    (e.kind === 'topic' && !ui.topicNodesEnabled) ||
-    (e.kind !== 'topic' &&
-      ui.filter.edgeKinds !== null &&
-      ui.filter.edgeKinds.length > 0 &&
-      !ui.filter.edgeKinds.includes(e.kind));
+    !edgeMatchesFilter(e, ui.filter) ||
+    (e.kind === 'topic' && !ui.topicNodesEnabled);
 
   /** Write one edge's vertex colors at the given reveal factor. */
   const fillEdgeColor = (

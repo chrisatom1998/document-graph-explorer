@@ -18,13 +18,13 @@ export interface SoundProfile {
   disagreement: boolean;
   models: { model: ProfileModel; complete: boolean; candidates: ModelCandidate[] }[];
 }
-export function sanitizeSoundProfile(raw: unknown): SoundProfile | undefined {
+export function sanitizeSoundProfile(raw: unknown, durationSeconds = 86400): SoundProfile | undefined {
   if (!raw || typeof raw !== 'object') return;
   const p = raw as Record<string, unknown>;
   if (p.version !== 1 || !Array.isArray(p.models)) return;
   const labels = (v: unknown, allowed: string[], count: number) => Array.isArray(v) ? [...new Set(v.filter((s): s is string => typeof s === 'string' && allowed.includes(s)))].slice(0, count) : [];
   const result: SoundProfile = { version: 1, character: labels(p.character, CHARACTER_LABELS, 3), roles: labels(p.roles, ROLE_LABELS, 2), disagreement: p.disagreement === true, models: [] };
-  if (Array.isArray(p.djTags)) result.djTags = sanitizeDjTags(p.djTags);
+  if (Array.isArray(p.djTags)) result.djTags = sanitizeDjTags(p.djTags, durationSeconds);
   for (const value of p.models.slice(0, PROFILE_MODELS.length)) {
     if (!value || typeof value !== 'object') continue;
     const m = value as Record<string, unknown>;

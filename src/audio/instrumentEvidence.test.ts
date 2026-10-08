@@ -35,6 +35,17 @@ describe('full track instrument detection', () => {
     for (let start = 10; start < 180; start += 5) evidence.add({ trumpet: 0.02 }, start, start + 10);
     expect(evidence.results()).toMatchObject([{ label: 'trumpet', status: 'likely', segments: [{ start: 0, end: 10 }] }]);
   });
+  it('retains scored provenance beyond the five strongest listenable examples through save and reload', () => {
+    const evidence = new InstrumentEvidence();
+    for (let start = 75; start <= 95; start += 5) evidence.add({ piano: .9 }, start, start + 10);
+    evidence.add({ piano: .4 }, 170, 180);
+    const instruments = evidence.results();
+    expect(instruments[0].segments).toHaveLength(5);
+    expect(instruments[0].segments!.every(s => s.start < 170)).toBe(true);
+    const saved = sanitizeMusicAnalysis({ version: 2, durationSeconds: 180, analyzedSeconds: 60, instruments, notes: [] })!;
+    expect(saved.instruments[0].windowEvidence).toMatchObject({ complete: true, windows: expect.arrayContaining([{ start: 170, end: 180, score: .4 }]) });
+    expect(saved.instruments[0].windowEvidence!.windows).toHaveLength(6);
+  });
   it('separates weaker guesses and does not count a nearly identical tail twice', () => {
     const evidence = new InstrumentEvidence();
     evidence.add({ cello: 0.65, trumpet: 0.4, piano: 0.1 }, 0, 10);

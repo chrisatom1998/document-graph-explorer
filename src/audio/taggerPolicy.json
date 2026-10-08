@@ -63,6 +63,12 @@
     "cymbals",
     "cymbal"
    ],
+   "alsoDecides": [
+    {
+     "dimension": "effect",
+     "label": "cymbal"
+    }
+   ],
    "tested": true,
    "minSeconds": 10,
    "long": {

@@ -1,5 +1,6 @@
 import type { DescriptionScore } from './profileDescriptions';
 import type { DjTag } from './djTags';
+import { appendNativeWindow } from './nativeWindowEvidence';
 
 /** Short windows at the moments a new sound starts in a long recording, scored by the one-shot heads.
  * In a 10 s window a short sound sits under the beat; cut at its start it fills most of the window.
@@ -57,8 +58,9 @@ export class EventWindowEvidence {
     for (const s of scores) {
       if (s.group !== 'dj-learned' || s.basis !== 'head' || s.decision !== 'include' || !s.learnedGroup || !s.label || !EVENT_WINDOW_LABELS.has(s.label)) continue;
       const key = `${s.learnedGroup}:${s.label}`; const hit = this.hits.get(key);
-      if (!hit) this.hits.set(key, { tag: { group: s.learnedGroup as DjTag['group'], label: s.label, score: s.score, model: 'Trained head (maybe)' }, segments: [{ start, end }] });
-      else { hit.tag.score = Math.max(hit.tag.score, s.score); hit.segments.push({ start, end }); }
+      if (!hit) this.hits.set(key, { tag: { group: s.learnedGroup as DjTag['group'], label: s.label, score: s.score, model: 'Trained head (maybe)',
+        windowEvidence: { windows: [{ start, end, score: s.score }], complete: true } }, segments: [{ start, end }] });
+      else { hit.tag.score = Math.max(hit.tag.score, s.score); hit.segments.push({ start, end }); appendNativeWindow(hit.tag.windowEvidence!, { start, end, score: s.score }); }
     }
   }
   results(): { tag: DjTag; segments: { start: number; end: number }[] }[] {

@@ -22,6 +22,7 @@ import { bindFolderWatcherToActiveCorpus, suspendFolderWatcher } from './folderW
 import { enqueueRun } from '../pipeline/runQueue';
 import { useCorpusStore } from '../store/corpusStore';
 import { useGraphStore } from '../store/graphStore';
+import { useFolderWatchStore } from '../store/folderWatchStore';
 import type { ReadFailure } from './readFailures';
 
 const CORPUS_ID = 'corpus-1';
@@ -51,12 +52,86 @@ function scannedFile(path: string) {
 
 beforeEach(() => {
   useGraphStore.getState().reset();
+  useFolderWatchStore.getState().setState({ status: 'idle', folderName: null });
   useCorpusStore.setState({ activeCorpusId: CORPUS_ID, mode: 'local' });
   repository.getCorpusRecord.mockResolvedValue(watchRecordWithPendingChange());
   scanner.scanFolder.mockResolvedValue([scannedFile('notes.md')]);
   localFiles.prepareIngestFiles.mockResolvedValue({
     files: [{ path: 'notes.md', name: 'notes.md', bytes: new ArrayBuffer(4) }],
     deferredPaths: new Set<string>(),
+  });
+});
+
+describe('cancelled share watcher recovery', () => {
+  it('does not hold the run queue while a preceding restore catch-up scan drains', async () => {
+    const { importGraphExportData } = await import('../persistence/exportImport');
+    let releaseBlocker!: () => void;
+    let releaseRecord!: () => void;
+    let recordStarted!: () => void;
+    let releaseScan!: () => void;
+    let escapeReconcile!: () => void;
+    const recordWaiting = new Promise<void>(resolve => { recordStarted = resolve; });
+    const recordGate = new Promise<void>(resolve => { releaseRecord = resolve; });
+    const scanGate = new Promise<void>(resolve => { releaseScan = resolve; });
+    const escape = new Promise<string[]>(resolve => { escapeReconcile = () => resolve([]); });
+    coordinator.reconcileWatchedFiles.mockImplementation(() => Promise.race([
+      enqueueRun(async () => ['doc:notes.md']), escape,
+    ]));
+    scanner.scanFolder.mockImplementation(async () => { await scanGate; return [scannedFile('notes.md')]; });
+    const blocker = enqueueRun(() => new Promise<void>(resolve => { releaseBlocker = resolve; }));
+    const controller = new AbortController();
+    const pending = importGraphExportData({
+      version: 1, nodes: [{ id: 'share', title: 'Share', kind: 'document', fileType: 'txt',
+        topics: [], entities: [], keywords: [], wordCount: 1, cluster: 0, degree: 0, status: 'ok' }], edges: [],
+    }, 'shared', { signal: controller.signal }).then(() => 'imported', error => error.name as string);
+    await vi.dynamicImportSettled();
+    repository.getCorpusRecord.mockImplementationOnce(async () => {
+      recordStarted();
+      await recordGate;
+      return watchRecordWithPendingChange();
+    });
+    const restoration = enqueueRun(async () => { await bindFolderWatcherToActiveCorpus(); });
+    controller.abort();
+    releaseBlocker();
+    try {
+      await recordWaiting;
+      // Let cancellation's recovery start while the earlier restore awaits DB.
+      await new Promise<void>(resolve => setTimeout(resolve, 0));
+      releaseRecord();
+      await restoration;
+      await vi.waitFor(() => expect(scanner.scanFolder).toHaveBeenCalled());
+      releaseScan();
+      const outcome = await Promise.race([
+        pending,
+        new Promise<'deadlocked'>(resolve => setTimeout(() => resolve('deadlocked'), 500)),
+      ]);
+      expect(outcome).toBe('AbortError');
+    } finally {
+      releaseRecord();
+      releaseScan();
+      escapeReconcile();
+      await blocker;
+      await pending;
+      await enqueueRun(async () => undefined);
+    }
+  });
+
+  it('does not arm an old local watcher if a shared graph replaces it during permission reads', async () => {
+    let release!: (permission: PermissionState) => void;
+    let requested = false;
+    const record = watchRecordWithPendingChange();
+    record.watch.handle.queryPermission = () => new Promise<PermissionState>(resolve => {
+      requested = true;
+      release = resolve;
+    });
+    repository.getCorpusRecord.mockResolvedValue(record);
+    const binding = bindFolderWatcherToActiveCorpus();
+    await vi.waitFor(() => expect(requested).toBe(true));
+    useCorpusStore.getState().setEphemeral('Shared graph', 'shared');
+    release('granted');
+    await binding;
+    expect(useFolderWatchStore.getState().status).not.toBe('watching');
+    expect(scanner.scanFolder).not.toHaveBeenCalled();
   });
 });
 

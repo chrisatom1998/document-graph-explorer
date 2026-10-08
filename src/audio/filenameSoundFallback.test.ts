@@ -1,7 +1,9 @@
 import {expect,it} from 'vitest';
 import {filenameSoundFallback} from './filenameSoundFallback';
 import {confidentSoundSummary} from './confidentSoundSummary';
-import type {MusicAnalysis} from './musicTypes';
+import {sanitizeMusicAnalysis,type MusicAnalysis} from './musicTypes';
+import {soundMatchLabels} from './soundMatchLabels';
+import type {SoundReview} from './recognition';
 const audio=():MusicAnalysis=>({version:2,durationSeconds:8,analyzedSeconds:8,instruments:[],notes:[]});
 const labels=(name:string,a=audio())=>filenameSoundFallback(a,{title:name},confidentSoundSummary(a));
 it('uses explicit glass hit semantics with provenance and no invented score',()=>{
@@ -34,4 +36,36 @@ it.each(['rejected','uncertain'] as const)('respects latest %s source and effect
 it('respects empty correction snapshots',()=>{
   const a=audio();a.confirmedDjTags={source:[],production:[],character:[]};
   expect(labels('piano_glass_hit_bright.wav',a)).toEqual([]);
+});
+
+const review=(dimension:SoundReview['dimension'],labelId:string,decision:SoundReview['decision']):SoundReview=>({dimension,labelId,decision,scope:'track',evidenceRunId:'qa',at:'2026-10-07T00:00:00Z'});
+it.each(['cymbal','cymbal hit'])('keeps the latest effect confirmation %s in one dimension even when the filename names its source alias',label=>{
+  const a=audio();a.soundReviews=[review('source','cymbals','confirmed'),review('effect',label,'confirmed')];
+  for(const current of [a,sanitizeMusicAnalysis(a)!]){
+    expect(confidentSoundSummary(current)).toEqual([{dimension:'effect',label:'cymbal',origin:'confirmed by you'}]);
+    expect.soft(labels('Cymbal.wav',current)).toEqual([]);
+    expect(soundMatchLabels({title:'Cymbal.wav',audio:current})).toEqual([{group:'production',label:'cymbal',origin:'confirmed',weight:.85}]);
+  }
+});
+it.each(['cymbal','cymbals'])('keeps the latest source confirmation %s without adding its effect alias from the filename',label=>{
+  const a=audio();a.soundReviews=[review('effect','cymbal','confirmed'),review('source',label,'confirmed')];
+  for(const current of [a,sanitizeMusicAnalysis(a)!]){
+    expect(confidentSoundSummary(current)).toEqual([{dimension:'source',label,origin:'confirmed by you'}]);
+    expect(labels('Cymbal.wav',current)).toEqual([]);
+    expect(soundMatchLabels({title:'Cymbal.wav',audio:current})).toEqual([{group:'source',label,origin:'confirmed',weight:.85}]);
+  }
+});
+it.each(['rejected','uncertain'] as const)('keeps a latest effect %s authoritative over source filename hints',decision=>{
+  const a=audio();a.soundReviews=[review('source','cymbals','confirmed'),review('effect','cymbal hit',decision)];
+  for(const current of [a,sanitizeMusicAnalysis(a)!]){
+    expect(labels('Cymbal.wav',current)).toEqual([]);
+    expect(soundMatchLabels({title:'Cymbal.wav',audio:current})).toEqual([]);
+  }
+});
+it('preserves unrelated filename source and character hints after an effect-alias confirmation',()=>{
+  const a=audio();a.soundReviews=[review('effect','cymbal','confirmed')];
+  for(const current of [a,sanitizeMusicAnalysis(a)!])expect(labels('Cymbal_Piano_Bright.wav',current)).toEqual([
+    {dimension:'source',label:'piano',origin:'From filename'},
+    {dimension:'character',label:'bright',origin:'From filename'},
+  ]);
 });

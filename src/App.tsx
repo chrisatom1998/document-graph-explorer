@@ -5,16 +5,12 @@ import { shouldIgnoreGlobalKey } from './ui/globalKeyboard';
 import { useGraphStore } from './store/graphStore';
 import { useUiStore } from './store/uiStore';
 import { useChatStore } from './store/chatStore';
-import { useCorpusStore } from './store/corpusStore';
 import { layoutSetDims } from './layout/layoutBridge';
 import { useInitialGraphFrame } from './scene/useInitialGraphFrame';
-import { enqueueRun } from './pipeline/runQueue';
 import { positionBuffer, slotOfId } from './scene/positionBuffer';
 import { cameraPose } from './scene/cameraPose';
 import { panInput } from './scene/panInput';
-import { initPersistence, restoreSession } from './persistence/session';
-import { initializeCorpusRepository } from './persistence/corpusRepository';
-import { reportPersistenceUnavailable } from './persistence/cache';
+import { initPersistence } from './persistence/session';
 import { initChatHistorySync } from './persistence/chatHistorySync';
 import { useSettingsStore } from './store/settingsStore';
 import { audioAnalysisUsedBefore } from './audio/speculativePreload';
@@ -129,52 +125,15 @@ export default function App() {
     if (!hasSavedDims()) useUiStore.getState().setDims(2);
     if (useUiStore.getState().dims === 2) layoutSetDims(2);
     initPersistence();
-    void (async () => {
-      try {
-        const { decodeShareFragment, hasShareFragment } = await import('./persistence/shareUrl');
-        if (hasShareFragment(window.location.href)) {
-          // Populate the local workspace list without hydrating any private
-          // graph. The portable view then clears the active id, letting the
-          // owner explicitly switch back while recipients simply see their
-          // own (usually empty) device-local list.
-          try {
-            await initializeCorpusRepository();
-          } catch (error) {
-            reportPersistenceUnavailable(error);
-          }
-          try {
-            const shared = await decodeShareFragment(window.location.href);
-            if (shared) {
-              const { importGraphExportData } = await import('./persistence/exportImport');
-              await importGraphExportData(shared, 'shared');
-              useUiStore
-                .getState()
-                .pushToast('Opened a shared graph — document contents remain on the owner’s device.', 'info');
-              return;
-            }
-          } catch (error) {
-            useCorpusStore.getState().setEphemeral('Invalid shared graph', 'shared');
-            useUiStore
-              .getState()
-              .pushToast(error instanceof Error ? error.message : 'This shared graph link is invalid.');
-            return;
-          }
-        }
-        // Serialized like every other restore path: DropZone is already live,
-        // so a drop landing mid-restore would otherwise interleave its ingest
-        // with hydration and leave the two writing over each other. The shared
-        // graph branch above returns before this point, so its own internally
-        // queued import never nests inside this run.
-        await enqueueRun(async () => {
-          await restoreSession();
-          const { bindFolderWatcherToActiveCorpus } = await import('./ingest/folderWatcher');
-          await bindFolderWatcherToActiveCorpus();
-        });
-      } catch (error) {
-        console.warn('session restore failed', error);
-      }
-      preloadAudioModelsWhenIdle();
-    })();
+    let disposed = false;
+    let stopNavigation: (() => void) | undefined;
+    void import('./persistence/shareNavigation').then(({ startShareNavigation }) => {
+      if (!disposed) stopNavigation = startShareNavigation(preloadAudioModelsWhenIdle);
+    }).catch(error => console.warn('session restore failed', error));
+    return () => {
+      disposed = true;
+      stopNavigation?.();
+    };
   }, []);
 
   // Loading and saving the transcript both hinge on which workspace is active

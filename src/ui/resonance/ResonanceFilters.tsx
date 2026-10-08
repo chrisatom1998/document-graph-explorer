@@ -3,7 +3,7 @@ import type { EdgeKind, FileType } from '../../model/types';
 import { useGraphStore } from '../../store/graphStore';
 import { DEFAULT_FILTER, useUiStore } from '../../store/uiStore';
 import { isFilterActive } from '../../scene/emphasis';
-import { keyName } from '../../audio/musicTypes';
+import { matchesKeyName, resolveTempoKey } from '../../audio/resolvedTempoKey';
 import { styleTags } from '../../audio/styleTags';
 import { nodeSoundTags } from '../../audio/soundFilterTags';
 import { soundLabelText } from '../../audio/djTags';
@@ -63,10 +63,14 @@ export default function ResonanceFilters() {
   const audio = audioCount > 0;
   const kindsPresent = useMemo(() => new Set(edges.map(e => e.kind)), [edges]);
   const similarity = SIMILARITY.filter(s => kindsPresent.has(s.kind));
-  const bpms = useMemo(() => docs.flatMap(n => (n.audio?.tempo ? [Math.round(n.audio.tempo.bpm)] : [])), [docs]);
+  const tempoKeys = useMemo(() => docs.filter(n => n.fileType === 'audio').map(resolveTempoKey), [docs]);
+  const bpms = useMemo(() => tempoKeys.flatMap(({ tempo }) => tempo ? [Math.round(tempo.bpm)] : []), [tempoKeys]);
   const bpmMin = bpms.length ? Math.min(...bpms) : 60;
   const bpmMax = bpms.length ? Math.max(...bpms) : 180;
-  const keys = useMemo(() => [...new Set(docs.flatMap(n => (n.audio?.key ? [keyName(n.audio.key)] : [])))].sort(), [docs]);
+  const keys = useMemo(() => [...new Set(tempoKeys.flatMap(({ keyLabel }) => keyLabel ? [keyLabel] : []))].sort(), [tempoKeys]);
+  const selectedKey = filter.musicKey;
+  const keyValue = selectedKey === null ? '' : keys.find(label => label === selectedKey)
+    ?? tempoKeys.find(({ key }) => matchesKeyName(key, selectedKey))?.keyLabel ?? selectedKey;
   const styles = useMemo(() => [...new Set(docs.flatMap(n => styleTags(n.audio)))].sort(), [docs]);
   const types = useMemo(() => [...new Set(docs.map(n => n.fileType))], [docs]);
   // Every label shown in a clip's Sounds row, most common first.
@@ -161,7 +165,7 @@ export default function ResonanceFilters() {
 
       <section className="rs-group">
         <h3>Key</h3>
-        <select className="rs-select" aria-label="Key" value={filter.musicKey ?? ''} disabled={!keys.length} onChange={e => setFilter({ musicKey: e.target.value || null })}>
+        <select className="rs-select" aria-label="Key" value={keyValue} disabled={!keys.length} onChange={e => setFilter({ musicKey: e.target.value || null })}>
           <option value="">Any key</option>
           {keys.map(k => <option key={k} value={k}>{k}</option>)}
         </select>

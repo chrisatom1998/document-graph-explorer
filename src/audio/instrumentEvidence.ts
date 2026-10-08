@@ -1,5 +1,7 @@
 import { INSTRUMENT_PARENTS, isBroadInstrument } from './instrumentLabels';
 import type { InstrumentEstimate, MusicAnalysis } from './musicTypes';
+import { appendNativeWindow, type NativeWindowEvidence } from './nativeWindowEvidence';
+import { latestSoundReview, sharedSoundReviewIdentity, soundReviewKey } from './soundReviewIdentity';
 
 export const INSTRUMENT_WINDOW_SECONDS = 10;
 export const INSTRUMENT_HOP_SECONDS = 5;
@@ -15,7 +17,7 @@ export function instrumentWindowStarts(duration: number): number[] {
   return starts;
 }
 
-type Evidence = { peak: number; strong: number; possible: number; lastStrong: number; lastPossible: number; segments: NonNullable<InstrumentEstimate['segments']> };
+type Evidence = { peak: number; strong: number; possible: number; lastStrong: number; lastPossible: number; segments: NonNullable<InstrumentEstimate['segments']>; windowEvidence: NativeWindowEvidence };
 export class InstrumentEvidence {
   private evidence = new Map<string, Evidence>();
   private suggestion: InstrumentEstimate | undefined;
@@ -27,12 +29,13 @@ export class InstrumentEvidence {
       const ranked = Object.entries(scores).filter(([, score]) => Number.isFinite(score) && score >= 0 && score <= 1).sort((a, b) => b[1] - a[1]);
       const top = ranked[0];
       if (top && !isBroadInstrument(top[0]) && top[1] >= 0.1 && top[1] >= 3 * (ranked[1]?.[1] ?? 0) && top[1] > (this.suggestion?.score ?? 0)) {
-        this.suggestion = { label: top[0], score: top[1], status: 'possible', windows: 1, segments: [{ start, end, score: top[1] }] };
+        this.suggestion = { label: top[0], score: top[1], status: 'possible', windows: 1, segments: [{ start, end, score: top[1] }], windowEvidence: { windows: [{ start, end, score: top[1] }], complete: false } };
       }
     }
     for (const [label, score] of Object.entries(scores)) {
       if (!Number.isFinite(score) || score < 0.35 || score > 1) continue;
-      const item = this.evidence.get(label) ?? { peak: 0, strong: 0, possible: 0, lastStrong: -Infinity, lastPossible: -Infinity, segments: [] };
+      const item = this.evidence.get(label) ?? { peak: 0, strong: 0, possible: 0, lastStrong: -Infinity, lastPossible: -Infinity, segments: [], windowEvidence: { windows: [], complete: true } };
+      appendNativeWindow(item.windowEvidence, { start, end, score });
       item.peak = Math.max(item.peak, score);
       if (start - item.lastPossible >= INSTRUMENT_HOP_SECONDS - 0.05) { item.possible++; item.lastPossible = start; }
       if (score >= 0.6 && start - item.lastStrong >= INSTRUMENT_HOP_SECONDS - 0.05) { item.strong++; item.lastStrong = start; }
@@ -48,7 +51,7 @@ export class InstrumentEvidence {
     for (const [label, e] of this.evidence) {
       const likely = e.peak >= 0.85 || e.strong >= 2;
       if (!likely && e.peak < 0.55 && e.possible < 2) continue;
-      items.push({ label, score: e.peak, status: likely ? 'likely' : 'possible', windows: e.possible, segments: e.segments });
+      items.push({ label, score: e.peak, status: likely ? 'likely' : 'possible', windows: e.possible, segments: e.segments, windowEvidence: e.windowEvidence });
     }
     if (!items.length && this.suggestion) return [this.suggestion];
     // A specific likely instrument supersedes its broad family, not a different instrument.
@@ -58,20 +61,28 @@ export class InstrumentEvidence {
 }
 
 export function confirmedInstrumentList(analysis: MusicAnalysis): string[] | undefined {
-  const reviews=new Map(analysis.soundReviews?.filter(r=>r.dimension==='source').map(r=>[r.labelId,r.decision]));
   // A DJ-tag correction is a full explicit source snapshot, including an empty
   // one. It therefore suppresses stale names and model estimates just like the
   // older instrument correction field does.
-  const confirmed=[...new Set([...(analysis.confirmedInstruments??analysis.confirmedDjTags?.source??[]),...[...reviews].filter(([,decision])=>decision==='confirmed').map(([label])=>label)])]
-    .filter(label=>!reviews.has(label)||reviews.get(label)==='confirmed');
+  const sources = new Map<string, string>();
+  const candidates = [...(analysis.confirmedInstruments ?? analysis.confirmedDjTags?.source ?? []),
+    ...(analysis.soundReviews ?? []).filter(r => r.dimension === 'source' && r.decision === 'confirmed').map(r => r.labelId)];
+  for (const label of candidates) {
+    const review = latestSoundReview(analysis.soundReviews, 'source', label);
+    if (review && (review.decision !== 'confirmed' || review.dimension !== 'source')) continue;
+    const savedLabel = review && sharedSoundReviewIdentity('source', label) ? review.labelId : label;
+    sources.set(soundReviewKey('source', label), savedLabel);
+  }
+  const confirmed = [...sources.values()];
   // Unsure/Reject history is not a human instrument list; only confirmations replace name tags.
   if (analysis.confirmedDjTags === undefined && analysis.confirmedInstruments === undefined && !confirmed.length) return;
   return confirmed;
 }
 
 export function sourceReviewAllows(analysis: MusicAnalysis, label: string): boolean {
-  const latest = analysis.soundReviews?.filter(review => review.dimension === 'source' && review.labelId === label).at(-1);
-  return !latest || latest.decision === 'confirmed';
+  const latest = latestSoundReview(analysis.soundReviews, 'source', label);
+  // A shared effect confirmation keeps its saved dimension; it must not restore a duplicate instrument or filename source.
+  return !latest || latest.decision === 'confirmed' && latest.dimension === 'source';
 }
 
 export function reliableInstruments(analysis: MusicAnalysis): InstrumentEstimate[] {
