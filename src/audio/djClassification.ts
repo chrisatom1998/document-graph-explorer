@@ -2,6 +2,7 @@ import { DJ_LABELS, DJ_TYPE_SOURCE, applyReviewedDecisions, deriveTestedSources,
 import type { DescriptionScore } from './profileDescriptions';
 import type { InstrumentEstimate } from './musicTypes';
 import type { SoundProfile } from './soundProfile';
+import { appendNativeWindow, type NativeWindowEvidence } from './nativeWindowEvidence';
 
 export function applyDjClassification(profile: SoundProfile, ast: InstrumentEstimate[], scores: DescriptionScore[]): SoundProfile {
   let tags = selectDjTags(scores);
@@ -49,7 +50,19 @@ export function mergeDjTags(profile: SoundProfile, passages: DjTag[], scores: De
     if (tag.group === 'source' && tag.model === 'Music CLAP' && profile.source?.basis === 'AudioSet AST' && tag.label !== profile.source.label && !['voice','breath'].includes(tag.label)) continue;
     if (tag.model !== 'Reviewed examples' && tag.group==='production' && DJ_TYPE_SOURCE[tag.label]==='synthesizer' && profile.source?.basis==='AudioSet AST' && profile.source.label!=='synthesizer') continue;
     const key=`${tag.group}:${tag.label}`; const existing=all.get(key);
-    all.set(key,existing && !outranksDjTag(tag,existing) ? {...existing,segments:tag.segments}:tag);
+    const retained=existing && !outranksDjTag(tag,existing) ? {...existing,segments:tag.segments}:tag;
+    if(existing&&existing.model===tag.model){
+      // A profile aggregate and a passage can share a detector without sharing its score provenance. Merge only
+      // that detector's actual scored windows; an unlocalized aggregate makes the combined evidence incomplete.
+      const sources=[existing.windowEvidence,tag.windowEvidence];
+      if(sources.some(Boolean)){
+        const windowEvidence:NativeWindowEvidence={windows:[],complete:sources.every(e=>e?.complete===true)};
+        const byInterval=new Map<string,{start:number;end:number;score:number}>();
+        for(const source of sources)for(const w of source?.windows??[]){const id=`${w.start}:${w.end}`,old=byInterval.get(id);if(!old||w.score>old.score)byInterval.set(id,w);}
+        for(const w of byInterval.values())appendNativeWindow(windowEvidence,w);
+        all.set(key,{...retained,windowEvidence});
+      }else all.set(key,retained);
+    }else all.set(key,retained);
     if (tag.model !== 'Reviewed examples' && tag.group==='production' && DJ_TYPE_SOURCE[tag.label]) {
       const label=DJ_TYPE_SOURCE[tag.label];
       if (!all.has(`source:${label}`)) all.set(`source:${label}`,{...tag,group:'source',label});

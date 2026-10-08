@@ -2,17 +2,18 @@ import { confirmedInstrumentList, sourceReviewAllows } from './instrumentEvidenc
 import { canonicalDjLabel } from './djTags';
 import { fusionPresentation } from './fusionPresentation';
 import type { MusicAnalysis } from './musicTypes';
-import { dimensionLabels, type Dimension } from './recognition';
+import { dimensionLabels, type Dimension, type Interval } from './recognition';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 import calibratedLabelList from './calibratedLabels.json';
 import unverifiedBlocked from './unverifiedBlocked.json';
 import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './soundReviewPolicy';
 import { FULL_MIX_FAMILY, FULL_MIX_REVISION } from './fullMixHeads';
-import { TAGGER_MAYBE_SCORE, TAGGER_SCORE, taggerDecisions, type TaggerTag } from './tagger';
+import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_SCORE, taggerDecisions, taggerIntervals, type TaggerTag } from './tagger';
+import { nativeScoreOutside, type NativeWindowEvidence } from './nativeWindowEvidence';
 
 /** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
  * musicLinks), so a display change also changes which instrument links a track can form, by design. */
-export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v3';
+export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v4';
 /** A detector score at or above this shows as "likely" (and is the only floor for short clips). */
 export const LIKELY_SOUND_CUTOFF = .5;
 /** Longer recordings also show "possible" tags from this raw score up to the likely cutoff. Scores are not calibrated probabilities. */
@@ -23,7 +24,9 @@ export type SoundTier = 'likely' | 'possible';
 export interface DisplaySound { dimension: Dimension; label: string; origin: 'confirmed by you' | 'model estimate'; scores?: {model:string;score:number}[]; /** Only maybe-level detectors back it. */ maybe?: boolean; /** Model estimates only: possible = best tested score between the track floor and the likely cutoff. */ tier?: SoundTier;
   /** No tested detector exists for this label: shown from the raw CLAP catalog similarity (>= the track floor, after
    * the catalog's own margin check), always as "possible", on recordings longer than one-shots only. */
-  uncalibrated?: boolean }
+  uncalibrated?: boolean;
+  /** The native aggregate may include unheard sections, but its saved evidence cannot establish a score there. */
+  coverageUnknown?: boolean }
 /** Labels that have a held-out-tested detector (learned.json / short-clip.json); kept in sync by add-maybe-heads.py and a test. */
 export const CALIBRATED_LABELS: ReadonlySet<string> = new Set(calibratedLabelList as string[]);
 /** Raw-CLAP fallback floor. Measured on 9,000 clips: at 0.40 only 23% of fallback tags agreed with the clip's own
@@ -74,8 +77,29 @@ TESTED_SCORES.add(OPENMIC_HEAD_SCORE);
 const nativeNames={ast:'AST score',jamendo:'Jamendo score',clap:'CLAP similarity',rhythm:'Tempo score',tonal:'Key score'};
 export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):DisplaySound[] {
   const result=new Map<string,DisplaySound>();
+  const tagger=taggerDecisions(audio.tagger,audio.durationSeconds);
+  const coverage=taggerIntervals(audio.tagger,audio.durationSeconds);
+  const covered=({start,end}:Interval)=>{
+    if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>audio.durationSeconds+1e-6)return false;
+    let through=start;
+    for(const interval of coverage){
+      if(interval.end<=through)continue;
+      if(interval.start>through+1e-6)return false;
+      through=interval.end;if(through>=end-1e-6)return true;
+    }
+    return false;
+  };
+  const coversRecording=covered({start:0,end:audio.durationSeconds});
+  // Keep each model's score supported outside the excerpt separate from its recording-wide maximum. A louder
+  // in-excerpt false alarm must not be revived by a weaker observation elsewhere. Missing ranges cannot prove coverage.
+  const outsideTagger=new Map<string,Map<string,number>>();
+  const unknownOutsideTagger=new Map<string,Set<string>>();
+  const oneWindow=(interval:Interval,score:number):NativeWindowEvidence=>({windows:[{start:interval.start,end:interval.end,score}],complete:true});
   const floor=soundDisplayFloor(audio.durationSeconds);
+  const fullMix=Number.isFinite(audio.durationSeconds)&&audio.durationSeconds>=FULL_MIX_MIN_SECONDS;
   const validScore=(score:unknown):score is number=>typeof score==='number'&&Number.isFinite(score)&&score>=floor&&score<=1;
+  const qualifies=(dimension:Dimension,label:string,model:string,score:number)=>validScore(score)&&(MAYBE_SCORES.has(model)
+    ||(TESTED_SCORES.has(model)&&score>=(fullMix&&dimension==='source'?FULL_MIX_MIN_TESTED_SCORE[label]??floor:floor)));
   const confirmed=confirmedInstrumentList(audio);
   const canonical=(dimension:Dimension,label:string)=>dimension==='character'?canonicalDjLabel('character',label)??label:dimension==='effect'?canonicalDjLabel('production',label)??label:label;
   const allowed=(dimension:Dimension,label:string)=>{
@@ -88,7 +112,7 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   for(const label of confirmed??[])human('source',label);
   for(const t of resolvedNonSourceLabels(audio))if(t.source==='confirmed')human(t.group==='character'?'character':'effect',t.label);
   for(const r of audio.soundReviews??[])if(r.decision==='confirmed'&&r.dimension!=='source'&&r.dimension!=='effect'&&r.dimension!=='character')human(r.dimension,r.labelId);
-  const estimate=(dimension:Dimension,raw:string,score:unknown,model:string)=>{
+  const estimate=(dimension:Dimension,raw:string,score:unknown,model:string,windowEvidence?:NativeWindowEvidence)=>{
     const label=canonical(dimension,raw);
     const supported=dimensionLabels[dimension].includes(label)||(dimension==='effect'&&!!canonicalDjLabel('production',label));
     if(!supported||!validScore(score)||!allowed(dimension,label))return;
@@ -96,53 +120,87 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     if(dimension!=='source'&&audio.confirmedDjTags!==undefined)return;
     const key=`${dimension}:${label}`,old=result.get(key);if(old?.origin==='confirmed by you')return;
     const item=old??{dimension,label,origin:'model estimate' as const,scores:[]};
+    item.scores??=[];delete item.coverageUnknown;
     model=profileNames[model]??model;
+    if(tagger?.length&&!coversRecording&&model!==TAGGER_SCORE&&model!==TAGGER_MAYBE_SCORE){
+      const outside=nativeScoreOutside(windowEvidence,covered);
+      if(validScore(outside.score)){
+        const scores=outsideTagger.get(key)??new Map<string,number>();
+        scores.set(model,Math.max(scores.get(model)??0,outside.score));outsideTagger.set(key,scores);
+      }
+      // Only a tag the existing display policy could show earns this conservative fallback; untested guesses cannot.
+      if(outside.unknown&&qualifies(dimension,label,model,score)){
+        const models=unknownOutsideTagger.get(key)??new Set<string>();models.add(model);unknownOutsideTagger.set(key,models);
+      }
+    }
     const same=item.scores!.find(s=>s.model===model);if(same)same.score=Math.max(same.score,score);else item.scores!.push({model,score});result.set(key,item);
   };
   // A current observation must reference matching evidence; orphan/historical score rows do not become labels.
-  const fullMix=Number.isFinite(audio.durationSeconds)&&audio.durationSeconds>=FULL_MIX_MIN_SECONDS;
   if(audio.recognition){const evidenceById=new Map(audio.recognition.evidence.map(e=>[e.id,e]));for(const observation of audio.recognition.observations){
     if(!['source','effect','character'].includes(observation.dimension))continue;
     for(const id of observation.evidenceIds){const e=evidenceById.get(id);if(!e||e.dimension!==observation.dimension||e.labelId!==observation.labelId)continue;
-      estimate(e.dimension,e.labelId,e.score,nativeNames[e.modelId]+(e.derivedFrom?` (${e.derivedFrom.labelId} supports ${e.labelId})`:''));
+      estimate(e.dimension,e.labelId,e.score,nativeNames[e.modelId]+(e.derivedFrom?` (${e.derivedFrom.labelId} supports ${e.labelId})`:''),oneWindow(e,e.score));
       // Calibrated on whole 10 s windows only: a shorter (e.g. imported) row is not promoted.
       const rule=fullMix&&e.modelId==='jamendo'&&e.dimension==='source'&&e.end-e.start>=FULL_MIX_MIN_SECONDS-1e-6?FULL_MIX_JAMENDO[e.labelId]:undefined;
-      if(rule&&e.score>=rule.threshold)estimate('source',rule.label,e.score,FULL_MIX_JAMENDO_SCORE);}
+      if(rule&&e.score>=rule.threshold)estimate('source',rule.label,e.score,FULL_MIX_JAMENDO_SCORE,oneWindow(e,e.score));}
   }}else{
-    for(const i of audio.instruments)estimate('source',i.label,i.score,'Instrument model');
+    for(const i of audio.instruments)estimate('source',i.label,i.score,'Instrument model',i.windowEvidence??(i.segments?{windows:i.segments,complete:false}:undefined));
     if(audio.instrumentPrediction)estimate('source',audio.instrumentPrediction.label,audio.instrumentPrediction.score,audio.instrumentPrediction.model??'Instrument model');
     for(const model of audio.soundProfile?.models??[])for(const candidate of model.candidates)if(dimensionLabels.source.includes(candidate.label))estimate('source',candidate.label,candidate.score,model.model);
   }
   // Only a complete sound scan: a partial one could hide (bass) evidence from windows the heads never scored.
   const heads=fullMix&&FULL_MIX_REVISION&&audio.instrumentScan?.complete&&audio.fullMix?.revision===FULL_MIX_REVISION?audio.fullMix:undefined;
-  if(heads)for(const l of heads.labels)estimate('source',l.label,l.score,OPENMIC_HEAD_SCORE);
-  const tagger=taggerDecisions(audio.tagger,audio.durationSeconds);
+  if(heads)for(const l of heads.labels)estimate('source',l.label,l.score,OPENMIC_HEAD_SCORE,l.windowEvidence);
   // Profile tags carry their own source-specific display score. Bare character/source strings and AI drafts do not.
   const catalogClap=new Set<string>();
   for(const tag of audio.soundProfile?.djTags??[]){const dim:Dimension=tag.group==='source'?'source':tag.group==='character'?'character':'effect';if(tag.model==='Music CLAP')catalogClap.add(`${dim}:${canonical(dim,tag.label)}`);}
-  for(const tag of audio.soundProfile?.djTags??[])estimate(tag.group==='source'?'source':tag.group==='character'?'character':'effect',tag.label,tag.score,tag.model??'Sound tag model');
+  for(const tag of audio.soundProfile?.djTags??[])estimate(tag.group==='source'?'source':tag.group==='character'?'character':'effect',tag.label,tag.score,tag.model??'Sound tag model',tag.windowEvidence);
   const fusion=fusionPresentation(audio.fusion,audio.durationSeconds,fusionMode??audio.recognition?.mode??'full');
   if(fusion?.qualified)for(const w of fusion.windows)for(const d of w.decisions){
-    if(d.state!=='unavailable')estimate('source',d.label,d.decisionProbability,`${d.source==='learned-head'?'Trained head':'Baseline fallback'} score${d.state==='positive'?'':' (below policy acceptance)'}`);
+    if(d.state!=='unavailable')estimate('source',d.label,d.decisionProbability,`${d.source==='learned-head'?'Trained head':'Baseline fallback'} score${d.state==='positive'?'':' (below policy acceptance)'}`,
+      typeof d.decisionProbability==='number'?oneWindow(w,d.decisionProbability):undefined);
     const head=FULL_MIX_HEADS[d.label];
-    if(fullMix&&head!==undefined&&w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6&&d.source!=='learned-head'&&typeof d.headProbability==='number'&&d.headProbability>=head)estimate('source',d.label,d.headProbability,FULL_MIX_HEAD_SCORE);
+    if(fullMix&&head!==undefined&&w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6&&d.source!=='learned-head'&&typeof d.headProbability==='number'&&d.headProbability>=head)estimate('source',d.label,d.headProbability,FULL_MIX_HEAD_SCORE,oneWindow(w,d.headProbability));
   }
   // A head that replaces the other models for its instrument: only its own score stands for that instrument.
   // The trained tagger decides after it, so a label both claim follows the tagger.
   if(heads)for(const label of heads.decides)for(const name of FULL_MIX_FAMILY[label]??[label]){
     const key=`source:${name}`,item=result.get(key);if(item?.origin!=='model estimate')continue;
     const own=item.scores!.filter(x=>x.model===OPENMIC_HEAD_SCORE);if(own.length)item.scores=own;else result.delete(key);}
-  // The trained tagger decides its tags alone: other models' estimates for them are dropped, then its own score is
-  // added when it passed the tag's threshold. Reviews and confirmations still apply (estimate checks them).
+  // The trained tagger replaces evidence inside its excerpt. Native positives from unscored sections remain;
+  // a recording-wide negative would claim the tagger listened to audio it never received.
   // An 'agree' rule (long recordings) also needs the existing detectors to show the tag: they are asked without the tagger.
+  const tagKeys=(tag:TaggerTag)=>[...tag.decides.map(label=>({dimension:tag.dimension,label})),...(tag.alsoDecides??[])]
+    .map(({dimension,label})=>`${dimension}:${canonical(dimension,label)}`);
   let detectors:Set<string>|undefined;
   const detectorsShow=(tag:TaggerTag)=>{
     detectors??=new Set(confidentSoundSummary({...audio,tagger:undefined},fusionMode).map(s=>`${s.dimension}:${s.label}`));
-    return tag.decides.some(name=>detectors!.has(`${tag.dimension}:${canonical(tag.dimension,name)}`));};
+    return tagKeys(tag).some(key=>detectors!.has(key));};
   if(tagger)for(const{tag,shown,score,needsAgreement}of tagger){
-    const agreed=shown&&(!needsAgreement||detectorsShow(tag));
-    for(const name of tag.decides){const key=`${tag.dimension}:${canonical(tag.dimension,name)}`;if(result.get(key)?.origin==='model estimate')result.delete(key);}
+    const keys=new Set(tagKeys(tag)),primary=`${tag.dimension}:${canonical(tag.dimension,tag.label)}`;
+    // The latest listener decision applies to the same sound even when an older detector used another dimension.
+    const review=audio.soundReviews?.filter(r=>keys.has(`${r.dimension}:${canonical(r.dimension,r.labelId)}`)).at(-1);
+    if(review&&review.decision!=='confirmed'){for(const key of keys)result.delete(key);continue;}
+    const confirmedAlias=[...keys].some(key=>result.get(key)?.origin==='confirmed by you');
+    const agreed=shown&&!confirmedAlias&&(!needsAgreement||detectorsShow(tag));
+    for(const key of keys){
+      const item=result.get(key);if(item?.origin!=='model estimate')continue;
+      if(confirmedAlias||(agreed&&key!==primary)){result.delete(key);continue;}
+      const outside=outsideTagger.get(key);
+      const unknown=item.scores?.some(s=>unknownOutsideTagger.get(key)?.has(s.model));
+      item.scores=(item.scores??[]).flatMap(s=>outside?.has(s.model)?[{model:s.model,score:outside.get(s.model)!}]:[]);
+      if(unknown&&!item.scores.some(s=>qualifies(item.dimension,item.label,s.model,s.score))){delete item.scores;item.coverageUnknown=true;item.tier='possible';}
+      else if(!item.scores.length)result.delete(key);
+    }
     if(agreed)estimate(tag.dimension,tag.label,score,tag.tested?TAGGER_SCORE:TAGGER_MAYBE_SCORE);}
+  // Alias identity belongs to the sound, not to whether the tagger happens to decide it on this recording.
+  // In particular, a long-recording 'detectors' rule or unavailable tagger cannot revive a rejected cymbal alias.
+  for(const tag of TAGGER_POLICY.tags.filter(t=>t.alsoDecides?.length)){
+    const keys=new Set(tagKeys(tag));
+    const review=audio.soundReviews?.filter(r=>keys.has(`${r.dimension}:${canonical(r.dimension,r.labelId)}`)).at(-1);
+    if(review&&review.decision!=='confirmed'){for(const key of keys)result.delete(key);}
+    else if([...keys].some(key=>result.get(key)?.origin==='confirmed by you'))for(const key of keys)if(result.get(key)?.origin==='model estimate')result.delete(key);
+  }
   const tiered=(s:DisplaySound,models:(m:string)=>boolean):DisplaySound=>({...s,tier:soundTier(Math.max(...s.scores!.filter(x=>models(x.model)).map(x=>x.score)))});
   const long=floor===TRACK_SOUND_FLOOR;
   const voiceHeads=fullMix&&fusion?.qualified?fusion.windows.filter(w=>w.status==='complete'&&w.end-w.start>=FULL_MIX_MIN_SECONDS-1e-6)
@@ -151,6 +209,7 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   const testedBest=(s:DisplaySound)=>Math.max(...s.scores!.filter(x=>TESTED_SCORES.has(x.model)).map(x=>x.score));
   const raised=(s:DisplaySound)=>fullMix&&s.dimension==='source'&&FULL_MIX_MIN_TESTED_SCORE[s.label]!==undefined&&testedBest(s)<FULL_MIX_MIN_TESTED_SCORE[s.label];
   return [...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
+    :s.coverageUnknown?[s]
     :s.scores?.some(x=>TESTED_SCORES.has(x.model))?raised(s)?[]:[tiered(s,m=>TESTED_SCORES.has(m))]
     :s.scores?.some(x=>MAYBE_SCORES.has(x.model))?[{...tiered(s,m=>MAYBE_SCORES.has(m)),maybe:true}]
     :long&&!CALIBRATED_LABELS.has(s.label)&&!UNVERIFIED_BLOCKED.has(s.label)&&catalogClap.has(`${s.dimension}:${s.label}`)&&s.scores?.some(x=>x.model==='CLAP similarity'&&x.score>=UNVERIFIED_SOUND_FLOOR)?[{...s,tier:'possible' as const,uncalibrated:true}]:[]);

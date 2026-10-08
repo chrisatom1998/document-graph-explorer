@@ -4,7 +4,8 @@ import CopilotProperties from './CopilotProperties';
 import MainSoundAttributes from './MainSoundAttributes';
 import ConfidentSoundSummary, { ModelScores } from './ConfidentSoundSummary';
 import MusicAnalysisMode from './MusicAnalysisMode';
-import { musicNameHints, type NamedHint } from '../audio/nameHints';
+import type { NamedHint } from '../audio/nameHints';
+import { resolveTempoKey } from '../audio/resolvedTempoKey';
 import { confirmedInstrumentList, sourceReviewAllows } from '../audio/instrumentEvidence';
 import { useState } from 'react';
 import type { DocNode } from '../model/types';
@@ -47,7 +48,8 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
     voice:sourceReviewAllows(analysis,'voice')?profile.voice:undefined,
     djTags:profile.djTags?.filter(tag=>tag.group!=='source'||sourceReviewAllows(analysis,tag.label))}:undefined;
 
-  const rawHints = musicNameHints(node);
+  const resolved = resolveTempoKey(node);
+  const rawHints = resolved.hints;
   const allowedHints=rawHints.instruments?.value.filter(label=>!analysis||sourceReviewAllows(analysis,label));
   const hints={...rawHints,instruments:allowedHints?.length?{...rawHints.instruments!,value:allowedHints}:undefined};
   // Use the filename's spelling when the model found the same musical key.
@@ -102,11 +104,11 @@ export default function MusicFeatures({ node, onSeek }: { node: DocNode; onSeek?
     {analysis ? <>
       <dl className="music-stats">
         <div><dt>Length</dt><dd>{time(analysis.durationSeconds)}</dd></div>
-        <div><dt>Tempo{hints.tempo && <small>from name</small>}</dt>{hints.tempo || analysis.tempo
-          ? <dd>{Number((hints.tempo ? hints.tempo.value : analysis.tempo!.bpm).toFixed(1))} BPM{tempoDiffers && <small className="music-stats__audio" title="The audio estimate differs from the file or folder name">audio {Number(analysis.tempo!.bpm.toFixed(1))}</small>}</dd>
+        <div><dt>Tempo{hints.tempo && <small>from name</small>}</dt>{resolved.tempo
+          ? <dd>{Number(resolved.tempo.bpm.toFixed(1))} BPM{tempoDiffers && <small className="music-stats__audio" title="The audio estimate differs from the file or folder name">audio {Number(analysis.tempo!.bpm.toFixed(1))}</small>}</dd>
           : <dd className="is-unknown" title={analysis.stage === 'preview' ? 'Not checked yet' : 'No steady beat detected'}>{analysis.stage === 'preview' ? '…' : '—'}</dd>}</div>
-        <div><dt>Key{hints.key && <small>from name</small>}</dt>{hints.key || analysis.key
-          ? <dd>{hints.key ? hints.key.displayName : keyName(analysis.key!)} <span className="camelot" title="Camelot wheel code">{camelotCode(hints.key ? hints.key.value : analysis.key!)}</span>{!!hints.key && !!analysis.key && !sameNamedKey && <small className="music-stats__audio" title="The audio estimate differs from the file or folder name">audio {keyName(analysis.key)}</small>}</dd>
+        <div><dt>Key{hints.key && <small>from name</small>}</dt>{resolved.key
+          ? <dd>{resolved.keyLabel} <span className="camelot" title="Camelot wheel code">{camelotCode(resolved.key)}</span>{!!hints.key && !!analysis.key && !sameNamedKey && <small className="music-stats__audio" title="The audio estimate differs from the file or folder name">audio {keyName(analysis.key)}</small>}</dd>
           : <dd className="is-unknown" title={analysis.stage === 'preview' ? 'Not checked yet' : 'No stable key detected'}>{analysis.stage === 'preview' ? '…' : '—'}</dd>}</div>
         {genre && <div title={genre.tested ? 'Estimated from the audio by a tested genre rule' : 'Estimated from the audio; this genre did not reach 70% precision and recall in testing'}>
           <dt>Genre{!genre.tested && <small>maybe</small>}</dt><dd className="music-genre">{genreText(genre.label)}</dd></div>}

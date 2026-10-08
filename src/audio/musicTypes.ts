@@ -10,6 +10,7 @@ import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProp
 import { sanitizeStructure, type TrackStructure } from './structure';
 import { sanitizeVersionPrint } from './versionPrint';
 import { sanitizeGenreScores, sanitizeStyles, type TrackStyle } from './genreEnergy';
+import { sanitizeNativeWindowEvidence, type NativeWindowEvidence } from './nativeWindowEvidence';
 export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 4;
 export const TEMPO_ANALYSIS_REVISION = 4;
@@ -22,6 +23,7 @@ export interface InstrumentEstimate {
   status?: 'likely' | 'possible';
   windows?: number;
   segments?: { start: number; end: number; score: number }[];
+  windowEvidence?: NativeWindowEvidence;
 }
 export type MusicAnalysisMode = 'fast' | 'full';
 export interface MusicAnalysis {
@@ -87,7 +89,7 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   if (fusion) out.fusion = fusion;
   const fullMix = sanitizeFullMixAnalysis(m.fullMix, out.durationSeconds);
   if (fullMix) out.fullMix = fullMix;
-  const tagger = sanitizeTaggerAnalysis(m.tagger);
+  const tagger = sanitizeTaggerAnalysis(m.tagger, out.durationSeconds);
   if (tagger) out.tagger = tagger;
   out.recognition = sanitizeRecognition(m.recognition, out.durationSeconds);
   if (!out.recognition) delete out.recognition;
@@ -106,7 +108,7 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   const genreScores = sanitizeGenreScores(m.genreScores);
   if (genreScores) out.genreScores = genreScores;
   if (positive(m.energyScore, 1)) out.energyScore = m.energyScore;
-  out.soundProfile = sanitizeSoundProfile(m.soundProfile);
+  out.soundProfile = sanitizeSoundProfile(m.soundProfile, out.durationSeconds);
   if (!out.soundProfile) delete out.soundProfile;
   const prediction = m.instrumentPrediction as Record<string, unknown> | undefined;
   if (prediction && typeof prediction.label === 'string' && INSTRUMENT_LABELS.includes(prediction.label) && positive(prediction.score, 1) && positive(prediction.margin, 2)) {
@@ -129,6 +131,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
     const i = v as Record<string, unknown>;
     if (typeof i.label !== 'string' || !positive(i.score, 1)) return [];
     const item: InstrumentEstimate = { label: i.label.slice(0, 80), score: i.score };
+    const windowEvidence = sanitizeNativeWindowEvidence(i.windowEvidence, out.durationSeconds);
+    if (windowEvidence) item.windowEvidence = windowEvidence;
     if (m.version === 2) {
       if (i.status !== 'likely' && i.status !== 'possible') return [];
       item.status = i.status;

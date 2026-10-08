@@ -34,13 +34,23 @@ version and sounds-alike links are unchanged (they do not read sound tags). Inst
 - **Aggregation**: a recording's score per output is its maximum over windows, and the tag shows when that passes the
   output's threshold. That is `evaluate.py`'s rule (any window passes). Thresholds were picked on validation artists only
   (`calibrate.py`). The shown score maps the threshold to the app's 0.5 likely cutoff. Each window's score is stored too
-  (`windowScores`), and recordings scored on more than one window (20 s and longer) follow the per-instrument
+  (`windowScores`) alongside the actual sampled `intervals` (excluding padding), and recordings scored on more than one window (20 s and longer) follow the per-instrument
   long-recording rule below; 10 s clips (one window) keep exactly this behaviour.
-- **Deciding a tag**: for each tag below, the tagger alone decides. Other models' estimates for that tag (and the labels in
-  its `decides` list) are dropped. Listener confirmations and rejections still win. Instruments are decided only on
+- **Deciding a tag**: for each tag below, the tagger replaces other models' estimates within its sampled coverage.
+  Native detections supported by a window outside that coverage, including a partly overlapping window, remain available.
+  The tagger cannot use a negative result from the middle of a track to erase a sound found in its intro or outro.
+  Native DJ, instrument, event, and full-mix evidence now keeps up to 128 scored intervals separately from its few
+  listenable examples, with an explicit completeness flag. Only actual outside scores support a numerical estimate;
+  full-mix heads retain their raw probabilities and existing top-window aggregation and threshold. If a legacy or
+  truncated record cannot establish an outside score, an otherwise eligible native estimate remains `possible`
+  without a numerical score. Its hover text explains the incomplete evidence.
+  Legacy results from the current model revision infer the same deterministic intervals only when their saved window
+  count matches; unknown coverage cannot veto native evidence. Listener confirmations and rejections still win. Instruments are decided only on
   recordings of at least 10 s (the held-out instrument sets had no shorter audio), and on recordings of more than one
   window only as the long-recording rules below allow; shorter clips keep the existing
   detectors for them. Sound-type and effect tags are decided at any length (their held-out clips were 0.3–30 s).
+  The cymbals output also replaces the native production/effect `cymbal` alias within that coverage, so an old label
+  cannot evade its decision or duplicate a positive tagger label; listener decisions apply across these aliases.
 - **Provenance**: tags that reached 0.70 precision and recall on every complete-label held-out set show with
   "Trained tagger score"; the rest still show, marked "maybe" with "Trained tagger score (maybe)". 70/70 is a target,
   not a display gate.
@@ -49,6 +59,11 @@ version and sounds-alike links are unchanged (they do not read sound tags). Inst
 - **Parity**: `src/audio/tagger.parity.test.ts` runs a fixed test signal (4.5, 10, 25 and 47 s) through the app's
   window helpers and onnxruntime-web, against `scripts/audio-model/parity.py` (the Python cutting rules with
   onnxruntime CPU). Window starts match exactly; all 20 policy scores agree within 1e-3 (stored scores are rounded to 1e-4).
+
+The 2026-10-07 coverage and cymbal-identity corrections are display/persistence fixes. They add no model runs and do
+not change sampling, thresholds or weights. `taggerCoverage.test.ts` covers unheard intros/outros and clip tails,
+covered false alarms, persistence, aliases and listener decisions. The historical accuracy tables below have not been
+re-measured for those corrections.
 
 ## Per-tag policy
 

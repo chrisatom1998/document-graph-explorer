@@ -148,14 +148,40 @@ describe('portable share-link graph', () => {
     expect(decoded?.nodes[0].title).toBe('Résumé — 東京');
   });
 
-  it('builds a clean URL without query state or corpus ids', async () => {
+  it('keeps generated metadata in the fragment and removes private query state', async () => {
     const url = await createShareUrl(
       graph(),
       'https://example.test/app/?corpus=private-id&eval=retrieval#old',
     );
-    expect(url).toMatch(/^https:\/\/example\.test\/app\/#graph=v1\./u);
-    expect(url).not.toContain('?');
+    const parsed = new URL(url);
+    expect(parsed.origin + parsed.pathname).toBe('https://example.test/app/');
+    expect(parsed.search).toBe('');
     expect(url).not.toContain('private-id');
+    expect((await decodeShareFragment(parsed.href))?.nodes[0].title).toBe('Résumé — 東京');
+  });
+
+  it.each([
+    'http://localhost:5173/app/?corpus=private-id',
+    'http://127.0.0.1:49152/',
+    'http://127.0.0.2:49152/',
+    'http://[::1]:49152/',
+    'http://0.0.0.0:5173/',
+    'file:///Users/chris/Private/index.html',
+  ])('creates a remotely openable link from a local app at %s', async (base) => {
+    const parsed = new URL(await createShareUrl(graph(), base));
+    expect(parsed.origin + parsed.pathname).toBe('https://document-graph-explorer.vercel.app/');
+    expect(parsed.href).not.toContain('private-id');
+    expect(parsed.href).not.toContain('Private');
+    expect((await decodeShareFragment(parsed.href))?.nodes[0].title).toBe('Résumé — 東京');
+  });
+
+  it.each(['https://music.example.org/library/', 'http://192.168.1.20:8080/app/'])('preserves a self-hosted app base at %s', async (base) => {
+    const parsed = new URL(await createShareUrl(graph(), base));
+    expect(parsed.origin + parsed.pathname).toBe(base.slice(0, -1) + '/');
+  });
+
+  it.each(['javascript:alert(1)', 'ftp://example.test/app/', 'ftp://localhost/app/'])('rejects an unsupported sharing origin %s', async (base) => {
+    await expect(createShareUrl(graph(), base)).rejects.toMatchObject({ code: 'malformed' });
   });
 
   it('uses an explicitly tagged raw fallback when compression streams are unavailable', async () => {
@@ -172,6 +198,32 @@ describe('portable share-link graph', () => {
     expect(hasShareFragment('#graph=v2.abc')).toBe(true);
     expect(extractShareFragment('#settings')).toBeNull();
     expect(hasShareFragment('https://example.test/')).toBe(false);
+  });
+
+  it.each([
+    ['https://example.test/%23graph=v1.abc', '#graph=v1.abc'],
+    ['https://example.test/#graph%3Dv1.abc', '#graph=v1.abc'],
+    ['https://example.test/%2523graph%253Dv1.abc', '#graph=v1.abc'],
+    ['https://example.test/?graph=v1.abc', '#graph=v1.abc'],
+    ['https://example.test/?graph=v1.query#graph=v1.fragment', '#graph=v1.fragment'],
+    ['https://example.test/?next=https%3A%2F%2Fother.test%2F%23graph%3Dv1.abc', null],
+    ['https://example.test/#settings%23graph=v1.abc', null],
+  ])('normalizes a direct share directive in %s', (href, expected) => {
+    expect(extractShareFragment(href)).toBe(expected);
+  });
+
+  it('rejects oversized percent-encoded graph payloads before decoding them', async () => {
+    await expect(decodeShareFragment(`https://example.test/?graph=${'%41'.repeat(MAX_SHARE_FRAGMENT_CHARS)}`))
+      .rejects.toMatchObject({ code: 'too_large' });
+  });
+
+  it('opens an explicit incoming query fallback through the same sanitizer', async () => {
+    const fragment = await encodeShareFragment(graph());
+    const incoming = `https://example.test/?graph=${fragment.slice('#graph='.length)}`;
+    const decoded = await decodeShareFragment(incoming);
+    expect(decoded?.nodes[0].title).toBe('Résumé — 東京');
+    expect(decoded?.nodes[0]).not.toHaveProperty('path');
+    expect(decoded).not.toHaveProperty('embeddings');
   });
 
   it('returns null when no share directive exists and rejects malformed directives', async () => {

@@ -120,13 +120,18 @@ export default function ExportImportMenu({
   onDialogOpenChange,
 }: ExportImportMenuProps) {
   const phase = useGraphStore((s) => s.phase);
-  const nodeCount = useGraphStore((s) => s.nodes.length);
-  const hasAudio = useGraphStore((s) => s.nodes.some((n) => n.kind === 'document' && n.fileType === 'audio'));
+  const nodes = useGraphStore((s) => s.nodes);
+  const edges = useGraphStore((s) => s.edges);
+  const clusterNames = useGraphStore((s) => s.clusterNames);
+  const nodeCount = nodes.length;
+  const hasAudio = nodes.some((n) => n.kind === 'document' && n.fileType === 'audio');
   const [rekordboxOpen, setRekordboxOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [shareConfirmOpen, setShareConfirmOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [preparedShare, setPreparedShare] = useState<{ url: string; source: ReturnType<typeof toGraphExport> } | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const confirmOpen = pendingFile !== null || shareConfirmOpen;
   const dialogOpen = confirmOpen || rekordboxOpen;
@@ -141,6 +146,26 @@ export default function ExportImportMenu({
 
   const canImport = phase === 'idle' || phase === 'ready';
   const canExportGraph = phase === 'ready';
+
+  // Compression must finish before the confirmation tap. Safari's clipboard
+  // permission can expire if writeText is called only after async encoding.
+  useEffect(() => {
+    setPreparedShare(null);
+    setShareError(null);
+    if (!shareConfirmOpen || phase !== 'ready') return;
+    let active = true;
+    const source = toGraphExport(false);
+    void createShareUrl(source).then(url => {
+      if (active) setPreparedShare({ url, source });
+    }).catch(error => {
+      if (active) setShareError(messageFromError(error));
+    });
+    return () => { active = false; };
+  }, [shareConfirmOpen, nodes, edges, clusterNames, phase]);
+
+  const shareReady = preparedShare !== null && phase === 'ready' &&
+    preparedShare.source.nodes === nodes && preparedShare.source.edges === edges &&
+    preparedShare.source.clusterNames === clusterNames;
 
   const runImport = async (file: File) => {
     setImporting(true);
@@ -168,10 +193,13 @@ export default function ExportImportMenu({
   };
 
   const copyShareLink = async () => {
+    const current = useGraphStore.getState();
+    if (!shareReady || !preparedShare || current.phase !== 'ready' ||
+      current.nodes !== preparedShare.source.nodes || current.edges !== preparedShare.source.edges ||
+      current.clusterNames !== preparedShare.source.clusterNames) return;
     setSharing(true);
     try {
-      const url = await createShareUrl(toGraphExport(false));
-      await copyText(url);
+      await copyText(preparedShare.url);
       useUiStore.getState().pushToast('Shareable graph link copied.', 'info');
       setShareConfirmOpen(false);
       onClose?.();
@@ -372,6 +400,7 @@ export default function ExportImportMenu({
                 full document text, local paths, embeddings, file handles, and settings. Anyone
                 with the link can view the included graph metadata.
               </p>
+              {shareError && <p role="alert" style={confirmTextStyle}>{shareError}</p>}
               <div style={confirmRowStyle}>
                 <button
                   type="button"
@@ -384,10 +413,10 @@ export default function ExportImportMenu({
                 <button
                   type="button"
                   className="snapshot-btn snapshot-btn--load"
-                  disabled={sharing}
+                  disabled={sharing || !shareReady}
                   onClick={() => void copyShareLink()}
                 >
-                  {sharing ? 'Creating link…' : 'Copy link'}
+                  {sharing ? 'Copying…' : !shareReady && !shareError ? 'Preparing link…' : 'Copy link'}
                 </button>
               </div>
             </div>

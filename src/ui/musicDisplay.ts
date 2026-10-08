@@ -1,5 +1,5 @@
 import type { DocNode, Edge } from '../model/types';
-import { musicNameHints } from '../audio/nameHints';
+import { resolveTempoKey } from '../audio/resolvedTempoKey';
 import { KEY_NAMES } from '../audio/musicTypes';
 import { mixFeatures, mixSuggestions, type KeyRelation, type MixSuggestion } from '../audio/mixSuggestions';
 
@@ -7,12 +7,9 @@ type Key = { tonic: number; mode: 'major' | 'minor' };
 
 /** Tempo and key exactly as the track panel shows them: a file/folder name tag wins over the audio estimate. */
 export function shownTempoKey(node: Pick<DocNode, 'path' | 'title' | 'audio'>) {
-  const hints = musicNameHints(node);
-  const audio = node.audio;
-  const bpm = hints.tempo ? hints.tempo.value : audio?.tempo?.bpm;
-  const key = hints.key ? hints.key.value : audio?.key ? { tonic: audio.key.tonic, mode: audio.key.mode } : undefined;
-  const keyLabel = hints.key ? hints.key.displayName : key ? `${KEY_NAMES[key.tonic]} ${key.mode}` : undefined;
-  return { bpm: bpm !== undefined && Number.isFinite(bpm) ? Number(bpm.toFixed(1)) : undefined, key, keyLabel, hints };
+  const { hints, tempo, key: resolvedKey, keyLabel } = resolveTempoKey(node);
+  const key = resolvedKey ? { tonic: resolvedKey.tonic, mode: resolvedKey.mode } : undefined;
+  return { bpm: tempo ? Number(tempo.bpm.toFixed(1)) : undefined, key, keyLabel, hints };
 }
 
 /** Compact key for chips and rows: "Gm" / "E♭". */

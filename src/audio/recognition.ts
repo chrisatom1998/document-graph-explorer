@@ -10,6 +10,7 @@ import { DJ_LABELS } from './djTags';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { supportsFusionInput } from './fusionRelease';
 import { CHARACTER_LABELS, ROLE_LABELS, VOCAL_LABELS } from './soundProfile';
+import { canonicalReviewLabel, sharedSoundReviewIdentity } from './soundReviewIdentity';
 export type Interval = { start: number; end: number };
 export type ModelId = 'ast' | 'jamendo' | 'clap' | 'rhythm' | 'tonal';
 export type Dimension = 'source' | 'vocal' | 'role' | 'character' | 'effect';
@@ -142,9 +143,14 @@ export function sanitizeSoundReviews(raw:unknown):SoundReview[] {
   if(!Array.isArray(raw))return [];
   return raw.slice(0,500).flatMap(value=>{
     const r=object(value);
-    if(!r||!DIMENSIONS.includes(r.dimension as Dimension)||typeof r.labelId!=='string'||!dimensionLabels[r.dimension as Dimension].includes(r.labelId)
+    if(!r||!DIMENSIONS.includes(r.dimension as Dimension)||typeof r.labelId!=='string')return [];
+    const dimension = r.dimension as Dimension;
+    const sharedIdentity = sharedSoundReviewIdentity(dimension, r.labelId);
+    // Persist the declared source/effect equivalents without expanding detector vocabulary.
+    const labelId = sharedIdentity ? canonicalReviewLabel(dimension, r.labelId) : r.labelId;
+    if((!dimensionLabels[dimension].includes(labelId)&&!sharedIdentity)
       ||!['confirmed','rejected','uncertain'].includes(r.decision as string)||r.scope!=='track'||!boundedString(r.at)||!Number.isFinite(Date.parse(r.at))||!boundedString(r.evidenceRunId))return [];
-    return [{dimension:r.dimension as Dimension,labelId:r.labelId,decision:r.decision as SoundReview['decision'],scope:'track' as const,at:r.at,evidenceRunId:r.evidenceRunId}];
+    return [{dimension,labelId,decision:r.decision as SoundReview['decision'],scope:'track' as const,at:r.at,evidenceRunId:r.evidenceRunId}];
   });
 }
 export function sanitizeRecognition(raw:unknown,duration:number):Recognition|undefined {

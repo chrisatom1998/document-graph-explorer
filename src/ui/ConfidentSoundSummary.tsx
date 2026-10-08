@@ -24,9 +24,11 @@ export default function ConfidentSoundSummary({audio,mode,node}:{audio:MusicAnal
       const kind = l.origin === 'confirmed by you' ? 'confirmed' : l.origin === 'From filename' ? 'name' : 'maybe' in l && l.maybe ? 'maybe' : l.dimension === 'source' ? 'source' : 'detail';
       const possible = 'tier' in l && l.tier === 'possible';
       const unverified = 'uncalibrated' in l && !!l.uncalibrated;
+      const coverageUnknown = 'coverageUnknown' in l && !!l.coverageUnknown;
       const hover = [DIMENSION_NAME[l.dimension as keyof typeof DIMENSION_NAME] ?? l.dimension,
         l.origin === 'From filename' ? 'from the file name, not the audio' : l.origin,
-        ...(unverified ? ['unverified: no tested detector for this sound yet; raw CLAP similarity, not calibrated'] : possible ? ['possible: detector score 0.40–0.49, not calibrated (not a 40% chance)'] : []),
+        ...(coverageUnknown ? ['possible: saved window evidence is incomplete; no score is established outside the tagger excerpt']
+          : unverified ? ['unverified: no tested detector for this sound yet; raw CLAP similarity, not calibrated'] : possible ? ['possible: detector score 0.40–0.49, not calibrated (not a 40% chance)'] : []),
         ...(l.scores ?? []).map(s => `${s.model} ${s.score.toFixed(2)}`)].join(' · ');
       return <li key={`${l.dimension}:${l.label}`} className={`sound-tag sound-tag--${kind}${possible ? ' sound-tag--possible' : ''}`} data-tier={'tier' in l ? l.tier : undefined} title={hover}>
         {kind === 'confirmed' && <span className="sound-tag__mark" aria-hidden="true">✓</span>}
