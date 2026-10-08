@@ -11,7 +11,8 @@
 import { describe, expect, it } from 'vitest';
 import type { DocNode, Edge } from '../model/types';
 import type { GraphFilter } from '../store/uiStore';
-import { adjacencyFor, computeEmphasis } from './emphasis';
+import { adjacencyFor, computeEmphasis, isFilterActive, nodesMatchingFilter } from './emphasis';
+import type { MusicAnalysis } from '../audio/musicTypes';
 
 function mkNode(overrides: Partial<DocNode> & { id: string }): DocNode {
   return {
@@ -48,6 +49,7 @@ const NO_FILTER: GraphFilter = {
   bpmRange: null,
   musicKey: null,
   style: null,
+  sounds: null,
 };
 
 describe('adjacencyFor', () => {
@@ -307,5 +309,32 @@ describe('computeEmphasis', () => {
       { ...NO_FILTER, fileTypes: ['md'] },
     );
     expect(set).toEqual(new Set(['a']));
+  });
+});
+
+describe('sounds filter', () => {
+  const clip = (id: string, confirmedInstruments: string[]): DocNode =>
+    mkNode({
+      id,
+      fileType: 'audio',
+      audio: { version: 2, durationSeconds: 8, analyzedSeconds: 8, instruments: [], notes: [], confirmedInstruments } as MusicAnalysis,
+    });
+  const nodes = [clip('v', ['voice']), clip('s', ['synth', 'drums']), clip('d', ['drums']), mkNode({ id: 'doc' })];
+
+  it('matches clips with any of the picked sounds', () => {
+    const matched = nodesMatchingFilter(nodes, [], { ...NO_FILTER, sounds: ['voice', 'synth'] });
+    expect([...(matched ?? [])].sort()).toEqual(['s', 'v']);
+  });
+
+  it('drops documents without audio and counts an empty pick as off', () => {
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, sounds: ['drums'] })).toEqual(new Set(['s', 'd']));
+    expect(isFilterActive({ ...NO_FILTER, sounds: [] })).toBe(false);
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, sounds: [] })).toBeNull();
+  });
+
+  it('honours a later rejection of a confirmed sound', () => {
+    const rejected = clip('r', ['voice']);
+    rejected.audio!.soundReviews = [{ dimension: 'source', labelId: 'voice', decision: 'rejected', scope: 'track', at: 'now', evidenceRunId: 'x' }];
+    expect(nodesMatchingFilter([rejected], [], { ...NO_FILTER, sounds: ['voice'] })).toEqual(new Set());
   });
 });

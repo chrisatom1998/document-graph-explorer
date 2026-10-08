@@ -169,6 +169,9 @@
 .rs-check { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--rs-line-strong); display: grid; place-items: center; flex: none; }
 .rs-checks input:checked + .rs-check { background: var(--rs-lime); border-color: var(--rs-lime); }
 .rs-checks input:checked + .rs-check::after { content: ''; width: 5px; height: 9px; border: solid var(--rs-lime-ink); border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+.rs-checks__count { margin-left: auto; color: var(--rs-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.rs-show-more { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--rs-muted); font: inherit; font-size: 12px; cursor: pointer; text-decoration: underline; }
+.rs-empty { margin: 0; color: var(--rs-muted); font-size: 12px; }
 .rs-checks input:focus-visible + .rs-check { outline: 2px solid var(--rs-lime); outline-offset: 2px; }
 .rs-range { position: relative; height: 24px; margin: 6px 4px 0; }
 .rs-range__track { position: absolute; left: 0; right: 0; top: 11px; height: 2px; background: var(--rs-line-strong); border-radius: 2px; }
