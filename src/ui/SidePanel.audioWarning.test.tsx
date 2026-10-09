@@ -6,6 +6,7 @@ import type { DocNode } from '../model/types';
 
 vi.mock('../pipeline/coordinator', () => ({ removeDocuments: vi.fn() }));
 
+import { PENDING_MUSIC_ANALYSIS_WARNING } from '../audio/parseAudio';
 import SidePanel from './SidePanel';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -26,5 +27,13 @@ describe('SidePanel audio warning', () => {
     useUiStore.getState().setSelected('clip1');
     render(<SidePanel inline />);
     expect(screen.getByText(/could not be decoded for music analysis/)).toBeInTheDocument();
+  });
+
+  it('does not show the pending-analysis placeholder as a failure', () => {
+    const pending: DocNode = { ...clip, title: 'Queued', warning: PENDING_MUSIC_ANALYSIS_WARNING };
+    useGraphStore.setState({ nodes: [pending], nodeIndex: { clip1: 0 }, edges: [], clusterNames: {}, localClusterNames: {} });
+    useUiStore.getState().setSelected('clip1');
+    render(<SidePanel inline />);
+    expect(screen.queryByText(/Music analysis is pending/)).not.toBeInTheDocument();
   });
 });

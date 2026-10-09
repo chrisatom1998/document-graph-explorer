@@ -1,5 +1,9 @@
 import { cleanFilename, type ParserResult } from '../pipeline/parsers/txt';
 
+/** Placeholder on a new clip until analysis publishes a result or a real error. */
+export const PENDING_MUSIC_ANALYSIS_WARNING =
+  'Music analysis is pending. You can also add your own musical relationships.';
+
 /** Audio is never decoded as text or described as if its sound was analyzed. */
 export function parseAudio(bytes: ArrayBuffer, name: string): ParserResult {
   if (!bytes.byteLength) throw new Error('This audio file is empty.');
@@ -8,7 +12,7 @@ export function parseAudio(bytes: ArrayBuffer, name: string): ParserResult {
   return {
     title, text: title, headings: [], mdLinkTargets: [], docLinks: [],
     status: 'ok',
-    warning: 'Music analysis is pending. You can also add your own musical relationships.',
+    warning: PENDING_MUSIC_ANALYSIS_WARNING,
   };
 }
 

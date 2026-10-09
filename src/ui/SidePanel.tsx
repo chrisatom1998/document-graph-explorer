@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { PENDING_MUSIC_ANALYSIS_WARNING } from '../audio/parseAudio';
 import { DUP_SIM_THRESHOLD } from '../config';
 import { useGraphStore } from '../store/graphStore';
 import { useUiStore } from '../store/uiStore';
@@ -186,6 +187,10 @@ export default function SidePanel({ inline = false, onClose }: { inline?: boolea
   // Clips keep the track panel only: the inspector's clip card already carries identity, and
   // Mix with and Versions cover connections. Document chrome (About, Connections) is for text.
   const isAudio = node.fileType === 'audio';
+  // Decode failures keep status `ok` and set `warning` to the error. The ingest
+  // placeholder uses the same field while a clip is queued or running.
+  const audioFailureWarning =
+    !!node.warning && node.warning !== PENDING_MUSIC_ANALYSIS_WARNING;
   const dialogLabel = isTopic
     ? `${node.title} (topic hub, ${node.degree} document${node.degree === 1 ? '' : 's'})`
     : codeLang
@@ -205,8 +210,8 @@ export default function SidePanel({ inline = false, onClose }: { inline?: boolea
           closeButtonRef={closeButtonRef}
         />
         <div className="side-panel__scroll">
-          {/* Music analysis failures set only `warning`, so show it even while status is ok. */}
-          {inline && isAudio && (node.status !== 'ok' || node.warning) && (
+          {/* Music analysis failures set only `warning`, so show those even while status is ok. */}
+          {inline && isAudio && (node.status !== 'ok' || audioFailureWarning) && (
             <p className="side-panel__badges"><span className="chip side-panel__badge-warning">⚠ {node.warning ?? node.status}</span></p>
           )}
           {!(inline && isAudio) && (
