@@ -49,7 +49,7 @@ function cacheUnavailable(err: unknown): void {
       isQuotaExceeded(err)
         ? "Storage is full — your session won't be saved. Clear cached data in Settings to free space."
         : isNewerVersion(err)
-          ? "Your saved library is from a newer version of Resonance. Reload the page to open it; until then this session won't be saved."
+          ? "Your saved library is from a newer version of Resonance. Reload the page to get it; if this message comes back, this session won't be saved."
           : "This browser blocked local storage — your session won't be saved automatically.",
       'warning',
     );
