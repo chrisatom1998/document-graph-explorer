@@ -10,7 +10,7 @@ import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
 import { instrumentScores, musicScore, type InstrumentPredictions } from './instrumentLabels';
 import { KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_ANALYSIS_REVISION, type MusicAnalysis } from './musicTypes';
 import { classifyJamendo, preloadJamendo } from './jamendo';
-import { classifyTagger } from './taggerInference';
+import { classifyTagger, preloadTagger } from './taggerInference';
 import { isTaggerScores } from './tagger';
 import { GENRE_ENERGY_VERSION } from './genreEnergy';
 import { detectRepeatedPitch } from './detectedPitch';
@@ -152,7 +152,7 @@ async function warmFamily(family: string, mode?: string): Promise<void> {
   // for clips up to 2.048 s; there it loads on the first such clip instead of holding 347 MB for long recordings.
   if (family === 'instruments') { await getClassifier(); if (mode !== 'full') await getGpuClassifier().catch(() => { gpuUnavailable = true; }); }
   else if (family === 'profile' || family === 'sound') await Promise.all([getSoundDescriptions(), getSoundClassifier()]);
-  else if (family === 'jamendo') await Promise.all([ready, preloadJamendo()]);
+  else if (family === 'jamendo') await Promise.all([ready, preloadJamendo(), preloadTagger()]);
   else await ready;
 }
 self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'tagger'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array; samples16?: Float32Array }>) => {
@@ -186,7 +186,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
     }
     if (data.kind === 'tagger') {
       // Runs in the Jamendo family's worker (analyzeMusic familyOf), on its single-thread runtime.
-      const result = await cachedAudioInference('tagger-model', `tagger-32khz:${musicRuntimeIdentity('jamendo')}`, data.samples, isTaggerScores, async () => {
+      const result = await cachedAudioInference('tagger-model', `tagger-32khz:validated-v2:${musicRuntimeIdentity('jamendo')}`, data.samples, isTaggerScores, async () => {
         const scores = await classifyTagger(data.samples); inferenceExecuted = true; return scores;
       });
       await postResult(result);
