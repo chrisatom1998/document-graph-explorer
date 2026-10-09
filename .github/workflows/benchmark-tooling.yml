@@ -1,0 +1,31 @@
+name: Benchmark tooling
+on:
+  pull_request:
+    paths:
+      - 'scripts/benchmarks/**'
+      - 'src/audio/**'
+      - 'package*.json'
+      - '.github/workflows/benchmark-tooling.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/benchmarks/**'
+      - 'src/audio/**'
+      - 'package*.json'
+      - '.github/workflows/benchmark-tooling.yml'
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:benchmarks
+      - name: Verify scoring against the shipped display policy
+        run: npx vite-node scripts/benchmarks/display.check.mjs
