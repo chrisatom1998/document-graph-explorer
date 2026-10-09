@@ -216,7 +216,7 @@ export default function ResonanceFilters() {
           {typeRows.map(([type, count]) => (
             <li key={type}>
               <label>
-                <input type="checkbox" checked={pickedTypes.includes(type)} disabled={typeCounts.length < 2 && !pickedTypes.includes(type)} onChange={() => toggleType(type)} />
+                <input type="checkbox" checked={pickedTypes.includes(type)} disabled={typeRows.length < 2 && !pickedTypes.includes(type)} onChange={() => toggleType(type)} />
                 <span className="rs-check" aria-hidden="true" />
                 {TYPE_LABEL[type] ?? type} <span className="rs-checks__count">{count}</span>
               </label>
