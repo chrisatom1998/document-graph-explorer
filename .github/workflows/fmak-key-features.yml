@@ -23,6 +23,9 @@ jobs:
         zip: ['000-019', '020-039', '040-049', '050-059', '060-069', '070-079', '080-089', '090-099', '100-109', '110-124']
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Fetch audio and labels
         run: |
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
