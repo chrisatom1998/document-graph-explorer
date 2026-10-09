@@ -3,7 +3,7 @@
   "at": "2026-10-09T16:55:53.352Z",
   "model": "dge-production",
   "commit": "fbf46ebd3db42f828104a9b0e98052f1052adde0",
-  "manifestSha256": "be29d9b63661b46238da676cb11bf3dc8dbf6c7707db632c0ad365a8b74de8a8",
+  "manifestSha256": "17d29f3876946356349a5dc035cc7e86af68fd85b98f3b45f4cfe9ff44aceea0",
   "platform": "linux",
   "cpu": "AMD EPYC 9V74 80-Core Processor",
   "logicalCpus": 9,

@@ -30,8 +30,8 @@ for (const duration of [...new Set(m.clips.map(c => c.seconds))]) {
     latency: { n: times.length, p50Ms: p(.5), observedP95Ms: p(.95),
       measuredSerialClipsPerSecond: times.length ? times.length * 1000 / times.reduce((a,b)=>a+b,0) : null,
       meanRealTimeFactor: times.length ? mean(times) / (duration * 1000) : null,
-      coldRows: rows.filter(r => r.cold).map(r => ({ id: r.id, elapsedMs: r.elapsedMs })),
-      warmRows: rows.filter(r => r.cold === false).map(r => ({ id: r.id, elapsedMs: r.elapsedMs })),
+      coldRows: rows.filter(r => r.status === 'complete' && r.cold).map(r => ({ id: r.id, elapsedMs: r.elapsedMs })),
+      warmRows: rows.filter(r => r.status === 'complete' && r.cold === false).map(r => ({ id: r.id, elapsedMs: r.elapsedMs })),
       note: 'Small pilot; aggregate mixes first-use and warm observations. Use coldRows/warmRows separately. Includes browser polling when run with run-dge.' },
     binding: bindingMetrics(rows.filter(r => clips.find(c => c.id === r.id)?.binding)),
     retrieval: retrievalMetrics(clips, rows) };

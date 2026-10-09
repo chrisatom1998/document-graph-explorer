@@ -34,7 +34,8 @@ for axis in ('T', 'R', 'O'):
         caption = next(c for c in captions if c['clip_id'] == track and c['axis'] == axis and c['style'] == 'strict')
         # Canonical DGE family labels only. Other detailed instrument names remain unscored.
         names = {'synth': 'synthesizer', 'bass': 'bass', 'drums': 'drums', 'vocals': 'voice',
-                 'electric guitar': 'guitar', 'acoustic guitar': 'guitar', 'piano': 'piano', 'violin': 'violin'}
+                 'electric guitar': 'guitar', 'acoustic guitar': 'guitar', 'piano': 'piano',
+                 'electric piano': 'piano', 'violin': 'violin'}
         tags = {f'source:{names[n]}': 1 for n in (row['inst_1'], row['inst_2']) if n in names}
         binding = {'positive': caption['caption_pos'], 'negative': caption['caption_neg'], 'axis': axis}
         sources.append({'id': f'masb-{track}-{axis}', 'group': f'jamendo-track-{track}', 'path': str(destination.resolve()),

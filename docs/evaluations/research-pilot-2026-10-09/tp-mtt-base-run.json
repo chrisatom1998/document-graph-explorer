@@ -2,7 +2,7 @@
   "model": "tp-clap",
   "revision": "b14090f5210715958f5ab7056d3c47f5f61cb582",
   "prompt": "Which musical instruments are audible?",
-  "manifestSha256": "be29d9b63661b46238da676cb11bf3dc8dbf6c7707db632c0ad365a8b74de8a8",
+  "manifestSha256": "17d29f3876946356349a5dc035cc7e86af68fd85b98f3b45f4cfe9ff44aceea0",
   "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
   "processor": "x86_64",
   "threads": 2,

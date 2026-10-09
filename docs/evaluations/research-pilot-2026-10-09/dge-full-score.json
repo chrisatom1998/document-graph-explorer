@@ -99,12 +99,7 @@
         "observedP95Ms": 10561.89017899998,
         "measuredSerialClipsPerSecond": 0.1349770127351834,
         "meanRealTimeFactor": 7.408668926181813,
-        "coldRows": [
-          {
-            "id": "masb-1009674-T-1s",
-            "elapsedMs": 19105.047902
-          }
-        ],
+        "coldRows": [],
         "warmRows": [
           {
             "id": "masb-101006-T-1s",
@@ -271,10 +266,6 @@
         "meanRealTimeFactor": 3.4933452286363695,
         "coldRows": [],
         "warmRows": [
-          {
-            "id": "masb-1009674-T-2s",
-            "elapsedMs": 12894.060425999996
-          },
           {
             "id": "masb-101006-T-2s",
             "elapsedMs": 7324.795854000011
@@ -539,6 +530,16 @@
           "incomplete": 0,
           "precision": 1,
           "recall": 1
+        },
+        "source:piano": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "tn": 0,
+          "unknown": 9,
+          "incomplete": 0,
+          "precision": null,
+          "recall": 0
         },
         "source:synthesizer": {
           "tp": 1,

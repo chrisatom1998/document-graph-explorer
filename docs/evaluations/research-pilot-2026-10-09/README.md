@@ -71,7 +71,7 @@ the frozen older baseline, not the current runtime.
 For the five explicitly labelled Iowa positives, DGE displayed flute on the 6 s
 flute crop and missed flute/marimba on all four 1–2 s crops. The inputs contain
 signal, with RMS around −31 to −34 dBFS. At 10 s, the published positive labels
-give guitar 4/4, violin 1/1, drums 1/1, bass 1/2 and synthesizer 1/2 detected.
+give guitar 4/4, violin 1/1, drums 1/1, bass 1/2, synthesizer 1/2 and piano 0/1 detected.
 Most other labels are **unknown**, not verified negatives, so those detections
 do not establish useful precision or calibration. The scorer's null precision
 values and unknown counts must be retained.
