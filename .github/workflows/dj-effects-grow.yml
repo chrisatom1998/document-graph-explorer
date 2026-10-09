@@ -1,0 +1,224 @@
+name: DJ effect heads (grown clip set)
+
+# Round 2 of the DJ effect heads (round 1: dj-effects-train.yml, PR #141). Keeps all 4,770 round-1 clips and adds every
+# further clip the same Freesound tag rules find, up to PER_LABEL per effect and PER_UPLOADER per uploader, with the same
+# split by uploader (scripts/dj-effects/grow.py). Previews are fetched and fingerprinted in SHARDS parallel jobs, then the
+# heads are refitted on the grown training split and judged on the round-1 held-out clips (PRIMARY_ROUND=1), so the
+# numbers compare one to one with the heads the app ships; all held-out clips are reported as well. Commits the clip list
+# (with each clip's licence), heads and report to docs/evaluations/dj-effects-2026-10-09. Audio is never committed.
+on:
+  push:
+    branches: [claude/dj-effect-clips-12lwv8]
+    paths:
+      - scripts/dj-effects/**
+      - .github/workflows/dj-effects-grow.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dj-effects-grow-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  META_URL: https://huggingface.co/datasets/Chr0my/freesound.org/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet
+  META_SHA256: fdc81269e2ddcf0bffffc05f01c55509d9c772f43b90f6d96fac325f9facdc8d
+  BASE: docs/evaluations/dj-effects-2026-10-06/clips.json
+  DOCS: docs/evaluations/dj-effects-2026-10-09
+  PER_LABEL: 1200
+  PER_UPLOADER: 12
+  NEGATIVES: 4800
+  SHARDS: 4
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+jobs:
+  mine:
+    if: ${{ !contains(github.event.head_commit.message, '[no-train]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q pyarrow
+      - name: Fetch the Freesound metadata dump
+        run: |
+          curl -fsSL --retry 6 -o "$RUNNER_TEMP/meta.parquet" "$META_URL"
+          echo "$META_SHA256  $RUNNER_TEMP/meta.parquet" | sha256sum -c -
+      - name: Pick clips and grow the round-1 set
+        run: |
+          python3 scripts/dj-effects/mine.py "$RUNNER_TEMP/meta.parquet" "$RUNNER_TEMP/big.json"
+          mkdir -p work; python3 scripts/dj-effects/grow.py "$BASE" "$RUNNER_TEMP/big.json" work/candidates.json 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidates
+          path: work/candidates.json
+
+  shard:
+    needs: mine
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: candidates
+          path: work
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q numpy scipy
+      - name: This shard's clips
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          d = json.load(open('work/candidates.json')); s, n = int(os.environ['SHARD']), int(os.environ['SHARDS'])
+          d['clips'] = d['clips'][s::n]; json.dump(d, open('work/shard.json', 'w')); print(len(d['clips']), 'clips')
+          EOF
+        env:
+          SHARD: ${{ matrix.shard }}
+      - name: Check Freesound is reachable from this runner
+        run: |
+          python3 - work/shard.json <<'PY'
+          import json, sys, urllib.error, urllib.parse, urllib.request
+          c = json.load(open(sys.argv[1]))['clips'][0]
+          url = f"https://freesound.org/people/{urllib.parse.quote(str(c['username']), safe='')}/sounds/{int(c['freesoundId'])}/"
+          req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (DGE research; non-commercial label training)'})
+          try: code = urllib.request.urlopen(req, timeout=30).status
+          except urllib.error.HTTPError as e: code = e.code
+          print('freesound page status:', code); sys.exit(0 if code in (200, 404) else 1)
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+      - name: Restore downloaded previews
+        uses: actions/cache/restore@v4
+        with:
+          path: work/fs
+          key: dj-grow-audio-${{ matrix.shard }}-${{ hashFiles('work/shard.json') }}
+          restore-keys: dj-grow-audio-${{ matrix.shard }}-
+      - name: Download previews (first ~15 s, with each clip's licence)
+        run: CONCURRENCY=2 node scripts/fetch-freesound-previews.mjs work/shard.json work/fs
+      - name: Save downloaded previews
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: work/fs
+          key: dj-grow-audio-${{ matrix.shard }}-${{ hashFiles('work/shard.json') }}-${{ github.run_id }}
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - run: npm run setup:music
+      - name: Restore fingerprints
+        uses: actions/cache/restore@v4
+        with:
+          path: work/emb
+          key: dj-grow-emb-${{ matrix.shard }}-${{ hashFiles('work/shard.json', 'scripts/embed-clap.mjs') }}
+          restore-keys: dj-grow-emb-${{ matrix.shard }}-
+      - name: Compute the app's CLAP fingerprints
+        run: |
+          mkdir -p work/emb
+          pids=(); for s in 0 1 2 3; do THREADS=1 node scripts/embed-clap.mjs work/fs/manifest.json work/emb/emb-${{ matrix.shard }}-$s.jsonl $s 4 > work/emb-$s.log 2>&1 & pids+=($!); done
+          rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/emb-*.log; exit $rc
+      - name: Save fingerprints
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: work/emb
+          key: dj-grow-emb-${{ matrix.shard }}-${{ hashFiles('work/shard.json', 'scripts/embed-clap.mjs') }}-${{ github.run_id }}
+      - name: Render effects onto this shard's training-split music clips (training only)
+        run: PER_EFFECT=55 python3 scripts/dj-effects/render.py work/fs/manifest.json work/render
+      - name: Fingerprint the renders
+        run: |
+          pids=(); for s in 0 1 2 3; do THREADS=1 node scripts/embed-clap.mjs work/render/manifest.json work/emb/emb-r${{ matrix.shard }}-$s.jsonl $s 4 > work/remb-$s.log 2>&1 & pids+=($!); done
+          rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/remb-*.log; exit $rc
+      - name: Measure clip durations
+        run: |
+          python3 - <<'EOF'
+          import json, subprocess
+          m = json.load(open('work/fs/manifest.json')); out = {}
+          for c in m['clips']:
+              try: out[c['id']] = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', c['path']],
+                                                       capture_output=True, text=True, check=True).stdout.strip())
+              except Exception: pass
+          json.dump(out, open('work/durations.json', 'w')); print(len(out), 'durations')
+          EOF
+      - name: Collect this shard's outputs
+        run: |
+          mkdir -p out; cp work/emb/*.jsonl out/
+          cp work/fs/manifest.json out/manifest-${{ matrix.shard }}.json; cp work/fs/state.json out/state-${{ matrix.shard }}.json
+          cp work/render/manifest.json out/renders-${{ matrix.shard }}.json; cp work/durations.json out/durations-${{ matrix.shard }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shard-${{ matrix.shard }}
+          path: out
+
+  train:
+    needs: shard
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q numpy scipy scikit-learn
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shard-*
+          path: work/emb
+          merge-multiple: true
+      - name: Merge the shards
+        run: |
+          python3 - <<'EOF'
+          import json, glob
+          clips, renders, dur, state = [], [], {}, {}
+          for f in sorted(glob.glob('work/emb/manifest-*.json')): clips += json.load(open(f))['clips']
+          for f in sorted(glob.glob('work/emb/renders-*.json')): renders += json.load(open(f))['clips']
+          for f in sorted(glob.glob('work/emb/durations-*.json')): dur.update(json.load(open(f)))
+          for f in sorted(glob.glob('work/emb/state-*.json')): state.update(json.load(open(f)))
+          json.dump({'clips': clips}, open('work/manifest.json', 'w')); json.dump({'clips': renders}, open('work/renders.json', 'w'))
+          json.dump(dur, open('work/durations.json', 'w')); json.dump(state, open('work/state.json', 'w'))
+          print(len(clips), 'clips with audio,', len(renders), 'renders')
+          EOF
+      - name: Train on the grown training split and score on held-out uploaders
+        run: PRIMARY_ROUND=1 DURATIONS=work/durations.json python3 scripts/dj-effects/train.py work/manifest.json work/emb "$DOCS" work/renders.json
+      - name: Record the clip list with licences
+        run: |
+          python3 - <<'EOF'
+          import json, os, glob
+          d = os.environ['DOCS']
+          m = json.load(open('work/manifest.json'))
+          emb = {json.loads(l)['id'] for f in glob.glob('work/emb/emb-*.jsonl') for l in open(f) if l.strip()}
+          state = json.load(open('work/state.json'))
+          keep = ('id', 'freesoundId', 'username', 'split', 'round', 'labels', 'kind', 'title', 'tags', 'licence', 'url')
+          clips = [{**{k: c.get(k) for k in keep}, 'preview': state.get(str(c['freesoundId']), {}).get('preview') or c.get('preview')} for c in m['clips'] if c['id'] in emb]
+          json.dump({'kind': 'dj-effects-clips-v2', 'note': 'Round 1 (PR #141) clips plus round 2 clips found by the same tag rules with larger caps; '
+                     'split by uploader as in round 1. Audio: public Freesound previews (first ~15 s); each clip keeps its own Creative Commons licence '
+                     'and page URL for attribution.', 'clips': clips}, open(f'{d}/clips.json', 'w'), indent=0)
+          print(len(clips), 'clips recorded')
+          EOF
+          { echo "tested $GITHUB_SHA (run $GITHUB_RUN_ID)"; echo "metadata: $META_SHA256 $META_URL"; echo "PER_LABEL=$PER_LABEL PER_UPLOADER=$PER_UPLOADER NEGATIVES=$NEGATIVES"; } > "$DOCS/run-info.txt"
+      - name: Commit the results
+        run: |
+          git add "$DOCS"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record DJ effect heads trained on the grown Freesound clip set [no-train]" || exit 0
+          for i in 1 2 3 4 5; do { git pull --rebase -X theirs -q origin "$GITHUB_REF_NAME" || { git rebase --abort; false; }; } && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 5 ] && exit 1; sleep $((2**i)); done
