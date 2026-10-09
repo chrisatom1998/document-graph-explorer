@@ -63,11 +63,14 @@ function getGpuClassifier() {
     const gpu = (navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown> } }).gpu;
     const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
     if (memory !== undefined && memory < 4) throw new Error('Too little memory for a second AST model');
-    if (!gpu || !await gpu.requestAdapter().catch(() => null)) throw new Error('No WebGPU adapter');
+    // TEMPORARY (gate measurement only, reverted before merge): CI runners have no GPU, so run the same fp32 weights
+    // on WASM to let the held-out gate score full-precision AST.
+    void gpu;
     const { env, AutoProcessor, AutoModelForAudioClassification } = await import('@huggingface/transformers');
     env.allowRemoteModels = false; env.allowLocalModels = true;
     env.localModelPath = import.meta.env.BASE_URL;
-    const model = await AutoModelForAudioClassification.from_pretrained('music-model', { dtype: 'fp32', device: 'webgpu', local_files_only: true });
+    if (env.backends.onnx.wasm) { env.backends.onnx.wasm.wasmPaths = undefined; env.backends.onnx.wasm.numThreads = musicInferenceThreads(); }
+    const model = await AutoModelForAudioClassification.from_pretrained('music-model', { dtype: 'fp32', device: 'wasm', local_files_only: true });
     const processor = await AutoProcessor.from_pretrained('music-model', { local_files_only: true });
     return { model, processor };
   })();
