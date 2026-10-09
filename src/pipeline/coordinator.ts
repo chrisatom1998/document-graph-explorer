@@ -1,3 +1,4 @@
+import { MUSIC_EDGE_KINDS } from '../audio/musicEdgeKinds';
 import { quickMusic } from '../audio/quickMusic';
 import { beginMusicJob, isCurrentMusicJob, finishMusicJob, updateMusicJob, cancelAllMusicJobs, cancelMusicJob, useMusicJobs } from '../store/musicJobs';
 import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from '../audio/djTags';
@@ -22,8 +23,7 @@ import { assertAudioContent } from '../audio/parseAudio';
  * (or a removal) while a run is in flight queues behind it (promise chain).
  */
 
-import { refreshMusicEdges as refreshMusicEdgesNow } from '../audio/musicLinks';
-import { versionWorkPending } from '../audio/versionLinks';
+import { createMusicCacheContext } from '../audio/musicAnalysisCache';
 import { INSTRUMENT_LABELS } from '../audio/instrumentLabels';
 import { sanitizeSoundReviews, type SoundReview } from '../audio/recognition';
 import { getOriginal } from '../persistence/originals';
@@ -161,7 +161,7 @@ const AGG_MAX_TIMEOUT_MS = 300_000;
 
 function aggTimeoutFor(msg: AggRequest): number {
   const count =
-    msg.type === 'lexical' ? msg.docs.length : 'ids' in msg ? msg.ids.length : 0;
+    msg.type === 'lexical' ? msg.docs.length : msg.type === 'music' ? msg.nodes.length : msg.ids.length;
   return Math.min(AGG_MAX_TIMEOUT_MS, AGG_BASE_TIMEOUT_MS + AGG_PER_DOC_TIMEOUT_MS * count);
 }
 
@@ -392,22 +392,36 @@ function documentNodes(): DocNode[] {
 
 /** Music edges for the current tracks. Version matching works to a time budget per rebuild, so a large library
  * gets its remaining duplicate and remix checks from follow-up rebuilds, queued behind other graph work. */
-function refreshMusicEdges(nodes: DocNode[], edges: Edge[]): Edge[] {
-  const next = refreshMusicEdgesNow(nodes, edges);
-  if (versionWorkPending()) scheduleVersionCatchUp();
-  return next;
+let musicVersionWorkPending = false;
+async function refreshMusicEdges(nodes: DocNode[], edges: Edge[]): Promise<Edge[]> {
+  const epoch = corpusEpoch;
+  const audio = nodes.filter(n => n.fileType === 'audio' && n.audio);
+  if (!audio.length) {
+    musicVersionWorkPending = false;
+    return edges.filter(edge => edge.authored || !(MUSIC_EDGE_KINDS as readonly string[]).includes(edge.kind));
+  }
+  // Keep similarity and version alignment off the UI thread. Documents without
+  // audio cannot contribute music links and need not be cloned into the worker.
+  const result = await aggRequest<Extract<AggResponse, {type:'music:done'}>>({
+    requestId: 0, type: 'music', nodes: audio, edges,
+  });
+  if (epoch !== corpusEpoch) throw new DOMException('Audio graph was replaced.', 'AbortError');
+  musicVersionWorkPending = result.pending;
+  if (result.pending) scheduleVersionCatchUp();
+  return result.edges;
 }
 let versionCatchUp: ReturnType<typeof setTimeout> | undefined;
-/** Finishes pending version matching; once done, reclusters and saves so the new links survive a reload. */
+/** Coalesce completed audio results and version catch-up into one worker rebuild,
+ * then refresh clusters and persist the same graph snapshot. */
 export function scheduleVersionCatchUp(): void {
   if (versionCatchUp) return;
   versionCatchUp = setTimeout(() => void enqueueRun(async () => {
     versionCatchUp = undefined;
     const current = useGraphStore.getState();
     if (!current.nodes.length) return;
-    const updated = refreshMusicEdges(documentNodes(), current.edges);
-    current.setEdges(updated); layoutSetLinks(toLinkInput(updated));
-    if (versionWorkPending()) return;
+    const updated = await refreshMusicEdges(documentNodes(), current.edges);
+    current.setEdges(updated); layoutSetLinks(toLinkInput(updated)); layoutReheat(.5);
+    if (musicVersionWorkPending) return;
     await clusterAudioGraph();
     await saveSession();
   }).catch(error => console.error('Version link update failed', error)), 300);
@@ -1137,7 +1151,7 @@ async function runLexicalPass(
       { signal },
     );
     const liveIds = new Set(documentNodes().map((n) => n.id));
-    lexEdges = refreshMusicEdges(documentNodes(), [...lexical.edges, ...buildTitleEdges(documentNodes()), ...store().edges.filter((e) => e.authored && liveIds.has(e.source) && liveIds.has(e.target))]);
+    lexEdges = await refreshMusicEdges(documentNodes(), [...lexical.edges, ...buildTitleEdges(documentNodes()), ...store().edges.filter((e) => e.authored && liveIds.has(e.source) && liveIds.has(e.target))]);
     boilerplate = new Set(lexical.boilerplateLines);
 
     const nodesById = new Map(documentNodes().map((n) => [n.id, n]));
@@ -1878,6 +1892,8 @@ export function resetCorpus(): void {
   // Invalidate callbacks before aborting them. A cancelled analyzer may still
   // publish its final partial synchronously as it observes the abort.
   corpusEpoch += 1;
+  clearTimeout(versionCatchUp); versionCatchUp = undefined;
+  musicVersionWorkPending = false;
   audioAnalysisOwners.clear();
   cancelAllMusicJobs();
   layoutReset();
@@ -1912,6 +1928,7 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
   const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (!n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION || (n.audio.recognition && n.audio.recognition.configurationHash !== recognitionConfiguration(n.audio.recognition.mode, n.audio.durationSeconds)) || (installedFusionIdentity() && (n.audio.classifierConfiguration !== fusionConfiguration() || (n.audio.fusion && !fusionPresentation(n.audio.fusion,n.audio.durationSeconds,n.audio.recognition?.mode ?? mode)?.qualified))) || forceIds.includes(n.id)));
   if (!nodes.length) return;
   const { analyzeMusic, preloadMusicModels } = await import('../audio/analyzeMusic');
+  const cacheContext = createMusicCacheContext();
   // Reanalysis after a reload starts cold; load every family while the first file decodes.
   void preloadMusicModels(mode).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
   const store = useGraphStore.getState;
@@ -1932,15 +1949,20 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
       store().setFileStatus({ fileId, name, stage: 'parsing' });
       try {
         throwIfAborted(signal);
+        // Reuse the same normalized Blob through Quick and Full so its digest
+        // and original-file read happen once, including repaired legacy MIME.
+        let input: Promise<{ blob: Blob; name: string }> | undefined;
         const load = async (onPreview: (preview: import('../audio/musicTypes').MusicAnalysis)=>void, jobSignal = signal, onProgress = progress, analysisMode = mode) => {
-          const original = originals?.get(node.id) ?? await getOriginal(node.id);
-          if (!original) throw new Error('Add the original audio file again to analyze it.');
-          // Older saved originals predate audio MIME routing. Repair the analysis
-          // input without rewriting the user's persisted original bytes.
-          const mime = mimeForFilename(original.name);
-          const blob = (!original.blob.type || original.blob.type === 'application/octet-stream') && mime.startsWith('audio/')
-            ? original.blob.slice(0, original.blob.size, mime) : original.blob;
-          return analyzeMusic(blob, original.name, {signal:jobSignal,mode:analysisMode,onProgress,onPreview,cacheKey:node.id,force:forceIds.includes(node.id),partialUpdates:'cancelled',onPartial: partial => {
+          const original = await (input ??= (async () => {
+            const saved = originals?.get(node.id) ?? await getOriginal(node.id);
+            if (!saved) throw new Error('Add the original audio file again to analyze it.');
+            const mime = mimeForFilename(saved.name);
+            const blob = (!saved.blob.type || saved.blob.type === 'application/octet-stream') && mime.startsWith('audio/')
+              ? saved.blob.slice(0, saved.blob.size, mime) : saved.blob;
+            return { blob, name: saved.name };
+          })());
+          const blob = original.blob;
+          return analyzeMusic(blob, original.name, {cacheContext,signal:jobSignal,mode:analysisMode,onProgress,onPreview,cacheKey:node.id,force:forceIds.includes(node.id),partialUpdates:'cancelled',onPartial: partial => {
             if (partial.recognition?.status !== 'cancelled') return;
             const publishCancelledPartial = () => {
               if (!ownsAudioAnalysis(node.id, analysisOwner, analysisEpoch)) return false;
@@ -1948,8 +1970,7 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
               if (!current) return false;
               store().patchNodes(new Map([[node.id, { audio: { ...partial, confirmedInstruments: current.audio?.confirmedInstruments, soundReviews: current.audio?.soundReviews, confirmedDjTags: current.audio?.confirmedDjTags, copilotProperties: current.audio?.copilotProperties } }]]));
               markDocsDirty([node.id]);
-              const edges = refreshMusicEdges(documentNodes(), store().edges);
-              store().setEdges(edges); layoutSetLinks(toLinkInput(edges));
+              scheduleVersionCatchUp();
               return true;
             };
             // A current queued ingest owns graph mutation synchronously. A
@@ -2000,9 +2021,7 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
               if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch)||!current||!isCurrentMusicJob(node.id,controller))return;
               store().patchNodes(new Map([[node.id,{audio:{...result,confirmedInstruments:current.audio?.confirmedInstruments,soundReviews:current.audio?.soundReviews,confirmedDjTags:current.audio?.confirmedDjTags,copilotProperties:current.audio?.copilotProperties},warning:undefined}]]));
               markDocsDirty([node.id]);
-              const edges=refreshMusicEdges(documentNodes(), store().edges);
-              store().setEdges(edges);layoutSetLinks(toLinkInput(edges));layoutReheat(.5);
-              await saveSession();
+              scheduleVersionCatchUp();
             });
           // Even an immediate cached Quick result must hand off to a whole-track scan.
           void quick.complete.then(async result=>{
@@ -2036,10 +2055,7 @@ async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], 
         store().setFileStatus({ fileId, name, stage: incomplete ? 'error' : 'placed',
           ...(incomplete ? { error: 'Instrument analysis stopped early. Select the track and reanalyze to finish.' } : {}) });
         // Publish connections as each track finishes, even in a long batch.
-        const edges = refreshMusicEdges(documentNodes(), store().edges);
-        store().setEdges(edges);
-        layoutSetLinks(toLinkInput(edges));
-        layoutReheat(0.5);
+        scheduleVersionCatchUp();
       } catch (error) {
         if (signal?.aborted) throw error;
         if(!ownsAudioAnalysis(node.id,analysisOwner,analysisEpoch))return;
@@ -2092,7 +2108,7 @@ export function setAudioInstruments(ids: string[], labels?: string[]): Promise<{
     });
     state.patchNodes(new Map(patches));
     markDocsDirty(targets.map(node => node.id));
-    const edges = refreshMusicEdges(documentNodes(), state.edges);
+    const edges = await refreshMusicEdges(documentNodes(), state.edges);
     useGraphStore.getState().setEdges(edges);
     layoutSetLinks(toLinkInput(edges));
     layoutReheat(0.5);
@@ -2125,7 +2141,7 @@ export function setAudioReview(id: string, labelId: string, dimension: SoundRevi
       });
     state.patchNodes(new Map([[id,{audio:{...node.audio,soundReviews,confirmedInstruments}}]]));
     markDocsDirty([id]);
-    const edges=refreshMusicEdges(documentNodes(), state.edges);
+    const edges=await refreshMusicEdges(documentNodes(), state.edges);
     useGraphStore.getState().setEdges(edges);layoutSetLinks(toLinkInput(edges));layoutReheat(.5);
     const {saveAudioGraph}=await import('../audio/saveAudioGraph');
     await saveAudioGraph();
@@ -2177,7 +2193,7 @@ export function setAudioDjTags(id: string, labels?: ConfirmedDjTags): Promise<bo
       ...(audio.soundReviews?{soundReviews:[...audio.soundReviews,...reconciliations]}:{})}}]]));
     markDocsDirty([id]);
     const state = useGraphStore.getState();
-    const edges = refreshMusicEdges(documentNodes(), state.edges);
+    const edges = await refreshMusicEdges(documentNodes(), state.edges);
     state.setEdges(edges); layoutSetLinks(toLinkInput(edges)); layoutReheat(.5);
     await saveAudioGraph();
     return useCorpusStore.getState().mode === 'local';

@@ -21,6 +21,7 @@ import { TAGGER_REVISION, TAGGER_SAMPLE_RATE, TAGGER_UNAVAILABLE, TAGGER_WINDOW_
 import { astGpuAllowed, createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
+  cacheContext?: import('./musicAnalysisCache').MusicCacheContext;
   /** Qualification-only opt-in; callers must bind and validate the scorer. */
   fusion?: FusionScorer;
   /** Pinned full-mix instrument heads (src/audio/fullMixHeads.ts); scored from the windows' existing model outputs. */

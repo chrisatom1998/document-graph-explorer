@@ -1,3 +1,4 @@
+import { handleMusic } from '../workers/aggregatorHandlers';
 import { cancelMusicJob, cancelAllMusicJobs, useMusicJobs } from '../store/musicJobs';
 import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, TEMPO_ANALYSIS_REVISION, sanitizeMusicAnalysis } from '../audio/musicTypes';
 /**
@@ -277,6 +278,7 @@ function fakeAggResponse(req: AggRequest): AggResponse {
       boilerplateLines: [],
     };
   }
+  if (req.type === 'music') return handleMusic(req);
   if (req.type === 'semantic') {
     const clusters: Record<string, number> = {};
     for (const id of req.ids) clusters[id] = 0;
@@ -1166,6 +1168,35 @@ describe('WAV music ingestion', () => {
     music.analyzeMusic.mockClear();
     await ingestFiles([wav('modes.wav')]);
     expect(music.analyzeMusic).not.toHaveBeenCalled();
+  });
+  it('batches background results into one worker rebuild and reclusters the final graph', async () => {
+    useSettingsStore.getState().setMusicAnalysisMode('fast');
+    const original = music.analyzeMusic.getMockImplementation()!;
+    const finishes: (() => void)[] = [];
+    music.analyzeMusic.mockImplementation(async (...args) => {
+      const base = await original(...args);
+      const result = { ...base, instrumentScan: { ...base.instrumentScan, mode: args[2].mode } };
+      if (args[2].mode === 'full') return new Promise(resolve => finishes.push(() => resolve(result)));
+      return result;
+    });
+    await ingestFiles([wav('batch-one.wav'), { ...wav('batch-two.wav'), bytes: new TextEncoder().encode('RIFF second distinct audio').buffer }]);
+    await vi.waitFor(() => expect(finishes).toHaveLength(2));
+    for (const name of ['batch-one.wav', 'batch-two.wav']) {
+      const calls = music.analyzeMusic.mock.calls.filter(call => call[1] === name);
+      expect(calls).toHaveLength(2);
+      expect(calls[0][0]).toBe(calls[1][0]);
+      expect(calls[0][2].cacheContext).toBe(calls[1][2].cacheContext);
+    }
+    aggState.requests = [];
+    layout.layoutSetClusters.mockClear();
+    persistence.saveSession.mockClear();
+    finishes.forEach(finish => finish());
+    await vi.waitFor(() => expect(layout.layoutSetClusters).toHaveBeenCalled());
+    await enqueueRun(async () => undefined);
+    expect(aggState.requests.filter(req => req.type === 'music')).toHaveLength(1);
+    expect(aggState.requests.filter(req => req.type === 'cluster')).toHaveLength(1);
+    expect(persistence.saveSession).toHaveBeenCalled();
+    expect(useGraphStore.getState().nodes.filter(n => n.fileType === 'audio').every(n => n.audio?.instrumentScan?.mode === 'full')).toBe(true);
   });
   it('queues all Full-mode songs and shows their previews before waiting for completed scans', async () => {
     const original = music.analyzeMusic.getMockImplementation()!;

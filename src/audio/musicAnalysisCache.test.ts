@@ -166,3 +166,27 @@ it('does not reuse a key from an older method or the fallback profiles',async()=
  await writeMusicCache('music-analysis:v2:current-key',{...audio,keyRevision:KEY_ANALYSIS_REVISION});
  expect(await readMusicCache('music-analysis:v2:current-key')).toBeDefined();
 });
+
+it('shares one digest and manifest snapshot within a batch, but refreshes on a new batch', async () => {
+ const { createMusicCacheContext } = await import('./musicAnalysisCache');
+ const fetcher = vi.fn(async () => Response.json({sha256:{'model.onnx':'a'.repeat(64)}}));
+ vi.stubGlobal('fetch', fetcher);
+ const blob = new Blob(['audio']); const read = vi.spyOn(blob, 'arrayBuffer');
+ const context = createMusicCacheContext();
+ const [fingerprint, quick, full] = await Promise.all([context.fingerprint(blob), musicCacheKey(blob, 'fast', context), musicCacheKey(blob, 'full', context)]);
+ expect(fingerprint).toMatch(/^[a-f0-9]{64}$/); expect(quick).not.toBe(full);
+ expect(read).toHaveBeenCalledTimes(1); expect(fetcher).toHaveBeenCalledTimes(4);
+ await musicCacheKey(blob, 'full', createMusicCacheContext());
+ expect(fetcher).toHaveBeenCalledTimes(8);
+});
+it('retries a failed manifest snapshot within the same batch', async () => {
+ const { createMusicCacheContext } = await import('./musicAnalysisCache');
+ let available = false;
+ const fetcher = vi.fn(async () => available ? Response.json({sha256:{'model.onnx':'a'.repeat(64)}}) : new Response('', {status:503}));
+ vi.stubGlobal('fetch', fetcher);
+ const context = createMusicCacheContext(), blob = new Blob(['audio']);
+ expect(await musicCacheKey(blob, 'fast', context)).toBeUndefined();
+ available = true;
+ expect(await musicCacheKey(blob, 'fast', context)).toBeDefined();
+ expect(fetcher).toHaveBeenCalledTimes(8);
+});

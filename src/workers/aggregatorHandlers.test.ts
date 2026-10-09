@@ -195,3 +195,18 @@ describe('dispatchAggregatorRequest', () => {
     expect(posted[0].type === 'error' && posted[0].message.length).toBeGreaterThan(0);
   });
 });
+
+it('builds audio relationships in the worker and preserves authored edges', async () => {
+  const nodes = ['a', 'b'].map(id => ({ id, title:id, kind:'document' as const, fileType:'audio' as const, wordCount:0, topics:[], keywords:[], entities:[], degree:0, cluster:0, status:'ok' as const,
+    audio:{version:2 as const, durationSeconds:10, analyzedSeconds:10, instruments:[], notes:[], tempo:{bpm:120, confidence:.9}} }));
+  const authored = {id:'manual', source:'a', target:'b', kind:'reference' as const, weight:1, authored:true, evidence:['user']};
+  const messages: import('../model/types').AggResponse[] = [];
+  await dispatchAggregatorRequest({requestId:42, type:'music', nodes, edges:[authored]}, message => messages.push(message));
+  expect(messages).toHaveLength(1);
+  const done = messages[0];
+  expect(done.type).toBe('music:done');
+  if (done.type !== 'music:done') throw new Error('Unexpected response');
+  expect(done.edges).toContainEqual(authored);
+  expect(done.edges.some(edge => edge.kind === 'tempo')).toBe(true);
+  expect(done.pending).toBe(false);
+});

@@ -1,3 +1,4 @@
+import { loadPinnedSoundAsset } from './pinnedSoundAsset';
 import { musicInferenceThreads, musicRuntimeDiagnostics, musicRuntimeIdentity, THREADED_RUNTIME_STALLED, switchToSingleThreadRuntime } from './musicRuntime';
 import soundManifest from '../../public/sound-model/manifest.json';
 import { learnedDjScores, sanitizeLearnedDjModel, type LearnedDjModel } from './learnedDjModel';
@@ -7,7 +8,7 @@ import { cachedAudioInference, isAudioEmbedding, isScoreMap } from './audioInfer
 import Essentia from 'essentia.js/dist/essentia.js-core.es.js';
 import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
 import { instrumentScores, musicScore, type InstrumentPredictions } from './instrumentLabels';
-import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_ANALYSIS_REVISION, type MusicAnalysis } from './musicTypes';
+import { KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_ANALYSIS_REVISION, type MusicAnalysis } from './musicTypes';
 import { classifyJamendo, preloadJamendo } from './jamendo';
 import { classifyTagger } from './taggerInference';
 import { isTaggerScores } from './tagger';
@@ -93,40 +94,20 @@ function getSoundClassifier() {
   })().catch(error => { soundClassifier = null; throw error; });
 }
 let soundDescriptions: Promise<{ prompts: DescriptionPrompt[]; learned?: LearnedDjModel; shortClip?: ShortClipModel }> | null = null;
-/** Optional pinned asset: a missing, altered or malformed file leaves short clips on the existing analysis. */
-async function pinnedJson(name: string): Promise<unknown> {
-  const pinned = (soundManifest.sha256 as Record<string,string>)[name];
-  if (!pinned) return;
-  try {
-    const response = await fetch(`${import.meta.env.BASE_URL}sound-model/${name}?v=${INSTRUMENT_ANALYSIS_REVISION}`, {cache:'no-cache'});
-    if (!response.ok) return;
-    const bytes = await response.arrayBuffer();
-    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
-    return hash === pinned ? JSON.parse(new TextDecoder().decode(bytes)) : undefined;
-  } catch { return; }
-}
 function getSoundDescriptions() {
   return soundDescriptions ??= (async () => {
-    const response = await fetch(`${import.meta.env.BASE_URL}sound-model/prompts.json?v=${INSTRUMENT_ANALYSIS_REVISION}`);
-    if (!response.ok) throw new Error('Sound descriptions could not be loaded.');
-    let learned: LearnedDjModel | undefined;
-    // A locally trained model is opt-in and must be pinned in the manifest.
-    // Public builds do not ship private or assistant-generated review data.
-    const learnedHash = (soundManifest.sha256 as Record<string,string>)['learned.json'];
-    if (learnedHash) {
-      try {
-        const learnedResponse = await fetch(`${import.meta.env.BASE_URL}sound-model/learned.json?v=${INSTRUMENT_ANALYSIS_REVISION}`, {cache:'no-cache'});
-        if (learnedResponse.ok) {
-          const bytes = await learnedResponse.arrayBuffer();
-          const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
-          if (hash === learnedHash) learned = sanitizeLearnedDjModel(JSON.parse(new TextDecoder().decode(bytes)));
-        }
-      } catch { /* Optional local model must not prevent pinned model inference. */ }
-    }
-    if (learned && learned.encoder !== CLAP_ENCODER) learned = undefined;
-    let shortClip = sanitizeShortClipModel(await pinnedJson('short-clip.json'));
-    if (shortClip && shortClip.clapEncoder !== CLAP_ENCODER) shortClip = undefined;
-    return { prompts: await response.json() as DescriptionPrompt[], learned, shortClip };
+    const hashes = soundManifest.sha256 as Record<string, string>;
+    const [rawPrompts, rawLearned, rawShort] = await Promise.all([
+      loadPinnedSoundAsset('prompts.json', hashes['prompts.json']),
+      loadPinnedSoundAsset('learned.json', hashes['learned.json']),
+      loadPinnedSoundAsset('short-clip.json', hashes['short-clip.json']),
+    ]);
+    const learned = sanitizeLearnedDjModel(rawLearned);
+    const shortClip = sanitizeShortClipModel(rawShort);
+    if (!Array.isArray(rawPrompts)) throw new Error('Sound descriptions are invalid.');
+    if (hashes['learned.json'] && (!learned || learned.encoder !== CLAP_ENCODER)) throw new Error('Trained sound model is invalid.');
+    if (hashes['short-clip.json'] && (!shortClip || shortClip.clapEncoder !== CLAP_ENCODER)) throw new Error('One-shot sound model is invalid.');
+    return { prompts: rawPrompts as DescriptionPrompt[], learned, shortClip };
   })().catch(error => { soundDescriptions = null; throw error; });
 }
 function isInstrumentPredictions(value: unknown): value is InstrumentPredictions {
