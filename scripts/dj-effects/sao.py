@@ -6,7 +6,7 @@ app; only CLAP heads trained partly on these clips do. Each prompt varies the ef
 Clips get the group "sao:<label>:<k mod 25>" and split 'train', so they never reach the held-out test; train.py picks
 them per label only where they help on the REAL training clips. Deterministic seeds. Mono 48 kHz, at most 10 s.
 Usage: sao.py <out dir> [shard shards]   env: PER_EFFECT (300, split across shards), HF_TOKEN"""
-import json, os, sys, random, time, wave
+import json, os, sys, random, time, wave, faulthandler
 import numpy as np
 import torch, torchaudio
 from einops import rearrange
@@ -40,12 +40,15 @@ def write(path, y, rate):
     with wave.open(path, 'wb') as w: w.setnchannels(1); w.setsampwidth(2); w.setframerate(rate); w.writeframes(pcm.tobytes())
 
 
+faulthandler.dump_traceback_later(int(os.environ.get('STACK_DUMP_AFTER', 0)) or 10**9, repeat=True)  # debugging aid for slow CPU runs
 torch.set_num_threads(os.cpu_count() or 4)
 model, config = get_pretrained_model('stabilityai/stable-audio-open-small')
 SR, SIZE = config['sample_rate'], config['sample_size']
 model = model.eval()
 out = []
+ONLY = set(filter(None, os.environ.get('LABELS', '').split(',')))
 for label, prompts in FX.items():
+    if ONLY and label not in ONLY: continue
     r = random.Random(f'dj-effects-sao|{label}|{SHARD}'); t0 = time.time()
     for k in range(PER_EFFECT):
         rid = f"sao:{label.replace(' ', '-')}:{SHARD}-{k}"; path = os.path.join(OUT, rid.replace(':', '_') + '.wav')
@@ -54,6 +57,7 @@ for label, prompts in FX.items():
             with torch.no_grad():
                 audio = generate_diffusion_cond(model, steps=8, conditioning=[{'prompt': prompt, 'seconds_total': secs}],
                                                 sample_size=SIZE, sampler_type='pingpong', device='cpu', seed=r.randrange(1 << 31))
+            print(f'  generated {rid} in {time.time() - t0:.0f} s', flush=True)
             y = rearrange(audio, 'b d n -> d (b n)').float().mean(0, keepdim=True)
             y = torchaudio.functional.resample(y, SR, 48000)[0, :int(48000 * min(secs, 10))].numpy()
             y = y / (np.abs(y).max() + 1e-9) * r.uniform(.3, .95)
