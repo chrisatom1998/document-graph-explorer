@@ -15,6 +15,7 @@ on:
       lr: { default: '1e-4' }
       batch: { default: '64' }
       weak: { description: 'weight of untagged (weak) absences', default: '0.2' }
+      rawstems: { description: 'add Mixing Secrets full songs (non-commercial licence: weights must be published CC BY-NC-SA)', default: 'false' }
       rare_repeat: { description: 'times each bass/organ/cello/trumpet/violin/sax window is seen per epoch', default: '1' }
       soundcloud: { description: 'add the SoundCloud train fold (artifacts of run 37413702012)', default: 'true' }
       all_tags: { description: 'add the app-named head (FSD50K, NSynth, effect renders)', default: 'true' }
@@ -84,7 +85,7 @@ jobs:
           REPO_SHA=${{ github.sha }} MODEL=${{ inputs.model || 'mn10_as' }} EPOCHS=${{ inputs.epochs || '15' }}
           ALL_TAGS=${{ (inputs.all_tags || 'true') == 'true' && '1' || '0' }} INIT_FROM=${{ github.event_name != 'push' && inputs.init_from || '' }}
           OUT_DIR=${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir }} JOB_NAME=dge-tagger-${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir || 'main' }}
-          TRAIN_HOURS=${{ inputs.train_hours || '4.25' }} RARE_REPEAT=${{ inputs.rare_repeat || '1' }} JOB_HOURS=${{ inputs.job_hours || '7' }}
+          TRAIN_HOURS=${{ inputs.train_hours || '4.25' }} RARE_REPEAT=${{ inputs.rare_repeat || '1' }} RAWSTEMS=${{ inputs.rawstems == 'true' && '1' || '0' }} JOB_HOURS=${{ inputs.job_hours || '7' }}
           LR=${{ inputs.lr || '1e-4' }} BATCH=${{ inputs.batch || '64' }} WEAK=${{ inputs.weak || '0.2' }}
           SOUNDCLOUD_DATA=${SOUNDCLOUD_DATA:-}
       - name: Stop the Hugging Face job if this workflow is cancelled
