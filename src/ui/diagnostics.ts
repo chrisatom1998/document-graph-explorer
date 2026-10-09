@@ -15,6 +15,7 @@ export function getAppVersion(): string {
   return typeof __APP_VERSION__ !== 'undefined' && __APP_VERSION__ ? __APP_VERSION__ : 'dev';
 }
 
+/** The plain-text report behind Copy diagnostics: version, build, corpus size and the last error. */
 export function buildDiagnosticsText(input: DiagnosticsInput): string {
   const lines = [
     `${PRODUCT_NAME} diagnostics`,

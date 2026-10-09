@@ -1,7 +1,7 @@
 {
   "name": "Resonance",
   "short_name": "Resonance",
-  "description": "Local-first map of how your sounds and documents relate. Parsing, analysis and embeddings stay in the browser.",
+  "description": "Local-first map of how your sounds and documents relate. Files stay on this device unless you turn on a cloud AI provider.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

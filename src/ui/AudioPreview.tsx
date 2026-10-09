@@ -10,6 +10,7 @@ import { namedRelationship } from '../audio/relationships';
 import MusicFeatures from './MusicFeatures';
 import { mimeForFilename } from '../util/fileMime';
 
+/** The clip panel: player, one status line, musical features and authored relationships for one audio node. */
 export default function AudioPreview({ node }: { node: DocNode }) {
   const nodes = useGraphStore((s) => s.nodes);
   const edges = useGraphStore((s) => s.edges);

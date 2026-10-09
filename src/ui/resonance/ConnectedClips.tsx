@@ -62,6 +62,7 @@ function reason(edge: Edge, a: DocNode, b: DocNode): { label: string; detail: st
   return { label, detail: pct, fill: edge.weight, ...extra };
 }
 
+/** Inspector card for one node: thumbnail, title and metadata, with an inline player for audio unless `player` is off. */
 function ClipCard({ node, accent, active, action, player = true }: { node: DocNode; accent: string; active?: boolean; action?: { label: string; run: () => void }; player?: boolean }) {
   const { url, peaks } = useClipAudio(node);
   const file = node.path?.split('/').pop() ?? node.title;
