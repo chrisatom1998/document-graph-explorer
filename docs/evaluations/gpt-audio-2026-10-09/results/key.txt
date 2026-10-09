@@ -1,0 +1,2 @@
+gpt-audio-1.5 on key: 150 clips, $0.569 ($0.0038/clip, 100 audio tokens/clip)
+key exact 6/123 = 0.049 (95% 0.02-0.10); fifth 14, relative 4, parallel 6; main 0.549

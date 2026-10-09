@@ -1,0 +1,1656 @@
+{
+ "model": "gpt-audio-1.5",
+ "task": "key",
+ "answers": {
+  "mk-6f9a0601cdbb752b": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-060610949f496b3e": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-0a05cd43d1913165": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-20bb04d507a0ed5d": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-315a8495445e4c9f": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-4c5c21f87b631046": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-73e6108486c4c5fa": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-5d0ba2646590d44c": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-18a4afcf4bb3e732": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-204dcf9dad651b59": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-52a9a958857f47ba": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-3ea88b5997e2f72b": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-4f2a5d3207025098": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-3a773cc74080db9b": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-540732273964e25f": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-5b94a8d9a9ace8bd": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-36b6aff7459af499": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-5692823006d914a9": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-3e2156a456814787": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-7ad97faa9381f494": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-4129c13767bc0e91": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-525b208ddfd76caf": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-3ca0d096525c9a9b": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-277358e2a0b8851e": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-2b52e463d55a7b05": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-4c233a89be272bf7": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-432db4b87b665b9e": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-0e935ab8a8968aba": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-1ebbb68632c27949": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-5aecc14566e5318b": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-38f5ecc64d0c8f7a": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-47434d001e564d18": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-01016f2ca50cc76f": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-5369b1751ee52f49": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-1a73994a1d9293fb": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-574c6bcd6ce34319": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-389ad62dc01228e9": {
+   "answer": {
+    "key": "C# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-2794d77852fc8ebe": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-490d6d505507df20": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-29390d29caf4766b": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-336892ee9c261652": {
+   "answer": {
+    "key": "C# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-2e89918f84e91195": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-0f8a7ec11554c70a": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-604882a2afa57839": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-31af8f8d352f24dc": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-3f61a78bd721c2b0": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-0b49f12cf0fd27d9": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-0622079abb8e1af3": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-1c4307dfda5d0763": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-23433f148df2aa53": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-450455de89d5091a": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-143c640f016fa776": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-54e4ba478d49775a": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-5b94c6fb6fc05675": {
+   "answer": {
+    "key": "E major"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-0c0c8f7efab908ea": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-24907e87f8fd6405": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-5eee6a381aa56d12": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-0605ac19a7a45c5d": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-2c3499a119f931b5": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-2d01b6b949766b78": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-756b6c2dfafaa10c": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-6aae9010e9312906": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-33aaf6f2045007e6": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-4a8ae79a9acff63f": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-411122f6a1786054": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-26d6ea5c1a7a6b75": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-0d0362657c5c46ff": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-32dbfd623e8621de": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-6dacdea7526ce74a": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-5b156f72e1036210": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-58f57b209b8bd6de": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-2406423ad6fa393f": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-16ae183ee2699270": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-64f8025b8ca986df": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-6cd211e45c86d144": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-0761ee87d1a36aff": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-67a0a3404ce7d901": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-0c33b55b45f7d972": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-0d3f7d3807eb80c9": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-5af221af3227af9f": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-534863ca6c33e5fa": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-28ad39cace861d08": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-2c5ab887e107b149": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-595325c6503dc234": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-4ac1a4dc950d3163": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-5cbae2a265e6b888": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-7014f0706f28a6f9": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-2af47191b74e6a89": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-06a8bf21a60837bb": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-0aa536c2db486096": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-51b08a4907b60318": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-4767ccd84542a4d9": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-41a50f1ee73bd54f": {
+   "answer": {
+    "key": "E major"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-24a288206feb334c": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-54994ed7b11af54c": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-42fbdc537f867450": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-22b73a6cd9b82b5c": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-3212394514461c5e": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-61b5d4a85cb6ea85": {
+   "answer": {
+    "key": "C# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-35dbf85174cea44d": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-4184e9084a98aeff": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-6fd052c1126c4698": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-26b4accb2b882762": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-1b3cc9a7a987da28": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-25ad6c58e438c137": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-4af3fc390395a5b1": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-4c754be6d4f62304": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-39e5c2c78fd10693": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-79da210fe220980e": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-651b726e370df985": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-46d8626a645e8afd": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-4f43ced063a1978f": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-2ac9d69669ddac73": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-2b72408f3d2e007d": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-2c3e5fede3d396e8": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-19dddf1ab30330e0": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-39a050c823b17606": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-165d66e0ba62c9cb": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-33b7b2cc6442ee84": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-09d54116c90087b1": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-73e58ab349024252": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-77694b06acae4aba": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-6fa1c40bd874fcd9": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-6da248b6c3a8ead1": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-60a296eea8e0a806": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-295dc58326f5696c": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-19f0e630dd5242fb": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-683675213d29b8fb": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-1834dccbc9e1e4ef": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-35164167928b227b": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-04ed78068c3a85d9": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-412166d35c35956e": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-56f8f2c532144d51": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-3ace056214c89f03": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-7171cfb8d4adb2d3": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-01491e45a3103b3c": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-4d1aac016649b910": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-56c326b7810c475a": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-196e1d7c6c490db6": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-714253713a1a9672": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-09ede7b92441e13b": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-189f4601f4638b94": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-2fa8d98d5ca35a28": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-1315c8369b7ff206": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-5bc091319f5d1961": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-65c81d3e5adfb1df": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-384f44bca7e6591d": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  },
+  "mk-697692c1262eff5b": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-2e86c7f03b642daf": {
+   "answer": {
+    "key": "E minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 7
+   },
+   "usd": 0.0037925
+  },
+  "mk-573b6724dde29244": {
+   "answer": {
+    "key": "F# minor"
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 209,
+    "out": 8
+   },
+   "usd": 0.0038025
+  }
+ }
+}

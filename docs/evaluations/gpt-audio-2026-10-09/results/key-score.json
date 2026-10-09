@@ -1,0 +1,18 @@
+{
+ "model": "gpt-audio-1.5",
+ "task": "key",
+ "clips": 150,
+ "usd": 0.5693,
+ "result": {
+  "n": 123,
+  "exact": 0.049,
+  "exactCI95": [
+   0.023,
+   0.102
+  ],
+  "fifth": 14,
+  "relative": 4,
+  "parallel": 6,
+  "main": 0.549
+ }
+}
