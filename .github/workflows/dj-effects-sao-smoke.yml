@@ -28,6 +28,7 @@ jobs:
           pip install -q stable-audio-tools
           # keep the CPU builds of all three in step (stable-audio-tools can pull a mismatched torchvision)
           pip install -q --force-reinstall --no-deps --index-url https://download.pytorch.org/whl/cpu torch==2.5.1 torchaudio==2.5.1 torchvision==0.20.1
+          pip install -q "transformers==4.46.3"  # newer transformers needs torch.accelerator (torch >= 2.6)
       - name: Generate 2 clips per effect and time it
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
