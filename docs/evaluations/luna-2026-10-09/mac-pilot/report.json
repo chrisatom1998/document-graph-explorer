@@ -1,0 +1,1884 @@
+{
+  "status": "provider-stopped",
+  "policy": "Frozen: normalize only supported existing names; use audio-only output when Luna recommends review, otherwise normalized existing detections. Compare union/agreement/fallback unchanged.",
+  "requested": 20,
+  "completed": 1,
+  "maxUsd": 5,
+  "chargedUpperBoundUsd": 0.014767625000000173,
+  "blockers": [],
+  "models": [
+    "gpt-6-luna",
+    "gpt-audio-1.5"
+  ],
+  "limitations": [
+    "Instrument/source annotations only; DJ effects and character accuracy are unproven.",
+    "Twenty clips are a pilot, not enough to establish reliable per-category accuracy.",
+    "Policies frozen before labels are scored. No acceptance thresholds are changed.",
+    "Provider latency includes excerpt preparation; native timing, when supplied, includes polling/export overhead and first-clip loading."
+  ],
+  "runnerSha256": "32774657c6231e868f857a605507cceb4be0184f82251d9a9ee32ea9a115406e",
+  "appCommit": "e3f50c908a96a1b4e287f0f409b1cd4d47f42877",
+  "dirty": true,
+  "pricesVerified": "2026-10-09",
+  "pricesSource": [
+    "https://developers.openai.com/api/docs/models/gpt-6-luna",
+    "https://developers.openai.com/api/docs/models/gpt-audio-1.5"
+  ],
+  "manifestSha256": "8289684072837034f896321bcb18cf47d06f22526db5acf178f3f7ce1cb3deee",
+  "baselineSha256": "46c96ee77f4f61282aed9244fe7c8e429b88d896b3021602cc9b58961dab6eee",
+  "nativeObservation": {
+    "sha256": "4cab1925211fcee0666789e171abb8a977d3e035772c94c3fec483f9be227fdc",
+    "backend": "Chromium SwiftShader; actual worker runtime recorded in stats.requests",
+    "commit": "e3f50c908a96a1b4e287f0f409b1cd4d47f42877",
+    "scope": "File-picker handoff through terminal detector state; includes polling/export overhead and first-clip model loading.",
+    "runtimes": [
+      {
+        "backend": "wasm",
+        "configuredInferenceThreads": 1,
+        "identity": "wasm-threads-1-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 1
+      },
+      {
+        "backend": "essentia-wasm",
+        "configuredInferenceThreads": 1,
+        "identity": "essentia-wasm-v1"
+      },
+      {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    ]
+  },
+  "selection": [
+    {
+      "id": "mm-c577cf43f68e4a5c",
+      "split": "development"
+    },
+    {
+      "id": "mm-15c87e2aac0238f1",
+      "split": "development"
+    },
+    {
+      "id": "mm-c8367d5b0a8045eb",
+      "split": "development"
+    },
+    {
+      "id": "mm-ede20b7988428fa4",
+      "split": "development"
+    },
+    {
+      "id": "mm-e6f2cb7f1176756c",
+      "split": "development"
+    },
+    {
+      "id": "mm-8c9a15367137fc40",
+      "split": "development"
+    },
+    {
+      "id": "mm-83f60ef385e424c6",
+      "split": "development"
+    },
+    {
+      "id": "mm-72f4cc5d62ceb602",
+      "split": "development"
+    },
+    {
+      "id": "mm-04b60cba73dcecff",
+      "split": "development"
+    },
+    {
+      "id": "mm-b9e2900fc5b40a31",
+      "split": "development"
+    },
+    {
+      "id": "mm-2c51a0bf56083e45",
+      "split": "held-out"
+    },
+    {
+      "id": "mm-8cbb5fb3b1e8e150",
+      "split": "held-out"
+    },
+    {
+      "id": "mm-e95e0a3f9a9cc5ad",
+      "split": "held-out"
+    },
+    {
+      "id": "mm-60db63b4e8738355",
+      "split": "held-out"
+    },
+    {
+      "id": "mm-ae815162535c263b",
+      "split": "held-out"
+    },
+    {
+      "id": "mm-c422ecac4ac28f9c",
+      "split": "held-out"
+    },
+    {
+      "id": "mm-16a6c06934487437",
+      "split": "held-out"
+    },
+    {
+      "id": "mm-9a752f469e25620c",
+      "split": "held-out"
+    },
+    {
+      "id": "mm-90833e8685700d76",
+      "split": "held-out"
+    },
+    {
+      "id": "mm-19677bc1be5e9c05",
+      "split": "held-out"
+    }
+  ],
+  "apiRequests": {
+    "luna": 2,
+    "audio": 2
+  },
+  "attempted": 2,
+  "scores": {
+    "development": {
+      "native": {
+        "evaluated": 1,
+        "micro": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "precision": 1,
+          "recall": 1,
+          "f1": 1
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 1,
+          "labeled": 1,
+          "abstentions": 0,
+          "failed": 1
+        },
+        "regressions": []
+      },
+      "audio": {
+        "evaluated": 1,
+        "micro": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "tn": 0,
+          "precision": null,
+          "recall": 0,
+          "f1": 0
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "tn": 0,
+            "precision": null,
+            "recall": 0,
+            "f1": 0
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 1,
+          "labeled": 1,
+          "abstentions": 0,
+          "failed": 1
+        },
+        "regressions": [
+          {
+            "label": "organ",
+            "additionalFalsePositives": 0,
+            "additionalMisses": 1
+          }
+        ]
+      },
+      "union": {
+        "evaluated": 1,
+        "micro": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "precision": 1,
+          "recall": 1,
+          "f1": 1
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 1,
+          "labeled": 1,
+          "abstentions": 0,
+          "failed": 1
+        },
+        "regressions": []
+      },
+      "agreement": {
+        "evaluated": 1,
+        "micro": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "tn": 0,
+          "precision": null,
+          "recall": 0,
+          "f1": 0
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "tn": 0,
+            "precision": null,
+            "recall": 0,
+            "f1": 0
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 1,
+          "labeled": 1,
+          "abstentions": 0,
+          "failed": 1
+        },
+        "regressions": [
+          {
+            "label": "organ",
+            "additionalFalsePositives": 0,
+            "additionalMisses": 1
+          }
+        ]
+      },
+      "fallback": {
+        "evaluated": 1,
+        "micro": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "precision": 1,
+          "recall": 1,
+          "f1": 1
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 1,
+          "labeled": 1,
+          "abstentions": 0,
+          "failed": 1
+        },
+        "regressions": []
+      },
+      "lunaNormalized": {
+        "evaluated": 1,
+        "micro": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "precision": 1,
+          "recall": 1,
+          "f1": 1
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 1,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1,
+            "recall": 1,
+            "f1": 1
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 1,
+          "labeled": 1,
+          "abstentions": 0,
+          "failed": 1
+        },
+        "regressions": []
+      },
+      "lunaRouted": {
+        "evaluated": 1,
+        "micro": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "tn": 0,
+          "precision": null,
+          "recall": 0,
+          "f1": 0
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 1,
+            "tn": 0,
+            "precision": null,
+            "recall": 0,
+            "f1": 0
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 1,
+          "labeled": 1,
+          "abstentions": 0,
+          "failed": 1
+        },
+        "regressions": [
+          {
+            "label": "organ",
+            "additionalFalsePositives": 0,
+            "additionalMisses": 1
+          }
+        ]
+      }
+    },
+    "held-out": {
+      "native": {
+        "evaluated": 0,
+        "micro": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 0,
+          "labeled": 0,
+          "abstentions": 0,
+          "failed": 0
+        },
+        "regressions": []
+      },
+      "audio": {
+        "evaluated": 0,
+        "micro": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 0,
+          "labeled": 0,
+          "abstentions": 0,
+          "failed": 0
+        },
+        "regressions": []
+      },
+      "union": {
+        "evaluated": 0,
+        "micro": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 0,
+          "labeled": 0,
+          "abstentions": 0,
+          "failed": 0
+        },
+        "regressions": []
+      },
+      "agreement": {
+        "evaluated": 0,
+        "micro": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 0,
+          "labeled": 0,
+          "abstentions": 0,
+          "failed": 0
+        },
+        "regressions": []
+      },
+      "fallback": {
+        "evaluated": 0,
+        "micro": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 0,
+          "labeled": 0,
+          "abstentions": 0,
+          "failed": 0
+        },
+        "regressions": []
+      },
+      "lunaNormalized": {
+        "evaluated": 0,
+        "micro": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 0,
+          "labeled": 0,
+          "abstentions": 0,
+          "failed": 0
+        },
+        "regressions": []
+      },
+      "lunaRouted": {
+        "evaluated": 0,
+        "micro": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "classes": {
+          "drums": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "voice": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "synthesizer": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "piano": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "guitar": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "bass": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "cymbals": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "organ": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "violin": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "trumpet": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          },
+          "saxophone": {
+            "tp": 0,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": null,
+            "recall": null,
+            "f1": null
+          }
+        },
+        "coverage": {
+          "requested": 10,
+          "paired": 0,
+          "labeled": 0,
+          "abstentions": 0,
+          "failed": 0
+        },
+        "regressions": []
+      }
+    }
+  },
+  "performance": {
+    "nativeLatency": {
+      "count": 2,
+      "medianMs": 54372,
+      "maxMs": 54372
+    },
+    "audioLatency": {
+      "count": 2,
+      "medianMs": 1888,
+      "maxMs": 1888
+    },
+    "lunaLatency": {
+      "count": 2,
+      "medianMs": 3917,
+      "maxMs": 3917
+    },
+    "audioPromptTokens": 2546,
+    "audioCompletionTokens": 129,
+    "lunaInputTokens": 8313,
+    "lunaOutputTokens": 347,
+    "simulatedRoutedAudioRequests": 2
+  },
+  "recommendation": "Keep current acceptance thresholds. Review held-out per-category regressions and uncertainty before recommending any fusion policy."
+}

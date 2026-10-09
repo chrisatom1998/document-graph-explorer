@@ -1,0 +1,1085 @@
+[
+  {
+    "id": "mm-c577cf43f68e4a5c",
+    "split": "development",
+    "native": [
+      "drums",
+      "synthesizer",
+      "piano",
+      "guitar",
+      "organ",
+      "violin"
+    ],
+    "audio": [
+      "synthesizer"
+    ],
+    "lunaNormalized": [
+      "drums",
+      "synthesizer",
+      "piano",
+      "guitar",
+      "organ",
+      "violin"
+    ],
+    "lunaRouted": [
+      "synthesizer"
+    ],
+    "sourceSha256": "8ee7c276c05afb3ecd7284042981fe1cf2cfc8aaa30328f05a21c1641bbecfd5",
+    "detectorConfiguration": "timeline-v1:full:decoder-mono-v3-short-pcm:wasm-threads-4-jamendo-1-v2:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1:pinned-models-required-v1:event-windows-v1:one-shot-a90881c0e776-prompts-e65719c5fbed:uncalibrated",
+    "nativeLatencyMs": 54372,
+    "luna": {
+      "model": "gpt-6-luna",
+      "policy": "normalization-routing-v1",
+      "samples": [
+        {
+          "ref": "Sample 1",
+          "labels": [
+            {
+              "id": "e1",
+              "group": "source",
+              "originalLabel": "organ",
+              "sourceModel": "CLAP similarity",
+              "score": 0.4492665430928235,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "organ",
+              "method": "deterministic"
+            },
+            {
+              "id": "e2",
+              "group": "source",
+              "originalLabel": "organ",
+              "sourceModel": "Full-mix head score",
+              "score": 0.7269,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "organ",
+              "method": "deterministic"
+            },
+            {
+              "id": "e3",
+              "group": "source",
+              "originalLabel": "organ",
+              "sourceModel": "Trained head score (maybe)",
+              "score": 0.9815239039883209,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "organ",
+              "method": "deterministic"
+            },
+            {
+              "id": "e4",
+              "group": "source",
+              "originalLabel": "organ",
+              "sourceModel": "Trained head score",
+              "score": 0.7004616131838688,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "organ",
+              "method": "deterministic"
+            },
+            {
+              "id": "e5",
+              "group": "character",
+              "originalLabel": "sustained",
+              "sourceModel": "CLAP similarity",
+              "score": 0.7169033681660939,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "sustained",
+              "method": "deterministic"
+            },
+            {
+              "id": "e6",
+              "group": "character",
+              "originalLabel": "sustained",
+              "sourceModel": "Trained head score (maybe)",
+              "score": 0.7169033681660939,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": null,
+              "canonicalLabel": "sustained",
+              "method": "deterministic"
+            },
+            {
+              "id": "e7",
+              "group": "character",
+              "originalLabel": "warm",
+              "sourceModel": "CLAP similarity",
+              "score": 0.8588226080283182,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "warm",
+              "method": "deterministic"
+            },
+            {
+              "id": "e8",
+              "group": "character",
+              "originalLabel": "warm",
+              "sourceModel": "Trained head score (maybe)",
+              "score": 0.8588226080283182,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": null,
+              "canonicalLabel": "warm",
+              "method": "deterministic"
+            },
+            {
+              "id": "e9",
+              "group": "production",
+              "originalLabel": "whisper",
+              "sourceModel": "Trained head score",
+              "score": 0.8270160169125806,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "whisper",
+              "method": "deterministic"
+            },
+            {
+              "id": "e10",
+              "group": "source",
+              "originalLabel": "synthesizer",
+              "sourceModel": "Trained head score (maybe)",
+              "score": 0.9220769134819122,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "synthesizer",
+              "method": "deterministic"
+            },
+            {
+              "id": "e11",
+              "group": "source",
+              "originalLabel": "synthesizer",
+              "sourceModel": "Trained head score",
+              "score": 0.9861563525705567,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "synthesizer",
+              "method": "deterministic"
+            },
+            {
+              "id": "e12",
+              "group": "character",
+              "originalLabel": "nasal",
+              "sourceModel": "Trained head score (maybe)",
+              "score": 0.8773048725734606,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": null,
+              "canonicalLabel": "nasal",
+              "method": "deterministic"
+            },
+            {
+              "id": "e13",
+              "group": "source",
+              "originalLabel": "drums",
+              "sourceModel": "Trained tagger score",
+              "score": 0.7757,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "drums",
+              "method": "deterministic"
+            },
+            {
+              "id": "e14",
+              "group": "source",
+              "originalLabel": "piano",
+              "sourceModel": "Trained tagger score",
+              "score": 0.6812,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "piano",
+              "method": "deterministic"
+            },
+            {
+              "id": "e15",
+              "group": "source",
+              "originalLabel": "guitar",
+              "sourceModel": "Trained tagger score",
+              "score": 0.7607,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "guitar",
+              "method": "deterministic"
+            },
+            {
+              "id": "e16",
+              "group": "source",
+              "originalLabel": "violin",
+              "sourceModel": "Trained tagger score",
+              "score": 0.5035,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "violin",
+              "method": "deterministic"
+            },
+            {
+              "id": "e17",
+              "group": "source",
+              "originalLabel": "synthesizer",
+              "sourceModel": "jamendo",
+              "score": 0.3306014835834503,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "synthesizer",
+              "method": "deterministic"
+            },
+            {
+              "id": "e18",
+              "group": "character",
+              "originalLabel": "bright",
+              "sourceModel": "jamendo",
+              "score": 0.9843877487712436,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "bright",
+              "method": "deterministic"
+            },
+            {
+              "id": "e19",
+              "group": "source",
+              "originalLabel": "organ",
+              "sourceModel": "clap",
+              "score": 0.4492665430928235,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "organ",
+              "method": "deterministic"
+            },
+            {
+              "id": "e20",
+              "group": "source",
+              "originalLabel": "electric piano",
+              "sourceModel": "clap",
+              "score": 0.37039780235151826,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "electric piano",
+              "method": "deterministic"
+            },
+            {
+              "id": "e21",
+              "group": "character",
+              "originalLabel": "sustained",
+              "sourceModel": "clap",
+              "score": 0.7169033681660939,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "sustained",
+              "method": "deterministic"
+            },
+            {
+              "id": "e22",
+              "group": "character",
+              "originalLabel": "warm",
+              "sourceModel": "clap",
+              "score": 0.8588226080283182,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "warm",
+              "method": "deterministic"
+            },
+            {
+              "id": "e23",
+              "group": "character",
+              "originalLabel": "reverberant",
+              "sourceModel": "clap",
+              "score": 0.37416277419313143,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "reverberant",
+              "method": "deterministic"
+            },
+            {
+              "id": "e24",
+              "group": "source",
+              "originalLabel": "voice",
+              "sourceModel": "Trained head",
+              "score": 0.8270160169125806,
+              "supported": false,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "voice",
+              "method": "deterministic"
+            },
+            {
+              "id": "e25",
+              "group": "source",
+              "originalLabel": "organ",
+              "sourceModel": "Trained head (maybe)",
+              "score": 0.9815239039883209,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "organ",
+              "method": "deterministic"
+            },
+            {
+              "id": "e26",
+              "group": "production",
+              "originalLabel": "whisper",
+              "sourceModel": "Trained head",
+              "score": 0.8270160169125806,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "whisper",
+              "method": "deterministic"
+            },
+            {
+              "id": "e27",
+              "group": "source",
+              "originalLabel": "synthesizer",
+              "sourceModel": "Trained head (maybe)",
+              "score": 0.9220769134819122,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "synthesizer",
+              "method": "deterministic"
+            },
+            {
+              "id": "e28",
+              "group": "character",
+              "originalLabel": "sustained",
+              "sourceModel": "Trained head (maybe)",
+              "score": 0.7169033681660939,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "sustained",
+              "method": "deterministic"
+            },
+            {
+              "id": "e29",
+              "group": "character",
+              "originalLabel": "warm",
+              "sourceModel": "Trained head (maybe)",
+              "score": 0.8588226080283182,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "warm",
+              "method": "deterministic"
+            },
+            {
+              "id": "e30",
+              "group": "character",
+              "originalLabel": "nasal",
+              "sourceModel": "Trained head (maybe)",
+              "score": 0.8773048725734606,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "nasal",
+              "method": "deterministic"
+            },
+            {
+              "id": "e31",
+              "group": "character",
+              "originalLabel": "reverberant",
+              "sourceModel": "Music CLAP",
+              "score": 0.37416277419313143,
+              "supported": false,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "reverberant",
+              "method": "deterministic"
+            },
+            {
+              "id": "e32",
+              "group": "source",
+              "originalLabel": "synthesizer",
+              "sourceModel": "Instrument model",
+              "score": 0.3306014835834503,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "synthesizer",
+              "method": "deterministic"
+            }
+          ],
+          "signals": [
+            "detector-disagreement",
+            "ambiguous-evidence"
+          ],
+          "review": "recommend",
+          "reason": "Listening could clarify the supported organ/synthesizer disagreement and the whisper versus instrument evidence. The tagger also labels drums, piano, guitar, and violin, unlike the other supported source predictions; detector coverage and capabilities differ."
+        }
+      ],
+      "status": "complete",
+      "cached": false,
+      "usage": {
+        "inputTokens": 4307,
+        "outputTokens": 188,
+        "cachedInputTokens": 0
+      }
+    },
+    "lunaLatencyMs": 3917,
+    "lunaCostUpperBoundUsd": 0.000632375,
+    "excerptSha256": "407209fc1fea8d5e38787decb7cb7418300ea666d4ca4ff4cba797174b840540",
+    "coverage": [
+      {
+        "ref": "Sample 1",
+        "startSeconds": 0,
+        "durationSeconds": 10
+      }
+    ],
+    "audioLatencyMs": 1888,
+    "audioUsage": {
+      "prompt_tokens": 1273,
+      "completion_tokens": 63,
+      "total_tokens": 1336,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 100,
+        "text_tokens": 1173,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0,
+        "text_tokens": 63
+      }
+    },
+    "audioCost": {
+      "usd": 0.0067625,
+      "basis": "standard rate estimate, no cache discount"
+    }
+  },
+  {
+    "id": "mm-15c87e2aac0238f1",
+    "split": "development",
+    "native": [
+      "drums",
+      "synthesizer",
+      "guitar"
+    ],
+    "audio": [],
+    "lunaNormalized": [
+      "drums",
+      "synthesizer",
+      "guitar"
+    ],
+    "lunaRouted": [
+      "drums",
+      "synthesizer",
+      "guitar"
+    ],
+    "sourceSha256": "252d4ad2b59158806f28c7e047b642bc0a263091915c0229d250ca112824a1a2",
+    "detectorConfiguration": "timeline-v1:full:decoder-mono-v3-short-pcm:wasm-threads-4-jamendo-1-v2:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1:pinned-models-required-v1:event-windows-v1:one-shot-a90881c0e776-prompts-e65719c5fbed:uncalibrated",
+    "nativeLatencyMs": 5054,
+    "luna": {
+      "model": "gpt-6-luna",
+      "policy": "normalization-routing-v1",
+      "samples": [
+        {
+          "ref": "Sample 1",
+          "labels": [
+            {
+              "id": "e1",
+              "group": "source",
+              "originalLabel": "synthesizer",
+              "sourceModel": "Full-mix head score",
+              "score": 0.8476,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "synthesizer",
+              "method": "deterministic"
+            },
+            {
+              "id": "e2",
+              "group": "source",
+              "originalLabel": "synthesizer",
+              "sourceModel": "CLAP similarity",
+              "score": 0.5191118313188596,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "synthesizer",
+              "method": "deterministic"
+            },
+            {
+              "id": "e3",
+              "group": "source",
+              "originalLabel": "synthesizer",
+              "sourceModel": "Trained head score",
+              "score": 0.937799684719902,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "synthesizer",
+              "method": "deterministic"
+            },
+            {
+              "id": "e4",
+              "group": "source",
+              "originalLabel": "waterphone",
+              "sourceModel": "CLAP similarity",
+              "score": 0.5240576529893857,
+              "supported": false,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "waterphone",
+              "method": "deterministic"
+            },
+            {
+              "id": "e5",
+              "group": "production",
+              "originalLabel": "fm synth",
+              "sourceModel": "CLAP similarity",
+              "score": 0.5191118313188596,
+              "supported": false,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "fm synth",
+              "method": "deterministic"
+            },
+            {
+              "id": "e6",
+              "group": "production",
+              "originalLabel": "texture",
+              "sourceModel": "Trained head score (maybe)",
+              "score": 0.9158542262418884,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": null,
+              "canonicalLabel": "texture",
+              "method": "deterministic"
+            },
+            {
+              "id": "e7",
+              "group": "source",
+              "originalLabel": "sound effect",
+              "sourceModel": "Trained head score (maybe)",
+              "score": 0.9158542262418884,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": null,
+              "canonicalLabel": "sound effect",
+              "method": "deterministic"
+            },
+            {
+              "id": "e8",
+              "group": "source",
+              "originalLabel": "drums",
+              "sourceModel": "Trained tagger score",
+              "score": 0.5381,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "drums",
+              "method": "deterministic"
+            },
+            {
+              "id": "e9",
+              "group": "source",
+              "originalLabel": "guitar",
+              "sourceModel": "Trained tagger score",
+              "score": 0.9093,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "guitar",
+              "method": "deterministic"
+            },
+            {
+              "id": "e10",
+              "group": "character",
+              "originalLabel": "bright",
+              "sourceModel": "Trained tagger score (maybe)",
+              "score": 0.977,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "bright",
+              "method": "deterministic"
+            },
+            {
+              "id": "e11",
+              "group": "character",
+              "originalLabel": "distorted",
+              "sourceModel": "Trained tagger score (maybe)",
+              "score": 0.5046,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "distorted",
+              "method": "deterministic"
+            },
+            {
+              "id": "e12",
+              "group": "character",
+              "originalLabel": "bright",
+              "sourceModel": "jamendo",
+              "score": 0.9809975888994005,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "bright",
+              "method": "deterministic"
+            },
+            {
+              "id": "e13",
+              "group": "source",
+              "originalLabel": "electric piano",
+              "sourceModel": "clap",
+              "score": 0.38508002108264855,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "electric piano",
+              "method": "deterministic"
+            },
+            {
+              "id": "e14",
+              "group": "source",
+              "originalLabel": "piano",
+              "sourceModel": "clap",
+              "score": 0.3491248150973777,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "piano",
+              "method": "deterministic"
+            },
+            {
+              "id": "e15",
+              "group": "source",
+              "originalLabel": "bell",
+              "sourceModel": "clap",
+              "score": 0.3399711786016995,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "bell",
+              "method": "deterministic"
+            },
+            {
+              "id": "e16",
+              "group": "character",
+              "originalLabel": "sustained",
+              "sourceModel": "clap",
+              "score": 0.4274706414613976,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "sustained",
+              "method": "deterministic"
+            },
+            {
+              "id": "e17",
+              "group": "character",
+              "originalLabel": "bright",
+              "sourceModel": "clap",
+              "score": 0.39070437764315435,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "bright",
+              "method": "deterministic"
+            },
+            {
+              "id": "e18",
+              "group": "character",
+              "originalLabel": "reverberant",
+              "sourceModel": "clap",
+              "score": 0.31305903836767196,
+              "supported": false,
+              "ambiguous": true,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "reverberant",
+              "method": "deterministic"
+            },
+            {
+              "id": "e19",
+              "group": "source",
+              "originalLabel": "waterphone",
+              "sourceModel": "Music CLAP",
+              "score": 0.5240576529893857,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "waterphone",
+              "method": "deterministic"
+            },
+            {
+              "id": "e20",
+              "group": "production",
+              "originalLabel": "fm synth",
+              "sourceModel": "Music CLAP",
+              "score": 0.5191118313188596,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "fm synth",
+              "method": "deterministic"
+            },
+            {
+              "id": "e21",
+              "group": "character",
+              "originalLabel": "chorused",
+              "sourceModel": "Music CLAP",
+              "score": 0.46405339579519483,
+              "supported": false,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "chorused",
+              "method": "deterministic"
+            },
+            {
+              "id": "e22",
+              "group": "production",
+              "originalLabel": "texture",
+              "sourceModel": "Trained head (maybe)",
+              "score": 0.9158542262418884,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "texture",
+              "method": "deterministic"
+            },
+            {
+              "id": "e23",
+              "group": "production",
+              "originalLabel": "reverse effect",
+              "sourceModel": "Trained head (maybe)",
+              "score": 0.8340527748876908,
+              "supported": false,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "reverse effect",
+              "method": "deterministic"
+            },
+            {
+              "id": "e24",
+              "group": "source",
+              "originalLabel": "synthesizer",
+              "sourceModel": "Music CLAP",
+              "score": 0.5191118313188596,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "synthesizer",
+              "method": "deterministic"
+            },
+            {
+              "id": "e25",
+              "group": "character",
+              "originalLabel": "sustained",
+              "sourceModel": "Music CLAP",
+              "score": 0.4274706414613976,
+              "supported": false,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "sustained",
+              "method": "deterministic"
+            },
+            {
+              "id": "e26",
+              "group": "character",
+              "originalLabel": "bright",
+              "sourceModel": "Music CLAP",
+              "score": 0.39070437764315435,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "bright",
+              "method": "deterministic"
+            },
+            {
+              "id": "e27",
+              "group": "character",
+              "originalLabel": "reverberant",
+              "sourceModel": "Music CLAP",
+              "score": 0.31305903836767196,
+              "supported": false,
+              "ambiguous": false,
+              "coverage": null,
+              "canonicalLabel": "reverberant",
+              "method": "deterministic"
+            },
+            {
+              "id": "e28",
+              "group": "source",
+              "originalLabel": "sound effect",
+              "sourceModel": "Trained head (maybe)",
+              "score": 0.9158542262418884,
+              "supported": true,
+              "ambiguous": false,
+              "coverage": [
+                {
+                  "start": 0,
+                  "end": 10
+                }
+              ],
+              "canonicalLabel": "sound effect",
+              "method": "deterministic"
+            }
+          ],
+          "signals": [
+            "detector-disagreement",
+            "ambiguous-evidence"
+          ],
+          "review": "recommend",
+          "reason": "Supported source labels conflict: synthesizer, drums, guitar, waterphone, and sound effect. Listening could help resolve which source descriptions apply; the evidence does not establish a single interpretation."
+        }
+      ],
+      "status": "complete",
+      "cached": false,
+      "usage": {
+        "inputTokens": 4006,
+        "outputTokens": 159,
+        "cachedInputTokens": 1125
+      }
+    },
+    "lunaLatencyMs": 2511,
+    "lunaCostUpperBoundUsd": 0.00058025,
+    "excerptSha256": "2455b1028474722c436c691ab60885344672509df3d657c22bee539d518f5459",
+    "error": {
+      "name": "Error",
+      "status": null
+    },
+    "audioLatencyMs": 1607,
+    "audioUsage": {
+      "prompt_tokens": 1273,
+      "completion_tokens": 66,
+      "total_tokens": 1339,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 100,
+        "text_tokens": 1173,
+        "image_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 0,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0,
+        "text_tokens": 66
+      }
+    },
+    "audioCost": {
+      "usd": 0.0067925,
+      "basis": "standard rate estimate, no cache discount"
+    }
+  }
+]

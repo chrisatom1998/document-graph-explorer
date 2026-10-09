@@ -1,5 +1,15 @@
 # Luna pilot status — 2026-10-09
 
+The [Mac pilot](mac-pilot/README.md) recovered all inputs and completed a real 20-clip detector baseline. Two Luna and two GPT-Audio inference calls cost an estimated upper bound of **$0.014767625**. The evaluator stopped without retries after the second audio completion failed validation: only one development clip is paired, and no held-out audio comparison was reached.
+
+On the single valid pair, native, union, fallback, and Luna normalization find the annotated organ; audio-only, agreement, and Luna routing miss it. This cannot establish model accuracy or justify a new policy. The separate native baseline has 13 TP, 0 FP, and one guitar miss across only 26 explicit class annotations. Unannotated predictions do not count as false positives.
+
+**Keep existing acceptance thresholds and policies.** Completing the audio comparison remains blocked by the validation stop and missing valid responses, rather than missing Mac inputs. DJ effects and character accuracy remain unproven. See immutable [paid checkpoints](mac-pilot/report.json), [responses](mac-pilot/responses.json), and [native results/runtime observations](mac-pilot/native-baseline-report.json). The precise invalid-response defect cannot be recovered because the executed runner did not save provider text; subsequent runner changes capture bounded text and finish reason for future diagnostics. No additional paid calls were made.
+
+The cloud preflight and cloud validation below are historical evidence.
+
+# Historical cloud preflight — 2026-10-09
+
 Implementation is available; live accuracy evaluation is blocked.
 
 | Comparison | Clips measured | Precision / recall / F1 | API cost |

@@ -36,3 +36,11 @@ export function sameDetectorConfiguration(actual, current) {
   const normalize = value => typeof value === 'string' ? value.replace(/wasm-threads-[1-4]-jamendo-1-v2/g, 'wasm-threads-N-jamendo-1-v2') : null;
   return typeof actual === 'string' && normalize(actual) === normalize(current);
 }
+
+// Deterministic local results make no billable request; unknown provider usage keeps the reservation.
+export function lunaCost(usage, noRequest = false) {
+  if (noRequest) return 0;
+  if (!usage || !Number.isInteger(usage.inputTokens) || usage.inputTokens < 0 || !Number.isInteger(usage.outputTokens) || usage.outputTokens < 0) return null;
+  const longContext = usage.inputTokens > 272000;
+  return (usage.inputTokens * .125 * (longContext ? 2 : 1) + usage.outputTokens * .5 * (longContext ? 1.5 : 1)) / 1e6;
+}

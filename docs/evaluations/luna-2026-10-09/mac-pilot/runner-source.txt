@@ -12,7 +12,7 @@ import { recognitionConfiguration } from '../../src/audio/recognition';
 import { lunaEvidence, LUNA_POLICY } from '../../src/audio/lunaEvidence';
 import { classesFor } from '../audio-listening/score.mjs';
 import { listeningExcerpt } from '../audio-listening/excerpt';
-import { Budget, audioCost, lunaCost, comparison, sameDetectorConfiguration } from './metrics.mjs';
+import { Budget, audioCost, comparison, sameDetectorConfiguration } from './metrics.mjs';
 
 const [manifestPath, baselinePath, audioDir, outputDir, budgetArg = '5', observationPath] = process.argv.slice(2);
 if (!outputDir) throw Error('Usage: npx vite-node scripts/luna-evaluation/run.mjs manifest.json current-graph-export.json audio-dir output-dir [max-usd=5]');
@@ -80,11 +80,9 @@ report.policy = 'Frozen: normalize only supported existing names; use audio-only
 report.status = 'running'; save();
 const client = new OpenAI({ apiKey: key, maxRetries: 0, timeout: 90_000 });
 const luna = createLunaReviewer(client, { maxRequests: 20 });
-let usage, providerResponse;
+let usage;
 const create = client.chat.completions.create.bind(client.chat.completions);
-client.chat.completions.create = async (...args) => { report.apiRequests.audio++; const response = await create(...args); usage = response.usage;
-  providerResponse = { finishReason: response.choices[0]?.finish_reason ?? null, content: response.choices[0]?.message.content?.slice(0, 30000) ?? null };
-  return response; };
+client.chat.completions.create = async (...args) => { report.apiRequests.audio++; const response = await create(...args); usage = response.usage; return response; };
 const records = [];
 const summarize = () => {
   report.completed = records.filter(r => !r.error).length;
@@ -122,7 +120,7 @@ for (const clip of prepared) {
   record.luna = await luna([clip.evidence], AbortSignal.timeout(35000));
   record.lunaLatencyMs = Math.round(performance.now() - started);
   const lu = record.luna.usage;
-  record.lunaCostUpperBoundUsd = lunaCost(lu, record.luna.cached || report.apiRequests.luna === lunaRequestsBefore);
+  record.lunaCostUpperBoundUsd = record.luna.cached || report.apiRequests.luna === lunaRequestsBefore ? 0 : lu ? (lu.inputTokens * .125 * (lu.inputTokens > 272000 ? 2 : 1) + lu.outputTokens * .5 * (lu.inputTokens > 272000 ? 1.5 : 1)) / 1e6 : null;
   budget.settle(lunaReserve, record.lunaCostUpperBoundUsd);
   record.lunaNormalized = [...new Set([...clip.native, ...classesFor(record.luna.samples[0].labels.filter(l => l.group === 'source' && l.supported && l.method !== 'protected' && l.canonicalLabel).map(l => l.canonicalLabel))])];
   // A failed advisor always retains baseline predictions.
@@ -131,7 +129,7 @@ for (const clip of prepared) {
   writeFileSync(join(outputDir, 'responses.json'), JSON.stringify(records, null, 2));
   if (!budget.reserve(audioReserve)) { report.status = 'budget-stopped'; break; }
   report.chargedUpperBoundUsd = budget.charged; save();
-  delete record.error; usage = undefined; providerResponse = undefined; const audioStart = performance.now();
+  delete record.error; usage = undefined; const audioStart = performance.now();
   try {
     const bytes = listeningExcerpt(clip.file, clip.seconds); record.excerptSha256 = hash(bytes);
     const sample = { ref: 'Sample 1', durationSeconds: clip.seconds, analyzedSeconds: clip.seconds, preview: false,
@@ -140,7 +138,7 @@ for (const clip of prepared) {
     const result = await reviewAudio(client, [sample], [{ ref: sample.ref, wav: bytes.toString('base64') }], 'Describe clearly audible sources in this excerpt.', AbortSignal.timeout(90000));
     record.audio = classesFor(result.suggestions.flatMap(s => s.tags.source)); record.coverage = result.listening;
   } catch (error) { record.error = { name: error.name, status: error.status ?? null }; }
-  record.audioLatencyMs = Math.round(performance.now() - audioStart); record.audioUsage = usage ?? null; record.audioResponse = providerResponse ?? null;
+  record.audioLatencyMs = Math.round(performance.now() - audioStart); record.audioUsage = usage ?? null;
   record.audioCost = audioCost(usage); budget.settle(audioReserve, record.audioCost?.usd ?? null);
   record.lunaRouted = record.luna.status === 'complete' && record.luna.samples[0].review === 'recommend' && !record.error ? record.audio : record.lunaNormalized;
   writeFileSync(join(outputDir, 'responses.json'), JSON.stringify(records, null, 2));

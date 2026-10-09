@@ -1,0 +1,39 @@
+{
+  "fullRegression": {
+    "filesPassed": 344,
+    "filesFailed": 1,
+    "testsPassed": 2694,
+    "testsFailed": 1,
+    "testsSkipped": 1,
+    "failure": {
+      "path": "src/eval/graphAccuracy.test.ts",
+      "line": 418,
+      "expectedClusteredPairsAtLeast": 198,
+      "actualClusteredPairs": 193,
+      "reproduced": true,
+      "graphSourceChangedByThisFollowup": false
+    }
+  },
+  "focusedAudioServerTests": {
+    "files": 8,
+    "passed": 46
+  },
+  "additionalFocusedTests": {
+    "files": 6,
+    "passed": 42
+  },
+  "evaluatorTests": 8,
+  "lint": "passed",
+  "typecheck": "passed",
+  "productionBuild": "passed",
+  "airgapBuild": "passed",
+  "bundleChecks": "passed",
+  "credentialContainment": "passed",
+  "priorPrHead": "e3f50c908a96a1b4e287f0f409b1cd4d47f42877",
+  "priorReviews": "both resolved and outdated",
+  "notes": [
+    "Initial sandbox full run had loopback EPERM errors; a full loopback-enabled rerun removed every server failure.",
+    "Model downloader initially lacked sandbox network access; verified download succeeded with network access before production and airgap builds.",
+    "No graph source or graph-test thresholds were changed."
+  ]
+}

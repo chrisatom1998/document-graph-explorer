@@ -29,3 +29,14 @@ test('accepts recorded runtime thread variants but rejects stale model policies'
   assert.equal(sameDetectorConfiguration('v0:wasm-threads-4-jamendo-1-v2', 'v1:wasm-threads-1-jamendo-1-v2'), false);
   assert.equal(sameDetectorConfiguration(undefined, 'v1'), false);
 });
+
+test('local advisor shortcuts cost zero while unknown paid usage keeps its reservation', async () => {
+  const { lunaCost } = await import('./metrics.mjs');
+  const budget = new Budget(5);
+  for (let n = 0; n < 20; n++) { assert.equal(budget.reserve(.27), true); budget.settle(.27, lunaCost(undefined, true)); }
+  assert.equal(budget.charged, 0);
+  budget.reserve(.27); budget.settle(.27, lunaCost(undefined));
+  assert.equal(budget.charged, .27);
+  assert.equal(lunaCost({ inputTokens: -1, outputTokens: 10 }), null);
+  assert.equal(lunaCost({ inputTokens: 1000, outputTokens: 100 }), .000175);
+});

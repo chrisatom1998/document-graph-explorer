@@ -1,0 +1,29 @@
+{
+  "status": "partial-provider-validation-stop",
+  "apiAttempts": {
+    "luna": 2,
+    "audio": 2
+  },
+  "actualUsageCostUpperBoundUsd": 0.014767625000000173,
+  "pairedDevelopment": 1,
+  "pairedHeldOut": 0,
+  "nativeBaselineClips": 20,
+  "nativeCounts": {
+    "tp": 13,
+    "fp": 0,
+    "fn": 1,
+    "tn": 12
+  },
+  "nativePrecisionWilson95": [
+    0.7719046276458016,
+    0.9999999999999999
+  ],
+  "nativeRecallWilson95": [
+    0.6853129557584889,
+    0.9872777847521093
+  ],
+  "uncertainty": "Descriptive Wilson intervals for pooled annotations; do not account for within-clip correlation. Sparse annotations and tiny counts prevent category accuracy claims.",
+  "failure": "Second audio completion returned usage but failed the existing validation boundary. This run retained only error name/status, not provider text or validation message; the precise schema defect cannot be recovered. No retry was made.",
+  "missingForComparison": "19 more valid paired results, including all 10 held-out clips. Needs a separately recorded run with diagnostic capture and an explicit no-retry/cumulative-budget continuation protocol; no further calls made here.",
+  "recommendation": "Retain existing thresholds and policies; no measured held-out evidence supports replacing native labels."
+}

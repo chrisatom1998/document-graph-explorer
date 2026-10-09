@@ -6,7 +6,7 @@
 npx vite-node scripts/luna-evaluation/run.mjs \
   docs/evaluations/mixed-music-2026-10-05/manifest.json \
   /path/to/current-graph-export.json /path/to/benchmark-audio \
-  /path/to/new-results-directory 5
+  /path/to/new-results-directory 5 /path/to/detector-observation.json
 node --test scripts/luna-evaluation/metrics.test.mjs
 ```
 
@@ -20,6 +20,10 @@ excerpts, evaluation rights, and no user corrections. The graph export must come
 from the current app's real detector run; stale recognition configurations fail (recorded runtime thread counts may differ).
 The original file’s SHA-256 must match the detector’s saved audio fingerprint.
 Record the compute backend and original detector-run latency with the export.
+The optional final argument supplies the benchmark observer JSON (`commit`, `backend`,
+`timings` with one opaque ID and elapsed seconds per clip, and worker `stats.requests`).
+When supplied, its commit and all selected clip timings are checked before paid calls;
+the report preserves runtime evidence and states the timing measurement boundary.
 These cannot be reconstructed from saved predictions. Hashes bind audio, manifest,
 and baseline; the report records app commit and working-tree state.
 
@@ -48,7 +52,9 @@ The requested dollar budget may be lowered but cannot exceed $5. Before each
 request, reserve a conservative model-context upper bound at official standard
 rates (Luna $0.27; audio $4.126). After known usage, release the difference. Without
 audio modality details, price **all** input tokens at the higher audio rate.
-Unknown usage keeps the reservation; failures stop. A tight remaining budget may
+Unknown usage keeps the reservation; failures stop. Local deterministic/cached
+advisor shortcuts cost zero. Provider text and finish reason are checkpointed for
+validation diagnostics, without request payloads, audio bytes, or credentials. A tight remaining budget may
 therefore stop before 20 clips even when expected audio costs would fit. A new
 run requires a new directory; paid outputs are checkpointed, never overwritten.
 There is no claim of invoice-level billing precision or account-wide spend control.
@@ -73,7 +79,14 @@ have wide uncertainty; inspect counts and regressions, not only aggregate F1.
 
 ## Local preflight on 2026-10-09
 
-See [report](../../docs/evaluations/luna-2026-10-09/report.json). Zero API requests,
+Historical cloud preflight: see [report](../../docs/evaluations/luna-2026-10-09/report.json). Zero API requests,
 $0 charged: the cloud checkout has no existing OpenAI key, current graph export,
 or benchmark audio. `/Users/chrisjohnson/Projects/document-graph-explorer` is not
 mounted. No measured accuracy or preferred fusion policy is reported.
+
+## Real Mac pilot
+
+See [measured partial results](../../docs/evaluations/luna-2026-10-09/mac-pilot/README.md).
+All 20 native clips completed. Four paid requests cost an estimated $0.014767625;
+the second audio response failed validation and the runner stopped without retrying.
+Only one development clip is paired; held-out audio accuracy remains unmeasured.
