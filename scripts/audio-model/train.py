@@ -41,6 +41,8 @@ from labelmap import CAT, FREESOUND, FSLD_ROLES, SAME  # noqa: E402
 # Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
 # sources' labels below wherever one names the same sound.
 CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS] + [f'cat:{l}' for l in CAT] + [f'fsld:{r}' for r in FSLD_ROLES]
+from labels_extra import EXTRA_CAT  # noqa: E402  (run 7: outputs only the uncached sources label)
+CLASSES += [f'cat:{l}' for l in EXTRA_CAT if l not in CAT]
 ALIAS = {'voice': 'voice', 'piano': 'piano', 'organ': 'organ', 'trumpet': 'trumpet', 'drums': 'drums', 'guitar': 'guitar', 'synthesizer': 'synthesizer',
          'mallet_percussion': 'mallet instrument', 'accordion': 'accordion', 'flute': 'flute', 'cymbals': 'cymbal',
          'jamendo:electricguitar': 'electric guitar', 'jamendo:acousticguitar': 'acoustic guitar', 'jamendo:electricpiano': 'electric piano',

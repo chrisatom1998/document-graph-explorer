@@ -12,6 +12,9 @@
 # CHRIS_DATA=<private dataset>:<folder> adds Chris's own train-half sounds and effect renders of them (prepare-chrisdrive.py;
 # staged by stage-chrisdrive.py; non-commercial weights; never leaves the private repos); SOURCE_REPEAT=name=k,... oversamples
 # sources (train.py --repeat). The run folder gets data-manifest.json naming every source and every chris-drive file used.
+# VCSL=1 adds VCSL CC0 one-shots and scores its held-out folders (eval-vcsl); SLAKH_MORE=1 adds the Slakh train tracks after
+# the cached 600 that carry rare orchestral or mallet patches (prepare-slakh-more.py); SAO=1 adds the private Stable Audio Open
+# effect clips (prepare-sao.py) and scores their held-out prompt groups (eval-sao).
 set -euo pipefail
 START=$(date +%s)
 export DEBIAN_FRONTEND=noninteractive
@@ -35,12 +38,18 @@ nproc; free -g | head -2; df -h $W | tail -1
 # scripts and label map, so a rerun with the same data skips the ~3 h prep. The upload runs alongside training.
 DIRS="prep prepj holdout"; [ "${ALL_TAGS:-0}" = 1 ] && DIRS="$DIRS fsdprep nsprep fsprep xprep"
 # The run 7 sources are built in every job (not cached), so their scripts stay out of the key.
-KEY=$( (ls $S/prepare*.py | grep -v -e prepare-rawstems.py -e prepare-iowa.py -e prepare-chrisdrive.py | xargs cat; cat $S/labelmap.py; echo "$DIRS") | sha256sum | cut -c1-12)
+KEY=$( (ls $S/prepare*.py | grep -v -e prepare-rawstems.py -e prepare-iowa.py -e prepare-chrisdrive.py -e prepare-vcsl.py -e prepare-slakh-more.py -e prepare-sao.py | xargs cat; cat $S/labelmap.py; echo "$DIRS") | sha256sum | cut -c1-12)
 # RAWSTEMS=1 adds Mixing Secrets full songs (prepare-rawstems.py, non-commercial licence), built alongside the rest.
 RS_PID=
 if [ "${RAWSTEMS:-0}" = 1 ]; then python3 $S/prepare-rawstems.py rsprep --workers 16 --fx "${RAWSTEMS_FX:-0}" > rawstems.log 2>&1 & RS_PID=$!; fi
 IOWA_PID=
 if [ "${IOWA:-0}" = 1 ]; then python3 $S/prepare-iowa.py iowaprep --workers 16 > iowa.log 2>&1 & IOWA_PID=$!; fi
+VCSL_PID=
+if [ "${VCSL:-0}" = 1 ]; then python3 $S/prepare-vcsl.py vcslprep --workers 16 > vcsl.log 2>&1 & VCSL_PID=$!; fi
+SM_PID=
+SAO_PID=
+if [ "${SAO:-0}" = 1 ]; then python3 $S/prepare-sao.py saoprep > sao.log 2>&1 & SAO_PID=$!; fi
+if [ "${SLAKH_MORE:-0}" = 1 ]; then python3 $S/prepare-slakh-more.py smprep --workers 8 > slakhmore.log 2>&1 & SM_PID=$!; fi
 CD_PID=
 if [ -n "${CHRIS_DATA:-}" ]; then   # private staged copy of Chris's train half: only counts are printed
   ( python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='cdstage', max_workers=8)" "$CHRIS_DATA" \
@@ -81,9 +90,9 @@ else
     for x in tinysol egfx fsld waivops surge; do python3 $S/prepare-extra.py $x xprep > $x.log 2>&1 & done
     if [ -f $S/prepare-slakh.py ]; then python3 $S/prepare-slakh.py xprep > slakh.log 2>&1 & fi
   fi
-  LOGS=$(ls *.log | grep -v -e rawstems.log -e iowa.log -e chrisdrive.log)
+  LOGS=$(ls *.log | grep -v -e rawstems.log -e iowa.log -e chrisdrive.log -e vcsl.log -e slakhmore.log -e sao.log)
   # The raw-stems, Iowa and chris-drive preps are waited on (and their logs shown) separately below.
-  for job in $(jobs -p); do case " ${RS_PID:-} ${IOWA_PID:-} ${CD_PID:-} " in *" $job "*) continue;; esac; wait $job || { tail -n 20 $LOGS; exit 1; }; done
+  for job in $(jobs -p); do case " ${RS_PID:-} ${IOWA_PID:-} ${CD_PID:-} ${VCSL_PID:-} ${SM_PID:-} ${SAO_PID:-} " in *" $job "*) continue;; esac; wait $job || { tail -n 20 $LOGS; exit 1; }; done
   tail -n 3 $LOGS; echo "data prep took $(( ($(date +%s) - START) / 60 )) min"; df -h $W | tail -1
   python3 - "$KEY" $DIRS > cache-upload.txt 2>&1 <<'PY' &
 import sys
@@ -103,6 +112,9 @@ if [ -n "$RS_PID" ]; then wait $RS_PID || { tail -n 30 rawstems.log; exit 1; }; 
 [ -f rsprep/rsfx.json ] && EXTRA+=(--extra rsfx=rsprep)
 if [ -n "$IOWA_PID" ]; then wait $IOWA_PID || { tail -n 30 iowa.log; exit 1; }; tail -n 4 iowa.log; EXTRA+=(--extra iowa=iowaprep); fi
 if [ -n "$CD_PID" ]; then wait $CD_PID || { tail -n 5 chrisdrive.log; exit 1; }; tail -n 4 chrisdrive.log; EXTRA+=(--extra chrisdrive=cdprep --extra chrisfx=cdprep); fi
+if [ -n "$VCSL_PID" ]; then wait $VCSL_PID || { tail -n 30 vcsl.log; exit 1; }; tail -n 5 vcsl.log; EXTRA+=(--extra vcsl=vcslprep); fi
+if [ -n "$SM_PID" ]; then wait $SM_PID || { tail -n 30 slakhmore.log; exit 1; }; tail -n 2 slakhmore.log; EXTRA+=(--extra slakhmore=smprep); fi
+if [ -n "$SAO_PID" ]; then wait $SAO_PID || { tail -n 30 sao.log; exit 1; }; tail -n 2 sao.log; EXTRA+=(--extra sao=saoprep); fi
 echo "all data ready after $(( ($(date +%s) - START) / 60 )) min"
 if [ -n "${SOUNDCLOUD_DATA:-}" ]; then   # "<dataset repo>:<folder>", uploaded by the workflow from its SoundCloud artifacts
   python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='scdl')" "$SOUNDCLOUD_DATA"
@@ -134,7 +146,11 @@ for n, d in sorted(srcs.items()):
     if not os.path.exists(js): continue
     j = json.load(open(js)); items = j['items']
     man['sources'][n] = {'description': j.get('source'), 'windows': len(items), 'validation': sum(bool(i.get('val')) for i in items)}
-    if n in ('chrisdrive', 'chrisfx', 'iowa'): man['sources'][n]['ids'] = sorted({i['id'].split('#')[0].split('@')[0] for i in items})
+    if n in ('chrisdrive', 'chrisfx', 'iowa', 'vcsl'): man['sources'][n]['ids'] = sorted({i['id'].split('#')[0].split('@')[0] for i in items})
+if os.path.exists('vcslprep/eval-vcsl.json'):
+    e = json.load(open('vcslprep/eval-vcsl.json')); man.setdefault('heldOutTest', {})['eval-vcsl'] = {'heldFolders': e['heldFolders'], 'clips': len(e['items']), 'note': 'never trained, tuned or calibrated on'}
+if os.path.exists('saoprep/eval-sao.json'):
+    e = json.load(open('saoprep/eval-sao.json')); man.setdefault('heldOutTest', {})['eval-sao'] = {'groups': sorted({i['artist'] for i in e['items']}), 'clips': len(e['items']), 'note': 'generated clips; never trained, tuned or calibrated on'}
 if os.path.exists('cdprep/chrisdrive-files.json'): man['chrisDrive'] = json.load(open('cdprep/chrisdrive-files.json'))
 json.dump(man, open('run/data-manifest.json', 'w'), indent=1)
 print('data manifest: ' + ', '.join(f"{n} {s['windows']}" for n, s in man['sources'].items()))
@@ -154,6 +170,9 @@ CAL=(openmic=prep jamendo=prepj); EVAL=(prep/eval-round1 prep/eval-round2 holdou
 [ -f rsprep/rsfx.json ] && CAL+=(rsfx=rsprep)
 [ -n "$IOWA_PID" ] && CAL+=(iowa=iowaprep)
 [ -n "$CD_PID" ] && CAL+=(chrisdrive=cdprep chrisfx=cdprep)
+[ -n "$VCSL_PID" ] && CAL+=(vcsl=vcslprep) && EVAL+=(vcslprep/eval-vcsl)
+[ -n "$SM_PID" ] && CAL+=(slakhmore=smprep)
+[ -n "$SAO_PID" ] && CAL+=(sao=saoprep) && EVAL+=(saoprep/eval-sao)
 if [ "${ALL_TAGS:-0}" = 1 ]; then CAL+=(fsd50k=fsdprep nsynth=nsprep freesound=fsprep); for x in $XS; do CAL+=($x=xprep); done; EVAL+=(fsdprep/eval-fsd50k nsprep/eval-nsynth-test nsprep/eval-nsynth-test-fx fsprep/eval-freesound); fi
 python3 $S/calibrate.py run "${CAL[@]}" | tee run/calibrate.txt
 python3 $S/coverage.py run "${CAL[@]}" 

@@ -23,6 +23,8 @@ from concurrent.futures import ThreadPoolExecutor
 warnings.filterwarnings('ignore')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labelmap import CAT  # noqa: E402
+from labels_extra import EXTRA_CAT  # noqa: E402
+CAT = list(CAT) + EXTRA_CAT
 
 BASE = 'https://theremin.music.uiowa.edu/'
 RATE = 32000
@@ -32,8 +34,9 @@ h = lambda *p: hashlib.sha256('|'.join(map(str, p)).encode()).hexdigest()
 PAGES = [('altoflute', ['flute']), ('bassflute', ['flute']), ('flute', ['flute']), ('oboe', ['oboe']), ('clarinet', ['clarinet']),
          ('bassoon', ['bassoon']), ('saxophone', ['saxophone']), ('horn', ['horn']), ('trumpet', ['trumpet']), ('trombone', ['trombone']),
          ('tuba', ['tuba']), ('violin', ['violin / fiddle', 'strings']), ('viola', ['viola', 'strings']), ('cello', ['cello', 'strings']),
-         ('doublebass', ['double bass', 'strings']), ('marimba', ['marimba', 'mallet instrument']), ('xylophone', ['xylophone', 'mallet instrument']),
-         ('vibraphone', ['vibraphone', 'mallet instrument']), ('bells', ['glockenspiel', 'mallet instrument']), ('crotales', ['mallet instrument']),
+         ('doublebass', ['double bass', 'strings']), ('marimba', ['marimba', 'mallet instrument', 'tuned percussion']), ('xylophone', ['xylophone', 'mallet instrument', 'tuned percussion']),
+         ('vibraphone', ['vibraphone', 'mallet instrument', 'tuned percussion']), ('bells', ['glockenspiel', 'mallet instrument', 'tuned percussion']),
+         ('crotales', ['mallet instrument', 'tuned percussion']),
          ('cymbals', ['cymbal']), ('gong', ['gong']), ('handpercussion', []), ('tambourines', ['tambourine', 'percussion']),
          ('piano', ['piano']), ('guitar', ['guitar', 'acoustic guitar'])]
 STRUCK = {'marimba', 'xylophone', 'vibraphone', 'bells', 'crotales', 'cymbals', 'gong', 'handpercussion', 'tambourines'}
@@ -41,7 +44,7 @@ STRUCK = {'marimba', 'xylophone', 'vibraphone', 'bells', 'crotales', 'cymbals', 
 BASE_ABSENT = ['voice', 'drums', 'synthesizer', 'electric guitar', 'bass guitar', 'organ', 'electric piano', 'kick', 'snare', 'drum loop',
                'synth bass', '808 bass', 'hi-hat', 'clap']
 TAUGHT = sorted(({l for _, ls in PAGES for l in ls} | set(BASE_ABSENT) |
-                 {'crash cymbal', 'ride cymbal', 'woodblock', 'clave', 'triangle', 'percussion hit', 'percussion', 'bell'}) & set(CAT))
+                 {'crash cymbal', 'ride cymbal', 'woodblock', 'clave', 'triangle', 'percussion hit', 'percussion', 'bell', 'tuned percussion'}) & set(CAT))
 RANGE = re.compile(r'^[a-g][b#]?-?\d[a-g][b#]?-?\d$')
 
 def extra_module():
@@ -76,6 +79,7 @@ def labels_of(kind, base, name):
         if l in present: lab[f'cat:{l}'] = 1.0
         elif kind in STRUCK and l in ('percussion', 'percussion hit', 'bell', 'cymbal', 'hi-hat', 'mallet instrument', 'glockenspiel'): continue
         elif kind == 'cymbals' and l in ('crash cymbal', 'ride cymbal'): continue
+        elif kind == 'gong' and l == 'tuned percussion': continue
         else: lab[f'cat:{l}'] = 0.0
     return lab
 
