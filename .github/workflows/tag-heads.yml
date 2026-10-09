@@ -141,8 +141,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: work/emb
-          key: tag-heads-emb-${{ matrix.shard }}-${{ hashFiles('work/shard.json', 'scripts/embed-clap.mjs') }}
-          restore-keys: tag-heads-emb-${{ matrix.shard }}-
+          key: tag-heads-emb-${{ matrix.shard }}-${{ hashFiles('work/shard.json', 'scripts/embed-clap.mjs', 'scripts/dj-effects/render.py', 'scripts/dj-effects/labels-tags.json') }}
+          restore-keys: tag-heads-emb-${{ matrix.shard }}-${{ hashFiles('work/shard.json', 'scripts/embed-clap.mjs', 'scripts/dj-effects/render.py', 'scripts/dj-effects/labels-tags.json') }}-
       - name: Compute the app's CLAP fingerprints
         run: |
           mkdir -p work/emb
@@ -159,7 +159,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: work/emb
-          key: tag-heads-emb-${{ matrix.shard }}-${{ hashFiles('work/shard.json', 'scripts/embed-clap.mjs') }}-${{ github.run_id }}
+          key: tag-heads-emb-${{ matrix.shard }}-${{ hashFiles('work/shard.json', 'scripts/embed-clap.mjs', 'scripts/dj-effects/render.py', 'scripts/dj-effects/labels-tags.json') }}-${{ github.run_id }}
       - name: Measure clip durations
         run: |
           python3 - <<'EOF'
