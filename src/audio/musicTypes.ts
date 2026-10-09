@@ -13,7 +13,7 @@ import { sanitizeGenreScores, sanitizeStyles, type TrackStyle } from './genreEne
 import { sanitizeNativeWindowEvidence, type NativeWindowEvidence } from './nativeWindowEvidence';
 export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 4;
-export const TEMPO_ANALYSIS_REVISION = 4;
+export const TEMPO_ANALYSIS_REVISION = 5;
 // Enabling the built-in policy makes persisted native-only documents eligible for reanalysis. 70/71: full-mix heads. 73/74: genre and energy.
 // 75/76: the trained tagger. 77/78: its per-window scores (long-recording rules).
 // 79/80: full-precision tagger scores; incomplete outputs remain unknown. 81/82: DJ effect heads retrained on the grown clip set.

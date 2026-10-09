@@ -14,10 +14,11 @@ import { classifyTagger, preloadTagger } from './taggerInference';
 import { isTaggerScores } from './tagger';
 import { GENRE_ENERGY_VERSION } from './genreEnergy';
 import { detectRepeatedPitch } from './detectedPitch';
-import { estimateTempo } from './tempo';
+import { countAttacks, estimateTempo, MIN_ATTACKS } from './tempo';
 import { essentiaKey, excerptChroma, recordingKey } from './key';
 import { keyProbabilities, profileWeight, recordingKeyFromProbabilities } from './keyCnn';
-import { combineLoopTempo, combineTempo, predictCnnTempo } from './tempoCnn';
+import { combineLoopTempo, combineTempo, LOOP_CNN_OVERRIDE_CONFIDENCE, predictCnnTempo } from './tempoCnn';
+import { isSeamlessLoop } from './loopWrap';
 import { soundSuggestions } from './soundSuggestions';
 import { descriptionScores, type DescriptionPrompt } from './profileDescriptions';
 import type { MusicExcerpts } from './decodeMusic';
@@ -277,12 +278,20 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
       if (consistent.length >= Math.ceil(excerpts.samples.length/2)) result.tempo = { ...median, bpm: Math.round(median.bpm*10)/10, confidence: Math.min(...consistent.map(t=>t.confidence)) };
     }
     // A learned tempo model overrides the beat tracker only when it confidently reads a different tempo. On a short loop
-    // (one excerpt, under 30 s) it also fills in a tempo the loop estimator could not find.
-    const loop = data.kind === 'rhythm' && audible.length === 1 && excerpts.durationSeconds < 30;
-    if (result.tempo || loop) {
+    // (one excerpt, under 30 s) it also fills in a tempo the loop estimator could not find. A short file that wraps
+    // seamlessly is a real loop, not a song excerpt: the loop-trained model reads it and is trusted at lower confidence.
+    // A one-shot also ends in silence, so a loop must have at least three attacks, as the loop estimator requires.
+    const seamlessAttacks = (samples: Float32Array) => { const v = engine!.arrayToVector(samples); try { return countAttacks(engine!, v); } finally { v.delete(); } };
+    const short = data.kind === 'rhythm' && audible.length === 1 && excerpts.durationSeconds < 30;
+    if (result.tempo || short) {
       try {
-        const cnn = await predictCnnTempo(audible);
-        if (cnn) result.tempo = loop ? combineLoopTempo(result.tempo, cnn) : { ...result.tempo!, ...combineTempo(result.tempo!, cnn) };
+        if (short && isSeamlessLoop(audible[0]) && seamlessAttacks(audible[0]) >= MIN_ATTACKS) {
+          const cnn = await predictCnnTempo(audible, 'loops');
+          if (cnn) result.tempo = combineLoopTempo(result.tempo, cnn, LOOP_CNN_OVERRIDE_CONFIDENCE);
+        } else {
+          const cnn = await predictCnnTempo(audible);
+          if (cnn) result.tempo = short ? combineLoopTempo(result.tempo, cnn) : { ...result.tempo!, ...combineTempo(result.tempo!, cnn) };
+        }
       } catch { /* Keep the beat tracker's tempo if the model is unavailable. */ }
     }
     // The learned key network reads the same tonal excerpts; the chroma profiles stay as the fallback when it cannot load.
