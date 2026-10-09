@@ -24,7 +24,7 @@ for (const item of manifest.items) {
   if ([...positives].some(label => !known.has(label))) throw new Error(`${item.id}: positive outside reviewed snapshot`);
   const path = resolve(root, item.preview);
   const truth = Object.fromEntries(assignments.labels.map(label => [label, known.has(label) ? Number(positives.has(label)) : null]));
-  clips.push({ id: item.id, path, ...assignment, truth,
+  clips.push({ id: item.id, path, group: assignment.group, split: assignment.split, kind: assignment.kind, truth,
     provenance: { type: 'human-reviewed', reference: `DGE review ${item.id}, ${review.reviewedAt}` } });
 }
 if (!clips.length || clips.length !== Object.keys(assignments.clips).length) throw new Error('Some assigned review IDs were not found; refusing a partial inventory');

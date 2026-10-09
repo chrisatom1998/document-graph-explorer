@@ -90,7 +90,7 @@ test('review adapter accepts explicit human confirmation only and keeps unknown 
     writeFileSync(join(dir, 'manifest.json'), JSON.stringify({ items: [{ id: '1', preview: 'audio/1.wav' }] }));
     const review = { confirmed: true, provenance: 'assistant review', reviewedAt: '2026-10-09', knownLabels: ['production:vocal chops'], labels: { production: ['vocal chops'] } };
     writeFileSync(join(dir, 'reviews.json'), JSON.stringify({ 1: review }));
-    writeFileSync(join(dir, 'assignments.json'), JSON.stringify({ labels, clips: { 1: { group: 'pack-1', split: 'test', kind: 'loop' } } }));
+    writeFileSync(join(dir, 'assignments.json'), JSON.stringify({ labels, clips: { 1: { group: 'pack-1', split: 'test', kind: 'loop', id: 'wrong', path: '/wrong.wav' } } }));
     const run = () => spawnSync(process.execPath, ['scripts/benchmarks/reviews.mjs', dir, join(dir, 'assignments.json'), join(dir, 'out.json')], { encoding: 'utf8' });
     assert.notEqual(run().status, 0);
     assert.equal(existsSync(join(dir, 'out.json')), false);
@@ -98,6 +98,8 @@ test('review adapter accepts explicit human confirmation only and keeps unknown 
     writeFileSync(join(dir, 'reviews.json'), JSON.stringify({ 1: review }));
     const result = run(); assert.equal(result.status, 0, result.stderr);
     const item = JSON.parse(readFileSync(join(dir, 'out.json'))).clips[0];
+    assert.equal(item.id, '1');
+    assert.equal(item.path, join(dir, 'audio/1.wav'));
     assert.deepEqual(item.truth, { [labels[0]]: null, [labels[1]]: 1 });
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
