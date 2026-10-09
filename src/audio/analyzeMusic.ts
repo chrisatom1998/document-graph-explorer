@@ -1,7 +1,7 @@
 import { musicWorkerCapacity } from './musicWorkerRetention';
 import { DecodedMusicCache, musicDecoderFromSnapshot } from './musicDecodedCache';
 import { loadBuiltInFusion, supportsFusionInput, fusionConfiguration } from './fusionRelease';
-import {musicCacheKey,musicWorkerFingerprint,readMusicCache,writeMusicCache} from './musicAnalysisCache';
+import {createMusicCacheContext,musicCacheKey,musicWorkerFingerprint,readMusicCache,writeMusicCache} from './musicAnalysisCache';
 import { openMusicDecoder } from './decodeMusic';
 import { FULL_MIX_PINNED, loadFullMixHeads } from './fullMixHeads';
 import { addVersionPrint, analyzeDecodedMusic, previewDecodedMusic, type AnalysisOptions } from './analyzeDecodedMusic';
@@ -177,6 +177,7 @@ function runRequest<T>(message: Record<string, unknown>, transfer: Transferable[
 /** Preview the folder first, then run deeper checks with bounded decoding and serialized inference. */
 export function analyzeMusic(blob: Blob, name: string, options: Options = {}): Promise<MusicAnalysis> {
   const mode = options.mode ?? 'fast';
+  const context = options.cacheContext ?? createMusicCacheContext();
   const injectedFusion = options.fusion;
   // Explicit local research build only; preserve installed persistent analysis namespace.
   const experimentalPaSST = !injectedFusion && import.meta.env.VITE_EXPERIMENTAL_PASST === '1';
@@ -184,9 +185,8 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
     options.signal?.throwIfAborted();
     clearTimeout(idleTimer);
     options.signal?.throwIfAborted();
-    const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
-    const audioFingerprint = Array.from(new Uint8Array(digest), n => n.toString(16).padStart(2, '0')).join('');
-    const key=await musicCacheKey(blob, mode);
+    const audioFingerprint = await context.fingerprint(blob);
+    const key=await musicCacheKey(blob, mode, context);
     if(key&&!options.force&&!injectedFusion&&!experimentalPaSST){const cached=await readMusicCache(key, blob.type);if(cached){options.signal?.throwIfAborted();options.onProgress?.('Reusing saved audio analysis');parkWorker();
       // Analyses saved before version prints existed get one now: decoding only, no models.
       if(!cached.versionPrint&&cached.durationSeconds>=VERSION_PRINT_MIN_SECONDS)try{const decoder=await openMusicDecoder(blob, name, options.signal);try{await addVersionPrint(cached,(start,seconds)=>decoder.read(start,seconds,VERSION_PRINT_SAMPLE_RATE),options.signal);}finally{decoder.close();}
@@ -235,7 +235,7 @@ export function analyzeMusic(blob: Blob, name: string, options: Options = {}): P
         if (fusionFailed) result.notes.push('The trained source classifier is unavailable; native analysis is retained.');
         else if (!injectedFusion && (!prepared || prepared.usedFallback()) && !result.fusion?.counts.failed) result.classifierConfiguration = fusionConfiguration();
         // The key names the runtime; after a single-thread fallback, save under the key the next lookup will use.
-        const key = first.key && first.runtime !== musicRuntimeIdentity() ? await musicCacheKey(blob, mode) : first.key;
+        const key = first.key && first.runtime !== musicRuntimeIdentity() ? await musicCacheKey(blob, mode, context) : first.key;
         // A tagger that failed to run is retried by the next analysis, so its result is not saved.
         const taggerFailed = result.notes.includes(TAGGER_UNAVAILABLE);
         if (key && !injectedFusion && !fusionFailed && !fullMixFailed && !taggerFailed && !experimentalPaSST) await writeMusicCache(key, result, blob.type);

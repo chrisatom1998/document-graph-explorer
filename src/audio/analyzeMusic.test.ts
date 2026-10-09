@@ -16,7 +16,8 @@ vi.mock('./fullMixHeads', async importOriginal => {
   const model = original.sanitizeFullMixModel(JSON.parse(readFileSync(new URL('../../public/sound-model/full-mix.json', import.meta.url), 'utf8')));
   return { ...original, loadFullMixHeads: vi.fn(async () => model) };
 });
-vi.mock('./musicAnalysisCache', () => ({
+vi.mock('./musicAnalysisCache', async importOriginal => ({
+  ...await importOriginal<typeof import('./musicAnalysisCache')>(),
   musicCacheKey: vi.fn(async () => 'key'),
   musicCacheFingerprint: () => state.fingerprint,
   musicWorkerFingerprint: () => state.fingerprint,

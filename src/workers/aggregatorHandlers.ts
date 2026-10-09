@@ -1,3 +1,5 @@
+import { refreshMusicEdges } from '../audio/musicLinks';
+import { versionWorkPending } from '../audio/versionLinks';
 /**
  * Corpus-wide aggregator handlers — lexical (TF-IDF / references / entities),
  * semantic similarity, and Louvain clustering. The worker file is a thin
@@ -181,13 +183,19 @@ export function handleCluster(
   };
 }
 
+export function handleMusic(req: Extract<AggRequest, { type: 'music' }>): Extract<AggResponse, { type: 'music:done' }> {
+  const edges = refreshMusicEdges(req.nodes, req.edges);
+  return { requestId: req.requestId, type: 'music:done', edges, pending: versionWorkPending() };
+}
+
 /** Worker-equivalent dispatcher: posts done / progress / error messages. */
 export async function dispatchAggregatorRequest(
   req: AggRequest,
   post: (msg: AggResponse) => void,
 ): Promise<void> {
   try {
-    if (req.type === 'lexical') post(handleLexical(req));
+    if (req.type === 'music') post(handleMusic(req));
+    else if (req.type === 'lexical') post(handleLexical(req));
     else if (req.type === 'semantic') {
       post(
         await handleSemantic(req, (progress) => {

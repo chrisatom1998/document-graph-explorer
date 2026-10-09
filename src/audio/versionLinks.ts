@@ -102,12 +102,17 @@ export function versionEvidence(a: Side, b: Side): VersionEvidence | undefined {
 }
 
 const unit = (v: number[] | undefined) => { if (!v || v.length !== 512) return; const n = Math.hypot(...v); return n > 1e-8 && Number.isFinite(n) ? v.map(x => x / n) : undefined; };
-/** Graph updates replace node objects for unrelated reasons (layout, degree), so caches key on the inputs themselves. */
+/** Graph updates and worker messages replace arrays without changing their values.
+ * Preserve cached alignment progress across structured clones, while invalidating
+ * it when any embedding value actually changes. */
+function sameEmbedding(a: number[] | undefined, b: number[] | undefined): boolean {
+  return a === b || (!!a && !!b && a.length === b.length && a.every((value, i) => value === b[i]));
+}
 const sides = new Map<string, { print?: string; embedding?: number[]; name: string; side: Side }>();
 function side(node: DocNode): Side {
   const print = node.audio?.versionPrint, embedding = node.audio?.embedding, name = node.path || node.title;
   const cached = sides.get(node.id);
-  if (cached && cached.print === print && cached.embedding === embedding && cached.name === name) { cached.side.node = node; return cached.side; }
+  if (cached && cached.print === print && sameEmbedding(cached.embedding, embedding) && cached.name === name) { cached.side.node = node; return cached.side; }
   const decoded = print ? decodeVersionPrint(print) : undefined;
   const fresh: Side = { node, print: decoded, harmony: decoded && harmony(decoded), vector: unit(embedding), title: versionTitle(node) };
   sides.set(node.id, { print, embedding, name, side: fresh });
