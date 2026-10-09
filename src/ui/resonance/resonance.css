@@ -435,17 +435,24 @@
    though both controls remain visibly rendered. */
 @media (max-width: 1100px) {
   :root { --rs-top: 96px; }
-  .rs-top { grid-template-columns: 1fr auto; grid-template-areas: 'brand actions' 'tabs tabs'; padding: 8px 12px 0; row-gap: 4px; }
-  .rs-brand { grid-area: brand; }
+  /* minmax(0, 1fr) lets the brand cell shrink below its content, so the workspace pill truncates instead of running under the action icons on phones. */
+  .rs-top { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'brand actions' 'tabs tabs'; padding: 8px 12px 0; row-gap: 4px; }
+  .rs-brand { grid-area: brand; overflow: hidden; }
   /* Keep the workspace switcher reachable; the wordmark gives way to it. */
   .rs-brand strong, .rs-tagline, .rs-top__status, .rs-top__rule { display: none; }
   .rs-logo { width: 30px; flex: none; }
-  .rs-corpus { margin-left: 4px; }
+  .rs-corpus { margin-left: 4px; max-width: 100%; }
+  .rs-corpus .corpus-switcher, .rs-corpus .corpus-switcher__trigger { max-width: 100%; }
   .rs-corpus .corpus-switcher__name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .rs-top__actions { grid-area: actions; gap: 4px; }
+  .rs-top__actions { grid-area: actions; gap: 4px; flex: none; }
   .rs-tabs { grid-area: tabs; justify-content: flex-start; margin: 0; height: 40px; }
   .rs-tabs button { padding: 0 12px; }
 }
 @media (max-width: 600px) {
   .rs-sidebar .rs-import strong, .rs-sidebar .rs-assistant__text strong { font-size: 12px; }
+  /* Phone top bar: five actions plus the 2D/3D switch leave little room, so the icons tighten and the pill keeps whatever is left. */
+  .rs-top { padding: 8px 8px 0; }
+  .rs-top .rs-icon { width: 32px; height: 32px; }
+  .rs-top__actions .workspace-dims span { padding: 4px 6px; }
+  .rs-corpus .corpus-switcher__trigger { padding: 0 8px; gap: 6px; }
 }

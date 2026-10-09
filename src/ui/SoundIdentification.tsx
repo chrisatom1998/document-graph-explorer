@@ -30,9 +30,9 @@ export function SoundTagGroups({ profile, confirmedDjTags, reviewedLabels }: Omi
 const GROUP_NAME: Record<DjGroup, string> = { source: 'Source', production: 'Production type', character: 'Character' };
 
 /**
- * Untested model guesses, shown next to the tested Sounds row so they are visible
- * without opening Technical details. Confirmed labels and anything already shown
- * in Sounds are left out, and empty groups are hidden.
+ * Untested model guesses. They sit inside Technical details so the default view
+ * holds only tested and confirmed tags (Chris, 2026-10-09). Confirmed labels and
+ * anything already shown in Sounds are left out, and empty groups are hidden.
  */
 export function OtherModelGuesses({ profile, confirmedDjTags, reviewedLabels, exclude, skipSource = false }: {
   profile?: SoundProfile; confirmedDjTags?: ConfirmedDjTags; reviewedLabels?: ResolvedDjLabel[];

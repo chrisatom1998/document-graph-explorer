@@ -104,11 +104,11 @@ export default function MusicFeatures({ node, onSeek, onMessage }: { node: DocNo
       {analysis.structure && <TrackStructure structure={analysis.structure} duration={analysis.durationSeconds} onSeek={onSeek} />}
       <TrackVersions node={node} />
       <ConfidentSoundSummary audio={analysis} node={node} />
-      <OtherModelGuesses profile={displayProfile} confirmedDjTags={analysis.confirmedDjTags ? confirmedTags : undefined} reviewedLabels={reviewedLabels}
-        skipSource={confirmed !== undefined || !!hints.instruments} exclude={shownSounds} />
       <MusicNeighbours node={node} nodes={nodes} nodeIndex={nodeIndex} edges={edges} />
       <details className="music-analysis-details">
         <summary>Technical details</summary>
+        <OtherModelGuesses profile={displayProfile} confirmedDjTags={analysis.confirmedDjTags ? confirmedTags : undefined} reviewedLabels={reviewedLabels}
+          skipSource={confirmed !== undefined || !!hints.instruments} exclude={shownSounds} />
         <MainSoundAttributes audio={analysis} node={node} />
         {recognitionProps && <RecognitionDiagnostics {...recognitionProps} />}
         {!!analysis.styles?.length && <p>Closest music styles: {analysis.styles.slice(0, 5).map(s => `${styleName(s.label)} ${Math.round(s.score * 100)}%`).join(', ')}.</p>}
