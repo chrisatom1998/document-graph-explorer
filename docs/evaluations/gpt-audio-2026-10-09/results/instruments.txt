@@ -1,0 +1,13 @@
+gpt-audio-1.5 on instruments: 500 clips, $1.952 ($0.0039/clip, 100 audio tokens/clip)
+tag               pos  neg   GPT P / R    GPT 95% P / R           main P / R   GPT 70/70 vs main
+bass               15   35   0.35 / 0.80  0.21-0.52 / 0.55-0.93  0.60 / 0.60  fail      worse
+cymbals            34    9   0.85 / 0.85  0.70-0.94 / 0.70-0.94  0.94 / 0.94  pass      worse
+drums              52    9   0.91 / 0.96  0.80-0.96 / 0.87-0.99  0.91 / 0.98  pass      no clear gain
+guitar             20   11   0.90 / 0.95  0.71-0.97 / 0.76-0.99  0.83 / 0.95  pass      no clear gain
+organ              16   37   0.00 / 0.00  0.00-0.79 / 0.00-0.19  0.48 / 0.88  fail      no clear gain
+piano              15   17   0.85 / 0.73  0.58-0.96 / 0.48-0.89  0.93 / 0.93  pass      worse
+saxophone          25   27   1.00 / 0.32  0.68-1.00 / 0.17-0.52  0.92 / 0.92  fail      worse
+synthesizer        39    8   0.94 / 0.74  0.79-0.98 / 0.59-0.85  0.89 / 1.00  pass      worse
+trumpet            18   63   0.75 / 0.17  0.30-0.95 / 0.06-0.39  0.60 / 0.67  fail      worse
+violin             15   25   0.80 / 0.27  0.38-0.96 / 0.11-0.52  0.86 / 0.80  fail      worse
+voice              31   17   0.85 / 0.94  0.70-0.94 / 0.79-0.98  0.88 / 0.90  pass      no clear gain

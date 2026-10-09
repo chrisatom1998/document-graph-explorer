@@ -1,0 +1,7632 @@
+{
+ "model": "gpt-audio-1.5",
+ "task": "instruments",
+ "answers": {
+  "dj2-54667c53919a43df": {
+   "answer": {
+    "present": [
+     "organ"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-f41b69b61d04e84e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-3f7193910a1fffc8": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-9cff939c65b8f212": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-ca108a5fcf3c325d": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-0fce11f3501613cf": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-4f66aa3d1b90fe4e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-610ac4e41688c5b0": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-0a345b202f364225": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-a9c4124fca0bf226": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-8f3ddbd008c6170e": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-9cd84eb5a6bb0172": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-19c0718ef02499bf": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-9f6e10b8d15cee61": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-c5107a58845349da": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-48e975f3c9dc0fd0": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-eb0ac9ccb4eaa1b7": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-64e1415f44945003": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-2e48b40c29a27d21": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-06ba749111a9b5ee": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-1138784611ddaab0": {
+   "answer": {
+    "present": [
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 13
+   },
+   "usd": 0.0038575
+  },
+  "dj2-b04f8c3f00e90fc1": {
+   "answer": {
+    "present": [
+     "guitar",
+     "bass",
+     "drums",
+     "cymbals"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-1f2301b43aaf1435": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-7dcc9764bfe812f5": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-21ee837b380b7099": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-9b408414d602d2b4": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-f9ed91cd0af6c416": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-f48eee5be782c97a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-6217c026a9ef89ca": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-5ba420b40cf7113d": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-72586f79c5fd5626": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-526bb7f2d11462c4": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-8db3d7bf76a5fa6e": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-1a10b36d74a1dcfa": {
+   "answer": {
+    "present": [
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-92ad7f06b2366958": {
+   "answer": {
+    "present": [
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-b49be9b551198720": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-1a57fa0ad4c8c5fc": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-519dffdf338e7a68": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-667b664eedc8a7d7": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-42b274f49d0806fb": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-38e351eb224e214f": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-0e14d9a7563e5812": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-ae475a43efa7f55f": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-d41250a06eff12f2": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-1c2c4250cef010c7": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-efb1c9d401f7d530": {
+   "answer": {
+    "present": [
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 13
+   },
+   "usd": 0.0038575
+  },
+  "dj2-5ffc423cd9a12c6b": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-13526c63c8deb399": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 14
+   },
+   "usd": 0.0038675
+  },
+  "dj2-b19e5af410096c66": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 5
+   },
+   "usd": 0.0037775
+  },
+  "dj2-e2b64ced23641e49": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-7e1c2f22dd3c9038": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-788844b07f89b818": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-716006edd4e370e3": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-290199e2a719fadb": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-2a68fdf85b5a8757": {
+   "answer": {
+    "present": [
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-cd6684cf0f8e3135": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-c9eb929fe921b9fc": {
+   "answer": {
+    "present": [
+     "voice",
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-ab3690af4d339790": {
+   "answer": {
+    "present": [
+     "saxophone"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 9
+   },
+   "usd": 0.0038174999999999997
+  },
+  "dj2-98988ee4bd2cc90c": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-5e679f133edc13fb": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-9886c7be81f833d1": {
+   "answer": {
+    "present": [
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-e4004d4910fd42a8": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-8c06617c907c8725": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "trumpet",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 22
+   },
+   "usd": 0.0039475
+  },
+  "dj2-9d34c89b39335273": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-88033c1f961f0d64": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-0174e18e7124d7ed": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-de12c969ec19b920": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-15f6194991e7856c": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 14
+   },
+   "usd": 0.0038675
+  },
+  "dj2-72689ffa259dc6cf": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-7a4eb530625366f8": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-81b6ae831f680121": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-332e2994d1dd6e16": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-ca47c396d38cde45": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-6d26852bf9683b7d": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-94ca4881251654dc": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-c40d23372373b457": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-761df068a23351cf": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-0e43a265b24292f8": {
+   "answer": {
+    "present": [
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-adda91d83af81f67": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-8dfcb0b0de334ad4": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-30f13776986999d6": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-5e5083ff3ea76656": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-613621244e50f09e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-bb75447e981a7612": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-e76524770313ae53": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-545f93a447d8b05c": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-76980f40ef2a58cc": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-dfe7b92262b53b42": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-89bf1b1b68873382": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-b80e255f8ca4becc": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-d6ae3ab9e49ba306": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-43b40d7d68fa1aba": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-d2e2a20581699b13": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-2e089b526dc2ab0c": {
+   "answer": {
+    "present": [
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-6c10b7f49bc06b91": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-589c535215a7efa6": {
+   "answer": {
+    "present": [
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-85aa7ec4cb26940d": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-370b1a5ec16d0449": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-646525546968c2da": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-4783531498863e58": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-dc89054c0618fc6a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-c985276ea9cf3c6a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-4c21961eeceeef19": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-f16ccd41823969b2": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-fb136071ec03efed": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-ce03940829a8bfe5": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-3b43156eb4da3d6c": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-25ca16fa0af88db9": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 5
+   },
+   "usd": 0.0037775
+  },
+  "dj2-b5b6c52c59365564": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-99dfff39bc038899": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-ded67210d0003d6c": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-25238343152721f3": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-fa90cf0320595120": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-d65d22d9a5570341": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-b9c7812383a05706": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-f50ffae408ff96eb": {
+   "answer": {
+    "present": [
+     "trumpet",
+     "drums",
+     "cymbals",
+     "bass"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 22
+   },
+   "usd": 0.0039475
+  },
+  "dj2-a3bf7713166dfaab": {
+   "answer": {
+    "present": [
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 13
+   },
+   "usd": 0.0038575
+  },
+  "dj2-0fc0169d83aad5ca": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-6c396cb50cc48df1": {
+   "answer": {
+    "present": [
+     "voice",
+     "organ"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-7e0ad0dc128f8fec": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-29ce0be4fea7fe9f": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-aab4d058daf4a046": {
+   "answer": {
+    "present": [
+     "organ"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-947b8656f1f39399": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-e090fb57b6cc388d": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-213db2942f37e04d": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-0335f2cf2a1fdff7": {
+   "answer": {
+    "present": [
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 13
+   },
+   "usd": 0.0038575
+  },
+  "dj2-a35fab8065dbc4d3": {
+   "answer": {
+    "present": [
+     "organ"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-ccb25e68d0c45c2f": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-72790b26299f348b": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-d07e7a1254b16c25": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-8dfa758dd7421221": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 14
+   },
+   "usd": 0.0038675
+  },
+  "dj2-401d3fc6fa2bbb0e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-c45a91c34ea47f5c": {
+   "answer": {
+    "present": [
+     "voice",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-c27d8de38cc26ab7": {
+   "answer": {
+    "present": [
+     "piano",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-209ef94a6a3550b6": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-408326934f84adf7": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-f5040cd949bc1109": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-4a1a0b75426c6402": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "guitar",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-09eec5cf968310ad": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "trumpet"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 22
+   },
+   "usd": 0.0039475
+  },
+  "dj2-83bbb6369c1925ff": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-2498f70cee9fee04": {
+   "answer": {
+    "present": [
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-1156cc5232d54f10": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-011ee97749d49a7b": {
+   "answer": {
+    "present": [
+     "piano",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-a68c066c123747f8": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-985fcfaae111ff0a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-927bb2fa74feb027": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-8c587db6bab47779": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-cc7db07cb7357916": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 5
+   },
+   "usd": 0.0037775
+  },
+  "dj2-c8ed72e264d12fae": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-523c51ef35e3784d": {
+   "answer": {
+    "present": [
+     "voice",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 13
+   },
+   "usd": 0.0038575
+  },
+  "dj2-e2aed27ad7dd82a7": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "trumpet",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 25
+   },
+   "usd": 0.0039775
+  },
+  "dj2-2d1f5c426d2d2620": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-d092973965703c64": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-773d41a397a01c80": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-a952952222665da2": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-0ceb4d0819a0f500": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-5d5ef55c2c708c8d": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-0e512a0820088a8d": {
+   "answer": {
+    "present": [
+     "piano",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-e4aa039c75e12e20": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-ffa26200c54459fe": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-b0a89bc0cd4eaae3": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-8033ea521fbbf8da": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-4f0b2fef3b50349d": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-901b000c41db668a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-b3cc0073e859db08": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-a12dfd92e1008527": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-4c8a9068f9b4fba6": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-0dcec573a0e6cb85": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-4d0c9c50c390cd3e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-621ff2916837a342": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-3fef36f0e3db348b": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 18
+   },
+   "usd": 0.0039074999999999995
+  },
+  "dj2-ee5d49c411b7620b": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-026bffc0e9b6719b": {
+   "answer": {
+    "present": [
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-46e6004445ac1c39": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-163d562e710bdf06": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-14716cd5b698eed2": {
+   "answer": {
+    "present": [
+     "organ"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-ecaf03f67ffc9cdd": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-bafe78782b0edd46": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-46e0153726a99498": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-1e58b74ef3a4dd16": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-25372875892b7cee": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-b82ef846b54a6bdd": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-34a4c827ad8c4327": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-04e4c9ed9733e44e": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-8e6781faec0509be": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-68813186205731ba": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-2355fd86f4bb88e1": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-e2088fba3fecbb82": {
+   "answer": {
+    "present": [
+     "trumpet"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 9
+   },
+   "usd": 0.0038174999999999997
+  },
+  "dj2-84f71df41703eab4": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-49eb247159372fdc": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-05280d96db0ed887": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "saxophone"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 19
+   },
+   "usd": 0.0039175
+  },
+  "dj2-37dc02fd927e40f7": {
+   "answer": {
+    "present": [
+     "voice",
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-10b0298b0d6d5ded": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-9a61c1e614e878e2": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-b07df7fa5fea37fa": {
+   "answer": {
+    "present": [
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-f10e09b06cbb4825": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "saxophone"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 22
+   },
+   "usd": 0.0039475
+  },
+  "dj2-6e8ec8619e21a425": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-9f6255eafa1a5323": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-6a1f20527d6a2446": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-8920e645dc596a34": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-27febb5283bd66e6": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-4405212d1a9d9f84": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-70de77a4b65c469c": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-b5d5c2e175e1c861": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-2f9d6f36947dc71e": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-1bb9e8b4928e788a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-1bcef2f608eb2713": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-004faaacd9fbd2d7": {
+   "answer": {
+    "present": [
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 13
+   },
+   "usd": 0.0038575
+  },
+  "dj2-1751dc9342188a09": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-1161b5ffbf7603f1": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 18
+   },
+   "usd": 0.0039074999999999995
+  },
+  "dj2-f8fca3af89968204": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-086d62f29402fe43": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-ce5d2804d53c963c": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-9890cefc78736209": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-5da50f0185d46c31": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-b3a28d58a9ebc198": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-b9cb4cfa29867dec": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-0ab4a87896b9262a": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-ec25d203281e6b11": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-a43b018408ecdb0f": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-9e6f7adef0626dc3": {
+   "answer": {
+    "present": [
+     "guitar",
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-58f361b55e8aea32": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-d626af54c9b84ffa": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-1a2fff92f0e06528": {
+   "answer": {
+    "present": [
+     "drums",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-e80fc12460672d6b": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-d0bc0d0f2231d6ec": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-586532aeaef8307e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-26a783a4a5b302a1": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-1eb96dedfb7c8497": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "saxophone"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 19
+   },
+   "usd": 0.0039175
+  },
+  "dj2-c41afaaeeae99e1c": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-1e96dd9e3d2f6ab3": {
+   "answer": {
+    "present": [
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-6a3cc104ff97ed97": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-e58522c3c0e8f046": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-6de5cd38ef933ba6": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-5b90164570277db8": {
+   "answer": {
+    "present": [
+     "piano",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-951903f7cd1325fa": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-af0cf0a27329716e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-ddb3d2db77555430": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-89898ad5aa0e1ecc": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-605b1421f548d17d": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-fa4c18bc1b686f5b": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-c89fdaeae24a8dc2": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-5d10d19c4ba9a634": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-c70c960b5ac971b0": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-e207ce0cf7cb9642": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-a5600356d1a10936": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-13aa54072eec1d0b": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-b1e5c333fbfe00e7": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-8e382c5f924b3085": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-5dbfa04ea35a3cb5": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 19
+   },
+   "usd": 0.0039175
+  },
+  "dj2-446a02fb8f5096b1": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-3f28767f07cb9ef0": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-9b0094c44e819829": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-ec025baa179e6c9a": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-66894b1dea1f92c4": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-60a49bd5323d520e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 18
+   },
+   "usd": 0.0039074999999999995
+  },
+  "dj2-53fb0e3861aeed04": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-405b8964ffd14383": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-e2a8412025110101": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-7504f4d92cb37748": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-ccc59feef8f91dd2": {
+   "answer": {
+    "present": [
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-5ed64d85650fc549": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-c72b72f1c9eb5f35": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-c11e33ef37ff4e99": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-52a03bfffcab27b2": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-c8ca24c07b948923": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-5e5c5dae6a435a8f": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-c3fc38b35cd3d6d5": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-f9467ed84ee0c3ae": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-c6f407f738591b2f": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-9e6c889679600198": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-dc9a2913e7e0abe0": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-20d363f4fe1158b2": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-83d154347df16f6f": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-e54471610ad96e87": {
+   "answer": {
+    "present": [
+     "violin",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-78c94900aa774dcf": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-4f565fc78d1a6147": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-4e16857b02be89aa": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-f7e77ca55d2a84b1": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-75f762bb5b296185": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-4456e74e72facfa0": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-873ccdbf0256fae4": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-6cdce15ffe901bf0": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-ce782f27057c2b99": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-43b9915c63120da3": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-07150dfcfb2bcd58": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-2bc19db87f44de96": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-422734fe3e46cc5d": {
+   "answer": {
+    "present": [
+     "bass",
+     "drums",
+     "cymbals"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-04c97480d5261a37": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-4dd0ac079e1e721c": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-0ed06a0d387a498f": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-c68e3c500603aeed": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 15
+   },
+   "usd": 0.0038775
+  },
+  "dj2-2fe8615837bf021b": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-c9770407148a9a80": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-041edd164a090773": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-19e762cd265fea6d": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-175f6fdb7ed17832": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-abc965dbd634a9e1": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-74ac2fe49249857a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 18
+   },
+   "usd": 0.0039074999999999995
+  },
+  "dj2-38a08a0d8aa3e21c": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-8ceca7d69d9823ac": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-fdc75922116c5665": {
+   "answer": {
+    "present": [
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-fc1c6c1e2fa6d58d": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-ad1082a7be5964d6": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-12acceeb274aa090": {
+   "answer": {
+    "present": [
+     "trumpet"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 9
+   },
+   "usd": 0.0038174999999999997
+  },
+  "dj2-a9253c9d26aceca6": {
+   "answer": {
+    "present": [
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-7fb2dd31415c0387": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 5
+   },
+   "usd": 0.0037775
+  },
+  "dj2-5f784b8725989f5e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-77083443eac6920a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-fa90585906099a1a": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-d26aae1b2e273985": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-74de380205b6e8f8": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "saxophone"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 22
+   },
+   "usd": 0.0039475
+  },
+  "dj2-d2bcf8be012d92bb": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-e803170bda71f2c5": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-9626dd24bedc0763": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-2b7de5df9696b17f": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-c585caed44f649cc": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-1edfd78ba96c82d3": {
+   "answer": {
+    "present": [
+     "organ",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-6d125f2d7bf141b1": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-d86c05decbfbd39e": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-effd8aef36fb8545": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-e60c78d24322e735": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-6777d4af47eed379": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-6ce9fa74b2070d42": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-b1ae22967898173e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-ea80a06ec15b8e10": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-99580f958eb9aba0": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-4a14eb318b260d1a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-b9c60622915d0794": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-db2e70af37955b8e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-16b09a42f1fb62dc": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-13408ee6a07c9f1b": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-94924e82954b21f1": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-a9ba2d68d8bb7ab9": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-b1c2188862d15003": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "bass"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-27f02405c19d460f": {
+   "answer": {
+    "present": [
+     "trumpet",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-4c328b9b8959df2e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-5f57f80ae9cc2fb7": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-3d76d54686d59b0e": {
+   "answer": {
+    "present": [
+     "voice",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-571acd68bf2936db": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-1d3d865be78da2df": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-96edca43d2209c9f": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 15
+   },
+   "usd": 0.0038775
+  },
+  "dj2-93b1a861eaf3dec7": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-4cc190b0728427f9": {
+   "answer": {
+    "present": [
+     "synthesizer",
+     "drums",
+     "cymbals",
+     "bass"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-c93dce13527f6000": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-ffeb6db07728fe3b": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-dadafa052079a2c2": {
+   "answer": {
+    "present": [
+     "saxophone"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 9
+   },
+   "usd": 0.0038174999999999997
+  },
+  "dj2-4133052ca0d4cf5e": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-090005a65efd1000": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-6a13f0663df1d9cc": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-777f241489afb048": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-730edcc7136a8eef": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-44e6083d2e52948d": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-1aea8d182b322507": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-0f890a2f2adf714e": {
+   "answer": {
+    "present": [
+     "violin",
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-3698aba35894681d": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-d92c9f6e4455d0a0": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-fe0a7215f5ce22ee": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-7b68fa7d75b408a6": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-cbec7d67641af3c0": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-781558ee6e33076a": {
+   "answer": {
+    "present": [
+     "violin",
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-6f7c2572e6e2c72b": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 5
+   },
+   "usd": 0.0037775
+  },
+  "dj2-59872adc1468e0f8": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-9c6c407bc45a14cc": {
+   "answer": {
+    "present": [
+     "voice",
+     "saxophone"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-aa080d310a5ccf67": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-74811933ca3ebf01": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-dedb93062d053686": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-bac821d803546fd5": {
+   "answer": {
+    "present": [
+     "piano",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-a20765360594dd9d": {
+   "answer": {
+    "present": [
+     "piano",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-e85fad1302a8f650": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-9ec09a905603ff4e": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-9932b53ab5411853": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-c50a1e7f65e773c6": {
+   "answer": {
+    "present": [
+     "voice",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-d8972913e23291ce": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-610b407e849d6832": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-3ec59fb346356f58": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-f659d86a053b1bfa": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-669297dc9bb70fc8": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-3dd443d74096f945": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-22fdf71a8bd180eb": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-f215d1027ac7ed10": {
+   "answer": {
+    "present": [
+     "voice",
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-3705b55ee5ab6b37": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-d7db1a12769c9418": {
+   "answer": {
+    "present": [
+     "piano",
+     "saxophone"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 13
+   },
+   "usd": 0.0038575
+  },
+  "dj2-c14f81577b187799": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-939dee62a84ba02d": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-a43b009b031e62ff": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 5
+   },
+   "usd": 0.0037775
+  },
+  "dj2-9d9e5cae0a087d63": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-8216092be5ab9b0b": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 14
+   },
+   "usd": 0.0038675
+  },
+  "dj2-f7c312bf867d45fc": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-a65ad8698265ea35": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-f88d9a6916ecaf71": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-d899c098944f38d6": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "saxophone"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 22
+   },
+   "usd": 0.0039475
+  },
+  "dj2-6e555d95fb058191": {
+   "answer": {
+    "present": [
+     "piano",
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-c880f9c9f1f9d960": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-4b3a1ed1dc7f9f71": {
+   "answer": {
+    "present": [
+     "cymbals",
+     "trumpet"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 15
+   },
+   "usd": 0.0038775
+  },
+  "dj2-195a64afeee378b2": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-3527866ab778c219": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-e89b6eeca3283843": {
+   "answer": {
+    "present": [
+     "voice",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-73c6c5fd0b7919f9": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-f8c71ad0799306d9": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-1a0428bee66a2469": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-78f14c359012e927": {
+   "answer": {
+    "present": [
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-35e1a41a296df6b9": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-3953b8d817a53da1": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-8895059c66cdfe25": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-71ae501bb226b43a": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-498ca06e276cb67f": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-d8170395d5f95fe7": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-47f8aa0e3e0941e4": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-5dc02f6ea3e6f6de": {
+   "answer": {
+    "present": [
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-c594166f51d66fb9": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-d8547a37897663e4": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 14
+   },
+   "usd": 0.0038675
+  },
+  "dj2-19f463de9bca360c": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-e51d375b7312184a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-5eeff71e8dff9161": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-818f16d0f052a9cb": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-4ed561292e918711": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-149f2ed2a884c738": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-4b610cd46abf0521": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-93f04920dc38ec43": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-7ee25b42944b2f7f": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-a4ee6e56626134bb": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-8f4729e532c33128": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-5b3a0851f0f86bd4": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-20ff7e018d0bd58f": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-bed186e970b49ff1": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-404c3443caff6254": {
+   "answer": {
+    "present": [
+     "bass",
+     "drums",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 14
+   },
+   "usd": 0.0038675
+  },
+  "dj2-89877bd4f16e7b90": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 15
+   },
+   "usd": 0.0038775
+  },
+  "dj2-19dcee1c4f9d178d": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-fabea5743e492555": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 5
+   },
+   "usd": 0.0037775
+  },
+  "dj2-808586e520b002a7": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-2e8fd4cec7a69583": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-326d3bf3d7fce932": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "trumpet",
+     "saxophone"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 27
+   },
+   "usd": 0.0039975
+  },
+  "dj2-74bdc267138beaff": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-467f1bacb606faf2": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-2ba96513dae9b018": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-e9acc9a66c8aee11": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-c2dbbb0a9f58ce2f": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-95749f1e1db9ec9b": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-54fe879f70b1d064": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-e3eb171b7276f45a": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-b04f0d61872d1c48": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 16
+   },
+   "usd": 0.0038875
+  },
+  "dj2-035c5075249cd1c7": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-83cf53e05dce6375": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-2596acdd866356c6": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "saxophone"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 22
+   },
+   "usd": 0.0039475
+  },
+  "dj2-2e401d682ca25db5": {
+   "answer": {
+    "present": [
+     "drums",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-76c552afa069c706": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-928417671d266f11": {
+   "answer": {
+    "present": [
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-2f2ae190bc1bc02c": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-f3fb736942304ad0": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 19
+   },
+   "usd": 0.0039175
+  },
+  "dj2-714e0a410327e8c3": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-5de2eac90e07f56c": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-d605b0ad21ef59e9": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-0b0470e17aafccbe": {
+   "answer": {
+    "present": [
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-377be1e0838c104d": {
+   "answer": {
+    "present": [
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 13
+   },
+   "usd": 0.0038575
+  },
+  "dj2-b3aef9326505ed53": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-a9188e9d43bcd618": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-c167a68b94087e2a": {
+   "answer": {
+    "present": [
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-e527e9d1e95f2508": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-d55c03e61704902b": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-acd32f01329f9347": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-0f9b539663fe561a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-680ae2769e64de2d": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-0b601f5144132dde": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-1163a2c35c4a8f4a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-c66f1ae874b98747": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-502b59e09111d50c": {
+   "answer": {
+    "present": [
+     "guitar",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-b75ebfb206c1b006": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-661a775e5a98a3cb": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-310a702edeab1afd": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-1d86b47153f9773e": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-9a2613512d28dacb": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-90294ed1eca55e7a": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 14
+   },
+   "usd": 0.0038675
+  },
+  "dj2-669cc4bf94008873": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-69e7c7bf3b889e9d": {
+   "answer": {
+    "present": [
+     "guitar"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-fc8da4ce9962a408": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-33200d496af439d1": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-49623757aa14e769": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-bee398b29cd360e4": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-99f4da4bad3f2452": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-31503c9657657724": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-01acf351d2435d25": {
+   "answer": {
+    "present": [
+     "piano",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 11
+   },
+   "usd": 0.0038374999999999998
+  },
+  "dj2-b98961364db8d94a": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 21
+   },
+   "usd": 0.0039375
+  },
+  "dj2-2d248ab0625aca3f": {
+   "answer": {
+    "present": [
+     "piano"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 8
+   },
+   "usd": 0.0038075
+  },
+  "dj2-fc47f4ddafbc2e77": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-905b271b90d10e68": {
+   "answer": {
+    "present": [
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 7
+   },
+   "usd": 0.0037975
+  },
+  "dj2-079a4a7944406e5a": {
+   "answer": {
+    "present": [
+     "piano",
+     "violin"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 12
+   },
+   "usd": 0.0038475
+  },
+  "dj2-d441fec2a46c0224": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-3ae0733b5a550997": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-b09d57948120d866": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 17
+   },
+   "usd": 0.0038975
+  },
+  "dj2-f3add4cdc6c2cb93": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-52864fc28b13d956": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 24
+   },
+   "usd": 0.0039675
+  },
+  "dj2-79e27683a5875de0": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-f7a58fb5362bfb68": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "guitar",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 18
+   },
+   "usd": 0.0039074999999999995
+  },
+  "dj2-3c50d3551ce65b22": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  },
+  "dj2-679bf959583e3eee": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 20
+   },
+   "usd": 0.0039275
+  },
+  "dj2-e9e63a83786b0316": {
+   "answer": {
+    "present": [
+     "drums",
+     "bass",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 14
+   },
+   "usd": 0.0038675
+  },
+  "dj2-2340a321e446c920": {
+   "answer": {
+    "present": [
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 10
+   },
+   "usd": 0.0038274999999999997
+  },
+  "dj2-18395820565f5382": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer",
+     "voice"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 26
+   },
+   "usd": 0.0039875
+  },
+  "dj2-3218fe2c9c278642": {
+   "answer": {
+    "present": [
+     "drums",
+     "cymbals",
+     "bass",
+     "synthesizer"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 211,
+    "out": 23
+   },
+   "usd": 0.0039575
+  }
+ }
+}

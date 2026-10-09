@@ -1,0 +1,250 @@
+{
+ "model": "gpt-audio-1.5",
+ "task": "instruments",
+ "clips": 500,
+ "usd": 1.9525,
+ "result": {
+  "bass": {
+   "precision": 0.353,
+   "recall": 0.8,
+   "tp": 12,
+   "fp": 22,
+   "fn": 3,
+   "positives": 15,
+   "negatives": 35,
+   "precisionCI95": [
+    0.215,
+    0.521
+   ],
+   "recallCI95": [
+    0.548,
+    0.93
+   ],
+   "main": [
+    0.6,
+    0.6
+   ],
+   "vsMain": "worse"
+  },
+  "cymbals": {
+   "precision": 0.853,
+   "recall": 0.853,
+   "tp": 29,
+   "fp": 5,
+   "fn": 5,
+   "positives": 34,
+   "negatives": 9,
+   "precisionCI95": [
+    0.699,
+    0.936
+   ],
+   "recallCI95": [
+    0.699,
+    0.936
+   ],
+   "main": [
+    0.94,
+    0.94
+   ],
+   "vsMain": "worse"
+  },
+  "drums": {
+   "precision": 0.909,
+   "recall": 0.962,
+   "tp": 50,
+   "fp": 5,
+   "fn": 2,
+   "positives": 52,
+   "negatives": 9,
+   "precisionCI95": [
+    0.804,
+    0.961
+   ],
+   "recallCI95": [
+    0.87,
+    0.989
+   ],
+   "main": [
+    0.91,
+    0.98
+   ],
+   "vsMain": "no clear gain"
+  },
+  "guitar": {
+   "precision": 0.905,
+   "recall": 0.95,
+   "tp": 19,
+   "fp": 2,
+   "fn": 1,
+   "positives": 20,
+   "negatives": 11,
+   "precisionCI95": [
+    0.711,
+    0.973
+   ],
+   "recallCI95": [
+    0.764,
+    0.991
+   ],
+   "main": [
+    0.83,
+    0.95
+   ],
+   "vsMain": "no clear gain"
+  },
+  "organ": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 1,
+   "fn": 16,
+   "positives": 16,
+   "negatives": 37,
+   "precisionCI95": [
+    0.0,
+    0.793
+   ],
+   "recallCI95": [
+    0.0,
+    0.194
+   ],
+   "main": [
+    0.483,
+    0.875
+   ],
+   "vsMain": "no clear gain"
+  },
+  "piano": {
+   "precision": 0.846,
+   "recall": 0.733,
+   "tp": 11,
+   "fp": 2,
+   "fn": 4,
+   "positives": 15,
+   "negatives": 17,
+   "precisionCI95": [
+    0.578,
+    0.957
+   ],
+   "recallCI95": [
+    0.48,
+    0.891
+   ],
+   "main": [
+    0.93,
+    0.93
+   ],
+   "vsMain": "worse"
+  },
+  "saxophone": {
+   "precision": 1.0,
+   "recall": 0.32,
+   "tp": 8,
+   "fp": 0,
+   "fn": 17,
+   "positives": 25,
+   "negatives": 27,
+   "precisionCI95": [
+    0.676,
+    1.0
+   ],
+   "recallCI95": [
+    0.172,
+    0.516
+   ],
+   "main": [
+    0.92,
+    0.92
+   ],
+   "vsMain": "worse"
+  },
+  "synthesizer": {
+   "precision": 0.935,
+   "recall": 0.744,
+   "tp": 29,
+   "fp": 2,
+   "fn": 10,
+   "positives": 39,
+   "negatives": 8,
+   "precisionCI95": [
+    0.793,
+    0.982
+   ],
+   "recallCI95": [
+    0.589,
+    0.854
+   ],
+   "main": [
+    0.886,
+    1.0
+   ],
+   "vsMain": "worse"
+  },
+  "trumpet": {
+   "precision": 0.75,
+   "recall": 0.167,
+   "tp": 3,
+   "fp": 1,
+   "fn": 15,
+   "positives": 18,
+   "negatives": 63,
+   "precisionCI95": [
+    0.301,
+    0.954
+   ],
+   "recallCI95": [
+    0.058,
+    0.392
+   ],
+   "main": [
+    0.6,
+    0.67
+   ],
+   "vsMain": "worse"
+  },
+  "violin": {
+   "precision": 0.8,
+   "recall": 0.267,
+   "tp": 4,
+   "fp": 1,
+   "fn": 11,
+   "positives": 15,
+   "negatives": 25,
+   "precisionCI95": [
+    0.376,
+    0.964
+   ],
+   "recallCI95": [
+    0.109,
+    0.52
+   ],
+   "main": [
+    0.86,
+    0.8
+   ],
+   "vsMain": "worse"
+  },
+  "voice": {
+   "precision": 0.853,
+   "recall": 0.935,
+   "tp": 29,
+   "fp": 5,
+   "fn": 2,
+   "positives": 31,
+   "negatives": 17,
+   "precisionCI95": [
+    0.699,
+    0.936
+   ],
+   "recallCI95": [
+    0.793,
+    0.982
+   ],
+   "main": [
+    0.875,
+    0.903
+   ],
+   "vsMain": "no clear gain"
+  }
+ }
+}
