@@ -5,6 +5,8 @@ import '@testing-library/jest-dom/vitest';
 import type { DocNode } from '../model/types';
 import DjCopilot from './DjCopilot';
 import { applyCopilotProperties } from '../audio/applyCopilotProperties';
+import { prepareListeningClips } from '../audio/copilotListening';
+vi.mock('../audio/copilotListening', async importOriginal => ({ ...await importOriginal<typeof import('../audio/copilotListening')>(), prepareListeningClips: vi.fn() }));
 vi.mock('../audio/applyCopilotProperties', () => ({ applyCopilotProperties: vi.fn(async () => 'AI-suggested properties saved for 1 sound.'), copilotCorpusIdentity: () => 'test-corpus' }));
 vi.mock('./DjTagCorrection', () => ({ default: () => <p>Manual correction controls</p> }));
 vi.mock('../persistence/originals', () => ({ getOriginal: vi.fn(async () => undefined) }));
@@ -14,6 +16,52 @@ const clip = (id: string): DocNode => ({ id, title: `${id}.wav`, path: `/private
 const props = () => ({ audio: ['one', 'two', 'three', 'four', 'five', 'six'].map(clip), ready: true, localApi: true, crate: [], onAddToCrate: vi.fn(), onOpen: vi.fn() });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.clearAllMocks(); });
 describe('copilot review UI', () => {
+  it('defaults to listening, discloses uploads, and waits for a click before decoding audio', async () => {
+    const clips = [{ ref: 'Sample 1', wav: 'encoded-audio' }];
+    vi.mocked(prepareListeningClips).mockResolvedValueOnce(clips);
+    const fetch = vi.fn(async () => Response.json({ answer: 'A chopped vocal in the excerpt.', model: 'gpt-audio-1.5',
+      listening: [{ ref: 'Sample 1', startSeconds: 0, durationSeconds: 2 }], suggestions: [] }));
+    vi.stubGlobal('fetch', fetch);
+    const p = props(); render(<DjCopilot {...p} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'one.wav' }));
+    expect(screen.getByLabelText('Review model')).toHaveValue('audio');
+    expect(screen.getByText(/uploads the first 10 seconds/)).toBeInTheDocument();
+    expect(prepareListeningClips).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Review selected sounds' }));
+    expect(await screen.findByText('A chopped vocal in the excerpt.')).toBeInTheDocument();
+    expect(prepareListeningClips).toHaveBeenCalledWith([p.audio[0]], expect.any(AbortSignal));
+    expect(fetch).toHaveBeenCalledWith('/api/dj-copilot/review-audio', expect.objectContaining({ method: 'POST' }));
+    const sent = JSON.parse(String((fetch.mock.calls as unknown as [string, RequestInit][])[0][1].body));
+    expect(sent.clips).toEqual(clips);
+    expect(JSON.stringify(sent)).not.toMatch(/private|one\.wav/);
+    expect(screen.getByText(/Sample 1, first 2.0s/)).toBeInTheDocument();
+    expect(applyCopilotProperties).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('Review model'), { target: { value: 'fast' } });
+    expect(screen.getByText(/review is historical/)).toBeInTheDocument();
+  });
+  it('keeps local evidence when an original is missing and makes no cloud request', async () => {
+    vi.mocked(prepareListeningClips).mockRejectedValueOnce(Error('Add the original audio file again before listening to it.'));
+    const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
+    render(<DjCopilot {...props()} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'one.wav' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Review selected sounds' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('original audio');
+    expect(fetch).not.toHaveBeenCalled();
+    expect(screen.getByText('Confirmed by you: voice, vocal chops')).toBeInTheDocument();
+  });
+  it('does not upload after the user cancels excerpt preparation', async () => {
+    let resolve!: (clips: { ref: string; wav: string }[]) => void;
+    vi.mocked(prepareListeningClips).mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+    const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
+    render(<DjCopilot {...props()} />);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'one.wav' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Review selected sounds' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop copilot' }));
+    resolve([{ ref: 'Sample 1', wav: 'encoded-audio' }]);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Review selected sounds' })).toBeEnabled());
+    expect(fetch).not.toHaveBeenCalled();
+  });
   it('shows evidence locally and limits review batches to five', () => {
     const fetch = vi.fn(); vi.stubGlobal('fetch', fetch); render(<DjCopilot {...props()} />);
     const boxes = screen.getAllByRole('checkbox');
@@ -26,6 +74,7 @@ describe('copilot review UI', () => {
   it('sends anonymized evidence only and displays advice without applying labels', async () => {
     const fetch = vi.fn(async () => Response.json({ answer: 'Listen to Sample 1.', model: 'gpt-6.1-sol' })); vi.stubGlobal('fetch', fetch);
     const p = props(); render(<DjCopilot {...p} />); fireEvent.click(screen.getByRole('checkbox', { name: 'one.wav' }));
+    fireEvent.change(screen.getByLabelText('Review model'), { target: { value: 'fast' } });
     fireEvent.click(screen.getByRole('button', { name: 'Review selected sounds' }));
     expect(await screen.findByText('Listen to Sample 1.')).toBeInTheDocument();
     const sent = String((fetch.mock.calls as unknown as [string, RequestInit][])[0][1].body);
@@ -38,14 +87,16 @@ describe('copilot review UI', () => {
   it('preserves local evidence after an API error', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({ error: 'API quota exhausted.' }, { status: 502 })));
     render(<DjCopilot {...props()} />); fireEvent.click(screen.getByRole('checkbox', { name: 'one.wav' }));
+    fireEvent.change(screen.getByLabelText('Review model'), { target: { value: 'fast' } });
     fireEvent.click(screen.getByRole('button', { name: 'Review selected sounds' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('API quota exhausted');
     expect(screen.getByText('Confirmed by you: voice, vocal chops')).toBeInTheDocument();
   });
-  it('aborts the request on close and never uploads audio without a transcription action', async () => {
+  it('aborts the request on close and does not prepare audio for a metadata-only review', async () => {
     let signal: AbortSignal | undefined;
     vi.stubGlobal('fetch', vi.fn((_url, options) => { signal = options.signal; return new Promise((_resolve, reject) => signal?.addEventListener('abort', () => reject(Error('Aborted')))); }));
     const view = render(<DjCopilot {...props()} />); fireEvent.click(screen.getByRole('checkbox', { name: 'one.wav' }));
+    fireEvent.change(screen.getByLabelText('Review model'), { target: { value: 'fast' } });
     fireEvent.click(screen.getByRole('button', { name: 'Review selected sounds' }));
     await waitFor(() => expect(signal).toBeDefined()); view.unmount(); expect(signal!.aborted).toBe(true);
   });
@@ -67,6 +118,7 @@ describe('copilot review UI', () => {
     const p = props(); p.audio[0].audio!.confirmedDjTags = undefined;
     render(<DjCopilot {...p} />);
     fireEvent.click(screen.getByRole('checkbox', { name: 'one.wav' }));
+    fireEvent.change(screen.getByLabelText('Review model'), { target: { value: 'fast' } });
     fireEvent.click(screen.getByRole('button', { name: 'Review selected sounds' }));
     const apply = await screen.findByRole('button', { name: 'Apply suggested properties' });
     expect(applyCopilotProperties).not.toHaveBeenCalled();
@@ -80,6 +132,7 @@ describe('copilot review UI', () => {
     const p = props(); p.audio[0].audio!.confirmedDjTags = undefined;
     render(<DjCopilot {...p} />);
     fireEvent.click(screen.getByRole('checkbox', { name: 'one.wav' }));
+    fireEvent.change(screen.getByLabelText('Review model'), { target: { value: 'fast' } });
     fireEvent.click(screen.getByRole('button', { name: 'Review selected sounds' }));
     const apply = await screen.findByRole('button', { name: 'Apply suggested properties' });
     vi.mocked(applyCopilotProperties).mockRejectedValueOnce(Error('Saving failed. Retry.'));

@@ -85,7 +85,7 @@ export function soundAttributeRows(audio: MusicAnalysis, node: Pick<DocNode,'tit
     `${fusion!.qualified?'Source classifier':audio.fusion?.imported?'Imported, unverified classifier':'Experimental, disabled classifier'} · ${d.state} · ${d.source} · head score range ${range(d.head)} · decision score range ${range(d.decision)}${d.eligible?'':' · head not enabled'}`);
   const hints=musicNameHints(node);
   for(const label of hints.instruments?.value??[])add('source',label,`From ${hints.instruments!.source} · not audio evidence`);
-  for(const item of projectedCopilotProperties(audio).current)add(item.group==='source'?'source':item.group==='production'?'effect':'character',item.label,`${audio.copilotProperties?.model??'AI'} metadata suggestion · not a listening assessment`);
+  for(const item of projectedCopilotProperties(audio).current)add(item.group==='source'?'source':item.group==='production'?'effect':'character',item.label,`${audio.copilotProperties?.model??'AI'} ${audio.copilotProperties?.model==='gpt-audio-1.5'?'audio-excerpt suggestion · unverified':'metadata suggestion · not a listening assessment'}`);
   return [...rows.values()];
 }
 

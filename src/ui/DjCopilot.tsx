@@ -9,14 +9,15 @@ import CopilotProperties from './CopilotProperties';
 import { parseCopilotSuggestions, type CopilotSuggestion } from '../audio/copilotProperties';
 import { applyCopilotProperties, copilotCorpusIdentity } from '../audio/applyCopilotProperties';
 import type { CopilotSample } from '../audio/copilotEvidence';
+import { LISTENING_MODEL, LISTENING_SECONDS, prepareListeningClips, type ListeningCoverage } from '../audio/copilotListening';
 
-interface Review { answer: string; fingerprint: string; mapping: string[]; model: string; warning?: string; suggestions: CopilotSuggestion[]; ids: string[]; evidence: CopilotSample[]; corpus: string }
+interface Review { answer: string; fingerprint: string; mapping: string[]; model: string; warning?: string; suggestions: CopilotSuggestion[]; ids: string[]; evidence: CopilotSample[]; corpus: string; listening?: ListeningCoverage[] }
 interface Transcript { text: string; seconds: number }
 export default function DjCopilot({ audio, ready, localApi, onAddToCrate, crate, onOpen, active = true, launch }: {
   launch?: { request: number; selectedIds: string[]; question: string };
   audio: DocNode[]; ready: boolean; localApi: boolean; onAddToCrate: (id: string) => void; crate: string[]; onOpen: (id: string) => void; active?: boolean;
 }) {
-  const [reviewMode, setReviewMode] = useState<'fast' | 'deep'>('fast');
+  const [reviewMode, setReviewMode] = useState<'audio' | 'fast' | 'deep'>('audio');
   const [selected, setSelected] = useState<string[]>([]);
   const [filter, setFilter] = useState('');
   const [playing, setPlaying] = useState('');
@@ -40,7 +41,7 @@ export default function DjCopilot({ audio, ready, localApi, onAddToCrate, crate,
     return node?.audio ? [node] : [];
   }), [selected, audio]);
   const evidence = useMemo(() => picked.flatMap((n, i) => { const sample = copilotEvidence(n, i); return sample ? [sample] : []; }), [picked]);
-  const fingerprint = JSON.stringify({ ids: picked.map(n => n.id), evidence, question });
+  const fingerprint = JSON.stringify({ ids: picked.map(n => n.id), evidence, question, reviewMode });
   const visible = audio.filter(n => n.title.toLowerCase().includes(filter.trim().toLowerCase()));
   const toggle = (id: string) => setSelected(previous => {
     const present = previous.filter(v => audio.some(n => n.id === v && n.audio));
@@ -61,14 +62,19 @@ export default function DjCopilot({ audio, ready, localApi, onAddToCrate, crate,
   const review = async () => {
     if (busy || applying || !ready || !localApi || !evidence.length || !question.trim()) return;
     const corpus = copilotCorpusIdentity();
-    const controller = start('Reviewing the selected evidence… This can take up to 3 minutes.');
+    const controller = start(reviewMode === 'audio' ? 'Preparing short audio excerpts for GPT-Audio-1.5…' : 'Reviewing the selected evidence… This can take up to 3 minutes.');
     try {
-      const data = await result(await fetch(reviewMode === 'fast' ? '/api/dj-copilot/review-fast' : '/api/dj-copilot/review', { method: 'POST',
+      const clips = reviewMode === 'audio' ? await prepareListeningClips(picked, controller.signal) : undefined;
+      controller.signal.throwIfAborted();
+      if (clips) setStatus('GPT-Audio-1.5 is listening to the uploaded excerpts…');
+      const data = await result(await fetch(reviewMode === 'audio' ? '/api/dj-copilot/review-audio' : reviewMode === 'fast' ? '/api/dj-copilot/review-fast' : '/api/dj-copilot/review', { method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-DJ-Assistant': '1' },
-        body: JSON.stringify({ samples: evidence, question }), signal: controller.signal }));
+        body: JSON.stringify({ samples: evidence, question, ...(clips ? { clips } : {}) }), signal: controller.signal }));
       if (typeof data.answer !== 'string' || !data.answer.trim()) throw Error('No completed review was returned.');
+      if (clips && (data.model !== LISTENING_MODEL || !Array.isArray(data.listening) || data.listening.length !== clips.length ||
+        data.listening.some((clip: ListeningCoverage, i: number) => !clip || clip.ref !== evidence[i].ref || clip.startSeconds !== 0 || !Number.isFinite(clip.durationSeconds) || clip.durationSeconds <= 0 || clip.durationSeconds > LISTENING_SECONDS))) throw Error('Invalid listening coverage returned.');
       if (controller.signal.aborted) return;
-      setReport({ answer: data.answer, model: data.model, warning: data.warning, fingerprint, mapping: picked.map((n, i) => `Sample ${i + 1}: ${n.title}`), suggestions: parseCopilotSuggestions(data.suggestions ?? [], evidence), ids: picked.map(n => n.id), evidence, corpus });
+      setReport({ answer: data.answer, model: data.model, warning: data.warning, fingerprint, mapping: picked.map((n, i) => `Sample ${i + 1}: ${n.title}`), suggestions: parseCopilotSuggestions(data.suggestions ?? [], evidence), ids: picked.map(n => n.id), evidence, corpus, ...(clips ? { listening: data.listening } : {}) });
       setApplied(false);
       setStatus('Review complete. Your labels have not been changed.');
     } catch (e) { if (!controller.signal.aborted) setError(e instanceof Error ? e.message : 'Review failed.'); }
@@ -106,7 +112,7 @@ export default function DjCopilot({ audio, ready, localApi, onAddToCrate, crate,
   const exportReport = () => {
     if (!report) return;
     const text = ['DJ Sample Copilot', report.fingerprint !== fingerprint ? 'Historical review: current selection or evidence has changed.' : '',
-      ...report.mapping, '', report.answer, report.warning ?? '', '', ...picked.flatMap(n => transcripts[n.id] ? [`Transcript (unverified), ${n.title}, first ${transcripts[n.id].seconds.toFixed(1)} seconds:`, transcripts[n.id].text] : [])].join('\n');
+      ...report.mapping, `Model: ${report.model}`, ...(report.listening?.map(clip => `${clip.ref}: listened to first ${clip.durationSeconds.toFixed(1)} seconds only; unverified suggestions.`) ?? ['Metadata review; no audio supplied.']), '', report.answer, report.warning ?? '', '', ...picked.flatMap(n => transcripts[n.id] ? [`Transcript (unverified), ${n.title}, first ${transcripts[n.id].seconds.toFixed(1)} seconds:`, transcripts[n.id].text] : [])].join('\n');
     const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
     const a = document.createElement('a'); a.href = url; a.download = 'dj-copilot-review.txt'; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
@@ -120,11 +126,11 @@ export default function DjCopilot({ audio, ready, localApi, onAddToCrate, crate,
       {!audio.length && <p>Add audio with the app’s Add files or Add a folder control, then return here.</p>}
       {!!audio.length && !visible.length && <p>No filenames match this filter.</p>}
       <form onSubmit={e => { e.preventDefault(); void review(); }}>
-        <label>Review model<select value={reviewMode} disabled={!!busy} onChange={e => setReviewMode(e.target.value === 'deep' ? 'deep' : 'fast')}><option value="fast">Astra Ultrafast — quick explanation</option><option value="deep">Sol agent — deeper review</option></select></label>
+        <label>Review model<select value={reviewMode} disabled={!!busy || applying} onChange={e => setReviewMode(e.target.value === 'deep' ? 'deep' : e.target.value === 'fast' ? 'fast' : 'audio')}><option value="audio">GPT-Audio-1.5 — listen to excerpts</option><option value="fast">Astra Ultrafast — quick explanation</option><option value="deep">Sol agent — deeper review</option></select></label>
         <label htmlFor="copilot-question">What should the copilot review?</label><textarea id="copilot-question" value={question} onChange={e => setQuestion(e.target.value)} maxLength={1200} disabled={!!busy} rows={4} />
         <button className="dj-primary" disabled={!!busy || applying || !ready || !localApi || !evidence.length || !question.trim()}>Review selected sounds</button>
       </form>
-      <p className="dj-note">Review sends selected measurements, labels, filename-derived musical hints, and your question to OpenAI. Filenames, paths, and audio are not sent. Fast review uses Astra Ultrafast. Deeper review uses a temporary Sol agent session, removed after the review.</p>
+      <p className="dj-note">{reviewMode === 'audio' ? 'Review selected sounds uploads the first 10 seconds of each selected sound, your question, and confirmed labels to OpenAI for GPT-Audio-1.5 listening. Filenames and paths are not sent. Suggestions are unverified and describe only these excerpts; measured tempo/key and your confirmed labels stay unchanged.' : 'Review sends selected measurements, labels, filename-derived musical hints, and your question to OpenAI. Filenames, paths, and audio are not sent. Fast review uses Astra Ultrafast. Deeper review uses a temporary Sol agent session, removed after the review.'}</p>
       <p className="dj-note">Transcribe vocal uploads only the first 30 seconds of that sound. Chopped vocals or music may produce inaccurate words; compare with playback. Transcripts stay in this panel until you close it or export a report.</p>
       {!localApi && <p role="status">Online review and transcription require the local app started with <code>npm run dev</code>. Evidence and tag corrections work here.</p>}
       {!ready && <p role="status">Wait for audio analysis to finish before reviewing or correcting tags.</p>}
@@ -156,7 +162,7 @@ export default function DjCopilot({ audio, ready, localApi, onAddToCrate, crate,
           <button className="dj-primary" disabled={applied || applying || !!busy || !ready || report.fingerprint !== fingerprint || !report.suggestions.length} onClick={() => void apply()}>{applied ? '✓ Properties added' : applying ? 'Adding properties…' : 'Apply suggested properties'}</button>
           <p className="dj-note">Adds the listed tags to these sounds as AI suggestions. Keeps your confirmed labels and measured tempo/key unchanged.</p>
         </div>
-        <p className="dj-note">Generated by {report.model}. Advice based on metadata, not a listening assessment.</p>
+        <p className="dj-note">Generated by {report.model}. {report.listening ? `Listening assessment of uploaded excerpts only: ${report.listening.map(clip => `${clip.ref}, first ${clip.durationSeconds.toFixed(1)}s`).join('; ')}. Suggestions are unverified.` : 'Advice based on metadata, not a listening assessment.'}</p>
         {report.warning && <p role="alert" className="dj-error">{report.warning}</p>}
       </section>}
     </section>

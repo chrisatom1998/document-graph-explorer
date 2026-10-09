@@ -7,6 +7,7 @@ import { saveSession } from '../persistence/sessionSave';
 import { saveAudioGraph } from './saveAudioGraph';
 import { copilotEvidence, type CopilotSample } from './copilotEvidence';
 import { parseCopilotSuggestions, sanitizeCopilotProperties, type CopilotSuggestion } from './copilotProperties';
+import type { ListeningCoverage } from './copilotListening';
 
 export function copilotCorpusIdentity(): string {
   const corpus = useCorpusStore.getState();
@@ -15,7 +16,7 @@ export function copilotCorpusIdentity(): string {
 
 /** Uses the same queue as ingest, reanalysis and corpus switching. */
 export function applyCopilotProperties(input: {
-  ids: string[]; evidence: CopilotSample[]; suggestions: CopilotSuggestion[]; model: string; corpus: string;
+  ids: string[]; evidence: CopilotSample[]; suggestions: CopilotSuggestion[]; model: string; corpus: string; listening?: ListeningCoverage[];
 }): Promise<string> {
   return enqueueRun(async () => {
     const state = useGraphStore.getState();
@@ -28,7 +29,9 @@ export function applyCopilotProperties(input: {
     for (const suggestion of suggestions) {
       const index = input.evidence.findIndex(sample => sample.ref === suggestion.ref);
       const node = nodes[index]!;
-      const properties = sanitizeCopilotProperties({ tags: suggestion.tags, model: input.model });
+      const excerpt = input.listening?.find(clip => clip.ref === suggestion.ref);
+      const properties = sanitizeCopilotProperties({ tags: suggestion.tags, model: input.model,
+        ...(excerpt ? { audioExcerpt: { startSeconds: excerpt.startSeconds, durationSeconds: excerpt.durationSeconds } } : {}) });
       if (!properties || !node.audio) throw Error('Invalid suggested properties.');
       patches.set(node.id, { audio: { ...node.audio, copilotProperties: properties } });
     }

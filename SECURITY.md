@@ -35,6 +35,15 @@ WASM core, and English language data are **self-hosted** in the app (`/models`,
 
 ## Browser-local persistence and sharing
 
+In local development, the explicit **GPT-Audio-1.5 listening review** action also
+uploads the first up to 10 seconds of each of one to five selected sounds to
+OpenAI, with sample aliases, the question and confirmed labels. It does not send
+filenames, paths, filename-derived hints or detector scores. The audio itself
+may contain speech or other sensitive content. The existing server-side key is
+reused; the browser never receives it. Requests use `store: false`, which is not
+a guarantee of zero provider retention. No automatic listening upload occurs
+on import or selection. See [the listening data flow](docs/music-copilot-integration.md#gpt-audio-15-listening).
+
 Named corpora, extracted document text, graph data, embeddings, layouts, chat
 history, snapshots, original file bytes, and watched-folder handles are stored in
 the browser's IndexedDB. A watched folder grants the app read access through the

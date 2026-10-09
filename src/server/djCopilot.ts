@@ -5,6 +5,8 @@ import { isLocalRequest } from './djAssistant';
 import { parseCopilotSamples, type CopilotSample } from '../audio/copilotEvidence';
 import { MAX_TRANSCRIPTION_BYTES, validateCopilotWave } from '../audio/copilotWave';
 import { copilotReviewSchema, parseCopilotSuggestions, type CopilotSuggestion } from '../audio/copilotProperties';
+import { MAX_LISTENING_REQUEST_BYTES, type ListeningClip, type ListeningCoverage } from '../audio/copilotListening';
+import { parseListeningClips, reviewAudio } from './gptAudioReview';
 
 export const COPILOT_MODEL = 'gpt-6.1-sol';
 export const TRANSCRIBE_MODEL = 'gpt-transcribe';
@@ -12,10 +14,11 @@ const instructions = `You are the DJ Sample Copilot inside Document Graph Explor
 Use the exact Sample 1, Sample 2 aliases. Never invent filenames. Confirmed tags and instruments are the user's ground truth: null means unreviewed, [] means explicitly reviewed with no positive labels. Automatic estimates must never override or add labels to a confirmed field. Keep filename/folder hints separate from measurements. Scores are model-specific evidence, not probabilities. Tempo confidence below 0.5, key strength below 0.6, and preview measurements are uncertain. A pitch is not a key. Do not infer instruments, speech, sample licensing, or missing measurements.
 Use a short Python calculation in the sandbox to compare reliable tempos and keys, if multiple samples have measurements. Do not fetch data, install packages, create subagents or ask for approval. Do not edit any user labels. Output your review directly as plain text, under 600 words: a short recommendation; numbered sample notes that cite actual evidence and flag conflicts/unknowns; useful groupings (explicitly by metadata, not acoustic similarity); one next listening/correction action. If the evidence is insufficient, say so. Label any creative musical-use suggestion as a suggestion, not a detected fact.`;
 
-export interface CopilotReport { answer: string; suggestions?: CopilotSuggestion[]; model: string; sessionId: string; turnId: string; warning?: string }
+export interface CopilotReport { answer: string; suggestions?: CopilotSuggestion[]; model: string; sessionId: string; turnId: string; warning?: string; listening?: ListeningCoverage[] }
 export interface CopilotBackend {
   review(samples: CopilotSample[], question: string, signal: AbortSignal): Promise<CopilotReport>;
   fastReview?(samples: CopilotSample[], question: string, signal: AbortSignal): Promise<CopilotReport>;
+  audioReview?(samples: CopilotSample[], clips: ListeningClip[], question: string, signal: AbortSignal): Promise<CopilotReport>;
   transcribe(wav: Uint8Array, signal: AbortSignal): Promise<string>;
 }
 class CopilotError extends Error {}
@@ -32,6 +35,7 @@ export function safeCopilotError(error: unknown): string {
 
 export function openAiCopilot(apiKey: string, client = new OpenAI({ apiKey, maxRetries: 0, timeout: 150_000 })): CopilotBackend {
   return {
+    audioReview: (samples, clips, question, signal) => reviewAudio(client, samples, clips, question, signal),
     async fastReview(samples, question, signal) {
       const result = await client.responses.create({
         model: 'gpt-6-astra', service_tier: 'ultrafast', store: false,
@@ -145,10 +149,11 @@ export function createCopilotHandler(apiKey: string, backend?: CopilotBackend) {
     if (!isLocalRequest(req)) return reply(res, 403, { error: 'Open the copilot from the local app.' });
     if (req.method !== 'POST') return reply(res, 405, { error: 'POST required.' });
     const path = (req.url ?? '').split('?')[0];
-    if (!['/review', '/review-fast', '/transcribe'].includes(path)) return reply(res, 404, { error: 'Unknown copilot action.' });
+    if (!['/review', '/review-fast', '/review-audio', '/transcribe'].includes(path)) return reply(res, 404, { error: 'Unknown copilot action.' });
     if (!service) return reply(res, 503, { error: 'The local OpenAI key is not configured. Restart the local app after key setup.' });
     if (active) return reply(res, 429, { error: 'Another copilot request is running. Wait for it to finish.' });
     const transcription = path === '/transcribe';
+    const listening = path === '/review-audio';
     if (!req.headers['content-type']?.startsWith(transcription ? 'audio/wav' : 'application/json')) return reply(res, 415, { error: 'Unsupported request format.' });
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 180_000);
@@ -158,7 +163,7 @@ export function createCopilotHandler(apiKey: string, backend?: CopilotBackend) {
       const chunks: Buffer[] = []; let bytes = 0;
       for await (const chunk of req) {
         bytes += chunk.length;
-        if (bytes > (transcription ? MAX_TRANSCRIPTION_BYTES : 48000)) return reply(res, 413, { error: 'The copilot request is too large.' });
+        if (bytes > (transcription ? MAX_TRANSCRIPTION_BYTES : listening ? MAX_LISTENING_REQUEST_BYTES : 48000)) return reply(res, 413, { error: 'The copilot request is too large.' });
         chunks.push(Buffer.from(chunk));
       }
       const body = Buffer.concat(chunks);
@@ -168,12 +173,17 @@ export function createCopilotHandler(apiKey: string, backend?: CopilotBackend) {
         const text = await service.transcribe(body, controller.signal);
         return reply(res, 200, { text, seconds, model: TRANSCRIBE_MODEL });
       }
-      let samples: CopilotSample[]; let question: string;
+      let samples: CopilotSample[]; let question: string; let clips: ListeningClip[] = [];
       try {
         const input = JSON.parse(body.toString());
         if (!input || typeof input.question !== 'string' || !input.question.trim() || input.question.length > 1200) throw Error();
         question = input.question.trim(); samples = parseCopilotSamples(input.samples);
-      } catch { return reply(res, 400, { error: 'Choose one to five analyzed sounds and a review question of up to 1,200 characters.' }); }
+        if (listening) clips = parseListeningClips(input.clips, samples).clips;
+      } catch { return reply(res, 400, { error: listening ? 'Choose one to five analyzed sounds, each with a valid mono 16 kHz WAV excerpt of at most 10 seconds, and a question of up to 1,200 characters.' : 'Choose one to five analyzed sounds and a review question of up to 1,200 characters.' }); }
+      if (listening) {
+        if (!service.audioReview) return reply(res, 503, { error: 'Audio listening review is unavailable.' });
+        return reply(res, 200, await service.audioReview(samples, clips, question, controller.signal));
+      }
       if (path === '/review-fast' && !service.fastReview) return reply(res, 503, { error: 'Fast review is unavailable.' });
       const report = path === '/review-fast'
         ? await service.fastReview!(samples, question, controller.signal)

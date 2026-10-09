@@ -11,6 +11,11 @@ import {FUSION_LABELS} from '../audio/fusion';
 beforeEach(()=>{setAttributesOpenSetting(true);});
 afterEach(()=>{cleanup();setShowUnconfirmedSetting(false);setAttributesOpenSetting(false);});
 const audio=():MusicAnalysis=>({version:2,durationSeconds:8,analyzedSeconds:8,instruments:[],notes:[]});
+it('attributes listening suggestions to audio excerpts without fabricating confidence',()=>{
+ const a=audio();a.copilotProperties={model:'gpt-audio-1.5',audioExcerpt:{startSeconds:0,durationSeconds:8},tags:{source:['voice'],production:[],character:[]}};
+ const row=soundAttributeRows(a,{title:'neutral.wav'}).find(row=>row.label==='voice');
+ expect([...row!.evidence]).toEqual(['gpt-audio-1.5 audio-excerpt suggestion · unverified']);expect(row?.probabilityScore).toBeUndefined();
+});
 it('makes weak native labels, roles, voice styles, and all candidates visible without changing tags or data',()=>{
  const a=audio();a.recognition=createRecognition(8,'full');recordEvidence(a.recognition,'ast',{start:0,end:8},[{dimension:'source',labelId:'piano',score:.23}]);
  a.soundProfile={version:1,disagreement:true,character:['bright'],roles:['melody'],voice:{basis:'Music CLAP',style:'vocal chops',corroborated:false},models:[{model:'Music CLAP',complete:false,candidates:['piano','flute','violin','cello','guitar'].map(label=>({label,score:.2}))}]};

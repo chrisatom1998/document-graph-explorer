@@ -1,7 +1,7 @@
 import { DJ_LABELS, type ConfirmedDjTags, type DjGroup } from './djTags';
 import type { CopilotSample } from './copilotEvidence';
 
-export interface CopilotProperties { tags: ConfirmedDjTags; model: string }
+export interface CopilotProperties { tags: ConfirmedDjTags; model: string; audioExcerpt?: { startSeconds: number; durationSeconds: number } }
 export interface CopilotSuggestion { ref: string; tags: ConfirmedDjTags }
 const groups = Object.keys(DJ_LABELS) as DjGroup[];
 
@@ -21,7 +21,16 @@ export function sanitizeCopilotProperties(value: unknown): CopilotProperties | u
   if (!value || typeof value !== 'object') return;
   const raw = value as Record<string, unknown>;
   if (typeof raw.model !== 'string' || !/^[a-zA-Z0-9._-]{1,80}$/.test(raw.model)) return;
-  try { return { tags: parseSuggestedTags(raw.tags), model: raw.model }; } catch { return; }
+  try {
+    const properties: CopilotProperties = { tags: parseSuggestedTags(raw.tags), model: raw.model };
+    if (raw.model === 'gpt-audio-1.5' && raw.audioExcerpt && typeof raw.audioExcerpt === 'object') {
+      const excerpt = raw.audioExcerpt as Record<string, unknown>;
+      if (excerpt.startSeconds === 0 && typeof excerpt.durationSeconds === 'number' && Number.isFinite(excerpt.durationSeconds) && excerpt.durationSeconds > 0 && excerpt.durationSeconds <= 10) {
+        properties.audioExcerpt = { startSeconds: 0, durationSeconds: excerpt.durationSeconds };
+      }
+    }
+    return properties;
+  } catch { return; }
 }
 export function parseCopilotSuggestions(value: unknown, samples: CopilotSample[]): CopilotSuggestion[] {
   if (!Array.isArray(value) || value.length > samples.length) throw Error('Invalid suggested samples.');

@@ -21,6 +21,24 @@ function backend(): CopilotBackend {
   return { review: vi.fn(async () => ({ answer: 'No confirmed labels.', model: 'test', sessionId: 's', turnId: 't' })), transcribe: vi.fn(async () => 'hello') };
 }
 describe('copilot server', () => {
+  it('routes validated listening excerpts and blocks invalid audio and cross-origin uploads', async () => {
+    const service = backend();
+    service.audioReview = vi.fn(async () => ({ answer: 'An excerpt review.', model: 'gpt-audio-1.5', sessionId: '', turnId: 'chat' }));
+    const post = await start(service);
+    const clips = [{ ref: 'Sample 1', wav: Buffer.from(copilotWave(new Float32Array(16000))).toString('base64') }];
+    const body = JSON.stringify({ samples: [sample], question: 'Listen', clips });
+    expect((await post('/review-audio', body, { Origin: 'https://evil.example' })).status).toBe(403);
+    expect((await post('/review-audio', JSON.stringify({ samples: [sample], question: 'Listen', clips: [] }))).status).toBe(400);
+    expect(service.audioReview).not.toHaveBeenCalled();
+    expect((await post('/review-audio', body)).status).toBe(200);
+    expect(service.audioReview).toHaveBeenCalledWith([sample], clips, 'Listen', expect.any(AbortSignal));
+    expect(service.review).not.toHaveBeenCalled();
+  });
+  it('rejects oversized listening bodies before contacting the provider', async () => {
+    const service = backend(); const post = await start(service);
+    expect((await post('/review-audio', ' '.repeat(2_200_000))).status).toBe(413);
+    expect(service.review).not.toHaveBeenCalled();
+  });
   it('routes fast reviews separately from hosted agent reviews', async () => {
     const service = backend();
     service.fastReview = vi.fn(async () => ({ answer: 'Fast evidence review.', model: 'gpt-6-astra', sessionId: '', turnId: 'response' }));

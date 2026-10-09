@@ -11,6 +11,15 @@ const node: DocNode = { id: 'one', title: 'one.wav', kind: 'document', fileType:
   audio: { version: 2, durationSeconds: 2, analyzedSeconds: 2, instruments: [], notes: [], copilotProperties: properties } };
 const sample = copilotEvidence(node, 0)!;
 describe('copilot properties', () => {
+  it('persists bounded listening provenance without treating it as verified evidence', () => {
+    const listening = { tags, model: 'gpt-audio-1.5', audioExcerpt: { startSeconds: 0, durationSeconds: 2 } };
+    expect(sanitizeCopilotProperties(listening)).toEqual(listening);
+    const audio = sanitizeMusicAnalysis({ ...node.audio, copilotProperties: listening })!;
+    expect(audio.copilotProperties).toEqual(listening);
+    expect(copilotEvidence({ ...node, audio }, 0)?.estimates).toEqual([]);
+    expect(sanitizeCopilotProperties({ ...listening, audioExcerpt: { startSeconds: 0, durationSeconds: 9999 } })).not.toHaveProperty('audioExcerpt');
+    expect(sanitizeCopilotProperties({ ...listening, model: 'gpt-6.1-sol' })).not.toHaveProperty('audioExcerpt');
+  });
   it('persists suggestions without promoting them to confirmed labels or new AI evidence', () => {
     const audio = sanitizeMusicAnalysis(JSON.parse(JSON.stringify(node.audio)))!;
     expect(audio.copilotProperties).toEqual(properties);

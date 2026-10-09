@@ -16,6 +16,13 @@ beforeEach(() => {
   useGraphStore.setState({ nodes: [structuredClone(node)], nodeIndex: { one: 0 }, phase: 'ready', corpusHash: 'test' });
 });
 describe('apply copilot properties', () => {
+  it('saves listening coverage alongside unverified tags while preserving measured tempo', async () => {
+    await applyCopilotProperties({ ...input(), model: 'gpt-audio-1.5', listening: [{ ref: 'Sample 1', startSeconds: 0, durationSeconds: 2 }] });
+    const audio = useGraphStore.getState().nodes[0].audio!;
+    expect(audio.copilotProperties).toMatchObject({ model: 'gpt-audio-1.5', audioExcerpt: { startSeconds: 0, durationSeconds: 2 } });
+    expect(audio.tempo).toEqual(node.audio!.tempo);
+    expect(audio.confirmedInstruments).toEqual(['piano']);
+  });
   it('adds properties and preserves measurements and human corrections', async () => {
     expect(await applyCopilotProperties(input())).toContain('saved for 1 sound');
     const audio = useGraphStore.getState().nodes[0].audio!;
