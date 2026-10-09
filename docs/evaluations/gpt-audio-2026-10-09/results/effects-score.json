@@ -1,0 +1,449 @@
+{
+ "model": "gpt-audio-1.5",
+ "task": "effects",
+ "clips": 300,
+ "usd": 0.8221,
+ "result": {
+  "air horn": {
+   "precision": 0.333,
+   "recall": 0.2,
+   "tp": 1,
+   "fp": 2,
+   "fn": 4,
+   "positives": 5,
+   "negatives": 295,
+   "precisionCI95": [
+    0.061,
+    0.792
+   ],
+   "recallCI95": [
+    0.036,
+    0.624
+   ],
+   "main": [
+    0.92,
+    0.65
+   ],
+   "vsMain": "worse"
+  },
+  "bitcrushed": {
+   "precision": 0.25,
+   "recall": 0.2,
+   "tp": 1,
+   "fp": 3,
+   "fn": 4,
+   "positives": 5,
+   "negatives": 295,
+   "precisionCI95": [
+    0.046,
+    0.699
+   ],
+   "recallCI95": [
+    0.036,
+    0.624
+   ],
+   "main": null,
+   "vsMain": ""
+  },
+  "chops": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 0,
+   "fn": 5,
+   "positives": 5,
+   "negatives": 295,
+   "precisionCI95": [
+    0,
+    0
+   ],
+   "recallCI95": [
+    -0.0,
+    0.434
+   ],
+   "main": [
+    0.25,
+    0.08
+   ],
+   "vsMain": "worse"
+  },
+  "delay throw": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 0,
+   "fn": 2,
+   "positives": 2,
+   "negatives": 298,
+   "precisionCI95": [
+    0,
+    0
+   ],
+   "recallCI95": [
+    0.0,
+    0.658
+   ],
+   "main": null,
+   "vsMain": ""
+  },
+  "downlifter": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 0,
+   "fn": 3,
+   "positives": 3,
+   "negatives": 297,
+   "precisionCI95": [
+    0,
+    0
+   ],
+   "recallCI95": [
+    0.0,
+    0.562
+   ],
+   "main": null,
+   "vsMain": ""
+  },
+  "filter sweep": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 1,
+   "fn": 10,
+   "positives": 10,
+   "negatives": 290,
+   "precisionCI95": [
+    0.0,
+    0.793
+   ],
+   "recallCI95": [
+    -0.0,
+    0.278
+   ],
+   "main": [
+    0.55,
+    0.48
+   ],
+   "vsMain": "no clear gain"
+  },
+  "flanged": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 0,
+   "fn": 16,
+   "positives": 16,
+   "negatives": 284,
+   "precisionCI95": [
+    0,
+    0
+   ],
+   "recallCI95": [
+    0.0,
+    0.194
+   ],
+   "main": null,
+   "vsMain": ""
+  },
+  "glitch effect": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 0,
+   "fn": 21,
+   "positives": 21,
+   "negatives": 279,
+   "precisionCI95": [
+    0,
+    0
+   ],
+   "recallCI95": [
+    0.0,
+    0.155
+   ],
+   "main": null,
+   "vsMain": ""
+  },
+  "impact": {
+   "precision": 0.3,
+   "recall": 0.273,
+   "tp": 6,
+   "fp": 14,
+   "fn": 16,
+   "positives": 22,
+   "negatives": 278,
+   "precisionCI95": [
+    0.145,
+    0.519
+   ],
+   "recallCI95": [
+    0.132,
+    0.482
+   ],
+   "main": [
+    0.63,
+    0.72
+   ],
+   "vsMain": "worse"
+  },
+  "laser": {
+   "precision": 0.333,
+   "recall": 0.2,
+   "tp": 4,
+   "fp": 8,
+   "fn": 16,
+   "positives": 20,
+   "negatives": 280,
+   "precisionCI95": [
+    0.138,
+    0.609
+   ],
+   "recallCI95": [
+    0.081,
+    0.416
+   ],
+   "main": [
+    0.51,
+    0.53
+   ],
+   "vsMain": "worse"
+  },
+  "noise sweep": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 0,
+   "fn": 10,
+   "positives": 10,
+   "negatives": 290,
+   "precisionCI95": [
+    0,
+    0
+   ],
+   "recallCI95": [
+    -0.0,
+    0.278
+   ],
+   "main": [
+    0.48,
+    0.62
+   ],
+   "vsMain": "worse"
+  },
+  "reverse cymbal": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 0,
+   "fn": 3,
+   "positives": 3,
+   "negatives": 297,
+   "precisionCI95": [
+    0,
+    0
+   ],
+   "recallCI95": [
+    0.0,
+    0.562
+   ],
+   "main": [
+    0.69,
+    0.85
+   ],
+   "vsMain": "worse"
+  },
+  "reverse effect": {
+   "precision": 0.194,
+   "recall": 0.3,
+   "tp": 6,
+   "fp": 25,
+   "fn": 14,
+   "positives": 20,
+   "negatives": 280,
+   "precisionCI95": [
+    0.092,
+    0.363
+   ],
+   "recallCI95": [
+    0.145,
+    0.519
+   ],
+   "main": [
+    0.6,
+    0.56
+   ],
+   "vsMain": "worse"
+  },
+  "riser": {
+   "precision": 0.25,
+   "recall": 0.545,
+   "tp": 12,
+   "fp": 36,
+   "fn": 10,
+   "positives": 22,
+   "negatives": 278,
+   "precisionCI95": [
+    0.149,
+    0.388
+   ],
+   "recallCI95": [
+    0.347,
+    0.731
+   ],
+   "main": [
+    0.68,
+    0.69
+   ],
+   "vsMain": "worse"
+  },
+  "siren": {
+   "precision": 0.846,
+   "recall": 0.478,
+   "tp": 11,
+   "fp": 2,
+   "fn": 12,
+   "positives": 23,
+   "negatives": 277,
+   "precisionCI95": [
+    0.578,
+    0.957
+   ],
+   "recallCI95": [
+    0.292,
+    0.67
+   ],
+   "main": [
+    0.7,
+    0.74
+   ],
+   "vsMain": "worse"
+  },
+  "stutter effect": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 3,
+   "fn": 2,
+   "positives": 2,
+   "negatives": 298,
+   "precisionCI95": [
+    0.0,
+    0.562
+   ],
+   "recallCI95": [
+    0.0,
+    0.658
+   ],
+   "main": [
+    0.0,
+    0.0
+   ],
+   "vsMain": "no clear gain"
+  },
+  "sub drop": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 3,
+   "fn": 9,
+   "positives": 9,
+   "negatives": 291,
+   "precisionCI95": [
+    0.0,
+    0.562
+   ],
+   "recallCI95": [
+    0.0,
+    0.299
+   ],
+   "main": null,
+   "vsMain": ""
+  },
+  "trance gate": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 2,
+   "fn": 8,
+   "positives": 8,
+   "negatives": 292,
+   "precisionCI95": [
+    0.0,
+    0.658
+   ],
+   "recallCI95": [
+    0.0,
+    0.324
+   ],
+   "main": null,
+   "vsMain": ""
+  },
+  "vinyl scratch": {
+   "precision": 0.159,
+   "recall": 0.389,
+   "tp": 7,
+   "fp": 37,
+   "fn": 11,
+   "positives": 18,
+   "negatives": 282,
+   "precisionCI95": [
+    0.079,
+    0.294
+   ],
+   "recallCI95": [
+    0.203,
+    0.614
+   ],
+   "main": [
+    0.74,
+    0.77
+   ],
+   "vsMain": "worse"
+  },
+  "vocal chops": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "tp": 0,
+   "fp": 11,
+   "fn": 2,
+   "positives": 2,
+   "negatives": 298,
+   "precisionCI95": [
+    0.0,
+    0.259
+   ],
+   "recallCI95": [
+    0.0,
+    0.658
+   ],
+   "main": [
+    0.45,
+    0.82
+   ],
+   "vsMain": "worse"
+  },
+  "whoosh": {
+   "precision": 0.4,
+   "recall": 0.091,
+   "tp": 2,
+   "fp": 3,
+   "fn": 20,
+   "positives": 22,
+   "negatives": 278,
+   "precisionCI95": [
+    0.118,
+    0.769
+   ],
+   "recallCI95": [
+    0.025,
+    0.278
+   ],
+   "main": [
+    0.85,
+    0.54
+   ],
+   "vsMain": "worse"
+  }
+ }
+}

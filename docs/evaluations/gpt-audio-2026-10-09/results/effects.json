@@ -1,0 +1,3668 @@
+{
+ "model": "gpt-audio-1.5",
+ "task": "effects",
+ "answers": {
+  "fse:209870": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 7,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.000844
+  },
+  "fse:145152": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 7,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0008240000000000001
+  },
+  "fse:32999": {
+   "answer": {
+    "present": [
+     "laser"
+    ]
+   },
+   "usage": {
+    "audioIn": 16,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.001132
+  },
+  "fse:468900": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.00382
+  },
+  "fse:569562": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 44,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.0020280000000000003
+  },
+  "fse:44931": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 12,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.000984
+  },
+  "fse:253207": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 56,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.002392
+  },
+  "fse:100341": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 30,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00156
+  },
+  "fse:485032": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:258344": {
+   "answer": {
+    "present": [
+     "vocal chops",
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 13
+   },
+   "usd": 0.0038799999999999998
+  },
+  "fse:213537": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:632718": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 7,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0008240000000000001
+  },
+  "fse:328837": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 28,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.001536
+  },
+  "fse:166231": {
+   "answer": {},
+   "usage": {
+    "audioIn": 3,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.0006560000000000001
+  },
+  "fse:492928": {
+   "answer": {},
+   "usage": {
+    "audioIn": 9,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.000848
+  },
+  "fse:190886": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:245284": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:392175": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:149894": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 40,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00188
+  },
+  "fse:26206": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:160968": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 9,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.000928
+  },
+  "fse:99602": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:415328": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:518201": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:78834": {
+   "answer": {
+    "present": [
+     "laser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.00382
+  },
+  "fse:184656": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:630478": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:371791": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:393555": {
+   "answer": {
+    "present": [
+     "sub drop"
+    ]
+   },
+   "usage": {
+    "audioIn": 18,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.001206
+  },
+  "fse:561255": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 32,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.0016539999999999999
+  },
+  "fse:325020": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 80,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00316
+  },
+  "fse:262837": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:203261": {
+   "answer": {
+    "present": [
+     "vocal chops"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:478152": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:511049": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:173400": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 40,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00188
+  },
+  "fse:62286": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 16,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.001112
+  },
+  "fse:42559": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 11,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.000952
+  },
+  "fse:93081": {
+   "answer": {
+    "present": [
+     "whoosh"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:623180": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:135384": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 21,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.001302
+  },
+  "fse:197466": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.00382
+  },
+  "fse:347502": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:476556": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:483511": {
+   "answer": {
+    "present": [
+     "vocal chops"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:388388": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 25,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.00144
+  },
+  "fse:176171": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 68,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.002816
+  },
+  "fse:615810": {
+   "answer": {},
+   "usage": {
+    "audioIn": 10,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.00088
+  },
+  "fse:200177": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 2,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0006640000000000001
+  },
+  "fse:187650": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:334024": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:76418": {
+   "answer": {
+    "present": [
+     "vocal chops"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:441049": {
+   "answer": {
+    "present": [
+     "vocal chops"
+    ]
+   },
+   "usage": {
+    "audioIn": 62,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.002624
+  },
+  "fse:342294": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:269315": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 3,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0006960000000000001
+  },
+  "fse:178558": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:434119": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:335486": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:15788": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:486874": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:42562": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 17,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0011439999999999998
+  },
+  "fse:375365": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 6,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0008320000000000001
+  },
+  "fse:503344": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:66355": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 96,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.003712
+  },
+  "fse:346891": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:270610": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.00382
+  },
+  "fse:90831": {
+   "answer": {},
+   "usage": {
+    "audioIn": 5,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.00072
+  },
+  "fse:212952": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 12,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.000984
+  },
+  "fse:476065": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 94,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0036479999999999998
+  },
+  "fse:533351": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 92,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.0035740000000000004
+  },
+  "fse:486531": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:37625": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 52,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.002294
+  },
+  "fse:72640": {
+   "answer": {
+    "present": [
+     "vinyl scratch",
+     "laser"
+    ]
+   },
+   "usage": {
+    "audioIn": 27,
+    "textIn": 220,
+    "out": 12
+   },
+   "usd": 0.001534
+  },
+  "fse:334461": {
+   "answer": {
+    "present": [
+     "bitcrushed"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:416462": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 79,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.003148
+  },
+  "fse:257341": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 16,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.001152
+  },
+  "fse:36122": {
+   "answer": {},
+   "usage": {
+    "audioIn": 21,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.001232
+  },
+  "fse:39232": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 40,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00188
+  },
+  "fse:607307": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:341179": {
+   "answer": {
+    "present": [
+     "filter sweep"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:162840": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 84,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.003288
+  },
+  "fse:417213": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 51,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0022719999999999997
+  },
+  "fse:96345": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:485034": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 68,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.0028060000000000003
+  },
+  "fse:482129": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 36,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.001772
+  },
+  "fse:265923": {
+   "answer": {
+    "present": [
+     "laser"
+    ]
+   },
+   "usage": {
+    "audioIn": 17,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.0011639999999999999
+  },
+  "fse:167942": {
+   "answer": {},
+   "usage": {
+    "audioIn": 10,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.00088
+  },
+  "fse:120682": {
+   "answer": {},
+   "usage": {
+    "audioIn": 5,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.00072
+  },
+  "fse:378257": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:575793": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 62,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.0026140000000000004
+  },
+  "fse:582486": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 94,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.003638
+  },
+  "fse:362486": {
+   "answer": {},
+   "usage": {
+    "audioIn": 7,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.0007840000000000001
+  },
+  "fse:622074": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:127576": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:183889": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 97,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.0037340000000000003
+  },
+  "fse:545197": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 20,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00124
+  },
+  "fse:336214": {
+   "answer": {
+    "present": [
+     "laser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.00382
+  },
+  "fse:44972": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:120677": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 7,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0008240000000000001
+  },
+  "fse:76177": {
+   "answer": {
+    "present": [
+     "vinyl scratch",
+     "laser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 12
+   },
+   "usd": 0.0038699999999999997
+  },
+  "fse:469722": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:316809": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 56,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.002422
+  },
+  "fse:134060": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:157345": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 61,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.002582
+  },
+  "fse:482160": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:90014": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:26023": {
+   "answer": {
+    "present": [
+     "bitcrushed"
+    ]
+   },
+   "usage": {
+    "audioIn": 34,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0017280000000000002
+  },
+  "fse:97425": {
+   "answer": {},
+   "usage": {
+    "audioIn": 12,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.0009440000000000001
+  },
+  "fse:44911": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:168319": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 5,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00076
+  },
+  "fse:331069": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:613661": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 46,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0021119999999999997
+  },
+  "fse:172152": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:257777": {
+   "answer": {
+    "present": [
+     "air horn"
+    ]
+   },
+   "usage": {
+    "audioIn": 5,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00079
+  },
+  "fse:520195": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:83769": {
+   "answer": {
+    "present": [
+     "laser"
+    ]
+   },
+   "usage": {
+    "audioIn": 6,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.000812
+  },
+  "fse:253583": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 83,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.0032860000000000003
+  },
+  "fse:609768": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:467765": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 64,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.0026780000000000003
+  },
+  "fse:533007": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:143641": {
+   "answer": {},
+   "usage": {
+    "audioIn": 36,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.001712
+  },
+  "fse:338837": {
+   "answer": {
+    "present": [
+     "riser",
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 11
+   },
+   "usd": 0.0038599999999999997
+  },
+  "fse:395695": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:141452": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 38,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0018559999999999998
+  },
+  "fse:38067": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 9,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.000928
+  },
+  "fse:511056": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:614158": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 23,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.001336
+  },
+  "fse:393666": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 28,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.001526
+  },
+  "fse:493928": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 68,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.002816
+  },
+  "fse:397148": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:107020": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:528911": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:623198": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:200178": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:535188": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:316806": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:391217": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:414769": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:457372": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 12,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.0010040000000000001
+  },
+  "fse:567308": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 22,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0013039999999999998
+  },
+  "fse:266392": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 76,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.003032
+  },
+  "fse:87162": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 5,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00076
+  },
+  "fse:511058": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:245599": {
+   "answer": {
+    "present": [
+     "vocal chops"
+    ]
+   },
+   "usage": {
+    "audioIn": 29,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0015680000000000002
+  },
+  "fse:96573": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 23,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.001366
+  },
+  "fse:266911": {
+   "answer": {
+    "present": [
+     "laser"
+    ]
+   },
+   "usage": {
+    "audioIn": 51,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.002252
+  },
+  "fse:467550": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:131590": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 34,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0017280000000000002
+  },
+  "fse:232183": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:131698": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:484753": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:233542": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 27,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.0014839999999999999
+  },
+  "fse:629356": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 5,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0008
+  },
+  "fse:585672": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:210625": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 30,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00159
+  },
+  "fse:553521": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 24,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.0013880000000000001
+  },
+  "fse:86528": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 90,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00351
+  },
+  "fse:550904": {
+   "answer": {
+    "present": [
+     "laser"
+    ]
+   },
+   "usage": {
+    "audioIn": 9,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.000908
+  },
+  "fse:503774": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 47,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.002104
+  },
+  "fse:123393": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 2,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0006640000000000001
+  },
+  "fse:578961": {
+   "answer": {
+    "present": [
+     "bitcrushed"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:622846": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:462509": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 54,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.002368
+  },
+  "fse:499593": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:381258": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:482145": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 84,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.003318
+  },
+  "fse:583452": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:607251": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 5,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00076
+  },
+  "fse:434745": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:542806": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:394105": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:217837": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:141139": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:352647": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 24,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0014080000000000002
+  },
+  "fse:491854": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 35,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00172
+  },
+  "fse:269289": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 3,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0006960000000000001
+  },
+  "fse:219095": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 84,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.003288
+  },
+  "fse:531386": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:416195": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 68,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.0028060000000000003
+  },
+  "fse:14927": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 50,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0022
+  },
+  "fse:215092": {
+   "answer": {
+    "present": [
+     "sub drop"
+    ]
+   },
+   "usage": {
+    "audioIn": 47,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.002134
+  },
+  "fse:210769": {
+   "answer": {},
+   "usage": {
+    "audioIn": 18,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.001136
+  },
+  "fse:171708": {
+   "answer": {},
+   "usage": {
+    "audioIn": 17,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.001104
+  },
+  "fse:416312": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 95,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00367
+  },
+  "fse:128163": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:107078": {
+   "answer": {},
+   "usage": {
+    "audioIn": 45,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.002
+  },
+  "fse:97428": {
+   "answer": {
+    "present": [
+     "vocal chops"
+    ]
+   },
+   "usage": {
+    "audioIn": 8,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0008960000000000001
+  },
+  "fse:417695": {
+   "answer": {
+    "present": [
+     "air horn"
+    ]
+   },
+   "usage": {
+    "audioIn": 60,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00255
+  },
+  "fse:519364": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:457528": {
+   "answer": {
+    "present": [
+     "whoosh"
+    ]
+   },
+   "usage": {
+    "audioIn": 22,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.001334
+  },
+  "fse:51275": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 59,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.0025080000000000002
+  },
+  "fse:163631": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 74,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.0029980000000000002
+  },
+  "fse:55193": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:614379": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:127561": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:445781": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:631748": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 37,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0017839999999999998
+  },
+  "fse:82744": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 10,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00092
+  },
+  "fse:611503": {
+   "answer": {
+    "present": [
+     "air horn"
+    ]
+   },
+   "usage": {
+    "audioIn": 5,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00079
+  },
+  "fse:621207": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:394285": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 60,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.00254
+  },
+  "fse:336208": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:448090": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 15,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00111
+  },
+  "fse:151262": {
+   "answer": {
+    "present": [
+     "trance gate"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:333627": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:503811": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 39,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.001868
+  },
+  "fse:51273": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:396652": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 63,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.002656
+  },
+  "fse:277017": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:502899": {
+   "answer": {
+    "present": [
+     "stutter effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:232407": {
+   "answer": {
+    "present": [
+     "vocal chops"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:235222": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:275762": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 36,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.001782
+  },
+  "fse:419497": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:398486": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 8,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.000876
+  },
+  "fse:2479": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 10,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00092
+  },
+  "fse:610778": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 14,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0010479999999999999
+  },
+  "fse:518144": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 34,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.001688
+  },
+  "fse:603887": {
+   "answer": {},
+   "usage": {
+    "audioIn": 2,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.0006240000000000001
+  },
+  "fse:332995": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 92,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.003584
+  },
+  "fse:321779": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:445782": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:539792": {
+   "answer": {
+    "present": [
+     "laser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.00382
+  },
+  "fse:51157": {
+   "answer": {},
+   "usage": {
+    "audioIn": 2,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.0006240000000000001
+  },
+  "fse:95109": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:463307": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:555711": {
+   "answer": {
+    "present": [
+     "bitcrushed"
+    ]
+   },
+   "usage": {
+    "audioIn": 34,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0017280000000000002
+  },
+  "fse:51272": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:199665": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:495109": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.00382
+  },
+  "fse:508732": {
+   "answer": {
+    "present": [
+     "record stop"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:557092": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 33,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0016559999999999997
+  },
+  "fse:353265": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:482146": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 40,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00191
+  },
+  "fse:65152": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:46355": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 31,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0015919999999999999
+  },
+  "fse:51143": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:66959": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:442902": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:339679": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 99,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.003798
+  },
+  "fse:47924": {
+   "answer": {
+    "present": [
+     "record stop"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:120686": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 7,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0008240000000000001
+  },
+  "fse:211552": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 67,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.0027640000000000004
+  },
+  "fse:38062": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 2,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0006640000000000001
+  },
+  "fse:270615": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 92,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.0035640000000000003
+  },
+  "fse:545544": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:436980": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:631485": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 44,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0020080000000000002
+  },
+  "fse:341560": {
+   "answer": {
+    "present": [
+     "whoosh"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:574073": {
+   "answer": {
+    "present": [
+     "vocal chops"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:497233": {
+   "answer": {
+    "present": [
+     "vocal chops",
+     "stutter effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 37,
+    "textIn": 220,
+    "out": 14
+   },
+   "usd": 0.0018739999999999998
+  },
+  "fse:51566": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:338374": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:125652": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:21336": {
+   "answer": {},
+   "usage": {
+    "audioIn": 10,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.00088
+  },
+  "fse:131914": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:552726": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:520736": {
+   "answer": {
+    "present": [
+     "stutter effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 12,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.001024
+  },
+  "fse:273210": {
+   "answer": {
+    "present": [
+     "whoosh"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:101373": {
+   "answer": {
+    "present": [
+     "vocal chops"
+    ]
+   },
+   "usage": {
+    "audioIn": 36,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.001792
+  },
+  "fse:579318": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:18421": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 20,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00124
+  },
+  "fse:423639": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:491425": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 11,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.000992
+  },
+  "fse:269476": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 6,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0008320000000000001
+  },
+  "fse:503804": {
+   "answer": {},
+   "usage": {
+    "audioIn": 40,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.00184
+  },
+  "fse:160467": {
+   "answer": {
+    "present": [
+     "laser"
+    ]
+   },
+   "usage": {
+    "audioIn": 6,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.000812
+  },
+  "fse:148178": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 10,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00092
+  },
+  "fse:435874": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 54,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.0023580000000000003
+  },
+  "fse:623151": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:99138": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:607253": {
+   "answer": {
+    "present": [
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 26,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.001452
+  },
+  "fse:563049": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:551282": {
+   "answer": {
+    "present": [
+     "reverse effect",
+     "impact"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 11
+   },
+   "usd": 0.0038599999999999997
+  },
+  "fse:374003": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:623761": {
+   "answer": {
+    "present": [
+     "trance gate"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:361661": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 8,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0008960000000000001
+  },
+  "fse:254866": {
+   "answer": {
+    "present": [
+     "whoosh"
+    ]
+   },
+   "usage": {
+    "audioIn": 75,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00303
+  },
+  "fse:271146": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:62285": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 19,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0012079999999999999
+  },
+  "fse:608367": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 59,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.002488
+  },
+  "fse:517074": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 6,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0007920000000000001
+  },
+  "fse:528771": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 21,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.001312
+  },
+  "fse:559797": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 17,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0011439999999999998
+  },
+  "fse:449401": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 39,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.001848
+  },
+  "fse:159755": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:333277": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 10,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.00092
+  },
+  "fse:168787": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.0038399999999999997
+  },
+  "fse:569325": {
+   "answer": {
+    "present": [
+     "sub drop"
+    ]
+   },
+   "usage": {
+    "audioIn": 40,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00191
+  },
+  "fse:231349": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:27236": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0038
+  },
+  "fse:414290": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:436395": {
+   "answer": {
+    "present": []
+   },
+   "usage": {
+    "audioIn": 49,
+    "textIn": 220,
+    "out": 5
+   },
+   "usd": 0.0021680000000000002
+  },
+  "fse:387053": {
+   "answer": {
+    "present": [
+     "vinyl scratch"
+    ]
+   },
+   "usage": {
+    "audioIn": 48,
+    "textIn": 220,
+    "out": 9
+   },
+   "usd": 0.002176
+  },
+  "fse:157352": {
+   "answer": {
+    "present": [
+     "reverse effect"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:277508": {
+   "answer": {
+    "present": [
+     "siren"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:323065": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  },
+  "fse:199810": {
+   "answer": {},
+   "usage": {
+    "audioIn": 18,
+    "textIn": 220,
+    "out": 1
+   },
+   "usd": 0.001136
+  },
+  "fse:269560": {
+   "answer": {
+    "present": [
+     "laser"
+    ]
+   },
+   "usage": {
+    "audioIn": 51,
+    "textIn": 220,
+    "out": 7
+   },
+   "usd": 0.002252
+  },
+  "fse:544375": {
+   "answer": {
+    "present": [
+     "riser"
+    ]
+   },
+   "usage": {
+    "audioIn": 100,
+    "textIn": 220,
+    "out": 8
+   },
+   "usd": 0.00383
+  }
+ }
+}

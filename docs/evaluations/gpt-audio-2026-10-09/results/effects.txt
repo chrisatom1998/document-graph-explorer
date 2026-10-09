@@ -1,0 +1,23 @@
+gpt-audio-1.5 on effects: 300 clips, $0.822 ($0.0027/clip, 66 audio tokens/clip)
+tag               pos  neg   GPT P / R    GPT 95% P / R           main P / R   GPT 70/70 vs main
+air horn            5  295   0.33 / 0.20  0.06-0.79 / 0.04-0.62  0.92 / 0.65  fail      worse
+bitcrushed          5  295   0.25 / 0.20  0.05-0.70 / 0.04-0.62  -            fail      
+chops               5  295   0.00 / 0.00  0.00-0.00 / -0.00-0.43  0.25 / 0.08  fail      worse
+delay throw         2  298   0.00 / 0.00  0.00-0.00 / 0.00-0.66  -            fail      
+downlifter          3  297   0.00 / 0.00  0.00-0.00 / 0.00-0.56  -            fail      
+filter sweep       10  290   0.00 / 0.00  0.00-0.79 / -0.00-0.28  0.55 / 0.48  fail      no clear gain
+flanged            16  284   0.00 / 0.00  0.00-0.00 / 0.00-0.19  -            fail      
+glitch effect      21  279   0.00 / 0.00  0.00-0.00 / 0.00-0.15  -            fail      
+impact             22  278   0.30 / 0.27  0.15-0.52 / 0.13-0.48  0.63 / 0.72  fail      worse
+laser              20  280   0.33 / 0.20  0.14-0.61 / 0.08-0.42  0.51 / 0.53  fail      worse
+noise sweep        10  290   0.00 / 0.00  0.00-0.00 / -0.00-0.28  0.48 / 0.62  fail      worse
+reverse cymbal      3  297   0.00 / 0.00  0.00-0.00 / 0.00-0.56  0.69 / 0.85  fail      worse
+reverse effect     20  280   0.19 / 0.30  0.09-0.36 / 0.15-0.52  0.60 / 0.56  fail      worse
+riser              22  278   0.25 / 0.55  0.15-0.39 / 0.35-0.73  0.68 / 0.69  fail      worse
+siren              23  277   0.85 / 0.48  0.58-0.96 / 0.29-0.67  0.70 / 0.74  fail      worse
+stutter effect      2  298   0.00 / 0.00  0.00-0.56 / 0.00-0.66  0.00 / 0.00  fail      no clear gain
+sub drop            9  291   0.00 / 0.00  0.00-0.56 / 0.00-0.30  -            fail      
+trance gate         8  292   0.00 / 0.00  0.00-0.66 / 0.00-0.32  -            fail      
+vinyl scratch      18  282   0.16 / 0.39  0.08-0.29 / 0.20-0.61  0.74 / 0.77  fail      worse
+vocal chops         2  298   0.00 / 0.00  0.00-0.26 / 0.00-0.66  0.45 / 0.82  fail      worse
+whoosh             22  278   0.40 / 0.09  0.12-0.77 / 0.03-0.28  0.85 / 0.54  fail      worse
