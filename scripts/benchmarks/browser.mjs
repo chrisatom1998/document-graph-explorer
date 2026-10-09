@@ -33,7 +33,7 @@ export function installObserver() {
         const data = args[0], id = data?.requestId ?? data?.id;
         const kind = data?.kind ?? data?.type;
         // Layout streams and third-party workers have different lifetimes; don't count them as jobs.
-        const observed = /musicAnalysis|aggregator|pool/.test(String(url)) && id !== undefined && kind && kind !== 'cancel';
+        const observed = /musicAnalysis|aggregator|pool|pipeline\.worker/.test(String(url)) && id !== undefined && kind && kind !== 'cancel';
         const key = data?.requestId === undefined ? `id:${id}` : `request:${id}`;
         if (observed) { pending.set(key, { start: performance.now(), kind, epoch: stats.epoch, progress: [] }); stats.pending++; }
         try { return post(...args); } catch (error) { if (observed) finish(key, { error: true }); throw error; }

@@ -15,5 +15,12 @@ assert.deepEqual(displayedPredictions(manifest, graph, 'likely')[0].labels, ['ef
 audio.soundReviews = [{ dimension: 'effect', labelId: 'kick', decision: 'confirmed' }];
 assert.throws(() => displayedPredictions(manifest, graph), /blind prediction/);
 delete audio.soundReviews;
+for (const confirmedInstruments of [[], ['piano']]) {
+  audio.confirmedInstruments = confirmedInstruments;
+  for (const tier of ['all', 'likely']) {
+    assert.throws(() => displayedPredictions(manifest, graph, tier), /blind prediction/);
+  }
+}
+delete audio.confirmedInstruments;
 assert.throws(() => displayedPredictions(manifest, { nodes: [...graph.nodes, ...graph.nodes] }), /Ambiguous/);
 console.log('Display-policy benchmark checks passed. No audio inference was run.');

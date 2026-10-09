@@ -51,3 +51,30 @@ test('observer preserves worker messages, tracks progress, and distinguishes cac
     delete globalThis.__dgeBenchmark;
   }
 });
+
+test('observer tracks parse and embedding jobs from pipeline worker URLs', () => {
+  const OriginalWorker = globalThis.Worker, OriginalDB = globalThis.IDBDatabase;
+  class FakeWorker extends EventTarget { postMessage() {} terminate() {} }
+  class FakeDB { transaction() { return new EventTarget(); } }
+  globalThis.Worker = FakeWorker; globalThis.IDBDatabase = FakeDB;
+  try {
+    installObserver();
+    for (const url of ['https://localhost/src/workers/pipeline.worker.ts', new URL('https://localhost/assets/pipeline.worker-abc123.js')]) {
+      const worker = new globalThis.Worker(url);
+      for (const [requestId, type] of [[1, 'parse'], [2, 'embedBatch']]) {
+        const before = globalThis.__dgeBenchmark.requests.length;
+        worker.postMessage({ requestId, type });
+        assert.equal(globalThis.__dgeBenchmark.pending, 1);
+        worker.dispatchEvent(new MessageEvent('message', { data: { requestId, type: `${type}:progress` } }));
+        assert.equal(globalThis.__dgeBenchmark.pending, 1);
+        worker.dispatchEvent(new MessageEvent('message', { data: { requestId, type: `${type}:done` } }));
+        assert.equal(globalThis.__dgeBenchmark.pending, 0);
+        assert.equal(globalThis.__dgeBenchmark.requests.length, before + 1);
+        assert.equal(globalThis.__dgeBenchmark.requests.at(-1).kind, type);
+      }
+    }
+  } finally {
+    globalThis.Worker = OriginalWorker; globalThis.IDBDatabase = OriginalDB;
+    delete globalThis.__dgeBenchmark;
+  }
+});

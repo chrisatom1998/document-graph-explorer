@@ -1,9 +1,14 @@
 // Freeze already-reviewed audio; never infer ground truth from a filename or model.
 import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
-import { dirname, extname, join, resolve, relative, isAbsolute } from 'node:path';
+import path, { dirname, extname, join, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { assertDisjoint, hash, manifestDigest, validateManifest } from './core.mjs';
+
+export function isWithinDirectory(directory, source, paths = path) {
+  const relativeSource = paths.relative(paths.resolve(directory), source);
+  return source === paths.resolve(directory) || relativeSource.split(paths.sep)[0] !== '..' && !paths.isAbsolute(relativeSource);
+}
 
 export function prepare(inventoryPath, output, excludedPath) {
   const inventory = JSON.parse(readFileSync(inventoryPath, 'utf8'));
@@ -12,7 +17,7 @@ export function prepare(inventoryPath, output, excludedPath) {
   const sources = [];
   const clips = inventory.clips.map((clip, i) => {
     const source = realpathSync(resolve(root, clip.path));
-    if (source === resolve(output) || relative(resolve(output), source).split('/')[0] !== '..' && !isAbsolute(relative(resolve(output), source))) {
+    if (isWithinDirectory(output, source)) {
       throw new Error('Source audio must be outside the new output directory');
     }
     const extension = extname(source).toLowerCase();

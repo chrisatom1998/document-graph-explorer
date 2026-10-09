@@ -10,7 +10,7 @@ export function displayedPredictions(manifest, graph, tier = 'all') {
   }
   return manifest.clips.map(c => {
     const node = byName.get(c.file), audio = node?.audio;
-    if (audio?.confirmedInstruments?.length || audio?.confirmedDjTags || audio?.soundReviews?.length || audio?.copilotProperties) {
+    if (audio?.confirmedInstruments !== undefined || audio?.confirmedDjTags || audio?.soundReviews?.length || audio?.copilotProperties) {
       throw new Error(`Corrected/assisted audio cannot be used as a blind prediction: ${c.id}`);
     }
     const shown = audio ? confidentSoundSummary(audio, audio.recognition?.mode) : [];
