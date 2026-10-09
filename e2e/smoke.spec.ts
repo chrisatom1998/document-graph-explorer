@@ -165,7 +165,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await closeDetails(page);
 
   const chooserPromise = page.waitForEvent('filechooser');
-  await page.locator('.rs-sidebar').getByRole('button', { name: /^Import (clips|files)/ }).click();
+  await page.locator('.rs-sidebar').getByRole('button', { name: /^Import (Clips|Files)/ }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/persistence.txt');
   await expect(corpusCount(page)).toContainText('101 files');
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
@@ -335,6 +335,6 @@ test('switching graph views does not leak WebGL contexts', async ({ page }) => {
     await expect(page.getByRole('application', { name: i % 2 ? /Interactive 3D/ : /Interactive 2D/ })).toBeVisible();
   }
   expect(await page.evaluate(() => (window as typeof window & { graphWebglContexts: number }).graphWebglContexts)).toBe(initialContexts);
-  await expect(page.getByRole('heading', { name: 'Document Graph Explorer stopped rendering.' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Resonance stopped rendering.' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });

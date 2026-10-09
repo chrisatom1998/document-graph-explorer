@@ -1,12 +1,11 @@
 import type { MusicAnalysis } from './musicTypes';
-import { resolvedNonSourceLabels } from './soundReviewPolicy';
+import { genreFromScores } from './genreEnergy';
 
 /**
- * Character/style labels for a clip, resolved the same way as the rest of the
- * sound pipeline: your saved tags replace model estimates, and labels you
- * rejected or marked unsure never come back. Powers the "Genre / Style" filter.
+ * The genre a clip is filed under, as the track panel shows it (tested or
+ * "maybe"). Powers the "Genre" filter; sound characters belong to the Sounds filter.
  */
 export function styleTags(audio: MusicAnalysis | undefined): string[] {
-  if (!audio) return [];
-  return resolvedNonSourceLabels(audio).filter(l => l.group === 'character').map(l => l.label);
+  const genre = genreFromScores(audio?.genreScores?.scores);
+  return genre ? [genre.label] : [];
 }

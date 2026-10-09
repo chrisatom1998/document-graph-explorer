@@ -30,7 +30,7 @@ export default function HelpPopover() {
       >
         <header className="help-popover__header">
           <div>
-            <p className="help-popover__eyebrow">Knowledge Nebula</p>
+            <p className="help-popover__eyebrow">Resonance</p>
             <h2 className="help-popover__title">Help &amp; graph legend</h2>
           </div>
           <CloseButton
@@ -41,7 +41,7 @@ export default function HelpPopover() {
         </header>
 
         <div className="help-popover__scroll">
-          <p className="help-popover__hint">Select a node to see its details. Drag the map to explore, scroll to zoom, and use All files to browse your library.</p>
+          <p className="help-popover__hint">Select a node to see its details. Drag the map to explore, scroll to zoom, and use Library to browse your files.</p>
 
           <section className="help-popover__section" aria-labelledby="help-nodes-title">
             <h3 id="help-nodes-title">Nodes</h3>
@@ -79,6 +79,20 @@ export default function HelpPopover() {
                 overview while keeping them available for hover, selection, search, and paths.
               </p>
             )}
+          </section>
+
+          <section className="help-popover__section" aria-labelledby="help-audio-title">
+            <h3 id="help-audio-title">How clips are linked</h3>
+            <p className="help-popover__hint">
+              Tempo and key are measured from excerpts of each clip, so a clip with tempo or key changes
+              gets one value. Instrument and sound estimates can miss sounds or confuse similar timbres;
+              an unlisted sound may still be present.
+            </p>
+            <p className="help-popover__hint">
+              Connections use tempo, compatible keys, instruments, and confirmed sound properties.
+              Half/double-time matches and name hints are labeled with lower strength. Your reviews take
+              priority; unknown evidence does not match. Up to 8 audio neighbors, with 4 per relationship type.
+            </p>
           </section>
 
           <section className="help-popover__section" aria-labelledby="help-shortcuts-title">

@@ -201,6 +201,13 @@
 /* Collapse: the column shrinks to an icon rail and the graph takes the space. */
 .app-root.rs-side-collapsed { --rs-left: 64px; }
 .rs-root { transition: grid-template-columns 200ms var(--ease-out); }
+/* No files yet: the welcome card is the whole screen, so the side columns wait. */
+.rs-root--empty { grid-template-columns: 1fr; grid-template-areas: 'top' 'stage'; }
+.app-root:has(.rs-root--empty) { --rs-left: 0px; --rs-right: 0px; }
+.rs-import--folder { padding: 8px 16px; }
+.rs-import--folder strong { font-size: 13px; font-weight: 500; }
+.rs-import--folder .rs-import__plus { font-size: 18px; }
+.rs-export .toolbar__menu-label { margin: 10px 12px 4px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--rs-faint); }
 .rs-collapse {
   align-self: flex-end; width: 30px; height: 30px; margin: -8px -8px 8px 0; flex: none;
   display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--rs-muted); cursor: pointer;
@@ -377,6 +384,8 @@
 .app-root:has(.rs-root) .path-panel { top: calc(var(--rs-top) + 16px); left: calc(var(--rs-left) + 16px); }
 .app-root:has(.rs-root) .insights-digest-layer { top: calc(var(--rs-top) + 16px); left: calc(var(--rs-left) + 16px); }
 .app-root:has(.rs-root) .insights-layer { padding-top: var(--rs-top); }
+/* The welcome card sits under the top bar instead of across it. */
+.app-root:has(.rs-root) .empty-state-layer { top: var(--rs-top); }
 .app-root:has(.rs-root) .progress-strip-layer { left: var(--rs-left); right: var(--rs-right); }
 .app-root:has(.rs-root) .first-run-guide { right: calc(var(--rs-right) + 18px); }
 
@@ -410,12 +419,16 @@
   .rs-sidebar.rs-sidebar.is-narrow-open > .rs-advanced { display: block; flex: 1 1 100%; }
   .rs-sidebar.is-narrow-open > .rs-filters-head { margin: 8px 0 0; }
   .rs-sidebar.is-narrow-open > .rs-group { flex-direction: column; }
-  .app-root.rs-side-collapsed { --rs-left: 0px; }
+  /* One column: nothing floats beside the stage, so the progress strip and guide span the width. */
+  .app-root:has(.rs-root), .app-root.rs-side-collapsed { --rs-left: 0px; --rs-right: 0px; }
   .rs-sidebar.is-collapsed { flex-direction: row; padding: 10px 16px; }
   .rs-sidebar .rs-import, .rs-sidebar .rs-assistant { flex: 1; min-width: 0; margin: 0; padding: 8px 10px; }
   .rs-sidebar small { display: none !important; }
   .rs-sidebar .rs-import strong { font-size: 13px; }
   .rs-inspector { max-height: 45vh; border-left: 0; border-top: 1px solid var(--rs-line); }
+  /* The sidebar is a row here, so the card parks at the bottom of the stage instead of over the buttons. */
+  .app-root:has(.rs-root) .insights-digest-layer { top: auto; left: 16px; right: 16px; bottom: 16px; max-width: none; }
+  .app-root:has(.rs-inspector:not(.rs-inspector--empty)) .insights-digest-layer { display: none; }
 }
 /* Compact headers: the workspace picker and view tabs need separate rows.
    At tablet widths a one-row header lets the tabs cover the picker even

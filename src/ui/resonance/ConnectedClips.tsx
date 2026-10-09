@@ -88,6 +88,7 @@ export default function ConnectedClips({ detailsOpen, onToggleDetails }: { detai
   const nodes = useGraphStore(s => s.nodes);
   const nodeIndex = useGraphStore(s => s.nodeIndex);
   const edges = useGraphStore(s => s.edges);
+  const hasAudio = useGraphStore(s => s.nodes.some(n => n.fileType === 'audio'));
   const selectedId = useUiStore(s => s.selectedId);
   const selected = selectedId !== null ? nodes[nodeIndex[selectedId]] : undefined;
   const neighbors = useMemo(() => (selected ? neighborsOf(selected.id, nodes, nodeIndex, edges) : []), [selected, nodes, nodeIndex, edges]);
@@ -104,12 +105,13 @@ export default function ConnectedClips({ detailsOpen, onToggleDetails }: { detai
   const current = neighbors[Math.min(index, Math.max(0, neighbors.length - 1))];
 
   if (!selected) {
+    // Worded for what the library holds: a PDF corpus is not asked to "hear" a clip.
     return (
-      <aside className="rs-inspector rs-inspector--empty" aria-label="Connected clips">
+      <aside className="rs-inspector rs-inspector--empty" aria-label={hasAudio ? 'Connected clips' : 'Connected documents'}>
         <div>
           <span className="rs-inspector__mark" aria-hidden="true">◎</span>
-          <h2>Pick a clip</h2>
-          <p>Click a node in the graph to hear it and see which clips sound like it.</p>
+          <h2>{hasAudio ? 'Pick a clip' : 'Pick a document'}</h2>
+          <p>{hasAudio ? 'Click a node in the graph to hear it and see which clips sound like it.' : 'Click a node in the graph to read it and see what it connects to.'}</p>
         </div>
       </aside>
     );

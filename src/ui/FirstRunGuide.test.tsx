@@ -116,11 +116,11 @@ describe('FirstRunGuide', () => {
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(toggle).toHaveFocus();
     expect(guide).toBeVisible();
-    expect(localStorage.getItem('knowledge-nebula-first-graph-guide-v4')).toBeNull();
+    expect(localStorage.getItem('knowledge-nebula-first-graph-guide-v5')).toBeNull();
 
     fireEvent.keyDown(toggle, { key: 'Escape' });
     expect(screen.queryByLabelText('Getting started')).not.toBeInTheDocument();
-    expect(localStorage.getItem('knowledge-nebula-first-graph-guide-v4')).toBe('dismissed');
+    expect(localStorage.getItem('knowledge-nebula-first-graph-guide-v5')).toBe('dismissed');
   });
 
   it('can be reopened after dismissal', async () => {
@@ -145,14 +145,14 @@ describe('FirstRunGuide', () => {
     expect(await screen.findByText('Explore the map')).toBeVisible();
 
     await act(async () => screen.getByRole('button', { name: 'Next' }).click());
-    expect(screen.getByText('Find and shape the view')).toBeVisible();
-    expect(screen.getByText('Step 2 of 4')).toBeVisible();
+    expect(screen.getByText('Narrow it down')).toBeVisible();
+    expect(screen.getByText('Step 2 of 2')).toBeVisible();
 
     await act(async () => screen.getByRole('button', { name: 'Back' }).click());
     expect(screen.getByText('Explore the map')).toBeVisible();
   });
 
-  it('teaches the core loop, ending on chat', async () => {
+  it('teaches the core loop in two steps', async () => {
     render(<FirstRunGuide />);
     await screen.findByText('Explore the map');
 
@@ -166,9 +166,7 @@ describe('FirstRunGuide', () => {
 
     expect(seen).toEqual([
       'Explore the map',
-      'Find and shape the view',
-      'Reduce visual noise',
-      'Ask the corpus',
+      'Narrow it down',
     ]);
     expect(screen.getByRole('button', { name: 'Got it' })).toBeVisible();
   });

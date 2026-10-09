@@ -40,9 +40,13 @@ test('file browsing is visible and mobile guidance clears the controls', async (
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   // Chat and the sample assistant both stay reachable and must not overlap.
   const chat = page.getByRole('button', { name: 'Ask about your library', exact: true });
-  const assistantBox = await page.locator('.rs-assistant').boundingBox();
+  const assistant = page.getByRole('button', { name: 'Sample assistant', exact: true });
+  await expect(assistant).toBeVisible();
+  const assistantBox = await assistant.boundingBox();
   const chatBox = await chat.boundingBox();
-  expect(chatBox!.y + chatBox!.height).toBeLessThanOrEqual(assistantBox!.y);
+  const apart = chatBox!.x + chatBox!.width <= assistantBox!.x || assistantBox!.x + assistantBox!.width <= chatBox!.x
+    || chatBox!.y + chatBox!.height <= assistantBox!.y || assistantBox!.y + assistantBox!.height <= chatBox!.y;
+  expect(apart).toBe(true);
   await chat.click();
   await expect(page.getByRole('button', { name: 'Close chat', exact: true })).toBeVisible();
 });

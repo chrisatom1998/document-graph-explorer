@@ -27,7 +27,6 @@ function EvidenceWindows({label,dimension,...props}:RecognitionEvidenceProps & {
       <span> {o.evidenceIds.map(id=>props.recognition.evidence.find(e=>e.id===id)).filter(e=>!!e).map(e=>e.derivedFrom?`${models[e.modelId]} “${e.derivedFrom.labelId}” score ${e.score.toFixed(3)} (supports voice)`:`${models[e.modelId]} score ${e.score.toFixed(3)}`).join('; ')}</span>
     </li>)}</ul>
     {observations.length>20&&<p>Showing the first 20 evidence windows.</p>}
-    <p>Raw model scores are not probabilities.</p>
   </details>;
 }
 /** Technical evidence is kept mounted inside the parent disclosure; no analysis or review data changes. */
@@ -36,7 +35,6 @@ export function RecognitionDiagnostics(props:RecognitionEvidenceProps) {
   return <>
     <div className="rec-head">
       <span className={`rec-badge rec-badge--${recognition.status}`}>{recognition.status}</span>
-      <span className="rec-head__note">Suggestions are uncalibrated and may be wrong. They do not create instrument connections.</span>
     </div>
     <FusionDiagnostics fusion={fusion} duration={duration} mode={recognition.mode} onSeek={props.onSeek} />
     {DIMENSIONS.map(dimension=>{
@@ -62,13 +60,6 @@ export function RecognitionDiagnostics(props:RecognitionEvidenceProps) {
       </li>;
     })}</ul>
     {reviews.length>0&&<details><summary>Saved review history ({reviews.length})</summary><ul>{reviews.map((review,i)=><li key={i}>{review.labelId}: {review.decision} for this track, {review.at}{review.evidenceRunId!==recognition.runId?' — earlier evidence':''}</li>)}</ul></details>}
-    <details className="rec-fineprint"><summary>About these numbers</summary>
-      <p>Tempo and key use sampled excerpts for tracks over one minute, even in Full mode. They do not map tempo or key changes across the track.</p>
-      <p>Intervals show classifier windows, not exact sound boundaries.</p>
-      {recognition.mode==='fast'&&<p>Fast mode samples sections; gaps were not analyzed.</p>}
-      {recognition.truncated&&<p>Stored evidence reached its limit. The displayed evidence is incomplete.</p>}
-      <p>Silence, missing coverage and missing labels do not prove a source is absent.</p>
-    </details>
   </>;
 }
 export default function RecognitionEvidence({summaryOnly=false,...props}:RecognitionEvidenceProps & {summaryOnly?:boolean}) {

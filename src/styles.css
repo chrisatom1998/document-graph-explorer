@@ -853,8 +853,7 @@ textarea {
   display: grid;
   grid-template-columns: minmax(280px, 0.88fr) minmax(390px, 1.12fr);
   grid-template-areas:
-    'visual content'
-    'workflow workflow';
+    'visual content';
   column-gap: clamp(32px, 4vw, 56px);
   row-gap: 28px;
   width: min(1080px, calc(100vw - 48px));
@@ -4269,8 +4268,7 @@ mark.passage-mark {
     grid-template-columns: 1fr;
     grid-template-areas:
       'visual'
-      'content'
-      'workflow';
+      'content';
     width: 100%;
     max-height: calc(100vh - 20px);
     overflow: auto;

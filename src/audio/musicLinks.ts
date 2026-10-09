@@ -69,7 +69,7 @@ type Features = ReturnType<typeof features>;
 function pairEdges(a: Features, b: Features, floor = SOUND_LINK_POLICY.floor): Edge[] {
   const [source, target] = [a.node.id, b.node.id].sort();
   const edges: Edge[] = [];
-  const add = (kind: MusicKind, weight: number, evidence: string) => edges.push({ id: `${source}->${target}:${kind}`, source, target, kind, weight, evidence: [evidence, 'Match strength reflects available evidence, not a probability. Musical similarities are not proof of sampling or influence.'] });
+  const add = (kind: MusicKind, weight: number, evidence: string) => edges.push({ id: `${source}->${target}:${kind}`, source, target, kind, weight, evidence: [evidence] });
   const sources = (kind: 'tempo' | 'key') => ` Sources: ${a.hints[kind]?.source ?? 'audio estimate'} and ${b.hints[kind]?.source ?? 'audio estimate'}. Name tags are not verified audio detections.`;
   if (a.tempo && b.tempo) {
     const at = a.tempo.bpm; const bt = b.tempo.bpm;

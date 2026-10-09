@@ -4,6 +4,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
@@ -16,8 +17,8 @@ import CloseButton from './CloseButton';
 import { IconGrip } from './icons';
 import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
 
-// v4: shorter core-loop tour after the toolbar was collapsed into menus.
-const KEY = 'knowledge-nebula-first-graph-guide-v4';
+// v5: two steps that point at the Resonance shell's real controls.
+const KEY = 'knowledge-nebula-first-graph-guide-v5';
 export { FIRST_RUN_GUIDE_REOPEN_EVENT };
 
 const TOUR_STEPS = [
@@ -27,24 +28,19 @@ const TOUR_STEPS = [
     body: 'Drag to orbit, scroll to zoom, and click a node to read it. Notes, tags, and pins live on the document panel when you need them.',
   },
   {
-    selector: '.toolbar',
-    title: 'Find and shape the view',
-    body: 'Search, fit the camera, switch between the 2D map and 3D space, and add files here. View, Analyze, and Data keep snapshots, insights, export, and other tools one click down.',
-  },
-  {
-    selector: '.filter-bar-layer',
-    title: 'Reduce visual noise',
-    body: 'Open Filters for file type and cluster. More filters hides weaker links, connection kinds, and recency until you ask.',
-  },
-  {
-    selector: '.chat-bubble-btn, .chat-panel',
-    title: 'Ask the corpus',
-    body: 'Open chat for grounded answers that cite the documents used. Answers can come from local passages, OpenRouter, or a fully local Ollama model — pick a provider in Settings.',
-    /** Airgap/offline builds must not advertise cloud providers. */
-    offlineBody:
-      'Open chat for grounded answers extracted from your documents, with citations to the passages used.',
+    selector: '.rs-sidebar',
+    title: 'Narrow it down',
+    body: 'Filters on the left pick the kinds of connection to show. Advanced filters hide weaker links until you ask for them.',
   },
 ] as const;
+
+/** Whether the tour is on screen, for overlays that should wait their turn (the "What we found" card). */
+let guideVisible = false;
+const guideListeners = new Set<() => void>();
+const subscribeGuide = (listener: () => void) => { guideListeners.add(listener); return () => { guideListeners.delete(listener); }; };
+export function useFirstRunGuideVisible(): boolean {
+  return useSyncExternalStore(subscribeGuide, () => guideVisible, () => false);
+}
 
 interface SpotlightRect {
   top: number;
@@ -163,6 +159,11 @@ export default function FirstRunGuide() {
   }, [dismissed, ready, selectedId, searchOpen, step]);
 
   const visible = ready && !dismissed && selectedId === null && !searchOpen;
+  useEffect(() => {
+    guideVisible = visible;
+    guideListeners.forEach((listener) => listener());
+    return () => { guideVisible = false; guideListeners.forEach((listener) => listener()); };
+  }, [visible]);
 
   // Place the panel imperatively once it is on screen: a saved drag position
   // when there is one, otherwise the measured bottom-right corner. Measuring
@@ -245,7 +246,7 @@ export default function FirstRunGuide() {
     step === 0 && dims === 2
       ? 'Drag empty space to pan, scroll to zoom, and click a node to read it. Notes, tags, and pins live on the document panel when you need them.'
       : current.body;
-  const body = offline && 'offlineBody' in current ? current.offlineBody : modeAwareBody;
+  const body: string = offline && 'offlineBody' in current ? String(current.offlineBody) : modeAwareBody;
   const spotlightStyle: CSSProperties | undefined = spotlight
     ? {
         top: Math.max(6, spotlight.top - 6),

@@ -68,7 +68,7 @@ export default function SidePanelAbout({
 
       {entities.length > 0 && (
         <div className="side-panel__block">
-          <p className="side-panel__section-label">Entities</p>
+          <p className="side-panel__section-label">Names and places</p>
           <div className="side-panel__chip-row">
             {entities.map((e) => (
               <span key={e} className="chip chip-muted">

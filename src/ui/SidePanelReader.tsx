@@ -31,6 +31,8 @@ interface SidePanelReaderProps {
   nodes: DocNode[];
   readerHighlight: ReaderHighlight | null;
   readerLabel: string;
+  /** Inline (Resonance) panel: the clip card above already shows a player. */
+  compact?: boolean;
   codeLang: CodeLanguage | null;
   onNavigate?: (id: string) => void;
 }
@@ -40,6 +42,7 @@ export default function SidePanelReader({
   nodes,
   readerHighlight,
   readerLabel,
+  compact = false,
   codeLang,
   onNavigate = focusNode,
 }: SidePanelReaderProps) {
@@ -159,7 +162,7 @@ export default function SidePanelReader({
           </span>
         )}
         {node.fileType === 'audio' ? (
-          <AudioPreview key={node.id} node={node} />
+          <AudioPreview key={node.id} node={node} compact={compact} />
         ) : pdfPreview && pdfPreview.id === node.id && !pdfTextView ? (
           <Suspense fallback={<div className="side-panel__reader is-unavailable">Loading preview…</div>}>
             <PdfPreview

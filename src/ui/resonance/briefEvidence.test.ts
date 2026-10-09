@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Edge, EdgeKind } from '../../model/types';
 import { briefEvidence } from './briefEvidence';
 
-const DISCLAIMER = 'Match strength reflects available evidence, not a probability. Musical similarities are not proof of sampling or influence.';
-const edge = (kind: EdgeKind, evidence: string): Edge => ({ id: kind, source: 'a', target: 'b', kind, weight: 0.6, evidence: [evidence, DISCLAIMER] });
+const edge = (kind: EdgeKind, evidence: string): Edge => ({ id: kind, source: 'a', target: 'b', kind, weight: 0.6, evidence: [evidence] });
 
 describe('briefEvidence', () => {
   it('reduces name-based tempo and key links to their source', () => {

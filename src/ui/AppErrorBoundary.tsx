@@ -42,7 +42,7 @@ export default class AppErrorBoundary extends Component<
       <div className="app-root app-error-shell">
         <section className="app-error-panel glass-panel" role="alert">
           <p className="app-error-panel__eyebrow">Application Error</p>
-          <h1 className="app-error-panel__title">Document Graph Explorer stopped rendering.</h1>
+          <h1 className="app-error-panel__title">Resonance stopped rendering.</h1>
           <p className="app-error-panel__message">{messageFor(this.state.error)}</p>
           <div className="app-error-panel__actions">
             <button

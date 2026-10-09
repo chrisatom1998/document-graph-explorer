@@ -94,7 +94,7 @@ test('real folder chooser imports nested audio, supports re-selection, and the c
     // Exercise the workspace menu too, and ensure repeated folder selection is handled.
     await writeFile(join(folder, 'Third tone.wav'), tone(880));
     const again = page.waitForEvent('filechooser');
-    await page.locator('.rs-sidebar').getByRole('button', { name: /^Import sounds/ }).click();
+    await page.locator('.rs-sidebar').getByRole('button', { name: /^Import a folder/ }).click();
     await (await again).setFiles(folder);
     await expect(corpusCount(page)).toContainText('4 clips',{ timeout: 120000 });
     await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
