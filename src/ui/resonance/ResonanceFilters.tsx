@@ -189,7 +189,7 @@ export default function ResonanceFilters() {
         <h3>Genre</h3>
         <select className="rs-select" aria-label="Genre" value={filter.style ?? ''} disabled={!styles.length && filter.style === null} onChange={e => setFilter({ style: e.target.value || null })}>
           <option value="">Any genre</option>
-          {filter.style && !styles.includes(filter.style) && <option value={filter.style}>{filter.style.replaceAll('_', ' ')} (saved filter)</option>}
+          {filter.style && !styles.includes(filter.style) && <option value={filter.style}>{soundLabelText(filter.style)} (saved filter)</option>}
           {styles.map(s => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}
         </select>
       </section>
