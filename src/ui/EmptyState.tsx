@@ -61,9 +61,10 @@ export default function EmptyState() {
             <Suspense fallback={<ConstellationSvg />}><HeroConstellation /></Suspense>
           </div>
           <div className="empty-state__visual-copy">
-            <p className="empty-state__visual-kicker">See how your files relate</p>
+            <p className="empty-state__visual-kicker">See how your sounds relate</p>
             <p>
-              Clips and documents become a map of what sounds alike, cites what, and shares a topic.
+              Clips become a map of what sounds alike, shares a tempo or key, and mixes well
+              together. Documents join by topic and citation.
             </p>
           </div>
           <ul className="empty-state__trust-list" aria-label="Privacy and access">
@@ -81,8 +82,9 @@ export default function EmptyState() {
               Find how sounds relate.
             </h1>
             <p className="empty-state__tagline">
-              Drop in audio clips or documents and get a map of how they connect. Files stay on
-              this device; nothing leaves it unless you turn on a cloud AI provider or share an export.
+              Drop in clips, loops or whole sample packs and get a map of how they relate by
+              instrument, tempo, key and feel. Documents work too. Files stay on this device;
+              nothing leaves it unless you turn on a cloud AI provider or share an export.
             </p>
           </header>
 
@@ -125,8 +127,8 @@ export default function EmptyState() {
               </Button>
             </div>
             <p className="empty-state__hint">
-              Drag files or folders anywhere, or choose a folder to include supported files from
-              every subfolder.
+              Drag clips, sample packs or folders anywhere, or choose a folder to include every
+              supported file from its subfolders.
             </p>
           </div>
 

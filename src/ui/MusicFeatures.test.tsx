@@ -68,6 +68,19 @@ it('shows whole-track coverage and lets listeners verify the strongest instrumen
   expect(screen.getByText('Weaker detections. These do not create instrument links.')).toBeTruthy();
 });
 
+it('keeps other model guesses inside Technical details until it is opened', () => {
+  const soundProfile = { version: 1 as const, character: [], roles: [], models: [], disagreement: false, djTags: [
+    { group: 'production' as const, label: 'drum loop', score: .4 }, { group: 'character' as const, label: 'rhythmic_stabs', score: .4 },
+  ] };
+  render(<MusicFeatures node={{ ...node, audio: { ...node.audio!, soundProfile } }} />);
+  const guesses = screen.getByRole('region', { name: 'Other model guesses' });
+  expect(guesses).not.toBeVisible();
+  expect(guesses.closest('details')).toBe(screen.getByText('Technical details').closest('details'));
+  fireEvent.click(screen.getByText('Technical details'));
+  expect(guesses).toBeVisible();
+  expect(screen.getByText('drum loop', { selector: '.chip--guess' })).toBeVisible();
+});
+
 it('shows a weak synth suggestion immediately instead of claiming nothing was detected', () => {
   renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, instruments: [{ label: 'synthesizer', score: 0.115, status: 'possible' }] } }} />);
   expect(screen.getByRole('heading', { name: 'Suggested instruments' })).toBeTruthy();
