@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles, startIn3D } from './resonance';
+import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles, showFilters, startIn3D } from './resonance';
 
 test.beforeEach(async ({ page }) => { page.setDefaultTimeout(30_000); });
 
@@ -220,8 +220,9 @@ test('search ranks within file filters before applying its result limit', async 
   });
   await importGraphJson(page, JSON.stringify(graph));
   await openLibrary(page);
-  await advancedFilters(page);
-  await page.getByRole('button', { name: 'md · 1', exact: true }).click();
+  // File type is the sidebar select; the embedded Advanced panel no longer repeats it.
+  await showFilters(page);
+  await page.getByRole('combobox', { name: 'File type' }).selectOption('md');
   await page.getByRole('button', { name: 'Search documents' }).click();
   // The sidebar's Key, Genre and File type selects are comboboxes too; type into the search box.
   await page.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('Architecture');

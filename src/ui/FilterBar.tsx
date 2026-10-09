@@ -123,7 +123,8 @@ export default function FilterBar({ embedded = false }: { embedded?: boolean }) 
   const advancedActive =
     filter.minDegree > 0 ||
     filter.minEdgeWeight > 0 ||
-    filter.edgeKinds !== null ||
+    // Embedded, the link-kind chips live in the sidebar, so a kind picked there must not hold this section open.
+    (!embedded && filter.edgeKinds !== null) ||
     filter.modifiedWithinDays !== null;
   const showAdvanced = advancedOpen || advancedActive;
 
@@ -167,6 +168,8 @@ export default function FilterBar({ embedded = false }: { embedded?: boolean }) 
             <span id="graph-filter-status" role="status">{matchingCount} {matchingCount === 1 ? 'document matches' : 'documents match'}</span>
           </div>
           {matchingCount === 0 && <p className="filter-bar__empty">No documents match. Clear filters or broaden your selection.</p>}
+          {/* The Resonance sidebar already offers file type and similarity type, so the embedded panel drops those chips. */}
+          {!embedded && (
           <div className="filter-bar__group">
             <span className="filter-bar__group-label">Type</span>
             {FILE_TYPE_ORDER.filter((ft) => (fileTypeCounts[ft] ?? 0) > 0).map((ft) => (
@@ -184,6 +187,7 @@ export default function FilterBar({ embedded = false }: { embedded?: boolean }) 
               </button>
             ))}
           </div>
+          )}
 
           {clusterCounts.length > 0 && (
             <div className="filter-bar__group filter-bar__group--clusters">
@@ -214,7 +218,7 @@ export default function FilterBar({ embedded = false }: { embedded?: boolean }) 
             <button
               type="button"
               className="filter-bar__more"
-              title="Connection count, link strength, kind, and recency"
+              title={embedded ? "Connection count, link strength, and recency" : "Connection count, link strength, kind, and recency"}
               aria-expanded={false}
               onClick={() => setAdvancedOpen(true)}
             >
@@ -268,6 +272,7 @@ export default function FilterBar({ embedded = false }: { embedded?: boolean }) 
             </div>
           </div>
 
+          {!embedded && (
           <div className="filter-bar__group">
             <span className="filter-bar__group-label" title="Keep only connections of these kinds. Leave all off to show every kind.">
               Links
@@ -287,6 +292,7 @@ export default function FilterBar({ embedded = false }: { embedded?: boolean }) 
               </button>
             ))}
           </div>
+          )}
 
           <div className="filter-bar__group">
             <span className="filter-bar__group-label" title="Keep documents modified within this window. Files without a known date hide when a window is set.">
@@ -311,7 +317,7 @@ export default function FilterBar({ embedded = false }: { embedded?: boolean }) 
               <button
                 type="button"
                 className="filter-bar__more"
-                title="Hide connection, strength, kind, and recency filters"
+                title={embedded ? "Hide connection, strength, and recency filters" : "Hide connection, strength, kind, and recency filters"}
                 aria-expanded={true}
                 onClick={() => setAdvancedOpen(false)}
               >
@@ -325,7 +331,7 @@ export default function FilterBar({ embedded = false }: { embedded?: boolean }) 
             <button
               type="button"
               className="filter-bar__clear"
-              title="Reset all filters (file types, clusters, connection kinds, recency, and strength minimums)"
+              title={embedded ? "Reset every filter, including the sidebar's type, similarity, tempo, key, genre and sound choices" : "Reset all filters (file types, clusters, connection kinds, recency, and strength minimums)"}
               onClick={clearAll}
             >
               Clear filters

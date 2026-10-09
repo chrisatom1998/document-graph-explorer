@@ -27,6 +27,8 @@ const SIMILARITY: { kind: EdgeKind; label: string }[] = [
   { kind: 'similar', label: 'Sounds alike' },
   { kind: 'tempo', label: 'Tempo' },
   { kind: 'key', label: 'Key' },
+  { kind: 'version', label: 'Versions' },
+  { kind: 'genre', label: 'Same genre' },
   { kind: 'title', label: 'Shared title' },
   { kind: 'semantic', label: 'Similar meaning' },
   { kind: 'keyword', label: 'Keywords' },
