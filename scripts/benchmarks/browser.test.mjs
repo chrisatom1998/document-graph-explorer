@@ -1,6 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installObserver } from './browser.mjs';
+import { installObserver, settlementStart } from './browser.mjs';
+
+test('cached graph starts settling when readiness changes without a graph change', () => {
+  const graph = 'complete saved graph';
+  let start = settlementStart(graph, null, graph, false, 100);
+  assert.equal(start, null);
+  start = settlementStart(graph, start, graph, true, 200);
+  assert.equal(start, 200);
+  assert.equal(settlementStart(graph, start, graph, true, 1800), 200);
+  assert.equal(settlementStart(graph, start, graph, false, 1900), null);
+  assert.equal(settlementStart(graph, null, graph, true, 2000), 2000);
+  assert.equal(settlementStart(graph, start, 'changed graph', true, 2100), 2100);
+});
 
 test('observer preserves worker messages, tracks progress, and distinguishes cached features from inference', () => {
   const OriginalWorker = globalThis.Worker, OriginalDB = globalThis.IDBDatabase;

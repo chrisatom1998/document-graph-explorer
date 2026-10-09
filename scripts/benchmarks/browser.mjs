@@ -83,6 +83,13 @@ export async function savedGraph(full = false) {
   } finally { db.close(); }
 }
 
+// Readiness can change without changing the saved graph (notably on a cached
+// reimport). Start a new stability interval whenever readiness is regained.
+export function settlementStart(previous, stableSince, signature, eligible, now) {
+  if (!eligible) return null;
+  return stableSince === null || signature !== previous ? now : stableSince;
+}
+
 export async function importBatch(page, paths, files, timeoutMs) {
   const picker = page.locator('body > input[type="file"][multiple]');
   if (!await picker.count()) {
@@ -96,6 +103,7 @@ export async function importBatch(page, paths, files, timeoutMs) {
   const started = performance.now();
   const deadline = started + timeoutMs;
   let last = null, stableSince = null, previous = '';
+  let lastProgress = started;
   let peakJsHeapBytes = null;
   await picker.setInputFiles(paths, { timeout: Math.min(timeoutMs, 120_000) });
   while (performance.now() < deadline) {
@@ -107,12 +115,16 @@ export async function importBatch(page, paths, files, timeoutMs) {
     if (metrics.heap !== null) peakJsHeapBytes = Math.max(peakJsHeapBytes ?? 0, metrics.heap);
     const ready = await page.getByRole('button', { name: 'Search documents' }).isEnabled().catch(() => false);
     const signature = JSON.stringify(state);
+    if (performance.now() - lastProgress >= 30_000) {
+      console.log(JSON.stringify({ progress: true, elapsedMs: performance.now() - started, ...state,
+        pending: metrics.pending, corpusWrites: metrics.corpusWrites, ready }));
+      lastProgress = performance.now();
+    }
     // A fresh corpus write proves this handoff actually settled. An unchanged
     // cached graph alone must not finish a slow reimport before it starts.
-    if (ready && state.terminal && metrics.pending === 0 && metrics.corpusWrites > 0) {
-      if (signature !== previous) stableSince = performance.now();
-      if (stableSince !== null && performance.now() - stableSince >= 1500) break;
-    } else stableSince = null;
+    stableSince = settlementStart(previous, stableSince, signature,
+      ready && state.terminal && metrics.pending === 0 && metrics.corpusWrites > 0, performance.now());
+    if (stableSince !== null && performance.now() - stableSince >= 1500) break;
     previous = signature;
     await page.waitForTimeout(500);
   }
