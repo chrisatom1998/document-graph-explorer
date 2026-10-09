@@ -34,10 +34,10 @@ checksums and build details. The page is intentionally separate from GitHub's
   The landing tag identifies its initial commit; the page's explicit Source link
   identifies the current downloadable build. Do not use its automatic source ZIP
   as the current desktop source.
-- One workflow runs at a time. GitHub coalesces rapid successive production events
-  to the newest pending run; intermediate superseded deployments may be skipped.
-  Preview and unsuccessful status events have separate concurrency groups and
-  cannot displace a pending production build. A monotonic status marker prevents
+- Eligible production runs share one concurrency group. GitHub coalesces rapid
+  successive eligible production events to the newest pending run; intermediate
+  superseded deployments may be skipped. Preview and unsuccessful status events
+  use separate groups and can overlap, but cannot displace a pending production build. A monotonic status marker prevents
   delayed/rerun old events from replacing newer completed downloads.
 
 ## Costs and restrictions
