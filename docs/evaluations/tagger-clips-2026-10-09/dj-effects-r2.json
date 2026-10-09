@@ -1,0 +1,147 @@
+{
+ "kind": "tagger-on-heldout-clips-v1",
+ "clips": 3233,
+ "set": "docs/evaluations/dj-effects-2026-10-09/clips.json",
+ "tags": {
+  "chops": {
+   "threshold": 0.3837,
+   "tp": 1,
+   "fp": 52,
+   "fn": 25,
+   "positives": 26,
+   "precision": 0.018867924528301886,
+   "recall": 0.038461538461538464,
+   "pass70": false
+  },
+  "stutter effect": {
+   "threshold": 0.438,
+   "tp": 6,
+   "fp": 89,
+   "fn": 19,
+   "positives": 25,
+   "precision": 0.06315789473684211,
+   "recall": 0.24,
+   "pass70": false
+  },
+  "glitch effect": {
+   "threshold": 0.401,
+   "tp": 135,
+   "fp": 227,
+   "fn": 167,
+   "positives": 302,
+   "precision": 0.3729281767955801,
+   "recall": 0.4470198675496689,
+   "pass70": false
+  },
+  "reverse effect": {
+   "threshold": 0.647,
+   "tp": 18,
+   "fp": 20,
+   "fn": 150,
+   "positives": 168,
+   "precision": 0.47368421052631576,
+   "recall": 0.10714285714285714,
+   "pass70": false
+  },
+  "record stop": {
+   "threshold": 0.5435,
+   "tp": 0,
+   "fp": 28,
+   "fn": 5,
+   "positives": 5,
+   "precision": 0.0,
+   "recall": 0.0,
+   "pass70": false
+  },
+  "vinyl scratch": {
+   "threshold": 0.0142,
+   "tp": 43,
+   "fp": 96,
+   "fn": 37,
+   "positives": 80,
+   "precision": 0.30935251798561153,
+   "recall": 0.5375,
+   "pass70": false
+  },
+  "riser": {
+   "threshold": 0.5525,
+   "tp": 69,
+   "fp": 48,
+   "fn": 57,
+   "positives": 126,
+   "precision": 0.5897435897435898,
+   "recall": 0.5476190476190477,
+   "pass70": false
+  },
+  "impact": {
+   "threshold": 0.7099,
+   "tp": 153,
+   "fp": 147,
+   "fn": 218,
+   "positives": 371,
+   "precision": 0.51,
+   "recall": 0.4123989218328841,
+   "pass70": false
+  },
+  "whoosh": {
+   "threshold": 0.1419,
+   "tp": 106,
+   "fp": 22,
+   "fn": 189,
+   "positives": 295,
+   "precision": 0.828125,
+   "recall": 0.3593220338983051,
+   "pass70": false
+  },
+  "noise sweep": {
+   "threshold": 0.6655,
+   "tp": 12,
+   "fp": 48,
+   "fn": 29,
+   "positives": 41,
+   "precision": 0.2,
+   "recall": 0.2926829268292683,
+   "pass70": false
+  },
+  "laser": {
+   "threshold": 0.6142,
+   "tp": 90,
+   "fp": 42,
+   "fn": 214,
+   "positives": 304,
+   "precision": 0.6818181818181818,
+   "recall": 0.29605263157894735,
+   "pass70": false
+  },
+  "siren": {
+   "threshold": 0.1487,
+   "tp": 80,
+   "fp": 3,
+   "fn": 199,
+   "positives": 279,
+   "precision": 0.963855421686747,
+   "recall": 0.2867383512544803,
+   "pass70": false
+  },
+  "flanged": {
+   "threshold": 0.3544,
+   "tp": 2,
+   "fp": 4,
+   "fn": 51,
+   "positives": 53,
+   "precision": 0.3333333333333333,
+   "recall": 0.03773584905660377,
+   "pass70": false
+  },
+  "bitcrushed": {
+   "threshold": 0.8417,
+   "tp": 3,
+   "fp": 29,
+   "fn": 40,
+   "positives": 43,
+   "precision": 0.09375,
+   "recall": 0.06976744186046512,
+   "pass70": false
+  }
+ }
+}
