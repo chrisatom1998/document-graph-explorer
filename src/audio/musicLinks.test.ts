@@ -354,6 +354,54 @@ describe('sound-alike links: reasons and scale', () => {
 });
 
 describe('sound-alike score: centered fingerprints and music styles', () => {
+  it('preserves large-library fallback links when short clips carry style estimates', () => {
+    const nodes = Array.from({ length: 850 }, (_, i) => sounding(`n${String(i).padStart(4, '0')}`, i % 8, i,
+      { durationSeconds: 4, analyzedSeconds: 4 }));
+    const expected = buildMusicEdges(nodes);
+    expect(expected.some(e => e.kind === 'similar')).toBe(true);
+    const styled = nodes.map(n => ({ ...n, audio: { ...n.audio!, styles: [{ label: 'Electronic---Techno', score: .9 }] } }));
+    expect(buildMusicEdges(styled)).toEqual(expected);
+  });
+  it('keeps styled large-library searches deterministic, fast, and within degree caps', () => {
+    const nodes = Array.from({ length: 1200 }, (_, i) => sounding(`n${String(i).padStart(4, '0')}`, i % 8, i, {
+      styles: [{ label: `style-${i % 8}`, score: .6 }, { label: 'shared-style', score: .2 }],
+    }));
+    const started = performance.now();
+    const edges = buildMusicEdges(nodes);
+    expect(performance.now() - started).toBeLessThan(20000);
+    expect(edges.some(e => e.kind === 'similar')).toBe(true);
+    expect(new Set(edges.map(e => e.id)).size).toBe(edges.length);
+    for (const n of nodes) {
+      const incident = edges.filter(e => e.source === n.id || e.target === n.id);
+      expect(new Set(incident.map(e => e.source === n.id ? e.target : e.source)).size).toBeLessThanOrEqual(MUSIC_NEIGHBOR_LIMIT);
+      expect(incident.filter(e => e.kind === 'similar').length).toBeLessThanOrEqual(MUSIC_NEIGHBORS_PER_KIND);
+    }
+    const reordered = [...nodes].reverse().map(n => ({ ...n, audio: { ...n.audio!, styles: [...n.audio!.styles!].reverse() } }));
+    expect(buildMusicEdges(reordered)).toEqual(edges);
+  });
+  it('finds a blended neighbor beyond 800 tracks even when raw fingerprint buckets miss it', () => {
+    let seed = 125;
+    const unit = (v: number[]) => { const norm = Math.hypot(...v); return v.map(x => x / norm); };
+    const random = () => unit(Array.from({ length: 512 }, () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 2 ** 32 - .5;
+    }));
+    const filler = Array.from({ length: 799 }, (_, i) => node(`f${i}`, { embedding: random() }));
+    const a = random(), other = random();
+    const dot = a.reduce((sum, x, i) => sum + x * other[i], 0);
+    const orthogonal = unit(other.map((x, i) => x - dot * a[i]));
+    const b = a.map((x, i) => .58 * x + Math.sqrt(1 - .58 ** 2) * orthogonal[i]);
+    const styles = [{ label: 'Electronic---Techno', score: .8 }];
+    const pair = [node('a', { embedding: a, styles }), node('b', { embedding: b, styles })];
+    const expected = musicPairEdges(pair[0], pair[1]).find(e => e.kind === 'similar');
+    expect(expected).toBeDefined();
+    expect(expected!.weight).toBeCloseTo(.58);
+    // This fixture has no shared raw hash bucket or other relation token. Only
+    // the score-matched, style-augmented candidate pass can recover its link.
+    const nodes = [...pair, ...filler];
+    expect(buildMusicEdges(nodes)).toContainEqual(expected);
+    expect(buildMusicEdges([...nodes].reverse())).toEqual(buildMusicEdges(nodes));
+  });
   // Unit fingerprints that share the common music component, with a chosen cosine between their remaining parts.
   const mean = center.mean;
   const orthogonal = (seed: number) => {

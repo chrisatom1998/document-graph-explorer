@@ -200,13 +200,13 @@ function tokens(f: Features, query = false): string[] {
 }
 /** Deterministic random hyperplanes (fixed seed) for libraries too large to compare all pairs; built once. */
 const planeCache = new Map<string, Float32Array[]>();
-function hyperplanes(count: number, dimensions: number): Float32Array[] {
-  const cached = planeCache.get(`${count}:${dimensions}`);
+function hyperplanes(count: number, dimensions: number, cache = true): Float32Array[] {
+  const cached = cache && planeCache.get(`${count}:${dimensions}`);
   if (cached) return cached;
   let seed = 0x2f6b1d3;
   const next = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32 - .5; };
   const planes = Array.from({ length: count }, () => Float32Array.from({ length: dimensions }, next));
-  planeCache.set(`${count}:${dimensions}`, planes);
+  if (cache) planeCache.set(`${count}:${dimensions}`, planes);
   return planes;
 }
 /** Each fingerprinted track's closest-sounding tracks (by index), most similar first. */
@@ -246,9 +246,37 @@ function soundNeighbors(audio: Features[], keep: number): Map<number, { other: n
       return `${t}:${code}`;
     });
   });
+  // Keep the old buckets for fallback pairs, and union a score-matched hash for
+  // styled tracks. Its unit vector is [sqrt(.8) * centered CLAP, sqrt(.2) * styles],
+  // whose dot product is exactly soundAlikeScore. Do not center it a second time.
+  const labels = [...new Set(members.flatMap(i => [...(audio[i].styles?.keys() ?? [])]))].sort();
+  if (labels.length) {
+    const labelIndex = new Map(labels.map((label, i) => [label, dimensions + i]));
+    // The vocabulary belongs to this library. Avoid retaining a plane matrix for
+    // every vocabulary size, and project sparse styles without dense per-track vectors.
+    const styledPlanes = hyperplanes(TABLES * BITS, dimensions + labels.length, false);
+    const fingerprintScale = Math.sqrt(1 - STYLE_SHARE), styleScale = Math.sqrt(STYLE_SHARE);
+    members.forEach((i, m) => {
+      const f = audio[i];
+      if (!f.styles) return;
+      const styles = [...f.styles].map(([label, value]) => [labelIndex.get(label)!, value] as const);
+      for (let t = 0; t < TABLES; t++) {
+        let code = 0;
+        for (let b = 0; b < BITS; b++) {
+          const p = styledPlanes[t * BITS + b];
+          let dot = 0;
+          for (let d = 0; d < dimensions; d++) dot += p[d] * f.centered![d] * fingerprintScale;
+          for (const [d, value] of styles) dot += p[d] * value * styleScale;
+          code = code * 2 + (dot > 0 ? 1 : 0);
+        }
+        codes[m].push(`style:${t}:${code}`);
+      }
+    });
+  }
   members.forEach((i, m) => { for (const code of codes[m]) { const list = buckets.get(code) ?? []; list.push(i); buckets.set(code, list); } });
   // Each bucket is in index order; compare only with a fixed window around this track, so identical
-  // fingerprints filling one bucket cannot make the search quadratic.
+  // fingerprints filling one bucket cannot make the search quadratic. Even with both hash families,
+  // at most 2 * TABLES * WINDOW earlier candidates are scored per track, deduplicated below.
   const WINDOW = 16;
   members.forEach((i, m) => {
     const seen = new Set<number>();
