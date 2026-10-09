@@ -184,3 +184,34 @@ describe('restored and orphaned audio filters', () => {
     expect(screen.queryByRole('button', { name: 'Clear audio filters' })).toBeNull();
   });
 });
+
+describe('File type filter', () => {
+  afterEach(() => { cleanup(); useGraphStore.getState().reset(); useUiStore.setState({ filter: { ...DEFAULT_FILTER } }); });
+  const doc = (id: string, fileType: DocNode['fileType']): DocNode => ({ ...clip(id, []), fileType, audio: undefined });
+
+  it('lists each type with its count and picks several as "any of"', async () => {
+    useGraphStore.getState().addNodes([clip('a', []), clip('b', []), doc('c', 'pdf'), doc('d', 'md')]);
+    render(<ResonanceFilters />);
+    const types = screen.getByRole('region', { name: 'File type' });
+    expect(types).toHaveTextContent('Audio 2PDF 1Markdown 1');
+    fireEvent.click(within(types).getByRole('checkbox', { name: /^Audio/ }));
+    fireEvent.click(within(types).getByRole('checkbox', { name: /^PDF/ }));
+    expect(useUiStore.getState().filter.fileTypes).toEqual(['audio', 'pdf']);
+    expect(types).toHaveTextContent('File type (any of)');
+    fireEvent.click(within(types).getByRole('checkbox', { name: /^Audio/ }));
+    fireEvent.click(within(types).getByRole('checkbox', { name: /^PDF/ }));
+    expect(useUiStore.getState().filter.fileTypes).toBeNull();
+    await screen.findAllByText(/match/);
+  });
+
+  it('keeps a saved view\'s type listed when the corpus no longer has it, so it can be unticked', async () => {
+    useGraphStore.getState().addNodes([clip('a', [])]);
+    useUiStore.setState({ filter: { ...DEFAULT_FILTER, fileTypes: ['pdf'] } });
+    render(<ResonanceFilters />);
+    const pdf = screen.getByRole('checkbox', { name: /^PDF/ });
+    expect(pdf).toBeChecked();
+    fireEvent.click(pdf);
+    expect(useUiStore.getState().filter.fileTypes).toBeNull();
+    await screen.findAllByText(/match/);
+  });
+});

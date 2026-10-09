@@ -1,0 +1,136 @@
+{
+  "model": "peace",
+  "revision": "484fe3cbf4a21226f0989fbbcadb126c59ec34ef",
+  "prompt": "Which musical instruments are audible?",
+  "manifestSha256": "8641396bd7aa9439f3fd315610c76390bc29b5bb0d618bf82c24ef63b90cfc0f",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "threads": 2,
+  "boundary": "Local file decode, preprocessing and inference; model loading measured separately. CPU batch size 1. Not browser end-to-end.",
+  "rows": [
+    {
+      "id": "flute-dry-1s",
+      "status": "complete",
+      "cold": true,
+      "elapsedMs": 1523.5639389993594
+    },
+    {
+      "id": "flute-dry-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 2161.815209999986
+    },
+    {
+      "id": "flute-dry-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1669.4973890007532
+    },
+    {
+      "id": "flute-delay-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 432.9619750005804
+    },
+    {
+      "id": "flute-delay-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1274.3594200001098
+    },
+    {
+      "id": "flute-delay-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 691.9761179997295
+    },
+    {
+      "id": "flute-distortion-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 503.83019200126
+    },
+    {
+      "id": "flute-distortion-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1303.3778600001824
+    },
+    {
+      "id": "flute-distortion-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 879.0186189999076
+    },
+    {
+      "id": "flute-filter-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 471.8319370003883
+    },
+    {
+      "id": "flute-filter-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1315.3104049997637
+    },
+    {
+      "id": "flute-filter-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 632.3840089989972
+    },
+    {
+      "id": "marimba-dry-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 366.23415400026715
+    },
+    {
+      "id": "marimba-dry-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1446.477296998637
+    },
+    {
+      "id": "marimba-delay-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 456.6761080004653
+    },
+    {
+      "id": "marimba-delay-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1455.3925399995933
+    },
+    {
+      "id": "marimba-distortion-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 599.2671860003611
+    },
+    {
+      "id": "marimba-distortion-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1453.5133940007654
+    },
+    {
+      "id": "marimba-filter-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 373.56730899955437
+    },
+    {
+      "id": "marimba-filter-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1411.6982409996126
+    }
+  ],
+  "loadMs": 3494.982821001031,
+  "rawRunSha256": "67fe9757eebd430a25a7073dbf560c6a63897e6b88dca7e4415300c969ead193",
+  "archiveNote": "Embedding vectors omitted; regenerate the raw run for retrieval rescoring.",
+  "checkpoint": "peace/boxgraph"
+}

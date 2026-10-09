@@ -1,0 +1,166 @@
+{
+  "model": "tp-clap",
+  "revision": "b14090f5210715958f5ab7056d3c47f5f61cb582",
+  "prompt": "Which audio effects are audible?",
+  "checkpoint": "tp-clap.pt",
+  "manifestSha256": "8641396bd7aa9439f3fd315610c76390bc29b5bb0d618bf82c24ef63b90cfc0f",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "requestedOmpThreads": 2,
+  "versions": {
+    "numpy": "2.5.3",
+    "torch": "2.14.1+cpu",
+    "transformers": "5.19.0",
+    "jax": "0.10.2",
+    "flax": "0.12.8",
+    "peace": "0.1.0",
+    "tp-clap": "0.1.0"
+  },
+  "threadingNote": "PyTorch set_num_threads is applied. OMP_NUM_THREADS does not bound all JAX/XLA threads.",
+  "boundary": "Local file decode, preprocessing and inference; model loading measured separately. CPU batch size 1. Not browser end-to-end.",
+  "rows": [
+    {
+      "id": "flute-dry-1s",
+      "status": "complete",
+      "cold": true,
+      "elapsedMs": 1471.1816359995282,
+      "embeddingElapsedMs": 1470.2448319985706
+    },
+    {
+      "id": "flute-dry-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 494.08733600103005,
+      "embeddingElapsedMs": 493.0327349993604
+    },
+    {
+      "id": "flute-dry-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 910.6448279999313,
+      "embeddingElapsedMs": 907.4647880006523
+    },
+    {
+      "id": "flute-delay-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 268.75176999965333,
+      "embeddingElapsedMs": 267.8044490003231
+    },
+    {
+      "id": "flute-delay-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 305.9703470007662,
+      "embeddingElapsedMs": 305.08019300032174
+    },
+    {
+      "id": "flute-delay-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 584.8263290008617,
+      "embeddingElapsedMs": 582.8372970008786
+    },
+    {
+      "id": "flute-distortion-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 196.84617100028845,
+      "embeddingElapsedMs": 196.0329930006992
+    },
+    {
+      "id": "flute-distortion-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 260.9241789996304,
+      "embeddingElapsedMs": 259.8132120001537
+    },
+    {
+      "id": "flute-distortion-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 556.8265820002125,
+      "embeddingElapsedMs": 554.7389200000907
+    },
+    {
+      "id": "flute-filter-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 196.01707299989357,
+      "embeddingElapsedMs": 193.40536799973052
+    },
+    {
+      "id": "flute-filter-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 286.9075039998279,
+      "embeddingElapsedMs": 285.8405330007372
+    },
+    {
+      "id": "flute-filter-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 478.20391800087236,
+      "embeddingElapsedMs": 476.3809249998303
+    },
+    {
+      "id": "marimba-dry-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 186.15893400055938,
+      "embeddingElapsedMs": 185.3597869994701
+    },
+    {
+      "id": "marimba-dry-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 274.8003239994432,
+      "embeddingElapsedMs": 272.07837399873824
+    },
+    {
+      "id": "marimba-delay-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 226.5980470001523,
+      "embeddingElapsedMs": 225.98647199993138
+    },
+    {
+      "id": "marimba-delay-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 304.9761189995479,
+      "embeddingElapsedMs": 303.9480970001023
+    },
+    {
+      "id": "marimba-distortion-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 243.75763799980632,
+      "embeddingElapsedMs": 242.9368989996874
+    },
+    {
+      "id": "marimba-distortion-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 436.2154609989375,
+      "embeddingElapsedMs": 435.1134369990177
+    },
+    {
+      "id": "marimba-filter-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 808.7236720002693,
+      "embeddingElapsedMs": 807.8900330001488
+    },
+    {
+      "id": "marimba-filter-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 779.1646919995401,
+      "embeddingElapsedMs": 778.1298699992476
+    }
+  ],
+  "loadMs": 10718.651795999904,
+  "rawRunSha256": "f6713900b885daad2e7b59834fe5c85e64d8735851d19b3950884eda05af1f57",
+  "archiveNote": "Embedding vectors omitted; regenerate the raw run for retrieval rescoring."
+}

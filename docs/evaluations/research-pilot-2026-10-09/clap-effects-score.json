@@ -1,0 +1,587 @@
+{
+  "model": "dge-clap-component",
+  "note": "Pilot; descriptive results, not a held-out accuracy claim.",
+  "durations": {
+    "1": {
+      "clips": 8,
+      "complete": 8,
+      "labels": null,
+      "tempo": [],
+      "key": [],
+      "strictTempo": null,
+      "octaveTolerantTempo": null,
+      "exactKey": null,
+      "weightedKey": null,
+      "correctNoPulse": null,
+      "correctNoKey": null,
+      "latency": {
+        "n": 8,
+        "p50Ms": 1264.8454669999992,
+        "observedP95Ms": 19508.958301000002,
+        "measuredSerialClipsPerSecond": 0.2724424371066096,
+        "meanRealTimeFactor": 3.6705001270000004,
+        "coldRows": [
+          {
+            "id": "flute-dry-1s",
+            "elapsedMs": 19508.958301000002
+          }
+        ],
+        "warmRows": [
+          {
+            "id": "flute-delay-1s",
+            "elapsedMs": 1903.4701370000002
+          },
+          {
+            "id": "flute-distortion-1s",
+            "elapsedMs": 1601.9487399999998
+          },
+          {
+            "id": "flute-filter-1s",
+            "elapsedMs": 1143.2217610000007
+          },
+          {
+            "id": "marimba-dry-1s",
+            "elapsedMs": 2196.7855299999937
+          },
+          {
+            "id": "marimba-delay-1s",
+            "elapsedMs": 784.5837890000039
+          },
+          {
+            "id": "marimba-distortion-1s",
+            "elapsedMs": 960.187291000002
+          },
+          {
+            "id": "marimba-filter-1s",
+            "elapsedMs": 1264.8454669999992
+          }
+        ],
+        "note": "Small pilot; aggregate mixes first-use and warm observations. Use coldRows/warmRows separately. Includes browser polling when run with run-dge."
+      },
+      "binding": {
+        "attempted": 0,
+        "scored": 0,
+        "strictCorrect": 0,
+        "ties": 0,
+        "accuracy": null,
+        "endToEndAccuracy": null,
+        "note": "Ties count as incorrect; silence is a separate control, not a correct caption label."
+      },
+      "retrieval": {
+        "k": 5,
+        "queries": 6,
+        "meanPrecision": 0.25,
+        "top1": 0.3333333333333333,
+        "meanReciprocalRank": 0.6666666666666666,
+        "note": "Queries require at least one known positive and negative in a different source group.",
+        "results": [
+          {
+            "id": "flute-delay-1s",
+            "label": "effect:delay",
+            "gallery": 4,
+            "returned": 4,
+            "precision": 0.25,
+            "top1": false,
+            "reciprocalRank": 0.5,
+            "top": [
+              {
+                "id": "marimba-dry-1s",
+                "relevant": false,
+                "score": 0.30203164385490966
+              },
+              {
+                "id": "marimba-delay-1s",
+                "relevant": true,
+                "score": 0.2894864012325804
+              },
+              {
+                "id": "marimba-distortion-1s",
+                "relevant": false,
+                "score": 0.23893851345921077
+              },
+              {
+                "id": "marimba-filter-1s",
+                "relevant": false,
+                "score": 0.16922711418653394
+              }
+            ]
+          },
+          {
+            "id": "flute-distortion-1s",
+            "label": "effect:distortion",
+            "gallery": 4,
+            "returned": 4,
+            "precision": 0.25,
+            "top1": true,
+            "reciprocalRank": 1,
+            "top": [
+              {
+                "id": "marimba-distortion-1s",
+                "relevant": true,
+                "score": 0.2812264880018036
+              },
+              {
+                "id": "marimba-delay-1s",
+                "relevant": false,
+                "score": 0.2042622389300122
+              },
+              {
+                "id": "marimba-dry-1s",
+                "relevant": false,
+                "score": 0.13968187980405744
+              },
+              {
+                "id": "marimba-filter-1s",
+                "relevant": false,
+                "score": 0.09343905097114523
+              }
+            ]
+          },
+          {
+            "id": "flute-filter-1s",
+            "label": "effect:filter",
+            "gallery": 4,
+            "returned": 4,
+            "precision": 0.25,
+            "top1": false,
+            "reciprocalRank": 0.5,
+            "top": [
+              {
+                "id": "marimba-distortion-1s",
+                "relevant": false,
+                "score": 0.33616012441959675
+              },
+              {
+                "id": "marimba-filter-1s",
+                "relevant": true,
+                "score": 0.31991789926946523
+              },
+              {
+                "id": "marimba-delay-1s",
+                "relevant": false,
+                "score": 0.28671967336125076
+              },
+              {
+                "id": "marimba-dry-1s",
+                "relevant": false,
+                "score": 0.18179519041780992
+              }
+            ]
+          },
+          {
+            "id": "marimba-delay-1s",
+            "label": "effect:delay",
+            "gallery": 4,
+            "returned": 4,
+            "precision": 0.25,
+            "top1": false,
+            "reciprocalRank": 0.5,
+            "top": [
+              {
+                "id": "flute-dry-1s",
+                "relevant": false,
+                "score": 0.29248324560838446
+              },
+              {
+                "id": "flute-delay-1s",
+                "relevant": true,
+                "score": 0.2894864012325804
+              },
+              {
+                "id": "flute-filter-1s",
+                "relevant": false,
+                "score": 0.28671967336125076
+              },
+              {
+                "id": "flute-distortion-1s",
+                "relevant": false,
+                "score": 0.2042622389300122
+              }
+            ]
+          },
+          {
+            "id": "marimba-distortion-1s",
+            "label": "effect:distortion",
+            "gallery": 4,
+            "returned": 4,
+            "precision": 0.25,
+            "top1": false,
+            "reciprocalRank": 0.5,
+            "top": [
+              {
+                "id": "flute-filter-1s",
+                "relevant": false,
+                "score": 0.33616012441959675
+              },
+              {
+                "id": "flute-distortion-1s",
+                "relevant": true,
+                "score": 0.2812264880018036
+              },
+              {
+                "id": "flute-delay-1s",
+                "relevant": false,
+                "score": 0.23893851345921077
+              },
+              {
+                "id": "flute-dry-1s",
+                "relevant": false,
+                "score": 0.2213385391110178
+              }
+            ]
+          },
+          {
+            "id": "marimba-filter-1s",
+            "label": "effect:filter",
+            "gallery": 4,
+            "returned": 4,
+            "precision": 0.25,
+            "top1": true,
+            "reciprocalRank": 1,
+            "top": [
+              {
+                "id": "flute-filter-1s",
+                "relevant": true,
+                "score": 0.31991789926946523
+              },
+              {
+                "id": "flute-delay-1s",
+                "relevant": false,
+                "score": 0.16922711418653394
+              },
+              {
+                "id": "flute-dry-1s",
+                "relevant": false,
+                "score": 0.15062997389380156
+              },
+              {
+                "id": "flute-distortion-1s",
+                "relevant": false,
+                "score": 0.09343905097114523
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "2": {
+      "clips": 8,
+      "complete": 8,
+      "labels": null,
+      "tempo": [],
+      "key": [],
+      "strictTempo": null,
+      "octaveTolerantTempo": null,
+      "exactKey": null,
+      "weightedKey": null,
+      "correctNoPulse": null,
+      "correctNoKey": null,
+      "latency": {
+        "n": 8,
+        "p50Ms": 1916.4838579999996,
+        "observedP95Ms": 3115.3035310000014,
+        "measuredSerialClipsPerSecond": 0.5321034915790063,
+        "meanRealTimeFactor": 0.9396668278124999,
+        "coldRows": [],
+        "warmRows": [
+          {
+            "id": "flute-dry-2s",
+            "elapsedMs": 3115.3035310000014
+          },
+          {
+            "id": "flute-delay-2s",
+            "elapsedMs": 2076.8191130000014
+          },
+          {
+            "id": "flute-distortion-2s",
+            "elapsedMs": 2361.1949539999987
+          },
+          {
+            "id": "flute-filter-2s",
+            "elapsedMs": 2068.224871999999
+          },
+          {
+            "id": "marimba-dry-2s",
+            "elapsedMs": 1182.8587909999987
+          },
+          {
+            "id": "marimba-delay-2s",
+            "elapsedMs": 1050.9349129999973
+          },
+          {
+            "id": "marimba-distortion-2s",
+            "elapsedMs": 1916.4838579999996
+          },
+          {
+            "id": "marimba-filter-2s",
+            "elapsedMs": 1262.8492130000013
+          }
+        ],
+        "note": "Small pilot; aggregate mixes first-use and warm observations. Use coldRows/warmRows separately. Includes browser polling when run with run-dge."
+      },
+      "binding": {
+        "attempted": 0,
+        "scored": 0,
+        "strictCorrect": 0,
+        "ties": 0,
+        "accuracy": null,
+        "endToEndAccuracy": null,
+        "note": "Ties count as incorrect; silence is a separate control, not a correct caption label."
+      },
+      "retrieval": {
+        "k": 5,
+        "queries": 6,
+        "meanPrecision": 0.25,
+        "top1": 0.6666666666666666,
+        "meanReciprocalRank": 0.8333333333333334,
+        "note": "Queries require at least one known positive and negative in a different source group.",
+        "results": [
+          {
+            "id": "flute-delay-2s",
+            "label": "effect:delay",
+            "gallery": 4,
+            "returned": 4,
+            "precision": 0.25,
+            "top1": false,
+            "reciprocalRank": 0.5,
+            "top": [
+              {
+                "id": "marimba-dry-2s",
+                "relevant": false,
+                "score": 0.25984627264827903
+              },
+              {
+                "id": "marimba-delay-2s",
+                "relevant": true,
+                "score": 0.23112328635942989
+              },
+              {
+                "id": "marimba-distortion-2s",
+                "relevant": false,
+                "score": 0.22520876816654795
+              },
+              {
+                "id": "marimba-filter-2s",
+                "relevant": false,
+                "score": 0.1692713760682867
+              }
+            ]
+          },
+          {
+            "id": "flute-distortion-2s",
+            "label": "effect:distortion",
+            "gallery": 4,
+            "returned": 4,
+            "precision": 0.25,
+            "top1": true,
+            "reciprocalRank": 1,
+            "top": [
+              {
+                "id": "marimba-distortion-2s",
+                "relevant": true,
+                "score": 0.24199851425830451
+              },
+              {
+                "id": "marimba-delay-2s",
+                "relevant": false,
+                "score": 0.11322747279633741
+              },
+              {
+                "id": "marimba-dry-2s",
+                "relevant": false,
+                "score": 0.11317433467015682
+              },
+              {
+                "id": "marimba-filter-2s",
+                "relevant": false,
+                "score": 0.05728752876883999
+              }
+            ]
+          },
+          {
+            "id": "flute-filter-2s",
+            "label": "effect:filter",
+            "gallery": 4,
+            "returned": 4,
+            "precision": 0.25,
+            "top1": true,
+            "reciprocalRank": 1,
+            "top": [
+              {
+                "id": "marimba-filter-2s",
+                "relevant": true,
+                "score": 0.3082473737475768
+              },
+              {
+                "id": "marimba-distortion-2s",
+                "relevant": false,
+                "score": 0.15692075313876003
+              },
+              {
+                "id": "marimba-delay-2s",
+                "relevant": false,
+                "score": 0.12739271176122213
+              },
+              {
+                "id": "marimba-dry-2s",
+                "relevant": false,
+                "score": 0.09706550203022737
+              }
+            ]
+          },
+          {
+            "id": "marimba-delay-2s",
+            "label": "effect:delay",
+            "gallery": 4,
+            "returned": 4,
+            "precision": 0.25,
+            "top1": false,
+            "reciprocalRank": 0.5,
+            "top": [
+              {
+                "id": "flute-dry-2s",
+                "relevant": false,
+                "score": 0.23246981696467786
+              },
+              {
+                "id": "flute-delay-2s",
+                "relevant": true,
+                "score": 0.23112328635942989
+              },
+              {
+                "id": "flute-filter-2s",
+                "relevant": false,
+                "score": 0.12739271176122213
+              },
+              {
+                "id": "flute-distortion-2s",
+                "relevant": false,
+                "score": 0.11322747279633741
+              }
+            ]
+          },
+          {
+            "id": "marimba-distortion-2s",
+            "label": "effect:distortion",
+            "gallery": 4,
+            "returned": 4,
+            "precision": 0.25,
+            "top1": true,
+            "reciprocalRank": 1,
+            "top": [
+              {
+                "id": "flute-distortion-2s",
+                "relevant": true,
+                "score": 0.24199851425830451
+              },
+              {
+                "id": "flute-delay-2s",
+                "relevant": false,
+                "score": 0.22520876816654795
+              },
+              {
+                "id": "flute-dry-2s",
+                "relevant": false,
+                "score": 0.214210685791747
+              },
+              {
+                "id": "flute-filter-2s",
+                "relevant": false,
+                "score": 0.15692075313876003
+              }
+            ]
+          },
+          {
+            "id": "marimba-filter-2s",
+            "label": "effect:filter",
+            "gallery": 4,
+            "returned": 4,
+            "precision": 0.25,
+            "top1": true,
+            "reciprocalRank": 1,
+            "top": [
+              {
+                "id": "flute-filter-2s",
+                "relevant": true,
+                "score": 0.3082473737475768
+              },
+              {
+                "id": "flute-delay-2s",
+                "relevant": false,
+                "score": 0.1692713760682867
+              },
+              {
+                "id": "flute-dry-2s",
+                "relevant": false,
+                "score": 0.1485665672670721
+              },
+              {
+                "id": "flute-distortion-2s",
+                "relevant": false,
+                "score": 0.05728752876883999
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "6": {
+      "clips": 4,
+      "complete": 4,
+      "labels": null,
+      "tempo": [],
+      "key": [],
+      "strictTempo": null,
+      "octaveTolerantTempo": null,
+      "exactKey": null,
+      "weightedKey": null,
+      "correctNoPulse": null,
+      "correctNoKey": null,
+      "latency": {
+        "n": 4,
+        "p50Ms": 3056.0042810000014,
+        "observedP95Ms": 3925.1640409999964,
+        "measuredSerialClipsPerSecond": 0.3123990713771408,
+        "meanRealTimeFactor": 0.5335056404999998,
+        "coldRows": [],
+        "warmRows": [
+          {
+            "id": "flute-dry-6s",
+            "elapsedMs": 3290.951814
+          },
+          {
+            "id": "flute-delay-6s",
+            "elapsedMs": 2532.0152359999993
+          },
+          {
+            "id": "flute-distortion-6s",
+            "elapsedMs": 3056.0042810000014
+          },
+          {
+            "id": "flute-filter-6s",
+            "elapsedMs": 3925.1640409999964
+          }
+        ],
+        "note": "Small pilot; aggregate mixes first-use and warm observations. Use coldRows/warmRows separately. Includes browser polling when run with run-dge."
+      },
+      "binding": {
+        "attempted": 0,
+        "scored": 0,
+        "strictCorrect": 0,
+        "ties": 0,
+        "accuracy": null,
+        "endToEndAccuracy": null,
+        "note": "Ties count as incorrect; silence is a separate control, not a correct caption label."
+      },
+      "retrieval": {
+        "k": 5,
+        "queries": 0,
+        "meanPrecision": null,
+        "top1": null,
+        "meanReciprocalRank": null,
+        "note": "Queries require at least one known positive and negative in a different source group.",
+        "results": []
+      }
+    }
+  }
+}

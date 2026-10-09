@@ -1,0 +1,567 @@
+{
+  "version": "dge-research-v1",
+  "createdAt": "2026-10-09T16:52:41.944Z",
+  "note": "Pilot only. Missing truth is unknown. Duration crops are grouped by original source.",
+  "clips": [
+    {
+      "id": "flute-dry-1s",
+      "path": "audio/c000000.wav",
+      "sha256": "d20bc213c638fa46e98809819afd0c1167ee30a4ef713347c11ac7d5c439151d",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "fixture": "iowa-flute-first8s.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "anull",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 0,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "flute-dry-2s",
+      "path": "audio/c000001.wav",
+      "sha256": "b1817a5f2f66196f4dd9e607cf1883c04797ac1417b449eb8245ba7cf12c678d",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "fixture": "iowa-flute-first8s.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "anull",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 0,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "flute-dry-6s",
+      "path": "audio/c000002.wav",
+      "sha256": "7059d6dd9d6e44516e203bb3dd13f2bd1f7a646e4e6ded5e8530c15b70ea34b8",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "fixture": "iowa-flute-first8s.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "anull",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 0,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "flute-delay-1s",
+      "path": "audio/c000003.wav",
+      "sha256": "99efc2e7790d00ab21635792c9c56813db708c14ac2aff1ca3c53d600d2c133a",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "fixture": "iowa-flute-first8s.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "aecho=0.8:0.9:120|250:0.45|0.3",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 1,
+          "effect:distortion": 0,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "flute-delay-2s",
+      "path": "audio/c000004.wav",
+      "sha256": "29b6ae151099f33b1a2ff498a15b5afdbe615cab245a8e22b3c739aaa523b804",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "fixture": "iowa-flute-first8s.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "aecho=0.8:0.9:120|250:0.45|0.3",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 1,
+          "effect:distortion": 0,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "flute-delay-6s",
+      "path": "audio/c000005.wav",
+      "sha256": "2b7106ac725ce3b8b0b057e99b6dbc69a2fa868ca5221cda44a8ecd6524f3b0c",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "fixture": "iowa-flute-first8s.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "aecho=0.8:0.9:120|250:0.45|0.3",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 1,
+          "effect:distortion": 0,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "flute-distortion-1s",
+      "path": "audio/c000006.wav",
+      "sha256": "dbd76176c26f0747c72a27bd5d0a474537ab925a2a4161b21c7a92185957ad22",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "fixture": "iowa-flute-first8s.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "volume=10,asoftclip=type=hard:threshold=0.2,volume=0.1",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 1,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "flute-distortion-2s",
+      "path": "audio/c000007.wav",
+      "sha256": "17df6773a5423da185010b19bc9733b74ff0ca348be914a508946055cc90eaa8",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "fixture": "iowa-flute-first8s.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "volume=10,asoftclip=type=hard:threshold=0.2,volume=0.1",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 1,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "flute-distortion-6s",
+      "path": "audio/c000008.wav",
+      "sha256": "decdbcf13c509bea72a4a7f8dcdbf0a5c13a78b494fdff787f14db46e5bbb3eb",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "fixture": "iowa-flute-first8s.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "volume=10,asoftclip=type=hard:threshold=0.2,volume=0.1",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 1,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "flute-filter-1s",
+      "path": "audio/c000009.wav",
+      "sha256": "2e559e56ef7a439e0ac389666ff4061dca06e1a5a271401a735b5f0374fd21e7",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "fixture": "iowa-flute-first8s.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "lowpass=f=800:p=2",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 0,
+          "effect:filter": 1
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "flute-filter-2s",
+      "path": "audio/c000010.wav",
+      "sha256": "9cc219e2ed692b677b00e59b7ed02009025579c86472303e1611caba2ccb5587",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "fixture": "iowa-flute-first8s.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "lowpass=f=800:p=2",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 0,
+          "effect:filter": 1
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "flute-filter-6s",
+      "path": "audio/c000011.wav",
+      "sha256": "162bddc8a3bc7a90c4344193c53b1d192f667e7fad90f875d97d23096a42850c",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "fixture": "iowa-flute-first8s.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "lowpass=f=800:p=2",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 0,
+          "effect:filter": 1
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "marimba-dry-1s",
+      "path": "audio/c000012.wav",
+      "sha256": "3494261ef74840378525856999da43b01ec922451b2e9ff4e2ee8016f66215e3",
+      "group": "iowa-marimba",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "fixture": "iowa-marimba-C7.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "anull",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 0,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "marimba-dry-2s",
+      "path": "audio/c000013.wav",
+      "sha256": "485ea182c40b877dadf0c0ffcfb14d955e1b6a20f16b9e298e5c3a04e6a6c854",
+      "group": "iowa-marimba",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "fixture": "iowa-marimba-C7.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "anull",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 0,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "marimba-delay-1s",
+      "path": "audio/c000014.wav",
+      "sha256": "ee34fe43f1ecb6c686b1422fa5ef86312fa144cbfba4447e69d49f4efffa67ac",
+      "group": "iowa-marimba",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "fixture": "iowa-marimba-C7.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "aecho=0.8:0.9:120|250:0.45|0.3",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 1,
+          "effect:distortion": 0,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "marimba-delay-2s",
+      "path": "audio/c000015.wav",
+      "sha256": "80a79e84d055dd00271ed4b3161591d3cccf7f5a8f86de9b7a5d23a50d68b3c7",
+      "group": "iowa-marimba",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "fixture": "iowa-marimba-C7.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "aecho=0.8:0.9:120|250:0.45|0.3",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 1,
+          "effect:distortion": 0,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "marimba-distortion-1s",
+      "path": "audio/c000016.wav",
+      "sha256": "d690d995fdd03420ba91f61dc5586f3fdbf00597d515fe1fdd00878d6b7b4964",
+      "group": "iowa-marimba",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "fixture": "iowa-marimba-C7.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "volume=10,asoftclip=type=hard:threshold=0.2,volume=0.1",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 1,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "marimba-distortion-2s",
+      "path": "audio/c000017.wav",
+      "sha256": "34b429ce34dc763012697da871a2cd54de8da47e217c954099f81cbf30557fbc",
+      "group": "iowa-marimba",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "fixture": "iowa-marimba-C7.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "volume=10,asoftclip=type=hard:threshold=0.2,volume=0.1",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 1,
+          "effect:filter": 0
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "marimba-filter-1s",
+      "path": "audio/c000018.wav",
+      "sha256": "a7b5b78bbce9e7033c9255cbd515c3816602dcbe0c72da421e797de34142d241",
+      "group": "iowa-marimba",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "fixture": "iowa-marimba-C7.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "lowpass=f=800:p=2",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 0,
+          "effect:filter": 1
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    },
+    {
+      "id": "marimba-filter-2s",
+      "path": "audio/c000019.wav",
+      "sha256": "1bd37a7adc350ee1f7ef2dc6008d05809d29407e70db0b2c29e66579be5f59a8",
+      "group": "iowa-marimba",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "fixture": "iowa-marimba-C7.wav",
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "processor": "lowpass=f=800:p=2",
+        "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+        "note": "Applied-effect identity only. Not perceptual truth; two source instruments."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Iowa MIS unrestricted project-use permission; committed fixture attribution."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "effect:delay": 0,
+          "effect:distortion": 0,
+          "effect:filter": 1
+        }
+      },
+      "referenceKind": "constructed-effect-diagnostic"
+    }
+  ]
+}

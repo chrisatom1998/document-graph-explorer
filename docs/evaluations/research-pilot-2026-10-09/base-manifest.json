@@ -1,0 +1,1424 @@
+{
+  "version": "dge-research-v1",
+  "createdAt": "2026-10-09T16:52:14.497Z",
+  "note": "Pilot only. Missing truth is unknown. Duration crops are grouped by original source.",
+  "clips": [
+    {
+      "id": "masb-1009674-T-1s",
+      "path": "audio/c000000.wav",
+      "sha256": "24ace91a545a144c7796d8ba475d7c3d04cb253adfc5d4da41b4ee97d43b5f38",
+      "group": "jamendo-track-1009674",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1009674",
+          "source": "SDD",
+          "jamendo_path": "74/1009674.mp3",
+          "track_duration_s": "210.2",
+          "axis": "T",
+          "crop_start_s": "34.06239098691099",
+          "crop_end_s": "44.06239098691099",
+          "inst_1": "synth",
+          "inst_2": "bass",
+          "timbre_1": "ambient",
+          "timbre_2": "punchy",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1009674&format=mp31&from=mtg",
+        "sourceSha256": "eaf6216983a5cce5e0a34ddd8b2af0d26758fa72926a7cdc84de8e2349226b73"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 34.06239098691099,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-1009674-T-2s",
+      "path": "audio/c000001.wav",
+      "sha256": "a0c2d1133d0ec8063f3e10e00f34248588929ecb8d48589596cffc35c575c7cd",
+      "group": "jamendo-track-1009674",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1009674",
+          "source": "SDD",
+          "jamendo_path": "74/1009674.mp3",
+          "track_duration_s": "210.2",
+          "axis": "T",
+          "crop_start_s": "34.06239098691099",
+          "crop_end_s": "44.06239098691099",
+          "inst_1": "synth",
+          "inst_2": "bass",
+          "timbre_1": "ambient",
+          "timbre_2": "punchy",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1009674&format=mp31&from=mtg",
+        "sourceSha256": "eaf6216983a5cce5e0a34ddd8b2af0d26758fa72926a7cdc84de8e2349226b73"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 34.06239098691099,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-1009674-T-6s",
+      "path": "audio/c000002.wav",
+      "sha256": "a5b81b65b7aba85510b243153c746acbe1d33fa28c6d24710416b40f3482ac2f",
+      "group": "jamendo-track-1009674",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1009674",
+          "source": "SDD",
+          "jamendo_path": "74/1009674.mp3",
+          "track_duration_s": "210.2",
+          "axis": "T",
+          "crop_start_s": "34.06239098691099",
+          "crop_end_s": "44.06239098691099",
+          "inst_1": "synth",
+          "inst_2": "bass",
+          "timbre_1": "ambient",
+          "timbre_2": "punchy",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1009674&format=mp31&from=mtg",
+        "sourceSha256": "eaf6216983a5cce5e0a34ddd8b2af0d26758fa72926a7cdc84de8e2349226b73"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 34.06239098691099,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-1009674-T-10s",
+      "path": "audio/c000003.wav",
+      "sha256": "17366304868e0b56c26baa7faf9a3bb70b057978c5e3aa01d027ece58898f2d2",
+      "group": "jamendo-track-1009674",
+      "split": "development",
+      "seconds": 10,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1009674",
+          "source": "SDD",
+          "jamendo_path": "74/1009674.mp3",
+          "track_duration_s": "210.2",
+          "axis": "T",
+          "crop_start_s": "34.06239098691099",
+          "crop_end_s": "44.06239098691099",
+          "inst_1": "synth",
+          "inst_2": "bass",
+          "timbre_1": "ambient",
+          "timbre_2": "punchy",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1009674&format=mp31&from=mtg",
+        "sourceSha256": "eaf6216983a5cce5e0a34ddd8b2af0d26758fa72926a7cdc84de8e2349226b73"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 34.06239098691099,
+      "truth": {
+        "tags": {
+          "source:synthesizer": 1,
+          "source:bass": 1
+        },
+        "binding": {
+          "positive": "a ambient synth and a punchy bass",
+          "negative": "a punchy synth and a ambient bass",
+          "axis": "T"
+        }
+      },
+      "binding": {
+        "positive": "a ambient synth and a punchy bass",
+        "negative": "a punchy synth and a ambient bass",
+        "axis": "T"
+      },
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-101006-T-1s",
+      "path": "audio/c000004.wav",
+      "sha256": "7600d5a878635dd96255a6b03487091941bf7f5cf9b180778384cc68a48c6ecf",
+      "group": "jamendo-track-101006",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "101006",
+          "source": "SDD",
+          "jamendo_path": "06/101006.mp3",
+          "track_duration_s": "168.4",
+          "axis": "T",
+          "crop_start_s": "86.22287160877161",
+          "crop_end_s": "96.22287160877161",
+          "inst_1": "harmonica",
+          "inst_2": "acoustic guitar",
+          "timbre_1": "bright",
+          "timbre_2": "soft",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=101006&format=mp31&from=mtg",
+        "sourceSha256": "dbcf2a428e2702eb6e18a3b6d3b0cc9dede6c5b8e40b88e2facdfe5545a8ebcd"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 86.22287160877161,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-101006-T-2s",
+      "path": "audio/c000005.wav",
+      "sha256": "dfc19a04806175638a2dc22eb487680161fafa33d8b91f904b2d133246433a16",
+      "group": "jamendo-track-101006",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "101006",
+          "source": "SDD",
+          "jamendo_path": "06/101006.mp3",
+          "track_duration_s": "168.4",
+          "axis": "T",
+          "crop_start_s": "86.22287160877161",
+          "crop_end_s": "96.22287160877161",
+          "inst_1": "harmonica",
+          "inst_2": "acoustic guitar",
+          "timbre_1": "bright",
+          "timbre_2": "soft",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=101006&format=mp31&from=mtg",
+        "sourceSha256": "dbcf2a428e2702eb6e18a3b6d3b0cc9dede6c5b8e40b88e2facdfe5545a8ebcd"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 86.22287160877161,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-101006-T-6s",
+      "path": "audio/c000006.wav",
+      "sha256": "da50232baa9fa0c887e1940321e031990b5c2eb23ef07277e72d0c1e8daee6d6",
+      "group": "jamendo-track-101006",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "101006",
+          "source": "SDD",
+          "jamendo_path": "06/101006.mp3",
+          "track_duration_s": "168.4",
+          "axis": "T",
+          "crop_start_s": "86.22287160877161",
+          "crop_end_s": "96.22287160877161",
+          "inst_1": "harmonica",
+          "inst_2": "acoustic guitar",
+          "timbre_1": "bright",
+          "timbre_2": "soft",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=101006&format=mp31&from=mtg",
+        "sourceSha256": "dbcf2a428e2702eb6e18a3b6d3b0cc9dede6c5b8e40b88e2facdfe5545a8ebcd"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 86.22287160877161,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-101006-T-10s",
+      "path": "audio/c000007.wav",
+      "sha256": "25c3ed0997c9ee2378fd3e5c78d16ff742a85dbbb66768857393af2ed744a4de",
+      "group": "jamendo-track-101006",
+      "split": "development",
+      "seconds": 10,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "101006",
+          "source": "SDD",
+          "jamendo_path": "06/101006.mp3",
+          "track_duration_s": "168.4",
+          "axis": "T",
+          "crop_start_s": "86.22287160877161",
+          "crop_end_s": "96.22287160877161",
+          "inst_1": "harmonica",
+          "inst_2": "acoustic guitar",
+          "timbre_1": "bright",
+          "timbre_2": "soft",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=101006&format=mp31&from=mtg",
+        "sourceSha256": "dbcf2a428e2702eb6e18a3b6d3b0cc9dede6c5b8e40b88e2facdfe5545a8ebcd"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 86.22287160877161,
+      "truth": {
+        "tags": {
+          "source:guitar": 1
+        },
+        "binding": {
+          "positive": "a bright harmonica and a soft acoustic guitar",
+          "negative": "a soft harmonica and a bright acoustic guitar",
+          "axis": "T"
+        }
+      },
+      "binding": {
+        "positive": "a bright harmonica and a soft acoustic guitar",
+        "negative": "a soft harmonica and a bright acoustic guitar",
+        "axis": "T"
+      },
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-103089-R-1s",
+      "path": "audio/c000008.wav",
+      "sha256": "8c0bf9bbde3da59feafae28680a3e47f3092cb0c372910a84f35c34a88cbef69",
+      "group": "jamendo-track-103089",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "103089",
+          "source": "SDD",
+          "jamendo_path": "89/103089.mp3",
+          "track_duration_s": "210.1",
+          "axis": "R",
+          "crop_start_s": "168.70654041230375",
+          "crop_end_s": "178.70654041230375",
+          "inst_1": "synth",
+          "inst_2": "electric guitar",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=103089&format=mp31&from=mtg",
+        "sourceSha256": "548d3dc0a73d1fe7e00eefbd0ee02e373b5a74a0bf2a5935749e2991f2effb97"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 168.70654041230375,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-103089-R-2s",
+      "path": "audio/c000009.wav",
+      "sha256": "9b0ceb0056f0592f9cc4d9aa4e7047ad762ddd8da9d913e4dfceb5bdd454a0a7",
+      "group": "jamendo-track-103089",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "103089",
+          "source": "SDD",
+          "jamendo_path": "89/103089.mp3",
+          "track_duration_s": "210.1",
+          "axis": "R",
+          "crop_start_s": "168.70654041230375",
+          "crop_end_s": "178.70654041230375",
+          "inst_1": "synth",
+          "inst_2": "electric guitar",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=103089&format=mp31&from=mtg",
+        "sourceSha256": "548d3dc0a73d1fe7e00eefbd0ee02e373b5a74a0bf2a5935749e2991f2effb97"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 168.70654041230375,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-103089-R-6s",
+      "path": "audio/c000010.wav",
+      "sha256": "5b0ff7a9e6b8630295adb29f8aad327ac98cfc9e55e82e1bc2a103bc1b533b08",
+      "group": "jamendo-track-103089",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "103089",
+          "source": "SDD",
+          "jamendo_path": "89/103089.mp3",
+          "track_duration_s": "210.1",
+          "axis": "R",
+          "crop_start_s": "168.70654041230375",
+          "crop_end_s": "178.70654041230375",
+          "inst_1": "synth",
+          "inst_2": "electric guitar",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=103089&format=mp31&from=mtg",
+        "sourceSha256": "548d3dc0a73d1fe7e00eefbd0ee02e373b5a74a0bf2a5935749e2991f2effb97"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 168.70654041230375,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-103089-R-10s",
+      "path": "audio/c000011.wav",
+      "sha256": "e4bc42c827f5e006deff670320368f815f0040be7d8e3f9b4ed774e7a613f925",
+      "group": "jamendo-track-103089",
+      "split": "development",
+      "seconds": 10,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "103089",
+          "source": "SDD",
+          "jamendo_path": "89/103089.mp3",
+          "track_duration_s": "210.1",
+          "axis": "R",
+          "crop_start_s": "168.70654041230375",
+          "crop_end_s": "178.70654041230375",
+          "inst_1": "synth",
+          "inst_2": "electric guitar",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=103089&format=mp31&from=mtg",
+        "sourceSha256": "548d3dc0a73d1fe7e00eefbd0ee02e373b5a74a0bf2a5935749e2991f2effb97"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 168.70654041230375,
+      "truth": {
+        "tags": {
+          "source:synthesizer": 1,
+          "source:guitar": 1
+        },
+        "binding": {
+          "positive": "the synth plays the melody while the electric guitar accompanies",
+          "negative": "the electric guitar plays the melody while the synth accompanies",
+          "axis": "R"
+        }
+      },
+      "binding": {
+        "positive": "the synth plays the melody while the electric guitar accompanies",
+        "negative": "the electric guitar plays the melody while the synth accompanies",
+        "axis": "R"
+      },
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-1033252-R-1s",
+      "path": "audio/c000012.wav",
+      "sha256": "139cdc3fff0d807d8eac04445f178bf8baf10089a7d50acece450a888fba2649",
+      "group": "jamendo-track-1033252",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1033252",
+          "source": "SDD",
+          "jamendo_path": "52/1033252.mp3",
+          "track_duration_s": "246.3",
+          "axis": "R",
+          "crop_start_s": "50.755514909685864",
+          "crop_end_s": "60.755514909685864",
+          "inst_1": "violin",
+          "inst_2": "acoustic guitar",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1033252&format=mp31&from=mtg",
+        "sourceSha256": "7741de8ab16358deb768ad6f52ab19e39c8e12d0682d20311d9c8269017eac74"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 50.755514909685864,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-1033252-R-2s",
+      "path": "audio/c000013.wav",
+      "sha256": "da30f69d749c0378a356d70df58f44ab8c6be63f0374569eaadd4104440f7be0",
+      "group": "jamendo-track-1033252",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1033252",
+          "source": "SDD",
+          "jamendo_path": "52/1033252.mp3",
+          "track_duration_s": "246.3",
+          "axis": "R",
+          "crop_start_s": "50.755514909685864",
+          "crop_end_s": "60.755514909685864",
+          "inst_1": "violin",
+          "inst_2": "acoustic guitar",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1033252&format=mp31&from=mtg",
+        "sourceSha256": "7741de8ab16358deb768ad6f52ab19e39c8e12d0682d20311d9c8269017eac74"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 50.755514909685864,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-1033252-R-6s",
+      "path": "audio/c000014.wav",
+      "sha256": "c55bdc0a5e952095affba2584a1766a21ac353c45704da850cff37367c6d1c8d",
+      "group": "jamendo-track-1033252",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1033252",
+          "source": "SDD",
+          "jamendo_path": "52/1033252.mp3",
+          "track_duration_s": "246.3",
+          "axis": "R",
+          "crop_start_s": "50.755514909685864",
+          "crop_end_s": "60.755514909685864",
+          "inst_1": "violin",
+          "inst_2": "acoustic guitar",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1033252&format=mp31&from=mtg",
+        "sourceSha256": "7741de8ab16358deb768ad6f52ab19e39c8e12d0682d20311d9c8269017eac74"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 50.755514909685864,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-1033252-R-10s",
+      "path": "audio/c000015.wav",
+      "sha256": "f36eaea938a0fdea1ad4ce73d7905042626e460de343dce3f89dfb5156352ef8",
+      "group": "jamendo-track-1033252",
+      "split": "development",
+      "seconds": 10,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1033252",
+          "source": "SDD",
+          "jamendo_path": "52/1033252.mp3",
+          "track_duration_s": "246.3",
+          "axis": "R",
+          "crop_start_s": "50.755514909685864",
+          "crop_end_s": "60.755514909685864",
+          "inst_1": "violin",
+          "inst_2": "acoustic guitar",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1033252&format=mp31&from=mtg",
+        "sourceSha256": "7741de8ab16358deb768ad6f52ab19e39c8e12d0682d20311d9c8269017eac74"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 50.755514909685864,
+      "truth": {
+        "tags": {
+          "source:violin": 1,
+          "source:guitar": 1
+        },
+        "binding": {
+          "positive": "the violin plays the melody while the acoustic guitar accompanies",
+          "negative": "the acoustic guitar plays the melody while the violin accompanies",
+          "axis": "R"
+        }
+      },
+      "binding": {
+        "positive": "the violin plays the melody while the acoustic guitar accompanies",
+        "negative": "the acoustic guitar plays the melody while the violin accompanies",
+        "axis": "R"
+      },
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-1036934-O-1s",
+      "path": "audio/c000016.wav",
+      "sha256": "f6a04aaacb48e69156fd9fc82eef7f818e9fb735d41f262f31aefc9ad6fd359e",
+      "group": "jamendo-track-1036934",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1036934",
+          "source": "SDD",
+          "jamendo_path": "34/1036934.mp3",
+          "track_duration_s": "182.0",
+          "axis": "O",
+          "crop_start_s": "24.50183852316652",
+          "crop_end_s": "34.50183852316652",
+          "inst_1": "electric piano",
+          "inst_2": "bass",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1036934&format=mp31&from=mtg",
+        "sourceSha256": "60d254891606012b5fe6873571853f3ef2fd345c78a36c658193bc5051cf97ed"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 24.50183852316652,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-1036934-O-2s",
+      "path": "audio/c000017.wav",
+      "sha256": "2f189e70b86e3053ff8a9f22b4472a38b084590c3995605034b8e1851eb698db",
+      "group": "jamendo-track-1036934",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1036934",
+          "source": "SDD",
+          "jamendo_path": "34/1036934.mp3",
+          "track_duration_s": "182.0",
+          "axis": "O",
+          "crop_start_s": "24.50183852316652",
+          "crop_end_s": "34.50183852316652",
+          "inst_1": "electric piano",
+          "inst_2": "bass",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1036934&format=mp31&from=mtg",
+        "sourceSha256": "60d254891606012b5fe6873571853f3ef2fd345c78a36c658193bc5051cf97ed"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 24.50183852316652,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-1036934-O-6s",
+      "path": "audio/c000018.wav",
+      "sha256": "68f8d30d178c3f829f13b2ca5fe702cf8b4c35530ac99124d85c51ae5954fd7b",
+      "group": "jamendo-track-1036934",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1036934",
+          "source": "SDD",
+          "jamendo_path": "34/1036934.mp3",
+          "track_duration_s": "182.0",
+          "axis": "O",
+          "crop_start_s": "24.50183852316652",
+          "crop_end_s": "34.50183852316652",
+          "inst_1": "electric piano",
+          "inst_2": "bass",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1036934&format=mp31&from=mtg",
+        "sourceSha256": "60d254891606012b5fe6873571853f3ef2fd345c78a36c658193bc5051cf97ed"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 24.50183852316652,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-1036934-O-10s",
+      "path": "audio/c000019.wav",
+      "sha256": "ceb8e543ff1a754eb8391d1bc24361bfea63ba85d231f282976b82d567e7972e",
+      "group": "jamendo-track-1036934",
+      "split": "development",
+      "seconds": 10,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1036934",
+          "source": "SDD",
+          "jamendo_path": "34/1036934.mp3",
+          "track_duration_s": "182.0",
+          "axis": "O",
+          "crop_start_s": "24.50183852316652",
+          "crop_end_s": "34.50183852316652",
+          "inst_1": "electric piano",
+          "inst_2": "bass",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1036934&format=mp31&from=mtg",
+        "sourceSha256": "60d254891606012b5fe6873571853f3ef2fd345c78a36c658193bc5051cf97ed"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 24.50183852316652,
+      "truth": {
+        "tags": {
+          "source:piano": 1,
+          "source:bass": 1
+        },
+        "binding": {
+          "positive": "the electric piano enters before the bass",
+          "negative": "the bass enters before the electric piano",
+          "axis": "O"
+        }
+      },
+      "binding": {
+        "positive": "the electric piano enters before the bass",
+        "negative": "the bass enters before the electric piano",
+        "axis": "O"
+      },
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-103892-O-1s",
+      "path": "audio/c000020.wav",
+      "sha256": "ca72f497c5522aded76487ded460caf9b2cfb8aaa187503faa65ed9d61e1dde4",
+      "group": "jamendo-track-103892",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "103892",
+          "source": "SDD",
+          "jamendo_path": "92/103892.mp3",
+          "track_duration_s": "156.7",
+          "axis": "O",
+          "crop_start_s": "0.8581217254018736",
+          "crop_end_s": "10.858121725401874",
+          "inst_1": "drums",
+          "inst_2": "electric guitar",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=103892&format=mp31&from=mtg",
+        "sourceSha256": "018a589db23afd17e64a15bdcf0ce24ed578e00a19e846f8881dc7993b2f1490"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 0.8581217254018736,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-103892-O-2s",
+      "path": "audio/c000021.wav",
+      "sha256": "afebef982fcaf7026b7fe70ce95553a6d035978548822f849e1ab486b5038cc9",
+      "group": "jamendo-track-103892",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "103892",
+          "source": "SDD",
+          "jamendo_path": "92/103892.mp3",
+          "track_duration_s": "156.7",
+          "axis": "O",
+          "crop_start_s": "0.8581217254018736",
+          "crop_end_s": "10.858121725401874",
+          "inst_1": "drums",
+          "inst_2": "electric guitar",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=103892&format=mp31&from=mtg",
+        "sourceSha256": "018a589db23afd17e64a15bdcf0ce24ed578e00a19e846f8881dc7993b2f1490"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 0.8581217254018736,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-103892-O-6s",
+      "path": "audio/c000022.wav",
+      "sha256": "9a34c105df07c5979597dfa6c4e5dbb6a1020c2c75622c808899ce545796d5fa",
+      "group": "jamendo-track-103892",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "103892",
+          "source": "SDD",
+          "jamendo_path": "92/103892.mp3",
+          "track_duration_s": "156.7",
+          "axis": "O",
+          "crop_start_s": "0.8581217254018736",
+          "crop_end_s": "10.858121725401874",
+          "inst_1": "drums",
+          "inst_2": "electric guitar",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=103892&format=mp31&from=mtg",
+        "sourceSha256": "018a589db23afd17e64a15bdcf0ce24ed578e00a19e846f8881dc7993b2f1490"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 0.8581217254018736,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-103892-O-10s",
+      "path": "audio/c000023.wav",
+      "sha256": "6d2375dd5e1e3a483beaf2afac75cdcaa9705ef7f9a8e25e63a916cbe0488038",
+      "group": "jamendo-track-103892",
+      "split": "development",
+      "seconds": 10,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "103892",
+          "source": "SDD",
+          "jamendo_path": "92/103892.mp3",
+          "track_duration_s": "156.7",
+          "axis": "O",
+          "crop_start_s": "0.8581217254018736",
+          "crop_end_s": "10.858121725401874",
+          "inst_1": "drums",
+          "inst_2": "electric guitar",
+          "timbre_1": "",
+          "timbre_2": "",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=103892&format=mp31&from=mtg",
+        "sourceSha256": "018a589db23afd17e64a15bdcf0ce24ed578e00a19e846f8881dc7993b2f1490"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 0.8581217254018736,
+      "truth": {
+        "tags": {
+          "source:drums": 1,
+          "source:guitar": 1
+        },
+        "binding": {
+          "positive": "the drums enters before the electric guitar",
+          "negative": "the electric guitar enters before the drums",
+          "axis": "O"
+        }
+      },
+      "binding": {
+        "positive": "the drums enters before the electric guitar",
+        "negative": "the electric guitar enters before the drums",
+        "axis": "O"
+      },
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "iowa-flute-1s",
+      "path": "audio/c000024.wav",
+      "sha256": "d20bc213c638fa46e98809819afd0c1167ee30a4ef713347c11ac7d5c439151d",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "fixture": "iowa-flute-first8s.wav"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "University of Iowa MIS unrestricted project-use permission; see committed LICENSE-ATTRIBUTION.md."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "source:flute": 1,
+          "source:marimba": 0
+        }
+      },
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "iowa-flute-2s",
+      "path": "audio/c000025.wav",
+      "sha256": "b1817a5f2f66196f4dd9e607cf1883c04797ac1417b449eb8245ba7cf12c678d",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "fixture": "iowa-flute-first8s.wav"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "University of Iowa MIS unrestricted project-use permission; see committed LICENSE-ATTRIBUTION.md."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "source:flute": 1,
+          "source:marimba": 0
+        }
+      },
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "iowa-flute-6s",
+      "path": "audio/c000026.wav",
+      "sha256": "7059d6dd9d6e44516e203bb3dd13f2bd1f7a646e4e6ded5e8530c15b70ea34b8",
+      "group": "iowa-flute",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "fixture": "iowa-flute-first8s.wav"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "University of Iowa MIS unrestricted project-use permission; see committed LICENSE-ATTRIBUTION.md."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "source:flute": 1,
+          "source:marimba": 0
+        }
+      },
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "iowa-marimba-1s",
+      "path": "audio/c000027.wav",
+      "sha256": "3494261ef74840378525856999da43b01ec922451b2e9ff4e2ee8016f66215e3",
+      "group": "iowa-marimba",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "fixture": "iowa-marimba-C7.wav"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "University of Iowa MIS unrestricted project-use permission; see committed LICENSE-ATTRIBUTION.md."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "source:marimba": 1,
+          "source:flute": 0
+        }
+      },
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "iowa-marimba-2s",
+      "path": "audio/c000028.wav",
+      "sha256": "485ea182c40b877dadf0c0ffcfb14d955e1b6a20f16b9e298e5c3a04e6a6c854",
+      "group": "iowa-marimba",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "url": "https://theremin.music.uiowa.edu/MIS.html",
+        "fixture": "iowa-marimba-C7.wav"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "University of Iowa MIS unrestricted project-use permission; see committed LICENSE-ATTRIBUTION.md."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tags": {
+          "source:marimba": 1,
+          "source:flute": 0
+        }
+      },
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "silence-1s",
+      "path": "audio/c000029.wav",
+      "sha256": "b248b0c85bcee6ea7e0cbc2379cb94c2926f158acaa73c0c6a3b50c44856ea3a",
+      "group": "silence",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": null,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": null,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "silence-2s",
+      "path": "audio/c000030.wav",
+      "sha256": "df52a402cca07ddf05ce50dbc4a938741d5b351a5eb151aa0f7459d0f12670c8",
+      "group": "silence",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": null,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": null,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "silence-6s",
+      "path": "audio/c000031.wav",
+      "sha256": "00af04a463d943fca3fdb7b168780cb032cc67686172eba314ffb7b3db44a2fc",
+      "group": "silence",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": null,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": null,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "silence-10s",
+      "path": "audio/c000032.wav",
+      "sha256": "2c51d114105c13547b04dc80593d7d6ef6a4aaf818d7c2611fef20491544d1d8",
+      "group": "silence",
+      "split": "development",
+      "seconds": 10,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": null,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": null,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "pulse90-1s",
+      "path": "audio/c000033.wav",
+      "sha256": "8fa94e5c52f44f6a92cddcd5b90d8e4bc65dba1a55a00672cf31b2003fdf29d3",
+      "group": "pulse90",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": 90,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": 90,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "pulse90-2s",
+      "path": "audio/c000034.wav",
+      "sha256": "c6f06ec4ce2daf22c9c9d7c224398f8e43c8ddbc9b5508ed21bf00f6d64062d2",
+      "group": "pulse90",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": 90,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": 90,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "pulse90-6s",
+      "path": "audio/c000035.wav",
+      "sha256": "a71253d27f7a293d0dcae41b40a15a63bca61deb4a5a1efc0122de0e5efa390f",
+      "group": "pulse90",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": 90,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": 90,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "pulse90-10s",
+      "path": "audio/c000036.wav",
+      "sha256": "14463f82782cdfe07908425387f3313fa08794ec8619ca119071984e0f04b05b",
+      "group": "pulse90",
+      "split": "development",
+      "seconds": 10,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": 90,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": 90,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "pulse120-1s",
+      "path": "audio/c000037.wav",
+      "sha256": "2b1ade3296e8c4d03613a524bde7afbd85e1bdee2869e3d3016953fdf0af4370",
+      "group": "pulse120",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": 120,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": 120,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "pulse120-2s",
+      "path": "audio/c000038.wav",
+      "sha256": "bbc0339fbe923a54c37cb249187d9839b4bab6c8e8748619747452241db1214c",
+      "group": "pulse120",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": 120,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": 120,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "pulse120-6s",
+      "path": "audio/c000039.wav",
+      "sha256": "d0c48d7e8e7d25228ac089254f3ed003dc6c5c2f12bec90403cef607e181da6a",
+      "group": "pulse120",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": 120,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": 120,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "pulse120-10s",
+      "path": "audio/c000040.wav",
+      "sha256": "d14a818c6d7ab8ad4b4188827086aa5508071d0f1bd4594788315047c7551c9c",
+      "group": "pulse120",
+      "split": "development",
+      "seconds": 10,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": 120,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": 120,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "pulse174-1s",
+      "path": "audio/c000041.wav",
+      "sha256": "4f7823db1238f32e9397416995b3809738bed2e3fd380be92b55c5a261658195",
+      "group": "pulse174",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": 174,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": 174,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "pulse174-2s",
+      "path": "audio/c000042.wav",
+      "sha256": "7faf1fc439ed972935591bf16fd41f84774c5db6ca4bc6dec9cf28c9d1dcdf12",
+      "group": "pulse174",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": 174,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": 174,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "pulse174-6s",
+      "path": "audio/c000043.wav",
+      "sha256": "e8dbf7221201a8250f00255474136f77712ff0df1082fc37a05e9b33d5094fc0",
+      "group": "pulse174",
+      "split": "development",
+      "seconds": 6,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": 174,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": 174,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    },
+    {
+      "id": "pulse174-10s",
+      "path": "audio/c000044.wav",
+      "sha256": "eb91a770c7be261b6fc6883bd3ab9fdf6c57d8b01dcfecbb3a5b24a59ac023bd",
+      "group": "pulse174",
+      "split": "development",
+      "seconds": 10,
+      "provenance": {
+        "generator": "seed-pilot.py",
+        "bpm": 174,
+        "note": "Pulse-grid reference; no musical mode assigned."
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "Generated by this evaluation script; no third-party source audio."
+      },
+      "sourceStart": 0,
+      "truth": {
+        "tempo": 174,
+        "key": null
+      },
+      "referenceKind": "constructed-diagnostic"
+    }
+  ]
+}
