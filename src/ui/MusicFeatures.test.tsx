@@ -15,25 +15,22 @@ function renderExpanded(ui: Parameters<typeof render>[0]) {
 }
 afterEach(() => { cleanup(); useSettingsStore.getState().setMusicAnalysisMode('full'); });
 it.each([
-  ['Bleacher_D#m_130.wav', 'D♯ minor', 'D♯', 'E♭ minor'],
-  ['Clip_Ebm_130.wav', 'E♭ minor', 'E♭', 'D♯ minor'],
-])('keeps equivalent key spelling consistent throughout explanations for %s', (path, label, pitch, otherSpelling) => {
+  ['Bleacher_D#m_130.wav', 'D♯ minor', 'E♭ minor'],
+  ['Clip_Ebm_130.wav', 'E♭ minor', 'D♯ minor'],
+])('keeps the file name key spelling for %s when the audio agrees', (path, label, otherSpelling) => {
   const audio = { ...node.audio!, key: { tonic: 3, mode: 'minor' as const, strength: .8 }, tempo: { bpm: 130, confidence: .9 }, detectedPitch: { pitchClass: 3, confidence: .9 } };
   renderExpanded(<MusicFeatures node={{ ...node, path, audio }} />);
-  fireEvent.click(screen.getByText('View source names'));
-  expect(screen.getByText(`Filename — ${label} · 130 BPM`)).toBeVisible();
-  expect(screen.getByText(`Audio comparison: tempo 130.0 BPM; key ${label}; detected pitch ${pitch}.`)).toBeVisible();
+  expect(screen.getByText(label, { selector: 'dd' })).toBeVisible();
+  expect(screen.queryByText(/^audio /, { selector: 'small' })).toBeNull();
   expect(screen.queryByText(new RegExp(otherSpelling))).toBeNull();
-  expect(screen.queryByText(/Differences may reflect/)).toBeNull();
   expect(audio.key).toEqual({ tonic: 3, mode: 'minor', strength: .8 });
 });
-it('displays the filename D-sharp minor instead of a conflicting audio estimate or E-flat spelling', () => {
+it('displays the filename D-sharp minor and marks the conflicting audio estimate', () => {
   render(<MusicFeatures node={{ ...node, path: 'SHADOW_UK1_Melodic_Loop_Bleacher_D#m_130.wav', audio: { ...node.audio!, key: { tonic: 4, mode: 'minor', strength: .8 } } }} />);
   expect(screen.getByText('D♯ minor', { selector: 'dd' })).toBeVisible();
   expect(screen.queryByText('E minor', { selector: 'dd' })).toBeNull();
   expect(screen.queryByText('E♭ minor', { selector: 'dd' })).toBeNull();
-  fireEvent.click(screen.getByText('Technical details'));
-  expect(screen.getByText(/Audio comparison:.*key E minor/)).toBeVisible();
+  expect(screen.getByText('audio E minor', { selector: 'small' })).toBeVisible();
 });
 it('shows the automatic synth label with uncertainty without requiring a confirmation', () => {
   renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, instruments: [{ label: 'synthesizer', score: 0.39, status: 'possible' }, { label: 'trumpet', score: 0.376, status: 'possible' }], instrumentPrediction: { label: 'synthesizer', score: 0.39, margin: 0.014 } } }} />);
@@ -47,7 +44,6 @@ it('clearly distinguishes confirmed instruments from model guesses', () => {
   expect(screen.getByText('synthesizer', { selector: '.sound-tag--confirmed > span:not(.sr-only):not(.sound-tag__mark)' })).toBeVisible();
   expect(screen.queryByText('trumpet', { selector: 'span' })).toBeNull();
   expect(screen.queryByRole('region', { name: 'Other model guesses' })).toBeNull();
-  expect(screen.getByText('Confirmed by you. These instruments are used for connections.')).toBeVisible();
 });
 it('updates the confirmed summary after a later rejection', () => {
   renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, confirmedInstruments: ['synthesizer', 'trumpet'], soundReviews: [{ labelId: 'synthesizer', dimension: 'source', decision: 'rejected', scope: 'track', at: '2026-10-03T00:00:00Z', evidenceRunId: 'run' }] } }} />);
@@ -58,9 +54,7 @@ it('updates the confirmed summary after a later rejection', () => {
 });
 it('keeps name-derived instruments after an unsure machine-label review', () => {
   renderExpanded(<MusicFeatures node={{ ...node, path: 'Piano Loop.wav', audio: { ...node.audio!, soundReviews: [{ labelId: 'oboe', dimension: 'source', decision: 'uncertain', scope: 'track', at: '2026-10-03T00:00:00Z', evidenceRunId: 'run' }] } }} />);
-  expect(screen.getByText('Instruments from name')).toBeVisible();
-  expect(screen.getAllByText('piano').length).toBeGreaterThan(0);
-  expect(screen.queryByText('Confirmed by you. These instruments are used for connections.')).toBeNull();
+  expect(within(screen.getByRole('region', { name: 'Sound identification' })).getByText('piano')).toBeVisible();
 });
 const node: DocNode = { id: 'track', kind: 'document', title: 'Track', fileType: 'audio', topics: [], entities: [], keywords: [], wordCount: 0, cluster: 0, degree: 0, status: 'ok', audio: { version: 2, durationSeconds: 180, analyzedSeconds: 60, notes: [], instrumentScan: { complete: true, analyzedSeconds: 180, windows: 35 }, instruments: [{ label: 'trumpet', status: 'likely', score: .9, segments: [{ start: 70, end: 80, score: .9 }] }, { label: 'cello', status: 'possible', score: .5 }] } };
 it('shows whole-track coverage and lets listeners verify the strongest instrument passage', () => {
@@ -72,6 +66,19 @@ it('shows whole-track coverage and lets listeners verify the strongest instrumen
   expect(seek).toHaveBeenCalledWith(70);
   expect(screen.getByText('Possible instruments (1)')).toBeTruthy();
   expect(screen.getByText('Weaker detections. These do not create instrument links.')).toBeTruthy();
+});
+
+it('keeps other model guesses inside Technical details until it is opened', () => {
+  const soundProfile = { version: 1 as const, character: [], roles: [], models: [], disagreement: false, djTags: [
+    { group: 'production' as const, label: 'drum loop', score: .4 }, { group: 'character' as const, label: 'rhythmic_stabs', score: .4 },
+  ] };
+  render(<MusicFeatures node={{ ...node, audio: { ...node.audio!, soundProfile } }} />);
+  const guesses = screen.getByRole('region', { name: 'Other model guesses' });
+  expect(guesses).not.toBeVisible();
+  expect(guesses.closest('details')).toBe(screen.getByText('Technical details').closest('details'));
+  fireEvent.click(screen.getByText('Technical details'));
+  expect(guesses).toBeVisible();
+  expect(screen.getByText('drum loop', { selector: '.chip--guess' })).toBeVisible();
 });
 
 it('shows a weak synth suggestion immediately instead of claiming nothing was detected', () => {
@@ -92,34 +99,25 @@ it('shows the detected pitch without inventing a major or minor mode', () => {
   expect(screen.getByText(/Detected pitch: D/)).toBeVisible();
   expect(screen.getByText(/A repeated note alone cannot establish/)).toBeVisible();
 });
-it('shows name-derived features and retains conflicting audio for comparison', () => {
+it('shows name-derived features and marks the conflicting audio tempo', () => {
   renderExpanded(<MusicFeatures node={{ ...node, path: 'Synths/Action_Dm_140.wav', audio: { ...node.audio!, tempo: { bpm: 70, confidence: .75 } } }} />);
   expect(screen.getByText('140 BPM')).toBeVisible();
   expect(screen.getByText('D minor')).toBeVisible();
+  expect(screen.getByText('audio 70', { selector: 'small' })).toBeVisible();
   expect(screen.queryByText('Key tonic from name')).toBeNull();
-  expect(screen.getByText('Instruments from name')).toBeVisible();
-  expect(screen.getByText(/Audio comparison: tempo 70.0 BPM/)).toBeVisible();
-  expect(screen.getByText('From filename: D minor · 140 BPM')).toBeVisible();
-  expect(screen.getByText('From folder: synthesizer')).toBeVisible();
-  const sources = screen.getByText('View source names').closest('details')!;
-  expect(sources).not.toHaveAttribute('open');
-  expect(screen.getAllByText('Action_Dm_140')).toHaveLength(1);
-  fireEvent.click(screen.getByText('View source names'));
-  expect(sources).toHaveAttribute('open');
-  expect(screen.getByText('Synths')).toBeVisible();
+  expect(screen.queryByText(/Audio comparison/)).toBeNull();
+  expect(screen.queryByText('View source names')).toBeNull();
+  expect(screen.queryByText('Action_Dm_140')).toBeNull();
 });
 it('attributes the added music model instead of presenting it as a confirmed label', () => {
   renderExpanded(<MusicFeatures node={{ ...node, audio: { ...node.audio!, instruments: [], instrumentPrediction: { label: 'synthesizer', score: .56, margin: .2, model: 'MTG-Jamendo' } } }} />);
   expect(screen.getByText(/Music model: MTG-Jamendo/)).toBeVisible();
-  expect(screen.queryByText('Confirmed by you. These instruments are used for connections.')).toBeNull();
 });
 
-it('selects the persistent analysis mode and labels sampled coverage truthfully', () => {
+it('labels sampled coverage truthfully and keeps the analysis mode out of Track actions', () => {
   useGraphStore.getState().setPhase('ready');
   renderExpanded(<MusicFeatures node={{...node,audio:{...node.audio!,instrumentScan:{complete:true,mode:'fast',analyzedSeconds:30,windows:3}}}} />);
-  const mode=screen.getByRole('combobox',{name:'Music analysis mode'});
-  expect(mode).toHaveValue('full');fireEvent.change(mode,{target:{value:'fast'}});
-  expect(useSettingsStore.getState().musicAnalysisMode).toBe('fast');
+  expect(screen.queryByRole('combobox',{name:'Music analysis mode'})).toBeNull();
   expect(screen.getByText('Sampled instrument scan: 0:30 of 3:00.')).toBeVisible();
   expect(screen.queryByText(/Full-track instrument scan/)).toBeNull();
 });
@@ -137,9 +135,8 @@ it('keeps explanations collapsed while showing the main musical values', () => {
   expect(screen.getByText('140 BPM')).toBeVisible();
   expect(screen.getByText('D minor')).toBeVisible();
   expect(screen.getByText('Technical details').closest('details')).not.toHaveAttribute('open');
-  expect(screen.getByText('Audio comparison:', { exact: false })).not.toBeVisible();
+  expect(screen.getByRole('button', { name: 'All sound attributes' })).not.toBeVisible();
   fireEvent.click(screen.getByText('Track actions'));
-  expect(screen.getByRole('combobox', { name: 'Music analysis mode' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Reanalyze musical features' })).toHaveTextContent('Reanalyze');
 });
 
@@ -165,7 +162,6 @@ it('keeps duration, sound possibilities and corrections visible while diagnostic
   expect(screen.queryByText('Correct the instrument')).toBeNull();
   expect(screen.queryByText('Correct DJ tags')).toBeNull();
   expect(screen.getByText('Coverage by component')).not.toBeVisible();
-  expect(screen.getByText(/Suggestions are uncalibrated/)).not.toBeVisible();
   const disclosure = screen.getByText('Technical details');
   disclosure.focus(); expect(document.activeElement).toBe(disclosure);
   fireEvent.click(disclosure); expect(screen.getByText('Coverage by component')).toBeVisible();

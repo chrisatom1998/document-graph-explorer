@@ -1,5 +1,7 @@
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { cnnTempo, combineLoopTempo, combineTempo, tempoMel, tempoWindows } from './tempoCnn';
+import { cnnTempo, combineLoopTempo, combineTempo, LOOP_CNN_OVERRIDE_CONFIDENCE, TEMPO_CNN_WEIGHTS, tempoMel, tempoWindows } from './tempoCnn';
 
 function logitsFor(rows: number[][]) {
   return Float32Array.from(rows.flatMap(peaks => Array.from({ length: 256 }, (_, k) => peaks.includes(30 + k) ? 10 : 0)));
@@ -48,5 +50,15 @@ describe('tempo CNN input and output', () => {
     expect(combineLoopTempo(loop, { bpm: 120, confidence: 0.9 })).toEqual({ bpm: 120, confidence: 0.9, alternatives: [60, 240] });
     expect(combineLoopTempo(loop, { bpm: 120, confidence: 0.2 })).toBe(loop);
     expect(combineLoopTempo(loop, { bpm: 81, confidence: 0.9 })).toBe(loop);
+  });
+  it('trusts the loop-trained model on a seamless loop down to a lower confidence', () => {
+    const loop = { bpm: 80, confidence: 0.6, alternatives: [40, 160] };
+    expect(combineLoopTempo(loop, { bpm: 120, confidence: 0.2 }, LOOP_CNN_OVERRIDE_CONFIDENCE)).toEqual({ bpm: 120, confidence: 0.2, alternatives: [60, 240] });
+    expect(combineLoopTempo(undefined, { bpm: 120, confidence: 0.2 }, LOOP_CNN_OVERRIDE_CONFIDENCE)).toEqual({ bpm: 120, confidence: 0.2, alternatives: [60, 240] });
+    expect(combineLoopTempo(undefined, { bpm: 120, confidence: 0.05 }, LOOP_CNN_OVERRIDE_CONFIDENCE)).toBeUndefined();
+  });
+  it('names both committed tempo networks in its provenance identity', () => {
+    const hash = (file: string) => createHash('sha256').update(readFileSync(`public/tempo-model/${file}`)).digest('hex').slice(0, 16);
+    expect(TEMPO_CNN_WEIGHTS).toBe(`tempo-cnn-${hash('tempo-cnn.onnx')}:loops-${hash('tempo-cnn-loops.onnx')}`);
   });
 });

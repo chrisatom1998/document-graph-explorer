@@ -16,6 +16,9 @@ Exported in the form learnedDjModel.ts evaluates: logit = bias + sum(w_i * v_i /
 With a renders manifest (render.py: effects applied by DSP to plain music clips from TRAINING uploaders), each label
 is fitted both without and with the renders, and the variant (and C) is chosen on out-of-fold scores of the REAL
 training clips only; the threshold is chosen on those real out-of-fold scores too. Renders never reach the held-out test.
+With PRIMARY_ROUND=<n> (grow.py clips carry a "round"), the held-out numbers that decide a head are taken on the held-out
+clips of rounds <= n only, so heads trained on a grown clip set are judged on exactly the clips earlier heads were judged on;
+"extended" adds the same numbers on every held-out clip, new rounds included.
 Usage: train.py <audio-manifest.json> <embeddings dir> <out dir> [renders-manifest.json]"""
 import json, sys, glob, os, datetime
 import numpy as np
@@ -40,6 +43,7 @@ X = np.asarray(X, dtype=np.float64); X /= np.linalg.norm(X, axis=1, keepdims=Tru
 LAB = [set(meta[i]['labels']) for i in ids]
 G = np.array([meta[i]['group'] for i in ids]); TEST = np.array([meta[i]['split'] == 'heldout' for i in ids])
 assert not set(G[TEST]) & set(G[~TEST]), 'uploader in both splits'
+PRIMARY = np.array([meta[i].get('round', 1) <= int(os.environ.get('PRIMARY_ROUND', 10**6)) for i in ids])
 RENDER = np.array([meta[i].get('kind') == 'render' for i in ids]); assert not (RENDER & TEST).any()
 print(f'clips with fingerprints: {len(ids)} of {len(meta)}  (train {int((~TEST & ~RENDER).sum())} real + {int(RENDER.sum())} renders, held-out {int(TEST.sum())}, uploaders {len(set(G))})')
 
@@ -76,7 +80,7 @@ heads, report = [], {}
 for label in [L['label'] for L in spec['labels']]:
     pos = np.array([label in s for s in LAB])
     use = pos | np.array([not any(related(label, o) for o in s) for s in LAB])
-    tr, te = use & ~TEST, use & TEST
+    tr, te, tx = use & ~TEST, use & TEST & PRIMARY, use & TEST
     real_tr = tr & ~RENDER
     e = {'group': GROUP[label], 'trainPositive': int(pos[real_tr].sum()), 'trainNegative': int((~pos[real_tr]).sum()),
          'trainRenders': int((pos & tr & RENDER).sum()), 'testPositive': int(pos[te].sum()), 'testNegative': int((~pos[te]).sum()),
@@ -92,6 +96,9 @@ for label in [L['label'] for L in spec['labels']]:
             continue
         p = sig(X[te] @ np.asarray(hd['weights']) + hd['bias'])
         e.setdefault('current', []).append({'file': hd['file'], 'maybe': bool(hd.get('maybe')), 'threshold': hd['threshold'], **prf(pos[te], p >= hd['threshold'])})
+        if (tx != te).any():
+            p = sig(X[tx] @ np.asarray(hd['weights']) + hd['bias'])
+            e.setdefault('extended', {})['current'] = {'positives': int(pos[tx].sum()), 'negatives': int((~pos[tx]).sum()), **prf(pos[tx], p >= hd['threshold'])}
     variants = {'real': real_tr}
     if e['trainRenders']: variants['real+renders'] = tr
     best = None
@@ -119,6 +126,8 @@ for label in [L['label'] for L in spec['labels']]:
     if e['testPositive'] < MIN_TEST:
         report[label] = {**e, 'verdict': f'fewer than {MIN_TEST} held-out positives; not tested'}; continue
     res = prf(pos[te], model.predict_proba(X[te])[:, 1] >= th)
+    if (tx != te).any():
+        e.setdefault('extended', {})['new'] = {'positives': int(pos[tx].sum()), 'negatives': int((~pos[tx]).sum()), **prf(pos[tx], model.predict_proba(X[tx])[:, 1] >= th)}
     if DUR:
         rows = te & SHORT
         e['heldOutOneShot'] = {'positives': int(pos[rows].sum()), 'negatives': int((~pos[rows]).sum()),
@@ -133,13 +142,15 @@ for label in [L['label'] for L in spec['labels']]:
 lines = [f"{'label':<16}{'train+':>7}{'test+':>6}{'test-':>6}{'thresh':>8}{'P':>7}{'R':>7}   {'verdict':<17}{'trained on':<14}current head on same held-out"]
 for label, e in report.items():
     cur = '; '.join(f"{c['file'].split('.')[0]}{' maybe' if c['maybe'] else ''}{' (<=2.25 s clips)' if c.get('subset') else ''} P{c['precision']:.2f} R{c['recall']:.2f}" for c in e.get('current', [])) or '-'
+    if e.get('extended', {}).get('new'):
+        x = e['extended']; cur += f"   | all held-out ({x['new']['positives']}+): new P{x['new']['precision']:.2f} R{x['new']['recall']:.2f}" + (f", current P{x['current']['precision']:.2f} R{x['current']['recall']:.2f}" if 'current' in x else '')
     if e.get('heldOutOneShot', {}).get('positives'): o = e['heldOutOneShot']; cur += f"   | new on <=2.25 s: P{o['precision']:.2f} R{o['recall']:.2f} ({o['positives']}+/{o['negatives']}-)"
     if 'precision' not in e: lines.append(f"{label:<16}{e['trainPositive']:>7}{e['testPositive']:>6}{e['testNegative']:>6}{'-':>8}{'-':>7}{'-':>7}   {e['verdict']:<17} {e.get('variant', '-'):<14}{cur}"); continue
     lines.append(f"{label:<16}{e['trainPositive']:>7}{e['testPositive']:>6}{e['testNegative']:>6}{e['threshold']:>8.3f}{e['precision']:>7.2f}{e['recall']:>7.2f}   {e['verdict']:<17} {e['variant']:<14}{cur}")
 text = '\n'.join(lines); print(text)
 open(f'{OUT}/report.txt', 'w').write(text + '\n')
 json.dump({'kind': 'dj-effect-heads-report-v1', 'trainedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
-           'clips': len(ids), 'trainClips': int((~TEST).sum()), 'heldOutClips': int(TEST.sum()), 'heldOutUploaders': len(set(G[TEST])),
+           'clips': len(ids), 'trainClips': int((~TEST).sum()), 'heldOutClips': int(TEST.sum()), 'primaryHeldOutClips': int((TEST & PRIMARY).sum()), 'heldOutUploaders': len(set(G[TEST])),
            'thresholdTarget': TARGET, 'labels': report}, open(f'{OUT}/report.json', 'w'), indent=1)
 json.dump({'kind': 'dj-effect-heads-v1', 'heads': heads}, open(f'{OUT}/heads.json', 'w'))
 print(f'wrote {OUT}/report.json and {len(heads)} heads')

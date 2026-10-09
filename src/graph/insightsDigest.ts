@@ -48,7 +48,7 @@ export function summarizeInsights(
 
 export function formatInsightsDigest(digest: InsightsDigest): string {
   const clusters = `${digest.clusterCount} ${digest.clusterCount === 1 ? 'cluster' : 'clusters'}`;
-  const orphans = `${digest.orphanCount} ${digest.orphanCount === 1 ? 'orphan' : 'orphans'}`;
+  const orphans = `${digest.orphanCount} unlinked`;
   const dups = `${digest.duplicateCount} near-${digest.duplicateCount === 1 ? 'duplicate' : 'duplicates'}`;
   return `${clusters} · ${orphans} · ${dups}`;
 }

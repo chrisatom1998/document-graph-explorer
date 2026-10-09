@@ -7,7 +7,8 @@ held-out clips (higher min(P, R), then higher F1); a normal head is only ever re
 New labels (labels.json "new") get a catalog entry on their own axis (dj-effect), so they do not change which
 existing label wins the dj-transition axis; add-prompts.mjs then gives them CLAP text vectors (on Actions).
 Re-pins learned.json in manifest.json, bumps the learned.json revision and the catalog version, and rewrites
-calibratedLabels.json.  Usage: ship.py <dir with report.json + heads.json>"""
+calibratedLabels.json. When the report also scores every held-out clip ("extended", train.py PRIMARY_ROUND), a head that
+replaces a current one must beat it there too. REVISION_TAG (default dj-effects-2026-10-06) names the revision suffix.  Usage: ship.py <dir with report.json + heads.json>"""
 import json, sys, hashlib, os
 D = sys.argv[1]
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -35,6 +36,9 @@ for label, e in report.items():
         if not cur: out.append({**row, 'shipped': False, 'why': 'current head was not scored on the same clips'}); continue
         if key(P, R) <= key(cur['precision'], cur['recall']):
             out.append({**row, 'shipped': False, 'why': f"current head is as good on the same held-out clips (P {cur['precision']:.2f} R {cur['recall']:.2f})"}); continue
+        ext = e.get('extended', {})
+        if 'new' in ext and 'current' in ext and key(ext['new']['precision'], ext['new']['recall']) <= key(ext['current']['precision'], ext['current']['recall']):
+            out.append({**row, 'shipped': False, 'why': f"current head is as good on all held-out clips (P {ext['current']['precision']:.2f} R {ext['current']['recall']:.2f})"}); continue
         model['heads'] = [x for x in model['heads'] if x['label'] != label]
         row['replaced'] = {'tier': 'maybe' if cur['maybe'] else 'full', 'precision': cur['precision'], 'recall': cur['recall']}
     if (h['group'], label) not in cats:
@@ -48,7 +52,7 @@ for label, e in report.items():
     model['heads'].append({**h, **({} if full else {'maybe': True})})
     out.append({**row, 'shipped': True, 'tier': 'full' if full else 'maybe'})
 if not any(r['shipped'] for r in out): sys.exit('nothing to ship')
-model['revision'] += '+dj-effects-2026-10-06'
+model['revision'] += '+' + os.environ.get('REVISION_TAG', 'dj-effects-2026-10-06')
 body = json.dumps(model, separators=(',', ':')) + '\n'
 open(LEARNED, 'w').write(body)
 man = json.load(open(MANIFEST)); man['sha256']['learned.json'] = hashlib.sha256(body.encode()).hexdigest()

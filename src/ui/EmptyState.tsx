@@ -57,39 +57,34 @@ export default function EmptyState() {
     <div className="empty-state-layer">
       <HeroEmptyState className="empty-state__card glass-panel">
         <aside className="empty-state__visual" aria-label="Local-first knowledge mapping">
-          <div className="empty-state__visual-label" aria-hidden="true">
-            <span>Local observatory</span>
-            <span>01 / 03</span>
-          </div>
           <div className="empty-state__hero">
             <Suspense fallback={<ConstellationSvg />}><HeroConstellation /></Suspense>
           </div>
           <div className="empty-state__visual-copy">
-            <p className="empty-state__visual-kicker">See the structure in your work</p>
+            <p className="empty-state__visual-kicker">See how your sounds relate</p>
             <p>
-              Documents become a navigable constellation of topics, references, and shared ideas.
+              Clips become a map of what sounds alike, shares a tempo or key, and mixes well
+              together. Documents join by topic and citation.
             </p>
           </div>
           <ul className="empty-state__trust-list" aria-label="Privacy and access">
-            <li><span aria-hidden="true" />100% local processing</li>
-            <li><span aria-hidden="true" />Private by design</li>
-            <li><span aria-hidden="true" />No account required</li>
+            <li><span aria-hidden="true" />Everything runs in this browser. No account, no upload.</li>
           </ul>
         </aside>
         <div className="empty-state__content">
           <header className="empty-state__header">
             <Chip className="empty-state__eyebrow" size="sm" variant="secondary">
               <span className="empty-state__orb" aria-hidden="true" />
-              Private knowledge workspace
+              Private workspace
             </Chip>
-            <p className="empty-state__kicker">Document Graph Explorer</p>
+            <p className="empty-state__kicker">Resonance</p>
             <h1 className="empty-state__title">
-              Turn scattered files into a living map.
+              Find how sounds relate.
             </h1>
             <p className="empty-state__tagline">
-              Build an interactive 3D graph of ideas and relationships. Processing and storage stay
-              in this browser, with files cached only on this device. Documents leave your device
-              only when you explicitly enable a cloud AI provider or share exported graph data.
+              Drop in clips, loops or whole sample packs and get a map of how they relate by
+              instrument, tempo, key and feel. Documents work too. Files stay on this device;
+              nothing leaves it unless you turn on a cloud AI provider or share an export.
             </p>
           </header>
 
@@ -132,8 +127,8 @@ export default function EmptyState() {
               </Button>
             </div>
             <p className="empty-state__hint">
-              Drag files or folders anywhere, or choose a folder to include supported files from
-              every subfolder.
+              Drag clips, sample packs or folders anywhere, or choose a folder to include every
+              supported file from its subfolders.
             </p>
           </div>
 
@@ -146,24 +141,6 @@ export default function EmptyState() {
           </div>
         </div>
 
-        <div className="empty-state__workflow" aria-label="How Document Graph Explorer works">
-          <div className="empty-state__workflow-heading">
-            <span>From files to map</span>
-            <span>Three local steps</span>
-          </div>
-          <div className="empty-state__step">
-            <span className="empty-state__step-number">01</span>
-            <span><strong>Bring your files</strong>Audio, docs, PDFs, Office, or a source repo.</span>
-          </div>
-          <div className="empty-state__step">
-            <span className="empty-state__step-number">02</span>
-            <span><strong>Find the signal</strong>Topics and connections emerge locally.</span>
-          </div>
-          <div className="empty-state__step">
-            <span className="empty-state__step-number">03</span>
-            <span><strong>Explore the map</strong>Navigate a living graph of your corpus.</span>
-          </div>
-        </div>
       </HeroEmptyState>
     </div>
   );

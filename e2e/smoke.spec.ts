@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles, startIn3D } from './resonance';
+import { advancedFilters, closeDetails, corpusCount, details, fitAll, openFiles, showFilters, startIn3D } from './resonance';
 
 test.beforeEach(async ({ page }) => { page.setDefaultTimeout(30_000); });
 
@@ -66,7 +66,7 @@ test('first run renders the empty state with a working WebGL scene', async ({ pa
   const errors = collectErrors(page);
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Turn scattered files into a living map.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Find how sounds relate.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Load demo corpus' })).toBeVisible();
 
   // If WebGL context creation failed, the scene mounts a fallback section
@@ -165,7 +165,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await closeDetails(page);
 
   const chooserPromise = page.waitForEvent('filechooser');
-  await page.locator('.rs-sidebar').getByRole('button', { name: /^Import (clips|files)/ }).click();
+  await page.locator('.rs-sidebar').getByRole('button', { name: /^Import(?: (?:Clips|Files),|$)/ }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/persistence.txt');
   await expect(corpusCount(page)).toContainText('101 files');
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
@@ -220,8 +220,9 @@ test('search ranks within file filters before applying its result limit', async 
   });
   await importGraphJson(page, JSON.stringify(graph));
   await openLibrary(page);
-  await advancedFilters(page);
-  await page.getByRole('button', { name: 'md · 1', exact: true }).click();
+  // File type is the sidebar select; the embedded Advanced panel no longer repeats it.
+  await showFilters(page);
+  await page.getByRole('combobox', { name: 'File type' }).selectOption('md');
   await page.getByRole('button', { name: 'Search documents' }).click();
   // The sidebar's Key, Genre and File type selects are comboboxes too; type into the search box.
   await page.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('Architecture');
@@ -335,6 +336,6 @@ test('switching graph views does not leak WebGL contexts', async ({ page }) => {
     await expect(page.getByRole('application', { name: i % 2 ? /Interactive 3D/ : /Interactive 2D/ })).toBeVisible();
   }
   expect(await page.evaluate(() => (window as typeof window & { graphWebglContexts: number }).graphWebglContexts)).toBe(initialContexts);
-  await expect(page.getByRole('heading', { name: 'Document Graph Explorer stopped rendering.' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Resonance stopped rendering.' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });

@@ -216,6 +216,38 @@ export default function ExportImportMenu({
         <button
           type="button"
           className="toolbar__menu-item"
+          title="Export the current scene as a PNG image"
+          disabled={nodeCount === 0}
+          onClick={() => {
+            void exportScenePNG().then((ok) => {
+              useUiStore
+                .getState()
+                .pushToast(
+                  ok ? 'PNG export started.' : "Couldn't export PNG - no scene canvas found.",
+                  ok ? 'info' : 'error',
+                );
+            });
+            onClose?.();
+          }}
+        >
+          <IconImage />
+          <span>Export image PNG</span>
+        </button>
+        {hasAudio && (
+          <button
+            type="button"
+            className="toolbar__menu-item"
+            title="Export BPM, key and sound tags as a Rekordbox collection XML"
+            disabled={!canExportGraph}
+            onClick={() => setRekordboxOpen(true)}
+          >
+            <IconJson />
+            <span>Export for Rekordbox (XML)</span>
+          </button>
+        )}
+        <button
+          type="button"
+          className="toolbar__menu-item"
           title="Copy a backend-free link to this graph"
           disabled={!canExportGraph}
           onClick={() => setShareConfirmOpen(true)}
@@ -223,6 +255,7 @@ export default function ExportImportMenu({
           <IconLink />
           <span>Copy shareable URL</span>
         </button>
+        <p className="toolbar__menu-label">Backup</p>
         <button
           type="button"
           className="toolbar__menu-item"
@@ -260,6 +293,16 @@ export default function ExportImportMenu({
         <button
           type="button"
           className="toolbar__menu-item"
+          title={canImport ? 'Import a graph JSON file' : 'Import is disabled while processing'}
+          disabled={!canImport}
+          onClick={pickImportFile}
+        >
+          <IconImport />
+          <span>Import graph JSON</span>
+        </button>
+        <button
+          type="button"
+          className="toolbar__menu-item"
           title="Export the graph as an OpenUSD stage (.usda) for usdview / NVIDIA Omniverse"
           disabled={!canExportGraph}
           onClick={() => {
@@ -275,49 +318,7 @@ export default function ExportImportMenu({
           }}
         >
           <IconUsd />
-          <span>Export OpenUSD scene</span>
-        </button>
-        {hasAudio && (
-          <button
-            type="button"
-            className="toolbar__menu-item"
-            title="Export BPM, key and sound tags as a Rekordbox collection XML"
-            disabled={!canExportGraph}
-            onClick={() => setRekordboxOpen(true)}
-          >
-            <IconJson />
-            <span>Export for Rekordbox (XML)</span>
-          </button>
-        )}
-        <button
-          type="button"
-          className="toolbar__menu-item"
-          title="Export the current scene as a PNG image"
-          disabled={nodeCount === 0}
-          onClick={() => {
-            void exportScenePNG().then((ok) => {
-              useUiStore
-                .getState()
-                .pushToast(
-                  ok ? 'PNG export started.' : "Couldn't export PNG - no scene canvas found.",
-                  ok ? 'info' : 'error',
-                );
-            });
-            onClose?.();
-          }}
-        >
-          <IconImage />
-          <span>Export image PNG</span>
-        </button>
-        <button
-          type="button"
-          className="toolbar__menu-item"
-          title={canImport ? 'Import a graph JSON file' : 'Import is disabled while processing'}
-          disabled={!canImport}
-          onClick={pickImportFile}
-        >
-          <IconImport />
-          <span>Import graph JSON</span>
+          <span>Export 3D scene (USD)</span>
         </button>
       </div>
 

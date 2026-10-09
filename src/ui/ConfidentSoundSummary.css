@@ -22,13 +22,19 @@
 .sound-tags__empty { margin: 0; color: var(--text-faint); }
 
 /* Clip stats: length, tempo, key. */
-.music-features .music-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0 0; }
-.music-features .music-stats > div { min-width: 0; padding: 10px 12px; border-radius: var(--radius-md); background: var(--surface-inset); border: 1px solid var(--border-glass); }
-.music-features .music-stats dt { margin-bottom: 4px; display: flex; gap: 6px; align-items: baseline; }
+.music-features .music-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 12px 0 0; }
+.music-features .music-stats > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.music-features .music-stats dt { margin: 0; display: flex; gap: 6px; align-items: baseline; }
 .music-features .music-stats dt small { font-size: 10px; letter-spacing: .04em; color: var(--accent-strong); text-transform: none; font-weight: 500; }
-.music-features .music-stats dd { margin: 0; font-size: 17px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music-features .music-stats dd { margin: 0; font-size: 16px; font-weight: 500; color: var(--text-primary); white-space: nowrap; }
 .music-features .music-stats dd.is-unknown { color: var(--text-faint); }
 .music-status { margin: 10px 0 0; font-size: 12px; color: var(--warning); }
+.music-status__action { margin-left: 6px; padding: 2px 8px; font: inherit; font-size: 12px; color: var(--text-primary); background: var(--surface-inset); border: 1px solid var(--border-glass); border-radius: 999px; cursor: pointer; }
+.music-status__action:disabled { opacity: 0.5; cursor: default; }
+.sound-tags__note { margin: 0 0 8px; font-size: 11.5px; line-height: 1.4; color: var(--text-faint); max-width: 60ch; }
+.music-manual-link__list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.music-manual-link__list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--border-glass); font-size: 12.5px; }
+.audio-preview__prepare { margin: 8px 0 0; }
 
 /* Quiet disclosures: present, never shouting. */
 .music-features details > summary,
@@ -126,5 +132,5 @@
 /* Possible = a tested detector scored 0.40–0.49 on a longer recording: dimmer, dashed. */
 .sound-tag--possible { opacity: .72; border-style: dashed; }
 /* When the name tag and the audio estimate disagree, the audio value sits under the shown one. */
-.music-features .music-stats__audio { display: block; margin-top: 3px; font-size: 11px; font-weight: 400; color: var(--warning); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music-features .music-stats__audio { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 400; color: var(--warning); white-space: nowrap; }
 .music-features .music-stats .camelot { vertical-align: 2px; }

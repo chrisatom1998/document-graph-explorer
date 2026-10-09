@@ -107,7 +107,7 @@ function SampleWorkspace({ audio, ready, storageKey, onClose, onMinimize, header
       <div><h1 id="dj-title">Find your next sound.</h1><p>{audio.length} sounds in your library</p></div>
       <div className="dj-window-actions">
         <button type="button" data-drag-handle aria-label="Move sample assistant" title="Drag to move. Arrow keys move; Home centers.">⠿</button>
-        <button type="button" onClick={onMinimize} aria-label="Minimize sample assistant" title="Minimize; reopen from Music copilot → More tools.">−</button>
+        <button type="button" onClick={onMinimize} aria-label="Minimize sample assistant" title="Minimize; reopen from the Sample assistant button.">−</button>
         <button onClick={onClose} aria-label="Close sample assistant" title="Close">×</button>
       </div>
     </header>
@@ -123,14 +123,15 @@ function SampleWorkspace({ audio, ready, storageKey, onClose, onMinimize, header
     {tab === 'copilot' ? null : tab === 'overview' ? <UploadInsights audio={audio} localApi={localApi} onClose={onClose} /> : tab === 'packs' ? <SamplePackFinder /> :
     <div className="dj-workspace dj-library-workspace">
       <section className="dj-controls" aria-label="Search controls" hidden={showCrate}>
-        <form className="dj-search-form" onSubmit={e => { e.preventDefault(); void run(query); }}>
+        {/* AI search needs the local dev API; without it the filters below are the search. */}
+        {localApi && <form className="dj-search-form" onSubmit={e => { e.preventDefault(); void run(query); }}>
           <label htmlFor="dj-query">Describe the sound</label>
           <textarea id="dj-query" autoFocus value={query} maxLength={2000} rows={1} onChange={e => setQuery(e.target.value)} placeholder="Find vocal chops under 5 seconds…" />
           <div className="dj-actions"><button className="dj-primary" disabled={busy || !ready || !localApi || !query.trim()}>{busy ? 'Interpreting your search…' : 'Search sounds'}</button>{busy && <button type="button" onClick={() => { request.current?.abort(); setBusy(false); setStatus('Search stopped. Previous results are unchanged.'); }}>Stop</button>}</div>
-        </form>
-        <p className="dj-note">{localApi ? 'Search text is sent to OpenAI. Your sound files stay on this device.' : 'Use Filters to search on this device. AI search is unavailable here.'}</p>
+        </form>}
+        {localApi && <p className="dj-note">Search text is sent to OpenAI. Your sound files stay on this device.</p>}
         {!ready && <p role="status">Your sounds are still being analyzed.</p>}
-        <details className="dj-local-filters"><summary>Filters</summary>
+        <details className="dj-local-filters" open={!localApi}><summary>Filters</summary>
           <form key={JSON.stringify(plan)} onSubmit={e => {
             e.preventDefault();
             const data = new FormData(e.currentTarget);

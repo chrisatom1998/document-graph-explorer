@@ -1,3 +1,4 @@
+import { loadPinnedSoundAsset } from './pinnedSoundAsset';
 import { musicInferenceThreads, musicRuntimeDiagnostics, musicRuntimeIdentity, THREADED_RUNTIME_STALLED, switchToSingleThreadRuntime } from './musicRuntime';
 import soundManifest from '../../public/sound-model/manifest.json';
 import { learnedDjScores, sanitizeLearnedDjModel, type LearnedDjModel } from './learnedDjModel';
@@ -7,16 +8,17 @@ import { cachedAudioInference, isAudioEmbedding, isScoreMap } from './audioInfer
 import Essentia from 'essentia.js/dist/essentia.js-core.es.js';
 import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
 import { instrumentScores, musicScore, type InstrumentPredictions } from './instrumentLabels';
-import { INSTRUMENT_ANALYSIS_REVISION, KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_ANALYSIS_REVISION, type MusicAnalysis } from './musicTypes';
+import { KEY_ANALYSIS_REVISION, KEY_NAMES, TEMPO_ANALYSIS_REVISION, type MusicAnalysis } from './musicTypes';
 import { classifyJamendo, preloadJamendo } from './jamendo';
-import { classifyTagger } from './taggerInference';
+import { classifyTagger, preloadTagger } from './taggerInference';
 import { isTaggerScores } from './tagger';
 import { GENRE_ENERGY_VERSION } from './genreEnergy';
 import { detectRepeatedPitch } from './detectedPitch';
-import { estimateTempo } from './tempo';
+import { countAttacks, estimateTempo, MIN_ATTACKS } from './tempo';
 import { essentiaKey, excerptChroma, recordingKey } from './key';
 import { keyProbabilities, profileWeight, recordingKeyFromProbabilities } from './keyCnn';
-import { combineLoopTempo, combineTempo, predictCnnTempo } from './tempoCnn';
+import { combineLoopTempo, combineTempo, LOOP_CNN_OVERRIDE_CONFIDENCE, predictCnnTempo } from './tempoCnn';
+import { isSeamlessLoop } from './loopWrap';
 import { soundSuggestions } from './soundSuggestions';
 import { descriptionScores, type DescriptionPrompt } from './profileDescriptions';
 import type { MusicExcerpts } from './decodeMusic';
@@ -52,8 +54,9 @@ function getClassifier() {
   })().catch(error => { classifier = null; throw error; });
 }
 /** Full-precision AST on the graphics card: 0.4 s a window against 2-3 s for q8 WASM (measured 2026-10-05), with
- * every AudioSet probability within 0.023 of q8 and the same top five. Only requested where no validated scorer
- * reads AST scores (analyzeDecodedMusic astOnGpu); any failure falls back to q8 WASM for the rest of the session. */
+ * every AudioSet probability within 0.023 of q8 and the same top five. Requested for every analysis, including the
+ * trained source classifier's inputs (held-out gate on fp32 AST, see docs/audio-runtime-performance.md); any failure
+ * falls back to q8 WASM for the rest of the session. */
 let gpuClassifier: ReturnType<typeof getClassifier> | null = null;
 let gpuUnavailable = false;
 function getGpuClassifier() {
@@ -93,40 +96,20 @@ function getSoundClassifier() {
   })().catch(error => { soundClassifier = null; throw error; });
 }
 let soundDescriptions: Promise<{ prompts: DescriptionPrompt[]; learned?: LearnedDjModel; shortClip?: ShortClipModel }> | null = null;
-/** Optional pinned asset: a missing, altered or malformed file leaves short clips on the existing analysis. */
-async function pinnedJson(name: string): Promise<unknown> {
-  const pinned = (soundManifest.sha256 as Record<string,string>)[name];
-  if (!pinned) return;
-  try {
-    const response = await fetch(`${import.meta.env.BASE_URL}sound-model/${name}?v=${INSTRUMENT_ANALYSIS_REVISION}`, {cache:'no-cache'});
-    if (!response.ok) return;
-    const bytes = await response.arrayBuffer();
-    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
-    return hash === pinned ? JSON.parse(new TextDecoder().decode(bytes)) : undefined;
-  } catch { return; }
-}
 function getSoundDescriptions() {
   return soundDescriptions ??= (async () => {
-    const response = await fetch(`${import.meta.env.BASE_URL}sound-model/prompts.json?v=${INSTRUMENT_ANALYSIS_REVISION}`);
-    if (!response.ok) throw new Error('Sound descriptions could not be loaded.');
-    let learned: LearnedDjModel | undefined;
-    // A locally trained model is opt-in and must be pinned in the manifest.
-    // Public builds do not ship private or assistant-generated review data.
-    const learnedHash = (soundManifest.sha256 as Record<string,string>)['learned.json'];
-    if (learnedHash) {
-      try {
-        const learnedResponse = await fetch(`${import.meta.env.BASE_URL}sound-model/learned.json?v=${INSTRUMENT_ANALYSIS_REVISION}`, {cache:'no-cache'});
-        if (learnedResponse.ok) {
-          const bytes = await learnedResponse.arrayBuffer();
-          const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
-          if (hash === learnedHash) learned = sanitizeLearnedDjModel(JSON.parse(new TextDecoder().decode(bytes)));
-        }
-      } catch { /* Optional local model must not prevent pinned model inference. */ }
-    }
-    if (learned && learned.encoder !== CLAP_ENCODER) learned = undefined;
-    let shortClip = sanitizeShortClipModel(await pinnedJson('short-clip.json'));
-    if (shortClip && shortClip.clapEncoder !== CLAP_ENCODER) shortClip = undefined;
-    return { prompts: await response.json() as DescriptionPrompt[], learned, shortClip };
+    const hashes = soundManifest.sha256 as Record<string, string>;
+    const [rawPrompts, rawLearned, rawShort] = await Promise.all([
+      loadPinnedSoundAsset('prompts.json', hashes['prompts.json']),
+      loadPinnedSoundAsset('learned.json', hashes['learned.json']),
+      loadPinnedSoundAsset('short-clip.json', hashes['short-clip.json']),
+    ]);
+    const learned = sanitizeLearnedDjModel(rawLearned);
+    const shortClip = sanitizeShortClipModel(rawShort);
+    if (!Array.isArray(rawPrompts)) throw new Error('Sound descriptions are invalid.');
+    if (hashes['learned.json'] && (!learned || learned.encoder !== CLAP_ENCODER)) throw new Error('Trained sound model is invalid.');
+    if (hashes['short-clip.json'] && (!shortClip || shortClip.clapEncoder !== CLAP_ENCODER)) throw new Error('One-shot sound model is invalid.');
+    return { prompts: rawPrompts as DescriptionPrompt[], learned, shortClip };
   })().catch(error => { soundDescriptions = null; throw error; });
 }
 function isInstrumentPredictions(value: unknown): value is InstrumentPredictions {
@@ -166,12 +149,12 @@ async function shortClipProfile(model: ShortClipModel, samples48: Float32Array, 
   return shortClipScores(model, inputs).scores;
 }
 /** Load one family's weights ahead of its first clip. Scores are unaffected: the same memoized sessions serve later requests. */
-async function warmFamily(family: string, mode?: string): Promise<void> {
-  // Quick analyses use the GPU model, so warming it keeps its ~6 s load off the first file. Full analyses only use it
-  // for clips up to 2.048 s; there it loads on the first such clip instead of holding 347 MB for long recordings.
-  if (family === 'instruments') { await getClassifier(); if (mode !== 'full') await getGpuClassifier().catch(() => { gpuUnavailable = true; }); }
+async function warmFamily(family: string): Promise<void> {
+  // AST runs on the GPU model where WebGPU works, so warming it keeps its ~6 s load off the first file. The q8 WASM
+  // model then loads only if the GPU fails (or for short-clip heads), instead of holding both in memory.
+  if (family === 'instruments') { if (gpuUnavailable || !await getGpuClassifier().then(() => true, () => false)) { gpuUnavailable = true; await getClassifier(); } }
   else if (family === 'profile' || family === 'sound') await Promise.all([getSoundDescriptions(), getSoundClassifier()]);
-  else if (family === 'jamendo') await Promise.all([ready, preloadJamendo()]);
+  else if (family === 'jamendo') await Promise.all([ready, preloadJamendo(), preloadTagger()]);
   else await ready;
 }
 self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'tagger'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array; samples16?: Float32Array }>) => {
@@ -179,7 +162,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
   // The main thread decided this browser needs the single-thread runtime (see THREADED_RUNTIME_STALLED).
   if ((data as { singleThread?: boolean }).singleThread) switchToSingleThreadRuntime(false);
   if (data.kind === 'warm') {
-    try { await warmFamily(data.family, (data as { mode?: string }).mode); self.postMessage({ id, warmed: true }); }
+    try { await warmFamily(data.family); self.postMessage({ id, warmed: true }); }
     catch (error) { self.postMessage({ id, error: error instanceof Error ? error.message : String(error) }); }
     return;
   }
@@ -205,7 +188,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
     }
     if (data.kind === 'tagger') {
       // Runs in the Jamendo family's worker (analyzeMusic familyOf), on its single-thread runtime.
-      const result = await cachedAudioInference('tagger-model', `tagger-32khz:${musicRuntimeIdentity('jamendo')}`, data.samples, isTaggerScores, async () => {
+      const result = await cachedAudioInference('tagger-model', `tagger-32khz:validated-v2:${musicRuntimeIdentity('jamendo')}`, data.samples, isTaggerScores, async () => {
         const scores = await classifyTagger(data.samples); inferenceExecuted = true; return scores;
       });
       await postResult(result);
@@ -296,12 +279,20 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
       if (consistent.length >= Math.ceil(excerpts.samples.length/2)) result.tempo = { ...median, bpm: Math.round(median.bpm*10)/10, confidence: Math.min(...consistent.map(t=>t.confidence)) };
     }
     // A learned tempo model overrides the beat tracker only when it confidently reads a different tempo. On a short loop
-    // (one excerpt, under 30 s) it also fills in a tempo the loop estimator could not find.
-    const loop = data.kind === 'rhythm' && audible.length === 1 && excerpts.durationSeconds < 30;
-    if (result.tempo || loop) {
+    // (one excerpt, under 30 s) it also fills in a tempo the loop estimator could not find. A short file that wraps
+    // seamlessly is a real loop, not a song excerpt: the loop-trained model reads it and is trusted at lower confidence.
+    // A one-shot also ends in silence, so a loop must have at least three attacks, as the loop estimator requires.
+    const seamlessAttacks = (samples: Float32Array) => { const v = engine!.arrayToVector(samples); try { return countAttacks(engine!, v); } finally { v.delete(); } };
+    const short = data.kind === 'rhythm' && audible.length === 1 && excerpts.durationSeconds < 30;
+    if (result.tempo || short) {
       try {
-        const cnn = await predictCnnTempo(audible);
-        if (cnn) result.tempo = loop ? combineLoopTempo(result.tempo, cnn) : { ...result.tempo!, ...combineTempo(result.tempo!, cnn) };
+        if (short && isSeamlessLoop(audible[0]) && seamlessAttacks(audible[0]) >= MIN_ATTACKS) {
+          const cnn = await predictCnnTempo(audible, 'loops');
+          if (cnn) result.tempo = combineLoopTempo(result.tempo, cnn, LOOP_CNN_OVERRIDE_CONFIDENCE);
+        } else {
+          const cnn = await predictCnnTempo(audible);
+          if (cnn) result.tempo = short ? combineLoopTempo(result.tempo, cnn) : { ...result.tempo!, ...combineTempo(result.tempo!, cnn) };
+        }
       } catch { /* Keep the beat tracker's tempo if the model is unavailable. */ }
     }
     // The learned key network reads the same tonal excerpts; the chroma profiles stay as the fallback when it cannot load.

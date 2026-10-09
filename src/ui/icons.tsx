@@ -276,3 +276,13 @@ export function IconLink() {
     </Svg>
   );
 }
+
+export function IconNote() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 12.5V3.5l7-1.5v8.5" />
+      <circle cx="4" cy="12.5" r="2" />
+      <circle cx="11" cy="10.5" r="2" />
+    </svg>
+  );
+}

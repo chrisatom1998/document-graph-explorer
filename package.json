@@ -31,7 +31,12 @@
     "predev": "node scripts/stage-audio-runtime.mjs && node scripts/download-music-model.mjs",
     "prebuild:airgap": "node scripts/stage-audio-runtime.mjs && node scripts/download-music-model.mjs",
     "setup:music": "node scripts/download-music-model.mjs",
-    "review:sounds": "python3 scripts/dj-review-server.py"
+    "review:sounds": "python3 scripts/dj-review-server.py",
+    "test:benchmarks": "node --test scripts/benchmarks/*.test.mjs",
+    "bench:dj:prepare": "node scripts/benchmarks/prepare.mjs",
+    "bench:dj:run": "node scripts/benchmarks/run.mjs accuracy",
+    "bench:dj:score": "vite-node scripts/benchmarks/score.mjs",
+    "bench:import": "node scripts/benchmarks/run.mjs import"
   },
   "dependencies": {
     "@ffmpeg/core": "^0.12.10",

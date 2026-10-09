@@ -19,6 +19,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore, type InsightsFocus } from '../store/uiStore';
 import { openInsights } from './openInsights';
 import CloseButton from './CloseButton';
+import { useFirstRunGuideVisible } from './firstRunGuideVisibility';
 
 let pending: Digest | null = null;
 const listeners = new Set<(digest: Digest) => void>();
@@ -61,6 +62,8 @@ export default function InsightsDigest() {
   const hasNodes = useGraphStore((s) => s.nodes.length > 0);
   const insightsOpen = useUiStore((s) => s.insightsOpen);
   const [digest, setDigest] = useState<Digest | null>(null);
+  // The first-run tour speaks first; the card appears once it closes.
+  const tourOpen = useFirstRunGuideVisible();
 
   useEffect(() => subscribeDigest(setDigest), []);
 
@@ -68,7 +71,7 @@ export default function InsightsDigest() {
     if (!hasNodes || phase !== 'ready' || insightsOpen) setDigest(null);
   }, [hasNodes, phase, insightsOpen]);
 
-  if (!digest || insightsOpen || phase !== 'ready') return null;
+  if (!digest || insightsOpen || phase !== 'ready' || tourOpen) return null;
 
   const jump = (focus: InsightsFocus, ids?: string[]): void => {
     openInsights(focus, ids);
@@ -102,10 +105,10 @@ export default function InsightsDigest() {
             <button
               type="button"
               className="insights-digest__jump"
-              title="Open insights and highlight isolated documents"
+              title="Open insights and highlight documents with no connections"
               onClick={() => jump('orphans', digest.orphanIds)}
             >
-              {digest.orphanCount} {digest.orphanCount === 1 ? 'orphan' : 'orphans'}
+              {digest.orphanCount} unlinked
             </button>
           )}
           {digest.duplicateCount > 0 && (

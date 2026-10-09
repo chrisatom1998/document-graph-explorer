@@ -311,7 +311,7 @@ export default function InsightsPanel() {
 
           {section(
             'orphans',
-            'Orphaned documents',
+            'Unlinked documents',
             insights.orphans.length,
             insights.orphans,
             insights.orphans.length === 0 ? (

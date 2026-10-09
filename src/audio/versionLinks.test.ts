@@ -93,3 +93,15 @@ describe('version links', () => {
     expect(buildVersionEdges([a, { ...b, id: 'c' }], 10_000).map(e => e.id)).toEqual(['a->c:version']);
   });
 });
+
+it('retains completed alignments across structured-cloned worker messages', () => {
+  const nodes: DocNode[] = ['cache-a', 'cache-b'].map((id, i) => ({id, kind:'document', title:`Artist - Shared title (${i ? 'Club Remix' : 'Original Mix'}).mp3`, fileType:'audio', topics:[], entities:[], keywords:[], wordCount:0, cluster:-1, degree:0, status:'ok',
+    audio:{version:2, analyzedSeconds:10, durationSeconds:10, instruments:[], notes:[], embedding:vector(1)}}));
+  const first = buildVersionEdges(nodes, 10_000);
+  expect(first).toHaveLength(1);
+  // No new alignment work is permitted, so this succeeds only via the cache.
+  expect(buildVersionEdges(structuredClone(nodes), 0)).toEqual(first);
+  const changed = structuredClone(nodes);
+  changed[0].audio!.embedding![0] += .1;
+  expect(buildVersionEdges(changed, 0)).toEqual([]);
+});

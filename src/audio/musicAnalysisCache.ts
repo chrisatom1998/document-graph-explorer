@@ -8,18 +8,43 @@ const PREFIX='music-analysis:v2:';
 // these copies serve tracks that were removed, renamed or moved and come back.
 export const MUSIC_CACHE_LIMIT=1000;
 const LIMIT=MUSIC_CACHE_LIMIT;
-export async function musicCacheKey(blob:Blob,mode:MusicAnalysisMode):Promise<string|undefined>{
+/** Scoped to an ingestion batch: reuse bytes and manifests across Quick/Full without
+ * hiding model updates from the next batch. Failed fetches are never retained. */
+export function createMusicCacheContext() {
+ const hashes = new WeakMap<Blob, Promise<string>>();
+ let manifests: Promise<unknown[]> | undefined;
+ return {
+  fingerprint(blob: Blob): Promise<string> {
+   let pending = hashes.get(blob);
+   if (!pending) {
+    pending = blob.arrayBuffer().then(bytes => crypto.subtle.digest('SHA-256', bytes))
+     .then(hash => Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join(''));
+    hashes.set(blob, pending);
+    void pending.catch(() => { if (hashes.get(blob) === pending) hashes.delete(blob); });
+   }
+   return pending;
+  },
+  manifests(): Promise<unknown[]> {
+   if (!manifests) {
+    const attempt = Promise.all(['music-model','jamendo-model','sound-model','tagger-model'].map(async directory => {
+     const response = await fetch(`${import.meta.env.BASE_URL}${directory}/manifest.json`, {cache:'no-cache', signal:AbortSignal.timeout(2000)});
+     if (!response.ok) throw new Error('Model manifest unavailable');
+     const manifest = await response.json();
+     if (!manifest.sha256 || typeof manifest.sha256 !== 'object' || Array.isArray(manifest.sha256) || !Object.entries(manifest.sha256).length
+      || !Object.entries(manifest.sha256).every(([name, hash]) => name.length > 0 && typeof hash === 'string' && /^[a-f0-9]{64}$/i.test(hash))) throw new Error('Model hashes unavailable');
+     return [directory, manifest.revision ?? '', Object.entries(manifest.sha256).sort(([a], [b]) => a.localeCompare(b))];
+    }));
+    manifests = attempt;
+    void attempt.catch(() => { if (manifests === attempt) manifests = undefined; });
+   }
+   return manifests;
+  },
+ };
+}
+export type MusicCacheContext = ReturnType<typeof createMusicCacheContext>;
+export async function musicCacheKey(blob:Blob, mode:MusicAnalysisMode, context = createMusicCacheContext()):Promise<string|undefined>{
  try {
-  const manifests=await Promise.all(['music-model','jamendo-model','sound-model','tagger-model'].map(async directory=>{
-   const response=await fetch(`${import.meta.env.BASE_URL}${directory}/manifest.json`,{cache:'no-cache',signal:AbortSignal.timeout(2000)});
-   if(!response.ok)throw new Error('Model manifest unavailable');
-   const manifest=await response.json();
-   if(!manifest.sha256 || typeof manifest.sha256!=='object'||Array.isArray(manifest.sha256)||!Object.entries(manifest.sha256).length
-    ||!Object.entries(manifest.sha256).every(([name,hash])=>typeof name==='string'&&name.length>0&&typeof hash==='string'&&/^[a-f0-9]{64}$/i.test(hash)))throw new Error('Model hashes unavailable');
-   return [directory,manifest.revision??'',Object.entries(manifest.sha256).sort(([a],[b])=>a.localeCompare(b))];
-  }));
-  const bytes=await blob.arrayBuffer();
-  const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+  const [hash, manifests] = await Promise.all([context.fingerprint(blob), context.manifests()]);
   return PREFIX+JSON.stringify([hash,mode,INSTRUMENT_ANALYSIS_REVISION,TEMPO_ANALYSIS_REVISION,KEY_ANALYSIS_REVISION,recognitionConfiguration(mode),manifests,fusionConfiguration(),blob.type]);
  }catch{return undefined;}
 }

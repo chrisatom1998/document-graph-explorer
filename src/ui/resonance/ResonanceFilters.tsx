@@ -9,7 +9,6 @@ import { nodeSoundTags } from '../../audio/soundFilterTags';
 import { soundLabelText } from '../../audio/djTags';
 import { openFilePicker } from '../../ingest/DropZone';
 import { openFolderPicker } from '../../ingest/folderPicker';
-import { openSampleAssistant } from '../../store/sampleAssistantStore';
 import { lazy, Suspense } from 'react';
 
 // The classic panel still owns cluster, connection-count, edge-weight and
@@ -28,10 +27,12 @@ const SIMILARITY: { kind: EdgeKind; label: string }[] = [
   { kind: 'similar', label: 'Sounds alike' },
   { kind: 'tempo', label: 'Tempo' },
   { kind: 'key', label: 'Key' },
+  { kind: 'version', label: 'Versions' },
+  { kind: 'genre', label: 'Same genre' },
   { kind: 'title', label: 'Shared title' },
   { kind: 'semantic', label: 'Similar meaning' },
   { kind: 'keyword', label: 'Keywords' },
-  { kind: 'entity', label: 'Entities' },
+  { kind: 'entity', label: 'Names and places' },
   { kind: 'reference', label: 'Links' },
 ];
 
@@ -109,18 +110,13 @@ export default function ResonanceFilters() {
       <button type="button" className="rs-collapse" aria-expanded={!collapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} onClick={() => setCollapsed(v => !v)}>
         <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2" /><path d="M6 2.5v11" /><path d={collapsed ? 'M9 6.5l1.8 1.5L9 9.5' : 'M11 6.5L9.2 8l1.8 1.5'} /></svg>
       </button>
-      <button type="button" className="rs-import" onClick={openFilePicker} title={collapsed ? 'Import clips' : undefined}>
+      <button type="button" className="rs-import" onClick={openFilePicker} title={collapsed ? 'Import' : undefined}>
         <span className="rs-import__plus" aria-hidden="true">+</span>
-        <span><strong>{audio || docs.length === 0 ? 'Import clips' : 'Import files'}</strong><small>Audio files, drag and drop, or browse</small></span>
+        <span><strong>Import</strong><small>{audio || docs.length === 0 ? 'Clips, folders, or drag and drop' : 'Files, folders, or drag and drop'}</small></span>
       </button>
-      <button type="button" className="rs-import rs-import--secondary" onClick={openFolderPicker} title={collapsed ? 'Import sounds' : undefined}>
+      <button type="button" className="rs-import rs-import--secondary rs-import--folder" onClick={openFolderPicker} title={collapsed ? 'Import a folder' : undefined}>
         <span className="rs-import__plus rs-import__icon" aria-hidden="true"><IconFolderPlus /></span>
-        <span><strong>Import sounds</strong><small>Pick a whole folder of samples</small></span>
-      </button>
-      <button type="button" className="rs-assistant" aria-haspopup="dialog" onClick={() => openSampleAssistant()} title={collapsed ? 'Sample assistant' : undefined}>
-        <span className="rs-assistant__icon" aria-hidden="true">♫</span>
-        <span className="rs-assistant__text"><strong>Sample assistant</strong><small>Search, tag and build crates</small></span>
-        <span className="rs-assistant__count" aria-label={`${audioCount} clips`}>{audioCount}</span>
+        <span><strong>Import a folder</strong></span>
       </button>
       {collapsed && (
         <button type="button" className="rs-rail-filters" aria-label={`Show filters${isFilterActive(filter) ? ' (filters on)' : ''}`} title="Filters" onClick={() => setCollapsed(false)}>
@@ -153,6 +149,7 @@ export default function ResonanceFilters() {
         )}
       </section>
 
+      {audio && <>
       <section className="rs-group rs-group--rule">
         <h3>Tempo (BPM)</h3>
         <div className="rs-range" style={{ '--lo': `${((range[0] - bpmMin) / Math.max(1, bpmMax - bpmMin)) * 100}%`, '--hi': `${((range[1] - bpmMin) / Math.max(1, bpmMax - bpmMin)) * 100}%` } as React.CSSProperties}>
@@ -172,9 +169,9 @@ export default function ResonanceFilters() {
       </section>
 
       <section className="rs-group">
-        <h3>Genre / Style</h3>
-        <select className="rs-select" aria-label="Genre or style" value={filter.style ?? ''} disabled={!styles.length} onChange={e => setFilter({ style: e.target.value || null })}>
-          <option value="">Any style</option>
+        <h3>Genre</h3>
+        <select className="rs-select" aria-label="Genre" value={filter.style ?? ''} disabled={!styles.length} onChange={e => setFilter({ style: e.target.value || null })}>
+          <option value="">Any genre</option>
           {styles.map(s => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}
         </select>
       </section>
@@ -200,6 +197,7 @@ export default function ResonanceFilters() {
           </button>
         )}
       </section>
+      </>}
 
       <section className="rs-group">
         <h3>File type</h3>

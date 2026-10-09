@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { correctDjTags } from './sampleAssistant';
-import { advancedFilters, closeDetails, fitAll, openTab, startIn3D } from './resonance';
+import { advancedFilters, closeDetails, fitAll, openTab, similarityFilter, startIn3D } from './resonance';
 
 const base = { kind:'document',fileType:'audio',topics:[],entities:[],keywords:[],wordCount:0,degree:0,cluster:0,status:'ok' };
 const analysis = {version:2,analyzedSeconds:8,durationSeconds:8,instruments:[],notes:[]};
@@ -35,7 +35,21 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
   await page.getByRole('button',{name:'Search documents'}).click();
   await page.getByRole('option',{name:/Alpha piano/}).click();
   await expect(page.locator('.audio-preview')).toBeVisible();
-  await page.getByRole('button',{name:'Connections',exact:true}).click();
+ };
+ // Clips have no Connections disclosure: the inspector explains one connected clip at a time,
+ // with each row's full evidence in its hover text. Walk every neighbour and gather it.
+ const connectionEvidence=async()=>{
+  const previous=page.getByRole('button',{name:'Previous connected clip',exact:true});
+  const next=page.getByRole('button',{name:'Next connected clip',exact:true});
+  while(await previous.count() && !(await previous.isDisabled()))await previous.click();
+  const titles:string[]=[];
+  for(;;){
+   await expect(page.locator('.rs-shared li').first()).toBeVisible();
+   titles.push(...await page.locator('.rs-shared li').evaluateAll(items=>items.map(li=>li.getAttribute('title')??'')));
+   if(!(await next.count()) || await next.isDisabled())break;
+   await next.click();
+  }
+  return titles.join('\n');
  };
  const exportGraph=async()=>{
   await openTab(page,'Export');
@@ -62,19 +76,19 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  await page.mouse.move(500,300);await page.mouse.down();await page.mouse.move(570,350,{steps:10});await page.mouse.up();await page.mouse.wheel(0,-120);
  await fitAll(page);
  await page.screenshot({path:testInfo.outputPath('audio-graph-desktop.png')});
+ // Link kinds are a sidebar checkbox now; the embedded Advanced panel no longer repeats them.
+ await similarityFilter(page,'Sound properties');
+ await similarityFilter(page,'Sound properties',false);
  await advancedFilters(page);
- await page.getByRole('button',{name:'More filters',exact:true}).click();
- await page.getByRole('button',{name:'sound properties',exact:true}).click();
- await expect(page.getByRole('button',{name:'sound properties',exact:true})).toHaveAttribute('aria-pressed','true');
- await page.getByRole('button',{name:'sound properties',exact:true}).click();
+ await expect(page.getByRole('button',{name:'More filters',exact:true})).toBeVisible();
  await advancedFilters(page,false);
  await openAlpha();
- await expect(page.locator('.connection-row__evidence')).toContainText(['Shared instruments: piano']);
- const showAll=page.getByRole('button',{name:/Show all \d+ connections/});if(await showAll.isVisible())await showAll.click();
- await expect(page.locator('.side-panel')).toContainText('Half/double-time tempo');
- await expect(page.locator('.side-panel')).toContainText('Shared sound properties');
+ const evidence=await connectionEvidence();
+ expect(evidence).toContain('Shared instruments: piano');
+ expect(evidence).toContain('Half/double-time tempo');
+ expect(evidence).toContain('Shared sound properties');
  await dismissToasts();
- await page.locator('.connection-row').filter({hasText:'Shared sound properties'}).scrollIntoViewIfNeeded();
+ await page.locator('.rs-shared').scrollIntoViewIfNeeded();
  await page.screenshot({path:testInfo.outputPath('audio-match-reasons-desktop.png')});
  const exported=await exportGraph(); const graph=JSON.parse(exported);
  expect(graph.edges.some((e:{kind:string})=>e.kind==='sound')).toBe(true);
@@ -82,7 +96,7 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  expect(graph.edges.some((e:{source:string;target:string})=>[e.source,e.target].some(id=>['unknown','rejected'].includes(id)))).toBe(false);
  await page.setViewportSize({width:390,height:844});
  await dismissToasts();
- await page.locator('.connection-row').filter({hasText:'Shared sound properties'}).scrollIntoViewIfNeeded();
+ await page.locator('.rs-shared').scrollIntoViewIfNeeded();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
  await page.screenshot({path:testInfo.outputPath('audio-match-reasons-mobile.png')});
  await page.setViewportSize({width:1440,height:1000});

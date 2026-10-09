@@ -298,6 +298,7 @@ export interface LexicalDocInput {
 }
 
 export type AggRequest =
+  | { requestId: number; type: 'music'; nodes: DocNode[]; edges: Edge[] }
   | {
       requestId: number;
       type: 'lexical';
@@ -333,6 +334,7 @@ export type AggRequest =
     };
 
 export type AggResponse =
+  | { requestId: number; type: 'music:done'; edges: Edge[]; pending: boolean }
   | {
       requestId: number;
       type: 'lexical:done';
