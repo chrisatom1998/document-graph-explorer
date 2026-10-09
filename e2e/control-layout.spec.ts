@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { openTab } from './resonance';
 
-test('file browsing is visible and mobile guidance clears the controls', async ({ page }) => {
+for (const includeAudio of [false, true]) test(`file browsing is visible and mobile guidance clears the controls (${includeAudio ? 'mixed library' : 'documents only'})`, async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/');
   await page.getByRole('button', { name: 'Import a graph', exact: true }).click();
-  await page.locator('input[type="file"][accept*=".json"]').evaluate(element => {
+  await page.locator('input[type="file"][accept*=".json"]').evaluate((element, withAudio) => {
     const graph = {
       version: 1, generator: 'knowledge-nebula', createdAt: '2026-10-03T00:00:00.000Z',
       includeEmbeddings: false,
@@ -13,11 +13,12 @@ test('file browsing is visible and mobile guidance clears the controls', async (
         topics: [], entities: [], keywords: [], wordCount: 1, cluster: 0, degree: 0, status: 'ok' }],
       edges: [],
     };
+    if (withAudio) graph.nodes.push({ ...graph.nodes[0], id: 'layout-audio', title: 'Layout sound', fileType: 'audio', wordCount: 0 });
     const transfer = new DataTransfer();
     transfer.items.add(new File([JSON.stringify(graph)], 'layout.json', { type: 'application/json' }));
     Object.defineProperty(element, 'files', { configurable: true, value: transfer.files });
     element.dispatchEvent(new Event('change', { bubbles: true }));
-  });
+  }, includeAudio);
   // The library list lives in its own view tab now, at both sizes.
   const library = page.getByRole('button', { name: 'Library', exact: true });
   await expect(library).toBeInViewport();
@@ -38,15 +39,21 @@ test('file browsing is visible and mobile guidance clears the controls', async (
   expect(box!.x + box!.width).toBeLessThanOrEqual(390);
   expect(box!.y + box!.height).toBeLessThanOrEqual(744);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-  // Chat and the sample assistant both stay reachable and must not overlap.
+  // The audio-only assistant is absent for documents; with audio, both tools
+  // stay reachable on mobile and must not overlap.
   const chat = page.getByRole('button', { name: 'Ask about your library', exact: true });
   const assistant = page.getByRole('button', { name: 'Sample assistant', exact: true });
-  await expect(assistant).toBeVisible();
-  const assistantBox = await assistant.boundingBox();
-  const chatBox = await chat.boundingBox();
-  const apart = chatBox!.x + chatBox!.width <= assistantBox!.x || assistantBox!.x + assistantBox!.width <= chatBox!.x
-    || chatBox!.y + chatBox!.height <= assistantBox!.y || assistantBox!.y + assistantBox!.height <= chatBox!.y;
-  expect(apart).toBe(true);
+  await expect(chat).toBeInViewport();
+  if (includeAudio) {
+    await expect(assistant).toBeInViewport();
+    const assistantBox = await assistant.boundingBox();
+    const chatBox = await chat.boundingBox();
+    const apart = chatBox!.x + chatBox!.width <= assistantBox!.x || assistantBox!.x + assistantBox!.width <= chatBox!.x
+      || chatBox!.y + chatBox!.height <= assistantBox!.y || assistantBox!.y + assistantBox!.height <= chatBox!.y;
+    expect(apart).toBe(true);
+  } else {
+    await expect(assistant).toHaveCount(0);
+  }
   await chat.click();
   await expect(page.getByRole('button', { name: 'Close chat', exact: true })).toBeVisible();
 });
