@@ -10,8 +10,7 @@ import { namedRelationship } from '../audio/relationships';
 import MusicFeatures from './MusicFeatures';
 import { mimeForFilename } from '../util/fileMime';
 
-/** `compact` (the Resonance inspector): a one-row transport instead of the waveform card, since the clip card above already has one. */
-export default function AudioPreview({ node, compact = false }: { node: DocNode; compact?: boolean }) {
+export default function AudioPreview({ node }: { node: DocNode }) {
   const nodes = useGraphStore((s) => s.nodes);
   const edges = useGraphStore((s) => s.edges);
   const phase = useGraphStore((s) => s.phase);
@@ -109,7 +108,7 @@ export default function AudioPreview({ node, compact = false }: { node: DocNode;
       onTimeUpdate={event => setCurrentTime(event.currentTarget.currentTime)}
       onLoadedMetadata={event => { setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0); event.currentTarget.volume = volume; }}
       onError={() => { setPlaying(false); setNeedsConversion(true); setMessage('This format needs conversion. Choose Prepare playback.'); }} />}
-    <AudioControls state={controls} dock={compact} />
+    <AudioControls state={controls} />
     {transport && createPortal(<div className="audio-transport"><div className="audio-transport__identity"><strong>{node.title}</strong><small>{node.path || 'Selected sample'}</small></div><AudioControls state={controls} dock /></div>, transport)}
     {message && <p role="status">{message}</p>}
     {saveFailed && <button type="button" disabled={!idle} onClick={() => void persist()}>Retry saving relationships</button>}

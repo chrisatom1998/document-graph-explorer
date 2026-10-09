@@ -267,7 +267,6 @@ export default function SidePanel({ inline = false, onClose }: { inline?: boolea
               readerHighlight={readerHighlight}
               readerLabel={readerLabel}
               codeLang={codeLang}
-              compact={inline}
             />
           )}
 
