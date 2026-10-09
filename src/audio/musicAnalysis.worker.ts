@@ -58,10 +58,13 @@ function getClassifier() {
  * falls back to q8 WASM for the rest of the session. Phones and data saver skip it (see gpuModelPolicy.ts). */
 let gpuClassifier: ReturnType<typeof getClassifier> | null = null;
 let gpuUnavailable = false;
+let touchTablet = false;
 function getGpuClassifier() {
   return gpuClassifier ??= (async () => {
     const gpu = (navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown> } }).gpu;
-    const blocked = gpuModelBlockedReason(navigator as Navigator & GpuModelNavigator);
+    // Navigator fields are prototype getters, so read them explicitly rather than spreading.
+    const nav = navigator as Navigator & GpuModelNavigator;
+    const blocked = gpuModelBlockedReason({ deviceMemory: nav.deviceMemory, connection: nav.connection, userAgentData: nav.userAgentData, userAgent: nav.userAgent, touchTablet });
     if (blocked) throw new Error(blocked);
     if (!gpu || !await gpu.requestAdapter().catch(() => null)) throw new Error('No WebGPU adapter');
     const { AutoProcessor, AutoModelForAudioClassification } = await loadTransformers();
@@ -156,6 +159,8 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
   const { id } = data;
   // The main thread decided this browser needs the single-thread runtime (see THREADED_RUNTIME_STALLED).
   if ((data as { singleThread?: boolean }).singleThread) switchToSingleThreadRuntime(false);
+  // iPads send a Mac user agent; only the main thread can tell them apart (gpuModelPolicy.ts).
+  if ((data as { touchTablet?: boolean }).touchTablet) touchTablet = true;
   if (data.kind === 'warm') {
     try { await warmFamily(data.family); self.postMessage({ id, warmed: true }); }
     catch (error) { self.postMessage({ id, error: error instanceof Error ? error.message : String(error) }); }

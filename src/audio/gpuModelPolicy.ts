@@ -10,6 +10,8 @@ export interface GpuModelNavigator {
   connection?: { saveData?: boolean };
   userAgentData?: { mobile?: boolean };
   userAgent?: string;
+  /** Set by the main thread (see isTouchMac): workers cannot read maxTouchPoints. */
+  touchTablet?: boolean;
 }
 
 const MOBILE_UA = /Android|iPhone|iPod|Mobile/i;
@@ -17,6 +19,14 @@ const MOBILE_UA = /Android|iPhone|iPod|Mobile/i;
 export function gpuModelBlockedReason(nav: GpuModelNavigator): string | null {
   if (nav.deviceMemory !== undefined && nav.deviceMemory < 4) return 'Too little memory for a second AST model';
   if (nav.connection?.saveData === true) return 'Data saver is on';
-  if (nav.userAgentData?.mobile === true || MOBILE_UA.test(nav.userAgent ?? '')) return 'Phone or tablet: skipping the large graphics-card model';
+  if (nav.touchTablet === true || nav.userAgentData?.mobile === true || MOBILE_UA.test(nav.userAgent ?? '')) return 'Phone or tablet: skipping the large graphics-card model';
   return null;
+}
+
+/**
+ * iPadOS Safari sends a Mac user agent; a Mac with a touch screen is an iPad.
+ * Main thread only: workers have no maxTouchPoints.
+ */
+export function isTouchMac(nav: { userAgent?: string; maxTouchPoints?: number } | undefined = globalThis.navigator): boolean {
+  return !!nav && /Macintosh/.test(nav.userAgent ?? '') && (nav.maxTouchPoints ?? 0) > 1;
 }
