@@ -35,6 +35,9 @@ export default function AudioPreview({ node }: { node: DocNode }) {
   const peaks = useWaveform(original?.blob ?? null);
   const transport = document.getElementById('workspace-transport');
   const idle = phase === 'ready' && !saving;
+  // Playback/action feedback comes first, but must not hide persistent analysis
+  // failures: those can leave the imported node's status as 'ok'.
+  const statusMessages = [...new Set([message, node.warning].filter(Boolean))];
   const authored = edges.filter((e) => e.authored && (e.source === node.id || e.target === node.id));
   useEffect(() => {
     active.current = true;
@@ -111,7 +114,7 @@ export default function AudioPreview({ node }: { node: DocNode }) {
       onError={() => { setPlaying(false); setNeedsConversion(true); setMessage('This format needs conversion. Choose Prepare playback.'); }} />}
     <AudioControls state={controls} />
     {transport && createPortal(<div className="audio-transport"><div className="audio-transport__identity"><strong>{node.title}</strong><small>{node.path || 'Selected sample'}</small></div><AudioControls state={controls} dock /></div>, transport)}
-    {message && <p role="status">{message}</p>}
+    {statusMessages.length > 0 && <p role="status">{statusMessages.join(' ')}</p>}
     {saveFailed && <button type="button" disabled={!idle} onClick={() => void persist()}>Retry saving relationships</button>}
     {original && needsConversion && <button type="button" className="audio-preview__prepare" disabled={converting} onClick={() => void convert()}>{converting ? 'Preparing…' : 'Prepare playback'}</button>}
     <MusicFeatures node={node} onMessage={setMessage} onSeek={url ? (seconds) => {

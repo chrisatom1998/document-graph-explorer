@@ -8,7 +8,7 @@
 
 import type { DocNode, Edge } from '../model/types';
 import { matchesKeyName, resolveTempoKey } from '../audio/resolvedTempoKey';
-import { styleTags } from '../audio/styleTags';
+import { matchesStyleFilter } from '../audio/styleTags';
 import { nodeSoundTags } from '../audio/soundFilterTags';
 import { buildAdjacency } from '../store/graphStore';
 import type { GraphFilter } from '../store/uiStore';
@@ -54,7 +54,7 @@ function audioOk(node: DocNode, filter: GraphFilter): boolean {
     }
     if (filter.musicKey !== null && !matchesKeyName(key, filter.musicKey)) return false;
   }
-  if (filter.style !== null && !styleTags(audio).includes(filter.style)) return false;
+  if (filter.style !== null && !matchesStyleFilter(audio, filter.style)) return false;
   // Any of the picked sounds is enough: "voice or synth".
   if (sounds !== null) {
     const tags = nodeSoundTags(node);

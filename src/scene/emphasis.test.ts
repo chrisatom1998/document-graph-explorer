@@ -338,3 +338,18 @@ describe('sounds filter', () => {
     expect(nodesMatchingFilter([rejected], [], { ...NO_FILTER, sounds: ['voice'] })).toEqual(new Set());
   });
 });
+
+describe('saved character-style compatibility', () => {
+  it('keeps the old character facet AND the existing Sounds facet', () => {
+    const clip = (id: string, character: string[], sources: string[]) => mkNode({
+      id, fileType: 'audio', audio: {
+        version: 2, durationSeconds: 8, analyzedSeconds: 8, instruments: [], notes: [],
+        confirmedInstruments: sources,
+        confirmedDjTags: { source: [], production: [], character },
+      },
+    });
+    const nodes = [clip('both', ['warm'], ['voice']), clip('character-only', ['warm'], ['drums']), clip('sound-only', ['bright'], ['voice'])];
+    expect(nodesMatchingFilter(nodes, [], { ...NO_FILTER, style: 'warm', sounds: ['voice'] }))
+      .toEqual(new Set(['both']));
+  });
+});

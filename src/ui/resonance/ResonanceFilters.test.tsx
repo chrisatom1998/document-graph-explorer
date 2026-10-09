@@ -149,3 +149,38 @@ describe('Sounds filter', () => {
     await screen.findAllByText(/match/);
   });
 });
+
+describe('restored and orphaned audio filters', () => {
+  beforeEach(() => { useGraphStore.getState().reset(); useUiStore.setState({ filter: { ...DEFAULT_FILTER } }); localStorage.clear(); });
+  afterEach(() => { cleanup(); useGraphStore.getState().reset(); useUiStore.setState({ filter: { ...DEFAULT_FILTER } }); });
+
+  it('shows a restored character filter even when it is not a genre option', async () => {
+    useGraphStore.getState().addNodes([track('Warm clip', 'clip.wav', { confirmedDjTags: { source: [], production: [], character: ['warm'] } })]);
+    useUiStore.getState().setFilter({ style: 'warm' });
+    render(<ResonanceFilters />);
+    const genre = screen.getByRole('combobox', { name: 'Genre' });
+    expect(genre).toHaveValue('warm');
+    expect(within(genre).getByRole('option', { name: 'warm (saved filter)' })).toBeInTheDocument();
+    expect(genre).toBeEnabled();
+    fireEvent.change(genre, { target: { value: '' } });
+    expect(useUiStore.getState().filter.style).toBeNull();
+    await screen.findByText('1 document matches');
+  });
+
+  it('keeps active audio facets visible after the last clip disappears and clears only them', async () => {
+    useGraphStore.getState().addNodes([track('Clip', '128bpm_Dm.wav')]);
+    useUiStore.getState().setFilter({ bpmRange: [120, 130], musicKey: 'D minor', style: 'techno', sounds: ['voice'], fileTypes: ['md'] });
+    render(<ResonanceFilters />);
+    act(() => {
+      useGraphStore.getState().reset();
+      useGraphStore.getState().addNodes([{ ...track('Document', 'notes.md'), fileType: 'md', audio: undefined }]);
+    });
+    expect(screen.getByRole('combobox', { name: 'Key' })).toHaveValue('D minor');
+    expect(screen.getByRole('combobox', { name: 'Genre' })).toHaveValue('techno');
+    expect(screen.getByRole('checkbox', { name: /voice/ })).toBeChecked();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear audio filters' }));
+    expect(useUiStore.getState().filter).toEqual({ ...DEFAULT_FILTER, fileTypes: ['md'] });
+    expect(screen.queryByRole('combobox', { name: 'Key' })).not.toBeInTheDocument();
+    await screen.findByText('1 document matches');
+  });
+});

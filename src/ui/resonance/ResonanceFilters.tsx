@@ -60,6 +60,10 @@ export default function ResonanceFilters() {
   const docs = useMemo(() => nodes.filter(n => n.kind === 'document'), [nodes]);
   const audioCount = docs.filter(n => n.fileType === 'audio').length;
   const audio = audioCount > 0;
+  // A saved filter, or removing the last clip, can leave an audio facet active
+  // in a document-only library. Always leave its value and a way to clear it visible.
+  const audioFilterActive = filter.bpmRange !== null || filter.musicKey !== null
+    || filter.style !== null || !!filter.sounds?.length;
   const kindsPresent = useMemo(() => new Set(edges.map(e => e.kind)), [edges]);
   const similarity = SIMILARITY.filter(s => kindsPresent.has(s.kind));
   const tempoKeys = useMemo(() => docs.filter(n => n.fileType === 'audio').map(resolveTempoKey), [docs]);
@@ -147,7 +151,8 @@ export default function ResonanceFilters() {
         )}
       </section>
 
-      {audio && <>
+      {(audio || audioFilterActive) && <>
+      {audioFilterActive && <button type="button" className="rs-show-more" onClick={() => setFilter({ bpmRange: null, musicKey: null, style: null, sounds: null })}>Clear audio filters</button>}
       <section className="rs-group rs-group--rule">
         <h3>Tempo (BPM)</h3>
         <div className="rs-range" style={{ '--lo': `${((range[0] - bpmMin) / Math.max(1, bpmMax - bpmMin)) * 100}%`, '--hi': `${((range[1] - bpmMin) / Math.max(1, bpmMax - bpmMin)) * 100}%` } as React.CSSProperties}>
@@ -160,16 +165,18 @@ export default function ResonanceFilters() {
 
       <section className="rs-group">
         <h3>Key</h3>
-        <select className="rs-select" aria-label="Key" value={keyValue} disabled={!keys.length} onChange={e => setFilter({ musicKey: e.target.value || null })}>
+        <select className="rs-select" aria-label="Key" value={keyValue} disabled={!keys.length && selectedKey === null} onChange={e => setFilter({ musicKey: e.target.value || null })}>
           <option value="">Any key</option>
+          {keyValue && !keys.includes(keyValue) && <option value={keyValue}>{keyValue} (saved filter)</option>}
           {keys.map(k => <option key={k} value={k}>{k}</option>)}
         </select>
       </section>
 
       <section className="rs-group">
         <h3>Genre</h3>
-        <select className="rs-select" aria-label="Genre" value={filter.style ?? ''} disabled={!styles.length} onChange={e => setFilter({ style: e.target.value || null })}>
+        <select className="rs-select" aria-label="Genre" value={filter.style ?? ''} disabled={!styles.length && filter.style === null} onChange={e => setFilter({ style: e.target.value || null })}>
           <option value="">Any genre</option>
+          {filter.style && !styles.includes(filter.style) && <option value={filter.style}>{filter.style.replaceAll('_', ' ')} (saved filter)</option>}
           {styles.map(s => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}
         </select>
       </section>

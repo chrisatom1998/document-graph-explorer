@@ -126,3 +126,10 @@ describe('computeLocalClusterNames', () => {
     expect(computeLocalClusterNames([])).toEqual({});
   });
 });
+
+describe('meaningful short cluster keywords', () => {
+  it.each(['api', 'sql', 'ai', 'ux', 'war', 'art'])('does not discard dominant %s when a longer keyword exists', keyword => {
+    const nodes = [mkNode('a', 0, [keyword, 'reference']), mkNode('b', 0, [keyword]), mkNode('c', 0, [keyword])];
+    expect(computeLocalClusterNames(nodes)[0]).toBe(`${keyword[0].toUpperCase()}${keyword.slice(1)} & Reference`);
+  });
+});

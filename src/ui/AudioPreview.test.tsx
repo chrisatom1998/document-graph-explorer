@@ -26,6 +26,19 @@ function connect() {
   fireEvent.change(screen.getByLabelText('Relationship'), { target: { value: 'Same rhythm' } });
   fireEvent.click(screen.getByRole('button', { name: 'Connect tracks' }));
 }
+describe('audio warnings', () => {
+  it('retains analysis retry warnings for otherwise healthy nodes alongside playback status', async () => {
+    const warning = 'Audio analysis failed. Reanalyze this track to retry.';
+    const view = render(<AudioPreview node={{ ...node('first'), warning }} />);
+    await screen.findByText(/Audio is not saved here/);
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent(warning);
+    expect(screen.getByRole('status').textContent).toMatch(/^Audio is not saved here.*Audio analysis failed/);
+    view.rerender(<AudioPreview node={node('first')} />);
+    expect(screen.getByRole('status')).not.toHaveTextContent(warning);
+  });
+});
+
 describe('audio relationships', () => {
   it('adds a labeled graph edge and removes it again', async () => {
     render(<AudioPreview node={node('first')} />);
@@ -79,6 +92,17 @@ describe('preparing playback', () => {
     vi.mocked(convertAudio).mockResolvedValue(new Blob(['converted audio']));
   });
   afterEach(() => { vi.mocked(getOriginal).mockResolvedValue(undefined); vi.unstubAllGlobals(); });
+
+  it('shows warnings after loading succeeds and retains them after playback conversion', async () => {
+    const warning = 'Analysis is incomplete. Reanalyze to finish.';
+    render(<AudioPreview node={{ ...node('first'), warning }} />);
+    await screen.findByRole('button', { name: 'Prepare playback' });
+    expect(screen.getByRole('status')).toHaveTextContent(warning);
+    fireEvent.click(screen.getByRole('button', { name: 'Prepare playback' }));
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Ready to play.'));
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent(warning);
+  });
 
   it('resets transport state when conversion replaces a playing clip', async () => {
     const view = render(<AudioPreview node={node('first')} />);

@@ -179,3 +179,15 @@ it('updates profile confirmations and correction defaults on the latest review w
  expect(screen.getByRole('region',{name:'Sound identification'})).toHaveTextContent(/distorted — Character · confirmed by you/);
  expect(updated.soundProfile.djTags[0].score).toBe(.8);expect(updated.soundReviews).toHaveLength(2);
 });
+
+
+it('keeps analysis limitations and retry details in Technical details', () => {
+  const notes = ['Only the first 30 seconds could be analyzed.', 'Instrument model failed to load. Reanalyze to retry.'];
+  render(<MusicFeatures node={{ ...node, audio: { ...node.audio!, notes } }} />);
+  const details = screen.getByText('Technical details').closest('details')!;
+  for (const note of notes) {
+    expect(within(details).getByText(note)).not.toBeVisible();
+  }
+  fireEvent.click(screen.getByText('Technical details'));
+  for (const note of notes) expect(within(details).getByText(note)).toBeVisible();
+});

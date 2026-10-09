@@ -109,6 +109,7 @@ export default function MusicFeatures({ node, onSeek, onMessage }: { node: DocNo
       <MusicNeighbours node={node} nodes={nodes} nodeIndex={nodeIndex} edges={edges} />
       <details className="music-analysis-details">
         <summary>Technical details</summary>
+        {analysis.notes.length > 0 && <ul aria-label="Analysis notes">{analysis.notes.map((note, index) => <li key={index}>{note}</li>)}</ul>}
         <MainSoundAttributes audio={analysis} node={node} />
         {recognitionProps && <RecognitionDiagnostics {...recognitionProps} />}
         {!!analysis.styles?.length && <p>Closest music styles: {analysis.styles.slice(0, 5).map(s => `${styleName(s.label)} ${Math.round(s.score * 100)}%`).join(', ')}.</p>}
