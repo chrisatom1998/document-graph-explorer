@@ -23,7 +23,7 @@ const workerCapacity = () => musicWorkerCapacity(
 );
 let workerFingerprint: string | undefined;
 // Two decoders can prepare audio. Up to four family sessions stay warm.
-const decoderQueue = new MusicTaskQueue(2);
+const decoderQueue = new MusicTaskQueue(2, () => concurrentModels());
 const modelQueue = new MusicTaskQueue(1);
 // With a retained worker per family and cores to spare, the families run side by side:
 // each worker still takes one request at a time, so per-model memory stays bounded.
@@ -174,7 +174,7 @@ function runRequest<T>(message: Record<string, unknown>, transfer: Transferable[
   });
 }
 
-/** Preview the folder first, then run deeper checks with bounded decoding and serialized inference. */
+/** Preview the folder while capable hosts pipeline deeper checks through retained family workers. */
 export function analyzeMusic(blob: Blob, name: string, options: Options = {}): Promise<MusicAnalysis> {
   const mode = options.mode ?? 'fast';
   const context = options.cacheContext ?? createMusicCacheContext();
