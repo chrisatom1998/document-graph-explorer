@@ -9,7 +9,6 @@ import jamendo from '../../public/jamendo-model/manifest.json';
 import { EFFECT_EVENT_LABELS } from './soundReviewPolicy';
 import { DJ_LABELS } from './djTags';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
-import { supportsFusionInput } from './fusionRelease';
 import { CHARACTER_LABELS, ROLE_LABELS, VOCAL_LABELS } from './soundProfile';
 import { canonicalReviewLabel, sharedSoundReviewIdentity } from './soundReviewIdentity';
 export type Interval = { start: number; end: number };
@@ -72,15 +71,12 @@ export function familyOf(label: string): string {
  * (analyzeDecodedMusic eventPass): a new file re-runs both. Fast long analyses never use them and stay current. */
 const oneShotIdentity = `one-shot-${((clap.sha256 as Record<string, string>)['short-clip.json'] ?? 'none').slice(0, 12)}-prompts-${clap.sha256['prompts.json'].slice(0, 12)}`;
 export const recognitionConfiguration = (mode: 'fast' | 'full', durationSeconds?: number) => `timeline-v1:${mode}:decoder-mono-v3-short-pcm:${musicRuntimeIdentity()}:labels-v2:voice-evidence-v1:dj-catalog-v2:effect-routing-v1:short-unsupported-completion-v1:audio-mime-v1:pinned-models-required-v1${durationSeconds !== undefined && durationSeconds <= SHORT_CLIP_MAX_SECONDS ? `:${oneShotIdentity}` : mode === 'full' && durationSeconds !== undefined ? `:event-windows-v1:${oneShotIdentity}` : ''}:uncalibrated`;
-/** AST may run full-precision on the graphics card only where no validated scorer reads its scores: the trained
- * source classifier was qualified on q8 WASM AST for full analyses past 2.048 s (see fusionRelease). */
-export const astGpuAllowed = (duration: number, mode: 'fast' | 'full') => !supportsFusionInput(duration, mode);
 export function createRecognition(duration: number, mode: 'fast' | 'full', audioFingerprint?: string): Recognition {
   // Checksum prefixes keep the growing Jamendo asset list inside the 512-character ledger bound.
   const versions = [ast.revision, Object.values(jamendo.sha256).map(hash => hash.slice(0, 16)).join(':'), clap.revision, `${TEMPO_CNN_WEIGHTS}:essentia-0.1.3-tempo-1`, `${KEY_CNN_WEIGHTS}:essentia-0.1.3-key-4`];
   return { schemaVersion:1, runId:crypto.randomUUID(), audioFingerprint, configurationHash:recognitionConfiguration(mode,duration),
     startedAt:new Date().toISOString(),status:'running',mode,calibration:'unvalidated',evidence:[],observations:[],
-    jobs:MODEL_IDS.map((modelId,i)=>({modelId,weightsVersion:versions[i],preprocessingVersion:'decoder-mono-v3-short-pcm:'+(['ast','jamendo','clap'].includes(modelId)?musicRuntimeIdentity(modelId)+':':'')+(['ast','jamendo'].includes(modelId)?16000:modelId==='clap'?48000:44100)+':'+(modelId==='ast'?ast.sha256['preprocessor_config.json']+(astGpuAllowed(duration,mode)?':webgpu-fp32-allowed':''):modelId==='clap'?clap.sha256['preprocessor_config.json']:modelId==='tonal'?`features-v1:${KEY_CNN_FEATURES}`:'features-v1'),
+    jobs:MODEL_IDS.map((modelId,i)=>({modelId,weightsVersion:versions[i],preprocessingVersion:'decoder-mono-v3-short-pcm:'+(['ast','jamendo','clap'].includes(modelId)?musicRuntimeIdentity(modelId)+':':'')+(['ast','jamendo'].includes(modelId)?16000:modelId==='clap'?48000:44100)+':'+(modelId==='ast'?ast.sha256['preprocessor_config.json']+':webgpu-fp32-allowed':modelId==='clap'?clap.sha256['preprocessor_config.json']:modelId==='tonal'?`features-v1:${KEY_CNN_FEATURES}`:'features-v1'),
       ...(modelId==='clap'?{promptVersion:clap.sha256['prompts.json']}:{}),status:'pending',planned:[],attempted:[],successful:[],analyzedSeconds:0,gaps:duration>0?[{start:0,end:duration}]:[]})) };
 }
 /** A threaded-runtime stall switches this browser to one inference thread mid-run. Stamp the finished ledger
