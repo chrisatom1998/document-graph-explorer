@@ -54,9 +54,11 @@ export default function EmptyState() {
   };
 
   return (
-    <div className="empty-state-layer">
+    // A labelled section keeps the card's <header> from becoming a second
+    // page banner and gives the welcome text a landmark.
+    <section className="empty-state-layer" aria-label="Welcome">
       <HeroEmptyState className="empty-state__card glass-panel">
-        <aside className="empty-state__visual" aria-label="Local-first knowledge mapping">
+        <div className="empty-state__visual">
           <div className="empty-state__hero">
             <Suspense fallback={<ConstellationSvg />}><HeroConstellation /></Suspense>
           </div>
@@ -70,7 +72,7 @@ export default function EmptyState() {
           <ul className="empty-state__trust-list" aria-label="Privacy and access">
             <li><span aria-hidden="true" />Everything runs in this browser. No account, no upload.</li>
           </ul>
-        </aside>
+        </div>
         <div className="empty-state__content">
           <header className="empty-state__header">
             <Chip className="empty-state__eyebrow" size="sm" variant="secondary">
@@ -142,6 +144,6 @@ export default function EmptyState() {
         </div>
 
       </HeroEmptyState>
-    </div>
+    </section>
   );
 }
