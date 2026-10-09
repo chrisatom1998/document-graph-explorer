@@ -14,6 +14,8 @@ import SidePanelAbout from './SidePanelAbout';
 import SidePanelConnections from './SidePanelConnections';
 import SidePanelHeader from './SidePanelHeader';
 import SidePanelReader from './SidePanelReader';
+import NotesTagsSection from './NotesTagsSection';
+import { annotationKey } from '../store/annotationStore';
 
 function Disclose({
   label,
@@ -168,9 +170,6 @@ export default function SidePanel({ inline = false, onClose }: { inline?: boolea
     return out;
   }, [node, nodes]);
 
-  // Audio nodes often carry several links (tempo, key, sound) to the same track; count tracks too.
-  const linkedTracks = useMemo(() => new Set(connections.filter((row) => row.neighbor?.fileType === 'audio').map((row) => row.neighborId)).size, [connections]);
-
   // Gates the Ask-AI section below; hydrates an evicted body on demand.
   const { text: fullText } = useDocText(node?.kind === 'document' ? node.id : undefined);
 
@@ -184,6 +183,9 @@ export default function SidePanel({ inline = false, onClose }: { inline?: boolea
   const readerLabel = codeLang?.label ?? fileTypeLabel(node);
   const isDocument = node.kind === 'document';
   const isTopic = node.kind === 'topic';
+  // Clips keep the track panel only: the inspector's clip card already carries identity, and
+  // Mix with and Versions cover connections. Document chrome (About, Connections) is for text.
+  const isAudio = node.fileType === 'audio';
   const dialogLabel = isTopic
     ? `${node.title} (topic hub, ${node.degree} document${node.degree === 1 ? '' : 's'})`
     : codeLang
@@ -203,54 +205,60 @@ export default function SidePanel({ inline = false, onClose }: { inline?: boolea
           closeButtonRef={closeButtonRef}
         />
         <div className="side-panel__scroll">
-          <div className="side-panel__identity">
-            <div className="side-panel__badges">
-              <span className="chip">{typeChip}</span>
-              <span className="chip">
-                <span
-                  className="chip-dot"
-                  style={{ background: clusterColor }}
-                  aria-hidden="true"
-                />
-                {clusterLabel}
-              </span>
-              {node.status !== 'ok' && (
-                <span className="chip side-panel__badge-warning">
-                  ⚠ {node.warning ?? node.status}
-                </span>
-              )}
-              {duplicatesOf.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  className="chip chip-selectable side-panel__badge-warning side-panel__dup-chip"
-                  title={`${(d.sim * 100).toFixed(1)}% similar — compare these side by side`}
-                  onClick={() => openCompare(node.id, d.id)}
-                >
-                  ≈ duplicate of {nodes[nodeIndex[d.id]]?.title ?? d.id}
-                </button>
-              ))}
-            </div>
+          {inline && isAudio && node.status !== 'ok' && (
+            <p className="side-panel__badges"><span className="chip side-panel__badge-warning">⚠ {node.warning ?? node.status}</span></p>
+          )}
+          {!(inline && isAudio) && (
+            <div className="side-panel__identity">
+              <div className="side-panel__badges">
+                <span className="chip">{typeChip}</span>
+                {!isAudio && (
+                  <span className="chip">
+                    <span
+                      className="chip-dot"
+                      style={{ background: clusterColor }}
+                      aria-hidden="true"
+                    />
+                    {clusterLabel}
+                  </span>
+                )}
+                {node.status !== 'ok' && (
+                  <span className="chip side-panel__badge-warning">
+                    ⚠ {node.warning ?? node.status}
+                  </span>
+                )}
+                {duplicatesOf.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    className="chip chip-selectable side-panel__badge-warning side-panel__dup-chip"
+                    title={`${(d.sim * 100).toFixed(1)}% similar — compare these side by side`}
+                    onClick={() => openCompare(node.id, d.id)}
+                  >
+                    ≈ duplicate of {nodes[nodeIndex[d.id]]?.title ?? d.id}
+                  </button>
+                ))}
+              </div>
 
-            <div className="side-panel__stats">
-              {isTopic ? (
-                <span>
-                  {node.degree} document{node.degree === 1 ? '' : 's'}
-                </span>
-              ) : (
-                <>
-                  {node.fileType !== 'audio' && <span>{node.wordCount.toLocaleString()} words</span>}
-                  {node.fileType === 'audio' && <span>{linkedTracks} linked track{linkedTracks === 1 ? '' : 's'}</span>}
-                  <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
-                </>
-              )}
-              {node.fileType !== 'audio' && node.lastModified !== undefined && (
-                <span title={new Date(node.lastModified).toLocaleString()}>
-                  updated {timeAgo(node.lastModified)}
-                </span>
-              )}
+              <div className="side-panel__stats">
+                {isTopic ? (
+                  <span>
+                    {node.degree} document{node.degree === 1 ? '' : 's'}
+                  </span>
+                ) : (
+                  <>
+                    {node.fileType !== 'audio' && <span>{node.wordCount.toLocaleString()} words</span>}
+                    <span>{node.degree} connection{node.degree === 1 ? '' : 's'}</span>
+                  </>
+                )}
+                {node.fileType !== 'audio' && node.lastModified !== undefined && (
+                  <span title={new Date(node.lastModified).toLocaleString()}>
+                    updated {timeAgo(node.lastModified)}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {isDocument && (
             <SidePanelReader
@@ -262,7 +270,13 @@ export default function SidePanel({ inline = false, onClose }: { inline?: boolea
             />
           )}
 
-          {isDocument && (
+          {isDocument && isAudio && (
+            <div className="side-panel__section side-panel__section--compact">
+              <NotesTagsSection key={node.id} docKey={annotationKey(node)} />
+            </div>
+          )}
+
+          {isDocument && !isAudio && (
             <Disclose
               label="About"
               open={aboutOpen}
@@ -290,7 +304,7 @@ export default function SidePanel({ inline = false, onClose }: { inline?: boolea
                 onToggleEvidence={toggleEvidence}
               />
             </div>
-          ) : (
+          ) : isAudio ? null : (
             <Disclose
               label="Connections"
               open={connectionsOpen}

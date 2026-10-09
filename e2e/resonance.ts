@@ -98,9 +98,9 @@ export async function openChat(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Ask about your library' }).click();
 }
 
-/** Open the sample assistant (replaces the floating .dj-launch pill). */
+/** Open the sample assistant (the top-bar note button; replaces the floating .dj-launch pill). */
 export async function openSampleAssistant(page: Page): Promise<void> {
-  await page.locator('.rs-assistant').click();
+  await page.getByRole('button', { name: 'Sample assistant', exact: true }).click();
 }
 
 /**
@@ -117,6 +117,9 @@ export async function autoDismissTour(page: Page): Promise<void> {
 }
 
 export async function showFilters(page: Page): Promise<void> {
+  // The empty workspace has no sidebar. Wait for import to mount it before
+  // checking the compact-screen toggle, or a fast check misses that control.
+  await expect(page.getByRole('complementary', { name: 'Filters', exact: true })).toBeVisible();
   const toggle = page.locator('.rs-narrow-filters');
   if (await toggle.isVisible() && (await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
 }

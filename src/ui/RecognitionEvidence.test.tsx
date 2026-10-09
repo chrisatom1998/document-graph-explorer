@@ -9,9 +9,9 @@ it('shows simultaneous possible sources, window playback, uncertainty and compon
   recordEvidence(run,'jamendo',{start:10,end:20},[{dimension:'source',labelId:'oboe',score:.8},{dimension:'source',labelId:'viola',score:.7}]);
   const seek=vi.fn(); render(<RecognitionEvidence recognition={run} duration={20} onSeek={seek} />);
   expect(screen.queryByText('oboe',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull(); expect(screen.queryByText('viola',{selector:'.sound-tag > span:not(.sr-only):not(.sound-tag__mark):not(.sound-tag__note)'})).toBeNull();
-  expect(screen.getByText(/uncalibrated/)).not.toBeVisible();
+  expect(screen.getByText('Coverage by component')).not.toBeVisible();
   fireEvent.click(screen.getByText('Details'));
-  expect(screen.getByText(/uncalibrated/)).toBeVisible();
+  expect(screen.getByText('Coverage by component')).toBeVisible();
   expect(screen.getByText(/AST: failed/)).toBeVisible();
   fireEvent.click(screen.getByText('Evidence for oboe (1 windows)'));
   fireEvent.click(screen.getByRole('button',{name:'Listen for oboe at 0:10–0:20'}));
@@ -39,7 +39,6 @@ it('explains the qualifying vocal prompt instead of presenting its score as dire
  fireEvent.click(screen.getByText('Details'));
  fireEvent.click(screen.getByText('Evidence for voice (1 windows)'));
  expect(screen.getByText('CLAP “vocal chops” score 0.500 (supports voice)')).toBeInTheDocument();
- expect(screen.getByText('Raw model scores are not probabilities.')).toBeInTheDocument();
  fireEvent.click(screen.getByRole('button',{name:'Listen for voice at 0:00–0:03'}));
  expect(seek).toHaveBeenCalledWith(0);
 });

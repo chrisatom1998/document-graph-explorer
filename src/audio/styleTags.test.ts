@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import type { MusicAnalysis } from './musicTypes';
 import { styleTags } from './styleTags';
+import { genreFromScores } from './genreEnergy';
 
 const base = (): MusicAnalysis => ({ version: 2, durationSeconds: 8, analyzedSeconds: 8, instruments: [], notes: [],
   soundProfile: { version: 1, character: ['warm'], roles: [], models: [], disagreement: false, djTags: [{ group: 'character', label: 'bright', score: 0.8 }] } });
 
 describe('styleTags', () => {
-  it('lists model character labels when nothing was reviewed', () => {
-    expect(styleTags(base()).sort()).toEqual(['bright', 'warm']);
+  it('lists nothing when no genre was estimated', () => {
+    expect(styleTags(base())).toEqual([]);
+    expect(styleTags(undefined)).toEqual([]);
   });
-  it('drops labels the user rejected', () => {
+  it('files a clip under the genre the track panel shows, not its character tags', () => {
     const audio = base();
-    audio.soundReviews = [{ dimension: 'character', labelId: 'bright', decision: 'rejected', scope: 'track', at: 'now', evidenceRunId: 'qa' }];
-    expect(styleTags(audio)).toEqual(['warm']);
-  });
-  it('uses saved tags instead of model estimates', () => {
-    const audio = base();
-    audio.confirmedDjTags = { source: [], production: [], character: ['dark'] };
-    expect(styleTags(audio)).toEqual(['dark']);
+    audio.genreScores = { version: 'test', scores: { techno: 0.99 } };
+    const genre = genreFromScores(audio.genreScores.scores);
+    expect(genre).toBeDefined();
+    expect(styleTags(audio)).toEqual([genre!.label]);
+    expect(styleTags(audio)).not.toContain('bright');
   });
 });

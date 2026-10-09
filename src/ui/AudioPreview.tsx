@@ -20,6 +20,8 @@ export default function AudioPreview({ node }: { node: DocNode }) {
   const [target, setTarget] = useState('');
   const [label, setLabel] = useState('');
   const [converting, setConverting] = useState(false);
+  // Offer conversion only once this browser cannot play the file (a decode error, or a format it does not claim to play).
+  const [needsConversion, setNeedsConversion] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
   const conversion = useRef<AbortController | null>(null);
@@ -33,16 +35,19 @@ export default function AudioPreview({ node }: { node: DocNode }) {
   const peaks = useWaveform(original?.blob ?? null);
   const transport = document.getElementById('workspace-transport');
   const idle = phase === 'ready' && !saving;
+  const authored = edges.filter((e) => e.authored && (e.source === node.id || e.target === node.id));
   useEffect(() => {
     active.current = true;
-    setUrl(''); setOriginal(null); setMessage('Loading audio…');
+    setUrl(''); setOriginal(null); setMessage('Loading audio…'); setNeedsConversion(false);
     setPlaying(false); setCurrentTime(0); setDuration(0);
     let cancelled = false;
     void getOriginal(node.id).then((record) => {
       if (cancelled) return;
       if (!record) { setMessage('Audio is not saved here. Add the original file again to play it.'); return; }
       setOriginal(record);
-      liveUrl.current = URL.createObjectURL(record.blob.slice(0, record.blob.size, mimeForFilename(record.name)));
+      const mime = mimeForFilename(record.name);
+      if (typeof document.createElement('audio').canPlayType === 'function' && !document.createElement('audio').canPlayType(mime)) setNeedsConversion(true);
+      liveUrl.current = URL.createObjectURL(record.blob.slice(0, record.blob.size, mime));
       setUrl(liveUrl.current); setMessage('');
     }).catch(() => { if (active.current) setMessage('Could not load audio. Add the original file again.'); });
     return () => { cancelled = true; active.current = false; conversion.current?.abort(); if (liveUrl.current) URL.revokeObjectURL(liveUrl.current); };
@@ -60,6 +65,7 @@ export default function AudioPreview({ node }: { node: DocNode }) {
       liveUrl.current = URL.createObjectURL(blob);
       // A new media element starts paused at zero and has no metadata yet.
       setPlaying(false); setCurrentTime(0); setDuration(0);
+      setNeedsConversion(false);
       setUrl(liveUrl.current); setMessage('Ready to play.');
     } catch (error) {
       if (active.current) setMessage(error instanceof Error ? error.message : 'Could not convert this audio.');
@@ -83,7 +89,7 @@ export default function AudioPreview({ node }: { node: DocNode }) {
   const play = (audio: HTMLAudioElement) => {
     void audio.play().catch(() => {
       // Conversion can replace the element before an earlier play() rejects.
-      if (player.current === audio) setMessage('Choose Prepare playback if this format cannot play on your device.');
+      if (player.current === audio) { setNeedsConversion(true); setMessage('Choose Prepare playback if this format cannot play on your device.'); }
     });
   };
   const controls: AudioControlState = {
@@ -102,13 +108,13 @@ export default function AudioPreview({ node }: { node: DocNode }) {
       onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)}
       onTimeUpdate={event => setCurrentTime(event.currentTarget.currentTime)}
       onLoadedMetadata={event => { setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0); event.currentTarget.volume = volume; }}
-      onError={() => { setPlaying(false); setMessage('This format needs conversion. Choose Prepare playback.'); }} />}
+      onError={() => { setPlaying(false); setNeedsConversion(true); setMessage('This format needs conversion. Choose Prepare playback.'); }} />}
     <AudioControls state={controls} />
     {transport && createPortal(<div className="audio-transport"><div className="audio-transport__identity"><strong>{node.title}</strong><small>{node.path || 'Selected sample'}</small></div><AudioControls state={controls} dock /></div>, transport)}
     {message && <p role="status">{message}</p>}
     {saveFailed && <button type="button" disabled={!idle} onClick={() => void persist()}>Retry saving relationships</button>}
-    {original && <details><summary>Playback options</summary><button type="button" disabled={converting} onClick={() => void convert()}>{converting ? 'Preparing…' : 'Prepare playback'}</button></details>}
-    <MusicFeatures node={node} onSeek={url ? (seconds) => {
+    {original && needsConversion && <button type="button" className="audio-preview__prepare" disabled={converting} onClick={() => void convert()}>{converting ? 'Preparing…' : 'Prepare playback'}</button>}
+    <MusicFeatures node={node} onMessage={setMessage} onSeek={url ? (seconds) => {
       if (!player.current) return;
       try {
         player.current.currentTime = seconds;
@@ -130,7 +136,9 @@ export default function AudioPreview({ node }: { node: DocNode }) {
       <button type="submit" disabled={!idle || !target || !label.trim()}>Connect tracks</button>
     </form>
     {!idle && !saving && <p>Wait for file processing to finish before editing relationships.</p>}
+    {authored.length > 0 && <ul className="music-manual-link__list" aria-label="Your relationships">
+      {authored.map((edge) => <li key={edge.id}><span>{nodes.find((n) => n.id === (edge.source === node.id ? edge.target : edge.source))?.title}: {edge.evidence[0]?.replace(/^Your relationship: /, '')}</span><button type="button" disabled={!idle} aria-label={`Remove relationship ${edge.evidence[0]}`} onClick={() => void updateEdges(useGraphStore.getState().edges.filter((e) => e.id !== edge.id))}>Remove</button></li>)}
+    </ul>}
     </details>
-    {edges.filter((e) => e.authored && (e.source === node.id || e.target === node.id)).map((edge) => <div key={edge.id}><span>{nodes.find((n) => n.id === (edge.source === node.id ? edge.target : edge.source))?.title}: {edge.evidence[0]?.replace(/^Your relationship: /, '')}</span><button type="button" disabled={!idle} aria-label={`Remove relationship ${edge.evidence[0]}`} onClick={() => void updateEdges(useGraphStore.getState().edges.filter((e) => e.id !== edge.id))}>Remove</button></div>)}
   </div>;
 }

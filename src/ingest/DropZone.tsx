@@ -249,7 +249,7 @@ export function DropZone() {
       className={visible ? 'dropzone-overlay visible' : 'dropzone-overlay'}
       aria-hidden={!visible}
     >
-      <div className="dropzone-card">Drop to add to your nebula</div>
+      <div className="dropzone-card">Drop to add to your library</div>
     </div>
   );
 }

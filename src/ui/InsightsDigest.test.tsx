@@ -80,9 +80,9 @@ describe('InsightsDigest', () => {
     });
 
     expect(screen.getByLabelText('What we found')).toBeInTheDocument();
-    expect(screen.getByText('2 clusters · 1 orphan · 1 near-duplicate')).toBeInTheDocument();
+    expect(screen.getByText('2 clusters · 1 unlinked · 1 near-duplicate')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: '1 orphan' }));
+    fireEvent.click(screen.getByRole('button', { name: '1 unlinked' }));
     const ui = useUiStore.getState();
     expect(ui.insightsOpen).toBe(true);
     expect(ui.insightsFocus).toBe('orphans');
@@ -103,7 +103,7 @@ describe('InsightsDigest', () => {
     });
     render(<InsightsDigest />);
     expect(screen.getByLabelText('What we found')).toBeInTheDocument();
-    expect(screen.getByText('2 clusters · 2 orphans · 0 near-duplicates')).toBeInTheDocument();
+    expect(screen.getByText('2 clusters · 2 unlinked · 0 near-duplicates')).toBeInTheDocument();
   });
 
   it('does not appear after enrichment', () => {

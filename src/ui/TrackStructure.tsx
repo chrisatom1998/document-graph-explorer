@@ -23,6 +23,6 @@ export default function TrackStructure({ structure, duration, onSeek }: { struct
         </button>
       </li>)}
     </ul>
-    <p className="track-structure__note">Found from loudness and bass in the audio; boundaries can be a bar or two off.</p>
+    <p className="track-structure__note">Boundaries can be a bar or two off.</p>
   </section>;
 }

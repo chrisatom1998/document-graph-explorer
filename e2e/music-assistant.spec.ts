@@ -25,7 +25,7 @@ test('integrated music assistant preserves the classic graph and works on mobile
   await expect(dialog.getByRole('button', { name: 'Correct tags' }).first()).toBeHidden();
   await page.screenshot({ path: testInfo.outputPath('simple-library-desktop.png') });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(dialog.getByRole('textbox', { name: 'Describe the sound' })).toBeVisible();
+  await expect(dialog.getByRole('textbox', { name: 'Describe the sound' })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await page.screenshot({ path: testInfo.outputPath('simple-library-mobile.png') });
   await page.setViewportSize({ width: 1168, height: 792 });
@@ -36,7 +36,9 @@ test('integrated music assistant preserves the classic graph and works on mobile
   await dialog.getByText('Search options', { exact: true }).click();
   await expect(dialog.getByRole('combobox', { name: 'Compare with a sound' })).toBeVisible();
   await dialog.getByText('Search options', { exact: true }).click();
-  await dialog.getByText('Filters', { exact: true }).click();
+  // In the production app there is no local AI API, so local filters start open.
+  await expect(dialog.locator('.dj-local-filters')).toHaveAttribute('open', '');
+  await expect(dialog.getByLabel('Maximum seconds')).toBeVisible();
   await dialog.getByLabel('Maximum seconds').fill('5');
   await dialog.getByRole('button', { name: 'Apply local filters' }).click();
   await expect(dialog.getByRole('article')).toHaveCount(2);

@@ -57,7 +57,7 @@ describe('summarizeInsights', () => {
     expect(digest.duplicateCount).toBe(1);
     expect(digest.duplicateIds).toEqual(['a', 'b']);
     expect(digest.staleIds).toEqual(['orphan']);
-    expect(formatInsightsDigest(digest)).toBe('3 clusters · 2 orphans · 1 near-duplicate');
+    expect(formatInsightsDigest(digest)).toBe('3 clusters · 2 unlinked · 1 near-duplicate');
     expect(shouldOfferInsightsDigest(digest)).toBe(true);
   });
 

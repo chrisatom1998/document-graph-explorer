@@ -37,13 +37,15 @@ it('keeps filename measurements separate from audio and exposes alternatives and
 });
 it('shows a brief incomplete warning instead of component diagnostics',()=>{
  const a=audio();a.recognition=createRecognition(8,'full');a.recognition.jobs[0].status='unsupported';a.recognition.jobs[0].unsupportedReason='Input too short';
- render(<MainSoundAttributes audio={a} node={{title:'neutral.wav'}}/>);expect(screen.getByText('Some audio analysis is incomplete or unavailable. See Technical details.')).toBeVisible();expect(screen.queryByText(/ast: unsupported/)).toBeNull();expect(screen.getByText(/Source: unknown or unsupported/)).toBeVisible();
+ render(<MainSoundAttributes audio={a} node={{title:'neutral.wav'}}/>);expect(screen.getByText('Some audio analysis is incomplete or unavailable.')).toBeVisible();expect(screen.queryByText(/ast: unsupported/)).toBeNull();expect(screen.getByText(/Source: unknown or unsupported/)).toBeVisible();
 });
-it('places the attributes outside the collapsed Technical details in the actual music panel',()=>{
+it('keeps the attributes inside the collapsed Technical details in the actual music panel',()=>{
  const a=audio();a.instruments=[{label:'piano',score:.22,status:'possible'}];
  const node:DocNode={id:'qa',kind:'document',fileType:'audio',title:'neutral.wav',topics:[],entities:[],keywords:[],wordCount:0,cluster:0,degree:0,status:'ok',audio:a};
- render(<MusicFeatures node={node}/>);const region=screen.getByRole('region',{name:'All sound attributes'});fireEvent.click(screen.getByRole('button',{name:/Show unconfirmed/}));
- expect(region.closest('details')).toBeNull();expect(within(region).getByText('piano')).toBeVisible();expect(screen.getByText('Technical details').closest('details')).not.toHaveAttribute('open');expect(screen.queryByRole('button',{name:/^(Confirm|Reject|Unsure)$/})).toBeNull();
+ render(<MusicFeatures node={node}/>);const region=screen.getByRole('region',{name:'All sound attributes'});
+ expect(region.closest('details')).not.toBeNull();expect(screen.getByText('Technical details').closest('details')).not.toHaveAttribute('open');
+ fireEvent.click(screen.getByText('Technical details'));fireEvent.click(screen.getByRole('button',{name:/Show unconfirmed/}));
+ expect(within(region).getByText('piano')).toBeVisible();expect(screen.queryByRole('button',{name:/^(Confirm|Reject|Unsure)$/})).toBeNull();
 });
 it('exposes experimental classifier states without promoting them to verified labels',()=>{
  const a=audio();a.durationSeconds=10;a.fusion={version:1,scope:'window',validation:'unvalidated',identity:{modelSha256:'a'.repeat(64),policySha256:'b'.repeat(64),scorerSha256:'c'.repeat(64)},planned:1,counts:{complete:1,failed:0,unsupported:0,empty:0},omittedWindows:0,windows:[{start:0,end:10,status:'complete',decisions:FUSION_LABELS.map(label=>({label,state:'uncertain',source:'learned-head',headProbability:.2,decisionProbability:.2,eligible:false,positiveGroups:2,negativeGroups:2}))}]};

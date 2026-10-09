@@ -7,6 +7,7 @@ export default function VoiceQuery({ onTranscript, disabled = false }: { onTrans
   const [recording, setRecording] = useState(false);
   const [busy, setBusy] = useState(false);
   const active = useRef<{ recorder?: MediaRecorder; stream?: MediaStream; controller: AbortController; timer?: ReturnType<typeof setTimeout> } | null>(null);
+  // Transcription needs the local dev API, so production builds render nothing instead of a dead button.
   const localApi = import.meta.env.DEV && import.meta.env.MODE !== 'airgap';
   useEffect(() => () => {
     const session = active.current; active.current = null;
@@ -59,6 +60,7 @@ export default function VoiceQuery({ onTranscript, disabled = false }: { onTrans
       if (!session.controller.signal.aborted) { setStatus(error && typeof error === 'object' && 'name' in error && error.name === 'NotAllowedError' ? 'Microphone access was denied. Type your request or allow the microphone in browser settings.' : 'Could not start recording. Type your request instead.'); setBusy(false); }
     }
   };
+  if (!localApi) return null;
   return <div className="voice-query">
     <button type="button" disabled={disabled || !localApi || (busy && !recording)} aria-label={recording ? 'Stop voice recording' : 'Speak your request'} onClick={() => { if (recording) active.current?.recorder?.stop(); else void start(); }}>{recording ? 'Stop recording' : busy ? 'Transcribing…' : 'Speak your request'}</button>
     <small>Voice sends up to 20 seconds to OpenAI for transcription.</small>

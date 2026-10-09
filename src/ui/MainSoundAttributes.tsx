@@ -124,7 +124,6 @@ export default function MainSoundAttributes({audio,node}:{audio:MusicAnalysis;no
   return <section className="main-sound-attributes" aria-label="All sound attributes">
     <h4><button type="button" className="main-sound-attributes__head" aria-expanded={open} aria-controls="main-sound-attributes-body" onClick={()=>setAttributesOpenSetting(!open)}>All sound attributes</button></h4>
     <div id="main-sound-attributes-body" hidden={!open}>
-    <p>Includes uncertain and experimental evidence, not just the Sounds tags. Scores use each model’s own scale; they are not measured accuracy. Your saved decisions take precedence. Negative or missing evidence does not prove a sound is absent.</p>
     <dl className="main-sound-attributes__measurements">
       <div><dt>Audio tempo</dt><dd>{audio.tempo?`${audio.tempo.bpm} BPM · confidence ${score(audio.tempo.confidence)}`:'Uncertain / unavailable'}{audio.tempo?.alternatives?.length?` · alternatives ${audio.tempo.alternatives.join(' / ')} BPM`:''}</dd></div>
       <div><dt>Audio key</dt><dd>{audio.key?`${audioKey} · strength ${score(audio.key.strength)}`:'Uncertain / unavailable'}</dd></div>
@@ -138,7 +137,7 @@ export default function MainSoundAttributes({audio,node}:{audio:MusicAnalysis;no
       <strong>{soundLabelText(row.label)}</strong> <span>· {dimensionName[row.dimension]} · {row.review??(isLikely(row)?'likely · model score ≥ 50%':'unconfirmed evidence')}</span>
       <ul>{[...row.evidence].map(e=><li key={e}>{e}</li>)}</ul>
     </li>)}</ul>}
-    {incomplete&&<p role="status">Some audio analysis is incomplete or unavailable. See Technical details.</p>}
+    {incomplete&&<p role="status">Some audio analysis is incomplete or unavailable.</p>}
     {audio.soundProfile?.disagreement&&<p>Instrument models disagree; the estimate is uncertain.</p>}
     {(['source','effect','character','vocal','role'] as const).filter(d=>!rows.some(r=>r.dimension===d)).map(d=><p key={d}>{dimensionName[d]}: unknown or unsupported by the available evidence.</p>)}
     </div>

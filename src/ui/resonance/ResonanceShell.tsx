@@ -3,7 +3,8 @@ import { useGraphStore } from '../../store/graphStore';
 import { useUiStore } from '../../store/uiStore';
 import { useChatStore } from '../../store/chatStore';
 import { useCorpusStore } from '../../store/corpusStore';
-import { IconBulb, IconChat, IconGear, IconHelp, IconHistory, IconPath, IconSearch } from '../icons';
+import { IconBulb, IconChat, IconGear, IconHelp, IconHistory, IconNote, IconPath, IconSearch } from '../icons';
+import { openSampleAssistant } from '../../store/sampleAssistantStore';
 import { DimsToggleButton } from '../DimsToggleButton';
 import ResonanceFilters from './ResonanceFilters';
 import ConnectedClips from './ConnectedClips';
@@ -37,6 +38,7 @@ function LogoMark() {
 export default function ResonanceShell({ children }: { children: ReactNode }) {
   const phase = useGraphStore(s => s.phase);
   const docCount = useGraphStore(s => s.nodes.filter(n => n.kind === 'document').length);
+  const hasAudio = useGraphStore(s => s.nodes.some(n => n.fileType === 'audio'));
   const edgeCount = useGraphStore(s => s.edges.length);
   const activeName = useCorpusStore(s => s.activeName);
   const [tab, setTab] = useState<Tab>('graph');
@@ -72,7 +74,7 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
   const ui = () => useUiStore.getState();
 
   return (
-    <div className="rs-root">
+    <div className={`rs-root${docCount === 0 && phase === 'idle' ? ' rs-root--empty' : ''}`}>
       <header className="rs-top">
         <div className="rs-brand">
           <LogoMark />
@@ -80,7 +82,7 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
           {/* Switch, create, rename or delete workspaces; the tagline shows until a graph exists. */}
           {docCount > 0
             ? <span className="rs-corpus"><Suspense fallback={<span className="rs-tagline">{activeName}</span>}><CorpusSwitcher /></Suspense></span>
-            : <span className="rs-tagline">Find what sounds alike.</span>}
+            : <span className="rs-tagline">Find how sounds relate.</span>}
         </div>
         <nav className="rs-tabs" aria-label="Views">
           {(['graph', 'library', 'export'] as Tab[]).map(key => (
@@ -95,6 +97,7 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
           <span className="rs-top__rule" />
           <button type="button" className="rs-icon" aria-label="Search documents" disabled={!ready} onClick={() => { ui().setSearchResults(null); ui().setSearchOpen(true); }}><IconSearch /></button>
           <DimsToggleButton />
+          {hasAudio && <button type="button" className="rs-icon" aria-label="Sample assistant" title="Sample assistant: search, tag and build crates" aria-haspopup="dialog" onClick={() => openSampleAssistant()}><IconNote /></button>}
           <button type="button" className="rs-icon" aria-label="Ask about your library" disabled={docCount === 0} onClick={() => useChatStore.getState().setIsOpen(true)}><IconChat /></button>
           <div className="rs-more">
             <button type="button" className="rs-icon rs-icon--round" aria-label="More tools" aria-expanded={moreOpen} onClick={() => setMoreOpen(v => !v)}><IconGear /></button>
@@ -120,7 +123,8 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <ResonanceFilters />
+      {/* Before any file is added the welcome card is the whole screen. */}
+      {!(docCount === 0 && phase === 'idle') && <ResonanceFilters />}
 
       <main className="rs-stage" aria-label="Graph">
         {children}
@@ -138,7 +142,7 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
         )}
       </main>
 
-      <ConnectedClips detailsOpen={detailsOpen} onToggleDetails={() => setDetailsOpen(v => !v)} />
+      {!(docCount === 0 && phase === 'idle') && <ConnectedClips detailsOpen={detailsOpen} onToggleDetails={() => setDetailsOpen(v => !v)} />}
     </div>
   );
 }
