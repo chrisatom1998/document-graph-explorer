@@ -6,6 +6,7 @@ import { buildMusicEdges, musicPairEdges, refreshMusicEdges, MUSIC_NEIGHBOR_LIMI
 import { instrumentScores } from './instrumentLabels';
 import { sanitizeGraphExport } from '../persistence/validateImport';
 import { createRecognition } from './recognition';
+import center from './soundAlikeCenter.json';
 const node = (id: string, features: Partial<MusicAnalysis> = {}): DocNode => ({ id, title: 'same filename', kind: 'document', fileType: 'audio', wordCount: 0, topics: [], entities: [], keywords: [], degree: 0, cluster: 0, status: 'ok', audio: { version: 2, durationSeconds: 100, analyzedSeconds: 60, instruments: [], notes: [], ...features } });
 const tempo = (bpm: number, confidence = 0.9) => ({bpm, confidence});
 const key = (tonic: number, mode: 'major' | 'minor' = 'major', strength = 0.9) => ({tonic, mode, strength});
@@ -349,5 +350,39 @@ describe('sound-alike links: reasons and scale', () => {
     const similar = buildMusicEdges(nodes).filter(e => e.kind === 'similar');
     expect(performance.now() - started).toBeLessThan(20000);
     expect(similar.length).toBeGreaterThan(0);
+  });
+});
+
+describe('sound-alike score: centered fingerprints and music styles', () => {
+  // Unit fingerprints that share the common music component, with a chosen cosine between their remaining parts.
+  const mean = center.mean;
+  const orthogonal = (seed: number) => {
+    const v = mean.map((_, i) => Math.sin(i * (seed + 1) * 1.7 + seed));
+    const dot = v.reduce((t, x, i) => t + x * mean[i], 0) / mean.reduce((t, x) => t + x * x, 0);
+    const r = v.map((x, i) => x - dot * mean[i]); const n = Math.hypot(...r); return r.map(x => x / n);
+  };
+  const rest = Math.sqrt(1 - mean.reduce((t, x) => t + x * x, 0));
+  const e1 = orthogonal(1), e2raw = orthogonal(2);
+  const d12 = e2raw.reduce((t, x, i) => t + x * e1[i], 0);
+  const e2 = (() => { const r = e2raw.map((x, i) => x - d12 * e1[i]); const n = Math.hypot(...r); return r.map(x => x / n); })();
+  const pair = (cos: number) => [mean.map((m, i) => m + rest * e1[i]), mean.map((m, i) => m + rest * (cos * e1[i] + Math.sqrt(1 - cos * cos) * e2[i]))];
+  const styles = [{ label: 'Electronic---Techno', score: .6 }, { label: 'Electronic---Minimal', score: .2 }];
+  it('lets matching music styles carry a borderline pair of full tracks over the floor', () => {
+    const [x, y] = pair(.55);
+    expect(musicPairEdges(node('a', { embedding: x }), node('b', { embedding: y })).filter(e => e.kind === 'similar')).toEqual([]);
+    const edge = musicPairEdges(node('a', { embedding: x, styles }), node('b', { embedding: y, styles })).find(e => e.kind === 'similar');
+    expect(edge).toBeDefined();
+    // Strength and text keep the plain fingerprint cosine.
+    expect(edge!.evidence[0]).toMatch(/fingerprints are \d+% similar/);
+  });
+  it('ignores styles on short sounds, where the style model has too little context', () => {
+    const [x, y] = pair(.55);
+    const short = { durationSeconds: 4, analyzedSeconds: 4, styles };
+    expect(musicPairEdges(node('a', { embedding: x, ...short }), node('b', { embedding: y, ...short })).filter(e => e.kind === 'similar')).toEqual([]);
+  });
+  it('does not link full tracks whose styles differ when their fingerprints are only loosely alike', () => {
+    const [x, y] = pair(.55);
+    const other = [{ label: 'Classical---Baroque', score: .7 }];
+    expect(musicPairEdges(node('a', { embedding: x, styles }), node('b', { embedding: y, styles: other })).filter(e => e.kind === 'similar')).toEqual([]);
   });
 });

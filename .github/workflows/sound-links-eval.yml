@@ -6,13 +6,13 @@ name: Sound link check
 # scores every link it made. Audio is fetched at run time and never committed.
 on:
   push:
-    branches: [claude/sound-similarity-links-2189o9, claude/project-thread-64wmq5]
+    branches: [claude/sound-similarity-links-2189o9, claude/project-thread-64wmq5, claude/sound-alike-links-m3khx3]
     paths: [.github/workflows/sound-links-eval.yml, scripts/sound-links/**]
   workflow_dispatch:
 
 env:
   ONNXRUNTIME_NODE_INSTALL: skip
-  BASE_REF: c28add778a8aba58df662ff1a6cf629453a825c6  # raw CLAP sound-alike links, before the learned projection
+  BASE_REF: 18a3f34d8dfdd922169a1425a2effc92cfe05336  # main before the style-blended sound-alike score
   OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
   FMA_METADATA: https://os.unil.cloud.switch.ch/fma/fma_metadata.zip
   NSYNTH: http://download.magenta.tensorflow.org/datasets/nsynth/nsynth-test.jsonwav.tar.gz

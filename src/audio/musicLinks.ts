@@ -7,17 +7,25 @@ import { keyName, type MusicAnalysis } from './musicTypes';
 import { buildVersionEdges, versionRelation } from './versionLinks';
 import { energyFromScore, genreFromScores, genreText } from './genreEnergy';
 import { MUSIC_EDGE_KINDS } from './musicEdgeKinds';
+import center from './soundAlikeCenter.json';
 export { MUSIC_EDGE_KINDS } from './musicEdgeKinds';
 type MusicKind = Exclude<typeof MUSIC_EDGE_KINDS[number], 'version'>;
 export const MUSIC_NEIGHBOR_LIMIT = 8;
 export const MUSIC_NEIGHBORS_PER_KIND = 4;
 const CANDIDATES_PER_BUCKET = 12;
 const MAX_CANDIDATES = 128;
-/** CLAP audio cosines run high, so each track's `neighbors` closest sounds are always candidates and a pair links
- * at `floor` or above. A mutual-top-3 rule at 0.5 was tried with scripts/sound-links: more song links but lower
- * precision (45% vs 63% same genre), so this keeps the original policy. */
+/** Each track's `neighbors` closest sounds are always candidates and a pair links when its sound-alike score
+ * (soundAlikeScore) is `floor` or above. A mutual-top-3 rule at 0.5 was tried with scripts/sound-links: more song
+ * links but lower precision (45% vs 63% same genre), so this keeps the closest-neighbours policy. */
 export interface SoundLinkPolicy { neighbors: number; floor: number }
-export const SOUND_LINK_POLICY: SoundLinkPolicy = { neighbors: 3, floor: .7 };
+export const SOUND_LINK_POLICY: SoundLinkPolicy = { neighbors: 3, floor: .6 };
+/** Share of the sound-alike score taken from the tracks' Discogs music styles; the rest is the centered CLAP fingerprint.
+ * Picked on the sound-link tuning songs (scripts/sound-links), where it raised same-genre precision at every link count. */
+const STYLE_SHARE = .2;
+/** The style model reads whole-track context; on single notes and one-shots its styles are noise (they lowered
+ * same-instrument nearest-neighbour precision on the tuning notes), so shorter audio compares fingerprints only. */
+const STYLE_MIN_SECONDS = 8;
+const CLAP_CENTER = Float64Array.from(center.mean);
 /** All-pairs similarity up to this many valid fingerprints; larger libraries use bounded hashed neighborhoods. */
 const EXACT_SIMILARITY_LIMIT = 800;
 const cosine = (a: number[], b: number[]) => { let dot = 0; for (let i = 0; i < a.length; i++) dot += a[i] * b[i]; return dot; };
@@ -36,6 +44,28 @@ function keyRelation(a: NonNullable<MusicAnalysis['key']>, b: NonNullable<MusicA
   if (a.mode === b.mode && [5, 7].includes((a.tonic - b.tonic + 12) % 12)) return 'neighboring keys on the circle of fifths';
   return null;
 }
+/** The fingerprint minus the part every music recording shares, so that shared part does not count as similarity. */
+function centeredVector(vector: number[] | undefined): number[] | undefined {
+  if (!vector) return;
+  return unitVector(vector.map((value, i) => value - CLAP_CENTER[i]));
+}
+/** Square-rooted strengths of the stored strongest styles, unit length, for a cosine between two tracks. */
+function styleVector(audio: MusicAnalysis): Map<string, number> | undefined {
+  if (audio.stage === 'preview' || !(audio.durationSeconds >= STYLE_MIN_SECONDS) || !audio.styles?.length) return;
+  const roots = audio.styles.filter(s => validScore(s.score) && s.score > 0).map(s => [s.label, Math.sqrt(s.score)] as const);
+  const norm = Math.hypot(...roots.map(([, v]) => v));
+  return norm > 1e-8 ? new Map(roots.map(([label, v]) => [label, v / norm])) : undefined;
+}
+/** What decides a sound-alike link: centered fingerprint cosine, blended with music-style agreement when both tracks
+ * have styles. Only used to choose links; the link's strength and text keep the plain fingerprint similarity. */
+function soundAlikeScore(a: Features, b: Features): number | undefined {
+  if (!a.centered || !b.centered) return;
+  const sound = cosine(a.centered, b.centered);
+  if (!a.styles || !b.styles) return sound;
+  let style = 0;
+  for (const [label, v] of a.styles) style += v * (b.styles.get(label) ?? 0);
+  return (1 - STYLE_SHARE) * sound + STYLE_SHARE * style;
+}
 /** Project evidence once per rebuild; never mutate saved estimates or corrections. */
 function features(node: DocNode) {
   const audio = node.audio!;
@@ -52,8 +82,9 @@ function features(node: DocNode) {
   const shownSources = matches.filter(m => m.group === 'source' && !(human && m.origin !== 'confirmed'));
   const instruments = [...base, ...shownSources.filter(m => !base.some(i => i.label === m.label)).map(m => ({ label: m.label, score: m.weight, origin: m.origin }))];
   const settled = audio.stage !== 'preview';
+  const vector = unitVector(audio.embedding);
   return {
-    node, hints, human, vector: unitVector(audio.embedding),
+    node, hints, human, vector, centered: centeredVector(vector), styles: styleVector(audio),
     genre: settled ? genreFromScores(audio.genreScores?.scores) : undefined,
     energy: settled ? energyFromScore(audio.energyScore) : undefined,
      named: !!named, instruments: instruments.filter(i => validScore(i.score)),
@@ -119,8 +150,9 @@ function pairEdges(a: Features, b: Features, floor = SOUND_LINK_POLICY.floor): E
     const basis = pairs.map(({ i, other }) => `${i.label}: ${MATCH_ORIGIN_TEXT[i.origin]} / ${MATCH_ORIGIN_TEXT[other.origin]}`).join('; ');
     add('sound', Math.max(...pairs.map(({ i, other }) => Math.min(i.weight, other.weight))), `Shared sound properties: ${names}. ${confirmed ? 'Confirmed by you on both tracks.' : `Not confirmed by you on at least one track (${basis}). Matches the Sounds and Other model guesses lists.`}`);
   }
+  const alike = soundAlikeScore(a, b);
   const similarity = a.vector && b.vector ? cosine(a.vector, b.vector) : undefined;
-  if (similarity !== undefined && similarity >= floor) {
+  if (similarity !== undefined && alike !== undefined && alike >= floor) {
     // Tags already explained by the instrument link are not repeated.
     const both = a.alikeTags.filter(t => b.alikeTags.some(u => u.dimension === t.dimension && u.label === t.label) && !(t.dimension === 'source' && shared.some(i => i.label === t.label)));
     const origins = both.map(t => [t.origin, b.alikeTags.find(u => u.dimension === t.dimension && u.label === t.label)!.origin]);
@@ -176,8 +208,9 @@ function hyperplanes(count: number, dimensions: number): Float32Array[] {
 /** Each fingerprinted track's closest-sounding tracks (by index), most similar first. */
 function soundNeighbors(audio: Features[], keep: number): Map<number, { other: number; similarity: number }[]> {
   const result = new Map<number, { other: number; similarity: number }[]>();
-  const members = audio.flatMap((f, i) => f.vector ? [i] : []);
-  const vector = (i: number) => audio[i].vector!;
+  const members = audio.flatMap((f, i) => f.centered ? [i] : []);
+  const vector = (i: number) => audio[i].centered!;
+  const score = (i: number, other: number) => soundAlikeScore(audio[i], audio[other])!;
   const offer = (i: number, other: number, similarity: number) => {
     const list = result.get(i) ?? [];
     if (list.length >= keep && similarity <= list[list.length - 1].similarity) return;
@@ -188,7 +221,7 @@ function soundNeighbors(audio: Features[], keep: number): Map<number, { other: n
   };
   if (members.length <= EXACT_SIMILARITY_LIMIT) {
     for (let x = 0; x < members.length; x++) for (let y = x + 1; y < members.length; y++) {
-      const similarity = cosine(vector(members[x]), vector(members[y]));
+      const similarity = score(members[x], members[y]);
       offer(members[x], members[y], similarity); offer(members[y], members[x], similarity);
     }
     return result;
@@ -221,7 +254,7 @@ function soundNeighbors(audio: Features[], keep: number): Map<number, { other: n
         const other = list[k];
         if (other >= i || seen.has(other)) continue; // each pair is scored from its higher index
         seen.add(other);
-        const similarity = cosine(vector(i), vector(other));
+        const similarity = score(i, other);
         offer(i, other, similarity); offer(other, i, similarity);
       }
     }

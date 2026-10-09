@@ -1,14 +1,21 @@
 // Scores "sounds alike" links built from CLAP fingerprints alone, over a grid of link policies.
-// Usage: npx vite-node scripts/sound-links/tune.mjs <manifest.json> <embeddings.jsonl> [out.json] [policy-json | shipped]
-// Each clip becomes an audio node whose only evidence is its fingerprint (as the app stores it), so this measures the
+// Usage: npx vite-node scripts/sound-links/tune.mjs <manifest.json> <embeddings.jsonl> [out.json] [policy-json | shipped] [styles.json]
+// Each clip becomes an audio node whose only evidence is its fingerprint (as the app stores it), plus its strongest
+// Discogs styles when a styles file is given (scripts/genre-energy/features.mjs output), so this measures the
 // sound-similarity part of src/audio/musicLinks.ts. Precision = share of links whose two clips share the label.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { buildMusicEdges, SOUND_LINK_POLICY } from '../../src/audio/musicLinks';
+import { KEPT_STYLES } from '../../src/audio/genreEnergy';
 
-const [manifestPath, embeddingsPath, outPath, policyArg] = process.argv.slice(2);
+const [manifestPath, embeddingsPath, outPath, policyArg, stylesPath] = process.argv.slice(2);
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 const vectors = new Map(readFileSync(embeddingsPath, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l)).map(r => [r.id, r.embedding]));
 const items = manifest.items.filter(i => vectors.has(i.id));
+// The app keeps each track's KEPT_STYLES strongest styles (GenreEnergyScores.styleList).
+const styleClasses = stylesPath && JSON.parse(readFileSync('public/jamendo-model/discogs-effnet-bsdynamic-1.json', 'utf8')).classes;
+const styles = new Map(stylesPath ? JSON.parse(readFileSync(stylesPath, 'utf8')).filter(r => r.styles).map(r => [r.id,
+  r.styles.map((score, i) => ({ label: styleClasses[i], score: +score.toFixed(4) })).sort((a, b) => b.score - a.score).slice(0, KEPT_STYLES)]) : []);
+const seconds = manifest.kind === 'songs' ? 10 : 4;
 const relations = manifest.kind === 'songs' ? ['genre', 'artist'] : ['family', 'instrument'];
 const unit = v => { const n = Math.hypot(...v); return v.map(x => x / n); };
 const mean = new Array(512).fill(0);
@@ -18,7 +25,7 @@ function nodes(center) {
   return items.map(i => {
     const v = unit(vectors.get(i.id));
     return { id: i.id, title: i.id, kind: 'document', fileType: 'audio', topics: [], entities: [], keywords: [], wordCount: 0, degree: 0, cluster: 0, status: 'ok',
-      audio: { version: 2, durationSeconds: 10, analyzedSeconds: 10, instruments: [], notes: [], embedding: unit(center ? v.map((x, d) => x - mean[d]) : v).map(x => Math.round(x * 1e4) / 1e4) } };
+      audio: { version: 2, durationSeconds: seconds, analyzedSeconds: seconds, instruments: [], notes: [], ...(styles.has(i.id) ? { styles: styles.get(i.id) } : {}), embedding: unit(center ? v.map((x, d) => x - mean[d]) : v).map(x => Math.round(x * 1e4) / 1e4) } };
   });
 }
 const label = Object.fromEntries(items.map(i => [i.id, i.labels]));
