@@ -16,6 +16,14 @@ function shortEstimate(bpm: number, confidence: number): Tempo {
   };
 }
 
+/** A recording needs this many attacks before any tempo is read from it (a one-shot or a held tone has none). */
+export const MIN_ATTACKS = 3;
+export function countAttacks(engine: TempoEngine, vector: ReturnType<TempoEngine['arrayToVector']>): number {
+  const attacks = engine.OnsetRate(vector);
+  try { return attacks.onsets.size(); }
+  finally { attacks.onsets.delete(); }
+}
+
 /** Input is real 44.1 kHz audio: never repeat a clip or infer BPM from its name. */
 export function estimateTempo(engine: TempoEngine, samples: Float32Array): Tempo | undefined {
   if (samples.length < 2 * RATE) return;
@@ -27,9 +35,7 @@ export function estimateTempo(engine: TempoEngine, samples: Float32Array): Tempo
     if (short) {
       // Beat trackers can report a convincing BPM for a steady tone or noise.
       // Require at least three actual attacks before trying the loop estimator.
-      const attacks = engine.OnsetRate(vector);
-      try { if (attacks.onsets.size() < 3) return; }
-      finally { attacks.onsets.delete(); }
+      if (countAttacks(engine, vector) < MIN_ATTACKS) return;
       try {
         // Uses Percival's periodicity estimate and requires a 0.95 loop fit.
         const loop = engine.LoopBpmEstimator(vector, 0.95);

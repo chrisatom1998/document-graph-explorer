@@ -5,6 +5,8 @@ const N = 1024, HOP = 512, BANDS = 40, FRAMES = 215, WINDOW_HOP = 107;
 const MIN_BPM = 30, CLASSES = 256;
 /** The CNN's tempo replaces the beat tracker's only when they disagree and the CNN is this sure (tuning clips only). */
 export const CNN_OVERRIDE_CONFIDENCE = 0.5;
+/** On a seamless loop the loop-trained CNN is trusted down to this confidence (tuned on FSL10K loops outside the judge set). */
+export const LOOP_CNN_OVERRIDE_CONFIDENCE = 0.1;
 
 /** Kaiser-windowed sinc low-pass at 0.97 of the new Nyquist, close to ffmpeg's default resampler. */
 const TAPS = (() => {
@@ -48,7 +50,7 @@ const MEL = (() => {
 })();
 
 /** In-place radix-2 FFT. */
-function fft(re: Float64Array, im: Float64Array) {
+export function fft(re: Float64Array, im: Float64Array) {
   const n = re.length;
   for (let i = 1, j = 0; i < n; i++) {
     let bit = n >> 1;
@@ -120,37 +122,40 @@ function sameTempo(a: number, b: number) { return Math.abs(b / a - 1) <= 0.04; }
  * The app's tempo unless the CNN confidently reads a different one within the app's 40-250 BPM range. An overriding
  * reading carries the CNN's own confidence, not the beat tracker's.
  */
-export function combineTempo(app: { bpm: number; confidence: number }, cnn: { bpm: number; confidence: number }): { bpm: number; confidence: number } {
-  const usable = cnn.bpm >= 40 && cnn.bpm <= 250 && cnn.confidence > CNN_OVERRIDE_CONFIDENCE;
+export function combineTempo(app: { bpm: number; confidence: number }, cnn: { bpm: number; confidence: number }, threshold = CNN_OVERRIDE_CONFIDENCE): { bpm: number; confidence: number } {
+  const usable = cnn.bpm >= 40 && cnn.bpm <= 250 && cnn.confidence > threshold;
   return usable && !sameTempo(app.bpm, cnn.bpm) ? { bpm: cnn.bpm, confidence: Math.min(1, cnn.confidence) } : app;
 }
 
 /** For a short loop: the combined tempo, or the CNN's alone when the loop estimator found none. Half and double time
  * stay listed as alternatives, as the loop estimator lists them. */
-export function combineLoopTempo(app: { bpm: number; confidence: number; alternatives?: number[] } | undefined, cnn: { bpm: number; confidence: number }): { bpm: number; confidence: number; alternatives?: number[] } | undefined {
-  const usable = cnn.bpm >= 40 && cnn.bpm <= 250 && cnn.confidence > CNN_OVERRIDE_CONFIDENCE;
+export function combineLoopTempo(app: { bpm: number; confidence: number; alternatives?: number[] } | undefined, cnn: { bpm: number; confidence: number }, threshold = CNN_OVERRIDE_CONFIDENCE): { bpm: number; confidence: number; alternatives?: number[] } | undefined {
+  const usable = cnn.bpm >= 40 && cnn.bpm <= 250 && cnn.confidence > threshold;
   const base = app ?? (usable ? { bpm: cnn.bpm, confidence: 0 } : undefined);
   if (!base) return undefined;
-  const tempo = combineTempo(base, cnn);
+  const tempo = combineTempo(base, cnn, threshold);
   if (tempo === app) return app;
   const alternatives = [tempo.bpm / 2, tempo.bpm * 2].filter(v => v >= 40 && v <= 250).map(v => Math.round(v * 10) / 10);
   return { ...tempo, confidence: app ? tempo.confidence : Math.min(1, cnn.confidence), ...(alternatives.length ? { alternatives } : {}) };
 }
 
-let session: Promise<{ ort: typeof import('onnxruntime-web/webgpu'); model: import('onnxruntime-web/webgpu').InferenceSession }> | undefined;
-async function loadModel() {
+type TempoSession = Promise<{ ort: typeof import('onnxruntime-web/webgpu'); model: import('onnxruntime-web/webgpu').InferenceSession }>;
+/** songs: the shipped model (#139). loops: the same network retrained with FSL10K loops, used only on seamless loops. */
+const MODEL_FILES = { songs: 'tempo-cnn.onnx', loops: 'tempo-cnn-loops.onnx' } as const;
+const sessions: Partial<Record<keyof typeof MODEL_FILES, TempoSession>> = {};
+async function loadModel(file: string) {
   // Same ORT entry as the Jamendo models; 1.4 MB, single-thread WASM.
   const ort = await import('onnxruntime-web/webgpu');
   ort.env.wasm.numThreads = 1;
-  const model = await ort.InferenceSession.create(`${import.meta.env.BASE_URL}tempo-model/tempo-cnn.onnx`, { executionProviders: ['wasm'] });
+  const model = await ort.InferenceSession.create(`${import.meta.env.BASE_URL}tempo-model/${file}`, { executionProviders: ['wasm'] });
   return { ort, model };
 }
 
 /** CNN tempo over every 10 s window of the excerpts (44.1 kHz mono), or undefined for silence or a missing model. */
-export async function predictCnnTempo(excerpts: Float32Array[]): Promise<{ bpm: number; confidence: number } | undefined> {
+export async function predictCnnTempo(excerpts: Float32Array[], which: keyof typeof MODEL_FILES = 'songs'): Promise<{ bpm: number; confidence: number } | undefined> {
   const windows = excerpts.flatMap(s => tempoWindows(tempoMel(s)));
   if (!windows.length) return;
-  const { ort, model } = await (session ??= loadModel().catch(error => { session = undefined; throw error; }));
+  const { ort, model } = await (sessions[which] ??= loadModel(MODEL_FILES[which]).catch(error => { sessions[which] = undefined; throw error; }));
   const input = new Float32Array(windows.length * FRAMES * BANDS);
   windows.forEach((w, i) => input.set(w, i * FRAMES * BANDS));
   const tensor = new ort.Tensor('float32', input, [windows.length, FRAMES, BANDS]);
