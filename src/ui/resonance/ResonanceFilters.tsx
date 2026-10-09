@@ -77,7 +77,18 @@ export default function ResonanceFilters() {
   const keyValue = selectedKey === null ? '' : keys.find(label => label === selectedKey)
     ?? tempoKeys.find(({ key }) => matchesKeyName(key, selectedKey))?.keyLabel ?? selectedKey;
   const styles = useMemo(() => [...new Set(docs.flatMap(n => styleTags(n.audio)))].sort(), [docs]);
-  const types = useMemo(() => [...new Set(docs.map(n => n.fileType))], [docs]);
+  // File types present, most common first; a type kept by a saved view but absent from the corpus still lists so it can be unticked.
+  const typeCounts = useMemo(() => {
+    const counts = new Map<FileType, number>();
+    for (const n of docs) counts.set(n.fileType, (counts.get(n.fileType) ?? 0) + 1);
+    return [...counts].sort((a, b) => b[1] - a[1]);
+  }, [docs]);
+  const pickedTypes = filter.fileTypes ?? [];
+  const typeRows = [...typeCounts, ...pickedTypes.filter(t => !typeCounts.some(([ft]) => ft === t)).map(t => [t, 0] as [FileType, number])];
+  const toggleType = (type: FileType) => {
+    const next = pickedTypes.includes(type) ? pickedTypes.filter(t => t !== type) : [...pickedTypes, type];
+    setFilter({ fileTypes: next.length ? next : null });
+  };
   // Every label shown in a clip's Sounds row, most common first.
   const soundCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -206,12 +217,19 @@ export default function ResonanceFilters() {
       </section>
       </>}
 
-      <section className="rs-group">
-        <h3>File type</h3>
-        <select className="rs-select" aria-label="File type" value={filter.fileTypes?.[0] ?? ''} disabled={types.length < 2} onChange={e => setFilter({ fileTypes: e.target.value ? [e.target.value as FileType] : null })}>
-          <option value="">Any type</option>
-          {types.map(t => <option key={t} value={t}>{TYPE_LABEL[t] ?? t}</option>)}
-        </select>
+      <section className="rs-group" aria-label="File type">
+        <h3 title="Show files of any of the ticked types. Leave all off to show every type.">File type{pickedTypes.length > 1 ? ' (any of)' : ''}</h3>
+        <ul className="rs-checks">
+          {typeRows.map(([type, count]) => (
+            <li key={type}>
+              <label>
+                <input type="checkbox" checked={pickedTypes.includes(type)} disabled={typeRows.length < 2 && !pickedTypes.includes(type)} onChange={() => toggleType(type)} />
+                <span className="rs-check" aria-hidden="true" />
+                {TYPE_LABEL[type] ?? type} <span className="rs-checks__count">{count}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
       </section>
       <details className="rs-advanced">
         <summary>Advanced filters</summary>
