@@ -124,7 +124,13 @@ jobs:
           path: mm
       - name: Score
         run: |
-          MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json npx vite-node scripts/mixed-music/score.mjs report.json exports/*/graph-export.json
+          # download-artifact v5+ extracts a sole matching artifact directly into exports.
+          # Keep scoring all available shards, including a run where only one uploaded.
+          shopt -s nullglob
+          exports=(exports/mixed-music-${{ matrix.build }}-*/graph-export.json)
+          if [ -f exports/graph-export.json ]; then exports+=(exports/graph-export.json); fi
+          test "${#exports[@]}" -gt 0 || { echo "No graph exports to score" >&2; exit 1; }
+          MANIFEST=mm/docs/evaluations/mixed-music-2026-10-05/manifest.json npx vite-node scripts/mixed-music/score.mjs report.json "${exports[@]}"
           set -o pipefail; node scripts/compare-tag-reports.mjs --min-positives 5 report.json
       - uses: actions/upload-artifact@v6
         with:
@@ -149,3 +155,4 @@ jobs:
           cp reports/mixed-music-report-branch/report.json branch.json
           set -o pipefail; node scripts/compare-tag-reports.mjs --min-positives 5 base.json branch.json | tee compare.txt
           ! grep -q 'branch: now fails' compare.txt
+
