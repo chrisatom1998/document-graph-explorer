@@ -5,6 +5,7 @@ import { learnedDjScores, sanitizeLearnedDjModel, type LearnedDjModel } from './
 import { sanitizeShortClipModel, shortClipScores, type ShortClipModel } from './shortClipModel';
 import { eventFeatures } from './eventFeatures';
 import { cachedAudioInference, isAudioEmbedding, isScoreMap } from './audioInferenceCache';
+import { loadTransformers } from './transformersRuntime';
 import Essentia from 'essentia.js/dist/essentia.js-core.es.js';
 import { EssentiaWASM } from 'essentia.js/dist/essentia-wasm.es.js';
 import { instrumentScores, musicScore, type InstrumentPredictions } from './instrumentLabels';
@@ -44,10 +45,7 @@ async function loadModel<T>(load: (progress_callback?: (p: { status?: string; fi
 let classifier: Promise<{ model: Awaited<ReturnType<typeof AutoModelForAudioClassification.from_pretrained>>; processor: Awaited<ReturnType<typeof AutoProcessor.from_pretrained>> }> | null = null;
 function getClassifier() {
   return classifier ??= (async () => {
-    const { env, AutoProcessor, AutoModelForAudioClassification } = await import('@huggingface/transformers');
-    env.allowRemoteModels = false; env.allowLocalModels = true;
-    env.localModelPath = import.meta.env.BASE_URL;
-    if (env.backends.onnx.wasm) { env.backends.onnx.wasm.wasmPaths = undefined; env.backends.onnx.wasm.numThreads = musicInferenceThreads(); }
+    const { AutoProcessor, AutoModelForAudioClassification } = await loadTransformers();
     const model = await loadModel(progress_callback => AutoModelForAudioClassification.from_pretrained('music-model', { dtype: 'q8', device: 'wasm', local_files_only: true, progress_callback }));
     const processor = await AutoProcessor.from_pretrained('music-model', { local_files_only: true });
     return { model, processor };
@@ -65,9 +63,7 @@ function getGpuClassifier() {
     const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
     if (memory !== undefined && memory < 4) throw new Error('Too little memory for a second AST model');
     if (!gpu || !await gpu.requestAdapter().catch(() => null)) throw new Error('No WebGPU adapter');
-    const { env, AutoProcessor, AutoModelForAudioClassification } = await import('@huggingface/transformers');
-    env.allowRemoteModels = false; env.allowLocalModels = true;
-    env.localModelPath = import.meta.env.BASE_URL;
+    const { AutoProcessor, AutoModelForAudioClassification } = await loadTransformers();
     const model = await AutoModelForAudioClassification.from_pretrained('music-model', { dtype: 'fp32', device: 'webgpu', local_files_only: true });
     const processor = await AutoProcessor.from_pretrained('music-model', { local_files_only: true });
     return { model, processor };
@@ -80,9 +76,7 @@ let soundClassifier: Promise<{
 }> | null = null;
 function getSoundClassifier() {
   return soundClassifier ??= (async () => {
-    const { env, AutoProcessor, ClapAudioModelWithProjection } = await import('@huggingface/transformers');
-    env.allowRemoteModels = false; env.allowLocalModels = true; env.localModelPath = import.meta.env.BASE_URL;
-    if (env.backends.onnx.wasm) { env.backends.onnx.wasm.wasmPaths = undefined; env.backends.onnx.wasm.numThreads = musicInferenceThreads(); }
+    const { env, AutoProcessor, ClapAudioModelWithProjection } = await loadTransformers();
     // Isolate this generation from the previously cached, smaller CLAP model.
     // Requests in this worker are serialized, so restore the default for AST.
     const previousCache = env.cacheKey;
