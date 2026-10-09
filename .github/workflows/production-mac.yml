@@ -47,6 +47,7 @@ jobs:
     outputs:
       sha: ${{ steps.prepare.outputs.sha }}
       tag: ${{ steps.prepare.outputs.tag }}
+      release_id: ${{ steps.prepare.outputs.release_id }}
       build: ${{ steps.prepare.outputs.build }}
       eligible: ${{ steps.prepare.outputs.eligible }}
     steps:
@@ -84,9 +85,9 @@ jobs:
             if (policy.pointerStatus(pointer?.body) > meta.statusId) {
               core.setOutput('eligible', 'false'); return;
             }
-            let release;
-            try { release = (await github.rest.repos.getReleaseByTag({...context.repo, tag:meta.tag})).data; }
-            catch (e) { if (e.status !== 404) throw e; }
+            // The tag endpoint excludes drafts; paginate to reuse a partial draft on retry.
+            const releases = await github.paginate(github.rest.repos.listReleases, {...context.repo, per_page:100});
+            let release = releases.find(candidate => candidate.tag_name === meta.tag);
             if (!release) release = (await github.rest.repos.createRelease({
               ...context.repo, tag_name:meta.tag, target_commitish:meta.sha,
               name:`Mac production ${meta.sha.slice(0,12)}`, body:policy.releaseBody(meta.sha),
@@ -95,6 +96,7 @@ jobs:
             if (!release.draft) policy.assertComplete(release.assets);
             core.setOutput('sha', meta.sha);
             core.setOutput('tag', meta.tag);
+            core.setOutput('release_id', String(release.id));
             core.setOutput('build', String(release.draft));
             core.setOutput('eligible', 'true');
 
@@ -199,12 +201,17 @@ jobs:
           ref: ${{ github.workflow_sha }}
           persist-credentials: false
       - name: Publish complete release and atomically replace download links
+        env:
+          RELEASE_ID: ${{ needs.prepare.outputs.release_id }}
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea9 # v7
         with:
           script: |
             const policy = require('./scripts/production-mac-policy.cjs');
             const meta = policy.validateEvent(context.payload);
-            const {data:release} = await github.rest.repos.getReleaseByTag({...context.repo, tag:meta.tag});
+            const releaseId = Number(process.env.RELEASE_ID);
+            if (!Number.isSafeInteger(releaseId) || releaseId <= 0) throw new Error('Invalid release ID');
+            const {data:release} = await github.rest.repos.getRelease({...context.repo, release_id:releaseId});
+            if (release.tag_name !== meta.tag) throw new Error('Prepared release tag mismatch');
             policy.assertComplete(release.assets);
             if (release.draft) await github.rest.repos.updateRelease({
               ...context.repo, release_id:release.id, draft:false, prerelease:true, make_latest:'false'
