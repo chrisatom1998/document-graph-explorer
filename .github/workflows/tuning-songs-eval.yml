@@ -1,0 +1,154 @@
+name: Whole-song tuning set (Mixing Secrets)
+
+# Runs the real app on full Mixing Secrets songs (scripts/tuning-songs/build-mss.py) so whole-song display rules
+# ("sound effect", "texture", voice, ...) can be tuned on songs that are NOT the 417-song judge set
+# (whole-songs-eval.yml). The graph exports are kept as artifacts for offline tuning; only the manifest and an aggregate
+# report are committed, to the triggering branch. Audio is fetched at run time and never committed.
+on:
+  workflow_dispatch:
+    inputs:
+      app_ref:
+        description: Branch, tag or commit whose app to test
+        default: main
+  push:
+    branches: ['claude/raise-tag-accuracy-*']
+    paths: [.github/workflows/tuning-songs-eval.yml, scripts/tuning-songs/**]
+
+permissions:
+  contents: write
+
+env:
+  APP_REF: ${{ inputs.app_ref || 'main' }}
+  ONNXRUNTIME_NODE_INSTALL: skip
+  DOCS: docs/evaluations/tuning-songs-2026-10-09
+  SONGS: 150
+  SHARDS: 6
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+concurrency:
+  group: tuning-songs-${{ github.ref_name }}-${{ inputs.app_ref || 'main' }}
+
+jobs:
+  audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    outputs:
+      app_sha: ${{ steps.app.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin the app under test to one commit
+        id: app
+        run: git fetch -q --depth 1 origin "$APP_REF" && echo "sha=$(git rev-parse FETCH_HEAD)" | tee -a "$GITHUB_OUTPUT"
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL; df -h .
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install -q numpy huggingface_hub
+      - name: Sum each song's stems into one MP3 and label it from the stems
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          python3 scripts/tuning-songs/build-mss.py audio manifest.json "$SONGS" "$SHARDS" --workers 6
+          cp manifest.json audio/
+      - uses: actions/upload-artifact@v4
+        with: { name: ts-audio, path: audio, retention-days: 7 }
+
+  eval:
+    needs: audio
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.audio.outputs.app_sha }}
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/download-artifact@v4
+        with:
+          name: ts-audio
+          path: all-clips
+      - name: Keep this shard's songs
+        run: |
+          mv all-clips/${{ matrix.shard }} clips
+          python3 -c "import json,os,sys;m=json.load(open(sys.argv[1]));have={f[:-4] for f in os.listdir('clips')};m['items']=[i for i in m['items'] if i['id'] in have];json.dump(m,open('manifest.json','w'));print(len(m['items']),'songs in this shard')" all-clips/manifest.json
+          rm -rf all-clips
+          cp harness/scripts/short-clip-upload-eval.mjs scripts/
+          git log -1 --format='app under test: %H %s'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=clips AUDIO_EXT=mp3 MANIFEST=manifest.json node scripts/short-clip-upload-eval.mjs out/run test 4
+          git rev-parse HEAD > out/run/app-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ts-export-${{ matrix.shard }}
+          path: out/run/
+          retention-days: 30
+
+  score:
+    needs: [audio, eval]
+    if: ${{ !cancelled() && needs.audio.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.audio.outputs.app_sha }}
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: ts-audio
+          path: audio
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ts-export-*
+          path: exports
+      - name: Score
+        run: |
+          set -o pipefail
+          mkdir -p scripts/tuning-songs && cp harness/scripts/tuning-songs/score.mjs scripts/tuning-songs/
+          APP=$(git rev-parse HEAD); LABEL=$(echo "$APP_REF" | tr -c 'A-Za-z0-9._\n-' '-' | cut -c1-40)-${APP::7}
+          mkdir -p "harness/$DOCS"; cp audio/manifest.json "harness/$DOCS/manifest.json"
+          R="harness/$DOCS/results/$LABEL"; mkdir -p "$R"; echo "R=$R" >> "$GITHUB_ENV"
+          MANIFEST=harness/$DOCS/manifest.json npx vite-node scripts/tuning-songs/score.mjs "$R/tags.json" exports/ts-export-*/graph-export.json | tee "$R/tags.txt"
+          echo "app $APP_REF at $APP; harness $GITHUB_SHA; run $GITHUB_RUN_ID" > "$R/tested-commit.txt"
+      - name: Commit the manifest and aggregate report
+        if: github.ref_name != github.event.repository.default_branch
+        working-directory: harness
+        run: |
+          git add "$DOCS"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record tuning-song tag results for $APP_REF" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
