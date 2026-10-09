@@ -115,3 +115,19 @@ Apple M5 Max, 18 logical CPUs, Chrome reporting 32 GiB, Vite dev server, full mo
 | 45-second synthetic WAV, models warm | 38.4 s | 21.6 s |
 
 For the three warm rows, the complete analysis JSON (all scores, evidence, tempo, key and notes; run id and timestamps excluded) is byte-identical between the serialized and side-by-side paths. Unit tests cover the same equality with out-of-order completion, including a failing family. Peak memory, batch throughput on large folders and the built app were not measured.
+
+## Pipelined folder ingestion
+
+On hosts that retain four model-family workers and report at least eight logical CPUs, the two-slot decoder queue now lets a ready deeper analysis start while the remaining files receive previews. Previously, every queued Jamendo preview had to finish before any deeper analysis started, leaving the heavier model workers idle during that first pass. Once deeper analysis occupies a slot, pending previews get the other slot; when previews finish, both slots can process deeper analyses. Other hosts keep the existing preview-first scheduling.
+
+The change applies to both Quick and Full analysis through the shared audio ingestion path. Model requests, inference thread counts, preprocessing, output aggregation, coverage and cache identities are unchanged. It removes the initial scheduling barrier; it does not make an individual model invocation faster.
+
+Regression tests cover 100-file Quick and Full imports with mixed filename extensions and mocked decoding/inference. They hold AST and CLAP work pending, verify that both start before all previews finish, verify that all 100 previews still finish, and then verify complete ledgers with exactly one request per model family per three-second file. Queue tests also cover cancellation, failure recovery, the two-slot limit and the serialized fallback. These are scheduling checks, not real-audio throughput measurements; no new latency or speedup percentage has been measured on the user's machine.
+
+## Audio processing work reduction
+
+Tempo and key analysis now share their exact decoded 44.1 kHz excerpts. This reduces the decoder reads for those two jobs from two to one for recordings up to 60 seconds, and from six to three for longer recordings. Retention is bounded to 60 seconds of mono PCM (about 10.6 MB per active analysis). Rhythm receives its own transferable copies; key receives the retained originals. Incomplete decodes are never reused, so key can still retry if rhythm's preparation fails.
+
+On hosts already running model families concurrently, the trained tagger starts alongside AST and CLAP instead of after the sound passes. It still queues behind other work in the existing single-request Jamendo worker. Its results and failure notes are applied in the previous order, preserving intermediate previews and final aggregation. The existing Jamendo warmup now also loads the tagger's session. Other hosts keep sequential inference.
+
+Audio regression tests compare complete results between serial and concurrent execution, including tagger failure; check cancellation with a pending tagger; verify exact PCM hashes after real buffer transfers; and check decoder counts and retry behavior. These changes retain the same models, preprocessing, windows and cache identities. Wall-clock improvements with real model inference have not been measured here.

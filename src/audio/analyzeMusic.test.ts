@@ -87,6 +87,44 @@ it.each(['fast', 'full'] as const)('previews a folder before deeper %s checks wi
   expect(results.every(result => result.stage === undefined && result.instrumentScan?.complete)).toBe(true);
 });
 
+it.each(['fast', 'full'] as const)('starts heavy %s inference before all 100 audio previews finish', async mode => {
+  vi.stubGlobal('navigator', { deviceMemory: 16, hardwareConcurrency: 8 });
+  vi.resetModules();
+  const isolated = await import('./analyzeMusic');
+  const previews = new Set<string>();
+  const heavyStarts: number[] = [];
+  const held: (() => void)[] = [];
+  let hold = true;
+  class SlowHeavyWorker extends FakeWorker {
+    override postMessage(message: { id: number; kind: string }) {
+      if (message.kind === 'instruments' || message.kind === 'profile') {
+        heavyStarts.push(previews.size);
+        if (hold) { held.push(() => super.postMessage(message)); return; }
+      }
+      super.postMessage(message);
+    }
+  }
+  vi.stubGlobal('Worker', SlowHeavyWorker);
+  const formats = ['wav', 'mp3', 'ogg', 'flac', 'm4a'];
+  const pending = Promise.all(Array.from({ length: 100 }, (_, i) => {
+    const name = `track-${i}.${formats[i % formats.length]}`;
+    return isolated.analyzeMusic(new Blob([name]), name, { mode, onPreview: () => { previews.add(name); } });
+  }));
+  // Hold both heavy families: the free decoder must still finish every preview.
+  await vi.waitFor(() => expect(previews.size).toBe(100), { timeout: 5000 });
+  expect(heavyStarts.length).toBeGreaterThanOrEqual(2);
+  expect(heavyStarts.every(count => count < 100)).toBe(true);
+  expect(state.maxDecoders).toBe(2);
+  hold = false;
+  for (const release of held) release();
+  const results = await pending;
+  for (const kind of ['jamendo', 'instruments', 'profile', 'rhythm', 'tonal']) {
+    expect(state.events.filter(event => event === kind)).toHaveLength(100);
+  }
+  expect(results.every(result => result.recognition?.status === 'complete' && result.instrumentScan?.complete)).toBe(true);
+  expect(state.decoders).toBe(0);
+});
+
 it('reuses a finished analysis without opening audio decoders', async () => {
   state.cache = { version: 2, durationSeconds: 3, analyzedSeconds: 2, instruments: [], notes: [],
     instrumentScan: { complete: true, analyzedSeconds: 2, windows: 1 } };

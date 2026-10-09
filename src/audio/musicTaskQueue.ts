@@ -8,13 +8,16 @@ interface Task {
   abort: () => void;
 }
 
-/** Bound decoder/model memory, and finish waiting previews before starting deeper work. */
+/** Bound decoder/model memory. By default, finish previews before deeper work. */
 export class MusicTaskQueue {
   private pending: Task[] = [];
   private active = 0;
   private activePreviews = 0;
 
-  constructor(private readonly concurrency: number) {}
+  constructor(
+    private readonly concurrency: number,
+    private readonly pipelineAnalysis: () => boolean = () => false,
+  ) {}
 
   schedule<T>(priority: Priority, run: () => Promise<T>, signal?: AbortSignal): Promise<T> {
     return new Promise<T>((resolve, reject) => {
@@ -39,8 +42,15 @@ export class MusicTaskQueue {
   private pump() {
     while (this.active < this.concurrency && this.pending.length) {
       const preview = this.pending.findIndex(task => task.priority === 'preview');
-      if (preview < 0 && this.activePreviews) return;
-      const task = this.pending.splice(preview < 0 ? 0 : preview, 1)[0];
+      // Keep one deeper analysis moving while the other slot previews the folder.
+      // Otherwise a large import leaves AST/CLAP idle until every preview finishes.
+      // Once analysis owns a slot, previews retain priority for the remaining one.
+      const pipeline = this.concurrency > 1 && this.pipelineAnalysis();
+      const analysis = pipeline && this.active === this.activePreviews
+        ? this.pending.findIndex(task => task.priority === 'analysis') : -1;
+      if (!pipeline && preview < 0 && this.activePreviews) return;
+      const index = analysis >= 0 ? analysis : preview >= 0 ? preview : 0;
+      const task = this.pending.splice(index, 1)[0];
       task.signal?.removeEventListener('abort', task.abort);
       this.active++;
       if (task.priority === 'preview') this.activePreviews++;
