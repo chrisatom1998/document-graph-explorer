@@ -82,7 +82,7 @@ export default function ResonanceShell({ children }: { children: ReactNode }) {
           {/* Switch, create, rename or delete workspaces; the tagline shows until a graph exists. */}
           {docCount > 0
             ? <span className="rs-corpus"><Suspense fallback={<span className="rs-tagline">{activeName}</span>}><CorpusSwitcher /></Suspense></span>
-            : <span className="rs-tagline">Find what sounds alike.</span>}
+            : <span className="rs-tagline">Find how sounds relate.</span>}
         </div>
         <nav className="rs-tabs" aria-label="Views">
           {(['graph', 'library', 'export'] as Tab[]).map(key => (

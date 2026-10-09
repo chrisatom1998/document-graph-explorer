@@ -66,7 +66,7 @@ test('first run renders the empty state with a working WebGL scene', async ({ pa
   const errors = collectErrors(page);
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Find what sounds alike.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Find how sounds relate.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Load demo corpus' })).toBeVisible();
 
   // If WebGL context creation failed, the scene mounts a fallback section

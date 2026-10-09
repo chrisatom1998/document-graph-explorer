@@ -78,7 +78,7 @@ export default function EmptyState() {
             </Chip>
             <p className="empty-state__kicker">Resonance</p>
             <h1 className="empty-state__title">
-              Find what sounds alike.
+              Find how sounds relate.
             </h1>
             <p className="empty-state__tagline">
               Drop in audio clips or documents and get a map of how they connect. Files stay on
