@@ -98,9 +98,9 @@ export async function openChat(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Ask about your library' }).click();
 }
 
-/** Open the sample assistant (replaces the floating .dj-launch pill). */
+/** Open the sample assistant (the top-bar note button; replaces the floating .dj-launch pill). */
 export async function openSampleAssistant(page: Page): Promise<void> {
-  await page.locator('.rs-assistant').click();
+  await page.getByRole('button', { name: 'Sample assistant', exact: true }).click();
 }
 
 /**
