@@ -1,0 +1,143 @@
+name: Whole-song tag check
+
+# Judges every sound tag on 417 real full songs whose instruments are all known from their stems
+# (docs/evaluations/whole-songs-2026-10-09: MedleyDB 178 + MoisesDB 239, CC BY-NC-SA, judge only). Unlike the Jamendo
+# sets, a tag the stems rule out counts as absent, so precision is real, not a floor.
+# The app under test is the "app_ref" input on a manual run, else main. Scripts and the manifest always come from this
+# commit. Each batch of 4 songs must finish inside the driver's 30-minute batch limit. Audio is fetched at run time and never committed; only aggregate reports are committed, to the triggering
+# branch (never the default branch).
+on:
+  workflow_dispatch:
+    inputs:
+      app_ref:
+        description: Branch, tag or commit whose app to test
+        default: main
+  push:
+    branches: ['whole-songs/**', 'claude/whole-song-tag-labels-*']
+    paths: [.github/workflows/whole-songs-eval.yml, scripts/whole-songs/**]
+
+permissions:
+  contents: write
+
+env:
+  APP_REF: ${{ inputs.app_ref || 'main' }}
+  ONNXRUNTIME_NODE_INSTALL: skip
+  DOCS: docs/evaluations/whole-songs-2026-10-09
+  AUDIO: https://huggingface.co/datasets/seungheondoh/cmd-{set}-metadata/resolve/main/{set}.tar.gz
+  MUSIC_MODEL_PATHS: |
+    public/music-model/**/*.onnx
+    public/sound-model/**/*.onnx
+    public/jamendo-model/*.onnx
+    !public/jamendo-model/nsynth_*-discogs-effnet-1.onnx
+
+concurrency:
+  group: whole-songs-${{ github.ref_name }}-${{ inputs.app_ref || 'main' }}
+
+jobs:
+  audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL; df -h .
+      - name: Fetch both archives and cut every song to a named MP3
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          python3 scripts/whole-songs/fetch-audio.py "$DOCS/manifest.json" "$AUDIO" audio 12
+      - uses: actions/upload-artifact@v4
+        with: { name: ws-audio, path: audio, retention-days: 7 }
+
+  eval:
+    needs: audio
+    runs-on: ubuntu-latest
+    # About 5 minutes per song on a runner, so 12 shards of ~35 songs, at most 6 at once (the project's runner cap).
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.APP_REF }}
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/download-artifact@v4
+        with:
+          name: ws-audio
+          path: all-clips
+      - name: Keep this shard's songs
+        run: mv all-clips/${{ matrix.shard }} clips && rm -rf all-clips
+      - name: Use the harness's driver and manifest
+        run: |
+          cp harness/scripts/short-clip-upload-eval.mjs scripts/
+          python3 -c "import json,os,sys;m=json.load(open(sys.argv[1]));have={f[:-4] for f in os.listdir('clips')};m['items']=[i for i in m['items'] if i['id'] in have];json.dump(m,open('manifest.json','w'));print(len(m['items']),'songs in this shard')" harness/$DOCS/manifest.json
+          git log -1 --format='app under test: %H %s'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Analyse in the real app
+        run: |
+          export CHROME_PATH=$(node -e "console.log(require('playwright').chromium.executablePath())")
+          AUDIO_DIR=clips AUDIO_EXT=mp3 MANIFEST=manifest.json node scripts/short-clip-upload-eval.mjs out/run test 4
+          git rev-parse HEAD > out/run/app-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ws-export-${{ matrix.shard }}
+          path: out/run/
+          retention-days: 30
+
+  score:
+    needs: eval
+    # Every shard must succeed: a partial run would be scored and committed as if every song were analysed.
+    if: ${{ !cancelled() && needs.eval.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.APP_REF }}
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ws-export-*
+          path: exports
+      - name: Score
+        run: |
+          set -o pipefail
+          mkdir -p scripts/whole-songs && cp harness/scripts/whole-songs/score.mjs scripts/whole-songs/   # run against the app's own src
+          APP=$(git rev-parse HEAD); LABEL=$(echo "$APP_REF" | tr -c 'A-Za-z0-9._-\n' '-' | cut -c1-40)-${APP::7}
+          R="harness/$DOCS/results/$LABEL"; mkdir -p "$R"; echo "R=$R" >> "$GITHUB_ENV"
+          MANIFEST=harness/$DOCS/manifest.json npx vite-node scripts/whole-songs/score.mjs "$R/tags.json" exports/ws-export-*/graph-export.json | tee "$R/tags.txt"
+          echo "app $APP_REF at $APP; harness $GITHUB_SHA; run $GITHUB_RUN_ID" > "$R/tested-commit.txt"
+      - name: Commit the aggregate reports
+        if: github.ref_name != github.event.repository.default_branch
+        working-directory: harness
+        run: |
+          git add "${R#harness/}"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record whole-song tag results for $APP_REF" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
