@@ -1,0 +1,274 @@
+{
+  "model": "dge-clap-component",
+  "manifestSha256": "8641396bd7aa9439f3fd315610c76390bc29b5bb0d618bf82c24ef63b90cfc0f",
+  "at": "2026-10-09T17:02:29.926Z",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "logicalCpus": 9,
+  "rows": [
+    {
+      "id": "flute-dry-1s",
+      "status": "complete",
+      "cold": true,
+      "elapsedMs": 19508.958301000002,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "flute-dry-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 3115.3035310000014,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "flute-dry-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 3290.951814,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "flute-delay-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1903.4701370000002,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "flute-delay-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 2076.8191130000014,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "flute-delay-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 2532.0152359999993,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "flute-distortion-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1601.9487399999998,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "flute-distortion-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 2361.1949539999987,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "flute-distortion-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 3056.0042810000014,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "flute-filter-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1143.2217610000007,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "flute-filter-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 2068.224871999999,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "flute-filter-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 3925.1640409999964,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "marimba-dry-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 2196.7855299999937,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "marimba-dry-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1182.8587909999987,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "marimba-delay-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 784.5837890000039,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "marimba-delay-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1050.9349129999973,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "marimba-distortion-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 960.187291000002,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "marimba-distortion-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1916.4838579999996,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "marimba-filter-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1264.8454669999992,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    },
+    {
+      "id": "marimba-filter-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1262.8492130000013,
+      "runtime": {
+        "backend": "wasm",
+        "configuredInferenceThreads": 4,
+        "identity": "wasm-threads-4-v1",
+        "inferenceExecuted": true,
+        "effectiveInferenceThreads": 4
+      }
+    }
+  ],
+  "commit": "fbf46ebd3db42f828104a9b0e98052f1052adde0",
+  "boundary": "ffmpeg mono 48 kHz decode, IPC, unchanged built production CLAP profile worker; no graph, AST, tagger, display-policy or browser-file-picker work. Fresh context, sequential clips.",
+  "browser": "153.0.8010.0",
+  "rawRunSha256": "a4f3459c50c2a4d397cf5e3b253829f729c65820155da5bf09b4e25e60c9ebe0",
+  "archiveNote": "Embedding vectors omitted; regenerate the raw run for retrieval rescoring."
+}

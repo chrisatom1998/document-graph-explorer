@@ -1,0 +1,701 @@
+{
+  "model": "dge-production",
+  "note": "Pilot; descriptive results, not a held-out accuracy claim.",
+  "durations": {
+    "1": {
+      "clips": 12,
+      "complete": 11,
+      "labels": {
+        "source:flute": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "tn": 1,
+          "unknown": 10,
+          "incomplete": 0,
+          "precision": null,
+          "recall": 0
+        },
+        "source:marimba / xylophone": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "tn": 1,
+          "unknown": 10,
+          "incomplete": 0,
+          "precision": null,
+          "recall": 0
+        }
+      },
+      "tempo": [
+        {
+          "id": "silence-1s",
+          "strict": null,
+          "halfDouble": null,
+          "noPulseCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse90-1s",
+          "strict": false,
+          "halfDouble": false,
+          "noPulseCorrect": null,
+          "complete": true
+        },
+        {
+          "id": "pulse120-1s",
+          "strict": false,
+          "halfDouble": false,
+          "noPulseCorrect": null,
+          "complete": true
+        },
+        {
+          "id": "pulse174-1s",
+          "strict": false,
+          "halfDouble": false,
+          "noPulseCorrect": null,
+          "complete": true
+        }
+      ],
+      "key": [
+        {
+          "id": "silence-1s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse90-1s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse120-1s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse174-1s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        }
+      ],
+      "strictTempo": 0,
+      "octaveTolerantTempo": 0,
+      "exactKey": null,
+      "weightedKey": null,
+      "correctNoPulse": 1,
+      "correctNoKey": 1,
+      "latency": {
+        "n": 11,
+        "p50Ms": 7386.8226399999985,
+        "observedP95Ms": 10561.89017899998,
+        "measuredSerialClipsPerSecond": 0.1349770127351834,
+        "meanRealTimeFactor": 7.408668926181813,
+        "coldRows": [
+          {
+            "id": "masb-1009674-T-1s",
+            "elapsedMs": 19105.047902
+          }
+        ],
+        "warmRows": [
+          {
+            "id": "masb-101006-T-1s",
+            "elapsedMs": 6892.388500999994
+          },
+          {
+            "id": "masb-103089-R-1s",
+            "elapsedMs": 7386.8226399999985
+          },
+          {
+            "id": "masb-1033252-R-1s",
+            "elapsedMs": 10561.89017899998
+          },
+          {
+            "id": "masb-1036934-O-1s",
+            "elapsedMs": 6414.833155
+          },
+          {
+            "id": "masb-103892-O-1s",
+            "elapsedMs": 7632.800707999966
+          },
+          {
+            "id": "iowa-flute-1s",
+            "elapsedMs": 8640.488249999995
+          },
+          {
+            "id": "iowa-marimba-1s",
+            "elapsedMs": 7489.248006000009
+          },
+          {
+            "id": "silence-1s",
+            "elapsedMs": 6542.29495000001
+          },
+          {
+            "id": "pulse90-1s",
+            "elapsedMs": 6488.421424
+          },
+          {
+            "id": "pulse120-1s",
+            "elapsedMs": 8162.262512999994
+          },
+          {
+            "id": "pulse174-1s",
+            "elapsedMs": 5283.907861999993
+          }
+        ],
+        "note": "Small pilot; aggregate mixes first-use and warm observations. Use coldRows/warmRows separately. Includes browser polling when run with run-dge."
+      },
+      "binding": {
+        "attempted": 0,
+        "scored": 0,
+        "strictCorrect": 0,
+        "ties": 0,
+        "accuracy": null,
+        "endToEndAccuracy": null,
+        "note": "Ties count as incorrect; silence is a separate control, not a correct caption label."
+      },
+      "retrieval": {
+        "k": 5,
+        "queries": 0,
+        "meanPrecision": null,
+        "top1": null,
+        "meanReciprocalRank": null,
+        "note": "Queries require at least one known positive and negative in a different source group.",
+        "results": []
+      }
+    },
+    "2": {
+      "clips": 12,
+      "complete": 11,
+      "labels": {
+        "source:flute": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "tn": 1,
+          "unknown": 10,
+          "incomplete": 0,
+          "precision": null,
+          "recall": 0
+        },
+        "source:marimba / xylophone": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 1,
+          "tn": 1,
+          "unknown": 10,
+          "incomplete": 0,
+          "precision": null,
+          "recall": 0
+        }
+      },
+      "tempo": [
+        {
+          "id": "silence-2s",
+          "strict": null,
+          "halfDouble": null,
+          "noPulseCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse90-2s",
+          "strict": true,
+          "halfDouble": true,
+          "noPulseCorrect": null,
+          "complete": true
+        },
+        {
+          "id": "pulse120-2s",
+          "strict": true,
+          "halfDouble": true,
+          "noPulseCorrect": null,
+          "complete": true
+        },
+        {
+          "id": "pulse174-2s",
+          "strict": false,
+          "halfDouble": false,
+          "noPulseCorrect": null,
+          "complete": true
+        }
+      ],
+      "key": [
+        {
+          "id": "silence-2s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse90-2s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse120-2s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse174-2s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        }
+      ],
+      "strictTempo": 0.6666666666666666,
+      "octaveTolerantTempo": 0.6666666666666666,
+      "exactKey": null,
+      "weightedKey": null,
+      "correctNoPulse": 1,
+      "correctNoKey": 1,
+      "latency": {
+        "n": 11,
+        "p50Ms": 6913.163546000025,
+        "observedP95Ms": 9287.45862400002,
+        "measuredSerialClipsPerSecond": 0.14312928361654523,
+        "meanRealTimeFactor": 3.4933452286363695,
+        "coldRows": [],
+        "warmRows": [
+          {
+            "id": "masb-1009674-T-2s",
+            "elapsedMs": 12894.060425999996
+          },
+          {
+            "id": "masb-101006-T-2s",
+            "elapsedMs": 7324.795854000011
+          },
+          {
+            "id": "masb-103089-R-2s",
+            "elapsedMs": 6326.745549999992
+          },
+          {
+            "id": "masb-1033252-R-2s",
+            "elapsedMs": 9287.45862400002
+          },
+          {
+            "id": "masb-1036934-O-2s",
+            "elapsedMs": 6335.174419999996
+          },
+          {
+            "id": "masb-103892-O-2s",
+            "elapsedMs": 6450.447972000053
+          },
+          {
+            "id": "iowa-flute-2s",
+            "elapsedMs": 6913.163546000025
+          },
+          {
+            "id": "iowa-marimba-2s",
+            "elapsedMs": 7502.3507230000105
+          },
+          {
+            "id": "silence-2s",
+            "elapsedMs": 6515.426510000019
+          },
+          {
+            "id": "pulse90-2s",
+            "elapsedMs": 7125.289614000008
+          },
+          {
+            "id": "pulse120-2s",
+            "elapsedMs": 7648.778105999983
+          },
+          {
+            "id": "pulse174-2s",
+            "elapsedMs": 5423.964111000008
+          }
+        ],
+        "note": "Small pilot; aggregate mixes first-use and warm observations. Use coldRows/warmRows separately. Includes browser polling when run with run-dge."
+      },
+      "binding": {
+        "attempted": 0,
+        "scored": 0,
+        "strictCorrect": 0,
+        "ties": 0,
+        "accuracy": null,
+        "endToEndAccuracy": null,
+        "note": "Ties count as incorrect; silence is a separate control, not a correct caption label."
+      },
+      "retrieval": {
+        "k": 5,
+        "queries": 0,
+        "meanPrecision": null,
+        "top1": null,
+        "meanReciprocalRank": null,
+        "note": "Queries require at least one known positive and negative in a different source group.",
+        "results": []
+      }
+    },
+    "6": {
+      "clips": 11,
+      "complete": 11,
+      "labels": {
+        "source:flute": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "unknown": 10,
+          "incomplete": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "source:marimba / xylophone": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 1,
+          "unknown": 10,
+          "incomplete": 0,
+          "precision": null,
+          "recall": null
+        }
+      },
+      "tempo": [
+        {
+          "id": "silence-6s",
+          "strict": null,
+          "halfDouble": null,
+          "noPulseCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse90-6s",
+          "strict": true,
+          "halfDouble": true,
+          "noPulseCorrect": null,
+          "complete": true
+        },
+        {
+          "id": "pulse120-6s",
+          "strict": true,
+          "halfDouble": true,
+          "noPulseCorrect": null,
+          "complete": true
+        },
+        {
+          "id": "pulse174-6s",
+          "strict": true,
+          "halfDouble": true,
+          "noPulseCorrect": null,
+          "complete": true
+        }
+      ],
+      "key": [
+        {
+          "id": "silence-6s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse90-6s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": false,
+          "complete": true
+        },
+        {
+          "id": "pulse120-6s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse174-6s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        }
+      ],
+      "strictTempo": 1,
+      "octaveTolerantTempo": 1,
+      "exactKey": null,
+      "weightedKey": null,
+      "correctNoPulse": 1,
+      "correctNoKey": 0.75,
+      "latency": {
+        "n": 11,
+        "p50Ms": 9684.370429999952,
+        "observedP95Ms": 72458.05308800002,
+        "measuredSerialClipsPerSecond": 0.06066381479612432,
+        "meanRealTimeFactor": 2.7473818985303025,
+        "coldRows": [],
+        "warmRows": [
+          {
+            "id": "masb-1009674-T-6s",
+            "elapsedMs": 29100.221088
+          },
+          {
+            "id": "masb-101006-T-6s",
+            "elapsedMs": 9039.638347
+          },
+          {
+            "id": "masb-103089-R-6s",
+            "elapsedMs": 9169.303446000005
+          },
+          {
+            "id": "masb-1033252-R-6s",
+            "elapsedMs": 72458.05308800002
+          },
+          {
+            "id": "masb-1036934-O-6s",
+            "elapsedMs": 7919.873788000026
+          },
+          {
+            "id": "masb-103892-O-6s",
+            "elapsedMs": 10789.780226999952
+          },
+          {
+            "id": "iowa-flute-6s",
+            "elapsedMs": 9684.370429999952
+          },
+          {
+            "id": "silence-6s",
+            "elapsedMs": 6375.978327999997
+          },
+          {
+            "id": "pulse90-6s",
+            "elapsedMs": 10405.737806999998
+          },
+          {
+            "id": "pulse120-6s",
+            "elapsedMs": 10375.363656000001
+          },
+          {
+            "id": "pulse174-6s",
+            "elapsedMs": 6008.885097999999
+          }
+        ],
+        "note": "Small pilot; aggregate mixes first-use and warm observations. Use coldRows/warmRows separately. Includes browser polling when run with run-dge."
+      },
+      "binding": {
+        "attempted": 0,
+        "scored": 0,
+        "strictCorrect": 0,
+        "ties": 0,
+        "accuracy": null,
+        "endToEndAccuracy": null,
+        "note": "Ties count as incorrect; silence is a separate control, not a correct caption label."
+      },
+      "retrieval": {
+        "k": 5,
+        "queries": 0,
+        "meanPrecision": null,
+        "top1": null,
+        "meanReciprocalRank": null,
+        "note": "Queries require at least one known positive and negative in a different source group.",
+        "results": []
+      }
+    },
+    "10": {
+      "clips": 10,
+      "complete": 10,
+      "labels": {
+        "source:bass": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 1,
+          "tn": 0,
+          "unknown": 8,
+          "incomplete": 0,
+          "precision": 1,
+          "recall": 0.5
+        },
+        "source:drums": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "unknown": 9,
+          "incomplete": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "source:guitar": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "unknown": 6,
+          "incomplete": 0,
+          "precision": 1,
+          "recall": 1
+        },
+        "source:synthesizer": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 1,
+          "tn": 0,
+          "unknown": 8,
+          "incomplete": 0,
+          "precision": 1,
+          "recall": 0.5
+        },
+        "source:violin": {
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "tn": 0,
+          "unknown": 9,
+          "incomplete": 0,
+          "precision": 1,
+          "recall": 1
+        }
+      },
+      "tempo": [
+        {
+          "id": "silence-10s",
+          "strict": null,
+          "halfDouble": null,
+          "noPulseCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse90-10s",
+          "strict": true,
+          "halfDouble": true,
+          "noPulseCorrect": null,
+          "complete": true
+        },
+        {
+          "id": "pulse120-10s",
+          "strict": true,
+          "halfDouble": true,
+          "noPulseCorrect": null,
+          "complete": true
+        },
+        {
+          "id": "pulse174-10s",
+          "strict": true,
+          "halfDouble": true,
+          "noPulseCorrect": null,
+          "complete": true
+        }
+      ],
+      "key": [
+        {
+          "id": "silence-10s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse90-10s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": false,
+          "complete": true
+        },
+        {
+          "id": "pulse120-10s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        },
+        {
+          "id": "pulse174-10s",
+          "exact": null,
+          "weighted": null,
+          "noKeyCorrect": true,
+          "complete": true
+        }
+      ],
+      "strictTempo": 1,
+      "octaveTolerantTempo": 1,
+      "exactKey": null,
+      "weightedKey": null,
+      "correctNoPulse": 1,
+      "correctNoKey": 0.75,
+      "latency": {
+        "n": 10,
+        "p50Ms": 9159.286866999988,
+        "observedP95Ms": 13159.220717999997,
+        "measuredSerialClipsPerSecond": 0.10845905044944079,
+        "meanRealTimeFactor": 0.9220069656300001,
+        "coldRows": [],
+        "warmRows": [
+          {
+            "id": "masb-1009674-T-10s",
+            "elapsedMs": 13159.220717999997
+          },
+          {
+            "id": "masb-101006-T-10s",
+            "elapsedMs": 10607.350000000006
+          },
+          {
+            "id": "masb-103089-R-10s",
+            "elapsedMs": 9638.34932400001
+          },
+          {
+            "id": "masb-1033252-R-10s",
+            "elapsedMs": 11040.764161
+          },
+          {
+            "id": "masb-1036934-O-10s",
+            "elapsedMs": 7437.359804000007
+          },
+          {
+            "id": "masb-103892-O-10s",
+            "elapsedMs": 9159.286866999988
+          },
+          {
+            "id": "silence-10s",
+            "elapsedMs": 6438.42745800002
+          },
+          {
+            "id": "pulse90-10s",
+            "elapsedMs": 9297.211794000003
+          },
+          {
+            "id": "pulse120-10s",
+            "elapsedMs": 7981.472474000009
+          },
+          {
+            "id": "pulse174-10s",
+            "elapsedMs": 7441.2539629999665
+          }
+        ],
+        "note": "Small pilot; aggregate mixes first-use and warm observations. Use coldRows/warmRows separately. Includes browser polling when run with run-dge."
+      },
+      "binding": {
+        "attempted": 6,
+        "scored": 0,
+        "strictCorrect": 0,
+        "ties": 0,
+        "accuracy": null,
+        "endToEndAccuracy": 0,
+        "note": "Ties count as incorrect; silence is a separate control, not a correct caption label."
+      },
+      "retrieval": {
+        "k": 5,
+        "queries": 0,
+        "meanPrecision": null,
+        "top1": null,
+        "meanReciprocalRank": null,
+        "note": "Queries require at least one known positive and negative in a different source group.",
+        "results": []
+      }
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "at": "2026-10-09T16:58:04.300Z",
+  "model": "dge-production",
+  "commit": "fbf46ebd3db42f828104a9b0e98052f1052adde0",
+  "manifestSha256": "8641396bd7aa9439f3fd315610c76390bc29b5bb0d618bf82c24ef63b90cfc0f",
+  "platform": "linux",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "logicalCpus": 9,
+  "node": "v24.19.0",
+  "rows": [
+    {
+      "id": "flute-dry-1s",
+      "status": "failed",
+      "error": "Error: Import deadline exceeded; browser session ended"
+    },
+    {
+      "id": "flute-dry-2s",
+      "status": "failed",
+      "error": "Error: locator.count: Target crashed "
+    },
+    {
+      "id": "flute-dry-6s",
+      "status": "failed",
+      "error": "Error: locator.count: Target crashed "
+    },
+    {
+      "id": "flute-delay-1s",
+      "status": "failed",
+      "error": "Error: locator.count: Target crashed "
+    },
+    {
+      "id": "flute-delay-2s",
+      "status": "failed",
+      "error": "Error: locator.count: Target page, context or browser has been closed"
+    }
+  ],
+  "boundary": "File picker through saved terminal result, including polling/stability waits; sequential clips in a fresh browser context. First clip cold, others warm. Heap is page-only.",
+  "browser": "153.0.8010.0",
+  "hardware": {
+    "cores": 9,
+    "deviceMemoryGiB": 8,
+    "isolated": true
+  },
+  "aborted": "Browser deadline or crash",
+  "rawRunSha256": "5cbaa061732aff5649e70d7522c9585c3f165b630ed2a58f8ed5618a3bb3d3f0",
+  "archiveNote": "Embedding vectors omitted; regenerate the raw run for retrieval rescoring."
+}

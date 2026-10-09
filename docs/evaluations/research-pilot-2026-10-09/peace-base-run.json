@@ -1,0 +1,286 @@
+{
+  "model": "peace",
+  "revision": "484fe3cbf4a21226f0989fbbcadb126c59ec34ef",
+  "prompt": "Which musical instruments are audible?",
+  "manifestSha256": "be29d9b63661b46238da676cb11bf3dc8dbf6c7707db632c0ad365a8b74de8a8",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "threads": 4,
+  "boundary": "Local file decode, preprocessing and inference; model loading measured separately. CPU batch size 1. Not browser end-to-end.",
+  "rows": [
+    {
+      "id": "masb-1009674-T-1s",
+      "status": "complete",
+      "cold": true,
+      "elapsedMs": 3135.5095870003424
+    },
+    {
+      "id": "masb-1009674-T-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 4460.2771509999
+    },
+    {
+      "id": "masb-1009674-T-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 3972.383947999333
+    },
+    {
+      "id": "masb-1009674-T-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 2781.9270020008844
+    },
+    {
+      "id": "masb-101006-T-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 511.6510859988921
+    },
+    {
+      "id": "masb-101006-T-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1476.1257530008152
+    },
+    {
+      "id": "masb-101006-T-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 834.1375069994683
+    },
+    {
+      "id": "masb-101006-T-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1231.9853249991866
+    },
+    {
+      "id": "masb-103089-R-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 524.4997839999996
+    },
+    {
+      "id": "masb-103089-R-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1740.7293010001013
+    },
+    {
+      "id": "masb-103089-R-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 904.6774710004684
+    },
+    {
+      "id": "masb-103089-R-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1196.091306001108
+    },
+    {
+      "id": "masb-1033252-R-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 635.4469479992986
+    },
+    {
+      "id": "masb-1033252-R-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1717.2531239993987
+    },
+    {
+      "id": "masb-1033252-R-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1093.3346020010504
+    },
+    {
+      "id": "masb-1033252-R-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1875.512829001309
+    },
+    {
+      "id": "masb-1036934-O-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 962.2470919985062
+    },
+    {
+      "id": "masb-1036934-O-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 2459.58869199967
+    },
+    {
+      "id": "masb-1036934-O-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1322.7776780004206
+    },
+    {
+      "id": "masb-1036934-O-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1675.5265160009003
+    },
+    {
+      "id": "masb-103892-O-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 603.601515000264
+    },
+    {
+      "id": "masb-103892-O-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1992.3968549992424
+    },
+    {
+      "id": "masb-103892-O-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 911.9953970002825
+    },
+    {
+      "id": "masb-103892-O-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1072.6725980002811
+    },
+    {
+      "id": "iowa-flute-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 560.0357780003833
+    },
+    {
+      "id": "iowa-flute-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 2083.3259880000696
+    },
+    {
+      "id": "iowa-flute-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 931.576146000225
+    },
+    {
+      "id": "iowa-marimba-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 713.0980629990518
+    },
+    {
+      "id": "iowa-marimba-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 2268.3427530009794
+    },
+    {
+      "id": "silence-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 68780.34461300012
+    },
+    {
+      "id": "silence-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 8756.482636001238
+    },
+    {
+      "id": "silence-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 863.6459589997685
+    },
+    {
+      "id": "silence-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 908.4785129998636
+    },
+    {
+      "id": "pulse90-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 531.455612001082
+    },
+    {
+      "id": "pulse90-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1650.3277319989138
+    },
+    {
+      "id": "pulse90-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 928.2489439992787
+    },
+    {
+      "id": "pulse90-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1038.3839620008075
+    },
+    {
+      "id": "pulse120-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 487.279163000494
+    },
+    {
+      "id": "pulse120-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1665.338217999306
+    },
+    {
+      "id": "pulse120-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 920.6579059991782
+    },
+    {
+      "id": "pulse120-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1002.127109999492
+    },
+    {
+      "id": "pulse174-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 575.3825359988696
+    },
+    {
+      "id": "pulse174-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1590.7192089998716
+    },
+    {
+      "id": "pulse174-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 873.3767619996797
+    },
+    {
+      "id": "pulse174-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1138.3098360001895
+    }
+  ],
+  "loadMs": 6236.660730999574,
+  "rawRunSha256": "a3889f42f34224e8daefba873b1440f5b91e3f59c1b8dc1865145fce97f0b34f",
+  "archiveNote": "Embedding vectors omitted; regenerate the raw run for retrieval rescoring.",
+  "checkpoint": "peace/boxgraph"
+}

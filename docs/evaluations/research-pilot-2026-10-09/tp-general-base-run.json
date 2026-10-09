@@ -1,0 +1,389 @@
+{
+  "model": "tp-clap",
+  "revision": "b14090f5210715958f5ab7056d3c47f5f61cb582",
+  "prompt": "Which musical instruments are audible?",
+  "checkpoint": "tp-clap.pt",
+  "manifestSha256": "be29d9b63661b46238da676cb11bf3dc8dbf6c7707db632c0ad365a8b74de8a8",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "requestedOmpThreads": 2,
+  "versions": {
+    "numpy": "2.5.3",
+    "torch": "2.14.1+cpu",
+    "transformers": "5.19.0",
+    "jax": "0.10.2",
+    "flax": "0.12.8",
+    "peace": "0.1.0",
+    "tp-clap": "0.1.0"
+  },
+  "threadingNote": "PyTorch set_num_threads is applied. OMP_NUM_THREADS does not bound all JAX/XLA threads.",
+  "boundary": "Local file decode, preprocessing and inference; model loading measured separately. CPU batch size 1. Not browser end-to-end.",
+  "rows": [
+    {
+      "id": "masb-1009674-T-1s",
+      "status": "complete",
+      "cold": true,
+      "elapsedMs": 711.2259969999286,
+      "embeddingElapsedMs": 710.4968760013435
+    },
+    {
+      "id": "masb-1009674-T-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 239.606677001575,
+      "embeddingElapsedMs": 237.9005220009276
+    },
+    {
+      "id": "masb-1009674-T-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 470.8664450008655,
+      "embeddingElapsedMs": 468.6971810006071
+    },
+    {
+      "id": "masb-1009674-T-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1599.1851429989765,
+      "embeddingElapsedMs": 648.074821998307,
+      "binding": {
+        "positive": 0.17002156376838684,
+        "negative": 0.17631350457668304,
+        "silencePositive": -0.11711074411869049,
+        "silenceNegative": -0.07014437764883041,
+        "control": "unconditioned ten-second silence; not an LLM text-only control"
+      },
+      "bindingControlElapsedMs": 948.2840539985773
+    },
+    {
+      "id": "masb-101006-T-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 687.2221710000304,
+      "embeddingElapsedMs": 686.3816810000571
+    },
+    {
+      "id": "masb-101006-T-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 745.3407909997622,
+      "embeddingElapsedMs": 743.6273940002138
+    },
+    {
+      "id": "masb-101006-T-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1107.8869390003092,
+      "embeddingElapsedMs": 1104.5345859984081
+    },
+    {
+      "id": "masb-101006-T-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1494.6797739994508,
+      "embeddingElapsedMs": 885.3086349990917,
+      "binding": {
+        "positive": 0.7265375852584839,
+        "negative": 0.715057909488678,
+        "silencePositive": -0.08541165292263031,
+        "silenceNegative": -0.09914784133434296,
+        "control": "unconditioned ten-second silence; not an LLM text-only control"
+      },
+      "bindingControlElapsedMs": 606.1039759988489
+    },
+    {
+      "id": "masb-103089-R-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 221.25391900044633,
+      "embeddingElapsedMs": 220.08229000130086
+    },
+    {
+      "id": "masb-103089-R-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 313.9584950004064,
+      "embeddingElapsedMs": 312.6641499984544
+    },
+    {
+      "id": "masb-103089-R-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 423.6732240005949,
+      "embeddingElapsedMs": 421.8701310001052
+    },
+    {
+      "id": "masb-103089-R-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1226.8112120000296,
+      "embeddingElapsedMs": 601.8392409987428,
+      "binding": {
+        "positive": 0.22192734479904175,
+        "negative": 0.15095332264900208,
+        "silencePositive": -0.10518752038478851,
+        "silenceNegative": -0.1103116124868393,
+        "control": "unconditioned ten-second silence; not an LLM text-only control"
+      },
+      "bindingControlElapsedMs": 621.2457609999547
+    },
+    {
+      "id": "masb-1033252-R-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 435.7310689993028,
+      "embeddingElapsedMs": 434.45422100012365
+    },
+    {
+      "id": "masb-1033252-R-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 276.3936539995484,
+      "embeddingElapsedMs": 275.22549999957846
+    },
+    {
+      "id": "masb-1033252-R-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 517.3678739993193,
+      "embeddingElapsedMs": 514.7390929996618
+    },
+    {
+      "id": "masb-1033252-R-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1185.1727430002938,
+      "embeddingElapsedMs": 621.7314599998645,
+      "binding": {
+        "positive": 0.41958656907081604,
+        "negative": 0.3947286009788513,
+        "silencePositive": 0.0078028663992881775,
+        "silenceNegative": -0.02030685916543007,
+        "control": "unconditioned ten-second silence; not an LLM text-only control"
+      },
+      "bindingControlElapsedMs": 561.0544570008642
+    },
+    {
+      "id": "masb-1036934-O-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 195.32898400029808,
+      "embeddingElapsedMs": 194.67832099871885
+    },
+    {
+      "id": "masb-1036934-O-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 315.1096490000782,
+      "embeddingElapsedMs": 314.2081160003727
+    },
+    {
+      "id": "masb-1036934-O-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 452.74720300039917,
+      "embeddingElapsedMs": 450.98337800118315
+    },
+    {
+      "id": "masb-1036934-O-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 2055.593803001102,
+      "embeddingElapsedMs": 771.4083919981931,
+      "binding": {
+        "positive": 0.19211345911026,
+        "negative": 0.1973690390586853,
+        "silencePositive": -0.15991371870040894,
+        "silenceNegative": -0.14887118339538574,
+        "control": "unconditioned ten-second silence; not an LLM text-only control"
+      },
+      "bindingControlElapsedMs": 1281.4694579992647
+    },
+    {
+      "id": "masb-103892-O-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 681.6620680001506,
+      "embeddingElapsedMs": 680.9968230008963
+    },
+    {
+      "id": "masb-103892-O-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 516.5834609997546,
+      "embeddingElapsedMs": 515.6470670008275
+    },
+    {
+      "id": "masb-103892-O-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 891.8761540007836,
+      "embeddingElapsedMs": 890.7706940008211
+    },
+    {
+      "id": "masb-103892-O-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 1635.5615869997564,
+      "embeddingElapsedMs": 841.343546000644,
+      "binding": {
+        "positive": 0.5065553784370422,
+        "negative": 0.4978722929954529,
+        "silencePositive": -0.1087234690785408,
+        "silenceNegative": -0.10291033238172531,
+        "control": "unconditioned ten-second silence; not an LLM text-only control"
+      },
+      "bindingControlElapsedMs": 792.7362119989994
+    },
+    {
+      "id": "iowa-flute-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 375.3812039994955,
+      "embeddingElapsedMs": 372.9595659988263
+    },
+    {
+      "id": "iowa-flute-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 440.93158899886475,
+      "embeddingElapsedMs": 438.701470999149
+    },
+    {
+      "id": "iowa-flute-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 566.4837660006015,
+      "embeddingElapsedMs": 562.3715639994771
+    },
+    {
+      "id": "iowa-marimba-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 182.0800910008984,
+      "embeddingElapsedMs": 180.99066500144545
+    },
+    {
+      "id": "iowa-marimba-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 212.7283300014824,
+      "embeddingElapsedMs": 211.4156980005646
+    },
+    {
+      "id": "silence-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 205.25969899972552,
+      "embeddingElapsedMs": 204.12931099963316
+    },
+    {
+      "id": "silence-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 194.85284199981834,
+      "embeddingElapsedMs": 193.67688499914948
+    },
+    {
+      "id": "silence-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 418.0087109998567,
+      "embeddingElapsedMs": 416.1253559996112
+    },
+    {
+      "id": "silence-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 790.9624029998668,
+      "embeddingElapsedMs": 788.0045240017353
+    },
+    {
+      "id": "pulse90-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 498.1538640004146,
+      "embeddingElapsedMs": 496.43065100099193
+    },
+    {
+      "id": "pulse90-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 852.9301180005859,
+      "embeddingElapsedMs": 851.829123999778
+    },
+    {
+      "id": "pulse90-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 998.2176189987513,
+      "embeddingElapsedMs": 996.3778600013029
+    },
+    {
+      "id": "pulse90-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 733.8552420005726,
+      "embeddingElapsedMs": 731.3374089990248
+    },
+    {
+      "id": "pulse120-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 227.57154399914725,
+      "embeddingElapsedMs": 226.3473340008204
+    },
+    {
+      "id": "pulse120-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 500.3224499996577,
+      "embeddingElapsedMs": 496.93105699952866
+    },
+    {
+      "id": "pulse120-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 910.8992590008711,
+      "embeddingElapsedMs": 907.3709599997528
+    },
+    {
+      "id": "pulse120-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 884.1142609999224,
+      "embeddingElapsedMs": 881.1407499997586
+    },
+    {
+      "id": "pulse174-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 215.36400399963895,
+      "embeddingElapsedMs": 212.23775199905504
+    },
+    {
+      "id": "pulse174-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 289.93873899889877,
+      "embeddingElapsedMs": 287.86636800032284
+    },
+    {
+      "id": "pulse174-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 476.5289690003556,
+      "embeddingElapsedMs": 473.30657199927373
+    },
+    {
+      "id": "pulse174-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 499.68968400025915,
+      "embeddingElapsedMs": 497.1162269994238
+    }
+  ],
+  "loadMs": 14443.558569999368,
+  "rawRunSha256": "ce2ef2ff0d9f500544e875708d9ee3a8cb92ca98db108bb9903e2c9873e7a4c6",
+  "archiveNote": "Embedding vectors omitted; regenerate the raw run for retrieval rescoring."
+}
