@@ -1,0 +1,41 @@
+name: FMAK key features
+
+# Key-network features for the 5,489 FMAKv2 songs (scripts/key/fmak-features.py): extra key training data that is in
+# no judging set. One job per Zenodo audio zip (4-5 GB each); the features go up as artifacts (audio never does) and
+# the key thread trains on them offline.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/improve-key-detection-*']
+    paths: ['.github/workflows/fmak-key-features.yml', 'scripts/key/fmak-features.py']
+
+permissions:
+  contents: read
+
+jobs:
+  features:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        zip: ['000-019', '020-039', '040-049', '050-059', '060-069', '070-079', '080-089', '090-099', '100-109', '110-124']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch audio and labels
+        run: |
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+          curl -fsSL --retry 6 -o "$RUNNER_TEMP/fmakv2.csv" https://zenodo.org/api/records/12759100/files/fmakv2.csv/content
+          curl -fSL --retry 10 --retry-all-errors -C - -o "$RUNNER_TEMP/a.zip" \
+            "https://zenodo.org/api/records/10719860/files/${{ matrix.zip }}.zip/content"
+          mkdir -p "$RUNNER_TEMP/audio" && cd "$RUNNER_TEMP/audio" && unzip -q "$RUNNER_TEMP/a.zip" && rm "$RUNNER_TEMP/a.zip"
+          ls | head; du -sh .
+      - name: Features
+        run: J=4 python3 scripts/key/fmak-features.py "$RUNNER_TEMP/fmakv2.csv" "$RUNNER_TEMP/audio" "feat-${{ matrix.zip }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fmak-key-${{ matrix.zip }}
+          path: feat-${{ matrix.zip }}
+          compression-level: 0
+          retention-days: 3
