@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { correctDjTags } from './sampleAssistant';
-import { advancedFilters, closeDetails, fitAll, openTab, startIn3D } from './resonance';
+import { advancedFilters, closeDetails, fitAll, openTab, similarityFilter, startIn3D } from './resonance';
 
 const base = { kind:'document',fileType:'audio',topics:[],entities:[],keywords:[],wordCount:0,degree:0,cluster:0,status:'ok' };
 const analysis = {version:2,analyzedSeconds:8,durationSeconds:8,instruments:[],notes:[]};
@@ -76,11 +76,11 @@ test('automatic audio graph explains matches, updates corrections, exports, and 
  await page.mouse.move(500,300);await page.mouse.down();await page.mouse.move(570,350,{steps:10});await page.mouse.up();await page.mouse.wheel(0,-120);
  await fitAll(page);
  await page.screenshot({path:testInfo.outputPath('audio-graph-desktop.png')});
+ // Link kinds are a sidebar checkbox now; the embedded Advanced panel no longer repeats them.
+ await similarityFilter(page,'Sound properties');
+ await similarityFilter(page,'Sound properties',false);
  await advancedFilters(page);
- await page.getByRole('button',{name:'More filters',exact:true}).click();
- await page.getByRole('button',{name:'sound properties',exact:true}).click();
- await expect(page.getByRole('button',{name:'sound properties',exact:true})).toHaveAttribute('aria-pressed','true');
- await page.getByRole('button',{name:'sound properties',exact:true}).click();
+ await expect(page.getByRole('button',{name:'More filters',exact:true})).toBeVisible();
  await advancedFilters(page,false);
  await openAlpha();
  const evidence=await connectionEvidence();
