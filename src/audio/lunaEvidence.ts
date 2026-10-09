@@ -50,6 +50,8 @@ export function lunaEvidence(audio: MusicAnalysis, index: number): LunaSample {
   const labels: LunaLabel[] = [];
   let truncated = false;
   const add = (group: DjGroup, originalLabel: string, sourceModel: string, score: number | null, coverage: Interval[] | null, supported: boolean, ambiguous: boolean) => {
+    truncated ||= (coverage?.length ?? 0) > 128;
+    coverage = coverage?.slice(0, 128) ?? null;
     const previous = labels.find(l => l.group === group && l.originalLabel === originalLabel && l.sourceModel === sourceModel && l.score === score && l.supported === supported && l.ambiguous === ambiguous);
     if (previous) {
       if (coverage) {

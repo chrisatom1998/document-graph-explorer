@@ -4,6 +4,13 @@ import { createRecognition } from './recognition';
 import { sample } from './lunaEvidence.fixture';
 const response = (normalizations: unknown[] = []) => ({ samples: [{ ref: 'Sample 1', normalizations, review: 'recommend', reason: 'The second detector is ambiguous and its coverage is unknown.' }] });
 describe('Luna evidence boundary', () => {
+  it('bounds every detector coverage path and marks omitted windows', () => {
+    const segments = Array.from({ length: 150 }, (_, i) => ({ start: i, end: i + 1, score: .6 }));
+    const evidence = lunaEvidence({ version: 2, durationSeconds: 150, analyzedSeconds: 90, notes: [],
+      instruments: [{ label: 'piano', score: .6, segments }] }, 0);
+    expect(evidence.truncated).toBe(true);
+    expect(evidence.labels.find(l => l.sourceModel === 'Instrument model')?.coverage).toEqual(segments.slice(0, 128).map(({ start, end }) => ({ start, end })));
+  });
   it('preserves a saved audio model proposal and its actual excerpt without inventing a score', () => {
     const evidence = lunaEvidence({ version: 2, durationSeconds: 30, analyzedSeconds: 30, instruments: [], notes: [],
       copilotProperties: { model: 'gpt-audio-1.5', tags: { source: ['voice'], production: [], character: [] }, audioExcerpt: { startSeconds: 0, durationSeconds: 10 } } }, 0);
