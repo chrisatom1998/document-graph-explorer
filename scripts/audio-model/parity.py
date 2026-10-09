@@ -36,7 +36,7 @@ def main():
     model, out = sys.argv[1:3]
     root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
     policy = json.load(open(os.path.join(root, 'src', 'audio', 'taggerPolicy.json')))
-    classes = json.load(open(os.path.join(os.path.dirname(model), 'model.json')))['classes']
+    meta = json.load(open(os.path.join(os.path.dirname(model), 'model.json'))); classes = meta['classes']
     sess = ort.InferenceSession(model, providers=['CPUExecutionProvider'])
     cases = []
     for d in DURATIONS:
@@ -47,7 +47,7 @@ def main():
         scores = np.max(np.stack([sess.run(None, {'samples32k': w[None]})[0][0] for w in ws]), axis=0)
         cases.append({'seconds': d, 'starts': [(offset + k * WIN) / SR for k in range(len(ws))],
                       'scores': {t['output']: round(float(scores[classes.index(t['output'])]), 6) for t in policy['tags']}})
-    json.dump({'model': policy['modelSha256'], 'sampleRate': SR, 'cases': cases}, open(out, 'w'), indent=1)
+    json.dump({'model': meta.get('sha256', {}).get('model.onnx', policy['modelSha256']), 'sampleRate': SR, 'cases': cases}, open(out, 'w'), indent=1)
     print(f'wrote {out}')
 
 if __name__ == '__main__':

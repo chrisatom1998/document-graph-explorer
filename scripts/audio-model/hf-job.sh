@@ -2,10 +2,10 @@
 # Train DGE's own instrument tagger on a Hugging Face Jobs GPU (launched by .github/workflows/audio-model-train.yml).
 # Fetches every dataset itself (nothing is uploaded from GitHub), trains, calibrates on validation artists, exports the
 # browser model, scores DJ clip rounds 1 and 2 and the round 3 held-out Jamendo set (aggregates only), and uploads the
-# run to the private model repo $HF_REPO. Env: REPO_SHA, HF_REPO, MODEL, EPOCHS, LR, BATCH, WEAK, optional SOUNDCLOUD_DATA, HF_TOKEN (secret).
+# run to the private model repo $HF_REPO. Env: REPO_SHA, HF_REPO, MODEL, EPOCHS, LR, BATCH, WEAK, optional RARE_REPEAT, JOB_HOURS, SOUNDCLOUD_DATA, HF_TOKEN (secret).
 # ALL_TAGS=1 adds the app-named head (FSD50K dev, NSynth train + effect renders, Freesound; judged on FSD50K eval, NSynth
 # test and held-out Freesound uploaders), plus TinySOL, EGFxSet, FSLD, WaivOps drum loops, Surge presets (prepare-extra.py)
-# and Slakh stems when scripts/audio-model/prepare-slakh.py exists.
+# and Slakh stems when scripts/audio-model/prepare-slakh.py exists. RAWSTEMS=1 adds Mixing Secrets songs (non-commercial).
 # INIT_FROM=<model repo>[@<revision>[/<folder>]] starts from an earlier run's model.pt. OUT_DIR puts this run under a folder of $HF_REPO.
 set -euo pipefail
 START=$(date +%s)
@@ -29,7 +29,10 @@ nproc; free -g | head -2; df -h $W | tail -1
 # Prepared data is cached in the private dataset <user>/dge-tagger-data under prep-cache/<key>, keyed by the prepare
 # scripts and label map, so a rerun with the same data skips the ~3 h prep. The upload runs alongside training.
 DIRS="prep prepj holdout"; [ "${ALL_TAGS:-0}" = 1 ] && DIRS="$DIRS fsdprep nsprep fsprep xprep"
-KEY=$( (cat $S/prepare*.py $S/labelmap.py; echo "$DIRS") | sha256sum | cut -c1-12)
+KEY=$( (ls $S/prepare*.py | grep -v prepare-rawstems.py | xargs cat; cat $S/labelmap.py; echo "$DIRS") | sha256sum | cut -c1-12)
+# RAWSTEMS=1 adds Mixing Secrets full songs (prepare-rawstems.py, non-commercial licence), built alongside the rest.
+RS_PID=
+if [ "${RAWSTEMS:-0}" = 1 ]; then python3 $S/prepare-rawstems.py rsprep --workers 16 > rawstems.log 2>&1 & RS_PID=$!; fi
 CACHE_PID=
 if python3 - "$KEY" $DIRS <<'PY'
 import os, shutil, sys
@@ -66,7 +69,8 @@ else
     if [ -f $S/prepare-slakh.py ]; then python3 $S/prepare-slakh.py xprep > slakh.log 2>&1 & fi
   fi
   LOGS=$(ls *.log)
-  for job in $(jobs -p); do wait $job || { tail -n 20 $LOGS; exit 1; }; done
+  # The raw-stems prep is waited on (and its log shown) separately below.
+  for job in $(jobs -p); do [ "$job" = "${RS_PID:-}" ] && continue; wait $job || { tail -n 20 $LOGS; exit 1; }; done
   tail -n 3 $LOGS; echo "data prep took $(( ($(date +%s) - START) / 60 )) min"; df -h $W | tail -1
   python3 - "$KEY" $DIRS > cache-upload.txt 2>&1 <<'PY' &
 import sys
@@ -82,9 +86,10 @@ PY
 fi
 
 EXTRA=()
+if [ -n "$RS_PID" ]; then wait $RS_PID || { tail -n 30 rawstems.log; exit 1; }; tail -n 5 rawstems.log; EXTRA+=(--extra rawstems=rsprep); fi
 if [ -n "${SOUNDCLOUD_DATA:-}" ]; then   # "<dataset repo>:<folder>", uploaded by the workflow from its SoundCloud artifacts
   python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='scdl')" "$SOUNDCLOUD_DATA"
-  mv "scdl/${SOUNDCLOUD_DATA#*:}" scprep && EXTRA=(--soundcloud scprep)
+  mv "scdl/${SOUNDCLOUD_DATA#*:}" scprep && EXTRA+=(--soundcloud scprep)
 fi
 if [ "${ALL_TAGS:-0}" = 1 ]; then
   EXTRA+=(--fsd50k fsdprep --nsynth nsprep --freesound fsprep)
@@ -98,9 +103,19 @@ fi
 # evaluation and upload, and never more than TRAIN_HOURS.
 HOURS=$(python3 -c "import sys; t, j, e = map(float, sys.argv[1:]); left = j - e / 3600 - 0.75; print(round(max(0.5, min(t, left) if t else left), 2))" "${TRAIN_HOURS:-0}" "${JOB_HOURS:-7}" "$(( $(date +%s) - START ))")
 echo "training budget ${HOURS} h"
-python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --threads 8 --hours "$HOURS"
+python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --rare-repeat "${RARE_REPEAT:-1}" --threads 8 --hours "$HOURS"
+# Upload the weights now, so a job that runs out of time while scoring still leaves them in the repo.
+python3 - <<EOF
+import os
+from huggingface_hub import HfApi
+api = HfApi(); repo = os.environ['HF_REPO']; api.create_repo(repo, private=True, exist_ok=True)
+api.upload_folder(repo_id=repo, folder_path='run', path_in_repo=os.environ.get('OUT_DIR') or None, allow_patterns=['model.pt', 'log.json'],
+                  delete_patterns=['onnx/*', 'thresholds.json', 'calibrate.txt', 'eval.*', 'coverage.*'],   # an earlier run's scores never sit beside new weights
+                  commit_message='DGE tagger run at ${REPO_SHA:0:7}: ${MODEL} weights, before scoring')
+EOF
 CAL=(openmic=prep jamendo=prepj); EVAL=(prep/eval-round1 prep/eval-round2 holdout/holdout-r3)
 [ -d scprep ] && CAL+=(soundcloud=scprep)
+[ -n "$RS_PID" ] && CAL+=(rawstems=rsprep)
 if [ "${ALL_TAGS:-0}" = 1 ]; then CAL+=(fsd50k=fsdprep nsynth=nsprep freesound=fsprep); for x in $XS; do CAL+=($x=xprep); done; EVAL+=(fsdprep/eval-fsd50k nsprep/eval-nsynth-test nsprep/eval-nsynth-test-fx fsprep/eval-freesound); fi
 python3 $S/calibrate.py run "${CAL[@]}" | tee run/calibrate.txt
 python3 $S/coverage.py run "${CAL[@]}" 

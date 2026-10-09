@@ -1,0 +1,12 @@
+{
+  "runs": [
+    "all-tags",
+    "all-tags-run5"
+  ],
+  "keep": "drums",
+  "public_repo": "dge-all-tags-tagger-nc",
+  "license": "cc-by-nc-sa-4.0",
+  "flavor": "cpu-upgrade",
+  "timeout": "2h",
+  "attempt": 2
+}

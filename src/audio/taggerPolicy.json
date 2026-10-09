@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-2026-10-06-r1",
- "modelSha256": "4839854fa429c8c1ed6835a82a4b6c5c1ea490b2a5ecffe0fcf0303f964f9ca6",
+ "revision": "all-tags-blend-2026-10-09-r1",
+ "modelSha256": "bd231add526cc8d2229fd09a8cd8df550ef974667463704c0e7d49f8d80fa184",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -44,7 +44,7 @@
    "output": "guitar",
    "label": "guitar",
    "dimension": "source",
-   "threshold": 0.4886,
+   "threshold": 0.7281,
    "decides": [
     "guitar"
    ],
@@ -79,7 +79,7 @@
    "output": "violin",
    "label": "violin",
    "dimension": "source",
-   "threshold": 0.3732,
+   "threshold": 0.6256,
    "decides": [
     "violin",
     "violin / fiddle"
@@ -94,7 +94,7 @@
    "output": "trumpet",
    "label": "trumpet",
    "dimension": "source",
-   "threshold": 0.4961,
+   "threshold": 0.6648,
    "decides": [
     "trumpet"
    ],
@@ -138,7 +138,7 @@
    "output": "cat:percussive",
    "label": "percussive",
    "dimension": "character",
-   "threshold": 0.646,
+   "threshold": 0.7246,
    "decides": [
     "percussive"
    ],
@@ -158,7 +158,7 @@
    "output": "cat:wobbling",
    "label": "wobbling",
    "dimension": "character",
-   "threshold": 0.5718,
+   "threshold": 0.6548,
    "decides": [
     "wobbling"
    ],
@@ -178,11 +178,11 @@
    "output": "cat:pulsing",
    "label": "pulsing",
    "dimension": "character",
-   "threshold": 0.5645,
+   "threshold": 0.6477,
    "decides": [
     "pulsing"
    ],
-   "tested": false
+   "tested": true
   },
   {
    "output": "cat:bright",
@@ -208,7 +208,7 @@
    "output": "cat:distorted",
    "label": "distorted",
    "dimension": "character",
-   "threshold": 0.3459,
+   "threshold": 0.4491,
    "decides": [
     "distorted"
    ],
@@ -218,11 +218,11 @@
    "output": "cat:reverse effect",
    "label": "reverse effect",
    "dimension": "effect",
-   "threshold": 0.7061,
+   "threshold": 0.647,
    "decides": [
     "reverse effect"
    ],
-   "tested": false
+   "tested": true
   },
   {
    "output": "cat:bird ambience",
@@ -238,7 +238,7 @@
    "output": "cat:rain ambience",
    "label": "rain ambience",
    "dimension": "effect",
-   "threshold": 0.7011,
+   "threshold": 0.7014,
    "decides": [
     "rain ambience"
    ],
