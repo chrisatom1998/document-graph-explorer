@@ -123,7 +123,8 @@ export default function FilterBar({ embedded = false }: { embedded?: boolean }) 
   const advancedActive =
     filter.minDegree > 0 ||
     filter.minEdgeWeight > 0 ||
-    filter.edgeKinds !== null ||
+    // Embedded, the link-kind chips live in the sidebar, so a kind picked there must not hold this section open.
+    (!embedded && filter.edgeKinds !== null) ||
     filter.modifiedWithinDays !== null;
   const showAdvanced = advancedOpen || advancedActive;
 
@@ -330,7 +331,7 @@ export default function FilterBar({ embedded = false }: { embedded?: boolean }) 
             <button
               type="button"
               className="filter-bar__clear"
-              title={embedded ? "Reset all filters (clusters, recency, and strength minimums)" : "Reset all filters (file types, clusters, connection kinds, recency, and strength minimums)"}
+              title={embedded ? "Reset every filter, including the sidebar's type, similarity, tempo, key, genre and sound choices" : "Reset all filters (file types, clusters, connection kinds, recency, and strength minimums)"}
               onClick={clearAll}
             >
               Clear filters
