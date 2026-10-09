@@ -1,0 +1,3 @@
+tested 4e20f942705562da2049e4a74bd990d5906fcca4 (run 37872902885)
+metadata: fdc81269e2ddcf0bffffc05f01c55509d9c772f43b90f6d96fac325f9facdc8d https://huggingface.co/datasets/Chr0my/freesound.org/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet
+PER_LABEL=1200 PER_UPLOADER=12 NEGATIVES=4800
