@@ -2,16 +2,17 @@ name: DJ effect heads with synthetic training clips
 
 # Same clips, split and judge as round 2 (dj-effects-grow.yml, PR #167): the 12,751 clips recorded in
 # docs/evaluations/dj-effects-2026-10-09/clips.json, split by uploader, heads judged on the round-1 held-out clips
-# (PRIMARY_ROUND=1) and on all 3,233 held-out clips. New: scripts/dj-effects/synth.py adds SYNTH_PER_EFFECT synthetic
-# training clips per effect (impacts, whooshes, lasers, sirens, air horns, reverse cymbals/impacts built from noise and
-# oscillators; vinyl scratches and risers made from training-split music). Two head sets are trained: "renders" (round 2's
-# DSP renders only, the baseline) and "synth" (renders + synthetic clips); train.py picks the synthetic clips per label
-# only where they help on the REAL training clips. Held-out clips are never used to train or pick. Audio is never committed.
+# (PRIMARY_ROUND=1) and on all 3,233 held-out clips. Head sets: "renders" (round 2's DSP renders only, the baseline),
+# "aug" (+ AUG_COPIES augmented copies of every real training effect clip, scripts/dj-effects/aug.py), "sao" (+ Stable
+# Audio Open Small clips made on an HF GPU by scripts/dj-effects/sao.py into SAO_DATASET) and "all" (both). Run 1 tested
+# from-scratch synthetic clips (scripts/dj-effects/synth.py; results kept in synth/): never picked. train.py picks extra clips
+# per label only where they help on the REAL training clips. Held-out clips are never used to train or pick. No audio committed.
 on:
   push:
     branches: [claude/other-ai-models-survey-5si1c0]
     paths:
       - scripts/dj-effects/synth.py
+      - scripts/dj-effects/aug.py
       - .github/workflows/dj-effects-synth.yml
 
 permissions:
@@ -25,7 +26,9 @@ env:
   ONNXRUNTIME_NODE_INSTALL: skip
   CLIPS: docs/evaluations/dj-effects-2026-10-09/clips.json
   DOCS: docs/evaluations/dj-effects-synth-2026-10-09
-  SYNTH_PER_EFFECT: 1200
+  AUG_COPIES: 2
+  SAO_DATASET: cmjatom/dge-effects-sao
+  SAO_MIN_FILES: 3001
   SHARDS: 4
   MUSIC_MODEL_PATHS: |
     public/music-model/**/*.onnx
@@ -138,12 +141,12 @@ jobs:
         run: |
           pids=(); for s in 0 1 2 3; do THREADS=1 node scripts/embed-clap.mjs work/render/manifest.json work/emb/emb-r${{ matrix.shard }}-$s.jsonl $s 4 > work/remb-$s.log 2>&1 & pids+=($!); done
           rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/remb-*.log; exit $rc
-      - name: Synthesise effect clips (training only)
-        run: PER_EFFECT=$SYNTH_PER_EFFECT python3 scripts/dj-effects/synth.py work/fs/manifest.json work/synth ${{ matrix.shard }} $SHARDS
-      - name: Fingerprint the synthetic clips
+      - name: Augment this shard's real training-split effect clips (training only)
+        run: COPIES=$AUG_COPIES python3 scripts/dj-effects/aug.py work/fs/manifest.json work/aug
+      - name: Fingerprint the augmented copies
         run: |
-          mkdir -p work/emb-synth; pids=(); for s in 0 1 2 3; do THREADS=1 node scripts/embed-clap.mjs work/synth/manifest.json work/emb-synth/emb-s${{ matrix.shard }}-$s.jsonl $s 4 > work/semb-$s.log 2>&1 & pids+=($!); done
-          rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/semb-*.log; exit $rc
+          mkdir -p work/emb-aug; pids=(); for s in 0 1 2 3; do THREADS=1 node scripts/embed-clap.mjs work/aug/manifest.json work/emb-aug/emb-a${{ matrix.shard }}-$s.jsonl $s 4 > work/aemb-$s.log 2>&1 & pids+=($!); done
+          rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/aemb-*.log; exit $rc
       - name: Save fingerprints
         if: always()
         uses: actions/cache/save@v4
@@ -163,16 +166,67 @@ jobs:
           EOF
       - name: Collect this shard's outputs
         run: |
-          mkdir -p out; cp work/emb/*.jsonl work/emb-synth/*.jsonl out/
+          mkdir -p out; cp work/emb/*.jsonl work/emb-aug/*.jsonl out/
           cp work/fs/manifest.json out/manifest-${{ matrix.shard }}.json; cp work/fs/state.json out/state-${{ matrix.shard }}.json
-          cp work/render/manifest.json out/renders-${{ matrix.shard }}.json; cp work/synth/manifest.json out/synth-${{ matrix.shard }}.json; cp work/durations.json out/durations-${{ matrix.shard }}.json
+          cp work/render/manifest.json out/renders-${{ matrix.shard }}.json; cp work/aug/manifest.json out/aug-${{ matrix.shard }}.json; cp work/durations.json out/durations-${{ matrix.shard }}.json
       - uses: actions/upload-artifact@v4
         with:
           name: shard-${{ matrix.shard }}
           path: out
 
+  sao:
+    needs: mine
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -q huggingface_hub
+      - name: Fetch the Stable Audio Open Small clips (made on an HF GPU by scripts/dj-effects/sao.py)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python3 - <<'EOF'
+          import json, os
+          import time
+          from huggingface_hub import snapshot_download, HfApi
+          for _ in range(120):  # the GPU job uploads 3,000 clips + manifest; wait until they are all there
+              n = sum(f.startswith('sao/') for f in HfApi().list_repo_files(os.environ['SAO_DATASET'], repo_type='dataset'))
+              print(n, 'files so far', flush=True)
+              if n >= int(os.environ['SAO_MIN_FILES']): break
+              time.sleep(60)
+          d = snapshot_download(os.environ['SAO_DATASET'], repo_type='dataset', local_dir='work/saods')
+          m = json.load(open('work/saods/sao/manifest.json'))
+          for c in m['clips']: c['path'] = os.path.abspath(os.path.join('work/saods/sao', os.path.basename(c['path'])))
+          m['clips'] = [c for c in m['clips'] if os.path.exists(c['path'])]
+          json.dump(m, open('work/sao.json', 'w')); print(len(m['clips']), 'Stable Audio clips')
+          EOF
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+      - name: Restore audio model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.MUSIC_MODEL_PATHS }}
+          key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
+          restore-keys: music-models-
+      - run: npm run setup:music
+      - name: Fingerprint the Stable Audio clips
+        run: |
+          mkdir -p out; pids=(); for s in 0 1 2 3; do THREADS=1 node scripts/embed-clap.mjs work/sao.json out/emb-sao-$s.jsonl $s 4 > work/aemb-$s.log 2>&1 & pids+=($!); done
+          rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/aemb-*.log; cp work/sao.json out/sao.json; exit $rc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shard-sao
+          path: out
+
   train:
-    needs: shard
+    needs: [shard, sao]
     runs-on: ubuntu-latest
     timeout-minutes: 300
     steps:
@@ -190,24 +244,28 @@ jobs:
         run: |
           python3 - <<'EOF'
           import json, glob
-          clips, renders, synth, dur, state = [], [], [], {}, {}
-          for f in sorted(glob.glob('work/emb/synth-*.json')): synth += json.load(open(f))['clips']
+          clips, renders, aug, dur, state = [], [], [], {}, {}
+          sao = json.load(open('work/emb/sao.json'))['clips']
+          for f in sorted(glob.glob('work/emb/aug-*.json')): aug += json.load(open(f))['clips']
           for f in sorted(glob.glob('work/emb/manifest-*.json')): clips += json.load(open(f))['clips']
           for f in sorted(glob.glob('work/emb/renders-*.json')): renders += json.load(open(f))['clips']
           for f in sorted(glob.glob('work/emb/durations-*.json')): dur.update(json.load(open(f)))
           for f in sorted(glob.glob('work/emb/state-*.json')): state.update(json.load(open(f)))
-          json.dump({'clips': clips}, open('work/manifest.json', 'w')); json.dump({'clips': renders}, open('work/renders.json', 'w')); json.dump({'clips': renders + synth}, open('work/renders-synth.json', 'w'))
+          json.dump({'clips': clips}, open('work/manifest.json', 'w')); json.dump({'clips': renders}, open('work/renders.json', 'w')); json.dump({'clips': renders + aug}, open('work/renders-aug.json', 'w')); json.dump({'clips': renders + sao}, open('work/renders-sao.json', 'w')); json.dump({'clips': renders + aug + sao}, open('work/renders-all.json', 'w'))
           json.dump(dur, open('work/durations.json', 'w')); json.dump(state, open('work/state.json', 'w'))
-          print(len(clips), 'clips with audio,', len(renders), 'renders,', len(synth), 'synthetic')
+          print(len(clips), 'clips with audio,', len(renders), 'renders,', len(aug), 'augmented,', len(sao), 'Stable Audio')
           EOF
       - name: Baseline - round 2's renders only
         run: PRIMARY_ROUND=1 DURATIONS=work/durations.json python3 scripts/dj-effects/train.py work/manifest.json work/emb "$DOCS/renders" work/renders.json
-      - name: With synthetic clips added
-        run: PRIMARY_ROUND=1 DURATIONS=work/durations.json python3 scripts/dj-effects/train.py work/manifest.json work/emb "$DOCS/synth" work/renders-synth.json
+      - name: With augmented copies of the real clips added
+        run: PRIMARY_ROUND=1 DURATIONS=work/durations.json python3 scripts/dj-effects/train.py work/manifest.json work/emb "$DOCS/aug" work/renders-aug.json
+      - name: With Stable Audio clips added
+        run: PRIMARY_ROUND=1 DURATIONS=work/durations.json python3 scripts/dj-effects/train.py work/manifest.json work/emb "$DOCS/sao" work/renders-sao.json
+      - name: With both added
+        run: PRIMARY_ROUND=1 DURATIONS=work/durations.json python3 scripts/dj-effects/train.py work/manifest.json work/emb "$DOCS/all" work/renders-all.json
       - name: Record the run
         run: |
-          python3 -c "import json; print(sum(1 for _ in json.load(open('work/renders-synth.json'))['clips']))" > /dev/null
-          { echo "tested $GITHUB_SHA (run $GITHUB_RUN_ID)"; echo "clips: $CLIPS"; echo "SYNTH_PER_EFFECT=$SYNTH_PER_EFFECT"; } > "$DOCS/run-info.txt"
+                    { echo "tested $GITHUB_SHA (run $GITHUB_RUN_ID)"; echo "clips: $CLIPS"; echo "AUG_COPIES=$AUG_COPIES SAO_DATASET=$SAO_DATASET"; } > "$DOCS/run-info.txt"
       - name: Commit the results
         run: |
           git add "$DOCS"
