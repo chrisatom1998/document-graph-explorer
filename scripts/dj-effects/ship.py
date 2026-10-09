@@ -12,7 +12,7 @@ replaces a current one must beat it there too. REVISION_TAG (default dj-effects-
 import json, sys, hashlib, os
 D = sys.argv[1]
 HERE = os.path.dirname(os.path.abspath(__file__))
-spec = {L['label']: L for L in json.load(open(f'{HERE}/labels.json'))['labels']}
+spec = {L['label']: L for L in json.load(open(f"{HERE}/{os.environ.get('LABELS', 'labels.json')}"))['labels']}
 report = json.load(open(f'{D}/report.json'))['labels']
 trained = {h['label']: h for h in json.load(open(f'{D}/heads.json'))['heads']}
 LEARNED, MANIFEST, CATALOG = 'public/sound-model/learned.json', 'public/sound-model/manifest.json', 'src/audio/djCatalog.json'

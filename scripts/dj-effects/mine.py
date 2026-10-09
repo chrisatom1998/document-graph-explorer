@@ -1,6 +1,6 @@
 """Picks short Freesound clips whose uploader tags name a DJ effect (chop, stutter, tape stop, backspin, ...),
 plus clips that name no effect at all as plain negatives, from the public Freesound metadata dump
-(huggingface.co/datasets/Chr0my/freesound.org). Label rules live in labels.json.
+(huggingface.co/datasets/Chr0my/freesound.org). Label rules live in labels.json (or the file named by LABELS, e.g. labels-tags.json).
 
 Tags are written by uploaders, so labels are noisy and a missing tag is not proof of absence; train.py
 therefore never uses a clip tagged with a related effect as a negative (labels.json "overlap").
@@ -15,7 +15,7 @@ META, OUT = sys.argv[1:3]
 PER_LABEL, PER_UPLOADER = int(os.environ.get('PER_LABEL', 300)), int(os.environ.get('PER_UPLOADER', 5))
 NEGATIVES = int(os.environ.get('NEGATIVES', 1600))
 HERE = os.path.dirname(os.path.abspath(__file__))
-spec = json.load(open(f'{HERE}/labels.json'))
+spec = json.load(open(f"{HERE}/{os.environ.get('LABELS', 'labels.json')}"))
 norm = lambda s: re.sub(r'[\s_\-]+', ' ', str(s).lower()).strip()
 squash = lambda s: norm(s).replace(' ', '')
 h = lambda s: hashlib.sha256(s.encode()).hexdigest()
