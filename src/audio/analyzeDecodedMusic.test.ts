@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { createHash } from 'node:crypto';
 import { analyzeDecodedMusic, type AnalysisOptions, type MusicRequest } from './analyzeDecodedMusic';
 import { fastInstrumentStarts } from './analysisPlan';
 import { arrangement } from './structureArrangement.testutil';
@@ -8,6 +9,7 @@ import { instrumentWindowStarts, reliableInstruments } from './instrumentEvidenc
 import { ResultCache } from './recognition';
 import type { DescriptionScore } from './profileDescriptions';
 import { confidentSoundSummary } from './confidentSoundSummary';
+import { TAGGER_UNAVAILABLE } from './tagger';
 
 function fixture(duration: number, options: AnalysisOptions = {}, fail?: string) {
   const calls: string[] = [];
@@ -51,7 +53,7 @@ describe('side-by-side model families', () => {
       maxReads = Math.max(maxReads, ++reads); await new Promise(r => setTimeout(r, 1)); reads--;
       return new Float32Array(Math.round(Math.max(0, Math.min(seconds, duration - start)) * rate)).fill(.1);
     } };
-    const delays: Record<string, number> = { instruments: 7, jamendo: 1, profile: 4, rhythm: 3, tonal: 2 };
+    const delays: Record<string, number> = { instruments: 7, jamendo: 1, profile: 4, rhythm: 3, tonal: 2, tagger: 9 };
     const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
       const kind = String(message.kind);
       maxActive = Math.max(maxActive, ++active);
@@ -64,6 +66,7 @@ describe('side-by-side model families', () => {
       if (kind === 'rhythm' || kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: Math.min(60, duration), instruments: [], notes: [] } as T;
       if (kind === 'instruments') return { scores: { piano: .6 + n * .3, guitar: .4 + n * .2 }, musicScore: .9 } as T;
       if (kind === 'jamendo') return { synthesizer: .5 + n * .3, drums: .3 + n / 3 } as T;
+      if (kind === 'tagger') return { drums: .8, piano: .2, 'cat:reverse effect': .75 } as T;
       return [{group:'source',label:'piano',score:.5 + n * .2}] as T;
     };
     return { run: () => analyzeDecodedMusic(decoder, request, options), stats: () => ({ maxActive, maxReads, familyOverlap }) };
@@ -73,8 +76,8 @@ describe('side-by-side model families', () => {
     if (copy.recognition) { copy.recognition.runId = ''; copy.recognition.startedAt = ''; copy.recognition.endedAt = ''; }
     return copy;
   };
-  it.each([['full', undefined], ['fast', undefined], ['full', 'profile'], ['full', 'instruments']] as const)('matches one-at-a-time results exactly (%s, failing %s)', async (mode, fail) => {
-    const base = { mode, audioFingerprint: 'same-audio' } as const;
+  it.each([['full', undefined], ['fast', undefined], ['full', 'profile'], ['full', 'instruments'], ['full', 'tagger'], ['fast', 'tagger']] as const)('matches one-at-a-time results exactly (%s, failing %s)', async (mode, fail) => {
+    const base = { mode, audioFingerprint: 'same-audio', tagger: true } as const;
     const serial = timed(47, { ...base }, fail), side = timed(47, { ...base, concurrentModels: true }, fail);
     const [a, b] = [await serial.run(), await side.run()];
     expect(comparable(b)).toEqual(comparable(a));
@@ -88,6 +91,109 @@ describe('side-by-side model families', () => {
     const f = timed(300, { signal: controller.signal, concurrentModels: true });
     const run = f.run(); setTimeout(() => controller.abort(new DOMException('cancelled', 'AbortError')), 20);
     await expect(run).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  it('finishes the tagger while heavy inference is still pending without publishing its result early', async () => {
+    const { decoder } = fixture(3);
+    let release!: () => void;
+    const heavy = new Promise<void>(resolve => { release = resolve; });
+    let activeHeavy = 0, previews = 0;
+    const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
+      if (message.kind === 'instruments' || message.kind === 'profile') {
+        activeHeavy++;
+        await heavy;
+        activeHeavy--;
+      }
+      if (message.kind === 'tagger') {
+        expect(activeHeavy).toBeGreaterThan(0);
+        release();
+        return { drums: .8 } as T;
+      }
+      if (message.kind === 'instruments') return { scores: { piano: .9 }, musicScore: .8 } as T;
+      if (message.kind === 'profile') return [] as T;
+      if (message.kind === 'jamendo') return { piano: .7 } as T;
+      return { version: 2, durationSeconds: 3, analyzedSeconds: 3, instruments: [], notes: [] } as T;
+    };
+    const observe = (result: MusicAnalysis) => { previews++; expect(result.tagger).toBeUndefined(); };
+    const result = await analyzeDecodedMusic(decoder, request, {
+      mode: 'full', tagger: true, concurrentModels: true, onPreview: observe, onPartial: observe,
+    });
+    expect(previews).toBeGreaterThan(0);
+    expect(result.tagger?.scores.drums).toBe(.8);
+    expect(result.recognition?.status).toBe('complete');
+  });
+
+  it('handles cancellation during early tagger inference without publishing late evidence', async () => {
+    const { decoder } = fixture(3);
+    const controller = new AbortController();
+    let release!: () => void;
+    const tagger = new Promise<void>(resolve => { release = resolve; });
+    const partials: MusicAnalysis[] = [];
+    const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
+      if (message.kind === 'tagger') {
+        controller.abort();
+        await tagger;
+        return { drums: .9 } as T;
+      }
+      if (message.kind === 'instruments') return { scores: {}, musicScore: 0 } as T;
+      if (message.kind === 'profile') return [] as T;
+      if (message.kind === 'jamendo') return {} as T;
+      return { version: 2, durationSeconds: 3, analyzedSeconds: 3, instruments: [], notes: [] } as T;
+    };
+    await expect(analyzeDecodedMusic(decoder, request, {
+      mode: 'full', concurrentModels: true, tagger: true, signal: controller.signal,
+      onPartial: result => { partials.push(result); },
+    })).rejects.toMatchObject({ name: 'AbortError' });
+    release();
+    await tagger;
+    expect(partials.at(-1)?.recognition?.status).toBe('cancelled');
+    expect(partials.every(result => !result.tagger && !result.notes.includes(TAGGER_UNAVAILABLE))).toBe(true);
+  });
+});
+
+describe('shared tempo and key decoding', () => {
+  it.each([3, 30, 60, 75, 180])('decodes each %s-second recording excerpt once and survives buffer transfers', async duration => {
+    const { decoder } = fixture(duration);
+    const seen: Record<string, Array<{ length: number; hash: string }>> = {};
+    const request: MusicRequest = async <T>(message: Record<string, unknown>, transfer: Transferable[]) => {
+      const kind = String(message.kind);
+      if (kind === 'rhythm' || kind === 'tonal') {
+        const { samples } = message.excerpts as { samples: Float32Array[] };
+        seen[kind] = samples.map(sample => ({ length: sample.length,
+          hash: createHash('sha256').update(new Uint8Array(sample.buffer, sample.byteOffset, sample.byteLength)).digest('hex') }));
+        structuredClone(message, { transfer });
+        expect(samples.every(sample => sample.byteLength === 0)).toBe(true);
+        return { version: 2, durationSeconds: duration, analyzedSeconds: Math.min(60, duration), instruments: [], notes: [] } as T;
+      }
+      if (kind === 'instruments') return { scores: {}, musicScore: 0 } as T;
+      return (kind === 'jamendo' ? {} : []) as T;
+    };
+    const result = await analyzeDecodedMusic(decoder, request, { mode: 'fast', concurrentModels: true });
+    const reads = vi.mocked(decoder.read).mock.calls.filter(([, , rate]) => rate === 44100);
+    expect(reads).toHaveLength(duration > 60 ? 3 : 1);
+    expect(seen.tonal).toEqual(seen.rhythm);
+    expect(seen.tonal.reduce((total, sample) => total + sample.length, 0)).toBeLessThanOrEqual(60 * 44100);
+    expect(result.recognition?.jobs.filter(job => job.modelId === 'rhythm' || job.modelId === 'tonal')
+      .every(job => job.status === 'complete')).toBe(true);
+  });
+
+  it('retries key decoding after an incomplete tempo decode without reusing partial excerpts', async () => {
+    const { decoder } = fixture(75);
+    const read = decoder.read;
+    let reads = 0;
+    vi.mocked(decoder.read).mockImplementation(async (start, seconds, rate) => {
+      if (rate === 44100 && ++reads === 2) throw new Error('Decoder failed');
+      return new Float32Array(Math.round(Math.max(0, Math.min(seconds, 75 - start)) * rate)).fill(.1);
+    });
+    const request: MusicRequest = async <T>(message: Record<string, unknown>) => {
+      if (message.kind === 'instruments') return { scores: {}, musicScore: 0 } as T;
+      if (message.kind === 'rhythm' || message.kind === 'tonal') return { version: 2, durationSeconds: 75, analyzedSeconds: 60, instruments: [], notes: [] } as T;
+      return (message.kind === 'jamendo' ? {} : []) as T;
+    };
+    const result = await analyzeDecodedMusic(decoder, request, { mode: 'fast' });
+    expect(vi.mocked(read).mock.calls.filter(([, , rate]) => rate === 44100)).toHaveLength(5);
+    expect(result.recognition?.jobs.find(job => job.modelId === 'rhythm')).toMatchObject({ status: 'failed', successful: [] });
+    expect(result.recognition?.jobs.find(job => job.modelId === 'tonal')).toMatchObject({ status: 'complete', successful: expect.any(Array) });
   });
 });
 describe('early estimates and selectable music scans', () => {

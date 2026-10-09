@@ -1,4 +1,4 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import { MusicTaskQueue } from './musicTaskQueue';
 
 function deferred() {
@@ -62,4 +62,60 @@ it('continues the folder after a preview fails', async () => {
   const next = queue.schedule('analysis', async () => 'next song');
   await expect(failed).rejects.toThrow('Cannot decode');
   expect(await next).toBe('next song');
+});
+
+it('pipelines a deeper check beside previews without starving either lane', async () => {
+  const queue = new MusicTaskQueue(2, () => true);
+  const first = deferred(), second = deferred(), third = deferred(), deep = deferred();
+  const started: string[] = [];
+  const schedule = (priority: 'preview' | 'analysis', name: string, task: ReturnType<typeof deferred>) =>
+    queue.schedule(priority, async () => { started.push(name); await task.promise; });
+  const a = schedule('preview', 'preview A', first);
+  const b = schedule('preview', 'preview B', second);
+  const c = schedule('preview', 'preview C', third);
+  const x = schedule('analysis', 'deep A', deep);
+  const y = schedule('analysis', 'deep B', deep);
+  first.resolve();
+  await a;
+  await vi.waitFor(() => expect(started).toEqual(['preview A', 'preview B', 'deep A']));
+  second.resolve();
+  await b;
+  await vi.waitFor(() => expect(started).toEqual(['preview A', 'preview B', 'deep A', 'preview C']));
+  third.resolve();
+  await c;
+  // When previews are exhausted, both slots can finish analysis.
+  await vi.waitFor(() => expect(started.at(-1)).toBe('deep B'));
+  deep.resolve();
+  await Promise.all([x, y]);
+});
+
+it('cancels queued pipelined analysis and releases its slot after a failure', async () => {
+  const queue = new MusicTaskQueue(2, () => true);
+  const preview = deferred(), deep = deferred();
+  const a = queue.schedule('preview', () => preview.promise);
+  const b = queue.schedule('analysis', async () => { await deep.promise; throw Error('Model failed'); });
+  const failure = expect(b).rejects.toThrow('Model failed');
+  const controller = new AbortController();
+  const cancelled = queue.schedule('analysis', async () => { throw Error('Must not start'); }, controller.signal);
+  const rejection = expect(cancelled).rejects.toMatchObject({ name: 'AbortError' });
+  const next = queue.schedule('analysis', async () => 'next song');
+  controller.abort();
+  await rejection;
+  deep.resolve();
+  await failure;
+  expect(await next).toBe('next song');
+  preview.resolve();
+  await a;
+});
+
+it('keeps a single-slot queue serialized even when pipelining is requested', async () => {
+  const queue = new MusicTaskQueue(1, () => true);
+  const first = deferred();
+  const started: string[] = [];
+  const a = queue.schedule('preview', async () => { started.push('preview A'); await first.promise; });
+  const b = queue.schedule('analysis', async () => { started.push('deep A'); });
+  const c = queue.schedule('preview', async () => { started.push('preview B'); });
+  first.resolve();
+  await Promise.all([a, b, c]);
+  expect(started).toEqual(['preview A', 'preview B', 'deep A']);
 });

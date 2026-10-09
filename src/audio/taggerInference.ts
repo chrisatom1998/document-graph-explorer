@@ -28,7 +28,8 @@ export async function classifyTagger(samples: Float32Array): Promise<Record<stri
     try {
       const scores = outputs[TAGGER_POLICY.input.output].data as Float32Array;
       if (scores.length !== classes.length) throw new Error('Tagger returned an unexpected number of scores.');
-      return Object.fromEntries(classes.map((label, i) => [label, Math.min(1, Math.max(0, Number(scores[i])))]));
+      if (scores.some(score => !Number.isFinite(score) || score < 0 || score > 1)) throw new Error('Tagger returned an invalid probability.');
+      return Object.fromEntries(classes.map((label, i) => [label, Number(scores[i])]));
     } finally { for (const tensor of Object.values(outputs)) tensor.dispose(); }
   } finally { input.dispose(); }
 }

@@ -56,7 +56,7 @@ describe('trained tagger front end', () => {
       const result = evidence.results()!;
       for (const [output, want] of Object.entries(c.scores)) worst = Math.max(worst, Math.abs(result.scores[output] - want));
     }
-    // Stored scores are rounded to 1e-4; the two runtimes differ by float32 rounding only.
+    // The two runtimes differ by float32 rounding only.
     expect(worst).toBeLessThan(1e-3);
   }, 120_000);
 });

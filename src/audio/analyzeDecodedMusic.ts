@@ -346,7 +346,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   }
   /** The trained tagger (src/audio/tagger.ts): whole 10 s windows at 32 kHz, cut as its held-out scorer cut them.
    * All windows or nothing: a failure leaves every tag to the other detectors and keeps the result out of the cache. */
-  async function taggerPass(): Promise<void> {
+  async function taggerPass(): Promise<{ tagger?: MusicAnalysis['tagger']; unavailable?: true }> {
     try {
       const evidence = new TaggerEvidence();
       for (const start of taggerWindowStarts(duration)) {
@@ -365,12 +365,10 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
         }
         evidence.add(scores, { start, end: start + seconds });
       }
-      const tagger = evidence.results();
-      if (tagger) result.tagger = tagger;
+      return { tagger: evidence.results() };
     } catch (error) {
       if (options.signal?.aborted) throw error;
-      delete result.tagger;
-      result.notes.push(TAGGER_UNAVAILABLE);
+      return { unavailable: true };
     }
   }
   /** One-shot heads on short windows where new sounds start (src/audio/eventWindows.ts). Optional: a failure
@@ -412,23 +410,34 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     }
   }
   const leads = concurrent ? (['ast','jamendo','clap'] as const).map(id => scoreAhead(id).catch(() => {})) : [];
+  // The tagger shares the serialized Jamendo worker, not AST/CLAP. Its bounded
+  // windows can run while the heavier families work. Apply its output below in
+  // the original order so previews, failure notes and final decisions stay stable.
+  const taggerLead = concurrent && options.tagger
+    ? taggerPass().then(value => ({ value }), (error: unknown) => ({ error })) : undefined;
   try {
     if (!options.fusion) await sound('jamendo', job('jamendo').planned[0]);
     refresh();
     if (job('jamendo').successful.length) options.onPreview?.({ ...structuredClone(result), stage: 'preview' });
     check(); publish();
+    // Both jobs use the exact same plan. Keep at most 60 seconds of 44.1 kHz
+    // mono PCM (~10.6 MB), avoiding a second decode/seek/resample for key analysis.
+    // Rhythm receives copies because its worker transfers ownership of them.
+    let tonalSamples: Float32Array[] | undefined;
     for (const id of ['rhythm','tonal'] as const) {
       const j = job(id); j.status = 'running';
       try {
         const samples: Float32Array[] = [];
-        for (const interval of j.planned) {
+        for (const [index, interval] of j.planned.entries()) {
           check(); j.attempted.push(interval);
-          const sample = await read(interval.start, interval.end - interval.start, 44100);
+          const sample = tonalSamples?.[index] ?? await read(interval.start, interval.end - interval.start, 44100);
           if (!sample.length || sample.length < Math.round((interval.end - interval.start) * 44100) - 1) throw new Error('Audio excerpt could not be fully decoded');
           samples.push(sample);
         }
         if (!samples.length) throw new Error('Audio excerpt could not be fully decoded');
-        const partial = await request<MusicAnalysis>({ kind: id, excerpts: { durationSeconds: duration, samples } }, samples.map(s => s.buffer));
+        if (id === 'rhythm') tonalSamples = samples;
+        const input = id === 'rhythm' ? samples.map(sample => sample.slice()) : samples;
+        const partial = await request<MusicAnalysis>({ kind: id, excerpts: { durationSeconds: duration, samples: input } }, input.map(s => s.buffer));
         check();
         if (id === 'rhythm') result.tempo = partial.tempo;
         else {
@@ -442,7 +451,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       } catch (error) {
         if (options.signal?.aborted) throw error;
         j.error = error instanceof Error ? error.message : 'Unavailable'; result.notes.push(messages[id]!);
-      }
+      } finally { if (id === 'tonal') tonalSamples = undefined; }
       publish();
     }
     if (options.fusion && fusionIdentity) {
@@ -497,7 +506,12 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     // A stopped family may still hold one window in flight; let it settle before the decoder closes.
     stopAhead(); await Promise.all(leads);
     if (mode === 'full' && duration > SHORT_CLIP_MAX_SECONDS && !stopped.has('clap') && !job('clap').unsupportedReason) await eventPass();
-    if (options.tagger) await taggerPass();
+    if (options.tagger) {
+      const outcome = taggerLead ? await taggerLead : { value: await taggerPass() };
+      if ('error' in outcome) throw outcome.error;
+      if (outcome.value.tagger) result.tagger = outcome.value.tagger;
+      if (outcome.value.unavailable) result.notes.push(TAGGER_UNAVAILABLE);
+    }
     await addVersionPrint(result, (start, seconds) => read(start, seconds, VERSION_PRINT_SAMPLE_RATE), options.signal);
     refresh(false, true);
     return result;

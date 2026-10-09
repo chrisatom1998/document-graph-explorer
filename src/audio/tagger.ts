@@ -89,25 +89,25 @@ export interface TaggerAnalysis {
   intervals?: Interval[];
 }
 
-const round4 = (v: number) => Math.round(v * 1e4) / 1e4;
 export class TaggerEvidence {
   private perWindow = new Map<string, number[]>();
   private intervals: Interval[] = [];
   private count = 0;
   add(scores: Record<string, number>, interval?: Interval): void {
-    const k = this.count++;
+    this.count++;
     if (interval) this.intervals.push({ start: interval.start, end: interval.end });
     for (const tag of TAGGER_POLICY.tags) {
       const s = scores[tag.output];
       if (typeof s !== 'number' || !Number.isFinite(s) || s < 0 || s > 1) continue;
       const list = this.perWindow.get(tag.output) ?? [];
-      while (list.length < k) list.push(0);
-      list[k] = s; this.perWindow.set(tag.output, list);
+      list.push(s); this.perWindow.set(tag.output, list);
     }
   }
   results(): TaggerAnalysis | undefined {
     if (!this.count) return;
-    const windowScores = Object.fromEntries([...this.perWindow].map(([k, v]) => [k, Array.from({ length: this.count }, (_, i) => round4(v[i] ?? 0))]));
+    // Missing/invalid output is unknown, not a negative observation. Only outputs scored in every
+    // window can decide a tag. Keep model precision: rounding here can cross a calibrated threshold.
+    const windowScores = Object.fromEntries([...this.perWindow].filter(([, v]) => v.length === this.count).map(([k, v]) => [k, [...v]]));
     return { revision: TAGGER_REVISION, windows: this.count, scores: Object.fromEntries(Object.entries(windowScores).map(([k, v]) => [k, Math.max(...v)])), windowScores,
       ...(this.intervals.length === this.count ? { intervals: this.intervals.map(i => ({ ...i })) } : {}) };
   }
@@ -162,14 +162,15 @@ export interface TaggerDisplay {
 /** The recording-level score a tag's rule reads, and the threshold it is compared with. Undefined when the tagger does
  * not decide the tag on this recording (the 'detectors' rule, or per-window scores missing for a rule that needs them). */
 function ruleScore(tag: TaggerTag, tagger: TaggerAnalysis): { raw: number; threshold: number; agree: boolean } | undefined {
-  const best = tagger.scores[tag.output] ?? 0;
+  const best = tagger.scores[tag.output];
+  if (!finite(best) || best < 0 || best > 1) return;
   const long = tagger.windows > 1 ? tag.long : undefined;
   if (!long || long.rule === 'max') return { raw: best, threshold: long?.threshold ?? tag.threshold, agree: false };
   const threshold = long.threshold ?? tag.threshold;
   if (long.rule === 'detectors') return;
   if (long.rule === 'agree') return { raw: best, threshold, agree: true };
   const windows = tagger.windowScores?.[tag.output];
-  if (!windows || windows.length !== tagger.windows) return;
+  if (!windows || windows.length !== tagger.windows || !windows.every(v => finite(v) && v >= 0 && v <= 1)) return;
   if (long.rule === 'mean') return { raw: windows.reduce((a, b) => a + b, 0) / windows.length, threshold, agree: false };
   // 'windows': the k-th best window is the score that has to pass, so k windows pass exactly when it does.
   const k = Math.min(windows.length, Math.max(1, long.windows ?? 2));
@@ -191,4 +192,5 @@ export function taggerDecisions(tagger: TaggerAnalysis | undefined, durationSeco
 }
 
 export const isTaggerScores = (value: unknown): value is Record<string, number> => !!value && typeof value === 'object' && !Array.isArray(value)
-  && Object.keys(value).length > 0 && Object.values(value).every(v => finite(v) && v >= 0 && v <= 1);
+  && TAGGER_POLICY.tags.every(tag => Object.hasOwn(value, tag.output))
+  && Object.values(value).every(v => finite(v) && v >= 0 && v <= 1);
