@@ -1,7 +1,7 @@
 {
-  "name": "Document Graph Explorer",
-  "short_name": "Doc Graph",
-  "description": "Local-first 3D graph explorer for documents and source repositories. Parsing and embeddings stay in the browser.",
+  "name": "Resonance",
+  "short_name": "Resonance",
+  "description": "Local-first map of how your sounds and documents relate. Parsing, analysis and embeddings stay in the browser.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

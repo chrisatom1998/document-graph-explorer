@@ -1,4 +1,5 @@
 import type { LastError } from '../store/uiStore';
+import { PRODUCT_NAME } from '../product/brand';
 
 export interface DiagnosticsInput {
   version: string;
@@ -16,7 +17,7 @@ export function getAppVersion(): string {
 
 export function buildDiagnosticsText(input: DiagnosticsInput): string {
   const lines = [
-    'Document Graph Explorer diagnostics',
+    `${PRODUCT_NAME} diagnostics`,
     `Version: ${input.version}`,
     `Build: ${input.buildFlavor}`,
     `User agent: ${input.userAgent}`,

@@ -4,6 +4,7 @@
  * and intelligent text formatting.
  */
 
+import { PRODUCT_NAME } from '../product/brand';
 import type { DocNode, LinkRef } from '../model/types';
 import { fileTypeLabel, selectedDocumentTitle } from '../pipeline/codeLanguage';
 import { hexFor } from '../scene/palette';
@@ -204,7 +205,7 @@ export function openDocumentViewer(
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${title} — Document Graph Explorer</title>
+<title>${title} — ${PRODUCT_NAME}</title>
 <style>
   :root {
     --bg-deep: #07080f;

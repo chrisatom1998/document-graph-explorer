@@ -71,10 +71,13 @@ export function computeLocalClusterNames(nodes: DocNode[]): Record<number, strin
       score: inClusterDocFreq * Math.log(1 + totalDocs / (1 + (globalDf.get(kw) ?? 0))),
     }));
     scored.sort((a, b) => b.score - a.score || a.kw.localeCompare(b.kw));
-    // Record codes ("DAT-1082") leave three-letter stems in the keyword list;
-    // a label like "Dat & Data Platform" reads as a bug, so stems only name a
-    // cluster when nothing longer is available.
-    const words = scored.filter((s) => s.kw.length >= 4);
+    // Record codes ("DAT-1082") leave three-letter stems in the keyword list,
+    // and "Dat & Data Platform" reads as a bug. A stem is only a short keyword
+    // that a longer keyword in the same cluster begins with; short words that
+    // stand on their own (API, SQL, AI, art) stay in the running.
+    const isStem = (short: string) =>
+      short.length < 4 && scored.some((s) => s.kw.length > short.length && s.kw.startsWith(short));
+    const words = scored.filter((s) => !isStem(s.kw));
     ranked.set(cluster, (words.length > 0 ? words : scored).map((s) => s.kw));
   }
 

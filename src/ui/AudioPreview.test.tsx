@@ -26,6 +26,26 @@ function connect() {
   fireEvent.change(screen.getByLabelText('Relationship'), { target: { value: 'Same rhythm' } });
   fireEvent.click(screen.getByRole('button', { name: 'Connect tracks' }));
 }
+describe('one status line', () => {
+  it('keeps a stored analysis warning visible on a node whose status stayed ok', async () => {
+    const warning = 'Audio analysis failed. Reanalyze this track to retry.';
+    const view = render(<AudioPreview node={{ ...node('first'), warning }} />);
+    await screen.findByText(/Audio is not saved here/);
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.getByRole('status').textContent).toMatch(/^Audio is not saved here.*Audio analysis failed/);
+    view.rerender(<AudioPreview node={node('first')} />);
+    expect(screen.getByRole('status')).not.toHaveTextContent(warning);
+  });
+  it('joins playback feedback and the analysis state instead of stacking two lines', async () => {
+    const preview = { ...node('first'), audio: { version: 2 as const, durationSeconds: 8, analyzedSeconds: 2, instruments: [], notes: [], stage: 'preview' as const } };
+    render(<AudioPreview node={preview} />);
+    await screen.findByText(/Audio is not saved here/);
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent(/Audio is not saved here.*Quick estimate only\. Reanalyze to finish/);
+    expect(screen.getByRole('button', { name: 'Finish analysis' })).toBeInTheDocument();
+  });
+});
+
 describe('audio relationships', () => {
   it('adds a labeled graph edge and removes it again', async () => {
     render(<AudioPreview node={node('first')} />);
@@ -79,6 +99,17 @@ describe('preparing playback', () => {
     vi.mocked(convertAudio).mockResolvedValue(new Blob(['converted audio']));
   });
   afterEach(() => { vi.mocked(getOriginal).mockResolvedValue(undefined); vi.unstubAllGlobals(); });
+
+  it('keeps a warning after loading succeeds and after playback conversion', async () => {
+    const warning = 'Analysis is incomplete. Reanalyze to finish.';
+    render(<AudioPreview node={{ ...node('first'), warning }} />);
+    await screen.findByRole('button', { name: 'Prepare playback' });
+    expect(screen.getByRole('status')).toHaveTextContent(warning);
+    fireEvent.click(screen.getByRole('button', { name: 'Prepare playback' }));
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Ready to play.'));
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent(warning);
+  });
 
   it('resets transport state when conversion replaces a playing clip', async () => {
     const view = render(<AudioPreview node={node('first')} />);
