@@ -27,5 +27,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:benchmarks
+      - name: Lint benchmark scripts
+        run: npx eslint scripts/benchmarks
       - name: Verify scoring against the shipped display policy
         run: npx vite-node scripts/benchmarks/display.check.mjs

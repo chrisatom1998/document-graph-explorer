@@ -89,7 +89,7 @@ export function scoreClips(manifest, predictions, { split = 'test', minSupport =
       const recall = tp + fn ? tp / (tp + fn) : null;
       const supported = tp + fn >= minSupport && fp + tn >= minSupport;
       return [label, { tp, fp, fn, tn, unknown, unscored, precision, recall,
-        f1: precision === null || recall === null ? null : precision + recall ? 2 * precision * recall / (precision + recall) : 0,
+        f1: 2 * tp + fp + fn ? 2 * tp / (2 * tp + fp + fn) : null,
         positiveSupport: tp + fn, evaluatedNegativeSupport: fp + tn,
         meets70: supported && unscored === 0 && precision >= .7 && recall >= .7,
         supported, falsePositives, falseNegatives }];

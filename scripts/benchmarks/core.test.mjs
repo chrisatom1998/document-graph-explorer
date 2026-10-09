@@ -66,6 +66,12 @@ test('duplicate predictions are rejected; absent split cannot pass vacuously', (
   assert.throws(() => scoreClips(manifest([clip('1')]), [p, p]), /Duplicate prediction/);
   assert.throws(() => scoreClips(manifest([clip('1')]), [], { split: 'development' }), /No development/);
 });
+test('a detector that never fires earns zero F1 when positives exist', () => {
+  const report = scoreClips(manifest([clip('1')]), [{ id: '1', status: 'complete', labels: [] }]);
+  assert.equal(report.labels[labels[0]].precision, null);
+  assert.equal(report.labels[labels[0]].recall, 0);
+  assert.equal(report.labels[labels[0]].f1, 0);
+});
 test('completion requires each distinct file; terminal failure is not success', () => {
   const node = { path: 'c000001.wav', audio: { recognition: { status: 'failed' } } };
   assert.equal(inspectGraph({ nodes: [node], edges: [] }, ['c000001.wav']).terminal, true);
