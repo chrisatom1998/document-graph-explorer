@@ -426,8 +426,8 @@
   .rs-sidebar small { display: none !important; }
   .rs-sidebar .rs-import strong { font-size: 13px; }
   .rs-inspector { max-height: 45vh; border-left: 0; border-top: 1px solid var(--rs-line); }
-  /* The sidebar is a row here, so the card parks at the bottom of the stage instead of over the buttons. */
-  .app-root:has(.rs-root) .insights-digest-layer { top: auto; left: 16px; right: 16px; bottom: 16px; max-width: none; }
+  /* The sidebar is a row here, so the card sits just under it, over the top of the graph, and goes away once a node is selected. */
+  .app-root:has(.rs-root) .insights-digest-layer { top: calc(var(--rs-top) + 92px); left: 16px; right: 16px; max-width: none; }
   .app-root:has(.rs-inspector:not(.rs-inspector--empty)) .insights-digest-layer { display: none; }
 }
 /* Compact headers: the workspace picker and view tabs need separate rows.
