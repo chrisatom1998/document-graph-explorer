@@ -39,3 +39,14 @@ workflow from the Actions tab or push a change to `run.txt`. Results land in `re
 - Only the tags where it beat main would use it, and each one shows "GPT-Audio-1.5 (cloud)" as its source.
 - It sends a few 10 s windows per track (cost shown before running), never the whole library by default.
 - Everything else keeps working without it.
+
+## Result (Actions runs 37942940161 and 37949445554, 2026-10-09): no gain, not added to the app
+Spend $3.34 (measured): 10 s clip = 100 audio tokens (10 per second), about $0.004 per clip including the prompt.
+
+| Set | GPT-Audio-1.5 | Main |
+|---|---|---|
+| Instruments, DJ round 2 (500) | 5 of 11 pass 70/70; better than main on none; clearly worse on 7 (bass .35/.80, organ never named, sax recall .32, trumpet .17, violin .27, piano, cymbals) | 70/70 on 8 of 11 by these numbers |
+| DJ effects (300 held-out) | 0 of 21 pass; worse than main on 13, no tag better | 2 of 20 pass |
+| Key, Beatport (123 scored) | **4.9% exact** (about chance: 1 in 24) | 54.9% |
+
+Full tables: `results/*.txt`. Per-clip answers: `results/*.json`. Decision: GPT-Audio-1.5 is not added as a provider.
