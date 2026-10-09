@@ -71,9 +71,11 @@ export function computeLocalClusterNames(nodes: DocNode[]): Record<number, strin
       score: inClusterDocFreq * Math.log(1 + totalDocs / (1 + (globalDf.get(kw) ?? 0))),
     }));
     scored.sort((a, b) => b.score - a.score || a.kw.localeCompare(b.kw));
-    // Short keywords can be meaningful (API, SQL, AI, art). A length-only
-    // record-code heuristic must not discard the strongest descriptors.
-    ranked.set(cluster, scored.map((s) => s.kw));
+    // Short keywords can be meaningful (API, SQL, AI, art), so keep them,
+    // except a record-code stem that only prefixes a longer keyword in the
+    // same cluster ("dat" from DAT-1082 beside "data" reads as a bug).
+    const kws = scored.map((s) => s.kw);
+    ranked.set(cluster, kws.filter((kw) => kw.length >= 4 || !kws.some((o) => o.length > kw.length && o.startsWith(kw))));
   }
 
   // Base name: top two keywords joined with " & ", dropping the second when

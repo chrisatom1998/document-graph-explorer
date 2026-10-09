@@ -132,4 +132,9 @@ describe('meaningful short cluster keywords', () => {
     const nodes = [mkNode('a', 0, [keyword, 'reference']), mkNode('b', 0, [keyword]), mkNode('c', 0, [keyword])];
     expect(computeLocalClusterNames(nodes)[0]).toBe(`${keyword[0].toUpperCase()}${keyword.slice(1)} & Reference`);
   });
+
+  it('drops a record-code stem that only prefixes a longer keyword', () => {
+    const nodes = [mkNode('a', 0, ['dat', 'data', 'platform']), mkNode('b', 0, ['dat', 'data', 'platform']), mkNode('c', 0, ['dat', 'data'])];
+    expect(computeLocalClusterNames(nodes)[0]).toBe('Data & Platform');
+  });
 });
