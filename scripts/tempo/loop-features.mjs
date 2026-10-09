@@ -36,8 +36,12 @@ for (const [n, clip] of clips.entries()) {
     const input = new Float32Array(windows.length * 215 * 40);
     windows.forEach((w, i) => input.set(w, i * 215 * 40));
     for (const { name, session } of models) {
-      const out = await session.run({ mel: new ort.Tensor('float32', input, [windows.length, 215, 40]) });
-      row[name] = cnnTempo(out.logits.data, windows.length);
+      const tensor = new ort.Tensor('float32', input, [windows.length, 215, 40]);
+      try {
+        const out = await session.run({ mel: tensor });
+        try { row[name] = cnnTempo(out.logits.data, windows.length); }
+        finally { for (const t of Object.values(out)) t.dispose(); }
+      } finally { tensor.dispose(); }
     }
   }
   rows.push(row);

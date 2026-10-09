@@ -140,6 +140,8 @@ export function combineLoopTempo(app: { bpm: number; confidence: number; alterna
 }
 
 type TempoSession = Promise<{ ort: typeof import('onnxruntime-web/webgpu'); model: import('onnxruntime-web/webgpu').InferenceSession }>;
+/** Provenance for the rhythm job: both committed tempo networks (checksum prefixes, checked by the tests). */
+export const TEMPO_CNN_WEIGHTS = 'tempo-cnn-b916a58aa443cea0:loops-75054b63c752fa58';
 /** songs: the shipped model (#139). loops: the same network retrained with FSL10K loops, used only on seamless loops. */
 const MODEL_FILES = { songs: 'tempo-cnn.onnx', loops: 'tempo-cnn-loops.onnx' } as const;
 const sessions: Partial<Record<keyof typeof MODEL_FILES, TempoSession>> = {};

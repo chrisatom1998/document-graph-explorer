@@ -5,6 +5,7 @@ fsl10k-loops-tempo-330.json, in the project files).
 Usage: python3 scripts/tempo/loop-tuning-set.py <annotations.zip> <judge fsl10k-loops-tempo-330.json> <out dir>"""
 import io, json, os, sys, re, zipfile, collections, random, importlib.util
 ANN, JUDGE, OUT = sys.argv[1:4]
+os.makedirs(OUT, exist_ok=True)
 spec = importlib.util.spec_from_file_location('f', os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'hf-eval', 'fetch-fsl10k-loops.py'))
 src = open(spec.origin).read().split('manifest, out = sys.argv')[0]; ns = {}; exec(src, ns)
 z = zipfile.ZipFile(io.BufferedReader(ns['HttpFile'](ns['URL']), buffer_size=1 << 20))
