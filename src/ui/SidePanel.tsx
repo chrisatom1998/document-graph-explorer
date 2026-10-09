@@ -205,7 +205,8 @@ export default function SidePanel({ inline = false, onClose }: { inline?: boolea
           closeButtonRef={closeButtonRef}
         />
         <div className="side-panel__scroll">
-          {inline && isAudio && node.status !== 'ok' && (
+          {/* AudioPreview owns warning text; only a bare error status needs a fallback chip. */}
+          {inline && isAudio && node.status !== 'ok' && !node.warning && (
             <p className="side-panel__badges"><span className="chip side-panel__badge-warning">⚠ {node.warning ?? node.status}</span></p>
           )}
           {!(inline && isAudio) && (
@@ -222,7 +223,7 @@ export default function SidePanel({ inline = false, onClose }: { inline?: boolea
                     {clusterLabel}
                   </span>
                 )}
-                {node.status !== 'ok' && (
+                {node.status !== 'ok' && !(isAudio && node.warning) && (
                   <span className="chip side-panel__badge-warning">
                     ⚠ {node.warning ?? node.status}
                   </span>

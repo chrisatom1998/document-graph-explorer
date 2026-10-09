@@ -1,0 +1,355 @@
+{
+  "model": "tp-clap",
+  "note": "Pilot; descriptive results, not a held-out accuracy claim.",
+  "durations": {
+    "1": {
+      "clips": 12,
+      "complete": 12,
+      "labels": null,
+      "tempo": [],
+      "key": [],
+      "strictTempo": null,
+      "octaveTolerantTempo": null,
+      "exactKey": null,
+      "weightedKey": null,
+      "correctNoPulse": null,
+      "correctNoKey": null,
+      "latency": {
+        "n": 12,
+        "p50Ms": 227.57154399914725,
+        "observedP95Ms": 711.2259969999286,
+        "measuredSerialClipsPerSecond": 2.5883073224476285,
+        "meanRealTimeFactor": 0.3863528844999564,
+        "coldRows": [
+          {
+            "id": "masb-1009674-T-1s",
+            "elapsedMs": 711.2259969999286
+          }
+        ],
+        "warmRows": [
+          {
+            "id": "masb-101006-T-1s",
+            "elapsedMs": 687.2221710000304
+          },
+          {
+            "id": "masb-103089-R-1s",
+            "elapsedMs": 221.25391900044633
+          },
+          {
+            "id": "masb-1033252-R-1s",
+            "elapsedMs": 435.7310689993028
+          },
+          {
+            "id": "masb-1036934-O-1s",
+            "elapsedMs": 195.32898400029808
+          },
+          {
+            "id": "masb-103892-O-1s",
+            "elapsedMs": 681.6620680001506
+          },
+          {
+            "id": "iowa-flute-1s",
+            "elapsedMs": 375.3812039994955
+          },
+          {
+            "id": "iowa-marimba-1s",
+            "elapsedMs": 182.0800910008984
+          },
+          {
+            "id": "silence-1s",
+            "elapsedMs": 205.25969899972552
+          },
+          {
+            "id": "pulse90-1s",
+            "elapsedMs": 498.1538640004146
+          },
+          {
+            "id": "pulse120-1s",
+            "elapsedMs": 227.57154399914725
+          },
+          {
+            "id": "pulse174-1s",
+            "elapsedMs": 215.36400399963895
+          }
+        ],
+        "note": "Small pilot; aggregate mixes first-use and warm observations. Use coldRows/warmRows separately. Includes browser polling when run with run-dge."
+      },
+      "binding": {
+        "attempted": 0,
+        "scored": 0,
+        "strictCorrect": 0,
+        "ties": 0,
+        "accuracy": null,
+        "endToEndAccuracy": null,
+        "note": "Ties count as incorrect; silence is a separate control, not a correct caption label."
+      },
+      "retrieval": {
+        "k": 5,
+        "queries": 0,
+        "meanPrecision": null,
+        "top1": null,
+        "meanReciprocalRank": null,
+        "note": "Queries require at least one known positive and negative in a different source group.",
+        "results": []
+      }
+    },
+    "2": {
+      "clips": 12,
+      "complete": 12,
+      "labels": null,
+      "tempo": [],
+      "key": [],
+      "strictTempo": null,
+      "octaveTolerantTempo": null,
+      "exactKey": null,
+      "weightedKey": null,
+      "correctNoPulse": null,
+      "correctNoKey": null,
+      "latency": {
+        "n": 12,
+        "p50Ms": 313.9584950004064,
+        "observedP95Ms": 852.9301180005859,
+        "measuredSerialClipsPerSecond": 2.4496310962227943,
+        "meanRealTimeFactor": 0.20411236645835137,
+        "coldRows": [],
+        "warmRows": [
+          {
+            "id": "masb-1009674-T-2s",
+            "elapsedMs": 239.606677001575
+          },
+          {
+            "id": "masb-101006-T-2s",
+            "elapsedMs": 745.3407909997622
+          },
+          {
+            "id": "masb-103089-R-2s",
+            "elapsedMs": 313.9584950004064
+          },
+          {
+            "id": "masb-1033252-R-2s",
+            "elapsedMs": 276.3936539995484
+          },
+          {
+            "id": "masb-1036934-O-2s",
+            "elapsedMs": 315.1096490000782
+          },
+          {
+            "id": "masb-103892-O-2s",
+            "elapsedMs": 516.5834609997546
+          },
+          {
+            "id": "iowa-flute-2s",
+            "elapsedMs": 440.93158899886475
+          },
+          {
+            "id": "iowa-marimba-2s",
+            "elapsedMs": 212.7283300014824
+          },
+          {
+            "id": "silence-2s",
+            "elapsedMs": 194.85284199981834
+          },
+          {
+            "id": "pulse90-2s",
+            "elapsedMs": 852.9301180005859
+          },
+          {
+            "id": "pulse120-2s",
+            "elapsedMs": 500.3224499996577
+          },
+          {
+            "id": "pulse174-2s",
+            "elapsedMs": 289.93873899889877
+          }
+        ],
+        "note": "Small pilot; aggregate mixes first-use and warm observations. Use coldRows/warmRows separately. Includes browser polling when run with run-dge."
+      },
+      "binding": {
+        "attempted": 0,
+        "scored": 0,
+        "strictCorrect": 0,
+        "ties": 0,
+        "accuracy": null,
+        "endToEndAccuracy": null,
+        "note": "Ties count as incorrect; silence is a separate control, not a correct caption label."
+      },
+      "retrieval": {
+        "k": 5,
+        "queries": 0,
+        "meanPrecision": null,
+        "top1": null,
+        "meanReciprocalRank": null,
+        "note": "Queries require at least one known positive and negative in a different source group.",
+        "results": []
+      }
+    },
+    "6": {
+      "clips": 11,
+      "complete": 11,
+      "labels": null,
+      "tempo": [],
+      "key": [],
+      "strictTempo": null,
+      "octaveTolerantTempo": null,
+      "exactKey": null,
+      "weightedKey": null,
+      "correctNoPulse": null,
+      "correctNoKey": null,
+      "latency": {
+        "n": 11,
+        "p50Ms": 517.3678739993193,
+        "observedP95Ms": 1107.8869390003092,
+        "measuredSerialClipsPerSecond": 1.5204802827094843,
+        "meanRealTimeFactor": 0.10961448731822285,
+        "coldRows": [],
+        "warmRows": [
+          {
+            "id": "masb-1009674-T-6s",
+            "elapsedMs": 470.8664450008655
+          },
+          {
+            "id": "masb-101006-T-6s",
+            "elapsedMs": 1107.8869390003092
+          },
+          {
+            "id": "masb-103089-R-6s",
+            "elapsedMs": 423.6732240005949
+          },
+          {
+            "id": "masb-1033252-R-6s",
+            "elapsedMs": 517.3678739993193
+          },
+          {
+            "id": "masb-1036934-O-6s",
+            "elapsedMs": 452.74720300039917
+          },
+          {
+            "id": "masb-103892-O-6s",
+            "elapsedMs": 891.8761540007836
+          },
+          {
+            "id": "iowa-flute-6s",
+            "elapsedMs": 566.4837660006015
+          },
+          {
+            "id": "silence-6s",
+            "elapsedMs": 418.0087109998567
+          },
+          {
+            "id": "pulse90-6s",
+            "elapsedMs": 998.2176189987513
+          },
+          {
+            "id": "pulse120-6s",
+            "elapsedMs": 910.8992590008711
+          },
+          {
+            "id": "pulse174-6s",
+            "elapsedMs": 476.5289690003556
+          }
+        ],
+        "note": "Small pilot; aggregate mixes first-use and warm observations. Use coldRows/warmRows separately. Includes browser polling when run with run-dge."
+      },
+      "binding": {
+        "attempted": 0,
+        "scored": 0,
+        "strictCorrect": 0,
+        "ties": 0,
+        "accuracy": null,
+        "endToEndAccuracy": null,
+        "note": "Ties count as incorrect; silence is a separate control, not a correct caption label."
+      },
+      "retrieval": {
+        "k": 5,
+        "queries": 0,
+        "meanPrecision": null,
+        "top1": null,
+        "meanReciprocalRank": null,
+        "note": "Queries require at least one known positive and negative in a different source group.",
+        "results": []
+      }
+    },
+    "10": {
+      "clips": 10,
+      "complete": 10,
+      "labels": null,
+      "tempo": [],
+      "key": [],
+      "strictTempo": null,
+      "octaveTolerantTempo": null,
+      "exactKey": null,
+      "weightedKey": null,
+      "correctNoPulse": null,
+      "correctNoKey": null,
+      "latency": {
+        "n": 10,
+        "p50Ms": 1185.1727430002938,
+        "observedP95Ms": 2055.593803001102,
+        "measuredSerialClipsPerSecond": 0.8260622063044916,
+        "meanRealTimeFactor": 0.1210562585200023,
+        "coldRows": [],
+        "warmRows": [
+          {
+            "id": "masb-1009674-T-10s",
+            "elapsedMs": 1599.1851429989765
+          },
+          {
+            "id": "masb-101006-T-10s",
+            "elapsedMs": 1494.6797739994508
+          },
+          {
+            "id": "masb-103089-R-10s",
+            "elapsedMs": 1226.8112120000296
+          },
+          {
+            "id": "masb-1033252-R-10s",
+            "elapsedMs": 1185.1727430002938
+          },
+          {
+            "id": "masb-1036934-O-10s",
+            "elapsedMs": 2055.593803001102
+          },
+          {
+            "id": "masb-103892-O-10s",
+            "elapsedMs": 1635.5615869997564
+          },
+          {
+            "id": "silence-10s",
+            "elapsedMs": 790.9624029998668
+          },
+          {
+            "id": "pulse90-10s",
+            "elapsedMs": 733.8552420005726
+          },
+          {
+            "id": "pulse120-10s",
+            "elapsedMs": 884.1142609999224
+          },
+          {
+            "id": "pulse174-10s",
+            "elapsedMs": 499.68968400025915
+          }
+        ],
+        "note": "Small pilot; aggregate mixes first-use and warm observations. Use coldRows/warmRows separately. Includes browser polling when run with run-dge."
+      },
+      "binding": {
+        "attempted": 6,
+        "scored": 6,
+        "strictCorrect": 4,
+        "ties": 0,
+        "accuracy": 0.6666666666666666,
+        "endToEndAccuracy": 0.6666666666666666,
+        "note": "Ties count as incorrect; silence is a separate control, not a correct caption label."
+      },
+      "retrieval": {
+        "k": 5,
+        "queries": 0,
+        "meanPrecision": null,
+        "top1": null,
+        "meanReciprocalRank": null,
+        "note": "Queries require at least one known positive and negative in a different source group.",
+        "results": []
+      }
+    }
+  }
+}

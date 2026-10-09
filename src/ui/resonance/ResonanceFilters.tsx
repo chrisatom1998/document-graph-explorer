@@ -62,6 +62,11 @@ export default function ResonanceFilters() {
   const docs = useMemo(() => nodes.filter(n => n.kind === 'document'), [nodes]);
   const audioCount = docs.filter(n => n.fileType === 'audio').length;
   const audio = audioCount > 0;
+  // A saved view, or removing the last clip, can leave an audio facet active in a
+  // document-only library. Keep its value and a way to clear it on screen, or the
+  // remaining files fail the audio facets with nothing to show why.
+  const audioFilterActive = filter.bpmRange !== null || filter.musicKey !== null
+    || filter.style !== null || !!filter.sounds?.length;
   const kindsPresent = useMemo(() => new Set(edges.map(e => e.kind)), [edges]);
   const similarity = SIMILARITY.filter(s => kindsPresent.has(s.kind));
   const tempoKeys = useMemo(() => docs.filter(n => n.fileType === 'audio').map(resolveTempoKey), [docs]);
@@ -73,7 +78,18 @@ export default function ResonanceFilters() {
   const keyValue = selectedKey === null ? '' : keys.find(label => label === selectedKey)
     ?? tempoKeys.find(({ key }) => matchesKeyName(key, selectedKey))?.keyLabel ?? selectedKey;
   const styles = useMemo(() => [...new Set(docs.flatMap(n => styleTags(n.audio)))].sort(), [docs]);
-  const types = useMemo(() => [...new Set(docs.map(n => n.fileType))], [docs]);
+  // File types present, most common first; a type kept by a saved view but absent from the corpus still lists so it can be unticked.
+  const typeCounts = useMemo(() => {
+    const counts = new Map<FileType, number>();
+    for (const n of docs) counts.set(n.fileType, (counts.get(n.fileType) ?? 0) + 1);
+    return [...counts].sort((a, b) => b[1] - a[1]);
+  }, [docs]);
+  const pickedTypes = filter.fileTypes ?? [];
+  const typeRows = [...typeCounts, ...pickedTypes.filter(t => !typeCounts.some(([ft]) => ft === t)).map(t => [t, 0] as [FileType, number])];
+  const toggleType = (type: FileType) => {
+    const next = pickedTypes.includes(type) ? pickedTypes.filter(t => t !== type) : [...pickedTypes, type];
+    setFilter({ fileTypes: next.length ? next : null });
+  };
   // Every label shown in a clip's Sounds row, most common first.
   const soundCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -149,7 +165,8 @@ export default function ResonanceFilters() {
         )}
       </section>
 
-      {audio && <>
+      {(audio || audioFilterActive) && <>
+      {audioFilterActive && <button type="button" className="rs-show-more" onClick={() => setFilter({ bpmRange: null, musicKey: null, style: null, sounds: null })}>Clear audio filters</button>}
       <section className="rs-group rs-group--rule">
         <h3>Tempo (BPM)</h3>
         <div className="rs-range" style={{ '--lo': `${((range[0] - bpmMin) / Math.max(1, bpmMax - bpmMin)) * 100}%`, '--hi': `${((range[1] - bpmMin) / Math.max(1, bpmMax - bpmMin)) * 100}%` } as React.CSSProperties}>
@@ -162,16 +179,18 @@ export default function ResonanceFilters() {
 
       <section className="rs-group">
         <h3>Key</h3>
-        <select className="rs-select" aria-label="Key" value={keyValue} disabled={!keys.length} onChange={e => setFilter({ musicKey: e.target.value || null })}>
+        <select className="rs-select" aria-label="Key" value={keyValue} disabled={!keys.length && selectedKey === null} onChange={e => setFilter({ musicKey: e.target.value || null })}>
           <option value="">Any key</option>
+          {keyValue && !keys.includes(keyValue) && <option value={keyValue}>{keyValue} (saved filter)</option>}
           {keys.map(k => <option key={k} value={k}>{k}</option>)}
         </select>
       </section>
 
       <section className="rs-group">
         <h3>Genre</h3>
-        <select className="rs-select" aria-label="Genre" value={filter.style ?? ''} disabled={!styles.length} onChange={e => setFilter({ style: e.target.value || null })}>
+        <select className="rs-select" aria-label="Genre" value={filter.style ?? ''} disabled={!styles.length && filter.style === null} onChange={e => setFilter({ style: e.target.value || null })}>
           <option value="">Any genre</option>
+          {filter.style && !styles.includes(filter.style) && <option value={filter.style}>{soundLabelText(filter.style)} (saved filter)</option>}
           {styles.map(s => <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>)}
         </select>
       </section>
@@ -199,12 +218,19 @@ export default function ResonanceFilters() {
       </section>
       </>}
 
-      <section className="rs-group">
-        <h3>File type</h3>
-        <select className="rs-select" aria-label="File type" value={filter.fileTypes?.[0] ?? ''} disabled={types.length < 2} onChange={e => setFilter({ fileTypes: e.target.value ? [e.target.value as FileType] : null })}>
-          <option value="">Any type</option>
-          {types.map(t => <option key={t} value={t}>{TYPE_LABEL[t] ?? t}</option>)}
-        </select>
+      <section className="rs-group" aria-label="File type">
+        <h3 title="Show files of any of the ticked types. Leave all off to show every type.">File type{pickedTypes.length > 1 ? ' (any of)' : ''}</h3>
+        <ul className="rs-checks">
+          {typeRows.map(([type, count]) => (
+            <li key={type}>
+              <label>
+                <input type="checkbox" checked={pickedTypes.includes(type)} disabled={typeRows.length < 2 && !pickedTypes.includes(type)} onChange={() => toggleType(type)} />
+                <span className="rs-check" aria-hidden="true" />
+                {TYPE_LABEL[type] ?? type} <span className="rs-checks__count">{count}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
       </section>
       <details className="rs-advanced">
         <summary>Advanced filters</summary>

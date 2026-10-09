@@ -5,6 +5,7 @@ import { useUiStore } from '../store/uiStore';
 import { lookupLibraryFiles, libraryKey, type LibraryHit } from '../persistence/library';
 import { isIngestCandidate, routeFileWithSniff } from './fileRouter';
 import { reportReadFailures, type ReadFailure } from './readFailures';
+import { holdReload, recoverFromChunkError } from '../util/staleBuild';
 
 export interface NamedFile {
   file: File;
@@ -135,6 +136,7 @@ export async function prepareIngestFiles(
 }
 
 export async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
+  const release = holdReload();
   try {
     // A one-shot selection has no manifest to retry against, so deferred files
     // stay reported-and-skipped exactly as before.
@@ -150,8 +152,10 @@ export async function ingestNamedFiles(named: NamedFile[]): Promise<void> {
     await ingestFiles(files);
   } catch (error) {
     console.error('ingestion failed', error);
-    useUiStore
-      .getState()
-      .pushToast("Something went wrong adding those files — check the console for details.");
+    if (recoverFromChunkError(error)) return;
+    const detail = error instanceof Error && error.message ? ` (${error.message})` : '';
+    useUiStore.getState().pushToast(`Those files could not be added${detail}. Try again.`);
+  } finally {
+    release();
   }
 }

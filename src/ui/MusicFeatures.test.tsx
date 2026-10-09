@@ -192,3 +192,19 @@ it('updates profile confirmations and correction defaults on the latest review w
  expect(screen.getByRole('region',{name:'Sound identification'})).toHaveTextContent(/distorted — Character · confirmed by you/);
  expect(updated.soundProfile.djTags[0].score).toBe(.8);expect(updated.soundReviews).toHaveLength(2);
 });
+
+it('lists analysis notes and retry guidance inside Technical details', () => {
+  const notes = ['Only the first 30 seconds could be analyzed.', 'Instrument model failed to load. Reanalyze to retry.'];
+  render(<MusicFeatures node={{ ...node, audio: { ...node.audio!, notes } }} />);
+  const details = screen.getByText('Technical details').closest('details')!;
+  const list = within(details).getByRole('list', { name: 'Analysis notes', hidden: true });
+  for (const note of notes) expect(within(list).getByText(note)).not.toBeVisible();
+  fireEvent.click(screen.getByText('Technical details'));
+  for (const note of notes) expect(within(list).getByText(note)).toBeVisible();
+});
+
+it('shows a stored warning on an ok node and leaves the notes list out when there are none', () => {
+  render(<MusicFeatures node={{ ...node, warning: 'Audio analysis failed. Reanalyze this track to retry.' }} />);
+  expect(screen.getByRole('status')).toHaveTextContent('Audio analysis failed. Reanalyze this track to retry.');
+  expect(screen.queryByRole('list', { name: 'Analysis notes', hidden: true })).toBeNull();
+});

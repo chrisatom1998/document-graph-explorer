@@ -24,6 +24,7 @@ import { soundSuggestions } from './soundSuggestions';
 import { descriptionScores, type DescriptionPrompt } from './profileDescriptions';
 import type { MusicExcerpts } from './decodeMusic';
 import type { AutoModelForAudioClassification, AutoProcessor } from '@huggingface/transformers';
+import { gpuModelBlockedReason, type GpuModelNavigator } from './gpuModelPolicy';
 
 declare const self: DedicatedWorkerGlobalScope;
 const ready = new Promise<void>(resolve => {
@@ -54,14 +55,17 @@ function getClassifier() {
 /** Full-precision AST on the graphics card: 0.4 s a window against 2-3 s for q8 WASM (measured 2026-10-05), with
  * every AudioSet probability within 0.023 of q8 and the same top five. Requested for every analysis, including the
  * trained source classifier's inputs (held-out gate on fp32 AST, see docs/audio-runtime-performance.md); any failure
- * falls back to q8 WASM for the rest of the session. */
+ * falls back to q8 WASM for the rest of the session. Phones and data saver skip it (see gpuModelPolicy.ts). */
 let gpuClassifier: ReturnType<typeof getClassifier> | null = null;
 let gpuUnavailable = false;
+let touchTablet = false;
 function getGpuClassifier() {
   return gpuClassifier ??= (async () => {
     const gpu = (navigator as Navigator & { gpu?: { requestAdapter(): Promise<unknown> } }).gpu;
-    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-    if (memory !== undefined && memory < 4) throw new Error('Too little memory for a second AST model');
+    // Navigator fields are prototype getters, so read them explicitly rather than spreading.
+    const nav = navigator as Navigator & GpuModelNavigator;
+    const blocked = gpuModelBlockedReason({ deviceMemory: nav.deviceMemory, connection: nav.connection, userAgentData: nav.userAgentData, userAgent: nav.userAgent, touchTablet });
+    if (blocked) throw new Error(blocked);
     if (!gpu || !await gpu.requestAdapter().catch(() => null)) throw new Error('No WebGPU adapter');
     const { AutoProcessor, AutoModelForAudioClassification } = await loadTransformers();
     const model = await AutoModelForAudioClassification.from_pretrained('music-model', { dtype: 'fp32', device: 'webgpu', local_files_only: true });
@@ -155,6 +159,8 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
   const { id } = data;
   // The main thread decided this browser needs the single-thread runtime (see THREADED_RUNTIME_STALLED).
   if ((data as { singleThread?: boolean }).singleThread) switchToSingleThreadRuntime(false);
+  // iPads send a Mac user agent; only the main thread can tell them apart (gpuModelPolicy.ts).
+  if ((data as { touchTablet?: boolean }).touchTablet) touchTablet = true;
   if (data.kind === 'warm') {
     try { await warmFamily(data.family); self.postMessage({ id, warmed: true }); }
     catch (error) { self.postMessage({ id, error: error instanceof Error ? error.message : String(error) }); }
