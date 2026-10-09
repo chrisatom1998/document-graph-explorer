@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { displayedPredictions } from './score.mjs';
+import { displayedPredictions } from './displayed-predictions.mjs';
 
 const manifest = { clips: [{ id: 'one', file: 'c000001.wav' }, { id: 'missing', file: 'c000002.wav' }] };
 const audio = { version: 2, durationSeconds: 8, analyzedSeconds: 8, instruments: [], notes: [],
