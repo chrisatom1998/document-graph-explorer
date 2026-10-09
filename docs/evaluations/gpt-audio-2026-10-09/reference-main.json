@@ -1,0 +1,14 @@
+{
+  "_doc": "Main's measured scores on the same judge sets, copied (not re-run) from committed reports. Instruments: DJ clip round 2 (500 OpenMIC 10 s clips); the 8 tagger instruments from docs/evaluations/all-tags-model-2026-10-06/README.md (short clips use the shipped tagger), synthesizer/voice/organ from docs/evaluations/all-tags-2026-10-06/judge/main/r2-openmic-tags.json (main's detectors kept for them). Effects: current heads on the 1,193 round-1 held-out clips after #167, docs/evaluations/dj-effects-2026-10-09/REPORT.md. Key: DJ clip round 2 Beatport excerpts after #123 (project accuracy table, 54.9% exact).",
+  "instruments": {
+    "drums": [0.91, 0.98], "cymbals": [0.94, 0.94], "bass": [0.60, 0.60], "synthesizer": [0.886, 1.0], "piano": [0.93, 0.93],
+    "organ": [0.483, 0.875], "guitar": [0.83, 0.95], "violin": [0.86, 0.80], "trumpet": [0.60, 0.67], "saxophone": [0.92, 0.92],
+    "voice": [0.875, 0.903]
+  },
+  "effects": {
+    "chops": [0.25, 0.08], "vocal chops": [0.45, 0.82], "stutter effect": [0.0, 0.0], "reverse effect": [0.60, 0.56],
+    "vinyl scratch": [0.74, 0.77], "riser": [0.68, 0.69], "impact": [0.63, 0.72], "whoosh": [0.85, 0.54], "reverse cymbal": [0.69, 0.85],
+    "noise sweep": [0.48, 0.62], "laser": [0.51, 0.53], "siren": [0.70, 0.74], "air horn": [0.92, 0.65], "filter sweep": [0.55, 0.48]
+  },
+  "keyExact": 0.549
+}

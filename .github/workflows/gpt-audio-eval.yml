@@ -1,0 +1,88 @@
+name: GPT-Audio-1.5 labelling check
+
+# Scores OpenAI's gpt-audio-1.5 on judge-only sets the app is already measured on, so it can be compared with main:
+# DJ clip round 2 instruments (500 OpenMIC 10 s clips), 300 of the 1,193 round-1 held-out DJ-effect clips, and 150
+# GiantSteps MTG key excerpts. Needs the repository secret OPENAI_API_KEY. Spend is capped per job from each response's
+# measured usage (total cap $5). Answers and scores are committed to docs/evaluations/gpt-audio-2026-10-09/results.
+# Audio is fetched at run time and never committed. Re-runs resume from the committed answers and cost nothing extra.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/gpt-audio-labels-yvet4z]
+    paths: [docs/evaluations/gpt-audio-2026-10-09/run.txt]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gpt-audio-eval
+  cancel-in-progress: false
+
+env:
+  OPENMIC: https://zenodo.org/records/1432913/files/openmic-2018-v1.0.0.tgz?download=1
+  MTGKEY: https://github.com/GiantSteps/giantsteps-mtg-key-dataset.git
+  MTGKEY_REF: fd7b8c584f7bd6d720d170c325a6d42c9bf75a6b
+  R2: docs/evaluations/dj-clips-round2-2026-10-06
+  OUT: docs/evaluations/gpt-audio-2026-10-09
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - task: instruments
+            limit: 0
+            max_usd: '2.50'
+          - task: effects
+            limit: 300
+            max_usd: '1.50'
+          - task: key
+            limit: 150
+            max_usd: '1.00'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the key is set
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          [ -n "$OPENAI_API_KEY" ] || { echo "::error::Add the repository secret OPENAI_API_KEY (Settings > Secrets and variables > Actions) and re-run."; exit 1; }
+      - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+      - name: Fetch OpenMIC round 2 clips
+        if: matrix.task == 'instruments'
+        run: |
+          curl -fsSL --retry 6 -o "$RUNNER_TEMP/openmic.tgz" "$OPENMIC"
+          echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $RUNNER_TEMP/openmic.tgz" | md5sum -c -
+          python3 scripts/dj-clips/openmic-round2.py "$RUNNER_TEMP/openmic.tgz" audio
+          git diff --exit-code -- "$R2"   # the frozen selection must not change
+      - name: Fetch GiantSteps MTG key excerpts
+        if: matrix.task == 'key'
+        run: |
+          git clone -q "$MTGKEY" "$RUNNER_TEMP/mk" && git -C "$RUNNER_TEMP/mk" checkout -q "$MTGKEY_REF"
+          python3 scripts/dj-clips/mtg-key.py "$RUNNER_TEMP/mk" audio
+          git diff --exit-code -- "$R2"
+      - name: Ask gpt-audio-1.5
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          mkdir -p audio "$OUT/results"
+          case "${{ matrix.task }}" in
+            instruments) M=$R2/openmic-manifest.json ;;
+            key) M=$R2/mtg-key-manifest.json ;;
+            effects) M=docs/evaluations/dj-effects-2026-10-09/clips.json ;;
+          esac
+          A="$OUT/results/${{ matrix.task }}.json"
+          python3 scripts/gpt-audio/label.py ${{ matrix.task }} "$M" audio "$A" --limit ${{ matrix.limit }} --max-usd ${{ matrix.max_usd }}
+          python3 scripts/gpt-audio/score.py ${{ matrix.task }} "$M" "$A" "$OUT/reference-main.json" | tee "$OUT/results/${{ matrix.task }}.txt"
+      - name: Commit answers and scores
+        if: always()
+        run: |
+          git add "$OUT/results" || exit 0
+          git diff --cached --quiet && exit 0
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "GPT-Audio-1.5 ${{ matrix.task }} answers and scores"
+          for i in 1 2 3 4 5; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+            && break; [ $i = 5 ] && exit 1; sleep $((2**i)); done
