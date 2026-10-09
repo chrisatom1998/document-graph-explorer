@@ -1,0 +1,26 @@
+label            train+ test+ test-  thresh      P      R   verdict          trained on    current head on same held-out
+chops               146    25  1042   0.903   0.17   0.28   below 70/70       real          learned maybe P0.25 R0.08   | all held-out (26+): new P0.10 R0.27, current P0.10 R0.08   | new on <=2.25 s: P0.00 R0.00 (1+/210-)
+vocal chops          63    11  1042   0.901   0.44   0.73   below 70/70       real+renders  learned maybe P0.45 R0.82   | all held-out (14+): new P0.33 R0.71, current P0.23 R0.79
+stutter effect       91    20  1040   0.894   0.17   0.25   below 70/70       real+renders  learned maybe P0.00 R0.00   | all held-out (25+): new P0.12 R0.28, current P0.00 R0.00   | new on <=2.25 s: P0.00 R0.00 (2+/210-)
+glitch effect      1017    88  1015   0.734   0.41   0.52   below 70/70       real+renders  -   | all held-out (302+): new P0.48 R0.50   | new on <=2.25 s: P0.65 R0.61 (36+/205-)
+reverse effect      548    77   844   0.787   0.60   0.55   below 70/70       real          learned maybe P0.59 R0.56   | all held-out (168+): new P0.54 R0.57, current P0.54 R0.58   | new on <=2.25 s: P0.50 R0.67 (6+/183-)
+record stop          44     5  1046       -      -      -   fewer than 10 held-out positives; not tested real+renders  -
+vinyl scratch       216    65  1046   0.841   0.84   0.65   below 70/70       real          learned P0.74 R0.77; short-clip (<=2.25 s clips) P0.79 R0.48   | all held-out (80+): new P0.65 R0.66, current P0.51 R0.78   | new on <=2.25 s: P0.94 R0.70 (23+/223-)
+riser               337    86   914   0.876   0.65   0.62   below 70/70       real          learned maybe P0.67 R0.66   | all held-out (126+): new P0.49 R0.59, current P0.51 R0.63   | new on <=2.25 s: P0.67 R0.67 (3+/208-)
+downlifter           20    15   931   0.917   0.38   0.33   below 70/70       real+renders  -   | all held-out (15+): new P0.25 R0.33
+impact              863    98  1064   0.822   0.64   0.72   below 70/70       real          learned maybe P0.63 R0.72; short-clip (<=2.25 s clips) P0.36 R0.30   | all held-out (371+): new P0.71 R0.75, current P0.71 R0.74   | new on <=2.25 s: P0.60 R0.93 (27+/226-)
+whoosh              952    81   857   0.722   0.65   0.79   below 70/70       real          learned P0.85 R0.56; short-clip (<=2.25 s clips) P0.85 R0.65   | all held-out (295+): new P0.68 R0.75, current P0.88 R0.52   | new on <=2.25 s: P0.65 R0.85 (26+/205-)
+reverse cymbal       51    13   914   0.859   0.80   0.62   below 70/70       real          learned maybe P0.69 R0.85   | all held-out (13+): new P0.73 R0.62, current P0.61 R0.85   | new on <=2.25 s: P0.00 R0.00 (1+/208-)
+reverse impact       15     1   801       -      -      -   fewer than 10 held-out positives; not tested real+renders  -
+noise sweep         154    37   857   0.876   0.67   0.43   below 70/70       real          learned maybe P0.47 R0.62   | all held-out (41+): new P0.38 R0.44, current P0.26 R0.61   | new on <=2.25 s: P0.75 R0.60 (5+/205-)
+sub drop             43    20  1064   0.945   0.50   0.25   below 70/70       real          -   | all held-out (27+): new P0.38 R0.22   | new on <=2.25 s: P0.00 R0.00 (1+/226-)
+laser               781    90  1015   0.787   0.51   0.53   below 70/70       real          learned maybe P0.51 R0.53   | all held-out (304+): new P0.65 R0.60, current P0.65 R0.60   | new on <=2.25 s: P0.67 R0.65 (31+/218-)
+siren               893    77  1015   0.771   0.61   0.78   below 70/70       real          learned P0.70 R0.74   | all held-out (279+): new P0.71 R0.78, current P0.75 R0.71   | new on <=2.25 s: P0.33 R0.50 (4+/218-)
+air horn             30    17  1015   0.887   0.92   0.65   below 70/70       real          learned maybe P0.92 R0.65   | all held-out (17+): new P0.69 R0.65, current P0.73 R0.65   | new on <=2.25 s: P1.00 R1.00 (1+/218-)
+flanged             219    46  1002   0.861   0.37   0.37   below 70/70       real          -   | all held-out (53+): new P0.30 R0.45   | new on <=2.25 s: P0.50 R0.33 (3+/213-)
+bitcrushed          180    30  1078   0.883   0.32   0.23   below 70/70       real+renders  -   | all held-out (43+): new P0.16 R0.16   | new on <=2.25 s: P1.00 R0.50 (6+/213-)
+beat repeat          27     2  1040       -      -      -   fewer than 10 held-out positives; not tested real          -
+filter sweep         87    33   857   0.945   0.67   0.36   below 70/70       real          learned maybe P0.55 R0.48   | all held-out (41+): new P0.39 R0.34, current P0.30 R0.44   | new on <=2.25 s: P0.00 R0.00 (8+/205-)
+trance gate          82    18  1042   0.926   0.31   0.28   below 70/70       real          -   | all held-out (26+): new P0.23 R0.27   | new on <=2.25 s: P0.00 R0.00 (6+/210-)
+rewind                9     1  1046       -      -      -   fewer than 10 held-out positives; not tested real+renders  -
+delay throw          53     3  1168       -      -      -   fewer than 10 held-out positives; not tested real          -

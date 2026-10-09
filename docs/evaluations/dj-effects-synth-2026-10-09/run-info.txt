@@ -1,3 +1,3 @@
-tested 3c6fd321834450a01eb31ff79fbfc0557f28d907 (run 37981911602)
+tested deb343e706d2c7d564ff694e83f6573e923ed10b (run 37998808277)
 clips: docs/evaluations/dj-effects-2026-10-09/clips.json
-SYNTH_PER_EFFECT=1200
+AUG_COPIES=2 SAO_DATASET=cmjatom/dge-effects-sao
