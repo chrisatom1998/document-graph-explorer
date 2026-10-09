@@ -19,7 +19,7 @@ import { useGraphStore } from '../store/graphStore';
 import { useUiStore, type InsightsFocus } from '../store/uiStore';
 import { openInsights } from './openInsights';
 import CloseButton from './CloseButton';
-import { useFirstRunGuideVisible } from './FirstRunGuide';
+import { useFirstRunGuideVisible } from './firstRunGuideVisibility';
 
 let pending: Digest | null = null;
 const listeners = new Set<(digest: Digest) => void>();

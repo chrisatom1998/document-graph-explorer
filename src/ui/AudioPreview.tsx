@@ -65,6 +65,7 @@ export default function AudioPreview({ node }: { node: DocNode }) {
       liveUrl.current = URL.createObjectURL(blob);
       // A new media element starts paused at zero and has no metadata yet.
       setPlaying(false); setCurrentTime(0); setDuration(0);
+      setNeedsConversion(false);
       setUrl(liveUrl.current); setMessage('Ready to play.');
     } catch (error) {
       if (active.current) setMessage(error instanceof Error ? error.message : 'Could not convert this audio.');

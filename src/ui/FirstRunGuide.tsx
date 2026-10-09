@@ -4,7 +4,6 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  useSyncExternalStore,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
@@ -16,6 +15,7 @@ import { useUiStore } from '../store/uiStore';
 import CloseButton from './CloseButton';
 import { IconGrip } from './icons';
 import { FIRST_RUN_GUIDE_REOPEN_EVENT } from './uiEvents';
+import { setFirstRunGuideVisible } from './firstRunGuideVisibility';
 
 // v5: two steps that point at the Resonance shell's real controls.
 const KEY = 'knowledge-nebula-first-graph-guide-v5';
@@ -33,14 +33,6 @@ const TOUR_STEPS = [
     body: 'Filters on the left pick the kinds of connection to show. Advanced filters hide weaker links until you ask for them.',
   },
 ] as const;
-
-/** Whether the tour is on screen, for overlays that should wait their turn (the "What we found" card). */
-let guideVisible = false;
-const guideListeners = new Set<() => void>();
-const subscribeGuide = (listener: () => void) => { guideListeners.add(listener); return () => { guideListeners.delete(listener); }; };
-export function useFirstRunGuideVisible(): boolean {
-  return useSyncExternalStore(subscribeGuide, () => guideVisible, () => false);
-}
 
 interface SpotlightRect {
   top: number;
@@ -159,10 +151,10 @@ export default function FirstRunGuide() {
   }, [dismissed, ready, selectedId, searchOpen, step]);
 
   const visible = ready && !dismissed && selectedId === null && !searchOpen;
-  useEffect(() => {
-    guideVisible = visible;
-    guideListeners.forEach((listener) => listener());
-    return () => { guideVisible = false; guideListeners.forEach((listener) => listener()); };
+  // Before paint, so the insights card never shows for a frame over the tour.
+  useLayoutEffect(() => {
+    setFirstRunGuideVisible(visible);
+    return () => setFirstRunGuideVisible(false);
   }, [visible]);
 
   // Place the panel imperatively once it is on screen: a saved drag position
