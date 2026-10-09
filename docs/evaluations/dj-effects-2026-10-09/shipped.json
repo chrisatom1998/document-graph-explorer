@@ -1,0 +1,328 @@
+{
+ "kind": "dj-effect-heads-shipped-v1",
+ "learnedRevision": "trained-heads-2026-10-04-r6c+maybe-2026-10-05+amari-r24+dj-effects-2026-10-06+oneshot+dj-effects-2026-10-09",
+ "learnedSha256": "4892de25e98c96c3a7852733c8fb5dadbed65c67bdeadad02ac5acfa4fbdf3c2",
+ "newCatalogLabels": [],
+ "heads": [
+  {
+   "label": "chops",
+   "precision": 0.18421052631578946,
+   "recall": 0.28,
+   "testPositive": 25,
+   "testNegative": 1042,
+   "trainPositive": 146,
+   "threshold": 0.908,
+   "meets70": false,
+   "shipped": false,
+   "why": "held-out precision < 0.45 or recall < 0.30"
+  },
+  {
+   "label": "vocal chops",
+   "precision": 0.38461538461538464,
+   "recall": 0.45454545454545453,
+   "testPositive": 11,
+   "testNegative": 1042,
+   "trainPositive": 63,
+   "threshold": 0.9181,
+   "meets70": false,
+   "shipped": false,
+   "why": "held-out precision < 0.45 or recall < 0.30"
+  },
+  {
+   "label": "stutter effect",
+   "precision": 0.21428571428571427,
+   "recall": 0.3,
+   "testPositive": 20,
+   "testNegative": 1040,
+   "trainPositive": 91,
+   "threshold": 0.8827,
+   "meets70": false,
+   "shipped": false,
+   "why": "held-out precision < 0.45 or recall < 0.30"
+  },
+  {
+   "label": "glitch effect",
+   "precision": 0.36752136752136755,
+   "recall": 0.48863636363636365,
+   "testPositive": 88,
+   "testNegative": 1015,
+   "trainPositive": 1017,
+   "threshold": 0.7692,
+   "meets70": false,
+   "shipped": false,
+   "why": "held-out precision < 0.45 or recall < 0.30"
+  },
+  {
+   "label": "reverse effect",
+   "precision": 0.5972222222222222,
+   "recall": 0.5584415584415584,
+   "testPositive": 77,
+   "testNegative": 844,
+   "trainPositive": 548,
+   "threshold": 0.786,
+   "meets70": false,
+   "replaced": {
+    "tier": "maybe",
+    "precision": 0.4883720930232558,
+    "recall": 0.5454545454545454
+   },
+   "shipped": true,
+   "tier": "maybe"
+  },
+  {
+   "label": "record stop",
+   "precision": null,
+   "recall": null,
+   "testPositive": 5,
+   "testNegative": 1046,
+   "trainPositive": 44,
+   "threshold": 0.9192,
+   "shipped": false,
+   "why": "fewer than 10 held-out positives; not tested"
+  },
+  {
+   "label": "vinyl scratch",
+   "precision": 0.8235294117647058,
+   "recall": 0.6461538461538462,
+   "testPositive": 65,
+   "testNegative": 1046,
+   "trainPositive": 216,
+   "threshold": 0.8395,
+   "meets70": false,
+   "shipped": false,
+   "why": "a normal head already ships and the new one is below 70/70"
+  },
+  {
+   "label": "riser",
+   "precision": 0.6781609195402298,
+   "recall": 0.686046511627907,
+   "testPositive": 86,
+   "testNegative": 914,
+   "trainPositive": 337,
+   "threshold": 0.8384,
+   "meets70": false,
+   "replaced": {
+    "tier": "maybe",
+    "precision": 0.6116504854368932,
+    "recall": 0.7325581395348837
+   },
+   "shipped": true,
+   "tier": "maybe"
+  },
+  {
+   "label": "downlifter",
+   "precision": 0.0,
+   "recall": 0.0,
+   "testPositive": 15,
+   "testNegative": 931,
+   "trainPositive": 20,
+   "threshold": 0.9444,
+   "meets70": false,
+   "shipped": false,
+   "why": "held-out precision < 0.45 or recall < 0.30"
+  },
+  {
+   "label": "impact",
+   "precision": 0.6339285714285714,
+   "recall": 0.7244897959183674,
+   "testPositive": 98,
+   "testNegative": 1064,
+   "trainPositive": 863,
+   "threshold": 0.8206,
+   "meets70": false,
+   "replaced": {
+    "tier": "maybe",
+    "precision": 0.6226415094339622,
+    "recall": 0.673469387755102
+   },
+   "shipped": true,
+   "tier": "maybe"
+  },
+  {
+   "label": "whoosh",
+   "precision": 0.64,
+   "recall": 0.7901234567901234,
+   "testPositive": 81,
+   "testNegative": 857,
+   "trainPositive": 952,
+   "threshold": 0.7181,
+   "meets70": false,
+   "shipped": false,
+   "why": "a normal head already ships and the new one is below 70/70"
+  },
+  {
+   "label": "reverse cymbal",
+   "precision": 0.7272727272727273,
+   "recall": 0.6153846153846154,
+   "testPositive": 13,
+   "testNegative": 914,
+   "trainPositive": 51,
+   "threshold": 0.8548,
+   "meets70": false,
+   "shipped": false,
+   "why": "current head is as good on the same held-out clips (P 0.69 R 0.85)"
+  },
+  {
+   "label": "reverse impact",
+   "precision": null,
+   "recall": null,
+   "testPositive": 1,
+   "testNegative": 801,
+   "trainPositive": 15,
+   "threshold": null,
+   "shipped": false,
+   "why": "too few training clips"
+  },
+  {
+   "label": "noise sweep",
+   "precision": 0.6538461538461539,
+   "recall": 0.4594594594594595,
+   "testPositive": 37,
+   "testNegative": 857,
+   "trainPositive": 154,
+   "threshold": 0.8739,
+   "meets70": false,
+   "shipped": false,
+   "why": "current head is as good on the same held-out clips (P 0.48 R 0.62)"
+  },
+  {
+   "label": "sub drop",
+   "precision": 0.5,
+   "recall": 0.25,
+   "testPositive": 20,
+   "testNegative": 1064,
+   "trainPositive": 43,
+   "threshold": 0.943,
+   "meets70": false,
+   "shipped": false,
+   "why": "held-out precision < 0.45 or recall < 0.30"
+  },
+  {
+   "label": "laser",
+   "precision": 0.5052631578947369,
+   "recall": 0.5333333333333333,
+   "testPositive": 90,
+   "testNegative": 1015,
+   "trainPositive": 781,
+   "threshold": 0.7867,
+   "meets70": false,
+   "replaced": {
+    "tier": "maybe",
+    "precision": 0.5753424657534246,
+    "recall": 0.4666666666666667
+   },
+   "shipped": true,
+   "tier": "maybe"
+  },
+  {
+   "label": "siren",
+   "precision": 0.59,
+   "recall": 0.7662337662337663,
+   "testPositive": 77,
+   "testNegative": 1015,
+   "trainPositive": 893,
+   "threshold": 0.7586,
+   "meets70": false,
+   "shipped": false,
+   "why": "a normal head already ships and the new one is below 70/70"
+  },
+  {
+   "label": "air horn",
+   "precision": 0.9166666666666666,
+   "recall": 0.6470588235294118,
+   "testPositive": 17,
+   "testNegative": 1015,
+   "trainPositive": 30,
+   "threshold": 0.857,
+   "meets70": false,
+   "replaced": {
+    "tier": "maybe",
+    "precision": 0.7857142857142857,
+    "recall": 0.6470588235294118
+   },
+   "shipped": true,
+   "tier": "maybe"
+  },
+  {
+   "label": "flanged",
+   "precision": 0.36363636363636365,
+   "recall": 0.34782608695652173,
+   "testPositive": 46,
+   "testNegative": 1002,
+   "trainPositive": 219,
+   "threshold": 0.8625,
+   "meets70": false,
+   "shipped": false,
+   "why": "held-out precision < 0.45 or recall < 0.30"
+  },
+  {
+   "label": "bitcrushed",
+   "precision": 0.38095238095238093,
+   "recall": 0.26666666666666666,
+   "testPositive": 30,
+   "testNegative": 1078,
+   "trainPositive": 180,
+   "threshold": 0.82,
+   "meets70": false,
+   "shipped": false,
+   "why": "held-out precision < 0.45 or recall < 0.30"
+  },
+  {
+   "label": "beat repeat",
+   "precision": null,
+   "recall": null,
+   "testPositive": 2,
+   "testNegative": 1040,
+   "trainPositive": 27,
+   "threshold": 0.8753,
+   "shipped": false,
+   "why": "fewer than 10 held-out positives; not tested"
+  },
+  {
+   "label": "filter sweep",
+   "precision": 0.6190476190476191,
+   "recall": 0.3939393939393939,
+   "testPositive": 33,
+   "testNegative": 857,
+   "trainPositive": 87,
+   "threshold": 0.9381,
+   "meets70": false,
+   "shipped": false,
+   "why": "current head is as good on the same held-out clips (P 0.55 R 0.48)"
+  },
+  {
+   "label": "trance gate",
+   "precision": 0.3125,
+   "recall": 0.2777777777777778,
+   "testPositive": 18,
+   "testNegative": 1042,
+   "trainPositive": 82,
+   "threshold": 0.9238,
+   "meets70": false,
+   "shipped": false,
+   "why": "held-out precision < 0.45 or recall < 0.30"
+  },
+  {
+   "label": "rewind",
+   "precision": null,
+   "recall": null,
+   "testPositive": 1,
+   "testNegative": 1046,
+   "trainPositive": 9,
+   "threshold": 0.9866,
+   "shipped": false,
+   "why": "fewer than 10 held-out positives; not tested"
+  },
+  {
+   "label": "delay throw",
+   "precision": null,
+   "recall": null,
+   "testPositive": 3,
+   "testNegative": 1168,
+   "trainPositive": 53,
+   "threshold": 0.8861,
+   "shipped": false,
+   "why": "fewer than 10 held-out positives; not tested"
+  }
+ ]
+}
