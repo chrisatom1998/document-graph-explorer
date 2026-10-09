@@ -32,9 +32,10 @@ if not args.checkpoint.exists():
 manifest = json.loads(args.manifest.read_text())
 if manifest.get('version') != 'dge-research-v1':
     raise SystemExit('Invalid manifest')
-os.environ.setdefault('OMP_NUM_THREADS', str(args.threads))
-os.environ.setdefault('HF_HUB_OFFLINE', '1')
-os.environ.setdefault('TRANSFORMERS_OFFLINE', '1')
+# Enforce these before importing model libraries, even in an online parent shell.
+os.environ['OMP_NUM_THREADS'] = str(args.threads)
+os.environ['HF_HUB_OFFLINE'] = '1'
+os.environ['TRANSFORMERS_OFFLINE'] = '1'
 rows = []
 report = {'model': args.model, 'revision': args.revision, 'prompt': args.prompt,
           'checkpoint': args.checkpoint.name,
