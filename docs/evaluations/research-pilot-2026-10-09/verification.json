@@ -13,5 +13,14 @@
     "failed": 1,
     "failure": "src/eval/graphAccuracy.test.ts: 61 real Python PEPs, timeout after 600000 ms"
   },
-  "isolatedRetry": "Stopped after remaining incomplete; no pass inferred. Original 600-second timeout remains unresolved."
+  "isolatedRetry": "Stopped after remaining incomplete; no pass inferred. Original 600-second timeout remains unresolved.",
+  "latestBuild": "passed after merging main 3c622872c4f59d64c317c8c78204da661b4e94a2",
+  "runtimeFixTests": {
+    "passed": 2
+  },
+  "currentRuntimeSmoke": {
+    "complete": 2,
+    "attempted": 2,
+    "commit": "02c2d4a9474120672a19fec5ee159fd218202f0f"
+  }
 }

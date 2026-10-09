@@ -1,0 +1,77 @@
+{
+  "version": "dge-research-v1",
+  "createdAt": "2026-10-09T16:52:14.497Z",
+  "note": "Two-input cold-start smoke after main runtime fix; not a fresh accuracy benchmark.",
+  "clips": [
+    {
+      "id": "masb-1009674-T-1s",
+      "path": "audio/c000000.wav",
+      "sha256": "24ace91a545a144c7796d8ba475d7c3d04cb253adfc5d4da41b4ee97d43b5f38",
+      "group": "jamendo-track-1009674",
+      "split": "development",
+      "seconds": 1,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1009674",
+          "source": "SDD",
+          "jamendo_path": "74/1009674.mp3",
+          "track_duration_s": "210.2",
+          "axis": "T",
+          "crop_start_s": "34.06239098691099",
+          "crop_end_s": "44.06239098691099",
+          "inst_1": "synth",
+          "inst_2": "bass",
+          "timbre_1": "ambient",
+          "timbre_2": "punchy",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1009674&format=mp31&from=mtg",
+        "sourceSha256": "eaf6216983a5cce5e0a34ddd8b2af0d26758fa72926a7cdc84de8e2349226b73"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 34.06239098691099,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    },
+    {
+      "id": "masb-1009674-T-2s",
+      "path": "audio/c000001.wav",
+      "sha256": "a0c2d1133d0ec8063f3e10e00f34248588929ecb8d48589596cffc35c575c7cd",
+      "group": "jamendo-track-1009674",
+      "split": "development",
+      "seconds": 2,
+      "provenance": {
+        "url": "https://github.com/barry-mir/music-clap-bow",
+        "commit": "9dd9338790f3b195fa984e888f6e57f93b5cd949",
+        "annotation": {
+          "clip_id": "1009674",
+          "source": "SDD",
+          "jamendo_path": "74/1009674.mp3",
+          "track_duration_s": "210.2",
+          "axis": "T",
+          "crop_start_s": "34.06239098691099",
+          "crop_end_s": "44.06239098691099",
+          "inst_1": "synth",
+          "inst_2": "bass",
+          "timbre_1": "ambient",
+          "timbre_2": "punchy",
+          "confidence": "5"
+        },
+        "sourceUrl": "https://prod-1.storage.jamendo.com/?trackid=1009674&format=mp31&from=mtg",
+        "sourceSha256": "eaf6216983a5cce5e0a34ddd8b2af0d26758fa72926a7cdc84de8e2349226b73"
+      },
+      "rights": {
+        "evaluationAllowed": true,
+        "basis": "MASB documents Creative Commons source tracks; no redistribution of audio."
+      },
+      "sourceStart": 34.06239098691099,
+      "truth": {},
+      "referenceKind": "published-annotation"
+    }
+  ]
+}

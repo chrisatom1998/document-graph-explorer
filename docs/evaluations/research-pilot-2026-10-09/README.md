@@ -59,6 +59,15 @@ The DGE browser run completed **43/45** clips. Its first 1 s and 2 s music impor
 were partial, with AST reporting `network error`; subsequent imports completed.
 Partial results do not receive complete-pipeline accuracy credit.
 
+**Current-runtime follow-up:** main subsequently included the runtime-initialization
+fix [#174](https://github.com/chrisatom1998/document-graph-explorer/pull/174),
+commit `3c622872c4f59d64c317c8c78204da661b4e94a2`. After merging it, the same two
+initial clips both completed, with no page errors: 20.35 s for the cold 1 s clip
+and 6.90 s for the subsequent 2 s clip. This two-input smoke check is recorded
+separately at commit `02c2d4a9474120672a19fec5ee159fd218202f0f`; it does not replace
+the 45-clip study or establish general reliability. The earlier partials describe
+the frozen older baseline, not the current runtime.
+
 For the five explicitly labelled Iowa positives, DGE displayed flute on the 6 s
 flute crop and missed flute/marimba on all four 1–2 s crops. The inputs contain
 signal, with RMS around −31 to −34 dBFS. At 10 s, the published positive labels
@@ -163,3 +172,5 @@ compile. The full existing suite reported 2,658 passed, one skipped and one
 600-second timeout in the unrelated 61-PEP graph-accuracy test. An isolated retry
 also remained incomplete and was stopped; no pass is inferred. That existing
 test timeout remains unresolved. Details are recorded in `verification.json`.
+The build was repeated successfully after merging the current-main runtime fix;
+its two focused tests and the two-input browser smoke also passed.

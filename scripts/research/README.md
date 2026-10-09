@@ -50,6 +50,10 @@ CHROME_PATH=/path/to/chromium node_modules/.bin/vite-node scripts/research/run-d
 Each output path must be new. `DGE_RESEARCH_PORT` selects an alternative preview port.
 The browser adapter has an independent deadline that closes a stalled page. A
 partial or failed result never earns complete-pipeline accuracy credit.
+Commands evaluate the current checkout. The archived 45-clip study used DGE
+commit `fbf46ebd3db42f828104a9b0e98052f1052adde0`, before the runtime fix in #174;
+reproducing that older baseline requires that app revision with these research
+scripts copied into it. A separate two-clip follow-up covers the updated runtime.
 
 ```sh
 /tmp/dge-research-venv/bin/python scripts/research/run-model.py /tmp/dge-pilot/manifest.json artifacts/peace.json --model peace --checkpoint /tmp/dge-models/peace/boxgraph --revision 484fe3cbf4a21226f0989fbbcadb126c59ec34ef --threads 2
