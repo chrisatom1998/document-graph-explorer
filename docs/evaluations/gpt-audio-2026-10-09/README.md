@@ -46,7 +46,7 @@ Spend $3.34 (measured): 10 s clip = 100 audio tokens (10 per second), about $0.0
 | Set | GPT-Audio-1.5 | Main |
 |---|---|---|
 | Instruments, DJ round 2 (500) | 5 of 11 pass 70/70; better than main on none; clearly worse on 7 (bass .35/.80, organ never named, sax recall .32, trumpet .17, violin .27, piano, cymbals) | 70/70 on 8 of 11 by these numbers |
-| DJ effects (300 held-out) | 0 of 21 pass; worse than main on 13, no tag better | 2 of 20 pass |
+| DJ effects (300 held-out) | 0 of 21 pass; worse than main on 12, no tag better | 2 of 20 pass |
 | Key, Beatport (123 scored) | **4.9% exact** (about chance: 1 in 24) | 54.9% |
 
 Full tables: `results/*.txt`. Per-clip answers: `results/*.json`. Decision: GPT-Audio-1.5 is not added as a provider.
