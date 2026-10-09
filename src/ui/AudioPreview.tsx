@@ -58,6 +58,8 @@ export default function AudioPreview({ node }: { node: DocNode }) {
       if (!active.current) return;
       URL.revokeObjectURL(liveUrl.current);
       liveUrl.current = URL.createObjectURL(blob);
+      // A new media element starts paused at zero and has no metadata yet.
+      setPlaying(false); setCurrentTime(0); setDuration(0);
       setUrl(liveUrl.current); setMessage('Ready to play.');
     } catch (error) {
       if (active.current) setMessage(error instanceof Error ? error.message : 'Could not convert this audio.');
@@ -78,13 +80,19 @@ export default function AudioPreview({ node }: { node: DocNode }) {
     layoutReheat(0.4);
     await persist();
   };
+  const play = (audio: HTMLAudioElement) => {
+    void audio.play().catch(() => {
+      // Conversion can replace the element before an earlier play() rejects.
+      if (player.current === audio) setMessage('Choose Prepare playback if this format cannot play on your device.');
+    });
+  };
   const controls: AudioControlState = {
     playing, currentTime, duration, volume, available: !!url, peaks,
     onToggle: () => {
       const audio = player.current;
       if (!audio) return;
       if (!audio.paused) audio.pause();
-      else void audio.play().catch(() => setMessage('Choose Prepare playback if this format cannot play on your device.'));
+      else play(audio);
     },
     onSeek: seconds => { if (player.current) player.current.currentTime = seconds; setCurrentTime(seconds); },
     onVolume: value => { setVolume(value); if (player.current) player.current.volume = value; },
@@ -104,7 +112,7 @@ export default function AudioPreview({ node }: { node: DocNode }) {
       if (!player.current) return;
       try {
         player.current.currentTime = seconds;
-        void player.current.play().catch(() => setMessage('Choose Prepare playback if this format cannot play on your device.'));
+        play(player.current);
       } catch { setMessage('Choose Prepare playback to listen to this section.'); }
     } : undefined} />
     <details className="music-manual-link"><summary>Connect to another track</summary>

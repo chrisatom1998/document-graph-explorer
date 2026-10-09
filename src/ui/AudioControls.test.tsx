@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import AudioControls, { type AudioControlState } from './AudioControls';
+import { cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react';
+import AudioControls, { useWaveform, type AudioControlState } from './AudioControls';
 afterEach(cleanup);
 const state = (): AudioControlState => ({ playing: false, currentTime: 0, duration: 12, volume: 1, available: true, peaks: [.2, .4], onToggle: vi.fn(), onSeek: vi.fn(), onVolume: vi.fn() });
 describe('sample playback controls', () => {
@@ -20,4 +20,15 @@ describe('sample playback controls', () => {
     expect(screen.getByRole('button', { name: 'Play sample' })).toBeDisabled();
     expect(screen.getByLabelText('Sample position')).toBeDisabled();
   });
+});
+
+it('keeps playback available when the browser cannot create a waveform audio context', () => {
+  vi.stubGlobal('AudioContext', class { constructor() { throw new DOMException('Too many audio contexts', 'NotSupportedError'); } });
+  try {
+    const blob = new Blob(['audio']);
+    const { result } = renderHook(() => useWaveform(blob));
+    expect(result.current).toEqual([]);
+    render(<AudioControls state={{ ...state(), peaks: result.current }} />);
+    expect(screen.getByRole('button', { name: 'Play sample' })).toBeEnabled();
+  } finally { vi.unstubAllGlobals(); }
 });

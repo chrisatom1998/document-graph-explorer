@@ -9,7 +9,9 @@ export function useWaveform(blob: Blob | null) {
     setPeaks([]);
     if (!blob || typeof AudioContext === 'undefined') return;
     let cancelled = false;
-    const context = new AudioContext();
+    let context: AudioContext;
+    try { context = new AudioContext(); }
+    catch { return; } // Waveforms are optional when the browser denies an audio context.
     void (async () => {
       try {
         const audio = await context.decodeAudioData(await blob.arrayBuffer());

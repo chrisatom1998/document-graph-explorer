@@ -1,13 +1,16 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { DocNode } from '../model/types';
 vi.mock('../persistence/originals', () => ({ getOriginal: vi.fn(async () => undefined) }));
 vi.mock('../audio/saveAudioGraph', () => ({ saveAudioGraph: vi.fn() }));
+vi.mock('../audio/convertAudio', () => ({ convertAudio: vi.fn() }));
 vi.mock('../layout/layoutBridge', () => ({ layoutSetLinks: vi.fn(), layoutReheat: vi.fn() }));
 import AudioPreview from './AudioPreview';
 import { saveAudioGraph } from '../audio/saveAudioGraph';
+import { getOriginal } from '../persistence/originals';
+import { convertAudio } from '../audio/convertAudio';
 import { useGraphStore } from '../store/graphStore';
 const node = (id: string): DocNode => ({ id, title: id, fileType: 'audio', kind: 'document', topics: [], entities: [], keywords: [], wordCount: 0, cluster: -1, degree: 0, status: 'ok' });
 beforeEach(() => {
@@ -63,5 +66,49 @@ describe('audio relationships', () => {
     render(<AudioPreview node={node('first')} />);
     await screen.findByText('Audio is not saved here. Add the original file again to play it.');
     expect(screen.queryByRole('button', { name: 'Prepare playback' })).toBeNull();
+  });
+});
+
+describe('preparing playback', () => {
+  beforeEach(() => {
+    vi.stubGlobal('URL', class extends URL {
+      static override createObjectURL = vi.fn((blob: Blob) => `blob:${blob.size}`);
+      static override revokeObjectURL = vi.fn();
+    });
+    vi.mocked(getOriginal).mockResolvedValue({ hash: 'first', name: 'clip.flac', blob: new Blob(['original']) });
+    vi.mocked(convertAudio).mockResolvedValue(new Blob(['converted audio']));
+  });
+  afterEach(() => { vi.mocked(getOriginal).mockResolvedValue(undefined); vi.unstubAllGlobals(); });
+
+  it('resets transport state when conversion replaces a playing clip', async () => {
+    const view = render(<AudioPreview node={node('first')} />);
+    await screen.findByRole('button', { name: 'Prepare playback' });
+    const original = view.container.querySelector('audio')!;
+    Object.defineProperty(original, 'duration', { value: 20 });
+    original.currentTime = 8;
+    fireEvent.loadedMetadata(original);
+    fireEvent.timeUpdate(original);
+    fireEvent.play(original);
+    expect(screen.getByRole('button', { name: 'Pause sample' })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Prepare playback' }));
+    await screen.findByText('Ready to play.');
+    expect(view.container.querySelector('audio')).not.toBe(original);
+    expect(screen.getByRole('button', { name: 'Play sample' })).toBeEnabled();
+    expect(screen.getByLabelText('Sample position')).toHaveValue('0');
+    expect(screen.getByLabelText('Sample position')).toBeDisabled();
+  });
+
+  it('ignores an old play rejection after conversion replaces the audio element', async () => {
+    let failPlay!: (error: Error) => void;
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementationOnce(() => new Promise<void>((_resolve, reject) => { failPlay = reject; }));
+    try {
+      render(<AudioPreview node={node('first')} />);
+      await screen.findByRole('button', { name: 'Prepare playback' });
+      fireEvent.click(screen.getByRole('button', { name: 'Play sample' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Prepare playback' }));
+      await screen.findByText('Ready to play.');
+      await act(async () => failPlay(new Error('The play request was interrupted by a new load request')));
+      expect(screen.getByRole('status')).toHaveTextContent('Ready to play.');
+    } finally { vi.mocked(HTMLMediaElement.prototype.play).mockRestore(); }
   });
 });
