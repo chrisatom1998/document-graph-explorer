@@ -2,6 +2,8 @@ import { createServer, type Server } from 'node:http';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createCopilotHandler, openAiCopilot, type CopilotBackend } from './djCopilot';
 import { copilotWave } from '../audio/copilotWave';
+import { sample as lunaSample } from '../audio/lunaEvidence.fixture';
+import { deterministicLuna, LUNA_MODEL, LUNA_POLICY, type LunaReport } from '../audio/lunaEvidence';
 
 const sample = { ref: 'Sample 1', durationSeconds: 2, analyzedSeconds: 2, preview: false, tempo: null, key: null,
   confirmedTags: [], confirmedInstruments: null, estimates: [], filenameHints: { bpm: null, key: null } };
@@ -21,6 +23,17 @@ function backend(): CopilotBackend {
   return { review: vi.fn(async () => ({ answer: 'No confirmed labels.', model: 'test', sessionId: 's', turnId: 't' })), transcribe: vi.fn(async () => 'hello') };
 }
 describe('copilot server', () => {
+  it('routes bounded Luna evidence without audio, arbitrary fields, or cross-origin access', async () => {
+    const service = backend();
+    service.lunaReview = vi.fn(async (): Promise<LunaReport> => ({ model: LUNA_MODEL, policy: LUNA_POLICY, status: 'complete', cached: false, samples: [deterministicLuna(lunaSample)] }));
+    const post = await start(service);
+    const body = JSON.stringify({ samples: [{ ...lunaSample, wav: 'must-not-forward', filename: 'private.wav' }] });
+    expect((await post('/review-luna', body, { Origin: 'https://evil.example' })).status).toBe(403);
+    expect((await post('/review-luna', body)).status).toBe(200);
+    expect(service.lunaReview).toHaveBeenCalledWith([lunaSample], expect.any(AbortSignal));
+    expect(service.review).not.toHaveBeenCalled();
+    expect((await post('/review-luna', JSON.stringify({ samples: [{ ...lunaSample, labels: Array(65).fill(lunaSample.labels[0]) }] }))).status).toBe(400);
+  });
   it('routes validated listening excerpts and blocks invalid audio and cross-origin uploads', async () => {
     const service = backend();
     service.audioReview = vi.fn(async () => ({ answer: 'An excerpt review.', model: 'gpt-audio-1.5', sessionId: '', turnId: 'chat' }));

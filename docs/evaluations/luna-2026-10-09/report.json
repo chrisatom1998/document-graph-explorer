@@ -1,0 +1,31 @@
+{
+  "status": "blocked",
+  "policy": "normalization-routing-v1",
+  "requested": 20,
+  "completed": 0,
+  "maxUsd": 5,
+  "chargedUpperBoundUsd": 0,
+  "blockers": [
+    "Existing server-side OPENAI_API_KEY is unavailable.",
+    "Missing current graph export.",
+    "Missing audio directory."
+  ],
+  "models": [
+    "gpt-6-luna",
+    "gpt-audio-1.5"
+  ],
+  "limitations": [
+    "Instrument/source annotations only; DJ effects and character accuracy are unproven.",
+    "Twenty clips are a pilot, not enough to establish reliable per-category accuracy.",
+    "Policies frozen before labels are scored. No acceptance thresholds are changed.",
+    "Latency includes provider and excerpt preparation; native latency is not recoverable from graph exports."
+  ],
+  "runnerSha256": "89ade169dc44e0ddd277bca3338b2448cdec5b4f3291ca5aabb9346804cceae7",
+  "appCommit": "d0dc36ad0fa073042d784802b2fe0b9b9caa7707",
+  "dirty": true,
+  "pricesVerified": "2026-10-09",
+  "pricesSource": [
+    "https://developers.openai.com/api/docs/models/gpt-6-luna",
+    "https://developers.openai.com/api/docs/models/gpt-audio-1.5"
+  ]
+}

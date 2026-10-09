@@ -7,6 +7,8 @@ import { MAX_TRANSCRIPTION_BYTES, validateCopilotWave } from '../audio/copilotWa
 import { copilotReviewSchema, parseCopilotSuggestions, type CopilotSuggestion } from '../audio/copilotProperties';
 import { MAX_LISTENING_REQUEST_BYTES, type ListeningClip, type ListeningCoverage } from '../audio/copilotListening';
 import { parseListeningClips, reviewAudio } from './gptAudioReview';
+import { parseLunaSamples, type LunaReport, type LunaSample } from '../audio/lunaEvidence';
+import { configuredLunaLimits, createLunaReviewer } from './lunaReview';
 
 export const COPILOT_MODEL = 'gpt-6.1-sol';
 export const TRANSCRIBE_MODEL = 'gpt-transcribe';
@@ -16,6 +18,7 @@ Use a short Python calculation in the sandbox to compare reliable tempos and key
 
 export interface CopilotReport { answer: string; suggestions?: CopilotSuggestion[]; model: string; sessionId: string; turnId: string; warning?: string; listening?: ListeningCoverage[] }
 export interface CopilotBackend {
+  lunaReview?(samples: LunaSample[], signal: AbortSignal): Promise<LunaReport>;
   review(samples: CopilotSample[], question: string, signal: AbortSignal): Promise<CopilotReport>;
   fastReview?(samples: CopilotSample[], question: string, signal: AbortSignal): Promise<CopilotReport>;
   audioReview?(samples: CopilotSample[], clips: ListeningClip[], question: string, signal: AbortSignal): Promise<CopilotReport>;
@@ -35,6 +38,7 @@ export function safeCopilotError(error: unknown): string {
 
 export function openAiCopilot(apiKey: string, client = new OpenAI({ apiKey, maxRetries: 0, timeout: 150_000 })): CopilotBackend {
   return {
+    lunaReview: createLunaReviewer(client, configuredLunaLimits()),
     audioReview: (samples, clips, question, signal) => reviewAudio(client, samples, clips, question, signal),
     async fastReview(samples, question, signal) {
       const result = await client.responses.create({
@@ -149,7 +153,7 @@ export function createCopilotHandler(apiKey: string, backend?: CopilotBackend) {
     if (!isLocalRequest(req)) return reply(res, 403, { error: 'Open the copilot from the local app.' });
     if (req.method !== 'POST') return reply(res, 405, { error: 'POST required.' });
     const path = (req.url ?? '').split('?')[0];
-    if (!['/review', '/review-fast', '/review-audio', '/transcribe'].includes(path)) return reply(res, 404, { error: 'Unknown copilot action.' });
+    if (!['/review', '/review-fast', '/review-audio', '/review-luna', '/transcribe'].includes(path)) return reply(res, 404, { error: 'Unknown copilot action.' });
     if (!service) return reply(res, 503, { error: 'The local OpenAI key is not configured. Restart the local app after key setup.' });
     if (active) return reply(res, 429, { error: 'Another copilot request is running. Wait for it to finish.' });
     const transcription = path === '/transcribe';
@@ -163,10 +167,17 @@ export function createCopilotHandler(apiKey: string, backend?: CopilotBackend) {
       const chunks: Buffer[] = []; let bytes = 0;
       for await (const chunk of req) {
         bytes += chunk.length;
-        if (bytes > (transcription ? MAX_TRANSCRIPTION_BYTES : listening ? MAX_LISTENING_REQUEST_BYTES : 48000)) return reply(res, 413, { error: 'The copilot request is too large.' });
+        if (bytes > (transcription ? MAX_TRANSCRIPTION_BYTES : listening ? MAX_LISTENING_REQUEST_BYTES : path === '/review-luna' ? 262144 : 48000)) return reply(res, 413, { error: 'The copilot request is too large.' });
         chunks.push(Buffer.from(chunk));
       }
       const body = Buffer.concat(chunks);
+      if (path === '/review-luna') {
+        let samples: LunaSample[];
+        try { samples = parseLunaSamples(JSON.parse(body.toString()).samples); }
+        catch { return reply(res, 400, { error: 'Invalid bounded detector evidence.' }); }
+        if (!service.lunaReview) return reply(res, 503, { error: 'Luna review is unavailable. Detector results are unchanged.' });
+        return reply(res, 200, await service.lunaReview(samples, controller.signal));
+      }
       if (transcription) {
         let seconds: number;
         try { seconds = validateCopilotWave(body); } catch { return reply(res, 400, { error: 'Expected a mono 16 kHz WAV excerpt, at most 30 seconds.' }); }

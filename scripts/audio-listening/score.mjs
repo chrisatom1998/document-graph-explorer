@@ -1,8 +1,8 @@
 // Fixed before evaluation. Unknown annotations are never negative examples.
 export const CLASSES = {
   drums: ['drums', 'drum kit', 'drum machine'], voice: ['voice'], synthesizer: ['synthesizer'],
-  piano: ['piano', 'electric piano'], guitar: ['guitar', 'acoustic guitar', 'electric guitar', 'steel guitar'],
-  bass: ['bass', 'bass guitar', 'double bass'], cymbals: ['cymbals'], organ: ['organ'],
+  piano: ['piano', 'electric piano'], guitar: ['guitar', 'acoustic guitar', 'electric guitar', 'steel guitar', 'steel guitar / slide guitar'],
+  bass: ['bass', 'bass guitar', 'double bass'], cymbals: ['cymbals', 'cymbal'], organ: ['organ'],
   violin: ['violin', 'violin / fiddle'], trumpet: ['trumpet'], saxophone: ['saxophone'],
 };
 export function classesFor(labels) {

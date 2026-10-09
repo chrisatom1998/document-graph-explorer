@@ -103,3 +103,11 @@ external domains and no CSP violations in the Console.
 
 Report suspected security issues privately to the repository owner
 (chrismjohnson@google.com) rather than opening a public issue.
+
+Luna normalization/routing is a separate explicit, metadata-only request to the
+local copilot handler. It reuses server-only `OPENAI_API_KEY`, strips unrecognized
+request fields, accepts bounded detector evidence and no audio, and never writes
+model proposals into verified labels. Audio stays behind the explicit listening
+flow. Provider failures return fixed messages without upstream error bodies;
+requests/responses and credentials are not logged. A bounded memory cache and a
+configurable per-process request allowance limit repeated metadata calls.

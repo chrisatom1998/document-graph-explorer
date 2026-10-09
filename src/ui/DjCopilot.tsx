@@ -5,6 +5,8 @@ import { copilotWave, TRANSCRIPTION_RATE, TRANSCRIPTION_SECONDS } from '../audio
 import { getOriginal } from '../persistence/originals';
 import DjTagCorrection from './DjTagCorrection';
 import SampleClipPlayer from './SampleClipPlayer';
+import LunaReview from './LunaReview';
+import { lunaEvidence } from '../audio/lunaEvidence';
 import CopilotProperties from './CopilotProperties';
 import { parseCopilotSuggestions, type CopilotSuggestion } from '../audio/copilotProperties';
 import { applyCopilotProperties, copilotCorpusIdentity } from '../audio/applyCopilotProperties';
@@ -41,6 +43,7 @@ export default function DjCopilot({ audio, ready, localApi, onAddToCrate, crate,
     return node?.audio ? [node] : [];
   }), [selected, audio]);
   const evidence = useMemo(() => picked.flatMap((n, i) => { const sample = copilotEvidence(n, i); return sample ? [sample] : []; }), [picked]);
+  const lunaSamples = useMemo(() => picked.map((n, i) => lunaEvidence(n.audio!, i)), [picked]);
   const fingerprint = JSON.stringify({ ids: picked.map(n => n.id), evidence, question, reviewMode });
   const visible = audio.filter(n => n.title.toLowerCase().includes(filter.trim().toLowerCase()));
   const toggle = (id: string) => setSelected(previous => {
@@ -152,6 +155,10 @@ export default function DjCopilot({ audio, ready, localApi, onAddToCrate, crate,
           {node.audio && <CopilotProperties audio={node.audio} />}
         </article>;
       })}
+      {!!picked.length && <LunaReview samples={lunaSamples} disabled={!!busy || applying || !ready || !localApi} onChooseAudio={refs => {
+        setSelected(picked.filter((_, i) => refs.includes(lunaSamples[i].ref)).map(n => n.id));
+        setReviewMode('audio'); setStatus('GPT-Audio listening selected. Click Review selected sounds to upload the excerpts.');
+      }} />}
       {report && <section className="dj-copilot-report" aria-label="Copilot review">
         <div className="dj-results-heading"><h2>Copilot’s review</h2><button onClick={exportReport}>Export review</button></div>
         {report.fingerprint !== fingerprint && <p role="status" className="dj-error">Selection, question, or evidence changed. This review is historical; run it again for current advice.</p>}

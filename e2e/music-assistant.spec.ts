@@ -57,6 +57,8 @@ test('integrated music assistant preserves the classic graph and works on mobile
   await expect(dialog.getByText('1 / 5 selected', { exact: true })).toBeVisible();
   await expect(dialog.getByLabel('Review model')).toHaveValue('audio');
   await expect(dialog.getByText(/uploads the first 10 seconds/)).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Label normalization and review routing' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Normalize labels and check review need' })).toBeDisabled();
   await page.screenshot({ path: testInfo.outputPath('music-review-desktop.png') });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: testInfo.outputPath('music-review-mobile.png') });

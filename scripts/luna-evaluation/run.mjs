@@ -1,0 +1,147 @@
+// Explicit invocation authorizes benchmark audio uploads. No automatic import uploads.
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { join, basename } from 'node:path';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import OpenAI from 'openai';
+import { loadEnv } from 'vite';
+import { reviewAudio } from '../../src/server/gptAudioReview';
+import { createLunaReviewer } from '../../src/server/lunaReview';
+import { confidentSoundSummary } from '../../src/audio/confidentSoundSummary';
+import { recognitionConfiguration } from '../../src/audio/recognition';
+import { lunaEvidence, LUNA_POLICY } from '../../src/audio/lunaEvidence';
+import { classesFor } from '../audio-listening/score.mjs';
+import { listeningExcerpt } from '../audio-listening/excerpt';
+import { Budget, audioCost, comparison, sameDetectorConfiguration } from './metrics.mjs';
+
+const [manifestPath, baselinePath, audioDir, outputDir, budgetArg = '5'] = process.argv.slice(2);
+if (!outputDir) throw Error('Usage: npx vite-node scripts/luna-evaluation/run.mjs manifest.json current-graph-export.json audio-dir output-dir [max-usd=5]');
+const budget = new Budget(Number(budgetArg));
+mkdirSync(outputDir, { recursive: true });
+if (existsSync(join(outputDir, 'report.json'))) throw Error('Use a new output directory; never overwrite paid results.');
+const hash = x => createHash('sha256').update(x).digest('hex');
+const report = { status: 'preflight', policy: LUNA_POLICY, requested: 20, completed: 0, maxUsd: budget.limit,
+  chargedUpperBoundUsd: 0, blockers: [], models: ['gpt-6-luna', 'gpt-audio-1.5'],
+  limitations: ['Instrument/source annotations only; DJ effects and character accuracy are unproven.',
+    'Twenty clips are a pilot, not enough to establish reliable per-category accuracy.',
+    'Policies frozen before labels are scored. No acceptance thresholds are changed.',
+    'Latency includes provider and excerpt preparation; native latency is not recoverable from graph exports.'],
+  runnerSha256: hash(readFileSync(new URL(import.meta.url))),
+  appCommit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+  dirty: !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(),
+  pricesVerified: '2026-10-09', pricesSource: ['https://developers.openai.com/api/docs/models/gpt-6-luna', 'https://developers.openai.com/api/docs/models/gpt-audio-1.5'] };
+const save = () => writeFileSync(join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
+const key = process.env.OPENAI_API_KEY || loadEnv('development', process.cwd(), 'OPENAI_API_KEY').OPENAI_API_KEY;
+if (!key) report.blockers.push('Existing server-side OPENAI_API_KEY is unavailable.');
+for (const [name, path] of [['manifest', manifestPath], ['current graph export', baselinePath], ['audio directory', audioDir]]) if (!existsSync(path)) report.blockers.push(`Missing ${name}.`);
+if (report.blockers.length) { report.status = 'blocked'; save(); console.log('Evaluation blocked; see report.json. No API requests made.'); process.exit(2); }
+const manifestBytes = readFileSync(manifestPath), baselineBytes = readFileSync(baselinePath);
+const manifest = JSON.parse(manifestBytes), baseline = JSON.parse(baselineBytes);
+report.manifestSha256 = hash(manifestBytes); report.baselineSha256 = hash(baselineBytes);
+// Select IDs without examining annotations. Group by artist to isolate development and held-out clips.
+const candidates = manifest.items.filter(i => i.split === 'test').sort((a, b) => hash(a.id).localeCompare(hash(b.id)));
+const selected = [], artists = new Set();
+for (const item of candidates) {
+  const artist = item.groups?.artist;
+  if (!artist || artists.has(artist)) continue;
+  artists.add(artist); selected.push(item); if (selected.length === 20) break;
+}
+const nodes = new Map((baseline.nodes ?? []).map(n => [basename(n.path ?? n.title).replace(/\.[^.]+$/, ''), n]));
+const prepared = [];
+for (const [index, item] of selected.entries()) {
+  if (!/^[a-zA-Z0-9_-]+$/.test(item.id)) { report.blockers.push('Invalid opaque clip ID.'); continue; }
+  const node = nodes.get(item.id), audio = node?.audio;
+  const file = ['wav', 'ogg', 'mp3'].map(ext => join(audioDir, `${item.id}.${ext}`)).find(existsSync);
+  if (!audio || !file) { report.blockers.push(`Missing completed detector evidence or actual audio for ${item.id}.`); continue; }
+  if (item.start !== 0 || item.end > 10 || item.end <= 0 || item.rights?.evaluationAllowed !== true || audio.durationSeconds > 10.1 || audio.analyzedSeconds < item.end - .1 || audio.stage === 'preview') {
+    report.blockers.push(`Mismatched or incomplete excerpt for ${item.id}.`); continue;
+  }
+  if (!audio.recognition || audio.recognition.mode !== 'full' || audio.recognition.status !== 'complete' || !sameDetectorConfiguration(audio.recognition.configurationHash, recognitionConfiguration(audio.recognition.mode, audio.durationSeconds))) { report.blockers.push(`Outdated detector configuration for ${item.id}. Re-run the current app.`); continue; }
+  const sourceSha256 = hash(readFileSync(file));
+  if (audio.recognition.audioFingerprint !== sourceSha256) { report.blockers.push(`Audio bytes differ from the detector baseline for ${item.id}. Use the original file.`); continue; }
+  const shown = confidentSoundSummary(audio);
+  if (shown.some(s => s.origin === 'confirmed by you') || audio.confirmedDjTags !== undefined || audio.confirmedInstruments !== undefined || audio.copilotProperties !== undefined || audio.soundReviews?.length) {
+    report.blockers.push(`Remove ground-truth/user corrections from baseline for ${item.id}.`); continue;
+  }
+  const evidence = lunaEvidence(audio, 0);
+  if (Object.values(evidence.locked).some(Boolean) || Object.values(evidence.protectedLabels).some(x => x.length)) { report.blockers.push(`Reviewed evidence in baseline for ${item.id}.`); continue; }
+  prepared.push({ id: item.id, sourceSha256, configuration: audio.recognition.configurationHash, split: index < 10 ? 'development' : 'held-out', file, evidence,
+    native: classesFor(shown.filter(s => s.dimension === 'source').map(s => s.label)), seconds: item.end });
+}
+if (selected.length !== 20) report.blockers.push('Need 20 artist-disjoint eligible test clips.');
+if (report.blockers.length) { report.status = 'blocked'; save(); console.log('Evaluation blocked; see report.json. No API requests made.'); process.exit(2); }
+report.selection = prepared.map(({ id, split }) => ({ id, split }));
+report.policy = 'Frozen: normalize only supported existing names; use audio-only output when Luna recommends review, otherwise normalized existing detections. Compare union/agreement/fallback unchanged.';
+report.status = 'running'; save();
+const client = new OpenAI({ apiKey: key, maxRetries: 0, timeout: 90_000 });
+const luna = createLunaReviewer(client, { maxRequests: 20 });
+let usage;
+const create = client.chat.completions.create.bind(client.chat.completions);
+client.chat.completions.create = async (...args) => { report.apiRequests.audio++; const response = await create(...args); usage = response.usage; return response; };
+const records = [];
+const summarize = () => {
+  report.completed = records.filter(r => !r.error).length;
+  report.attempted = records.length;
+  report.scores = Object.fromEntries(['development', 'held-out'].map(split => {
+    const ids = new Set(prepared.filter(p => p.split === split).map(p => p.id));
+    return [split, comparison(selected.filter(i => ids.has(i.id)), records.filter(r => r.split === split))];
+  }));
+  const distribution = values => {
+    const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+    return { count: sorted.length, medianMs: sorted.length ? sorted[Math.floor(sorted.length / 2)] : null, maxMs: sorted.at(-1) ?? null };
+  };
+  report.performance = {
+    nativeLatency: null,
+    audioLatency: distribution(records.map(r => r.audioLatencyMs)),
+    lunaLatency: distribution(records.map(r => r.lunaLatencyMs)),
+    audioPromptTokens: records.reduce((n, r) => n + (r.audioUsage?.prompt_tokens ?? 0), 0),
+    audioCompletionTokens: records.reduce((n, r) => n + (r.audioUsage?.completion_tokens ?? 0), 0),
+    lunaInputTokens: records.reduce((n, r) => n + (r.luna?.cached ? 0 : r.luna?.usage?.inputTokens ?? 0), 0),
+    lunaOutputTokens: records.reduce((n, r) => n + (r.luna?.cached ? 0 : r.luna?.usage?.outputTokens ?? 0), 0),
+    simulatedRoutedAudioRequests: records.filter(r => r.luna?.samples[0].review === 'recommend').length,
+  };
+};
+report.apiRequests = { luna: 0, audio: 0 };
+const createResponse = client.responses.create.bind(client.responses);
+client.responses.create = async (...args) => { report.apiRequests.luna++; return createResponse(...args); };
+for (const clip of prepared) {
+  const record = { id: clip.id, split: clip.split, native: clip.native, audio: [], lunaNormalized: clip.native, lunaRouted: clip.native,
+    sourceSha256: clip.sourceSha256, detectorConfiguration: clip.configuration, nativeLatencyMs: null };
+  // Context-window worst case at the highest input rate + capped text output. Retain reservation on unknown usage/failure.
+  const lunaReserve = .27, audioReserve = 128000 * 32 / 1e6 + 3000 * 10 / 1e6;
+  if (!budget.reserve(lunaReserve)) { report.status = 'budget-stopped'; break; }
+  report.chargedUpperBoundUsd = budget.charged; save();
+  const started = performance.now();
+  record.luna = await luna([clip.evidence], AbortSignal.timeout(35000));
+  record.lunaLatencyMs = Math.round(performance.now() - started);
+  const lu = record.luna.usage;
+  record.lunaCostUpperBoundUsd = record.luna.cached ? 0 : lu ? (lu.inputTokens * .125 * (lu.inputTokens > 272000 ? 2 : 1) + lu.outputTokens * .5 * (lu.inputTokens > 272000 ? 1.5 : 1)) / 1e6 : null;
+  budget.settle(lunaReserve, record.lunaCostUpperBoundUsd);
+  record.lunaNormalized = [...new Set([...clip.native, ...classesFor(record.luna.samples[0].labels.filter(l => l.group === 'source' && l.supported && l.method !== 'protected' && l.canonicalLabel).map(l => l.canonicalLabel))])];
+  // A failed advisor always retains baseline predictions.
+  if (record.luna.status !== 'complete') record.lunaNormalized = clip.native;
+  record.error = { name: 'AudioNotAttempted', status: null }; records.push(record);
+  writeFileSync(join(outputDir, 'responses.json'), JSON.stringify(records, null, 2));
+  if (!budget.reserve(audioReserve)) { report.status = 'budget-stopped'; break; }
+  report.chargedUpperBoundUsd = budget.charged; save();
+  delete record.error; usage = undefined; const audioStart = performance.now();
+  try {
+    const bytes = listeningExcerpt(clip.file, clip.seconds); record.excerptSha256 = hash(bytes);
+    const sample = { ref: 'Sample 1', durationSeconds: clip.seconds, analyzedSeconds: clip.seconds, preview: false,
+      tempo: null, key: null, confirmedTags: null, confirmedInstruments: null, estimates: [], filenameHints: { bpm: null, key: null } };
+    // Crucially, only this opaque sample and audio enter GPT-Audio. No item annotations, filenames or native labels.
+    const result = await reviewAudio(client, [sample], [{ ref: sample.ref, wav: bytes.toString('base64') }], 'Describe clearly audible sources in this excerpt.', AbortSignal.timeout(90000));
+    record.audio = classesFor(result.suggestions.flatMap(s => s.tags.source)); record.coverage = result.listening;
+  } catch (error) { record.error = { name: error.name, status: error.status ?? null }; }
+  record.audioLatencyMs = Math.round(performance.now() - audioStart); record.audioUsage = usage ?? null;
+  record.audioCost = audioCost(usage); budget.settle(audioReserve, record.audioCost?.usd ?? null);
+  record.lunaRouted = record.luna.status === 'complete' && record.luna.samples[0].review === 'recommend' && !record.error ? record.audio : record.lunaNormalized;
+  writeFileSync(join(outputDir, 'responses.json'), JSON.stringify(records, null, 2));
+  summarize(); report.chargedUpperBoundUsd = budget.charged;
+  save(); console.log(`${records.length}/20 completed (including failures).`);
+  if (record.error || record.luna.status === 'fallback') { report.status = 'provider-stopped'; break; }
+}
+summarize(); report.chargedUpperBoundUsd = budget.charged;
+if (report.status === 'running') report.status = records.length === 20 ? 'complete' : 'incomplete';
+report.recommendation = 'Keep current acceptance thresholds. Review held-out per-category regressions and uncertainty before recommending any fusion policy.';
+save();

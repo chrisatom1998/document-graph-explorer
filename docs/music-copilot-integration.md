@@ -44,3 +44,36 @@ The optional reviewer starts with `npm run review:sounds` and uses the bundled a
 Unit tests exercise query validation, evidence boundaries, crate selection, cancellation, saving, and the preview-to-Full transition. Browser checks exercise the integrated local UI. Microphone capture on a physical device and cloud account access are separate from mocked tests; an API key's presence alone does not verify quota or model access.
 
 This checkout passed real OpenAI calls for sample search, fast review, and crate planning using synthetic evidence. Local reviewer checks also passed real generated-audio upload, multi-section song analysis, and preserving saved reviews. Continuous voice conversations and physical-microphone capture have not been validated.
+
+## Luna label normalization and review routing
+
+The separate **Normalize labels and check review need** action posts bounded
+machine evidence to `/api/dj-copilot/review-luna`. It uses the same server-side key
+as listening. Exact taxonomy names and catalog aliases resolve locally; only
+unresolved names can receive a Luna mapping. Source model, original name, original
+score and known excerpt intervals remain attached. Unknown coverage stays unknown.
+A normalized name is an unverified proposal, never a newly verified detection.
+
+Luna can recommend listening when detector label sets differ, fewer than two
+supported labels remain, or evidence is ambiguous/truncated/has unknown coverage.
+These are triage signals, not calibrated accuracy measures; different detector
+capabilities or excerpt coverage can explain disagreement. Fully locked fields and
+individual reviewed labels are protected. Choosing the suggested listening mode
+still requires **Review selected sounds** to upload audio through PR #172's path.
+
+The advisor uses `gpt-6-luna` Responses with strict JSON Schema and independent
+semantic validation. Its process-local cache lasts 15 minutes, holds at most 128
+entries and includes the model, policy and all bounded evidence in its key. It has
+a 30-second timeout, at most two provider requests concurrently, and no retries.
+`DGE_LUNA_MAX_REQUESTS` configures the per-server-process attempt budget (default
+20, 0 disables paid Luna requests, invalid configuration disables them). Restarting
+the local server resets this allowance. The existing HTTP handler serializes
+copilot requests; provider-level bounds also protect direct callers. Failures,
+invalid results, exhausted budgets and cancellations retain deterministic mappings
+and the original detectors. No credential or provider error body is returned.
+
+No acceptance threshold changes. No automatic upload during import. No effects or
+character accuracy claim. The reproducible 20-clip/$5 evaluation is documented in
+[`scripts/luna-evaluation/README.md`](../scripts/luna-evaluation/README.md).
+The listening-mode shortcut selects only the clips Luna recommended. It does not
+upload them; the user can inspect the new selection before starting audio review.
