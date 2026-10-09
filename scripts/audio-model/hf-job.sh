@@ -7,6 +7,11 @@
 # test and held-out Freesound uploaders), plus TinySOL, EGFxSet, FSLD, WaivOps drum loops, Surge presets (prepare-extra.py)
 # and Slakh stems when scripts/audio-model/prepare-slakh.py exists. RAWSTEMS=1 adds Mixing Secrets songs (non-commercial).
 # INIT_FROM=<model repo>[@<revision>[/<folder>]] starts from an earlier run's model.pt. OUT_DIR puts this run under a folder of $HF_REPO.
+# Run 7 additions (all optional): RAWSTEMS_FX=<share> re-renders that share of the Mixing Secrets windows with one effect
+# (source rsfx); IOWA=1 adds University of Iowa MIS notes minus the free-tag-set judge notes (prepare-iowa.py);
+# CHRIS_DATA=<private dataset>:<folder> adds Chris's own train-half sounds and effect renders of them (prepare-chrisdrive.py;
+# staged by stage-chrisdrive.py; non-commercial weights; never leaves the private repos); SOURCE_REPEAT=name=k,... oversamples
+# sources (train.py --repeat). The run folder gets data-manifest.json naming every source and every chris-drive file used.
 set -euo pipefail
 START=$(date +%s)
 export DEBIAN_FRONTEND=noninteractive
@@ -29,10 +34,18 @@ nproc; free -g | head -2; df -h $W | tail -1
 # Prepared data is cached in the private dataset <user>/dge-tagger-data under prep-cache/<key>, keyed by the prepare
 # scripts and label map, so a rerun with the same data skips the ~3 h prep. The upload runs alongside training.
 DIRS="prep prepj holdout"; [ "${ALL_TAGS:-0}" = 1 ] && DIRS="$DIRS fsdprep nsprep fsprep xprep"
-KEY=$( (ls $S/prepare*.py | grep -v prepare-rawstems.py | xargs cat; cat $S/labelmap.py; echo "$DIRS") | sha256sum | cut -c1-12)
+# The run 7 sources are built in every job (not cached), so their scripts stay out of the key.
+KEY=$( (ls $S/prepare*.py | grep -v -e prepare-rawstems.py -e prepare-iowa.py -e prepare-chrisdrive.py | xargs cat; cat $S/labelmap.py; echo "$DIRS") | sha256sum | cut -c1-12)
 # RAWSTEMS=1 adds Mixing Secrets full songs (prepare-rawstems.py, non-commercial licence), built alongside the rest.
 RS_PID=
-if [ "${RAWSTEMS:-0}" = 1 ]; then python3 $S/prepare-rawstems.py rsprep --workers 16 > rawstems.log 2>&1 & RS_PID=$!; fi
+if [ "${RAWSTEMS:-0}" = 1 ]; then python3 $S/prepare-rawstems.py rsprep --workers 16 --fx "${RAWSTEMS_FX:-0}" > rawstems.log 2>&1 & RS_PID=$!; fi
+IOWA_PID=
+if [ "${IOWA:-0}" = 1 ]; then python3 $S/prepare-iowa.py iowaprep --workers 16 > iowa.log 2>&1 & IOWA_PID=$!; fi
+CD_PID=
+if [ -n "${CHRIS_DATA:-}" ]; then   # private staged copy of Chris's train half: only counts are printed
+  ( python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='cdstage', max_workers=8)" "$CHRIS_DATA" \
+    && python3 $S/prepare-chrisdrive.py "cdstage/${CHRIS_DATA#*:}" cdprep && rm -rf cdstage ) > chrisdrive.log 2>&1 & CD_PID=$!
+fi
 CACHE_PID=
 if python3 - "$KEY" $DIRS <<'PY'
 import os, shutil, sys
@@ -68,9 +81,9 @@ else
     for x in tinysol egfx fsld waivops surge; do python3 $S/prepare-extra.py $x xprep > $x.log 2>&1 & done
     if [ -f $S/prepare-slakh.py ]; then python3 $S/prepare-slakh.py xprep > slakh.log 2>&1 & fi
   fi
-  LOGS=$(ls *.log)
-  # The raw-stems prep is waited on (and its log shown) separately below.
-  for job in $(jobs -p); do [ "$job" = "${RS_PID:-}" ] && continue; wait $job || { tail -n 20 $LOGS; exit 1; }; done
+  LOGS=$(ls *.log | grep -v -e rawstems.log -e iowa.log -e chrisdrive.log)
+  # The raw-stems, Iowa and chris-drive preps are waited on (and their logs shown) separately below.
+  for job in $(jobs -p); do case " ${RS_PID:-} ${IOWA_PID:-} ${CD_PID:-} " in *" $job "*) continue;; esac; wait $job || { tail -n 20 $LOGS; exit 1; }; done
   tail -n 3 $LOGS; echo "data prep took $(( ($(date +%s) - START) / 60 )) min"; df -h $W | tail -1
   python3 - "$KEY" $DIRS > cache-upload.txt 2>&1 <<'PY' &
 import sys
@@ -87,6 +100,10 @@ fi
 
 EXTRA=()
 if [ -n "$RS_PID" ]; then wait $RS_PID || { tail -n 30 rawstems.log; exit 1; }; tail -n 5 rawstems.log; EXTRA+=(--extra rawstems=rsprep); fi
+[ -f rsprep/rsfx.json ] && EXTRA+=(--extra rsfx=rsprep)
+if [ -n "$IOWA_PID" ]; then wait $IOWA_PID || { tail -n 30 iowa.log; exit 1; }; tail -n 4 iowa.log; EXTRA+=(--extra iowa=iowaprep); fi
+if [ -n "$CD_PID" ]; then wait $CD_PID || { tail -n 5 chrisdrive.log; exit 1; }; tail -n 4 chrisdrive.log; EXTRA+=(--extra chrisdrive=cdprep --extra chrisfx=cdprep); fi
+echo "all data ready after $(( ($(date +%s) - START) / 60 )) min"
 if [ -n "${SOUNDCLOUD_DATA:-}" ]; then   # "<dataset repo>:<folder>", uploaded by the workflow from its SoundCloud artifacts
   python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='scdl')" "$SOUNDCLOUD_DATA"
   mv "scdl/${SOUNDCLOUD_DATA#*:}" scprep && EXTRA+=(--soundcloud scprep)
@@ -103,19 +120,40 @@ fi
 # evaluation and upload, and never more than TRAIN_HOURS.
 HOURS=$(python3 -c "import sys; t, j, e = map(float, sys.argv[1:]); left = j - e / 3600 - 0.75; print(round(max(0.5, min(t, left) if t else left), 2))" "${TRAIN_HOURS:-0}" "${JOB_HOURS:-7}" "$(( $(date +%s) - START ))")
 echo "training budget ${HOURS} h"
-python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --rare-repeat "${RARE_REPEAT:-1}" --threads 8 --hours "$HOURS"
+python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --rare-repeat "${RARE_REPEAT:-1}" --repeat "${SOURCE_REPEAT:-}" --threads 8 --hours "$HOURS"
+# Which data trained this model, so it can be rebuilt without any one source (chris-drive rows keep source=chris-drive).
+python3 - "${EXTRA[@]}" <<'EOF'
+import json, os, sys
+a = sys.argv[1:]; srcs = {}
+for k, v in zip(a, a[1:]):
+    if k == '--extra': n, d = v.split('=', 1); srcs[n] = d
+    elif k in ('--fsd50k', '--nsynth', '--freesound', '--soundcloud'): srcs[k[2:]] = v
+man = {'repoSha': os.environ.get('REPO_SHA'), 'initFrom': os.environ.get('INIT_FROM'), 'sources': {}}
+for n, d in sorted(srcs.items()):
+    js = os.path.join(d, f'{n}.json')
+    if not os.path.exists(js): continue
+    j = json.load(open(js)); items = j['items']
+    man['sources'][n] = {'description': j.get('source'), 'windows': len(items), 'validation': sum(bool(i.get('val')) for i in items)}
+    if n in ('chrisdrive', 'chrisfx', 'iowa'): man['sources'][n]['ids'] = sorted({i['id'].split('#')[0].split('@')[0] for i in items})
+if os.path.exists('cdprep/chrisdrive-files.json'): man['chrisDrive'] = json.load(open('cdprep/chrisdrive-files.json'))
+json.dump(man, open('run/data-manifest.json', 'w'), indent=1)
+print('data manifest: ' + ', '.join(f"{n} {s['windows']}" for n, s in man['sources'].items()))
+EOF
 # Upload the weights now, so a job that runs out of time while scoring still leaves them in the repo.
 python3 - <<EOF
 import os
 from huggingface_hub import HfApi
 api = HfApi(); repo = os.environ['HF_REPO']; api.create_repo(repo, private=True, exist_ok=True)
-api.upload_folder(repo_id=repo, folder_path='run', path_in_repo=os.environ.get('OUT_DIR') or None, allow_patterns=['model.pt', 'log.json'],
-                  delete_patterns=['onnx/*', 'thresholds.json', 'calibrate.txt', 'eval.*', 'coverage.*'],   # an earlier run's scores never sit beside new weights
+api.upload_folder(repo_id=repo, folder_path='run', path_in_repo=os.environ.get('OUT_DIR') or None, allow_patterns=['model.pt', 'log.json', 'data-manifest.json'],
+                  delete_patterns=['onnx/*', 'thresholds.json', 'calibrate.txt', 'eval.*', 'coverage.*', 'data-manifest.json'],   # an earlier run's scores never sit beside new weights
                   commit_message='DGE tagger run at ${REPO_SHA:0:7}: ${MODEL} weights, before scoring')
 EOF
 CAL=(openmic=prep jamendo=prepj); EVAL=(prep/eval-round1 prep/eval-round2 holdout/holdout-r3)
 [ -d scprep ] && CAL+=(soundcloud=scprep)
 [ -n "$RS_PID" ] && CAL+=(rawstems=rsprep)
+[ -f rsprep/rsfx.json ] && CAL+=(rsfx=rsprep)
+[ -n "$IOWA_PID" ] && CAL+=(iowa=iowaprep)
+[ -n "$CD_PID" ] && CAL+=(chrisdrive=cdprep chrisfx=cdprep)
 if [ "${ALL_TAGS:-0}" = 1 ]; then CAL+=(fsd50k=fsdprep nsynth=nsprep freesound=fsprep); for x in $XS; do CAL+=($x=xprep); done; EVAL+=(fsdprep/eval-fsd50k nsprep/eval-nsynth-test nsprep/eval-nsynth-test-fx fsprep/eval-freesound); fi
 python3 $S/calibrate.py run "${CAL[@]}" | tee run/calibrate.txt
 python3 $S/coverage.py run "${CAL[@]}" 
@@ -126,7 +164,7 @@ import os
 from huggingface_hub import HfApi
 api = HfApi(); repo = os.environ['HF_REPO']
 api.create_repo(repo, private=True, exist_ok=True)
-api.upload_folder(repo_id=repo, folder_path='run', path_in_repo=os.environ.get('OUT_DIR') or None, allow_patterns=['onnx/*', 'thresholds.json', 'log.json', 'calibrate.txt', 'eval.*', 'coverage.*', 'model.pt'],
+api.upload_folder(repo_id=repo, folder_path='run', path_in_repo=os.environ.get('OUT_DIR') or None, allow_patterns=['onnx/*', 'thresholds.json', 'log.json', 'calibrate.txt', 'eval.*', 'coverage.*', 'model.pt', 'data-manifest.json'],
                   commit_message='DGE tagger run at ${REPO_SHA:0:7}: ${MODEL}, ${EPOCHS} epochs')
 print('uploaded to https://huggingface.co/' + repo)
 EOF

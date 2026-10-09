@@ -90,6 +90,7 @@ def main():
     ap.add_argument('--extra', action='append', default=[], help='<name>=<dir> holding <name>-mel.npy + <name>.json (prepare-extra.py, Slakh)')
     ap.add_argument('--hours', type=float, default=0, help='training time budget: after epoch 1, cut the epoch count (and its cosine schedule) to fit')
     ap.add_argument('--init', help='start from this model.pt (an earlier run); classifier rows are matched by class name')
+    ap.add_argument('--repeat', default='', help='name=k,...: times each training window of that source is seen per epoch (e.g. iowa=2,chrisdrive=4)')
     args = ap.parse_args()
     dev = torch.device(args.device)
     torch.set_num_threads(args.threads); torch.manual_seed(0); rng = np.random.default_rng(0)
@@ -117,8 +118,9 @@ def main():
     rare = {c for c in CLASSES if c in args.rare_tags.split(',') or SAME.get(c) in names or c[4:] in names and c.startswith('cat:')}
     rare_cols = np.array(sorted(CLASSES.index(c) for c in rare), int)
     for src in sources: src['rare'] = (src['y'][:, rare_cols] >= 0.5).any(1) if len(rare_cols) else np.zeros(len(src['y']), bool)
+    src_repeat = {k: int(v) for k, v in (p.split('=') for p in args.repeat.split(',') if p)}
     pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]
-            for _ in range(max(args.dj_repeat if src['dj'][i] else 1, args.rare_repeat if src['rare'][i] else 1))]
+            for _ in range(max(args.dj_repeat if src['dj'][i] else 1, args.rare_repeat if src['rare'][i] else 1, src_repeat.get(src['name'], 1)))]
     vals = {src['name']: np.flatnonzero(src['val'])[:(args.limit // 8 + 8) if args.limit else None] for src in sources}
     print(f'{len(pool)} train windows per epoch ({sum(int((s["dj"] & ~s["val"]).sum()) for s in sources)} DJ/electronic windows, seen {args.dj_repeat}x; '
           f'{sum(int((s["rare"] & ~s["val"]).sum()) for s in sources)} windows with {sorted(rare)}, seen {args.rare_repeat}x) ' + ', '.join(f'{s["name"]} {int((~s["val"]).sum())}' for s in sources) +
