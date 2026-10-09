@@ -2,7 +2,7 @@ import { resolvedNonSourceLabels, reviewedSoundProfile } from '../audio/soundRev
 import { useMusicJobs } from '../store/musicJobs';
 import CopilotProperties from './CopilotProperties';
 import MainSoundAttributes from './MainSoundAttributes';
-import ConfidentSoundSummary from './ConfidentSoundSummary';
+import ConfidentSoundSummary, { SoundDescription } from './ConfidentSoundSummary';
 import { resolveTempoKey } from '../audio/resolvedTempoKey';
 import { confirmedInstrumentList, sourceReviewAllows } from '../audio/instrumentEvidence';
 import { useState } from 'react';
@@ -113,6 +113,7 @@ export default function MusicFeatures({ node, onSeek, onMessage, status }: { nod
       {analysis.structure && <TrackStructure structure={analysis.structure} duration={analysis.durationSeconds} onSeek={onSeek} />}
       <TrackVersions node={node} />
       <ConfidentSoundSummary audio={analysis} node={node} />
+      <SoundDescription audio={analysis} exclude={shownSounds} />
       <MusicNeighbours node={node} nodes={nodes} nodeIndex={nodeIndex} edges={edges} />
       <details className="music-analysis-details">
         <summary>Technical details</summary>

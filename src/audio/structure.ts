@@ -19,7 +19,8 @@ export type SectionLabel = 'intro' | 'buildup' | 'drop' | 'breakdown' | 'outro';
 export interface TrackSection { start: number; end: number; label: SectionLabel }
 export interface TrackStructure { revision: number; sections: TrackSection[]; drops: number[] }
 
-function fftInPlace(re: Float64Array, im: Float64Array) {
+/** In-place radix-2 FFT (length must be a power of two). Shared with timbre.ts. */
+export function fftInPlace(re: Float64Array, im: Float64Array) {
   const n = re.length;
   for (let i = 1, j = 0; i < n; i++) {
     let bit = n >> 1;

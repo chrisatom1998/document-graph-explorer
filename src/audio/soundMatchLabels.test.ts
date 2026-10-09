@@ -52,12 +52,12 @@ describe('cymbal reviews in sound match labels', () => {
     const node = clip({ soundReviews: [review('source', 'cymbals', 'rejected')] });
     node.audio!.soundProfile!.djTags!.push(
       { group: 'production', label: 'kick', score: .9, model: 'Trained head' },
-      { group: 'character', label: 'airy', score: .9, model: 'Trained head (maybe)' },
+      { group: 'character', label: 'bright', score: .9, model: 'Trained head (maybe)' },
       { group: 'production', label: 'ride cymbal', score: .3 },
     );
     expect(soundMatchLabels(node)).toEqual([
       { group: 'production', label: 'kick', origin: 'sounds', weight: .7 },
-      { group: 'character', label: 'airy', origin: 'maybe', weight: .55 },
+      { group: 'character', label: 'bright', origin: 'maybe', weight: .55 },
       { group: 'production', label: 'ride cymbal', origin: 'guess', weight: .4 },
     ]);
   });

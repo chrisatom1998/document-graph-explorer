@@ -5,6 +5,7 @@ import type { MusicAnalysis } from './musicTypes';
 import type { Dimension } from './recognition';
 import { canonicalReviewLabel, latestSoundReview, sharedSoundReviewIdentity } from './soundReviewIdentity';
 export { latestSoundReview } from './soundReviewIdentity';
+import { isRuleDescribedLabel } from './timbreDescriptions';
 
 export const EFFECT_EVENT_LABELS = DJ_CATALOG.filter(c => c.group === 'production' && c.source === 'sound effect').map(c => c.label);
 export function djReviewDimension(group: DjGroup, label: string): Dimension | undefined {
@@ -33,6 +34,8 @@ export function resolvedNonSourceLabels(analysis: MusicAnalysis, includeSuggesti
     // A source confirmation is shown under its saved source name, not repeated as an effect.
     if (review && dimension && review.dimension !== dimension && sharedSoundReviewIdentity(dimension, label)) return;
     const origin = review ? 'confirmed' : source;
+    // warm, airy, metallic… are described by DSP rules (timbreDescriptions.ts); only your confirmation keeps one as a label.
+    if (group === 'character' && origin !== 'confirmed' && isRuleDescribedLabel(label)) return;
     const key = `${group}:${label}`;
     const previous = labels.get(key);
     if (!previous || priority[origin] > priority[previous.source]) labels.set(key,{group,label,source:origin,...(origin === 'estimated' && score !== undefined ? {score} : {})});

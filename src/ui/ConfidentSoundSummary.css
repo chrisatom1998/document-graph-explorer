@@ -20,6 +20,8 @@
 .sound-tag__mark { font-size: 11px; }
 .sound-tag__note { font-size: 10px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-faint); }
 .sound-tags__empty { margin: 0; color: var(--text-faint); }
+/* Rule-measured description: a plain line under the tags, deliberately not chips. */
+.sound-description { margin: 8px 0 0; font-size: 13px; color: var(--text-secondary); }
 
 /* Clip stats: length, tempo, key. */
 .music-features .music-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 12px 0 0; }

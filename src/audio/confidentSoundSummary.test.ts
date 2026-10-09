@@ -1,3 +1,4 @@
+import { RULE_DESCRIBED_LABELS } from './timbreDescriptions';
 import {expect,it} from 'vitest';
 import {confidentSoundSummary,LIKELY_SOUND_CUTOFF,TRACK_SOUND_FLOOR} from './confidentSoundSummary';
 import {createRecognition,recordEvidence} from './recognition';
@@ -57,7 +58,8 @@ it('can display every catalog label once a trained head reports it',async()=>{
   const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:c.group as 'source'|'production'|'character',label:c.label,score:.9,model:'Trained head'}]};
   return !confidentSoundSummary(a).some(s=>s.label===c.label);
  }).map(c=>c.label);
- expect(missing).toEqual([]);
+ // The nine rule-described character words are never shown from a model (timbreDescriptions.ts); every other label can be.
+ expect(missing.sort()).toEqual([...RULE_DESCRIBED_LABELS].sort());
 });
 it('shows full-mix-tested Jamendo synthesizer, drums and piano on recordings of at least ten seconds only',async()=>{
  const {FULL_MIX_JAMENDO,FULL_MIX_JAMENDO_SCORE}=await import('./confidentSoundSummary');

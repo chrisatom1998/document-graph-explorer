@@ -1,6 +1,7 @@
 import type { MusicAnalysis } from './musicTypes';
 import { genreFromScores } from './genreEnergy';
-import { resolvedNonSourceLabels } from './soundReviewPolicy';
+import { djReviewAllows, resolvedNonSourceLabels } from './soundReviewPolicy';
+import { isRuleDescribedLabel, timbreDescriptions } from './timbreDescriptions';
 
 /**
  * The genre a clip is filed under, as the track panel shows it (tested or
@@ -20,5 +21,9 @@ export function styleTags(audio: MusicAnalysis | undefined): string[] {
  */
 export function matchesStyleFilter(audio: MusicAnalysis | undefined, selected: string): boolean {
   if (styleTags(audio).includes(selected)) return true;
-  return !!audio && resolvedNonSourceLabels(audio).some(label => label.group === 'character' && label.label === selected);
+  if (!audio) return false;
+  // Rule-described words (warm, airy…) match the clip's measured description unless your latest review of that word is not a confirmation.
+  if (isRuleDescribedLabel(selected) && timbreDescriptions(audio.timbre).some(word => word === selected)
+    && djReviewAllows(audio, 'character', selected)) return true;
+  return resolvedNonSourceLabels(audio).some(label => label.group === 'character' && label.label === selected);
 }

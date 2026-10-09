@@ -5,6 +5,18 @@ import { confidentSoundSummary, SOUND_DISPLAY_POLICY } from '../audio/confidentS
 import type { MusicAnalysis } from '../audio/musicTypes';
 import { soundLabelText } from '../audio/djTags';
 import { likelyExtraSounds } from './MainSoundAttributes';
+import { TIMBRE_DEFINITIONS, timbreDescriptions } from '../audio/timbreDescriptions';
+import { djReviewAllows } from '../audio/soundReviewPolicy';
+
+/** The rule-measured words for how it sounds (timbreDescriptions.ts), as one plain line: not tags, no scores.
+ * Words you rejected, and words already shown as tags, are left out; old analyses without a measurement show nothing. */
+export function SoundDescription({audio,exclude=[]}:{audio:MusicAnalysis;exclude?:Iterable<string>}) {
+  const shown=new Set(exclude);
+  const words=timbreDescriptions(audio.timbre).filter(word=>!shown.has(word)&&djReviewAllows(audio,'character',word));
+  if(!words.length)return null;
+  const hover=`Measured from the audio by fixed rules, not a trained model or a tested tag. ${words.map(word=>`${word}: ${TIMBRE_DEFINITIONS[word]}`).join('; ')}.`;
+  return <p className="sound-description" title={hover}>Sound: {words.join(', ')}<span className="sr-only"> — {hover}</span></p>;
+}
 
 const ORDER = ['source', 'effect', 'character', 'vocal', 'role'] as const;
 const DIMENSION_NAME = { source: 'Sound source', effect: 'Sound type', character: 'Character', vocal: 'Vocal', role: 'Role' };

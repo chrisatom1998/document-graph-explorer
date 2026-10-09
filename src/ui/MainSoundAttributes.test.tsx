@@ -67,19 +67,19 @@ it('folds unconfirmed evidence behind a toggle while keeping reviewed labels vis
 });
 
 it('lists unreviewed labels scored 50% or higher as likely and folds weaker ones',()=>{
- const a=audio();a.soundProfile={version:1,character:[],roles:[],disagreement:false,models:[{model:'Music CLAP',complete:true,candidates:[{label:'bright',score:.62},{label:'warm',score:.31}]}]};
+ const a=audio();a.soundProfile={version:1,character:[],roles:[],disagreement:false,models:[{model:'Music CLAP',complete:true,candidates:[{label:'bright',score:.62},{label:'dark',score:.31}]}]};
  render(<MainSoundAttributes audio={a} node={{title:'neutral.wav'}}/>);
- expect(screen.getByText('bright')).toBeVisible();expect(screen.getByText(/likely · model score ≥ 50%/)).toBeVisible();expect(screen.queryByText('warm')).toBeNull();
+ expect(screen.getByText('bright')).toBeVisible();expect(screen.getByText(/likely · model score ≥ 50%/)).toBeVisible();expect(screen.queryByText('dark')).toBeNull();
  expect(screen.getByRole('button',{name:'Show unconfirmed (1)'})).toBeVisible();
 });
 
 it('keeps the show-unconfirmed choice when the panel remounts',()=>{
- const a=audio();a.soundProfile={version:1,character:['warm'],roles:[],disagreement:false,models:[]};
+ const a=audio();a.soundProfile={version:1,character:['dark'],roles:[],disagreement:false,models:[]};
  const first=render(<MainSoundAttributes audio={a} node={{title:'neutral.wav'}}/>);
- fireEvent.click(screen.getByRole('button',{name:/Show unconfirmed/}));expect(screen.getByText('warm')).toBeVisible();
+ fireEvent.click(screen.getByRole('button',{name:/Show unconfirmed/}));expect(screen.getByText('dark')).toBeVisible();
  first.unmount();
  render(<MainSoundAttributes audio={a} node={{title:'other.wav'}}/>);
- expect(screen.getByText('warm')).toBeVisible();
+ expect(screen.getByText('dark')).toBeVisible();
  fireEvent.click(screen.getByRole('button',{name:/Hide unconfirmed/}));
 });
 it('starts collapsed and keeps the open choice when another sound is shown',()=>{

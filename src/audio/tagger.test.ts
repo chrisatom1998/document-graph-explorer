@@ -109,9 +109,9 @@ describe('trained tagger display', () => {
   });
   it('decides its sound-type and effect tags at any length, and leaves other tags alone', () => {
     const a = track(4, { 'cat:percussive': .99, 'cat:dark': .01 }, [
-      { group: 'character', label: 'dark', score: .9, model: 'Trained head' }, { group: 'character', label: 'warm', score: .9, model: 'Trained head' },
+      { group: 'character', label: 'dark', score: .9, model: 'Trained head' }, { group: 'character', label: 'bright', score: .9, model: 'Trained head' },
       { group: 'production', label: 'riser', score: .9, model: 'Trained head' }]);
-    expect(confidentSoundSummary(a).map(s => `${s.dimension}:${s.label}`).sort()).toEqual(['character:percussive', 'character:warm', 'effect:riser']);
+    expect(confidentSoundSummary(a).map(s => `${s.dimension}:${s.label}`).sort()).toEqual(['character:bright', 'character:percussive', 'effect:riser']);
   });
   it('never overrides what the listener confirmed or rejected', () => {
     const a = track(30, { drums: .01, piano: .99 });
@@ -213,7 +213,10 @@ describe('trained tagger pass', () => {
       return [{ group: 'source', label: 'piano', score: .6 }] as T;
     };
     const result = await analyzeDecodedMusic(decoder, request, { mode: 'full', tagger });
-    return { result, reads: reads.filter(r => r[2] === 32000), taggerInputs };
+    // The sound description (timbre.ts) also reads 32 kHz audio, last of all; leave its excerpts out.
+    const { timbreExcerpts } = await import('./timbre');
+    const tagged = reads.filter(r => r[2] === 32000);
+    return { result, reads: tagged.slice(0, tagged.length - timbreExcerpts(duration).length), taggerInputs };
   }
   it('scores the middle 30 s of a song as three padded 32 kHz windows and keeps the best', async () => {
     const { result, reads, taggerInputs } = await run(65);
