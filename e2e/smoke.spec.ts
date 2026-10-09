@@ -66,7 +66,7 @@ test('first run renders the empty state with a working WebGL scene', async ({ pa
   const errors = collectErrors(page);
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Turn scattered files into a living map.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Find what sounds alike.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Load demo corpus' })).toBeVisible();
 
   // If WebGL context creation failed, the scene mounts a fallback section
@@ -165,7 +165,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await closeDetails(page);
 
   const chooserPromise = page.waitForEvent('filechooser');
-  await page.locator('.rs-sidebar').getByRole('button', { name: /^Import (Clips|Files)/ }).click();
+  await page.locator('.rs-sidebar').getByRole('button', { name: /^Import(?: (?:Clips|Files),|$)/ }).click();
   await (await chooserPromise).setFiles('e2e/fixtures/persistence.txt');
   await expect(corpusCount(page)).toContainText('101 files');
   await expect(page.getByRole('button', { name: 'Search documents' })).toBeEnabled();
