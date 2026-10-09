@@ -69,7 +69,8 @@ else
     if [ -f $S/prepare-slakh.py ]; then python3 $S/prepare-slakh.py xprep > slakh.log 2>&1 & fi
   fi
   LOGS=$(ls *.log)
-  for job in $(jobs -p); do wait $job || { tail -n 20 $LOGS; exit 1; }; done
+  # The raw-stems prep is waited on (and its log shown) separately below.
+  for job in $(jobs -p); do [ "$job" = "${RS_PID:-}" ] && continue; wait $job || { tail -n 20 $LOGS; exit 1; }; done
   tail -n 3 $LOGS; echo "data prep took $(( ($(date +%s) - START) / 60 )) min"; df -h $W | tail -1
   python3 - "$KEY" $DIRS > cache-upload.txt 2>&1 <<'PY' &
 import sys
