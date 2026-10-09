@@ -23,8 +23,12 @@ export const SOUND_LINK_POLICY: SoundLinkPolicy = { neighbors: 3, floor: .6 };
  * Picked on the sound-link tuning songs (scripts/sound-links), where it raised same-genre precision at every link count. */
 const STYLE_SHARE = .2;
 /** The style model reads whole-track context; on single notes and one-shots its styles are noise (they lowered
- * same-instrument nearest-neighbour precision on the tuning notes), so shorter audio compares fingerprints only. */
+ * same-instrument nearest-neighbour precision on the tuning notes), so shorter audio has no styles here. */
 const STYLE_MIN_SECONDS = 8;
+/** Pairs without styles on both sides keep the earlier rule: the plain fingerprint cosine at 0.7. Centering alone
+ * lowered same-family precision on the in-app notes check, so it is only used with styles. The offset puts that
+ * rule on the same scale as the blended score at the shipped floor. */
+const FINGERPRINT_ONLY_OFFSET = .1;
 const CLAP_CENTER = Float64Array.from(center.mean);
 /** All-pairs similarity up to this many valid fingerprints; larger libraries use bounded hashed neighborhoods. */
 const EXACT_SIMILARITY_LIMIT = 800;
@@ -56,15 +60,15 @@ function styleVector(audio: MusicAnalysis): Map<string, number> | undefined {
   const norm = Math.hypot(...roots.map(([, v]) => v));
   return norm > 1e-8 ? new Map(roots.map(([label, v]) => [label, v / norm])) : undefined;
 }
-/** What decides a sound-alike link: centered fingerprint cosine, blended with music-style agreement when both tracks
- * have styles. Only used to choose links; the link's strength and text keep the plain fingerprint similarity. */
+/** What decides a sound-alike link: when both tracks have styles, the centered fingerprint cosine blended with
+ * music-style agreement; otherwise the plain fingerprint cosine, offset to the same scale. Only used to choose
+ * links; the link's strength and text keep the plain fingerprint similarity. */
 function soundAlikeScore(a: Features, b: Features): number | undefined {
-  if (!a.centered || !b.centered) return;
-  const sound = cosine(a.centered, b.centered);
-  if (!a.styles || !b.styles) return sound;
+  if (!a.vector || !b.vector || !a.centered || !b.centered) return;
+  if (!a.styles || !b.styles) return cosine(a.vector, b.vector) - FINGERPRINT_ONLY_OFFSET;
   let style = 0;
   for (const [label, v] of a.styles) style += v * (b.styles.get(label) ?? 0);
-  return (1 - STYLE_SHARE) * sound + STYLE_SHARE * style;
+  return (1 - STYLE_SHARE) * cosine(a.centered, b.centered) + STYLE_SHARE * style;
 }
 /** Project evidence once per rebuild; never mutate saved estimates or corrections. */
 function features(node: DocNode) {
