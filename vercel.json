@@ -3,7 +3,7 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/((?!.*\\.[A-Za-z0-9]+$).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!assets/)(?!.*\\.[A-Za-z0-9]+$).*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/assets/(.*)",
