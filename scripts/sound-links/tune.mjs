@@ -43,7 +43,9 @@ function score(edges) {
 }
 const grid = policyArg === 'shipped' ? [SOUND_LINK_POLICY] : policyArg ? [JSON.parse(policyArg)] : [1, 2, 3, 5].flatMap(neighbors => [0, .3, .5, .6, .7, .8].map(floor => ({ ...SOUND_LINK_POLICY, neighbors, floor })));
 const rows = [];
-for (const center of [false, true]) for (const policy of grid) rows.push({ center, ...policy, ...score(buildMusicEdges(nodes(center), policy)) });
+// With styles the app already centers styled pairs on its fixed mean, so a second, dataset-mean centering is skipped.
+const centerModes = styles.size ? [false] : [false, true];
+for (const center of centerModes) for (const policy of grid) rows.push({ center, ...policy, ...score(buildMusicEdges(nodes(center), policy)) });
 // Nearest-neighbour precision ignores any threshold: how often a clip's single closest clip shares the label.
 const nn = {};
 for (const center of [false, true]) {

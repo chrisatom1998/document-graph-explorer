@@ -7,7 +7,7 @@ name: Sound link check
 on:
   push:
     branches: [claude/sound-similarity-links-2189o9, claude/project-thread-64wmq5, claude/sound-alike-links-m3khx3]
-    paths: [.github/workflows/sound-links-eval.yml, scripts/sound-links/**]
+    paths: [.github/workflows/sound-links-eval.yml, scripts/sound-links/**, src/audio/musicLinks.ts, src/audio/soundAlikeCenter.json]
   workflow_dispatch:
 
 env:
