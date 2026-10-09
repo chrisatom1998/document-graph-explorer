@@ -1,7 +1,7 @@
 """Fine-tune an AudioSet-pretrained EfficientAT MobileNet as DGE's own instrument tagger.
 
 Usage: python3 scripts/audio-model/train.py <run-dir> --openmic <prep-dir> [--jamendo <prep-dir>] [--soundcloud <prep-dir>]
-       [--model mn10_as] [--epochs 8] [--lr 1e-4] [--weak 0.2] [--resume]
+       [--model mn10_as] [--epochs 8] [--lr 1e-4] [--weak 0.2] [--rare-repeat 1] [--resume]
 
 Inputs are the log-mel windows written by prepare.py (OpenMIC-2018 train, benchmark artists removed) and
 prepare-jamendo.py (MTG-Jamendo split-0 train/validation, round 3 held-out artists removed) and prepare-soundcloud.py
@@ -37,7 +37,7 @@ JAMENDO_TAGS = ['accordion', 'acousticbassguitar', 'acousticguitar', 'bass', 'be
                 'synthesizer', 'trombone', 'trumpet', 'viola', 'violin', 'voice']
 OPENMIC = list(CLASSES)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from labelmap import CAT, FREESOUND, FSLD_ROLES  # noqa: E402
+from labelmap import CAT, FREESOUND, FSLD_ROLES, SAME  # noqa: E402
 # Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
 # sources' labels below wherever one names the same sound.
 CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS] + [f'cat:{l}' for l in CAT] + [f'fsld:{r}' for r in FSLD_ROLES]
@@ -80,6 +80,9 @@ def main():
     ap.add_argument('--lr', type=float, default=1e-4); ap.add_argument('--batch', type=int, default=32)
     ap.add_argument('--mixup', type=float, default=0.3); ap.add_argument('--weak', type=float, default=0.2)
     ap.add_argument('--dj-repeat', type=int, default=2, help='times each DJ/electronic-genre Jamendo window is seen per epoch')
+    ap.add_argument('--rare-repeat', type=int, default=1, help='times each window labelling a --rare-tags instrument as present is seen per epoch')
+    ap.add_argument('--rare-tags', default='bass,organ,cello,trumpet,violin,saxophone',
+                    help='OpenMIC classes whose positive windows --rare-repeat oversamples (outputs naming the same sound count too)')
     ap.add_argument('--threads', type=int, default=os.cpu_count()); ap.add_argument('--resume', action='store_true')
     ap.add_argument('--limit', type=int, default=0, help='first N clips per source only (smoke test)')
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -108,10 +111,17 @@ def main():
     for pair in args.extra:
         name, d = pair.split('=', 1)
         sources.append(load_source(name, os.path.join(d, f'{name}-mel.npy'), json.load(open(os.path.join(d, f'{name}.json')))['items'], args.weak))
+    # Each rare OpenMIC class with every output naming the same sound (labelmap.SAME), plus the other basses.
+    names = {SAME.get(t, t) for t in args.rare_tags.split(',') if t}
+    names |= {'double bass', 'synth bass'} if 'bass guitar' in names else set()
+    rare = {c for c in CLASSES if c in args.rare_tags.split(',') or SAME.get(c) in names or c[4:] in names and c.startswith('cat:')}
+    rare_cols = np.array(sorted(CLASSES.index(c) for c in rare), int)
+    for src in sources: src['rare'] = (src['y'][:, rare_cols] >= 0.5).any(1) if len(rare_cols) else np.zeros(len(src['y']), bool)
     pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]
-            for _ in range(args.dj_repeat if src['dj'][i] else 1)]
+            for _ in range(max(args.dj_repeat if src['dj'][i] else 1, args.rare_repeat if src['rare'][i] else 1))]
     vals = {src['name']: np.flatnonzero(src['val'])[:(args.limit // 8 + 8) if args.limit else None] for src in sources}
-    print(f'{len(pool)} train windows per epoch ({sum(int((s["dj"] & ~s["val"]).sum()) for s in sources)} DJ/electronic windows, seen {args.dj_repeat}x) ' + ', '.join(f'{s["name"]} {int((~s["val"]).sum())}' for s in sources) +
+    print(f'{len(pool)} train windows per epoch ({sum(int((s["dj"] & ~s["val"]).sum()) for s in sources)} DJ/electronic windows, seen {args.dj_repeat}x; '
+          f'{sum(int((s["rare"] & ~s["val"]).sum()) for s in sources)} windows with {sorted(rare)}, seen {args.rare_repeat}x) ' + ', '.join(f'{s["name"]} {int((~s["val"]).sum())}' for s in sources) +
           '; validation ' + ', '.join(f'{k} {len(v)}' for k, v in vals.items()), flush=True)
 
     model = get_model(width_mult=WIDTH[args.model], pretrained_name=args.model, num_classes=len(CLASSES)).to(dev)

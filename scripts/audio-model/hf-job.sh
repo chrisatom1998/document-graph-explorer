@@ -2,7 +2,7 @@
 # Train DGE's own instrument tagger on a Hugging Face Jobs GPU (launched by .github/workflows/audio-model-train.yml).
 # Fetches every dataset itself (nothing is uploaded from GitHub), trains, calibrates on validation artists, exports the
 # browser model, scores DJ clip rounds 1 and 2 and the round 3 held-out Jamendo set (aggregates only), and uploads the
-# run to the private model repo $HF_REPO. Env: REPO_SHA, HF_REPO, MODEL, EPOCHS, LR, BATCH, WEAK, optional SOUNDCLOUD_DATA, HF_TOKEN (secret).
+# run to the private model repo $HF_REPO. Env: REPO_SHA, HF_REPO, MODEL, EPOCHS, LR, BATCH, WEAK, optional RARE_REPEAT, JOB_HOURS, SOUNDCLOUD_DATA, HF_TOKEN (secret).
 # ALL_TAGS=1 adds the app-named head (FSD50K dev, NSynth train + effect renders, Freesound; judged on FSD50K eval, NSynth
 # test and held-out Freesound uploaders), plus TinySOL, EGFxSet, FSLD, WaivOps drum loops, Surge presets (prepare-extra.py)
 # and Slakh stems when scripts/audio-model/prepare-slakh.py exists.
@@ -98,7 +98,15 @@ fi
 # evaluation and upload, and never more than TRAIN_HOURS.
 HOURS=$(python3 -c "import sys; t, j, e = map(float, sys.argv[1:]); left = j - e / 3600 - 0.75; print(round(max(0.5, min(t, left) if t else left), 2))" "${TRAIN_HOURS:-0}" "${JOB_HOURS:-7}" "$(( $(date +%s) - START ))")
 echo "training budget ${HOURS} h"
-python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --threads 8 --hours "$HOURS"
+python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --rare-repeat "${RARE_REPEAT:-1}" --threads 8 --hours "$HOURS"
+# Upload the weights now, so a job that runs out of time while scoring still leaves them in the repo.
+python3 - <<EOF
+import os
+from huggingface_hub import HfApi
+api = HfApi(); repo = os.environ['HF_REPO']; api.create_repo(repo, private=True, exist_ok=True)
+api.upload_folder(repo_id=repo, folder_path='run', path_in_repo=os.environ.get('OUT_DIR') or None, allow_patterns=['model.pt', 'log.json'],
+                  commit_message='DGE tagger run at ${REPO_SHA:0:7}: ${MODEL} weights, before scoring')
+EOF
 CAL=(openmic=prep jamendo=prepj); EVAL=(prep/eval-round1 prep/eval-round2 holdout/holdout-r3)
 [ -d scprep ] && CAL+=(soundcloud=scprep)
 if [ "${ALL_TAGS:-0}" = 1 ]; then CAL+=(fsd50k=fsdprep nsynth=nsprep freesound=fsprep); for x in $XS; do CAL+=($x=xprep); done; EVAL+=(fsdprep/eval-fsd50k nsprep/eval-nsynth-test nsprep/eval-nsynth-test-fx fsprep/eval-freesound); fi
