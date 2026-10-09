@@ -1,14 +1,13 @@
 // npx vite-node scripts/audio-listening/run.mjs manifest.json baseline.json audio-dir output-dir [limit=20]
-import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
 import OpenAI from 'openai';
 import { loadEnv } from 'vite';
 import { reviewAudio } from '../../src/server/gptAudioReview';
 import { confidentSoundSummary } from '../../src/audio/confidentSoundSummary';
 import { classesFor, score } from './score.mjs';
+import { listeningExcerpt } from './excerpt';
 
 const [manifestPath, baselinePath, audioDir, outputDir, limitArg = '20'] = process.argv.slice(2);
 if (!outputDir) throw Error('Usage: npx vite-node scripts/audio-listening/run.mjs manifest.json baseline.json audio-dir output-dir [limit=20]');
@@ -48,34 +47,30 @@ const create = client.chat.completions.create.bind(client.chat.completions);
 client.chat.completions.create = async (...args) => {
   const response = await create(...args); usage = response.usage; return response;
 };
-const temp = mkdtempSync(join(tmpdir(), 'dge-listening-'));
-try {
-  for (const item of selected) {
-    const record = { id: item.id, native: native.get(item.id), audio: [] };
-    const started = performance.now(); usage = undefined;
-    try {
-      const file = join(audioDir, `${item.id}.wav`), wave = join(temp, 'excerpt.wav');
-      record.sourceSha256 = hash(readFileSync(file));
-      execFileSync('ffmpeg', ['-nostdin', '-v', 'error', '-y', '-i', resolve(file), '-t', String(item.end), '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', wave], { stdio: 'pipe' });
-      const bytes = readFileSync(wave); record.excerptSha256 = hash(bytes);
-      const sample = { ref: 'Sample 1', durationSeconds: item.end, analyzedSeconds: item.end, preview: false,
-        tempo: null, key: null, confirmedTags: null, confirmedInstruments: null, estimates: [], filenameHints: { bpm: null, key: null } };
-      // Ground truth, titles, file names and native predictions never enter this call.
-      const result = await reviewAudio(client, [sample], [{ ref: sample.ref, wav: bytes.toString('base64') }],
-        'Describe the clearly audible sources in this excerpt.', AbortSignal.timeout(90_000));
-      record.audio = classesFor(result.suggestions.flatMap(s => s.tags.source));
-      record.suggestions = result.suggestions; record.coverage = result.listening;
-    } catch (e) { record.error = { name: e.name, status: e.status ?? null }; }
-    record.elapsedMs = Math.round(performance.now() - started); record.usage = usage ?? null;
-    records.push(record);
-    // Checkpoint every response so interruptions do not lose paid results. No audio or secrets saved.
-    writeFileSync(join(outputDir, 'responses.json'), JSON.stringify(records, null, 2));
-    const report = { model: 'gpt-audio-1.5', manifestSha256: hash(manifestBytes), baselineSha256: hash(baselineBytes),
-      requested: selected.length, completed: records.length, failures: records.filter(r => r.error).length,
-      policy: 'Fixed union, agreement and native-unless-empty fallback; no tuning on test labels.',
-      scores: score(selected, records), cost: 'Token usage recorded per request; monetary cost not estimated.' };
-    writeFileSync(join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
-    console.log(`${records.length}/${selected.length}: ${record.error ? 'failed' : 'complete'}`);
-    if (record.error?.status === 401 || record.error?.status === 403 || record.error?.status === 429) break;
-  }
-} finally { rmSync(temp, { recursive: true, force: true }); }
+for (const item of selected) {
+  const record = { id: item.id, native: native.get(item.id), audio: [] };
+  const started = performance.now(); usage = undefined;
+  try {
+    const file = join(audioDir, `${item.id}.wav`);
+    record.sourceSha256 = hash(readFileSync(file));
+    const bytes = listeningExcerpt(file, item.end); record.excerptSha256 = hash(bytes);
+    const sample = { ref: 'Sample 1', durationSeconds: item.end, analyzedSeconds: item.end, preview: false,
+      tempo: null, key: null, confirmedTags: null, confirmedInstruments: null, estimates: [], filenameHints: { bpm: null, key: null } };
+    // Ground truth, titles, file names and native predictions never enter this call.
+    const result = await reviewAudio(client, [sample], [{ ref: sample.ref, wav: bytes.toString('base64') }],
+      'Describe the clearly audible sources in this excerpt.', AbortSignal.timeout(90_000));
+    record.audio = classesFor(result.suggestions.flatMap(s => s.tags.source));
+    record.suggestions = result.suggestions; record.coverage = result.listening;
+  } catch (e) { record.error = { name: e.name, status: e.status ?? null }; }
+  record.elapsedMs = Math.round(performance.now() - started); record.usage = usage ?? null;
+  records.push(record);
+  // Checkpoint every response so interruptions do not lose paid results. No audio or secrets saved.
+  writeFileSync(join(outputDir, 'responses.json'), JSON.stringify(records, null, 2));
+  const report = { model: 'gpt-audio-1.5', manifestSha256: hash(manifestBytes), baselineSha256: hash(baselineBytes),
+    requested: selected.length, completed: records.length, failures: records.filter(r => r.error).length,
+    policy: 'Fixed union, agreement and native-unless-empty fallback; no tuning on test labels.',
+    scores: score(selected, records), cost: 'Token usage recorded per request; monetary cost not estimated.' };
+  writeFileSync(join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
+  console.log(`${records.length}/${selected.length}: ${record.error ? 'failed' : 'complete'}`);
+  if (record.error?.status === 401 || record.error?.status === 403 || record.error?.status === 429) break;
+}

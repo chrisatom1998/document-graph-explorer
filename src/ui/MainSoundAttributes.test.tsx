@@ -7,10 +7,17 @@ import type {MusicAnalysis} from '../audio/musicTypes';
 import type {DocNode} from '../model/types';
 import {createRecognition,recordEvidence} from '../audio/recognition';
 import {FUSION_LABELS} from '../audio/fusion';
+import {sanitizeMusicAnalysis} from '../audio/musicTypes';
 // Most tests inspect the expanded contents; the collapse itself has its own test below.
 beforeEach(()=>{setAttributesOpenSetting(true);});
 afterEach(()=>{cleanup();setShowUnconfirmedSetting(false);setAttributesOpenSetting(false);});
 const audio=():MusicAnalysis=>({version:2,durationSeconds:8,analyzedSeconds:8,instruments:[],notes:[]});
+it.each([undefined,{startSeconds:0,durationSeconds:9999}])('does not infer listening from an audio model name without valid provenance: %j',audioExcerpt=>{
+ const a=sanitizeMusicAnalysis({...audio(),copilotProperties:{model:'gpt-audio-1.5',audioExcerpt,tags:{source:['voice'],production:[],character:[]}}})!;
+ const row=soundAttributeRows(a,{title:'neutral.wav'}).find(row=>row.label==='voice');
+ expect([...row!.evidence]).toEqual(['gpt-audio-1.5 suggestion · unverified; no validated audio-excerpt provenance']);
+ expect(row?.probabilityScore).toBeUndefined();
+});
 it('attributes listening suggestions to audio excerpts without fabricating confidence',()=>{
  const a=audio();a.copilotProperties={model:'gpt-audio-1.5',audioExcerpt:{startSeconds:0,durationSeconds:8},tags:{source:['voice'],production:[],character:[]}};
  const row=soundAttributeRows(a,{title:'neutral.wav'}).find(row=>row.label==='voice');
