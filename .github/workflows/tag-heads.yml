@@ -10,7 +10,8 @@ name: Sound tag heads (processing, space, gap instruments)
 # Commits the clip list (with licences), heads and report to docs/evaluations/tag-heads-2026-10-09. Audio is never committed.
 on:
   push:
-    branches: ['claude/raise-tag-accuracy-*']
+    # Not the -heads ship branches: a push there would retrain and overwrite the record the shipped heads came from.
+    branches: ['claude/raise-tag-accuracy-*', '!claude/raise-tag-accuracy-*-heads']
     paths:
       - scripts/dj-effects/labels-tags.json
       - scripts/dj-effects/render.py
