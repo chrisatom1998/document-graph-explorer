@@ -151,8 +151,14 @@ try {
     for (const count of counts) for (let repeat = 1; repeat <= repeats; repeat++) {
       const clips = selected.slice(0, count);
       await withSession(async (page, context, errors, requests) => {
-        await measured(page, context, clips, 'cold-profile', repeat, errors, requests);
-        await measured(page, context, clips, 'cached-reimport', repeat, errors, requests);
+        const cold = await measured(page, context, clips, 'cold-profile', repeat, errors, requests);
+        if (cold.valid) await measured(page, context, clips, 'cached-reimport', repeat, errors, requests);
+        else {
+          report.skipped ??= [];
+          report.skipped.push({ scenario: 'cached-reimport', repeat, count,
+            reason: 'Cold import did not finish successfully; unfinished work cannot count as a cached reimport.' });
+          writeReport(join(output, 'run.json'), report);
+        }
       });
       await withSession(async (page, context, errors, requests) => {
         const warmup = await measured(page, context, [selected[count]], 'warmup', repeat, errors, requests);
