@@ -18,7 +18,7 @@ import { musicRuntimeIdentity } from './musicRuntime';
 import { FullMixEvidence, type FullMixModel } from './fullMixHeads';
 import { computeVersionPrint, VERSION_PRINT_SAMPLE_RATE } from './versionPrint';
 import { TAGGER_REVISION, TAGGER_SAMPLE_RATE, TAGGER_UNAVAILABLE, TAGGER_WINDOW_SECONDS, TaggerEvidence, taggerWindow, taggerWindowStarts } from './tagger';
-import { astGpuAllowed, createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
+import { createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
 export interface AnalysisOptions {
   cacheContext?: import('./musicAnalysisCache').MusicCacheContext;
@@ -242,6 +242,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
     return next;
   };
   /** Decode and score one window. Touches no shared evidence, so families may overlap. */
+  // AST asks for the graphics card (full-precision weights): the worker uses it where WebGPU works and falls back to
+  // q8 WASM elsewhere, under separate cache identities. The AST job's preprocessing version records the GPU request.
   async function fetchRaw(id: SoundId, interval: Interval, key: string): Promise<{ output: Raw | undefined; cacheHit: boolean }> {
     let output = cache.get<Raw>(key);
     const cacheHit = output !== undefined;
@@ -256,7 +258,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       const hasAudio = audible(samples);
       // A whole short clip also goes to the one-shot heads, which read the unchanged 16 kHz audio.
       const samples16 = id === 'clap' && interval.start === 0 && interval.end >= duration && duration <= SHORT_CLIP_MAX_SECONDS ? await read(0, duration, 16000) : undefined;
-      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}), ...(id === 'ast' && astOnGpu ? { gpu: true } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
+      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}), ...(id === 'ast' ? { gpu: true } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
       if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
       check(); cache.set(key, output);
     }
@@ -270,10 +272,6 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const applied: Record<SoundId, number> = { ast: 0, jamendo: 0, clap: 0 };
   const wake: Partial<Record<SoundId, () => void>> = {};
   let ended = false;
-  // AST runs on the graphics card (full-precision weights, about 8x faster) only where no validated scorer reads
-  // its scores (recognition astGpuAllowed). The AST job's preprocessing version records it, so cache keys and
-  // saved ledgers both tell GPU-allowed runs apart from q8 WASM ones.
-  const astOnGpu = astGpuAllowed(duration, mode);
   const windowKey = (id: SoundId, interval: Interval) => modelCacheKey(fingerprint, job(id), interval);
   async function scoreAhead(id: SoundId): Promise<void> {
     const j = job(id);

@@ -53,8 +53,9 @@ function getClassifier() {
   })().catch(error => { classifier = null; throw error; });
 }
 /** Full-precision AST on the graphics card: 0.4 s a window against 2-3 s for q8 WASM (measured 2026-10-05), with
- * every AudioSet probability within 0.023 of q8 and the same top five. Only requested where no validated scorer
- * reads AST scores (analyzeDecodedMusic astOnGpu); any failure falls back to q8 WASM for the rest of the session. */
+ * every AudioSet probability within 0.023 of q8 and the same top five. Requested for every analysis, including the
+ * trained source classifier's inputs (held-out gate on fp32 AST, see docs/audio-runtime-performance.md); any failure
+ * falls back to q8 WASM for the rest of the session. */
 let gpuClassifier: ReturnType<typeof getClassifier> | null = null;
 let gpuUnavailable = false;
 function getGpuClassifier() {
@@ -147,10 +148,10 @@ async function shortClipProfile(model: ShortClipModel, samples48: Float32Array, 
   return shortClipScores(model, inputs).scores;
 }
 /** Load one family's weights ahead of its first clip. Scores are unaffected: the same memoized sessions serve later requests. */
-async function warmFamily(family: string, mode?: string): Promise<void> {
-  // Quick analyses use the GPU model, so warming it keeps its ~6 s load off the first file. Full analyses only use it
-  // for clips up to 2.048 s; there it loads on the first such clip instead of holding 347 MB for long recordings.
-  if (family === 'instruments') { await getClassifier(); if (mode !== 'full') await getGpuClassifier().catch(() => { gpuUnavailable = true; }); }
+async function warmFamily(family: string): Promise<void> {
+  // AST runs on the GPU model where WebGPU works, so warming it keeps its ~6 s load off the first file. The q8 WASM
+  // model then loads only if the GPU fails (or for short-clip heads), instead of holding both in memory.
+  if (family === 'instruments') { if (gpuUnavailable || !await getGpuClassifier().then(() => true, () => false)) { gpuUnavailable = true; await getClassifier(); } }
   else if (family === 'profile' || family === 'sound') await Promise.all([getSoundDescriptions(), getSoundClassifier()]);
   else if (family === 'jamendo') await Promise.all([ready, preloadJamendo(), preloadTagger()]);
   else await ready;
@@ -160,7 +161,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
   // The main thread decided this browser needs the single-thread runtime (see THREADED_RUNTIME_STALLED).
   if ((data as { singleThread?: boolean }).singleThread) switchToSingleThreadRuntime(false);
   if (data.kind === 'warm') {
-    try { await warmFamily(data.family, (data as { mode?: string }).mode); self.postMessage({ id, warmed: true }); }
+    try { await warmFamily(data.family); self.postMessage({ id, warmed: true }); }
     catch (error) { self.postMessage({ id, error: error instanceof Error ? error.message : String(error) }); }
     return;
   }
