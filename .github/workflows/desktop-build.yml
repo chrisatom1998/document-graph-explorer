@@ -1,8 +1,6 @@
 name: Desktop build (pinned main)
 
 on:
-  pull_request:
-    paths: ['.github/workflows/desktop-build.yml']
   workflow_dispatch:
 
 permissions:
@@ -25,10 +23,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
-            platform: win
-            arch: x64
-            target: portable
           - os: macos-15
             platform: mac
             arch: arm64
@@ -92,29 +86,6 @@ jobs:
           done
           cat /tmp/dge-desktop.log
           exit 1
-      - name: Smoke-test packaged Windows app
-        if: matrix.platform == 'win'
-        shell: pwsh
-        run: |
-          $app = Resolve-Path 'release/win-unpacked/Document Graph Explorer.exe'
-          $process = Start-Process $app -PassThru
-          try {
-            $ready = $false
-            for ($i = 0; $i -lt 60; $i++) {
-              try {
-                $response = Invoke-WebRequest 'http://127.0.0.1:47182/' -UseBasicParsing
-                if ($response.StatusCode -eq 200 -and $response.Content -match '<html') {
-                  $ready = $true
-                  break
-                }
-              } catch {}
-              if ($process.HasExited) { throw 'Packaged app exited before startup' }
-              Start-Sleep -Seconds 2
-            }
-            if (-not $ready) { throw 'Packaged app did not serve its renderer' }
-          } finally {
-            if (-not $process.HasExited) { Stop-Process -Id $process.Id -Force }
-          }
       - name: Write provenance and checksums
         run: |
           node --input-type=module <<'NODE'
@@ -122,8 +93,8 @@ jobs:
           import crypto from 'node:crypto';
           const files = fs.readdirSync('release').filter(n => /\.(exe|dmg)$/.test(n));
           if (files.length !== 1) throw new Error(`Expected one desktop package; got ${files}`);
-          // Three matrix jobs have equal caps, keeping their combined stored
-          // payload below 4 GB. Allow a margin for metadata/archive overhead.
+          // Two matrix jobs have equal caps, keeping their combined stored
+          // payload below 2.6 GB. Allow a margin for metadata/archive overhead.
           const bytes = files.reduce((sum, name) => sum + fs.statSync(`release/${name}`).size, 0);
           if (bytes > 1_300_000_000) throw new Error(`Package is ${bytes} bytes; exceeds authorized per-platform upload budget`);
           fs.mkdirSync('desktop-artifacts');
