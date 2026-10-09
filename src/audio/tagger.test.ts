@@ -4,7 +4,7 @@ import { confidentSoundSummary } from './confidentSoundSummary';
 import { sanitizeMusicAnalysis, type MusicAnalysis } from './musicTypes';
 import { dimensionLabels } from './recognition';
 import { canonicalDjLabel } from './djTags';
-import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, TAGGER_UNAVAILABLE, TaggerEvidence, sanitizeTaggerAnalysis, taggerDecisions, taggerWindowStarts, type TaggerTag } from './tagger';
+import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_REVISION, TAGGER_SCORE, TAGGER_UNAVAILABLE, TaggerEvidence, isTaggerScores, sanitizeTaggerAnalysis, taggerDecisions, taggerWindowStarts, type TaggerTag } from './tagger';
 
 const threshold = (output: string) => TAGGER_POLICY.tags.find(t => t.output === output)!.threshold;
 const track = (seconds: number, scores: Record<string, number>, djTags: NonNullable<MusicAnalysis['soundProfile']>['djTags'] = []): MusicAnalysis => ({
@@ -36,6 +36,14 @@ describe('trained tagger policy', () => {
 });
 
 describe('trained tagger windows and storage', () => {
+  it('only reuses cached inference with every policy output present and valid', () => {
+    const scores = Object.fromEntries(TAGGER_POLICY.tags.map(tag => [tag.output, .5]));
+    expect(isTaggerScores(scores)).toBe(true);
+    expect(isTaggerScores({ drums: .5 })).toBe(false);
+    for (const value of [undefined, NaN, Infinity, -.01, 1.01]) {
+      expect(isTaggerScores({ ...scores, drums: value })).toBe(false);
+    }
+  });
   it.each([[0, []], [3, [0]], [10, [0]], [19.9, [0]], [20, [0, 10]], [35, [0, 10, 20]], [40, [5, 15, 25]], [200, [85, 95, 105]]] as const)(
     'cuts a %s s recording at %j', (seconds, starts) => { expect(taggerWindowStarts(seconds)).toEqual(starts); });
   it('keeps each output\'s best window and only policy outputs', () => {
@@ -43,6 +51,25 @@ describe('trained tagger windows and storage', () => {
     expect(e.results()).toBeUndefined();
     e.add({ drums: .2, piano: .9, 'cat:dog': .9 }); e.add({ drums: .7, piano: .1 });
     expect(e.results()).toEqual({ revision: TAGGER_REVISION, windows: 2, scores: { drums: .7, piano: .9 }, windowScores: { drums: [.2, .7], piano: [.9, .1] } });
+  });
+  it('leaves outputs with missing or invalid windows to the other detectors', () => {
+    const e = new TaggerEvidence();
+    e.add({ drums: .8, piano: .6, guitar: NaN, trumpet: .7 });
+    e.add({ drums: .7, guitar: .9, trumpet: Infinity });
+    const result = e.results()!;
+    expect(result.scores).toEqual({ drums: .8 });
+    expect(result.windowScores).toEqual({ drums: [.8, .7] });
+    expect(taggerDecisions(result, 10)!.map(d => d.tag.output)).toEqual(['drums']);
+  });
+  it('applies thresholds before rounding for display', () => {
+    const t = threshold('drums');
+    for (const score of [t - .00001, t, t + .00001]) {
+      const e = new TaggerEvidence();
+      e.add({ drums: score });
+      const result = e.results()!;
+      expect(result.scores.drums).toBe(score);
+      expect(taggerDecisions(result, 10)!.find(d => d.tag.output === 'drums')!.shown).toBe(score >= t);
+    }
   });
   it('sanitizes stored results', () => {
     expect(sanitizeTaggerAnalysis({ revision: 'x', windows: 2, scores: { drums: .5, 'cat:dog': .5, piano: 2, guitar: NaN } })).toEqual({ revision: 'x', windows: 2, scores: { drums: .5 } });
@@ -100,6 +127,14 @@ describe('trained tagger display', () => {
     expect(sources(a)).toEqual(['piano']);
     a.tagger = { revision: 'older', windows: 1, scores: { piano: 0 } };
     expect(sources(a)).toEqual(['piano']);
+  });
+  it('does not mistake an absent or invalid output for evidence against a sound', () => {
+    for (const score of [undefined, NaN, Infinity, -1, 2]) {
+      const a = track(10, { drums: .9, ...(score === undefined ? {} : { piano: score }) }, [
+        { group: 'source', label: 'piano', score: .9, model: 'Trained head' },
+      ]);
+      expect(sources(a)).toEqual(['drums', 'piano']);
+    }
   });
 });
 
@@ -170,7 +205,7 @@ describe('trained tagger pass', () => {
       if (message.kind === 'tagger') {
         taggerInputs.push((message.samples as Float32Array).length);
         if (failTagger) throw new Error('Model unavailable');
-        return { drums: .2 + .1 * taggerInputs.length, 'cat:percussive': .1 } as T;
+        return { drums: [.3, .4, .5][taggerInputs.length - 1], 'cat:percussive': .1 } as T;
       }
       if (message.kind === 'rhythm' || message.kind === 'tonal') return { version: 2, durationSeconds: duration, analyzedSeconds: Math.min(60, duration), instruments: [], notes: [] } as T;
       if (message.kind === 'instruments') return { scores: { piano: .95 }, musicScore: .9 } as T;

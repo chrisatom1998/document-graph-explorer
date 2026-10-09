@@ -186,7 +186,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
     }
     if (data.kind === 'tagger') {
       // Runs in the Jamendo family's worker (analyzeMusic familyOf), on its single-thread runtime.
-      const result = await cachedAudioInference('tagger-model', `tagger-32khz:${musicRuntimeIdentity('jamendo')}`, data.samples, isTaggerScores, async () => {
+      const result = await cachedAudioInference('tagger-model', `tagger-32khz:validated-v2:${musicRuntimeIdentity('jamendo')}`, data.samples, isTaggerScores, async () => {
         const scores = await classifyTagger(data.samples); inferenceExecuted = true; return scores;
       });
       await postResult(result);
