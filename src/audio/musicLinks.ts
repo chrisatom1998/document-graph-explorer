@@ -212,8 +212,10 @@ function hyperplanes(count: number, dimensions: number): Float32Array[] {
 /** Each fingerprinted track's closest-sounding tracks (by index), most similar first. */
 function soundNeighbors(audio: Features[], keep: number): Map<number, { other: number; similarity: number }[]> {
   const result = new Map<number, { other: number; similarity: number }[]>();
-  const members = audio.flatMap((f, i) => f.centered ? [i] : []);
-  const vector = (i: number) => audio[i].centered!;
+  // Buckets hash the plain fingerprints (minus this library's mean), as before styles: tracks without styles are
+  // scored on plain fingerprints, so their nearest pairs must still share buckets.
+  const members = audio.flatMap((f, i) => f.vector && f.centered ? [i] : []);
+  const vector = (i: number) => audio[i].vector!;
   const score = (i: number, other: number) => soundAlikeScore(audio[i], audio[other])!;
   const offer = (i: number, other: number, similarity: number) => {
     const list = result.get(i) ?? [];
