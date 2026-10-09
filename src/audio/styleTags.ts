@@ -22,8 +22,9 @@ export function styleTags(audio: MusicAnalysis | undefined): string[] {
 export function matchesStyleFilter(audio: MusicAnalysis | undefined, selected: string): boolean {
   if (styleTags(audio).includes(selected)) return true;
   if (!audio) return false;
-  // Rule-described words (warm, airy…) match the clip's measured description unless your latest review of that word is not a confirmation.
-  if (isRuleDescribedLabel(selected) && timbreDescriptions(audio.timbre).some(word => word === selected)
+  // Rule-described words (warm, airy…) match the clip's measured description unless your latest review of that word is not a
+  // confirmation; a saved confirmed-tag list replaces automatic character evidence, so it decides alone.
+  if (audio.confirmedDjTags === undefined && isRuleDescribedLabel(selected) && timbreDescriptions(audio.timbre).some(word => word === selected)
     && djReviewAllows(audio, 'character', selected)) return true;
   return resolvedNonSourceLabels(audio).some(label => label.group === 'character' && label.label === selected);
 }
