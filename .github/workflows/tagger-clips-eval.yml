@@ -1,0 +1,104 @@
+name: Tagger on held-out Freesound clips
+
+# Scores the shipped tagger's app-tag outputs (scripts/audio-model/score-clips.py) on the held-out uploaders' clips of a
+# Freesound clip set (DJ effects round 2 by default, or the sound-tag heads' set), so tags the tagger passed only on
+# rendered notes (bitcrushed, stutter effect, rising, ...) are checked on real recordings before the app reads them.
+# Commits the aggregate report to the triggering branch. Audio is fetched at run time and never committed.
+on:
+  workflow_dispatch:
+    inputs:
+      clips: { description: 'clips.json of a Freesound clip set', default: docs/evaluations/dj-effects-2026-10-09/clips.json }
+      labels: { description: 'label file in scripts/dj-effects', default: labels.json }
+      name: { description: 'report name', default: dj-effects-r2 }
+  push:
+    branches: ['claude/raise-tag-accuracy-*']
+    paths: [scripts/audio-model/score-clips.py, .github/workflows/tagger-clips-eval.yml]
+
+permissions:
+  contents: write
+
+env:
+  CLIPS: ${{ inputs.clips || 'docs/evaluations/dj-effects-2026-10-09/clips.json' }}
+  LABELS: ${{ inputs.labels || 'labels.json' }}
+  NAME: ${{ inputs.name || 'dj-effects-r2' }}
+  DOCS: docs/evaluations/tagger-clips-2026-10-09
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install -q numpy onnxruntime
+      - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - name: The held-out clips of this shard
+        run: |
+          mkdir -p work; python3 - <<'EOF'
+          import json, os
+          c = [x for x in json.load(open(os.environ['CLIPS']))['clips'] if x['split'] == 'heldout']
+          c = c[int(os.environ['SHARD'])::3]; json.dump({'clips': c}, open('work/cands.json', 'w')); print(len(c), 'held-out clips')
+          EOF
+        env: { SHARD: '${{ matrix.shard }}' }
+      - name: Download previews
+        run: CONCURRENCY=2 node scripts/fetch-freesound-previews.mjs work/cands.json work/fs
+      - name: Fetch the shipped tagger (pinned by public/tagger-model/manifest.json)
+        run: |
+          python3 - <<'EOF'
+          import json, hashlib, urllib.request
+          m = json.load(open('public/tagger-model/manifest.json'))
+          for f in ('model.onnx', 'model.json'):
+              urllib.request.urlretrieve(m['sources'][f], f'work/{f}')
+              assert hashlib.sha256(open(f'work/{f}', 'rb').read()).hexdigest() == m['sha256'][f], f
+          urllib.request.urlretrieve(f"https://huggingface.co/{m['repository']}/resolve/{m['revision']}/thresholds.json", 'work/thresholds.json')
+          EOF
+      - name: Score
+        run: |
+          python3 - <<'EOF'
+          import json
+          m = json.load(open('work/fs/manifest.json')); c = {x['id']: x for x in json.load(open('work/cands.json'))['clips']}
+          for x in m['clips']: x['split'] = 'heldout'; x['labels'] = c[x['id']]['labels']
+          json.dump(m, open('work/fs/manifest.json', 'w'))
+          EOF
+          python3 scripts/audio-model/score-clips.py work/fs/manifest.json work/model.onnx work/model.json work/thresholds.json "scripts/dj-effects/$LABELS" work/report.json
+      - uses: actions/upload-artifact@v4
+        with: { name: 'tc-${{ matrix.shard }}', path: work/report.json }
+
+  merge:
+    needs: score
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { pattern: 'tc-*', path: parts }
+      - name: Merge the shards and commit
+        run: |
+          mkdir -p "$DOCS"; python3 - <<'EOF'
+          import json, glob, os
+          tot, n = {}, 0
+          for f in glob.glob('parts/*/report.json'):
+              d = json.load(open(f)); n += d['clips']
+              for t, r in d['tags'].items():
+                  a = tot.setdefault(t, {'threshold': r['threshold'], 'tp': 0, 'fp': 0, 'fn': 0})
+                  for k in ('tp', 'fp', 'fn'): a[k] += r[k]
+          for t, a in tot.items():
+              a['positives'] = a['tp'] + a['fn']; a['precision'] = a['tp'] / (a['tp'] + a['fp']) if a['tp'] + a['fp'] else None
+              a['recall'] = a['tp'] / a['positives'] if a['positives'] else None
+              a['pass70'] = a['precision'] is not None and a['recall'] is not None and a['precision'] >= .7 and a['recall'] >= .7 and a['positives'] >= 10
+          out = f"{os.environ['DOCS']}/{os.environ['NAME']}"
+          json.dump({'kind': 'tagger-on-heldout-clips-v1', 'clips': n, 'set': os.environ['CLIPS'], 'tags': tot}, open(out + '.json', 'w'), indent=1)
+          f = lambda x: '  -  ' if x is None else f'{x:.2f}'
+          lines = [f"{t:<20} P {f(a['precision'])} R {f(a['recall'])}  ({a['positives']}+, {a['fp']} false){'  PASS' if a['pass70'] else ''}" for t, a in sorted(tot.items())]
+          open(out + '.txt', 'w').write(f"{n} held-out clips of {os.environ['CLIPS']}\n" + '\n'.join(lines) + '\n'); print('\n'.join(lines))
+          EOF
+          git add "$DOCS"
+          git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -qm "Record the tagger's scores on held-out Freesound clips ($NAME)" || exit 0
+          for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
