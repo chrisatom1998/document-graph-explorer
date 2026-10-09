@@ -1,0 +1,222 @@
+name: Production Mac downloads
+
+on:
+  deployment_status:
+  pull_request:
+    paths:
+      - '.github/workflows/production-mac.yml'
+      - 'scripts/production-mac-policy*.cjs'
+
+# Coalesce rapid deployments; never cancel the build currently publishing.
+# GitHub retains the latest pending run. A failed build leaves existing links intact.
+concurrency:
+  group: production-mac-${{ github.event.deployment.environment == 'Production' && github.event.deployment_status.state == 'success' && github.event.deployment.creator.id == 35613825 && github.event.deployment_status.creator.id == 35613825 && 'downloads' || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  deployments: read
+
+jobs:
+  policy-tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          persist-credentials: false
+      - run: node --test scripts/production-mac-policy.test.cjs
+
+  prepare:
+    if: >-
+      github.repository == 'chrisatom1998/document-graph-explorer' &&
+      github.event.repository.private == false &&
+      github.event.deployment.environment == 'Production' &&
+      github.event.deployment_status.environment == 'Production' &&
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.creator.id == 35613825 &&
+      github.event.deployment_status.creator.id == 35613825
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      deployments: read
+    outputs:
+      sha: ${{ steps.prepare.outputs.sha }}
+      tag: ${{ steps.prepare.outputs.tag }}
+      build: ${{ steps.prepare.outputs.build }}
+      eligible: ${{ steps.prepare.outputs.eligible }}
+    steps:
+      # No checkout or repository code until deployed SHA is verified on main.
+      - name: Verify trusted source ancestry
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea9 # v7
+        with:
+          script: |
+            const sha = context.payload.deployment.sha;
+            if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error('Invalid deployed SHA');
+            for (const candidate of [sha, context.workflowSha || process.env.GITHUB_WORKFLOW_SHA]) {
+              if (!/^[0-9a-f]{40}$/.test(candidate || '')) throw new Error('Invalid workflow SHA');
+              const {data} = await github.rest.repos.compareCommitsWithBasehead({
+                ...context.repo, basehead: `${candidate}...main`
+              });
+              if (!['ahead', 'identical'].includes(data.status)) throw new Error('Source/workflow is not on trusted main history');
+            }
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - name: Validate release policy
+        run: node --test scripts/production-mac-policy.test.cjs
+      - name: Prepare private draft release
+        id: prepare
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea9 # v7
+        with:
+          script: |
+            const policy = require('./scripts/production-mac-policy.cjs');
+            const meta = policy.validateEvent(context.payload);
+            // Ignore delayed events older than the already published pointer.
+            let pointer;
+            try { pointer = (await github.rest.repos.getReleaseByTag({...context.repo, tag:'mac-downloads'})).data; }
+            catch (e) { if (e.status !== 404) throw e; }
+            if (policy.pointerStatus(pointer?.body) > meta.statusId) {
+              core.setOutput('eligible', 'false'); return;
+            }
+            let release;
+            try { release = (await github.rest.repos.getReleaseByTag({...context.repo, tag:meta.tag})).data; }
+            catch (e) { if (e.status !== 404) throw e; }
+            if (!release) release = (await github.rest.repos.createRelease({
+              ...context.repo, tag_name:meta.tag, target_commitish:meta.sha,
+              name:`Mac production ${meta.sha.slice(0,12)}`, body:policy.releaseBody(meta.sha),
+              draft:true, prerelease:true, make_latest:'false'
+            })).data;
+            if (!release.draft) policy.assertComplete(release.assets);
+            core.setOutput('sha', meta.sha);
+            core.setOutput('tag', meta.tag);
+            core.setOutput('build', String(release.draft));
+            core.setOutput('eligible', 'true');
+
+  build:
+    needs: prepare
+    if: needs.prepare.outputs.eligible == 'true' && needs.prepare.outputs.build == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            arch: arm64
+          - os: macos-15-intel
+            arch: x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    env:
+      SOURCE_SHA: ${{ needs.prepare.outputs.sha }}
+      RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+      ARCH: ${{ matrix.arch }}
+      ONNXRUNTIME_NODE_INSTALL: skip
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          persist-credentials: false
+      - name: Verify exact production source
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          # Deliberately no cache writes or temporary Actions artifacts.
+      - run: npm ci
+      - run: npm run build
+      - name: Package native Mac DMG
+        shell: bash
+        run: |
+          VERSION="$(node -p "require('./package.json').version")-production.${SOURCE_SHA:0:12}"
+          npx --no-install electron-builder --mac dmg --"$ARCH" --publish never \
+            -c.extraMetadata.version="$VERSION" \
+            -c.artifactName="Document-Graph-Explorer-mac-${ARCH}.\${ext}"
+      - name: Verify signature and smoke-test native packaged app
+        shell: bash
+        run: |
+          APP="$(find release -maxdepth 2 -type d -name 'Document Graph Explorer.app' -print -quit)"
+          test -n "$APP"
+          EXPECTED_ARCH="$ARCH"
+          if [ "$EXPECTED_ARCH" = x64 ]; then EXPECTED_ARCH=x86_64; fi
+          file "$APP/Contents/MacOS/Document Graph Explorer" | grep "$EXPECTED_ARCH"
+          codesign --verify --deep --strict "$APP"
+          "$APP/Contents/MacOS/Document Graph Explorer" > /tmp/dge-desktop.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:47182/ > /tmp/dge-index.html; then
+              grep -q '<html' /tmp/dge-index.html
+              exit 0
+            fi
+            kill -0 "$PID" || { cat /tmp/dge-desktop.log; exit 1; }
+            sleep 2
+          done
+          cat /tmp/dge-desktop.log
+          exit 1
+      - name: Write checksum and provenance
+        shell: bash
+        run: |
+          FILE="release/Document-Graph-Explorer-mac-${ARCH}.dmg"
+          test -s "$FILE"
+          test "$(stat -f%z "$FILE")" -lt 2147483648
+          (cd release && shasum -a 256 "Document-Graph-Explorer-mac-${ARCH}.dmg" > "SHA256SUMS-${ARCH}.txt")
+          printf 'Source: %s\nArchitecture: %s\nRun: https://github.com/%s/actions/runs/%s\nSigning: ad-hoc; no Developer ID or notarization\nVerified: runtime assets, architecture, signature integrity, native HTTP startup\n' \
+            "$SOURCE_SHA" "$ARCH" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > "release/BUILD-INFO-${ARCH}.txt"
+      # Token is exposed only to the upload process, not npm/build/app steps.
+      # Source has been restricted to trusted main history; no PR-head code runs.
+      - name: Upload only to the unpublished draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true
+          gh release upload "$RELEASE_TAG" \
+            "release/Document-Graph-Explorer-mac-${ARCH}.dmg" \
+            "release/SHA256SUMS-${ARCH}.txt" "release/BUILD-INFO-${ARCH}.txt" --clobber
+
+  publish:
+    needs: [prepare, build]
+    if: >-
+      always() && needs.prepare.result == 'success' &&
+      needs.prepare.outputs.eligible == 'true' &&
+      (needs.build.result == 'success' || needs.prepare.outputs.build == 'false')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      deployments: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - name: Publish complete release and atomically replace download links
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea9 # v7
+        with:
+          script: |
+            const policy = require('./scripts/production-mac-policy.cjs');
+            const meta = policy.validateEvent(context.payload);
+            const {data:release} = await github.rest.repos.getReleaseByTag({...context.repo, tag:meta.tag});
+            policy.assertComplete(release.assets);
+            if (release.draft) await github.rest.repos.updateRelease({
+              ...context.repo, release_id:release.id, draft:false, prerelease:true, make_latest:'false'
+            });
+            let pointer;
+            try { pointer = (await github.rest.repos.getReleaseByTag({...context.repo, tag:'mac-downloads'})).data; }
+            catch (e) { if (e.status !== 404) throw e; }
+            if (policy.pointerStatus(pointer?.body) > meta.statusId) {
+              core.notice('Newer production download is already published'); return;
+            }
+            const fields = {name:'Download Document Graph Explorer for Mac', body:policy.pointerBody(meta),
+              draft:false, prerelease:true, make_latest:'false'};
+            if (pointer) await github.rest.repos.updateRelease({...context.repo, release_id:pointer.id, ...fields});
+            else await github.rest.repos.createRelease({...context.repo, tag_name:'mac-downloads', target_commitish:meta.sha, ...fields});
+            await core.summary.addLink('Download Mac DMGs', `https://github.com/${policy.REPOSITORY}/releases/tag/mac-downloads`).write();
