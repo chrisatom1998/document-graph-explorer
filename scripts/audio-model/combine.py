@@ -44,12 +44,13 @@ def choose(tags, runs, keep):
     for tag in tags:
         base = rows(runs[0]['eval'], tag); best, why = 0, 'shipped run'
         if tag not in keep and base:
-            passed = {n for n, p, r in base if p >= .7 and r >= .7}
+            passed, top = {n for n, p, r in base if p >= .7 and r >= .7}, merit(base) + .01
             for k, run in enumerate(runs[1:], 1):
                 rs = rows(run['eval'], tag); m = merit(rs)
                 if m is None or {n for n, *_ in rs} != {n for n, *_ in base}: continue
                 if any(n in passed and (p < .7 or r < .7) for n, p, r in rs): continue
-                if m >= merit(rows(runs[best]['eval'], tag)) + .01: best, why = k, f'mean min(P, R) {merit(base):.3f} -> {m:.3f}'
+                # The margin is over the shipped run; among the runs that clear it, the best wins whatever the order (ties: the earlier).
+                if m >= top and (best == 0 or m > top): best, top, why = k, m, f'mean min(P, R) {merit(base):.3f} -> {m:.3f}'
         elif tag in keep: why = 'kept (long-recording threshold tuned on the shipped run)'
         picks[tag] = {'run': runs[best]['name'], 'why': why,
                       'heldOut': {run['name']: {n: [round(p, 3), round(r, 3)] for n, p, r in rows(run['eval'], tag)} for run in runs}}
