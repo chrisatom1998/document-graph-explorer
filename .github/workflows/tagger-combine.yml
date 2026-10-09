@@ -26,14 +26,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Combine, score and publish on Hugging Face Jobs
-        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
+        env:
+          HF_TOKEN: '${{ secrets.HF_TOKEN }}'
+          # Dispatch inputs reach the script as variables, never as script text.
+          IN_RUNS: '${{ inputs.runs }}'
+          IN_KEEP: '${{ inputs.keep }}'
+          IN_REPO: '${{ inputs.public_repo }}'
+          IN_LICENSE: '${{ inputs.license }}'
+          IN_FLAVOR: '${{ inputs.flavor }}'
+          IN_TIMEOUT: '${{ inputs.timeout }}'
         run: |
           pip install -q huggingface_hub
           if [ "${{ github.event_name }}" = push ]; then
             read RUNS KEEP REPO LICENSE FLAVOR TIMEOUT < <(python3 -c "import json; r = json.load(open('scripts/audio-model/combine-request.json')); print(' '.join([','.join(r['runs']), r.get('keep', 'drums'), r.get('public_repo', 'dge-all-tags-tagger'), r.get('license', 'mit'), r.get('flavor', 'cpu-upgrade'), r.get('timeout', '2h')]))")
             RUNS=${RUNS//,/ }
           else
-            RUNS="${{ inputs.runs }}"; KEEP="${{ inputs.keep }}"; REPO="${{ inputs.public_repo }}"; LICENSE="${{ inputs.license }}"; FLAVOR="${{ inputs.flavor }}"; TIMEOUT="${{ inputs.timeout }}"
+            RUNS="$IN_RUNS"; KEEP="$IN_KEEP"; REPO="$IN_REPO"; LICENSE="$IN_LICENSE"; FLAVOR="$IN_FLAVOR"; TIMEOUT="$IN_TIMEOUT"
           fi
           USER=$(python3 -c "from huggingface_hub import whoami; print(whoami()['name'])")
           python3 scripts/audio-model/hf-launch.py "$FLAVOR" "$TIMEOUT" REPO_SHA=${{ github.sha }} JOB_SCRIPT=hf-combine-job.sh JOB_NAME=dge-tagger-combine \

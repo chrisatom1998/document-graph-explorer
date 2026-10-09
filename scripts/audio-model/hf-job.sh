@@ -110,6 +110,7 @@ import os
 from huggingface_hub import HfApi
 api = HfApi(); repo = os.environ['HF_REPO']; api.create_repo(repo, private=True, exist_ok=True)
 api.upload_folder(repo_id=repo, folder_path='run', path_in_repo=os.environ.get('OUT_DIR') or None, allow_patterns=['model.pt', 'log.json'],
+                  delete_patterns=['onnx/*', 'thresholds.json', 'calibrate.txt', 'eval.*', 'coverage.*'],   # an earlier run's scores never sit beside new weights
                   commit_message='DGE tagger run at ${REPO_SHA:0:7}: ${MODEL} weights, before scoring')
 EOF
 CAL=(openmic=prep jamendo=prepj); EVAL=(prep/eval-round1 prep/eval-round2 holdout/holdout-r3)

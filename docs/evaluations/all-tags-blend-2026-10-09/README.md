@@ -25,7 +25,8 @@ A newer run takes a tag only when two things hold. Its mean min(precision, recal
 at least 0.01 higher than run 3's. And it must not drop below 70/70 on any set where run 3 passes. Instruments are
 judged on DJ clip rounds 1 and 2. App sound tags are judged on FSD50K eval, NSynth test, the NSynth effect renders and
 the held-out Freesound uploaders. Drums stays on run 3 because its long-recording threshold was tuned on run 3's scores.
-None of these sets was trained or tuned on.
+No weights were trained and no thresholds calibrated on these sets, but they did choose each tag's network, so the
+blend's scores on them are not an independent test of that choice.
 
 | Tag | Network | Run 3 held-out P/R | Blend held-out P/R | Tested |
 |---|---|---|---|---|

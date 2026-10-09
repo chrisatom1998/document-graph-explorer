@@ -20,4 +20,5 @@ graph) that onnxruntime-web can run on 10 s windows of 32 kHz audio.
 `hf-launch.py`) with the `HF_TOKEN` repository secret, and uploads the run to that account's private
 `dge-instrument-tagger` model repo.
 
-The app runs run 3's model for the tags in `src/audio/taggerPolicy.json`; see docs/evaluations/all-tags-model-2026-10-06.
+The app runs a blend of runs 3 and 5 (each tag in `src/audio/taggerPolicy.json` from the run listed in
+`public/tagger-model/model.json`'s `outputRun`); see docs/evaluations/all-tags-blend-2026-10-09.
