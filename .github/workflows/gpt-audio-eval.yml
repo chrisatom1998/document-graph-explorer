@@ -54,7 +54,8 @@ jobs:
       - name: Fetch OpenMIC round 2 clips
         if: matrix.task == 'instruments'
         run: |
-          curl -fsSL --retry 6 -o "$RUNNER_TEMP/openmic.tgz" "$OPENMIC"
+          # Zenodo sometimes cuts the 2.6 GB download off part way (curl exit 18), so resume instead of restarting.
+          for i in 1 2 3 4 5 6 7 8; do curl -fsSL -C - --retry 6 -o "$RUNNER_TEMP/openmic.tgz" "$OPENMIC" && break; sleep 10; done
           echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $RUNNER_TEMP/openmic.tgz" | md5sum -c -
           python3 scripts/dj-clips/openmic-round2.py "$RUNNER_TEMP/openmic.tgz" audio
           git diff --exit-code -- "$R2"   # the frozen selection must not change
