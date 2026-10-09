@@ -1,0 +1,40 @@
+name: Stable Audio Open Small smoke test
+
+# Times scripts/dj-effects/sao.py on a free runner and keeps the generated clips as an artifact to listen to.
+# Training clips only; nothing ships from here.
+on:
+  push:
+    branches: [claude/other-ai-models-survey-5si1c0]
+    paths:
+      - scripts/dj-effects/sao.py
+      - .github/workflows/dj-effects-sao-smoke.yml
+
+concurrency:
+  group: dj-effects-sao-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Stable Audio Tools (CPU)
+        run: |
+          pip install -q --index-url https://download.pytorch.org/whl/cpu torch==2.5.1 torchaudio==2.5.1
+          pip install -q stable-audio-tools
+      - name: Generate 2 clips per effect and time it
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          PER_EFFECT: 2
+        run: |
+          start=$(date +%s); python3 scripts/dj-effects/sao.py work/sao; end=$(date +%s)
+          n=$(python3 -c "import json; print(len(json.load(open('work/sao/manifest.json'))['clips']))")
+          echo "$n clips in $((end-start)) s (includes model download)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sao-smoke
+          path: work/sao
