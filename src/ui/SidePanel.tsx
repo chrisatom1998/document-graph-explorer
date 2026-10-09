@@ -205,7 +205,8 @@ export default function SidePanel({ inline = false, onClose }: { inline?: boolea
           closeButtonRef={closeButtonRef}
         />
         <div className="side-panel__scroll">
-          {inline && isAudio && node.status !== 'ok' && (
+          {/* Music analysis failures set only `warning`, so show it even while status is ok. */}
+          {inline && isAudio && (node.status !== 'ok' || node.warning) && (
             <p className="side-panel__badges"><span className="chip side-panel__badge-warning">⚠ {node.warning ?? node.status}</span></p>
           )}
           {!(inline && isAudio) && (
