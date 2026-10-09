@@ -88,7 +88,7 @@ EXTRA=()
 if [ -n "$RS_PID" ]; then wait $RS_PID || { tail -n 30 rawstems.log; exit 1; }; tail -n 5 rawstems.log; EXTRA+=(--extra rawstems=rsprep); fi
 if [ -n "${SOUNDCLOUD_DATA:-}" ]; then   # "<dataset repo>:<folder>", uploaded by the workflow from its SoundCloud artifacts
   python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='scdl')" "$SOUNDCLOUD_DATA"
-  mv "scdl/${SOUNDCLOUD_DATA#*:}" scprep && EXTRA=(--soundcloud scprep)
+  mv "scdl/${SOUNDCLOUD_DATA#*:}" scprep && EXTRA+=(--soundcloud scprep)
 fi
 if [ "${ALL_TAGS:-0}" = 1 ]; then
   EXTRA+=(--fsd50k fsdprep --nsynth nsprep --freesound fsprep)
