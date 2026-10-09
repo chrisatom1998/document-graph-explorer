@@ -220,11 +220,13 @@ test('search ranks within file filters before applying its result limit', async 
   });
   await importGraphJson(page, JSON.stringify(graph));
   await openLibrary(page);
-  // File type is the sidebar select; the embedded Advanced panel no longer repeats it.
+  // File type is a sidebar checkbox list; the embedded Advanced panel no longer repeats it.
   await showFilters(page);
-  await page.getByRole('combobox', { name: 'File type' }).selectOption('md');
+  // The native input is visually hidden behind a styled box, so drive the label.
+  await page.getByRole('region', { name: 'File type' }).locator('label', { hasText: 'Markdown' }).click();
+  await expect(page.getByRole('checkbox', { name: /^Markdown/ })).toBeChecked();
   await page.getByRole('button', { name: 'Search documents' }).click();
-  // The sidebar's Key, Genre and File type selects are comboboxes too; type into the search box.
+  // The sidebar's Key and Genre selects are comboboxes too; type into the search box.
   await page.getByRole('dialog', { name: 'Search documents' }).getByRole('combobox').fill('Architecture');
   await expect(page.getByRole('dialog', { name: 'Search documents' }).getByRole('option', { name: /Architecture 13/ })).toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Search documents' }).getByRole('option')).toHaveCount(1);
