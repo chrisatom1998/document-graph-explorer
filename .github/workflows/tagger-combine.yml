@@ -6,10 +6,10 @@ name: Combine tagger runs
 on:
   workflow_dispatch:
     inputs:
-      runs: { description: 'folders of the private dge-instrument-tagger repo, the shipped run first', default: 'all-tags all-tags-run4' }
+      runs: { description: 'folders of the private dge-instrument-tagger repo, the shipped run first', default: 'all-tags all-tags-run5' }
       keep: { description: 'tags that stay with the shipped run', default: 'drums' }
-      public_repo: { description: 'public model repo to publish to (under the HF_TOKEN account)', default: 'dge-all-tags-tagger' }
-      license: { description: 'licence of the published weights (cc-by-nc-sa-4.0 when a run used Mixing Secrets)', default: 'mit' }
+      public_repo: { description: 'public model repo to publish to (under the HF_TOKEN account)', default: 'dge-all-tags-tagger-nc' }
+      license: { description: 'licence of the published weights (cc-by-nc-sa-4.0 when a run used Mixing Secrets)', default: 'cc-by-nc-sa-4.0' }
       flavor: { default: 'cpu-upgrade' }
       timeout: { default: '2h' }
   push:   # a new workflow can't be dispatched before it reaches main: push a changed combine-request.json instead
