@@ -9,6 +9,7 @@
 import { useUiStore } from '../store/uiStore';
 import type { NamedFile } from './localFiles';
 import { reportReadFailures, type ReadFailure } from './readFailures';
+import { holdReload, recoverFromChunkError } from '../util/staleBuild';
 
 async function ingestScannedFolder(named: NamedFile[], folderName: string): Promise<void> {
   if (named.length === 0) {
@@ -32,9 +33,10 @@ export async function ingestPickedDirectory(
     // Cancelling / escaping the picker rejects with AbortError — a no-op.
     if (error instanceof DOMException && error.name === 'AbortError') return;
     console.warn('folder picker failed', error);
-    useUiStore.getState().pushToast("Couldn't open that folder — check the console for details.");
+    useUiStore.getState().pushToast("Couldn't open that folder. Try again or pick a different folder.");
     return;
   }
+  const release = holdReload();
   try {
     const { scanFolder } = await import('./folderScanner');
     const failures: ReadFailure[] = [];
@@ -43,15 +45,17 @@ export async function ingestPickedDirectory(
     if (named.length > 0 || failures.length === 0) await ingestScannedFolder(named, handle.name);
   } catch (error) {
     console.error('folder scan failed', error);
-    useUiStore
-      .getState()
-      .pushToast("Something went wrong reading that folder — check the console for details.");
+    if (recoverFromChunkError(error)) return;
+    useUiStore.getState().pushToast("That folder could not be read. Try again.");
+  } finally {
+    release();
   }
 }
 
 /** Fallback path: run a flat <input webkitdirectory> selection through the scan filters. */
 export async function ingestPickedFolderFiles(files: File[]): Promise<void> {
   if (files.length === 0) return;
+  const release = holdReload();
   try {
     const { scanPickedFolderFiles } = await import('./folderScanner');
     const failures: ReadFailure[] = [];
@@ -61,8 +65,9 @@ export async function ingestPickedFolderFiles(files: File[]): Promise<void> {
     if (named.length > 0 || failures.length === 0) await ingestScannedFolder(named, rootName);
   } catch (error) {
     console.error('folder scan failed', error);
-    useUiStore
-      .getState()
-      .pushToast("Something went wrong reading that folder — check the console for details.");
+    if (recoverFromChunkError(error)) return;
+    useUiStore.getState().pushToast("That folder could not be read. Try again.");
+  } finally {
+    release();
   }
 }

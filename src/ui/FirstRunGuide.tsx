@@ -25,7 +25,7 @@ const TOUR_STEPS = [
   {
     selector: '.nebula-canvas',
     title: 'Explore the map',
-    body: 'Drag to orbit, scroll to zoom, and click a node to read it. Notes, tags, and pins live on the document panel when you need them.',
+    body: 'Drag to orbit, scroll to zoom, and click a node to open it. Notes, tags, and pins live in its side panel when you need them.',
   },
   {
     selector: '.rs-sidebar',
@@ -236,7 +236,7 @@ export default function FirstRunGuide() {
   const offline = AIRGAP || offlineMode;
   const modeAwareBody =
     step === 0 && dims === 2
-      ? 'Drag empty space to pan, scroll to zoom, and click a node to read it. Notes, tags, and pins live on the document panel when you need them.'
+      ? 'Drag empty space to pan, scroll to zoom, and click a node to open it. Notes, tags, and pins live in its side panel when you need them.'
       : current.body;
   const body: string = offline && 'offlineBody' in current ? String(current.offlineBody) : modeAwareBody;
   const spotlightStyle: CSSProperties | undefined = spotlight

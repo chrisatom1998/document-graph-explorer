@@ -30,6 +30,11 @@ function isQuotaExceeded(err: unknown): boolean {
   );
 }
 
+/** The stored database is newer than this build (e.g. a tab left open across a deploy, or a rollback). */
+function isNewerVersion(err: unknown): boolean {
+  return (err instanceof DOMException || err instanceof Error) && err.name === 'VersionError';
+}
+
 let warnedOnce = false;
 function cacheUnavailable(err: unknown): void {
   if (warnedOnce) return;
@@ -43,7 +48,9 @@ function cacheUnavailable(err: unknown): void {
     .pushToast(
       isQuotaExceeded(err)
         ? "Storage is full — your session won't be saved. Clear cached data in Settings to free space."
-        : "This browser blocked local storage — your session won't be saved automatically.",
+        : isNewerVersion(err)
+          ? "Your saved library is from a newer version of Resonance. Reload the page to get it; if this message comes back, this session won't be saved."
+          : "This browser blocked local storage — your session won't be saved automatically.",
       'warning',
     );
 }

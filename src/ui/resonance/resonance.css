@@ -386,6 +386,12 @@
 .app-root:has(.rs-root) .insights-layer { padding-top: var(--rs-top); }
 /* The welcome card sits under the top bar instead of across it. */
 .app-root:has(.rs-root) .empty-state-layer { top: var(--rs-top); }
+/* The card's own max-height counts the whole viewport, so a tall card was
+   centred past the layer's top edge and covered the tabs on phones. */
+.app-root:has(.rs-root) .empty-state__card { max-height: calc(100dvh - var(--rs-top) - 48px); }
+@media (max-width: 820px) {
+  .app-root:has(.rs-root) .empty-state__card { max-height: calc(100dvh - var(--rs-top) - 20px); }
+}
 .app-root:has(.rs-root) .progress-strip-layer { left: var(--rs-left); right: var(--rs-right); }
 .app-root:has(.rs-root) .first-run-guide { right: calc(var(--rs-right) + 18px); }
 
