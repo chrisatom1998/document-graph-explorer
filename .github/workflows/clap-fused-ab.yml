@@ -1,0 +1,83 @@
+name: CLAP clap-htsat-fused A/B (DJ effects)
+
+# Judge-only comparison of laion/clap-htsat-fused with the app's CLAP (laion/larger_clap_music_and_speech) on the
+# DJ-effect clips (docs/evaluations/dj-effects-2026-10-06/clips.json, split by uploader). Freesound is not reachable
+# from the cloud sandbox, so the previews are fetched here. Audio is never committed; the report is uploaded as an artifact.
+on:
+  push:
+    branches: [claude/clap-htsat-fused-ab-qrssqz]
+    paths:
+      - scripts/clap-fused-ab/**
+      - .github/workflows/clap-fused-ab.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clap-fused-ab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  embed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        shard: [0, 1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install -q --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -q transformers numpy
+          command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+      - name: Fetch previews
+        run: python3 scripts/clap-fused-ab/fetch_previews.py docs/evaluations/dj-effects-2026-10-06/clips.json work/fs work/clips.json ${{ matrix.shard }} 5
+      - name: Fingerprint with both encoders
+        run: |
+          mkdir -p out/current out/fused
+          THREADS=2 python3 scripts/clap-fused-ab/embed.py laion/larger_clap_music_and_speech work/clips.json out/current/s${{ matrix.shard }}.jsonl > cur.log 2>&1 & a=$!
+          THREADS=2 python3 scripts/clap-fused-ab/embed.py laion/clap-htsat-fused work/clips.json out/fused/s${{ matrix.shard }}.jsonl > fus.log 2>&1 & b=$!
+          rc=0; wait $a || rc=1; wait $b || rc=1; tail -n 3 cur.log fus.log; exit $rc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: emb-${{ matrix.shard }}
+          path: out
+          retention-days: 14
+
+  score:
+    needs: embed
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          pip install -q --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -q transformers numpy scikit-learn
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: emb-*
+          path: emb-parts
+      - name: Prompt vectors and scores
+        run: |
+          mkdir -p emb/current emb/fused prompts
+          cp emb-parts/*/current/*.jsonl emb/current/; cp emb-parts/*/fused/*.jsonl emb/fused/
+          python3 scripts/clap-fused-ab/prompts.py prompts/in.json
+          python3 scripts/clap-fused-ab/embed.py laion/larger_clap_music_and_speech --prompts prompts/in.json prompts/current.json
+          python3 scripts/clap-fused-ab/embed.py laion/clap-htsat-fused --prompts prompts/in.json prompts/fused.json
+          python3 scripts/clap-fused-ab/score.py dj emb prompts dj-effects.json | tee dj-effects.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dj-effects-report
+          path: |
+            dj-effects.json
+            dj-effects.txt
+            prompts/in.json
+          retention-days: 30
