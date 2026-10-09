@@ -17,7 +17,7 @@ on:
       - .github/workflows/tag-heads.yml
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: tag-heads-${{ github.ref }}
@@ -183,6 +183,8 @@ jobs:
 
   train:
     needs: shard
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 300
     steps:
@@ -232,5 +234,5 @@ jobs:
           git add "$DOCS"
           git config user.name 'github-actions[bot]'; git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -qm "Record sound tag heads (processing, space, gap instruments) [no-train]" || exit 0
-          for i in 1 2 3 4 5; do { git pull --rebase -X theirs -q origin "$GITHUB_REF_NAME" || { git rebase --abort; false; }; } && git push -q origin "HEAD:$GITHUB_REF_NAME" \
+          for i in 1 2 3 4 5; do { git pull --rebase -q origin "$GITHUB_REF_NAME" || { git rebase --abort; false; }; } && git push -q origin "HEAD:$GITHUB_REF_NAME" \
             && break; [ $i = 5 ] && exit 1; sleep $((2**i)); done
