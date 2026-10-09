@@ -1,4 +1,4 @@
-"""Generates DJ-effect TRAINING clips with Stable Audio Open Small (text to audio, 341M parameters, runs on a CPU).
+"""Generates DJ-effect TRAINING clips with Stable Audio Open Small (text to audio, 341M parameters, runs on a CPU; much faster on a GPU).
 
 Weights: stabilityai/stable-audio-open-small (gated on Hugging Face; Stability AI Community License: free for
 individuals and organisations under $1M annual revenue, generated audio belongs to us). The weights never ship in the
@@ -44,7 +44,9 @@ faulthandler.dump_traceback_later(int(os.environ.get('STACK_DUMP_AFTER', 0)) or 
 torch.set_num_threads(os.cpu_count() or 4)
 model, config = get_pretrained_model('stabilityai/stable-audio-open-small')
 SR, SIZE = config['sample_rate'], config['sample_size']
-model = model.eval()
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+model = model.to(DEVICE).eval()
+print('device', DEVICE, flush=True)
 out = []
 ONLY = set(filter(None, os.environ.get('LABELS', '').split(',')))
 for label, prompts in FX.items():
@@ -56,9 +58,9 @@ for label, prompts in FX.items():
             prompt = r.choice(prompts).format(s=r.choice(STYLE)); secs = r.uniform(1.5, 10)
             with torch.no_grad():
                 audio = generate_diffusion_cond(model, steps=8, conditioning=[{'prompt': prompt, 'seconds_total': secs}],
-                                                sample_size=SIZE, sampler_type='pingpong', device='cpu', seed=r.randrange(1 << 31))
+                                                sample_size=SIZE, sampler_type='pingpong', device=DEVICE, seed=r.randrange(1 << 31))
             print(f'  generated {rid} in {time.time() - t0:.0f} s', flush=True)
-            y = rearrange(audio, 'b d n -> d (b n)').float().mean(0, keepdim=True)
+            y = rearrange(audio, 'b d n -> d (b n)').float().cpu().mean(0, keepdim=True)
             y = torchaudio.functional.resample(y, SR, 48000)[0, :int(48000 * min(secs, 10))].numpy()
             y = y / (np.abs(y).max() + 1e-9) * r.uniform(.3, .95)
             write(path, y, 48000)
