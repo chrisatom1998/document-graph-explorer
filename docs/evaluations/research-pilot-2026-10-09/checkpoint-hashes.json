@@ -1,0 +1,27 @@
+[
+  {
+    "path": "peace/boxgraph/model.safetensors",
+    "sha256": "6473521c29dbe7be169a1c2945719a7c9c42f8651d1ae64e021d7d173c37fdeb",
+    "bytes": 431623992
+  },
+  {
+    "path": "tp-clap/tp-clap_mtt.pt",
+    "sha256": "8425de5eb3724ac309b4380c06fc8fe3404ea9cbd6661148903bb6d39a01fa13",
+    "bytes": 876980901
+  },
+  {
+    "path": "ced/model.safetensors",
+    "sha256": "314935693ed1dcef07576ca0c41277c51c642f3847bc5eb03918c5277eb79af9",
+    "bytes": 342863548
+  },
+  {
+    "path": "bert/model.safetensors",
+    "sha256": "68d45e234eb4a928074dfd868cead0219ab85354cc53d20e772753c6bb9169d3",
+    "bytes": 440449768
+  },
+  {
+    "path": "tp-clap/tp-clap.pt",
+    "sha256": "4db2e8cd538a9e809bdeddf997925c5460f34089347faeb4cd0ac8e241e0a14e",
+    "bytes": 876980491
+  }
+]

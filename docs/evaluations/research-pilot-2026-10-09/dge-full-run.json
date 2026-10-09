@@ -1,0 +1,7149 @@
+{
+  "version": 1,
+  "at": "2026-10-09T16:55:53.352Z",
+  "model": "dge-production",
+  "commit": "fbf46ebd3db42f828104a9b0e98052f1052adde0",
+  "manifestSha256": "17d29f3876946356349a5dc035cc7e86af68fd85b98f3b45f4cfe9ff44aceea0",
+  "platform": "linux",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "logicalCpus": 9,
+  "node": "v24.19.0",
+  "rows": [
+    {
+      "id": "masb-1009674-T-1s",
+      "status": "partial",
+      "cold": true,
+      "elapsedMs": 19105.047902,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:voice"
+      ],
+      "tempo": 129,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently.",
+        "Instrument recognition was unavailable. Reanalyze to retry."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "failed",
+          "error": "network error"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 109.83999999985099,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 1,
+          "inferenceExecuted": 0,
+          "totalMs": 26229.414999999106,
+          "runtimeIdentities": []
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 1,
+          "inferenceExecuted": 0,
+          "totalMs": 269.14499999955297,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2547.5600000005215,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3316.714999999851,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2318.554999999702,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 13523.050000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 110.19999999925494,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 12.81499999947846,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.6900000013411045,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-1009674-T-2s",
+      "status": "partial",
+      "cold": false,
+      "elapsedMs": 12894.060425999996,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:voice"
+      ],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "No stable major/minor key detected confidently.",
+        "Instrument recognition was unavailable. Reanalyze to retry."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "failed",
+          "error": "network error"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 33.39000000059605,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 1,
+          "inferenceExecuted": 0,
+          "totalMs": 7483.440000001341,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1288.8850000016391,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1033.765000000596,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1972.515000000596,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5872.14999999851,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 2,
+          "failed": 2,
+          "inferenceExecuted": 0,
+          "totalMs": 9000.259999999776,
+          "runtimeIdentities": []
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 23.880000000819564,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 9.275000000372529,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 11.580000000074506,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-1009674-T-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 29100.221088,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "character:sustained",
+        "character:rhythmic",
+        "source:drums",
+        "source:voice",
+        "character:bright"
+      ],
+      "tempo": 133.9,
+      "key": {
+        "tonic": 10,
+        "mode": "minor",
+        "strength": 0.6165461089413654
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 10.394999999552965,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 1,
+          "inferenceExecuted": 0,
+          "totalMs": 2247.7099999990314,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2321.969999998808,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1134.230000000447,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 3,
+          "failed": 1,
+          "inferenceExecuted": 2,
+          "totalMs": 25251.33999999985,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7879.180000001565,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 716.9550000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 3793.5,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.195000000298023,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 26.66000000014901,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5.950000001117587,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-1009674-T-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 13159.220717999997,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:synthesizer",
+        "source:voice",
+        "character:rhythmic",
+        "source:drums",
+        "source:piano",
+        "source:guitar",
+        "source:cymbals",
+        "source:bass",
+        "character:bright"
+      ],
+      "tempo": 134,
+      "key": {
+        "tonic": 3,
+        "mode": "major",
+        "strength": 0.7101612441538496
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 23.300000000745058,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 16.530000001192093,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1395.6850000005215,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 882.4600000008941,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2701.650000002235,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 2787.02499999851,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4590.9399999994785,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 9282.950000001118,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 10.095000000670552,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 33.49000000022352,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.554999999701977,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-101006-T-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6892.388500999994,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:guitar",
+        "character:bright"
+      ],
+      "tempo": 129,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4.445000000298023,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.964999999850988,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 178.4850000012666,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1386.855000000447,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4333.680000001565,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4380.4350000005215,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4350.25,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.985000001266599,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 21.790000000968575,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.0400000009685755,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "masb-101006-T-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 7324.795854000011,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:guitar",
+        "character:bright"
+      ],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5.03999999910593,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 11.380000000819564,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 984.9749999996275,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1225.8650000002235,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1128.629999998957,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4589.75500000082,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4654.595000000671,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 16.240000000223517,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 23.244999999180436,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5.410000000149012,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "masb-101006-T-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 9039.638347,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "character:sustained",
+        "effect:texture",
+        "source:sound effect",
+        "source:flute",
+        "character:bright"
+      ],
+      "tempo": 111,
+      "key": {
+        "tonic": 7,
+        "mode": "major",
+        "strength": 0.9425505205569017
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.7200000006705523,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 16.91499999910593,
+          "runtimeIdentities": []
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 461.71000000089407,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 2367.074999999255,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 921.9350000005215,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3130.6699999999255,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4659.289999999106,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5303.864999998361,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.9049999993294477,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 36.53000000119209,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.419999998062849,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-101006-T-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 10607.350000000006,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "character:sustained",
+        "effect:texture",
+        "source:sound effect",
+        "source:flute",
+        "source:ukulele",
+        "source:drums",
+        "source:piano",
+        "source:guitar",
+        "character:bright"
+      ],
+      "tempo": 111.9,
+      "key": {
+        "tonic": 7,
+        "mode": "major",
+        "strength": 0.9513468465516116
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.930000001564622,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 25.97499999962747,
+          "runtimeIdentities": []
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 915.730000000447,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 2294.7249999996275,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1661.875,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 592.230000000447,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4820.915000000969,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5612.144999999553,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 8.394999999552965,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 28.1100000012666,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.644999999552965,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-103089-R-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 7386.8226399999985,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "character:distorted"
+      ],
+      "tempo": 129,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 9.984999999403954,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 15.525000000372529,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 210.47000000067055,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1316.695000000298,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4031.054999999702,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4930.345000000671,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4900.285000000149,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 19.044999999925494,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 29.345000000670552,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 10.990000000223517,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "masb-103089-R-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6326.745549999992,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:drums"
+      ],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 15.56499999947846,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 17.23000000230968,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 438.3300000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 959.7000000011176,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1512.6349999997765,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3989.0800000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4014.7649999987334,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.3599999994039536,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 37.65500000119209,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 15.240000000223517,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-103089-R-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 9169.303446000005,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "character:sustained",
+        "character:airy",
+        "source:voice"
+      ],
+      "tempo": 144.7,
+      "key": {
+        "tonic": 3,
+        "mode": "minor",
+        "strength": 0.9170405660191335
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.550000000745058,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 10.794999999925494,
+          "runtimeIdentities": []
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 372.15499999932945,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 2582.554999999702,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1032.9650000017136,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3130.5200000014156,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4235.89999999851,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5008.834999999031,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.33500000089407,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 45.32000000029802,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 22.2350000012666,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-103089-R-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 9638.34932400001,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "character:sustained",
+        "character:rhythmic",
+        "character:airy",
+        "source:drums",
+        "source:guitar",
+        "source:cymbals",
+        "source:bass"
+      ],
+      "tempo": 144.9,
+      "key": {
+        "tonic": 3,
+        "mode": "minor",
+        "strength": 0.950924714999352
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.269999999552965,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5.580000001937151,
+          "runtimeIdentities": []
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1025.030000001192,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 2204.1599999982864,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1829.1350000016391,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 555.4550000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3956.7550000008196,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4836.9550000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4.324999999254942,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 102.38000000081956,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 15.92000000178814,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-1033252-R-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 10561.89017899998,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [],
+      "tempo": 65,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 9.285000000149012,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 48.58999999985099,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 177.31000000052154,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 2435.574999999255,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3775.1549999993294,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 7699.480000000447,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 7629.894999999553,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.4650000017136335,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 72.98999999836087,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 11.965000001713634,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-1033252-R-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 9287.45862400002,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.810000000521541,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 31.749999998137355,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 436.73000000044703,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1022.765000000596,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 2038.890000000596,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 6365.9000000003725,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 6402.735000001267,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 47.84999999962747,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 48.36500000208616,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 30.005000000819564,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-1033252-R-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 72458.05308800002,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "character:rhythmic",
+        "character:sustained",
+        "source:flute",
+        "source:voice"
+      ],
+      "tempo": 90,
+      "key": {
+        "tonic": 7,
+        "mode": "major",
+        "strength": 0.8970124109806515
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 20.115000000223517,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 111.55500000156462,
+          "runtimeIdentities": []
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 618.9900000002235,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 2186.2850000020117,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1050,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4360.00500000082,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5100.679999999702,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3503.964999999851,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 15.445000000298023,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 56.690000001341105,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 25.450000001117587,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-1033252-R-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 11040.764161,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "character:sustained",
+        "character:rhythmic",
+        "source:flute",
+        "source:drums",
+        "source:piano",
+        "source:guitar",
+        "source:cymbals",
+        "source:violin",
+        "source:trumpet",
+        "source:bass",
+        "character:bright"
+      ],
+      "tempo": 90.1,
+      "key": {
+        "tonic": 7,
+        "mode": "major",
+        "strength": 0.7483664103356491
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 8.529999999329448,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 28.325000001117587,
+          "runtimeIdentities": []
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 765.7450000010431,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 2689.7150000017136,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3225.2799999993294,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 677.7750000003725,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5420.239999998361,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 6115.0800000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.910000000149012,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 91.78999999910593,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 17.790000000968575,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-1036934-O-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6414.833155,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:piano",
+        "source:voice"
+      ],
+      "tempo": 129,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4.495000001043081,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.469999998807907,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 168.06000000052154,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1095.234999999404,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2156.4350000005215,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4024.464999999851,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4049.8250000011176,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.369999999180436,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 39.55499999970198,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5.775000002235174,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-1036934-O-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6335.174419999996,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:piano",
+        "source:voice"
+      ],
+      "tempo": 153,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 22.509999999776483,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 16.21499999985099,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 926.4349999986589,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1275.5849999990314,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1235.414999999106,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3578.6500000003725,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3634.0849999990314,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4.945000000298023,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 36.10499999858439,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.935000002384186,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-1036934-O-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 7919.873788000026,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:drums",
+        "character:rhythmic",
+        "source:voice",
+        "character:bright"
+      ],
+      "tempo": 152.8,
+      "key": {
+        "tonic": 0,
+        "mode": "major",
+        "strength": 0.7264455737671689
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4.304999999701977,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.755000000819564,
+          "runtimeIdentities": []
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 308.32499999925494,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 1625.3149999994785,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1399.9049999993294,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3648.2400000002235,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4060.184999998659,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3099.969999998808,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.419999999925494,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 54.755000000819564,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.26999999769032,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "masb-1036934-O-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 7437.359804000007,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:voice",
+        "source:synthesizer",
+        "character:rhythmic",
+        "source:drums",
+        "source:guitar",
+        "character:bright"
+      ],
+      "tempo": 153.7,
+      "key": {
+        "tonic": 0,
+        "mode": "major",
+        "strength": 0.7561069564249796
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.879999998956919,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3.0399999991059303,
+          "runtimeIdentities": []
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 707.9600000008941,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 1791.2249999996275,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1810.039999999106,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 433.34500000067055,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3202.5950000006706,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3817.679999999702,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 11.294999999925494,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 66.50999999977648,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.419999999925494,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "masb-103892-O-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 7632.800707999966,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "effect:percussion hit",
+        "effect:snare",
+        "source:drums",
+        "character:bright",
+        "character:distorted"
+      ],
+      "tempo": 65,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 12.605000000447035,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4.03999999910593,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 166.285000000149,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 2033.8250000011176,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2042.550000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4713.140000000596,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4800.855000000447,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 36.330000000074506,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 43.77999999932945,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.39500000141561,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "masb-103892-O-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6450.447972000053,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "effect:kick",
+        "effect:percussion hit",
+        "source:drums",
+        "character:bright"
+      ],
+      "tempo": 118,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 19.90000000037253,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 21.340000001713634,
+          "runtimeIdentities": []
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1453.7749999985099,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1540.460000000894,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1443.995000001043,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3849.445000000298,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3915.1399999987334,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 18.820000000298023,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 61.980000000447035,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 11.014999998733401,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-103892-O-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 10789.780226999952,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:drums",
+        "source:electric piano",
+        "character:rhythmic",
+        "source:bass",
+        "source:cymbals"
+      ],
+      "tempo": 120,
+      "key": {
+        "tonic": 9,
+        "mode": "minor",
+        "strength": 0.6438195666282811
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.399999998509884,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3.4400000013411045,
+          "runtimeIdentities": []
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 464.53499999828637,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 3204.9399999994785,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1021.25,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4737.405000001192,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5615.084999999031,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4455.695000000298,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.700000001117587,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 90.22000000067055,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 18.709999999031425,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "masb-103892-O-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 9159.286866999988,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "character:rhythmic",
+        "source:drums",
+        "source:guitar",
+        "source:cymbals",
+        "source:bass"
+      ],
+      "tempo": 120,
+      "key": {
+        "tonic": 9,
+        "mode": "minor",
+        "strength": 0.7378379349298629
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.4950000010430813,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 28.875000001862645,
+          "runtimeIdentities": []
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 855.8050000015646,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 2447.539999999106,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2328.019999999553,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 454.9500000011176,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4124.734999999404,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4856.9000000003725,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.949999999254942,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 89.0800000000745,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 14.705000000074506,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "iowa-flute-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 8640.488249999995,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "Repeated C pitch detected from the audio; there is insufficient evidence for a full major/minor key."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4.439999999478459,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 33.74000000208616,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 116.85500000044703,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 2016.800000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3315.679999999702,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5792.2949999999255,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5839.320000000298,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 8.134999999776483,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 79.20999999903142,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 19.84999999962747,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "iowa-flute-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6913.163546000025,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "Repeated C pitch detected from the audio; there is insufficient evidence for a full major/minor key."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.375,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 9.694999998435378,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 722.5599999986589,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1632.9749999996275,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1978.875,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4124.424999998882,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4185.9749999996275,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 16.72499999962747,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 74.94500000029802,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.445000000298023,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "iowa-flute-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 9684.370429999952,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:flute",
+        "source:clarinet"
+      ],
+      "tempo": null,
+      "key": {
+        "tonic": 5,
+        "mode": "minor",
+        "strength": 0.6321732977582202
+      },
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes)."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 22.22499999962747,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.0950000006705523,
+          "runtimeIdentities": []
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 421.10500000044703,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 1784.7099999990314,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1341.230000000447,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3763.7949999999255,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4424.389999998733,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4070.2900000009686,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 8.650000000372529,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 119.71499999985099,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 10.759999999776483,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "iowa-marimba-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 7489.248006000009,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "effect:impact",
+        "source:sound effect",
+        "character:percussive"
+      ],
+      "tempo": 65,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 8.945000000298023,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.355000000447035,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 190.48499999940395,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1196.094999998808,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2537.7200000006706,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4974.555000001565,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5008.7400000002235,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 9.640000000596046,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 82.28999999910593,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 15.074999999254942,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "iowa-marimba-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 7502.3507230000105,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "effect:impact",
+        "source:sound effect",
+        "character:percussive"
+      ],
+      "tempo": 62,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 12.384999999776483,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 8.31499999947846,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 238.7700000014156,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1390.7649999987334,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1385.199999999255,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4754.49499999918,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4805.1850000005215,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.03999999910593,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 86.25999999977648,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 23.694999998435378,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "silence-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6542.29495000001,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "character:percussive"
+      ],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 20.980000000447035,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1.5299999993294477,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 11.074999999254942,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.824999999254942,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 998.890000000596,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3831.335000000894,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3869.6850000005215,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 17.27000000141561,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 52.294999999925494,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 10.050000000745058,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "silence-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6515.426510000019,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "character:percussive"
+      ],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5.025000000372529,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 10.85499999858439,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.285000000149012,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 14.64500000141561,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": false
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 9.275000000372529,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1177.714999999851,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4066.5200000014156,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3.494999999180436,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 65.39000000059605,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 9.53999999910593,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "silence-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6375.978327999997,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "character:percussive"
+      ],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3.105000000447035,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.105000000447035,
+          "runtimeIdentities": []
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.064999999478459,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": false
+            }
+          ]
+        },
+        "rhythm": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 23.25,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 34.25999999977648,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1390.605000000447,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4167.779999999329,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 17.71499999985099,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 56.79500000178814,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.695000000298023,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "silence-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6438.42745800002,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:drums",
+        "source:piano",
+        "source:guitar",
+        "source:bass",
+        "character:percussive"
+      ],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.655000001192093,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.099999999627471,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 48.9850000012666,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 42.00499999895692,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 45.96499999985099,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": false
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1311.800000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3819.870000001043,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.3599999994039536,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 45.01500000059605,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5.195000000298023,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "pulse90-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6488.421424,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "effect:percussion hit",
+        "source:drums",
+        "character:percussive"
+      ],
+      "tempo": 65,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 9.599999999627471,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 23.535000002011657,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 183.90499999932945,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1218.3349999990314,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1346.280000001192,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3923.570000000298,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3948.0099999997765,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3.3450000006705523,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 41.44500000029802,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 10.475000001490116,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "pulse90-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 7125.289614000008,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "effect:percussion hit",
+        "effect:synth hit",
+        "source:synthesizer",
+        "source:drums",
+        "character:percussive",
+        "character:pulsing"
+      ],
+      "tempo": 93,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 18.08999999985099,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 21.859999999403954,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1052.6949999984354,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1486.0250000003725,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 516.6849999986589,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4139.285000000149,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4207.480000000447,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.28999999910593,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 71.51500000059605,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 16.255000000819564,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "pulse90-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 10405.737806999998,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:synthesizer",
+        "source:drums",
+        "character:rhythmic",
+        "character:nasal",
+        "source:xylophone",
+        "effect:percussion hit",
+        "effect:clave",
+        "character:percussive"
+      ],
+      "tempo": 90,
+      "key": {
+        "tonic": 11,
+        "mode": "minor",
+        "strength": 0.6216553514553919
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3.900000000372529,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 23.530000001192093,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 948.7099999990314,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1452.4249999988824,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 597.0049999989569,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 2743.8899999987334,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4620.5649999994785,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5707.9350000005215,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 13.690000001341105,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 140.70999999903142,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.494999997317791,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "pulse90-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 9297.211794000003,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:synthesizer",
+        "character:rhythmic",
+        "character:nasal",
+        "source:xylophone",
+        "effect:percussion hit",
+        "effect:clave",
+        "character:percussive"
+      ],
+      "tempo": 90.1,
+      "key": {
+        "tonic": 1,
+        "mode": "minor",
+        "strength": 0.6361024174595858
+      },
+      "notes": [],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 14.389999998733401,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 9.999999998137355,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2486.945000000298,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1074.2750000003725,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 974.3300000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 2643.2249999996275,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3857.089999999851,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4520.320000000298,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5.58500000089407,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 134.65999999828637,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 92.27999999932945,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "pulse120-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 8162.262512999994,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "effect:percussion hit",
+        "source:drums",
+        "character:percussive"
+      ],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3.2099999990314245,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4.910000000149012,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 291.5049999989569,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1047.4349999967963,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1850.0449999999255,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5149.4199999999255,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5194.569999998435,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.225000001490116,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 63.02000000141561,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.120000001043081,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "pulse120-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 7648.778105999983,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "effect:percussion hit",
+        "source:drums",
+        "character:percussive",
+        "character:pulsing"
+      ],
+      "tempo": 120,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4.435000000521541,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4.7099999990314245,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 407.8649999983609,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 226.99000000022352,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 1729.9000000003725,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4702.10000000149,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 4745.6150000002235,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.925000000745058,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 84.36500000022352,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 16.084999999031425,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "pulse120-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 10375.363656000001,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:synthesizer",
+        "source:drums",
+        "character:rhythmic",
+        "source:xylophone",
+        "effect:percussion hit",
+        "effect:clave",
+        "character:percussive"
+      ],
+      "tempo": 120,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3.650000000372529,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5.4099999982863665,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 782.5249999985099,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1254.894999999553,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 627.765000000596,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 3318.945000000298,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 5603.3650000002235,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 6300.160000000149,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5.794999999925494,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 97.26999999955297,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.974999999627471,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "pulse120-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 7981.472474000009,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:synthesizer",
+        "effect:synth pluck",
+        "character:rhythmic",
+        "source:xylophone",
+        "effect:percussion hit",
+        "effect:clave",
+        "character:percussive"
+      ],
+      "tempo": 120,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 12.349999999627471,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.449999999254942,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1160.6549999993294,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1564.9199999999255,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 799.855000000447,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 1686.2150000017136,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3256.39999999851,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 3826.0600000005215,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5.300000000745058,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 71.65000000037253,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.160000000149012,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    },
+    {
+      "id": "pulse174-1s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 5283.907861999993,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "effect:percussion hit",
+        "source:drums",
+        "character:percussive"
+      ],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "Repeated B pitch detected from the audio; there is insufficient evidence for a full major/minor key."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 8.18999999947846,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.8599999994039536,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 189.96000000089407,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 857.070000000298,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1073.4649999979883,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 2930.0449999999255,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 2955.4550000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 5.830000000074506,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 50.46000000089407,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 6.694999998435378,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "pulse174-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 5423.964111000008,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "effect:percussion hit",
+        "effect:synth hit",
+        "source:synthesizer",
+        "source:drums",
+        "character:percussive",
+        "character:pulsing"
+      ],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 13.984999999403954,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 4.21000000089407,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 515.019999999553,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "profile": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 781.7549999989569,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 521.4349999986589,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 2768.410000000149,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 2810.609999999404,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.6850000005215406,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 77.14000000059605,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.0,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "pulse174-6s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6008.885097999999,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:synthesizer",
+        "source:drums",
+        "character:rhythmic",
+        "character:staccato",
+        "source:xylophone",
+        "effect:percussion hit",
+        "effect:clave",
+        "character:percussive"
+      ],
+      "tempo": 172.3,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 20.155000001192093,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 17.990000000223517,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 945.8499999996275,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1370.425000000745,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 434.75500000081956,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 1292.7849999982864,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 2426.910000000149,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 2973.609999999404,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 3.0950000006705523,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 105.36500000022352,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.46000000089407,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 4
+    },
+    {
+      "id": "pulse174-10s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 7441.2539629999665,
+      "peakPageHeapBytes": 17100000,
+      "timedOut": false,
+      "labels": [
+        "source:synthesizer",
+        "character:rhythmic",
+        "character:warm",
+        "source:xylophone",
+        "effect:percussion hit"
+      ],
+      "tempo": 172.3,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "complete"
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ],
+      "workerSummary": {
+        "parse": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 2.825000001117587,
+          "runtimeIdentities": []
+        },
+        "warm": {
+          "requests": 4,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 17.345000000670552,
+          "runtimeIdentities": []
+        },
+        "rhythm": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1375.9000000003725,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "tonal": {
+          "requests": 3,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 1993.734999999404,
+          "runtimeIdentities": [
+            {
+              "backend": "essentia-wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "essentia-wasm-v1"
+            }
+          ]
+        },
+        "jamendo": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 679.125,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "profile": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 2,
+          "totalMs": 1354.5899999979883,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "tagger": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 2553.120000001043,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 1,
+              "identity": "wasm-threads-1-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 1
+            }
+          ]
+        },
+        "instruments": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 1,
+          "totalMs": 2919.710000000894,
+          "runtimeIdentities": [
+            {
+              "backend": "wasm",
+              "configuredInferenceThreads": 4,
+              "identity": "wasm-threads-4-v1",
+              "inferenceExecuted": true,
+              "effectiveInferenceThreads": 4
+            }
+          ]
+        },
+        "lexical": {
+          "requests": 1,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.929999999701977,
+          "runtimeIdentities": []
+        },
+        "music": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 93.875,
+          "runtimeIdentities": []
+        },
+        "cluster": {
+          "requests": 2,
+          "failed": 0,
+          "inferenceExecuted": 0,
+          "totalMs": 7.100000001490116,
+          "runtimeIdentities": []
+        }
+      },
+      "corpusWrites": 5
+    }
+  ],
+  "boundary": "File picker through saved terminal result, including polling/stability waits; sequential clips in a fresh browser context. First clip cold, others warm. Heap is page-only.",
+  "browser": "153.0.8010.0",
+  "hardware": {
+    "cores": 9,
+    "deviceMemoryGiB": 8,
+    "isolated": true
+  },
+  "rawRunSha256": "2872102f0c03b5fdfb85918f6719ef94118a48a3a122643738eee71e5a66bd6d",
+  "archiveNote": "Embedding vectors and verbose event traces omitted; worker request counts/times/identities summarized. Regenerate the raw run for detailed tracing and retrieval rescoring."
+}

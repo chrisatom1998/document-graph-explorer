@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "at": "2026-10-09T17:06:55.982Z",
+  "model": "dge-production",
+  "commit": "02c2d4a9474120672a19fec5ee159fd218202f0f",
+  "manifestSha256": "73249d1589191f86e45dceb67517d3d49d304ff1e993b5c7b88fd9ec459918ae",
+  "platform": "linux",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "logicalCpus": 9,
+  "node": "v24.19.0",
+  "rows": [
+    {
+      "id": "masb-1009674-T-1s",
+      "status": "complete",
+      "cold": true,
+      "elapsedMs": 20347.291926,
+      "peakPageHeapBytes": 18200000,
+      "timedOut": false,
+      "labels": [
+        "source:voice"
+      ],
+      "tempo": 129,
+      "key": null,
+      "notes": [
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ]
+    },
+    {
+      "id": "masb-1009674-T-2s",
+      "status": "complete",
+      "cold": false,
+      "elapsedMs": 6896.498646,
+      "peakPageHeapBytes": 18200000,
+      "timedOut": false,
+      "labels": [
+        "source:voice"
+      ],
+      "tempo": null,
+      "key": null,
+      "notes": [
+        "No steady tempo detected confidently (too few beats, free rhythm, or tempo changes).",
+        "No stable major/minor key detected confidently."
+      ],
+      "errors": [],
+      "jobs": [
+        {
+          "modelId": "ast",
+          "status": "complete"
+        },
+        {
+          "modelId": "jamendo",
+          "status": "unsupported",
+          "unsupportedReason": "At least 2.048 seconds of audio are required; no Jamendo inference ran."
+        },
+        {
+          "modelId": "clap",
+          "status": "complete"
+        },
+        {
+          "modelId": "rhythm",
+          "status": "complete"
+        },
+        {
+          "modelId": "tonal",
+          "status": "complete"
+        }
+      ]
+    }
+  ],
+  "boundary": "File picker through saved terminal result, including polling/stability waits; sequential clips in a fresh browser context. First clip cold, others warm. Heap is page-only.",
+  "browser": "153.0.8010.0",
+  "hardware": {
+    "cores": 9,
+    "deviceMemoryGiB": 8,
+    "isolated": true
+  },
+  "rawRunSha256": "48599b50d5875fd2270b0051ecb7ce37058df2218efc5278a63fd7d393ac8adc",
+  "archiveNote": "Two-input current-runtime smoke only; embedding vectors and verbose traces omitted."
+}
