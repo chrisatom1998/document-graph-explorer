@@ -20,8 +20,13 @@ import TrackVersions from './TrackVersions';
 import { camelotCode } from '../audio/mixSuggestions';
 import MusicNeighbours from './MusicNeighbours';
 import { energyFromScore, genreFromScores, genreText, styleName } from '../audio/genreEnergy';
-/** `onMessage` hands analysis status lines to the parent so the panel shows one status slot (the player shares it). */
-export default function MusicFeatures({ node, onSeek, onMessage }: { node: DocNode; onSeek?: (seconds: number) => void; onMessage?: (text: string) => void }) {
+/**
+ * The panel has one status line, rendered here: playback or action feedback
+ * (`status`, owned by the parent, which also receives this component's own
+ * messages through `onMessage`), any stored analysis warning on the node, and
+ * the analysis state with its fix inline.
+ */
+export default function MusicFeatures({ node, onSeek, onMessage, status }: { node: DocNode; onSeek?: (seconds: number) => void; onMessage?: (text: string) => void; status?: string }) {
   const job = useMusicJobs(s => s.jobs[node.id]);
   const phase = useGraphStore(s => s.phase);
   const nodes = useGraphStore(s => s.nodes);
@@ -29,8 +34,11 @@ export default function MusicFeatures({ node, onSeek, onMessage }: { node: DocNo
   const edges = useGraphStore(s => s.edges);
   const [controller, setController] = useState<AbortController | null>(null);
   const [ownMessage, setOwnMessage] = useState('');
-  const message = onMessage ? '' : ownMessage;
+  const feedback = onMessage ? status ?? '' : ownMessage;
   const setMessage = (text: string) => { if (onMessage) onMessage(text); else setOwnMessage(text); };
+  // Background analysis records a failure in node.warning without changing the
+  // node's status, so the warning is shown here on its own merits.
+  const statusText = [...new Set([feedback, node.warning].filter(Boolean))].join(' ');
   const analysis = node.audio;
   const confirmed = analysis ? confirmedInstrumentList(analysis) : undefined;
   const reviewedLabels = analysis ? resolvedNonSourceLabels(analysis) : [];
@@ -79,14 +87,15 @@ export default function MusicFeatures({ node, onSeek, onMessage }: { node: DocNo
     recognition: analysis.recognition, fusion: analysis.fusion, duration: analysis.durationSeconds, onSeek,
     reviews: analysis.soundReviews, confirmedInstruments: confirmed ?? []
   } : undefined;
+  const analysisState = analysis?.stage === 'preview'
+    ? job || phase === 'parsing' ? 'Quick estimate — still checking in the background.' : <>Quick estimate only{analysis.recognition && analysis.recognition.status !== 'complete' ? `; analysis ${analysis.recognition.status}` : ''}. Reanalyze to finish. <button type="button" className="music-status__action" disabled={phase !== 'ready' || !!controller} onClick={() => void run()}>Finish analysis</button></>
+    : analysis && (analysis.instrumentScan && !analysis.instrumentScan.complete || analysis.recognition && analysis.recognition.status !== 'complete')
+      ? <>Analysis: {analysis.recognition && analysis.recognition.status !== 'complete' ? analysis.recognition.status : 'incomplete'}. <button type="button" className="music-status__action" disabled={phase !== 'ready' || !!controller} onClick={() => void run()}>{controller ? 'Analyzing…' : 'Finish analysis'}</button></>
+      : null;
   return <section className="music-features" aria-label="Musical features">
     <h3 className="sr-only">Track details</h3>
-    {/* One line about the analysis state, with the fix inline instead of inside Track actions. */}
-    {analysis?.stage === 'preview'
-      ? <p role="status" className="music-status">{job || phase === 'parsing' ? 'Quick estimate — still checking in the background.' : <>Quick estimate only{analysis.recognition && analysis.recognition.status !== 'complete' ? `; analysis ${analysis.recognition.status}` : ''}. Reanalyze to finish. <button type="button" className="music-status__action" disabled={phase !== 'ready' || !!controller} onClick={() => void run()}>Finish analysis</button></>}</p>
-      : analysis && (analysis.instrumentScan && !analysis.instrumentScan.complete || analysis.recognition && analysis.recognition.status !== 'complete')
-        ? <p role="status" className="music-status">Analysis: {analysis.recognition && analysis.recognition.status !== 'complete' ? analysis.recognition.status : 'incomplete'}. <button type="button" className="music-status__action" disabled={phase !== 'ready' || !!controller} onClick={() => void run()}>{controller ? 'Analyzing…' : 'Finish analysis'}</button></p>
-        : null}
+    {/* One status line: feedback and warnings first, then the analysis state with the fix inline instead of inside Track actions. */}
+    {(statusText || analysisState) && <p role="status" className={analysisState || node.warning ? 'music-status' : undefined}>{statusText}{statusText && analysisState ? ' ' : ''}{analysisState}</p>}
     {analysis ? <>
       <dl className="music-stats">
         <div><dt>Length</dt><dd>{time(analysis.durationSeconds)}</dd></div>
@@ -107,6 +116,8 @@ export default function MusicFeatures({ node, onSeek, onMessage }: { node: DocNo
       <MusicNeighbours node={node} nodes={nodes} nodeIndex={nodeIndex} edges={edges} />
       <details className="music-analysis-details">
         <summary>Technical details</summary>
+        {/* Retry guidance from the analysis itself: a missing structure pass, a model or tagger that failed to load. */}
+        {analysis.notes.length > 0 && <ul aria-label="Analysis notes">{analysis.notes.map((note, index) => <li key={index}>{note}</li>)}</ul>}
         <OtherModelGuesses profile={displayProfile} confirmedDjTags={analysis.confirmedDjTags ? confirmedTags : undefined} reviewedLabels={reviewedLabels}
           skipSource={confirmed !== undefined || !!hints.instruments} exclude={shownSounds} />
         <MainSoundAttributes audio={analysis} node={node} />
@@ -141,6 +152,5 @@ export default function MusicFeatures({ node, onSeek, onMessage }: { node: DocNo
     <button type="button" aria-label={analysis ? 'Reanalyze musical features' : 'Analyze musical features'} disabled={phase !== 'ready' || !!controller} onClick={() => void run()}>{controller ? 'Analyzing…' : analysis ? 'Reanalyze' : 'Analyze track'}</button>
     {controller && <button type="button" onClick={() => controller.abort()}>Cancel analysis</button>}
     </details>
-    {message && <p role="status">{message}</p>}
   </section>;
 }

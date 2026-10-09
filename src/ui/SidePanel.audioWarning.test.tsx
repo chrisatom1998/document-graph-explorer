@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, act } from '@testing-library/react';
 import type { DocNode } from '../model/types';
 
 vi.mock('../pipeline/coordinator', () => ({ removeDocuments: vi.fn() }));
+vi.mock('../persistence/originals', () => ({ getOriginal: vi.fn(async () => undefined) }));
 
 import { PENDING_MUSIC_ANALYSIS_WARNING } from '../audio/parseAudio';
 import SidePanel from './SidePanel';
@@ -17,23 +18,48 @@ const clip: DocNode = {
   status: 'ok', warning: 'This audio could not be decoded for music analysis.',
 };
 
-describe('SidePanel audio warning', () => {
-  afterEach(() => cleanup());
+function select(node: DocNode) {
+  useGraphStore.setState({ nodes: [node], nodeIndex: { clip1: 0 }, edges: [], clusterNames: {}, localClusterNames: {} });
+  useUiStore.getState().setSelected('clip1');
+}
 
-  // Music analysis failures set only `warning` and leave status ok; the inline
-  // inspector must still tell the user the file could not be analysed.
-  it('shows a music-analysis warning on an audio clip whose status is ok', () => {
-    useGraphStore.setState({ nodes: [clip], nodeIndex: { clip1: 0 }, edges: [], clusterNames: {}, localClusterNames: {} });
-    useUiStore.getState().setSelected('clip1');
-    render(<SidePanel inline />);
-    expect(screen.getByText(/could not be decoded for music analysis/)).toBeInTheDocument();
+describe('SidePanel audio warning', () => {
+  afterEach(() => { cleanup(); useUiStore.getState().setSelected(null); useGraphStore.getState().reset(); });
+
+  it.each([true, false])('shows exactly one complete decode warning with inline=%s and clears it on recovery', async (inline) => {
+    select(clip);
+    render(<SidePanel inline={inline} />);
+    await screen.findByText(/Audio is not saved here/);
+    expect(screen.getAllByText(/could not be decoded for music analysis/)).toHaveLength(1);
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent(clip.warning!);
+    expect(document.querySelector('.side-panel__badge-warning')).toBeNull();
+    act(() => select({ ...clip, warning: undefined }));
+    expect(screen.queryByText(/could not be decoded for music analysis/)).not.toBeInTheDocument();
   });
 
-  it('does not show the pending-analysis placeholder as a failure', () => {
-    const pending: DocNode = { ...clip, title: 'Queued', warning: PENDING_MUSIC_ANALYSIS_WARNING };
-    useGraphStore.setState({ nodes: [pending], nodeIndex: { clip1: 0 }, edges: [], clusterNames: {}, localClusterNames: {} });
-    useUiStore.getState().setSelected('clip1');
+  it('keeps pending analysis visible as neutral status, without a failure chip', async () => {
+    select({ ...clip, warning: PENDING_MUSIC_ANALYSIS_WARNING });
     render(<SidePanel inline />);
-    expect(screen.queryByText(/Music analysis is pending/)).not.toBeInTheDocument();
+    await screen.findByText(/Audio is not saved here/);
+    expect(screen.getAllByText(/Music analysis is pending/)).toHaveLength(1);
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent(PENDING_MUSIC_ANALYSIS_WARNING);
+    expect(screen.queryByText(/⚠/)).not.toBeInTheDocument();
+    expect(document.querySelector('.side-panel__badge-warning')).toBeNull();
+  });
+
+  it('does not repeat a warning when parsing also reports an error status', async () => {
+    select({ ...clip, status: 'unreadable' });
+    render(<SidePanel inline />);
+    await screen.findByText(/Audio is not saved here/);
+    expect(screen.getAllByText(/could not be decoded for music analysis/)).toHaveLength(1);
+    expect(screen.getByRole('status')).toHaveTextContent(clip.warning!);
+  });
+
+  it('retains a bare error status when no warning detail is available', () => {
+    select({ ...clip, status: 'unreadable', warning: undefined });
+    render(<SidePanel inline />);
+    expect(screen.getByText('⚠ unreadable')).toBeInTheDocument();
   });
 });
