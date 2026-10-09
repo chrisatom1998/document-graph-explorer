@@ -87,6 +87,8 @@ export default function MusicFeatures({ node, onSeek, onMessage }: { node: DocNo
       : analysis && (analysis.instrumentScan && !analysis.instrumentScan.complete || analysis.recognition && analysis.recognition.status !== 'complete')
         ? <p role="status" className="music-status">Analysis: {analysis.recognition && analysis.recognition.status !== 'complete' ? analysis.recognition.status : 'incomplete'}. <button type="button" className="music-status__action" disabled={phase !== 'ready' || !!controller} onClick={() => void run()}>{controller ? 'Analyzing…' : 'Finish analysis'}</button></p>
         : null}
+    {analysis?.stage === 'preview' && analysis.recognition && analysis.recognition.status !== 'complete' &&
+      <p role="status" className="music-status">Analysis: {analysis.recognition.status}.</p>}
     {analysis ? <>
       <dl className="music-stats">
         <div><dt>Length</dt><dd>{time(analysis.durationSeconds)}</dd></div>
