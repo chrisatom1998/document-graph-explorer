@@ -56,10 +56,15 @@ export function createLunaReviewer(client: OpenAI, configuration: Partial<LunaLi
       const aborted = new Promise<never>((_, reject) => controller.signal.addEventListener('abort', () => reject(Error('Luna stopped.')), { once: true }));
       const response = await Promise.race([task, aborted]);
       if (controller.signal.aborted || response.status !== 'completed' || response.output_text.length > 24_000) throw Error('Incomplete Luna response.');
-      const report: LunaReport = { model: LUNA_MODEL, policy: LUNA_POLICY, samples: mergeLunaResponse(JSON.parse(response.output_text), samples), status: 'complete', cached: false,
-        ...(response.usage ? { usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens, cachedInputTokens: response.usage.input_tokens_details.cached_tokens } } : {}) };
-      while (cache.size >= limits.cacheEntries) cache.delete(cache.keys().next().value!);
-      cache.set(key, { at: Date.now(), report: structuredClone(report) });
+      const merged = mergeLunaResponse(JSON.parse(response.output_text), samples);
+      const reported = response.usage;
+      const report: LunaReport = { model: LUNA_MODEL, policy: LUNA_POLICY, samples: merged, status: 'complete', cached: false,
+        ...(reported ? { usage: { inputTokens: reported.input_tokens, outputTokens: reported.output_tokens, cachedInputTokens: reported.input_tokens_details?.cached_tokens ?? 0 } } : {}) };
+      // A cache miss must not turn a validated review into a provider failure.
+      try {
+        while (cache.size >= limits.cacheEntries) cache.delete(cache.keys().next().value!);
+        cache.set(key, { at: Date.now(), report: structuredClone(report) });
+      } catch { /* keep the completed review */ }
       return report;
     } catch { return fallback('Luna was unavailable or returned invalid evidence. Existing detector results are unchanged.'); }
     finally { active--; clearTimeout(timeout); signal.removeEventListener('abort', cancel); }

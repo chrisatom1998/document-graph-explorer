@@ -47,6 +47,7 @@ export function lunaEvidence(audio: MusicAnalysis, index: number): LunaSample {
   const shown = confidentSoundSummary(audio).filter(s => s.origin === 'model estimate');
   const acceptedEvidence = new Set(audio.recognition?.observations.filter(o => o.status === 'accepted').flatMap(o => o.evidenceIds) ?? []);
   const supportedShown = new Set(shown.filter(s => !s.maybe && !s.uncalibrated).map(s => `${s.dimension}:${s.label}`));
+  const supportedInGroup = (group: DjGroup, label: string) => shown.some(s => groupFor(s.dimension) === group && s.label === label && !s.maybe && !s.uncalibrated);
   const labels: LunaLabel[] = [];
   let truncated = false;
   const add = (group: DjGroup, originalLabel: string, sourceModel: string, score: number | null, coverage: Interval[] | null, supported: boolean, ambiguous: boolean) => {
@@ -90,10 +91,10 @@ export function lunaEvidence(audio: MusicAnalysis, index: number): LunaSample {
   }
   for (const t of audio.soundProfile?.djTags ?? []) add(t.group, t.label, t.model ?? 'Sound tag model', t.score,
     t.windowEvidence?.windows.map(w => ({ start: w.start, end: w.end })) ?? t.segments ?? null,
-    shown.some(s => s.label === t.label), false);
+    supportedInGroup(t.group, t.label), false);
   for (const t of audio.instruments) add('source', t.label, 'Instrument model', t.score,
     t.windowEvidence?.windows.map(w => ({ start: w.start, end: w.end })) ?? t.segments ?? null,
-    shown.some(s => s.label === t.label), false);
+    supportedInGroup('source', t.label), false);
   const confirmedNonSource = resolvedNonSourceLabels(audio).filter(l => l.source === 'confirmed');
   const protectedLabels = Object.fromEntries((Object.keys(LUNA_TAXONOMY) as DjGroup[]).map(group => [group,
     LUNA_TAXONOMY[group].filter(label => (group === 'source' ? !sourceReviewAllows(audio, label) : !djReviewAllows(audio, group, label)) || confirmedNonSource.some(l => l.group === group && l.label === label))])) as Record<DjGroup, string[]>;

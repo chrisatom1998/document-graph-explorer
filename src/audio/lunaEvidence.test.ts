@@ -11,6 +11,32 @@ describe('Luna evidence boundary', () => {
     expect(evidence.truncated).toBe(true);
     expect(evidence.labels.find(l => l.sourceModel === 'Instrument model')?.coverage).toEqual(segments.slice(0, 128).map(({ start, end }) => ({ start, end })));
   });
+  it('does not treat maybe, uncalibrated, or other-dimension rows as supported', () => {
+    const evidence = lunaEvidence({ version: 2, durationSeconds: 30, analyzedSeconds: 30, notes: [],
+      instruments: [{ label: 'piano', score: .8 }, { label: 'synthesizer', score: .8 }, { label: 'kick', score: .8 }],
+      soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false, djTags: [
+        { group: 'source', label: 'piano', score: .9, model: 'Trained head (maybe)' },
+        { group: 'source', label: 'synthesizer', score: .9, model: 'Trained head' },
+        { group: 'source', label: 'banjo', score: .8, model: 'Music CLAP' },
+        { group: 'production', label: 'kick', score: .8, model: 'Trained head' },
+      ] } }, 0);
+    const row = (sourceModel: string, originalLabel: string) => evidence.labels.find(l => l.sourceModel === sourceModel && l.originalLabel === originalLabel);
+    expect(row('Trained head (maybe)', 'piano')?.supported).toBe(false);
+    expect(row('Instrument model', 'piano')?.supported).toBe(false);
+    expect(row('Music CLAP', 'banjo')?.supported).toBe(false);
+    expect(row('Instrument model', 'kick')?.supported).toBe(false);
+    expect(row('Trained head', 'synthesizer')?.supported).toBe(true);
+    expect(row('Instrument model', 'synthesizer')?.supported).toBe(true);
+    expect(row('Trained head', 'kick')?.supported).toBe(true);
+    const routed = deterministicLuna(lunaEvidence({ version: 2, durationSeconds: 30, analyzedSeconds: 30, notes: [],
+      instruments: [{ label: 'piano', score: .8 }],
+      soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false, djTags: [
+        { group: 'source', label: 'piano', score: .9, model: 'Trained head (maybe)' },
+        { group: 'source', label: 'synthesizer', score: .9, model: 'Trained head' },
+      ] } }, 0));
+    expect(routed.signals).toContain('few-supported-labels');
+    expect(routed.signals).not.toContain('detector-disagreement');
+  });
   it('preserves a saved audio model proposal and its actual excerpt without inventing a score', () => {
     const evidence = lunaEvidence({ version: 2, durationSeconds: 30, analyzedSeconds: 30, instruments: [], notes: [],
       copilotProperties: { model: 'gpt-audio-1.5', tags: { source: ['voice'], production: [], character: [] }, audioExcerpt: { startSeconds: 0, durationSeconds: 10 } } }, 0);

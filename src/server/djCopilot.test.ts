@@ -34,6 +34,18 @@ describe('copilot server', () => {
     expect(service.review).not.toHaveBeenCalled();
     expect((await post('/review-luna', JSON.stringify({ samples: [{ ...lunaSample, labels: Array(65).fill(lunaSample.labels[0]) }] }))).status).toBe(400);
   });
+  it('accepts a five-sound Luna selection at the evidence caps', async () => {
+    const service = backend();
+    service.lunaReview = vi.fn(async (): Promise<LunaReport> => ({ model: LUNA_MODEL, policy: LUNA_POLICY, status: 'complete', cached: false, samples: [deterministicLuna(lunaSample)] }));
+    const post = await start(service);
+    const coverage = Array.from({ length: 128 }, (_, i) => ({ start: i, end: i + .5 }));
+    const labels = Array.from({ length: 64 }, (_, i) => ({ id: `e${i + 1}`, group: 'source', originalLabel: 'voice', sourceModel: 'ast', score: .5, supported: true, ambiguous: false, coverage }));
+    const samples = [1, 2, 3, 4, 5].map(n => ({ ref: `Sample ${n}`, durationSeconds: 128, truncated: true, locked: lunaSample.locked, protectedLabels: lunaSample.protectedLabels, labels }));
+    const body = JSON.stringify({ samples });
+    expect(Buffer.byteLength(body)).toBeGreaterThan(262144);
+    expect((await post('/review-luna', body)).status).toBe(200);
+    expect(service.lunaReview).toHaveBeenCalledOnce();
+  });
   it('routes validated listening excerpts and blocks invalid audio and cross-origin uploads', async () => {
     const service = backend();
     service.audioReview = vi.fn(async () => ({ answer: 'An excerpt review.', model: 'gpt-audio-1.5', sessionId: '', turnId: 'chat' }));

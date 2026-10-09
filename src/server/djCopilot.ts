@@ -9,6 +9,8 @@ import { MAX_LISTENING_REQUEST_BYTES, type ListeningClip, type ListeningCoverage
 import { parseListeningClips, reviewAudio } from './gptAudioReview';
 import { parseLunaSamples, type LunaReport, type LunaSample } from '../audio/lunaEvidence';
 import { configuredLunaLimits, createLunaReviewer } from './lunaReview';
+/** parseLunaSamples accepts 5 samples × 64 labels × 128 windows. That JSON is larger than 256 KiB, including escaped 100-character names. */
+const MAX_LUNA_REQUEST_BYTES = 3_200_000;
 
 export const COPILOT_MODEL = 'gpt-6.1-sol';
 export const TRANSCRIBE_MODEL = 'gpt-transcribe';
@@ -167,7 +169,7 @@ export function createCopilotHandler(apiKey: string, backend?: CopilotBackend) {
       const chunks: Buffer[] = []; let bytes = 0;
       for await (const chunk of req) {
         bytes += chunk.length;
-        if (bytes > (transcription ? MAX_TRANSCRIPTION_BYTES : listening ? MAX_LISTENING_REQUEST_BYTES : path === '/review-luna' ? 262144 : 48000)) return reply(res, 413, { error: 'The copilot request is too large.' });
+        if (bytes > (transcription ? MAX_TRANSCRIPTION_BYTES : listening ? MAX_LISTENING_REQUEST_BYTES : path === '/review-luna' ? MAX_LUNA_REQUEST_BYTES : 48000)) return reply(res, 413, { error: 'The copilot request is too large.' });
         chunks.push(Buffer.from(chunk));
       }
       const body = Buffer.concat(chunks);

@@ -38,6 +38,16 @@ describe('bounded Luna provider', () => {
     const malformed = createLunaReviewer({ responses: { create: async () => ({ ...complete(), status: 'incomplete' }) } } as never);
     expect((await malformed([sample], signal())).status).toBe('fallback');
   });
+  it('keeps a completed review when cached token details are absent', async () => {
+    const create = vi.fn(async () => ({ status: 'completed', output_text: JSON.stringify({ samples: [{ ref: 'Sample 1', normalizations: [{ id: 'e2', canonicalLabel: 'piano' }], review: 'recommend', reason: 'The keys label is ambiguous.' }] }), usage: { input_tokens: 100, output_tokens: 40 } }));
+    const review = createLunaReviewer({ responses: { create } } as never, { maxRequests: 1 });
+    const report = await review([sample], signal());
+    expect(report.status).toBe('complete');
+    expect(report.samples[0].labels[1]).toMatchObject({ canonicalLabel: 'piano', method: 'luna' });
+    expect(report.usage).toEqual({ inputTokens: 100, outputTokens: 40, cachedInputTokens: 0 });
+    expect((await review([sample], signal())).cached).toBe(true);
+    expect(create).toHaveBeenCalledOnce();
+  });
   it('invalidates cached results when source evidence or coverage changes', async () => {
     const create = vi.fn(async () => complete()); const review = createLunaReviewer({ responses: { create } } as never);
     await review([sample], signal());
