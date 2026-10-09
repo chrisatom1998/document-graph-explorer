@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGraphStore } from '../store/graphStore';
 import { useMusicJobs } from '../store/musicJobs';
 import { useUiStore } from '../store/uiStore';
-import { CHUNK_NETWORK_MESSAGE, STALE_BUILD_MESSAGE, recoverFromChunkError } from './staleBuild';
+import { CHUNK_NETWORK_MESSAGE, STALE_BUILD_MESSAGE, holdReload, recoverFromChunkError } from './staleBuild';
 
 const chunkError = new TypeError('Failed to fetch dynamically imported module: https://example.test/assets/coordinatorLazy-old.js');
 
@@ -48,5 +48,20 @@ describe('stale build recovery', () => {
     expect(recoverFromChunkError(chunkError)).toBe(true);
     expect(reload).not.toHaveBeenCalled();
     expect(toasts()).toContain(STALE_BUILD_MESSAGE);
+  });
+
+  it('keeps a picked selection: no reload while files are being handed to the import', () => {
+    const release = holdReload();
+    expect(recoverFromChunkError(chunkError)).toBe(true);
+    expect(reload).not.toHaveBeenCalled();
+    expect(toasts()).toContain(STALE_BUILD_MESSAGE);
+    release();
+  });
+
+  it('does not reload when the reload guard cannot be stored', () => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('QuotaExceededError'); });
+    expect(recoverFromChunkError(chunkError)).toBe(true);
+    expect(reload).not.toHaveBeenCalled();
+    setItem.mockRestore();
   });
 });

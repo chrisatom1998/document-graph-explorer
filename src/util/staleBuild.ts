@@ -23,9 +23,26 @@ export function isChunkLoadError(error: unknown): boolean {
   return CHUNK_ERROR.test(message);
 }
 
+let held = 0;
+
+/**
+ * Block the automatic reload while the caller holds files the user picked
+ * (before the import pipeline has them), so a failed chunk shows a message
+ * instead of discarding the selection. Call the returned function when done.
+ */
+export function holdReload(): () => void {
+  held += 1;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    held -= 1;
+  };
+}
+
 function busy(): boolean {
   const phase = useGraphStore.getState().phase;
-  return (phase !== 'idle' && phase !== 'ready') || Object.keys(useMusicJobs.getState().jobs).length > 0;
+  return held > 0 || (phase !== 'idle' && phase !== 'ready') || Object.keys(useMusicJobs.getState().jobs).length > 0;
 }
 
 function recentlyReloaded(now: number): boolean {
@@ -51,9 +68,17 @@ export function recoverFromChunkError(error: unknown): boolean {
   if (now - lastHandledAt < 2_000) return true;
   lastHandledAt = now;
   if (!busy() && !recentlyReloaded(now)) {
-    try { sessionStorage.setItem(RELOAD_KEY, String(now)); } catch { /* checked in recentlyReloaded */ }
-    window.location.reload();
-    return true;
+    let marked = false;
+    try {
+      sessionStorage.setItem(RELOAD_KEY, String(now));
+      marked = sessionStorage.getItem(RELOAD_KEY) === String(now);
+    } catch { /* storage unavailable */ }
+    // Without the marker the next failure could reload again, so only reload
+    // when the guard is actually stored.
+    if (marked) {
+      window.location.reload();
+      return true;
+    }
   }
   useUiStore.getState().pushToast(recentlyReloaded(now) ? CHUNK_NETWORK_MESSAGE : STALE_BUILD_MESSAGE, 'warning');
   return true;

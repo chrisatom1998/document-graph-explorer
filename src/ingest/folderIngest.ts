@@ -9,7 +9,7 @@
 import { useUiStore } from '../store/uiStore';
 import type { NamedFile } from './localFiles';
 import { reportReadFailures, type ReadFailure } from './readFailures';
-import { recoverFromChunkError } from '../util/staleBuild';
+import { holdReload, recoverFromChunkError } from '../util/staleBuild';
 
 async function ingestScannedFolder(named: NamedFile[], folderName: string): Promise<void> {
   if (named.length === 0) {
@@ -36,6 +36,7 @@ export async function ingestPickedDirectory(
     useUiStore.getState().pushToast("Couldn't open that folder. Try again or pick a different folder.");
     return;
   }
+  const release = holdReload();
   try {
     const { scanFolder } = await import('./folderScanner');
     const failures: ReadFailure[] = [];
@@ -46,12 +47,15 @@ export async function ingestPickedDirectory(
     console.error('folder scan failed', error);
     if (recoverFromChunkError(error)) return;
     useUiStore.getState().pushToast("That folder could not be read. Try again.");
+  } finally {
+    release();
   }
 }
 
 /** Fallback path: run a flat <input webkitdirectory> selection through the scan filters. */
 export async function ingestPickedFolderFiles(files: File[]): Promise<void> {
   if (files.length === 0) return;
+  const release = holdReload();
   try {
     const { scanPickedFolderFiles } = await import('./folderScanner');
     const failures: ReadFailure[] = [];
@@ -63,5 +67,7 @@ export async function ingestPickedFolderFiles(files: File[]): Promise<void> {
     console.error('folder scan failed', error);
     if (recoverFromChunkError(error)) return;
     useUiStore.getState().pushToast("That folder could not be read. Try again.");
+  } finally {
+    release();
   }
 }
