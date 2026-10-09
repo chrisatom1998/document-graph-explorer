@@ -29,3 +29,19 @@ benchmark; DJ effects and character accuracy are explicitly unproven.
 The [runner instructions](../../../scripts/luna-evaluation/README.md) describe the
 fixed 10-clip development / 10-clip artist-disjoint held-out split, privacy boundary,
 per-category metrics, conservative $5 spending gate and reproducibility records.
+
+## Implementation validation
+
+- Full regression run: 345 test files passed, 2,694 tests passed, one skipped.
+- Final coverage-bound change: all 36 focused evidence, server and UI tests passed.
+- Evaluator scoring and budget tests: all seven passed.
+- `npm run lint`, `npm run typecheck`, `npm run build`,
+  `npm run build:airgap` and `npm run check:bundle` passed after the final change.
+- Production-build Playwright music-assistant test passed on desktop and mobile,
+  including the Luna section and disabled static-build action. It used the
+  environment's existing Chromium executable.
+- Runtime asset checks passed; the air-gapped build contains zero external
+  service hosts. The branch diff contains no credential patterns.
+
+These checks validate implementation behavior, not live model accuracy. The full
+browser matrix and platform packaging remain CI checks; no merge was performed.

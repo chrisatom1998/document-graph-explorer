@@ -20,9 +20,9 @@
     "Policies frozen before labels are scored. No acceptance thresholds are changed.",
     "Latency includes provider and excerpt preparation; native latency is not recoverable from graph exports."
   ],
-  "runnerSha256": "89ade169dc44e0ddd277bca3338b2448cdec5b4f3291ca5aabb9346804cceae7",
-  "appCommit": "d0dc36ad0fa073042d784802b2fe0b9b9caa7707",
-  "dirty": true,
+  "runnerSha256": "6109f01bb23b4beb5748a9e08634a885d0eba4c24bad75a310bedb07ce3094c6",
+  "appCommit": "07b8d0e826895b0737631d0413c3c3e407d87bf0",
+  "dirty": false,
   "pricesVerified": "2026-10-09",
   "pricesSource": [
     "https://developers.openai.com/api/docs/models/gpt-6-luna",
