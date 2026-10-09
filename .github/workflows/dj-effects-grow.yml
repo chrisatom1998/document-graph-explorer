@@ -136,18 +136,18 @@ jobs:
           mkdir -p work/emb
           pids=(); for s in 0 1 2 3; do THREADS=1 node scripts/embed-clap.mjs work/fs/manifest.json work/emb/emb-${{ matrix.shard }}-$s.jsonl $s 4 > work/emb-$s.log 2>&1 & pids+=($!); done
           rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/emb-*.log; exit $rc
-      - name: Save fingerprints
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: work/emb
-          key: dj-grow-emb-${{ matrix.shard }}-${{ hashFiles('work/shard.json', 'scripts/embed-clap.mjs') }}-${{ github.run_id }}
       - name: Render effects onto this shard's training-split music clips (training only)
         run: PER_EFFECT=55 python3 scripts/dj-effects/render.py work/fs/manifest.json work/render
       - name: Fingerprint the renders
         run: |
           pids=(); for s in 0 1 2 3; do THREADS=1 node scripts/embed-clap.mjs work/render/manifest.json work/emb/emb-r${{ matrix.shard }}-$s.jsonl $s 4 > work/remb-$s.log 2>&1 & pids+=($!); done
           rc=0; for p in "${pids[@]}"; do wait $p || rc=1; done; tail -n 3 work/remb-*.log; exit $rc
+      - name: Save fingerprints
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: work/emb
+          key: dj-grow-emb-${{ matrix.shard }}-${{ hashFiles('work/shard.json', 'scripts/embed-clap.mjs') }}-${{ github.run_id }}
       - name: Measure clip durations
         run: |
           python3 - <<'EOF'
