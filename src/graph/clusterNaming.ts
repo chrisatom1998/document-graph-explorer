@@ -23,6 +23,9 @@ import type { DocNode } from '../model/types';
 /** Soft cap on label length: drop the second keyword rather than truncate. */
 const MAX_NAME_LENGTH = 32;
 
+/** Keywords shorter than this may be record-code stems ("dat" from DAT-1082). */
+const STEM_LENGTH = 4;
+
 function titleCase(term: string): string {
   return term
     .split(/\s+/)
@@ -71,10 +74,16 @@ export function computeLocalClusterNames(nodes: DocNode[]): Record<number, strin
       score: inClusterDocFreq * Math.log(1 + totalDocs / (1 + (globalDf.get(kw) ?? 0))),
     }));
     scored.sort((a, b) => b.score - a.score || a.kw.localeCompare(b.kw));
-    // Record codes ("DAT-1082") leave three-letter stems in the keyword list;
-    // a label like "Dat & Data Platform" reads as a bug, so stems only name a
-    // cluster when nothing longer is available.
-    const words = scored.filter((s) => s.kw.length >= 4);
+    // Record codes ("DAT-1082") leave three-letter stems in the keyword list,
+    // and "Dat & Data Platform" reads as a bug. A stem is only a short keyword
+    // that a longer keyword in the same cluster begins with; short words that
+    // stand on their own (API, SQL, AI, art) stay in the running. The prefixes
+    // are collected once so a cluster with many keywords stays linear.
+    const prefixes = new Set<string>();
+    for (const { kw } of scored) {
+      for (let len = 1; len < Math.min(STEM_LENGTH, kw.length); len++) prefixes.add(kw.slice(0, len));
+    }
+    const words = scored.filter((s) => s.kw.length >= STEM_LENGTH || !prefixes.has(s.kw));
     ranked.set(cluster, (words.length > 0 ? words : scored).map((s) => s.kw));
   }
 

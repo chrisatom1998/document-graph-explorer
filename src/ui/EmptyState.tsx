@@ -68,7 +68,7 @@ export default function EmptyState() {
             </p>
           </div>
           <ul className="empty-state__trust-list" aria-label="Privacy and access">
-            <li><span aria-hidden="true" />Everything runs in this browser. No account, no upload.</li>
+            <li><span aria-hidden="true" />Runs in this browser with no account. Nothing is uploaded unless you turn on a cloud AI provider.</li>
           </ul>
         </aside>
         <div className="empty-state__content">
