@@ -41,6 +41,8 @@ from labelmap import CAT, FREESOUND, FSLD_ROLES, SAME  # noqa: E402
 # Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
 # sources' labels below wherever one names the same sound.
 CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS] + [f'cat:{l}' for l in CAT] + [f'fsld:{r}' for r in FSLD_ROLES]
+from labels_extra import EXTRA_CAT, RUN9_TAGS  # noqa: E402  (run 7: outputs only the uncached sources label)
+CLASSES += [f'cat:{l}' for l in EXTRA_CAT if l not in CAT]
 ALIAS = {'voice': 'voice', 'piano': 'piano', 'organ': 'organ', 'trumpet': 'trumpet', 'drums': 'drums', 'guitar': 'guitar', 'synthesizer': 'synthesizer',
          'mallet_percussion': 'mallet instrument', 'accordion': 'accordion', 'flute': 'flute', 'cymbals': 'cymbal',
          'jamendo:electricguitar': 'electric guitar', 'jamendo:acousticguitar': 'acoustic guitar', 'jamendo:electricpiano': 'electric piano',
@@ -56,6 +58,9 @@ def load_source(name, mel_path, items, weak):
     for i, it in enumerate(items):
         weak_set = set(it.get('weakAbsent', []))
         labels = dict(it['labels'])
+        if it.get('weakAll') == 'run9':   # run 9 (prepare-run9.py): every run 9 tag the item does not list is a weak absence
+            for l in RUN9_TAGS:
+                if f'cat:{l}' not in labels: labels[f'cat:{l}'] = 0.0; weak_set.add(f'cat:{l}')
         for c, l in ALIAS.items():   # the same sound under the app's name, unless the source labels that name itself
             if c in labels and f'cat:{l}' not in labels: labels[f'cat:{l}'] = labels[c]; weak_set |= {f'cat:{l}'} if c in weak_set else set()
         for c, r in labels.items():
@@ -90,6 +95,7 @@ def main():
     ap.add_argument('--extra', action='append', default=[], help='<name>=<dir> holding <name>-mel.npy + <name>.json (prepare-extra.py, Slakh)')
     ap.add_argument('--hours', type=float, default=0, help='training time budget: after epoch 1, cut the epoch count (and its cosine schedule) to fit')
     ap.add_argument('--init', help='start from this model.pt (an earlier run); classifier rows are matched by class name')
+    ap.add_argument('--repeat', default='', help='name=k,...: times each training window of that source is seen per epoch (e.g. iowa=2,chrisdrive=4)')
     args = ap.parse_args()
     dev = torch.device(args.device)
     torch.set_num_threads(args.threads); torch.manual_seed(0); rng = np.random.default_rng(0)
@@ -117,8 +123,9 @@ def main():
     rare = {c for c in CLASSES if c in args.rare_tags.split(',') or SAME.get(c) in names or c[4:] in names and c.startswith('cat:')}
     rare_cols = np.array(sorted(CLASSES.index(c) for c in rare), int)
     for src in sources: src['rare'] = (src['y'][:, rare_cols] >= 0.5).any(1) if len(rare_cols) else np.zeros(len(src['y']), bool)
+    src_repeat = {k: int(v) for k, v in (p.split('=') for p in args.repeat.split(',') if p)}
     pool = [(s, i) for s, src in enumerate(sources) for i in np.flatnonzero(~src['val'])[:args.limit or None]
-            for _ in range(max(args.dj_repeat if src['dj'][i] else 1, args.rare_repeat if src['rare'][i] else 1))]
+            for _ in range(max(args.dj_repeat if src['dj'][i] else 1, args.rare_repeat if src['rare'][i] else 1, src_repeat.get(src['name'], 1)))]
     vals = {src['name']: np.flatnonzero(src['val'])[:(args.limit // 8 + 8) if args.limit else None] for src in sources}
     print(f'{len(pool)} train windows per epoch ({sum(int((s["dj"] & ~s["val"]).sum()) for s in sources)} DJ/electronic windows, seen {args.dj_repeat}x; '
           f'{sum(int((s["rare"] & ~s["val"]).sum()) for s in sources)} windows with {sorted(rare)}, seen {args.rare_repeat}x) ' + ', '.join(f'{s["name"]} {int((~s["val"]).sum())}' for s in sources) +

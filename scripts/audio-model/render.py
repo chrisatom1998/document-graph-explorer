@@ -108,3 +108,12 @@ def apply(name, x, seed):
     if not np.isfinite(y).all(): return None
     y = y * rms(x) / rms(y); y *= min(1.0, .95 / (np.abs(y).max() + 1e-9))
     return None if rms(y) < .25 * rms(x) else y
+
+# Effects rendered onto real music windows (Mixing Secrets songs, Chris's train-half loops and stems) for run 7:
+# the processing tags plus the DJ edits that stay recognisable on a full mix.
+MUSIC_FX = ['bitcrushed', 'flanged', 'chorused', 'saturated', 'filtered', 'reverberant', 'echoing', 'rising', 'falling',
+            'distorted', 'stutter effect', 'reverse effect', 'wobbling', 'pulsing', 'gliding']
+# Effects a dry real recording almost never carries, so a dry window can count as a (weak) absence of them.
+CLEAR_FX = ['bitcrushed', 'flanged', 'rising', 'falling', 'stutter effect', 'reverse effect', 'gliding']
+# Edits that rearrange the audio in time, after which a loop's own tags (e.g. 'drum loop') may no longer hold.
+TIME_EDITS = {'stutter effect', 'reverse effect', 'rising', 'falling', 'gliding'}

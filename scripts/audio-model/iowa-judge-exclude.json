@@ -1,0 +1,3386 @@
+{
+"about": "University of Iowa MIS notes in the free-tag-set judge set (/mnt/project-files/datasets/free-tag-set/audio/iowa-mis, 483 files). prepare-iowa.py never trains on a file whose name key, file sha256 or decoded 32 kHz mono PCM md5 matches one of these.",
+"files": [
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.A4.stereo.aif",
+"key": "a4.bassoon.ff",
+"sha256": "d2e841ead5a9c643b1aa4d1f1ef36a597c0d67c4488e92d49de51b84d441f1a5",
+"pcm32kMonoMd5": "417e16ae6c93ae9b93f8269d92c91380"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.Ab2.stereo.aif",
+"key": "ab2.bassoon.ff",
+"sha256": "2db56b753818ac1a12549458937c6ed3e27a6d6d2f188c08520a83ea6c3c22bf",
+"pcm32kMonoMd5": "04d22dfc5b38e55a4a9cc0ec26ac1dfb"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.Ab3.stereo.aif",
+"key": "ab3.bassoon.ff",
+"sha256": "1477c308399b77b7e0d1bf7321fcb91a85b837802c605e8ed24db1ee02419348",
+"pcm32kMonoMd5": "4c9a89d6ad0aa9115119750c9135a9b4"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.B4.stereo.aif",
+"key": "b4.bassoon.ff",
+"sha256": "814b16b755e2b61e30ff2bb0d2b3126b0c630a3613686b7f5392e42692cc3cde",
+"pcm32kMonoMd5": "fc3bd743db31ec7364055a0c8658368e"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.Bb1.stereo.aif",
+"key": "bassoon.bb1.ff",
+"sha256": "dac6ffa4432dee663b49662cd7d1812d5a150f0cb9d7469906b3370f2489f8e9",
+"pcm32kMonoMd5": "ac7b126335a7a1e725c707696b00afa1"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.Bb2.stereo.aif",
+"key": "bassoon.bb2.ff",
+"sha256": "dc23bf207812ac2e30711e69430e6721fbc5ceb756a9686b59bf50d28b139f6d",
+"pcm32kMonoMd5": "76c5cc1ffa5632af7017223580327ab1"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.Bb3.stereo.aif",
+"key": "bassoon.bb3.ff",
+"sha256": "8a7e832bd620d5154bc85b58c47ab0d2ff7e1e27012aa3e63850f771bac4e993",
+"pcm32kMonoMd5": "37595501e36a4b097778ac4556cfae37"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.C2.stereo.aif",
+"key": "bassoon.c2.ff",
+"sha256": "859074f0f98ef534548ed62585a2a9e800c64619630c0df69c92bfc42279df4d",
+"pcm32kMonoMd5": "be179853eacb65b17b72b58d039ff839"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.C3.stereo.aif",
+"key": "bassoon.c3.ff",
+"sha256": "aefaa25849927db2b8cb6d9653fac4866fb82913088f131628c9a935026efbc0",
+"pcm32kMonoMd5": "1504a1642190905c95b820bf56e2a0be"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.D2.stereo.aif",
+"key": "bassoon.d2.ff",
+"sha256": "be8a4ab8e1ff4bede729d4908ffbaa6b0d230636087214fca8fa018fb937d58c",
+"pcm32kMonoMd5": "29a89bf15e3250a18aa3baf2e49bedad"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.D3.stereo.aif",
+"key": "bassoon.d3.ff",
+"sha256": "d51f61a83a422130f6b9a9ba26b75d6999017ab59e86f4830176e196d8f6af1d",
+"pcm32kMonoMd5": "c51b4930f58056f13127c60e655d6c27"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.Db4.stereo.aif",
+"key": "bassoon.db4.ff",
+"sha256": "0bae1390dd60a929a1af7b35772606c1412e0f4d1d2cb4eac1f28ec38802f591",
+"pcm32kMonoMd5": "b35817f7dae3461a993b6a862db06028"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.Db5.stereo.aif",
+"key": "bassoon.db5.ff",
+"sha256": "09067eaa343f3763dffad9bd9f824c41c724d6a8e1c7de9eb0158d05c5184cff",
+"pcm32kMonoMd5": "cc421398e95a74eae2e8573cf9ec9d13"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.E2.stereo.aif",
+"key": "bassoon.e2.ff",
+"sha256": "93ac88aa3bd661b0bc8326982c01b14b08d328503e84b4e430877e579b25fbbe",
+"pcm32kMonoMd5": "3199774a572ed48bae07d8f7d5a33765"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.E3.stereo.aif",
+"key": "bassoon.e3.ff",
+"sha256": "f15b6290edd7f0ef4e4cf56fe069a81feb0aacfd0a7a4b1d89472611c17f1db3",
+"pcm32kMonoMd5": "b37857bfd3d56185b27abb74a9603987"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.Eb4.stereo.aif",
+"key": "bassoon.eb4.ff",
+"sha256": "74de9c2969c2c429b44f1953afd292670897e48488bf61bee88ec33607a5db1a",
+"pcm32kMonoMd5": "9fc2115921a9527097431b1dcc53c9eb"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.F4.stereo.aif",
+"key": "bassoon.f4.ff",
+"sha256": "51fe54c382436055cd6d05b59a90990e8afeb551aaec67bb0bbcd757766ef321",
+"pcm32kMonoMd5": "12219c39d762ea8e705f114170e1f485"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.G4.stereo.aif",
+"key": "bassoon.ff.g4",
+"sha256": "f227501b859f50a25bbca426b03e94a1bc3657395cd356047a635003643d477a",
+"pcm32kMonoMd5": "2d682df1a2527664e19b120695f82c33"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.Gb2.stereo.aif",
+"key": "bassoon.ff.gb2",
+"sha256": "270260c4834efa91025ac27fea5f70262b341b363c74f22c097dccd66489ad07",
+"pcm32kMonoMd5": "842b7cc462905535abab216c0df513fc"
+},
+{
+"pack": "Bassoon",
+"name": "Bassoon.ff.Gb3.stereo.aif",
+"key": "bassoon.ff.gb3",
+"sha256": "8c27d36dd2f307798eaf3ce42a425adaf579fea5dd14fcc372a32f2a88d8043e",
+"pcm32kMonoMd5": "8878ffee8a6f4697a1729fd36bb600ff"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.A5.stereo.aif",
+"key": "a5.bbclarinet.ff",
+"sha256": "6dea3d09d4a5d2060e9a9133566e2355172f8a1d14ac042089f71f805d3da165",
+"pcm32kMonoMd5": "33538753c40147cfe16e2936b3a742cf"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.A6.stereo.aif",
+"key": "a6.bbclarinet.ff",
+"sha256": "14fce2483c46b666d5279c8ab86632949467f25a3d9ec20c3370b312b82a209b",
+"pcm32kMonoMd5": "ec77c0935bc195291f86ecf56fb01f65"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.Ab3.stereo.aif",
+"key": "ab3.bbclarinet.ff",
+"sha256": "1d93555ae3d5e7eeb5a654032cf485f6ce001467c023cc2f101a471425605e62",
+"pcm32kMonoMd5": "a0b6c0936719a7a2b365c37f5d03775a"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.Ab4.stereo.aif",
+"key": "ab4.bbclarinet.ff",
+"sha256": "697eebd55546738a0c17a4af4801a8a3cbf9860861a0f68abcd410def1a4959a",
+"pcm32kMonoMd5": "5f0d4e22186c8d06aed92087145ef143"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.B3.stereo.aif",
+"key": "b3.bbclarinet.ff",
+"sha256": "71e1dd526e060508ba4ee3d32090f09a5e5e1a34a294cfc31e9cc595dfd7900d",
+"pcm32kMonoMd5": "2aa5b7501c39a36c1ae751e2da9bddf9"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.B5.stereo.aif",
+"key": "b5.bbclarinet.ff",
+"sha256": "e4adf97006a132f9401f7b4927a43c3fa3683f824bc88922f7bce09aa7a37831",
+"pcm32kMonoMd5": "8327c8777f2af30675ff1fb18e241e75"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.Bb4.stereo.aif",
+"key": "bb4.bbclarinet.ff",
+"sha256": "54bd0ed762d8568955488877bf6d596729d4e528690223eb449e2b960c775e38",
+"pcm32kMonoMd5": "57c2215670fc8979bd070530d6b4ba42"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.C5.stereo.aif",
+"key": "bbclarinet.c5.ff",
+"sha256": "65c379f07991cd18a6b8ce7cd8ea8ee37e161edef7c03a4605e9c3b85798b271",
+"pcm32kMonoMd5": "b81b7021b768f6610cb6213269fea2b3"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.D3.stereo.aif",
+"key": "bbclarinet.d3.ff",
+"sha256": "4e33ff78b776366293dd285305d95336af7f469df9a4a71edd533db642b2be2f",
+"pcm32kMonoMd5": "7f0ecbb5901a118af4e86658aca3d276"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.D5.stereo.aif",
+"key": "bbclarinet.d5.ff",
+"sha256": "aa87d1bf35abd2d99f9071ad63f8ce65c431d71557b63230709c807eee36b01b",
+"pcm32kMonoMd5": "4825a8d64ed4f68b0510c46232c4abbf"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.D6.stereo.aif",
+"key": "bbclarinet.d6.ff",
+"sha256": "56f0218741f45417242634f31d4932e8136d40db4bf03ec95479c7b107e48246",
+"pcm32kMonoMd5": "6ad4cc4c4293b5770e092ff487b6b0d0"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.Db4.stereo.aif",
+"key": "bbclarinet.db4.ff",
+"sha256": "a3632da8e0794896d1f33f3f4c397b026296f118f81eec5bc87ba4d421d9d330",
+"pcm32kMonoMd5": "93c9e002835d0c449d25a10608cae75e"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.E3.stereo.aif",
+"key": "bbclarinet.e3.ff",
+"sha256": "fd4cb2594101a9b6c269c1c186c5418bf4a26b9bc0d261e2e83b5218ce239a63",
+"pcm32kMonoMd5": "35fae4d399317559d5ed71466675aa6d"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.E6.stereo.aif",
+"key": "bbclarinet.e6.ff",
+"sha256": "34d9130ee208d4392c073c41e2c607c51ec42df07c14eba3a27ab91764d37f57",
+"pcm32kMonoMd5": "f93634ec1ed59d9d67e0c736dfa3123f"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.Eb4.stereo.aif",
+"key": "bbclarinet.eb4.ff",
+"sha256": "302660ea9d9cded110dcf26fbfc5b14e988d2006f4f59dc7c276e2ccfeed9a4f",
+"pcm32kMonoMd5": "08bd82098ca0c58384834e492a24f0e4"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.F4.stereo.aif",
+"key": "bbclarinet.f4.ff",
+"sha256": "eb3534cf47c2ee9ee4124f6917be7b52a6209efa98e3dda869ba02181416be1f",
+"pcm32kMonoMd5": "3acd1301268664d698d5b247e7174870"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.F5.stereo.aif",
+"key": "bbclarinet.f5.ff",
+"sha256": "b1c645e7d4036b69f2a67a5df649641fa35c5099893a61d90cb47ca25285b401",
+"pcm32kMonoMd5": "8ce572f72f902a35f1b8afc34479b05d"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.G5.stereo.aif",
+"key": "bbclarinet.ff.g5",
+"sha256": "39afe9c194a6b65f74afcca32594d137ea54dc850f3b1a3c871e2a62071399bf",
+"pcm32kMonoMd5": "07b027baea0be53be126ac12b36f7a2b"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.Gb3.stereo.aif",
+"key": "bbclarinet.ff.gb3",
+"sha256": "8baeee77d8b2fea473b37daab2dfe6b92595bae384a27664120499bf99188804",
+"pcm32kMonoMd5": "4183d80fca8e313e13b32606afbcdfe8"
+},
+{
+"pack": "BbClarinet",
+"name": "BbClarinet.ff.Gb6.stereo.aif",
+"key": "bbclarinet.ff.gb6",
+"sha256": "be9b73335c2f572c8c14cefe8c9398f5043e962b8aa4def2ac31e09597674f8a",
+"pcm32kMonoMd5": "7898fd6c29c97573d8250dca5947be32"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.nonvib.ff.A5.stereo.aif",
+"key": "a5.ff.nonvib.sopsax",
+"sha256": "47126039192814eaa3740cf08b60ae37a501a660593779768614c87a23185d20",
+"pcm32kMonoMd5": "fee315960a1fdac72df4045f187db401"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.nonvib.ff.Ab3.stereo.aif",
+"key": "ab3.ff.nonvib.sopsax",
+"sha256": "2088aee0a4f4ad94bbbb1f7fbb76a445a47556dcf68e54f9b6e5415c6e058d6f",
+"pcm32kMonoMd5": "f5d24a66b6101d4fbe32d7958e2a6d81"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.nonvib.ff.Ab4.stereo.aif",
+"key": "ab4.ff.nonvib.sopsax",
+"sha256": "208b5d05b7317e0797b318829e199be9883d36121c9e82ee1575ed614badbf35",
+"pcm32kMonoMd5": "35d6bcf08116b71ac8db2ade0ce4489a"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.nonvib.ff.B3.stereo.aif",
+"key": "b3.ff.nonvib.sopsax",
+"sha256": "c62c6d163064dafc55ae3c1bf9204c26869817a0a030979afd2dff8b13ba45a3",
+"pcm32kMonoMd5": "d396d8c4eda3607ea5c3d79c82ece438"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.nonvib.ff.C5.stereo.aif",
+"key": "c5.ff.nonvib.sopsax",
+"sha256": "4a0ae110e1c511a9bc4cf42a6175e0e87db765736d3ffe0bdc1eb5886a4865ea",
+"pcm32kMonoMd5": "15a86a6b39dd4220eeced01578f763fd"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.nonvib.ff.C6.stereo.aif",
+"key": "c6.ff.nonvib.sopsax",
+"sha256": "8aa0d7c1b2fa90196ec15b51ec6bd7f077a6ff4224ef37e8ac1ab5d75a055b3b",
+"pcm32kMonoMd5": "d9fd05f0c7a8cac44bdbd1db0be736b3"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.nonvib.ff.D4.stereo.aif",
+"key": "d4.ff.nonvib.sopsax",
+"sha256": "512406b77634a6001754cdc38e7a85c477f2f7ef0ddc37f97833ef0e78252a7e",
+"pcm32kMonoMd5": "045781aa28298051d47a7e9154b6f712"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.nonvib.ff.Eb5.stereo.aif",
+"key": "eb5.ff.nonvib.sopsax",
+"sha256": "4a0558edaa653a5d2247ffbb8d5ce1ed186ac94af314a59d864482a32eac212d",
+"pcm32kMonoMd5": "f04381e059556f2371b9e106ba3a9d0d"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.nonvib.ff.F4.stereo.aif",
+"key": "f4.ff.nonvib.sopsax",
+"sha256": "a2da407d2b8286c1b50d5ecaab57ed371d1897ce994af796dbacdfec09bf7f8c",
+"pcm32kMonoMd5": "67f5671a02a82a7f1a04dcf4d19fe9bf"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.nonvib.ff.Gb5.stereo.aif",
+"key": "ff.gb5.nonvib.sopsax",
+"sha256": "3e8ec518ceb72eab609fe7d82c2dae07664826d9653274861d0265b25debc0d1",
+"pcm32kMonoMd5": "0a326d252672c6addbf5108e64ec255d"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.vib.ff.A5.stereo.aif",
+"key": "a5.ff.sopsax.vib",
+"sha256": "f3db962170fe3be31812a543a23ba1bafd1a8da7e3f209023bd6fa5af000bed1",
+"pcm32kMonoMd5": "849adde7368ccb4accb1e26572f37c67"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.vib.ff.Ab3.stereo.aif",
+"key": "ab3.ff.sopsax.vib",
+"sha256": "bd07c977cd9d93849df6981cb73a3c4d9c8c6ec7e5fc9a98d130d9c7347ccb05",
+"pcm32kMonoMd5": "1ac571adff44d9b4ef3b4482f3af94a8"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.vib.ff.Ab4.stereo.aif",
+"key": "ab4.ff.sopsax.vib",
+"sha256": "71fe342522dd6c529b162fa7bcaf85d38896aaa520899b70f50698dfd5a2a0a4",
+"pcm32kMonoMd5": "81256bacd01b6a66791d02d03d413fe5"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.vib.ff.B3.stereo.aif",
+"key": "b3.ff.sopsax.vib",
+"sha256": "6a7398390515ab1904c36d4b933f1c35ada9e8da2be5c9b960f9cee10fd50fb4",
+"pcm32kMonoMd5": "1385b2e83737f6309507f3b38c2588f6"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.vib.ff.C5.stereo.aif",
+"key": "c5.ff.sopsax.vib",
+"sha256": "5a2ee2dbcaf12bad58b00eacf77bac9c1b24827f11642d7eecbbe7ab5c3cc0be",
+"pcm32kMonoMd5": "07a14bdae132ef3fd2f1ec9716b45345"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.vib.ff.C6.stereo.aif",
+"key": "c6.ff.sopsax.vib",
+"sha256": "e852637429bc492de8db1a90c020c1cba8c12236f4d9fc75583b5f3750fb503c",
+"pcm32kMonoMd5": "0a3b6d3443c4d7b640d95f57cb40816b"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.vib.ff.D4.stereo.aif",
+"key": "d4.ff.sopsax.vib",
+"sha256": "9bdd6f0a3e3122f5820696939a640dd77743d2574e1d9f755a00500310d651a5",
+"pcm32kMonoMd5": "e51542a761f0127f3b4c9645549a6cd9"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.vib.ff.Eb5.stereo.aif",
+"key": "eb5.ff.sopsax.vib",
+"sha256": "911f21312bddfd7bd9ca1d6acf58c7113743ec3d1c23d982384a51eb266e49f8",
+"pcm32kMonoMd5": "6f36ec24cc5002b0be9edca7c67172a3"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.vib.ff.F4.stereo.aif",
+"key": "f4.ff.sopsax.vib",
+"sha256": "ec0562fcc578cb19c49dc36a954632c5e01adeddd109e557789f9e5ed3fcfb38",
+"pcm32kMonoMd5": "1f7985c693c12fca6d5ca73ba4fea589"
+},
+{
+"pack": "BbSopranoSaxophone",
+"name": "SopSax.vib.ff.Gb5.stereo.aif",
+"key": "ff.gb5.sopsax.vib",
+"sha256": "9033be16fdbc0ecd7dc13047bba0b3d6e5a9b42ab71461df44b4208e745b2026",
+"pcm32kMonoMd5": "4b67c5fd8ad4df3015c6ed7017a640d6"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.novib.ff.Ab3.stereo.aif",
+"key": "ab3.ff.novib.trumpet",
+"sha256": "eab2fb0998da7cc55fadc9325746d72102dee332296b1802e1a86071e03172eb",
+"pcm32kMonoMd5": "fc9ca801553b061b6eeafcab87b940d4"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.novib.ff.Ab5.stereo.aif",
+"key": "ab5.ff.novib.trumpet",
+"sha256": "a1319e1697bf2842c7c61bd6618348e242bb8b57237b2d81b3ac78ce381af259",
+"pcm32kMonoMd5": "d5eaf96205fc0f44cf46767ed2b930e8"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.novib.ff.B3.stereo.aif",
+"key": "b3.ff.novib.trumpet",
+"sha256": "3c63cad0668ebbba58f24c6e97cb1443ab2c7a505bd8a5fa897a286686102ba5",
+"pcm32kMonoMd5": "0aa756ec137ac5bb56189ffd46f9fc6e"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.novib.ff.Bb4.stereo.aif",
+"key": "bb4.ff.novib.trumpet",
+"sha256": "49b306690c5a8197afe59de106b57186bfa37e8014016a9255b0514e801e2f4e",
+"pcm32kMonoMd5": "c68ae2de72d22f9b0bfa9103787ac6b8"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.novib.ff.C6.stereo.aif",
+"key": "c6.ff.novib.trumpet",
+"sha256": "08fce8fc1a70c706bc1edde4131fcba7e6ba18963b9369de957f4721d4e0bdbb",
+"pcm32kMonoMd5": "fb1b91a893972e6b4b30e3e76546feb4"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.novib.ff.Db5.stereo.aif",
+"key": "db5.ff.novib.trumpet",
+"sha256": "6d10153dccb3ec2223bc93d1562a4d5a2bb9e4b7eaedcbb0f92aaa35d67a6928",
+"pcm32kMonoMd5": "69728037cc915f3a449a770d8c1f92c0"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.novib.ff.E3.stereo.aif",
+"key": "e3.ff.novib.trumpet",
+"sha256": "563f2926003ac26b97762e440a55e5a8bcea321a7007be804b842aa3b6f56444",
+"pcm32kMonoMd5": "7381f5a0181a6589fed0884b0e13211b"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.novib.ff.Eb4.stereo.aif",
+"key": "eb4.ff.novib.trumpet",
+"sha256": "da42eda550e675455af11f533fed3d2e07d833c22f8776c9b8b7d9d751f18b47",
+"pcm32kMonoMd5": "fae20ed887292be3a9ce88c57de92aca"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.novib.ff.F5.stereo.aif",
+"key": "f5.ff.novib.trumpet",
+"sha256": "103d23289af7475181e74dd15c0523875510b897b936c6619d62bb610733c9bc",
+"pcm32kMonoMd5": "fc66ed6fa3a2607e67a71af047730614"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.novib.ff.Gb4.stereo.aif",
+"key": "ff.gb4.novib.trumpet",
+"sha256": "bc0aa5872fadd5dbbf60b9adccba623f2febdc25781d60dda9b9932661c5abdd",
+"pcm32kMonoMd5": "c3eeeb95bea21ac4e60159f1b19412b9"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.vib.ff.A4.stereo.aif",
+"key": "a4.ff.trumpet.vib",
+"sha256": "8fca3fe6ecbd1ddcb8f9f588798694d0079f54c74e51309ff9c23b52105da80e",
+"pcm32kMonoMd5": "c1df2a3590def7bc411436649d09a156"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.vib.ff.Ab5.stereo.aif",
+"key": "ab5.ff.trumpet.vib",
+"sha256": "980496df316a907939b0d837553c5f7e38e7fe63b61a09ee01f08d14ade8aa54",
+"pcm32kMonoMd5": "5f302b9e267568464d7dc1bebf9c137f"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.vib.ff.B3.stereo.aif",
+"key": "b3.ff.trumpet.vib",
+"sha256": "3154ed2dc76e4890436bd9967e4f8e3295f2d5bde7ac7cf3ebd081261f103bff",
+"pcm32kMonoMd5": "3062887d2cb41b06c399e2d1fb2f617e"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.vib.ff.B5.stereo.aif",
+"key": "b5.ff.trumpet.vib",
+"sha256": "6c4b7f04035abb4747218e8e81f579c97926e0cd4bdab2c6e9bbd05437bb567c",
+"pcm32kMonoMd5": "85b17a9cdb0d130a3f5a58027a5bc078"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.vib.ff.D4.stereo.aif",
+"key": "d4.ff.trumpet.vib",
+"sha256": "cb9b8ab8261d721e8f1a58aeb82fce1805f28b3de16fd90d25b4133eef7d51b7",
+"pcm32kMonoMd5": "ea6264ae24da1e9e86e0e8a8389e51c7"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.vib.ff.Db5.stereo.aif",
+"key": "db5.ff.trumpet.vib",
+"sha256": "3bb6626bac108cffac20077206d027c089fd9a381a4e5c1625bb3e398fac11d1",
+"pcm32kMonoMd5": "8485733bdd10b9b000aad7bcd7eda7d6"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.vib.ff.E3.stereo.aif",
+"key": "e3.ff.trumpet.vib",
+"sha256": "6439d2f96c72e0dc87f2dc5eb7c43cb1685c2c9d51a64075d606b3e5de7e4355",
+"pcm32kMonoMd5": "e2acfb89120cb0483c6df2dbae5452a1"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.vib.ff.E5.stereo.aif",
+"key": "e5.ff.trumpet.vib",
+"sha256": "83cdfbdf2dba37f65435168262d5f6a514663e9fe74903e7605162d605884864",
+"pcm32kMonoMd5": "9133dbe746c3ca922177328feee26175"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.vib.ff.G3.stereo.aif",
+"key": "ff.g3.trumpet.vib",
+"sha256": "294ea9ed4f8656da4bf7796eaa31c702128c633fab688379352526eabeba36a6",
+"pcm32kMonoMd5": "ba41987b2f2dad062d728b6c9c0be5a2"
+},
+{
+"pack": "BbTrumpet",
+"name": "Trumpet.vib.ff.Gb4.stereo.aif",
+"key": "ff.gb4.trumpet.vib",
+"sha256": "4650674294408f17d5e52ed6e4f0042188b767a1cb7fddd3b6678cf9313a21d3",
+"pcm32kMonoMd5": "46db41479c5cc38379055ac29ce76321"
+},
+{
+"pack": "Bells",
+"name": "bells.brass.ff.Ab5.stereo.aif",
+"key": "ab5.bells.brass.ff",
+"sha256": "b9046dcca4970cffed59cb7326134014082686b029e85ae11813a5adad4766f9",
+"pcm32kMonoMd5": "df0b5dab66c2599fc79b9ef00bcbe920"
+},
+{
+"pack": "Bells",
+"name": "bells.brass.ff.Ab6.stereo.aif",
+"key": "ab6.bells.brass.ff",
+"sha256": "3f52433380ee061483ccb20261f84124de647fb7f8fe1e92197fc1fe2b64bf82",
+"pcm32kMonoMd5": "154131e6b58d8a7b708716dfec9a97c1"
+},
+{
+"pack": "Bells",
+"name": "bells.brass.ff.Ab7.stereo.aif",
+"key": "ab7.bells.brass.ff",
+"sha256": "9c613d7fc5ea079094e44d03e902683edb0cc0ff503603f2e0d05ce87c4ea897",
+"pcm32kMonoMd5": "131738190191393a637e773e20515435"
+},
+{
+"pack": "Bells",
+"name": "bells.brass.ff.C5.stereo.aif",
+"key": "bells.brass.c5.ff",
+"sha256": "f786cd8ccdfa660005baee82be33d599908e65c4d26378b2493765dfe48db3e9",
+"pcm32kMonoMd5": "27bc4f54784b526e93d98411b7404a22"
+},
+{
+"pack": "Bells",
+"name": "bells.brass.ff.C6.stereo.aif",
+"key": "bells.brass.c6.ff",
+"sha256": "1aaee98d0b2464dc6858d788e9e57312b61d75dcf17bf51a590bfdda2e21c9a7",
+"pcm32kMonoMd5": "4ccf297da54e667925ae8d712e552f13"
+},
+{
+"pack": "Bells",
+"name": "bells.brass.ff.C7.stereo.aif",
+"key": "bells.brass.c7.ff",
+"sha256": "0b301b9b3633a5ef65731a82677b070d0287e47037eccafbc1ae9e2d1615dad3",
+"pcm32kMonoMd5": "9e87a9c094194b962ff6640082fc3f8c"
+},
+{
+"pack": "Bells",
+"name": "bells.brass.ff.C8.stereo.aif",
+"key": "bells.brass.c8.ff",
+"sha256": "d51c959f938f06317c60334a58ba9602fba0a119ca355f841fc3be862e2c112c",
+"pcm32kMonoMd5": "65edefcff276c6b839bac59cc1af5d33"
+},
+{
+"pack": "Bells",
+"name": "bells.brass.ff.E5.stereo.aif",
+"key": "bells.brass.e5.ff",
+"sha256": "31635ddfa45e969cf768d7247dc5b03226ce64f3e0e2cb319d1e38727bcfe887",
+"pcm32kMonoMd5": "87bf87bde7fbcaff5d0f082566c43e78"
+},
+{
+"pack": "Bells",
+"name": "bells.brass.ff.E6.stereo.aif",
+"key": "bells.brass.e6.ff",
+"sha256": "70a0a73ae4dc38342efe12f6f95d93e7ef5b67f1fad3ce4897c44a8cca4fd57b",
+"pcm32kMonoMd5": "49619ba5e1ead2b9e7e86f48e5ac592f"
+},
+{
+"pack": "Bells",
+"name": "bells.brass.ff.E7.stereo.aif",
+"key": "bells.brass.e7.ff",
+"sha256": "544167ddc979562b45fd2ac781f7ff6ccf53c560b64bf78aa0f958e43f2f3e48",
+"pcm32kMonoMd5": "5bbc6d55778b33c381f75cd1de924c5d"
+},
+{
+"pack": "Bells",
+"name": "bells.plastic.ff.Ab5.stereo.aif",
+"key": "ab5.bells.ff.plastic",
+"sha256": "26e4c580bc7a71ef37ec46c476171be414f5f3aa750dc1a39710baaeb8edf719",
+"pcm32kMonoMd5": "9ebea42e23b9ae4e88da0ad04227f185"
+},
+{
+"pack": "Bells",
+"name": "bells.plastic.ff.Ab6.stereo.aif",
+"key": "ab6.bells.ff.plastic",
+"sha256": "5dd8685f3b8cc1ac1b4d10ecc210274eb0fd25991661ae137c0954b5b729c1db",
+"pcm32kMonoMd5": "6d8d107f5d48022d1ba6c26766a63c81"
+},
+{
+"pack": "Bells",
+"name": "bells.plastic.ff.Ab7.stereo.aif",
+"key": "ab7.bells.ff.plastic",
+"sha256": "0deb0219bb305d216e6b53f48b133e85819cf0db9a06fa2e7da033bb5773979e",
+"pcm32kMonoMd5": "4097b115e425e6f3910740e40510689c"
+},
+{
+"pack": "Bells",
+"name": "bells.plastic.ff.C5.stereo.aif",
+"key": "bells.c5.ff.plastic",
+"sha256": "ec55f340761fcca3b5ce41a910e5d9e9fada833627bf49bcaf896e10eb9f17cc",
+"pcm32kMonoMd5": "af5b008eb39ebdde5f815a0c1cd88e80"
+},
+{
+"pack": "Bells",
+"name": "bells.plastic.ff.C6.stereo.aif",
+"key": "bells.c6.ff.plastic",
+"sha256": "054bad776d8894bda6363256f34b2f6474a0b2643f988d70a1c27a3f0a67a75f",
+"pcm32kMonoMd5": "81ee9006267fd3e082e8041fe91a77b4"
+},
+{
+"pack": "Bells",
+"name": "bells.plastic.ff.C7.stereo.aif",
+"key": "bells.c7.ff.plastic",
+"sha256": "52ab1a74604ad9c6e1c9eb8f6853881a90f1ba2c4f183277c61d508693791435",
+"pcm32kMonoMd5": "4d6e8ed7113a154806138b7513590bf6"
+},
+{
+"pack": "Bells",
+"name": "bells.plastic.ff.C8.stereo.aif",
+"key": "bells.c8.ff.plastic",
+"sha256": "c7359ee35931705e5f79d1ba52b5046765d3904b68c4631e93cdca933e32dc79",
+"pcm32kMonoMd5": "32f53087fc82761479f05833ff5e340f"
+},
+{
+"pack": "Bells",
+"name": "bells.plastic.ff.E5.stereo.aif",
+"key": "bells.e5.ff.plastic",
+"sha256": "5fe4361a361d6a3280e06eda40f8b5601ed71833e950bd30836c431f818296c8",
+"pcm32kMonoMd5": "a1daebb3ed053bbb08704848475096bc"
+},
+{
+"pack": "Bells",
+"name": "bells.plastic.ff.E6.stereo.aif",
+"key": "bells.e6.ff.plastic",
+"sha256": "7fc385c036d1519a1dd925215f1b775d8d58326ce36ef6c6d7596ca96aaafc98",
+"pcm32kMonoMd5": "c3de569dda5a73c4a8083d2368b942c9"
+},
+{
+"pack": "Bells",
+"name": "bells.plastic.ff.E7.stereo.aif",
+"key": "bells.e7.ff.plastic",
+"sha256": "e352a7bcde1252f89410a607a36e09b41ec2446e636ced54be6a9334fd65415f",
+"pcm32kMonoMd5": "831a28b693fd8698c567dc4fc542c3a3"
+},
+{
+"pack": "Cello",
+"name": "Cello.arco.ff.sulA.Db5.stereo.aif",
+"key": "arco.cello.db5.ff.sula",
+"sha256": "9f8b131c4ddbe2e7659d88f7f33505d6cf5b4fde588a718ba0b94aaddb605737",
+"pcm32kMonoMd5": "c3dc335ff73d86523d9418b7ca300159"
+},
+{
+"pack": "Cello",
+"name": "Cello.arco.ff.sulA.Eb4.stereo.aif",
+"key": "arco.cello.eb4.ff.sula",
+"sha256": "cb3b33fc95f69c2e506e9edc1ca9f080ec516b1a9bb944c38ce23dc0047d33e7",
+"pcm32kMonoMd5": "85f0b6b62624068ec0a5a5e3b9eef8ab"
+},
+{
+"pack": "Cello",
+"name": "Cello.arco.ff.sulC.A2.stereo.aif",
+"key": "a2.arco.cello.ff.sulc",
+"sha256": "8ea819c7c132622d686af1f512afd2a929e198dd1004730fd8efd4fc95f3318c",
+"pcm32kMonoMd5": "b9c02fe08ceaed87da33f81cc3d49920"
+},
+{
+"pack": "Cello",
+"name": "Cello.arco.ff.sulC.C2.stereo.aif",
+"key": "arco.c2.cello.ff.sulc",
+"sha256": "56798a31bfb79a784baba213e9cffd9ad1565b8bc7f3ce08b557a82f432d6725",
+"pcm32kMonoMd5": "bda4e08f6d48aaf7e9a6dbf1c6fed498"
+},
+{
+"pack": "Cello",
+"name": "Cello.arco.ff.sulC.G3.stereo.aif",
+"key": "arco.cello.ff.g3.sulc",
+"sha256": "bbc244dd339f3122e1adbb63ada1c0d649df26b15796263660d51866e7888ec0",
+"pcm32kMonoMd5": "43829dd813b2f086ff76224e8ba850e9"
+},
+{
+"pack": "Cello",
+"name": "Cello.arco.ff.sulD.C5.stereo.aif",
+"key": "arco.c5.cello.ff.suld",
+"sha256": "5a20c27b05551f6d7a373139dcb36e4e98ece48d2eb6ab299db59c706b8e909c",
+"pcm32kMonoMd5": "579e153e39b1a5f67b9b2ae11e3d95e8"
+},
+{
+"pack": "Cello",
+"name": "Cello.arco.ff.sulD.D4.stereo.aif",
+"key": "arco.cello.d4.ff.suld",
+"sha256": "458789db62b9aecb2ef01ca6b5a525270e6ae9b17cd7e889bfae5f5c6edb236f",
+"pcm32kMonoMd5": "e739ea4ca91ff2cb9b2e0db5020cff89"
+},
+{
+"pack": "Cello",
+"name": "Cello.arco.ff.sulD.F3.stereo.aif",
+"key": "arco.cello.f3.ff.suld",
+"sha256": "7bdc24dcf046964b3c5eb3914ebef7ac6df020b6f9f54bb75058bdea9575e6ec",
+"pcm32kMonoMd5": "fa3b922273309af54f324a5cdbb83511"
+},
+{
+"pack": "Cello",
+"name": "Cello.arco.ff.sulG.Ab3.stereo.aif",
+"key": "ab3.arco.cello.ff.sulg",
+"sha256": "eb71f25180fd3124f33951eaf327d4ab57b59f5acfc8e39e6c8a6e0ce654a473",
+"pcm32kMonoMd5": "e98ab081d0130ab6c19d0794125eee82"
+},
+{
+"pack": "Cello",
+"name": "Cello.arco.ff.sulG.Bb2.stereo.aif",
+"key": "arco.bb2.cello.ff.sulg",
+"sha256": "f0f8531e777282d94d2933680d437a56b4374a9b3494dd95d77dc8baa9cef2b5",
+"pcm32kMonoMd5": "c3442eaa77d59d22b3941dba7589d9a0"
+},
+{
+"pack": "Cello",
+"name": "Cello.pizz.ff.sulA.C5.stereo.aif",
+"key": "c5.cello.ff.pizz.sula",
+"sha256": "c2c8bf1996d88c8caeb55a346f60a251c1b8d62f8b430af4fb6d19e280d359d6",
+"pcm32kMonoMd5": "5064e511f72c7e1292ea991d0d38d7cd"
+},
+{
+"pack": "Cello",
+"name": "Cello.pizz.ff.sulA.D4.stereo.aif",
+"key": "cello.d4.ff.pizz.sula",
+"sha256": "a4eab09e78fe19089ffcf5407c262e7e8add71bd03584bdf1bb131de252a675c",
+"pcm32kMonoMd5": "1714d22bcd1f94eac5e700236fa247db"
+},
+{
+"pack": "Cello",
+"name": "Cello.pizz.ff.sulC.Ab3.stereo.aif",
+"key": "ab3.cello.ff.pizz.sulc",
+"sha256": "2c8aa6b82eb8557ab7eda018eeab5223956d1d0ac2879c8e576db97b50287ba4",
+"pcm32kMonoMd5": "bbbb826ddc4281724547e8ea4abcce06"
+},
+{
+"pack": "Cello",
+"name": "Cello.pizz.ff.sulC.Bb2.stereo.aif",
+"key": "bb2.cello.ff.pizz.sulc",
+"sha256": "5b96a52c9856f5439df0c974c82f2bde1917bcdf9c258a4d0abaf1a7e4f07a80",
+"pcm32kMonoMd5": "c27824e37e69c39105a707acefd5aa23"
+},
+{
+"pack": "Cello",
+"name": "Cello.pizz.ff.sulC.Db2.stereo.aif",
+"key": "cello.db2.ff.pizz.sulc",
+"sha256": "d9076406394e7c0efc7740dd977155286ce7716ade26cddfccb561a846a7d779",
+"pcm32kMonoMd5": "da3bcafdbd552c5e6afef5c3ad277043"
+},
+{
+"pack": "Cello",
+"name": "Cello.pizz.ff.sulD.Ab4.stereo.aif",
+"key": "ab4.cello.ff.pizz.suld",
+"sha256": "9769b2778ac863083454443445c0440e9806765473260947c4db8bb89b1c8bcb",
+"pcm32kMonoMd5": "a30a9457233086003f2e031fe5adb081"
+},
+{
+"pack": "Cello",
+"name": "Cello.pizz.ff.sulD.Bb3.stereo.aif",
+"key": "bb3.cello.ff.pizz.suld",
+"sha256": "0907f9ea221b1a03c0e3ddd33e4d072ae92177f4e142a7090338a3396c446d5b",
+"pcm32kMonoMd5": "cff0ced40bb8cd692067450a3cd9bdc4"
+},
+{
+"pack": "Cello",
+"name": "Cello.pizz.ff.sulG.A3.stereo.aif",
+"key": "a3.cello.ff.pizz.sulg",
+"sha256": "2fae5aabdae71e50ecdaf6ba6f43c8207e96a53604b50118159054c7c255b3a2",
+"pcm32kMonoMd5": "e6165e6920bfdbaa383d3349ed774d18"
+},
+{
+"pack": "Cello",
+"name": "Cello.pizz.ff.sulG.B2.stereo.aif",
+"key": "b2.cello.ff.pizz.sulg",
+"sha256": "109bafd94598ea8d4aaaff6628b14e5a18d7f79d1d83c55f5b7d27259bb7f5cc",
+"pcm32kMonoMd5": "0387a66b4487ad54b94204c9e04d87f5"
+},
+{
+"pack": "Cello",
+"name": "Cello.pizz.ff.sulG.G4.stereo.aif",
+"key": "cello.ff.g4.pizz.sulg",
+"sha256": "49fdc9e147732fbc3c4c2f4b6767abc9cf0a0fc16c8de5b36d55a5501dbcd5df",
+"pcm32kMonoMd5": "3d04b219f28ac877ca37c69402961ab6"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.A7.stereo.aif",
+"key": "a7.crotale.ff",
+"sha256": "0f0a4f991cce30fc6cc9147b4d5dc680fe08630569187ccc7707c131b40174ad",
+"pcm32kMonoMd5": "6c68f6575c6048d5015ef04b142201eb"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.Ab6.stereo.aif",
+"key": "ab6.crotale.ff",
+"sha256": "80b133bb83b9a01f5263dd87a92017b1a8818cbca0dece8305a7d149d504eec8",
+"pcm32kMonoMd5": "80b4559b2afe53894c2571890f877987"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.Ab7.stereo.aif",
+"key": "ab7.crotale.ff",
+"sha256": "030743173876b144a91b78558a663133340d4316d8a9e60326d2ce80e8b419ac",
+"pcm32kMonoMd5": "aa03ce3ff933da0298e00e97a6d45959"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.B6.stereo.aif",
+"key": "b6.crotale.ff",
+"sha256": "384c71d919ea383697c5050eb05d236dff82ab0ecfd623103061a579057232bd",
+"pcm32kMonoMd5": "849fdda7adfa0f5055abc7f4fba72522"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.B7.stereo.aif",
+"key": "b7.crotale.ff",
+"sha256": "600c9a539283831a1cc809a5e501e6b51a0f46ca36714cbeb62868cab89a05a9",
+"pcm32kMonoMd5": "278d4cb9c03a5217c49efb8b14889cf7"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.Bb6.stereo.aif",
+"key": "bb6.crotale.ff",
+"sha256": "c137d0187eea83112fca3d8fbd3828e419652e23cc2c22166df276ce66844eb1",
+"pcm32kMonoMd5": "9bd0b34512d58ebeb5c38efc9b98fca9"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.Bb7.stereo.aif",
+"key": "bb7.crotale.ff",
+"sha256": "7f61216a8f5546d6cd376a2143b966fe71fa8f471707ef2a594856b68a7b7319",
+"pcm32kMonoMd5": "eab7c7f3d5337a27f894bd548414dd01"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.C6.stereo.aif",
+"key": "c6.crotale.ff",
+"sha256": "646835b108d5b0023075b0c1edb108e0b86f84392ba914d446c7e632866ee032",
+"pcm32kMonoMd5": "6004556320e60376a7983abcb0caa3bd"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.C7.stereo.aif",
+"key": "c7.crotale.ff",
+"sha256": "8b4f1354c7d8252c57cbb8dd64a1ee19ebc2c4708f062b9de721cc499e12f9d4",
+"pcm32kMonoMd5": "1e83504be33dadc47da0017f9ab6d573"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.D6.stereo.aif",
+"key": "crotale.d6.ff",
+"sha256": "bab9afd81a97480703410c4b1baaa8dc2d0f6ae916b57b8d350e02d8289162a2",
+"pcm32kMonoMd5": "6313f3195e7057220ed748aaec1dee89"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.Db6.stereo.aif",
+"key": "crotale.db6.ff",
+"sha256": "aefa516e8d45a3ddb5379b48f04e075b281c5ee651b3ecae5861b13f748d15d8",
+"pcm32kMonoMd5": "c8288be1707041f49c5646fcd5d70320"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.Db7.stereo.aif",
+"key": "crotale.db7.ff",
+"sha256": "06b5cd1840aab19675502b0b1304dbdab82efb9e38f167e5aeb272ce0eef2bb1",
+"pcm32kMonoMd5": "4ce37a3796927b8f1d806b5e06ccbbb5"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.E7.stereo.aif",
+"key": "crotale.e7.ff",
+"sha256": "b7f4aec073f7358a09a60781fc438e12d82b1f50ebf592f1936818e47bdf7113",
+"pcm32kMonoMd5": "50a691c5428007b2d1fd2c2a43156568"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.Eb6.stereo.aif",
+"key": "crotale.eb6.ff",
+"sha256": "be109feb8d2ef39f2d615bb5c84c8ba4cc409b242e9447351d3ed9da3ce66208",
+"pcm32kMonoMd5": "69c914f3d64fff95296e917d2a8f77dc"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.Eb7.stereo.aif",
+"key": "crotale.eb7.ff",
+"sha256": "d358360a553350aa7168c84ceecbdc3a5acfde3cf822608b1f3a90238c2fb3f9",
+"pcm32kMonoMd5": "d46029f7d7d99a01a7fdc44be9bb07a0"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.F6.stereo.aif",
+"key": "crotale.f6.ff",
+"sha256": "4cc45c78375fac44f347e3d2f9919b1e9a882b423fc28bb12c3419adc087c4b1",
+"pcm32kMonoMd5": "d2411098a2fd4fbd01925d484de3d7b8"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.F7.stereo.aif",
+"key": "crotale.f7.ff",
+"sha256": "5875ede914c240b5e5889b302bd61ad8c2f8150ff3f700ebe0bfa2db1c1cfc90",
+"pcm32kMonoMd5": "778cb4c9ad0022d83b8c49bf8a64a074"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.G6.stereo.aif",
+"key": "crotale.ff.g6",
+"sha256": "773ff9be3dba57e2d27b0324eb0a5a7f577dfb4f4b30b12451cfd844655b620e",
+"pcm32kMonoMd5": "b280fb18d9bfcd497f909c72d474445c"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.Gb6.stereo.aif",
+"key": "crotale.ff.gb6",
+"sha256": "2cb33bd36115e47092586cbfae5e06d2e4377152c3aeda11641130c8221b9df0",
+"pcm32kMonoMd5": "1ca89d08f213ab45781a5f762db29636"
+},
+{
+"pack": "Crotales",
+"name": "Crotale.ff.Gb7.stereo.aif",
+"key": "crotale.ff.gb7",
+"sha256": "b3a88abe2a177da6400522bc779df27ba13381651b0cde382ba4c9c38b073776",
+"pcm32kMonoMd5": "bbe741a6760c22f613cd1ff993e6496a"
+},
+{
+"pack": "Cymbals",
+"name": "13crash.bow.stereo.aif",
+"key": "13crash.bow",
+"sha256": "c59cd3965c23497b113c7865c1a4ed7dcb24cd73602af97345d2332922b79243",
+"pcm32kMonoMd5": "8019323a4d06e8372d14660927d8229e"
+},
+{
+"pack": "Cymbals",
+"name": "13crash.stick.bell.ff.stereo.aif",
+"key": "13crash.bell.ff.stick",
+"sha256": "6bed95fbf5394b851af3792375e1795b676d66381ce03b585423aae56f84fcef",
+"pcm32kMonoMd5": "51867b825b7b506540216bd935a1629a"
+},
+{
+"pack": "Cymbals",
+"name": "13crash.stick.normal.ff.stereo.aif",
+"key": "13crash.ff.normal.stick",
+"sha256": "875c98c580636871d808f1f0ad31fb2df21a5290701037de64930829204b4ffc",
+"pcm32kMonoMd5": "9cdc24b21222b7a90a7fb5ae3cd02ad7"
+},
+{
+"pack": "Cymbals",
+"name": "13crash.stick.shoulder.ff.stereo.aif",
+"key": "13crash.ff.shoulder.stick",
+"sha256": "1e9cdbff4f8f86541461e2e1accc95968ca03d3a94bc10cca12a3d3b07d13d18",
+"pcm32kMonoMd5": "3543307ea14d8095e986bb611971e040"
+},
+{
+"pack": "Cymbals",
+"name": "15orchcrash.bandaturka.ff.stereo.aif",
+"key": "15orchcrash.bandaturka.ff",
+"sha256": "7e87321ab19c4525d06080c912f96a098ca5810344c6699e9d9e552b24965d3f",
+"pcm32kMonoMd5": "b387fd10ccc93e5ec5037b5acf0aa625"
+},
+{
+"pack": "Cymbals",
+"name": "16chinese.mallet.roll.stereo.aif",
+"key": "16chinese.mallet.roll",
+"sha256": "a74fe860edb566f9909be1312f90238eb06a1697d70aaf992cbff0f2de95f8ea",
+"pcm32kMonoMd5": "32ee7bb0f3a811b0197494d989a1f391"
+},
+{
+"pack": "Cymbals",
+"name": "16chinese.stick.shoulder.ff.stereo.aif",
+"key": "16chinese.ff.shoulder.stick",
+"sha256": "fa1d1874e950f620408ee395783645e4699c1ace799b4fe2d98267237ce45c15",
+"pcm32kMonoMd5": "406db9489a7ff2e57618b060f6c53ce5"
+},
+{
+"pack": "Cymbals",
+"name": "17crash.mallet.roll.stereo.aif",
+"key": "17crash.mallet.roll",
+"sha256": "beab7dcc594f245f99e9f1024a7024b3c2d388fe04f8600f256ba959f3e6fe33",
+"pcm32kMonoMd5": "67aeb658e29ba6d6c63b844b1ea98251"
+},
+{
+"pack": "Cymbals",
+"name": "18crash.chokecrash.stereo.aif",
+"key": "18crash.chokecrash",
+"sha256": "d1d557aa4a46fb1bf07b2f1c06c2458dabc5876ee7fc9eafc49f8de6d387905b",
+"pcm32kMonoMd5": "569b41c0d29ffdb33f5228f01678200c"
+},
+{
+"pack": "Cymbals",
+"name": "18crash.mallet.ff.stereo.aif",
+"key": "18crash.ff.mallet",
+"sha256": "0c86f68355215073a30d171a27712c0c31fc149082a8c0192b78ad1887aa5347",
+"pcm32kMonoMd5": "1f63877bba3aee93a31e1470af739a43"
+},
+{
+"pack": "Cymbals",
+"name": "18crash.stick.roll.stereo.aif",
+"key": "18crash.roll.stick",
+"sha256": "312fd698c16a8c0efda44ca87ce3815d7c9171d177762727c1115190e748b4bc",
+"pcm32kMonoMd5": "bf21b0844c44a2b83f0f7dc6af6a1fc8"
+},
+{
+"pack": "Cymbals",
+"name": "18orchcrash.germanic.ff.stereo.aif",
+"key": "18orchcrash.ff.germanic",
+"sha256": "5f737136a43c700d3b0ee31decf712a20fc0ed4d36bdc3a08fcddf3a92689a78",
+"pcm32kMonoMd5": "dea27a5cea091d88a1c8a402028e8cd7"
+},
+{
+"pack": "Cymbals",
+"name": "19chinese.chokecrash.stereo.aif",
+"key": "19chinese.chokecrash",
+"sha256": "89c2c3dc97149a17977bff7d879c561694cf335ee2be0562dd1d833b635b260e",
+"pcm32kMonoMd5": "aad2ea2d695c70e02a065603d1cced45"
+},
+{
+"pack": "Cymbals",
+"name": "19chinese.stick.roll.stereo.aif",
+"key": "19chinese.roll.stick",
+"sha256": "73326f366c376b29ac229cada650a71bcbfd9e8d64ef6381193b72ad9e3b914e",
+"pcm32kMonoMd5": "141256fcd7ba7f998623baa11c594c19"
+},
+{
+"pack": "Cymbals",
+"name": "20chinese.bow.stereo.aif",
+"key": "20chinese.bow",
+"sha256": "56feba1f35bf7eafde792528def80d411ba97fb316cd8b838331b0680e206efe",
+"pcm32kMonoMd5": "4699d886e1820d424b3773b9af26b053"
+},
+{
+"pack": "Cymbals",
+"name": "20chinese.stick.bell.ff.stereo.aif",
+"key": "20chinese.bell.ff.stick",
+"sha256": "5436ebe81710dda8e6ec06fb7275080a99aea5bb316b04ce4f0966c6fe4710b6",
+"pcm32kMonoMd5": "cf60ccbc5f9ff69476f93ece85a37edb"
+},
+{
+"pack": "Cymbals",
+"name": "20chinese.stick.normal.ff.stereo.aif",
+"key": "20chinese.ff.normal.stick",
+"sha256": "1e991179f4fe4f061adccd5c05150d1c05f9918d5326e59ccc657265ba159c56",
+"pcm32kMonoMd5": "9095c924f8ddbffdba81ee67d17206cc"
+},
+{
+"pack": "Cymbals",
+"name": "20crash.bow.stereo.aif",
+"key": "20crash.bow",
+"sha256": "ca2b7f2b394c643b01920cefb02bd88218a8bf416bd9b83f4fa09bc2cd9eb313",
+"pcm32kMonoMd5": "0662d4016ab712e291d1d079866a8a9d"
+},
+{
+"pack": "Cymbals",
+"name": "20crash.stick.bell.ff.stereo.aif",
+"key": "20crash.bell.ff.stick",
+"sha256": "7affb70ccc0b4e802d3a72888265ee280929e4e1225e320effbfcb3acd3ca6e0",
+"pcm32kMonoMd5": "1f8aaf28f82925355b42c14b78e2d08c"
+},
+{
+"pack": "Cymbals",
+"name": "20crash.stick.normal.ff.stereo.aif",
+"key": "20crash.ff.normal.stick",
+"sha256": "623547d0fd59e12b97bd2cddc4ab409e9a0c3f586d4c20dd2f7c936e3e8af2ae",
+"pcm32kMonoMd5": "41be6a63c23fda650c15e3be4363f2d1"
+},
+{
+"pack": "Cymbals",
+"name": "21ride.mallet.ff.stereo.aif",
+"key": "21ride.ff.mallet",
+"sha256": "bcbc2d983bc13193570b1bc68492d73bc6fb6b90900fd3166e29481b904d8631",
+"pcm32kMonoMd5": "d12986955d5726cac07f8fa968807cc5"
+},
+{
+"pack": "Cymbals",
+"name": "21ride.stick.shoulder.ff.stereo.aif",
+"key": "21ride.ff.shoulder.stick",
+"sha256": "87a77cdf6d8dda08feb935aae7c81ab7432fc3c6fb02c8d8a07e5971f99c8aef",
+"pcm32kMonoMd5": "0f8a837020f24280f9ecc90c738ff5cd"
+},
+{
+"pack": "Cymbals",
+"name": "hihat.normal.ff.stereo.aif",
+"key": "ff.hihat.normal",
+"sha256": "b4a18d9f9674ad4448a13279cd7c61abec3ce529eeed1aa04ace44d094309895",
+"pcm32kMonoMd5": "f2f5afae1952bb78c195e119ebe3dd03"
+},
+{
+"pack": "Cymbals",
+"name": "splash.mallet.roll.stereo.aif",
+"key": "mallet.roll.splash",
+"sha256": "20d5e64d6490ba100639a757823481d1c2da40c647700867f8f119e1602265c5",
+"pcm32kMonoMd5": "a259c02cca9366e1586e7646b16f7258"
+},
+{
+"pack": "Cymbals",
+"name": "splash.stick.roll.stereo.aif",
+"key": "roll.splash.stick",
+"sha256": "999fc62ed20327583be1df519a3279e2d5e847178e2bb06e08116414e3fd3543",
+"pcm32kMonoMd5": "5bbd438535608df6ba4d073823de11ba"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.arco.ff.sulA.C3.stereo.aif",
+"key": "arco.bass.c3.ff.sula",
+"sha256": "d6b448c5aa43c87ae97db9f4c437f6fff54064e6af78f65016ef14d027d3f205",
+"pcm32kMonoMd5": "5cf43fd355967d1ab8bf8bc5e6d5e872"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.arco.ff.sulA.Db2.stereo.aif",
+"key": "arco.bass.db2.ff.sula",
+"sha256": "7221472ff1af8aeacdbb233a8c42bf453639ed9c9f66494a0a728884bb5794df",
+"pcm32kMonoMd5": "78ecd8f0de7568bc6cdef02dffe97f91"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.arco.ff.sulC.C1.stereo.aif",
+"key": "arco.bass.c1.ff.sulc",
+"sha256": "4cb18629ead44ff8c1dabe0d39a5c1f4394b3e6058a17f5a3d0b9610cc0fbad2",
+"pcm32kMonoMd5": "9798cb69ca11a9318f11a49afbd8891f"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.arco.ff.sulD.Bb3.stereo.aif",
+"key": "arco.bass.bb3.ff.suld",
+"sha256": "adb9e25c1e0717472016225928396fd13ea0ddae7402cc8d5929a21d22e3b8f3",
+"pcm32kMonoMd5": "e6a496c02497dc211a8705874b9e013a"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.arco.ff.sulD.C3.stereo.aif",
+"key": "arco.bass.c3.ff.suld",
+"sha256": "a8e37b95b0ab111e9bc43bf4c2651c4a9b02ea47dad97de777315a749dc5b3d9",
+"pcm32kMonoMd5": "793d860e5388d27e388b6a354f29af2d"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.arco.ff.sulD.D2.stereo.aif",
+"key": "arco.bass.d2.ff.suld",
+"sha256": "9936fab1294358ea6d3cd39d684cafd56f06c0b3a6afdcce8ce8dffe401588f3",
+"pcm32kMonoMd5": "8e6d531ff2466d2bd83a437526ba5c0d"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.arco.ff.sulE.Ab2.stereo.aif",
+"key": "ab2.arco.bass.ff.sule",
+"sha256": "3ddbc16963b206c1702edbd59e90e0192865f5a62d423267af7c3ca371a440f7",
+"pcm32kMonoMd5": "8a34417df1c811da63d20182cfc25d3a"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.arco.ff.sulE.Bb1.stereo.aif",
+"key": "arco.bass.bb1.ff.sule",
+"sha256": "bf2bb2eef431af783f3839d30aa91cf6e960cc2c131b27a93f4f95d7631b6ed1",
+"pcm32kMonoMd5": "8b1a2a23db0fc397f710988760928630"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.arco.ff.sulG.B3.stereo.aif",
+"key": "arco.b3.bass.ff.sulg",
+"sha256": "ded2a49010b228bf1beacd0a978056080725eb7224425a3cb72d6c09600a62eb",
+"pcm32kMonoMd5": "7c76e4a3b780521ecff3a0f65467c7c0"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.arco.ff.sulG.Db3.stereo.aif",
+"key": "arco.bass.db3.ff.sulg",
+"sha256": "23990e0301e563a9f891b28746066c7872f40a11013d3a83863c3942861a7b71",
+"pcm32kMonoMd5": "cc18e702824c7c530c0762a81c80dcc9"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.pizz.ff.sulA.Ab3.stereo.aif",
+"key": "ab3.bass.ff.pizz.sula",
+"sha256": "6c6b156639ba212c38c806e53326804a9847c3a28fb689e045b1423c3a998cff",
+"pcm32kMonoMd5": "41f98fd2063130bacf3ab31654317133"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.pizz.ff.sulA.Bb2.stereo.aif",
+"key": "bass.bb2.ff.pizz.sula",
+"sha256": "8a073b6f83e28e8af8acec367a76692c30a1b81c6cbe43da0353ec9e171bf273",
+"pcm32kMonoMd5": "9a7695f3e4755f8c4f730a49bade0a31"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.pizz.ff.sulA.C2.stereo.aif",
+"key": "bass.c2.ff.pizz.sula",
+"sha256": "10be6a3dce95168057d8a0c9defa1939ffe0f696d04c52c46b7e42daf74894be",
+"pcm32kMonoMd5": "33d7319822c0ec8abf603e5bcc0c1a15"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.pizz.ff.sulC.Db1.stereo.aif",
+"key": "bass.db1.ff.pizz.sulc",
+"sha256": "b2c087f289694e22f65efd77222b94bfcd40bd58d0ae0d2002187892dba2ad3d",
+"pcm32kMonoMd5": "fb28a0c0f8830147e9353c6c01178f5b"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.pizz.ff.sulD.A3.stereo.aif",
+"key": "a3.bass.ff.pizz.suld",
+"sha256": "be6000577b5615321effb96f24d87458cb44a9f1a5a20872619433f016dbfb20",
+"pcm32kMonoMd5": "d7aa15e0a219ca3ade292c39162f8e2c"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.pizz.ff.sulD.B2.stereo.aif",
+"key": "b2.bass.ff.pizz.suld",
+"sha256": "3ae82fa381d2ddd24c3659eb1dcf3ee7025c7d8f10751141a8edb00cb82d454b",
+"pcm32kMonoMd5": "9bdd03d1c0ce61c27d9d3575f54fed5a"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.pizz.ff.sulE.B1.stereo.aif",
+"key": "b1.bass.ff.pizz.sule",
+"sha256": "5dd6388e2d08f29d024b4f995976443121c017def78fa59afd2229bfbbbe5609",
+"pcm32kMonoMd5": "82de3a22fcabcf39050a57da4bd48012"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.pizz.ff.sulE.Bb2.stereo.aif",
+"key": "bass.bb2.ff.pizz.sule",
+"sha256": "9198867b337cf5b971f0e0db1cf9b45cae54b002379c399f482b846b878ccf71",
+"pcm32kMonoMd5": "f4a9da8ac806e385f7d8968f786d3536"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.pizz.ff.sulG.A3.stereo.aif",
+"key": "a3.bass.ff.pizz.sulg",
+"sha256": "a71e738f56c947b660e65f0faebe0a2d14ea8176af98c07f5c9c337dd057a216",
+"pcm32kMonoMd5": "c3a01adb5168fc2c5020c8932cf519c5"
+},
+{
+"pack": "DoubleBass",
+"name": "Bass.pizz.ff.sulG.B2.stereo.aif",
+"key": "b2.bass.ff.pizz.sulg",
+"sha256": "8627bf974332522b01c0948ee1111a0a9fd0d72e178fd9881a85458d651c9624",
+"pcm32kMonoMd5": "4faaac4344ee53134648a5b1c04c6531"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.NoVib.ff.Ab4.stereo.aif",
+"key": "ab4.altosax.ff.novib",
+"sha256": "ac609f57e280a612ebc45c5309197bbd01e6072f118a7f35c739c602d8e313b1",
+"pcm32kMonoMd5": "e8707ed17a19f3e5f26ff7c178da6a90"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.NoVib.ff.B4.stereo.aif",
+"key": "altosax.b4.ff.novib",
+"sha256": "a007007ba9908f93e147198ab47d14899b0f02166543d212e2188a151d392ea6",
+"pcm32kMonoMd5": "050b6a04a2e7c438a79f3ec8bc9cb94c"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.NoVib.ff.Bb3.stereo.aif",
+"key": "altosax.bb3.ff.novib",
+"sha256": "fb8a1b31cc9d25af55611f25027beb30c4e680a45c3d0c0e3222dcd868f819bb",
+"pcm32kMonoMd5": "8cbaef6459333868b08cb974a90c994e"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.NoVib.ff.D5.stereo.aif",
+"key": "altosax.d5.ff.novib",
+"sha256": "84ad05613a6d7eb1e1e6a1da4007732322841aa55d041d6438906c47f1fb85e5",
+"pcm32kMonoMd5": "7525b1a0ea1a4117805d50e47589d38d"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.NoVib.ff.Db3.stereo.aif",
+"key": "altosax.db3.ff.novib",
+"sha256": "22cf0a09d6ffef7988a3ce761fcf0b2e3f3d568e94fe9fa94aa291354546df83",
+"pcm32kMonoMd5": "b0e1ad2b59cdecd122f0be1c5595a18a"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.NoVib.ff.Db4.stereo.aif",
+"key": "altosax.db4.ff.novib",
+"sha256": "93634b6e2d49c682cfb6d67c8569f24ce1c06b61fd2a1271f14a19f9c0e297ae",
+"pcm32kMonoMd5": "ff2f8351f9f1a49aa765154d18b0ac64"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.NoVib.ff.E3.stereo.aif",
+"key": "altosax.e3.ff.novib",
+"sha256": "69ef439be94355efaaf382bec55ef38741dfd6342d448022d30a24aa2a21dc24",
+"pcm32kMonoMd5": "7de6db0f9c810be8407a8b102ca666aa"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.NoVib.ff.F4.stereo.aif",
+"key": "altosax.f4.ff.novib",
+"sha256": "57c8763ed9ba502b25c2ce58d8aafe3829a7e5af7d7507d544e0dae93bed8b5e",
+"pcm32kMonoMd5": "1f06d6a8ec6184f5906ecb732bb0accf"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.NoVib.ff.F5.stereo.aif",
+"key": "altosax.f5.ff.novib",
+"sha256": "aea4a7df6c2941c0574df2ee2bb329d71aa71da85f2698b960b2f39ac41fb065",
+"pcm32kMonoMd5": "725c8ebf3a06da91273828b6ff0fb149"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.NoVib.ff.G3.stereo.aif",
+"key": "altosax.ff.g3.novib",
+"sha256": "e692a256630cdb9ea276876578316593abd0cbd251ef5550107c4409aad13591",
+"pcm32kMonoMd5": "ab2fffe771bd432e654fd10f046ff5fc"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.vib.ff.Ab4.stereo.aif",
+"key": "ab4.altosax.ff.vib",
+"sha256": "d3ec9d1c3b09370d5555edb4b0dbd72c731d8cf54d7f1e86e7ab7ced6eadc59d",
+"pcm32kMonoMd5": "b70d9f4b8c84f32ad005532f31c2d88f"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.vib.ff.B4.stereo.aif",
+"key": "altosax.b4.ff.vib",
+"sha256": "602e207b29531af25cb9137aa4f760a0d5f710de89faa61697a9161430d3c8fd",
+"pcm32kMonoMd5": "a19ba4bea13900a4c7c31bd867708e3b"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.vib.ff.Bb3.stereo.aif",
+"key": "altosax.bb3.ff.vib",
+"sha256": "cc9571c9e5d482cf007fb847a9fc39da633e7a4aa2a085ef206b8dd520b2783a",
+"pcm32kMonoMd5": "091a9dd2609ddb0cbe9987040a51cd0f"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.vib.ff.D5.stereo.aif",
+"key": "altosax.d5.ff.vib",
+"sha256": "5036f28de602bd5ec2ef2ace6267318f02a720595c0d5c19813c90b2ae14f475",
+"pcm32kMonoMd5": "a9e69af0c242e47d52cb8ead0f4010db"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.vib.ff.Db3.stereo.aif",
+"key": "altosax.db3.ff.vib",
+"sha256": "c453a75506ac4755807f390989ac093c3620188312cb21c3d532a55065c11bcd",
+"pcm32kMonoMd5": "5153bdfa4599a6b0c7e88016bf50feb0"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.vib.ff.Db4.stereo.aif",
+"key": "altosax.db4.ff.vib",
+"sha256": "f1dac439e646ce91776afc3a4ee7d8a21c10d72f3bf413c364c61e013989ab25",
+"pcm32kMonoMd5": "d89852cafd5671c76377549e91ded1c5"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.vib.ff.E3.stereo.aif",
+"key": "altosax.e3.ff.vib",
+"sha256": "4e8df1954aaf281b7c69b1f5dc99abab26533314e3fce539bf52355eb66a7b1b",
+"pcm32kMonoMd5": "ece3447afa675f97165e1b1dd061b7df"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.vib.ff.F4.stereo.aif",
+"key": "altosax.f4.ff.vib",
+"sha256": "76063b6add514f0a64e136632e55e7bfe1f3d149b60a725957a839be64b71ff4",
+"pcm32kMonoMd5": "6b8032d0461d596a6f072b2f52c30f1d"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.vib.ff.F5.stereo.aif",
+"key": "altosax.f5.ff.vib",
+"sha256": "137921200cb7ccfa656f96fc0119157ddc47624bf8c037f815c68c888dddcf8c",
+"pcm32kMonoMd5": "81f30dde1e69b77771955f67b2440865"
+},
+{
+"pack": "EbAltoSaxophone",
+"name": "AltoSax.vib.ff.G3.stereo.aif",
+"key": "altosax.ff.g3.vib",
+"sha256": "1bfa495e714f1e5445df9a8ae82927fab0ad98ca5385b7f97a445d4827d8798f",
+"pcm32kMonoMd5": "cc8b9b462c338f41936565f3adb76fa9"
+},
+{
+"pack": "Flute",
+"name": "Flute.nonvib.ff.B3.stereo.aif",
+"key": "b3.ff.flute.nonvib",
+"sha256": "169245b81684854a554e933ca36034e7013687468179a7ed92c07e9ddc4922ae",
+"pcm32kMonoMd5": "e9ddcc841606079c1c9431f7aa47b9ab"
+},
+{
+"pack": "Flute",
+"name": "Flute.nonvib.ff.B4.stereo.aif",
+"key": "b4.ff.flute.nonvib",
+"sha256": "2d50a58818514cab5b99b8b70ad39375a31bfe907e9ce81da18e144cc8b3ec56",
+"pcm32kMonoMd5": "04098a8d8c292f59e29375acabf673c9"
+},
+{
+"pack": "Flute",
+"name": "Flute.nonvib.ff.Bb5.stereo.aif",
+"key": "bb5.ff.flute.nonvib",
+"sha256": "ef35f8f1c1545e452009b2c40ffe310922b263e1d445e94c8fab695b7f930422",
+"pcm32kMonoMd5": "3792c793c1e4e2b146f3644539992127"
+},
+{
+"pack": "Flute",
+"name": "Flute.nonvib.ff.Bb6.stereo.aif",
+"key": "bb6.ff.flute.nonvib",
+"sha256": "294639d2a9fee50450ad81b65bc1d625dd3da1dde2d0e9a9c01e4e0779528013",
+"pcm32kMonoMd5": "63e0c9448dfbb927004a11198f824ade"
+},
+{
+"pack": "Flute",
+"name": "Flute.nonvib.ff.D5.stereo.aif",
+"key": "d5.ff.flute.nonvib",
+"sha256": "ad0b21e12eef0c09b557c9dcd9d3782d907469321b27a93a5849522c89ba180f",
+"pcm32kMonoMd5": "453f4e62f32c14e53314aac1d3be8eb9"
+},
+{
+"pack": "Flute",
+"name": "Flute.nonvib.ff.D6.stereo.aif",
+"key": "d6.ff.flute.nonvib",
+"sha256": "4e922adcdfe60ec4c75a46d6ff6c6e935911467248602b2ffc85e2e23d8c930a",
+"pcm32kMonoMd5": "8019423f0158449875ec0611a53c602a"
+},
+{
+"pack": "Flute",
+"name": "Flute.nonvib.ff.Eb4.stereo.aif",
+"key": "eb4.ff.flute.nonvib",
+"sha256": "9ebd45c80c1a0600b9195d45a368949ea98f826ab621b527ab4eff9941839449",
+"pcm32kMonoMd5": "ce6b502dfa28e8cf9405638aded64e18"
+},
+{
+"pack": "Flute",
+"name": "Flute.nonvib.ff.G4.stereo.aif",
+"key": "ff.flute.g4.nonvib",
+"sha256": "3236f6f28e438d8b4b488d3ccc8bd882a3326eb68d8b7e529f61bd3a980eb431",
+"pcm32kMonoMd5": "325f784f6b958849be9c0ba1723767f3"
+},
+{
+"pack": "Flute",
+"name": "Flute.nonvib.ff.Gb5.stereo.aif",
+"key": "ff.flute.gb5.nonvib",
+"sha256": "9f0de5bc4ba2af9fae1a35cd483fd5fc3944f74bff2330fbfe5183a992a22b0f",
+"pcm32kMonoMd5": "779095c55e806a4c378870c3e6000b7b"
+},
+{
+"pack": "Flute",
+"name": "Flute.nonvib.ff.Gb6.stereo.aif",
+"key": "ff.flute.gb6.nonvib",
+"sha256": "5adecc9e89d29e69a47f4fbf4d6aa7b13919c7ba688bb2f5ff5c5e824f3de152",
+"pcm32kMonoMd5": "15f04c3176148731597b5ecad940f863"
+},
+{
+"pack": "Flute",
+"name": "Flute.vib.ff.A6.stereo.aif",
+"key": "a6.ff.flute.vib",
+"sha256": "55d46eb7bdcd8e5fdbdbea8816b0597a1116c99e24bd2756ae5984828fed8fe9",
+"pcm32kMonoMd5": "0ade533e030172d302c1281916be22ad"
+},
+{
+"pack": "Flute",
+"name": "Flute.vib.ff.B3.stereo.aif",
+"key": "b3.ff.flute.vib",
+"sha256": "93ce10bde757c978f01ed2f64df3e8e3d3d208ba9aa47f3be1d5f712a5cbfda1",
+"pcm32kMonoMd5": "8b406d635baf79527c0fe021b73a28a4"
+},
+{
+"pack": "Flute",
+"name": "Flute.vib.ff.Bb4.stereo.aif",
+"key": "bb4.ff.flute.vib",
+"sha256": "aff5e2092f9a9c87dc05849ec0a3608eb2e43bb054089d22ed7be7bc7d7df9ef",
+"pcm32kMonoMd5": "0ee9a070252fe3814ef0c6cd7be71429"
+},
+{
+"pack": "Flute",
+"name": "Flute.vib.ff.Bb5.stereo.aif",
+"key": "bb5.ff.flute.vib",
+"sha256": "1f5d05a234255c22615b775710ab8e11066c316d85fe189d79e9c5e0f6d18edf",
+"pcm32kMonoMd5": "c23f3994152f33b3e3adccabd43ee5c9"
+},
+{
+"pack": "Flute",
+"name": "Flute.vib.ff.D4.stereo.aif",
+"key": "d4.ff.flute.vib",
+"sha256": "7bef6d56e5563952ead5193625f8be168b3a8b234f9596ad6ae2010e16e74c90",
+"pcm32kMonoMd5": "13faa5748ec177fe5bd730a3ece352bd"
+},
+{
+"pack": "Flute",
+"name": "Flute.vib.ff.D5.stereo.aif",
+"key": "d5.ff.flute.vib",
+"sha256": "325dd231d3cc31277676f0f59d90b896c2b73e3ece60fb7b8352aeefcc2d2b32",
+"pcm32kMonoMd5": "4d782bd05dd9609dbdb141ad3fc31504"
+},
+{
+"pack": "Flute",
+"name": "Flute.vib.ff.Db6.stereo.aif",
+"key": "db6.ff.flute.vib",
+"sha256": "d13ccd0dae9a3d7078087512410a9a942fce348c8818199c7fbd2e1b265df8df",
+"pcm32kMonoMd5": "a848fb10b220a8d97353f34701b32484"
+},
+{
+"pack": "Flute",
+"name": "Flute.vib.ff.F6.stereo.aif",
+"key": "f6.ff.flute.vib",
+"sha256": "88972b9c448877ea6acc6cc50d71fb5639b1d5e17dccedadd13f511cc1258411",
+"pcm32kMonoMd5": "f292f2fc55bbc101c38f21ff874de0bc"
+},
+{
+"pack": "Flute",
+"name": "Flute.vib.ff.Gb4.stereo.aif",
+"key": "ff.flute.gb4.vib",
+"sha256": "bf7d6397fe40f2e1afeb0ba77f7defe039e65d52ba163e24ece4d128e637c20b",
+"pcm32kMonoMd5": "9bef65de8d9eabb3be19928f78d60a62"
+},
+{
+"pack": "Flute",
+"name": "Flute.vib.ff.Gb5.stereo.aif",
+"key": "ff.flute.gb5.vib",
+"sha256": "53da781e0524943a153158570c3ef1a72112010111eff46f45562606eb7d9eb1",
+"pcm32kMonoMd5": "7d00d614d7a223be6fd9e9216a2dacb1"
+},
+{
+"pack": "GongsTamTams",
+"name": "20windgong.bow.stereo.aif",
+"key": "20windgong.bow",
+"sha256": "90cebaed7d0202b7cdb6fdecc1ec3585e75ff93aef50c63a1db142dbfdccd88a",
+"pcm32kMonoMd5": "d766a96354e0ac13584cae148d14c166"
+},
+{
+"pack": "GongsTamTams",
+"name": "20windgong.ff.stereo.aif",
+"key": "20windgong.ff",
+"sha256": "955f5ade691531461053d8a6b851d24538f27fbacd8b45150cfdc0a8efab792a",
+"pcm32kMonoMd5": "d9d2d628373d0e6587a57ccde2079e33"
+},
+{
+"pack": "GongsTamTams",
+"name": "22tamtam.bow.stereo.aif",
+"key": "22tamtam.bow",
+"sha256": "e13288c9d9d352bc12a64a0c89dc012f42172bec2cbafca3faa20471ce831c47",
+"pcm32kMonoMd5": "d8b6583c210638f73158b42912c166d8"
+},
+{
+"pack": "GongsTamTams",
+"name": "28tamtam.bow.stereo.aif",
+"key": "28tamtam.bow",
+"sha256": "594857e0ebf06e603b0b1c264ff46bbc7bf66d781fead5925550744f801f2e7b",
+"pcm32kMonoMd5": "fe84983f933afba9258c1db3ea9c1a62"
+},
+{
+"pack": "GongsTamTams",
+"name": "28tamtam.ff.stereo.aif",
+"key": "28tamtam.ff",
+"sha256": "8cf1b28bbcfb69ab79fad9d903f56279931484b8a1e4faacda5a7cd482dfcbe6",
+"pcm32kMonoMd5": "8e5d13cb737e0b049f73fa1039ea7918"
+},
+{
+"pack": "GongsTamTams",
+"name": "40tamtam.bow.stereo.aif",
+"key": "40tamtam.bow",
+"sha256": "b5baa6ba5aeb9c8300e6bb59cc2d00d9da45d1d625af6c8bfccc9f45934ffef4",
+"pcm32kMonoMd5": "beaf90e0e22831aa15361aa85269aca1"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.A4.stereo.aif",
+"key": "a4.ff.thaigong",
+"sha256": "c1e7efbed95fb9d449befc1c02b1f79952486d18346e32fb2aa61f36346646c8",
+"pcm32kMonoMd5": "db82f207b81386edabbdee322af2d0a1"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.Ab4.stereo.aif",
+"key": "ab4.ff.thaigong",
+"sha256": "b79e9a9d6e986194c557aa5f00b79d86935f9e901dc69f4a7400c4579386a8f3",
+"pcm32kMonoMd5": "5c89ba35e3589244c130769f77beb4bb"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.B4.stereo.aif",
+"key": "b4.ff.thaigong",
+"sha256": "d63ca18bbfebf61898a6f9f61a3b3a6c64fbba2e5476b6b85a103739c4487a94",
+"pcm32kMonoMd5": "698b7615959e8b5290ecaaaeabe2c091"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.Bb4.stereo.aif",
+"key": "bb4.ff.thaigong",
+"sha256": "9cc41e71f24e0ddbd0132f7239d8a54c92531e14f07592eb1a062f670276574b",
+"pcm32kMonoMd5": "c50ba3bab3df7a16599d83cbb3865b04"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.C4.stereo.aif",
+"key": "c4.ff.thaigong",
+"sha256": "112d1beb3ae4b352be5a209ffe5682767b0e87c3ad3a4f4282eec1576f1cb9ad",
+"pcm32kMonoMd5": "78f8ded14595a56ac5768db49111c3b6"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.C5.stereo.aif",
+"key": "c5.ff.thaigong",
+"sha256": "783c2b09f3b409010b806dc26be2133b5600e9a7ac3a7eb2c044389f4f9482d5",
+"pcm32kMonoMd5": "620c7607a5aad5fdd1bd4ebecc558b5a"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.D4.stereo.aif",
+"key": "d4.ff.thaigong",
+"sha256": "fef59b06d58106a8407bcaebcb448b8ea686b9ad9470360df97635a6c412b767",
+"pcm32kMonoMd5": "34aca72c37a4f69c195a445eab9d3a0e"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.Db4.stereo.aif",
+"key": "db4.ff.thaigong",
+"sha256": "dbd7fb4cf866ed48182fbc9ce659ed27ae56f22a7e8d637724b1ce998780c1a6",
+"pcm32kMonoMd5": "067285597b95e1144571f190b278686a"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.E4.stereo.aif",
+"key": "e4.ff.thaigong",
+"sha256": "e180b7d4585d159284fd62ac4f7fd4dccb3f266d67d406720818bc57961a25cc",
+"pcm32kMonoMd5": "71f67e501bde3bb5b03fbe8a3462fae5"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.Eb4.stereo.aif",
+"key": "eb4.ff.thaigong",
+"sha256": "b31d6b0b0afbb91c6ad582ff8dcb49130d08b0bf7ac707d41eedef7faf0733bc",
+"pcm32kMonoMd5": "1d58e93aa4195d486452f55477813f75"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.F4.stereo.aif",
+"key": "f4.ff.thaigong",
+"sha256": "d5d99c5d48606a9adfc210dfd4a875e1a1138f30c5c351ebed8149c1a1d3d51b",
+"pcm32kMonoMd5": "dcd3a200e3e9f56768733c41b49ae950"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.G4.stereo.aif",
+"key": "ff.g4.thaigong",
+"sha256": "0c0f089765f7bcbd398b6871d698f8fab879c8d7c81ef458f9862dc352bde80d",
+"pcm32kMonoMd5": "173b07992b6dec7781f109b89ab94de2"
+},
+{
+"pack": "GongsTamTams",
+"name": "thaigong.ff.Gb4.stereo.aif",
+"key": "ff.gb4.thaigong",
+"sha256": "c9162946b6d1a9de06208dd611edd3c05341374fade50539787100be7d4359cf",
+"pcm32kMonoMd5": "09ada30db84ce7549db1c86ebddfb142"
+},
+{
+"pack": "HandPercussion",
+"name": "10wb.ff.stereo.aif",
+"key": "10wb.ff",
+"sha256": "ced5481466003fb3082e2f1d703e4594b471eba1f9e7557183e17469d57726f1",
+"pcm32kMonoMd5": "c7e486bd041484ed1c2806160704c826"
+},
+{
+"pack": "HandPercussion",
+"name": "5.5wb.ff.stereo.aif",
+"key": "5.5wb.ff",
+"sha256": "dc55847829fdc7646cdb5138e688cb9b473f4f6e02eb41ee919c85c8968afb3d",
+"pcm32kMonoMd5": "015cf5e8026318009dbdefa096ae2a18"
+},
+{
+"pack": "HandPercussion",
+"name": "6.5wb.ff.stereo.aif",
+"key": "5wb.6.ff",
+"sha256": "afd80972397d0fb3e82869151c44fd024e361830881cc10579a0c20278822116",
+"pcm32kMonoMd5": "219898b55d832ff1dff8cecfb16a8459"
+},
+{
+"pack": "HandPercussion",
+"name": "6triangle.ff.stereo.aif",
+"key": "6triangle.ff",
+"sha256": "2ebd135a4813848be1c28847c812323cd47e6dc004db8cab4d7f2fbe65a9e29f",
+"pcm32kMonoMd5": "fb47a5d2588c18a9917ee2217467f1cb"
+},
+{
+"pack": "HandPercussion",
+"name": "6triangle.roll.ff.stereo.aif",
+"key": "6triangle.ff.roll",
+"sha256": "6caf892581d4ccd145401dc7aec4f99c64306fdc264de7a9d1229ae897221d39",
+"pcm32kMonoMd5": "1778f69a600951561e0ce48ce54fdb74"
+},
+{
+"pack": "HandPercussion",
+"name": "7wb.ff.stereo.aif",
+"key": "7wb.ff",
+"sha256": "6fafa7d1a34cf9d53db7c49665b7a8f075abbd81437c8a1a11ff7a403819da20",
+"pcm32kMonoMd5": "230263a1b8edc1b6fd4436fb9e4efc89"
+},
+{
+"pack": "HandPercussion",
+"name": "8.5wb.ff.stereo.aif",
+"key": "5wb.8.ff",
+"sha256": "8c72d59bbe304f52038c1ef7eedb523c63b5716c9a8301253673e76b8e0e9ed7",
+"pcm32kMonoMd5": "5c9c3062fe0f3a93ac903c54a71a2e87"
+},
+{
+"pack": "HandPercussion",
+"name": "8triangle.ff.stereo.aif",
+"key": "8triangle.ff",
+"sha256": "3770189b1262e41c757fb83c2f18856930cc7f8a3a07753250a0a61069b0d613",
+"pcm32kMonoMd5": "4ce512ed5ed9da378226efee07283263"
+},
+{
+"pack": "HandPercussion",
+"name": "8triangle.roll.ff.stereo.aif",
+"key": "8triangle.ff.roll",
+"sha256": "e786875cae18e91b37976e5071729a17d53a031641aed86cb6f83a8ead15cc1b",
+"pcm32kMonoMd5": "6b7799a6f659f214a2a83bbc6a10bfeb"
+},
+{
+"pack": "HandPercussion",
+"name": "castanet1.ff.stereo.aif",
+"key": "castanet1.ff",
+"sha256": "fa3d1a72133655807d30bdfcd941a409a624b869a19123bd6329279bc5dd7690",
+"pcm32kMonoMd5": "1de4e5fcda8dc06d6f8a394aebc85dd1"
+},
+{
+"pack": "HandPercussion",
+"name": "castanet2.ff.stereo.aif",
+"key": "castanet2.ff",
+"sha256": "f7c8711891f99e0faf6de04af6fc15cef12caac80376a19d5c3b940fee710f10",
+"pcm32kMonoMd5": "ff49165fa61188b65bc49b56e45f5e1f"
+},
+{
+"pack": "HandPercussion",
+"name": "clave1.ff.stereo.aif",
+"key": "clave1.ff",
+"sha256": "9266e7b230e8ed38bfd393d8ed0e0848ac38f58a1ea98a89688cc6cd583c8e39",
+"pcm32kMonoMd5": "eb2538ac01eac88ce7974f9b38261eec"
+},
+{
+"pack": "HandPercussion",
+"name": "clave2.ff.stereo.aif",
+"key": "clave2.ff",
+"sha256": "804311a57d2076678608776b7b5f47363f3d087169a33372187380c5b62a42ee",
+"pcm32kMonoMd5": "56013db1bc02b53eceb30dbb40564015"
+},
+{
+"pack": "HandPercussion",
+"name": "clave3.ff.stereo.aif",
+"key": "clave3.ff",
+"sha256": "0adaa806ef976b40882beea4dc447ca26978ee2d1da718103a92bbe7e03ad72f",
+"pcm32kMonoMd5": "f9e1b95668d9beced6e6cc887dd46e4f"
+},
+{
+"pack": "HandPercussion",
+"name": "clave4.ff.stereo.aif",
+"key": "clave4.ff",
+"sha256": "6c6ed781c2f21f487405acbb66087ac761c83f746c9cb9d2ebfb4090884e4e9e",
+"pcm32kMonoMd5": "6c13f5c08d848d8961ce1b490e89e9da"
+},
+{
+"pack": "HandPercussion",
+"name": "clave5.ff.stereo.aif",
+"key": "clave5.ff",
+"sha256": "6ed044025d3755d3b04865d48b808f7ff955873ca50ee97533bf3c56a7702351",
+"pcm32kMonoMd5": "9dcd7a11832e95748da6c7f80a2a54df"
+},
+{
+"pack": "HandPercussion",
+"name": "clave6.ff.stereo.aif",
+"key": "clave6.ff",
+"sha256": "299e20983454e2070dd29ca25b843170bbdd0b084354516c897ced2666a24f74",
+"pcm32kMonoMd5": "a555b675ebd4e2e5fe875ce1f02a6243"
+},
+{
+"pack": "HandPercussion",
+"name": "clave7.ff.stereo.aif",
+"key": "clave7.ff",
+"sha256": "beea9ebb991e8e5214d639c2761381f561c3e96ac18846bac671f7b155d11a05",
+"pcm32kMonoMd5": "4a3d5602868eaecfaa3391d0cee63a2d"
+},
+{
+"pack": "HandPercussion",
+"name": "graniteblock1.ff.stereo.aif",
+"key": "ff.graniteblock1",
+"sha256": "054799e5e7661ae204370f1a8ed44673dc5cb1f5c576556fbd9649c1a1d02c8a",
+"pcm32kMonoMd5": "ef2bb90942bb1367238320fe7bde60ad"
+},
+{
+"pack": "HandPercussion",
+"name": "graniteblock2.ff.stereo.aif",
+"key": "ff.graniteblock2",
+"sha256": "c4b8ad7d2fbd188a09783748fc4384b115352ac9963f5820e98583a59afd2d8e",
+"pcm32kMonoMd5": "2ee2cc5abe05b3c4456ebb28fb41ffb9"
+},
+{
+"pack": "HandPercussion",
+"name": "graniteblock3.ff.stereo.aif",
+"key": "ff.graniteblock3",
+"sha256": "8461afc8c8ba75cebbe351b2509a4c502e8fb0746b9e9e633a1a8a9042d0b6f0",
+"pcm32kMonoMd5": "6bdeddabdf992001439e034da01afe60"
+},
+{
+"pack": "HandPercussion",
+"name": "graniteblock4.ff.stereo.aif",
+"key": "ff.graniteblock4",
+"sha256": "13fbd4f6a6a7218a2eb9482530b4c40ca34ff0867682f28dfe97bf11cf2c13c2",
+"pcm32kMonoMd5": "a648d5ce8964e602652286da192107fe"
+},
+{
+"pack": "HandPercussion",
+"name": "graniteblock5.ff.stereo.aif",
+"key": "ff.graniteblock5",
+"sha256": "5ba6d0e76123d04b575289cc3af515d51526973a2abb4cdec64144e0e020e5a3",
+"pcm32kMonoMd5": "939c10dbdee3af2f9b89b3ea4829ae24"
+},
+{
+"pack": "HandPercussion",
+"name": "guiro.away.ff.stereo.aif",
+"key": "away.ff.guiro",
+"sha256": "6b528e2efe7323a3dffc3bf3cfb09e51a7949f1491db9a7fd34f35a0629b5452",
+"pcm32kMonoMd5": "ed445b844b5e1c0edb6b9a1db03ff5cc"
+},
+{
+"pack": "HandPercussion",
+"name": "guiro.toward.ff.stereo.aif",
+"key": "ff.guiro.toward",
+"sha256": "d791ce947b70d641f4e22bfd4103c4c46f46807ab6e05c999a5cdbff15a208c8",
+"pcm32kMonoMd5": "610211852aa460a1217e0da99f8da252"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.A2.stereo.aif",
+"key": "a2.ff.horn",
+"sha256": "cff68c70d663c449cb9f4b3a1eddc3642d97604aee7620d23429ea201df88867",
+"pcm32kMonoMd5": "a04155687364ccf972a69e36acd2c09a"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.A4.stereo.aif",
+"key": "a4.ff.horn",
+"sha256": "8c1132e42f0943df33ba717b6f8dde8830e956ba6ae88bc45fb21cdf93e4d976",
+"pcm32kMonoMd5": "0f98be21d67a24c13012b180c3ac151a"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.Ab3.stereo.aif",
+"key": "ab3.ff.horn",
+"sha256": "568746c757de2c9fa7290f9979f8685a243f889cc20f08954906ceb05f1c1db1",
+"pcm32kMonoMd5": "1c59b59f2fe08dff2d26189c90190335"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.B2.stereo.aif",
+"key": "b2.ff.horn",
+"sha256": "eaac8701895e5f3558e9c8c2f9b3d9f3dfb665be4f8149a2ce7ee22dc27b756f",
+"pcm32kMonoMd5": "786ba2e765f32e6b9cd03cceb784a1e9"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.B4.stereo.aif",
+"key": "b4.ff.horn",
+"sha256": "7ecb42b6da3a78ab4f3b0911f7136cc3419fccf573d379ce7d686ee58778cc43",
+"pcm32kMonoMd5": "3c577ef30a0df62de41fa7106126c32f"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.Bb1.stereo.aif",
+"key": "bb1.ff.horn",
+"sha256": "ee8ef3115ca7b3e3accb6eb2b07bee071f2c5a9da923eff22376b3e46e7be3eb",
+"pcm32kMonoMd5": "6ec4efba0fae5ed99323ba8bfd61fe3e"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.Bb3.stereo.aif",
+"key": "bb3.ff.horn",
+"sha256": "b8bd43a18be0ad9452f366329ada5adbec589a4f527cad2f974add942fae80a9",
+"pcm32kMonoMd5": "7cecc7594d9812beb6ffc046c558ec1a"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.C2.stereo.aif",
+"key": "c2.ff.horn",
+"sha256": "5c2b772f6586fddc3ed0c51833a495d8fcc3a5a45e6b3d5883a1720434bff548",
+"pcm32kMonoMd5": "2e6c0095960be94b7db3311b194466f8"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.C4.stereo.aif",
+"key": "c4.ff.horn",
+"sha256": "f67135ff89af7497abba9454a8442500879566459cc60780bdc67fe95ce1b23b",
+"pcm32kMonoMd5": "7e5e0199a1348761af90a2b6561f2014"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.D2.stereo.aif",
+"key": "d2.ff.horn",
+"sha256": "449251c0c6c44d86d076793152bb50369c6a20e2614622d3d686114d7172e6b3",
+"pcm32kMonoMd5": "40a4f75e4882b6d8d61d6dcc70449f10"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.D4.stereo.aif",
+"key": "d4.ff.horn",
+"sha256": "7404168e8278f288562b5c05e792e7253373be7f23875b1d686a465e9feb7fa4",
+"pcm32kMonoMd5": "e730d1963f5dbf484bab5450da2ce508"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.Db3.stereo.aif",
+"key": "db3.ff.horn",
+"sha256": "74857493bb2695ed8432b779b9f28982af5aa682a10ea32a66013bc4ae00a431",
+"pcm32kMonoMd5": "6849ebe53d01574a4af6bf28c5de385a"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.Db5.stereo.aif",
+"key": "db5.ff.horn",
+"sha256": "682e49e3ad6cb4d9055b0015e2918be6096ec6ab846be1300576fb01cc8a14ef",
+"pcm32kMonoMd5": "f93d3832eb5b0ad9407520046df46826"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.E2.stereo.aif",
+"key": "e2.ff.horn",
+"sha256": "a2e02b0c705823887e31b649fe9d304173053b70ade817a3ac50318c6cd81502",
+"pcm32kMonoMd5": "dd0de10dffc91e9d87045a71fc4d7d13"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.E4.stereo.aif",
+"key": "e4.ff.horn",
+"sha256": "ae380235ffd4823bbb7606e9d8c0be95a7a91576d992e4449114a340b1c4c6a5",
+"pcm32kMonoMd5": "dcc93ea3a0c377f676a02ee9b44158a7"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.Eb3.stereo.aif",
+"key": "eb3.ff.horn",
+"sha256": "5ac73b4c70f3f7553306a07a4b1490a31323d4ae90eaf2f91ec790f73caf62c6",
+"pcm32kMonoMd5": "0dfef787cdedaab471f2ad01d0a87c6f"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.Eb5.stereo.aif",
+"key": "eb5.ff.horn",
+"sha256": "cf863d0f0dd14b456f636f552e237ad5b8d1558192aca8365fab732d02a50c97",
+"pcm32kMonoMd5": "d28b3631205d256449693ef0ee19ed6c"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.F3.stereo.aif",
+"key": "f3.ff.horn",
+"sha256": "38ecc7c44c974b8c8fa704f3a4faec8fa5b6cd6ea6bac6d015a2fa84052ee145",
+"pcm32kMonoMd5": "48d8828ebc138b492316865767b331fe"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.G4.stereo.aif",
+"key": "ff.g4.horn",
+"sha256": "3cf06b3ad316cbff3c1b1949ac9e98c7c9a03f9890c664b6d189a955391c64b0",
+"pcm32kMonoMd5": "829ebe414eb4f4e30c217a40bb4d2277"
+},
+{
+"pack": "Horn",
+"name": "Horn.ff.Gb2.stereo.aif",
+"key": "ff.gb2.horn",
+"sha256": "83f2abe7a53af73c06ec619e6becf9e5b643f05ae3fa99d94a80f99b92025376",
+"pcm32kMonoMd5": "5c7ba247cb095a9243be90b2c4d40852"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.cord.ff.Bb5.stereo.aif",
+"key": "bb5.cord.ff.marimba",
+"sha256": "aefcfc7472a23a815c691f2a2d2ac6679dd314f4cad564e40feed39e0a896e48",
+"pcm32kMonoMd5": "4a0d37cce24546927b6a0c1d729d87c8"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.cord.ff.C2.stereo.aif",
+"key": "c2.cord.ff.marimba",
+"sha256": "a16accc74dbe296b0367e5ddb43d0c64687c20a0974a448a3a02695f03b7b490",
+"pcm32kMonoMd5": "a48502bdbd7dc916379edb3744dcfb63"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.cord.ff.Eb3.stereo.aif",
+"key": "cord.eb3.ff.marimba",
+"sha256": "9a1d9856c383eba2de929488a5bab1365399ae720adbc39b71b1f40abaa5a427",
+"pcm32kMonoMd5": "496393edb473e48740e9fab5e66b2bdf"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.cord.ff.Gb4.stereo.aif",
+"key": "cord.ff.gb4.marimba",
+"sha256": "6371bac2a47fadf8bbfae97c275696f2ac41d1a9e7ed9c2dcf5d4d9af8f407a6",
+"pcm32kMonoMd5": "3c21330a353ec3aa7022de9a7c71fd3c"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.deadstroke.ff.A5.stereo.aif",
+"key": "a5.deadstroke.ff.marimba",
+"sha256": "4526a7bb2637d1143c5c739b3bb80dad296ee19630a71b062568dfe2b4f63d09",
+"pcm32kMonoMd5": "3a4d2ccfbca0a2a7ac05d095637025eb"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.deadstroke.ff.D3.stereo.aif",
+"key": "d3.deadstroke.ff.marimba",
+"sha256": "77ded6ad252a47d01c48facb73666d42646885f69ba44bd2d22299f110990b74",
+"pcm32kMonoMd5": "9dfef1ed6c51913e7f1293426b8c81f7"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.deadstroke.ff.F4.stereo.aif",
+"key": "deadstroke.f4.ff.marimba",
+"sha256": "423988fc34b2af2bb4584e75ee3b4e7b7fc9d9e8b51abf27cb3d01ee1d204f31",
+"pcm32kMonoMd5": "5a22d60113ef6de030c9c79c9adfeaff"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.roll.ff.A5.stereo.aif",
+"key": "a5.ff.marimba.roll",
+"sha256": "72d868c9089e8b05ee2f59e024db686c8b64eee245a7e0fb783b1f4a04028348",
+"pcm32kMonoMd5": "36d7802d6e67271392f1e03addabf6da"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.roll.ff.C7.stereo.aif",
+"key": "c7.ff.marimba.roll",
+"sha256": "4bcce4c0deb1bbba172d0f50bea0ee2cef9bb867eba8637a17eedbb04f9dbd61",
+"pcm32kMonoMd5": "58e3053e388ab45bd8fb3626007e6cf6"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.roll.ff.D3.stereo.aif",
+"key": "d3.ff.marimba.roll",
+"sha256": "e065b16a8b4eb9f2c0441302da6e8d3d2e1cbe75c5885b6778a47ebcbc87654b",
+"pcm32kMonoMd5": "9e0d38b503bf3bb46a42f9fa36e71dba"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.roll.ff.Gb4.stereo.aif",
+"key": "ff.gb4.marimba.roll",
+"sha256": "651b9dfa699b781aed226dd31310d6b9fb65e968eee74575c444c6faf6409895",
+"pcm32kMonoMd5": "3ce4194c51611454b8ff3a388990784a"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.rubber.ff.A5.stereo.aif",
+"key": "a5.ff.marimba.rubber",
+"sha256": "86ceb304e224b5a83a5355e75818b9b34f4b8a64b12af42565a08cca8a53e94c",
+"pcm32kMonoMd5": "7a7981e3d58d8f7eff73c81ed5649b27"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.rubber.ff.C2.stereo.aif",
+"key": "c2.ff.marimba.rubber",
+"sha256": "a59658b6e529ea941da4cf9b459c836626b25ac8a7f4cc389518d795283ad594",
+"pcm32kMonoMd5": "95b4960b5c10850f76c0538c694a8cae"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.rubber.ff.C7.stereo.aif",
+"key": "c7.ff.marimba.rubber",
+"sha256": "9ff920691b6803bb35bb962abcb593927d16f04a98cca4b6658468b8579432fe",
+"pcm32kMonoMd5": "dda068c76f3a1800f685ecf82df6c709"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.rubber.ff.Eb3.stereo.aif",
+"key": "eb3.ff.marimba.rubber",
+"sha256": "aa197be63707ee8d15ba255e37e7e07b68bc9adcb9b87b381642baa889ed40a1",
+"pcm32kMonoMd5": "4083847c8c06c8de0c984cb17beacf91"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.rubber.ff.Gb4.stereo.aif",
+"key": "ff.gb4.marimba.rubber",
+"sha256": "95f280007cd94dff332176c6b2893d49ee1585951a1d0b13cfb4efd59c46e83e",
+"pcm32kMonoMd5": "c6b5fb4e315c722a80268abdc7df9940"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.yarn.ff.Bb5.stereo.aif",
+"key": "bb5.ff.marimba.yarn",
+"sha256": "942ed750b10c87f9ef05640db4e2ebe6ccb168748d3abbf3d2d304a74fa3e304",
+"pcm32kMonoMd5": "160cdacec05f12d4e2cea72966e62090"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.yarn.ff.C2.stereo.aif",
+"key": "c2.ff.marimba.yarn",
+"sha256": "d01cb3c363aac92085b43b2ebe6647ce796b52de22e525f45bbc7e6e563fe156",
+"pcm32kMonoMd5": "392efcd8b21eb9feb7953490e349d21b"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.yarn.ff.E3.stereo.aif",
+"key": "e3.ff.marimba.yarn",
+"sha256": "44800bec27492d83d7bbbc5382f3880293d0efd6e2bcbd43fc70892381a47f65",
+"pcm32kMonoMd5": "ee9584a91254763ad9c6d92642eb68d3"
+},
+{
+"pack": "Marimba",
+"name": "Marimba.yarn.ff.G4.stereo.aif",
+"key": "ff.g4.marimba.yarn",
+"sha256": "00dd1ae784ebbb5661b35fe70f0bf4c429a3e88c77816bddc79ea8e84562bc94",
+"pcm32kMonoMd5": "0c29f1641f17312a8061eb03fbc33cbd"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.Ab4.stereo.aif",
+"key": "ab4.ff.oboe",
+"sha256": "fb619ecef4890a745d96df3dabee128db00198f9aef302413aa4f3b08273db33",
+"pcm32kMonoMd5": "f3d0c9fb0bc647e32f17de0815698a26"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.Ab5.stereo.aif",
+"key": "ab5.ff.oboe",
+"sha256": "60a883c6cc86c61a7ac91afaa18cf03e11088a6831f88583a6bd7d9939c40131",
+"pcm32kMonoMd5": "5d5c935d346bd2ae0b13adfc6e084d92"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.B3.stereo.aif",
+"key": "b3.ff.oboe",
+"sha256": "c0625c1d6bbb46be5694d369c86eda7040c152ff1a649fa1fc8e2ef9b14d5007",
+"pcm32kMonoMd5": "1007f9b2678d53316f8f2b29e6b3b186"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.Bb3.stereo.aif",
+"key": "bb3.ff.oboe",
+"sha256": "0c6380976976d261c678cc170700052b69e008d2bc0137a8eaec47f9b3c0363a",
+"pcm32kMonoMd5": "31a06bd3606b51da35af0a1cb6f7f14d"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.Bb4.stereo.aif",
+"key": "bb4.ff.oboe",
+"sha256": "0f6e9d806fe8937928d1d14bec89e9e10914d0f327a08f5673237ff5ff352660",
+"pcm32kMonoMd5": "ab856fba2215b2eff2794e4e630fa515"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.Bb5.stereo.aif",
+"key": "bb5.ff.oboe",
+"sha256": "eef5cbe13406fdb25fd2e2a806ed63123c70c0a1c1d0c615ae55bd5ede4d8019",
+"pcm32kMonoMd5": "73c5de4479eae5b854f4dacd861da9e6"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.C5.stereo.aif",
+"key": "c5.ff.oboe",
+"sha256": "dc7f5bdf225b746171ed3413c133d5e7b56e95a9ec0034532eb807828209d0a7",
+"pcm32kMonoMd5": "08da69b2ec009343b3bf638b89024f58"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.C6.stereo.aif",
+"key": "c6.ff.oboe",
+"sha256": "7ecc478f197acbcc723e0a6edb4096a94fdf2e2c5e2c36113d184dde5ae003eb",
+"pcm32kMonoMd5": "4946e937cf479eed31c103d90977fbea"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.D6.stereo.aif",
+"key": "d6.ff.oboe",
+"sha256": "d69bb3c9a2b5d4b7b79f0dbd401330fcf292b62251d87bcd1219ab635654c062",
+"pcm32kMonoMd5": "e71443dc7191c3e30b510cb3394cf69f"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.Db4.stereo.aif",
+"key": "db4.ff.oboe",
+"sha256": "e98c3c383ce290eaeba9d1dab7265c197b22d62e6622373c4f312a31a2df77d4",
+"pcm32kMonoMd5": "f430cec1f9f73cee53bc4e56b66de9e8"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.Db5.stereo.aif",
+"key": "db5.ff.oboe",
+"sha256": "53605089792d89970c29483c966750ca7e6d4097e4e06a7eb0a1bc1ad4d7d90c",
+"pcm32kMonoMd5": "f00386cb71c0de90e2f8a0a01c617eb1"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.Eb4.stereo.aif",
+"key": "eb4.ff.oboe",
+"sha256": "736ca68699998e88557f878ac7bca173079a8693eaff9bbb5a3183e67d2d50b2",
+"pcm32kMonoMd5": "30584a5eb9b6345b60fcf806d2b3759f"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.Eb5.stereo.aif",
+"key": "eb5.ff.oboe",
+"sha256": "09caeb0373d354aeb69675dddd5993166c61897a22cdd98349b4dd87a5375338",
+"pcm32kMonoMd5": "08fb15ea1842e4f3916ab535727761f7"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.Eb6.stereo.aif",
+"key": "eb6.ff.oboe",
+"sha256": "8e2748adf0807c27aff9f9a8ed4a759e7fadef671867f213a556a197f8058068",
+"pcm32kMonoMd5": "37e0992c1ebb32583ccaa556ef6c5fee"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.F4.stereo.aif",
+"key": "f4.ff.oboe",
+"sha256": "500132a703a924f0308f49254d9d1c25eca4061453411c71e37070b7e439c964",
+"pcm32kMonoMd5": "7b5de2c457b1ccecc410d2f8e340361c"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.F5.stereo.aif",
+"key": "f5.ff.oboe",
+"sha256": "9e498f859fcac07eedd15c8b9b84ac38639ff59e785f5f3431875907385d8476",
+"pcm32kMonoMd5": "95c0b91a0f0aa8db7021e9938cccc761"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.F6.stereo.aif",
+"key": "f6.ff.oboe",
+"sha256": "3148c366f83c3d312076b08d3e415343f4fc7e866a56107d386ee566d506a441",
+"pcm32kMonoMd5": "dd528097f863d4bfc1d6b89b864db564"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.G5.stereo.aif",
+"key": "ff.g5.oboe",
+"sha256": "d7ac170abe978594465736d7897bae99a673072be8d1971aef9928d497ff45cb",
+"pcm32kMonoMd5": "fb0436f084ab0d03888d3e847fae3ae8"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.G6.stereo.aif",
+"key": "ff.g6.oboe",
+"sha256": "e9ba18b8dedbc2967e7d66beef0c59e00eb55a79f58884878182ea2605348488",
+"pcm32kMonoMd5": "d400f555628b911cca3af3eb5da97b5a"
+},
+{
+"pack": "Oboe",
+"name": "Oboe.ff.Gb4.stereo.aif",
+"key": "ff.gb4.oboe",
+"sha256": "7a773ea29c8ab674e48cfc96d1bd37efe6757815ff057d8935d570c2e48ff57d",
+"pcm32kMonoMd5": "e61cf00d296a595309cc6075eeff1d95"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine1.fingerroll.ff.stereo.aif",
+"key": "ff.fingerroll.tambourine1",
+"sha256": "70264ecdb71fba3c8797539add6b4c18f9f9c34945eb8909cdd7da2e68209e86",
+"pcm32kMonoMd5": "ef93dabcad2f4c75efeea178c3ad724f"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine1.normal.ff.stereo.aif",
+"key": "ff.normal.tambourine1",
+"sha256": "fb4c82d3e257998dff8248c59f428378cb4a0b2255dcd49cc48e39248fc01821",
+"pcm32kMonoMd5": "3cba055302e481dc6482288ae948e1b0"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine1.sforzando.stereo.aif",
+"key": "sforzando.tambourine1",
+"sha256": "e2f4ceb7dd0b85362046dc07ff09f89910a7f3b9a49ff8cc926bd3fb3e06e30d",
+"pcm32kMonoMd5": "7c48394d1a7bd930d865148f70808575"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine1.shakeroll.ff.stereo.aif",
+"key": "ff.shakeroll.tambourine1",
+"sha256": "25f3245a8cf5151dd2499f7595d31dd26fbb5ef2727dab331686e456dd0a8e2b",
+"pcm32kMonoMd5": "1ad1cdc1e440a66b75596988450f5528"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine1.thumbroll.ff.stereo.aif",
+"key": "ff.tambourine1.thumbroll",
+"sha256": "ca8488e1c9385ea1daf89cf33242cc4c60668a3d1cad845d680477ee80418e5e",
+"pcm32kMonoMd5": "3644db4d4bca2173acaa10ab02b7cf4d"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine2.fingerroll.ff.stereo.aif",
+"key": "ff.fingerroll.tambourine2",
+"sha256": "8c12480e87b464fb4efa5ef9b5699144eadc842daa1ca7f3db6bf46e128b5c7e",
+"pcm32kMonoMd5": "112c6666ec33720eb3d75f586e75b3de"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine2.normal.ff.stereo.aif",
+"key": "ff.normal.tambourine2",
+"sha256": "9545020aa51340c32fceaf999b48b77dcd73401c894dd6385337285309b14437",
+"pcm32kMonoMd5": "600f7be0cf6a641ec5f62aa497bd2777"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine2.sforzando.stereo.aif",
+"key": "sforzando.tambourine2",
+"sha256": "104744265b16c5a2b8c5ff68d35e1a3252b788fa8578979fe7ca013c9272a901",
+"pcm32kMonoMd5": "93f71690892d433d3bec99790c16766f"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine2.shakeroll.ff.stereo.aif",
+"key": "ff.shakeroll.tambourine2",
+"sha256": "976666f08941309976f42deb73c3e351135e4337d5a71ba8f8b989f8f440afab",
+"pcm32kMonoMd5": "c4b8929c84a09666eaaea7201937d3d6"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine2.thumbroll.ff.stereo.aif",
+"key": "ff.tambourine2.thumbroll",
+"sha256": "266cf6c815dba64fcecde824a075b53858759222d7dd2ed05c5b4c0e4ab72565",
+"pcm32kMonoMd5": "106928cf97bbc3c8a012d90b91eb8100"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine3.fingerroll.ff.stereo.aif",
+"key": "ff.fingerroll.tambourine3",
+"sha256": "9e50f80390ef467ec1e1aab320d657af9ac234695f0343ab0ec5e849fb98b6f6",
+"pcm32kMonoMd5": "57b3f769d1e30bfc0eb88ef55cfe492f"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine3.normal.ff.stereo.aif",
+"key": "ff.normal.tambourine3",
+"sha256": "75a52c4f634cf5f65f21930dc243806fe807034ce1778d9b2267f6ffb3e23c07",
+"pcm32kMonoMd5": "00f28880119805a5f89c029313c5d2d3"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine3.sforzando.stereo.aif",
+"key": "sforzando.tambourine3",
+"sha256": "e0043ce95a809a8c004461173fdef3017240d80c8b6db6b8a3fbcd595326649b",
+"pcm32kMonoMd5": "f8cdda124861b39a96e401b88116f13b"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine3.shakeroll.ff.stereo.aif",
+"key": "ff.shakeroll.tambourine3",
+"sha256": "ba9b1470c29ce35d040b08f0f29d66eb94b66c6e3d8f7a70a6f71a33a33e6b30",
+"pcm32kMonoMd5": "42d6c7811e326f2a88fd79886bf38f91"
+},
+{
+"pack": "Tambourines",
+"name": "tambourine3.thumbroll.ff.stereo.aif",
+"key": "ff.tambourine3.thumbroll",
+"sha256": "62e013a32cb82c3b30984feab24d7cdfdc63345ad2dac30590736d998c5cd730",
+"pcm32kMonoMd5": "5589ece7d418750ff994ba58a5c2047c"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.A4.stereo.aif",
+"key": "a4.ff.tenortrombone",
+"sha256": "a733e4c313c262e39fe2d46d61fe2e9dc3f12ac1f7c12ebaa28d7564334a4bd6",
+"pcm32kMonoMd5": "20fe005c4581b91d0295c805481d4778"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.Ab2.stereo.aif",
+"key": "ab2.ff.tenortrombone",
+"sha256": "56033a988c492e3c9d045f2b17c862e2804fc035d5a3d865ad4bbfd71e19f3cf",
+"pcm32kMonoMd5": "99f62757ed734af10ee7bbad547d1280"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.Ab3.stereo.aif",
+"key": "ab3.ff.tenortrombone",
+"sha256": "1dfab0bb83e6de2b71fe65bc9eb61aa250a0c0690df674a8b4f4b6a329bb5b2d",
+"pcm32kMonoMd5": "1ecd96d215a8c20ef1e18e442904faf7"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.Ab4.stereo.aif",
+"key": "ab4.ff.tenortrombone",
+"sha256": "400ef03fddea5028f4e2e4a50a62aa9225bcd530f783c655017afd6ccf6da361",
+"pcm32kMonoMd5": "8200d9dcdfef8cfc776609cec4ed2dce"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.B3.stereo.aif",
+"key": "b3.ff.tenortrombone",
+"sha256": "e6f4c88f2b15366cef2d553982c38eabba865e0b134baa554f75d0e77cab750b",
+"pcm32kMonoMd5": "76355bb143041a96dddaf589c21c8198"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.B4.stereo.aif",
+"key": "b4.ff.tenortrombone",
+"sha256": "fd8b01cfb7a18a221d71a8e6564601c3ba7c3769c596329f672430b33b4dff50",
+"pcm32kMonoMd5": "3e575616d173bf22f133e138f6454d19"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.Bb2.stereo.aif",
+"key": "bb2.ff.tenortrombone",
+"sha256": "9998d937204f8ecfd166745333f254091f4ffd59f1c5265927cfdb3c22751cf9",
+"pcm32kMonoMd5": "f0571437f2d12e7e52f6c7bde7c91bc9"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.Bb3.stereo.aif",
+"key": "bb3.ff.tenortrombone",
+"sha256": "6fd60183201dd769467b513727643c7fc05c8326a87788ac35a27744043cdcd8",
+"pcm32kMonoMd5": "0e15612f0952e23c19694ef26f931fe9"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.C3.stereo.aif",
+"key": "c3.ff.tenortrombone",
+"sha256": "6339d1f872bdffa4294a947e46af0ecbc534be9d44cb4d7c33f2a326b404ffe6",
+"pcm32kMonoMd5": "e68e75a7e693b2b5b9a5e34800e6a08f"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.Db3.stereo.aif",
+"key": "db3.ff.tenortrombone",
+"sha256": "3581ac44b3bef7f48578771752480f6744f1ae0e492ab9567fff68816cb8435b",
+"pcm32kMonoMd5": "8bd9633efd79a3c8d4dae4a07c72099e"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.Db4.stereo.aif",
+"key": "db4.ff.tenortrombone",
+"sha256": "103c4c3299cee91f42b43ce4a01f44336cb1ec6edb3dd6cfb6cf45795d38d1ae",
+"pcm32kMonoMd5": "e9d00bb4e942bfd877720212d623e4a9"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.E2.stereo.aif",
+"key": "e2.ff.tenortrombone",
+"sha256": "23a6d61c3dd85ff44efc431a93a835bed59f46cd5d99dfcb3508254ad04cdc1d",
+"pcm32kMonoMd5": "d3d2f8760a6ce9c30b32f61f5e09bba6"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.E4.stereo.aif",
+"key": "e4.ff.tenortrombone",
+"sha256": "b48427c66b57e3077c5246b78e6acaa25de8efc7974fc4bcafe5bcecc0d95004",
+"pcm32kMonoMd5": "d6f9a8a832ae1e459a0d0032809685e7"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.Eb3.stereo.aif",
+"key": "eb3.ff.tenortrombone",
+"sha256": "8f0e53d14c0d97e8bea4a52a848c7bba77a93e32cf8a5bd95397bcdfb58699ee",
+"pcm32kMonoMd5": "42107958c25b7c1bc4f6499ec22dc675"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.Eb4.stereo.aif",
+"key": "eb4.ff.tenortrombone",
+"sha256": "8357c21eb02948b35f0053e69b00d1c75c91474c67975f95341a973279ce9535",
+"pcm32kMonoMd5": "eab114c88beabf8ccfa9decf095866e6"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.F2.stereo.aif",
+"key": "f2.ff.tenortrombone",
+"sha256": "a39850914862f0397765a1145bbb5504bfcd4e39a7a06959d9272c4b07e051a8",
+"pcm32kMonoMd5": "eca165e68b89f65c5a201b32a96f292e"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.F3.stereo.aif",
+"key": "f3.ff.tenortrombone",
+"sha256": "a15da9d50c4b4314dd154ca113a33c09f80df0738ca26b6b73b103179c3877e2",
+"pcm32kMonoMd5": "709fc79405af3730fad18d636d85ff60"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.G2.stereo.aif",
+"key": "ff.g2.tenortrombone",
+"sha256": "c241fb2e416b287e897f7ce301ed6ccac4e0c2f0abaf973cc459e46cfb166f54",
+"pcm32kMonoMd5": "fbfbbd75fb122c7c02a30e6e9247ac8b"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.Gb3.stereo.aif",
+"key": "ff.gb3.tenortrombone",
+"sha256": "a3a010213fd280245ba6057af602e0cb8dbc823d20fb1c129658e4146d4a0032",
+"pcm32kMonoMd5": "4603b48ce7142c03e9bbf80d48cc5d14"
+},
+{
+"pack": "TenorTrombone",
+"name": "TenorTrombone.ff.Gb4.stereo.aif",
+"key": "ff.gb4.tenortrombone",
+"sha256": "84ff9b323da45f929135f5700bbe174e3adc54898d34c85fce25944ccdf9ee33",
+"pcm32kMonoMd5": "5e2b33dd0918c51af799c5d6296c6be6"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.A1.stereo.aif",
+"key": "a1.ff.tuba",
+"sha256": "69e48b01f75bf7f5f85aa06de2d77ecb64ea9a38f2a6f325137526d702d18957",
+"pcm32kMonoMd5": "330220a55acb45ef271146120a12fa8e"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.A3.stereo.aif",
+"key": "a3.ff.tuba",
+"sha256": "1bde741d660a74c5bb67ad9c85681c1aa6d670c243c2a0647b5f6e62c46b706d",
+"pcm32kMonoMd5": "dcc7ea6d32d72933be20de88add375c4"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.Ab2.stereo.aif",
+"key": "ab2.ff.tuba",
+"sha256": "24d29a581ec7def72ace91ec11e0f5078d79fb1743ce4af6fa91938f12796dc4",
+"pcm32kMonoMd5": "a776b931bc316a88cc56491d22994569"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.B1.stereo.aif",
+"key": "b1.ff.tuba",
+"sha256": "a92a7fef31980eee623e2ddb278d77f3b086c3f034bbce1f734956ada8a929c8",
+"pcm32kMonoMd5": "67d0c07f6b2f6386ea9713bb7e986adf"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.B3.stereo.aif",
+"key": "b3.ff.tuba",
+"sha256": "de83646a1b62f557675b49520e516364478678de45a76dacec8ca53422f1db97",
+"pcm32kMonoMd5": "181ab1e0798d760c7e14eb1486335e07"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.Bb2.stereo.aif",
+"key": "bb2.ff.tuba",
+"sha256": "8056b9c49e1dd51d103b214fc2c6c6caebd175ef20cf059a4ecf2a85bf60999f",
+"pcm32kMonoMd5": "ea6eda1b1d739a53b7c2fb2d82dc2a1b"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.C1.stereo.aif",
+"key": "c1.ff.tuba",
+"sha256": "2e8a1352fa5b2da8da56250081437dbcf482c527845b24d7161daa4c4ff649ce",
+"pcm32kMonoMd5": "1bf73b92e58b506bceb9c3cc3420ff12"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.C2.stereo.aif",
+"key": "c2.ff.tuba",
+"sha256": "af51c37abab6866c1ada54b1de776c8169e5868fbdfe2aece7b222b8444d144f",
+"pcm32kMonoMd5": "aeae43f42bbf1fba0dcf3a7adb2c7dcf"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.C3.stereo.aif",
+"key": "c3.ff.tuba",
+"sha256": "c8128c624dd162b6cbd51d8ceda62d8f72003c13c85dae0fe57f64f8dbe926dc",
+"pcm32kMonoMd5": "8e70b55cbd7202f8ff47ad302fce5dc9"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.D2.stereo.aif",
+"key": "d2.ff.tuba",
+"sha256": "0ca9a4f965fdc74cf643b03f7a7f9ce75acc168364530923158d53e8cd184353",
+"pcm32kMonoMd5": "c7ac946e0fef24a5d7553c8aa40037a7"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.Db1.stereo.aif",
+"key": "db1.ff.tuba",
+"sha256": "6fbe8d96f81ed88e9fd29937416967edcd67e9b271e49bae018fffd3be42e88d",
+"pcm32kMonoMd5": "f15a9315559d682e0a93a8b8f9148eb0"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.Db3.stereo.aif",
+"key": "db3.ff.tuba",
+"sha256": "d321b04f09c63327a32a93b88f9234bfd9a947d33c328df39facaacdf6545f56",
+"pcm32kMonoMd5": "20f2aeac306bee884f795472492f383c"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.E2.stereo.aif",
+"key": "e2.ff.tuba",
+"sha256": "17ec6c6efd4fb8e26f0d48f5da3a1c2a95a6aa433e3614807bbad25ad0ffdb56",
+"pcm32kMonoMd5": "1ff0b4fccdead11b18a1a0d9d2febad4"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.Eb1.stereo.aif",
+"key": "eb1.ff.tuba",
+"sha256": "90e882366510ae13b69a94a574f75b9f093b8e4644243e1ceda0426ed4213cab",
+"pcm32kMonoMd5": "4253a7cc9b61d76c4360d6cb648e4a6e"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.Eb3.stereo.aif",
+"key": "eb3.ff.tuba",
+"sha256": "ec8872d776a618326d79119132fa6d2003143e75fa769e59d3db01d4c9a64eff",
+"pcm32kMonoMd5": "7354a37fca04fa96664207aea499e2a3"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.F1.stereo.aif",
+"key": "f1.ff.tuba",
+"sha256": "2339447721daf029920b744e6326e6baec57b805cf4bb93ec860af2ae9a747c6",
+"pcm32kMonoMd5": "815c9349fff4fe60538ef09f96a8ce9a"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.F3.stereo.aif",
+"key": "f3.ff.tuba",
+"sha256": "bb327774c176ffb36dec6a4c51ff9bd89ffda09e9e2f9160311f489ce3dfd49d",
+"pcm32kMonoMd5": "216504902703739ee1d7b1bd6caa9627"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.G1.stereo.aif",
+"key": "ff.g1.tuba",
+"sha256": "3a8d41c24e3c98d7acc1b3d934d90e284ac6b10be5e74750fe5dc661d7ce5b40",
+"pcm32kMonoMd5": "deb1a6a872dbc14d14a142e3959c6d59"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.G3.stereo.aif",
+"key": "ff.g3.tuba",
+"sha256": "6bfb56de5f69a00970d3b9cacfa63c299d2d65249095d7adc4a6ec2949f97184",
+"pcm32kMonoMd5": "0632a205d9f0e54c36e1d87dc7c8a2aa"
+},
+{
+"pack": "Tuba",
+"name": "Tuba.ff.Gb2.stereo.aif",
+"key": "ff.gb2.tuba",
+"sha256": "bc0c3c9f33f1ef59299f9e6b0b721d4e01e0a27c0abe55025dbd9e6c79ba5783",
+"pcm32kMonoMd5": "0b027dfde53b8e25767671133e8e042b"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.bow.A5.stereo.aif",
+"key": "a5.bow.vibraphone",
+"sha256": "ac91c7210915c1c58d9c4133f2bb05a875ce3c0a804aab76f88895cc50d6959d",
+"pcm32kMonoMd5": "841050000bc917270e0cc82cca8fbdf4"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.bow.Ab3.stereo.aif",
+"key": "ab3.bow.vibraphone",
+"sha256": "f5c7c5b579320929e1b6a8dae27aa5120d17efad05de4cc9dcda2726e3b3bfc6",
+"pcm32kMonoMd5": "0129db6bc685550654eb804084e39942"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.bow.C3.stereo.aif",
+"key": "bow.c3.vibraphone",
+"sha256": "1aee5ce4df98796d8b180e4c6aeeb5927d57cf18c1d1b8d87b3f17bd38bdda56",
+"pcm32kMonoMd5": "fa21e3e8f086862c1d4a140ca292755f"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.bow.Db5.stereo.aif",
+"key": "bow.db5.vibraphone",
+"sha256": "bc5c55037afac060234a7a23645103bfd9bb17e03127043babb9b3e175d255e8",
+"pcm32kMonoMd5": "1febcda309d2cf3066e41cfa9805ad36"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.bow.F4.stereo.aif",
+"key": "bow.f4.vibraphone",
+"sha256": "0fdce6c6dcba3c8b007d07288736138f34718065d517b9eb685ac6749c409506",
+"pcm32kMonoMd5": "828927e7db1d274d5bd41e2251546534"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.dampen.ff.A5.stereo.aif",
+"key": "a5.dampen.ff.vibraphone",
+"sha256": "4a015053321f792c672ed8644c4886b5ffe87ed9f7e68c516f648e06053084ae",
+"pcm32kMonoMd5": "0461416e7b410e703a0f6c8b3561387a"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.dampen.ff.Ab3.stereo.aif",
+"key": "ab3.dampen.ff.vibraphone",
+"sha256": "4cfca369bfeab0496b13c01630a65f1938dd4d94db591c0b42bb8b8cf4e4e932",
+"pcm32kMonoMd5": "ada6ff0250b00375745dd48112dabfc4"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.dampen.ff.C3.stereo.aif",
+"key": "c3.dampen.ff.vibraphone",
+"sha256": "0b8526a40f4cbe387c17bfb751db8489f0a0b04b36850f303d766bdeca7864c8",
+"pcm32kMonoMd5": "86524a836c3177e2b2cad2e4d0abddbe"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.dampen.ff.Db5.stereo.aif",
+"key": "dampen.db5.ff.vibraphone",
+"sha256": "112d74f5d9fbe679bc3b085fb1109373d0f5c707f91c47bcc7ded15e9c5366d7",
+"pcm32kMonoMd5": "f5e5037919cde831e944834fbe9f499a"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.dampen.ff.F4.stereo.aif",
+"key": "dampen.f4.ff.vibraphone",
+"sha256": "46e7237d590f974c6387de83dcf01ee6fb30cbd3a6e4b1dc88041d02eedeb432",
+"pcm32kMonoMd5": "19f87d7077c56c9d51a5ecc26f5a1b8f"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.shortsustain.ff.A3.stereo.aif",
+"key": "a3.ff.shortsustain.vibraphone",
+"sha256": "1e7681d8fca737da5f805057eb509241d8fc45ef0d9c14bd9d4cdb73947dcc3e",
+"pcm32kMonoMd5": "89654e4c8591a781ace9c2fecb9da6c1"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.shortsustain.ff.Bb5.stereo.aif",
+"key": "bb5.ff.shortsustain.vibraphone",
+"sha256": "7951caf09b2807d001b335e160518e62b029aee334045c49306b534f329a2cdf",
+"pcm32kMonoMd5": "7e8b9480219d40c9aaa736985b040706"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.shortsustain.ff.C3.stereo.aif",
+"key": "c3.ff.shortsustain.vibraphone",
+"sha256": "1f650a12b882695ab9e36abb5fad07f697d0da6b01aeaa3150eca570744881b4",
+"pcm32kMonoMd5": "2be31024a6b37595740549b4ef8edacc"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.shortsustain.ff.Db5.stereo.aif",
+"key": "db5.ff.shortsustain.vibraphone",
+"sha256": "5701a846e9e75d186a2e1a098d2871c4e8bcf952e2d4e3f4e4f817baa5d2e2b4",
+"pcm32kMonoMd5": "f4ac6e11f1cf80752a83583a05af6065"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.shortsustain.ff.F4.stereo.aif",
+"key": "f4.ff.shortsustain.vibraphone",
+"sha256": "a227ee8f57eadc21e24bc43000c4af3aa049ac137d7517a8d6cfccebc73c070c",
+"pcm32kMonoMd5": "822a86d2d8750917ef62743ba12cea40"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.sustain.ff.Ab3.stereo.aif",
+"key": "ab3.ff.sustain.vibraphone",
+"sha256": "39879135f4421974f02173ef9cc473b49aec7e43b427891ae056c8635756e401",
+"pcm32kMonoMd5": "739a549873536b28fb5612d79adbdcbd"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.sustain.ff.Bb5.stereo.aif",
+"key": "bb5.ff.sustain.vibraphone",
+"sha256": "3364b379f409f985740c07353cffbc94de3a6b644f24da1c09c1bca41219f8ce",
+"pcm32kMonoMd5": "5d9ad09dadf5d3ea421bdf733d811a80"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.sustain.ff.C3.stereo.aif",
+"key": "c3.ff.sustain.vibraphone",
+"sha256": "df7eb7074e55b2ea2243bce03d52edcfffc6314e12de046b57eaa3d3eaee1f77",
+"pcm32kMonoMd5": "bf6d47832132f5083fa29277839158ee"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.sustain.ff.Db5.stereo.aif",
+"key": "db5.ff.sustain.vibraphone",
+"sha256": "e14967c77fe705cc239a80c168cba0079e53c2d77a17259d21af8128964fd986",
+"pcm32kMonoMd5": "f35ced8856e59bbcb596bcdac5e33d2f"
+},
+{
+"pack": "Vibraphone",
+"name": "Vibraphone.sustain.ff.F4.stereo.aif",
+"key": "f4.ff.sustain.vibraphone",
+"sha256": "fa75c003f99466d7d1ec7a53b11865cacd5e120b107ff4114f72d21040a44044",
+"pcm32kMonoMd5": "933ee865e1e7e0997956cdf786fbfbe8"
+},
+{
+"pack": "Viola",
+"name": "Viola.arco.ff.sulA.C6.stereo.aif",
+"key": "arco.c6.ff.sula.viola",
+"sha256": "7e668dd45208d7a054988f8fc100ba1a59c16da487cea07973bbfe4bc0ee0f7b",
+"pcm32kMonoMd5": "832fa4801d9206597ce558063d364920"
+},
+{
+"pack": "Viola",
+"name": "Viola.arco.ff.sulA.D5.stereo.aif",
+"key": "arco.d5.ff.sula.viola",
+"sha256": "21d42d16337d8b8e43fc1dd3a85bb6acec3e21a0c3b6f40ac60743177c2fc7d4",
+"pcm32kMonoMd5": "0b58dedd3807c04c90522368d97e1dfb"
+},
+{
+"pack": "Viola",
+"name": "Viola.arco.ff.sulC.Ab4.stereo.aif",
+"key": "ab4.arco.ff.sulc.viola",
+"sha256": "97ede5c85fc8fd8976333c9cf48c13c1c53afc99dd4ae2671bb1bb7409996b58",
+"pcm32kMonoMd5": "681355bba37450c6a36a5d386b070795"
+},
+{
+"pack": "Viola",
+"name": "Viola.arco.ff.sulC.Bb3.stereo.aif",
+"key": "arco.bb3.ff.sulc.viola",
+"sha256": "236e62809ad947cfdf87ea7aecd48668585aa6dcf9808c52417ae2272ad0ac3c",
+"pcm32kMonoMd5": "c2cbbc3df957da24a558d34ad79ca94d"
+},
+{
+"pack": "Viola",
+"name": "Viola.arco.ff.sulC.C3.stereo.aif",
+"key": "arco.c3.ff.sulc.viola",
+"sha256": "c3c3cf1433dba22757b4490a9c89c78629c81c8ef57f7f8cfe665654cc6695da",
+"pcm32kMonoMd5": "a0648ba3230ab973d4298a30a80255b7"
+},
+{
+"pack": "Viola",
+"name": "Viola.arco.ff.sulD.Bb5.stereo.aif",
+"key": "arco.bb5.ff.suld.viola",
+"sha256": "a7633e743707fdc8e63d4625badf784bfaf41c2d988433a139bd2ec085be8db3",
+"pcm32kMonoMd5": "245b4c08ca30fac40ad8da0b121004f1"
+},
+{
+"pack": "Viola",
+"name": "Viola.arco.ff.sulD.C5.stereo.aif",
+"key": "arco.c5.ff.suld.viola",
+"sha256": "c183cf849687423cd33bbe89ea0578c19069e26a99437caf1620760c0ed4bb42",
+"pcm32kMonoMd5": "81baa286e00c6c57f340f7b5d96dc0a3"
+},
+{
+"pack": "Viola",
+"name": "Viola.arco.ff.sulD.D4.stereo.aif",
+"key": "arco.d4.ff.suld.viola",
+"sha256": "027d1162c23f50ad8a7ba749b3463f4011ac2b787ea3fe26702eb5bfa375fcd8",
+"pcm32kMonoMd5": "a59eea86aeb9b5c20b4dccc80d8791f8"
+},
+{
+"pack": "Viola",
+"name": "Viola.arco.ff.sulG.Bb4.stereo.aif",
+"key": "arco.bb4.ff.sulg.viola",
+"sha256": "bfbe619ed5f713b24f6df8b4bf51c37f11b441240561898e6e99097e878d8cfe",
+"pcm32kMonoMd5": "dd4b454f31519ef53c9779dfa6332cdd"
+},
+{
+"pack": "Viola",
+"name": "Viola.arco.ff.sulG.C4.stereo.aif",
+"key": "arco.c4.ff.sulg.viola",
+"sha256": "3ffd93b4c5e06d2824323cadf978555be41f75fe278d8a3afda701a309ff6621",
+"pcm32kMonoMd5": "e75c41bb362402b9b3201fee6f5f065f"
+},
+{
+"pack": "Viola",
+"name": "Viola.pizz.ff.sulA.C6.stereo.aif",
+"key": "c6.ff.pizz.sula.viola",
+"sha256": "6bb610279844cab9082c5cff750154964aa4d4f8bb7e66d21e366466371c4b20",
+"pcm32kMonoMd5": "e023828dbd0ee576bcdac2ec269c9933"
+},
+{
+"pack": "Viola",
+"name": "Viola.pizz.ff.sulA.D5.stereo.aif",
+"key": "d5.ff.pizz.sula.viola",
+"sha256": "4b72ebbdcb978c89f334b28f82e5d034ca431d1279c68122fee8dc2d654eafeb",
+"pcm32kMonoMd5": "491a9a88cf3c3afa1e73fe9625013518"
+},
+{
+"pack": "Viola",
+"name": "Viola.pizz.ff.sulC.Ab4.stereo.aif",
+"key": "ab4.ff.pizz.sulc.viola",
+"sha256": "a9bb6855263b4eabd23751438d63ab68ee574caafd9c2b4a6d2e79dcdc8e5ea8",
+"pcm32kMonoMd5": "4ccb7811cc6dd1e625c5fc836ccf7f68"
+},
+{
+"pack": "Viola",
+"name": "Viola.pizz.ff.sulC.Bb3.stereo.aif",
+"key": "bb3.ff.pizz.sulc.viola",
+"sha256": "f0824c869564918430eebf22834727cdde263716131832d215d7450592529d55",
+"pcm32kMonoMd5": "ea3c4682470ba0f42ea5a24e2d1fbe6a"
+},
+{
+"pack": "Viola",
+"name": "Viola.pizz.ff.sulC.C3.stereo.aif",
+"key": "c3.ff.pizz.sulc.viola",
+"sha256": "33dbe02e98ef0dbb7dc3fd3fadd990b9ae347194abbe6964318ae5e5082e787f",
+"pcm32kMonoMd5": "24c099308106bed2d9fd4f7749d3fcd5"
+},
+{
+"pack": "Viola",
+"name": "Viola.pizz.ff.sulD.Bb5.stereo.aif",
+"key": "bb5.ff.pizz.suld.viola",
+"sha256": "7eb220e0405320f8c6b38ed0077c47c45d2d73d669489e51ad61dace3485d743",
+"pcm32kMonoMd5": "c7c6372b9cd3ee914bbff1641d9dd720"
+},
+{
+"pack": "Viola",
+"name": "Viola.pizz.ff.sulD.C5.stereo.aif",
+"key": "c5.ff.pizz.suld.viola",
+"sha256": "077e43827296a90c8653fb1e4569bfab4c18e4f3f1bcef34fd96dbe82c9aa1cf",
+"pcm32kMonoMd5": "15e8ab18e463cfdd929a3ec9738b0f3c"
+},
+{
+"pack": "Viola",
+"name": "Viola.pizz.ff.sulD.D4.stereo.aif",
+"key": "d4.ff.pizz.suld.viola",
+"sha256": "baf8831da7b633187236cd49f6b77146246b0b3e7dfdfe599fc19c7d74e7899e",
+"pcm32kMonoMd5": "dc4c7950973757951234a624400224e2"
+},
+{
+"pack": "Viola",
+"name": "Viola.pizz.ff.sulG.Bb4.stereo.aif",
+"key": "bb4.ff.pizz.sulg.viola",
+"sha256": "c30ecdf6d04a563a709efcb598cd6e7db01207fa5fea6e9bbdbfd779c5f9679f",
+"pcm32kMonoMd5": "6da2827c47c6d7626de45a833822ea66"
+},
+{
+"pack": "Viola",
+"name": "Viola.pizz.ff.sulG.C4.stereo.aif",
+"key": "c4.ff.pizz.sulg.viola",
+"sha256": "8c787fcebf731fe8ed284acec08a0a7c1018540ac0572b787e2c9569440c0d7f",
+"pcm32kMonoMd5": "b6d8bb21cb50030945f6c480a3194b47"
+},
+{
+"pack": "Violin",
+"name": "Violin.arco.ff.sulA.A5.stereo.aif",
+"key": "a5.arco.ff.sula.violin",
+"sha256": "00a4ec2b30e7eac48ab8070149ecb82b74768556dee63e873e3c55595c2490aa",
+"pcm32kMonoMd5": "25b89c02f2e261a3cec779b8f0dfb531"
+},
+{
+"pack": "Violin",
+"name": "Violin.arco.ff.sulA.C5.stereo.aif",
+"key": "arco.c5.ff.sula.violin",
+"sha256": "7c0a6381bdf5ca5d7143e851722ae3934ccc2e61f7d0861f8cce615843c2db1d",
+"pcm32kMonoMd5": "4548f5077cd7f2746036d626fcd0187f"
+},
+{
+"pack": "Violin",
+"name": "Violin.arco.ff.sulA.G6.stereo.aif",
+"key": "arco.ff.g6.sula.violin",
+"sha256": "b3191584b67457f579a36ab4f33b9cef4f3c2fbb2404aba2e02454dc068348e0",
+"pcm32kMonoMd5": "a365651ddc1a7b2510f3583fc304bdd1"
+},
+{
+"pack": "Violin",
+"name": "Violin.arco.ff.sulD.Bb4.stereo.aif",
+"key": "arco.bb4.ff.suld.violin",
+"sha256": "7d3fde44b0e60af699477b501db594a3352b2eba953b73561bdc29032c88e9c8",
+"pcm32kMonoMd5": "e61ada15cace0217da4805924b340140"
+},
+{
+"pack": "Violin",
+"name": "Violin.arco.ff.sulD.G5.stereo.aif",
+"key": "arco.ff.g5.suld.violin",
+"sha256": "f38dcc18d098ef7925699dfd44d62fc9e91477f03d2573f9f479643f184391ee",
+"pcm32kMonoMd5": "375461b80df3ee0247acf11f5ca6efd1"
+},
+{
+"pack": "Violin",
+"name": "Violin.arco.ff.sulE.Ab6.stereo.aif",
+"key": "ab6.arco.ff.sule.violin",
+"sha256": "418d0b32b08bf179b65e7f727c2147bb6ffc4f6f229886625034308bf7e7f877",
+"pcm32kMonoMd5": "5f5ff55bd52f14daa1615d01b7d856ca"
+},
+{
+"pack": "Violin",
+"name": "Violin.arco.ff.sulE.B5.stereo.aif",
+"key": "arco.b5.ff.sule.violin",
+"sha256": "606694dd3abc81b47a4e4259b5cf27ce7e0c3e97ce30fcc7f0fd78ffd8267634",
+"pcm32kMonoMd5": "cb83fdb1697b9b5a1608ad6c0c5eb996"
+},
+{
+"pack": "Violin",
+"name": "Violin.arco.ff.sulG.C5.stereo.aif",
+"key": "arco.c5.ff.sulg.violin",
+"sha256": "39a924eee42a4c81da4a1f2379faee7e263430d741460c6169c7e30d947bf752",
+"pcm32kMonoMd5": "1d14d69def10f4cc9ffbd9fa916d5fbd"
+},
+{
+"pack": "Violin",
+"name": "Violin.arco.ff.sulG.Eb4.stereo.aif",
+"key": "arco.eb4.ff.sulg.violin",
+"sha256": "f22e20f8a50c5916ffc6496d51e54078baf185f10f98cd8bac6433d57609d825",
+"pcm32kMonoMd5": "4ea6869e4b38cbb7881b509f7b572d6f"
+},
+{
+"pack": "Violin",
+"name": "Violin.arco.ff.sulG.G3.stereo.aif",
+"key": "arco.ff.g3.sulg.violin",
+"sha256": "57e40d4b85e9d9b57956a991e8a99eb769a6a1bbf160780819464e30e044186f",
+"pcm32kMonoMd5": "4836147c91774387e58c89f10aeb1508"
+},
+{
+"pack": "Violin",
+"name": "Violin.pizz.ff.sulA.Bb4.stereo.aif",
+"key": "bb4.ff.pizz.sula.violin",
+"sha256": "6a76feeeed9c9a504abf9374b77a71e44deda6162cd4d2b83bd26ee8540911db",
+"pcm32kMonoMd5": "410b18cd19284c80ac59e81dabfc8f0c"
+},
+{
+"pack": "Violin",
+"name": "Violin.pizz.ff.sulA.E6.stereo.aif",
+"key": "e6.ff.pizz.sula.violin",
+"sha256": "54c2a3ff121fa22a900260db56884580d6b64f3aa38f1e6bcef783c9a5a11272",
+"pcm32kMonoMd5": "89231fef3ed9a63a6fd2742333ee04e9"
+},
+{
+"pack": "Violin",
+"name": "Violin.pizz.ff.sulA.G5.stereo.aif",
+"key": "ff.g5.pizz.sula.violin",
+"sha256": "f821df69588a48d6910ea2a12947c23527efb0d11c9047546a1e538e75941952",
+"pcm32kMonoMd5": "7e87f0d0ea35cee91f6110fb6e9b992a"
+},
+{
+"pack": "Violin",
+"name": "Violin.pizz.ff.sulD.Ab4.stereo.aif",
+"key": "ab4.ff.pizz.suld.violin",
+"sha256": "89ee3fdbfe36eda8e7089fbfe13ac43a1695047ba96a8f6c3e60671f4b1f8140",
+"pcm32kMonoMd5": "535bd947d20d7079b84ee937b22b9796"
+},
+{
+"pack": "Violin",
+"name": "Violin.pizz.ff.sulD.F5.stereo.aif",
+"key": "f5.ff.pizz.suld.violin",
+"sha256": "2cfcffc2a530dfd5589810c85b42b30b90c0ac7f6cdc4617b8a055e00dd81850",
+"pcm32kMonoMd5": "3879b94c29a05b6499e3f5cdb13df7a4"
+},
+{
+"pack": "Violin",
+"name": "Violin.pizz.ff.sulE.Ab6.stereo.aif",
+"key": "ab6.ff.pizz.sule.violin",
+"sha256": "60a621afb1943c257db699e7580f5659232a4436af6a9236476e0936849fc246",
+"pcm32kMonoMd5": "0fb9869a92ab3886f41570babe40efe0"
+},
+{
+"pack": "Violin",
+"name": "Violin.pizz.ff.sulE.B5.stereo.aif",
+"key": "b5.ff.pizz.sule.violin",
+"sha256": "909e64b615f9fa60cd92f59a690651f1ef1e761b40a52c07a0fb5cdf5b110bf6",
+"pcm32kMonoMd5": "5332a4fb227d4d021fd7f29806edb7a0"
+},
+{
+"pack": "Violin",
+"name": "Violin.pizz.ff.sulG.D5.stereo.aif",
+"key": "d5.ff.pizz.sulg.violin",
+"sha256": "a9ed49a2eb4e6c7135f09390488e24c9b6b041afe663a7d5209ef7eafde7d421",
+"pcm32kMonoMd5": "0a2a29342c2d1353bf8d1de245479805"
+},
+{
+"pack": "Violin",
+"name": "Violin.pizz.ff.sulG.E4.stereo.aif",
+"key": "e4.ff.pizz.sulg.violin",
+"sha256": "f8d30dcd8230d78c73b0e295467839302bf46001f6d333c9498cf1bcde7a56b3",
+"pcm32kMonoMd5": "b1a6468a3bc9a311c3f19f68a1a1a8d9"
+},
+{
+"pack": "Violin",
+"name": "Violin.pizz.ff.sulG.G3.stereo.aif",
+"key": "ff.g3.pizz.sulg.violin",
+"sha256": "56a5a43db6a9333823cd96b016d02e9dac703ac3fcbb20510817ef1110dfb77f",
+"pcm32kMonoMd5": "5f79575ff6ef2db2621e4428640ce4d8"
+},
+{
+"pack": "piano",
+"name": "Piano.ff.A3.aiff",
+"key": "a3.ff.piano",
+"sha256": "99c1f313be9e36fa705177c804c24cc5ac6f48fd6928943f708aceb01011a4e2",
+"pcm32kMonoMd5": "2f24cec3fc6cc7ee68ef233ff66ec6f6"
+},
+{
+"pack": "piano",
+"name": "Piano.ff.Ab2.aiff",
+"key": "ab2.ff.piano",
+"sha256": "e3655a07ba54506ed6ee81c0303d7cceba546e333361eb37bf5c6b9b803b1e47",
+"pcm32kMonoMd5": "9e22d711cc60a151fdc72a5456e35a3f"
+},
+{
+"pack": "piano",
+"name": "Piano.ff.B5.aiff",
+"key": "b5.ff.piano",
+"sha256": "b4c6e5245807f17ddd4502e0f97b94510dcf2ffe2d401685fb955537970ac4fe",
+"pcm32kMonoMd5": "3c21c0d193b56118778410eab44d07c9"
+},
+{
+"pack": "piano",
+"name": "Piano.ff.Bb4.aiff",
+"key": "bb4.ff.piano",
+"sha256": "2a7630b16fe9eb083365c7a6ad8e0ae595c43435f7060902bc00c82e1e1fb81f",
+"pcm32kMonoMd5": "3034396c99a7f2bacb1c55bce615daa4"
+},
+{
+"pack": "piano",
+"name": "Piano.ff.C7.aiff",
+"key": "c7.ff.piano",
+"sha256": "b2c65f8508d53c9c8c2122cfa1ba08a08e96ec0f69e5f47ae980a599c2413d42",
+"pcm32kMonoMd5": "334e091c81217c398c4263430d8939a1"
+},
+{
+"pack": "piano",
+"name": "Piano.mf.Ab6.aiff",
+"key": "ab6.mf.piano",
+"sha256": "f7787ea6c85975d118458848efcd4cd4726af2a172f5b5a56fd2a97a100ce2b0",
+"pcm32kMonoMd5": "af9f8e5a55733b92ab4c6ba8cb5307df"
+},
+{
+"pack": "piano",
+"name": "Piano.mf.Bb7.aiff",
+"key": "bb7.mf.piano",
+"sha256": "3c6db231c9287a8a96397207e328d6747ac482d36597f9ec3bd7c964057dd5d7",
+"pcm32kMonoMd5": "ed7dfb821c2efecee7d10370af9835cd"
+},
+{
+"pack": "piano",
+"name": "Piano.mf.E2.aiff",
+"key": "e2.mf.piano",
+"sha256": "303393356166e70ffa5627efdf4f89b3c0cbf4d43e7a8e82d98223b7bae6ea18",
+"pcm32kMonoMd5": "125943f70a6a714c4b709012e76254b2"
+},
+{
+"pack": "piano",
+"name": "Piano.mf.Eb1.aiff",
+"key": "eb1.mf.piano",
+"sha256": "eda8e62f763688b4b98529caae601cbdd8a1aa711a1f75099bbb9546bc377447",
+"pcm32kMonoMd5": "82d137ade9d7900db06d2968a6e9f9e1"
+},
+{
+"pack": "piano",
+"name": "Piano.mf.F3.aiff",
+"key": "f3.mf.piano",
+"sha256": "c4ad875fa7b631a697ea681476fbca2f5dcfbbf254430d3d0a29fe872921c3b0",
+"pcm32kMonoMd5": "ceb799280b2b0f57c43bc773ba851a2e"
+},
+{
+"pack": "piano",
+"name": "Piano.mf.G5.aiff",
+"key": "g5.mf.piano",
+"sha256": "0afa1fbb5114bb254b7e03016aef2d3f93b38c60e92cea523c58979371303d17",
+"pcm32kMonoMd5": "d7115848bab081d7bd2265bddbea0d79"
+},
+{
+"pack": "piano",
+"name": "Piano.mf.Gb4.aiff",
+"key": "gb4.mf.piano",
+"sha256": "b96802b034a42c45cdca1af419330a03069136eb0149dbe19c6167998c71e0ea",
+"pcm32kMonoMd5": "e70d7ffa3a545cd20414b4df245b5db4"
+},
+{
+"pack": "piano",
+"name": "Piano.pp.B1.aiff",
+"key": "b1.piano.pp",
+"sha256": "9808361607ec8d5804b68dda742c9b3eb8bd4f5400e4c5a51546fe64adefa436",
+"pcm32kMonoMd5": "402e015fa478ad582984d6d61b4d1fac"
+},
+{
+"pack": "piano",
+"name": "Piano.pp.Bb0.aiff",
+"key": "bb0.piano.pp",
+"sha256": "c13a73ef311e30e21bc615641529f485482d212a3c6f250bb45e1ffbbaef0762",
+"pcm32kMonoMd5": "d48f956a9777afed3c437e101d45ff39"
+},
+{
+"pack": "piano",
+"name": "Piano.pp.C3.aiff",
+"key": "c3.piano.pp",
+"sha256": "dedfacca6a9c244ff7c38d7b53c55b08e43fc8f4ce7d6c8c5a0f8b70fb03b58d",
+"pcm32kMonoMd5": "60242456e852d3de36acc495ff1459ea"
+},
+{
+"pack": "piano",
+"name": "Piano.pp.D5.aiff",
+"key": "d5.piano.pp",
+"sha256": "d739882608035d629810c010014894e279da254f73d8e13e4f02c698d7a2d219",
+"pcm32kMonoMd5": "5e42b6587563067cad3a6cba9c9fd3f0"
+},
+{
+"pack": "piano",
+"name": "Piano.pp.Db4.aiff",
+"key": "db4.piano.pp",
+"sha256": "2f24b1a54579a45a5607f4c5f3c8a335b76e2fd15becd003148851974ec9bb7d",
+"pcm32kMonoMd5": "514c61c44087aa970d8476eb9d89b0c5"
+},
+{
+"pack": "piano",
+"name": "Piano.pp.E7.aiff",
+"key": "e7.piano.pp",
+"sha256": "80ecea690d3270211efaae3ae3a6e652a7380d58fc5c64fc3d01842d20ff04b1",
+"pcm32kMonoMd5": "9d068c050cfd3917656ad715008b2c15"
+},
+{
+"pack": "piano",
+"name": "Piano.pp.Eb6.aiff",
+"key": "eb6.piano.pp",
+"sha256": "c6b9ccad91fccf792e7188544aa5d4d2ef93b2cf897c0c1f684a7c0d94208347",
+"pcm32kMonoMd5": "8f0a218136bce1536d68a0f3af3eb47c"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.gliss.up.stereo.aif",
+"key": "gliss.up.xylophone",
+"sha256": "91270fe7873d226222a459fbde79f73bbe9a93e5a2c75af034724848354860be",
+"pcm32kMonoMd5": "c956a8d269203ad0924b63ea1f92d72d"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.hardrubber.ff.Bb5.stereo.aif",
+"key": "bb5.ff.hardrubber.xylophone",
+"sha256": "a0616556d26c5bbb0b71efb16654808e1d635120f0dacb3b5621323cdc338a12",
+"pcm32kMonoMd5": "a8ed4dd693bea70058fbf2a2e51e6097"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.hardrubber.ff.Db5.stereo.aif",
+"key": "db5.ff.hardrubber.xylophone",
+"sha256": "259eb13fb843e91e0f49b1f0fa7dc7c9b98c5e5f7fd21b879a38406ea37493dc",
+"pcm32kMonoMd5": "037b36dc74f35718d589abd533dd0336"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.hardrubber.ff.E7.stereo.aif",
+"key": "e7.ff.hardrubber.xylophone",
+"sha256": "ff57ac45a0d8ed5f45dcfefa4ab9a15a2cab78926d254776874f6ecc982a0755",
+"pcm32kMonoMd5": "35624d3f5dd228d2238d351015cab111"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.hardrubber.ff.F4.stereo.aif",
+"key": "f4.ff.hardrubber.xylophone",
+"sha256": "259c648162987375380b6e0f9dc61acc4548fb8e9394fb2441d3b8f252afe800",
+"pcm32kMonoMd5": "c3d297324fb8c19a6ead64ddd303da9b"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.hardrubber.ff.G6.stereo.aif",
+"key": "ff.g6.hardrubber.xylophone",
+"sha256": "2d0254e8d45fb8ced6b6d3718450f420e297745aa596c42514613d0ca6856662",
+"pcm32kMonoMd5": "f7f745214c12acd65c03148d1fef253d"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.hardrubber.roll.ff.Ab5.stereo.aif",
+"key": "ab5.ff.hardrubber.roll.xylophone",
+"sha256": "cad82393bcca08c4c216852df2573f7ff5a8cfeca6f11a39f2d275d7e44cf7e3",
+"pcm32kMonoMd5": "7287aef3863d7ef31ff5e3c76007e53e"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.hardrubber.roll.ff.B4.stereo.aif",
+"key": "b4.ff.hardrubber.roll.xylophone",
+"sha256": "79faf8a650bc1d22f04ae9d9d1704e56de4aebc98e30e4a2b80607aab381f6fd",
+"pcm32kMonoMd5": "93736f2bdffd496a689126b031775fe7"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.hardrubber.roll.ff.C8.stereo.aif",
+"key": "c8.ff.hardrubber.roll.xylophone",
+"sha256": "5a0e72c1ec8bc0cbd637ec32a6b94cce87365e36035fb4a50b0149ca4cb0c026",
+"pcm32kMonoMd5": "de18b25e619594a87274ae7e17c59722"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.hardrubber.roll.ff.Eb7.stereo.aif",
+"key": "eb7.ff.hardrubber.roll.xylophone",
+"sha256": "35d5fe031d43d9e6804ba910b243add05e5243e0b008d780d9266b7621fe2457",
+"pcm32kMonoMd5": "a3e55ef3a4d69b46a84f26f351bcb424"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.hardrubber.roll.ff.F6.stereo.aif",
+"key": "f6.ff.hardrubber.roll.xylophone",
+"sha256": "3282ed670cc6a43cf09d116a0245f534d1776c57b5c32b65a6786294c571b14a",
+"pcm32kMonoMd5": "8839390de51d20cd95a4fa8910f39e05"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.rosewood.ff.Bb5.stereo.aif",
+"key": "bb5.ff.rosewood.xylophone",
+"sha256": "487816540d0f9e5802a3ef4d987261cb187251fd1b2cffd6090080bd5c425afa",
+"pcm32kMonoMd5": "fea3bd7da70b0f0444a427b017eed5e1"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.rosewood.ff.Db5.stereo.aif",
+"key": "db5.ff.rosewood.xylophone",
+"sha256": "b0b6276c352c953339a7741c9e5a11a0a37b04db80b2fe943115c3a9f42c7332",
+"pcm32kMonoMd5": "78212a83bc564c23abf1a3e8926696bd"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.rosewood.ff.E7.stereo.aif",
+"key": "e7.ff.rosewood.xylophone",
+"sha256": "a29d8651dbc4da4a294a6ad80377eaf9c678e65f419ff545584c3718c34dee82",
+"pcm32kMonoMd5": "ba69cde678f629455821794f04c99e61"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.rosewood.ff.F4.stereo.aif",
+"key": "f4.ff.rosewood.xylophone",
+"sha256": "22e9934cdaec83a9c5983ee57e9b8f0b03de97218f32bda374642dc1ff497343",
+"pcm32kMonoMd5": "2f5ae0c5df60fcad17ab2f55251c8425"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.rosewood.ff.G6.stereo.aif",
+"key": "ff.g6.rosewood.xylophone",
+"sha256": "89abfee857c72d67bdd99850ca9df2596f393e8b8f8074239f448a70979a52da",
+"pcm32kMonoMd5": "18615ea395e60fff2457b7df83e0e73c"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.rosewood.roll.ff.A5.stereo.aif",
+"key": "a5.ff.roll.rosewood.xylophone",
+"sha256": "20dc8ce87918d3944de78dd4a9dfac95da3d640c28764e7f6b38e179d4408c12",
+"pcm32kMonoMd5": "9a5831fa12be4b28bc9bfb5ebfaa87a9"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.rosewood.roll.ff.C5.stereo.aif",
+"key": "c5.ff.roll.rosewood.xylophone",
+"sha256": "5bed191c07b9ccc8099d13f5f86813f75ad3de5a35a0561c69fe6c1ad8039b23",
+"pcm32kMonoMd5": "b71f8e54e98241918a396e3f5f4a5574"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.rosewood.roll.ff.E7.stereo.aif",
+"key": "e7.ff.roll.rosewood.xylophone",
+"sha256": "528cba99307d9af446dddcc8ef61f107b04f42b8a4b88099fca4f7d5fb823781",
+"pcm32kMonoMd5": "15552d4a7fc538b20e3ba58bae668db4"
+},
+{
+"pack": "xylophone",
+"name": "Xylophone.rosewood.roll.ff.Gb6.stereo.aif",
+"key": "ff.gb6.roll.rosewood.xylophone",
+"sha256": "8330df5a92dc77b9b6fbdbf0a22a40831c47c57355fa122f62b444c1a1ec71ba",
+"pcm32kMonoMd5": "e53cd49e0db05f8ebb9e6bf5471ced8f"
+}
+]
+}
