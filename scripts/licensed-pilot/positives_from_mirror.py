@@ -31,7 +31,7 @@ from concurrent.futures import ThreadPoolExecutor
 MIRROR = 'https://huggingface.co/datasets/benjamin-paine/freesound-laion-640k/resolve/main/data/'
 IMPACT = ['Thump, thud', 'Slam', 'Knock', 'Bang', 'Whack, thwack', 'Smash, crash', 'Breaking', 'Clatter', 'Hammer', 'Chop', 'Wood']
 LIC = {0: 'CC0-1.0', 1: 'CC-BY-4.0', 2: 'CC-BY-3.0'}
-CAP = {'bass guitar': 10, 'foley hit': 4, 'hard negative': 3, 'drum negative': 3}
+CAP = {'bass guitar': 10, 'foley hit': 4, 'hard negative': 4, 'drum negative': 3}
 LIMIT = {'bass guitar': 700, 'foley hit': 600, 'hard negative': 600, 'drum negative': 400}
 # Drum loops and kits with no bass: music a bass guitar head must not fire on.
 DRUM_CLASSES = ['Drum kit', 'Drum machine', 'Drum', 'Snare drum', 'Hi-hat']
@@ -41,7 +41,7 @@ OTHER_CLASSES = ['Double bass', 'Electric guitar', 'Bass drum', 'Synthesizer', '
 OTHER_TEXT = r'double ?bass|upright|contra ?bass|cello|guitar|808|sub ?bass|synth|reese|wobble|bass ?drum|kick|moog'
 BASS_GUITAR_TEXT = r'bass ?guitar|electric bass|bassist|precision bass|jazz bass|fretless|slap bass|p-bass|j-bass'
 BASS = r'\bbass(es)?\b|\bbajo\b|\bbasse\b'
-NOT_BASS_GUITAR = r'double ?bass|upright|contra ?bass|contrabass|synth|808|sub ?bass|bass ?drum|kick|bassoon|moog|reese|wobble|dubstep'
+NOT_BASS_GUITAR = r'double ?bass|upright|contra ?bass|contrabass|synth|808|sub ?bass|bass ?drum|kick|bassoon|clarinet|flute|trombone|tuba|sax|baritone|voice|vocal|singer|moog|reese|wobble|dubstep'
 IMPACT_TEXT = r'impact|\bhit|knock|punch|slam|thud|bang|smash|crash|clank|thump|strike|whack|slap|foley|\bdrop|chop|break|bump|hammer'
 NOT_FOLEY = r'drum|snare|kick|music|loop|\bbeat|bpm|cymbal'
 h8 = lambda s: int(hashlib.sha256(s.encode()).hexdigest()[:8], 16)
@@ -117,14 +117,17 @@ class HTTPFile(io.RawIOBase):
         if n < 0: n = self.size - self.pos
         if n <= 0 or self.pos >= self.size: return b''
         end = min(self.size, self.pos + n) - 1
+        want = end - self.pos + 1
         for attempt in range(5):
             try:
                 r = self.ses.get(self.url, headers={'Range': f'bytes={self.pos}-{end}'}, allow_redirects=True, timeout=300)
                 r.raise_for_status(); data = r.content
-                if len(data) == end - self.pos + 1: break
+                if len(data) == want: break
+                # A server that ignores Range sends the whole file; never hand that to pyarrow as this range.
+                if attempt == 4: raise IOError(f'range {self.pos}-{end}: got {len(data)} bytes, wanted {want}')
             except Exception:
                 if attempt == 4: raise
-        self.pos += len(data); return data
+        self.pos += want; return data
     def readinto(self, b):
         d = self.read(len(b)); b[:len(d)] = d; return len(d)
 

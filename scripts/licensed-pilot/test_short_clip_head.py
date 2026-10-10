@@ -51,6 +51,13 @@ class ShortClipHeadTests(unittest.TestCase):
         manifest = json.loads((self.root / 'public/sound-model/manifest.json').read_text())
         self.assertEqual(manifest['sha256']['short-clip.json'], hashlib.sha256(body.encode()).hexdigest())
 
+    def test_refuses_non_finite_weights_and_leaves_files_alone(self):
+        before = (self.root / 'public/sound-model/short-clip.json').read_text()
+        (self.root / 'heads.json').write_text(json.dumps({'heads': [{**self.head, 'weights': [float('inf')] + self.head['weights'][1:]}]}))
+        self.assertNotEqual(self.apply().returncode, 0)
+        self.assertEqual((self.root / 'public/sound-model/short-clip.json').read_text(), before)
+        self.assertEqual(json.loads((self.root / 'public/sound-model/manifest.json').read_text())['sha256']['short-clip.json'], 'old')
+
     def test_refuses_other_blocks(self):
         self.model['blocks'] = ['clapRepeat', 'event']
         (self.root / 'public/sound-model/short-clip.json').write_text(json.dumps(self.model))

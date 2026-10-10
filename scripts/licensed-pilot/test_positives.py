@@ -16,7 +16,7 @@ class LabelRules(unittest.TestCase):
     def test_bass_guitar_needs_a_bass_word_and_no_other_bass(self):
         self.assertEqual(call('bass guitar', 'walking jazz bass electric'), {'bass guitar': 1, 'foley hit': 0})
         self.assertIsNone(call('bass guitar', 'funky groove'))
-        for text in ['808 bass hit', 'upright double bass pizz', 'synth bass wobble', 'bass drum kick']:
+        for text in ['808 bass hit', 'upright double bass pizz', 'synth bass wobble', 'bass drum kick', 'bass clarinet low note']:
             with self.subTest(text=text):
                 self.assertIsNone(call('bass guitar', text))
 

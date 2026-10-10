@@ -9,7 +9,7 @@ The label's existing short-clip head is replaced (the evaluation records the hol
 touched, so longer clips keep today's analysis. Re-pins short-clip.json in manifest.json and appends the revision tag.
 INSTRUMENT_ANALYSIS_REVISION in src/audio/musicTypes.ts is bumped by hand in the same commit.
 """
-import hashlib, json, sys
+import hashlib, json, math, sys
 
 HEADS, LABEL, TAG = sys.argv[1:4]
 SHORT, MANIFEST = 'public/sound-model/short-clip.json', 'public/sound-model/manifest.json'
@@ -23,7 +23,9 @@ converted = {'group': head['group'], 'label': LABEL, 'weights': [a * s for a, s 
 old = [h for h in model['heads'] if h['label'] == LABEL]
 model['heads'] = [h if h['label'] != LABEL else converted for h in model['heads']] if old else model['heads'] + [converted]
 model['revision'] += '+' + TAG
-body = json.dumps(model, separators=(',', ':'))
+values = converted['weights'] + [converted['bias'], converted['threshold']] + head['weights'] + [head['bias']]
+assert all(math.isfinite(v) for v in values), 'non-finite head value'
+body = json.dumps(model, separators=(',', ':'), allow_nan=False)
 open(SHORT, 'w').write(body)
 manifest = json.load(open(MANIFEST))
 manifest['sha256']['short-clip.json'] = hashlib.sha256(body.encode()).hexdigest()
