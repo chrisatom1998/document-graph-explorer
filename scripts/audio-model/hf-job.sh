@@ -151,7 +151,7 @@ if [ "${ROUND12:-0}" = 1 ]; then   # round 12: empty-tag train audio, staged tra
   python3 $S/round12/check-fsd50k-eval.py etstage ${RUN9_AUDIT:+run9-audited.csv} || exit 1
   python3 $S/prepare-run9.py etstage etprep --workers 6 --prefix et --no-renders --lookalikes $S/round12/round12.json > emptytags.log 2>&1 || { tail -n 30 emptytags.log; exit 1; }
   tail -n 3 emptytags.log; rm -rf etdl etstage; ET_PID=done; EXTRA+=(--extra etfs9=etprep --extra etls9=etprep)
-  RARE_TAGS=$(python3 -c "import json, sys; print(','.join(json.load(open(sys.argv[1]))['oversample']))" $S/round12/round12.json)
+  RARE_TAGS=bass,organ,cello,trumpet,violin,saxophone,$(python3 -c "import json, sys; print(','.join(json.load(open(sys.argv[1]))['oversample']))" $S/round12/round12.json)   # train.py's default rare classes stay
 fi
 if [ "${ROUND10:-0}" = 1 ]; then   # round 10 commercial training packs, private bucket (prepare-round10.py; train list filtered for test
   # overlap beforehand). Runs after the other preps, not beside them: all of them at once ran an L4 job out of memory.
