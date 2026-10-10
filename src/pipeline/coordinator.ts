@@ -1,7 +1,7 @@
 import { MUSIC_EDGE_KINDS } from '../audio/musicEdgeKinds';
 import { quickMusic } from '../audio/quickMusic';
 import { beginMusicJob, isCurrentMusicJob, finishMusicJob, updateMusicJob, cancelAllMusicJobs, cancelMusicJob, useMusicJobs } from '../store/musicJobs';
-import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from '../audio/djTags';
+import { mergedDjLabel, sanitizeConfirmedDjTags, type ConfirmedDjTags } from '../audio/djTags';
 import { buildTitleEdges } from '../graph/titleLinks';
 import { fusionPresentation } from '../audio/fusionPresentation';
 import { fusionConfiguration, installedFusionIdentity } from '../audio/fusionRelease';
@@ -2213,12 +2213,18 @@ export function setAudioDjTags(id: string, labels?: ConfirmedDjTags): Promise<bo
     const audio=node.audio!;
     const confirmedDjTags=labels===undefined?undefined:sanitizeConfirmedDjTags(labels);
     if(labels!==undefined&&!confirmedDjTags)throw new Error('Invalid DJ corrections.');
-    // A newly saved snapshot must supersede earlier character reviews, just as it does source reviews.
+    // A newly saved snapshot must supersede earlier character reviews, including effects merged into character labels.
     // Append canonical decisions instead of clearing history, so a later individual review can still override it.
     const reviewedLabels=new Map<string, {labelId:string;dimension:'source'|'character'}>();
-    for(const review of audio.soundReviews??[])if(review.dimension==='source'||review.dimension==='character'){
-      const labelId=canonicalReviewLabel(review.dimension,review.labelId);
-      reviewedLabels.set(`${review.dimension}:${labelId}`,{labelId,dimension:review.dimension});
+    for(const review of audio.soundReviews??[]){
+      let dimension=review.dimension, labelId=canonicalReviewLabel(dimension,review.labelId);
+      if(dimension==='effect'){
+        const merged=mergedDjLabel('production',labelId);
+        if(merged.group!=='character')continue;
+        dimension='character';labelId=merged.label;
+      }
+      if(dimension!=='source'&&dimension!=='character')continue;
+      reviewedLabels.set(`${dimension}:${labelId}`,{labelId,dimension});
     }
     const reconciliations:SoundReview[]=confirmedDjTags===undefined?[]:[...reviewedLabels.values()].map<SoundReview>(({labelId,dimension})=>({labelId,dimension,scope:'track',at:new Date().toISOString(),
       evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmedDjTags[dimension].includes(labelId)?'confirmed':'rejected'}))
