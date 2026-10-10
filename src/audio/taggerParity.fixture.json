@@ -34,7 +34,12 @@
     "cat:rain ambience": 0.000175,
     "cat:vocal breath": 5.4e-05,
     "cat:tambourine": 0.0,
-    "cat:vocal scream": 2.5e-05
+    "cat:vocal scream": 2.5e-05,
+    "cat:environmental sound": 0.025185,
+    "cat:foley": 4.6e-05,
+    "cat:turntable": 2e-06,
+    "cat:finger snap": 2e-06,
+    "cat:water ambience": 0.001498
    }
   },
   {
@@ -69,7 +74,12 @@
     "cat:rain ambience": 0.003648,
     "cat:vocal breath": 3.4e-05,
     "cat:tambourine": 2.1e-05,
-    "cat:vocal scream": 0.000118
+    "cat:vocal scream": 0.000118,
+    "cat:environmental sound": 0.002167,
+    "cat:foley": 0.000673,
+    "cat:turntable": 1e-06,
+    "cat:finger snap": 3e-06,
+    "cat:water ambience": 0.000418
    }
   },
   {
@@ -105,7 +115,12 @@
     "cat:rain ambience": 0.005676,
     "cat:vocal breath": 4.5e-05,
     "cat:tambourine": 2.1e-05,
-    "cat:vocal scream": 0.000118
+    "cat:vocal scream": 0.000118,
+    "cat:environmental sound": 0.008192,
+    "cat:foley": 0.002341,
+    "cat:turntable": 2e-06,
+    "cat:finger snap": 1.2e-05,
+    "cat:water ambience": 0.001492
    }
   },
   {
@@ -142,7 +157,12 @@
     "cat:rain ambience": 0.037185,
     "cat:vocal breath": 9e-05,
     "cat:tambourine": 1.6e-05,
-    "cat:vocal scream": 0.000143
+    "cat:vocal scream": 0.000143,
+    "cat:environmental sound": 0.017395,
+    "cat:foley": 0.003292,
+    "cat:turntable": 7e-06,
+    "cat:finger snap": 1.7e-05,
+    "cat:water ambience": 0.003655
    }
   }
  ]
