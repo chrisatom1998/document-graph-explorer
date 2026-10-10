@@ -22,3 +22,10 @@ graph) that onnxruntime-web can run on 10 s windows of 32 kHz audio.
 
 The app runs a blend of runs 3 and 5 (each tag in `src/audio/taggerPolicy.json` from the run listed in
 `public/tagger-model/model.json`'s `outputRun`); see docs/evaluations/all-tags-blend-2026-10-09.
+
+FSD50K's supplemental app-tag labels are applied at load time, including coverage counts. Before comparing runs,
+`hf-combine-job.sh` re-exports each input and re-scores its FSD50K benchmark with the current label mapping and its
+original frozen thresholds. It replaces only the local `eval-fsd50k` rows; other held-out sets are preserved. This adds
+export/evaluation time to combining, but prevents comparisons between different label populations. For a manual
+combine, run `python3 scripts/audio-model/refresh-fsd50k-eval.py <prep-dir>/eval-fsd50k <run-dir> [...]` first.
+Offline regression checks: `python3 scripts/audio-model/test_fsd50k_review.py` (requires NumPy, no model downloads).

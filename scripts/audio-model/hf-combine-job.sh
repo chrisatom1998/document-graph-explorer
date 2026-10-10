@@ -25,6 +25,9 @@ snapshot_download(data, repo_type='dataset', local_dir='cache', max_workers=16,
 snapshot_download(os.environ['HF_REPO'], local_dir='runs', allow_patterns=[f'{r}/{f}' for r in runs for f in ('model.pt', 'log.json', 'thresholds.json', 'eval.json')])
 PY
 C=cache/prep-cache/$KEY
+# Re-score every input with the same FSD50K labels before comparing old and new runs.
+# Keep each run's frozen thresholds and all other benchmark rows.
+python3 $S/refresh-fsd50k-eval.py $C/fsdprep/eval-fsd50k $(for r in $RUNS; do echo runs/$r; done)
 mkdir -p out
 python3 $S/combine.py out $W/dge/src/audio/taggerPolicy.json $(for r in $RUNS; do echo runs/$r; done) --keep "${KEEP:-}" | tee out/combine.txt
 python3 $S/evaluate.py out/model.onnx out/thresholds.json out/eval.json $C/prep/eval-round1 $C/prep/eval-round2 $C/holdout/holdout-r3 \
