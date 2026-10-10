@@ -27,9 +27,11 @@ Writes one .npz per tar / parquet shard to OUT (a mounted private bucket): id, s
 (float16), plus username/license for the mirror. Finished outputs are skipped, so a re-run resumes.
 Env: OUT, MODE, REPO, DIRS, PART/PARTS (every PARTS-th input from PART), COUNT (max inputs per part, dry run),
 MAX_ROWS (per mirror shard), STOP_AFTER_MIN, BATCH, WORKERS.
-ALLOW (MODE=mirror, optional, default off): a CSV with columns file,freesound_id; only those shards and clips are run.
+ALLOW (MODE=mirror, optional, default off): a CSV with columns file,freesound_id; only those shards and clips are run,
+and each output is named <shard>.allow-<hash of its ids>.npz so it is never mistaken for a full shard.
 """
 import csv
+import hashlib
 import io
 import os
 import queue
@@ -165,6 +167,9 @@ def main():
     if count:
         files = files[:count]
     key = lambda f: f.replace("/", "__").rsplit(".", 1)[0] + ".npz"  # noqa: E731
+    if allow is not None:  # a partial shard gets its own name (hash of its ids), so a full or different-list run never takes it as done
+        full = key
+        key = lambda f: full(f)[:-4] + ".allow-" + hashlib.sha256(",".join(map(str, sorted(allow[f]))).encode()).hexdigest()[:8] + ".npz"  # noqa: E731
     todo = [f for f in files if not os.path.exists(os.path.join(out, key(f)))]
     print(f"{len(files)} inputs in slice, {len(todo)} to do", flush=True)
 
