@@ -7,18 +7,18 @@ export type StemRole = 'drums' | 'bass' | 'vocals' | 'melody';
 export const STEM_ROLES: readonly StemRole[] = ['drums', 'bass', 'vocals', 'melody'];
 
 const DRUMS = ['drums', 'percussion', 'hand percussion', 'tabla', 'djembe', 'cajon', 'triangle', 'gong',
-  'bass drum', 'cymbal', 'drum', 'drum kit', 'drum machine', 'hi-hat', 'jingle bell', 'maraca', 'rattle (instrument)',
+  'bass drum', 'cymbal', 'cymbals', 'drum', 'drum kit', 'drum machine', 'hi-hat', 'jingle bell', 'maraca', 'rattle (instrument)',
   'snare drum', 'tambourine', 'timpani', 'wood block'];
 // acid synth carries the merged acid bass label, and a 303 line usually sits in the bass part.
-const BASS = ['bass guitar', 'double bass', 'synth bass', 'bass hit', 'acid synth'];
+const BASS = ['bass', 'bass guitar', 'double bass', 'synth bass', 'bass hit', 'acid synth'];
 const VOCALS = ['voice', 'breath', 'vocal breath'];
 const MELODY = ['synthesizer', 'guitar', 'piano', 'electric piano', 'acoustic guitar', 'electric guitar', 'strings',
-  'violin / fiddle', 'cello', 'viola', 'trumpet', 'saxophone', 'flute', 'clarinet', 'organ', 'bell', 'mallet instrument',
+  'violin / fiddle', 'violin', 'cello', 'viola', 'trumpet', 'saxophone', 'flute', 'clarinet', 'organ', 'bell', 'mallet instrument',
   'harp', 'trombone', 'horn', 'tuba', 'oboe', 'bassoon', 'harmonica', 'accordion', 'banjo', 'ukulele', 'sitar', 'mandolin',
   'steel guitar', 'xylophone', 'marimba', 'vibraphone', 'steel drum', 'glockenspiel', 'kalimba', 'whistle', 'tuned percussion',
   'jaw harp', 'atmospheric pad', 'bagpipes', 'bowed string instrument', 'brass instrument', 'chime', 'didgeridoo',
   'electronic organ', 'french horn', 'hammond organ', 'harpsichord', 'keyboard (musical)', 'mallet percussion',
-  'marimba / xylophone', 'plucked string instrument', 'shofar', 'steel guitar / slide guitar', 'steelpan', 'string section',
+  'mallet_percussion', 'marimba / xylophone', 'plucked string instrument', 'shofar', 'steel guitar / slide guitar', 'steelpan', 'string section',
   'theremin', 'tubular bells', 'wind instrument / woodwind instrument', 'zither'];
 
 /** Sound label to stem. Whole tag families map by family (every drum hit and pattern is drums, every bass tag is bass,

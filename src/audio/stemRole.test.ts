@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DJ_CATALOG } from './djTags';
+import { FUSION_LABELS } from './fusion';
 import { stemRoleOf } from './stemRole';
 
 describe('stemRoleOf', () => {
@@ -7,6 +8,8 @@ describe('stemRoleOf', () => {
     expect(['kick', 'top loop', 'conga', 'drums'].map(stemRoleOf)).toEqual(['drums', 'drums', 'drums', 'drums']);
     expect(['808 bass', 'reese bass', 'synth bass', 'bass guitar'].map(stemRoleOf)).toEqual(['bass', 'bass', 'bass', 'bass']);
     expect(['vocal chops', 'voice', 'beatbox'].map(stemRoleOf)).toEqual(['vocals', 'vocals', 'vocals']);
+    expect(FUSION_LABELS.filter(label => !stemRoleOf(label))).toEqual([]);
+    expect(['cymbals', 'bass'].map(stemRoleOf)).toEqual(['drums', 'bass']);
     expect(['acid synth', 'vocal shush'].map(stemRoleOf)).toEqual(['bass', 'vocals']);
     expect(['synth pluck', 'piano', 'atmospheric pad', 'strings'].map(stemRoleOf)).toEqual(['melody', 'melody', 'melody', 'melody']);
   });
