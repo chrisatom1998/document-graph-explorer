@@ -38,6 +38,7 @@ import {
 import { rememberWorldOrigin } from '../scene/ingestBirth';
 import { createRecognition, recognitionConfiguration } from '../audio/recognition';
 import { supportsFusionInput, fusionConfiguration } from '../audio/fusionRelease';
+import { resolvedNonSourceLabels, latestSoundReview } from '../audio/soundReviewPolicy';
 
 const music = vi.hoisted(() => ({ analyzeMusic: vi.fn(), preloadMusicModels: vi.fn(async () => {}) }));
 vi.mock('../audio/analyzeMusic', () => music);
@@ -1054,6 +1055,44 @@ describe('WAV music ingestion', () => {
     expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.confirmedDjTags?.source).toEqual(['piano']);
     await setAudioDjTags(node.id);
     expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.soundReviews).toEqual(updated.soundReviews);
+  });
+  it('lets saved character corrections supersede older reviews while later individual reviews still win', async () => {
+    await ingestFiles([wav('character-review.wav')]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    useGraphStore.getState().patchNodes(new Map([[node.id, { audio: { ...node.audio!, recognition: createRecognition(node.audio!.durationSeconds, 'full') } }]]));
+    const current = () => useGraphStore.getState().nodes.find(n => n.id === node.id)!.audio!;
+    await setAudioReview(node.id, 'warm', 'character', 'confirmed');
+    const original = current().soundReviews![0];
+    await setAudioDjTags(node.id, { source: [], production: [], character: [] });
+    expect(resolvedNonSourceLabels(current()).filter(label => label.group === 'character')).toEqual([]);
+    expect(current().soundReviews?.[0]).toEqual(original);
+    expect(latestSoundReview(current().soundReviews, 'character', 'warm')?.decision).toBe('rejected');
+    const clearedHistory = current().soundReviews;
+    await setAudioDjTags(node.id, { source: [], production: [], character: [] });
+    expect(current().soundReviews).toEqual(clearedHistory);
+    const restored = sanitizeMusicAnalysis(JSON.parse(JSON.stringify(current())))!;
+    expect(resolvedNonSourceLabels(restored).filter(label => label.group === 'character')).toEqual([]);
+    await setAudioReview(node.id, 'warm', 'character', 'confirmed');
+    expect(resolvedNonSourceLabels(current())).toContainEqual({ group: 'character', label: 'warm', source: 'confirmed' });
+    await setAudioReview(node.id, 'warm', 'character', 'uncertain');
+    await setAudioDjTags(node.id, { source: [], production: [], character: ['warm'] });
+    expect(resolvedNonSourceLabels(current())).toContainEqual({ group: 'character', label: 'warm', source: 'confirmed' });
+    expect(current().soundReviews?.map(review => review.decision)).toEqual(['confirmed', 'rejected', 'confirmed', 'uncertain', 'confirmed']);
+    const history = current().soundReviews;
+    await setAudioDjTags(node.id);
+    expect(current().soundReviews).toEqual(history);
+  });
+  it('refuses a character correction atomically when reconciliation would exceed the review history limit', async () => {
+    await ingestFiles([wav('character-review-limit.wav')]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    const review = { labelId: 'warm', dimension: 'character' as const, decision: 'confirmed' as const, scope: 'track' as const, at: '2026-10-10T00:00:00Z', evidenceRunId: 'r' };
+    const audio = { ...node.audio!, soundReviews: Array.from({ length: 500 }, () => ({ ...review })) };
+    useGraphStore.getState().patchNodes(new Map([[node.id, { audio }]]));
+    await expect(setAudioDjTags(node.id, { source: [], production: [], character: [] })).rejects.toThrow('Review history limit reached');
+    expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio).toEqual(audio);
+    // Saving an unchanged decision needs no new history entry, even at the limit.
+    await expect(setAudioDjTags(node.id, { source: [], production: [], character: ['warm'] })).resolves.toBe(true);
+    expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.soundReviews).toEqual(audio.soundReviews);
   });
   it('re-runs saved one-shots and full long recordings after a one-shot model change, keeping their reviews', async () => {
     await ingestFiles([wav('hit.wav'), wav('song.wav')]);
