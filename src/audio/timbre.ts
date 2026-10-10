@@ -4,16 +4,16 @@ import { fftInPlace } from './structure';
  * A small, fixed-rule measurement of how a recording sounds (band balance, noisiness, clipping via the crest factor, decay, a mid scoop,
  * a 1–2.5 kHz resonance, how many octaves carry sound, and partials that do not line up as harmonics). Plain DSP, no model: the plain-English words
  * built from it live in timbreDescriptions.ts. Computed from up to three 4 s excerpts of 32 kHz mono audio in
- * contiguous 64 ms frames, so it costs under two hundred 2048-point FFTs per recording.
+ * 64 ms frames with 50% overlap, so it costs under four hundred 2048-point FFTs per recording.
  */
 export const TIMBRE_SAMPLE_RATE = 32000;
-/** v2 covers every frame and uses a 16 ms decay envelope. Older preview measurements are discarded on load;
+/** v2 gives every sample nonzero spectral coverage and uses a 16 ms decay envelope. Older preview measurements are discarded on load;
  * this does not invalidate the model-analysis cache, so those recordings need reanalysis to regain a description. */
 export const TIMBRE_VERSION = 2;
 const FFT = 2048, HALF = FFT / 2, HZ = TIMBRE_SAMPLE_RATE / FFT;
 const EXCERPT_SECONDS = 4;
-/** Cover every sample; an incomplete final frame is aligned with the excerpt's end. */
-const HOP = FFT;
+/** Overlap keeps frame-boundary transients near a window peak. */
+const HOP = HALF;
 /** A finer envelope keeps a short hit's decay visible even when it fits in one FFT frame. */
 const LEVEL_FRAME = FFT / 4;
 /** Recordings up to this long are measured whole (one-shots and short loops keep their real decay). */
@@ -46,7 +46,8 @@ export interface TimbreSummary {
   inharmonicity: number;
 }
 
-const window = Float64Array.from({ length: FFT }, (_, i) => .5 - .5 * Math.cos(2 * Math.PI * i / FFT));
+// Hamming retains nonzero weight at excerpt edges without adding padded, broadband edge frames.
+const window = Float64Array.from({ length: FFT }, (_, i) => .54 - .46 * Math.cos(2 * Math.PI * i / FFT));
 const binOf = (hz: number) => Math.min(HALF, Math.max(0, Math.round(hz / HZ)));
 const THIRDS = Array.from({ length: 21 }, (_, i) => 125 * 2 ** (i / 3));
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -59,7 +60,7 @@ export function frameInharmonicity(p: ArrayLike<number>): number | undefined {
   for (let k = lo; k <= hi; k++) if (p[k] > max) max = p[k];
   if (max <= 0) return;
   const peaks: { f: number; p: number }[] = [];
-  // −25 dB keeps Hann side lobes (−31 dB) out of the peak list.
+  // −25 dB keeps Hamming side lobes (about −43 dB) out of the peak list.
   for (let k = lo; k <= hi; k++) if (p[k] > p[k - 1] && p[k] >= p[k + 1] && p[k] >= max * 10 ** -2.5) {
     const a = Math.log(p[k - 1] + 1e-30), b = Math.log(p[k]), c = Math.log(p[k + 1] + 1e-30);
     const d = a - 2 * b + c, delta = d < 0 ? clamp(.5 * (a - c) / d, -.5, .5) : 0;
@@ -101,16 +102,20 @@ export class TimbreFeatures {
     }
     const flatLo = binOf(150), airLo = binOf(8000);
     const frames: { start: number; weight: number }[] = [];
-    for (let start = 0; start + FFT <= samples.length; start += HOP) frames.push({ start, weight: 1 });
-    // Use real audio for the final spectrum rather than letting a tiny zero-padded tail count as a full noisy frame.
-    // Only clips shorter than one FFT need padding; otherwise the last full frame may overlap the preceding one.
-    const last = Math.max(0, samples.length - FFT);
-    if (frames.at(-1)?.start !== last) frames.push({ start: last, weight: frames.length ? (samples.length % FFT) / FFT : 1 });
-    // The overlapping end frame contributes only its newly covered duration, not a duplicate full frame.
+    if (samples.length < FFT) {
+      // Centre short clips under the window peak, including a single-sample transient.
+      frames.push({ start: -Math.floor((FFT - samples.length) / 2), weight: 1 });
+    } else {
+      // Count the first frame once and subsequent frames only for their newly covered half.
+      for (let start = 0; start + FFT <= samples.length; start += HOP) frames.push({ start, weight: start === 0 ? 1 : HOP / FFT });
+      // Keep real audio in the end-aligned spectrum; only its newly covered duration counts.
+      const last = samples.length - FFT, remainder = last % HOP;
+      if (remainder) frames.push({ start: last, weight: remainder / FFT });
+    }
     for (const { start, weight } of frames) {
       let ms = 0, top = 0;
       for (let i = 0; i < FFT; i++) { const v = samples[start + i] ?? 0; ms += v * v; top = Math.max(top, Math.abs(v)); this.re[i] = v * window[i]; this.im[i] = 0; }
-      ms /= Math.min(FFT, samples.length - start);
+      ms /= Math.min(samples.length, start + FFT) - Math.max(0, start);
       if (ms < SILENT) continue;
       this.crests.push({ value: top / Math.sqrt(ms), weight });
       fftInPlace(this.re, this.im);

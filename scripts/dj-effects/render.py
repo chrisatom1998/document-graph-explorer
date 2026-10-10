@@ -6,11 +6,11 @@ Only clips from TRAINING uploaders are used as sources, and each render keeps it
 group, so a render never reaches the held-out test and cross-validation never splits a source from its renders.
 Held-out scoring stays on real tagged clips only; train.py uses renders only where they help on real training clips.
 Every render is mono 48 kHz, at most 10 s, loudness-matched to its source. Deterministic (fixed seed).
-Usage: render.py <audio-manifest.json> <out dir>   env: PER_EFFECT (220)
+Usage: render.py <audio-manifest.json> <out dir>   env: PER_EFFECT (220), RENDER (dj | tags: the processing and space tags)
 Writes <out dir>/<id>.wav and <out dir>/manifest.json (clips: id, path, labels, group, split='train', kind='render')."""
 import json, sys, os, subprocess, wave, hashlib, random
 import numpy as np
-from scipy.signal import butter, sosfilt, sosfilt_zi
+from scipy.signal import butter, sosfilt, sosfilt_zi, fftconvolve
 
 MANIFEST, OUT = sys.argv[1:3]
 PER_EFFECT = int(os.environ.get('PER_EFFECT', 220))
@@ -153,10 +153,65 @@ def sub_drop(x, r):
     out = np.sin(ph) * np.exp(-t * r.uniform(.5, 2))
     return np.tanh(out * 2) + (.15 * x[:L] / rms(x[:L]) * rms(out) if r.random() < .5 and len(x) >= L else 0)
 
+def _reverb(x, r, secs, wet):
+    L = int(RATE * secs); ir = np.random.default_rng(r.randrange(1 << 30)).normal(size=L) * np.exp(-np.arange(L) / RATE * 6.9 / secs)
+    ir = sosfilt(butter(2, r.uniform(3000, 10000), 'low', fs=RATE, output='sos'), ir)
+    y = fftconvolve(np.r_[x, np.zeros(L)], ir)[:len(x) + L]; y *= rms(x) / rms(y)
+    return np.r_[x, np.zeros(L)] * (1 - wet) + y * wet
+
+def chorused(x, r):
+    n = np.arange(len(x)); out = x.copy()
+    for v in range(r.randint(2, 3)):
+        d = (r.uniform(.012, .03) + r.uniform(.002, .006) * np.sin(2 * np.pi * r.uniform(.2, 1.5) * n / RATE + r.uniform(0, 6.3))) * RATE
+        out = out + r.uniform(.5, .8) * np.interp(n - d, n, x, left=0)
+    return out
+
+def saturated(x, r):
+    y = np.tanh(x / (np.max(np.abs(x)) + 1e-9) * r.uniform(2, 5))
+    return sosfilt(butter(1, r.uniform(6000, 12000), 'low', fs=RATE, output='sos'), y)
+
+def distorted(x, r):
+    g = r.uniform(10, 40); y = x / (np.max(np.abs(x)) + 1e-9) * g
+    y = np.clip(y + r.uniform(0, .3), -1, 1) if r.random() < .5 else np.sign(y) * (1 - np.exp(-np.abs(y)))
+    return sosfilt(butter(2, r.uniform(3000, 8000), 'low', fs=RATE, output='sos'), y - np.mean(y))
+
+def filtered(x, r):
+    kind = r.choice(['low', 'low', 'high', 'band'])
+    f = r.uniform(250, 1400) if kind == 'low' else r.uniform(1500, 4000) if kind == 'high' else [r.uniform(400, 900), r.uniform(1500, 3000)]
+    return sosfilt(butter(4, f, kind, fs=RATE, output='sos'), x)
+
+def reverberant(x, r):
+    return _reverb(x, r, r.uniform(1.5, 4.5), r.uniform(.45, .8))[:int(MAX * RATE)]
+
+def echoing(x, r):
+    d = int(RATE * r.uniform(.15, .5)); fb = r.uniform(.4, .7); out = np.r_[x, np.zeros(d * 6)]; tap = x.copy(); g = 1
+    lp = butter(1, r.uniform(2500, 6000), 'low', fs=RATE, output='sos')
+    for k in range(1, 7):
+        g *= fb; tap = sosfilt(lp, tap); out[k * d:k * d + len(tap)] += g * tap
+    return out
+
+def rising(x, r):
+    L = len(x); return resample_curve(np.r_[x, x], np.geomspace(1, r.uniform(1.6, 2.6), L))
+
+def falling(x, r):
+    L = len(x); return resample_curve(x, np.geomspace(1, r.uniform(.35, .65), L))
+
+def gliding(x, r):
+    """Pitch that moves smoothly between held levels (portamento), not a steady ramp."""
+    L = len(x); k = r.randint(3, 6); levels = [2 ** (r.randint(-7, 7) / 12) for _ in range(k)]
+    seg = L // k; curve = np.concatenate([np.full(seg, v) for v in levels])
+    glide = int(RATE * r.uniform(.08, .3)); kern = np.ones(glide) / glide
+    curve = np.convolve(np.r_[np.full(glide, levels[0]), curve, np.full(glide, levels[-1])], kern, mode='same')[glide:glide + len(curve)]
+    return resample_curve(np.r_[x, x, x], curve)
+
 EFFECTS = {'chops': chops, 'stutter effect': stutter, 'beat repeat': beat_repeat, 'trance gate': trance_gate,
            'record stop': record_stop, 'rewind': rewind, 'filter sweep': filter_sweep, 'delay throw': delay_throw,
            'bitcrushed': bitcrushed, 'flanged': flanged, 'reverse effect': reverse, 'noise sweep': noise_sweep,
            'riser': lambda x, r: pitched_sweep(x, r, True), 'downlifter': lambda x, r: pitched_sweep(x, r, False), 'sub drop': sub_drop}
+TAG_EFFECTS = {'chorused': chorused, 'saturated': saturated, 'distorted': distorted, 'filtered': filtered, 'reverberant': reverberant,
+               'echoing': echoing, 'rising': rising, 'falling': falling, 'gliding': gliding}
+# RENDER=tags renders the processing and space tags (labels-tags.json) instead of the DJ effects.
+if os.environ.get('RENDER') == 'tags': EFFECTS = TAG_EFFECTS
 
 def write(path, y):
     y = np.clip(y, -1, 1); pcm = (y * 32767).astype('<i2')

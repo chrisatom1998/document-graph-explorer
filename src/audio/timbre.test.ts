@@ -56,6 +56,28 @@ describe('timbre descriptor', () => {
     expect(measured.bands[1]).toBeGreaterThan(.7);
   });
 
+  it.each([0, 1, 1023, 1024, 2047, 2048, 2049, 3072, 4095])('measures an impulse at sample %i without window blind spots', offset => {
+    const samples = new Float32Array(4096);
+    samples[offset] = .5;
+    const measured = measure(samples);
+    expect(measured).toBeDefined();
+    expect(sanitizeTimbre(measured)).toEqual(measured);
+    expect(measured.flatness).toBeCloseTo(1, 2);
+    expect(measured.bands.reduce((sum, share) => sum + share, 0)).toBeCloseTo(1, 2);
+  });
+
+  it('retains the same transient over a quiet tone at a frame boundary and a frame centre', () => {
+    const withImpulse = (offset: number) => {
+      const samples = sine(250, 16384 / TIMBRE_SAMPLE_RATE, .01);
+      samples[offset] += 1;
+      return measure(samples);
+    };
+    const boundary = withImpulse(4096), centre = withImpulse(5120);
+    expect(boundary.bands[5]).toBeGreaterThan(.1);
+    expect(boundary.bands).toEqual(centre.bands);
+    expect(boundary.flatness).toEqual(centre.flatness);
+  });
+
   it('keeps the decay of a sub-frame hit instead of treating it as a held tone', () => {
     const samples = new Float32Array(Math.round(.12 * TIMBRE_SAMPLE_RATE));
     samples.set(sine(300, .03));
@@ -68,24 +90,22 @@ describe('timbre descriptor', () => {
   it.each([1, 2, 31, 511, 512, 513, 2047, 2048, 2049])('keeps a %i-sample partial frame finite', length => {
     const samples = Float32Array.from({ length }, (_, i) => .3 * Math.cos(2 * Math.PI * 300 * i / TIMBRE_SAMPLE_RATE));
     const measured = measure(samples);
-    // A one-sample clip can have no measurable spectrum under the Hann window.
-    if (measured) {
-      expect(sanitizeTimbre(measured)).toEqual(measured);
-      expect(measured.bands.reduce((sum, share) => sum + share, 0)).toBeCloseTo(1, 2);
-    }
+    expect(measured).toBeDefined();
+    expect(sanitizeTimbre(measured)).toEqual(measured);
+    expect(measured.bands.reduce((sum, share) => sum + share, 0)).toBeCloseTo(1, 2);
   });
 
-  it.each([2050, 4098, 16386])('does not treat a tiny tail as a full noisy frame at %i samples', length => {
+  it.each([2050, 3074, 4098, 16386])('does not treat a tiny tail as a full noisy frame at %i samples', length => {
     const measured = measure(sine(300, length / TIMBRE_SAMPLE_RATE));
     expect(measured.flatness).toBeLessThan(.01);
     expect(timbreDescriptions(measured)).toEqual(['warm', 'smooth']);
   });
 
-  it('does not overcount the overlapping end frame when only two samples are added', () => {
+  it.each([3072, 4096])('does not overcount the overlapping end frame when two samples extend a %i-sample clip', length => {
     const clip = (tail: number) => {
-      const samples = new Float32Array(4096 + tail);
+      const samples = new Float32Array(length + tail);
       samples.set(sine(300, 2048 / TIMBRE_SAMPLE_RATE));
-      samples.set(sine(3000, (2048 + tail) / TIMBRE_SAMPLE_RATE), 2048);
+      samples.set(sine(3000, (length - 2048 + tail) / TIMBRE_SAMPLE_RATE), 2048);
       return measure(samples);
     };
     const exact = clip(0), extended = clip(2);

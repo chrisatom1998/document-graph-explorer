@@ -28,7 +28,7 @@ from sklearn.model_selection import GroupKFold
 MANIFEST, EMB, OUT = sys.argv[1:4]; RENDERS = sys.argv[4] if len(sys.argv) > 4 else None
 os.makedirs(OUT, exist_ok=True)
 HERE = os.path.dirname(os.path.abspath(__file__))
-spec = json.load(open(f'{HERE}/labels.json'))
+spec = json.load(open(f"{HERE}/{os.environ.get('LABELS', 'labels.json')}"))
 GROUP = {L['label']: L['group'] for L in spec['labels']}
 OVERLAP = [set(s) for s in spec['overlap']]
 TARGET, MIN_TRAIN, MIN_TEST = 0.70, 25, 10
