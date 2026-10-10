@@ -38,6 +38,7 @@ JAMENDO_TAGS = ['accordion', 'acousticbassguitar', 'acousticguitar', 'bass', 'be
 OPENMIC = list(CLASSES)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labelmap import CAT, FREESOUND, FSLD_ROLES, SAME  # noqa: E402
+import fsd50k_extra  # noqa: E402
 import charts  # noqa: E402
 # Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
 # sources' labels below wherever one names the same sound.
@@ -104,7 +105,9 @@ def main():
     if args.soundcloud:
         sources.append(load_source('soundcloud', os.path.join(args.soundcloud, 'soundcloud-mel.npy'), json.load(open(os.path.join(args.soundcloud, 'soundcloud.json')))['items'], args.weak))
     if args.fsd50k:
-        sources.append(load_source('fsd50k', os.path.join(args.fsd50k, 'fsd50k-mel.npy'), json.load(open(os.path.join(args.fsd50k, 'fsd50k.json')))['items'], args.weak))
+        fsd_items = json.load(open(os.path.join(args.fsd50k, 'fsd50k.json')))['items']
+        print(f'FSD50K: {fsd50k_extra.relabel(fsd_items, "dev")} labels added from FSD50K classes the prep leaves out (fsd50k_extra.py)', flush=True)
+        sources.append(load_source('fsd50k', os.path.join(args.fsd50k, 'fsd50k-mel.npy'), fsd_items, args.weak))
     if args.nsynth:
         sources.append(load_source('nsynth', os.path.join(args.nsynth, 'nsynth-mel.npy'), json.load(open(os.path.join(args.nsynth, 'nsynth.json')))['items'], args.weak))
     if args.freesound:
