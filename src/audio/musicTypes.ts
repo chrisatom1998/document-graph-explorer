@@ -21,7 +21,8 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 83/84: the runs 3 and 5 tagger blend (old tagger scores no longer count).
 // 85/86: sound heads for kalimba, djembe and nine maybe tags (tag-heads-2026-10-09).
 // 87/88: heads at held-out 50/50 ship as full tags (stored "maybe" head scores no longer count).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 88 : 87;
+// 89/90: tagger blend adds run 7 for animal sound, percussion, tambourine and rain ambience (all-tags-blend-2026-10-10).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 90 : 89;
 export interface InstrumentEstimate {
   label: string;
   score: number;

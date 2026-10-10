@@ -7,7 +7,7 @@
     "model.json": "https://huggingface.co/cmjatom/dge-all-tags-tagger-nc/resolve/8e363c7c1bcbec801c706ee4b96c636cd69e4903/onnx/model.json"
   },
   "sha256": {
-    "model.onnx": "bd231add526cc8d2229fd09a8cd8df550ef974667463704c0e7d49f8d80fa184",
-    "model.json": "4c4fdbead57f1c01fcfbf61a4670400175230afe03344d2a0c2ecad21b4879da"
+    "model.onnx": "f00ea480aa20ac7e13262f4eb559b5392450aab31694b75c713bfa59438242e9",
+    "model.json": "49f6e3bba0d14831aa1c700fe486ad5a18dea554b3790e4466263e51802767bb"
   }
 }

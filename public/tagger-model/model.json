@@ -251,7 +251,15 @@
   "fsld:chords",
   "fsld:melody",
   "fsld:fx",
-  "fsld:vocal"
+  "fsld:vocal",
+  "cat:bongo",
+  "cat:tuned percussion",
+  "cat:banjo",
+  "cat:mandolin",
+  "cat:pitched vocal",
+  "cat:shaker loop",
+  "cat:synth hit",
+  "cat:vocal shush"
  ],
  "input": {
   "name": "samples32k",
@@ -263,10 +271,11 @@
   "name": "scores",
   "activation": "sigmoid"
  },
- "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
+ "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
  "runs": [
   "all-tags",
-  "all-tags-run5"
+  "all-tags-run5",
+  "all-tags-run7"
  ],
  "outputRun": {
   "accordion": "all-tags",
@@ -336,7 +345,7 @@
   "cat:acoustic guitar": "all-tags",
   "cat:air horn": "all-tags",
   "cat:airy": "all-tags",
-  "cat:animal sound": "all-tags",
+  "cat:animal sound": "all-tags-run7",
   "cat:atmospheric pad": "all-tags",
   "cat:bass growl": "all-tags",
   "cat:bass guitar": "all-tags",
@@ -422,14 +431,14 @@
   "cat:open hi-hat": "all-tags",
   "cat:organ": "all-tags",
   "cat:organ synth": "all-tags",
-  "cat:percussion": "all-tags",
+  "cat:percussion": "all-tags-run7",
   "cat:percussion hit": "all-tags",
   "cat:percussion loop": "all-tags",
   "cat:percussive": "all-tags-run5",
   "cat:piano": "all-tags",
   "cat:plucked": "all-tags",
   "cat:pulsing": "all-tags-run5",
-  "cat:rain ambience": "all-tags-run5",
+  "cat:rain ambience": "all-tags-run7",
   "cat:record stop": "all-tags",
   "cat:reese bass": "all-tags",
   "cat:reverberant": "all-tags",
@@ -476,7 +485,7 @@
   "cat:synth stab": "all-tags",
   "cat:synthesizer": "all-tags",
   "cat:tabla": "all-tags",
-  "cat:tambourine": "all-tags",
+  "cat:tambourine": "all-tags-run7",
   "cat:texture": "all-tags",
   "cat:tom": "all-tags",
   "cat:top loop": "all-tags",
@@ -520,11 +529,19 @@
   "fsld:chords": "all-tags",
   "fsld:melody": "all-tags",
   "fsld:fx": "all-tags",
-  "fsld:vocal": "all-tags"
+  "fsld:vocal": "all-tags",
+  "cat:bongo": "all-tags-run7",
+  "cat:tuned percussion": "all-tags-run7",
+  "cat:banjo": "all-tags-run7",
+  "cat:mandolin": "all-tags-run7",
+  "cat:pitched vocal": "all-tags-run7",
+  "cat:shaker loop": "all-tags-run7",
+  "cat:synth hit": "all-tags-run7",
+  "cat:vocal shush": "all-tags-run7"
  },
  "sha256": {
-  "model.onnx": "bd231add526cc8d2229fd09a8cd8df550ef974667463704c0e7d49f8d80fa184"
+  "model.onnx": "f00ea480aa20ac7e13262f4eb559b5392450aab31694b75c713bfa59438242e9"
  },
- "bytes": 91428859,
+ "bytes": 160329743,
  "maxAbsErrorVsPyTorch": 1.9669532775878906e-06
 }

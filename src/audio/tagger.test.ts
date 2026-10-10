@@ -31,7 +31,7 @@ describe('trained tagger policy', () => {
     const decided = new Set(TAGGER_POLICY.tags.flatMap(t => t.decides));
     for (const label of ['synthesizer', 'voice', 'organ', 'cello']) expect(decided.has(label)).toBe(false);
     expect(TAGGER_POLICY.tags.filter(t => t.dimension === 'source').map(t => t.output).sort())
-      .toEqual(['bass', 'cymbals', 'drums', 'guitar', 'piano', 'saxophone', 'trumpet', 'violin']);
+      .toEqual(['bass', 'cat:animal sound', 'cat:percussion', 'cat:tambourine', 'cymbals', 'drums', 'guitar', 'piano', 'saxophone', 'trumpet', 'violin']);
   });
 });
 
@@ -154,7 +154,8 @@ describe('trained tagger long-recording rules', () => {
   it('installs the rules picked on the full-song tuning set', () => {
     expect(Object.fromEntries(TAGGER_POLICY.tags.filter(t => t.long).map(t => [t.output, t.long]))).toEqual({
       drums: { rule: 'max', threshold: .5757 }, trumpet: { rule: 'max' }, piano: { rule: 'detectors' }, guitar: { rule: 'detectors' },
-      cymbals: { rule: 'detectors' }, violin: { rule: 'detectors' }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' } });
+      cymbals: { rule: 'detectors' }, violin: { rule: 'detectors' }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' },
+      'cat:percussion': { rule: 'detectors' }, 'cat:tambourine': { rule: 'detectors' } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
   it('needs the higher full-song drums threshold on long recordings only', () => {
