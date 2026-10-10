@@ -78,6 +78,27 @@ describe('timbre descriptor', () => {
     expect(boundary.flatness).toEqual(centre.flatness);
   });
 
+  it('weights a sub-frame excerpt by its duration when accumulating excerpts', () => {
+    const tone = sine(250, 2048 / TIMBRE_SAMPLE_RATE);
+    const features = new TimbreFeatures();
+    features.add(new Float32Array([.5]));
+    features.add(tone);
+    const measured = features.summary()!;
+    expect(measured.flatness).toBeLessThan(.01);
+    expect(measured.crest).toBeCloseTo(measure(tone).crest, 2);
+  });
+
+  it.each([128, 256, 1024].flatMap(length => [.15, .3, .6].map(amplitude => ({ length, amplitude }))))(
+    'keeps mixed-excerpt energy proportional for $length samples at amplitude $amplitude, in either order', ({ length, amplitude }) => {
+    const short = sine(6000, length / TIMBRE_SAMPLE_RATE, amplitude), full = sine(250, 2048 / TIMBRE_SAMPLE_RATE, .3);
+    const forwards = new TimbreFeatures(), backwards = new TimbreFeatures();
+    forwards.add(short); forwards.add(full);
+    backwards.add(full); backwards.add(short);
+    const expected = length * amplitude ** 2 / (length * amplitude ** 2 + 2048 * .3 ** 2);
+    expect(forwards.summary()!.bands[4]).toBeCloseTo(expected, 2);
+    expect(backwards.summary()).toEqual(forwards.summary());
+  });
+
   it('keeps the decay of a sub-frame hit instead of treating it as a held tone', () => {
     const samples = new Float32Array(Math.round(.12 * TIMBRE_SAMPLE_RATE));
     samples.set(sine(300, .03));

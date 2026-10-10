@@ -26,7 +26,7 @@ import { assertAudioContent } from '../audio/parseAudio';
 import { createMusicCacheContext } from '../audio/musicAnalysisCache';
 import { INSTRUMENT_LABELS } from '../audio/instrumentLabels';
 import { sanitizeSoundReviews, type SoundReview } from '../audio/recognition';
-import { canonicalReviewLabel } from '../audio/soundReviewIdentity';
+import { canonicalReviewLabel, latestSoundReview } from '../audio/soundReviewIdentity';
 import { getOriginal } from '../persistence/originals';
 import {
   DUP_SIM_THRESHOLD,
@@ -2192,8 +2192,9 @@ export function setAudioDjTags(id: string, labels?: ConfirmedDjTags): Promise<bo
       const labelId=canonicalReviewLabel(review.dimension,review.labelId);
       reviewedLabels.set(`${review.dimension}:${labelId}`,{labelId,dimension:review.dimension});
     }
-    const reconciliations:SoundReview[]=confirmedDjTags===undefined?[]:[...reviewedLabels.values()].map(({labelId,dimension})=>({labelId,dimension,scope:'track',at:new Date().toISOString(),
-      evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmedDjTags[dimension].includes(labelId)?'confirmed':'rejected'}));
+    const reconciliations:SoundReview[]=confirmedDjTags===undefined?[]:[...reviewedLabels.values()].map<SoundReview>(({labelId,dimension})=>({labelId,dimension,scope:'track',at:new Date().toISOString(),
+      evidenceRunId:audio.recognition?.runId??'unknown',decision:confirmedDjTags[dimension].includes(labelId)?'confirmed':'rejected'}))
+      .filter(review=>latestSoundReview(audio.soundReviews,review.dimension,review.labelId)?.decision!==review.decision);
     if((audio.soundReviews?.length??0)+reconciliations.length>500)throw new Error('Review history limit reached. Export this graph before adding more reviews.');
     useGraphStore.getState().patchNodes(new Map([[id,{audio:{...audio,confirmedDjTags,
       ...(confirmedDjTags?{confirmedInstruments:[...confirmedDjTags.source]}:{}),

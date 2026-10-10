@@ -48,6 +48,7 @@ export interface TimbreSummary {
 
 // Hamming retains nonzero weight at excerpt edges without adding padded, broadband edge frames.
 const window = Float64Array.from({ length: FFT }, (_, i) => .54 - .46 * Math.cos(2 * Math.PI * i / FFT));
+const windowPower = window.reduce((sum, value) => sum + value * value, 0);
 const binOf = (hz: number) => Math.min(HALF, Math.max(0, Math.round(hz / HZ)));
 const THIRDS = Array.from({ length: 21 }, (_, i) => 125 * 2 ** (i / 3));
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -101,10 +102,13 @@ export class TimbreFeatures {
       levels.push(Math.sqrt(ms / (end - start)));
     }
     const flatLo = binOf(150), airLo = binOf(8000);
-    const frames: { start: number; weight: number }[] = [];
+    const frames: { start: number; weight: number; powerScale?: number }[] = [];
     if (samples.length < FFT) {
       // Centre short clips under the window peak, including a single-sample transient.
-      frames.push({ start: -Math.floor((FFT - samples.length) / 2), weight: 1 });
+      const start = -Math.floor((FFT - samples.length) / 2);
+      const coveredPower = window.subarray(-start, -start + samples.length).reduce((sum, value) => sum + value * value, 0);
+      // Match the full-frame power scale before duration weighting; padding must not count duration twice.
+      frames.push({ start, weight: samples.length / FFT, powerScale: windowPower / coveredPower });
     } else {
       // Count the first frame once and subsequent frames only for their newly covered half.
       for (let start = 0; start + FFT <= samples.length; start += HOP) frames.push({ start, weight: start === 0 ? 1 : HOP / FFT });
@@ -112,7 +116,7 @@ export class TimbreFeatures {
       const last = samples.length - FFT, remainder = last % HOP;
       if (remainder) frames.push({ start: last, weight: remainder / FFT });
     }
-    for (const { start, weight } of frames) {
+    for (const { start, weight, powerScale = 1 } of frames) {
       let ms = 0, top = 0;
       for (let i = 0; i < FFT; i++) { const v = samples[start + i] ?? 0; ms += v * v; top = Math.max(top, Math.abs(v)); this.re[i] = v * window[i]; this.im[i] = 0; }
       ms /= Math.min(samples.length, start + FFT) - Math.max(0, start);
@@ -120,7 +124,7 @@ export class TimbreFeatures {
       this.crests.push({ value: top / Math.sqrt(ms), weight });
       fftInPlace(this.re, this.im);
       const p = this.re;
-      for (let k = 0; k <= HALF; k++) { p[k] = this.re[k] * this.re[k] + this.im[k] * this.im[k]; this.power[k] += p[k] * weight; }
+      for (let k = 0; k <= HALF; k++) { p[k] = this.re[k] * this.re[k] + this.im[k] * this.im[k]; this.power[k] += p[k] * weight * powerScale; }
       this.frames += weight;
       this.flat += flatness(p, flatLo, HALF) * weight;
       let air = 0, all = 0;

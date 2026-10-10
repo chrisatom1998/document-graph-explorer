@@ -1067,6 +1067,9 @@ describe('WAV music ingestion', () => {
     expect(resolvedNonSourceLabels(current()).filter(label => label.group === 'character')).toEqual([]);
     expect(current().soundReviews?.[0]).toEqual(original);
     expect(latestSoundReview(current().soundReviews, 'character', 'warm')?.decision).toBe('rejected');
+    const clearedHistory = current().soundReviews;
+    await setAudioDjTags(node.id, { source: [], production: [], character: [] });
+    expect(current().soundReviews).toEqual(clearedHistory);
     const restored = sanitizeMusicAnalysis(JSON.parse(JSON.stringify(current())))!;
     expect(resolvedNonSourceLabels(restored).filter(label => label.group === 'character')).toEqual([]);
     await setAudioReview(node.id, 'warm', 'character', 'confirmed');
@@ -1087,6 +1090,9 @@ describe('WAV music ingestion', () => {
     useGraphStore.getState().patchNodes(new Map([[node.id, { audio }]]));
     await expect(setAudioDjTags(node.id, { source: [], production: [], character: [] })).rejects.toThrow('Review history limit reached');
     expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio).toEqual(audio);
+    // Saving an unchanged decision needs no new history entry, even at the limit.
+    await expect(setAudioDjTags(node.id, { source: [], production: [], character: ['warm'] })).resolves.toBe(true);
+    expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.soundReviews).toEqual(audio.soundReviews);
   });
   it('re-runs saved one-shots and full long recordings after a one-shot model change, keeping their reviews', async () => {
     await ingestFiles([wav('hit.wav'), wav('song.wav')]);
