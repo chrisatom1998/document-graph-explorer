@@ -1,6 +1,6 @@
 """Stage tagger run 9's new training and held-out audio into a PRIVATE Hugging Face dataset (run as small CPU HF jobs).
 
-  STAGE_REPO=<user>/dge-private-train OUT=run9/v1 PART=freesound NPARTS=3 PARTNO=0 IDS=run9/inputs/run9-ids.txt \
+  STAGE_REPO=<user>/dge-private-train OUT=run9/v1 PART=freesound NPARTS=3 PARTNO=0 IDS=run9/inputs/ids-0.b64,...,ids-3.b64 \
   IDS_MD5=<md5> REPO_SHA=<sha of this repo> python3 -I stage-run9.py
   PART=labelled stages the labelled sets instead (no id list needed).
 
@@ -190,7 +190,12 @@ def ced_scores(want):
 def stage_freesound(sha, nparts, partno):
     import pyarrow.parquet as pq
     from huggingface_hub import hf_hub_download
-    data = open(hf_hub_download(os.environ['STAGE_REPO'], os.environ['IDS'], repo_type='dataset'), 'rb').read()
+    # IDS: one file, or comma-separated parts joined in order; a .b64 list is base64 of the bz2-compressed text.
+    parts = os.environ['IDS'].split(',')
+    data = b''.join(open(hf_hub_download(os.environ['STAGE_REPO'], f, repo_type='dataset'), 'rb').read().strip() for f in parts)
+    if parts[0].endswith('.b64'):
+        import base64, bz2
+        data = bz2.decompress(base64.b64decode(data))
     if hashlib.md5(data).hexdigest() != os.environ['IDS_MD5']: sys.exit('id list md5 does not match IDS_MD5; refusing')
     listed = []   # (tag, split, route, id)
     for line in data.decode().splitlines():
