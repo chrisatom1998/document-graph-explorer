@@ -35,8 +35,9 @@ def sha256(path):
     return h.hexdigest()
 
 def decode(path, rate):
+    # An undecodable file comes back empty and is rejected as "silent or undecodable" below.
     raw = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-i', path, '-ac', '1', '-ar', str(rate), '-f', 's16le', '-'],
-                         capture_output=True, check=True).stdout
+                         capture_output=True).stdout
     return raw, np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768
 
 def frames(x, n=1024, hop=256):

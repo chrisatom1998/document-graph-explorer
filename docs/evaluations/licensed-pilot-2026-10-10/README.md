@@ -105,8 +105,8 @@ build was stopped part-way. The pilot laser is worse than the current one on bot
 
 | Bar | Detectors that clear it |
 |---|---|
-| 50/50 (ship) | no pilot detector; the current laser does |
-| 70/70 | no pilot detector; the current laser does on longer clips (2 short positives only) |
+| 50/50 (ship) | no pilot detector; the current laser does under "shown" scoring (strict: 0, because it was a "maybe" tag at baseline; #193 has since made it a normal tag, so "shown" is what users now see) |
+| 70/70 | no pilot detector; the current laser does under "shown" scoring on longer clips (2 short positives only) |
 | 90/90 | none |
 
 ## Why, and the data gaps

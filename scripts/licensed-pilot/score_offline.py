@@ -9,9 +9,11 @@ even the ceiling is under the ship bar, no threshold the training data could pic
 Every locked item is scored. A file embed-clap.mjs skipped (under 0.1 s) is listed and counted as never firing: a
 miss when it is a positive, never a false positive. Its ceiling is also given as if every skipped positive were found.
 """
-import json, math, sys
+import hashlib, json, math, os, sys
 
 HOLD, EMB, PILOT, MAIN, OUT = sys.argv[1:6]
+if hashlib.sha256(open(HOLD, 'rb').read()).hexdigest() != open(os.path.join(os.path.dirname(HOLD), 'holdout.lock')).read().split()[0]:
+    sys.exit(f'{HOLD} does not match holdout.lock')
 items = json.load(open(HOLD))['items']
 emb = {}
 for line in open(EMB):

@@ -7,12 +7,16 @@ Three tests, each on decoded audio rather than file bytes, so mirrors, re-encode
 1. identical 16 kHz mono PCM (sha256) to a holdout file or to an earlier training row;
 2. CLAP embedding cosine >= 0.98 to any holdout file (catches crops, gain changes and transcodes of the same sound);
 3. CLAP cosine >= 0.995 to a training row of a different fold group (the copy would leak across folds).
-A training row hit by 1 or 2 is dropped; a row hit by 3 joins the earlier row's fold group.
+A training row hit by 1 or 2 is dropped; a row hit by 3 joins the earlier row's fold group. A training row with no
+embedding is dropped too (it cannot get tests 2-3, nor be trained on). Holdout files too short to embed (under 0.1 s)
+still get test 1 and are listed in dedupe.json.
 """
 import csv, hashlib, json, os, subprocess, sys
 import numpy as np
 
 HOLD, FTS, EMB, OUT, *MANIFESTS = sys.argv[1:]
+if hashlib.sha256(open(HOLD, 'rb').read()).hexdigest() != open(os.path.join(os.path.dirname(HOLD), 'holdout.lock')).read().split()[0]:
+    sys.exit(f'{HOLD} does not match holdout.lock')
 os.makedirs(OUT, exist_ok=True)
 emb = {}
 for f in EMB.split(','):
@@ -32,7 +36,8 @@ for m in MANIFESTS:
         why = None
         if r['pcm16k_sha256'] in hpcm: why = f"decoded audio identical to holdout {hpcm[r['pcm16k_sha256']]}"
         elif r['pcm16k_sha256'] in kept_pcm: why = f"decoded audio identical to training row {kept_pcm[r['pcm16k_sha256']]}"
-        elif r['id'] in emb:
+        elif r['id'] not in emb: why = 'no CLAP embedding (too short or silent): cosine checks impossible, and it cannot be trained on'
+        else:
             v = unit(emb[r['id']]); sims = H @ v; j = int(sims.argmax())
             if sims[j] >= 0.98: why = f'CLAP cosine {sims[j]:.3f} to holdout {hids[j]}'
             else:
@@ -41,11 +46,12 @@ for m in MANIFESTS:
                         regrouped.append({'id': r['id'], 'from': r['fold_group'], 'to': kg, 'cosine': round(float(kv @ v), 4)}); r['fold_group'] = kg; break
         if why: dropped.append({'id': r['id'], 'manifest': os.path.basename(m), 'reason': why}); continue
         kept_pcm[r['pcm16k_sha256']] = r['id']
-        if r['id'] in emb: kept.append((r['id'], unit(emb[r['id']]), r['fold_group']))
+        kept.append((r['id'], unit(emb[r['id']]), r['fold_group']))
         out.append(r)
     with open(os.path.join(OUT, os.path.basename(m)), 'w', newline='') as f:
         w = csv.DictWriter(f, list(rows[0])); w.writeheader(); w.writerows(out)
     print(f'{os.path.basename(m)}: kept {len(out)} of {len(rows)}')
-json.dump({'dropped': dropped, 'regrouped': regrouped, 'holdout_files_compared': len(hold), 'holdout_embedded': len(hids)},
+json.dump({'dropped': dropped, 'regrouped': regrouped, 'holdout_files_compared': len(hold), 'holdout_embedded': len(hids),
+           'holdout_not_embedded': [i['id'] for i in hold if i['id'] not in emb]},
           open(os.path.join(OUT, 'dedupe.json'), 'w'), indent=1)
 print(f'dropped {len(dropped)}, regrouped {len(regrouped)}')

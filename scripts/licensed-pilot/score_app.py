@@ -14,9 +14,11 @@ clips are always reported apart; "all" is given only for completeness and is nev
 route does not run. Filename-only tags never count (the upload names are opaque ids anyway).
 Unknown holdout rows are not scored; how often a label shows on them is reported as fires_on_unlabelled.
 """
-import json, os, re, sys
+import hashlib, json, os, re, sys
 
 HOLD, OUT, *TAGS = sys.argv[1:]
+LOCK = open(os.path.join(os.path.dirname(HOLD), 'holdout.lock')).read().split()[0]
+if hashlib.sha256(open(HOLD, 'rb').read()).hexdigest() != LOCK: sys.exit(f'{HOLD} does not match holdout.lock')
 hold = json.load(open(HOLD)); items = {i['id']: i for i in hold['items']}
 shown = {}
 for f in TAGS:
@@ -55,7 +57,10 @@ def score(label, route):
     return out
 
 missing = [i for i in items if i not in shown]
-report = {'holdout_lock': open(os.path.join(os.path.dirname(HOLD), 'holdout.lock')).read().split()[0],
+incomplete = [k for k, v in shown.items() if v['status'] != 'complete']
+# A partial run would silently shrink the denominators, so it is refused rather than scored.
+if missing or incomplete: sys.exit(f'{len(missing)} holdout files missing and {len(incomplete)} not complete: rerun them before scoring')
+report = {'holdout_lock': LOCK,
           'scored_files': len(shown), 'missing_files': len(missing), 'missing_ids': missing[:50],
           'not_complete': sum(1 for v in shown.values() if v['status'] not in ('complete',)),
           'labels': {l: {route: score(l, route) for route in ('short', 'long', 'all')} for l in hold['labels']}}
