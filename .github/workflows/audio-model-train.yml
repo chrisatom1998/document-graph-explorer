@@ -28,7 +28,7 @@ on:
       iowa: { description: 'add University of Iowa MIS notes (free-tag-set judge notes excluded)', default: 'false' }
       chris_data: { description: 'PRIVATE HF dataset <repo>:<folder> with Chris''s staged train-half sounds (non-commercial weights); empty = none', default: '' }
       source_repeat: { description: 'oversample sources per epoch, e.g. iowa=2,chrisdrive=4,chrisfx=2', default: '' }
-      extra_sets: { description: 'space-separated sets: vcsl slakh_more sao round10 (VCSL CC0, more Slakh tracks, private Stable Audio Open clips, round 10 commercial packs)', default: '' }
+      extra_sets: { description: 'space-separated sets: vcsl slakh_more sao round10 soft11 (VCSL CC0, more Slakh tracks, private Stable Audio Open clips, round 10 commercial packs, round 11 teacher soft labels)', default: '' }
       fsnew_data: { description: 'PRIVATE HF dataset <repo>:<folder> with staged Freesound sounds for tags with little or no audio (stage-freesound.py); empty = none', default: '' }
       run9_data: { description: 'PRIVATE HF dataset <repo>:<folder> with run 9 staged audio (stage-run9.py); empty = none', default: '' }
       run9_audit: { description: 'PRIVATE HF dataset <repo>:<path> of run9-audit.py manifest-audited.csv (keeps only audited items); empty = none', default: '' }
@@ -102,6 +102,7 @@ jobs:
           CHRIS_DATA=${{ inputs.chris_data || '' }} SOURCE_REPEAT=${{ inputs.source_repeat || '' }}
           VCSL=${{ contains(inputs.extra_sets, 'vcsl') && '1' || '0' }} SLAKH_MORE=${{ contains(inputs.extra_sets, 'slakh_more') && '1' || '0' }}
           SAO=${{ contains(inputs.extra_sets, 'sao') && '1' || '0' }} FSNEW_DATA=${{ inputs.fsnew_data || '' }} RUN9_DATA=${{ inputs.run9_data || '' }} RUN9_AUDIT=${{ inputs.run9_audit || '' }} ROUND10=${{ contains(inputs.extra_sets, 'round10') && '1' || '0' }}
+          SOFT_LABELS=${{ contains(inputs.extra_sets, 'soft11') && 'cmjatom/dge-private-train:round11/soft-v1.json' || '' }}
       - name: Stop the Hugging Face job if this workflow is cancelled
         if: ${{ cancelled() }}
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
