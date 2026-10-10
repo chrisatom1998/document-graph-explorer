@@ -48,7 +48,7 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Check the frozen selection against the pinned dataset metadata
         run: |
           M="$RUNNER_TEMP/mj"
@@ -62,7 +62,7 @@ jobs:
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
           python3 scripts/holdout-r3/fetch-jamendo.py "$DOCS/jamendo-manifest.json" \
             "$RUNNER_TEMP/mj/data/download/raw_30s_audio-low_sha256_tracks.txt" ${{ matrix.shard }}/10 audio
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: h3-jamendo-audio-${{ matrix.shard }}
           path: audio
@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Select and fetch the held-out MTG key excerpts
         run: |
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
@@ -88,7 +88,7 @@ jobs:
             for i in 1 2 3 4; do git pull --rebase -q origin "$GITHUB_REF_NAME" && git push -q origin "HEAD:$GITHUB_REF_NAME" \
               && break; [ $i = 4 ] && exit 1; sleep $((2**i)); done
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: h3-mtgkey-audio
           path: |
@@ -120,13 +120,13 @@ jobs:
           - { set: mtgkey, shard: 2, of: 4 }
           - { set: mtgkey, shard: 3, of: 4 }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.APP_REF }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: harness
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: ${{ matrix.set == 'jamendo' && 'h3-jamendo-audio-*' || 'h3-mtgkey-audio' }}
           # The Jamendo artifacts hold bare WAVs (one upload path); the MTG key one also holds its manifest under docs/.
@@ -138,13 +138,13 @@ jobs:
           # The harness's driver handles both the old toolbar and the #137 layout; an app's own copy may not.
           cp harness/scripts/short-clip-upload-eval.mjs scripts/
           git log -1 --format='app under test: %H %s'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
@@ -162,7 +162,7 @@ jobs:
           AUDIO_DIR=clips/audio AUDIO_EXT=wav MANIFEST=manifest.json SHARD=${{ matrix.shard }}/${{ matrix.of }} \
             node scripts/short-clip-upload-eval.mjs out/run test 20
           git rev-parse HEAD > out/run/app-commit.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: h3-${{ matrix.set }}-export-${{ matrix.shard }}
@@ -175,22 +175,22 @@ jobs:
     if: ${{ !cancelled() && needs.eval.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.APP_REF }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: harness
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: h3-*-export-*
           path: exports
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: h3-mtgkey-audio
           path: clips

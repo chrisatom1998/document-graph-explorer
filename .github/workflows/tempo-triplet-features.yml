@@ -32,7 +32,7 @@ jobs:
       matrix:
         source: [giantsteps, mtg]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Fetch datasets and cut clips
         run: |
           command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
@@ -45,7 +45,7 @@ jobs:
             curl -fsSL --retry 6 -o "$RUNNER_TEMP/gtzan.tgz" "$GTZAN"
             python3 scripts/tempo/build-sets.py "$RUNNER_TEMP/gs" "$RUNNER_TEMP/gtzan.tgz" tclips
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: triplet-clips-${{ matrix.source }}
           path: tclips
@@ -61,12 +61,12 @@ jobs:
         set: [tune, gtzan-test, holdout, mtg-tune, round2]
         shard: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
         with:
           name: triplet-clips-${{ startsWith(matrix.set, 'mtg') && 'mtg' || matrix.set == 'round2' && 'mtg' || 'giantsteps' }}
           path: tclips
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -74,7 +74,7 @@ jobs:
       - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
       - name: Compute features
         run: npx vite-node scripts/tempo/features.mjs tclips/clips-${{ matrix.set }}.json f.json ${{ matrix.shard }}/4
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: triplet-f-${{ matrix.set }}-${{ matrix.shard }}
           path: f.json
@@ -85,8 +85,8 @@ jobs:
     if: ${{ !cancelled() && needs.features.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
         with:
           pattern: triplet-f-*
           path: parts
