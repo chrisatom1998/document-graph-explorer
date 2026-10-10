@@ -62,3 +62,14 @@ describe('cymbal reviews in sound match labels', () => {
     ]);
   });
 });
+
+describe('merged look-alike tags', () => {
+  it('lists an old-name model guess once, under the surviving name', () => {
+    const labels = soundMatchLabels(clip({ soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false,
+      djTags: [{ group: 'production', label: 'synth stab', score: .9, model: 'Trained head' }, { group: 'source', label: 'noise', score: .9, model: 'Trained head' }] } }));
+    const names = labels.map(l => `${l.group}:${l.label}`);
+    expect(names).not.toContain('production:synth stab');
+    expect(names).not.toContain('source:noise');
+    expect(names).toEqual(expect.arrayContaining(['production:synth hit', 'production:static noise']));
+  });
+});

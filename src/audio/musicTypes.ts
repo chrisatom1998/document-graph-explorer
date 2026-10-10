@@ -3,7 +3,7 @@ import { sanitizeFusion, type FusionAnalysis } from './fusion';
 import { sanitizeFullMixAnalysis, type FullMixAnalysis } from './fullMixHeads';
 import { sanitizeTaggerAnalysis, type TaggerAnalysis } from './tagger';
 import { sourceLabels, sanitizeRecognition, sanitizeSoundReviews, type Recognition, type SoundReview } from './recognition';
-import { sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
+import { MERGED_DJ_LABELS, mergedDjLabel, sanitizeConfirmedDjTags, type ConfirmedDjTags } from './djTags';
 import { sanitizeSoundProfile, type SoundProfile } from './soundProfile';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
@@ -12,6 +12,7 @@ import { sanitizeVersionPrint } from './versionPrint';
 import { sanitizeTimbre, type TimbreSummary } from './timbre';
 import { sanitizeGenreScores, sanitizeStyles, type TrackStyle } from './genreEnergy';
 import { sanitizeNativeWindowEvidence, type NativeWindowEvidence } from './nativeWindowEvidence';
+const MOVED_INTO_SOURCE = new Set(Object.entries(MERGED_DJ_LABELS).filter(([key, to]) => to.group === 'source' && !key.startsWith('source:')).map(([, to]) => to.label));
 export const MUSIC_ANALYSIS_VERSION = 2;
 export const KEY_ANALYSIS_REVISION = 4;
 export const TEMPO_ANALYSIS_REVISION = 5;
@@ -106,6 +107,12 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   if (Array.isArray(m.confirmedInstruments)) out.confirmedInstruments = [...new Set(m.confirmedInstruments.filter((label): label is string => typeof label === 'string' && sourceLabels.includes(label)))];
   const confirmedDjTags = sanitizeConfirmedDjTags(m.confirmedDjTags);
   if (confirmedDjTags) out.confirmedDjTags = confirmedDjTags;
+  if (out.confirmedInstruments) {
+    // Merged look-alike tags: an instrument merged into another group leaves the list, and a tag merged into source
+    // follows the DJ snapshot, which corrections always save alongside this list.
+    const kept = out.confirmedInstruments.map(label => mergedDjLabel('source', label)).filter(m => m.group === 'source').map(m => m.label);
+    out.confirmedInstruments = [...new Set([...kept, ...(confirmedDjTags?.source.filter(label => MOVED_INTO_SOURCE.has(label)) ?? [])])];
+  }
   const copilotProperties = sanitizeCopilotProperties(m.copilotProperties);
   if (copilotProperties) out.copilotProperties = copilotProperties;
   if (Array.isArray(m.embedding) && m.embedding.length === 512 && m.embedding.every(v => typeof v === 'number' && Number.isFinite(v)) && Math.hypot(...(m.embedding as number[])) > 1e-8) out.embedding = m.embedding as number[];
