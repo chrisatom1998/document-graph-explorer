@@ -5,7 +5,9 @@ choose its threshold: the regularisation strength and the threshold come from 5-
 the training uploaders only (GroupKFold by uploader). Threshold: the one that maximises min(precision, recall)
 on those out-of-fold scores (the target is P and R >= 0.70). The app refuses thresholds below 0.5.
 Negatives for a label: every other clip (other effects + clips that name no effect) except clips tagged with
-the label itself or a related effect (labels.json "overlap"), since uploader tags are incomplete.
+the label itself or a related effect (labels.json "overlap"), since uploader tags are incomplete. "hardNegatives"
+({label: [related labels]}) lets TRAINING use clips of the named related labels as negatives; the held-out rows keep the
+overlap rule, so held-out numbers stay comparable with heads trained without it.
 The heads that ship are the ones fitted on the training split, so the held-out numbers describe exactly them.
 Also scores the heads the app ships today on the same held-out clips, so a new head can be compared with the current
 one on equal terms: learned.json heads on every held-out clip, short-clip.json heads (which the app runs only on whole
@@ -19,6 +21,7 @@ training clips only; the threshold is chosen on those real out-of-fold scores to
 With PRIMARY_ROUND=<n> (grow.py clips carry a "round"), the held-out numbers that decide a head are taken on the held-out
 clips of rounds <= n only, so heads trained on a grown clip set are judged on exactly the clips earlier heads were judged on;
 "extended" adds the same numbers on every held-out clip, new rounds included.
+With ONLY=<label,label>, only those labels are trained and reported (for experiments).
 Usage: train.py <audio-manifest.json> <embeddings dir> <out dir> [renders-manifest.json]"""
 import json, sys, glob, os, datetime
 import numpy as np
@@ -32,6 +35,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 spec = json.load(open(f"{HERE}/{os.environ.get('LABELS', 'labels.json')}"))
 GROUP = {L['label']: L['group'] for L in spec['labels']}
 OVERLAP = [set(s) for s in spec['overlap']]
+HARD = {k: set(v) for k, v in spec.get('hardNegatives', {}).items()}
+ONLY = set(filter(None, os.environ.get('ONLY', '').split(',')))
 TARGET, MIN_TRAIN, MIN_TEST = 0.70, 25, 10
 meta = {c['id']: c for c in json.load(open(MANIFEST))['clips']}
 if RENDERS: meta.update({c['id']: c for c in json.load(open(RENDERS))['clips']})
@@ -80,14 +85,17 @@ SHORT = np.array([known_duration(DUR.get(i)) and DUR[i] <= SC['maxSeconds'] for 
 print(f'held-out clips of at most {SC["maxSeconds"]} s: {int((SHORT & TEST).sum())} (durations known for {len(DUR)})')
 
 heads, report = [], {}
-for label in [L['label'] for L in spec['labels']]:
+for label in [L['label'] for L in spec['labels'] if not ONLY or L['label'] in ONLY]:
     pos = np.array([label in s for s in LAB])
     use = pos | np.array([not any(related(label, o) for o in s) for s in LAB])
-    tr, te, tx = use & ~TEST, use & TEST & PRIMARY, use & TEST
+    hard = HARD.get(label, set())
+    use_tr = pos | np.array([not any(related(label, o) and o not in hard for o in s) for s in LAB])
+    tr, te, tx = use_tr & ~TEST, use & TEST & PRIMARY, use & TEST
     real_tr = tr & ~RENDER
     e = {'group': GROUP[label], 'trainPositive': int(pos[real_tr].sum()), 'trainNegative': int((~pos[real_tr]).sum()),
          'trainRenders': int((pos & tr & RENDER).sum()), 'testPositive': int(pos[te].sum()), 'testNegative': int((~pos[te]).sum()),
          'trainUploaders': len(set(G[real_tr & pos])), 'testUploaders': len(set(G[te & pos]))}
+    if hard: e['hardNegatives'] = sorted(hard)
     # Today's shipped heads on the same held-out clips.
     for hd in shipped.get(label, []):
         if hd['file'] == 'short-clip.json':
