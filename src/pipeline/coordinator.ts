@@ -1928,7 +1928,10 @@ function preloadAudioModels(): void {
 
 /** No finished whole-track analysis yet: never analyzed, still a preview, or a scan that stopped early. */
 function audioUnfinished(n: DocNode): boolean {
-  return !n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || !n.audio.instrumentScan?.complete;
+  const audio = n.audio;
+  if (!audio || audio.stage === 'preview' || audio.instrumentScan?.mode === 'fast') return true;
+  // Completed v1 results predate scan metadata; an explicit incomplete scan still needs finishing.
+  return audio.instrumentScan ? !audio.instrumentScan.complete : audio.version !== 1;
 }
 
 /** A finished analysis made by an older analysis version or detector release. */
