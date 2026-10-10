@@ -38,6 +38,7 @@ JAMENDO_TAGS = ['accordion', 'acousticbassguitar', 'acousticguitar', 'bass', 'be
 OPENMIC = list(CLASSES)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labelmap import CAT, FREESOUND, FSLD_ROLES, SAME  # noqa: E402
+import charts  # noqa: E402
 # Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
 # sources' labels below wherever one names the same sound.
 CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS] + [f'cat:{l}' for l in CAT] + [f'fsld:{r}' for r in FSLD_ROLES]

@@ -13,7 +13,7 @@ user = whoami()['name']; env.setdefault('HF_REPO', f'{user}/dge-instrument-tagge
 # TRACKIO_SPACE=1 picks the account's private live-charts Space (charts.py); each run gets its own chart, named after its
 # OUT_DIR and start time.
 if env.get('TRACKIO_SPACE') == '1': env['TRACKIO_SPACE'] = f'{user}/dge-training-charts'
-if env.get('TRACKIO_SPACE'): env.setdefault('TRACKIO_RUN', (env.get('OUT_DIR') or env.get('JOB_NAME') or 'main') + time.strftime('-%m%d-%H%M'))
+if env.get('TRACKIO_SPACE'): env.setdefault('TRACKIO_RUN', (env.get('OUT_DIR') or env.get('JOB_NAME') or 'main') + time.strftime('-%m%d-%H%M-') + os.urandom(2).hex())
 # JOB_NAME (default dge-instrument-tagger) names the run's lane: one job per lane at a time, so a job this workflow
 # started and then lost (a cancelled workflow) is stopped first, while a run in another lane keeps going.
 name = env.get('JOB_NAME') or 'dge-instrument-tagger'
