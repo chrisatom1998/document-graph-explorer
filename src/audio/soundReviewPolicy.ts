@@ -109,15 +109,17 @@ export function projectedCopilotProperties(analysis: MusicAnalysis) {
   const current: {group:DjGroup;label:string}[]=[];
   const historical: {group:DjGroup;label:string;reason:string}[]=[];
   const nonSource=resolvedNonSourceLabels(analysis,true);
-  for(const group of ['source','production','character'] as const) for(const raw of analysis.copilotProperties?.tags[group]??[]) {
-    const label=canonicalDjLabel(group,raw)??raw;
+  for(const rawGroup of ['source','production','character'] as const) for(const raw of analysis.copilotProperties?.tags[rawGroup]??[]) {
+    const canonical=canonicalDjLabel(rawGroup,raw)??raw;
+    const merged=mergedDjLabel(rawGroup,canonical);
+    const {group,label}=rawGroup==='source'||merged.group!=='source'?merged:{group:rawGroup,label:canonical};
     const dimension=djReviewDimension(group,label);
     const review=dimension&&latestSoundReview(analysis.soundReviews,dimension,label);
     const projected=group==='source'?undefined:nonSource.find(t=>t.group===group&&t.label===label);
     if(review) historical.push({group,label:raw,reason:`${review.decision} by you`});
     else if(analysis.confirmedDjTags!==undefined||(group==='source'&&confirmedInstrumentList(analysis)!==undefined)) historical.push({group,label:raw,reason:'superseded by your saved corrections'});
     else if(group!=='source'&&projected?.source!=='suggested') historical.push({group,label:raw,reason:projected?.source==='confirmed'?'confirmed by you':'superseded by current audio evidence'});
-    else current.push({group,label});
+    else if(!current.some(t=>t.group===group&&t.label===label)) current.push({group,label});
   }
   return {current,historical};
 }

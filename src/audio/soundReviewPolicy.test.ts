@@ -73,3 +73,16 @@ it('projects merged production labels under their surviving name', () => {
   a.copilotProperties = { model: 'draft', tags: { source: [], production: ['harmony vocals', 'choir'], character: [] } };
   expect(resolvedNonSourceLabels(a, true)).toEqual([{ group: 'production', label: 'choir', source: 'confirmed' }]);
 });
+
+it('keeps and deduplicates current Copilot suggestions under surviving production names', () => {
+  const a = audio([]);
+  a.soundProfile!.djTags = [];
+  a.copilotProperties = {model:'draft',tags:{source:[],production:['harmony vocals'],character:[]}};
+  expect(projectedCopilotProperties(a)).toEqual({current:[{group:'production',label:'choir'}],historical:[]});
+  a.copilotProperties.tags.production.push('choir');
+  const before = structuredClone(a);
+  expect(projectedCopilotProperties(a)).toEqual({current:[{group:'production',label:'choir'}],historical:[]});
+  expect(a).toEqual(before);
+  a.soundReviews = [review('effect','vocal harmony','confirmed')];
+  expect(projectedCopilotProperties(a).current).toEqual([]);
+});
