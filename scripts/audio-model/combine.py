@@ -84,6 +84,7 @@ def main():
         assert log['classes'][:len(CLASSES)] == CLASSES, f'{d} has a different class list'
         runs.append({'name': os.path.basename(os.path.normpath(d)), 'dir': d, 'model': log['args']['model'], 'classes': log['classes'],
                      'eval': json.load(open(os.path.join(d, 'eval.json'))), 'th': json.load(open(os.path.join(d, 'thresholds.json')))})
+    assert all(o.partition('=')[2].strip(', ') for o in args.only), f'--only needs RUN=output,output: {args.only}'
     only = {name: {t for t in ts.split(',') if t} for name, ts in (o.split('=', 1) for o in args.only)}
     assert set(only) <= {r['name'] for r in runs}, f'--only names a run that is not combined: {set(only)}'
     tags = [t['output'] for t in json.load(open(args.policy))['tags']]

@@ -16,7 +16,7 @@ function audio(durationSeconds = 180, intervals: Interval[] | undefined = middle
   return {
     version: 2, durationSeconds, analyzedSeconds: Math.min(durationSeconds, 60), instruments: [], notes: [],
     soundProfile: { version: 1, character: [], roles: [], models: [], disagreement: false, djTags: [] },
-    tagger: { revision: TAGGER_REVISION, windows, scores: { 'cat:reverse effect': 0, piano: 0, drums: 0, cymbals: 0 },
+    tagger: { revision: TAGGER_REVISION, windows, scores: { 'cat:rain ambience': 0, piano: 0, drums: 0, cymbals: 0 },
       ...(intervals ? { intervals } : {}) },
   };
 }
@@ -32,13 +32,13 @@ const shown = (a: MusicAnalysis) => confidentSoundSummary(a).map(s => `${s.dimen
 
 describe('tagger coverage in the displayed sounds', () => {
   it.each([[0, 10], [170, 180]])('keeps a native effect at %s–%s s outside the tagger excerpt', (start, end) => {
-    expect(shown(native(audio(), 'reverse effect', [{ start, end }]))).toEqual(['effect:reverse effect']);
+    expect(shown(native(audio(), 'rain ambience', [{ start, end }]))).toEqual(['effect:rain ambience']);
   });
   it.each([[75, 85], [80, 100], [75, 105]])('still suppresses native noise entirely inside %s–%s s of the sampled excerpt', (start, end) => {
-    expect(shown(native(audio(), 'reverse effect', [{ start, end }]))).toEqual([]);
+    expect(shown(native(audio(), 'rain ambience', [{ start, end }]))).toEqual([]);
   });
   it('keeps a native window that only partly overlaps the sampled excerpt', () => {
-    expect(shown(native(audio(), 'reverse effect', [{ start: 70, end: 80 }]))).toEqual(['effect:reverse effect']);
+    expect(shown(native(audio(), 'rain ambience', [{ start: 70, end: 80 }]))).toEqual(['effect:rain ambience']);
   });
   it('keeps an instrument in the unsampled tail of a 19.9 s clip', () => {
     const a = native(audio(19.9, [{ start: 0, end: 10 }], 1), 'piano', [{ start: 9.9, end: 19.9 }], 'source');
@@ -51,28 +51,28 @@ describe('tagger coverage in the displayed sounds', () => {
     expect(confidentSoundSummary(a)).toMatchObject([{ label: 'drums', scores: [{ model: FULL_MIX_JAMENDO_SCORE, score: .55 }] }]);
   });
   it('keeps the full-coverage 30 s display policy unchanged', () => {
-    const a = native(audio(30, [{ start: 0, end: 10 }, { start: 10, end: 20 }, { start: 20, end: 30 }]), 'reverse effect');
+    const a = native(audio(30, [{ start: 0, end: 10 }, { start: 10, end: 20 }, { start: 20, end: 30 }]), 'rain ambience');
     expect(shown(a)).toEqual([]);
   });
   it('infers the known sampler for legacy current-revision scores', () => {
-    const a = native(audio(180, undefined), 'reverse effect', [{ start: 0, end: 10 }]);
+    const a = native(audio(180, undefined), 'rain ambience', [{ start: 0, end: 10 }]);
     // Omission is intentional: old stored results had no intervals field.
     delete (a.tagger as MusicAnalysis['tagger'] & { intervals?: Interval[] }).intervals;
-    expect(shown(a)).toEqual(['effect:reverse effect']);
-    a.soundProfile!.djTags = []; native(a, 'reverse effect', [{ start: 80, end: 100 }]);
+    expect(shown(a)).toEqual(['effect:rain ambience']);
+    a.soundProfile!.djTags = []; native(a, 'rain ambience', [{ start: 80, end: 100 }]);
     expect(shown(a)).toEqual([]);
   });
   it('does not invent legacy coverage when the stored count differs from the known sampler', () => {
-    const a = native(audio(180, undefined, 1), 'reverse effect');
+    const a = native(audio(180, undefined, 1), 'rain ambience');
     delete (a.tagger as MusicAnalysis['tagger'] & { intervals?: Interval[] }).intervals;
-    expect(shown(a)).toEqual(['effect:reverse effect']);
+    expect(shown(a)).toEqual(['effect:rain ambience']);
   });
   it('preserves confirmations and rejections on sounds outside the excerpt', () => {
-    const a = native(audio(), 'reverse effect', [{ start: 0, end: 10 }]);
-    a.soundReviews = [{ dimension: 'effect', labelId: 'reverse effect', decision: 'rejected', scope: 'track', at: 'now', evidenceRunId: 'r' }];
+    const a = native(audio(), 'rain ambience', [{ start: 0, end: 10 }]);
+    a.soundReviews = [{ dimension: 'effect', labelId: 'rain ambience', decision: 'rejected', scope: 'track', at: 'now', evidenceRunId: 'r' }];
     expect(shown(a)).toEqual([]);
     a.soundReviews.push({ ...a.soundReviews[0], decision: 'confirmed' });
-    expect(confidentSoundSummary(a)).toMatchObject([{ label: 'reverse effect', origin: 'confirmed by you' }]);
+    expect(confidentSoundSummary(a)).toMatchObject([{ label: 'rain ambience', origin: 'confirmed by you' }]);
   });
 });
 
@@ -80,7 +80,7 @@ describe('tagger coverage persistence', () => {
   it('preserves actual sampled intervals through graph/cache sanitization', () => {
     const saved = sanitizeMusicAnalysis(audio());
     expect(saved?.tagger).toMatchObject({ intervals: middle });
-    expect(shown(native(saved!, 'reverse effect', [{ start: 0, end: 10 }]))).toEqual(['effect:reverse effect']);
+    expect(shown(native(saved!, 'rain ambience', [{ start: 0, end: 10 }]))).toEqual(['effect:rain ambience']);
   });
   it.each([
     [{ start: 0, end: 10 }],
@@ -95,58 +95,58 @@ describe('tagger coverage persistence', () => {
 describe('coverage from the real native accumulators', () => {
   function accumulated(hits: [number, number, number][]) {
     const evidence = new DjTagEvidence();
-    for (const [start, end, score] of hits) evidence.add([{ group: 'production', label: 'reverse effect', score, model: 'Trained head' }], start, end);
+    for (const [start, end, score] of hits) evidence.add([{ group: 'production', label: 'rain ambience', score, model: 'Trained head' }], start, end);
     const a = audio(); a.soundProfile!.djTags = evidence.results();
     return a;
   }
   it('retains the actual .40 outside hit rather than the .99 peak inside the tagger excerpt', () => {
     const a = accumulated([[0, 10, .4], [75, 85, .99]]);
-    expect(confidentSoundSummary(a)).toMatchObject([{ label: 'reverse effect', tier: 'possible', scores: [{ model: 'Trained head score', score: .4 }] }]);
+    expect(confidentSoundSummary(a)).toMatchObject([{ label: 'rain ambience', tier: 'possible', scores: [{ model: 'Trained head score', score: .4 }] }]);
   });
   it('keeps a fourth hit outside the first three covered listenable examples', () => {
     const a = accumulated([[75, 85, .6], [85, 95, .7], [95, 105, .8], [170, 180, .9]]);
-    expect(confidentSoundSummary(a)).toMatchObject([{ label: 'reverse effect', scores: [{ score: .9 }] }]);
+    expect(confidentSoundSummary(a)).toMatchObject([{ label: 'rain ambience', scores: [{ score: .9 }] }]);
   });
   it('preserves scored-window provenance when saving and loading a real accumulated result', () => {
     const a = sanitizeMusicAnalysis(accumulated([[0, 10, .4], [75, 85, .99]]))!;
-    expect(confidentSoundSummary(a).find(s=>s.label==='reverse effect')).toMatchObject({ label: 'reverse effect', tier: 'possible', scores: [{ score: .4 }] });
+    expect(confidentSoundSummary(a).find(s=>s.label==='rain ambience')).toMatchObject({ label: 'rain ambience', tier: 'possible', scores: [{ score: .4 }] });
   });
   it('does not attach a passage score to a stronger unlocalized aggregate while merging tags', () => {
     const passage = accumulated([[0, 10, .4]]).soundProfile!.djTags!;
-    const a = native(audio(), 'reverse effect'); a.soundProfile!.djTags![0].score = .99;
+    const a = native(audio(), 'rain ambience'); a.soundProfile!.djTags![0].score = .99;
     mergeDjTags(a.soundProfile!, passage);
-    expect(confidentSoundSummary(a).find(s => s.label === 'reverse effect')).toMatchObject({ tier: 'possible', scores: [{ score: .4 }] });
+    expect(confidentSoundSummary(a).find(s => s.label === 'rain ambience')).toMatchObject({ tier: 'possible', scores: [{ score: .4 }] });
   });
   it('merges the actual windows of the same detector when the existing peak wins', () => {
     const a = accumulated([[75, 85, .99]]);
     mergeDjTags(a.soundProfile!, accumulated([[0, 10, .4]]).soundProfile!.djTags!);
-    const evidence = a.soundProfile!.djTags!.find(t => t.label === 'reverse effect')!.windowEvidence!;
+    const evidence = a.soundProfile!.djTags!.find(t => t.label === 'rain ambience')!.windowEvidence!;
     expect(evidence).toEqual({ windows: [{ start: 75, end: 85, score: .99 }, { start: 0, end: 10, score: .4 }], complete: true });
-    expect(confidentSoundSummary(sanitizeMusicAnalysis(a)!).find(s => s.label === 'reverse effect')).toMatchObject({ tier: 'possible', scores: [{ score: .4 }] });
+    expect(confidentSoundSummary(sanitizeMusicAnalysis(a)!).find(s => s.label === 'rain ambience')).toMatchObject({ tier: 'possible', scores: [{ score: .4 }] });
   });
   it('does not borrow an outside window from a different detector that lost the merge', () => {
     const a = accumulated([[75, 85, .9]]), passage = accumulated([[0, 10, .99]]).soundProfile!.djTags!;
     passage[0].model = 'Trained head (maybe)';
     mergeDjTags(a.soundProfile!, passage);
-    expect(a.soundProfile!.djTags!.find(t => t.label === 'reverse effect')).toMatchObject({ model: 'Trained head', windowEvidence: { windows: [{ start: 75, end: 85, score: .9 }], complete: true } });
-    expect(confidentSoundSummary(a).find(s => s.label === 'reverse effect')).toBeUndefined();
+    expect(a.soundProfile!.djTags!.find(t => t.label === 'rain ambience')).toMatchObject({ model: 'Trained head', windowEvidence: { windows: [{ start: 75, end: 85, score: .9 }], complete: true } });
+    expect(confidentSoundSummary(a).find(s => s.label === 'rain ambience')).toBeUndefined();
   });
   it('does not treat legacy unscored snippets as a complete list of supporting hits', () => {
-    const a = native(audio(), 'reverse effect', middle);
+    const a = native(audio(), 'rain ambience', middle);
     delete a.soundProfile!.djTags![0].windowEvidence;
-    expect(confidentSoundSummary(a)).toEqual([{ dimension: 'effect', label: 'reverse effect', origin: 'model estimate', tier: 'possible', coverageUnknown: true }]);
+    expect(confidentSoundSummary(a)).toEqual([{ dimension: 'effect', label: 'rain ambience', origin: 'model estimate', tier: 'possible', coverageUnknown: true }]);
   });
   it('does not present a legacy aggregate peak as the score of an outside snippet', () => {
-    const a = native(audio(), 'reverse effect', [{ start: 0, end: 10 }, { start: 75, end: 85 }]);
+    const a = native(audio(), 'rain ambience', [{ start: 0, end: 10 }, { start: 75, end: 85 }]);
     a.soundProfile!.djTags![0].score = .99;
     delete a.soundProfile!.djTags![0].windowEvidence;
-    expect(confidentSoundSummary(a)).toEqual([{ dimension: 'effect', label: 'reverse effect', origin: 'model estimate', tier: 'possible', coverageUnknown: true }]);
+    expect(confidentSoundSummary(a)).toEqual([{ dimension: 'effect', label: 'rain ambience', origin: 'model estimate', tier: 'possible', coverageUnknown: true }]);
   });
   it('keeps an unlocalized tested estimate possible when the only known outside score is untested', () => {
-    const a = native(audio(), 'reverse effect');
+    const a = native(audio(), 'rain ambience');
     a.recognition = createRecognition(180, 'full');
-    recordEvidence(a.recognition, 'clap', { start: 0, end: 10 }, [{ dimension: 'effect', labelId: 'reverse effect', score: .8 }]);
-    expect(confidentSoundSummary(a)).toEqual([{ dimension: 'effect', label: 'reverse effect', origin: 'model estimate', tier: 'possible', coverageUnknown: true }]);
+    recordEvidence(a.recognition, 'clap', { start: 0, end: 10 }, [{ dimension: 'effect', labelId: 'rain ambience', score: .8 }]);
+    expect(confidentSoundSummary(a)).toEqual([{ dimension: 'effect', label: 'rain ambience', origin: 'model estimate', tier: 'possible', coverageUnknown: true }]);
   });
   it('recomputes the existing full-mix aggregation from actual outside probabilities', () => {
     const weights = Array(513).fill(0); weights[512] = 1;
@@ -184,12 +184,12 @@ describe('coverage from the real native accumulators', () => {
       aggregation: { top: 2, threshold: .5 } }, () => false)).toEqual({ unknown: true });
   });
   it('does not accept an empty complete record as proof that a positive aggregate was fully covered', () => {
-    const a = native(audio(), 'reverse effect');
+    const a = native(audio(), 'rain ambience');
     a.soundProfile!.djTags![0].windowEvidence = { windows: [], complete: true };
     const saved = sanitizeMusicAnalysis(a)!;
     expect(saved.soundProfile!.djTags![0].windowEvidence).toBeUndefined();
-    expect(confidentSoundSummary(saved)).toMatchObject([{ label: 'reverse effect', tier: 'possible', coverageUnknown: true }]);
-    expect(confidentSoundSummary(a)).toMatchObject([{ label: 'reverse effect', tier: 'possible', coverageUnknown: true }]);
+    expect(confidentSoundSummary(saved)).toMatchObject([{ label: 'rain ambience', tier: 'possible', coverageUnknown: true }]);
+    expect(confidentSoundSummary(a)).toMatchObject([{ label: 'rain ambience', tier: 'possible', coverageUnknown: true }]);
   });
 });
 
@@ -197,7 +197,7 @@ describe('fresh profile composition keeps learned-head provenance', () => {
   function composed(hits: [number, number, number][], localized = true) {
     const descriptions = new DescriptionAccumulator(), evidence = new DjTagEvidence();
     for (const [start, end, score] of hits) {
-      const rows: DescriptionScore[] = [{ group: 'dj-learned', learnedGroup: 'production', label: 'reverse effect', score, basis: 'head', decision: 'include' }];
+      const rows: DescriptionScore[] = [{ group: 'dj-learned', learnedGroup: 'production', label: 'rain ambience', score, basis: 'head', decision: 'include' }];
       descriptions.add(rows, localized ? { start, end } : undefined);
       evidence.add(selectDjTags(rows), start, end);
     }
@@ -208,17 +208,17 @@ describe('fresh profile composition keeps learned-head provenance', () => {
   }
   it('suppresses a fresh covered-only hit after aggregate profile construction and merging', () => {
     const a = composed([[75, 85, .99]]);
-    expect(a.soundProfile!.djTags!.find(t => t.label === 'reverse effect')!.windowEvidence).toEqual({ windows: [{ start: 75, end: 85, score: .99 }], complete: true });
-    expect(confidentSoundSummary(a).find(t => t.label === 'reverse effect')).toBeUndefined();
-    expect(confidentSoundSummary(sanitizeMusicAnalysis(a)!).find(t => t.label === 'reverse effect')).toBeUndefined();
+    expect(a.soundProfile!.djTags!.find(t => t.label === 'rain ambience')!.windowEvidence).toEqual({ windows: [{ start: 75, end: 85, score: .99 }], complete: true });
+    expect(confidentSoundSummary(a).find(t => t.label === 'rain ambience')).toBeUndefined();
+    expect(confidentSoundSummary(sanitizeMusicAnalysis(a)!).find(t => t.label === 'rain ambience')).toBeUndefined();
   });
   it('uses the actual weaker outside hit through the same composition', () => {
     const a = composed([[0, 10, .4], [75, 85, .99]]);
-    expect(confidentSoundSummary(a).find(t => t.label === 'reverse effect')).toMatchObject({ tier: 'possible', scores: [{ score: .4 }] });
+    expect(confidentSoundSummary(a).find(t => t.label === 'rain ambience')).toMatchObject({ tier: 'possible', scores: [{ score: .4 }] });
   });
   it('remains conservative if the aggregate producer never received its intervals', () => {
     const a = composed([[75, 85, .99]], false);
-    expect(confidentSoundSummary(a).find(t => t.label === 'reverse effect')).toMatchObject({ tier: 'possible', coverageUnknown: true });
+    expect(confidentSoundSummary(a).find(t => t.label === 'rain ambience')).toMatchObject({ tier: 'possible', coverageUnknown: true });
   });
 });
 
