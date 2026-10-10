@@ -60,6 +60,7 @@ scripts copied into it. A separate two-clip follow-up covers the updated runtime
 /tmp/dge-research-venv/bin/python scripts/research/run-model.py /tmp/dge-pilot/manifest.json artifacts/tp-clap.json --model tp-clap --checkpoint /tmp/dge-models/tp-clap/tp-clap.pt --revision b14090f5210715958f5ab7056d3c47f5f61cb582 --audio-backbone /tmp/dge-models/ced --text-backbone /tmp/dge-models/bert --threads 2
 node_modules/.bin/vite-node scripts/research/score.mjs /tmp/dge-pilot/manifest.json artifacts/tp-clap.json artifacts/tp-score.json
 node --test scripts/research/core.test.mjs
+python3 -m unittest discover -s scripts/research -p 'test_*.py'
 ```
 
 For effects, substitute `/tmp/dge-fx/manifest.json`; TP-CLAP uses
