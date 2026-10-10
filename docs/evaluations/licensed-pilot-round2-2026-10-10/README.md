@@ -8,7 +8,7 @@ SampleRadar, Iowa MIS and BBC SFX; never trained on or uploaded).
 **Result: bass guitar ships on clips of 2.25 s or shorter.** The real app, run on the locked holdout, goes from
 1.00 precision / 0.25 recall to **0.85 / 0.92** (11 of 12 labelled positives, 2 false positives in 543 labelled negatives; the other 39 short clips have no
 bass guitar label and are left out of these scores). Nothing else
-it displays changes on those clips. On longer clips the same detector would reach only 0.47 precision, so it is
+it displays changes on those clips. On longer clips the same detector would reach only 0.28 precision (screen), so it is
 placed in `short-clip.json`, which the app applies only to clips of at most 2.25 s; longer clips keep today's analysis.
 Foley hit and laser do not change.
 
