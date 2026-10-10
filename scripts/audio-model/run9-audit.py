@@ -185,21 +185,46 @@ def main():
     else:
         nc_folder, nc_why = (stage_nc(st, sha, staged) if TARGETS else (None, {}))
     if nc_folder: parts.append(nc_folder)
+    # HASH_PARTS=a,b: hash only those parts and save <OUT>/hashes/<part>.csv (one short job per part, run side by side,
+    # so none outlives its HF token); a later run without it reuses every saved hash file and hashes only what is missing
+    only = {x.strip() for x in os.environ.get('HASH_PARTS', '').split(',') if x.strip()}
+    if only: parts = [p for p in parts if os.path.basename(p) in only]
+    have = set() if only else {os.path.basename(f)[:-4] for f in api.list_repo_files(REPO, repo_type='dataset')
+                                if f.startswith(f'{OUT}/hashes/') and f.endswith('.csv')}
     from huggingface_hub import snapshot_download
-    snapshot_download(REPO, repo_type='dataset', allow_patterns=[f'{p}/*' for p in parts], local_dir=LOCAL, max_workers=16)
+    snapshot_download(REPO, repo_type='dataset', allow_patterns=[f'{p}/manifest.csv' for p in parts]
+                      + [f'{p}/*' for p in parts if os.path.basename(p) not in have], local_dir=LOCAL, max_workers=16)
+    saved = {os.path.basename(p): hf_hub_download(REPO, f'{OUT}/hashes/{os.path.basename(p)}.csv', repo_type='dataset')
+             for p in parts if os.path.basename(p) in have}
     ids = {int(r['id'].split(':')[1]) for p in parts for r in csv.DictReader(open(os.path.join(LOCAL, p, 'manifest.csv')))
            if r['source'] == 'freesound'}
-    meta = freesound_meta(ids)
-    print('downloaded', parts, flush=True)
+    meta = {} if only else freesound_meta(ids)
+    print('downloaded', parts, 'reusing saved hashes for', sorted(saved), flush=True)
 
     items = []
     for p in parts:
-        rows, blobs = read_part(p)
-        with ThreadPoolExecutor(2 * (os.cpu_count() or 4)) as pool:
-            hashes = list(pool.map(lambda r: (hashlib.sha256(blobs[r['file']]).hexdigest(), *pcm_hash(blobs[r['file']])) if r.get('file') in blobs else (None, None, 0.0, False), rows))
+        if os.path.basename(p) in saved:
+            rows = list(csv.DictReader(open(os.path.join(LOCAL, p, 'manifest.csv'))))
+            got = {(h['id'], h['file']): h for h in csv.DictReader(open(saved[os.path.basename(p)]))}
+            hashes = [(g['encoded_sha256'], g['pcm_sha256'], float(g['seconds'] or 0), g['extra_md5'] == '1') if g else (None, None, 0.0, False)
+                      for g in (got.get((r['id'], r.get('file', ''))) for r in rows)]
+        else:
+            rows, blobs = read_part(p)
+            with ThreadPoolExecutor(2 * (os.cpu_count() or 4)) as pool:
+                hashes = list(pool.map(lambda r: (hashlib.sha256(blobs[r['file']]).hexdigest(), *pcm_hash(blobs[r['file']])) if r.get('file') in blobs else (None, None, 0.0, False), rows))
         for r, (enc, pcm, secs, hit) in zip(rows, hashes):
             items.append(dict(r, part=p, encoded_sha256=enc or '', pcm_sha256=pcm or '', seconds=secs, _extra_md5=hit))
         print(f'{p}: {len(rows)} items hashed', flush=True)
+    if only:
+        tmp = tempfile.mkdtemp(); os.makedirs(os.path.join(tmp, 'hashes'))
+        for p in parts:
+            with open(os.path.join(tmp, 'hashes', f'{os.path.basename(p)}.csv'), 'w', newline='') as f:
+                w = csv.writer(f); w.writerow(['id', 'file', 'encoded_sha256', 'pcm_sha256', 'seconds', 'extra_md5'])
+                for r in items:
+                    if r['part'] == p: w.writerow([r['id'], r.get('file', ''), r['encoded_sha256'], r['pcm_sha256'], r['seconds'], int(r['_extra_md5'])])
+        api.upload_folder(repo_id=REPO, repo_type='dataset', folder_path=tmp, path_in_repo=OUT, commit_message=f'Run 9 audit hashes: {", ".join(sorted(only))}')
+        print('HASHES_DONE', sorted(only), flush=True)
+        return
 
     # identical decoded audio = one sound
     by_pcm = defaultdict(list)
