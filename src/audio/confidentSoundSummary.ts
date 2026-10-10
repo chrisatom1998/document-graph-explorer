@@ -14,7 +14,7 @@ import { isRuleDescribedLabel } from './timbreDescriptions';
 
 /** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
  * musicLinks), so a display change also changes which instrument links a track can form, by design. */
-export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v7';
+export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v8';
 /** The shipping bar (Chris, 2026-10-10): a detector shows as a normal tag when its held-out precision AND recall on clips and
  * samples are both at least this; below it, a useful detector shows as a faded "maybe". Full songs are a no-regression check
  * only. scripts/head-scorecard.py, scripts/dj-effects/ship.py and the tagger's `tested` flags use the same bar. */
@@ -39,6 +39,10 @@ export const CALIBRATED_LABELS: ReadonlySet<string> = new Set(calibratedLabelLis
 export const UNVERIFIED_SOUND_FLOOR = .5;
 /** Labels whose fallback tags were measured as almost always wrong (>= 15 firings, < 10% agreement): never shown. */
 export const UNVERIFIED_BLOCKED: ReadonlySet<string> = new Set(unverifiedBlocked.blocked);
+/** Labels hidden from every model until a detector passes held-out REAL clips (Chris, 2026-10-10). On 2,927 free-tag-set
+ * test clips the shipped tagger scored distorted 4% precision and reverse effect 0 of 76 found; its high scores came from
+ * code-made renders. A listener's own confirmation still shows. Remove a label once a run passes 50/50 on real clips. */
+export const HIDDEN_UNTIL_TESTED: ReadonlySet<string> = new Set(['distorted', 'reverse effect']);
 /** One-shots (≤ SHORT_CLIP_MAX_SECONDS) keep the 0.50 rule; longer audio uses the 0.40 floor. */
 export const soundDisplayFloor=(durationSeconds:number|undefined)=>Number.isFinite(durationSeconds)&&durationSeconds!>SHORT_CLIP_MAX_SECONDS?TRACK_SOUND_FLOOR:LIKELY_SOUND_CUTOFF;
 export const soundTier=(score:number):SoundTier=>score>=LIKELY_SOUND_CUTOFF?'likely':'possible';
@@ -216,6 +220,7 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
   const testedBest=(s:DisplaySound)=>Math.max(...s.scores!.filter(x=>TESTED_SCORES.has(x.model)).map(x=>x.score));
   const raised=(s:DisplaySound)=>fullMix&&s.dimension==='source'&&FULL_MIX_MIN_TESTED_SCORE[s.label]!==undefined&&testedBest(s)<FULL_MIX_MIN_TESTED_SCORE[s.label];
   return foldMerged([...result.values()].flatMap(s=>s.origin==='confirmed by you'?[s]
+    :HIDDEN_UNTIL_TESTED.has(s.label)?[]
     :s.coverageUnknown?[s]
     :s.scores?.some(x=>TESTED_SCORES.has(x.model))?raised(s)?[]:[tiered(s,m=>TESTED_SCORES.has(m))]
     :s.scores?.some(x=>MAYBE_SCORES.has(x.model))?[{...tiered(s,m=>MAYBE_SCORES.has(m)),maybe:true}]

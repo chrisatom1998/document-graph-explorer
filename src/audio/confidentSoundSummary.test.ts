@@ -1,7 +1,7 @@
 import { RULE_DESCRIBED_LABELS } from './timbreDescriptions';
 import {mergedDjLabel} from './djTags';
 import {expect,it} from 'vitest';
-import {confidentSoundSummary,LIKELY_SOUND_CUTOFF,TRACK_SOUND_FLOOR} from './confidentSoundSummary';
+import {confidentSoundSummary,HIDDEN_UNTIL_TESTED,LIKELY_SOUND_CUTOFF,TRACK_SOUND_FLOOR} from './confidentSoundSummary';
 import {createRecognition,recordEvidence} from './recognition';
 import type {MusicAnalysis} from './musicTypes';
 import {FULL_MIX_REVISION} from './fullMixHeads';
@@ -61,8 +61,8 @@ it('can display every catalog label once a trained head reports it',async()=>{
   return !confidentSoundSummary(a).some(s=>s.label===shown);
  }).map(c=>c.label);
  // The nine rule-described character words are never shown from a model (timbreDescriptions.ts); every other label can be,
- // merged-away labels under the name they merged into.
- expect(missing.sort()).toEqual([...RULE_DESCRIBED_LABELS].sort());
+ // merged-away labels under the name they merged into, and labels hidden until they pass real clips.
+ expect(missing.sort()).toEqual([...RULE_DESCRIBED_LABELS,...HIDDEN_UNTIL_TESTED].sort());
 });
 it('shows merged look-alike tags once, under the kept name, and keeps the stronger entry',()=>{
  const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[
@@ -128,4 +128,11 @@ it('shows full-mix head labels as tested on recordings of at least one full wind
  expect(confidentSoundSummary({...a,fullMix:{...a.fullMix!,revision:'old'}}).map(s=>s.label).sort()).toEqual(['bass guitar','organ']);
  expect(confidentSoundSummary({...a,durationSeconds:8,analyzedSeconds:8}).map(s=>s.label).sort()).toEqual(['bass guitar','organ']);
  expect(confidentSoundSummary({...a,instrumentScan:{complete:false,analyzedSeconds:10,windows:1}}).map(s=>s.label).sort()).toEqual(['bass guitar','organ']);
+});
+it('hides labels that failed on real clips unless the listener confirmed them',()=>{
+ const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[
+  {group:'production',label:'reverse effect',score:.95,model:'Trained head'},{group:'character',label:'distorted',score:.95,model:'Trained head'},{group:'production',label:'riser',score:.95,model:'Trained head'}]};
+ expect(confidentSoundSummary(a).map(s=>s.label)).toEqual(['riser']);
+ a.soundReviews=[{dimension:'effect',labelId:'reverse effect',decision:'confirmed',scope:'track',at:'2026-10-10T00:00:00.000Z',evidenceRunId:'r'}];
+ expect(confidentSoundSummary(a).map(s=>s.label).sort()).toEqual(['reverse effect','riser']);
 });
