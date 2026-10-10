@@ -23,7 +23,8 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 85/86: sound heads for kalimba, djembe and nine maybe tags (tag-heads-2026-10-09).
 // 87/88: heads at held-out 50/50 ship as full tags (stored "maybe" head scores no longer count).
 // 89/90: five round-16 heads retrained without FSD50K eval clips (round16-clean-2026-10-10).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 90 : 89;
+// 91/92: tagger blend of runs 3, 5, 7 and 8 with eight more tags (old tagger scores no longer count).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 92 : 91;
 export interface InstrumentEstimate {
   label: string;
   score: number;

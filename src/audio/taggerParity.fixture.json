@@ -1,5 +1,5 @@
 {
- "model": "bd231add526cc8d2229fd09a8cd8df550ef974667463704c0e7d49f8d80fa184",
+ "model": "09c1a2b157c85abc0a41a461493006d9ca84e060cd691db365f07bb03f792f85",
  "sampleRate": 32000,
  "cases": [
   {
@@ -26,7 +26,7 @@
     "cat:distorted": 0.030455,
     "cat:reverse effect": 0.027068,
     "cat:bird ambience": 1.4e-05,
-    "cat:rain ambience": 0.000272,
+    "cat:rain ambience": 0.000175,
     "cat:vocal breath": 5.4e-05
    }
   },
@@ -54,7 +54,7 @@
     "cat:distorted": 0.085727,
     "cat:reverse effect": 0.015564,
     "cat:bird ambience": 8e-06,
-    "cat:rain ambience": 0.002597,
+    "cat:rain ambience": 0.003648,
     "cat:vocal breath": 3.4e-05
    }
   },
@@ -83,7 +83,7 @@
     "cat:distorted": 0.085727,
     "cat:reverse effect": 0.015564,
     "cat:bird ambience": 2.2e-05,
-    "cat:rain ambience": 0.007202,
+    "cat:rain ambience": 0.005676,
     "cat:vocal breath": 4.5e-05
    }
   },
@@ -113,7 +113,7 @@
     "cat:distorted": 0.103695,
     "cat:reverse effect": 0.007465,
     "cat:bird ambience": 6.8e-05,
-    "cat:rain ambience": 0.049178,
+    "cat:rain ambience": 0.037185,
     "cat:vocal breath": 9e-05
    }
   }

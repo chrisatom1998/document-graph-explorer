@@ -27,11 +27,12 @@ describe('trained tagger policy', () => {
       expect(supported, tag.label).toBe(true);
     }
   });
-  it('keeps the existing detectors for synthesizer, voice, organ and cello', () => {
+  it('keeps the existing detectors for voice, organ and cello', () => {
     const decided = new Set(TAGGER_POLICY.tags.flatMap(t => t.decides));
-    for (const label of ['synthesizer', 'voice', 'organ', 'cello']) expect(decided.has(label)).toBe(false);
+    for (const label of ['voice', 'organ', 'cello']) expect(decided.has(label)).toBe(false);
     expect(TAGGER_POLICY.tags.filter(t => t.dimension === 'source').map(t => t.output).sort())
-      .toEqual(['bass', 'cymbals', 'drums', 'guitar', 'piano', 'saxophone', 'trumpet', 'violin']);
+      .toEqual(['bass', 'cat:animal sound', 'cat:glockenspiel', 'cat:percussion', 'cat:whistle', 'cymbals', 'drums', 'guitar', 'piano', 'saxophone', 'synthesizer',
+        'trumpet', 'violin']);
   });
 });
 
@@ -154,7 +155,10 @@ describe('trained tagger long-recording rules', () => {
   it('installs the rules picked on the full-song tuning set', () => {
     expect(Object.fromEntries(TAGGER_POLICY.tags.filter(t => t.long).map(t => [t.output, t.long]))).toEqual({
       drums: { rule: 'max', threshold: .5757 }, trumpet: { rule: 'max' }, piano: { rule: 'detectors' }, guitar: { rule: 'detectors' },
-      cymbals: { rule: 'detectors' }, violin: { rule: 'detectors' }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' } });
+      cymbals: { rule: 'detectors' }, violin: { rule: 'detectors' }, saxophone: { rule: 'detectors' }, bass: { rule: 'detectors' },
+      synthesizer: { rule: 'max' }, 'cat:percussion': { rule: 'detectors' }, 'cat:animal sound': { rule: 'detectors' },
+      'cat:glockenspiel': { rule: 'detectors' }, 'cat:whistle': { rule: 'detectors' }, 'cat:tambourine': { rule: 'detectors' },
+      'cat:vocal scream': { rule: 'detectors' } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
   it('needs the higher full-song drums threshold on long recordings only', () => {
