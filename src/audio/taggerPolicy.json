@@ -351,6 +351,71 @@
    "long": {
     "rule": "detectors"
    }
+  },
+  {
+   "output": "cat:environmental sound",
+   "label": "environmental sound",
+   "dimension": "source",
+   "threshold": 0.4549,
+   "decides": [
+    "environmental sound"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:foley",
+   "label": "foley",
+   "dimension": "source",
+   "threshold": 0.2941,
+   "decides": [
+    "foley"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:turntable",
+   "label": "turntable",
+   "dimension": "source",
+   "threshold": 0.0124,
+   "decides": [
+    "turntable"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:finger snap",
+   "label": "finger snap",
+   "dimension": "effect",
+   "threshold": 0.0331,
+   "decides": [
+    "finger snap"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:water ambience",
+   "label": "water ambience",
+   "dimension": "effect",
+   "threshold": 0.252,
+   "decides": [
+    "water ambience"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
   }
  ]
 }
