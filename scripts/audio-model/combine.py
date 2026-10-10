@@ -10,7 +10,7 @@ Each <run-dir> holds a run's model.pt, log.json (backbone in args.model), thresh
   * it does not drop below 0.70 precision or recall on a set where the shipped run reached both.
 Tags in --keep stay with the first run (their long-recording thresholds were tuned on its scores). --only RUN=a,b limits
 RUN to those outputs and makes them candidates even when the app's policy does not list them yet (a tag that newly passes
-on held-out real clips); each must be an output of the first run, whose scores are the baseline it is compared with. Every other output keeps the first run's score. Runs that win no tag are left out of the file.
+on held-out real clips); each must be an output of the first run, whose scores are the baseline it is compared with. Every other output keeps the first run's score. --pin RUN=a,b takes those outputs from RUN whatever the combiner scores (for a tag that won on real clips the combiner's own sets do not cover, e.g. VCSL). Runs that win no tag are left out of the file.
 A later run may add outputs after the first run's class list; the file then carries the longest list, and an output only
 newer runs have comes from the first used run that has it.
 
@@ -42,9 +42,14 @@ def rows(ev, tag):
 
 def merit(rs): return float(np.mean([min(p, r) for _, p, r in rs])) if rs else None
 
-def choose(tags, runs, keep, only=None):
-    only = only or {}; picks = {}
+def choose(tags, runs, keep, only=None, pin=None):
+    only = only or {}; pin = pin or {}; picks = {}
     for tag in tags:
+        if tag in pin:
+            k = next(i for i, run in enumerate(runs) if run['name'] == pin[tag])
+            picks[tag] = {'run': pin[tag], 'why': 'pinned (won on held-out real clips the combiner does not score)',
+                          'heldOut': {run['name']: {n: [round(p, 3), round(r, 3)] for n, p, r in rows(run['eval'], tag)} for run in runs}}
+            continue
         base = rows(runs[0]['eval'], tag); best, why = 0, 'shipped run'
         if tag not in keep and base:
             passed, top = {n for n, p, r in base if p >= .7 and r >= .7}, merit(base) + .01
@@ -77,6 +82,7 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('policy'); ap.add_argument('runs', nargs='+')
     ap.add_argument('--keep', default='')
     ap.add_argument('--only', action='append', default=[], help='RUN=output,output: the only outputs RUN may take')
+    ap.add_argument('--pin', action='append', default=[], help='RUN=output,output: outputs taken from RUN whatever the combiner scores')
     args = ap.parse_args(); os.makedirs(args.out, exist_ok=True)
     runs = []
     for d in args.runs:
@@ -87,10 +93,14 @@ def main():
     assert all(o.partition('=')[2].strip(', ') for o in args.only), f'--only needs RUN=output,output: {args.only}'
     only = {name: {t for t in ts.split(',') if t} for name, ts in (o.split('=', 1) for o in args.only)}
     assert set(only) <= {r['name'] for r in runs}, f'--only names a run that is not combined: {set(only)}'
+    assert all(o.partition('=')[2].strip(', ') for o in args.pin), f'--pin needs RUN=output,output: {args.pin}'
+    pin = {t: name for name, ts in (o.split('=', 1) for o in args.pin) for t in ts.split(',') if t}
+    assert set(pin.values()) <= {r['name'] for r in runs}, f'--pin names a run that is not combined: {set(pin.values())}'
+    for t, name in pin.items(): assert t in next(r for r in runs if r['name'] == name)['classes'], f'{t} is not an output of {name}'
     tags = [t['output'] for t in json.load(open(args.policy))['tags']]
-    tags += sorted({t for ts in only.values() for t in ts} - set(tags))
+    tags += sorted(({t for ts in only.values() for t in ts} | set(pin)) - set(tags))
     for t in tags: assert t in runs[0]['classes'], f'{t} is not an output of {runs[0]["name"]}'
-    picks = choose(tags, runs, {t for t in args.keep.split(',') if t}, only)
+    picks = choose(tags, runs, {t for t in args.keep.split(',') if t}, only, pin)
     used = [k for k, run in enumerate(runs) if k == 0 or any(p['run'] == run['name'] for p in picks.values())]
     names = [runs[k]['name'] for k in used]
     classes = max((runs[k]['classes'] for k in used), key=len)

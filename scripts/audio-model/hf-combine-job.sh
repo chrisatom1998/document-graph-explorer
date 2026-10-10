@@ -3,7 +3,7 @@
 # held-out audio), score the result on the same held-out sets, write the browser parity reference, and publish it to the
 # public model repo $PUBLIC_REPO under $LICENSE. Launched by .github/workflows/tagger-combine.yml through hf-launch.py
 # (JOB_SCRIPT=hf-combine-job.sh). Env: REPO_SHA, HF_REPO (private runs), RUNS (folders of HF_REPO, the shipped run
-# first), KEEP, ONLY (optional: RUN=output,output entries separated by ';', the only outputs each named run may take),
+# first), KEEP, ONLY (optional: RUN=output,output entries separated by ';', the only outputs each named run may take), PIN (same format: outputs forced to a named run),
 # PUBLIC_REPO, LICENSE, HF_TOKEN (secret).
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
@@ -32,6 +32,7 @@ python3 $S/refresh-fsd50k-eval.py $C/fsdprep/eval-fsd50k $(for r in $RUNS; do ec
 mkdir -p out
 ONLY_ARGS=()
 if [ -n "${ONLY:-}" ]; then IFS=';' read -ra ONLY_PARTS <<< "$ONLY"; for o in "${ONLY_PARTS[@]}"; do ONLY_ARGS+=(--only "$o"); done; fi
+if [ -n "${PIN:-}" ]; then IFS=';' read -ra PIN_PARTS <<< "$PIN"; for o in "${PIN_PARTS[@]}"; do ONLY_ARGS+=(--pin "$o"); done; fi
 python3 $S/combine.py out $W/dge/src/audio/taggerPolicy.json $(for r in $RUNS; do echo runs/$r; done) --keep "${KEEP:-}" "${ONLY_ARGS[@]}" | tee out/combine.txt
 python3 $S/evaluate.py out/model.onnx out/thresholds.json out/eval.json $C/prep/eval-round1 $C/prep/eval-round2 $C/holdout/holdout-r3 \
   $C/fsdprep/eval-fsd50k $C/nsprep/eval-nsynth-test $C/nsprep/eval-nsynth-test-fx $C/fsprep/eval-freesound | tee out/eval.txt
