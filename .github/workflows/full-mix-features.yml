@@ -25,19 +25,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Select OpenMIC train clips
         run: |
           curl -fsSL --retry 6 -o "$RUNNER_TEMP/openmic.tgz" "$OPENMIC"
           echo "e4ccf187e2bb5ab2e115416e8aafe7f4  $RUNNER_TEMP/openmic.tgz" | md5sum -c -
           python3 scripts/full-mix-heads/openmic-train.py "$RUNNER_TEMP/openmic.tgz" audio openmic-train-labels.json
           python3 -c "import json,os;json.dump([{'id':i['id'],'path':'clips/audio/'+i['id']+'.ogg'} for i in json.load(open('openmic-train-labels.json'))['items']],open('openmic-train-list.json','w'))"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: fm-openmic-labels
           path: openmic-train-labels.json
           retention-days: 30
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: fm-openmic-audio
           path: |
@@ -55,19 +55,19 @@ jobs:
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
         with:
           name: fm-openmic-audio
           path: clips
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
       - run: npm ci
       - run: command -v ffmpeg || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
       - name: Restore audio model weights
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.MUSIC_MODEL_PATHS }}
           key: music-models-${{ hashFiles('public/*-model/manifest.json') }}
@@ -75,7 +75,7 @@ jobs:
       - run: node scripts/download-music-model.mjs
       - name: Compute features
         run: npx vite-node scripts/full-mix-heads/features.mjs clips/openmic-train-list.json fm-${{ matrix.shard }} ${{ matrix.shard }}/16
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: fm-openmic-features-${{ matrix.shard }}
           path: fm-${{ matrix.shard }}.*
