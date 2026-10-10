@@ -227,7 +227,9 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      max-parallel: 6   # leave most of the account's runners to everything else
+      # The PR slice (5 Jamendo + 4 MTG key parts, 11-25 min each) gets all nine at once, so a verdict is one wave
+      # instead of two; main's full set and labelled full runs (report only) keep 6, leaving runners to everything else.
+      max-parallel: ${{ inputs.mode == 'fast' && 9 || 6 }}
       matrix:
         include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     name: analyse (${{ matrix.side }} ${{ matrix.set }} ${{ matrix.shard }})
