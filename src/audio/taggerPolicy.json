@@ -98,7 +98,7 @@
    "decides": [
     "trumpet"
    ],
-   "tested": false,
+   "tested": true,
    "minSeconds": 10,
    "long": {
     "rule": "max"
@@ -242,7 +242,7 @@
    "decides": [
     "rain ambience"
    ],
-   "tested": false
+   "tested": true
   },
   {
    "output": "cat:vocal breath",
