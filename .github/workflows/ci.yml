@@ -174,8 +174,8 @@ jobs:
             git diff --name-only HEAD^1 HEAD > changed.txt
             # Anything outside these paths can reach the build, so it runs the full suite.
             grep -vE '^(docs/|[^/]+\.md$|.*\.(py|ipynb)$|\.github/workflows/)' changed.txt > app.txt || true
-            # This workflow itself, and the one Python file the app's dev server starts, still count.
-            grep -xE '\.github/workflows/ci\.yml|scripts/dj-review-server\.py' changed.txt >> app.txt || true
+            # This workflow itself, and the Python the app's dev server starts (the review server and its import), still count.
+            grep -xE '\.github/workflows/ci\.yml|scripts/(dj-review-server|dj_pack_import)\.py' changed.txt >> app.txt || true
             [ -s app.txt ] || APP=false
             echo "Files that can affect the app:"; cat app.txt
           fi
