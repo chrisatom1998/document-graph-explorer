@@ -220,8 +220,12 @@ def main():
         for p in parts:
             with open(os.path.join(tmp, 'hashes', f'{os.path.basename(p)}.csv'), 'w', newline='') as f:
                 w = csv.writer(f); w.writerow(['id', 'file', 'encoded_sha256', 'pcm_sha256', 'seconds', 'extra_md5'])
-                for r in items:
-                    if r['part'] == p: w.writerow([r['id'], r.get('file', ''), r['encoded_sha256'], r['pcm_sha256'], r['seconds'], int(r['_extra_md5'])])
+                for r in items:   # extra_md5 also carries id/uploader hits, so the merge run needs no EXTRA_EXCL
+                    if r['part'] != p: continue
+                    fid = r['id'].split(':')[1] if r['source'] == 'freesound' else ''
+                    user = r['group'].removeprefix('freesound-user:').casefold() if r['source'] == 'freesound' else None
+                    hit = r['_extra_md5'] or (fid.isdigit() and int(fid) in EXTRA['ids']) or (user and user in EXTRA['users'])
+                    w.writerow([r['id'], r.get('file', ''), r['encoded_sha256'], r['pcm_sha256'], r['seconds'], int(bool(hit))])
         api.upload_folder(repo_id=REPO, repo_type='dataset', folder_path=tmp, path_in_repo=OUT, commit_message=f'Run 9 audit hashes: {", ".join(sorted(only))}')
         print('HASHES_DONE', sorted(only), flush=True)
         return
