@@ -13,7 +13,8 @@ export const DJ_LABELS: Record<DjGroup, readonly string[]> = {
 export type ConfirmedDjTags = Record<DjGroup, string[]>;
 /** Look-alike tags shown and confirmed under one name (Chris, 2026-10-10): the models could not tell each pair apart
  * (breath and vocal breath are taught by the same labels; static noise already covers white noise; turntable and vinyl
- * scratch both come from FSD50K's one Scratching class). The old labels stay
+ * scratch both come from FSD50K's one Scratching class; vocal harmony has no tagger output and too little audio to tell
+ * apart from choir). The old labels stay
  * in the catalog because trained heads, prompts and saved analyses use them; only what people see and confirm merges. */
 export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: string }>> = {
   'production:vocal breath': { group: 'source', label: 'breath' },
@@ -21,6 +22,7 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'production:synth stab': { group: 'production', label: 'synth hit' },
   'production:downlifter': { group: 'character', label: 'falling' },
   'source:turntable': { group: 'production', label: 'vinyl scratch' },
+  'production:vocal harmony': { group: 'production', label: 'choir' },
 };
 export const mergedDjLabel = (group: DjGroup, label: string): { group: DjGroup; label: string } => MERGED_DJ_LABELS[`${group}:${label}`] ?? { group, label };
 /** Labels people can pick: the catalog minus the merged names. */
