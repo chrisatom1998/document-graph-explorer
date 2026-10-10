@@ -30,5 +30,5 @@
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-xl",
   "timeout": "4h",
-  "attempt": 6
+  "attempt": 7
 }
