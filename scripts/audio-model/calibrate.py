@@ -45,8 +45,12 @@ def pick(y, s):
         if best is None or key > best[0]: best = (key, float(t), p, r)
     return best[1:]
 
-def view(name, j, keep_weak):
-    y, w, s = val[name]; k = w[:, j] > 0 if keep_weak else w[:, j] >= 1
+# Freesound-only tags, and every tag of the run 7 Freesound sounds (fsnew, which has no outright absences), count
+# untagged sounds as absent.
+keep_weak = lambda n, c: (n == 'freesound' and c[4:] in FREESOUND) or n == 'fsnew'
+
+def view(name, j, use_weak):
+    y, w, s = val[name]; k = w[:, j] > 0 if use_weak else w[:, j] >= 1
     return y[k, j], s[k, j]
 
 out = {}
@@ -54,7 +58,7 @@ for j, c in enumerate(classes):
     if c.startswith('jamendo:'): fit = [('jamendo', True)] if 'jamendo' in val else []
     # Freesound-only tags have no outright absences (uploaders tag selectively): its untagged sounds count as absent,
     # so precision is a lower bound, as with Jamendo's tags.
-    elif c.startswith('cat:') or c.startswith('fsld:'): fit = [(n, n == 'freesound' and c[4:] in FREESOUND) for n in val]
+    elif c.startswith('cat:') or c.startswith('fsld:'): fit = [(n, keep_weak(n, c)) for n in val]
     else: fit = [('openmic', False)] if 'openmic' in val else []
     ys, ss = zip(*[view(n, j, kw) for n, kw in fit]) if fit else ((), ())
     y = np.concatenate(ys) if ys else np.zeros(0); s = np.concatenate(ss) if ss else np.zeros(0)
@@ -64,7 +68,7 @@ for j, c in enumerate(classes):
     row = {'enabled': True, 'threshold': round(t, 4), 'fitOn': [n for n, _ in fit], 'val': {'precision': round(p, 3), 'recall': round(r, 3), 'positives': pos, 'negatives': neg}}
     if any(kw for _, kw in fit): row['precisionIsLowerBound'] = True
     for n in val:   # each source's own view at the chosen threshold
-        yn, sn = view(n, j, n == 'jamendo' or (n == 'freesound' and c[4:] in FREESOUND))
+        yn, sn = view(n, j, n == 'jamendo' or keep_weak(n, c))
         if (yn == 1).sum() or (yn == 0).sum():
             pn, rn, posn, negn = pr(yn, sn, t)
             row[f'{n}Val'] = {'precision': None if pn is None or negn == 0 else round(pn, 3), 'recall': None if rn is None else round(rn, 3), 'positives': posn, 'negatives': negn}

@@ -30,3 +30,10 @@ original frozen thresholds. It replaces only the local `eval-fsd50k` rows; other
 export/evaluation time to combining, but prevents comparisons between different label populations. For a manual
 combine, run `python3 scripts/audio-model/refresh-fsd50k-eval.py <prep-dir>/eval-fsd50k <run-dir> [...]` first.
 Offline regression checks: `python3 scripts/audio-model/test_fsd50k_review.py` (requires NumPy, no model downloads).
+
+Prepared data is cached in the private dataset `<user>/dge-tagger-data`: the base sources under `prep-cache/<key>`, and
+each extra source (raw stems, Iowa, chris-drive, VCSL, more Slakh, SAO, fsnew, run 9, round 10) under
+`prep-cache/src/<name>/<key>` (`prep-cache.py`). A source's key covers its prepare script, the local modules and files it
+uses, its output-changing arguments and a content hash of its private input, so a job rebuilds only the sources whose
+inputs changed. `prep_only` in `extra_sets` (on a CPU flavor) fills the caches without training. Offline check:
+`python3 scripts/audio-model/test_prep_cache.py`.

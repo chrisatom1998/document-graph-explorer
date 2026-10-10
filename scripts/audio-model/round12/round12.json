@@ -1,0 +1,34 @@
+{
+  "about": "Round 12 (reports/round12-plan-2026-10-10 in the project folder). Read by hf-job.sh when ROUND12=1. oversample: tags whose positive windows train.py sees RARE_REPEAT times per epoch (--rare-tags); tags with 2,500+ training clips are left out on purpose. lookalikes: extra look-alike groups for prepare-run9.py (a Freesound train clip naming exactly one member is a full-weight absence for the others; never put a parent and its child in one group). merge: child -> parent, applied by train.py --merge (a clip with the child present also counts the parent present); Chris approved the merges and 6 hides on 2026-10-10, 6:31 am Pacific; chops stays out of merge because he defined it at 2:31 am as chopped samples of any sound, not only vocals (asked him again).",
+  "oversample": [
+    "crash cymbal", "hi-hat loop", "drum fill", "glockenspiel", "acid synth", "tuned percussion", "whoosh", "vocal gasp",
+    "chiptune synth", "breath", "choir", "clap", "shaker", "trombone", "djembe", "flute",
+    "organ synth", "steel drum", "chorused", "bass pluck", "vocal harmony", "rolling", "kalimba",
+    "horn", "viola", "oboe", "string synth", "tuba", "mandolin", "bass guitar", "vocoder vocal",
+    "noise sweep", "bass growl", "vocal chops", "cajon", "flanged", "bitcrushed", "rimshot", "synth pluck",
+    "synth bass", "synth chord", "synth drone", "wobble bass", "conga"
+  ],
+  "lookalikes": [
+    ["noise sweep", "whoosh", "filter sweep"],
+    ["bass growl", "wobble bass", "reese bass", "acid bass"],
+    ["vocal chops", "reversed vocal", "pitched vocal", "vocal phrase"],
+    ["bitcrushed", "distorted", "glitch effect"],
+    ["flanged", "chorused", "filter sweep"],
+    ["rimshot", "snare", "clap", "woodblock"],
+    ["synth pluck", "bell synth", "synth hit", "synth lead"],
+    ["synth chord", "synth drone", "atmospheric pad", "string synth"],
+    ["djembe", "conga", "bongo", "cajon"],
+    ["waterphone", "singing bowl", "gong"],
+    ["drum fill", "snare roll", "breakbeat"],
+    ["hi-hat", "shaker", "tambourine"]
+  ],
+  "merge": {
+    "foghorn bass": "synth bass", "stutter effect": "glitch effect", "record stop": "turntable",
+    "foley hit": "foley", "percussion hit": "percussion", "closed hi-hat": "hi-hat", "vocal-like synth": "vocoder vocal"
+  },
+  "merge_proposed": {
+    "chops": "vocal chops", "foghorn bass": "synth bass", "stutter effect": "glitch effect", "record stop": "turntable",
+    "foley hit": "foley", "percussion hit": "percussion", "closed hi-hat": "hi-hat", "vocal-like synth": "vocoder vocal"
+  },
+  "hide_proposed": ["texture", "sound effect", "dry", "echoing", "synth sequence", "saturated"]
+}

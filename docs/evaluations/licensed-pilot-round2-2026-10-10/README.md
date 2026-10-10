@@ -91,7 +91,7 @@ baseline was run, not from this change.
 
 One existing short-clip head's weights are replaced: same dot product, no new model or window. `short-clip.json`
 grows from 107.5 KB to 111.6 KB raw (39.1 KB to 41.3 KB gzip) because the converted weights carry full precision.
-`INSTRUMENT_ANALYSIS_REVISION` moves to 93/94, so stored analyses refresh their bass guitar score. Main gained a new
+`INSTRUMENT_ANALYSIS_REVISION` moves to 95/96, so stored analyses refresh their bass guitar score. Main gained a new
 tagger blend (#205/#206) after the app run; its bass tag needs 10 s of audio (`taggerPolicy.json` `minSeconds`), so it
 cannot change the short-clip result.
 
