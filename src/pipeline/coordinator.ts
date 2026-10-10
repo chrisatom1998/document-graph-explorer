@@ -553,8 +553,10 @@ async function runIngestBodyInner(
   const pending: PendingFile[] = [];
   let retryIncomplete = false;
   const audioOriginals = new Map<string, { blob: Blob; name: string }>();
-  // Remembered audio is not re-read, but re-adding it still lets stale analyses catch up.
+  // Remembered audio is not re-read, but re-adding it still finishes an analysis that stopped early.
   let audioReAdded = false;
+  // Only the tracks in this drop are analyzed; the rest of the library keeps its results.
+  const audioScope = new Set<string>();
   const remembered: Parameters<typeof rememberLibraryFiles>[0] = [];
   for (const routedFile of routed) {
     let { file } = routedFile;
@@ -590,6 +592,7 @@ async function runIngestBodyInner(
       ? new Blob([])
       : new Blob([file.bytes], { type: mimeForFilename(file.name) });
     if (fileType === 'audio') {
+      audioScope.add(id);
       if (file.knownId) audioReAdded = true;
       else audioOriginals.set(id, { blob: original, name: file.name });
       fileIdOfDoc.set(id, file.fileId);
@@ -878,7 +881,7 @@ async function runIngestBodyInner(
     return false;
   }
 
-  await analyzeAudioNodes(signal, [], audioOriginals);
+  await analyzeAudioNodes(signal, [], audioOriginals, audioScope);
 
   // (e) lexical aggregation over the WHOLE corpus (idf + title mentions
   // are corpus-wide, so every drop rebuilds them)
@@ -1922,10 +1925,35 @@ function preloadAudioModels(): void {
   void import('../audio/analyzeMusic').then(m => m.preloadMusicModels(mode)).catch(() => { /* Analysis loads the models itself if preloading fails. */ });
 }
 
-/** Run inside the existing mutation queue; every estimate belongs to this corpus snapshot. */
-async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], originals?: Map<string, { blob: Blob; name: string }>): Promise<void> {
+/** No finished whole-track analysis yet: never analyzed, still a preview, or a scan that stopped early. */
+function audioUnfinished(n: DocNode): boolean {
+  return !n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || !n.audio.instrumentScan?.complete;
+}
+
+/** A finished analysis made by an older analysis version or detector release. */
+function audioOutdated(n: DocNode, mode = useSettingsStore.getState().musicAnalysisMode): boolean {
+  const audio = n.audio;
+  if (!audio) return false;
+  return audio.version !== 2 || audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || audio.keyRevision !== KEY_ANALYSIS_REVISION
+    || audio.instrumentScan?.revision !== INSTRUMENT_ANALYSIS_REVISION
+    || (!!audio.recognition && audio.recognition.configurationHash !== recognitionConfiguration(audio.recognition.mode, audio.durationSeconds))
+    || (!!installedFusionIdentity() && (audio.classifierConfiguration !== fusionConfiguration()
+      || (!!audio.fusion && !fusionPresentation(audio.fusion, audio.durationSeconds, audio.recognition?.mode ?? mode)?.qualified)));
+}
+
+/** Finished tracks whose saved results predate the current detectors; Settings > Data offers to update them. */
+export function outdatedAudioIds(): string[] {
+  return documentNodes().filter(n => n.fileType === 'audio' && !audioUnfinished(n) && audioOutdated(n)).map(n => n.id);
+}
+
+/**
+ * Run inside the existing mutation queue; every estimate belongs to this corpus snapshot.
+ * With a `scope` (an ingest), only those tracks are considered and a finished analysis is kept
+ * even when a newer detector release exists: adding files must not re-analyze the library.
+ */
+async function analyzeAudioNodes(signal?: AbortSignal, forceIds: string[] = [], originals?: Map<string, { blob: Blob; name: string }>, scope?: ReadonlySet<string>): Promise<void> {
   const mode = useSettingsStore.getState().musicAnalysisMode;
-  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (!n.audio || n.audio.stage === 'preview' || n.audio.instrumentScan?.mode === 'fast' || n.audio.version !== 2 || n.audio.tempoRevision !== TEMPO_ANALYSIS_REVISION || n.audio.keyRevision !== KEY_ANALYSIS_REVISION || !n.audio.instrumentScan?.complete || n.audio.instrumentScan.revision !== INSTRUMENT_ANALYSIS_REVISION || (n.audio.recognition && n.audio.recognition.configurationHash !== recognitionConfiguration(n.audio.recognition.mode, n.audio.durationSeconds)) || (installedFusionIdentity() && (n.audio.classifierConfiguration !== fusionConfiguration() || (n.audio.fusion && !fusionPresentation(n.audio.fusion,n.audio.durationSeconds,n.audio.recognition?.mode ?? mode)?.qualified))) || forceIds.includes(n.id)));
+  const nodes = documentNodes().filter(n => n.fileType === 'audio' && (!forceIds.length || forceIds.includes(n.id)) && (!scope || scope.has(n.id)) && (!useMusicJobs.getState().jobs[n.id] || mode==='full' || forceIds.includes(n.id)) && (forceIds.includes(n.id) || audioUnfinished(n) || (!scope && audioOutdated(n, mode))));
   if (!nodes.length) return;
   const { analyzeMusic, preloadMusicModels } = await import('../audio/analyzeMusic');
   const cacheContext = createMusicCacheContext();
