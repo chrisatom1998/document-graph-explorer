@@ -107,7 +107,8 @@ it('keeps the calibrated-label list in sync with the shipped detectors',async()=
 const clapOnly=(label:string,group:'source'|'production'|'character',score:number,durationSeconds=8):MusicAnalysis=>({...audio(),durationSeconds,analyzedSeconds:durationSeconds,instruments:[],soundProfile:{version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group,label,score,model:'Music CLAP'}]}});
 it('shows an untested label from raw CLAP only as unverified/possible on long recordings',()=>{
  expect(confidentSoundSummary(clapOnly('banjo','source',.5))[0]).toMatchObject({label:'banjo',tier:'possible',uncalibrated:true});
- expect(confidentSoundSummary(clapOnly('downlifter','production',.62))[0]).toMatchObject({label:'downlifter',tier:'possible',uncalibrated:true});
+ // downlifter merged into falling (Chris, 2026-10-10), so its fallback shows under the surviving name.
+ expect(confidentSoundSummary(clapOnly('downlifter','production',.62))[0]).toMatchObject({label:'falling',dimension:'character',tier:'possible',uncalibrated:true});
 });
 it.each([[.49,8],[.6,1.5]] as const)('does not fall back below the 0.50 fallback floor or on one-shots (score %s, %s s)',(score,seconds)=>{
  expect(confidentSoundSummary(clapOnly('banjo','source',score,seconds))).toEqual([]);
