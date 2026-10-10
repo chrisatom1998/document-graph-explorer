@@ -1,7 +1,7 @@
 {
  "version": 1,
- "revision": "all-tags-blend-2026-10-10-r1",
- "modelSha256": "09c1a2b157c85abc0a41a461493006d9ca84e060cd691db365f07bb03f792f85",
+ "revision": "all-tags-blend-2026-10-10-r2",
+ "modelSha256": "9a1d45948f70a30b30172ae95b8c1a354e0455a8e26e871d84d8301125f27ec3",
  "input": {
   "name": "samples32k",
   "output": "scores",
@@ -412,7 +412,7 @@
    "output": "cat:water ambience",
    "label": "water ambience",
    "dimension": "effect",
-   "threshold": 0.252,
+   "threshold": 0.3239,
    "decides": [
     "water ambience"
    ],
@@ -420,6 +420,32 @@
    "long": {
     "rule": "detectors",
     "afterSeconds": 30
+   }
+  },
+  {
+   "output": "cat:bell",
+   "label": "bell",
+   "dimension": "source",
+   "threshold": 0.4454,
+   "decides": [
+    "bell"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
+   }
+  },
+  {
+   "output": "cat:fm synth",
+   "label": "fm synth",
+   "dimension": "effect",
+   "threshold": 0.0104,
+   "decides": [
+    "fm synth"
+   ],
+   "tested": true,
+   "long": {
+    "rule": "detectors"
    }
   }
  ]
