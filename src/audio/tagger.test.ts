@@ -31,7 +31,7 @@ describe('trained tagger policy', () => {
     const decided = new Set(TAGGER_POLICY.tags.flatMap(t => t.decides));
     for (const label of ['voice', 'organ', 'cello']) expect(decided.has(label)).toBe(false);
     expect(TAGGER_POLICY.tags.filter(t => t.dimension === 'source').map(t => t.output).sort())
-      .toEqual(['bass', 'cat:animal sound', 'cat:environmental sound', 'cat:foley', 'cat:glockenspiel', 'cat:percussion', 'cat:turntable', 'cat:whistle', 'cymbals',
+      .toEqual(['bass', 'cat:animal sound', 'cat:bell', 'cat:environmental sound', 'cat:foley', 'cat:glockenspiel', 'cat:percussion', 'cat:turntable', 'cat:whistle', 'cymbals',
         'drums', 'guitar', 'piano', 'saxophone', 'synthesizer', 'trumpet', 'violin']);
   });
 });
@@ -160,7 +160,8 @@ describe('trained tagger long-recording rules', () => {
       'cat:glockenspiel': { rule: 'detectors' }, 'cat:whistle': { rule: 'detectors' }, 'cat:tambourine': { rule: 'detectors' },
       'cat:vocal scream': { rule: 'detectors' }, 'cat:environmental sound': { rule: 'detectors', afterSeconds: 30 },
       'cat:foley': { rule: 'detectors', afterSeconds: 30 }, 'cat:turntable': { rule: 'detectors', afterSeconds: 30 },
-      'cat:finger snap': { rule: 'detectors', afterSeconds: 30 }, 'cat:water ambience': { rule: 'detectors', afterSeconds: 30 } });
+      'cat:finger snap': { rule: 'detectors', afterSeconds: 30 }, 'cat:water ambience': { rule: 'detectors', afterSeconds: 30 },
+      'cat:bell': { rule: 'detectors' }, 'cat:fm synth': { rule: 'detectors' } });
     for (const tag of TAGGER_POLICY.tags.filter(t => t.long?.threshold !== undefined)) expect(tag.long!.threshold).toBeGreaterThan(tag.threshold);
   });
   it('needs the higher full-song drums threshold on long recordings only', () => {

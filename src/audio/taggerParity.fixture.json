@@ -1,5 +1,5 @@
 {
- "model": "09c1a2b157c85abc0a41a461493006d9ca84e060cd691db365f07bb03f792f85",
+ "model": "9a1d45948f70a30b30172ae95b8c1a354e0455a8e26e871d84d8301125f27ec3",
  "sampleRate": 32000,
  "cases": [
   {
@@ -39,7 +39,9 @@
     "cat:foley": 4.6e-05,
     "cat:turntable": 2e-06,
     "cat:finger snap": 2e-06,
-    "cat:water ambience": 0.001498
+    "cat:water ambience": 6.7e-05,
+    "cat:bell": 0.002299,
+    "cat:fm synth": 0.018872
    }
   },
   {
@@ -79,7 +81,9 @@
     "cat:foley": 0.000673,
     "cat:turntable": 1e-06,
     "cat:finger snap": 3e-06,
-    "cat:water ambience": 0.000418
+    "cat:water ambience": 0.000337,
+    "cat:bell": 0.013276,
+    "cat:fm synth": 0.017205
    }
   },
   {
@@ -120,7 +124,9 @@
     "cat:foley": 0.002341,
     "cat:turntable": 2e-06,
     "cat:finger snap": 1.2e-05,
-    "cat:water ambience": 0.001492
+    "cat:water ambience": 0.001565,
+    "cat:bell": 0.013276,
+    "cat:fm synth": 0.017205
    }
   },
   {
@@ -162,7 +168,9 @@
     "cat:foley": 0.003292,
     "cat:turntable": 7e-06,
     "cat:finger snap": 1.7e-05,
-    "cat:water ambience": 0.003655
+    "cat:water ambience": 0.005967,
+    "cat:bell": 0.010821,
+    "cat:fm synth": 0.01556
    }
   }
  ]

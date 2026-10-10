@@ -112,6 +112,9 @@ describe('the 50/50 shipping bar', () => {
     // Runs 3/5 outputs at 50/50 on FSD50K eval (tagger-promotions-2026-10-10).
     expect(['cat:environmental sound', 'cat:foley', 'cat:turntable', 'cat:finger snap', 'cat:water ambience'].map(tested))
       .toEqual([true, true, true, true, true]);
+    // Run 9 (tagger-run9): bell (0.72/0.62 on FSD50K eval; the old detector was 0.78/0.58, so a precision/recall trade), water ambience
+    // and fm synth clear their bars on held-out audio.
+    expect(['cat:bell', 'cat:fm synth'].map(tested)).toEqual([true, true]);
     // Measured only on NSynth and its effect renders: unchanged.
     expect(['cat:bright', 'cat:dark', 'cat:distorted', 'cat:falling'].map(tested)).toEqual([false, false, false, false]);
     expect(['cat:percussive', 'cat:pulsing', 'cat:swelling', 'cat:wobbling', 'cat:reverse effect'].map(tested)).toEqual([true, true, true, true, true]);

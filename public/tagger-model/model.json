@@ -259,7 +259,12 @@
   "cat:pitched vocal",
   "cat:shaker loop",
   "cat:synth hit",
-  "cat:vocal shush"
+  "cat:vocal shush",
+  "cat:reversed vocal",
+  "cat:vocal pad",
+  "cat:vocal phrase",
+  "cat:rubbery bass",
+  "cat:vocal harmony"
  ],
  "input": {
   "name": "samples32k",
@@ -271,12 +276,13 @@
   "name": "scores",
   "activation": "sigmoid"
  },
- "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
+ "base": "EfficientAT mn10_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT + EfficientAT mn20_as (AudioSet), MIT",
  "runs": [
   "all-tags",
   "all-tags-run5",
   "all-tags-run7",
-  "all-tags-run8"
+  "all-tags-run8",
+  "all-tags-run9"
  ],
  "outputRun": {
   "accordion": "all-tags",
@@ -355,7 +361,7 @@
   "cat:bassoon": "all-tags",
   "cat:beat repeat": "all-tags",
   "cat:beatbox": "all-tags",
-  "cat:bell": "all-tags",
+  "cat:bell": "all-tags-run9",
   "cat:bell synth": "all-tags",
   "cat:bird ambience": "all-tags",
   "cat:bitcrushed": "all-tags",
@@ -398,7 +404,7 @@
   "cat:finger snap": "all-tags",
   "cat:flanged": "all-tags",
   "cat:flute": "all-tags",
-  "cat:fm synth": "all-tags-run5",
+  "cat:fm synth": "all-tags-run9",
   "cat:foghorn bass": "all-tags",
   "cat:foley": "all-tags",
   "cat:foley hit": "all-tags",
@@ -514,7 +520,7 @@
   "cat:vocoder vocal": "all-tags",
   "cat:voice": "all-tags",
   "cat:warm": "all-tags",
-  "cat:water ambience": "all-tags",
+  "cat:water ambience": "all-tags-run9",
   "cat:waterphone": "all-tags",
   "cat:whisper": "all-tags",
   "cat:whistle": "all-tags-run8",
@@ -538,11 +544,16 @@
   "cat:pitched vocal": "all-tags-run7",
   "cat:shaker loop": "all-tags-run7",
   "cat:synth hit": "all-tags-run7",
-  "cat:vocal shush": "all-tags-run7"
+  "cat:vocal shush": "all-tags-run7",
+  "cat:reversed vocal": "all-tags-run9",
+  "cat:vocal pad": "all-tags-run9",
+  "cat:vocal phrase": "all-tags-run9",
+  "cat:rubbery bass": "all-tags-run9",
+  "cat:vocal harmony": "all-tags-run9"
  },
  "sha256": {
-  "model.onnx": "09c1a2b157c85abc0a41a461493006d9ca84e060cd691db365f07bb03f792f85"
+  "model.onnx": "9a1d45948f70a30b30172ae95b8c1a354e0455a8e26e871d84d8301125f27ec3"
  },
- "bytes": 229227624,
+ "bytes": 298179763,
  "maxAbsErrorVsPyTorch": 1.9669532775878906e-06
 }

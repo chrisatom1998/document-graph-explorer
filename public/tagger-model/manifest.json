@@ -1,13 +1,13 @@
 {
   "repository": "cmjatom/dge-all-tags-tagger-nc",
-  "revision": "d4a536369b1f1eedbb7162ac92dd7240b4a2bf04",
+  "revision": "990ae7a6f39f8d2f957ebfae0af11ca8d3eb9b36",
   "license": "CC BY-NC-SA 4.0",
   "sources": {
-    "model.onnx": "https://huggingface.co/cmjatom/dge-all-tags-tagger-nc/resolve/d4a536369b1f1eedbb7162ac92dd7240b4a2bf04/onnx/model.onnx",
-    "model.json": "https://huggingface.co/cmjatom/dge-all-tags-tagger-nc/resolve/d4a536369b1f1eedbb7162ac92dd7240b4a2bf04/onnx/model.json"
+    "model.onnx": "https://huggingface.co/cmjatom/dge-all-tags-tagger-nc/resolve/990ae7a6f39f8d2f957ebfae0af11ca8d3eb9b36/onnx/model.onnx",
+    "model.json": "https://huggingface.co/cmjatom/dge-all-tags-tagger-nc/resolve/990ae7a6f39f8d2f957ebfae0af11ca8d3eb9b36/onnx/model.json"
   },
   "sha256": {
-    "model.onnx": "09c1a2b157c85abc0a41a461493006d9ca84e060cd691db365f07bb03f792f85",
-    "model.json": "6000d309b3f136ea1e25991c9f6d326448ccc98055f37bb7bc8ecd51556d6963"
+    "model.onnx": "9a1d45948f70a30b30172ae95b8c1a354e0455a8e26e871d84d8301125f27ec3",
+    "model.json": "96b730d8f20677f959973d710c93d2fb00e43630d8b78e5a67a81ed9a19c092c"
   }
 }
