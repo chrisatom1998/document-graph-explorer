@@ -163,11 +163,20 @@ def fetch_shard(out, shard, wanted):
             text = ' '.join([t.column('title')[i].as_py() or '', ' '.join(t.column('tags')[i].as_py() or [])]).lower()
             audio = t.column('audio')[i].as_py()['bytes']
             wav = os.path.join(out, 'audio', f'fs{fid}.wav')
-            p = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-y', '-i', 'pipe:0', '-t', '10', '-ac', '1', '-ar', '48000', wav],
-                               input=audio, capture_output=True)
-            if p.returncode or not os.path.exists(wav): results.append((w, None, 'undecodable')); continue
-            p = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-i', wav, '-ac', '1', '-ar', '16000', '-f', 's16le', '-'], capture_output=True)
-            if p.returncode or not p.stdout: os.remove(wav); results.append((w, None, 'undecodable')); continue
+            try:
+                p = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-y', '-i', 'pipe:0', '-t', '10', '-ac', '1', '-ar', '48000', wav],
+                                   input=audio, capture_output=True, timeout=120)
+                ok = not p.returncode and os.path.exists(wav)
+                if ok:
+                    p = subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-i', wav, '-ac', '1', '-ar', '16000', '-f', 's16le', '-'],
+                                       capture_output=True, timeout=120)
+                    ok = not p.returncode and bool(p.stdout)
+                why = 'undecodable'
+            except subprocess.TimeoutExpired:
+                ok, why = False, 'decode timed out'
+            if not ok:
+                if os.path.exists(wav): os.remove(wav)
+                results.append((w, None, why)); continue
             pcm = p.stdout
             results.append((w, {'text': text, 'title': (t.column('title')[i].as_py() or '')[:120], 'encoded_sha256': hashlib.sha256(audio).hexdigest(),
                                 'pcm16k_sha256': hashlib.sha256(pcm).hexdigest(), 'duration_s': round(len(pcm) / 32000, 3), 'wav': wav}, None))
