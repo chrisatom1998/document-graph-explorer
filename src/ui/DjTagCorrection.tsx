@@ -1,11 +1,12 @@
 import { resolvedNonSourceLabels } from '../audio/soundReviewPolicy';
 import { confirmedInstrumentList, sourceReviewAllows } from '../audio/instrumentEvidence';
 import { useState } from 'react';
-import { DJ_CATALOG, DJ_LABELS, DJ_PICKER_LABELS, MERGED_DJ_LABELS, mergedDjLabel, soundLabelText, type ConfirmedDjTags, type DjGroup } from '../audio/djTags';
+import { DJ_CATALOG, DJ_HIDDEN_LABELS, DJ_LABELS, DJ_PICKER_LABELS, MERGED_DJ_LABELS, mergedDjLabel, soundLabelText, type ConfirmedDjTags, type DjGroup } from '../audio/djTags';
 import type { DocNode } from '../model/types';
 import { useGraphStore } from '../store/graphStore';
 const names: Record<DjGroup,string> = {source:'Source',production:'Production type',character:'Character'};
-const PICKER_COUNT = Object.values(DJ_PICKER_LABELS).flat().length;
+const PICKER_COUNT = (Object.keys(DJ_PICKER_LABELS) as DjGroup[]).reduce((n, g) => n + DJ_PICKER_LABELS[g].filter(l => !DJ_HIDDEN_LABELS.has(`${g}:${l}`)).length, 0);
+const HIDDEN_COUNT = Object.values(DJ_PICKER_LABELS).flat().length - PICKER_COUNT;
 /** Merged-away names still find the tag they now show under. */
 const MERGED_FROM: Record<string,string[]> = {};
 for (const [from, to] of Object.entries(MERGED_DJ_LABELS)) {
@@ -50,8 +51,8 @@ function DjTagEditor({node}:{node:DocNode}) {
   return <details><summary>Correct DJ tags</summary>
     <p>Save the sounds you know are present. Corrections stay separate from model guesses and are included in collection exports.</p>
     <label>Find a sound category<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Vocal chop, breath, Reese, riser…" /></label>
-    <p>{PICKER_COUNT} categories. Automatic matches are estimates; accuracy has not been established for every category.</p>
-    {(Object.keys(DJ_LABELS) as DjGroup[]).map(group=><fieldset key={group}><legend>{names[group]}</legend><div className="dj-tag-choices">{DJ_PICKER_LABELS[group].filter(label=>labels[group].includes(label) || DJ_CATALOG.some(c=>c.group===group && c.label===label && [c.label,c.family,...c.aliases,...(MERGED_FROM[`${group}:${label}`]??[])].some(v=>v.includes(query.trim().toLowerCase())))).map(label=><label key={label}><input type="checkbox" checked={labels[group].includes(label)} onChange={e=>setLabels(previous=>({...previous,[group]:e.target.checked?[...previous[group],label]:previous[group].filter(v=>v!==label)}))}/>{soundLabelText(label)}</label>)}</div></fieldset>)}
+    <p>{PICKER_COUNT} categories, plus {HIDDEN_COUNT} rarer ones that show up when you search. Automatic matches are estimates; accuracy has not been established for every category.</p>
+    {(Object.keys(DJ_LABELS) as DjGroup[]).map(group=><fieldset key={group}><legend>{names[group]}</legend><div className="dj-tag-choices">{DJ_PICKER_LABELS[group].filter(label=>labels[group].includes(label) || (!!query.trim() || !DJ_HIDDEN_LABELS.has(`${group}:${label}`)) && DJ_CATALOG.some(c=>c.group===group && c.label===label && [c.label,c.family,...c.aliases,...(MERGED_FROM[`${group}:${label}`]??[])].some(v=>v.includes(query.trim().toLowerCase())))).map(label=><label key={label}><input type="checkbox" checked={labels[group].includes(label)} onChange={e=>setLabels(previous=>({...previous,[group]:e.target.checked?[...previous[group],label]:previous[group].filter(v=>v!==label)}))}/>{soundLabelText(label)}</label>)}</div></fieldset>)}
     <button disabled={busy||phase!=='ready'} onClick={()=>void save()}>Save DJ tags</button>
     {node.audio?.confirmedDjTags && <button disabled={busy||phase!=='ready'} onClick={()=>void save(true)}>Use automatic DJ tags</button>}
     <p>These corrections do not automatically retrain the models.</p>{message&&<p role="status">{message}</p>}
