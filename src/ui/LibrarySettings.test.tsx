@@ -22,6 +22,9 @@ const track = (id: string): DocNode => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  coordinator.outdatedAudioIds.mockReturnValue(['older']);
+  // Once updated, nothing is left from an older release.
+  coordinator.analyzeAudioCorpus.mockImplementation(async () => { coordinator.outdatedAudioIds.mockReturnValue([]); });
   useGraphStore.getState().reset();
   useGraphStore.getState().addNodes(['older', 'unfinished', 'current'].map(track));
   useGraphStore.getState().setPhase('ready');
@@ -34,4 +37,13 @@ it('updates only the older tracks named by the button, leaving other unfinished 
   await waitFor(() => expect(coordinator.analyzeAudioCorpus).toHaveBeenCalledWith(['older']));
   expect(coordinator.analyzeAudioCorpus).toHaveBeenCalledTimes(1);
   expect(await screen.findByRole('status')).toHaveTextContent('Updated 1 track');
+});
+
+it('says which older tracks could not be updated instead of claiming success', async () => {
+  coordinator.outdatedAudioIds.mockReturnValue(['older', 'other']);
+  // One track fails and keeps its older results.
+  coordinator.analyzeAudioCorpus.mockImplementation(async () => { coordinator.outdatedAudioIds.mockReturnValue(['other']); });
+  render(<LibrarySettings />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Update 2 older tracks' }));
+  expect(await screen.findByRole('status')).toHaveTextContent('Updated 1 track; 1 track could not be updated. Try again.');
 });
