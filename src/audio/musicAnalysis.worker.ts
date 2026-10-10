@@ -155,7 +155,7 @@ async function warmFamily(family: string): Promise<void> {
   else if (family === 'jamendo') await Promise.all([ready, preloadJamendo(), preloadTagger()]);
   else await ready;
 }
-self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'tagger'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array; samples16?: Float32Array }>) => {
+self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; family: string } | { id: number; kind: 'rhythm' | 'tonal'; excerpts: MusicExcerpts } | { id: number; kind: 'instruments'; samples: Float32Array } | { id: number; kind: 'sound'; samples: Float32Array } | { id: number; kind: 'jamendo'; samples: Float32Array } | { id: number; kind: 'tagger'; samples: Float32Array } | { id: number; kind: 'profile'; samples: Float32Array; samples16?: Float32Array; clip?: boolean }>) => {
   const { id } = data;
   // The main thread decided this browser needs the single-thread runtime (see THREADED_RUNTIME_STALLED).
   if ((data as { singleThread?: boolean }).singleThread) switchToSingleThreadRuntime(false);
@@ -206,7 +206,7 @@ self.onmessage = async ({ data }: MessageEvent<{ id: number; kind: 'warm'; famil
         } finally { await disposeTensors(inputs); }
       }, () => self.postMessage({ id, progress: 'Applying current reviews to saved sound features' }));
       if (data.kind !== 'profile') { await postResult(soundSuggestions(embedding, prompts.filter(p => p.group === 'source'))); return; }
-      let learnedScores = learned ? learnedDjScores(embedding, learned) : [];
+      let learnedScores = learned ? learnedDjScores(embedding, learned, data.clip === true) : [];
       // A whole short clip arrives with its 16 kHz copy: score it with heads trained on one-shots.
       const short = data.samples16 && shortClip && data.samples.length <= shortClip.maxSeconds * 48000 ? shortClip : undefined;
       const oneShot = short ? await shortClipProfile(short, data.samples, data.samples16!, embedding) : [];

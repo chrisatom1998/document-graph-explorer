@@ -13,6 +13,7 @@ import { combineSoundModels } from './ensemble';
 import { descriptionStarts, fastInstrumentStarts } from './analysisPlan';
 import { detectStructure, representativeStart, StructureFeatures, STRUCTURE_MAX_SECONDS, STRUCTURE_MIN_SECONDS, STRUCTURE_RATE } from './structure';
 import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
+import { CLIP_CUTOFF_MAX_SECONDS } from './learnedDjModel';
 import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWindowEvidence, onsetCandidates, pickEventStarts } from './eventWindows';
 import { musicRuntimeIdentity } from './musicRuntime';
 import { FullMixEvidence, type FullMixModel } from './fullMixHeads';
@@ -143,6 +144,8 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
   const decodedEnd = tailStart + tail.length / 16000;
   if (tail.length && decodedEnd < duration && duration - decodedEnd <= 1) duration = decodedEnd;
   const recognition = createRecognition(duration, mode, options.audioFingerprint);
+  // Clips and samples use the sound heads' clip cutoffs; full songs keep the standard ones.
+  const clip = duration <= CLIP_CUTOFF_MAX_SECONDS;
   const result: MusicAnalysis = { version: 2, durationSeconds: duration, analyzedSeconds: 0, instruments: [], notes: [], recognition,
     tempoRevision: TEMPO_ANALYSIS_REVISION, keyRevision: KEY_ANALYSIS_REVISION };
   // Mix points: one pass over the whole recording at 16 kHz, 60 s of PCM at a time (src/audio/structure.ts).
@@ -266,7 +269,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       const hasAudio = audible(samples);
       // A whole short clip also goes to the one-shot heads, which read the unchanged 16 kHz audio.
       const samples16 = id === 'clap' && interval.start === 0 && interval.end >= duration && duration <= SHORT_CLIP_MAX_SECONDS ? await read(0, duration, 16000) : undefined;
-      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}), ...(id === 'ast' ? { gpu: true } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
+      output = await request({ kind: id === 'ast' ? 'instruments' : id === 'clap' ? 'profile' : 'jamendo', samples, ...(samples16 ? { samples16 } : {}), ...(id === 'clap' && clip ? { clip } : {}), ...(id === 'ast' ? { gpu: true } : {}) }, samples16 ? [samples.buffer, samples16.buffer] : [samples.buffer]);
       if (!hasAudio) output = id === 'ast' ? { scores: {}, musicScore: 0 } : id === 'clap' ? [] : {};
       check(); cache.set(key, output);
     }
@@ -397,7 +400,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
           const samples = await read(interval.start, seconds, 48000), samples16 = await read(interval.start, seconds, 16000);
           check();
           if (!audible(samples) || samples.length < Math.round(seconds * 48000) - 1) continue;
-          output = await request<DescriptionScore[]>({ kind: 'profile', samples, samples16 }, [samples.buffer, samples16.buffer]);
+          output = await request<DescriptionScore[]>({ kind: 'profile', samples, samples16, ...(clip ? { clip } : {}) }, [samples.buffer, samples16.buffer]);
           check(); cache.set(key, output);
         }
         output = splitEmbedding(output).scores;

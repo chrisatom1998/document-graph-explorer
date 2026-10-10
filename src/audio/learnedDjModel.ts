@@ -28,7 +28,12 @@ export interface LearnedDjHead {
   /** Also tested on held-out whole clips of at most the one-shot length (scripts/dj-effects/oneshot.py), so it still
    *  scores those clips; other heads stay off them and only the one-shot heads (short-clip.json) apply. */
   oneShot?: boolean;
+  /** Lower cutoff for clips and samples (recordings up to CLIP_CUTOFF_MAX_SECONDS), tuned on a separate check set and
+   *  scored on held-out clips. Longer recordings (full songs) keep `threshold`, so their tags do not change. */
+  clipThreshold?: number;
 }
+/** Recordings up to this long count as clips or samples for a head's `clipThreshold`; full songs run longer. */
+export const CLIP_CUTOFF_MAX_SECONDS = 60;
 const groups: ReviewedGroup[] = ['source', 'production', 'character'];
 interface ReviewedIndex { group: ReviewedGroup; label: string; decisions: Int8Array }
 // Published models are immutable snapshots. A newly loaded model gets its own
@@ -71,13 +76,15 @@ export function sanitizeLearnedDjModel(raw: unknown): LearnedDjModel | undefined
   if (model.heads !== undefined && (!Array.isArray(model.heads) || model.heads.length > 2000 || model.heads.some(h =>
     !h || !groups.includes(h.group) || typeof h.label !== 'string' || !h.label || h.label.length > 80 ||
     !Array.isArray(h.weights) || h.weights.length !== 512 || !h.weights.every(Number.isFinite) ||
-    !Number.isFinite(h.bias) || !Number.isFinite(h.threshold) || h.threshold < .5 || h.threshold > 1 || (h.maybe !== undefined && typeof h.maybe !== 'boolean') || (h.oneShot !== undefined && typeof h.oneShot !== 'boolean')))) return;
+    !Number.isFinite(h.bias) || !Number.isFinite(h.threshold) || h.threshold < .5 || h.threshold > 1 || (h.maybe !== undefined && typeof h.maybe !== 'boolean') || (h.oneShot !== undefined && typeof h.oneShot !== 'boolean') ||
+    (h.clipThreshold !== undefined && (!Number.isFinite(h.clipThreshold) || h.clipThreshold < .5 || h.clipThreshold >= h.threshold))))) return;
   return {version:1,encoder:model.encoder,revision:model.revision,examples,...(model.heads ? {heads:model.heads} : {})};
 }
 /** Conservative exemplar classifier over frozen CLAP features; not base-model fine-tuning.
  * Positive and negative evidence compete independently for each reviewed label.
+ * `clip`: the whole recording is a clip or sample (at most CLIP_CUTOFF_MAX_SECONDS), so heads use their clip cutoff.
  */
-export function learnedDjScores(embedding: ArrayLike<number>, model: LearnedDjModel): DescriptionScore[] {
+export function learnedDjScores(embedding: ArrayLike<number>, model: LearnedDjModel, clip = false): DescriptionScore[] {
   if (embedding.length !== 512) return [];
   const vector = Array.from(embedding); const norm = Math.hypot(...vector);
   if (!norm || !Number.isFinite(norm)) return [];
@@ -107,7 +114,7 @@ export function learnedDjScores(embedding: ArrayLike<number>, model: LearnedDjMo
     if (results.some(r => r.learnedGroup === head.group && r.label === head.label)) continue;
     const logit = head.bias + head.weights.reduce((sum,w,i) => sum + w * vector[i] / norm, 0);
     const score = 1 / (1 + Math.exp(-Math.max(-35,Math.min(35,logit))));
-    if (score >= head.threshold) results.push({group:'dj-learned',label:head.label,score,learnedGroup:head.group,decision:'include',basis:'head',...(head.maybe ? {maybe:true} : {})});
+    if (score >= (clip && head.clipThreshold !== undefined ? head.clipThreshold : head.threshold)) results.push({group:'dj-learned',label:head.label,score,learnedGroup:head.group,decision:'include',basis:'head',...(head.maybe ? {maybe:true} : {})});
   }
   return results;
 }
