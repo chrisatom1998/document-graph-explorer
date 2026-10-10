@@ -14,7 +14,7 @@ copy is kept, the others are dropped and their tags merge into it.
 NC supplement (Chris 2026-10-10: training may use any licence): the CED mapped list's CC BY-NC rows (score >= 0.5)
 for the TARGETS tags, which stage-run9.py dropped for licence. They pass the same train-side exclusions as
 stage-run9.py (imported from RUN9_SHA), the same caps (15 per uploader; a tag's CED mapped rows stay <= 400 in total),
-and their uploader must not be held out anywhere in the staged manifests. Staged under <OUT>/nc-supplement/ like
+and their uploader must not be held out anywhere in the staged manifests. Staged under <IN>/nc-supplement/ like
 stage-run9.py does (Freesound preview MP3) and audited the same way. Weights trained on them stay CC BY-NC-SA.
 Never uploads unless the repo is private. No held-out audio is read except the staged held-out rows themselves.
 """
@@ -150,15 +150,15 @@ def stage_nc(st, sha, staged_rows):
             out.add({'id': f'freesound:{i}', 'source': 'freesound', 'group': f"freesound-user:{v['user']}", 'split': 'train', 'tags': '|'.join(sorted(v['tags'])),
                      'licence': v['lic'], 'score': v['score'], 'url': f"https://freesound.org/people/{v['user']}/sounds/{i}/", 'route': 'ced-mapped-nc'}, b, 'mp3')
     folder = out.close({'removed': dict(why), 'sounds': len(sounds), 'staged': got, 'note': 'CED mapped CC BY-NC rows; unreviewed'})
-    st.upload(folder, f'{OUT}/nc-supplement', f'Run 9 NC supplement: {got} sounds')
-    return f'{OUT}/nc-supplement', dict(why)
+    st.upload(folder, f'{IN}/nc-supplement', f'Run 9 NC supplement: {got} sounds')   # beside the staged parts, so RUN9_DATA picks it up
+    return f'{IN}/nc-supplement', dict(why)
 
 
 def main():
     if not api.repo_info(REPO, repo_type='dataset').private: sys.exit('staging repo is not private; refusing')
     st, sha = load_stage()
     parts = sorted({os.path.dirname(f) for f in api.list_repo_files(REPO, repo_type='dataset')
-                    if f.startswith(IN + '/') and f.endswith('/manifest.csv')})
+                    if f.startswith(IN + '/') and f.endswith('/manifest.csv') and not f.startswith(IN + '/nc-supplement/')})
     print('staged parts:', parts, flush=True)
     staged = []
     for p in parts:
