@@ -31,6 +31,7 @@ on:
       extra_sets: { description: 'space-separated run 7 sets: vcsl slakh_more sao (VCSL CC0, more Slakh tracks, private Stable Audio Open clips)', default: '' }
       fsnew_data: { description: 'PRIVATE HF dataset <repo>:<folder> with staged Freesound sounds for tags with little or no audio (stage-freesound.py); empty = none', default: '' }
       run9_data: { description: 'PRIVATE HF dataset <repo>:<folder> with run 9 staged audio (stage-run9.py); empty = none', default: '' }
+      run9_audit: { description: 'PRIVATE HF dataset <repo>:<path> of run9-audit.py manifest-audited.csv (keeps only audited items); empty = none', default: '' }
   push:
     branches: ['claude/train-audio-model-*']
     paths: ['.github/workflows/audio-model-train.yml']
@@ -98,7 +99,7 @@ jobs:
           RAWSTEMS_FX=${{ inputs.rawstems_fx || '0' }} IOWA=${{ inputs.iowa == 'true' && '1' || '0' }}
           CHRIS_DATA=${{ inputs.chris_data || '' }} SOURCE_REPEAT=${{ inputs.source_repeat || '' }}
           VCSL=${{ contains(inputs.extra_sets, 'vcsl') && '1' || '0' }} SLAKH_MORE=${{ contains(inputs.extra_sets, 'slakh_more') && '1' || '0' }}
-          SAO=${{ contains(inputs.extra_sets, 'sao') && '1' || '0' }} FSNEW_DATA=${{ inputs.fsnew_data || '' }} RUN9_DATA=${{ inputs.run9_data || '' }}
+          SAO=${{ contains(inputs.extra_sets, 'sao') && '1' || '0' }} FSNEW_DATA=${{ inputs.fsnew_data || '' }} RUN9_DATA=${{ inputs.run9_data || '' }} RUN9_AUDIT=${{ inputs.run9_audit || '' }}
       - name: Stop the Hugging Face job if this workflow is cancelled
         if: ${{ cancelled() }}
         env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }

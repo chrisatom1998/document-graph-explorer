@@ -126,11 +126,17 @@ def init_worker():
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('staged'); ap.add_argument('out'); ap.add_argument('--workers', type=int, default=6); ap.add_argument('--limit', type=int, default=0)
+    ap.add_argument('--audit', default='', help="run9-audit.py's manifest-audited.csv: keep only its keep=1 items, with its merged tags")
     args = ap.parse_args(); os.makedirs(args.out, exist_ok=True)
     rows = []
     for part in sorted(os.listdir(args.staged)):
         m = os.path.join(args.staged, part, 'manifest.csv')
         if os.path.exists(m): rows += [dict(r, part=part) for r in csv.DictReader(open(m))]
+    if args.audit:   # duplicate audio, training copies of held-out audio and groups on both sides are dropped there
+        aud = {(os.path.basename(a['part']), a['id']): a for a in csv.DictReader(open(args.audit))}
+        before = len(rows)
+        rows = [dict(r, tags=aud[r['part'], r['id']]['tags']) for r in rows if aud.get((r['part'], r['id']), {}).get('keep') == '1']
+        print(f'run9: audit keeps {len(rows)} of {before} staged items', flush=True)
     if args.limit: rows = rows[::max(1, len(rows) // args.limit)]
     known = set(CAT) | set(EXTRA_CAT)
     for r in rows: r['own'] = sorted(set(r['tags'].split('|')) & known)

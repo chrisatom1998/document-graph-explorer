@@ -18,6 +18,7 @@
 # staged Freesound sounds for tags with little or no audio (stage-freesound.py, prepare-fsnew.py) and scores their heldout rows (eval-fsnew).
 # Run 9: RUN9_DATA=<private dataset>:<folder> adds the staged run 9 audio (stage-run9.py, prepare-run9.py: Freesound keyword and
 # CED-base checked rows, labelled sets, code renders; unreviewed) and scores its held-out split (eval-run9).
+# RUN9_AUDIT=<private dataset>:<path of manifest-audited.csv> (run9-audit.py) keeps only the audited items.
 set -euo pipefail
 START=$(date +%s)
 export DEBIAN_FRONTEND=noninteractive
@@ -66,7 +67,8 @@ fi
 RN_PID=
 if [ -n "${RUN9_DATA:-}" ]; then   # private staged run 9 audio (stage-run9.py): Freesound keyword / CED rows and labelled sets
   ( python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='r9stage', max_workers=16)" "$RUN9_DATA" \
-    && python3 $S/prepare-run9.py "r9stage/${RUN9_DATA#*:}" r9prep --workers 6 && rm -rf r9stage ) > run9.log 2>&1 & RN_PID=$!
+    && if [ -n "${RUN9_AUDIT:-}" ]; then python3 -c "import sys, shutil; from huggingface_hub import hf_hub_download as d; r, f = sys.argv[1].split(':'); shutil.copy(d(r, f, repo_type='dataset'), 'run9-audited.csv')" "$RUN9_AUDIT"; fi \
+    && python3 $S/prepare-run9.py "r9stage/${RUN9_DATA#*:}" r9prep --workers 6 ${RUN9_AUDIT:+--audit run9-audited.csv} && rm -rf r9stage ) > run9.log 2>&1 & RN_PID=$!
 fi
 CACHE_PID=
 if python3 - "$KEY" $DIRS <<'PY'
