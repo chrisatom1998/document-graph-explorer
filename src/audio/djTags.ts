@@ -18,6 +18,7 @@ export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: 
   'production:vocal breath': { group: 'source', label: 'breath' },
   'source:noise': { group: 'production', label: 'static noise' },
   'production:synth stab': { group: 'production', label: 'synth hit' },
+  'production:downlifter': { group: 'character', label: 'falling' },
 };
 export const mergedDjLabel = (group: DjGroup, label: string): { group: DjGroup; label: string } => MERGED_DJ_LABELS[`${group}:${label}`] ?? { group, label };
 /** Labels people can pick: the catalog minus the merged names. */

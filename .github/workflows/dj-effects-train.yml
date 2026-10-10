@@ -167,7 +167,9 @@ jobs:
           json.dump(out, open('work/fs/durations.json', 'w')); print(len(out), 'durations;', sum(v <= 2.25 for v in out.values()), 'at most 2.25 s')
           EOF
       - name: Train and score on held-out uploaders
+        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }  # live training chart; steps run without it when the secret is absent
         run: |
+          pip install -q trackio==0.42.0 || echo "live charts off: trackio install failed"
           cp work/remb/emb-r*.jsonl work/emb/
           DURATIONS=work/fs/durations.json python3 scripts/dj-effects/train.py work/fs/manifest.json work/emb "$DOCS" work/render/manifest.json
       - name: Record the clip list with licences
