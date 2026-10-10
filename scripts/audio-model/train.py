@@ -81,6 +81,7 @@ def load_source(name, mel_path, items, weak):
 
 def masked_ap(scores, y, w):
     from sklearn.metrics import average_precision_score
+    y = (y >= 0.5).astype(np.float32)   # teacher soft targets (--soft) are scored as the hard label they round to
     aps = {}
     for j, c in enumerate(CLASSES):
         k = w[:, j] > 0 if c.startswith('jamendo:') or c[4:] in FREESOUND else w[:, j] >= 1   # strong labels only, except tags with no outright absences
