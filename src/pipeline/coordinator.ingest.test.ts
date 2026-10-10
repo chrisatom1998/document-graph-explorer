@@ -1083,6 +1083,26 @@ describe('WAV music ingestion', () => {
     await setAudioDjTags(node.id);
     expect(current().soundReviews).toEqual(history);
   });
+  it('lets a saved falling correction supersede a historical downlifter rejection', async () => {
+    await ingestFiles([wav('downlifter-review.wav')]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    useGraphStore.getState().patchNodes(new Map([[node.id, { audio: { ...node.audio!, recognition: createRecognition(node.audio!.durationSeconds, 'full') } }]]));
+    await setAudioReview(node.id, 'downlifter', 'effect', 'rejected');
+    const current = () => useGraphStore.getState().nodes.find(n => n.id === node.id)!.audio!;
+    const original = current().soundReviews![0];
+    await setAudioDjTags(node.id, { source: [], production: [], character: ['falling'] });
+    expect(latestSoundReview(current().soundReviews, 'character', 'falling')?.decision).toBe('confirmed');
+    expect(resolvedNonSourceLabels(current())).toContainEqual({ group: 'character', label: 'falling', source: 'confirmed' });
+    expect(current().soundReviews?.[0]).toEqual(original);
+    const restored = sanitizeMusicAnalysis(JSON.parse(JSON.stringify(current())))!;
+    expect(resolvedNonSourceLabels(restored)).toContainEqual({ group: 'character', label: 'falling', source: 'confirmed' });
+    const history = current().soundReviews;
+    await setAudioDjTags(node.id, { source: [], production: [], character: ['falling'] });
+    expect(current().soundReviews).toEqual(history);
+    await setAudioDjTags(node.id, { source: [], production: [], character: [] });
+    expect(latestSoundReview(current().soundReviews, 'character', 'falling')?.decision).toBe('rejected');
+    expect(resolvedNonSourceLabels(current())).toEqual([]);
+  });
   it('refuses a character correction atomically when reconciliation would exceed the review history limit', async () => {
     await ingestFiles([wav('character-review-limit.wav')]);
     const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;

@@ -11,7 +11,7 @@ import { isRuleDescribedLabel } from './timbreDescriptions';
 
 export const labelKey = (label: string) => label.replaceAll('_', ' ').toLowerCase();
 const displayedLabelKey = (label: string) => sharedSoundReviewIdentity('source', labelKey(label))
-  ?? sharedSoundReviewIdentity('effect', labelKey(label)) ?? labelKey(label);
+  ?? sharedSoundReviewIdentity('effect', labelKey(label)) ?? sharedSoundReviewIdentity('character', labelKey(label)) ?? labelKey(label);
 export type MatchOrigin = 'confirmed' | 'sounds' | 'maybe' | 'filename' | 'guess' | 'unverified';
 export interface MatchLabel { group: DjGroup; label: string; origin: MatchOrigin; weight: number }
 /** How strongly each origin counts toward a link. None of these are probabilities. */

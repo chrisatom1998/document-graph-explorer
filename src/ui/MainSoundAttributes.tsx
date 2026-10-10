@@ -4,7 +4,7 @@ import type { MusicAnalysis } from '../audio/musicTypes';
 import { KEY_NAMES, keyName } from '../audio/musicTypes';
 import { musicNameHints } from '../audio/nameHints';
 import { confirmedInstrumentList } from '../audio/instrumentEvidence';
-import { canonicalDjLabel, soundLabelText } from '../audio/djTags';
+import { canonicalDjLabel, mergedDjLabel, sanitizeConfirmedDjTags, soundLabelText } from '../audio/djTags';
 import { latestSoundReview, projectedCopilotProperties } from '../audio/soundReviewPolicy';
 import { fusionPresentation } from '../audio/fusionPresentation';
 import { isRuleDescribedLabel } from '../audio/timbreDescriptions';
@@ -26,14 +26,21 @@ const canonical = (dimension: Dimension, label: string) => dimension === 'effect
 /** All saved label evidence, visibly attributed. This does not decide the Sounds tags or mutate analysis. */
 export function soundAttributeRows(audio: MusicAnalysis, node: Pick<DocNode,'title'|'path'>): Attribute[] {
   const rows = new Map<string,Attribute>();
-  const confirmed = confirmedInstrumentList(audio);
+  const confirmedTags = sanitizeConfirmedDjTags(audio.confirmedDjTags);
+  const confirmed = confirmedInstrumentList(confirmedTags ? {...audio,confirmedDjTags:confirmedTags,confirmedInstruments:confirmedTags.source} : audio);
   const add = (dimension: Dimension, raw: string, evidence: string, evidenceScore?: number, probabilityLike = false) => {
-    const label = canonical(dimension,raw), key = `${dimension}:${label}`;
+    let label = canonical(dimension,raw);
+    if (dimension === 'source' || dimension === 'effect' || dimension === 'character') {
+      const merged = mergedDjLabel(dimension === 'effect' ? 'production' : dimension,label);
+      dimension = merged.group === 'production' ? 'effect' : merged.group;
+      label = merged.label;
+    }
+    const key = `${dimension}:${label}`;
     const row = rows.get(key) ?? {dimension,label,evidence:new Set<string>()};
     const review = latestSoundReview(audio.soundReviews,dimension,label);
     row.review = review ? `${review.decision === 'uncertain' ? 'unsure' : review.decision} by you`
       : dimension === 'source' && confirmed !== undefined ? confirmed.includes(label) ? 'confirmed by you' : 'superseded by your source corrections'
-      : dimension !== 'source' && audio.confirmedDjTags !== undefined ? audio.confirmedDjTags[dimension === 'character' ? 'character' : 'production'].includes(label) ? 'confirmed by you' : 'superseded by your sound corrections'
+      : dimension !== 'source' && confirmedTags !== undefined ? confirmedTags[dimension === 'character' ? 'character' : 'production'].includes(label) ? 'confirmed by you' : 'superseded by your sound corrections'
       : undefined;
     if (dimension === 'vocal' && !review) {
       const voiceReview=latestSoundReview(audio.soundReviews,'source','voice');
@@ -147,3 +154,4 @@ export default function MainSoundAttributes({audio,node}:{audio:MusicAnalysis;no
     </div>
   </section>;
 }
+
