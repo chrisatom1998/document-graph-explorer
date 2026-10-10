@@ -109,8 +109,8 @@ jobs:
           EVENT: ${{ github.event_name }}
         run: |
           # Jamendo tracks are 30 s (three analysis windows), about 30 s each to analyse; MTG key excerpts are 10 s.
-          # About 15 Jamendo tracks or 40 MTG key excerpts per job (8-15 min each, plus ~1.5 min setup), so a PR's
-          # 18 jobs finish in one round on the account's 40 runners.
+          # About 15 Jamendo tracks or 40 MTG key excerpts per job (8-15 min each, plus ~1.5 min setup). A PR whose base
+          # numbers are cached runs 18 jobs, one round on the account's 40 runners; analysing the base too doubles that.
           node -e '
             const { MODE, HEAD_SHA, BASE, BASE_CACHED, EVENT } = process.env;
             const sides = [["head", HEAD_SHA]];
@@ -229,8 +229,9 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      # The PR slice (18 jobs) runs all at once, so its verdict is one round. Main's full set and labelled full runs
-      # (28 jobs, report only) take 14 at a time, leaving the rest of the account's 40 runners to PRs and CI.
+      # A PR slice with cached base numbers (18 jobs) runs all at once, one round; with the base analysed too (36) it
+      # takes two. Main's full set (28 jobs, report only) and labelled full runs take 14 at a time, leaving the rest
+      # of the account's 40 runners to PRs and CI.
       max-parallel: ${{ inputs.mode == 'fast' && 18 || 14 }}
       matrix:
         include: ${{ fromJSON(needs.plan.outputs.matrix) }}
