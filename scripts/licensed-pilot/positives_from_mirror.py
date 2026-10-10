@@ -209,7 +209,7 @@ def fetch(out, workers):
     with ThreadPoolExecutor(workers) as ex:
         for n, results in enumerate(ex.map(lambda s: fetch_shard(out, s, by_shard[s]), sorted(by_shard))):
             for w, got, err in results:
-                if err: why[err if 'mismatch' not in err else 'row order mismatch'] += 1; continue
+                if err: why['row order mismatch' if err.startswith('row order mismatch') else err] += 1; continue
                 lab, ev = label(w, got)
                 if not lab:
                     why[ev] += 1; os.remove(got['wav']); continue
