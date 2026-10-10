@@ -4,7 +4,7 @@ import { SHORT_CLIP_MAX_SECONDS } from './shortClipModel';
 
 export type ClipShape = 'loop' | 'one-shot';
 export const CLIP_SHAPES: readonly ClipShape[] = ['loop', 'one-shot'];
-type ShapeNode = Pick<DocNode, 'path' | 'title' | 'audio'>;
+type ShapeNode = Pick<DocNode, 'path' | 'title' | 'audio' | 'fileType'>;
 
 const clean = (name: string) => name.replace(/[_()[\]{}-]+/g, ' ').replace(/\s+/g, ' ').trim();
 const ONE_SHOT_WORD = /\b(?:one ?shots?|1 ?shots?)\b/i;
@@ -39,12 +39,14 @@ const cache = new WeakMap<ShapeNode, ClipShape | null>();
  * whole bars at a steady tempo is a loop, and a short clip that does not is a one-shot. Anything else (songs,
  * long one-shots with no name hint, loops cut off-grid) stays unknown rather than guessed. */
 export function clipShape(node: ShapeNode): ClipShape | undefined {
-  if (!node.audio) return undefined;
+  if (node.fileType !== 'audio') return undefined;
   const hit = cache.get(node);
   if (hit !== undefined) return hit ?? undefined;
+  // The name needs no analysis, so it also covers clips still being analysed or whose analysis failed.
   let shape = namedShape(node);
-  if (!shape) {
-    const seconds = node.audio.durationSeconds;
+  const seconds = node.audio?.durationSeconds ?? 0;
+  // A quick preview can carry a duration of 0 before the length is known; that is not a short clip.
+  if (!shape && node.audio && Number.isFinite(seconds) && seconds > 0) {
     const { tempo } = resolveTempoKey(node);
     const steady = tempo && tempo.confidence >= 0.5 ? [tempo.bpm, ...(tempo.alternatives ?? [])] : [];
     if (seconds <= LOOP_MAX_SECONDS && steady.some(bpm => lastsWholeBars(seconds, bpm))) shape = 'loop';

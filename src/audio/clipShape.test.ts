@@ -27,6 +27,13 @@ describe('clipShape', () => {
     expect(clipShape(clip('Pack/pad.wav', 9.3, { bpm: 120, confidence: 0.8 }))).toBeUndefined();
     expect(clipShape(clip('Music/song.mp3', 240, { bpm: 120, confidence: 0.9 }))).toBeUndefined();
   });
+  it('reads the name before analysis finishes, and ignores a preview with no length yet', () => {
+    const pending = { ...clip('Pack/Drum Loops/kick.wav', 1), audio: undefined };
+    expect(clipShape(pending)).toBe('loop');
+    expect(clipShape({ ...clip('Pack/kick.wav', 1), audio: undefined })).toBeUndefined();
+    expect(clipShape(clip('Pack/song.wav', 0))).toBeUndefined();
+    expect(clipShape({ ...clip('Docs/Loops/notes.md', 1), fileType: 'md' })).toBeUndefined();
+  });
   it('calls a short clip off the grid a one-shot', () => {
     expect(clipShape(clip('Pack/kick.wav', 0.6, { bpm: 120, confidence: 0.8 }))).toBe('one-shot');
     expect(clipShape(clip('Pack/hit.wav', 1.2))).toBe('one-shot');
