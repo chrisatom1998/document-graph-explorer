@@ -1103,6 +1103,17 @@ describe('WAV music ingestion', () => {
     expect(latestSoundReview(current().soundReviews, 'character', 'falling')?.decision).toBe('rejected');
     expect(resolvedNonSourceLabels(current())).toEqual([]);
   });
+  it('does not reject vinyl scratch through a historical turntable source review when corrections keep it', async () => {
+    await ingestFiles([wav('turntable-review.wav')]);
+    const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;
+    useGraphStore.getState().patchNodes(new Map([[node.id, { audio: { ...node.audio!, recognition: createRecognition(node.audio!.durationSeconds, 'full') } }]]));
+    await setAudioReview(node.id, 'turntable', 'source', 'confirmed');
+    const current = () => useGraphStore.getState().nodes.find(n => n.id === node.id)!.audio!;
+    const history = current().soundReviews;
+    await setAudioDjTags(node.id, { source: [], production: ['vinyl scratch'], character: [] });
+    expect(current().soundReviews).toEqual(history);
+    expect(latestSoundReview(current().soundReviews, 'effect', 'vinyl scratch')?.decision).toBe('confirmed');
+  });
   it('refuses a character correction atomically when reconciliation would exceed the review history limit', async () => {
     await ingestFiles([wav('character-review-limit.wav')]);
     const node = useGraphStore.getState().nodes.find(n => n.fileType === 'audio')!;

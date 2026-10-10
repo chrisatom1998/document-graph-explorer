@@ -2218,10 +2218,11 @@ export function setAudioDjTags(id: string, labels?: ConfirmedDjTags): Promise<bo
     const reviewedLabels=new Map<string, {labelId:string;dimension:'source'|'character'}>();
     for(const review of audio.soundReviews??[]){
       let dimension=review.dimension, labelId=canonicalReviewLabel(dimension,review.labelId);
-      if(dimension==='effect'){
-        const merged=mergedDjLabel('production',labelId);
-        if(merged.group!=='character')continue;
-        dimension='character';labelId=merged.label;
+      if(dimension==='effect'||dimension==='source'){
+        // A source label merged into an effect (e.g. turntable into vinyl scratch) is not reconciled here, like other effects.
+        const merged=mergedDjLabel(dimension==='effect'?'production':'source',labelId);
+        if(merged.group==='production')continue;
+        dimension=merged.group;labelId=merged.label;
       }
       if(dimension!=='source'&&dimension!=='character')continue;
       reviewedLabels.set(`${dimension}:${labelId}`,{labelId,dimension});
