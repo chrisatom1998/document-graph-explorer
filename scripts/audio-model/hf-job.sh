@@ -107,12 +107,15 @@ if [ -n "${FSNEW_DATA:-}" ]; then   # private staged Freesound sounds for tags w
 fi
 RN_PID=
 R10_PID=
+LOOKALIKES=; LOOK_KEY=
+if [ "${ROUND12:-0}" = 1 ]; then   # round 12's extra look-alike groups change run 9's prepared labels, so they are part of its cache key
+  LOOKALIKES=$S/round12/round12.json; LOOK_KEY=$(python3 -c "import json, sys; print(json.dumps(json.load(open(sys.argv[1]))['lookalikes']))" $LOOKALIKES | sha256sum | cut -c1-16)
+fi
 if [ -n "${RUN9_DATA:-}" ]; then   # private staged run 9 audio (stage-run9.py): Freesound keyword / CED rows and labelled sets
-  R12_LOOK=; [ "${ROUND12:-0}" = 1 ] && R12_LOOK=$S/round12/round12.json
-  ( from_cache run9 r9prep prepare-run9.py --data "$RUN9_DATA" ${RUN9_AUDIT:+--data "$RUN9_AUDIT"} ${R12_LOOK:+--file "$R12_LOOK"} \
+  ( from_cache run9 r9prep prepare-run9.py --data "$RUN9_DATA" ${RUN9_AUDIT:+--data "$RUN9_AUDIT"} ${LOOKALIKES:+--arg "lookalikes=$LOOK_KEY"} \
     || { python3 -c "import sys; from huggingface_hub import snapshot_download as d; r, f = sys.argv[1].split(':'); d(r, repo_type='dataset', allow_patterns=[f + '/*'], local_dir='r9stage', max_workers=16)" "$RUN9_DATA" \
     && if [ -n "${RUN9_AUDIT:-}" ]; then python3 -c "import sys, shutil; from huggingface_hub import hf_hub_download as d; r, f = sys.argv[1].split(':'); shutil.copy(d(r, f, repo_type='dataset'), 'run9-audited.csv')" "$RUN9_AUDIT"; fi \
-    && python3 $S/prepare-run9.py "r9stage/${RUN9_DATA#*:}" r9prep --workers 6 ${RUN9_AUDIT:+--audit run9-audited.csv} ${R12_LOOK:+--lookalikes $R12_LOOK} && rm -rf r9stage && to_cache run9 r9prep run9.log; } ) > run9.log 2>&1 & RN_PID=$!
+    && python3 $S/prepare-run9.py "r9stage/${RUN9_DATA#*:}" r9prep --workers 6 ${RUN9_AUDIT:+--audit run9-audited.csv} ${LOOKALIKES:+--lookalikes $LOOKALIKES} && rm -rf r9stage && to_cache run9 r9prep run9.log; } ) > run9.log 2>&1 & RN_PID=$!
 fi
 CACHE_PID=
 if python3 - "$KEY" $DIRS <<'PY'
@@ -178,15 +181,13 @@ if [ -n "$SAO_PID" ]; then wait $SAO_PID || { tail -n 30 sao.log; exit 1; }; tai
 if [ -n "$FN_PID" ]; then wait $FN_PID || { tail -n 30 fsnew.log; exit 1; }; tail -n 3 fsnew.log; EXTRA+=(--extra fsnew=fnprep); fi
 if [ -n "$RN_PID" ]; then wait $RN_PID || { tail -n 30 run9.log; exit 1; }; tail -n 4 run9.log; EXTRA+=(--extra fs9=r9prep --extra ls9=r9prep); fi
 if [ "${ROUND12:-0}" = 1 ]; then   # round 12: empty-tag train audio, staged train-only (test filtering ran in the project container)
-  # Cached like the other sources; the FSD50K eval check ran when the cached copy was built (its script and inputs are in the key).
-  if ! from_cache emptytags etprep prepare-run9.py --data cmjatom/dge-private-train:empty-tags/v1 ${RUN9_AUDIT:+--data "$RUN9_AUDIT"} \
-       --file $S/round12/round12.json --file $S/round12/check-fsd50k-eval.py --arg "et no-renders" > emptytags.log 2>&1; then
+  python3 -c "from huggingface_hub import hf_hub_download as d; import shutil; shutil.copy(d('cmjatom/dge-private-train', 'run9/v1-audit/manifest-audited.csv', repo_type='dataset'), 'r9-guard.csv')"
+  python3 -c "from huggingface_hub import snapshot_download as d; d('cmjatom/dge-private-train', repo_type='dataset', allow_patterns=['empty-tags/v1/*/manifest.csv', 'empty-tags/v1/*/*/manifest.csv'], local_dir='etguard')"
+  python3 $S/round12/check-fsd50k-eval.py etguard r9-guard.csv || exit 1   # runs on every job, cache hit or not
+  if ! from_cache emptytags etprep prepare-run9.py --data cmjatom/dge-private-train:empty-tags/v1 --arg "prefix=et no-renders" --arg "lookalikes=$LOOK_KEY" > emptytags.log 2>&1; then
     python3 -c "from huggingface_hub import snapshot_download as d; d('cmjatom/dge-private-train', repo_type='dataset', allow_patterns=['empty-tags/v1/*'], local_dir='etdl', max_workers=16)"
     mkdir -p etstage; for m in $(find etdl/empty-tags/v1 -name manifest.csv); do d=$(dirname $m); mv "$d" "etstage/$(echo ${d#etdl/empty-tags/v1/} | tr / -)"; done
-    if [ -n "${RUN9_AUDIT:-}" ] && [ ! -f run9-audited.csv ]; then   # run 9 came from the cache, so its audit list was not fetched
-      python3 -c "import sys, shutil; from huggingface_hub import hf_hub_download as d; r, f = sys.argv[1].split(':'); shutil.copy(d(r, f, repo_type='dataset'), 'run9-audited.csv')" "$RUN9_AUDIT"; fi
-    python3 $S/round12/check-fsd50k-eval.py etstage ${RUN9_AUDIT:+run9-audited.csv} || exit 1
-    python3 $S/prepare-run9.py etstage etprep --workers 6 --prefix et --no-renders --lookalikes $S/round12/round12.json >> emptytags.log 2>&1 || { tail -n 30 emptytags.log; exit 1; }
+    python3 $S/prepare-run9.py etstage etprep --workers 6 --prefix et --no-renders --lookalikes $LOOKALIKES >> emptytags.log 2>&1 || { tail -n 30 emptytags.log; exit 1; }
     rm -rf etdl etstage; to_cache emptytags etprep emptytags.log
   fi
   tail -n 3 emptytags.log; ET_PID=done; EXTRA+=(--extra etfs9=etprep --extra etls9=etprep)
