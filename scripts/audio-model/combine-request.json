@@ -4,7 +4,8 @@
     "all-tags-run5",
     "all-tags-run7",
     "all-tags-run8",
-    "all-tags-run9"
+    "all-tags-run9",
+    "all-tags-run11"
   ],
   "only": {
     "all-tags-run7": [
@@ -23,6 +24,10 @@
       "cat:bell",
       "cat:water ambience",
       "cat:fm synth"
+    ],
+    "all-tags-run11": [
+      "cat:bass guitar",
+      "cat:machine ambience"
     ]
   },
   "pin": {
@@ -35,5 +40,5 @@
   "license": "cc-by-nc-sa-4.0",
   "flavor": "cpu-xl",
   "timeout": "5h",
-  "attempt": 9
+  "attempt": 10
 }
