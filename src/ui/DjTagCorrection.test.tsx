@@ -20,4 +20,7 @@ it('finds a merged tag by the old name and its aliases', () => {
     fireEvent.change(screen.getByRole('searchbox'),{target:{value}});
     expect(screen.getByLabelText('choir')).toBeDefined();
   }
+  fireEvent.change(screen.getByRole('searchbox'),{target:{value:'303 bass'}});
+  expect(screen.getByLabelText('acid synth')).toBeDefined();
+  expect(screen.queryByLabelText('acid bass')).toBeNull();
 });
