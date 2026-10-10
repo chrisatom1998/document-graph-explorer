@@ -181,9 +181,14 @@ if [ -n "$SAO_PID" ]; then wait $SAO_PID || { tail -n 30 sao.log; exit 1; }; tai
 if [ -n "$FN_PID" ]; then wait $FN_PID || { tail -n 30 fsnew.log; exit 1; }; tail -n 3 fsnew.log; EXTRA+=(--extra fsnew=fnprep); fi
 if [ -n "$RN_PID" ]; then wait $RN_PID || { tail -n 30 run9.log; exit 1; }; tail -n 4 run9.log; EXTRA+=(--extra fs9=r9prep --extra ls9=r9prep); fi
 if [ "${ROUND12:-0}" = 1 ]; then   # round 12: empty-tag train audio, staged train-only (test filtering ran in the project container)
-  python3 -c "from huggingface_hub import hf_hub_download as d; import shutil; shutil.copy(d('cmjatom/dge-private-train', 'run9/v1-audit/manifest-audited.csv', repo_type='dataset'), 'r9-guard.csv')"
+  GUARD=(etguard)   # the FSD50K eval check reads the lists this job actually trains on
+  if [ -n "${RUN9_DATA:-}" ]; then
+    [ -n "${RUN9_AUDIT:-}" ] || { echo "stopping: round 12 trains run 9 audio only from an audited list (set run9_audit) so the FSD50K check covers it"; exit 1; }
+    python3 -c "import sys, shutil; from huggingface_hub import hf_hub_download as d; r, f = sys.argv[1].split(':'); shutil.copy(d(r, f, repo_type='dataset'), 'r9-guard.csv')" "$RUN9_AUDIT"
+    GUARD+=(r9-guard.csv)
+  fi
   python3 -c "from huggingface_hub import snapshot_download as d; d('cmjatom/dge-private-train', repo_type='dataset', allow_patterns=['empty-tags/v1/*/manifest.csv', 'empty-tags/v1/*/*/manifest.csv'], local_dir='etguard')"
-  python3 $S/round12/check-fsd50k-eval.py etguard r9-guard.csv || exit 1   # runs on every job, cache hit or not
+  python3 $S/round12/check-fsd50k-eval.py "${GUARD[@]}" || exit 1   # runs on every job, cache hit or not
   if ! from_cache emptytags etprep prepare-run9.py --data cmjatom/dge-private-train:empty-tags/v1 --arg "prefix=et no-renders" --arg "lookalikes=$LOOK_KEY" > emptytags.log 2>&1; then
     python3 -c "from huggingface_hub import snapshot_download as d; d('cmjatom/dge-private-train', repo_type='dataset', allow_patterns=['empty-tags/v1/*'], local_dir='etdl', max_workers=16)"
     mkdir -p etstage; for m in $(find etdl/empty-tags/v1 -name manifest.csv); do d=$(dirname $m); mv "$d" "etstage/$(echo ${d#etdl/empty-tags/v1/} | tr / -)"; done

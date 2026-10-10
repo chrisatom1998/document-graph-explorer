@@ -243,6 +243,10 @@ def main():
         user = r['group'].removeprefix('freesound-user:').casefold() if r['source'] == 'freesound' else None
         if r['_extra_md5'] or fid in EXTRA['ids'] or (user and user in EXTRA['users']):
             r['keep'], r['drop_reason'] = '0', 'in another held-out test set'
+    for rs in by_pcm.values():   # ... and so does every identical-audio copy of it, whichever part it came from
+        if any(r['drop_reason'] == 'in another held-out test set' for r in rs):
+            for r in rs:
+                if r['keep'] == '1' and r['split'] == 'train': r['keep'], r['drop_reason'] = '0', 'same audio as another held-out test set'
     dup_groups = 0
     for h, rs in by_pcm.items():
         if len(rs) < 2: continue
