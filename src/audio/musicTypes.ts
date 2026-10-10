@@ -9,6 +9,7 @@ import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { sanitizeCopilotProperties, type CopilotProperties } from './copilotProperties';
 import { sanitizeStructure, type TrackStructure } from './structure';
 import { sanitizeVersionPrint } from './versionPrint';
+import { sanitizeTimbre, type TimbreSummary } from './timbre';
 import { sanitizeGenreScores, sanitizeStyles, type TrackStyle } from './genreEnergy';
 import { sanitizeNativeWindowEvidence, type NativeWindowEvidence } from './nativeWindowEvidence';
 export const MUSIC_ANALYSIS_VERSION = 2;
@@ -69,6 +70,9 @@ export interface MusicAnalysis {
   structure?: TrackStructure;
   /** Compact pitch, band-balance and loudness series (versionPrint.ts) that finds other copies and versions of this recording. */
   versionPrint?: string;
+  /** Fixed-rule DSP measurement of how it sounds (timbre.ts), turned into plain words by timbreDescriptions.ts. Absent on
+   * analyses saved before it existed: those keep working and simply show no description until reanalysed. */
+  timbre?: TimbreSummary;
   instrumentScan?: { mode?: MusicAnalysisMode; revision?: number; complete: boolean; analyzedSeconds: number; windows: number };
   notes: string[];
 }
@@ -105,6 +109,8 @@ export function sanitizeMusicAnalysis(raw: unknown, options: { trustedCache?: bo
   if (Array.isArray(m.embedding) && m.embedding.length === 512 && m.embedding.every(v => typeof v === 'number' && Number.isFinite(v)) && Math.hypot(...(m.embedding as number[])) > 1e-8) out.embedding = m.embedding as number[];
   const versionPrint = sanitizeVersionPrint(m.versionPrint);
   if (versionPrint) out.versionPrint = versionPrint;
+  const timbre = sanitizeTimbre(m.timbre);
+  if (timbre) out.timbre = timbre;
   const styles = sanitizeStyles(m.styles);
   if (styles) out.styles = styles;
   const genreScores = sanitizeGenreScores(m.genreScores);

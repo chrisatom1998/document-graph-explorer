@@ -17,6 +17,7 @@ import { EVENT_WINDOW_AFTER, EVENT_WINDOW_BEFORE, EVENT_WINDOW_LABELS, EventWind
 import { musicRuntimeIdentity } from './musicRuntime';
 import { FullMixEvidence, type FullMixModel } from './fullMixHeads';
 import { computeVersionPrint, VERSION_PRINT_SAMPLE_RATE } from './versionPrint';
+import { computeTimbre, TIMBRE_SAMPLE_RATE } from './timbre';
 import { TAGGER_REVISION, TAGGER_SAMPLE_RATE, TAGGER_UNAVAILABLE, TAGGER_WINDOW_SECONDS, TaggerEvidence, taggerWindow, taggerWindowStarts } from './tagger';
 import { createRecognition, refreshRuntimeIdentity, finishJob, recordEvidence, modelCacheKey, ResultCache, type Interval, type ModelId, type EvidenceCandidate } from './recognition';
 
@@ -53,6 +54,13 @@ export async function addVersionPrint(result: MusicAnalysis, read: (start: numbe
   try {
     const print = await computeVersionPrint(read, result.durationSeconds, signal);
     if (print) result.versionPrint = print;
+  } catch (error) { if (signal?.aborted) throw error; }
+}
+/** Local DSP only (timbre.ts): plain sound descriptions. A failure leaves the line empty; it never fails the analysis. */
+export async function addTimbre(result: MusicAnalysis, read: (start: number, seconds: number) => Promise<Float32Array>, signal?: AbortSignal): Promise<void> {
+  try {
+    const timbre = await computeTimbre(read, result.durationSeconds, signal);
+    if (timbre) result.timbre = timbre;
   } catch (error) { if (signal?.aborted) throw error; }
 }
 export interface MusicPreview {
@@ -511,6 +519,7 @@ export async function analyzeDecodedMusic(decoder: MusicDecoder, send: MusicRequ
       if (outcome.value.unavailable) result.notes.push(TAGGER_UNAVAILABLE);
     }
     await addVersionPrint(result, (start, seconds) => read(start, seconds, VERSION_PRINT_SAMPLE_RATE), options.signal);
+    await addTimbre(result, (start, seconds) => read(start, seconds, TIMBRE_SAMPLE_RATE), options.signal);
     refresh(false, true);
     return result;
   } catch (error) {

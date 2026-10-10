@@ -7,6 +7,7 @@ import { confirmedInstrumentList } from '../audio/instrumentEvidence';
 import { canonicalDjLabel, soundLabelText } from '../audio/djTags';
 import { latestSoundReview, projectedCopilotProperties } from '../audio/soundReviewPolicy';
 import { fusionPresentation } from '../audio/fusionPresentation';
+import { isRuleDescribedLabel } from '../audio/timbreDescriptions';
 import type { Dimension } from '../audio/recognition';
 import './MainSoundAttributes.css';
 
@@ -86,7 +87,8 @@ export function soundAttributeRows(audio: MusicAnalysis, node: Pick<DocNode,'tit
   const hints=musicNameHints(node);
   for(const label of hints.instruments?.value??[])add('source',label,`From ${hints.instruments!.source} · not audio evidence`);
   for(const item of projectedCopilotProperties(audio).current)add(item.group==='source'?'source':item.group==='production'?'effect':'character',item.label,`${audio.copilotProperties?.model??'AI'} metadata suggestion · not a listening assessment`);
-  return [...rows.values()];
+  // Model evidence for the rule-described words (warm, airy…) is not shown; a reviewed one stays as your decision.
+  return [...rows.values()].filter(row => row.review || row.dimension !== 'character' || !isRuleDescribedLabel(row.label));
 }
 
 /**

@@ -7,6 +7,7 @@ import { confirmedInstrumentList, sourceReviewAllows } from './instrumentEvidenc
 import { musicNameHints } from './nameHints';
 import { resolvedNonSourceLabels, reviewedSoundProfile, type ResolvedDjLabel } from './soundReviewPolicy';
 import { sharedSoundReviewIdentity } from './soundReviewIdentity';
+import { isRuleDescribedLabel } from './timbreDescriptions';
 
 export const labelKey = (label: string) => label.replaceAll('_', ' ').toLowerCase();
 const displayedLabelKey = (label: string) => sharedSoundReviewIdentity('source', labelKey(label))
@@ -28,7 +29,8 @@ export function otherModelGuessGroups({ profile, confirmedDjTags, reviewedLabels
     const raw = group !== 'source' && reviewedLabels?.length
       ? reviewedLabels.filter(t => t.group === group && t.source !== 'confirmed').map(t => t.label)
       : profile?.djTags?.filter(t => t.group === group).map(t => t.label) ?? [];
-    const values = [...new Set(raw)].filter(label => !shown.has(displayedLabelKey(label)));
+    // Rule-described character words (timbreDescriptions.ts) are never model guesses.
+    const values = [...new Set(raw)].filter(label => !shown.has(displayedLabelKey(label)) && !(group === 'character' && isRuleDescribedLabel(labelKey(label))));
     return values.length ? [{ group, values }] : [];
   });
 }

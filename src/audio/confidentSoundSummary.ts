@@ -10,10 +10,11 @@ import { djReviewAllows, latestSoundReview, resolvedNonSourceLabels } from './so
 import { FULL_MIX_FAMILY, FULL_MIX_REVISION } from './fullMixHeads';
 import { TAGGER_MAYBE_SCORE, TAGGER_POLICY, TAGGER_SCORE, taggerDecisions, taggerIntervals, type TaggerTag } from './tagger';
 import { nativeScoreOutside, type NativeWindowEvidence } from './nativeWindowEvidence';
+import { isRuleDescribedLabel } from './timbreDescriptions';
 
 /** Display policy: does not change stored evidence, acceptance or cache identity. Graph links read these tags (soundMatchLabels,
  * musicLinks), so a display change also changes which instrument links a track can form, by design. */
-export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v4';
+export const SOUND_DISPLAY_POLICY = 'tested-models-tiers-v5';
 /** A detector score at or above this shows as "likely" (and is the only floor for short clips). */
 export const LIKELY_SOUND_CUTOFF = .5;
 /** Longer recordings also show "possible" tags from this raw score up to the likely cutoff. Scores are not calibrated probabilities. */
@@ -116,6 +117,8 @@ export function confidentSoundSummary(audio:MusicAnalysis, fusionMode?:string):D
     const label=canonical(dimension,raw);
     const supported=dimensionLabels[dimension].includes(label)||(dimension==='effect'&&!!canonicalDjLabel('production',label));
     if(!supported||!validScore(score)||!allowed(dimension,label))return;
+    // warm, airy, metallic… cannot be accuracy-tested, so they come from DSP rules (timbreDescriptions.ts), never from a model.
+    if(dimension==='character'&&isRuleDescribedLabel(label))return;
     if(dimension==='source'&&confirmed!==undefined)return;
     if(dimension!=='source'&&audio.confirmedDjTags!==undefined)return;
     const key=`${dimension}:${label}`,old=result.get(key);if(old?.origin==='confirmed by you')return;
