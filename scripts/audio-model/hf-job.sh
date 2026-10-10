@@ -210,8 +210,10 @@ echo "all data ready after $(( ($(date +%s) - START) / 60 )) min"
 SRC_CACHE_PID=
 if [ -s cache-todo.txt ]; then python3 $S/prep-cache.py put cache-todo.txt > src-cache-upload.txt 2>&1 & SRC_CACHE_PID=$!; fi
 if [ "${PREP_ONLY:-0}" = 1 ]; then   # fill the caches and stop: no training
-  [ -n "$SRC_CACHE_PID" ] && { wait $SRC_CACHE_PID; cat src-cache-upload.txt; }
-  [ -n "$CACHE_PID" ] && { wait $CACHE_PID; tail -n 2 cache-upload.txt; }
+  RC=0
+  [ -n "$SRC_CACHE_PID" ] && { wait $SRC_CACHE_PID || RC=1; cat src-cache-upload.txt; }
+  [ -n "$CACHE_PID" ] && { wait $CACHE_PID || RC=1; tail -n 2 cache-upload.txt; }
+  [ $RC = 0 ] || { echo "prep only: a cache upload failed"; exit 1; }
   echo "prep only: caches filled after $(( ($(date +%s) - START) / 60 )) min"; exit 0
 fi
 if [ -n "${SOUNDCLOUD_DATA:-}" ]; then   # "<dataset repo>:<folder>", uploaded by the workflow from its SoundCloud artifacts

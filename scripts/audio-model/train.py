@@ -60,7 +60,7 @@ SOFT_MIX = 0.5   # where the item has a strong label of its own, the target is t
 MERGE = {}   # round 12 (--merge): merged-away tag -> the tag it is shown as; a clip with the child present counts the parent present
 
 def load_source(name, mel_path, items, weak):
-    y = np.zeros((len(items), len(CLASSES)), np.float32); w = np.zeros_like(y); yv = np.zeros_like(y); col = {c: j for j, c in enumerate(CLASSES)}
+    y = np.zeros((len(items), len(CLASSES)), np.float32); w = np.zeros_like(y); yv = np.zeros_like(y); wv = np.zeros_like(y); col = {c: j for j, c in enumerate(CLASSES)}
     for i, it in enumerate(items):
         weak_set = set(it.get('weakAbsent', []))
         labels = dict(it['labels'])
@@ -73,13 +73,13 @@ def load_source(name, mel_path, items, weak):
             if c in labels and f'cat:{l}' not in labels: labels[f'cat:{l}'] = labels[c]; weak_set |= {f'cat:{l}'} if c in weak_set else set()
         for c, r in labels.items():
             j = col[c]; y[i, j] = float(r >= 0.5); w[i, j] = weak if c in weak_set else 1.0
-        yv[i] = y[i]   # validation scores the clip's own 0/1 labels, never the teacher's soft targets
+        yv[i] = y[i]; wv[i] = w[i]   # validation scores the clip's own labels and weights, never the teacher's soft targets
         for l, p in SOFT.get(it['id'], {}).items():   # distillation: the teacher labels every listed tag, at full weight
             j = col.get(f'cat:{l}')
             if j is None: continue
             y[i, j] = SOFT_MIX * y[i, j] + (1 - SOFT_MIX) * p if w[i, j] >= 1 else p; w[i, j] = 1.0
     rows = np.array([it.get('row', i) for i, it in enumerate(items)])
-    return {'name': name, 'mel': np.load(mel_path, mmap_mode='r'), 'rows': rows, 'y': y, 'yv': yv, 'w': w,
+    return {'name': name, 'mel': np.load(mel_path, mmap_mode='r'), 'rows': rows, 'y': y, 'yv': yv, 'w': w, 'wv': wv,
             'val': np.array([bool(it['val']) if 'val' in it else is_val(it['artist']) for it in items]), 'ids': [it['id'] for it in items],
             'dj': np.array([bool(it.get('dj')) for it in items])}
 
@@ -222,7 +222,7 @@ def main():
                 print(f'epoch {epoch + 1} step {len(losses)}/{steps_per_epoch} loss {np.mean(losses[-50:]):.4f} '
                       f'{(time.time() - t0) / len(losses):.2f}s/step', flush=True)
         scores = evaluate()
-        aps = {name: masked_ap(sc, src['yv'][vals[name]], src['w'][vals[name]]) for (name, sc), src in zip(scores.items(), sources)}
+        aps = {name: masked_ap(sc, src['yv'][vals[name]], src['wv'][vals[name]]) for (name, sc), src in zip(scores.items(), sources)}
         all_ap = [v for a in aps.values() for v in a.values()]; mAP = float(np.mean(all_ap)) if all_ap else 0.0
         log.append({'epoch': epoch + 1, 'loss': float(np.mean(losses)), 'valMAP': mAP, 'valAP': aps, 'seconds': time.time() - t0})
         print(json.dumps(log[-1]), flush=True)

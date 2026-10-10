@@ -89,7 +89,14 @@ jobs:
           print(f'SOUNDCLOUD_DATA={repo}:{folder}')
           EOF
       - name: Train on Hugging Face Jobs
-        env: { HF_TOKEN: '${{ secrets.HF_TOKEN }}' }
+        env:   # free-text inputs reach the shell as variables, never as script text
+          HF_TOKEN: '${{ secrets.HF_TOKEN }}'
+          IN_CHART: '${{ inputs.chart_name }}'
+          IN_CHRIS: '${{ inputs.chris_data }}'
+          IN_REPEAT: '${{ inputs.source_repeat }}'
+          IN_FSNEW: '${{ inputs.fsnew_data }}'
+          IN_RUN9: '${{ inputs.run9_data }}'
+          IN_AUDIT: '${{ inputs.run9_audit }}'
         run: >
           python3 scripts/audio-model/hf-launch.py "${{ inputs.flavor || 'l4x1' }}" "${{ inputs.timeout || '7h' }}"
           REPO_SHA=${{ github.sha }} MODEL=${{ inputs.model || 'mn10_as' }} EPOCHS=${{ inputs.epochs || '15' }}
@@ -97,11 +104,11 @@ jobs:
           OUT_DIR=${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir }} JOB_NAME=dge-tagger-${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir || 'main' }}
           TRAIN_HOURS=${{ inputs.train_hours || '4.25' }} RARE_REPEAT=${{ inputs.rare_repeat || '1' }} RAWSTEMS=${{ inputs.rawstems == 'true' && '1' || '0' }} JOB_HOURS=${{ inputs.job_hours || '7' }}
           LR=${{ inputs.lr || '1e-4' }} BATCH=${{ inputs.batch || '64' }} WEAK=${{ inputs.weak || '0.2' }}
-          SOUNDCLOUD_DATA=${SOUNDCLOUD_DATA:-} TRACKIO_SPACE=${{ (inputs.charts || 'true') == 'true' && '1' || '' }} "TRACKIO_RUN=${{ inputs.chart_name }}"
+          SOUNDCLOUD_DATA=${SOUNDCLOUD_DATA:-} TRACKIO_SPACE=${{ (inputs.charts || 'true') == 'true' && '1' || '' }} "TRACKIO_RUN=$IN_CHART"
           RAWSTEMS_FX=${{ inputs.rawstems_fx || '0' }} IOWA=${{ inputs.iowa == 'true' && '1' || '0' }}
-          CHRIS_DATA=${{ inputs.chris_data || '' }} SOURCE_REPEAT=${{ inputs.source_repeat || '' }}
+          "CHRIS_DATA=$IN_CHRIS" "SOURCE_REPEAT=$IN_REPEAT"
           VCSL=${{ contains(inputs.extra_sets, 'vcsl') && '1' || '0' }} SLAKH_MORE=${{ contains(inputs.extra_sets, 'slakh_more') && '1' || '0' }}
-          SAO=${{ contains(inputs.extra_sets, 'sao') && '1' || '0' }} FSNEW_DATA=${{ inputs.fsnew_data || '' }} RUN9_DATA=${{ inputs.run9_data || '' }} RUN9_AUDIT=${{ inputs.run9_audit || '' }} ROUND10=${{ contains(inputs.extra_sets, 'round10') && '1' || '0' }} PREP_ONLY=${{ contains(inputs.extra_sets, 'prep_only') && '1' || '0' }}
+          SAO=${{ contains(inputs.extra_sets, 'sao') && '1' || '0' }} "FSNEW_DATA=$IN_FSNEW" "RUN9_DATA=$IN_RUN9" "RUN9_AUDIT=$IN_AUDIT" ROUND10=${{ contains(inputs.extra_sets, 'round10') && '1' || '0' }} PREP_ONLY=${{ contains(inputs.extra_sets, 'prep_only') && '1' || '0' }}
           SOFT_LABELS=${{ contains(inputs.extra_sets, 'soft11') && 'cmjatom/dge-private-train:round11/soft-v1.json' || '' }}
           ROUND12=${{ contains(inputs.extra_sets, 'round12') && '1' || '0' }}
       - name: Stop the Hugging Face job if this workflow is cancelled

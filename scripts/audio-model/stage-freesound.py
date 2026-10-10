@@ -57,7 +57,9 @@ def main():
     fsd_eval, fsd_dev = fsd('eval'), fsd('dev')
     bad_ids, bad_users = set(), set()
     for f in ('docs/evaluations/short-clips-2026-10-04/reserved-test-families.json', 'docs/evaluations/synth-clips-2026-10-05/reserved-test-families.json'):
-        d = json.loads(fetch(f'https://raw.githubusercontent.com/chrisatom1998/document-graph-explorer/{sha}/{f}'))
+        raw = fetch(f'https://raw.githubusercontent.com/chrisatom1998/document-graph-explorer/{sha}/{f}')
+        if raw is None: sys.exit(f'could not fetch {f} at {sha}; refusing to stage without the reserved test families')
+        d = json.loads(raw)
         bad_ids |= {int(x) for x in d.get('freesoundIds', [])}
         bad_users |= {u.removeprefix('freesound-user:') for k in ('freesoundUploaders', 'fsdUploaders') for u in d.get(k, [])}
     cache = lambda f: json.load(open(hf_hub_download(f'{me}/dge-tagger-data', f, repo_type='dataset')))['items']

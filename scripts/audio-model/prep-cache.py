@@ -70,6 +70,7 @@ def get(name, k, out):
     api, r, base = HfApi(), repo(), f'prep-cache/src/{name}/{k}'
     if not api.file_exists(r, f'{base}/DONE', repo_type='dataset'): sys.exit(1)
     try:
+        shutil.rmtree(f'cache-{name}', ignore_errors=True)   # never mix in files left by an earlier failed get
         snapshot_download(r, repo_type='dataset', allow_patterns=[f'{base}/*'], local_dir=f'cache-{name}', max_workers=16)
         shutil.rmtree(out, ignore_errors=True); shutil.move(f'cache-{name}/{base}', out); shutil.rmtree(f'cache-{name}', ignore_errors=True)
         os.remove(os.path.join(out, 'DONE'))
@@ -79,7 +80,7 @@ def get(name, k, out):
 
 def put(todo):
     from huggingface_hub import HfApi
-    api, r = HfApi(), repo(); api.create_repo(r, repo_type='dataset', private=True, exist_ok=True)
+    api, r = HfApi(), repo(); api.create_repo(r, repo_type='dataset', private=True, exist_ok=True); failed = 0
     for line in open(todo).read().split('\n'):
         if not line.strip(): continue
         name, k, d = line.split()
@@ -89,7 +90,8 @@ def put(todo):
             api.upload_file(path_or_fileobj=b'ok', path_in_repo=f'{base}/DONE', repo_id=r, repo_type='dataset', commit_message=f'Prepared {name} {k} complete')
             print(f'cached {name} at {r}/{base}', flush=True)
         except Exception as e:
-            print(f'{name}: prep cache upload failed ({e}); the next job rebuilds it', flush=True)
+            print(f'{name}: prep cache upload failed ({e}); the next job rebuilds it', flush=True); failed += 1
+    if failed: sys.exit(1)
 
 
 if __name__ == '__main__':
