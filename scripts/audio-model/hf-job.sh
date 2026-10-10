@@ -25,6 +25,11 @@ START=$(date +%s)
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q && apt-get install -yq --no-install-recommends ffmpeg git ca-certificates curl > /dev/null
 pip install -q scikit-learn scipy pyarrow onnx onnxruntime huggingface_hub
+# Round 11: SOFT_LABELS=<private dataset>:<path> adds the teacher's soft labels (round11/build-soft.py); fetched first,
+# while the job's access token is fresh.
+if [ -n "${SOFT_LABELS:-}" ]; then
+  python3 -c "import sys, shutil; from huggingface_hub import hf_hub_download as d; r, f = sys.argv[1].split(':'); shutil.copy(d(r, f, repo_type='dataset'), '/tmp/soft-labels.json')" "$SOFT_LABELS"
+fi
 # TRACKIO_SPACE=<user>/<space> turns on live training charts in that private Space (charts.py): training loss and
 # validation mAP only, never held-out per-clip results. Unset by default.
 if [ -n "${TRACKIO_SPACE:-}" ]; then pip install -q trackio==0.42.0 || echo "live charts off: trackio install failed"; fi
@@ -159,6 +164,7 @@ fi
 # evaluation and upload, and never more than TRAIN_HOURS.
 HOURS=$(python3 -c "import sys; t, j, e = map(float, sys.argv[1:]); left = j - e / 3600 - 0.75; print(round(max(0.5, min(t, left) if t else left), 2))" "${TRAIN_HOURS:-0}" "${JOB_HOURS:-7}" "$(( $(date +%s) - START ))")
 echo "training budget ${HOURS} h"
+if [ -n "${SOFT_LABELS:-}" ]; then EXTRA+=(--soft /tmp/soft-labels.json); fi
 python3 $S/train.py run --openmic prep --jamendo prepj "${EXTRA[@]}" --model "$MODEL" --epochs "$EPOCHS" --lr "$LR" --batch "$BATCH" --weak "$WEAK" --rare-repeat "${RARE_REPEAT:-1}" --repeat "${SOURCE_REPEAT:-}" --threads 8 --hours "$HOURS"
 # Which data trained this model, so it can be rebuilt without any one source (chris-drive rows keep source=chris-drive).
 python3 - "${EXTRA[@]}" <<'EOF'

@@ -55,6 +55,9 @@ FRAMES = 1000
 
 def is_val(artist): return int(hashlib.sha256(f'dge-audio-model|{artist}'.encode()).hexdigest()[:8], 16) % 10 == 0
 
+SOFT = {}   # round 11 (--soft): item id -> {app tag: teacher probability, shifted so the teacher's threshold sits at 0.5}
+SOFT_MIX = 0.5   # where the item has a strong label of its own, the target is this share of it plus the rest from the teacher
+
 def load_source(name, mel_path, items, weak):
     y = np.zeros((len(items), len(CLASSES)), np.float32); w = np.zeros_like(y); col = {c: j for j, c in enumerate(CLASSES)}
     for i, it in enumerate(items):
@@ -67,6 +70,10 @@ def load_source(name, mel_path, items, weak):
             if c in labels and f'cat:{l}' not in labels: labels[f'cat:{l}'] = labels[c]; weak_set |= {f'cat:{l}'} if c in weak_set else set()
         for c, r in labels.items():
             j = col[c]; y[i, j] = float(r >= 0.5); w[i, j] = weak if c in weak_set else 1.0
+        for l, p in SOFT.get(it['id'], {}).items():   # distillation: the teacher labels every listed tag, at full weight
+            j = col.get(f'cat:{l}')
+            if j is None: continue
+            y[i, j] = SOFT_MIX * y[i, j] + (1 - SOFT_MIX) * p if w[i, j] >= 1 else p; w[i, j] = 1.0
     rows = np.array([it.get('row', i) for i, it in enumerate(items)])
     return {'name': name, 'mel': np.load(mel_path, mmap_mode='r'), 'rows': rows, 'y': y, 'w': w,
             'val': np.array([bool(it['val']) if 'val' in it else is_val(it['artist']) for it in items]), 'ids': [it['id'] for it in items],
@@ -98,7 +105,10 @@ def main():
     ap.add_argument('--hours', type=float, default=0, help='training time budget: after epoch 1, cut the epoch count (and its cosine schedule) to fit')
     ap.add_argument('--init', help='start from this model.pt (an earlier run); classifier rows are matched by class name')
     ap.add_argument('--repeat', default='', help='name=k,...: times each training window of that source is seen per epoch (e.g. iowa=2,chrisdrive=4)')
+    ap.add_argument('--soft', help="round 11 teacher soft labels (round11/build-soft.py JSON: {'items': {id: {tag: p}}})")
     args = ap.parse_args()
+    if args.soft:
+        SOFT.update(json.load(open(args.soft))['items']); print(f'teacher soft labels for {len(SOFT)} items', flush=True)
     dev = torch.device(args.device)
     torch.set_num_threads(args.threads); torch.manual_seed(0); rng = np.random.default_rng(0)
     os.makedirs(args.run, exist_ok=True)
