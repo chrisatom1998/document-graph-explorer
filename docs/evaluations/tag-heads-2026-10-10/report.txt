@@ -1,0 +1,14 @@
+Aggregate metrics below include all durations; shipping uses heldOutLongClip, matching the runtime one-shot exclusion.
+label            train+ test+ test-  thresh      P      R   verdict          trained on    current head on same held-out
+chorused             97    47  2486   0.913   0.36   0.28   below 70/70       real          -   | new on <=2.25 s: P0.00 R0.00 (1+/560-)   | runtime >2.25 s: P0.36 R0.28 (46+/1926-; 0 unknown durations)
+saturated           188    59  2332   0.888   0.24   0.27   below 70/70       real          -   | new on <=2.25 s: P0.21 R0.15 (20+/514-)   | runtime >2.25 s: P0.25 R0.33 (39+/1818-; 0 unknown durations)
+filtered            144    61  2472   0.791   0.07   0.08   below 70/70       real+renders  -   | new on <=2.25 s: P0.12 R0.13 (15+/546-)   | runtime >2.25 s: P0.05 R0.07 (46+/1926-; 0 unknown durations)
+echoing             455   134  2232   0.806   0.22   0.27   below 70/70       real          -   | new on <=2.25 s: P0.33 R0.05 (20+/513-)   | runtime >2.25 s: P0.21 R0.31 (114+/1719-; 0 unknown durations)
+dry                 168    67  2232   0.767   0.03   0.03   below 70/70       real          -   | new on <=2.25 s: P0.00 R0.00 (20+/513-)   | runtime >2.25 s: P0.04 R0.04 (47+/1719-; 0 unknown durations)
+trombone             70    22  2495   0.877   0.67   0.45   below 70/70       real          learned maybe P0.82 R0.41   | new on <=2.25 s: P0.00 R0.00 (3+/552-)   | runtime >2.25 s: P0.67 R0.53 (19+/1943-; 0 unknown durations)
+viola                88    38  2473   0.899   0.51   0.53   below 70/70       real          learned maybe P0.51 R0.53   | new on <=2.25 s: P1.00 R0.50 (4+/555-)   | runtime >2.25 s: P0.49 R0.53 (34+/1918-; 0 unknown durations)
+double bass          87    24  2473   0.856   0.33   0.75   below 70/70       real          -   | new on <=2.25 s: P1.00 R1.00 (2+/555-)   | runtime >2.25 s: P0.30 R0.73 (22+/1918-; 0 unknown durations)
+glockenspiel        108    23  2341   0.879   0.56   0.83   below 70/70       real          -   | new on <=2.25 s: P0.00 R0.00 (1+/545-)   | runtime >2.25 s: P0.61 R0.86 (22+/1796-; 0 unknown durations)
+marimba              91    33  2341   0.834   0.48   0.61   below 70/70       real          learned maybe P0.48 R0.61   | new on <=2.25 s: P0.50 R1.00 (1+/545-)   | runtime >2.25 s: P0.47 R0.59 (32+/1796-; 0 unknown durations)
+vibraphone           80    27  2341   0.887   0.41   0.44   below 70/70       real          learned maybe P0.89 R0.30   | new on <=2.25 s: P0.00 R0.00 (6+/545-)   | runtime >2.25 s: P0.43 R0.57 (21+/1796-; 0 unknown durations)
+conga                58    43  2280   0.904   0.61   0.72   below 70/70       real          -   | new on <=2.25 s: P0.95 R0.86 (21+/447-)   | runtime >2.25 s: P0.41 R0.59 (22+/1833-; 0 unknown durations)

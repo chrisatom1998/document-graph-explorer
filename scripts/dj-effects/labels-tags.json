@@ -1,5 +1,5 @@
 {
- "_doc": "Sound tags mined from Freesound uploader tags for the processing, space and gap-instrument heads (same rules as labels.json; see its _doc). Selected with LABELS=labels-tags.json.",
+ "_doc": "Sound tags mined from Freesound uploader tags for the processing, space and gap-instrument heads (same rules as labels.json; see its _doc). Selected with LABELS=labels-tags.json. \"hardNegatives\": training-only negatives from related labels (train.py); held-out scoring keeps \"overlap\".",
  "music": [
   "loop",
   "loops",
@@ -290,7 +290,13 @@
    "label": "trombone",
    "group": "source",
    "tags": [
-    "trombone"
+    "trombone",
+    "trombones",
+    "tenor trombone",
+    "bass trombone",
+    "alto trombone",
+    "valve trombone",
+    "sackbut"
    ]
   },
   {
@@ -552,5 +558,14 @@
    "cajon",
    "tabla"
   ]
- ]
+ ],
+ "hardNegatives": {
+  "glockenspiel": [
+   "marimba",
+   "xylophone",
+   "vibraphone",
+   "kalimba",
+   "steel drum"
+  ]
+ }
 }
