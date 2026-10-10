@@ -10,7 +10,7 @@ Each <run-dir> holds a run's model.pt, log.json (backbone in args.model), thresh
   * it does not drop below 0.70 precision or recall on a set where the shipped run reached both.
 Tags in --keep stay with the first run (their long-recording thresholds were tuned on its scores). --only RUN=a,b limits
 RUN to those outputs and makes them candidates even when the app's policy does not list them yet (a tag that newly passes
-on held-out real clips). Every other output keeps the first run's score. Runs that win no tag are left out of the file.
+on held-out real clips); each must be an output of the first run, whose scores are the baseline it is compared with. Every other output keeps the first run's score. Runs that win no tag are left out of the file.
 A later run may add outputs after the first run's class list; the file then carries the longest list, and an output only
 newer runs have comes from the first used run that has it.
 

@@ -22,7 +22,7 @@ permissions:
 jobs:
   combine:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 300   # above the longest Hugging Face cap a request sets (4 h)
     steps:
       - uses: actions/checkout@v4
       - name: Combine, score and publish on Hugging Face Jobs
