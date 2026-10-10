@@ -272,6 +272,9 @@ if os.path.exists('r9prep/eval-run9.json'):
         if n in man['sources']: man['sources'][n]['reviewed'] = False
     man['run9Ids'] = json.load(open('r9prep/run9-ids.json'))
 if os.path.exists('cdprep/chrisdrive-files.json'): man['chrisDrive'] = json.load(open('cdprep/chrisdrive-files.json'))
+if os.environ.get('ABSENT_FIX'):   # train.py --absent-fix label edits: where they came from and exactly which file
+    import hashlib
+    man['absentFix'] = {'source': os.environ['ABSENT_FIX'], 'sha256': hashlib.sha256(open('/tmp/absent-fix.json', 'rb').read()).hexdigest()}
 json.dump(man, open('run/data-manifest.json', 'w'), indent=1)
 print('data manifest: ' + ', '.join(f"{n} {s['windows']}" for n, s in man['sources'].items()))
 EOF

@@ -35,9 +35,10 @@ test_ok, train_ok = exclusions.load(EXCL, PF, REPO, RUN9)
 fam = re.compile(NEG_FAMILY)
 def neg_ok(r): return not fam.search((r['title'] + ' ' + ' '.join(r['tags']) + ' ' + r['desc'][:300]).lower())
 
-def pick(cands, cap, per_up):
-    rng.shuffle(cands); n = defaultdict(int); out = []
-    for r in sorted(cands, key=lambda r: n[r['user']]):
+def pick(cands, cap, per_up, n=None):
+    """n: per-uploader counts shared across calls (a tag's H and M picks share one cap)."""
+    rng.shuffle(cands); n = defaultdict(int) if n is None else n; out = []
+    for r in cands:
         if n[r['user']] < per_up and len(out) < cap: out.append(r); n[r['user']] += 1
     return out
 
@@ -48,8 +49,9 @@ test_picks, train_picks, used = [], [], set()
 for tag in TAGS:
     H = [r for r in test_pool if RULES[tag]['H'](r)]
     M = [r for r in test_pool if not RULES[tag]['H'](r) and RULES[tag]['M'](r)]
-    hp = pick([r for r in H if r['id'] not in used], 14, 2); used |= {r['id'] for r in hp}
-    mp = pick([r for r in M if r['id'] not in used], 8, 2); used |= {r['id'] for r in mp}
+    per_up = defaultdict(int)   # 2 test clips per uploader per tag across H and M
+    hp = pick([r for r in H if r['id'] not in used], 14, 2, per_up); used |= {r['id'] for r in hp}
+    mp = pick([r for r in M if r['id'] not in used], 8, 2, per_up); used |= {r['id'] for r in mp}
     test_picks += [dict(r, tag=tag, conf='H') for r in hp] + [dict(r, tag=tag, conf='M') for r in mp]
     TH = [r for r in train_pool if RULES[tag]['H'](r)]
     tp = pick(TH, 45, 3)

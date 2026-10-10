@@ -13,9 +13,11 @@ def load(EXCL, PF, REPO, RUN9):
     fsd_eval = {int(r['fname']) for r in csv.DictReader(open(f'{EXCL}/FSD50K.ground_truth/eval.csv'))}
     rehost = {int(i) for v in json.load(open(f'{EXCL}/rehosts.json')).values() for i in v}
     staged = set(); held_users = set(); train_ids = set()
+    run7_held = set()   # prepare-fsnew.py's test-only rows: never tuned on
     for l in open(f'{PF}/datasets/run7-prep/fsnew-staging-ids.tsv'):
         tag, split, ids = l.rstrip('\n').split('\t')
         staged |= {int(x) for x in ids.split(',') if x}
+        if split != 'train': run7_held |= {int(x) for x in ids.split(',') if x}
     for r in csv.DictReader(open(RUN9)):   # private cmjatom/dge-private-train run9/v1-audit/manifest-audited.csv
         if r['id'].startswith('freesound:'):
             staged.add(int(r['id'].split(':')[1]))
@@ -46,5 +48,5 @@ def load(EXCL, PF, REPO, RUN9):
     def train_ok(r):
         u = r['user'].casefold()
         return (not reserved_any(r['user']) and u not in held_users and u not in dj_users and u not in reserved_users
-                and r['id'] not in fsd_eval and r['id'] not in test8_ids and r['id'] not in reserved_ids and r['id'] not in rehost and r['lic'] != 5)
+                and r['id'] not in fsd_eval and r['id'] not in run7_held and r['id'] not in test8_ids and r['id'] not in reserved_ids and r['id'] not in rehost and r['lic'] != 5)
     return test_ok, train_ok
