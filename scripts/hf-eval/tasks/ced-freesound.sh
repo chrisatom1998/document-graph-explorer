@@ -11,7 +11,7 @@ run)
   WORKERS=${WORKERS:-$CPUS} OUT=$OUT python3 "$HARNESS/scripts/hf-eval/ced-freesound.py" ;;
 collect)
   SHARDS=$2; R=$3; mkdir -p "$R"
-  pip install -q numpy
+  pip install -q --break-system-packages numpy 2>/dev/null || pip install -q numpy
   python3 - "$SHARDS" "$R" <<'PY'
 import glob, json, os, sys
 import numpy as np
