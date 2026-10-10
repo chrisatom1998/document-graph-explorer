@@ -1366,6 +1366,28 @@ describe('remembered library', () => {
     expect(useGraphStore.getState().nodes.find(n => n.id === node.id)?.audio?.instrumentScan?.complete).toBe(true);
   });
 
+  it.each([85, 86])('refreshes a persisted pre-calibration analysis at revision %i', async revision => {
+    const node = await storedTrack('calibration.wav');
+    const saved = { ...node, audio: { ...node.audio!,
+      instrumentScan: { ...node.audio!.instrumentScan!, revision },
+      confirmedInstruments: ['piano'],
+    } };
+    persistence.lookupDocCache.mockResolvedValue({ node: saved, text: '', chunkTexts: [], chunkVectors: null, docVector: null, mdLinkTargets: [], docLinks: [] });
+    persistence.getOriginal.mockResolvedValue({ blob: new Blob([wavBytes()], { type: 'audio/wav' }), name: 'calibration.wav' });
+    const readBytes = vi.fn(async () => wavBytes());
+    await ingestFiles([known('calibration.wav', node.id, readBytes)]);
+    expect(readBytes).not.toHaveBeenCalled();
+    expect(persistence.getOriginal).toHaveBeenCalledWith(node.id);
+    expect(music.analyzeMusic).toHaveBeenCalledTimes(1);
+    const refreshed = useGraphStore.getState().nodes.find(n => n.id === node.id)!.audio!;
+    expect(refreshed.instrumentScan?.revision).toBe(INSTRUMENT_ANALYSIS_REVISION);
+    expect(refreshed.instrumentScan?.revision).toBeGreaterThan(86);
+    expect(refreshed.confirmedInstruments).toEqual(['piano']);
+    music.analyzeMusic.mockClear();
+    await analyzeAudioCorpus();
+    expect(music.analyzeMusic).not.toHaveBeenCalled();
+  });
+
   it('reads the file after all when its stored record has gone', async () => {
     library.hasDocumentRecord.mockResolvedValue(false);
     const readBytes = vi.fn(async () => wavBytes());

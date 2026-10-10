@@ -20,7 +20,8 @@ export const TEMPO_ANALYSIS_REVISION = 5;
 // 79/80: full-precision tagger scores; incomplete outputs remain unknown. 81/82: DJ effect heads retrained on the grown clip set.
 // 83/84: the runs 3 and 5 tagger blend (old tagger scores no longer count).
 // 85/86: sound heads for kalimba, djembe and nine maybe tags (tag-heads-2026-10-09).
-export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 86 : 85;
+// 87/88: calibrate those heads on runtime-eligible long clips (tag-heads-2026-10-09+runtime-eligible).
+export const INSTRUMENT_ANALYSIS_REVISION = installedFusionIdentity() ? 88 : 87;
 export interface InstrumentEstimate {
   label: string;
   score: number;

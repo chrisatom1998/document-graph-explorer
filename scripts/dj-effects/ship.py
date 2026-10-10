@@ -1,15 +1,18 @@
 """Ships the DJ-effect heads from train.py into the app, following the project's display policy:
-  * held-out precision AND recall >= 0.70 (the project target) -> normal head;
+  * runtime-eligible held-out precision AND recall >= 0.70 (the project target) -> normal head;
   * below that -> "maybe" head (still shown, faded), unless it is clearly not useful:
     held-out precision < 0.45 or recall < 0.30 -> left out;
 A label that already ships a head in learned.json gets the new one only if it beats the current head on the SAME
-held-out clips (higher min(P, R), then higher F1); a normal head is only ever replaced by one that reaches 70/70.
+runtime-eligible held-out clips (higher min(P, R), then higher F1); a normal head is only ever replaced by one that reaches 70/70.
+New heads are not cleared for whole one-shots, so heldOutLongClip (with known durations and at least 10 positives)
+is required. Aggregate results cannot promote a head that fails on the clips where the browser enables it.
 New labels (labels.json "new") get a catalog entry on their own axis (dj-effect), so they do not change which
 existing label wins the dj-transition axis; add-prompts.mjs then gives them CLAP text vectors (on Actions).
 Re-pins learned.json in manifest.json, bumps the learned.json revision and the catalog version, and rewrites
 calibratedLabels.json. When the report also scores every held-out clip ("extended", train.py PRIMARY_ROUND), a head that
 replaces a current one must beat it there too. REVISION_TAG (default dj-effects-2026-10-06) names the revision suffix.  Usage: ship.py <dir with report.json + heads.json>"""
 import json, sys, hashlib, os
+from eligibility import eligible_metrics
 D = sys.argv[1]
 HERE = os.path.dirname(os.path.abspath(__file__))
 spec = {L['label']: L for L in json.load(open(f"{HERE}/{os.environ.get('LABELS', 'labels.json')}"))['labels']}
@@ -17,6 +20,7 @@ report = json.load(open(f'{D}/report.json'))['labels']
 trained = {h['label']: h for h in json.load(open(f'{D}/heads.json'))['heads']}
 LEARNED, MANIFEST, CATALOG = 'public/sound-model/learned.json', 'public/sound-model/manifest.json', 'src/audio/djCatalog.json'
 model = json.load(open(LEARNED)); catalog = json.load(open(CATALOG))
+MAX_SECONDS = json.load(open('public/sound-model/short-clip.json'))['maxSeconds']
 cats = {(c['group'], c['label']) for c in catalog['categories']}
 key = lambda P, R: (min(P, R), 2 * P * R / (P + R) if P + R else 0.0)
 out, added_cats = [], []
@@ -24,7 +28,15 @@ for label, e in report.items():
     row = {'label': label, **{k: e.get(k) for k in ('precision', 'recall', 'testPositive', 'testNegative', 'trainPositive', 'threshold')}}
     h = trained.get(label)
     if not h or 'precision' not in e: out.append({**row, 'shipped': False, 'why': e.get('verdict')}); continue
-    P, R = e['precision'], e['recall']
+    # New heads have no oneShot clearance. Judge the same >maxSeconds clips on
+    # which the browser enables them, and compare old/new heads on that subset.
+    metrics, why = eligible_metrics(e, MAX_SECONDS, min_positives=0)
+    if why: out.append({**row, 'shipped': False, 'why': why}); continue
+    P, R = metrics['precision'], metrics['recall']
+    row.update(precision=P, recall=R, testPositive=metrics['positives'], testNegative=metrics['negatives'],
+               evaluationSubset=metrics['subset'])
+    if metrics['positives'] < 10:
+        out.append({**row, 'shipped': False, 'why': 'fewer than 10 runtime-eligible held-out positives'}); continue
     row['meets70'] = bool(min(P, R) >= 0.70)
     if P < 0.45 or R < 0.30: out.append({**row, 'shipped': False, 'why': 'held-out precision < 0.45 or recall < 0.30'}); continue
     full = min(P, R) >= 0.70
@@ -34,13 +46,24 @@ for label, e in report.items():
     if current:
         cur = next((c for c in e.get('current', []) if c['file'] == 'learned.json'), None)
         if not cur: out.append({**row, 'shipped': False, 'why': 'current head was not scored on the same clips'}); continue
-        if key(P, R) <= key(cur['precision'], cur['recall']):
-            out.append({**row, 'shipped': False, 'why': f"current head is as good on the same held-out clips (P {cur['precision']:.2f} R {cur['recall']:.2f})"}); continue
+        cur_metrics, why = eligible_metrics(cur, MAX_SECONDS)
+        if why: out.append({**row, 'shipped': False, 'why': 'current head: ' + why}); continue
+        if (cur_metrics['positives'], cur_metrics['negatives']) != (metrics['positives'], metrics['negatives']):
+            out.append({**row, 'shipped': False, 'why': 'current head was scored on a different eligible clip set'}); continue
+        if key(P, R) <= key(cur_metrics['precision'], cur_metrics['recall']):
+            out.append({**row, 'shipped': False, 'why': f"current head is as good on runtime-eligible held-out clips (P {cur_metrics['precision']:.2f} R {cur_metrics['recall']:.2f})"}); continue
         ext = e.get('extended', {})
-        if 'new' in ext and 'current' in ext and key(ext['new']['precision'], ext['new']['recall']) <= key(ext['current']['precision'], ext['current']['recall']):
-            out.append({**row, 'shipped': False, 'why': f"current head is as good on all held-out clips (P {ext['current']['precision']:.2f} R {ext['current']['recall']:.2f})"}); continue
+        if ext:
+            new_ext, new_why = eligible_metrics(ext.get('new', {}), MAX_SECONDS)
+            cur_ext, cur_why = eligible_metrics(ext.get('current', {}), MAX_SECONDS)
+            if new_why or cur_why:
+                out.append({**row, 'shipped': False, 'why': 'extended runtime-eligible comparison is unavailable'}); continue
+            if (new_ext['positives'], new_ext['negatives']) != (cur_ext['positives'], cur_ext['negatives']):
+                out.append({**row, 'shipped': False, 'why': 'extended eligible clip sets differ'}); continue
+            if key(new_ext['precision'], new_ext['recall']) <= key(cur_ext['precision'], cur_ext['recall']):
+                out.append({**row, 'shipped': False, 'why': 'current head is as good on all runtime-eligible held-out clips'}); continue
         model['heads'] = [x for x in model['heads'] if x['label'] != label]
-        row['replaced'] = {'tier': 'maybe' if cur['maybe'] else 'full', 'precision': cur['precision'], 'recall': cur['recall']}
+        row['replaced'] = {'tier': 'maybe' if cur['maybe'] else 'full', 'precision': cur_metrics['precision'], 'recall': cur_metrics['recall']}
     if (h['group'], label) not in cats:
         new = spec[label].get('new')
         if not new: out.append({**row, 'shipped': False, 'why': 'not in the catalog'}); continue
@@ -51,7 +74,9 @@ for label, e in report.items():
         cats.add((h['group'], label)); added_cats.append(label)
     model['heads'].append({**h, **({} if full else {'maybe': True})})
     out.append({**row, 'shipped': True, 'tier': 'full' if full else 'maybe'})
-if not any(r['shipped'] for r in out): sys.exit('nothing to ship')
+if not any(r['shipped'] for r in out):
+    for row in out: print(f"{row['label']}: no - {row['why']}")
+    sys.exit('nothing to ship; reports without runtime-eligible scores must be regenerated with DURATIONS or rescore.py')
 model['revision'] += '+' + os.environ.get('REVISION_TAG', 'dj-effects-2026-10-06')
 body = json.dumps(model, separators=(',', ':')) + '\n'
 open(LEARNED, 'w').write(body)

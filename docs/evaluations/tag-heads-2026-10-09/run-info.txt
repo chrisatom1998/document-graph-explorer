@@ -1,3 +1,40 @@
 tested 31007940fd3d7e54f87984a61be4f2264f028f33 (run 37994472692)
 metadata: fdc81269e2ddcf0bffffc05f01c55509d9c772f43b90f6d96fac325f9facdc8d https://huggingface.co/datasets/Chr0my/freesound.org/resolve/refs%2Fconvert%2Fparquet/default/train/0000.parquet
 LABELS=labels-tags.json RENDER=tags PER_LABEL=600 PER_UPLOADER=8 NEGATIVES=3000
+
+Deterministic route-aware rescore (2026-10-09)
+Training, held-out uploader split, overlap exclusions, exported coefficients, and thresholds unchanged.
+Scored the exact rounded heads.json used at runtime; all 66 aggregate/short confusion-count comparisons match the recorded unrounded report.
+Verified all 20 current-head comparisons against the pre-training learned.json baseline.
+Held-out clips: 2533 total; 561 <= 2.25 s; 1972 > 2.25 s; 0 unknown/invalid durations.
+Long-route evidence is heldOutLongClip; missing/non-finite/non-positive durations never count as long clips.
+Full-precision training coefficients were not exported; no unrounded coefficients were reconstructed or retrained.
+Original report snapshot: b7988f90bed2df2018ab961f4c00babfc8010e09:docs/evaluations/tag-heads-2026-10-09/report.json
+Baseline model snapshot: 2d2116d5d756000745e681d35fd95b91358992ff:public/sound-model/learned.json (identical to training commit 31007940fd3d7e54f87984a61be4f2264f028f33).
+Source shard archives from training run 37994472692 (GitHub artifact SHA256 verified before extraction):
+  ee5bfc46de9c2a22af44aa8d01dd27d63a107e3aac7e0c745d480f7996ec5bbf  shard-0.zip
+  e2cca76bdc777b832f46a479349c14701142d6fd50a480e8f25d218895e1667c  shard-1.zip
+  46f55e4f992692a3e69a3fce311a7627640c74b52128546d4a48ed36fd74e18c  shard-2.zip
+  9eeaa39f6fefe71665525c4e781030ef89e1796431629cf976de8ac1281b2942  shard-3.zip
+  e29250c6cb5ebc71f216a92487ea003beb125125d00dcaa1a1858bea4ed99e3a  shard-4.zip
+  5f48e93ca9226fb28f38ed53050ce04e1c7e418e1907390c0a338e61b71e6cdd  shard-5.zip
+Individual manifest, render manifest, duration, and embedding digests are recorded in report.json rescoring.sourceFileSha256.
+
+Reproduce from extracted original shard directories at $ARTIFACTS (Python 3 + NumPy; no training dependencies):
+  mkdir -p /tmp/tag-heads-rescore-baseline
+  git show b7988f90bed2df2018ab961f4c00babfc8010e09:docs/evaluations/tag-heads-2026-10-09/report.json > /tmp/tag-heads-rescore-baseline/report.json
+  git show 2d2116d5d756000745e681d35fd95b91358992ff:public/sound-model/learned.json > /tmp/tag-heads-rescore-baseline/learned.json
+  OPENBLAS_NUM_THREADS=1 python3 scripts/dj-effects/rescore.py "$ARTIFACTS" docs/evaluations/tag-heads-2026-10-09 \
+    --recorded-report /tmp/tag-heads-rescore-baseline/report.json \
+    --recorded-report-sha256 41e8c85e36855cb3f04295e6247a326a867c4ff9030d8f000838ad8c1969efeb \
+    --baseline-learned /tmp/tag-heads-rescore-baseline/learned.json \
+    --baseline-sha256 2bcb98250b1ea4f96a1db1673526a05c5ae5e3621867c0a3ad9ad2a89893b1d3 \
+    --heads-sha256 53d7cb66c180ba2d445173d3e4b44751825d2912a666febc3e83936ccf828b20 \
+    --labels scripts/dj-effects/labels-tags.json
+
+Runtime artifact regeneration:
+  Restored baseline heads/revision and learned.json digest before shipping; all unrelated model/manifest metadata preserved.
+  LABELS=labels-tags.json REVISION_TAG=tag-heads-2026-10-09+runtime-eligible python3 scripts/dj-effects/ship.py docs/evaluations/tag-heads-2026-10-09
+  8 heads selected from long-route evidence: kalimba full; falling, viola, marimba, djembe, whistle, bongo, tom maybe.
+  6 replacements and 2 additions; 113 total learned heads; no new catalog entries; no new oneShot clearance.
+  learned.json SHA256: 0200e2353b267251fba2d7c93a1b805f2b7f57061b11cf30f6066369c7640356
