@@ -32,6 +32,8 @@ on:
       fsnew_data: { description: 'PRIVATE HF dataset <repo>:<folder> with staged Freesound sounds for tags with little or no audio (stage-freesound.py); empty = none', default: '' }
       run9_data: { description: 'PRIVATE HF dataset <repo>:<folder> with run 9 staged audio (stage-run9.py); empty = none', default: '' }
       run9_audit: { description: 'PRIVATE HF dataset <repo>:<path> of run9-audit.py manifest-audited.csv (keeps only audited items); empty = none', default: '' }
+      charts: { description: 'live training charts (loss, validation mAP) in the private dge-training-charts Space', default: 'true' }
+      chart_name: { description: 'name of this run on the live chart, e.g. round 9; empty = out_dir plus the start time', default: '' }
   push:
     branches: ['claude/train-audio-model-*']
     paths: ['.github/workflows/audio-model-train.yml']
@@ -95,7 +97,7 @@ jobs:
           OUT_DIR=${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir }} JOB_NAME=dge-tagger-${{ github.event_name == 'push' && 'all-tags' || inputs.out_dir || 'main' }}
           TRAIN_HOURS=${{ inputs.train_hours || '4.25' }} RARE_REPEAT=${{ inputs.rare_repeat || '1' }} RAWSTEMS=${{ inputs.rawstems == 'true' && '1' || '0' }} JOB_HOURS=${{ inputs.job_hours || '7' }}
           LR=${{ inputs.lr || '1e-4' }} BATCH=${{ inputs.batch || '64' }} WEAK=${{ inputs.weak || '0.2' }}
-          SOUNDCLOUD_DATA=${SOUNDCLOUD_DATA:-}
+          SOUNDCLOUD_DATA=${SOUNDCLOUD_DATA:-} TRACKIO_SPACE=${{ (inputs.charts || 'true') == 'true' && '1' || '' }} "TRACKIO_RUN=${{ inputs.chart_name }}"
           RAWSTEMS_FX=${{ inputs.rawstems_fx || '0' }} IOWA=${{ inputs.iowa == 'true' && '1' || '0' }}
           CHRIS_DATA=${{ inputs.chris_data || '' }} SOURCE_REPEAT=${{ inputs.source_repeat || '' }}
           VCSL=${{ contains(inputs.extra_sets, 'vcsl') && '1' || '0' }} SLAKH_MORE=${{ contains(inputs.extra_sets, 'slakh_more') && '1' || '0' }}

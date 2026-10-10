@@ -11,6 +11,18 @@ export const DJ_LABELS: Record<DjGroup, readonly string[]> = {
   character: DJ_CATALOG.filter(c => c.group === 'character').map(c => c.label),
 };
 export type ConfirmedDjTags = Record<DjGroup, string[]>;
+/** Look-alike tags shown and confirmed under one name (Chris, 2026-10-10): the models could not tell each pair apart
+ * (breath and vocal breath are taught by the same labels; static noise already covers white noise). The old labels stay
+ * in the catalog because trained heads, prompts and saved analyses use them; only what people see and confirm merges. */
+export const MERGED_DJ_LABELS: Readonly<Record<string, { group: DjGroup; label: string }>> = {
+  'production:vocal breath': { group: 'source', label: 'breath' },
+  'source:noise': { group: 'production', label: 'static noise' },
+  'production:synth stab': { group: 'production', label: 'synth hit' },
+};
+export const mergedDjLabel = (group: DjGroup, label: string): { group: DjGroup; label: string } => MERGED_DJ_LABELS[`${group}:${label}`] ?? { group, label };
+/** Labels people can pick: the catalog minus the merged names. */
+const pickable = (group: DjGroup) => DJ_LABELS[group].filter(label => !MERGED_DJ_LABELS[`${group}:${label}`]);
+export const DJ_PICKER_LABELS: Record<DjGroup, readonly string[]> = { source: pickable('source'), production: pickable('production'), character: pickable('character') };
 export interface DjTag { group: DjGroup; label: string; score: number; model?: 'AudioSet AST' | 'MTG-Jamendo' | 'Music CLAP' | 'Reviewed examples' | 'Trained head' | 'Trained head (maybe)'; segments?: { start: number; end: number }[]; windowEvidence?: NativeWindowEvidence }
 export const DJ_TYPE_SOURCE: Record<string, string> = Object.fromEntries(
   DJ_CATALOG.filter(c => c.group === 'production' && c.source).map(c => [c.label, c.source!]),
@@ -30,7 +42,13 @@ export function sanitizeConfirmedDjTags(raw: unknown): ConfirmedDjTags | undefin
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return;
   const input = raw as Record<string, unknown>;
   if (!['source','production','character'].every(g => Array.isArray(input[g]))) return;
-  return Object.fromEntries(Object.keys(DJ_LABELS).map(group => [group, [...new Set((input[group] as unknown[]).slice(0, DJ_LABELS[group as DjGroup].length * 2).map(v => canonicalDjLabel(group as DjGroup, v)).filter((v): v is string => !!v))].slice(0, DJ_LABELS[group as DjGroup].length)])) as ConfirmedDjTags;
+  const groups = Object.keys(DJ_LABELS) as DjGroup[];
+  const out = Object.fromEntries(groups.map(group => [group, [] as string[]])) as ConfirmedDjTags;
+  for (const group of groups) for (const v of (input[group] as unknown[]).slice(0, DJ_LABELS[group].length * 2)) {
+    const label = canonicalDjLabel(group, v);
+    if (label) { const m = mergedDjLabel(group, label); out[m.group].push(m.label); }
+  }
+  return Object.fromEntries(groups.map(group => [group, [...new Set(out[group])].slice(0, DJ_LABELS[group].length)])) as ConfirmedDjTags;
 }
 export function sanitizeDjTags(raw: unknown, durationSeconds = 86400): DjTag[] {
   if (!Array.isArray(raw)) return [];

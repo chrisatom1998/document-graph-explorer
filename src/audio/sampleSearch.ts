@@ -1,6 +1,6 @@
 import { djReviewAllows, resolvedNonSourceLabels } from './soundReviewPolicy';
 import type { DocNode } from '../model/types';
-import { DJ_CATALOG } from './djTags';
+import { DJ_CATALOG, MERGED_DJ_LABELS } from './djTags';
 import { INSTRUMENT_LABELS } from './instrumentLabels';
 import { keyName, type MusicAnalysis } from './musicTypes';
 import { energyFromScore, genreFromScores, genreFamily, genreText } from './genreEnergy';
@@ -12,9 +12,12 @@ export { EMPTY_SAMPLE_QUERY, parseSampleQuery, type SampleQuery } from './sample
 function normalize(s: string): string {
   return s.toLowerCase().replace(/[_-]/g, ' ').replace(/♯/g, '#').replace(/♭/g, 'b').replace(/\s+/g, ' ').trim();
 }
+// Merged look-alike tags search as one: "breath" finds vocal breath, "static noise" finds noise.
+const MERGED = new Map(Object.entries(MERGED_DJ_LABELS).map(([key, to]) => [key.slice(key.indexOf(':') + 1), to.label]));
 function canonical(s: string): string {
   const v = normalize(s);
-  return normalize(DJ_CATALOG.find(c => [c.label, ...c.aliases].some(a => normalize(a) === v))?.label ?? v);
+  const label = normalize(DJ_CATALOG.find(c => [c.label, ...c.aliases].some(a => normalize(a) === v))?.label ?? v);
+  return MERGED.get(label) ?? label;
 }
 const ENERGY_TERMS: Record<string, 'low' | 'medium' | 'high'> = { 'high energy': 'high', energetic: 'high', 'peak time': 'high', 'banger': 'high',
   'medium energy': 'medium', 'mid energy': 'medium', 'low energy': 'low', chill: 'low', calm: 'low', mellow: 'low' };

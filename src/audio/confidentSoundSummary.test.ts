@@ -1,4 +1,5 @@
 import { RULE_DESCRIBED_LABELS } from './timbreDescriptions';
+import {mergedDjLabel} from './djTags';
 import {expect,it} from 'vitest';
 import {confidentSoundSummary,LIKELY_SOUND_CUTOFF,TRACK_SOUND_FLOOR} from './confidentSoundSummary';
 import {createRecognition,recordEvidence} from './recognition';
@@ -56,10 +57,25 @@ it('can display every catalog label once a trained head reports it',async()=>{
  const {default:catalog}=await import('./djCatalog.json');
  const missing=catalog.categories.filter(c=>{
   const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:c.group as 'source'|'production'|'character',label:c.label,score:.9,model:'Trained head'}]};
-  return !confidentSoundSummary(a).some(s=>s.label===c.label);
+  const shown=mergedDjLabel(c.group as 'source'|'production'|'character',c.label).label;
+  return !confidentSoundSummary(a).some(s=>s.label===shown);
  }).map(c=>c.label);
- // The nine rule-described character words are never shown from a model (timbreDescriptions.ts); every other label can be.
+ // The nine rule-described character words are never shown from a model (timbreDescriptions.ts); every other label can be,
+ // merged-away labels under the name they merged into.
  expect(missing.sort()).toEqual([...RULE_DESCRIBED_LABELS].sort());
+});
+it('shows merged look-alike tags once, under the kept name, and keeps the stronger entry',()=>{
+ const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[
+  {group:'production',label:'vocal breath',score:.9,model:'Trained head'},{group:'source',label:'breath',score:.7,model:'Trained head (maybe)'},
+  {group:'source',label:'noise',score:.8,model:'Trained head'},{group:'production',label:'synth stab',score:.6,model:'Trained head (maybe)'}]};
+ const shown=confidentSoundSummary(a);
+ expect(shown.map(s=>[s.dimension,s.label,s.maybe===true]).sort()).toEqual([['effect','static noise',false],['effect','synth hit',true],['source','breath',false]]);
+ expect(shown.some(s=>['vocal breath','noise','synth stab'].includes(s.label))).toBe(false);
+});
+it('does not revive a rejected kept tag through its merged-away name',()=>{
+ const a=audio();a.instruments=[];a.soundProfile={version:1,character:[],roles:[],models:[],disagreement:false,djTags:[{group:'source',label:'noise',score:.9,model:'Trained head'}]};
+ a.soundReviews=[{dimension:'effect',labelId:'static noise',decision:'rejected',scope:'track',at:'2026-10-10T00:00:00.000Z',evidenceRunId:'r'}];
+ expect(confidentSoundSummary(a)).toEqual([]);
 });
 it('shows full-mix-tested Jamendo synthesizer, drums and piano on recordings of at least ten seconds only',async()=>{
  const {FULL_MIX_JAMENDO,FULL_MIX_JAMENDO_SCORE}=await import('./confidentSoundSummary');

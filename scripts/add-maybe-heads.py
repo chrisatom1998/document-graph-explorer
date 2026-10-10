@@ -2,11 +2,12 @@
 as faded "maybe" tags, without touching the heads already there. Use this instead of
 ship-round-heads.py when other scripts own some of the shipped heads (it rebuilds the file).
 A head whose tag already ships is left alone. Only the learned.json line in manifest.json changes.
-FULL_BAR=0.60 (optional): heads whose held-out precision AND recall reach it ship as full tags, the rest as maybe.
+FULL_BAR (default 0.50, Chris's bar of 2026-10-10, = SOUND_TAG_BAR in confidentSoundSummary.ts): heads whose
+held-out precision AND recall reach it ship as full tags, the rest as maybe.
 Usage: add-maybe-heads.py <round-export.json> <report.json>"""
 import json, sys, hashlib, datetime, os
 SRC, REPORT = sys.argv[1:3]
-FULL_BAR = float(os.environ['FULL_BAR']) if os.environ.get('FULL_BAR') else None
+FULL_BAR = float(os.environ.get('FULL_BAR') or 0.50)
 SKIP = set(filter(None, os.environ.get('SKIP', '').split(',')))   # labels another session owns
 REAL_ONLY = os.environ.get('REAL_ONLY') == '1'   # only heads measured on library brands or real recordings
 LEARNED, MANIFEST = 'public/sound-model/learned.json', 'public/sound-model/manifest.json'
@@ -21,7 +22,7 @@ for r in json.load(open(SRC))['results']:
     if (group, r['name']) in shipped: report.append({**row, 'added': False, 'why': 'already ships'}); continue
     if r['name'] in SKIP: report.append({**row, 'added': False, 'why': 'owned by another session'}); continue
     if REAL_ONLY and r.get('testedOn') not in ('library brands', 'real recordings'): report.append({**row, 'added': False, 'why': 'tested on made-up clips only'}); continue
-    full = FULL_BAR is not None and min(r['precision'], r['recall']) >= FULL_BAR
+    full = min(r['precision'], r['recall']) >= FULL_BAR
     added.append({'group': group, 'label': r['name'], **r['head'], 'threshold': round(r['threshold'], 4), **({} if full else {'maybe': True})})
     shipped.add((group, r['name']))   # first export of a label wins (instrument vs label job)
     report.append({**row, 'group': group, 'added': True, 'tier': 'full' if full else 'maybe'})

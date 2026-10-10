@@ -38,6 +38,8 @@ JAMENDO_TAGS = ['accordion', 'acousticbassguitar', 'acousticguitar', 'bass', 'be
 OPENMIC = list(CLASSES)
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from labelmap import CAT, FREESOUND, FSLD_ROLES, SAME  # noqa: E402
+import fsd50k_extra  # noqa: E402
+import charts  # noqa: E402
 # Third head: the app's own tag names (labelmap.py), taught by FSD50K, NSynth, the effect renders and Freesound, plus the music
 # sources' labels below wherever one names the same sound.
 CLASSES = OPENMIC + [f'jamendo:{t}' for t in JAMENDO_TAGS] + [f'cat:{l}' for l in CAT] + [f'fsld:{r}' for r in FSLD_ROLES]
@@ -109,7 +111,9 @@ def main():
     if args.soundcloud:
         sources.append(load_source('soundcloud', os.path.join(args.soundcloud, 'soundcloud-mel.npy'), json.load(open(os.path.join(args.soundcloud, 'soundcloud.json')))['items'], args.weak))
     if args.fsd50k:
-        sources.append(load_source('fsd50k', os.path.join(args.fsd50k, 'fsd50k-mel.npy'), json.load(open(os.path.join(args.fsd50k, 'fsd50k.json')))['items'], args.weak))
+        fsd_items = json.load(open(os.path.join(args.fsd50k, 'fsd50k.json')))['items']
+        print(f'FSD50K: {fsd50k_extra.relabel(fsd_items, "dev")} labels added from FSD50K classes the prep leaves out (fsd50k_extra.py)', flush=True)
+        sources.append(load_source('fsd50k', os.path.join(args.fsd50k, 'fsd50k-mel.npy'), fsd_items, args.weak))
     if args.nsynth:
         sources.append(load_source('nsynth', os.path.join(args.nsynth, 'nsynth-mel.npy'), json.load(open(os.path.join(args.nsynth, 'nsynth.json')))['items'], args.weak))
     if args.freesound:
@@ -174,6 +178,7 @@ def main():
                 out[src['name']] = np.concatenate(s_out) if s_out else np.zeros((0, len(CLASSES)))
         return out
 
+    charts.start(os.path.basename(os.path.abspath(args.run)), vars(args))
     for epoch in range(start, args.epochs):
         if epoch >= args.epochs: break       # --hours cut the run short
         model.train(); order = rng.permutation(len(pool)); t0 = time.time(); losses = []
@@ -196,6 +201,7 @@ def main():
             loss = (F.binary_cross_entropy_with_logits(logits, yt, reduction='none') * wt).sum() / wt.sum().clamp(min=1)
             opt.zero_grad(); loss.backward(); opt.step(); sched.step(); losses.append(loss.item())
             if len(losses) % 50 == 0:
+                charts.log({'loss': np.mean(losses[-50:]), 'lr': sched.get_last_lr()[0]}, step=epoch * steps_per_epoch + len(losses))
                 print(f'epoch {epoch + 1} step {len(losses)}/{steps_per_epoch} loss {np.mean(losses[-50:]):.4f} '
                       f'{(time.time() - t0) / len(losses):.2f}s/step', flush=True)
         scores = evaluate()
@@ -203,6 +209,8 @@ def main():
         all_ap = [v for a in aps.values() for v in a.values()]; mAP = float(np.mean(all_ap)) if all_ap else 0.0
         log.append({'epoch': epoch + 1, 'loss': float(np.mean(losses)), 'valMAP': mAP, 'valAP': aps, 'seconds': time.time() - t0})
         print(json.dumps(log[-1]), flush=True)
+        charts.log({'epoch': epoch + 1, 'epoch loss': log[-1]['loss'], 'validation mAP': mAP, 'minutes per epoch': log[-1]['seconds'] / 60,
+                    **{f'validation mAP {n}': np.mean(list(a.values())) for n, a in aps.items() if a}}, step=(epoch + 1) * steps_per_epoch)
         if epoch == start and args.hours and args.epochs * log[-1]['seconds'] > args.hours * 3600:
             args.epochs = max(epoch + 1, int(args.hours * 3600 // log[-1]['seconds'])); total = steps_per_epoch * args.epochs
             print(f'cut to {args.epochs} epochs to fit {args.hours} h', flush=True)
@@ -214,6 +222,7 @@ def main():
         json.dump({'args': vars(args), 'classes': CLASSES, 'epochs': log,
                    'val': {src['name']: [src['ids'][i] for i in vals[src['name']]] for src in sources}},
                   open(os.path.join(args.run, 'log.json'), 'w'), indent=1)
+    charts.finish()
 
 if __name__ == '__main__':
     main()
