@@ -173,7 +173,7 @@ test('demo corpus ingests end-to-end and nodes open the reader panel', async ({ 
   await expect(corpusCount(page)).toContainText('101 files');
 
   // Hygiene: no console errors, no uncaught page errors, no error toasts.
-  await expect(page.locator('.toast--error')).toHaveCount(0);
+  await expect(page.locator('.app-toast--error')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
@@ -304,7 +304,7 @@ test('renderer grows past 4,096 nodes and can frame the first node beyond the ol
   await expect(sidePanel).toBeVisible({ timeout: 180_000 });
   await expect(sidePanel).toContainText('Boundary node 4097');
 
-  await expect(page.locator('.toast--error')).toHaveCount(0);
+  await expect(page.locator('.app-toast--error')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
